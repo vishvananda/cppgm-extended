@@ -1716,7 +1716,43 @@ Evidence is in `/tmp/cppgm-revised-profile.sample.txt`,
 `/tmp/cppgm-primary-placeholder-test-strict.log`, and
 `/tmp/cppgm-primary-placeholder-test-report.log`.
 
-#### Multi-signal retention rubric at `3686d87b0`
+#### Named-type display view checkpoint
+
+The revised leaf census also found `927,511` named-type display requests over
+only `5,158` distinct types. `922,353` requests repeated a prior result, no
+result changed, and the returned text totalled `139,245,070` bytes. The two
+older experiments kept every compacted display eagerly but still returned it
+by value. They paid for the common result copy and therefore measured flat.
+
+The retained form leaves display compaction in place. On first demand it
+reconstructs the text into the existing `Type::named_display` string, then
+returns a borrowed reference on that and later requests. The reference is
+owned by the stripped named type and is valid while that type graph is alive.
+No caller stores the reference beyond the owning expression. This removes
+both repeated reconstruction and the by-value copy without adding a table,
+key, epoch, or invalidation path.
+
+Three interleaved pairs measured parent and candidate instruction medians of
+`115,568,617,192` and `112,226,094,977`, a `2.892%` improvement. All three
+instruction pairs agreed. Median RSS regressed by `0.188%`, and footprint
+regressed by `0.306%`; both remain inside the CPU lane's hard gates. Every
+object had the frozen SHA-256.
+
+The clean three-run median at `8d58a3d6a` is `112,101,667,646` instructions,
+`35.63%` below the original baseline. Maximum RSS is `703,864,832 B`, and
+footprint is `517,873,664 B`. The focused PA14 report passes `111/111`, direct
+strict passes `1530/1530`, and the full direct report passes `4863/4863`.
+
+Evidence is in `/tmp/cppgm-revised-profile.sample.txt`,
+`/tmp/cppgm-revised-leaf-census.stderr`,
+`/tmp/cppgm-display-view-screen.json`,
+`/tmp/cppgm-display-view-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-display-view-final.json`,
+`/tmp/cppgm-display-view-test-pa14.log`,
+`/tmp/cppgm-display-view-test-strict.log`, and
+`/tmp/cppgm-display-view-test-report.log`.
+
+#### Multi-signal retention rubric, adopted at `3686d87b0`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
 it was too blunt. It undervalued changes that reduce CPU work and memory
@@ -1765,18 +1801,26 @@ candidate qualifies through one of these lanes:
 | memory density | instruction regression is no worse than `0.15%`, and either footprint improves by at least `1%` and `4 MiB`, or footprint improves by at least `0.5%` while confirmed RSS improves by at least `1%` | Three interleaved pairs, retained-size census, and an independent RSS confirmation when the second form is used. |
 | allocation and latency | at least `100,000` allocation/deallocation calls or `8 MiB` of requested allocation traffic disappear; instruction and memory hard gates hold; quiet median wall time improves by at least `1%`, with user time or cycles agreeing | Five quiet interleaved pairs plus the allocation census. Allocation count by itself is not enough. |
 
+The allocation lane treats removed allocator traffic as a reason to measure,
+not as proof of speed. Allocator calls can be cheap, and a pool can trade them
+for lookup work or retained pages. This is why a slight instruction regression
+is permitted only when quiet end-to-end latency confirms the benefit. The
+balanced lane handles the other important case directly: a change can qualify
+below the `0.5%` instruction threshold when it improves both CPU work and
+memory by a material combined amount.
+
 Two sub-threshold edits may be measured together only when they share a hot
 path, state contract, or data representation. The composite must qualify as a
 whole. This permits, for example, removing two expected-exception producers
 through one status boundary. It does not permit bundling unrelated micro-edits
 to manufacture a score.
 
-#### Rejected-work checkpoint review at `3686d87b0`
+#### Rejected-work checkpoint review, started at `3686d87b0`
 
-The checkpoint review covered all 134 rows in the rejected-work ledger. It
-used absolute instructions removed, overlap with later retained work, a fresh
-release-binary sample, and the multi-signal rubric above. The denominator
-change alone does not justify a retry. A rejected form reopens when one of
+The checkpoint review covered all 135 current rows in the rejected-work
+ledger. It used absolute instructions removed, overlap with later retained
+work, a fresh release-binary sample, and the multi-signal rubric above. The
+denominator change alone does not justify a retry. A rejected form reopens when one of
 these conditions holds:
 
 - its prior result reaches a retention lane's decision threshold and needs the
@@ -1832,6 +1876,7 @@ The full ledger re-audit changes these old decisions:
 | compact `CallSemNode` child storage | `-0.022 / +0.563 / +1.169%` | memory-density lane; historical result was only a screen | Run a current paired decision. Retain only if the container remains simpler than a pool and clears full correctness. |
 | allocate `Scope::named_type_access` on first use | `+0.170 / +0.058 / +1.237%` | balance score `0.788`; historical result was only a screen and RSS supplied most of the score | The current retry scored `0.083` and regressed instructions and RSS. Keep the direct map. |
 | inline `strip_top_level_cv` and return the selected pointer by reference | `+0.165 / -0.074 / +1.980%` | balance score `1.155`; historical result was only a screen and RSS supplied most of the score | The current retry improved instructions in all three pairs but scored only `0.225` because memory was flat to worse. Keep the value-returning API. |
+| retain compacted named-type display strings | `+0.035 / unknown / negative one-run RSS` | misses every lane in its original by-value form | Reopen through a new ownership form after the fresh census found `922,353` stable repeats. The borrowed lazy view removes reconstruction and the return copy, clears the CPU lane at `2.892%`, and is retained in `8d58a3d6a`. |
 
 Three historical results need no retry. The early by-value trim result has a
 `0.618` balance score, but the later current-code rvalue screen was flat. The
@@ -1862,7 +1907,7 @@ construction, or complete-entry symbol reuse without a new census.
 
 #### Revised investigation order
 
-The 33.18% cumulative reduction leaves `29,296,735,745` instructions. A chain
+The `35.63%` cumulative reduction leaves `25,022,782,174` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -1920,16 +1965,16 @@ order:
    `1.622%` RSS improvement, but the required independent batch improved RSS
    by only `0.801%`. Its `0.780%` footprint and `0.077%` instruction gains miss
    the other lanes, so `std::vector` remains.
-9. In progress: attribute four new profile leaves before editing their
-   representations. The current sample records 89 display-reconstruction
-   leaves, 63 source-owner leaves, 57 primary-placeholder leaves, 53 overlay
-   leaves, and 44 snapshot-construction leaves. Retain the primary-placeholder
-   shape byte: `754,890` cache hits clear the CPU lane at `0.539%`. Keep the
-   broader owner pointer rejected after its independent balance score fell to
-   `0.406`. Close snapshot interning: only 29 of 6,746 snapshots were empty,
-   and sharing the 2,903 repeated contents would save roughly 1.1 MiB through
-   another broad cache. Continue with the 922,353 stable display repeats and
-   166,963 no-change overlay requests.
+9. In progress: finish the revised profile leaves. Retain the
+   primary-placeholder shape byte: `754,890` cache hits clear the CPU lane at
+   `0.539%`. Retain the named-type display view: `922,353` stable repeats clear
+   the CPU lane at `2.892%` once the API avoids both reconstruction and the
+   result copy. Keep the broader source-owner pointer rejected after its
+   independent balance score fell to `0.406`. Close snapshot interning: only
+   29 of 6,746 snapshots were empty, and sharing the 2,903 repeated contents
+   would save roughly 1.1 MiB through another broad cache. Next, determine
+   whether the 166,963 no-change overlay requests have an operation-scoped
+   identity and invalidation contract that avoids an analyzer-wide cache.
 10. Measure the two remaining narrow traversal families. Conversion-function
    group collection still uses two tree-backed class visit sets and has 37
    fresh leaf samples. It can use inline storage only if a population census
@@ -2032,6 +2077,7 @@ Fill one row after each retained commit.
 | `0e5b1af2d` | resolve template-parameter placeholder types by interned identity | `116,375,621,217` | `-33.18%` | `708,911,104` | `525,758,464` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-parameter-identity-final.json`; 239,256 identity hits; paired batches `-0.197%` and `-0.828%` instructions |
 | `4d0fddd3e` | compact `CppAstNode` by declaration-only field reordering | `116,167,632,347` | `-33.30%` | `701,468,672` | `516,448,256` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-layout-final.json`; paired footprint: `-1.776%`, or `-9,338,880 B`; instructions: `-0.080%` |
 | `9ad60e6c6` | memoize each class instantiation's primary-placeholder argument shape | `115,576,376,842` | `-33.64%` | `707,428,352` | `516,362,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-primary-placeholder-final.json`; 754,890 hits; paired instructions: `-0.539%` |
+| `8d58a3d6a` | reconstruct compacted named-type displays once and return an owned-lifetime view | `112,101,667,646` | `-35.63%` | `703,864,832` | `517,873,664` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-display-view-final.json`; 922,353 stable repeats; paired instructions: `-2.892%` |
 
 ## Rejected work ledger
 
@@ -2084,7 +2130,7 @@ experiment before starting the next candidate.
 | store stable type fingerprints in the function-template deduction cacheability table | 108,758 fingerprint requests covered 2,168 cacheable type graphs, with 106,590 repeats and no changed fingerprint, but the screen used `152,346,961,071` instructions, only `-0.06%` from the stable-key checkpoint | these eligible type graphs are shallow; avoid more work on deduction-key mechanics without a profile showing a larger consumer | `/tmp/cppgm-deduction-fingerprint-census.stderr`, `/tmp/cppgm-deduction-stable-fingerprint-screen.json` |
 | replace the dominant scope template-bound type-name tree with a sorted flat set | 33,387 scopes had a nonempty set and footprint fell by about 1.7 MiB, but instructions rose to `152,675,579,014` (`+0.15%` from the stable-key checkpoint) | linear insertion shifts and lookup outweigh the removed tree nodes; a useful scope change must remove duplicate ownership rather than swap containers | `/tmp/cppgm-flat-template-bound-type-names-screen.json` |
 | cache AST type lookup results by node and scope identity | 247,063 requests made 246,451 node lookups; raw node recurrence included 109,628 same results and 69,824 changing results, while the scope-aware analyzer population was 178,667 calls, 139,008 distinct keys, 20,262 same-result repeats, and 19,397 changed-result repeats | scope identity removes most apparent reuse, and results legitimately change as semantic state advances; the remaining stable population cannot repay a generation-aware cache and its invalidation machinery | `/tmp/cppgm-ast-type-lookup-census.stderr`, `/tmp/cppgm-ast-type-lookup-census-2.stderr`, `/tmp/cppgm-ast-scope-type-lookup-census.stderr` |
-| retain compacted class-template display strings instead of reconstructing them | `145,833,753,997` instructions, only `-0.035%` from the runtime-symbol index checkpoint; one-run RSS was about 8 MiB higher | recursive display reconstruction is visible in the profile but does not move the full compile enough to justify undoing the existing memory compaction | `/tmp/cppgm-retain-named-display-screen.json` |
+| retain compacted class-template display strings instead of reconstructing them | `145,833,753,997` instructions, only `-0.035%` from the runtime-symbol index checkpoint; one-run RSS was about 8 MiB higher | keep this eager, by-value form rejected. The later borrowed lazy view preserves compaction, removes reconstruction and return copies, and is retained in `8d58a3d6a` | `/tmp/cppgm-retain-named-display-screen.json` and `/tmp/cppgm-display-view-{parent,candidate}-{1,2,3}.time` |
 | consume normalized input with one streambuf fetch per byte, then extend it with an 8 KiB `sgetn` buffer | the single-fetch form used `145,373,405,816` instructions (`-0.35%` from the runtime-symbol checkpoint), while buffering regressed to `146,013,046,659` (`+0.09%`). The current retry measured parent and candidate medians of `117,050,516,745` and `117,262,068,602`, a `0.181%` regression; RSS also regressed `0.686%` | the historical balanced screen did not survive the current binary. Restore separate `sbumpc` and `sgetc` calls; keep the 8 KiB form closed | `/tmp/cppgm-normalizer-single-fetch-screen.json`, `/tmp/cppgm-normalizer-buffered-input-screen.json`, `/tmp/cppgm-normalizer-one-fetch-current-screen.json`, and `/tmp/cppgm-normalizer-current-{parent,candidate}-{1,2,3}.time` |
 | cache source-body output across constructor/destructor ABI entry-point variants | 6,505 emitted bindings included 1,296 constructors and 974 destructors, but variant expansion duplicated only 643 source-statement visits versus 8,578 ordinary-function visits | most special-member variant cost is distinct generated lifecycle work, so shared source-body caching is not a large enough lever | `/tmp/cppgm-function-variant-census.stderr` |
 | store function-local overlay index entries as owned `(name,type)` pairs or raw map-entry pointers | the owned-pair screen used `145,288,273,365` instructions and the pointer screen used `145,502,550,768`, both worse than the name-only index | keep cached names: they have the best measured code shape and revalidate the source map before use | `/tmp/cppgm-local-type-overlay-binding-index-screen.json`, `/tmp/cppgm-local-type-overlay-pointer-index-screen.json` |
@@ -2130,7 +2176,7 @@ experiment before starting the next candidate.
 | remove the unused `trimmed_name` local from type lookup | the value has no readers, but removing its declaration shifted the release layout and screened at `124,732,294,752` instructions, a `0.36%` regression | reject the primary-signal regression. The optimizer already removes the unused construction | `/tmp/cppgm-dead-type-lookup-trim-screen.json` |
 | borrow already-normalized type lookup spellings | a guarded reference path preserved trimming, `typename`, elaborated-prefix, `::template`, and signed/unsigned normalization but screened at `124,388,097,231` instructions, about `0.08%` above the retained checkpoint | string ownership is not the semantic lookup bottleneck. Restore the direct normalized string and close this lookup-text branch | `/tmp/cppgm-borrow-normalized-type-lookup-name-screen.json` |
 | reuse structured AST semantic types before node lookup | a focused frozen census observed zero entries into the structured semantic-type refresh branch | this workload's hot node lookups do not carry reusable structured semantic types. Remove the census without implementing a cache | `/tmp/cppgm-structured-semantic-type-census.stderr` |
-| retain reconstructed class-template display text on named types | disabling display compaction kept the generated spelling but used `124,284,558,137` instructions, flat against the retained `124,285,854,757` median | reconstruction does not consume enough work to justify retaining more text on each type | `/tmp/cppgm-retain-template-display-screen.json` |
+| retain reconstructed class-template display text on named types | disabling display compaction kept the generated spelling but used `124,284,558,137` instructions, flat against the retained `124,285,854,757` median | keep the eager-retention form rejected. The retained `8d58a3d6a` form restores text only on demand and borrows it after that first request | `/tmp/cppgm-retain-template-display-screen.json` and `/tmp/cppgm-display-view-final.json` |
 | allocate `Scope::named_type_access` on first use | 2,614 of 36,327 scopes populated the map. The historical candidate used `124,074,856,078` instructions, a `0.17%` reduction; footprint improved `0.058%` and one-run RSS improved `1.237%`. The current form reused the existing `LazyMap` with a one-line field change. Three current pairs measured parent and candidate instruction medians of `116,007,142,756` and `116,028,961,523`, a `0.019%` regression. RSS regressed `1.685%`, footprint improved `0.102%`, and every object had the frozen SHA-256 | the historical RSS result did not repeat. The current score is `0.083`, and only one instruction pair improved. Keep the direct map | `/tmp/cppgm-lazy-named-type-access-screen.json` and `/tmp/cppgm-lazy-named-access-{parent,candidate}-{1,2,3}.time` |
 | allocate the three core scope maps on first use | 4,988 scopes populated `values`, 4,266 populated `function_sets`, and 2,614 populated `named_type_access`. The combined candidate used `124,768,251,577` instructions, a `0.39%` regression | pointer checks and allocations on populated scopes cost more than the common-record reduction. Restore direct map storage and close this scope family | `/tmp/cppgm-lazy-scope-core-maps-screen.json` |
 | allocate source-declaration anchor payloads on first use | moving two strings behind a copied side record reduced one-run RSS to `718,831,616 B`, but instructions rose to `124,464,108,891` | the memory reduction does not repay allocation and pointer access across more than 65,000 owning records | `/tmp/cppgm-lazy-source-anchor-screen.json` |
