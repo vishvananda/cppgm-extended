@@ -253,7 +253,7 @@ struct Type
 
   Kind kind;
   EFundamentalType fundamental;
-  std::string named_display;
+  mutable std::string named_display;
   std::string named_key;
   const std::string * named_key_identity = nullptr;
   std::uint8_t named_key_prefix_kind = 0;
@@ -335,8 +335,10 @@ bool named_type_is_overloaded_function_set(const TypePtr & type);
 bool named_type_has_dependent_semantic(const TypePtr & type);
 bool named_type_key_contains_partial_order_placeholder(const TypePtr & type);
 std::string named_type_semantic_payload(const TypePtr & type);
-std::string named_type_display_text(const TypePtr & type);
-std::string named_type_display_text(const Type & type);
+// The returned string is owned by the stripped named Type and remains valid
+// while that type graph is alive.
+const std::string & named_type_display_text(const TypePtr & type);
+const std::string & named_type_display_text(const Type & type);
 bool compact_named_type_display(const TypePtr & type);
 const CppAstNode * named_type_dependent_type_expression_node(const TypePtr & type);
 bool named_type_dependent_type_expression_formed_with_placeholders(

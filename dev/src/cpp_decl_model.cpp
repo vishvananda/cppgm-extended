@@ -1997,26 +1997,27 @@ string template_argument_type_text(const TypePtr & type)
   return trim_trailing_space(spelling.before) + spelling.after;
 }
 
-string named_type_display_text(const TypePtr & type)
+const string & named_type_display_text(const TypePtr & type)
 {
   TypePtr base = strip_top_level_cv(type);
   if(!base || base->kind != Type::TK_NAMED) {
-    return string();
+    static const string empty;
+    return empty;
   }
   return named_type_display_text(*base);
 }
 
-string named_type_display_text(const Type & type)
+const string & named_type_display_text(const Type & type)
 {
   if(type.kind != Type::TK_NAMED) {
-    return string();
+    static const string empty;
+    return empty;
   }
   if(!type.named_display.empty()) {
     return type.named_display;
   }
-  const string reconstructed =
-      reconstruct_named_class_template_display(type);
-  return reconstructed.empty() ? type.named_key : reconstructed;
+  type.named_display = reconstruct_named_class_template_display(type);
+  return type.named_display.empty() ? type.named_key : type.named_display;
 }
 
 bool compact_named_type_display(const TypePtr & type)
