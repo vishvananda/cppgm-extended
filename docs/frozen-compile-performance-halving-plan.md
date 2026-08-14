@@ -1454,6 +1454,31 @@ Evidence: `/tmp/cppgm-alias-fast-path-census.stderr`,
 `/tmp/cppgm-enable-if-alias-test-report.log`, and
 `/tmp/cppgm-enable-if-alias-final.json`.
 
+#### Post-enable-if profile refresh
+
+A 30-second sample at `414b12972` captured 19,927 main-thread samples in
+`/tmp/cppgm-current-profile.sample.txt`. Allocation routines remain the
+largest leaf family. Semantic output dominates the owned stacks: function
+output contributed 10,116 samples through statement analysis, while expression
+analysis split its largest child stacks between binary expressions at 8,177
+and call expressions at 6,763. The sample attributes about 15% of the run to
+LowIR and native output, so the next large reduction must remove semantic work.
+
+The matching phase report at `/tmp/cppgm-current-phases.stderr` records 6,522
+function-body emissions and 87,018 expression analyses across output phases.
+The compiler completed 3,146 classes; 62,051 of its 70,079 completion calls
+returned an existing complete class. Its output queues ran five rounds,
+but each round emitted new work, and the earlier pending-reason census found no
+large retry population.
+
+The memory census at `/tmp/cppgm-current-memory-census.stderr` found 358,362
+source AST nodes, 101,042 types, 201,463 retained CallSem nodes, 36,327 scopes,
+33,713 function bindings, and 7,583 classes. Subsequent layout and lazy-storage
+screens reduced memory but missed the instruction floor. The retained
+`cfc773417` checkpoint remains the decision baseline at
+`124,285,854,757` instructions. Reaching the halving target requires another
+`37,206,969,285` instructions, or `29.94%` of the current total.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1629,3 +1654,12 @@ experiment before starting the next candidate.
 | remove the unused `trimmed_name` local from type lookup | the value has no readers, but removing its declaration shifted the release layout and screened at `124,732,294,752` instructions, a `0.36%` regression | reject the primary-signal regression. The optimizer already removes the unused construction | `/tmp/cppgm-dead-type-lookup-trim-screen.json` |
 | borrow already-normalized type lookup spellings | a guarded reference path preserved trimming, `typename`, elaborated-prefix, `::template`, and signed/unsigned normalization but screened at `124,388,097,231` instructions, about `0.08%` above the retained checkpoint | string ownership is not the semantic lookup bottleneck. Restore the direct normalized string and close this lookup-text branch | `/tmp/cppgm-borrow-normalized-type-lookup-name-screen.json` |
 | reuse structured AST semantic types before node lookup | a focused frozen census observed zero entries into the structured semantic-type refresh branch | this workload's hot node lookups do not carry reusable structured semantic types. Remove the census without implementing a cache | `/tmp/cppgm-structured-semantic-type-census.stderr` |
+| retain reconstructed class-template display text on named types | disabling display compaction kept the generated spelling but used `124,284,558,137` instructions, flat against the retained `124,285,854,757` median | reconstruction does not consume enough work to justify retaining more text on each type | `/tmp/cppgm-retain-template-display-screen.json` |
+| allocate `Scope::named_type_access` on first use | 2,614 of 36,327 scopes populated the map. The candidate emitted exact output and used `124,074,856,078` instructions, a `0.17%` reduction | the map header saves memory, but the instruction result misses the retention floor | `/tmp/cppgm-lazy-named-type-access-screen.json` |
+| allocate the three core scope maps on first use | 4,988 scopes populated `values`, 4,266 populated `function_sets`, and 2,614 populated `named_type_access`. The combined candidate used `124,768,251,577` instructions, a `0.39%` regression | pointer checks and allocations on populated scopes cost more than the common-record reduction. Restore direct map storage and close this scope family | `/tmp/cppgm-lazy-scope-core-maps-screen.json` |
+| allocate source-declaration anchor payloads on first use | moving two strings behind a copied side record reduced one-run RSS to `718,831,616 B`, but instructions rose to `124,464,108,891` | the memory reduction does not repay allocation and pointer access across more than 65,000 owning records | `/tmp/cppgm-lazy-source-anchor-screen.json` |
+| reorder `CppAstNode` fields for a 176-byte record | the new layout reduced the record from 192 to 176 bytes and peak footprint to `544,980,992 B`. It emitted exact output but used `124,102,791,008` instructions, a `0.15%` reduction. The largest AST-copy caller accounted for 31 of 19,927 profile samples | memory density improves, but the instruction gain misses the floor and the copy work has no cohesive caller large enough to combine with it | `/tmp/cppgm-ast-layout-compaction-screen.json`, `/tmp/cppgm-ast-compact-record-layouts.txt`, and `/tmp/cppgm-current-profile.sample.txt` |
+| cache general semantic-validation function bodies for output reuse | an environment-gated census logged 6,522 output emissions and zero calls through `analyze_function_body_semantics_impl` on the frozen workload | the two paths do not overlap on this compile, so a broader cache cannot remove work | `/tmp/cppgm-function-body-census.stderr` |
+| return fundamental non-type template parameter types before dependent resolution | a census found 11,125 fundamental inputs among 14,183 calls. The exact-output shortcut used `124,267,237,736` instructions, a `0.015%` reduction | the dependency memo makes these high-count calls cheap. Restore the uniform resolver | `/tmp/cppgm-nttp-type-census.stderr` and `/tmp/cppgm-nttp-fundamental-fast-path-screen.json` |
+| resolve exact bound named non-type parameter types before the general resolver | the census found 1,029 concrete named template-parameter results. Adding a direct lexical binding probe to the fundamental shortcut emitted exact output and used `124,283,660,973` instructions | the direct path is flat, so the sampled cost belongs to the remaining dependent named cases | `/tmp/cppgm-nttp-type-census.stderr` and `/tmp/cppgm-nttp-concrete-type-fast-path-screen.json` |
+| build the compiler at `-O2` | an isolated build produced a 16,124,240-byte executable and emitted the frozen object, but used `126,873,871,810` instructions, a `2.08%` regression from the retained checkpoint | restore `-O3`. The smaller executable does not offset weaker optimization on this workload | `/tmp/cppgm-build-o2-screen.json` and `/tmp/cppgm-o2-screen-binary` |
