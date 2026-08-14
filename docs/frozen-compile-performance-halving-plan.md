@@ -1474,10 +1474,11 @@ large retry population.
 The memory census at `/tmp/cppgm-current-memory-census.stderr` found 358,362
 source AST nodes, 101,042 types, 201,463 retained CallSem nodes, 36,327 scopes,
 33,713 function bindings, and 7,583 classes. Subsequent layout and lazy-storage
-screens reduced memory but missed the instruction floor. The retained
-`56128c65d` checkpoint is the current decision baseline at
-`119,571,899,320` instructions. Reaching the halving target requires another
-`32,493,013,848` instructions, or `27.17%` of the current total.
+screens reduced memory but missed the instruction floor. After the retained
+registration-time synthesized-linkage change, `3686d87b0` is the current
+decision baseline at `118,245,739,070` instructions. Reaching the halving
+target requires another `31,166,853,598` instructions, or `26.36%` of the
+current total.
 
 #### Release frame-pointer checkpoint
 
@@ -1518,6 +1519,29 @@ and the direct full report passed `4863/4863`. Evidence is in
 `/tmp/cppgm-template-parameter-type-intern-final.json`,
 `/tmp/cppgm-template-parameter-type-intern-test-strict.log`, and
 `/tmp/cppgm-template-parameter-type-intern-test-report.log`.
+
+#### Registration-time synthesized-linkage checkpoint
+
+The current profile attributed about 1,697 inclusive samples to function-symbol
+identity construction, including 595 beneath linkage upgrades. Eight implicit
+or inherited special-member paths registered a function with provisional
+linkage and then immediately regenerated its symbol with the already-known
+final synthesized linkage. The retained change supplies that linkage in the
+registration request and removes the redundant upgrade. It adds no cache or
+invalidation state.
+
+The clean three-run median is `118,245,739,070` instructions, `1.109%` below
+`56128c65d` and `32.10%` below the original baseline. Maximum RSS is
+`700,035,072 B`, and footprint is `524,410,880 B`. The frozen object remained
+exact with SHA-256 `4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+The direct strict gate passed `1530/1530`, and the direct full report passed
+`4863/4863`.
+
+Evidence is in `/tmp/cppgm-post-template-type-frame-profile-2.sample.txt`,
+`/tmp/cppgm-synthesized-linkage-registration-screen.json`,
+`/tmp/cppgm-synthesized-linkage-registration-final.json`,
+`/tmp/cppgm-synthesized-linkage-registration-strict.log`, and
+`/tmp/cppgm-synthesized-linkage-registration-test-report.log`.
 
 ### Phase 8: final halving proof
 
@@ -1598,6 +1622,7 @@ Fill one row after each retained commit.
 | `cfc773417` | resolve concrete standard `enable_if` forwarding aliases without a general instantiation scope | `124,285,854,757` | `-28.64%` | `740,732,928` | `554,344,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-enable-if-alias-final.json`; `3,052` concrete shortcuts; `-1.010%` from `2b72a6b7b` |
 | `32f889b69` | omit frame pointers in optimized release builds while preserving them in debug builds | `120,162,630,879` | `-31.00%` | `736,526,336` | `554,426,368` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-omit-frame-pointer-final.json`; `-3.318%` from `cfc773417` |
 | `56128c65d` | canonicalize immutable template-parameter named types by semantic identity and source spelling | `119,571,899,320` | `-31.34%` | `711,860,224` | `524,099,584` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-parameter-type-intern-final.json`; 61,675 hits in 62,264 probes; `-0.492%` from `32f889b69` |
+| `3686d87b0` | supply final synthesized special-member linkage during registration instead of regenerating the symbol immediately | `118,245,739,070` | `-32.10%` | `700,035,072` | `524,410,880` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-synthesized-linkage-registration-final.json`; `-1.109%` from `56128c65d` |
 
 ## Rejected work ledger
 
