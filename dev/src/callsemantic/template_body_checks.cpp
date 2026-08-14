@@ -11,8 +11,10 @@
 #include "semantic_statement.h"
 #include "semantic_utils.h"
 
+#include <algorithm>
+#include <functional>
 #include <unordered_map>
-#include <unordered_set>
+#include <vector>
 
 namespace callsemantic {
 
@@ -36,15 +38,21 @@ class AtomNameSet
 public:
   void insert(text_intern::Atom atom)
   {
-    if(atom) {
-      names.insert(atom);
+    if(!atom) {
+      return;
+    }
+    std::vector<text_intern::Atom>::iterator position =
+        std::lower_bound(names.begin(), names.end(), atom,
+                         std::less<text_intern::Atom>());
+    if(position == names.end() || *position != atom) {
+      names.insert(position, atom);
     }
   }
 
   void insert(const std::string & name)
   {
     if(!name.empty()) {
-      names.insert(text_intern::intern(name));
+      insert(text_intern::intern(name));
     }
   }
 
@@ -54,7 +62,9 @@ public:
       return false;
     }
     text_intern::Atom atom = text_intern::find(name);
-    return atom && names.count(atom) != 0;
+    return atom &&
+           std::binary_search(names.begin(), names.end(), atom,
+                              std::less<text_intern::Atom>());
   }
 
   bool empty() const
@@ -63,7 +73,7 @@ public:
   }
 
 private:
-  std::unordered_set<text_intern::Atom> names;
+  std::vector<text_intern::Atom> names;
 };
 
 typedef std::unordered_map<text_intern::Atom, TypePtr> TemplateBodyValueTypes;
