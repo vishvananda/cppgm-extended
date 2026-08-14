@@ -1475,9 +1475,9 @@ The memory census at `/tmp/cppgm-current-memory-census.stderr` found 358,362
 source AST nodes, 101,042 types, 201,463 retained CallSem nodes, 36,327 scopes,
 33,713 function bindings, and 7,583 classes. Subsequent layout and lazy-storage
 screens reduced memory but missed the instruction floor. The retained
-`32f889b69` checkpoint is the current decision baseline at
-`120,162,630,879` instructions. Reaching the halving target requires another
-`33,083,745,407` instructions, or `27.53%` of the current total.
+`56128c65d` checkpoint is the current decision baseline at
+`119,571,899,320` instructions. Reaching the halving target requires another
+`32,493,013,848` instructions, or `27.17%` of the current total.
 
 #### Release frame-pointer checkpoint
 
@@ -1494,6 +1494,30 @@ The direct strict gate passed `1530/1530`, and the direct full report passed
 `/tmp/cppgm-omit-frame-pointer-final.json`,
 `/tmp/cppgm-omit-frame-pointer-test-strict.log`, and
 `/tmp/cppgm-omit-frame-pointer-test-report.log`.
+
+#### Template-parameter type canonicalization checkpoint
+
+The exact-string census showed thousands of repeated template-parameter type
+keys. These types already compare by semantic payload and are fully initialized
+by `make_template_parameter_type`. The retained cache shares a type only when
+its normalized display, semantic payload, and source name all match, preserving
+diagnostic and witness spelling.
+
+A stats-only census recorded 62,264 probes, 61,675 hits, 589 misses and
+entries, and no stale evictions. The clean three-run median is
+`119,571,899,320` instructions, `0.492%` below `32f889b69` and `31.34%` below
+the original baseline. Maximum RSS fell to `711,860,224 B`, and footprint fell
+to `524,099,584 B`, about 30 MiB below the prior checkpoint. The result is
+retained as an infrastructure exception to the `0.5%` floor because it removes
+61,675 duplicate type constructions, establishes canonical pointer identity,
+and materially reduces both memory signals.
+
+The frozen object remained exact. The direct strict gate passed `1530/1530`,
+and the direct full report passed `4863/4863`. Evidence is in
+`/tmp/cppgm-template-parameter-type-intern-census.stderr`,
+`/tmp/cppgm-template-parameter-type-intern-final.json`,
+`/tmp/cppgm-template-parameter-type-intern-test-strict.log`, and
+`/tmp/cppgm-template-parameter-type-intern-test-report.log`.
 
 ### Phase 8: final halving proof
 
@@ -1573,6 +1597,7 @@ Fill one row after each retained commit.
 | `2b72a6b7b` | compare named types by interned key identity and keep local-name traversal scratch contiguous | `125,553,969,817` | `-27.91%` | `730,492,928` | `554,708,992` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-named-key-identity-final.json`; paired A/B: `-0.641%` instructions |
 | `cfc773417` | resolve concrete standard `enable_if` forwarding aliases without a general instantiation scope | `124,285,854,757` | `-28.64%` | `740,732,928` | `554,344,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-enable-if-alias-final.json`; `3,052` concrete shortcuts; `-1.010%` from `2b72a6b7b` |
 | `32f889b69` | omit frame pointers in optimized release builds while preserving them in debug builds | `120,162,630,879` | `-31.00%` | `736,526,336` | `554,426,368` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-omit-frame-pointer-final.json`; `-3.318%` from `cfc773417` |
+| `56128c65d` | canonicalize immutable template-parameter named types by semantic identity and source spelling | `119,571,899,320` | `-31.34%` | `711,860,224` | `524,099,584` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-parameter-type-intern-final.json`; 61,675 hits in 62,264 probes; `-0.492%` from `32f889b69` |
 
 ## Rejected work ledger
 
@@ -1694,3 +1719,5 @@ experiment before starting the next candidate.
 | keep class, type, and base-traversal cycle guards inline | replacing tree-backed pointer sets in semantic lookup, conversion, and overload resolution emitted the exact frozen object and used `119,841,579,416` instructions, a `0.267%` reduction. Extending the same representation to class-model recursion reduced the gain to `0.130%`, at `120,005,993,148` instructions | both forms miss the `0.5%` retention floor, and the larger form shows that linear scans and inline-state setup offset allocation savings outside the narrowest traversals. Restore the ordered sets and close the broad traversal-set family | `/tmp/cppgm-inline-traversal-sets-screen.json` and `/tmp/cppgm-inline-traversal-sets-full-screen.json` |
 | cache `AstDeclHooks` by scope and reference-only mode | the cache reused all eleven scope-bound callback wrappers for repeated type parsing and preserved the frozen object, but used `120,216,058,374` instructions and raised the one-run footprint to `563,654,656 B` | the inclusive profile cost belongs below the callbacks. Retaining hundreds of bytes of hooks per participating scope adds memory without removing material semantic work, so restore on-demand hook construction | `/tmp/cppgm-decl-hooks-cache-screen.json` |
 | borrow the hot exact-template lookup anchor instead of copying it into thread-local storage | a pointer-stack variant kept owned anchors for guards that outlive their source and borrowed the local anchor in `lookup_type_node`. It emitted the exact frozen object but used `120,170,127,684` instructions, effectively flat against the retained checkpoint | anchor copying is not the lookup long pole. Restore the simpler owned stack and focus on template/type resolution below it | `/tmp/cppgm-borrowed-exact-anchor-screen.json` |
+| bypass spelling normalization on common template-parameter cache probes | the guarded direct-spelling path preserved the frozen object but used `119,625,165,717` instructions, worse than the simple cache's `119,459,124,931` one-run screen | two empty scratch strings, indirect spelling pointers, and new branches outweighed the avoided string normalization. Keep the uniform normalized probe | `/tmp/cppgm-template-parameter-type-intern-payload-screen.json` and `/tmp/cppgm-template-parameter-type-intern-direct-screen.json` |
+| reserve 1,024 buckets for the template-parameter type cache | the reserved cache emitted exact output but screened at `119,629,005,329` instructions, again worse than the unreserved form | libc++ growth for 589 entries is cheaper than carrying the larger bucket table through 62,264 probes. Keep default growth and stop refining this cache | `/tmp/cppgm-template-parameter-type-intern-reserved-screen.json` |
