@@ -1626,6 +1626,9 @@ struct AliasTemplateDecl
   std::map<std::string, cpp_decl::TypePtr> reference_instantiations;
   mutable bool dependent_qualified_member_scope_sensitive_cached = false;
   mutable bool dependent_qualified_member_scope_sensitive = false;
+  // -1 means unclassified, 0 means ordinary alias, and 1 means the canonical
+  // standard enable_if member-type forwarding pattern.
+  mutable signed char direct_standard_enable_if_pattern = -1;
   mutable std::map<StableSubstitutionKey, StableSubstitutionFailure>
       stable_substitution_failures;
   mutable std::map<StableAliasExpansionKey, StableAliasExpansionValue>

@@ -13387,6 +13387,36 @@ private:
                                           arg_syntaxes);
     canonicalize_simple_dependent_argument_texts(arguments);
 
+    if(!template_source_capture_enabled() &&
+       !template_arguments_are_dependent(arguments) &&
+       alias_has_direct_standard_enable_if_pattern(decl) &&
+       arguments.size() == 2 &&
+       arguments[0].kind == TemplateArgument::TA_VALUE &&
+       arguments[1].kind == TemplateArgument::TA_TYPE &&
+       arguments[1].type) {
+      if(arguments[0].value == 0) {
+        throw_substitution_failure("standard enable_if condition is false",
+                                   std::string(),
+                                   "callsemantic");
+      }
+      resolved_source_semantics::ResolvedAliasTemplateId resolved;
+      resolved.origin = &decl;
+      resolved.use_scope = &resolution_scope;
+      resolved.resolved_type = arguments[1].type;
+      resolved.arguments = &arguments;
+      resolved.source_occurrence_arguments = &source_occurrence_arguments;
+      resolved.set_source_argument_syntaxes(arg_syntaxes);
+      resolved.set_source_syntax(source_syntax);
+      resolved.source_location = source_location;
+      complete_resolved_alias_template_id(
+          resolved,
+          suppress_source_capture,
+          false,
+          true,
+          !alias_source_occurrence_needs_completion(decl, source_syntax));
+      return finish(arguments[1].type);
+    }
+
     resolved_source_semantics::ResolvedAliasTemplateId resolved =
         instantiate_resolved_alias_template_impl(
         decl,
@@ -13493,6 +13523,51 @@ private:
       }
     }
     return true;
+  }
+
+  bool alias_has_direct_standard_enable_if_pattern(
+      const AliasTemplateDecl & decl) const
+  {
+    if(decl.direct_standard_enable_if_pattern >= 0) {
+      return decl.direct_standard_enable_if_pattern != 0;
+    }
+
+    bool matches = false;
+    if((decl.name == "enable_if_t" || decl.name == "__enable_if_t") &&
+       decl.parameters.size() == 2 &&
+       decl.parameters[0].kind == TemplateParameterInfo::TP_NON_TYPE &&
+       decl.parameters[1].kind == TemplateParameterInfo::TP_TYPE &&
+       !decl.parameters[0].parameter_pack &&
+       !decl.parameters[1].parameter_pack) {
+      TypePtr owner;
+      vector<string> members;
+      bool leading_typename = false;
+      void * selector_template = nullptr;
+      vector<DependentAliasTemplateArgumentSyntax> selector_arguments;
+      if(named_type_dependent_qualified_member(decl.resolved_type_pattern,
+                                               owner,
+                                               members,
+                                               leading_typename) &&
+         members.size() == 1 &&
+         trim_space(members[0]) == "type" &&
+         named_type_dependent_class_template(owner,
+                                             selector_template,
+                                             selector_arguments) &&
+         selector_template &&
+         selector_arguments.size() == 2) {
+        const ClassTemplateDecl * selector =
+            static_cast<const ClassTemplateDecl *>(selector_template);
+        matches = selector->name == "enable_if" &&
+            selector->comes_from_standard_include_path &&
+            alias_selector_argument_matches_parameter(selector_arguments[0],
+                                                      decl.parameters[0]) &&
+            alias_selector_argument_matches_parameter(selector_arguments[1],
+                                                      decl.parameters[1]);
+      }
+    }
+
+    decl.direct_standard_enable_if_pattern = matches ? 1 : 0;
+    return matches;
   }
 
   bool try_instantiate_known_conditional_alias_branch(
