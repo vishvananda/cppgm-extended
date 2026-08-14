@@ -1543,6 +1543,47 @@ Evidence is in `/tmp/cppgm-post-template-type-frame-profile-2.sample.txt`,
 `/tmp/cppgm-synthesized-linkage-registration-strict.log`, and
 `/tmp/cppgm-synthesized-linkage-registration-test-report.log`.
 
+#### Expected semantic-probe status checkpoint
+
+The exception census at the retained parent counted 6,138 throws. Expected
+constructor probes accounted for 3,320 `NoViableConstructorError` throws:
+3,309 user-defined conversion constructor probes and 11 implicit default-
+constructor viability checks. The constructor service now marks those two
+selection profiles as expected failures, allowing the overload selector to
+return its existing null result before formatting and throwing the diagnostic.
+The one functional-cast failure remains an exception.
+
+False direct standard `enable_if` conditions accounted for another 1,273
+substitution failures. Earlier broad status experiments changed overload
+selection by suppressing nested recoverable SFINAE. The retained receiver is
+owned by the non-type-parameter resolver that previously caught the exception,
+and an alias-instantiation depth guard permits only the receiver's outermost
+alias call to report status. It removes 1,145 throws while leaving 128 nested
+false-`enable_if` exceptions on their original recovery path. The combined
+census reports 1,673 total throws, including one constructor failure.
+
+A one-run composite screen used `117,580,638,540` instructions. The decisive
+three-pair comparison measured parent median `118,649,290,551` and candidate
+median `117,493,606,873`, a `0.974%` reduction, with all three pairs agreeing.
+Median RSS improved from `706,756,608 B` to `704,536,576 B`; footprint changed
+from `524,627,968 B` to `524,775,424 B`, a `0.028%` increase inside the hard
+gate. All six paired objects had the frozen SHA-256.
+
+The clean post-commit three-run median is `117,674,519,926` instructions,
+`32.43%` below the original baseline. Maximum RSS is `712,704,000 B`, and
+footprint is `524,689,408 B`. The contemporaneous paired result, rather than
+the non-contemporaneous absolute checkpoint difference, supplies the CPU-lane
+retention decision. Direct strict passes `1530/1530`, and the full direct
+report passes `4863/4863`.
+
+Evidence is in `/tmp/cppgm-exception-census-messages.stderr`,
+`/tmp/cppgm-exception-status-composite-census.stderr`,
+`/tmp/cppgm-exception-status-composite-screen.json`,
+`/tmp/cppgm-exception-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-exception-status-composite-final.json`,
+`/tmp/cppgm-exception-status-composite-test-strict.log`, and
+`/tmp/cppgm-exception-status-composite-test-report.log`.
+
 #### Multi-signal retention rubric at `3686d87b0`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
@@ -1687,7 +1728,7 @@ construction, or complete-entry symbol reuse without a new census.
 
 #### Revised investigation order
 
-The 32.10% cumulative reduction leaves `31,166,853,598` instructions. A chain
+The 32.43% cumulative reduction leaves `30,595,634,454` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -1701,12 +1742,12 @@ order:
    reduction. Both memory signals regressed slightly, giving a balance score
    of only `0.158`; the candidate also misses the other lanes. We rejected the
    source-map snapshot and restored the direct scan.
-2. Finish the cohesive expected-exception status slice. The current
-   constructor-selection boundary removes 3,320 expected throws, preserves the
-   frozen object, and screens `0.251%` below the retained checkpoint. It does
-   not qualify alone. Add the separately measured false standard `enable_if`
-   family only at its exact catch owner, then measure the composite. Preserve
-   nested recoverable SFINAE.
+2. Completed: retain the cohesive expected-exception status slice. The
+   constructor-selection boundary removes 3,320 expected throws. The root-only
+   standard `enable_if` receiver removes 1,145 more while preserving 128 nested
+   recoverable SFINAE throws. The paired composite improves instructions by
+   `0.974%`, emits exact bytes, and passes strict `1530/1530` plus full report
+   `4863/4863`.
 3. Revisit the visible-name bulk sort with the rejected scope-value snapshot.
    Source caching and destination insertion are one collector mechanism; their
    composite is allowed if it avoids replay work and qualifies as a whole.
@@ -1829,6 +1870,7 @@ Fill one row after each retained commit.
 | `32f889b69` | omit frame pointers in optimized release builds while preserving them in debug builds | `120,162,630,879` | `-31.00%` | `736,526,336` | `554,426,368` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-omit-frame-pointer-final.json`; `-3.318%` from `cfc773417` |
 | `56128c65d` | canonicalize immutable template-parameter named types by semantic identity and source spelling | `119,571,899,320` | `-31.34%` | `711,860,224` | `524,099,584` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-parameter-type-intern-final.json`; 61,675 hits in 62,264 probes; `-0.492%` from `32f889b69` |
 | `3686d87b0` | supply final synthesized special-member linkage during registration instead of regenerating the symbol immediately | `118,245,739,070` | `-32.10%` | `700,035,072` | `524,410,880` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-synthesized-linkage-registration-final.json`; `-1.109%` from `56128c65d` |
+| `a3dc6e079` | return expected constructor and root standard `enable_if` probe failures as status | `117,674,519,926` | `-32.43%` | `712,704,000` | `524,689,408` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-exception-status-composite-final.json`; 4,465 throws removed; paired A/B: `-0.974%` instructions |
 
 ## Rejected work ledger
 
@@ -1941,7 +1983,7 @@ experiment before starting the next candidate.
 | add a direct exact-type cache for finalized function-template bindings | a 16K-slot census covered 16,375 of 19,023 acquisitions and found 14,711 exact declaration, owner, and type-argument repeats. Of those, 14,708 held a live finalized binding, and every exact repeat returned the same binding through the full path. A guarded cache preserved the frozen object and used `123,965,783,988` instructions, a `0.26%` reduction | finalized binding reacquisition is redundant but not large enough to retain another cache and scope-independence contract. Restore the established instantiation cache | `/tmp/cppgm-function-template-acquire-census.stderr` and `/tmp/cppgm-function-template-acquire-fast-screen.json` |
 | avoid binary builtin-probe operand copies when no class conversion can run | the original path copied both `ExprInfo` trees before discovering scalar operands or a preserving comma or logical operator. Branching before those copies emitted exact output but used `124,179,016,816` instructions, a `0.09%` reduction | the copied trees are small enough that the new branch misses the retention floor. Restore the uniform probe path | `/tmp/cppgm-binary-probe-copy-screen.json` |
 | devirtualize direct and negative `class_info_for_type` results | the frozen metrics recorded 1,764,871 general calls plus 282,995 definite-negative skips. An inline wrapper handled cv stripping, non-class types, and named types carrying a direct class pointer before calling a virtual slow path. It preserved metrics mode and exact output but used `124,110,706,806` instructions, a `0.14%` reduction | the high-count common cases are cheap. Restore the single virtual interface and target work below class lookup | `/tmp/cppgm-class-info-devirtualize-screen.json` |
-| replace caught false standard `enable_if` results during non-type parameter resolution with a status | all 1,145 caught substitution failures came from the concrete standard `enable_if` fast path. A broad status used `123,612,231,381` instructions, a `0.542%` reduction, but changed the frozen object by selecting different libc++ `std::pair` and `std::__find` overloads. The status suppressed nested, recoverable SFINAE as well as the failure caught by the non-type parameter resolver. Per-probe state restored the `std::pair` choices, and restricting the status to the root alias-instantiation frame restored the frozen SHA-256 `4fc1303a...5c4`. Three semantics-preserving forms used `123,790,741,936`, `123,901,375,414`, and `123,944,605,544` instructions, reductions of `0.398%`, `0.309%`, and `0.275%` | exception propagation is part of recovery control flow below this catch boundary. The exact forms miss the retention floor and require a cross-layer status path, so restore exceptions and reject this conversion | `/tmp/cppgm-nttp-failure-census.stderr`, `/tmp/cppgm-nttp-enable-if-status-screen.json`, `/tmp/cppgm-nttp-enable-if-root-status-screen.json`, `/tmp/cppgm-nttp-enable-if-root-active-screen.json`, and `/tmp/cppgm-nttp-enable-if-explicit-status-screen.json` |
+| replace caught false standard `enable_if` results during non-type parameter resolution with a status | all 1,145 caught substitution failures came from the concrete standard `enable_if` fast path. A broad status used `123,612,231,381` instructions, a `0.542%` reduction, but changed the frozen object by selecting different libc++ `std::pair` and `std::__find` overloads. The status suppressed nested, recoverable SFINAE as well as the failure caught by the non-type parameter resolver. Per-probe state restored the `std::pair` choices, and restricting the status to the root alias-instantiation frame restored the frozen SHA-256 `4fc1303a...5c4`. Three semantics-preserving forms used `123,790,741,936`, `123,901,375,414`, and `123,944,605,544` instructions, reductions of `0.398%`, `0.309%`, and `0.275%` | the isolated forms remained rejected. Commit `a3dc6e079` later retained the root-only status as one cohesive expected-failure boundary with constructor probes; the combined paired result clears the CPU lane while nested SFINAE still throws | `/tmp/cppgm-nttp-failure-census.stderr`, `/tmp/cppgm-nttp-enable-if-status-screen.json`, `/tmp/cppgm-nttp-enable-if-root-status-screen.json`, `/tmp/cppgm-nttp-enable-if-root-active-screen.json`, and `/tmp/cppgm-nttp-enable-if-explicit-status-screen.json` |
 | build the compiler for the local CPU with `-march=native` | an isolated `-O3` build targeted the host's Skylake instruction set, emitted the exact frozen object, and used `123,933,837,451` instructions, a `0.28%` reduction from the retained checkpoint. Adding `-mtune=native` produced a byte-identical `callsemantic.o`, confirming that explicit native scheduling does not add to the target-CPU choice | the small machine-specific gain misses the retention floor and would make the normal compiler binary less portable. Keep the generic `-O3` developer build and return to semantic work removal | `/tmp/cppgm-march-native-screen.json`, `/tmp/cppgm-march-native`, and `/tmp/callsemantic-march-only.o` |
 | replace class-output temporary pointer maps and sets with hash tables | the one-file candidate changed the member-node index and emitted-binding membership set, neither of which exposes iteration order. It emitted the exact frozen object but used `124,377,323,752` instructions, a `0.07%` regression from the retained checkpoint | hash setup costs more than tree lookup for these per-class populations. Restore the ordered temporary containers | `/tmp/cppgm-class-output-hash-temporaries-screen.json` |
 | disable release stack protection after omitting frame pointers | the optimized binary contains 2,291 references to stack-canary support. An isolated `-fno-stack-protector` build emitted the exact frozen object and used `119,842,623,172` instructions, only `0.27%` below the retained `120,162,630,879` median | the gain misses the retention floor and does not justify removing input-processing hardening. Keep the host compiler's default stack protection | `/tmp/cppgm-no-stack-protector-screen.json` and `/tmp/cppgm-no-stack-protector` |
