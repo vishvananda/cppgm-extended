@@ -350,6 +350,7 @@ bool merge_template_parameter_redeclarations(
     }
     if(target[i].placeholder_key.empty()) {
       target[i].placeholder_key = incoming[i].placeholder_key;
+      target[i].placeholder_key_identity = incoming[i].placeholder_key_identity;
     }
     if(!target[i].non_type_decl_specifier_seq) {
       template_model::copy_template_parameter_non_type_decl_specifier_seq(
@@ -398,6 +399,7 @@ void prefer_incoming_template_parameter_spellings(
     }
     if(!incoming[i].placeholder_key.empty()) {
       target[i].placeholder_key = incoming[i].placeholder_key;
+      target[i].placeholder_key_identity = incoming[i].placeholder_key_identity;
     }
     if(incoming[i].value_type) {
       target[i].value_type = incoming[i].value_type;

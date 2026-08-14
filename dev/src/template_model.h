@@ -303,6 +303,7 @@ struct TemplateParameterInfo
   std::size_t template_parameter_count = 0;
   std::unique_ptr<std::vector<TemplateParameterInfo> > template_parameters;
   std::string placeholder_key;
+  text_intern::Atom placeholder_key_identity = nullptr;
   cpp_decl::TypePtr value_type;
   std::shared_ptr<TemplateParameterOwnedSyntax> owned_syntax;
   const CppAstNode * non_type_decl_specifier_seq = nullptr;
@@ -317,6 +318,25 @@ struct TemplateParameterInfo
   TemplateParameterInfo & operator=(const TemplateParameterInfo & other);
   TemplateParameterInfo & operator=(TemplateParameterInfo && other) noexcept;
 };
+
+inline void set_template_parameter_placeholder_key(
+    TemplateParameterInfo & parameter,
+    const std::string & key)
+{
+  parameter.placeholder_key = key;
+  parameter.placeholder_key_identity =
+      key.empty() ? nullptr : text_intern::intern(key);
+}
+
+inline void set_template_parameter_placeholder_key(
+    TemplateParameterInfo & parameter,
+    std::string && key)
+{
+  parameter.placeholder_key = std::move(key);
+  parameter.placeholder_key_identity =
+      parameter.placeholder_key.empty() ?
+          nullptr : text_intern::intern(parameter.placeholder_key);
+}
 
 inline const CppAstNode * store_template_parameter_ast(
     std::shared_ptr<TemplateParameterOwnedSyntax> & storage,
@@ -454,6 +474,7 @@ inline void copy_template_parameter_info(
           new std::vector<TemplateParameterInfo>(*source.template_parameters) :
           nullptr);
   target.placeholder_key = source.placeholder_key;
+  target.placeholder_key_identity = source.placeholder_key_identity;
   target.value_type = source.value_type;
   target.owned_syntax.reset();
   target.non_type_decl_specifier_seq = nullptr;
@@ -479,6 +500,7 @@ inline void move_template_parameter_info(
   target.template_parameter_count = source.template_parameter_count;
   target.template_parameters = std::move(source.template_parameters);
   target.placeholder_key = std::move(source.placeholder_key);
+  target.placeholder_key_identity = source.placeholder_key_identity;
   target.value_type = std::move(source.value_type);
   target.owned_syntax = std::move(source.owned_syntax);
   target.non_type_decl_specifier_seq = source.non_type_decl_specifier_seq;
@@ -488,6 +510,7 @@ inline void move_template_parameter_info(
   target.non_type_abstract_declarator = source.non_type_abstract_declarator;
   target.default_argument = source.default_argument;
 
+  source.placeholder_key_identity = nullptr;
   source.non_type_decl_specifier_seq = nullptr;
   source.non_type_declarator = nullptr;
   source.non_type_abstract_declarator = nullptr;

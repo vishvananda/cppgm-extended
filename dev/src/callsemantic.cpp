@@ -18310,9 +18310,11 @@ private:
 
         const CppAstNode * identifier = find_child_kind(parameter, CppAstKind::identifier);
         info.name = identifier ? identifier->value : string();
-        info.placeholder_key = string("template-parameter ") +
-                               (info.name.empty() ? string("<unnamed>") : info.name) + "#" +
-                               to_string(out.size());
+        template_model::set_template_parameter_placeholder_key(
+            info,
+            string("template-parameter ") +
+                (info.name.empty() ? string("<unnamed>") : info.name) + "#" +
+                to_string(out.size()));
         template_model::set_template_parameter_default_argument(
             info,
             find_child_kind(parameter, CppAstKind::default_template_argument));

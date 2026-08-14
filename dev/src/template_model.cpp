@@ -189,21 +189,29 @@ const TemplateParameterInfo * find_template_parameter(
     return nullptr;
   }
 
-  const string candidates[] = {
-      base->named_key,
-      base->named_semantic_payload,
-      base->named_source_name(),
+  if(base->named_key_identity && base->named_key_prefix_kind == 0) {
+    for(size_t i = 0; i < parameters.size(); ++i) {
+      if(parameters[i].placeholder_key_identity == base->named_key_identity) {
+        return &parameters[i];
+      }
+    }
+  }
+
+  const string * candidates[] = {
+      &base->named_key,
+      &base->named_semantic_payload,
+      &base->named_source_name(),
   };
   for(size_t i = 0; i < sizeof(candidates) / sizeof(candidates[0]); ++i) {
-    if(candidates[i].empty()) {
+    if(candidates[i]->empty()) {
       continue;
     }
     if(const TemplateParameterInfo * parameter =
-           find_template_parameter(parameters, candidates[i])) {
+           find_template_parameter(parameters, *candidates[i])) {
       return parameter;
     }
     if(const TemplateParameterInfo * parameter =
-           find_template_parameter_by_name(parameters, candidates[i])) {
+           find_template_parameter_by_name(parameters, *candidates[i])) {
       return parameter;
     }
   }

@@ -760,7 +760,8 @@ public:
     parameter.name = name;
     parameter.parameter_pack = parameter_pack;
     if(kind == TemplateParameterInfo::TP_TYPE) {
-      parameter.placeholder_key = std::string("template-parameter ") + name;
+      template_model::set_template_parameter_placeholder_key(
+          parameter, std::string("template-parameter ") + name);
     } else if(kind == TemplateParameterInfo::TP_NON_TYPE) {
       parameter.value_type = value_type;
     }
