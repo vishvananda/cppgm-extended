@@ -1584,6 +1584,37 @@ Evidence is in `/tmp/cppgm-exception-census-messages.stderr`,
 `/tmp/cppgm-exception-status-composite-test-strict.log`, and
 `/tmp/cppgm-exception-status-composite-test-report.log`.
 
+#### Template-body scope-view and bulk-sort checkpoint
+
+The earlier source-view retry cached `(Atom, ValueBinding *)` entries but fed
+all 1,825,503 replayed entries through ordered vector insertion. The retained
+composite reuses that live mapped-value view, appends each scope chain as one
+batch, and sorts and deduplicates the destination once. Map insertions change
+the cached count. Scope copy, move, erase, clear, and swap paths discard the
+view when they can invalidate its node pointers.
+
+The first three-pair batch measured parent and candidate medians of
+`117,562,208,035` and `116,991,657,009` instructions, a `0.485%` reduction.
+Median RSS improved by `0.394%`; footprint increased by `0.215%`; the balance
+score was `0.682`. All three instruction and RSS pairs agreed. The independent
+confirmation measured a `0.474%` instruction reduction, a `0.598%` RSS
+improvement, and a `0.190%` footprint increase. Two of three RSS pairs agreed,
+and the balance score was `0.773`. Both batches meet the balanced lane, and all
+twelve objects have the frozen SHA-256.
+
+The clean three-run median at `2ba26c3f4` is `116,933,622,740` instructions,
+`32.86%` below the original baseline. Maximum RSS is `718,651,392 B`, and
+footprint is `525,627,392 B`. The focused PA19 report passes `295/295`, direct
+strict passes `1530/1530`, and the full direct report passes `4863/4863`.
+
+Evidence is in `/tmp/cppgm-template-visible-composite-once-screen.json`,
+`/tmp/cppgm-template-visible-composite-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-template-visible-composite-{parent,candidate}-{4,5,6}.time`,
+`/tmp/cppgm-template-visible-composite-final.json`,
+`/tmp/cppgm-template-visible-composite-test-pa19.log`,
+`/tmp/cppgm-template-visible-composite-test-strict.log`, and
+`/tmp/cppgm-template-visible-composite-test-report.log`.
+
 #### Multi-signal retention rubric at `3686d87b0`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
@@ -1728,7 +1759,7 @@ construction, or complete-entry symbol reuse without a new census.
 
 #### Revised investigation order
 
-The 32.43% cumulative reduction leaves `30,595,634,454` instructions. A chain
+The 32.86% cumulative reduction leaves `29,854,737,268` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -1748,9 +1779,11 @@ order:
    recoverable SFINAE throws. The paired composite improves instructions by
    `0.974%`, emits exact bytes, and passes strict `1530/1530` plus full report
    `4863/4863`.
-3. Revisit the visible-name bulk sort with the rejected scope-value snapshot.
-   Source caching and destination insertion are one collector mechanism; their
-   composite is allowed if it avoids replay work and qualifies as a whole.
+3. Completed: retain the visible-name bulk sort with the scope-value snapshot.
+   The composite avoids repeated source interning and per-name destination
+   insertion. Two independent three-pair batches produce balance scores of
+   `0.682` and `0.773`; every frozen object is exact, and direct strict plus the
+   full report pass.
 4. Run current paired decisions for the one-fetch normalizer and 16-entry
    sparse template-angle cache. Both historical screens meet the balanced
    rubric without relying on a memory-only claim.
@@ -1871,6 +1904,7 @@ Fill one row after each retained commit.
 | `56128c65d` | canonicalize immutable template-parameter named types by semantic identity and source spelling | `119,571,899,320` | `-31.34%` | `711,860,224` | `524,099,584` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-parameter-type-intern-final.json`; 61,675 hits in 62,264 probes; `-0.492%` from `32f889b69` |
 | `3686d87b0` | supply final synthesized special-member linkage during registration instead of regenerating the symbol immediately | `118,245,739,070` | `-32.10%` | `700,035,072` | `524,410,880` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-synthesized-linkage-registration-final.json`; `-1.109%` from `56128c65d` |
 | `a3dc6e079` | return expected constructor and root standard `enable_if` probe failures as status | `117,674,519,926` | `-32.43%` | `712,704,000` | `524,689,408` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-exception-status-composite-final.json`; 4,465 throws removed; paired A/B: `-0.974%` instructions |
+| `2ba26c3f4` | cache template-body scope value views and bulk-sort visible names | `116,933,622,740` | `-32.86%` | `718,651,392` | `525,627,392` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-visible-composite-final.json`; two paired batches: `-0.485%` and `-0.474%` instructions; balance scores `0.682` and `0.773` |
 
 ## Rejected work ledger
 
@@ -1949,7 +1983,7 @@ experiment before starting the next candidate.
 | extend inline visited storage to the remaining using-directive lookup APIs | the generic lookup helpers already use the retained eight-pointer visit set, but callable, function-template, value, and qualified-namespace helpers still used tree sets. Converting that whole family preserved the frozen object and screened at `132,072,257,170` instructions, about `0.17%` below the retained interval-reuse checkpoint | the remaining tree allocations are too small a share of the compile to justify changing a public lookup interface. Restore the tree-set API and keep the proven inline representation only on the high-volume generic paths | `/tmp/cppgm-remaining-using-directive-inline-screen.json` |
 | bypass recursive argument-combination enumeration when every template call argument has one interpretation | the late profile attributed 593 inclusive samples to the combination runner. Moving each sole option into the deduction input once and calling its terminal step directly preserved the frozen object, but screened at `132,208,159,899` instructions, about `0.07%` below the retained interval-reuse checkpoint | the profile attribution belongs to deduction and binding acquisition below the runner; its recursion and move bookkeeping are negligible. Restore the uniform enumerator and investigate the work inside deduction instead | `/tmp/cppgm-single-template-combination-screen.json` |
 | add an exact-pointer front cache before structural function-template deduction keys | 45,199 structural cache hits included 28,168 hits with identical type pointers, all with at most four arguments. A fixed direct cache served 25,400 hits with 4K slots and 27,222 with 16K slots. The best one-run screen used `131,710,486,668` instructions, but an interleaved three-pair binary comparison measured parent median `132,052,142,360` versus candidate median `132,161,188,380`, a `0.083%` regression | repeated type fingerprints are real, but hashing, scope validation, and the second cache probe consume the savings. Restore the single structural cache; do not add another deduction cache layer | `/tmp/cppgm-deduction-pointer-census.stderr`, `/tmp/cppgm-deduction-fast-cache-screen{,-2,-16k}.json`, and `/tmp/cppgm-deduction-fast-ab-{parent,candidate}-{1,2,3}.json` |
-| bulk-insert visible scope names during template-body validation | the fresh post-backend profile attributed 95 leaf samples to visible-scope value collection. One form sorted each batch and merged it into the retained contiguous name set; a second appended the batch and sorted in place. They used `130,646,281,297` and `130,576,934,916` instructions, about `0.18%` and `0.24%` below the retained three-run median | batching removes per-name vector shifts but cannot meet the `0.5%` retention threshold. Restore individual insertion and close this destination-container family after two measured forms | `/tmp/cppgm-backend-metadata-profile.sample.txt`, `/tmp/cppgm-template-visible-bulk-insert-screen.json`, and `/tmp/cppgm-template-visible-bulk-sort-screen.json` |
+| bulk-insert visible scope names during template-body validation | the fresh post-backend profile attributed 95 leaf samples to visible-scope value collection. One form sorted each batch and merged it into the retained contiguous name set; a second appended the batch and sorted in place. They used `130,646,281,297` and `130,576,934,916` instructions, about `0.18%` and `0.24%` below the retained three-run median | the isolated destination forms remained rejected. Commit `2ba26c3f4` later combined one final sort with the source-scope view on the same collector path and met the balanced lane twice | `/tmp/cppgm-backend-metadata-profile.sample.txt`, `/tmp/cppgm-template-visible-bulk-insert-screen.json`, and `/tmp/cppgm-template-visible-bulk-sort-screen.json` |
 | trim temporary strings in place through an rvalue overload | the post-lazy-reserve profile attributed 73 leaf samples to the shared trim helper and 27 to the mangler-local copy. Rvalue overloads reused temporary `substr` and generated buffers while preserving the lvalue API, but screened at `128,511,249,469` instructions, effectively flat against the retained `128,444,585,958` median | temporary-buffer allocation is too small and dispersed to justify a second trim API. Restore the single const-reference helper | `/tmp/cppgm-lazy-reserve-profile.sample.txt` and `/tmp/cppgm-trim-rvalue-screen.json` |
 | memoize the immediately preceding AST type lookup within one hook bundle | the cache stayed inside one parse operation and therefore needed no scope epoch, but its exact-output screen used `128,590,908,638` instructions, slightly above the retained `128,444,585,958` median | even the allocation-free one-entry form is flat. Restore direct lookup and close AST result caching together with the earlier scope-aware census | `/tmp/cppgm-ast-last-node-screen.json` |
 | replace the diagnostic-context frame vector with intrusive RAII frames | normal semantic work no longer pushed or popped `Frame` objects in a heap-capable vector, while exception-time realization retained the same outer-to-inner stack, but the exact-output screen used `128,353,586,846` instructions, only about `0.07%` below the retained median | diagnostic frame bookkeeping is visible but not material to the frozen compile. Restore the simpler vector and leave exception diagnostics unchanged | `/tmp/cppgm-diagnostic-intrusive-stack-screen.json` |
@@ -2013,4 +2047,4 @@ experiment before starting the next candidate.
 | admit metadata-free negative `class_info_for_type` results before declaration collection completes | the existing registry epoch and metadata guards made the earlier admission exact. It converted 21,330 registry misses into named-key cache hits, reducing misses from 30,928 to 9,598, but used `118,388,459,077` instructions, `0.121%` above the retained checkpoint | the added negative-cache traffic costs as much as the second hash lookup it avoids. Restore post-declaration admission and keep the cache focused on stable negatives | `/tmp/cppgm-early-negative-class-cache-census.stderr` and `/tmp/cppgm-early-negative-class-cache-screen.json` |
 | coallocate CallSem optional payloads with their shared control blocks | coallocating the common extra record, rare payloads, qualified names, and interned symbols emitted the exact frozen object but used `118,748,695,498` instructions, `0.425%` above the retained checkpoint. Restricting coallocation to the roughly 91K common extra records was worse at `118,923,591,013`, a `0.573%` regression | the larger allocation changes recover part of the common-record loss but do not make the family competitive. Restore separate object and control-block allocations and keep the existing copy-on-write representation | `/tmp/cppgm-callsem-make-shared-screen.json` and `/tmp/cppgm-callsem-extra-make-shared-screen.json` |
 | move cold `FunctionBinding` strings and source anchors to a side record, then compact scalar layout | only 266 of 33,713 bindings stored an explicit `noexcept` expression and 50 stored an object-symbol override; source anchors are unused in normal compilation. Moving that union behind one pointer reduced footprint by about 2.7 MiB but used `118,374,356,578` instructions, `0.109%` above the retained checkpoint. Grouping scalar state removed alignment holes and reduced the record from 824 to 656 bytes, but used `118,496,295,717` instructions, a `0.212%` regression, while reducing footprint by about 5.8 MiB | density alone does not repay cold-access branches or the changed hot-field layout. Restore the original direct fields and close `FunctionBinding` compaction unless a future change removes work as well as bytes | `/tmp/cppgm-function-binding-rare-census.stderr`, `/tmp/cppgm-function-binding-cold-metadata-screen.json`, and `/tmp/cppgm-function-binding-compact-layout-screen.json` |
-| retry the interned template-body scope-value snapshot after atom-set compaction | the safe cache stored `(Atom, ValueBinding*)` entries, rebuilt after erase/clear/swap, and preserved live mapped-value updates. The census recorded 44,552 scope visits, 35,194 hits, 9,358 builds, 68 invalidation rebuilds, 3,092 source entries scanned, and 1,825,503 cached entries replayed. A lean optional-vector form screened at `118,075,598,689` instructions. Three interleaved binary pairs measured retained and candidate medians of `118,654,162,513` and `118,365,277,484`, a `288,885,029` instruction or `0.243%` reduction. Median RSS changed from `710,828,032` to `712,835,072`; footprint changed from `524,652,544` to `525,099,008`. All six objects had the frozen SHA-256 | after atom-set compaction, the retry saved less than half of the `591,228,695`-instruction retention floor. Restore the direct scan. Another attempt must remove destination replay or validation work; another source index will not qualify | `/tmp/cppgm-template-body-value-snapshot-census.stderr`, `/tmp/cppgm-template-body-value-snapshot-{screen,lean-screen}.json`, and `/tmp/cppgm-template-body-value-{retained,candidate}-{1,2,3}.time` |
+| retry the interned template-body scope-value snapshot after atom-set compaction | the safe cache stored `(Atom, ValueBinding*)` entries, rebuilt after erase/clear/swap, and preserved live mapped-value updates. The census recorded 44,552 scope visits, 35,194 hits, 9,358 builds, 68 invalidation rebuilds, 3,092 source entries scanned, and 1,825,503 cached entries replayed. A lean optional-vector form screened at `118,075,598,689` instructions. Three interleaved binary pairs measured retained and candidate medians of `118,654,162,513` and `118,365,277,484`, a `288,885,029` instruction or `0.243%` reduction. Median RSS changed from `710,828,032` to `712,835,072`; footprint changed from `524,652,544` to `525,099,008`. All six objects had the frozen SHA-256 | the isolated source view remained rejected. Commit `2ba26c3f4` later removed destination replay in the same collector and met the balanced lane in two independent batches | `/tmp/cppgm-template-body-value-snapshot-census.stderr`, `/tmp/cppgm-template-body-value-snapshot-{screen,lean-screen}.json`, and `/tmp/cppgm-template-body-value-{retained,candidate}-{1,2,3}.time` |
