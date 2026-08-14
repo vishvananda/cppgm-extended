@@ -785,6 +785,63 @@ TypePtr canonical_function_type(
   return result;
 }
 
+size_t template_parameter_type_identity_hash(
+    const string & semantic_payload)
+{
+  return std::hash<string>()(semantic_payload);
+}
+
+TypePtr canonical_template_parameter_type(
+    const string & display_name,
+    const string & semantic_payload,
+    const string & source_name)
+{
+  // Template-parameter types are fully initialized here and compare by their
+  // semantic payload. Keep source spelling in the cache match so sharing does
+  // not change diagnostics or witness rendering.
+  typedef unordered_multimap<size_t, weak_ptr<Type> > Cache;
+  static thread_local Cache cache;
+
+  const LeadingCvNormalization display =
+      normalize_leading_cv_spelling(display_name);
+  const LeadingCvNormalization payload =
+      normalize_leading_cv_spelling(semantic_payload);
+  if(display.cv_const || display.cv_volatile ||
+     payload.cv_const || payload.cv_volatile) {
+    return TypePtr();
+  }
+
+  const size_t hash =
+      template_parameter_type_identity_hash(payload.normalized_text);
+  pair<Cache::iterator, Cache::iterator> range = cache.equal_range(hash);
+  for(Cache::iterator it = range.first; it != range.second;) {
+    TypePtr existing = it->second.lock();
+    if(!existing) {
+      it = cache.erase(it);
+      continue;
+    }
+    if(existing->kind == Type::TK_NAMED &&
+       existing->named_semantic_kind == Type::NSK_TEMPLATE_PARAMETER &&
+       existing->named_display == display.normalized_text &&
+       existing->named_semantic_payload == payload.normalized_text &&
+       existing->named_source_name() == source_name) {
+      return existing;
+    }
+    ++it;
+  }
+
+  TypePtr result = make_semantic_named(display.normalized_text,
+                                       Type::NSK_TEMPLATE_PARAMETER,
+                                       payload.normalized_text,
+                                       true);
+  TypePtr base = strip_top_level_cv(result);
+  if(base && base->kind == Type::TK_NAMED) {
+    base->set_named_source_name(source_name);
+    cache.emplace(hash, base);
+  }
+  return result;
+}
+
 }  // namespace
 
 TypePtr make_fundamental(EFundamentalType type)
@@ -866,6 +923,11 @@ TypePtr make_template_parameter_type(const string & display_name,
                                      const string & semantic_payload,
                                      const string & source_name)
 {
+  if(TypePtr canonical = canonical_template_parameter_type(display_name,
+                                                           semantic_payload,
+                                                           source_name)) {
+    return canonical;
+  }
   TypePtr result = make_semantic_named(display_name,
                                        Type::NSK_TEMPLATE_PARAMETER,
                                        semantic_payload,
