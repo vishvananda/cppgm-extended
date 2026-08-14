@@ -1507,6 +1507,69 @@ set<string> collect_direct_call_arg_index_temps(
   return out;
 }
 
+vector<TempInterval> extend_direct_call_arg_index_source_intervals(
+    const lir::Function & function,
+    const map<string, TempDefInfo> & def_info,
+    const set<string> & direct_call_arg_index_temps,
+    const set<string> & thread_local_globals,
+    const vector<TempInterval> & intervals)
+{
+  vector<TempInterval> out = intervals;
+  unordered_map<string, size_t> interval_index;
+  interval_index.reserve(out.size());
+  for(size_t i = 0; i < out.size(); ++i) {
+    interval_index[out[i].name] = i;
+  }
+
+  vector<size_t> call_positions;
+  size_t position = 0;
+  for(size_t bi = 0; bi < function.blocks.size(); ++bi) {
+    for(size_t ii = 0; ii < function.blocks[bi].instructions.size();
+        ++ii, ++position) {
+      const lir::Instruction & inst = function.blocks[bi].instructions[ii];
+      if(inst.kind == lir::Instruction::IK_CALL ||
+         instruction_may_emit_tls_addr(inst, thread_local_globals) ||
+         instruction_may_emit_i128_helper_call(inst)) {
+        call_positions.push_back(position);
+      }
+      if(inst.kind != lir::Instruction::IK_CALL) {
+        continue;
+      }
+      for(size_t ai = 0; ai < inst.args.size(); ++ai) {
+        if(inst.args[ai].kind != lir::Operand::OP_TEMP ||
+           direct_call_arg_index_temps.count(inst.args[ai].text) == 0) {
+          continue;
+        }
+        map<string, TempDefInfo>::const_iterator def =
+            def_info.find(inst.args[ai].text);
+        if(def == def_info.end() ||
+           def->second.kind != lir::Instruction::IK_INDEX ||
+           def->second.first.kind != lir::Operand::OP_TEMP ||
+           def->second.second.kind != lir::Operand::OP_INTEGER) {
+          continue;
+        }
+        unordered_map<string, size_t>::const_iterator source =
+            interval_index.find(def->second.first.text);
+        if(source != interval_index.end()) {
+          out[source->second].end = max(out[source->second].end, position);
+        }
+      }
+    }
+  }
+
+  for(size_t i = 0; i < out.size(); ++i) {
+    if(out[i].live_across_call) {
+      continue;
+    }
+    vector<size_t>::const_iterator call =
+        upper_bound(call_positions.begin(), call_positions.end(), out[i].start);
+    if(call != call_positions.end() && *call < out[i].end) {
+      out[i].live_across_call = true;
+    }
+  }
+  return out;
+}
+
 bool plain_storage_debug_name(const string & storage_name,
                               string & source_name)
 {
@@ -2671,10 +2734,12 @@ FunctionLayout build_layout(const lir::Function & function,
   layout.aliased_object_return_slots =
       collect_aliased_object_return_slots(function, layout);
   const vector<TempInterval> register_intervals =
-      collect_temp_intervals(function,
-                             def_info,
-                             thread_local_globals,
-                             layout.direct_call_arg_index_temps);
+      extend_direct_call_arg_index_source_intervals(
+          function,
+          def_info,
+          layout.direct_call_arg_index_temps,
+          thread_local_globals,
+          layout.temp_intervals);
   layout.float_temp_register.reserve(register_intervals.size());
   assign_temp_registers(function,
                         layout,
