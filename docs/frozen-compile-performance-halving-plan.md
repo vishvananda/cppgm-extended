@@ -1817,7 +1817,7 @@ to manufacture a score.
 
 #### Rejected-work checkpoint review, started at `3686d87b0`
 
-The checkpoint review covered all 135 current rows in the rejected-work
+The checkpoint review covered all 138 current rows in the rejected-work
 ledger. It used absolute instructions removed, overlap with later retained
 work, a fresh release-binary sample, and the multi-signal rubric above. The
 denominator change alone does not justify a retry. A rejected form reopens when one of
@@ -1965,23 +1965,31 @@ order:
    `1.622%` RSS improvement, but the required independent batch improved RSS
    by only `0.801%`. Its `0.780%` footprint and `0.077%` instruction gains miss
    the other lanes, so `std::vector` remains.
-9. In progress: finish the revised profile leaves. Retain the
+9. Completed: finish the revised profile leaves. Retain the
    primary-placeholder shape byte: `754,890` cache hits clear the CPU lane at
    `0.539%`. Retain the named-type display view: `922,353` stable repeats clear
    the CPU lane at `2.892%` once the API avoids both reconstruction and the
    result copy. Keep the broader source-owner pointer rejected after its
    independent balance score fell to `0.406`. Close snapshot interning: only
    29 of 6,746 snapshots were empty, and sharing the 2,903 repeated contents
-   would save roughly 1.1 MiB through another broad cache. Next, determine
-   whether the 166,963 no-change overlay requests have an operation-scoped
-   identity and invalidation contract that avoids an analyzer-wide cache.
-10. Measure the two remaining narrow traversal families. Conversion-function
-   group collection still uses two tree-backed class visit sets and has 37
-   fresh leaf samples. It can use inline storage only if a population census
-   shows the same small-depth shape as the retained using-directive set.
-   Itanium IR substitution lookup has 48 lookup leaves and 42 key-equality
-   leaves despite its 28-entry vector/hash split. Count state sizes, probes,
-   alias probes, and index materializations before changing that threshold.
+   would save roughly 1.1 MiB through another broad cache. Reject overlay
+   result caching: only 2,413 of 276,899 stable target/source pairs repeat.
+   `107,924` calls have no relevant source names, but an early empty-source
+   return improves instructions by only about `0.18%`; moving the guard to the
+   wrapper or linearly probing the small exclusion set is worse.
+10. Completed: measure the two narrow traversal families and retain neither
+   candidate. Conversion-function group and name collection make 45,367 root
+   traversals, visit at most four classes, and see no duplicate class or
+   virtual-base insertion on the frozen workload. Reusing the inline visit-set
+   abstraction nevertheless regresses instructions by `0.26%` to `0.39%`
+   across full, capacity-sized, and binding-only forms. Itanium IR substitution
+   lookup makes 1,979,226 small-state probes and 11,750,955 structural key
+   comparisons. Lowering the vector/hash crossover from 28 to 8 or 16
+   regresses instructions by more than `0.6%`; raising it to 40 or 64 remains
+   slightly worse. Keep the current tree sets and 28-entry crossover.
+11. Refresh the release-binary sample after the named-display reduction and
+   use its new top leaves to start the next census. Prefer operation removal
+   or an existing cache/index contract over another general container swap.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, general container swaps, common-record
@@ -2221,3 +2229,6 @@ experiment before starting the next candidate.
 | coallocate CallSem optional payloads with their shared control blocks | coallocating the common extra record, rare payloads, qualified names, and interned symbols emitted the exact frozen object but used `118,748,695,498` instructions, `0.425%` above the retained checkpoint. Restricting coallocation to the roughly 91K common extra records was worse at `118,923,591,013`, a `0.573%` regression | the larger allocation changes recover part of the common-record loss but do not make the family competitive. Restore separate object and control-block allocations and keep the existing copy-on-write representation | `/tmp/cppgm-callsem-make-shared-screen.json` and `/tmp/cppgm-callsem-extra-make-shared-screen.json` |
 | move cold `FunctionBinding` strings and source anchors to a side record, then compact scalar layout | only 266 of 33,713 bindings stored an explicit `noexcept` expression and 50 stored an object-symbol override; source anchors are unused in normal compilation. Moving that union behind one pointer reduced footprint by about 2.7 MiB but used `118,374,356,578` instructions, `0.109%` above the retained checkpoint. Grouping scalar state removed alignment holes and reduced the record from 824 to 656 bytes, but used `118,496,295,717` instructions, a `0.212%` regression, while reducing footprint by about 5.8 MiB | density alone does not repay cold-access branches or the changed hot-field layout. Restore the original direct fields and close `FunctionBinding` compaction unless a future change removes work as well as bytes | `/tmp/cppgm-function-binding-rare-census.stderr`, `/tmp/cppgm-function-binding-cold-metadata-screen.json`, and `/tmp/cppgm-function-binding-compact-layout-screen.json` |
 | retry the interned template-body scope-value snapshot after atom-set compaction | the safe cache stored `(Atom, ValueBinding*)` entries, rebuilt after erase/clear/swap, and preserved live mapped-value updates. The census recorded 44,552 scope visits, 35,194 hits, 9,358 builds, 68 invalidation rebuilds, 3,092 source entries scanned, and 1,825,503 cached entries replayed. A lean optional-vector form screened at `118,075,598,689` instructions. Three interleaved binary pairs measured retained and candidate medians of `118,654,162,513` and `118,365,277,484`, a `288,885,029` instruction or `0.243%` reduction. Median RSS changed from `710,828,032` to `712,835,072`; footprint changed from `524,652,544` to `525,099,008`. All six objects had the frozen SHA-256 | the isolated source view remained rejected. Commit `2ba26c3f4` later removed destination replay in the same collector and met the balanced lane in two independent batches | `/tmp/cppgm-template-body-value-snapshot-census.stderr`, `/tmp/cppgm-template-body-value-snapshot-{screen,lean-screen}.json`, and `/tmp/cppgm-template-body-value-{retained,candidate}-{1,2,3}.time` |
+| skip template-bound overlay work for sources with no relevant names | a detailed census measured 276,899 source-scope requests, 166,963 unchanged results, and only 2,413 repeated stable target/source pairs. `115,809` requests made no insertion attempt; `107,924` of those had no relevant source names. An early return emitted the exact frozen object and screened at `111,894,594,757` instructions, about `0.18%` below the clean retained median. Moving the guard to the ancestor wrappers used `112,161,643,952`; combining it with linear lookup in the small exclusion sets regressed to `112,567,833,384` | a result cache has too little exact-pair reuse, while the simple empty work is below every retention lane and does not improve memory materially. Restore the uniform traversal and keep the census as evidence against adding invalidation state | `/tmp/cppgm-overlay-detailed-2.stderr`, `/tmp/cppgm-overlay-empty-screen.json`, `/tmp/cppgm-overlay-empty-wrapper-screen.json`, and `/tmp/cppgm-overlay-empty-excluded-screen.json` |
+| use inline visit sets for conversion-function class, virtual-base, and direct-binding traversal | 23,399 conversion-group roots and 21,968 conversion-name roots visited at most four classes and one virtual base, with no duplicate class or virtual-base insertion. The per-class direct-binding set reached two entries and rejected 20,669 duplicate probes. Reusing the retained inline visit set for all three emitted exact bytes but screened at `112,486,953,373` instructions; a binding-only form used `112,540,821,783`, and capacity-sized sets used `112,392,376,486` | the tree allocations are real, but linear scans, larger stack state, and the overflow-vector branch cost more on this path. All three forms regress instructions and miss the allocation-and-latency lane. Restore the tree sets | `/tmp/cppgm-conversion-traversal-census.stderr`, `/tmp/cppgm-conversion-inline-screen.json`, `/tmp/cppgm-conversion-binding-inline-screen.json`, and `/tmp/cppgm-conversion-inline-sized-screen.json` |
+| retune the Itanium IR substitution vector/hash crossover | 2,007,030 lookups included 1,979,226 small-state probes, 339,623 small hits, and 11,750,955 structural comparisons. The 28-entry cutoff materialized 1,594 indexes for 46,226 keys. Cutoffs of 8 and 16 used `112,802,228,864` and `112,838,296,308` instructions. Cutoffs of 40 and 64 were closer at `112,258,746,153` and `112,307,177,178`, but still worse than the clean retained median. Every form emitted the frozen object | the current crossover balances structural equality against hash construction better than either direction tested. Keep 28 and do not add another front index | `/tmp/cppgm-ir-substitution-census.stderr` and `/tmp/cppgm-ir-substitution-limit-{8,16,40,64}-screen.json` |
