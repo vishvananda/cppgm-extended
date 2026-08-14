@@ -1475,9 +1475,25 @@ The memory census at `/tmp/cppgm-current-memory-census.stderr` found 358,362
 source AST nodes, 101,042 types, 201,463 retained CallSem nodes, 36,327 scopes,
 33,713 function bindings, and 7,583 classes. Subsequent layout and lazy-storage
 screens reduced memory but missed the instruction floor. The retained
-`cfc773417` checkpoint remains the decision baseline at
-`124,285,854,757` instructions. Reaching the halving target requires another
-`37,206,969,285` instructions, or `29.94%` of the current total.
+`32f889b69` checkpoint is the current decision baseline at
+`120,162,630,879` instructions. Reaching the halving target requires another
+`33,083,745,407` instructions, or `27.53%` of the current total.
+
+#### Release frame-pointer checkpoint
+
+Homebrew clang kept frame pointers in the optimized macOS build even at
+`-O3`. An isolated `-fomit-frame-pointer` build reduced a one-run screen to
+`120,116,240,309` instructions and preserved the frozen object. The retained
+release-only flag then confirmed at a three-run median of `120,162,630,879`,
+`3.318%` below `cfc773417` and `31.00%` below the original baseline. Debug
+builds retain `-fno-omit-frame-pointer` for stack inspection.
+
+The direct strict gate passed `1530/1530`, and the direct full report passed
+`4863/4863`. Evidence is in
+`/tmp/cppgm-omit-frame-pointer-screen.json`,
+`/tmp/cppgm-omit-frame-pointer-final.json`,
+`/tmp/cppgm-omit-frame-pointer-test-strict.log`, and
+`/tmp/cppgm-omit-frame-pointer-test-report.log`.
 
 ### Phase 8: final halving proof
 
@@ -1556,6 +1572,7 @@ Fill one row after each retained commit.
 | `d5900e76d` | use inline dependent-name recursion state and defer placeholder scans until exact binding fails | `126,447,955,718` | `-27.39%` | `734,490,624` | `550,830,080` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-name-fast-path-final.json`; paired A/B: `-0.568%` instructions; avoided 95,972 placeholder scans |
 | `2b72a6b7b` | compare named types by interned key identity and keep local-name traversal scratch contiguous | `125,553,969,817` | `-27.91%` | `730,492,928` | `554,708,992` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-named-key-identity-final.json`; paired A/B: `-0.641%` instructions |
 | `cfc773417` | resolve concrete standard `enable_if` forwarding aliases without a general instantiation scope | `124,285,854,757` | `-28.64%` | `740,732,928` | `554,344,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-enable-if-alias-final.json`; `3,052` concrete shortcuts; `-1.010%` from `2b72a6b7b` |
+| `32f889b69` | omit frame pointers in optimized release builds while preserving them in debug builds | `120,162,630,879` | `-31.00%` | `736,526,336` | `554,426,368` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-omit-frame-pointer-final.json`; `-3.318%` from `cfc773417` |
 
 ## Rejected work ledger
 
