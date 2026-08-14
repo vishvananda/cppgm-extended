@@ -266,7 +266,9 @@ public:
 
   void reserve(std::size_t count)
   {
-    mutable_vector().reserve(count);
+    if(count != 0) {
+      mutable_vector().reserve(count);
+    }
   }
 
   void push_back(const T & value)
