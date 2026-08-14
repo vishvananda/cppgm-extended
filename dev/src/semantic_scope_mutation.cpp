@@ -153,115 +153,16 @@ void add_using_directive_if_needed(semantic_model::Scope & scope,
 void import_inline_namespace_members(semantic_model::Scope & scope,
                                      semantic_model::Scope & target)
 {
-  bool changed = false;
-  for(auto it =
-          target.namespace_bindings.begin();
-      it != target.namespace_bindings.end(); ++it) {
-    if(it->first == "_GLOBAL__N_1") {
-      continue;
-    }
-    scope.namespace_bindings[it->first] = it->second;
-    if(target.namespace_binding_first_token_starts) {
-      const auto first =
-          target.namespace_binding_first_token_starts->find(it->first);
-      if(first != target.namespace_binding_first_token_starts->end()) {
-        if(!scope.namespace_binding_first_token_starts) {
-          scope.namespace_binding_first_token_starts.reset(
-              new std::map<std::string, std::size_t>());
-        }
-        std::size_t & destination =
-            (*scope.namespace_binding_first_token_starts)[it->first];
-        if(destination == 0 || first->second < destination) {
-          destination = first->second;
-        }
-      }
-    }
-    changed = true;
-  }
+  // The implicit using-directive is the language-level representation of
+  // inline namespace visibility.  Copying every declaration into the parent
+  // duplicates storage, loses the declaration's real owner, and repeats all
+  // prior work whenever the namespace is reopened.
+  add_using_directive_raw(scope, target);
 
-  for(auto it = target.named_types.begin();
-      it != target.named_types.end(); ++it) {
-    if(scope.named_types.count(it->first) == 0) {
-      scope.named_types[it->first] = it->second;
-      changed = true;
-    }
-  }
-
-  for(std::map<std::string, semantic_model::ValueBinding>::iterator it =
-          target.values.begin();
-      it != target.values.end(); ++it) {
-    if(scope.values.count(it->first) == 0) {
-      scope.values[it->first] = it->second;
-      changed = true;
-    }
-  }
-
-  for(std::map<std::string, std::vector<semantic_model::FunctionBinding *> >::iterator it =
-          target.function_sets.begin();
-      it != target.function_sets.end(); ++it) {
-    std::vector<semantic_model::FunctionBinding *> & slot =
-        semantic_lookup::direct_function_set_slot(scope, it->first);
-    for(std::size_t i = 0; i < it->second.size(); ++i) {
-      bool duplicate = std::find(slot.begin(), slot.end(), it->second[i]) != slot.end();
-      if(!duplicate) {
-        for(std::size_t j = 0; j < slot.size(); ++j) {
-          if(cpp_decl::type_equals(slot[j]->type, it->second[i]->type)) {
-            duplicate = true;
-            break;
-          }
-        }
-      }
-      if(!duplicate) {
-        slot.push_back(it->second[i]);
-        changed = true;
-      }
-    }
-  }
-
-  for(std::map<std::string, semantic_model::ClassTemplateDecl *>::iterator it =
-          target.class_templates.begin();
-      it != target.class_templates.end(); ++it) {
-    if(scope.class_templates.count(it->first) == 0) {
-      scope.class_templates[it->first] = it->second;
-      changed = true;
-    }
-  }
-
-  for(std::map<std::string, std::vector<semantic_model::FunctionTemplateDecl *> >::iterator it =
-          target.function_templates.begin();
-      it != target.function_templates.end(); ++it) {
-    std::vector<semantic_model::FunctionTemplateDecl *> & slot =
-        semantic_lookup::direct_function_template_slot(scope, it->first);
-    for(std::size_t i = 0; i < it->second.size(); ++i) {
-      if(std::find(slot.begin(), slot.end(), it->second[i]) == slot.end()) {
-        slot.push_back(it->second[i]);
-        changed = true;
-      }
-    }
-  }
-
-  for(std::map<std::string, semantic_model::AliasTemplateDecl *>::iterator it =
-          target.alias_templates.begin();
-      it != target.alias_templates.end(); ++it) {
-    if(scope.alias_templates.count(it->first) == 0) {
-      scope.alias_templates[it->first] = it->second;
-      changed = true;
-    }
-  }
-
-  for(std::map<std::string, semantic_model::VariableTemplateDecl *>::iterator it =
-          target.variable_templates.begin();
-      it != target.variable_templates.end(); ++it) {
-    if(scope.variable_templates.count(it->first) == 0) {
-      scope.variable_templates[it->first] = it->second;
-      changed = true;
-    }
-  }
-
-  changed = add_using_directive_raw(scope, target) || changed;
-  if(changed) {
-    note_binding_mutation(scope);
-  }
+  // A completed inline namespace block can add bindings after the directive
+  // itself was installed.  Preserve conservative parent invalidation on every
+  // import so parent-scoped template caches observe those additions.
+  note_binding_mutation(scope);
 }
 
 void bind_value(semantic_model::Scope & scope,

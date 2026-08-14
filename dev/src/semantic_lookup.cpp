@@ -2580,6 +2580,16 @@ Scope * resolve_qualified_variable_parse_scope(SemanticContext & ctx,
   Scope * declaration_scope =
       ctx.resolve_qualified_scope_for_node(
           scope, *identifier_name, *identifier, true);
+  // A qualified definition can name a declaration owned by an inline child
+  // of the written namespace.  Keep parsing and registration in that real
+  // owner rather than creating a second binding in the enclosing namespace.
+  if(declaration_scope && !declaration_scope->class_info) {
+    const ValueBinding * existing =
+        lookup_direct_value(*declaration_scope, identifier_name->name);
+    if(existing && existing->declaration_scope) {
+      declaration_scope = existing->declaration_scope;
+    }
+  }
   return declaration_scope ? declaration_scope : &scope;
 }
 
