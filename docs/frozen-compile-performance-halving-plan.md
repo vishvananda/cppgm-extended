@@ -1306,6 +1306,52 @@ remain the largest compiler-owned stacks: `lookup_type_from_ast_node` has
 `resolve_instantiated_dependent_type_uncached` has 1,276. The allocation and
 string-comparison leaves remain broad costs rather than one untested owner.
 
+Sixteenth retained Phase 7 slice: dependent named-type resolution copied or
+formatted a recursion key and inserted it into a tree on every active call.
+The replacement guard keeps the active path in a thread-local vector. Nonempty
+names retain the old scope-and-string equality rule; unnamed types retain the
+old scope-and-type-identity rule. Nested resolution unwinds in stack order, so
+an active frame removes the final entry without a lookup.
+
+The same path scanned structured type spelling for local dependent
+placeholders before checking whether a template parameter had an exact bound.
+An exact concrete result or exact dependent result is decisive, so those cases
+now return before the scan. Unresolved names still run the original scan and
+all following resolution paths.
+
+A temporary frozen census measured 221,628 guard calls, 40,689 inline probes,
+782 recursion rejections, and a maximum depth of four. Exact binding avoided
+95,972 placeholder scans: 16,440 resolved exact bindings and 79,532 exact
+dependent bindings. The remaining 124,874 paths still performed the scan. The
+instrumentation was removed before commit.
+
+The two parts screened below the retention floor in isolation. Their combined
+three-pair binary comparison measured parent median `126,974,551,093` and
+candidate median `126,253,188,892`, a `0.568%` reduction. Median RSS changed
+from `738,619,392 B` to `735,580,160 B`; footprint changed from
+`550,838,272 B` to `550,793,216 B`. All six outputs had the frozen SHA-256.
+Focused PA22 and PA24 validation passes `730/730`, configured direct strict
+passes `1530/1530`, and the full direct report, including PA9 through its
+normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `126,447,955,718` | `-47,709,815,226` (`-27.39%`); `-0.536%` from `a74749dcd` |
+| maximum RSS | `734,490,624 B` | `-26,714,112 B` (`-3.51%`) |
+| peak footprint | `550,830,080 B` | `-17,928,192 B` (`-3.15%`) |
+| elapsed cycles | `92,892,551,820` | `-27.68%` |
+| wall time | `24.31 s` | `-39.26%`, informational under host load |
+
+Evidence: `/tmp/cppgm-dependent-name-fast-path-combined-screen.time`,
+`/tmp/cppgm-dependent-name-fast-path-census.stderr`,
+`/tmp/cppgm-dependent-name-combined-ab-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-dependent-name-fast-path-focused.log`,
+`/tmp/cppgm-dependent-name-fast-path-test-strict.log`,
+`/tmp/cppgm-dependent-name-fast-path-test-report.log`, and
+`/tmp/cppgm-dependent-name-fast-path-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1380,6 +1426,7 @@ Fill one row after each retained commit.
 | `59505722b` | borrow immutable backend definitions and signatures; classify direct-call indexes in one pass | `130,886,247,307` | `-24.85%` | `735,780,864` | `556,519,424` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-backend-borrowed-metadata-final.json`; paired A/B: `-0.849%` instructions |
 | `8e46f9fc2` | keep zero-length lazy AST vector reservations allocation-free | `128,444,585,958` | `-26.25%` | `734,158,848` | `554,516,480` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-reserve-zero-final.json`; paired A/B: `-2.040%` instructions |
 | `a74749dcd` | reuse nonvirtual special-member base-entry bodies for complete-entry output | `127,129,199,627` | `-27.00%` | `737,443,840` | `551,108,608` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-special-member-base-body-reuse-final.json`; removed 2,267 duplicate body analyses |
+| `d5900e76d` | use inline dependent-name recursion state and defer placeholder scans until exact binding fails | `126,447,955,718` | `-27.39%` | `734,490,624` | `550,830,080` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-name-fast-path-final.json`; paired A/B: `-0.568%` instructions; avoided 95,972 placeholder scans |
 
 ## Rejected work ledger
 
@@ -1469,5 +1516,5 @@ experiment before starting the next candidate.
 | extend special-member body reuse to virtual-base and deleting variants | the frozen census found two virtual-base constructor pairs, one virtual-base destructor triplet, and 13 nonvirtual deleting destructors. Those entry-specific paths contain 398 CallSem nodes; the frozen object remained exact | the residual population cannot repay a partial-tree reuse mechanism. Keep virtual-base setup, virtual-base teardown, and deleting deallocation on their existing paths | `/tmp/cppgm-special-member-variant-census.stderr` |
 | store the persistent type-dependency memo result in each `Type` | the existing memo served 2,981,946 persistent hits with 56,590 misses and 17,709 stale-address detections. Disabling it used `128,801,711,184` instructions. Replacing its pointer hash and `weak_ptr` check with a byte in existing `Type` padding emitted exact frozen bytes and used `127,139,069,875` instructions, flat against the retained `127,129,199,627` median | the current memo earns its cost, while its lookup representation does not consume enough of the full compile to meet the retention floor. Restore the ownership-safe map and close this representation family with the earlier flat-table and fast-path trials | `/tmp/cppgm-type-dependency-memo.stderr`, `/tmp/cppgm-type-dependency-memo-off-screen.json`, and `/tmp/cppgm-type-dependency-inline-state-screen.json` |
 | reuse the emitted base-entry `SymbolIdentity` when attaching a complete-entry object alias | the candidate removed one full Itanium remangle for each of 2,267 reused bodies and emitted the exact frozen object. A three-pair binary comparison measured parent median `126,883,104,116` and candidate median `126,616,060,859`, a `0.210%` reduction | the measured gain falls below the `0.5%` retention floor. Restore local symbol regeneration and avoid widening the special-member state path for this gain | `/tmp/cppgm-special-member-symbol-reuse-screen.json` and `/tmp/cppgm-symbol-ab-{parent,candidate}-{1,2,3}.time` |
-| test the exact template-parameter bound before scanning its type spelling for local dependent placeholders | the reordered path emitted the exact frozen object and screened at `126,699,852,401` instructions, `0.338%` below the retained `127,129,199,627` median | the placeholder scan is real work, but the exact-bound population is too small to meet the `0.5%` retention floor. Restore the original order and pursue work shared by the remaining dependent-name paths | `/tmp/cppgm-template-parameter-exact-bound-first-screen.json` |
-| replace the tree-backed dependent-name recursion guard with an inline LIFO stack | the candidate removed recursion-key copies, pointer-to-text formatting, and tree allocation while preserving the old scope-and-name equivalence. A three-pair binary comparison measured parent median `127,121,119,307` and candidate median `126,514,114,084`, a `0.478%` reduction. Parent and candidate median RSS were `735,195,136 B` and `734,056,448 B`; footprints were `550,821,888 B` and `550,887,424 B`. All six outputs had SHA-256 `4fc1303a...5c4` | the paired result misses the `0.5%` retention floor. Restore the existing guard instead of depending on a LIFO invariant for a sub-threshold gain | `/tmp/cppgm-dependent-named-inline-recursion-screen.json` and `/tmp/cppgm-named-guard-ab-{parent,candidate}-{1,2,3}.time` |
+| test the exact template-parameter bound before scanning its type spelling for local dependent placeholders | the reordered path emitted the exact frozen object and screened at `126,699,852,401` instructions, `0.338%` below the retained `127,129,199,627` median | the isolated result misses the `0.5%` floor. It was restored for the individual decision, then retained as part of the combined dependent-name fast path in `d5900e76d` | `/tmp/cppgm-template-parameter-exact-bound-first-screen.json` |
+| replace the tree-backed dependent-name recursion guard with an inline LIFO stack | the candidate removed recursion-key copies, pointer-to-text formatting, and tree allocation while preserving the old scope-and-name equivalence. A three-pair binary comparison measured parent median `127,121,119,307` and candidate median `126,514,114,084`, a `0.478%` reduction. Parent and candidate median RSS were `735,195,136 B` and `734,056,448 B`; footprints were `550,821,888 B` and `550,887,424 B`. All six outputs had SHA-256 `4fc1303a...5c4` | the isolated result misses the `0.5%` floor. It was restored for the individual decision, then retained with the exact-binding reorder in `d5900e76d` after the combined slice cleared the floor | `/tmp/cppgm-dependent-named-inline-recursion-screen.json` and `/tmp/cppgm-named-guard-ab-{parent,candidate}-{1,2,3}.time` |
