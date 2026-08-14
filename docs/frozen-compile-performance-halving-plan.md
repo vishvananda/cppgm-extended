@@ -1405,6 +1405,55 @@ Evidence: `/tmp/cppgm-post-dependent-name-profile.sample.txt`,
 `/tmp/cppgm-named-key-identity-test-report.log`, and
 `/tmp/cppgm-named-key-identity-final.json`.
 
+Eighteenth retained Phase 7 slice: a focused alias census separated the common
+libc++ forwarding aliases by dependency state. It found 3,052 concrete and
+4,167 dependent `__enable_if_t` uses, plus 925 concrete and 852 dependent
+`__void_t` uses. A fixed-void shortcut was exact but flat, so the retained work
+targets the larger `enable_if` population.
+
+After normal template-argument resolution has proved both arguments concrete,
+the compiler now recognizes only the canonical standard-library
+`enable_if<condition, type>::type` forwarding pattern. A true condition returns
+the already resolved type argument without building an alias instantiation
+scope, generating a string cache key, or parsing the forwarding type-id. A
+false condition raises the expected substitution failure. Dependent arguments
+remain on the general alias path, and witness capture disables the shortcut so
+source-event construction stays unchanged.
+
+Each immutable alias declaration memoizes its structural classification in one
+byte. A temporary stats build measured 11,769 classification lookups, 11,328
+hits, 441 misses and entries, and zero invalidations. The shortcut returned
+1,779 types and raised 1,273 expected SFINAE failures. The stats build emitted
+the frozen object exactly; its counters were removed from the normal release
+layout after the census.
+
+The frozen object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Focused PA23 and PA24 direct validation passes `822/822`. Configured direct
+strict passes `1530/1530`, and the full direct report, including PA9 through
+its normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `124,285,854,757` | `-49,871,916,187` (`-28.64%`); `-1.010%` from `2b72a6b7b` |
+| maximum RSS | `740,732,928 B` | `-20,471,808 B` (`-2.69%`) |
+| peak footprint | `554,344,448 B` | `-14,413,824 B` (`-2.53%`) |
+| elapsed cycles | `92,157,627,550` | `-28.25%` |
+| wall time | `23.90 s` | `-40.28%`, informational under host load |
+
+The halving target still requires `37,206,969,285` fewer instructions, or a
+`29.94%` reduction from this checkpoint.
+
+Evidence: `/tmp/cppgm-alias-fast-path-census.stderr`,
+`/tmp/cppgm-void-alias-fast-path-screen.json`,
+`/tmp/cppgm-enable-if-alias-stats.stderr`,
+`/tmp/cppgm-enable-if-focused-report.log`,
+`/tmp/cppgm-enable-if-alias-test-strict.log`,
+`/tmp/cppgm-enable-if-alias-test-report.log`, and
+`/tmp/cppgm-enable-if-alias-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1481,6 +1530,7 @@ Fill one row after each retained commit.
 | `a74749dcd` | reuse nonvirtual special-member base-entry bodies for complete-entry output | `127,129,199,627` | `-27.00%` | `737,443,840` | `551,108,608` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-special-member-base-body-reuse-final.json`; removed 2,267 duplicate body analyses |
 | `d5900e76d` | use inline dependent-name recursion state and defer placeholder scans until exact binding fails | `126,447,955,718` | `-27.39%` | `734,490,624` | `550,830,080` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-name-fast-path-final.json`; paired A/B: `-0.568%` instructions; avoided 95,972 placeholder scans |
 | `2b72a6b7b` | compare named types by interned key identity and keep local-name traversal scratch contiguous | `125,553,969,817` | `-27.91%` | `730,492,928` | `554,708,992` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-named-key-identity-final.json`; paired A/B: `-0.641%` instructions |
+| `cfc773417` | resolve concrete standard `enable_if` forwarding aliases without a general instantiation scope | `124,285,854,757` | `-28.64%` | `740,732,928` | `554,344,448` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-enable-if-alias-final.json`; `3,052` concrete shortcuts; `-1.010%` from `2b72a6b7b` |
 
 ## Rejected work ledger
 
@@ -1572,3 +1622,4 @@ experiment before starting the next candidate.
 | reuse the emitted base-entry `SymbolIdentity` when attaching a complete-entry object alias | the candidate removed one full Itanium remangle for each of 2,267 reused bodies and emitted the exact frozen object. A three-pair binary comparison measured parent median `126,883,104,116` and candidate median `126,616,060,859`, a `0.210%` reduction | the measured gain falls below the `0.5%` retention floor. Restore local symbol regeneration and avoid widening the special-member state path for this gain | `/tmp/cppgm-special-member-symbol-reuse-screen.json` and `/tmp/cppgm-symbol-ab-{parent,candidate}-{1,2,3}.time` |
 | test the exact template-parameter bound before scanning its type spelling for local dependent placeholders | the reordered path emitted the exact frozen object and screened at `126,699,852,401` instructions, `0.338%` below the retained `127,129,199,627` median | the isolated result misses the `0.5%` floor. It was restored for the individual decision, then retained as part of the combined dependent-name fast path in `d5900e76d` | `/tmp/cppgm-template-parameter-exact-bound-first-screen.json` |
 | replace the tree-backed dependent-name recursion guard with an inline LIFO stack | the candidate removed recursion-key copies, pointer-to-text formatting, and tree allocation while preserving the old scope-and-name equivalence. A three-pair binary comparison measured parent median `127,121,119,307` and candidate median `126,514,114,084`, a `0.478%` reduction. Parent and candidate median RSS were `735,195,136 B` and `734,056,448 B`; footprints were `550,821,888 B` and `550,887,424 B`. All six outputs had SHA-256 `4fc1303a...5c4` | the isolated result misses the `0.5%` floor. It was restored for the individual decision, then retained with the exact-binding reorder in `d5900e76d` after the combined slice cleared the floor | `/tmp/cppgm-dependent-named-inline-recursion-screen.json` and `/tmp/cppgm-named-guard-ab-{parent,candidate}-{1,2,3}.time` |
+| return a fixed void alias target before general instantiation | the census found 925 concrete `__void_t` uses. The exact-output shortcut screened at `125,523,296,465` instructions, only `0.024%` below the retained `125,553,969,817` median | the scope and key work removed from this population is too small to meet the retention floor. Restore the uniform path and target the larger concrete `enable_if` population | `/tmp/cppgm-alias-fast-path-census.stderr` and `/tmp/cppgm-void-alias-fast-path-screen.json` |
