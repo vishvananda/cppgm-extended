@@ -11,6 +11,7 @@ using namespace std;
 #include "cppast_ast.h"
 #include "class_template_mangle_info.h"
 #include "cpp_decl_model.h"
+#include "text_intern.h"
 
 namespace cpp_decl {
 
@@ -235,6 +236,17 @@ bool named_type_keys_match(const string & lhs, const string & rhs)
          (lhs_prefix == rhs_prefix ||
           lhs_prefix == NTKP_NONE ||
           rhs_prefix == NTKP_NONE);
+}
+
+void refresh_named_type_key_identity(Type & type)
+{
+  size_t prefix_size = 0;
+  const NamedTypeKeyPrefixKind prefix_kind =
+      named_type_key_prefix_kind(type.named_key, prefix_size);
+  type.named_key_identity = text_intern::intern(
+      type.named_key.data() + prefix_size,
+      type.named_key.size() - prefix_size);
+  type.named_key_prefix_kind = static_cast<uint8_t>(prefix_kind);
 }
 
 struct LeadingCvNormalization
@@ -805,7 +817,7 @@ TypePtr make_named(const string & display_name,
 
   TypePtr result(new Type(Type::TK_NAMED));
   result->named_display = display.normalized_text;
-  result->named_key = key.normalized_text;
+  set_named_type_key(result, key.normalized_text);
   const NamedSemanticClassification semantic =
       classify_named_semantic_key(result->named_key);
   result->named_semantic_kind = semantic.kind;
@@ -818,6 +830,15 @@ TypePtr make_named(const string & display_name,
   return make_cv(result,
                  display.cv_const || key.cv_const,
                  display.cv_volatile || key.cv_volatile);
+}
+
+void set_named_type_key(const TypePtr & type, const string & key)
+{
+  if(!type || type->kind != Type::TK_NAMED) {
+    return;
+  }
+  type->named_key = key;
+  refresh_named_type_key_identity(*type);
 }
 
 TypePtr make_semantic_named(const string & display_name,
@@ -1413,6 +1434,12 @@ bool type_equals(const TypePtr & lhs, const TypePtr & rhs)
     return lhs->fundamental == rhs->fundamental;
 
   case Type::TK_NAMED:
+    if(lhs->named_key_identity && rhs->named_key_identity) {
+      return lhs->named_key_identity == rhs->named_key_identity &&
+             (lhs->named_key_prefix_kind == rhs->named_key_prefix_kind ||
+              lhs->named_key_prefix_kind == NTKP_NONE ||
+              rhs->named_key_prefix_kind == NTKP_NONE);
+    }
     return named_type_keys_match(lhs->named_key, rhs->named_key);
 
   case Type::TK_CV:

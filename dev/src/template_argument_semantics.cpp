@@ -18490,7 +18490,7 @@ bool substitute_dependent_class_type(const TypePtr & type,
                                                   key_display) :
             key_display;
     substituted->named_display = display;
-    substituted->named_key = qualified;
+    cpp_decl::set_named_type_key(substituted, qualified);
     if(substituted->named_semantic_payload == type->named_key ||
        substituted->named_semantic_payload ==
            named_type_display_text(type)) {

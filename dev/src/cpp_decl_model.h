@@ -255,6 +255,8 @@ struct Type
   EFundamentalType fundamental;
   std::string named_display;
   std::string named_key;
+  const std::string * named_key_identity = nullptr;
+  std::uint8_t named_key_prefix_kind = 0;
   std::shared_ptr<NamedRareMetadata> named_rare_metadata;
   NamedSemanticKind named_semantic_kind;
   std::string named_semantic_payload;
@@ -288,6 +290,7 @@ TypePtr make_named(const std::string & display_name,
                    bool has_layout = false,
                    std::size_t alignment = 0,
                    std::size_t size = 0);
+void set_named_type_key(const TypePtr & type, const std::string & key);
 TypePtr make_semantic_named(const std::string & display_name,
                             Type::NamedSemanticKind semantic_kind,
                             const std::string & semantic_payload,

@@ -7810,9 +7810,10 @@ bool try_expand_alias_template_pattern_structurally(
          key_base->kind == Type::TK_NAMED &&
          key_base->named_key.compare(0, 6, "class ") != 0) {
         TypePtr canonical_key_type(new Type(*key_base));
-        canonical_key_type->named_key =
+        set_named_type_key(
+            canonical_key_type,
             std::string("class ") +
-            strip_elaborated_type_prefix(trim_space(key_base->named_key));
+                strip_elaborated_type_prefix(trim_space(key_base->named_key)));
         class_info = find_class_info_for_type(canonical_key_type);
       }
     }

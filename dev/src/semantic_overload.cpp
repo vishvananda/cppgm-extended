@@ -5304,8 +5304,8 @@ vector<TemplateArgument> constructor_deduction_local_type_arguments(
 void collect_constructor_local_named_types_from_type(
     SemanticContext & ctx,
     const TypePtr & type,
-    set<const ClassInfo *> & seen,
-    set<string> & visiting_named_keys,
+    vector<const ClassInfo *> & seen,
+    vector<const string *> & visiting_named_keys,
     vector<pair<string, TypePtr> > & out)
 {
   if(!type) {
@@ -5315,15 +5315,20 @@ void collect_constructor_local_named_types_from_type(
   switch(type->kind) {
   case Type::TK_NAMED:
   {
-    if(!type->named_key.empty() &&
-       !visiting_named_keys.insert(type->named_key).second) {
-      return;
+    if(type->named_key_identity) {
+      if(find(visiting_named_keys.begin(),
+              visiting_named_keys.end(),
+              type->named_key_identity) != visiting_named_keys.end()) {
+        return;
+      }
+      visiting_named_keys.push_back(type->named_key_identity);
     }
     ClassInfo * info = ctx.class_info_for_type(type);
     if(info) {
       if(info->enclosing_scope &&
          info->enclosing_scope->function != nullptr &&
-         seen.insert(info).second) {
+         find(seen.begin(), seen.end(), info) == seen.end()) {
+        seen.push_back(info);
         if(!info->name.empty()) {
           out.push_back(make_pair(info->name, info->type));
         }
@@ -5388,8 +5393,8 @@ void bind_constructor_local_named_types_from_args(SemanticContext & ctx,
                                                   Scope & target,
                                                   const vector<ExprInfo> & args)
 {
-  set<const ClassInfo *> seen;
-  set<string> visiting_named_keys;
+  vector<const ClassInfo *> seen;
+  vector<const string *> visiting_named_keys;
   vector<pair<string, TypePtr> > local_named_types;
   for(size_t i = 0; i < args.size(); ++i) {
     collect_constructor_local_named_types_from_type(

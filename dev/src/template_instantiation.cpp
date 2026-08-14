@@ -9209,8 +9209,8 @@ ClassInfo * current_instantiation_owner_for_scope(SemanticContext & ctx,
 
 void collect_argument_local_named_types(template_api::TemplateTypeSystem & type_system,
                                         const TypePtr & type,
-                                        std::set<std::string> & seen,
-                                        std::set<std::string> & visiting_named_keys,
+                                        std::vector<const ClassInfo *> & seen,
+                                        std::vector<const std::string *> & visiting_named_keys,
                                         std::vector<std::pair<std::string, TypePtr> > & out)
 {
   if(!type) {
@@ -9220,9 +9220,13 @@ void collect_argument_local_named_types(template_api::TemplateTypeSystem & type_
   switch(type->kind) {
   case Type::TK_NAMED:
   {
-    if(!type->named_key.empty() &&
-       !visiting_named_keys.insert(type->named_key).second) {
-      return;
+    if(type->named_key_identity) {
+      if(std::find(visiting_named_keys.begin(),
+                   visiting_named_keys.end(),
+                   type->named_key_identity) != visiting_named_keys.end()) {
+        return;
+      }
+      visiting_named_keys.push_back(type->named_key_identity);
     }
     ClassInfo * info = template_api::find_named_type_class_info(type_system.model, type);
     if(!info || !info->type) {
@@ -9231,9 +9235,9 @@ void collect_argument_local_named_types(template_api::TemplateTypeSystem & type_
     const bool function_local_info =
         info->enclosing_scope &&
         info->enclosing_scope->function != nullptr;
-    const std::string seen_key =
-        !type->named_key.empty() ? type->named_key : info->name;
-    if(function_local_info && seen.insert(seen_key).second) {
+    if(function_local_info &&
+       std::find(seen.begin(), seen.end(), info) == seen.end()) {
+      seen.push_back(info);
       if(!info->name.empty()) {
         out.push_back(std::make_pair(info->name, info->type));
       }
@@ -9283,8 +9287,8 @@ void bind_argument_local_named_types(template_api::TemplateTypeSystem & type_sys
                                      Scope & scope,
                                      const std::vector<TemplateArgument> & arguments)
 {
-  std::set<std::string> seen;
-  std::set<std::string> visiting_named_keys;
+  std::vector<const ClassInfo *> seen;
+  std::vector<const std::string *> visiting_named_keys;
   std::vector<std::pair<std::string, TypePtr> > local_named_types;
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(arguments[i].kind != TemplateArgument::TA_TYPE || !arguments[i].type) {

@@ -8112,7 +8112,7 @@ ClassInfo * output_class_info_for_named_type(SemanticContext & ctx,
   static const char * const prefixes[] = {"class ", "struct ", "union "};
   for(size_t i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); ++i) {
     TypePtr candidate(new Type(*base));
-    candidate->named_key = string(prefixes[i]) + unprefixed;
+    set_named_type_key(candidate, string(prefixes[i]) + unprefixed);
     if(ClassInfo * info = ctx.class_info_for_type(candidate)) {
       return info;
     }
@@ -8139,7 +8139,7 @@ void synchronize_output_named_type_layout(const TypePtr & type,
     return;
   }
   base->named_display = named_type_display_text(info_base);
-  base->named_key = info_base->named_key;
+  set_named_type_key(base, info_base->named_key);
   base->named_semantic_kind = info_base->named_semantic_kind;
   base->named_semantic_payload = info_base->named_semantic_payload;
   base->named_complete = info_base->named_complete;
