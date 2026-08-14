@@ -1111,6 +1111,46 @@ Evidence: `/tmp/cppgm-using-directive-inline-visited-screen.json`,
 `/tmp/cppgm-using-directive-inline-visited-decision.json`, and
 `/tmp/cppgm-using-directive-inline-visited-final.json`.
 
+Eleventh retained Phase 7 slice: template-body validation represented every
+set of interned names as a node-based hash set. These sets are copied while
+the recursive validator enters declarations and control-flow scopes. The
+earlier ownership census had measured `16,469` name-set copies containing
+`582,942` entries, while the fresh post-lookup profile still attributed 42
+direct atom-set insertion allocations to visible-value collection. `AtomNameSet`
+now stores atoms in sorted contiguous order, uses lower-bound insertion, and
+uses binary search for membership. The representation remains private to the
+existing set interface, and atom identity preserves the prior equality rule.
+
+The initial three-run candidate median was `132,862,900,577` instructions.
+Because that sat on the retention boundary, an alternating binary A/B made the
+decision: the parent used median `134,023,112,895` and the candidate used
+`132,805,080,448`, a `0.909%` reduction. Candidate and parent median RSS were
+`747,556,864 B` and `743,571,456 B`; footprints were `556,322,816 B` and
+`556,011,520 B`. The small RSS increase stayed within tolerance, while
+footprint was effectively flat. All six paired outputs had the frozen hash.
+
+The post-commit three-run result names `af290029f` as its head. The frozen
+object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `132,942,123,779` | `-41,215,647,165` (`-23.67%`) |
+| maximum RSS | `749,297,664 B` | `-11,907,072 B` (`-1.56%`) |
+| peak footprint | `556,949,504 B` | `-11,808,768 B` (`-2.08%`) |
+| elapsed cycles | `106,905,875,700` | `-16.77%` |
+| wall time | `31.00 s` | `-22.54%`, informational under host load |
+
+Evidence: `/tmp/cppgm-template-body-sorted-atoms-screen.json`,
+`/tmp/cppgm-template-body-sorted-atoms-decision.json`,
+`/tmp/cppgm-template-body-sorted-atoms-final.json`, the alternating records
+`/tmp/cppgm-sorted-atoms-ab-{parent,candidate}-{1,2,3}.json`, and
+`/tmp/cppgm-using-directive-profile.sample.txt`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1180,6 +1220,7 @@ Fill one row after each retained commit.
 | `1060e05df` | classify elaborated type prefixes by family and reuse temporary input buffers | `136,011,111,282` | `-21.90%` | `735,920,128` | `556,093,440` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-elaborated-prefix-dispatch-rvalue-final.json` |
 | `1a96ce861` | use reserved hash indexes for high-volume machine-layout probes | `135,861,805,665` | `-21.99%` | `736,321,536` | `555,786,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-layout-lookup-hashes-final.json`; paired A/B: `-0.577%` instructions |
 | `70fa6d879` | keep using-directive traversal visited sets inline | `133,973,655,610` | `-23.07%` | `747,077,632` | `555,909,120` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-using-directive-inline-visited-final.json`; paired decision: `-1.103%` instructions |
+| `af290029f` | store template-body validation name atoms contiguously | `132,942,123,779` | `-23.67%` | `749,297,664` | `556,949,504` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-sorted-atoms-final.json`; paired A/B: `-0.909%` instructions |
 
 ## Rejected work ledger
 
