@@ -1192,6 +1192,44 @@ Evidence: `/tmp/cppgm-register-interval-reuse-screen.json`,
 `/tmp/cppgm-register-interval-ab-{parent,candidate}-{1,2,3}.json`, and
 `/tmp/cppgm-using-directive-profile.sample.txt`.
 
+Thirteenth retained Phase 7 slice: backend layout construction copied every
+LowIR temp definition into two lookup indexes, copied function parameter
+vectors into a program-wide signature index, and copied the thread-local
+global set into every `FunctionLayout`. Direct-call index classification also
+rescanned the whole function once for each candidate temporary.
+
+The indexes now borrow immutable instruction and parameter records for the
+lifetime of layout construction and MIR emission. Register assignment receives
+the builder's thread-local set directly. Lookup-only function-name and
+parameter indexes use reserved hash tables, and direct-call classification
+collects candidates before making one call-site pass. No output-producing
+traversal changed order.
+
+The one-run screen used `131,165,238,771` instructions. An alternating binary
+A/B made the retention decision: the parent used median `132,035,283,775`
+and the candidate used `130,913,920,619`, a `0.849%` reduction. Every paired
+run emitted the frozen object.
+
+The post-commit three-run result names `59505722b` as its head. The frozen
+object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+Configured direct strict passes `1530/1530`; the full direct report, including
+PA9 through its normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `130,886,247,307` | `-43,271,523,637` (`-24.85%`) |
+| maximum RSS | `735,780,864 B` | `-25,423,872 B` (`-3.34%`) |
+| peak footprint | `556,519,424 B` | `-12,238,848 B` (`-2.15%`) |
+| elapsed cycles | `95,061,322,786` | `-25.99%` |
+| wall time | `24.44 s` | `-38.93%`, informational under host load |
+
+Evidence: `/tmp/cppgm-backend-borrowed-metadata-screen.json`,
+`/tmp/cppgm-backend-borrowed-metadata-final.json`, and the alternating records
+`/tmp/cppgm-backend-metadata-ab-{parent,candidate}-{1,2,3}.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1263,6 +1301,7 @@ Fill one row after each retained commit.
 | `70fa6d879` | keep using-directive traversal visited sets inline | `133,973,655,610` | `-23.07%` | `747,077,632` | `555,909,120` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-using-directive-inline-visited-final.json`; paired decision: `-1.103%` instructions |
 | `af290029f` | store template-body validation name atoms contiguously | `132,942,123,779` | `-23.67%` | `749,297,664` | `556,949,504` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-sorted-atoms-final.json`; paired A/B: `-0.909%` instructions |
 | `650dc50cd` | reuse the first temp-interval analysis for register allocation | `132,299,680,071` | `-24.03%` | `695,853,056` | `556,654,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-register-interval-reuse-final.json`; paired A/B: `-0.739%` instructions |
+| `59505722b` | borrow immutable backend definitions and signatures; classify direct-call indexes in one pass | `130,886,247,307` | `-24.85%` | `735,780,864` | `556,519,424` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-backend-borrowed-metadata-final.json`; paired A/B: `-0.849%` instructions |
 
 ## Rejected work ledger
 
