@@ -2144,8 +2144,17 @@ order:
    every pair. Direct strict is `1530/1530`, the full report is `4863/4863`,
    and the committed record is `108,407,409,101` instructions. Cumulative
    improvement is `37.75%`; `21,328,523,629` instructions remain.
-16. In progress: refresh attribution at `d94a9aa4a` and continue with an
-   unclosed construction or semantic-traversal slice.
+16. Completed: close the remaining translation-buffer devirtualization forms.
+   A minimal outer wrapper was exact, but three interleaved pairs improved
+   instructions by only `0.042%` and footprint by `0.025%`, regressed RSS by
+   `0.881%`, and improved wall and user time in only one pair. It misses every
+   lane. A broader specialization made all five hot buffer operations call
+   `FullTranslator` directly and remained exact on the UTF-8/trigraph reducer,
+   but its one-run screen regressed instructions by `0.491%` and footprint by
+   `0.127%`. Both forms were restored. The retained typed inner sources remove
+   the profitable virtual chains without duplicating the buffer implementation.
+17. In progress: refresh attribution after closing preprocessing dispatch and
+   continue with an unclosed construction or semantic-traversal slice.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, general container swaps, common-record
@@ -2404,3 +2413,5 @@ experiment before starting the next candidate.
 | borrow dependent-alias template argument vectors from their owning Type | a current census measured `362,565` accessor calls but only `12,257` copying hits, `19,986` arguments, `12,257` outer-vector allocations, and `5,915,856` requested bytes | this adjacent population is far below the allocation lane and much smaller than the retained dependent-class slice. Remove the census and avoid changing roughly thirty callers without stronger profile attribution | `/tmp/cppgm-dependent-alias-argument-copy-census.stderr` |
 | store persistent type-dependency root results on each Type | the existing weak map serves about `2.75M` hits for `27,264` misses. A model-pointer field removed the map and emitted exact bytes at `109,634,424,717` instructions, a `0.133%` gain; footprint improved `0.264%`, RSS regressed `0.141%`, and the score was about `0.396`. A clone-safe atomic epoch packed into existing Type padding emitted exact bytes at `109,810,890,704` instructions, losing the CPU gain while RSS rose to `706,428,928 B` | both forms miss every lane. The hot lookup count does not justify adding state to every Type; restore the weak root map | `/tmp/cppgm-type-dependency-inline-cache-screen.json` and `/tmp/cppgm-type-dependency-epoch-cache-screen.json` |
 | dispatch BufferedIterator sources through a concrete-source tag | the exact candidate preserved the buffer protocol and passed the focused UTF-8/trigraph reducer, but used `114,585,533,837` instructions, about `4.4%` more than the checkpoint | a branch on every source operation costs more than virtual dispatch. Restore the generic iterator; commit `d94a9aa4a` removes the two proven virtual chains with typed references and no per-character tag | `/tmp/cppgm-tagged-translation-source-screen.json` and `/tmp/cppgm-concrete-translation-source-final.json` |
+| specialize only the outer translation buffer's dereference and increment | the exact screen was close enough to require paired evidence. Three interleaved pairs measured parent and candidate medians of `108,464,014,169` and `108,418,368,725` instructions, a `0.042%` improvement. Footprint improved `0.025%`, RSS regressed `0.881%`, wall time improved `0.461%`, and user time improved `0.448%`; only one of three wall and user pairs agreed | the candidate misses the CPU, balanced, memory-density, and allocation-and-latency lanes. Restore the generic outer buffer; the retained concrete inner sources already capture the useful dispatch removal | `/tmp/cppgm-translation-buffer-screen.json` and `/tmp/cppgm-translation-buffer-{parent,candidate}-{1,2,3}.time` |
+| specialize all five hot outer translation-buffer operations | the candidate directly implemented dereference, increment, peek, next, pop, and extraction against `FullTranslator`, preserving exact output on the UTF-8/trigraph reducer. Its one-run screen used `108,940,165,427` instructions, a `0.491%` regression from the retained record, and raised footprint by `0.127%`; RSS improved by `0.796%` | this is an obvious CPU loss and fails every lane even before accounting for roughly 150 lines of duplicated buffer protocol. Restore the shared `BufferedIterator` implementation and close further preprocessing dispatch work without a different representation | `/tmp/cppgm-translation-buffer-full-screen.json` |
