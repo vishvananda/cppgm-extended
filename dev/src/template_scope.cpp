@@ -545,7 +545,10 @@ bool erase_template_parameter_binding(Scope & scope, const std::string & name)
   changed = scope.named_type_packs.erase(name) != 0 || changed;
   changed = scope.template_bound_type_pack_names.erase(name) != 0 || changed;
   changed = scope.named_pack_sizes.erase(name) != 0 || changed;
-  changed = scope.values.erase(name) != 0 || changed;
+  if(scope.values.erase(name) != 0) {
+    scope.discard_template_body_value_cache();
+    changed = true;
+  }
   changed = scope.template_bound_value_names.erase(name) != 0 || changed;
   changed = scope.template_bound_value_pack_names.erase(name) != 0 || changed;
   changed = scope.class_templates.erase(name) != 0 || changed;

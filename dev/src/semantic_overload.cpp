@@ -10901,7 +10901,9 @@ ExprInfo analyze_adl_only_call_expression(SemanticContext & ctx,
   // template arguments and candidate signatures, but do not let an
   // unrelated local object with the synthesized callee name turn the call
   // into an object-call expression.
-  adl_scope.values.erase(name);
+  if(adl_scope.values.erase(name) != 0) {
+    adl_scope.discard_template_body_value_cache();
+  }
   adl_scope.variable_templates.erase(name);
   if(!associated_functions.empty()) {
     direct_function_set_slot(adl_scope, name) = associated_functions;

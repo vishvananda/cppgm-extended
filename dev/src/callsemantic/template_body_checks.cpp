@@ -56,6 +56,24 @@ public:
     }
   }
 
+  void append_template_body_values(
+      const std::vector<Scope::TemplateBodyValueCacheEntry> & values)
+  {
+    if(values.empty()) {
+      return;
+    }
+    names.reserve(names.size() + values.size());
+    for(std::size_t i = 0; i < values.size(); ++i) {
+      names.push_back(values[i].first);
+    }
+  }
+
+  void finish_appended_values()
+  {
+    std::sort(names.begin(), names.end(), std::less<text_intern::Atom>());
+    names.erase(std::unique(names.begin(), names.end()), names.end());
+  }
+
   bool contains(const std::string & name) const
   {
     if(name.empty()) {
@@ -99,24 +117,52 @@ static TypePtr lookup_template_body_value_type(
   return found == value_types.end() ? TypePtr() : found->second;
 }
 
+static const std::vector<Scope::TemplateBodyValueCacheEntry> &
+template_body_scope_values(Scope & scope)
+{
+  static const std::vector<Scope::TemplateBodyValueCacheEntry> empty;
+  if(scope.values.empty()) {
+    scope.cached_template_body_value_count = 0;
+    scope.cached_template_body_values.reset();
+    return empty;
+  }
+  if(scope.cached_template_body_values &&
+     scope.cached_template_body_value_count == scope.values.size()) {
+    return *scope.cached_template_body_values;
+  }
+
+  std::unique_ptr<std::vector<Scope::TemplateBodyValueCacheEntry> > values(
+      new std::vector<Scope::TemplateBodyValueCacheEntry>);
+  values->reserve(scope.values.size());
+  for(std::map<std::string, ValueBinding>::const_iterator value =
+          scope.values.begin();
+      value != scope.values.end(); ++value) {
+    values->push_back(std::make_pair(text_intern::intern(value->first),
+                                    &value->second));
+  }
+  scope.cached_template_body_value_count = scope.values.size();
+  scope.cached_template_body_values = std::move(values);
+  return *scope.cached_template_body_values;
+}
+
 static void collect_visible_scope_values_for_template_body(
     Scope & scope,
     AtomNameSet & names,
     TemplateBodyValueTypes & value_types)
 {
   for(Scope * current = &scope; current; current = current->parent) {
-    for(std::map<std::string, ValueBinding>::const_iterator value =
-            current->values.begin();
-        value != current->values.end();
-        ++value) {
-      text_intern::Atom atom = text_intern::intern(value->first);
-      names.insert(atom);
+    const std::vector<Scope::TemplateBodyValueCacheEntry> & scope_values =
+        template_body_scope_values(*current);
+    names.append_template_body_values(scope_values);
+    for(std::size_t i = 0; i < scope_values.size(); ++i) {
+      text_intern::Atom atom = scope_values[i].first;
       TemplateBodyValueTypes::iterator found = value_types.find(atom);
       if(found == value_types.end() || !found->second) {
-        value_types[atom] = value->second.type;
+        value_types[atom] = scope_values[i].second->type;
       }
     }
   }
+  names.finish_appended_values();
 }
 
 bool declarator_declared_identifier(const CppAstNode & node,

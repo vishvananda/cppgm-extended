@@ -494,6 +494,7 @@ struct Scope
     template_bound_template_names = other.template_bound_template_names;
     template_bound_template_arguments = other.template_bound_template_arguments;
     values = other.values;
+    discard_template_body_value_cache();
     namespace_bindings = other.namespace_bindings;
     if(other.namespace_binding_first_token_starts) {
       namespace_binding_first_token_starts.reset(
@@ -576,6 +577,22 @@ struct Scope
   LazyMap<std::string, template_model::TemplateArgument>
       template_bound_template_arguments;
   std::map<std::string, ValueBinding> values;
+  // Template-body validation revisits stable declaration scopes many times.
+  // Cache interned names and pointers to the map's live mapped values so an
+  // overwrite remains visible without rebuilding the view.  Map insertions
+  // are detected by the count; erase, clear, and swap sites must discard the
+  // view before invalidating its node pointers.
+  typedef std::pair<text_intern::Atom, const ValueBinding *>
+      TemplateBodyValueCacheEntry;
+  mutable std::size_t cached_template_body_value_count =
+      static_cast<std::size_t>(-1);
+  mutable std::unique_ptr<std::vector<TemplateBodyValueCacheEntry> >
+      cached_template_body_values;
+  void discard_template_body_value_cache() const
+  {
+    cached_template_body_value_count = static_cast<std::size_t>(-1);
+    cached_template_body_values.reset();
+  }
   LazyMap<std::string, Scope *> namespace_bindings;
   // Namespace collection is intentionally eager so later declarations are
   // available when deferred class bodies are completed.  Keep the first token

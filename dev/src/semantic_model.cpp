@@ -283,6 +283,7 @@ Scope & Scope::operator=(Scope && other)
   template_bound_template_names = std::move(other.template_bound_template_names);
   template_bound_template_arguments = std::move(other.template_bound_template_arguments);
   values = std::move(other.values);
+  discard_template_body_value_cache();
   namespace_bindings = std::move(other.namespace_bindings);
   namespace_binding_first_token_starts =
       std::move(other.namespace_binding_first_token_starts);

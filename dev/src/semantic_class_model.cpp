@@ -7638,6 +7638,7 @@ void reset_instantiated_class_info(ClassInfo & info,
   info.member_scope->template_bound_value_pack_names.clear();
   info.member_scope->template_bound_template_names.clear();
   info.member_scope->values.clear();
+  info.member_scope->discard_template_body_value_cache();
   info.member_scope->namespace_bindings.clear();
   info.member_scope->function_sets.clear();
   info.member_scope->function_set_access_overrides.clear();
@@ -7815,6 +7816,7 @@ void reset_reference_member_state_for_full_collection(ClassInfo & info)
     info.member_scope->template_bound_value_pack_names.swap(
         preserved_template_bound_value_pack_names);
     info.member_scope->values.swap(preserved_values);
+    info.member_scope->discard_template_body_value_cache();
     info.member_scope->namespace_bindings.clear();
     info.member_scope->function_sets.clear();
     info.member_scope->function_set_access_overrides.clear();
