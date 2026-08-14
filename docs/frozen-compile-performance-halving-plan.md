@@ -1798,6 +1798,55 @@ Evidence is in `/tmp/cppgm-post-display-profile.sample.txt`,
 `/tmp/cppgm-inline-final-{parent,candidate}-{1,2,3}.time`, and
 `/tmp/cppgm-inline-namespace-directive-final.json`.
 
+#### Contiguous parser lookup-snapshot checkpoint
+
+The first post-inline sample exposed
+`CppAstParser::snapshot_name_lookup_state` as a new allocation-heavy leaf.
+The frozen compile takes `6,746` snapshots. They retain `25,458` stack scopes
+with `41,846` name atoms and `10,501` namespace scopes with `16,426` name
+atoms. The old snapshot representation placed every retained scope in its own
+`unordered_set`, even though a snapshot is immutable and is read only when a
+lazy function body restores the parser's live lookup state.
+
+Two intermediate representations were rejected under the multi-signal rubric,
+not the former instruction-only rule. A vector of atoms per scope reduced RSS
+and footprint but regressed instructions by about `0.14%`; its footprint gain
+was only about `0.26%`, so it missed the memory-density lane. Flattening the
+atoms while retaining separate boundary vectors improved instructions by
+`0.109%` and footprint by `0.424%`, but regressed RSS by `1.31%`; its score and
+instruction component both missed the balanced lane.
+
+The retained form stores each stack as one null-delimited atom vector plus a
+scope count. Namespace snapshots similarly pair one vector of scope names with
+one null-delimited atom vector. A null atom cannot be an interned identifier,
+so the delimiter does not widen the name domain. Snapshot creation owns the
+vectors, snapshots remain immutable, and restoration rebuilds the preexisting
+live `NameSet` hash tables before lookup resumes. There is no cache or
+invalidation state.
+
+Three interleaved pairs measured parent and candidate instruction medians of
+`111,148,795,852` and `110,922,055,728`, a `0.204%` improvement. All three
+pairs agreed. Median footprint fell by `3,117,056 B`, or `0.602%`, and median
+RSS fell by `5,939,200 B`, or `0.846%`. The balance score is `0.806`, so the
+candidate clears the balanced CPU-and-memory lane without relying on RSS as
+the decisive memory signal. Cycles regressed by `0.478%`; that advisory result
+does not cancel the exact instruction and footprint gains, but it prevents an
+allocation-and-latency claim.
+
+The clean three-run median at `9bcbc6fc6` is `110,890,016,889` instructions,
+`36.33%` below the original baseline. Maximum RSS is `696,147,968 B`, and
+footprint is `514,641,920 B`. PA19 passes `295/295`, direct strict passes
+`1530/1530`, and the full direct report passes `4863/4863`.
+
+Evidence is in `/tmp/cppgm-post-inline-profile.sample.txt`,
+`/tmp/cppgm-compact-snapshot-census.stderr`,
+`/tmp/cppgm-compact-lookup-snapshot-screen.json`,
+`/tmp/cppgm-flat-lookup-snapshot-screen.json`,
+`/tmp/cppgm-flat-snapshot-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-delimited-lookup-snapshot-screen.json`,
+`/tmp/cppgm-delimited-snapshot-{parent,candidate}-{1,2,3}.time`, and
+`/tmp/cppgm-lookup-snapshot-final.json`.
+
 #### Multi-signal retention rubric, adopted at `3686d87b0`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
@@ -1953,7 +2002,7 @@ construction, or complete-entry symbol reuse without a new census.
 
 #### Revised investigation order
 
-The `36.25%` cumulative reduction leaves `23,952,766,182` instructions. A chain
+The `36.33%` cumulative reduction leaves `23,811,131,417` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -2041,7 +2090,13 @@ order:
    fixed it without restoring copies. Conservative parent cache invalidation
    remains. Three final pairs improve instructions by `1.107%`, cycles by
    `1.591%`, and RSS by `1.035%`; strict and full reports pass.
-12. Refresh the release-binary sample at `589b40ac8`. Use the new top leaves to
+12. Completed: compact parser lookup snapshots. A census found `6,746`
+   immutable snapshots retaining `35,959` small lookup scopes. The final
+   null-delimited form removes a hash-table allocation per retained scope and
+   clears the balanced lane with a `0.204%` instruction gain, `0.602%`
+   footprint gain, `0.846%` RSS gain, and `0.806` balance score. The two
+   allocation-heavier vector forms remain rejected under the refined rubric.
+13. Refresh the release-binary sample at `9bcbc6fc6`. Use the new top leaves to
    start the next census, preferring operation removal or an existing
    cache/index contract over another general container swap.
 
@@ -2141,6 +2196,7 @@ Fill one row after each retained commit.
 | `9ad60e6c6` | memoize each class instantiation's primary-placeholder argument shape | `115,576,376,842` | `-33.64%` | `707,428,352` | `516,362,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-primary-placeholder-final.json`; 754,890 hits; paired instructions: `-0.539%` |
 | `8d58a3d6a` | reconstruct compacted named-type displays once and return an owned-lifetime view | `112,101,667,646` | `-35.63%` | `703,864,832` | `517,873,664` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-display-view-final.json`; 922,353 stable repeats; paired instructions: `-2.892%` |
 | `589b40ac8` | represent inline-namespace visibility with its implicit using-directive instead of copying accumulated bindings | `111,031,651,654` | `-36.25%` | `712,437,760` | `517,394,432` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-inline-namespace-directive-final.json`; paired instructions: `-1.107%`; paired RSS: `-1.035%` |
+| `9bcbc6fc6` | store immutable parser lookup snapshots in null-delimited contiguous atom buffers | `110,890,016,889` | `-36.33%` | `696,147,968` | `514,641,920` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lookup-snapshot-final.json`; paired instructions: `-0.204%`; footprint: `-0.602%`; balance score: `0.806` |
 
 ## Rejected work ledger
 
@@ -2288,3 +2344,5 @@ experiment before starting the next candidate.
 | use inline visit sets for conversion-function class, virtual-base, and direct-binding traversal | 23,399 conversion-group roots and 21,968 conversion-name roots visited at most four classes and one virtual base, with no duplicate class or virtual-base insertion. The per-class direct-binding set reached two entries and rejected 20,669 duplicate probes. Reusing the retained inline visit set for all three emitted exact bytes but screened at `112,486,953,373` instructions; a binding-only form used `112,540,821,783`, and capacity-sized sets used `112,392,376,486` | the tree allocations are real, but linear scans, larger stack state, and the overflow-vector branch cost more on this path. All three forms regress instructions and miss the allocation-and-latency lane. Restore the tree sets | `/tmp/cppgm-conversion-traversal-census.stderr`, `/tmp/cppgm-conversion-inline-screen.json`, `/tmp/cppgm-conversion-binding-inline-screen.json`, and `/tmp/cppgm-conversion-inline-sized-screen.json` |
 | retune the Itanium IR substitution vector/hash crossover | 2,007,030 lookups included 1,979,226 small-state probes, 339,623 small hits, and 11,750,955 structural comparisons. The 28-entry cutoff materialized 1,594 indexes for 46,226 keys. Cutoffs of 8 and 16 used `112,802,228,864` and `112,838,296,308` instructions. Cutoffs of 40 and 64 were closer at `112,258,746,153` and `112,307,177,178`, but still worse than the clean retained median. Every form emitted the frozen object | the current crossover balances structural equality against hash construction better than either direction tested. Keep 28 and do not add another front index | `/tmp/cppgm-ir-substitution-census.stderr` and `/tmp/cppgm-ir-substitution-limit-{8,16,40,64}-screen.json` |
 | use one insertion probe while eagerly copying inline-namespace maps | 556 import calls rescanned 61,162 named types, 7,442 values, 118,067 class templates, 46,257 alias templates, and 24,313 variable templates. Replacing `count` plus `operator[]` with `insert` emitted exact frozen bytes but used `112,236,996,211` instructions, slightly worse than the retained checkpoint | the duplicate probe was not the dominant cost. Commit `589b40ac8` removes the redundant copies and retains only the implicit using-directive plus conservative parent invalidation | `/tmp/cppgm-inline-namespace-import-census.stderr`, `/tmp/cppgm-inline-namespace-single-probe-screen.json`, and `/tmp/cppgm-inline-namespace-directive-final.json` |
+| store one compact atom vector per parser lookup-snapshot scope | the screen emitted exact output and reduced RSS and footprint, but instructions regressed by about `0.14%`; footprint improved by only about `0.26%` | misses the memory-density lane, and the per-scope vector still retains one allocation per populated scope. Commit `9bcbc6fc6` instead removes those allocations with one delimited buffer per stack | `/tmp/cppgm-compact-lookup-snapshot-screen.json` and `/tmp/cppgm-compact-snapshot-census.stderr` |
+| flatten parser lookup-snapshot atoms with separate scope-boundary vectors | three pairs improved instructions by `0.109%` and footprint by `0.424%`, while RSS regressed by `1.31%` | misses the balanced lane's `0.15%` instruction floor and `0.50` score. Commit `9bcbc6fc6` removes the nine boundary vectors and clears the balanced lane | `/tmp/cppgm-flat-lookup-snapshot-screen.json` and `/tmp/cppgm-flat-snapshot-{parent,candidate}-{1,2,3}.time` |
