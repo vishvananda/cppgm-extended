@@ -1543,20 +1543,78 @@ Evidence is in `/tmp/cppgm-post-template-type-frame-profile-2.sample.txt`,
 `/tmp/cppgm-synthesized-linkage-registration-strict.log`, and
 `/tmp/cppgm-synthesized-linkage-registration-test-report.log`.
 
+#### Multi-signal retention rubric at `3686d87b0`
+
+The former rolling `0.5%` instruction floor was useful for rejecting noise, but
+it was too blunt. It undervalued changes that reduce CPU work and memory
+together, and it could not recognize an allocator change whose benefit appears
+in CPU time rather than retired instructions. Use the following rubric for new
+work and for retries from the rejected-work ledger.
+
+Every lane has the same hard gates:
+
+- the frozen object has SHA-256 `4fc1303a...5c4`;
+- focused tests pass, followed by direct strict `1530/1530` and full report
+  `4863/4863` before retention;
+- the normal portable release build remains the measured configuration, with
+  no reduced hardening or host-specific target requirement;
+- a non-CPU lane may regress instructions by at most `0.15%`; every lane caps
+  peak-footprint regression at `1%` and confirmed RSS regression at `3%`;
+- a cache has a measured key, hit, miss, entry, and invalidation population;
+  allocation claims count calls and requested bytes before screening; and
+- the implementation has an explicit lifetime and invalidation contract. A
+  candidate that crosses a numerical lane can still be rejected for a concrete
+  correctness or maintenance cost, but not merely because it misses the old
+  instruction-only floor.
+
+A one-run screen can reject an obvious loss, but it cannot retain a change.
+Retention uses at least three sequential interleaved parent/candidate pairs.
+The median must move in the claimed direction and at least two of the three
+pairs must agree. When RSS supplies the decisive benefit, run a second
+independent three-pair batch because RSS is the noisiest memory signal.
+
+For the balanced lane, define `I`, `F`, and `R` as the percentage reductions in
+retired instructions, peak footprint, and maximum RSS. Positive values are
+improvements. The balance score is:
+
+```text
+I + max(F, 0.5 * R)
+```
+
+Taking the larger memory term avoids counting the same storage twice. RSS has
+half weight because it is less stable than the macOS footprint counter. A
+candidate qualifies through one of these lanes:
+
+| Lane | Acceptance rule | Required evidence |
+| --- | --- | --- |
+| CPU throughput | `I >= 0.50%` | Three interleaved pairs; memory stays inside the hard gates. |
+| balanced CPU and memory | `I >= 0.15%`, neither memory signal regresses by more than `0.25%`, and the balance score is at least `0.50` | Three interleaved pairs; repeat the batch when RSS, rather than footprint, makes the score cross `0.50`. |
+| memory density | instruction regression is no worse than `0.15%`, and either footprint improves by at least `1%` and `4 MiB`, or footprint improves by at least `0.5%` while confirmed RSS improves by at least `1%` | Three interleaved pairs, retained-size census, and an independent RSS confirmation when the second form is used. |
+| allocation and latency | at least `100,000` allocation/deallocation calls or `8 MiB` of requested allocation traffic disappear; instruction and memory hard gates hold; quiet median wall time improves by at least `1%`, with user time or cycles agreeing | Five quiet interleaved pairs plus the allocation census. Allocation count by itself is not enough. |
+
+Two sub-threshold edits may be measured together only when they share a hot
+path, state contract, or data representation. The composite must qualify as a
+whole. This permits, for example, removing two expected-exception producers
+through one status boundary. It does not permit bundling unrelated micro-edits
+to manufacture a score.
+
 #### Rejected-work checkpoint review at `3686d87b0`
 
 The checkpoint review covered all 134 rows in the rejected-work ledger. It
-used absolute instructions removed, overlap with later retained work, and a
-fresh release-binary sample. The denominator change alone does not justify a
-retry. A rejected form reopens only when one of these conditions holds:
+used absolute instructions removed, overlap with later retained work, a fresh
+release-binary sample, and the multi-signal rubric above. The denominator
+change alone does not justify a retry. A rejected form reopens when one of
+these conditions holds:
 
-- its prior absolute saving reaches the rolling `0.5%` floor;
+- its prior result reaches a retention lane's decision threshold and needs the
+  prescribed paired evidence;
 - a retained change supplied an invariant or removed a cost that the rejected
   form needed;
 - a fresh census shows a larger population or a changed cost distribution;
 - a new form removes setup that made the first form flat.
 
-The current floor is `591,228,695` instructions. The fresh compile at
+The former instruction-only floor at this checkpoint was `591,228,695`
+instructions. The fresh compile at
 `/tmp/cppgm-review-current.o` has the frozen SHA-256. Its phase and sample
 records are `/tmp/cppgm-review-current-phases.stderr` and
 `/tmp/cppgm-review-current.sample.txt`. The release binary omits frame
@@ -1571,13 +1629,13 @@ The closest old results normalize as follows:
 | --- | ---: | ---: | --- |
 | cache an interned contiguous view of each scope's values for template-body validation | `613,276,351` | `0.519%` | Retry with the retained sorted atom destination and the existing scope binding epoch. The old eager form ran before `AtomNameSet` became contiguous. The fresh collector remains a 129-sample leaf. |
 | reuse temporary buffers in `trim_space` | `592,264,893` for the best early confirmation | `0.501%` | Do not retry unchanged. A later rvalue-overload form at the 128.445B checkpoint measured flat. Reopen only after a call census identifies a larger temporary-producing family or a form that avoids copying lvalue inputs. |
-| consume normalized input with one stream-buffer fetch per byte | `511,468,490` | `0.433%` | Refine within the same input path. `Normalizer::operator++` has 267 fresh leaf samples, but the old one-fetch form still misses the floor and the buffered form regressed. Preserve the trigraph and UTF-8 lookahead protocol. |
+| consume normalized input with one stream-buffer fetch per byte | `511,468,490` | `0.433%` | Reopen the one-fetch form for a current paired decision. Its historical balance score is `0.564`; the 8 KiB buffered form remains closed. Preserve the trigraph and UTF-8 lookahead protocol. |
 | return exact false `enable_if` probes as a status | `495,112,821` for the best byte-exact form | `0.419%` | Redesign the status boundary. The fresh sample has 92 `__cxa_throw` leaves. Count all expected substitution failures, then carry status to the precise catch owner without changing nested SFINAE recovery. |
 | move completed LowIR records and instruction strings | `457,438,165` | `0.387%` | Do not retry unchanged. Later backend borrowing overlaps the ownership work, and LowIR plus native output accounts for about 15% of the run. Reopen only with a current copy census. |
-| memoize the preceding dependent-resolution root | `425,704,536` | `0.360%` | Keep closed. The retained dependent-name guard and exact-binding reorder removed work from the same path. |
-| pool `CallSemNode` child buffers | `392,794,783` | `0.332%` | Keep closed. Two pool forms missed the floor, one raised footprint, and the current coallocation screens regress instructions. |
-| replace the template-angle dense vectors with a sparse cache | `385,352,187` | `0.326%` | Keep closed. Four representations missed the floor, and the generation table added about 9 MiB. |
-| borrow strings while finding a template parameter | `383,792,415` | `0.325%` | Reopen as an identity design, not as the old pointer array. Named types now carry `named_key_identity`, and template-parameter types now canonicalize. Census atom-identity matches before adding identity fields to `TemplateParameterInfo`. |
+| memoize the preceding dependent-resolution root | `425,704,536` | `0.360%` | Reopen after a current repeat-population census. The historical paired balance score is `0.540`, but the retained dependent-name guard and exact-binding reorder overlap this path. |
+| pool `CallSemNode` child buffers | `392,794,783` | `0.332%` | Keep the measured slab form rejected: its `1.043%` footprint regression exceeds the hard gate. Reopen only a bounded or promptly released slab form, then require the allocation-and-latency proof. |
+| replace the template-angle dense vectors with a sparse cache | `385,352,187` | `0.326%` | Reopen only the 16-entry sparse form for a paired decision; its one-run balance score is `0.537`. The active-key, split, and generation-tagged forms remain closed. |
+| borrow strings while finding a template parameter | `383,792,415` | `0.325%` | Reopen the underlying ownership removal through current identities. Its historical paired balance score is `0.793`; census atom-identity matches before adding fields to `TemplateParameterInfo`. |
 | skip alias source-occurrence materialization | `379,275,374` | `0.321%` | Keep closed. The later, broader witness-disabled bypass measured flat at the current checkpoint. |
 
 Two earlier below-floor pieces already demonstrate the right combination rule.
@@ -1587,6 +1645,33 @@ saved `0.338%`. Their shared resolver slice saved `0.568%` and became
 early cache to a retained `0.492%` slice after the key and lifetime contract
 were narrowed. These cases support cohesive retries based on new invariants.
 They do not support combining unrelated micro-edits to cross the floor.
+
+The full ledger re-audit changes these old decisions:
+
+| Prior rejection | Historical `I / F / R` | Rubric result | Current action |
+| --- | ---: | --- | --- |
+| one-fetch normalized input | `+0.351 / +0.214 / +0.178%` | balance score `0.564`; historical result was only a screen | Run a current paired decision on the one-fetch form. |
+| one-entry dependent-resolution root memo | `+0.314 / +0.090 / +0.451%` | balance score `0.540`; paired evidence exists | Recount repeats after the retained resolver changes, then rerun if the population remains. |
+| borrow template-parameter candidate strings | `+0.283 / -0.041 / +1.019%` | balance score `0.793`; RSS must be independently confirmed | Retry the ownership removal against the current identity representation. |
+| bulk-sort visible template-body names | `+0.236 / +0.066 / +0.637%` | balance score `0.555`; historical result was only a screen | Combine or compare it with the current scope-value snapshot because both operate in the same collector. |
+| 16-entry sparse template-angle cache | `+0.322 / +0.116 / +0.430%` | balance score `0.537`; historical result was only a screen | Run a current paired decision without the three slower representations. |
+| reorder `CppAstNode` into 176 bytes | `+0.147 / +1.689 / +0.695%` | memory-density lane; historical result was only a screen | Run a current paired decision and retained-size census. |
+| compact `CallSemNode` child storage | `-0.022 / +0.563 / +1.169%` | memory-density lane; historical result was only a screen | Run a current paired decision. Retain only if the container remains simpler than a pool and clears full correctness. |
+
+Three historical results need no retry. The early by-value trim result has a
+`0.618` balance score, but the later current-code rvalue screen was flat. The
+old `CppAst` bitfield layout meets the density lane but is superseded by the
+smaller and faster 176-byte field reorder above. The raw template-parameter
+type cache easily meets the density lane, but the narrower retained
+canonicalization already supplies that memory saving with an instruction win.
+
+The allocation re-audit does not retroactively accept a custom allocator. The
+CallSem child-buffer pool reused `1,570,427` allocation requests and improved
+instructions by `0.306%`, but increased footprint by `1.043%` and has no quiet
+latency batch. It is a worthwhile design lead for bounded slab retention or
+prompt page release, not a passing result. FunctionBinding pooling, alias
+source materialization, and zero-allocation lookup walkers lack the required
+allocation volume or quiet latency evidence and remain closed.
 
 The latest rows remain closed. ABI type-IR borrowing, substitution child
 moves, alias-observation bypass, early negative class admission, CallSem
@@ -1613,20 +1698,33 @@ order:
    cache for nonempty scopes and reset it at each erase, clear, or swap.
    Three interleaved binary pairs measured `118,654,162,513` instructions for
    the retained compiler and `118,365,277,484` for the candidate, a `0.243%`
-   reduction. This saves less than half of the current `0.5%` floor. We
-   rejected the source-map snapshot and restored the direct scan.
-2. Census expected semantic exceptions by producer and catch owner. The first
-   status slice changed overload selection because it swallowed nested
-   recoverable SFINAE. A replacement must preserve that nesting and remove at
-   least the false standard `enable_if` throw family plus one measured peer
-   family before screening.
-3. Census template-parameter lookup by overload, parameter count, candidate
+   reduction. Both memory signals regressed slightly, giving a balance score
+   of only `0.158`; the candidate also misses the other lanes. We rejected the
+   source-map snapshot and restored the direct scan.
+2. Finish the cohesive expected-exception status slice. The current
+   constructor-selection boundary removes 3,320 expected throws, preserves the
+   frozen object, and screens `0.251%` below the retained checkpoint. It does
+   not qualify alone. Add the separately measured false standard `enable_if`
+   family only at its exact catch owner, then measure the composite. Preserve
+   nested recoverable SFINAE.
+3. Revisit the visible-name bulk sort with the rejected scope-value snapshot.
+   Source caching and destination insertion are one collector mechanism; their
+   composite is allowed if it avoids replay work and qualifies as a whole.
+4. Run current paired decisions for the one-fetch normalizer and 16-entry
+   sparse template-angle cache. Both historical screens meet the balanced
+   rubric without relying on a memory-only claim.
+5. Census template-parameter lookup by overload, parameter count, candidate
    source, and atom-identity match. A direct identity path may now use
    `Type::named_key_identity`; the prior string-borrow experiment could not.
-4. Refine normalized-input advancement. Screen the one-fetch form only with a
-   second operation removed from `Normalizer` or its direct consumer. PA1 test
-   `100-trigraph-lookahead-utf8` remains the focused correctness gate.
-5. Attribute four new profile leaves before editing their representations:
+6. Recount dependent-resolution root repeats before restoring the last-result
+   memo. Later resolver fast paths overlap its old population, so its `0.540`
+   historical balance score is sufficient to retest only if the census still
+   predicts reuse.
+7. Run the two memory-density decision batches after the CPU-oriented retries:
+   the 176-byte `CppAstNode` layout and compact CallSem child storage. They are
+   valuable secondary improvements, but they do little toward the remaining
+   instruction-halving gap.
+8. Attribute four new profile leaves before editing their representations:
    5,943 lazy-body name-lookup snapshots retain 2,329,656 base bytes;
    class-template display reconstruction has 86 leaf samples;
    `overlay_scope_bindings_impl` has 61; class primary-placeholder and source-
@@ -1634,7 +1732,7 @@ order:
    identities, repeated stable results, copied entries, and state transitions.
    Prefer producer-attached facts or operation-scoped views over another
    analyzer-wide cache.
-6. Measure the two remaining narrow traversal families. Conversion-function
+9. Measure the two remaining narrow traversal families. Conversion-function
    group collection still uses two tree-backed class visit sets and has 37
    fresh leaf samples. It can use inline storage only if a population census
    shows the same small-depth shape as the retained using-directive set.
@@ -1680,6 +1778,9 @@ Use these rules throughout the work:
 - Compare the same compiler build, standard library, frozen epoch, and command.
 - Run performance batches sequentially. Check for leftover compiler processes
   after each batch.
+- Apply the multi-signal retention rubric. Treat the validation script's
+  tolerances as regression guards, not as an instruction-only definition of a
+  useful optimization.
 - Keep correctness fixes separate from performance commits. Add a reducer and
   adjudication when profiling exposes a latent bug.
 - Reject a cache whose key construction consumes its saved work.
