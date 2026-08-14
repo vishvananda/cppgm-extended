@@ -1230,6 +1230,45 @@ Evidence: `/tmp/cppgm-backend-borrowed-metadata-screen.json`,
 `/tmp/cppgm-backend-borrowed-metadata-final.json`, and the alternating records
 `/tmp/cppgm-backend-metadata-ab-{parent,candidate}-{1,2,3}.json`.
 
+Fourteenth retained Phase 7 slice: the fresh profile attributed 192 allocation
+samples to `CppAstLazyVector<CppAstNode>::mutable_vector()` and another 74 to
+the template-ID specialization. Template-substitution and mangling clone paths
+call `reserve(source.size())` for each lazy AST side vector. When the source
+was empty, `reserve(0)` still called `mutable_vector()` and allocated an empty
+holder, contradicting the wrapper's allocation-free-empty invariant.
+
+`CppAstLazyVector::reserve(0)` is now a no-op, matching `std::vector` behavior.
+Positive reservations still allocate or detach through the existing mutable
+path, so populated vectors keep the same copy-on-write semantics.
+
+The one-run screen used `128,775,420,933` instructions. An alternating binary
+A/B made the retention decision: the parent used median `131,291,483,775`
+and the candidate used `128,612,847,943`, a `2.040%` reduction. Candidate and
+parent median RSS were `724,021,248 B` and `737,230,848 B`; footprints were
+`554,491,904 B` and `556,228,608 B`. Every paired run emitted the frozen
+object.
+
+The post-commit three-run result names `8e46f9fc2` as its head. The frozen
+object remains byte-identical with SHA-256
+`4fc1303ac95464ca600a882acc5f7489e021daf265e64c251c5db51b708c55c4`.
+PA10 passes `157/157`, configured direct strict passes `1530/1530`, and the
+full direct report, including PA9 through its normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `128,444,585,958` | `-45,713,184,986` (`-26.25%`) |
+| maximum RSS | `734,158,848 B` | `-27,045,888 B` (`-3.55%`) |
+| peak footprint | `554,516,480 B` | `-14,241,792 B` (`-2.50%`) |
+| elapsed cycles | `94,878,363,108` | `-26.13%` |
+| wall time | `24.88 s` | `-37.83%`, informational under host load |
+
+Evidence: `/tmp/cppgm-backend-metadata-profile.sample.txt`,
+`/tmp/cppgm-lazy-reserve-zero-screen.json`,
+`/tmp/cppgm-lazy-reserve-zero-final.json`, and the alternating records
+`/tmp/cppgm-lazy-reserve-ab-{parent,candidate}-{1,2,3}.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1302,6 +1341,7 @@ Fill one row after each retained commit.
 | `af290029f` | store template-body validation name atoms contiguously | `132,942,123,779` | `-23.67%` | `749,297,664` | `556,949,504` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-sorted-atoms-final.json`; paired A/B: `-0.909%` instructions |
 | `650dc50cd` | reuse the first temp-interval analysis for register allocation | `132,299,680,071` | `-24.03%` | `695,853,056` | `556,654,592` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-register-interval-reuse-final.json`; paired A/B: `-0.739%` instructions |
 | `59505722b` | borrow immutable backend definitions and signatures; classify direct-call indexes in one pass | `130,886,247,307` | `-24.85%` | `735,780,864` | `556,519,424` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-backend-borrowed-metadata-final.json`; paired A/B: `-0.849%` instructions |
+| `8e46f9fc2` | keep zero-length lazy AST vector reservations allocation-free | `128,444,585,958` | `-26.25%` | `734,158,848` | `554,516,480` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-reserve-zero-final.json`; paired A/B: `-2.040%` instructions |
 
 ## Rejected work ledger
 
