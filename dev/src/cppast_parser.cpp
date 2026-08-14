@@ -2813,33 +2813,34 @@ CppAstParser::snapshot_name_lookup_state(const NameSet * used_names) const
   const auto inherit_stack = [](const vector<NameSet> & local,
                                 const vector<NameSet> * inherited,
                                 const NameSet * used_names,
-                                vector<NameSet> & out) -> void
+                                CppAstNameLookupSnapshot::NameSetStack & out) -> void
   {
     out.clear();
     const auto append_scope = [&](const NameSet & source) -> void
     {
+      const size_t first_retained = out.names.size();
       if(!used_names) {
-        out.push_back(source);
+        out.push_scope(source.begin(), source.end());
         return;
       }
-      NameSet filtered;
       if(used_names->size() < source.size()) {
         for(NameSet::const_iterator it = used_names->begin();
             it != used_names->end();
             ++it) {
           if(source.count(*it) != 0) {
-            filtered.insert(*it);
+            out.names.push_back(*it);
           }
         }
       } else {
         for(NameSet::const_iterator it = source.begin(); it != source.end(); ++it) {
           if(used_names->count(*it) != 0) {
-            filtered.insert(*it);
+            out.names.push_back(*it);
           }
         }
       }
-      if(!filtered.empty()) {
-        out.push_back(filtered);
+      if(out.names.size() != first_retained) {
+        out.names.push_back(nullptr);
+        ++out.scope_count;
       }
     };
 
@@ -2887,15 +2888,17 @@ CppAstParser::snapshot_name_lookup_state(const NameSet * used_names) const
             source.begin();
         scope != source.end();
         ++scope) {
-      NameSet retained;
+      const size_t first_retained = out.names.size();
       if(!used_names) {
-        retained = scope->second;
+        out.names.insert(out.names.end(),
+                         scope->second.begin(),
+                         scope->second.end());
       } else if(used_names->size() < scope->second.size()) {
         for(NameSet::const_iterator name = used_names->begin();
             name != used_names->end();
             ++name) {
           if(scope->second.count(*name) != 0) {
-            retained.insert(*name);
+            out.names.push_back(*name);
           }
         }
       } else {
@@ -2903,12 +2906,13 @@ CppAstParser::snapshot_name_lookup_state(const NameSet * used_names) const
             name != scope->second.end();
             ++name) {
           if(used_names->count(*name) != 0) {
-            retained.insert(*name);
+            out.names.push_back(*name);
           }
         }
       }
-      if(!retained.empty()) {
-        out[scope->first] = retained;
+      if(out.names.size() != first_retained) {
+        out.scope_names.push_back(scope->first);
+        out.names.push_back(nullptr);
       }
     }
   };
@@ -2937,19 +2941,58 @@ CppAstParser::snapshot_name_lookup_state(const NameSet * used_names) const
 void CppAstParser::restore_name_lookup_state_from(
     const CppAstNameLookupSnapshot & snapshot)
 {
-  template_type_parameter_scopes = snapshot.template_type_parameter_scopes;
-  template_value_parameter_scopes = snapshot.template_value_parameter_scopes;
-  template_name_scopes = snapshot.template_name_scopes;
-  type_name_scopes = snapshot.type_name_scopes;
-  value_name_scopes = snapshot.value_name_scopes;
+  const auto restore_stack = [](
+      const CppAstNameLookupSnapshot::NameSetStack & source,
+      vector<NameSet> & out) -> void
+  {
+    out.clear();
+    out.reserve(source.scope_count);
+    NameSet names;
+    for(size_t i = 0; i < source.names.size(); ++i) {
+      if(source.names[i]) {
+        names.insert(source.names[i]);
+      } else {
+        out.push_back(std::move(names));
+        names = NameSet();
+      }
+    }
+  };
+  const auto restore_namespace_names = [](
+      const CppAstNameLookupSnapshot::NamespaceNameMap & source,
+      std::unordered_map<std::string, NameSet> & out) -> void
+  {
+    out.clear();
+    out.reserve(source.size());
+    size_t name_index = 0;
+    for(size_t i = 0; i < source.scope_names.size(); ++i) {
+      NameSet names;
+      while(name_index < source.names.size() && source.names[name_index]) {
+        names.insert(source.names[name_index]);
+        ++name_index;
+      }
+      ++name_index;
+      out.insert(std::make_pair(source.scope_names[i], std::move(names)));
+    }
+  };
+
+  restore_stack(snapshot.template_type_parameter_scopes,
+                template_type_parameter_scopes);
+  restore_stack(snapshot.template_value_parameter_scopes,
+                template_value_parameter_scopes);
+  restore_stack(snapshot.template_name_scopes, template_name_scopes);
+  restore_stack(snapshot.type_name_scopes, type_name_scopes);
+  restore_stack(snapshot.value_name_scopes, value_name_scopes);
   class_name_stack = snapshot.class_name_stack;
   namespace_path_stack = snapshot.namespace_path_stack;
   namespace_inline_stack = snapshot.namespace_inline_stack;
-  namespace_template_name_scopes = snapshot.namespace_template_name_scopes;
-  namespace_template_value_name_scopes =
-      snapshot.namespace_template_value_name_scopes;
-  namespace_type_name_scopes = snapshot.namespace_type_name_scopes;
-  namespace_value_name_scopes = snapshot.namespace_value_name_scopes;
+  restore_namespace_names(snapshot.namespace_template_name_scopes,
+                          namespace_template_name_scopes);
+  restore_namespace_names(snapshot.namespace_template_value_name_scopes,
+                          namespace_template_value_name_scopes);
+  restore_namespace_names(snapshot.namespace_type_name_scopes,
+                          namespace_type_name_scopes);
+  restore_namespace_names(snapshot.namespace_value_name_scopes,
+                          namespace_value_name_scopes);
   namespace_alias_targets = snapshot.namespace_alias_targets;
   materialized_inherited_template_type_parameter_scopes.clear();
   materialized_inherited_template_value_parameter_scopes.clear();
@@ -12610,10 +12653,14 @@ void CppAstParser::refresh_lazy_function_body_snapshots_for_class(
               cppast_name_lookup_snapshot(node) ?
                   *cppast_name_lookup_snapshot(node) :
                                            CppAstNameLookupSnapshot()));
-      refreshed->template_value_parameter_scopes.push_back(template_value_names);
-      refreshed->template_name_scopes.push_back(template_names);
-      refreshed->type_name_scopes.push_back(type_names);
-      refreshed->value_name_scopes.push_back(value_names);
+      refreshed->template_value_parameter_scopes.push_scope(
+          template_value_names.begin(), template_value_names.end());
+      refreshed->template_name_scopes.push_scope(
+          template_names.begin(), template_names.end());
+      refreshed->type_name_scopes.push_scope(
+          type_names.begin(), type_names.end());
+      refreshed->value_name_scopes.push_scope(
+          value_names.begin(), value_names.end());
       mutable_cppast_name_lookup_snapshot(node) = refreshed;
     }
     return;

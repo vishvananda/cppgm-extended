@@ -572,8 +572,51 @@ inline const char * cppast_kind_text(CppAstKind kind)
 struct CppAstNameLookupSnapshot
 {
   typedef template_angle_lookup::NameSet NameSet;
-  typedef std::vector<NameSet> NameSetStack;
-  typedef std::unordered_map<std::string, NameSet> NamespaceNameMap;
+  struct NameSetStack
+  {
+    // Snapshot names are immutable and never contain null atoms.  Delimit
+    // scopes in one contiguous buffer instead of retaining a hash table (or
+    // even a separate allocation) for every small saved set.
+    template<typename InputIt>
+    void push_scope(InputIt first, InputIt last)
+    {
+      names.insert(names.end(), first, last);
+      names.push_back(nullptr);
+      ++scope_count;
+    }
+
+    void clear()
+    {
+      names.clear();
+      scope_count = 0;
+    }
+
+    std::size_t size() const
+    {
+      return scope_count;
+    }
+
+    std::vector<text_intern::Atom> names;
+    std::size_t scope_count = 0;
+  };
+
+  struct NamespaceNameMap
+  {
+    // scope_names and the null-delimited atom buffer advance in lockstep.
+    void clear()
+    {
+      scope_names.clear();
+      names.clear();
+    }
+
+    std::size_t size() const
+    {
+      return scope_names.size();
+    }
+
+    std::vector<std::string> scope_names;
+    std::vector<text_intern::Atom> names;
+  };
 
   NameSetStack template_type_parameter_scopes;
   NameSetStack template_value_parameter_scopes;
