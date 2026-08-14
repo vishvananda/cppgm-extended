@@ -1649,6 +1649,34 @@ Evidence is in `/tmp/cppgm-template-parameter-identity-census.stderr`,
 `/tmp/cppgm-template-parameter-identity-guarded-test-strict.log`, and
 `/tmp/cppgm-template-parameter-identity-guarded-test-report.log`.
 
+#### `CppAstNode` layout checkpoint
+
+The declaration-only field reorder reduces `CppAstNode` from 192 to 176 bytes.
+It does not change the type or ownership of any field, and the source has no
+aggregate `CppAstNode` initializers whose meaning could depend on declaration
+order. A host-compiler assertion confirmed the 176-byte layout without making
+that libc++-specific size a portable source requirement.
+
+Three current interleaved pairs measured parent and candidate instruction
+medians of `116,150,212,823` and `116,057,787,624`, a `0.080%` improvement.
+Median RSS fell from `711,909,376 B` to `702,754,816 B`, or `1.286%`.
+Footprint fell from `525,848,576 B` to `516,509,696 B`, or `1.776%` and
+`9,338,880 B`. The footprint result independently meets the memory-density
+lane, so RSS is supporting evidence rather than the deciding signal. All six
+objects had the frozen SHA-256.
+
+The clean three-run median at `4d0fddd3e` is `116,167,632,347` instructions,
+`33.30%` below the original baseline. Maximum RSS is `701,468,672 B`, and
+footprint is `516,448,256 B`. The focused PA10 report passes `157/157`, direct
+strict passes `1530/1530`, and the full direct report passes `4863/4863`.
+
+Evidence is in `/tmp/cppgm-ast-layout-current-screen.time`,
+`/tmp/cppgm-ast-layout-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-ast-layout-final.json`,
+`/tmp/cppgm-ast-layout-test-pa10.log`,
+`/tmp/cppgm-ast-layout-test-strict.log`, and
+`/tmp/cppgm-ast-layout-test-report.log`.
+
 #### Multi-signal retention rubric at `3686d87b0`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
@@ -1846,10 +1874,13 @@ order:
    pointer by reference improved instructions by `0.233%`, with all three
    pairs agreeing, but regressed RSS by `0.393%` and footprint by `0.008%`.
    Its `0.225` score does not justify a compiler-wide ownership API change.
-8. Run the two memory-density decision batches after the CPU-oriented retries:
-   the 176-byte `CppAstNode` layout and compact CallSem child storage. They are
-   valuable secondary improvements, but they do little toward the remaining
-   instruction-halving gap.
+8. Completed: retain the 176-byte `CppAstNode` layout and reject compact
+   CallSem child storage. The AST reorder improves footprint by `1.776%` and
+   `9,338,880 B`, independently meeting the memory-density lane while leaving
+   instructions flat. Compact CallSem storage passed the first batch with a
+   `1.622%` RSS improvement, but the required independent batch improved RSS
+   by only `0.801%`. Its `0.780%` footprint and `0.077%` instruction gains miss
+   the other lanes, so `std::vector` remains.
 9. Attribute four new profile leaves before editing their representations:
    5,943 lazy-body name-lookup snapshots retain 2,329,656 base bytes;
    class-template display reconstruction has 86 leaf samples;
@@ -1958,6 +1989,7 @@ Fill one row after each retained commit.
 | `a3dc6e079` | return expected constructor and root standard `enable_if` probe failures as status | `117,674,519,926` | `-32.43%` | `712,704,000` | `524,689,408` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-exception-status-composite-final.json`; 4,465 throws removed; paired A/B: `-0.974%` instructions |
 | `2ba26c3f4` | cache template-body scope value views and bulk-sort visible names | `116,933,622,740` | `-32.86%` | `718,651,392` | `525,627,392` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-visible-composite-final.json`; two paired batches: `-0.485%` and `-0.474%` instructions; balance scores `0.682` and `0.773` |
 | `0e5b1af2d` | resolve template-parameter placeholder types by interned identity | `116,375,621,217` | `-33.18%` | `708,911,104` | `525,758,464` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-parameter-identity-final.json`; 239,256 identity hits; paired batches `-0.197%` and `-0.828%` instructions |
+| `4d0fddd3e` | compact `CppAstNode` by declaration-only field reordering | `116,167,632,347` | `-33.30%` | `701,468,672` | `516,448,256` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-layout-final.json`; paired footprint: `-1.776%`, or `-9,338,880 B`; instructions: `-0.080%` |
 
 ## Rejected work ledger
 
@@ -2042,7 +2074,7 @@ experiment before starting the next candidate.
 | replace the diagnostic-context frame vector with intrusive RAII frames | normal semantic work no longer pushed or popped `Frame` objects in a heap-capable vector, while exception-time realization retained the same outer-to-inner stack, but the exact-output screen used `128,353,586,846` instructions, only about `0.07%` below the retained median | diagnostic frame bookkeeping is visible but not material to the frozen compile. Restore the simpler vector and leave exception diagnostics unchanged | `/tmp/cppgm-diagnostic-intrusive-stack-screen.json` |
 | replace `Scope::values` ordered maps with hash maps | the frozen memory census found 14,102 entries across 36,331 scopes, with only 4,988 nonempty maps. The candidate emitted exact frozen bytes and used `128,340,237,385` instructions, about `0.08%` below the retained `128,444,585,958` median | most value maps are too small to repay hashing and bucket storage. Restore ordered maps and avoid an iteration-order contract change for a sub-threshold result | `/tmp/cppgm-memory-census-current.stderr` and `/tmp/cppgm-scope-values-unordered-screen.json` |
 | move the exception and alignment AST node vectors into the existing sparse record | removing two pointers from each common `CppAstNode` reduced peak footprint from the retained `554,516,480 B` median to `549,568,512 B`, and the frozen object stayed exact. The screen used `128,937,061,931` instructions, about `0.38%` above the retained median | memory density alone does not repay sparse-record access on these traversals. Restore the inline lazy handles and do not move the hotter qualifier vectors behind the same pointer | `/tmp/cppgm-ast-rare-node-vectors-screen.json` |
-| replace each recursive `CallSemNode` child vector with a one-pointer, single-allocation container | the retained-output census counted 201,469 nodes, including 87,199 leaves that paid an empty three-word vector header. The compact form reduced `CallSemNode` from 88 to 72 bytes and lowered the one-run RSS from the retained `734,158,848 B` median to `725,573,632 B`; footprint fell from `554,516,480 B` to `551,395,328 B`. It emitted the exact frozen object but used `128,472,954,235` instructions, effectively flat against the retained `128,444,585,958` median | the memory reduction does not improve the primary instruction signal and cannot justify a bespoke recursive container. Restore `std::vector` and keep the output representation conventional | `/tmp/cppgm-callsem-duplicate-census.stderr` and `/tmp/cppgm-callsem-compact-children-screen.json` |
+| replace each recursive `CallSemNode` child vector with a one-pointer, single-allocation container | the retained-output census counted 201,469 nodes, including 87,199 leaves that paid an empty three-word vector header. The current 72-byte form emitted exact frozen objects in two independent three-pair batches. The first improved instructions by `0.062%`, RSS by `1.622%`, and footprint by `0.828%`. The confirmation improved instructions by `0.077%`, RSS by only `0.801%`, and footprint by `0.780%`. All footprint and RSS pairs agreed; two instruction pairs agreed in each batch | reject after the required RSS confirmation missed the `1%` threshold. Footprint stays below the independent `1%` density form, and instructions stay below the balanced lane's `0.15%` floor. Restore `std::vector`; do not accept a 340-line recursive container on the favorable first batch alone | `/tmp/cppgm-callsem-duplicate-census.stderr`, `/tmp/cppgm-callsem-compact-current-screen.json`, and `/tmp/cppgm-callsem-compact-{parent,candidate}-{1,2,3,4,5,6}.time` |
 | pool recursive `CallSemNode` child-vector storage in reusable slabs | the construction census counted 276,542 node constructions, and a pooled-allocator census measured 1,686,253 child-buffer allocation requests with 1,570,427 free-list reuse hits. The instrumented form used `128,117,455,767` instructions; removing normal-mode census increments and thread-local pool access improved that to `128,051,791,175`, only `0.31%` below the retained median. The best form emitted the exact frozen object, reduced one-run RSS to `695,099,392 B`, and raised footprint to `560,300,032 B` | macOS's small-object allocator handles this traffic efficiently enough that slab lookup and lifetime bookkeeping consume most of the saved work. The result remains below the `0.5%` threshold after two forms and increases footprint, so restore the default allocator | `/tmp/cppgm-callsem-construction.stderr`, `/tmp/cppgm-callsem-child-pool-census.stderr`, `/tmp/cppgm-callsem-child-pool-screen.json`, and `/tmp/cppgm-callsem-child-pool-screen-2.json` |
 | extend special-member body reuse to virtual-base and deleting variants | the frozen census found two virtual-base constructor pairs, one virtual-base destructor triplet, and 13 nonvirtual deleting destructors. Those entry-specific paths contain 398 CallSem nodes; the frozen object remained exact | the residual population cannot repay a partial-tree reuse mechanism. Keep virtual-base setup, virtual-base teardown, and deleting deallocation on their existing paths | `/tmp/cppgm-special-member-variant-census.stderr` |
 | store the persistent type-dependency memo result in each `Type` | the existing memo served 2,981,946 persistent hits with 56,590 misses and 17,709 stale-address detections. Disabling it used `128,801,711,184` instructions. Replacing its pointer hash and `weak_ptr` check with a byte in existing `Type` padding emitted exact frozen bytes and used `127,139,069,875` instructions, flat against the retained `127,129,199,627` median | the current memo earns its cost, while its lookup representation does not consume enough of the full compile to meet the retention floor. Restore the ownership-safe map and close this representation family with the earlier flat-table and fast-path trials | `/tmp/cppgm-type-dependency-memo.stderr`, `/tmp/cppgm-type-dependency-memo-off-screen.json`, and `/tmp/cppgm-type-dependency-inline-state-screen.json` |
@@ -2060,7 +2092,7 @@ experiment before starting the next candidate.
 | allocate `Scope::named_type_access` on first use | 2,614 of 36,327 scopes populated the map. The historical candidate used `124,074,856,078` instructions, a `0.17%` reduction; footprint improved `0.058%` and one-run RSS improved `1.237%`. The current form reused the existing `LazyMap` with a one-line field change. Three current pairs measured parent and candidate instruction medians of `116,007,142,756` and `116,028,961,523`, a `0.019%` regression. RSS regressed `1.685%`, footprint improved `0.102%`, and every object had the frozen SHA-256 | the historical RSS result did not repeat. The current score is `0.083`, and only one instruction pair improved. Keep the direct map | `/tmp/cppgm-lazy-named-type-access-screen.json` and `/tmp/cppgm-lazy-named-access-{parent,candidate}-{1,2,3}.time` |
 | allocate the three core scope maps on first use | 4,988 scopes populated `values`, 4,266 populated `function_sets`, and 2,614 populated `named_type_access`. The combined candidate used `124,768,251,577` instructions, a `0.39%` regression | pointer checks and allocations on populated scopes cost more than the common-record reduction. Restore direct map storage and close this scope family | `/tmp/cppgm-lazy-scope-core-maps-screen.json` |
 | allocate source-declaration anchor payloads on first use | moving two strings behind a copied side record reduced one-run RSS to `718,831,616 B`, but instructions rose to `124,464,108,891` | the memory reduction does not repay allocation and pointer access across more than 65,000 owning records | `/tmp/cppgm-lazy-source-anchor-screen.json` |
-| reorder `CppAstNode` fields for a 176-byte record | the new layout reduced the record from 192 to 176 bytes and peak footprint to `544,980,992 B`. It emitted exact output but used `124,102,791,008` instructions, a `0.15%` reduction. The largest AST-copy caller accounted for 31 of 19,927 profile samples | memory density improves, but the instruction gain misses the floor and the copy work has no cohesive caller large enough to combine with it | `/tmp/cppgm-ast-layout-compaction-screen.json`, `/tmp/cppgm-ast-compact-record-layouts.txt`, and `/tmp/cppgm-current-profile.sample.txt` |
+| reorder `CppAstNode` fields for a 176-byte record | the historical screen reduced the record from 192 to 176 bytes but missed the former instruction-only floor. Three current pairs measured a `0.080%` instruction improvement, `1.286%` lower RSS, and `1.776%` or `9,338,880 B` lower footprint. Every object had the frozen SHA-256 | reopened under the refined rubric and retained in `4d0fddd3e`; the declaration-only reorder independently meets the memory-density lane without adding ownership or access indirection | `/tmp/cppgm-ast-layout-compaction-screen.json`, `/tmp/cppgm-ast-compact-record-layouts.txt`, `/tmp/cppgm-ast-layout-{parent,candidate}-{1,2,3}.time`, and `/tmp/cppgm-ast-layout-final.json` |
 | cache general semantic-validation function bodies for output reuse | an environment-gated census logged 6,522 output emissions and zero calls through `analyze_function_body_semantics_impl` on the frozen workload | the two paths do not overlap on this compile, so a broader cache cannot remove work | `/tmp/cppgm-function-body-census.stderr` |
 | return fundamental non-type template parameter types before dependent resolution | a census found 11,125 fundamental inputs among 14,183 calls. The exact-output shortcut used `124,267,237,736` instructions, a `0.015%` reduction | the dependency memo makes these high-count calls cheap. Restore the uniform resolver | `/tmp/cppgm-nttp-type-census.stderr` and `/tmp/cppgm-nttp-fundamental-fast-path-screen.json` |
 | resolve exact bound named non-type parameter types before the general resolver | the census found 1,029 concrete named template-parameter results. Adding a direct lexical binding probe to the fundamental shortcut emitted exact output and used `124,283,660,973` instructions | the direct path is flat, so the sampled cost belongs to the remaining dependent named cases | `/tmp/cppgm-nttp-type-census.stderr` and `/tmp/cppgm-nttp-concrete-type-fast-path-screen.json` |
