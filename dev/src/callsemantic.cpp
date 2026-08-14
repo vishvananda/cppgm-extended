@@ -13213,6 +13213,7 @@ private:
       const string * source_location = nullptr,
       const TemplateIdSyntax * source_syntax = nullptr) override
   {
+    const template_api::ScopedAliasInstantiationFrame alias_instantiation_frame;
     Scope & resolution_scope = argument_scope ? *argument_scope : use_scope;
     ScopedAliasClassUseCapture expansion_capture(resolved_source_state_.get());
     const auto finish = [&](const TypePtr & type) -> TypePtr
@@ -13409,6 +13410,9 @@ private:
        arguments[1].kind == TemplateArgument::TA_TYPE &&
        arguments[1].type) {
       if(arguments[0].value == 0) {
+        if(template_api::report_expected_root_standard_enable_if_failure()) {
+          return finish(TypePtr());
+        }
         throw_substitution_failure("standard enable_if condition is false",
                                    std::string(),
                                    "callsemantic");

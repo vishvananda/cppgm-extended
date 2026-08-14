@@ -150,6 +150,7 @@ struct ConstructorSelectionOptions
   bool emit_source_witness_without_body_instantiation = false;
   bool user_defined_conversion_source = false;
   bool non_explicit_construction = false;
+  bool no_viable_is_expected = false;
   ConstructorSourceCallResult * source_call_result_out = nullptr;
   bool source_call_result_capture_only = false;
 };

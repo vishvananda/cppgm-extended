@@ -13787,6 +13787,9 @@ FunctionBinding * select_constructor_from_exprs(SemanticContext & ctx,
         parser_trace::note("overload", std::string(), trace.str());
       }
     }
+    if(options.no_viable_is_expected) {
+      return nullptr;
+    }
     ostringstream out;
     out << "no viable constructor";
     out << " [class " << target_info.qualified_name << "]";

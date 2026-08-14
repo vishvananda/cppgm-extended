@@ -242,6 +242,9 @@ std::size_t witness_visible_class_template_argument_count(
 
 namespace {
 
+thread_local ScopedExpectedAliasSubstitutionFailure *
+    expected_alias_substitution_failure_receiver = nullptr;
+
 struct TemplateArgumentSourceLocationFrame
 {
   std::vector<std::string> texts;
@@ -1711,6 +1714,48 @@ TemplateClosureReason closure_reason_for_function_binding_acquisition_cause(
 }
 
 }  // namespace
+
+ScopedExpectedAliasSubstitutionFailure::
+    ScopedExpectedAliasSubstitutionFailure(
+        ExpectedAliasSubstitutionFailure & status)
+  : status_(&status),
+    previous_(expected_alias_substitution_failure_receiver)
+{
+  status = ExpectedAliasSubstitutionFailure::None;
+  expected_alias_substitution_failure_receiver = this;
+}
+
+ScopedExpectedAliasSubstitutionFailure::~
+    ScopedExpectedAliasSubstitutionFailure()
+{
+  expected_alias_substitution_failure_receiver = previous_;
+}
+
+ScopedAliasInstantiationFrame::ScopedAliasInstantiationFrame()
+  : receiver_(expected_alias_substitution_failure_receiver)
+{
+  if(receiver_) {
+    ++receiver_->alias_depth_;
+  }
+}
+
+ScopedAliasInstantiationFrame::~ScopedAliasInstantiationFrame()
+{
+  if(receiver_) {
+    --receiver_->alias_depth_;
+  }
+}
+
+bool report_expected_root_standard_enable_if_failure()
+{
+  ScopedExpectedAliasSubstitutionFailure * receiver =
+      expected_alias_substitution_failure_receiver;
+  if(!receiver || receiver->alias_depth_ != 1 || !receiver->status_) {
+    return false;
+  }
+  *receiver->status_ = ExpectedAliasSubstitutionFailure::StandardEnableIfFalse;
+  return true;
+}
 
 void source_type_materialization_detail::push(
     SourceTypeMaterializationOwner owner,

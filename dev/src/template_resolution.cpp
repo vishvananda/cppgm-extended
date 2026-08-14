@@ -12320,6 +12320,26 @@ bool try_resolve_non_type_template_parameter_type(
   if(can_remain_dependent) {
     *can_remain_dependent = false;
   }
+  template_api::ExpectedAliasSubstitutionFailure expected_alias_failure =
+      template_api::ExpectedAliasSubstitutionFailure::None;
+  const template_api::ScopedExpectedAliasSubstitutionFailure
+      expected_alias_failure_scope(expected_alias_failure);
+  const auto expected_alias_failure_reported = [&]() -> bool
+  {
+    if(expected_alias_failure ==
+       template_api::ExpectedAliasSubstitutionFailure::None) {
+      return false;
+    }
+    if(parser_trace::enabled("template.resolve")) {
+      std::ostringstream trace;
+      trace << "non-type-param-type name=" << parameter.name
+            << " spelling=" << non_type_template_parameter_spelling(parameter)
+            << " resolved=no"
+            << " type=<substitution-failure>";
+      parser_trace::note("template.resolve", std::string(), trace.str());
+    }
+    return true;
+  };
   try {
     template_api::TemplateTypeSystem & type_system = service_type_system(services);
     out = parameter.value_type;
@@ -12331,6 +12351,9 @@ bool try_resolve_non_type_template_parameter_type(
         template_argument_semantics::
             resolve_non_type_template_parameter_type_if_needed(
                 services, scope, out);
+        if(expected_alias_failure_reported()) {
+          return false;
+        }
       }
       if(out && !template_argument_semantics::type_depends_on_template_parameter(type_system, out)) {
         resolved = true;
@@ -12345,6 +12368,9 @@ bool try_resolve_non_type_template_parameter_type(
                &syntax_can_remain_dependent)) {
           resolved = true;
         } else {
+          if(expected_alias_failure_reported()) {
+            return false;
+          }
           if(can_remain_dependent) {
             *can_remain_dependent = syntax_can_remain_dependent;
           }

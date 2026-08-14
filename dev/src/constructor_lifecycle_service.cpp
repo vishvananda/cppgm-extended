@@ -24,11 +24,13 @@ ConstructorSelectionOptions derive_selection_options(
   case ConstructorIntent::ImplicitDefaultConstructorViability:
     options.allow_user_defined = false;
     options.instantiate_bodies = false;
+    options.no_viable_is_expected = true;
     break;
   case ConstructorIntent::UserDefinedConversionConstructorProbe:
     options.allow_user_defined = false;
     options.allow_explicit = false;
     options.user_defined_conversion_source = true;
+    options.no_viable_is_expected = true;
     break;
   case ConstructorIntent::NonExplicitConstruction:
     options.allow_explicit = false;
@@ -161,6 +163,8 @@ void apply_selection_profile(ConstructorSelectionOptions & options,
       derived.user_defined_conversion_source;
   options.non_explicit_construction =
       options.non_explicit_construction || derived.non_explicit_construction;
+  options.no_viable_is_expected =
+      options.no_viable_is_expected || derived.no_viable_is_expected;
 }
 
 ConstructorSelectionResult select_constructor_from_exprs(

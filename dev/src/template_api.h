@@ -21,6 +21,52 @@ struct FunctionSymbolOptions;
 
 namespace template_api {
 
+enum class ExpectedAliasSubstitutionFailure
+{
+  None,
+  StandardEnableIfFalse
+};
+
+// An expected-failure receiver belongs to the catch boundary that would have
+// consumed the exception. Alias frames ensure that a nested substitution still
+// throws through its own recovery path instead of reporting to an outer probe.
+class ScopedExpectedAliasSubstitutionFailure
+{
+public:
+  explicit ScopedExpectedAliasSubstitutionFailure(
+      ExpectedAliasSubstitutionFailure & status);
+  ~ScopedExpectedAliasSubstitutionFailure();
+
+  ScopedExpectedAliasSubstitutionFailure(
+      const ScopedExpectedAliasSubstitutionFailure &) = delete;
+  ScopedExpectedAliasSubstitutionFailure & operator=(
+      const ScopedExpectedAliasSubstitutionFailure &) = delete;
+
+private:
+  friend class ScopedAliasInstantiationFrame;
+  friend bool report_expected_root_standard_enable_if_failure();
+
+  ExpectedAliasSubstitutionFailure * status_ = nullptr;
+  ScopedExpectedAliasSubstitutionFailure * previous_ = nullptr;
+  std::size_t alias_depth_ = 0;
+};
+
+class ScopedAliasInstantiationFrame
+{
+public:
+  ScopedAliasInstantiationFrame();
+  ~ScopedAliasInstantiationFrame();
+
+  ScopedAliasInstantiationFrame(const ScopedAliasInstantiationFrame &) = delete;
+  ScopedAliasInstantiationFrame & operator=(
+      const ScopedAliasInstantiationFrame &) = delete;
+
+private:
+  ScopedExpectedAliasSubstitutionFailure * receiver_ = nullptr;
+};
+
+bool report_expected_root_standard_enable_if_failure();
+
 class ScopedSourceTypeMaterialization
 {
 public:
