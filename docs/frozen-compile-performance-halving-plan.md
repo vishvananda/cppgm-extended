@@ -1756,11 +1756,11 @@ The full ledger re-audit changes these old decisions:
 
 | Prior rejection | Historical `I / F / R` | Rubric result | Current action |
 | --- | ---: | --- | --- |
-| one-fetch normalized input | `+0.351 / +0.214 / +0.178%` | balance score `0.564`; historical result was only a screen | Run a current paired decision on the one-fetch form. |
+| one-fetch normalized input | `+0.351 / +0.214 / +0.178%` | balance score `0.564`; historical result was only a screen | The current retry regressed instructions by `0.181%` and RSS by `0.686%`. Keep the two-fetch path. |
 | one-entry dependent-resolution root memo | `+0.314 / +0.090 / +0.451%` | balance score `0.540`; paired evidence existed | The current census found the same population, but the retry scored only `0.106`. Keep the direct path. |
-| borrow template-parameter candidate strings | `+0.283 / -0.041 / +1.019%` | balance score `0.793`; RSS must be independently confirmed | Retry the ownership removal against the current identity representation. |
-| bulk-sort visible template-body names | `+0.236 / +0.066 / +0.637%` | balance score `0.555`; historical result was only a screen | Combine or compare it with the current scope-value snapshot because both operate in the same collector. |
-| 16-entry sparse template-angle cache | `+0.322 / +0.116 / +0.430%` | balance score `0.537`; historical result was only a screen | Run a current paired decision without the three slower representations. |
+| borrow template-parameter candidate strings | `+0.283 / -0.041 / +1.019%` | balance score `0.793`; RSS needed independent confirmation | The current identity-based form passed the balanced and CPU lanes and was retained in `0e5b1af2d`. |
+| bulk-sort visible template-body names | `+0.236 / +0.066 / +0.637%` | balance score `0.555`; historical result was only a screen | The cohesive source-view and destination-sort form passed two balanced batches and was retained in `2ba26c3f4`. |
+| 16-entry sparse template-angle cache | `+0.322 / +0.116 / +0.430%` | balance score `0.537`; historical result was only a screen | The current retry scored `0.442`; the packed refinement scored `0.284`. Keep the dense vectors. |
 | reorder `CppAstNode` into 176 bytes | `+0.147 / +1.689 / +0.695%` | memory-density lane; historical result was only a screen | Run a current paired decision and retained-size census. |
 | compact `CallSemNode` child storage | `-0.022 / +0.563 / +1.169%` | memory-density lane; historical result was only a screen | Run a current paired decision. Retain only if the container remains simpler than a pool and clears full correctness. |
 | allocate `Scope::named_type_access` on first use | `+0.170 / +0.058 / +1.237%` | balance score `0.788`; historical result was only a screen and RSS supplied most of the score | The current retry scored `0.083` and regressed instructions and RSS. Keep the direct map. |
