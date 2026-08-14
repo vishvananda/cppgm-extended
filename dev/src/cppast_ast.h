@@ -723,6 +723,10 @@ private:
 struct CppAstNode
 {
   CppAstKind kind = CppAstKind::invalid;
+  bool has_leading_typename = false;
+  bool allows_implicit_typename = false;
+  bool semantic_type_is_resolved_qualifier = false;
+  bool has_exception_type_id_syntaxes = false;
   std::string value;
   cpp_decl::TypePtr semantic_type;
   CppAstSparseDataPtr sparse_data;
@@ -730,11 +734,16 @@ struct CppAstNode
   CppAstSharedPtr<cpp_decl::TemplateIdSyntax> template_id_syntax;
   CppAstLazyVector<cpp_decl::TemplateIdSyntax> qualifier_template_id_syntaxes;
   CppAstLazyVector<CppAstNode> qualifier_type_syntaxes;
-  bool has_leading_typename = false;
-  bool allows_implicit_typename = false;
-  bool semantic_type_is_resolved_qualifier = false;
-  bool has_exception_type_id_syntaxes = false;
   CppAstLazyVector<CppAstNode> exception_type_id_syntaxes;
+  std::size_t maximum_field_alignment = 0;
+  CppAstLazyVector<CppAstNode> alignment_specifier_nodes;
+  // Token half-open range [token_start, token_end) in the original RecogToken stream.
+  std::size_t token_start = 0;
+  std::size_t token_end = 0;
+  std::vector<CppAstNode> children;
+  uint32_t source_location_id = 0;
+  ERecogTokenKind token_kind = RT_EOF;
+  ETokenType simple_type = static_cast<ETokenType>(0);
   bool linkage_has_braces = false;
   bool enum_has_definition = false;
   bool has_no_unique_address = false;
@@ -742,19 +751,10 @@ struct CppAstNode
   bool has_exclude_from_explicit_instantiation = false;
   bool has_weak_attribute = false;
   bool has_always_inline_attribute = false;
-  std::size_t maximum_field_alignment = 0;
-  CppAstLazyVector<CppAstNode> alignment_specifier_nodes;
   bool is_final_specifier = false;
   bool uses_assignment_form = false;
   bool is_typeof_specifier = false;
   bool has_token = false;
-  ERecogTokenKind token_kind = RT_EOF;
-  ETokenType simple_type = static_cast<ETokenType>(0);
-  // Token half-open range [token_start, token_end) in the original RecogToken stream.
-  std::size_t token_start = 0;
-  std::size_t token_end = 0;
-  uint32_t source_location_id = 0;
-  std::vector<CppAstNode> children;
 };
 
 inline CppAstNode cppast_copy_without_children(const CppAstNode & source)
