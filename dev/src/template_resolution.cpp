@@ -8377,11 +8377,17 @@ bool decompose_template_instantiation(template_api::TemplateServices & services,
   const bool have_info =
       template_api::describe_named_type_metadata(type_system.model, base, info);
   void * dependent_class_template_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> dependent_class_args;
+  const std::vector<DependentAliasTemplateArgumentSyntax> *
+      dependent_class_arg_view = nullptr;
   const bool have_dependent_class_template =
-      named_type_dependent_class_template(base,
-                                          dependent_class_template_decl,
-                                          dependent_class_args);
+      named_type_dependent_class_template_view(base,
+                                               dependent_class_template_decl,
+                                               dependent_class_arg_view);
+  static const std::vector<DependentAliasTemplateArgumentSyntax>
+      no_dependent_class_args;
+  const std::vector<DependentAliasTemplateArgumentSyntax> &
+      dependent_class_args = dependent_class_arg_view ?
+          *dependent_class_arg_view : no_dependent_class_args;
   std::vector<std::string> dependent_class_arg_texts;
   dependent_class_arg_texts.reserve(dependent_class_args.size());
   for(std::size_t i = 0; i < dependent_class_args.size(); ++i) {
@@ -10019,10 +10025,14 @@ bool dependent_class_arguments_mention_function_template_parameter(
     const TypePtr & type)
 {
   void * class_template_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
-  if(!named_type_dependent_class_template(type, class_template_decl, arguments)) {
+  const std::vector<DependentAliasTemplateArgumentSyntax> * argument_view = nullptr;
+  if(!named_type_dependent_class_template_view(type,
+                                               class_template_decl,
+                                               argument_view)) {
     return false;
   }
+  const std::vector<DependentAliasTemplateArgumentSyntax> & arguments =
+      *argument_view;
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(arguments[i].type) {
       if(type_mentions_function_template_parameter(ctx, parameters, arguments[i].type)) {
@@ -10196,10 +10206,14 @@ bool dependent_class_arguments_mention_function_template_parameter(
     const TypePtr & type)
 {
   void * class_template_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
-  if(!named_type_dependent_class_template(type, class_template_decl, arguments)) {
+  const std::vector<DependentAliasTemplateArgumentSyntax> * argument_view = nullptr;
+  if(!named_type_dependent_class_template_view(type,
+                                               class_template_decl,
+                                               argument_view)) {
     return false;
   }
+  const std::vector<DependentAliasTemplateArgumentSyntax> & arguments =
+      *argument_view;
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(arguments[i].type) {
       if(type_mentions_function_template_parameter(
@@ -10323,10 +10337,14 @@ bool dependent_class_arguments_mention_unbound_function_template_parameter(
     const TypePtr & type)
 {
   void * class_template_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> arguments;
-  if(!named_type_dependent_class_template(type, class_template_decl, arguments)) {
+  const std::vector<DependentAliasTemplateArgumentSyntax> * argument_view = nullptr;
+  if(!named_type_dependent_class_template_view(type,
+                                               class_template_decl,
+                                               argument_view)) {
     return false;
   }
+  const std::vector<DependentAliasTemplateArgumentSyntax> & arguments =
+      *argument_view;
   for(std::size_t i = 0; i < arguments.size(); ++i) {
     if(dependent_argument_syntax_mentions_unbound_function_template_parameter(
            ctx, parameters, scope, arguments[i])) {

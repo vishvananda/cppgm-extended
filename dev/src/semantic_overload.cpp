@@ -1680,16 +1680,23 @@ bool type_mentions_deduction_parameter(
       return true;
     }
     void * dependent_template_decl = nullptr;
+    const std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax> *
+        dependent_argument_view = nullptr;
     std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax>
-        dependent_arguments;
-    if(cpp_decl::named_type_dependent_class_template(
+        copied_alias_arguments;
+    if(!cpp_decl::named_type_dependent_class_template_view(
            base,
            dependent_template_decl,
-           dependent_arguments) ||
+           dependent_argument_view) &&
        cpp_decl::named_type_dependent_alias_template(
            base,
            dependent_template_decl,
-           dependent_arguments)) {
+           copied_alias_arguments)) {
+      dependent_argument_view = &copied_alias_arguments;
+    }
+    if(dependent_argument_view) {
+      const std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax> &
+          dependent_arguments = *dependent_argument_view;
       for(std::size_t i = 0; i < dependent_arguments.size(); ++i) {
         if(dependent_template_argument_mentions_deduction_parameter(
                ctx,
@@ -1794,9 +1801,9 @@ bool dependent_class_template_pattern_mismatches_actual(
     const TypePtr & actual)
 {
   void * pattern_template_ptr = nullptr;
-  std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax>
-      pattern_arguments;
-  if(!cpp_decl::named_type_dependent_class_template(
+  const std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax> *
+      pattern_arguments = nullptr;
+  if(!cpp_decl::named_type_dependent_class_template_view(
          pattern,
          pattern_template_ptr,
          pattern_arguments) ||
@@ -1807,9 +1814,9 @@ bool dependent_class_template_pattern_mismatches_actual(
       static_cast<const ClassTemplateDecl *>(pattern_template_ptr);
 
   void * actual_template_ptr = nullptr;
-  std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax>
-      actual_arguments;
-  if(cpp_decl::named_type_dependent_class_template(
+  const std::vector<cpp_decl::DependentAliasTemplateArgumentSyntax> *
+      actual_arguments = nullptr;
+  if(cpp_decl::named_type_dependent_class_template_view(
          actual,
          actual_template_ptr,
          actual_arguments)) {

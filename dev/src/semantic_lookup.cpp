@@ -3133,16 +3133,18 @@ bool types_have_definitely_distinct_namespace_template_metadata(
   {
     void * lhs_declaration = nullptr;
     void * rhs_declaration = nullptr;
-    std::vector<DependentAliasTemplateArgumentSyntax> lhs_arguments;
-    std::vector<DependentAliasTemplateArgumentSyntax> rhs_arguments;
+    const std::vector<DependentAliasTemplateArgumentSyntax> *
+        lhs_class_arguments = nullptr;
+    const std::vector<DependentAliasTemplateArgumentSyntax> *
+        rhs_class_arguments = nullptr;
     const bool lhs_class =
-        named_type_dependent_class_template(lhs,
-                                            lhs_declaration,
-                                            lhs_arguments);
+        named_type_dependent_class_template_view(lhs,
+                                                 lhs_declaration,
+                                                 lhs_class_arguments);
     const bool rhs_class =
-        named_type_dependent_class_template(rhs,
-                                            rhs_declaration,
-                                            rhs_arguments);
+        named_type_dependent_class_template_view(rhs,
+                                                 rhs_declaration,
+                                                 rhs_class_arguments);
     if(lhs_class && rhs_class && lhs_declaration != rhs_declaration) {
       const ClassTemplateDecl * lhs_decl =
           static_cast<const ClassTemplateDecl *>(lhs_declaration);
@@ -3158,6 +3160,8 @@ bool types_have_definitely_distinct_namespace_template_metadata(
         return true;
       }
     }
+    std::vector<DependentAliasTemplateArgumentSyntax> lhs_arguments;
+    std::vector<DependentAliasTemplateArgumentSyntax> rhs_arguments;
     const bool lhs_alias =
         named_type_dependent_alias_template(lhs,
                                             lhs_declaration,
@@ -3777,27 +3781,35 @@ bool same_named_dependent_template_metadata(
 
   void * lhs_decl = nullptr;
   void * rhs_decl = nullptr;
-  std::vector<DependentAliasTemplateArgumentSyntax> lhs_args;
-  std::vector<DependentAliasTemplateArgumentSyntax> rhs_args;
+  const std::vector<DependentAliasTemplateArgumentSyntax> *
+      lhs_class_args = nullptr;
+  const std::vector<DependentAliasTemplateArgumentSyntax> *
+      rhs_class_args = nullptr;
   const bool lhs_class =
-      named_type_dependent_class_template(lhs_base, lhs_decl, lhs_args);
+      named_type_dependent_class_template_view(lhs_base,
+                                               lhs_decl,
+                                               lhs_class_args);
   const bool rhs_class =
-      named_type_dependent_class_template(rhs_base, rhs_decl, rhs_args);
+      named_type_dependent_class_template_view(rhs_base,
+                                               rhs_decl,
+                                               rhs_class_args);
   if(lhs_class || rhs_class) {
     metadata_present = true;
     const bool arguments_match =
         lhs_class &&
         rhs_class &&
         lhs_decl == rhs_decl &&
-        same_dependent_template_argument_metadata_list(lhs_args,
+        same_dependent_template_argument_metadata_list(*lhs_class_args,
                                                        lhs_parameters,
                                                        lhs_scope,
-                                                       rhs_args,
+                                                       *rhs_class_args,
                                                        rhs_parameters,
                                                        rhs_scope);
     return arguments_match;
   }
 
+  std::vector<DependentAliasTemplateArgumentSyntax> lhs_args;
+  std::vector<DependentAliasTemplateArgumentSyntax> rhs_args;
   const bool lhs_alias =
       named_type_dependent_alias_template(lhs_base, lhs_decl, lhs_args);
   const bool rhs_alias =

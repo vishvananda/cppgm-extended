@@ -18404,12 +18404,15 @@ bool substitute_dependent_class_type(const TypePtr & type,
 {
   out.reset();
   void * class_template_decl = nullptr;
-  vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
-  if(!named_type_dependent_class_template(type,
-                                          class_template_decl,
-                                          dependent_arguments)) {
+  const vector<DependentAliasTemplateArgumentSyntax> *
+      dependent_argument_view = nullptr;
+  if(!named_type_dependent_class_template_view(type,
+                                               class_template_decl,
+                                               dependent_argument_view)) {
     return false;
   }
+  const vector<DependentAliasTemplateArgumentSyntax> & dependent_arguments =
+      *dependent_argument_view;
 
   vector<DependentAliasTemplateArgumentSyntax> substituted_arguments;
   bool changed = false;
@@ -30387,12 +30390,15 @@ bool try_resolve_dependent_class_instantiation_from_carried_syntax(
 {
   out.reset();
   void * class_template_decl = nullptr;
-  vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
-  if(!named_type_dependent_class_template(type,
-                                          class_template_decl,
-                                          dependent_arguments)) {
+  const vector<DependentAliasTemplateArgumentSyntax> *
+      dependent_argument_view = nullptr;
+  if(!named_type_dependent_class_template_view(type,
+                                               class_template_decl,
+                                               dependent_argument_view)) {
     return false;
   }
+  const vector<DependentAliasTemplateArgumentSyntax> & dependent_arguments =
+      *dependent_argument_view;
   ClassTemplateDecl * class_template =
       static_cast<ClassTemplateDecl *>(class_template_decl);
   if(!class_template) {
@@ -30766,10 +30772,13 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
 
   if(member_path.size() == 1 && trim_space(member_path[0]) == "type") {
     void * class_template_decl = nullptr;
-    vector<DependentAliasTemplateArgumentSyntax> dependent_arguments;
-    if(named_type_dependent_class_template(owner_type,
-                                           class_template_decl,
-                                           dependent_arguments)) {
+    const vector<DependentAliasTemplateArgumentSyntax> *
+        dependent_argument_view = nullptr;
+    if(named_type_dependent_class_template_view(owner_type,
+                                                class_template_decl,
+                                                dependent_argument_view)) {
+      const vector<DependentAliasTemplateArgumentSyntax> &
+          dependent_arguments = *dependent_argument_view;
       ClassTemplateDecl * class_template =
           static_cast<ClassTemplateDecl *>(class_template_decl);
       if(class_template && class_template->declaring_scope) {
@@ -30901,16 +30910,18 @@ DependentNamedTypeResolutionStatus resolve_structured_dependent_qualified_member
   bool owner_has_structured_template_semantics = false;
   if(type_is_dependent(owner_type)) {
     void * dependent_class_template_decl = nullptr;
-    vector<DependentAliasTemplateArgumentSyntax> dependent_class_arguments;
+    const vector<DependentAliasTemplateArgumentSyntax> *
+        dependent_class_arguments = nullptr;
     void * dependent_alias_template_decl = nullptr;
     vector<DependentAliasTemplateArgumentSyntax> dependent_alias_arguments;
     TypePtr qualified_owner;
     vector<string> qualified_members;
     bool qualified_leading_typename = false;
     owner_has_structured_template_semantics =
-        named_type_dependent_class_template(owner_type,
-                                            dependent_class_template_decl,
-                                            dependent_class_arguments) ||
+        named_type_dependent_class_template_view(
+            owner_type,
+            dependent_class_template_decl,
+            dependent_class_arguments) ||
         named_type_dependent_alias_template(owner_type,
                                             dependent_alias_template_decl,
                                             dependent_alias_arguments) ||

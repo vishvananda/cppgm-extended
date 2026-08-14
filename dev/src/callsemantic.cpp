@@ -6505,12 +6505,13 @@ private:
       return base->named_rare().named_class_info;
     }
     void * structured_template_decl = nullptr;
-    std::vector<DependentAliasTemplateArgumentSyntax> structured_arguments;
-    if(named_type_dependent_class_template(base,
-                                           structured_template_decl,
-                                           structured_arguments) &&
+    const std::vector<DependentAliasTemplateArgumentSyntax> *
+        structured_arguments = nullptr;
+    if(named_type_dependent_class_template_view(base,
+                                                structured_template_decl,
+                                                structured_arguments) &&
        structured_template_decl &&
-       structured_arguments.empty()) {
+       structured_arguments->empty()) {
       if(ClassInfo * specialization =
              class_info_for_template_specialization_metadata(base)) {
         return specialization;

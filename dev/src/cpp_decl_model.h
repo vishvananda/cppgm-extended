@@ -355,6 +355,12 @@ bool named_type_dependent_class_template(
     const TypePtr & type,
     void *& class_template_decl,
     std::vector<DependentAliasTemplateArgumentSyntax> & arguments);
+// The returned vector is owned by the stripped named Type and remains valid
+// while that type graph is alive.
+bool named_type_dependent_class_template_view(
+    const TypePtr & type,
+    void *& class_template_decl,
+    const std::vector<DependentAliasTemplateArgumentSyntax> *& arguments);
 void set_named_type_dependent_template_template_parameter(
     const TypePtr & type,
     const std::string & parameter_name,

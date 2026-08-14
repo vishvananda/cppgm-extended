@@ -1240,6 +1240,23 @@ bool named_type_dependent_class_template(
   return true;
 }
 
+bool named_type_dependent_class_template_view(
+    const TypePtr & type,
+    void *& class_template_decl,
+    const vector<DependentAliasTemplateArgumentSyntax> *& arguments)
+{
+  const Type * base = named_base_ptr(type);
+  if(!base || !base->named_rare().named_dependent_class_template_decl) {
+    class_template_decl = nullptr;
+    arguments = nullptr;
+    return false;
+  }
+  class_template_decl =
+      base->named_rare().named_dependent_class_template_decl;
+  arguments = &base->named_rare().named_dependent_class_arguments;
+  return true;
+}
+
 void set_named_type_dependent_template_template_parameter(
     const TypePtr & type,
     const string & parameter_name,
