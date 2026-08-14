@@ -1752,6 +1752,52 @@ Evidence is in `/tmp/cppgm-revised-profile.sample.txt`,
 `/tmp/cppgm-display-view-test-strict.log`, and
 `/tmp/cppgm-display-view-test-report.log`.
 
+#### Inline-namespace directive checkpoint
+
+The post-display sample exposed `import_inline_namespace_members` as a new
+leaf. A frozen census counted only `556` import calls, but each reopen replayed
+the inline namespace's complete accumulated contents into its parent. Across
+the run that meant scanning `1,855` namespace entries, `61,162` named types,
+`7,442` values, `192,368` function bindings, `118,067` class templates,
+`214,976` function-template entries, `46,257` alias templates, and `24,313`
+variable templates. A smaller change that replaced `count` plus `operator[]`
+with one map insertion emitted exact bytes but regressed instructions to
+`112,236,996,211`.
+
+Inline-namespace visibility is already represented by the implicit
+using-directive. The retained form stops copying bindings into the enclosing
+namespace and leaves lookup to the existing inline-child and using-directive
+walkers. It still bumps the parent's binding epoch after every completed
+inline-namespace block, so parent-scoped template caches observe declarations
+added on a reopen. Removing the copies exposed one ownership bug in the first
+full report: `int X::deep` created a second `X::deep` when the prior declaration
+belonged to `X::Y::Z` through nested inline namespaces. Qualified variable
+parse-scope resolution now follows the found binding back to its real
+declaration scope. The existing PA7 reducer
+`280-inline-namespace-qualified-lookup.t` catches this case.
+
+Three final interleaved pairs measured parent and candidate instruction
+medians of `112,347,566,251` and `111,103,959,589`, a `1.107%` improvement.
+All three pairs agreed, at `0.920%`, `1.191%`, and `1.122%`. Median cycles
+improved by `1.591%`; median RSS fell by `7,409,664 B`, or `1.035%`; and
+footprint fell by `204,800 B`, or `0.040%`. Median real and user time improved
+by `4.024%` and `3.821%`, although wall time remains advisory. Every paired
+object had the frozen SHA-256. This clears the CPU lane and improves both
+memory signals.
+
+The clean three-run median at `589b40ac8` is `111,031,651,654` instructions,
+`36.25%` below the original baseline. Maximum RSS is `712,437,760 B`, and
+footprint is `517,394,432 B`. PA7 passes `41/41`, direct strict passes
+`1530/1530`, and the full direct report passes `4863/4863`.
+
+Evidence is in `/tmp/cppgm-post-display-profile.sample.txt`,
+`/tmp/cppgm-inline-namespace-import-census.stderr`,
+`/tmp/cppgm-inline-namespace-single-probe-screen.json`,
+`/tmp/cppgm-inline-namespace-directive-only-screen.json`,
+`/tmp/cppgm-inline-namespace-conservative-screen.json`,
+`/tmp/cppgm-inline-final-{parent,candidate}-{1,2,3}.time`, and
+`/tmp/cppgm-inline-namespace-directive-final.json`.
+
 #### Multi-signal retention rubric, adopted at `3686d87b0`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
@@ -1907,7 +1953,7 @@ construction, or complete-entry symbol reuse without a new census.
 
 #### Revised investigation order
 
-The `35.63%` cumulative reduction leaves `25,022,782,174` instructions. A chain
+The `36.25%` cumulative reduction leaves `23,952,766,182` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -1987,9 +2033,17 @@ order:
    comparisons. Lowering the vector/hash crossover from 28 to 8 or 16
    regresses instructions by more than `0.6%`; raising it to 40 or 64 remains
    slightly worse. Keep the current tree sets and 28-entry crossover.
-11. Refresh the release-binary sample after the named-display reduction and
-   use its new top leaves to start the next census. Prefer operation removal
-   or an existing cache/index contract over another general container swap.
+11. Completed: refresh the release-binary sample and retain implicit
+   inline-namespace visibility without eager binding copies. A census showed
+   that 556 namespace imports replayed hundreds of thousands of accumulated
+   bindings. The directive-only form initially exposed a qualified-definition
+   ownership bug in PA7; resolving the prior value binding's real inline child
+   fixed it without restoring copies. Conservative parent cache invalidation
+   remains. Three final pairs improve instructions by `1.107%`, cycles by
+   `1.591%`, and RSS by `1.035%`; strict and full reports pass.
+12. Refresh the release-binary sample at `589b40ac8`. Use the new top leaves to
+   start the next census, preferring operation removal or an existing
+   cache/index contract over another general container swap.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, general container swaps, common-record
@@ -2086,6 +2140,7 @@ Fill one row after each retained commit.
 | `4d0fddd3e` | compact `CppAstNode` by declaration-only field reordering | `116,167,632,347` | `-33.30%` | `701,468,672` | `516,448,256` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-ast-layout-final.json`; paired footprint: `-1.776%`, or `-9,338,880 B`; instructions: `-0.080%` |
 | `9ad60e6c6` | memoize each class instantiation's primary-placeholder argument shape | `115,576,376,842` | `-33.64%` | `707,428,352` | `516,362,240` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-primary-placeholder-final.json`; 754,890 hits; paired instructions: `-0.539%` |
 | `8d58a3d6a` | reconstruct compacted named-type displays once and return an owned-lifetime view | `112,101,667,646` | `-35.63%` | `703,864,832` | `517,873,664` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-display-view-final.json`; 922,353 stable repeats; paired instructions: `-2.892%` |
+| `589b40ac8` | represent inline-namespace visibility with its implicit using-directive instead of copying accumulated bindings | `111,031,651,654` | `-36.25%` | `712,437,760` | `517,394,432` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-inline-namespace-directive-final.json`; paired instructions: `-1.107%`; paired RSS: `-1.035%` |
 
 ## Rejected work ledger
 
@@ -2232,3 +2287,4 @@ experiment before starting the next candidate.
 | skip template-bound overlay work for sources with no relevant names | a detailed census measured 276,899 source-scope requests, 166,963 unchanged results, and only 2,413 repeated stable target/source pairs. `115,809` requests made no insertion attempt; `107,924` of those had no relevant source names. An early return emitted the exact frozen object and screened at `111,894,594,757` instructions, about `0.18%` below the clean retained median. Moving the guard to the ancestor wrappers used `112,161,643,952`; combining it with linear lookup in the small exclusion sets regressed to `112,567,833,384` | a result cache has too little exact-pair reuse, while the simple empty work is below every retention lane and does not improve memory materially. Restore the uniform traversal and keep the census as evidence against adding invalidation state | `/tmp/cppgm-overlay-detailed-2.stderr`, `/tmp/cppgm-overlay-empty-screen.json`, `/tmp/cppgm-overlay-empty-wrapper-screen.json`, and `/tmp/cppgm-overlay-empty-excluded-screen.json` |
 | use inline visit sets for conversion-function class, virtual-base, and direct-binding traversal | 23,399 conversion-group roots and 21,968 conversion-name roots visited at most four classes and one virtual base, with no duplicate class or virtual-base insertion. The per-class direct-binding set reached two entries and rejected 20,669 duplicate probes. Reusing the retained inline visit set for all three emitted exact bytes but screened at `112,486,953,373` instructions; a binding-only form used `112,540,821,783`, and capacity-sized sets used `112,392,376,486` | the tree allocations are real, but linear scans, larger stack state, and the overflow-vector branch cost more on this path. All three forms regress instructions and miss the allocation-and-latency lane. Restore the tree sets | `/tmp/cppgm-conversion-traversal-census.stderr`, `/tmp/cppgm-conversion-inline-screen.json`, `/tmp/cppgm-conversion-binding-inline-screen.json`, and `/tmp/cppgm-conversion-inline-sized-screen.json` |
 | retune the Itanium IR substitution vector/hash crossover | 2,007,030 lookups included 1,979,226 small-state probes, 339,623 small hits, and 11,750,955 structural comparisons. The 28-entry cutoff materialized 1,594 indexes for 46,226 keys. Cutoffs of 8 and 16 used `112,802,228,864` and `112,838,296,308` instructions. Cutoffs of 40 and 64 were closer at `112,258,746,153` and `112,307,177,178`, but still worse than the clean retained median. Every form emitted the frozen object | the current crossover balances structural equality against hash construction better than either direction tested. Keep 28 and do not add another front index | `/tmp/cppgm-ir-substitution-census.stderr` and `/tmp/cppgm-ir-substitution-limit-{8,16,40,64}-screen.json` |
+| use one insertion probe while eagerly copying inline-namespace maps | 556 import calls rescanned 61,162 named types, 7,442 values, 118,067 class templates, 46,257 alias templates, and 24,313 variable templates. Replacing `count` plus `operator[]` with `insert` emitted exact frozen bytes but used `112,236,996,211` instructions, slightly worse than the retained checkpoint | the duplicate probe was not the dominant cost. Commit `589b40ac8` removes the redundant copies and retains only the implicit using-directive plus conservative parent invalidation | `/tmp/cppgm-inline-namespace-import-census.stderr`, `/tmp/cppgm-inline-namespace-single-probe-screen.json`, and `/tmp/cppgm-inline-namespace-directive-final.json` |
