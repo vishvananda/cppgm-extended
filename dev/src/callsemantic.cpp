@@ -9149,7 +9149,11 @@ private:
                                                 FunctionTemplateRegistrationIdentity(),
                                             const CppAstNode * declaration_node = nullptr,
                                             const CppAstNode * parameter_syntax_node = nullptr,
-                                            bool prefer_overload_suffix = false)
+                                            bool prefer_overload_suffix = false,
+                                            bool has_symbol_linkage_override = false,
+                                            symbol_linkage::SymbolLinkage
+                                                symbol_linkage_override =
+                                                    symbol_linkage::SL_EXTERNAL)
   {
     if(flags.ref_qualifier != RQ_NONE &&
        (flags.is_constructor || flags.is_destructor)) {
@@ -9295,20 +9299,24 @@ private:
       binding->is_move_assignment = true;
     }
 
+    const symbol_linkage::SymbolLinkage initial_symbol_linkage =
+        has_symbol_linkage_override ?
+            symbol_linkage_override :
+            function_symbol_linkage(*info.member_scope,
+                                    declaration_node,
+                                    body,
+                                    false,
+                                    flags.function_qualifier,
+                                    template_identity,
+                                    flags.is_defaulted,
+                                    nullptr,
+                                    true);
     binding->symbol =
         make_registered_function_symbol(symbol_qualified_name,
                                         simple_name,
                                         effective_type,
                                         false,
-                                        function_symbol_linkage(*info.member_scope,
-                                                                declaration_node,
-                                                                body,
-                                        false,
-                                                                flags.function_qualifier,
-                                                                template_identity,
-                                                                flags.is_defaulted,
-                                                                nullptr,
-                                                                true),
+                                        initial_symbol_linkage,
                                         flags.is_const_method,
                                         flags.is_volatile_method,
                                         flags.ref_qualifier,
@@ -9734,7 +9742,11 @@ private:
                                                 FunctionTemplateRegistrationIdentity(),
                                             const CppAstNode * declaration_node = nullptr,
                                             const CppAstNode * parameter_syntax_node = nullptr,
-                                            bool prefer_overload_suffix = false)
+                                            bool prefer_overload_suffix = false,
+                                            bool has_symbol_linkage_override = false,
+                                            symbol_linkage::SymbolLinkage
+                                                symbol_linkage_override =
+                                                    symbol_linkage::SL_EXTERNAL)
   {
     return register_class_function(info, simple_name, declared_type, explicit_params,
                                    vector<const CppAstNode *>(),
@@ -9742,7 +9754,9 @@ private:
                                    template_identity,
                                    declaration_node,
                                    parameter_syntax_node,
-                                   prefer_overload_suffix);
+                                   prefer_overload_suffix,
+                                   has_symbol_linkage_override,
+                                   symbol_linkage_override);
   }
 
   FunctionBinding * register_class_static_function(ClassInfo & info,
@@ -20414,7 +20428,9 @@ private:
                                           template_identity,
                                           request.declaration_node,
                                           request.parameter_syntax_node,
-                                          template_identity.prefer_overload_suffix);
+                                          template_identity.prefer_overload_suffix,
+                                          request.has_symbol_linkage_override,
+                                          request.symbol_linkage_override);
       }
       if(binding && request.semantic_flags.is_deleted) {
         binding->is_deleted = true;

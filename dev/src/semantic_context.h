@@ -108,6 +108,9 @@ struct FunctionRegistrationRequest
   semantic_model::ClassInfo * lexical_access_class = nullptr;
   semantic_model::FunctionBinding * lexical_access_function = nullptr;
   bool hidden_friend_only = false;
+  bool has_symbol_linkage_override = false;
+  symbol_linkage::SymbolLinkage symbol_linkage_override =
+      symbol_linkage::SL_EXTERNAL;
 };
 
 struct ClassTemplateInfoCreationRequest

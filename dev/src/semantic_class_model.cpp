@@ -3066,6 +3066,9 @@ bool collect_inherited_constructors(SemanticContext & ctx,
       request.ctor_initializer = ctor_initializer;
       request.declaration_node = &node;
       request.semantic_flags = options;
+      request.has_symbol_linkage_override = true;
+      request.symbol_linkage_override =
+          synthesized_class_member_symbol_linkage(info);
       FunctionBinding * inherited = ctx.register_function_entity(request);
       if(!inherited) {
         continue;
@@ -3078,8 +3081,6 @@ bool collect_inherited_constructors(SemanticContext & ctx,
           base_ctor->inherited_constructor_access_class ?
               base_ctor->inherited_constructor_access_class :
               base_ctor->owner_class;
-      ctx.upgrade_function_symbol_linkage(inherited,
-                                          synthesized_class_member_symbol_linkage(info));
     }
   }
 
@@ -14411,10 +14412,11 @@ void ensure_implicit_special_members(SemanticContext & ctx,
       request.owner_class = &info;
       request.name = ctor_name;
       request.semantic_flags = options;
+      request.has_symbol_linkage_override = true;
+      request.symbol_linkage_override =
+          synthesized_class_member_symbol_linkage(info);
       ctor = ctx.register_function_entity(request);
       ctor->synthesized = true;
-      ctx.upgrade_function_symbol_linkage(ctor,
-                                          synthesized_class_member_symbol_linkage(info));
     }
     const bool finalized_complete_ctor =
         info.complete &&
@@ -14438,11 +14440,12 @@ void ensure_implicit_special_members(SemanticContext & ctx,
     request.owner_class = &info;
     request.name = dtor_name;
     request.semantic_flags = options;
+    request.has_symbol_linkage_override = true;
+    request.symbol_linkage_override =
+        synthesized_class_member_symbol_linkage(info);
     FunctionBinding * dtor = ctx.register_function_entity(request);
     dtor->has_definition = true;
     dtor->synthesized = true;
-    ctx.upgrade_function_symbol_linkage(dtor,
-                                        synthesized_class_member_symbol_linkage(info));
   }
   if(info.complete) {
     refresh_defaulted_copy_assignment_state(ctx, info);
@@ -14491,6 +14494,9 @@ FunctionBinding * ensure_implicit_copy_constructor(SemanticContext & ctx,
   request.name = ctor_name;
   request.params = params;
   request.semantic_flags = options;
+  request.has_symbol_linkage_override = true;
+  request.symbol_linkage_override =
+      synthesized_class_member_symbol_linkage(info);
   FunctionBinding * ctor = ctx.register_function_entity(request);
   ctor->synthesized = true;
   ctor->is_copy_constructor = true;
@@ -14501,8 +14507,6 @@ FunctionBinding * ensure_implicit_copy_constructor(SemanticContext & ctx,
   } else {
     ctor->has_definition = true;
   }
-  ctx.upgrade_function_symbol_linkage(ctor,
-                                      synthesized_class_member_symbol_linkage(info));
   return ctor;
 }
 
@@ -14548,6 +14552,9 @@ FunctionBinding * ensure_implicit_move_constructor(SemanticContext & ctx,
   request.name = ctor_name;
   request.params = params;
   request.semantic_flags = options;
+  request.has_symbol_linkage_override = true;
+  request.symbol_linkage_override =
+      synthesized_class_member_symbol_linkage(info);
   FunctionBinding * ctor = ctx.register_function_entity(request);
   ctor->synthesized = true;
   ctor->is_move_constructor = true;
@@ -14558,8 +14565,6 @@ FunctionBinding * ensure_implicit_move_constructor(SemanticContext & ctx,
   } else {
     ctor->has_definition = true;
   }
-  ctx.upgrade_function_symbol_linkage(ctor,
-                                      synthesized_class_member_symbol_linkage(info));
   return ctor;
 }
 
@@ -14624,6 +14629,9 @@ FunctionBinding * ensure_implicit_move_assignment(SemanticContext & ctx,
   request.declared_type = declared_type;
   request.params = params;
   request.semantic_flags = options;
+  request.has_symbol_linkage_override = true;
+  request.symbol_linkage_override =
+      synthesized_class_member_symbol_linkage(info);
   FunctionBinding * op = ctx.register_function_entity(request);
   op->synthesized = true;
   if(info.complete) {
@@ -14632,8 +14640,6 @@ FunctionBinding * ensure_implicit_move_assignment(SemanticContext & ctx,
   } else {
     op->has_definition = true;
   }
-  ctx.upgrade_function_symbol_linkage(op,
-                                      synthesized_class_member_symbol_linkage(info));
   return op;
 }
 
@@ -14765,12 +14771,13 @@ FunctionBinding * ensure_implicit_aggregate_constructor(SemanticContext & ctx,
   request.name = ctor_name;
   request.params = params;
   request.semantic_flags = options;
+  request.has_symbol_linkage_override = true;
+  request.symbol_linkage_override =
+      synthesized_class_member_symbol_linkage(info);
   FunctionBinding * ctor = ctx.register_function_entity(request);
   ctor->has_definition = true;
   ctor->synthesized = true;
   ctor->is_aggregate_constructor = true;
-  ctx.upgrade_function_symbol_linkage(ctor,
-                                      synthesized_class_member_symbol_linkage(info));
   return ctor;
 }
 
@@ -14828,6 +14835,9 @@ FunctionBinding * ensure_implicit_copy_assignment(SemanticContext & ctx,
   request.declared_type = declared_type;
   request.params = params;
   request.semantic_flags = options;
+  request.has_symbol_linkage_override = true;
+  request.symbol_linkage_override =
+      synthesized_class_member_symbol_linkage(info);
   FunctionBinding * op = ctx.register_function_entity(request);
   op->synthesized = true;
   if(info.complete) {
@@ -14836,8 +14846,6 @@ FunctionBinding * ensure_implicit_copy_assignment(SemanticContext & ctx,
   } else {
     op->has_definition = true;
   }
-  ctx.upgrade_function_symbol_linkage(op,
-                                      synthesized_class_member_symbol_linkage(info));
   return op;
 }
 
