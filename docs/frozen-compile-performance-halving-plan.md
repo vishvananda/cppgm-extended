@@ -1352,6 +1352,59 @@ Evidence: `/tmp/cppgm-dependent-name-fast-path-combined-screen.time`,
 `/tmp/cppgm-dependent-name-fast-path-test-report.log`, and
 `/tmp/cppgm-dependent-name-fast-path-final.json`.
 
+Seventeenth retained Phase 7 slice: the post-dependent-name profile still
+placed `memcmp` first among non-allocation leaves with 917 samples. The earlier
+type-equality census measured 911,499 named-type structural comparisons. Only
+six unequal spellings matched through elaborated-prefix compatibility, but
+every unequal spelling still had to classify prefixes and compare character
+ranges.
+
+Each named type now retains an interned identity for its prefix-stripped key
+and the corresponding elaborated-prefix category. Named equality compares the
+identity pointers, then preserves the existing rule that an unprefixed name
+matches a class, struct, union, or enum spelling while incompatible prefixed
+categories remain unequal. The original key string remains authoritative for
+lookup, diagnostics, mangling, and output. A single setter refreshes the
+identity at construction and at the four post-construction key rewrite sites.
+
+Two local-named-type collectors also used tree sets of copied key strings and
+class pointers while walking the same identities. They now keep their small
+per-operation visit populations in contiguous vectors, comparing the interned
+key pointer or `ClassInfo` pointer. The fresh profile attributed 46 immediate
+allocation samples to the template-instantiation collector before this
+change.
+
+The identity-only screen used `126,014,200,185` instructions. Adding the two
+collectors improved the combined screen to `125,384,775,343`. A three-pair
+binary comparison measured parent median `126,417,396,602` and candidate
+median `125,607,532,538`, a `0.641%` reduction. Paired median RSS increased
+from `731,701,248 B` to `743,436,288 B`, and footprint increased from
+`550,633,472 B` to `554,647,552 B`; both remain below the original frozen
+baseline. All six paired objects had the frozen SHA-256. Configured direct
+strict passes `1530/1530`, and the full direct report, including PA9 through
+its normal lane, passes `4863/4863`.
+
+Absolute three-run medians against `42d55c49c`:
+
+| Signal | Candidate | Change |
+| --- | ---: | ---: |
+| retired instructions | `125,553,969,817` | `-48,603,801,127` (`-27.91%`); `-0.707%` from `d5900e76d` |
+| maximum RSS | `730,492,928 B` | `-30,711,808 B` (`-4.03%`) |
+| peak footprint | `554,708,992 B` | `-14,049,280 B` (`-2.47%`) |
+| elapsed cycles | `92,352,778,977` | `-28.10%` |
+| wall time | `24.19 s` | `-39.56%`, informational under host load |
+
+The halving target still requires `38,475,084,345` fewer instructions, or a
+`30.64%` reduction from this checkpoint.
+
+Evidence: `/tmp/cppgm-post-dependent-name-profile.sample.txt`,
+`/tmp/cppgm-named-key-identity-screen.json`,
+`/tmp/cppgm-named-key-identity-collectors-screen.json`,
+`/tmp/cppgm-named-identity-ab-{parent,candidate}-{1,2,3}.time`,
+`/tmp/cppgm-named-key-identity-test-strict.log`,
+`/tmp/cppgm-named-key-identity-test-report.log`, and
+`/tmp/cppgm-named-key-identity-final.json`.
+
 ### Phase 8: final halving proof
 
 Run the following from a clean tracked tree:
@@ -1427,6 +1480,7 @@ Fill one row after each retained commit.
 | `8e46f9fc2` | keep zero-length lazy AST vector reservations allocation-free | `128,444,585,958` | `-26.25%` | `734,158,848` | `554,516,480` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-reserve-zero-final.json`; paired A/B: `-2.040%` instructions |
 | `a74749dcd` | reuse nonvirtual special-member base-entry bodies for complete-entry output | `127,129,199,627` | `-27.00%` | `737,443,840` | `551,108,608` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-special-member-base-body-reuse-final.json`; removed 2,267 duplicate body analyses |
 | `d5900e76d` | use inline dependent-name recursion state and defer placeholder scans until exact binding fails | `126,447,955,718` | `-27.39%` | `734,490,624` | `550,830,080` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-name-fast-path-final.json`; paired A/B: `-0.568%` instructions; avoided 95,972 placeholder scans |
+| `2b72a6b7b` | compare named types by interned key identity and keep local-name traversal scratch contiguous | `125,553,969,817` | `-27.91%` | `730,492,928` | `554,708,992` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-named-key-identity-final.json`; paired A/B: `-0.641%` instructions |
 
 ## Rejected work ledger
 
