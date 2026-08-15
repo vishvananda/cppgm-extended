@@ -385,6 +385,11 @@ size_t vector_storage_bytes(const CppAstLazyVector<T> & value)
   return value.as_vector().capacity() * sizeof(T);
 }
 
+size_t vector_storage_bytes(const CallSemChildren & value)
+{
+  return value.storage_bytes();
+}
+
 template<class K, class V, class C, class A>
 size_t map_storage_bytes(const map<K, V, C, A> & value)
 {

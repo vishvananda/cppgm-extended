@@ -3,7 +3,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <iosfwd>
+#include <limits>
 #include <memory>
+#include <new>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -14,7 +17,7 @@
 #include "symbol_linkage.h"
 #include "text_intern.h"
 
-enum CallValueCategory
+enum CallValueCategory : std::uint64_t
 {
   CVC_NONE,
   CVC_LVALUE,
@@ -93,12 +96,16 @@ enum CallValueCategory
   X(variable, "variable") \
   X(while_statement, "while-statement")
 
-enum class CallSemKind
+enum class CallSemKind : std::uint64_t
 {
 #define CALL_SEM_KIND_ENUM(name, text) name,
   CALL_SEM_KIND_LIST(CALL_SEM_KIND_ENUM)
 #undef CALL_SEM_KIND_ENUM
 };
+
+static_assert(static_cast<std::uint64_t>(CallSemKind::while_statement) <
+                  (std::uint64_t(1) << 7),
+              "CallSemKind no longer fits in CallSemNode::kind");
 
 const char * callsem_kind_text(CallSemKind kind);
 bool callsem_construction_census_enabled();
@@ -122,6 +129,63 @@ typedef std::vector<std::pair<std::string, unsigned long long> >
     CallSemVirtualBaseLayout;
 
 struct CallSemNode;
+
+// Vector-like owned storage specialized for recursive CallSemNode children.
+// Copying deep-copies the elements and moving transfers their storage. As with
+// std::vector, reserve, growth, and insert invalidate iterators and references;
+// clear destroys elements but retains the allocation.
+class CallSemChildren
+{
+public:
+  typedef CallSemNode value_type;
+  typedef value_type * iterator;
+  typedef const value_type * const_iterator;
+
+  CallSemChildren() noexcept;
+  CallSemChildren(const CallSemChildren & other);
+  CallSemChildren(CallSemChildren && other) noexcept;
+  CallSemChildren(const std::vector<CallSemNode> & other);
+  ~CallSemChildren();
+
+  CallSemChildren & operator=(const CallSemChildren & other);
+  CallSemChildren & operator=(CallSemChildren && other) noexcept;
+  CallSemChildren & operator=(const std::vector<CallSemNode> & other);
+
+  iterator begin() noexcept;
+  const_iterator begin() const noexcept;
+  iterator end() noexcept;
+  const_iterator end() const noexcept;
+  bool empty() const noexcept;
+  std::size_t size() const noexcept;
+  std::size_t capacity() const noexcept;
+  std::size_t storage_bytes() const noexcept;
+  value_type & operator[](std::size_t index) noexcept;
+  const value_type & operator[](std::size_t index) const noexcept;
+  value_type & front() noexcept;
+  const value_type & front() const noexcept;
+  value_type & back() noexcept;
+  const value_type & back() const noexcept;
+
+  void clear() noexcept;
+  void reserve(std::size_t requested_capacity);
+  void push_back(const value_type & value);
+  void push_back(value_type && value);
+
+  template<typename InputIterator>
+  iterator insert(const_iterator position, InputIterator first, InputIterator last);
+
+  void swap(CallSemChildren & other) noexcept;
+
+private:
+  struct Storage;
+  Storage * storage_;
+
+  static Storage * allocate_storage(std::size_t capacity);
+  static void release_storage(Storage * storage) noexcept;
+  value_type * data() noexcept;
+  const value_type * data() const noexcept;
+  std::size_t next_capacity(std::size_t minimum) const;
+};
 
 class CallSemText
 {
@@ -331,6 +395,8 @@ struct CallSemNode
     : source_file_index(0),
       source_line(0),
       source_column(0),
+      kind(CallSemKind::invalid),
+      value_category(CVC_NONE),
       token_type(static_cast<ETokenType>(0)),
       implicit_return_move_eligible(false),
       has_uint_value(false),
@@ -391,16 +457,15 @@ struct CallSemNode
     callsem_note_constructed_node(kind, text, children.size());
   }
 
-  CallSemKind kind = CallSemKind::invalid;
-  CallValueCategory value_category = CVC_NONE;
-
   CallSemText text;
-  std::vector<CallSemNode> children;
+  CallSemChildren children;
   cpp_decl::TypePtr semantic_type;
   std::shared_ptr<CallSemNodeExtra> extra;
   std::uint64_t source_file_index : 16;
   std::uint64_t source_line : 24;
   std::uint64_t source_column : 24;
+  CallSemKind kind : 7;
+  CallValueCategory value_category : 2;
   ETokenType token_type : 8;
 
   std::uint64_t implicit_return_move_eligible : 1;
@@ -453,6 +518,284 @@ struct CallSemNode
 
   bool has_source_location() const;
 };
+
+struct alignas(CallSemNode) CallSemChildren::Storage
+{
+  std::uint32_t size;
+  std::uint32_t capacity;
+};
+
+inline CallSemChildren::CallSemChildren() noexcept : storage_(nullptr) {}
+
+inline CallSemChildren::CallSemChildren(const CallSemChildren & other)
+  : storage_(nullptr)
+{
+  reserve(other.size());
+  for(const_iterator it = other.begin(); it != other.end(); ++it) {
+    push_back(*it);
+  }
+}
+
+inline CallSemChildren::CallSemChildren(CallSemChildren && other) noexcept
+  : storage_(other.storage_)
+{
+  other.storage_ = nullptr;
+}
+
+inline CallSemChildren::CallSemChildren(const std::vector<CallSemNode> & other)
+  : storage_(nullptr)
+{
+  reserve(other.size());
+  for(std::vector<CallSemNode>::const_iterator it = other.begin();
+      it != other.end();
+      ++it) {
+    push_back(*it);
+  }
+}
+
+inline CallSemChildren::~CallSemChildren()
+{
+  release_storage(storage_);
+}
+
+inline CallSemChildren & CallSemChildren::operator=(const CallSemChildren & other)
+{
+  if(this != &other) {
+    CallSemChildren copy(other);
+    swap(copy);
+  }
+  return *this;
+}
+
+inline CallSemChildren & CallSemChildren::operator=(CallSemChildren && other) noexcept
+{
+  if(this != &other) {
+    release_storage(storage_);
+    storage_ = other.storage_;
+    other.storage_ = nullptr;
+  }
+  return *this;
+}
+
+inline CallSemChildren &
+CallSemChildren::operator=(const std::vector<CallSemNode> & other)
+{
+  CallSemChildren copy(other);
+  swap(copy);
+  return *this;
+}
+
+inline CallSemChildren::iterator CallSemChildren::begin() noexcept
+{
+  return data();
+}
+
+inline CallSemChildren::const_iterator CallSemChildren::begin() const noexcept
+{
+  return data();
+}
+
+inline CallSemChildren::iterator CallSemChildren::end() noexcept
+{
+  return storage_ ? data() + size() : nullptr;
+}
+
+inline CallSemChildren::const_iterator CallSemChildren::end() const noexcept
+{
+  return storage_ ? data() + size() : nullptr;
+}
+
+inline bool CallSemChildren::empty() const noexcept
+{
+  return size() == 0;
+}
+
+inline std::size_t CallSemChildren::size() const noexcept
+{
+  return storage_ ? storage_->size : 0;
+}
+
+inline std::size_t CallSemChildren::capacity() const noexcept
+{
+  return storage_ ? storage_->capacity : 0;
+}
+
+inline std::size_t CallSemChildren::storage_bytes() const noexcept
+{
+  return storage_ ? sizeof(Storage) + capacity() * sizeof(CallSemNode) : 0;
+}
+
+inline CallSemNode & CallSemChildren::operator[](std::size_t index) noexcept
+{
+  return data()[index];
+}
+
+inline const CallSemNode &
+CallSemChildren::operator[](std::size_t index) const noexcept
+{
+  return data()[index];
+}
+
+inline CallSemNode & CallSemChildren::front() noexcept
+{
+  return *begin();
+}
+
+inline const CallSemNode & CallSemChildren::front() const noexcept
+{
+  return *begin();
+}
+
+inline CallSemNode & CallSemChildren::back() noexcept
+{
+  return *(end() - 1);
+}
+
+inline const CallSemNode & CallSemChildren::back() const noexcept
+{
+  return *(end() - 1);
+}
+
+inline void CallSemChildren::clear() noexcept
+{
+  if(!storage_) {
+    return;
+  }
+  while(storage_->size != 0) {
+    data()[--storage_->size].~CallSemNode();
+  }
+}
+
+inline CallSemChildren::Storage *
+CallSemChildren::allocate_storage(std::size_t requested_capacity)
+{
+  if(requested_capacity > std::numeric_limits<std::uint32_t>::max()) {
+    throw std::length_error("too many CallSemNode children");
+  }
+  const std::size_t maximum_bytes =
+      (std::numeric_limits<std::size_t>::max() - sizeof(Storage)) /
+      sizeof(CallSemNode);
+  if(requested_capacity > maximum_bytes) {
+    throw std::length_error("CallSemNode children allocation is too large");
+  }
+  void * memory = ::operator new(sizeof(Storage) +
+                                 requested_capacity * sizeof(CallSemNode));
+  Storage * storage = new(memory) Storage();
+  storage->size = 0;
+  storage->capacity = static_cast<std::uint32_t>(requested_capacity);
+  return storage;
+}
+
+inline void CallSemChildren::release_storage(Storage * storage) noexcept
+{
+  if(!storage) {
+    return;
+  }
+  CallSemNode * elements = reinterpret_cast<CallSemNode *>(storage + 1);
+  while(storage->size != 0) {
+    elements[--storage->size].~CallSemNode();
+  }
+  storage->~Storage();
+  ::operator delete(storage);
+}
+
+inline CallSemNode * CallSemChildren::data() noexcept
+{
+  return storage_ ? reinterpret_cast<CallSemNode *>(storage_ + 1) : nullptr;
+}
+
+inline const CallSemNode * CallSemChildren::data() const noexcept
+{
+  return storage_ ? reinterpret_cast<const CallSemNode *>(storage_ + 1) : nullptr;
+}
+
+inline std::size_t CallSemChildren::next_capacity(std::size_t minimum) const
+{
+  const std::size_t current = capacity();
+  if(current >= minimum) {
+    return current;
+  }
+  if(current == 0) {
+    return minimum > 1 ? minimum : 1;
+  }
+  const std::size_t maximum = std::numeric_limits<std::uint32_t>::max();
+  const std::size_t doubled = current > maximum / 2 ? maximum : current * 2;
+  return doubled < minimum ? minimum : doubled;
+}
+
+inline void CallSemChildren::reserve(std::size_t requested_capacity)
+{
+  if(requested_capacity <= capacity()) {
+    return;
+  }
+  Storage * replacement = allocate_storage(requested_capacity);
+  CallSemNode * replacement_data =
+      reinterpret_cast<CallSemNode *>(replacement + 1);
+  try {
+    for(std::size_t i = 0; i < size(); ++i) {
+      new(replacement_data + i) CallSemNode(std::move_if_noexcept(data()[i]));
+      ++replacement->size;
+    }
+  } catch(...) {
+    release_storage(replacement);
+    throw;
+  }
+  release_storage(storage_);
+  storage_ = replacement;
+}
+
+inline void CallSemChildren::push_back(const CallSemNode & value)
+{
+  if(size() == capacity()) {
+    reserve(next_capacity(size() + 1));
+  }
+  new(data() + storage_->size) CallSemNode(value);
+  ++storage_->size;
+}
+
+inline void CallSemChildren::push_back(CallSemNode && value)
+{
+  if(size() == capacity()) {
+    reserve(next_capacity(size() + 1));
+  }
+  new(data() + storage_->size) CallSemNode(std::move(value));
+  ++storage_->size;
+}
+
+template<typename InputIterator>
+inline CallSemChildren::iterator
+CallSemChildren::insert(const_iterator position,
+                        InputIterator first,
+                        InputIterator last)
+{
+  const std::size_t offset = storage_ ? position - begin() : 0;
+  std::vector<CallSemNode> inserted;
+  for(; first != last; ++first) {
+    inserted.push_back(*first);
+  }
+  if(inserted.empty()) {
+    return offset == 0 ? begin() : begin() + offset;
+  }
+
+  CallSemChildren replacement;
+  replacement.reserve(next_capacity(size() + inserted.size()));
+  for(std::size_t i = 0; i < offset; ++i) {
+    replacement.push_back(std::move(data()[i]));
+  }
+  for(std::size_t i = 0; i < inserted.size(); ++i) {
+    replacement.push_back(std::move(inserted[i]));
+  }
+  for(std::size_t i = offset; i < size(); ++i) {
+    replacement.push_back(std::move(data()[i]));
+  }
+  swap(replacement);
+  return begin() + offset;
+}
+
+inline void CallSemChildren::swap(CallSemChildren & other) noexcept
+{
+  std::swap(storage_, other.storage_);
+}
 
 const std::string & callsem_empty_extra_string();
 std::uint32_t callsem_intern_source_file_index(const std::string & value);
