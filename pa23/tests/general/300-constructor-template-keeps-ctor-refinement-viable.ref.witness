@@ -5,8 +5,6 @@ translation-unit
     bind #1 = const char * source=deduced
     drop String::String reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity String::String
   function-instantiation
     entity String::String
   require-definition

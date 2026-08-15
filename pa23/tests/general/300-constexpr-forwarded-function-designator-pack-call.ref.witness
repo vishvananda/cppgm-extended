@@ -31,10 +31,6 @@ translation-unit
     bind #1 = int (&)(int) source=deduced
     bind #2 = <int> source=deduced
 template-closure-events
-  ensure-definition
-    entity forward
-  ensure-definition
-    entity invoke
   function-instantiation
     entity forward
   function-instantiation

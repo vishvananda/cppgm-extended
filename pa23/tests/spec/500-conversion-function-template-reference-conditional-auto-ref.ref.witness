@@ -21,18 +21,6 @@ translation-unit
     bind #1 = callable_tag source=deduced
     drop factor<unique_tag>::operator= reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity deduce_unique<unique_tag>::const operator wrapper<callable_tag> &
-  ensure-definition
-    entity deduce_unique<unique_tag>::deduce_unique
-  ensure-definition
-    entity factor<unique_tag>::factor
-  ensure-definition
-    entity factor<unique_tag>::operator=
-  ensure-definition
-    entity static_const_var
-  ensure-definition
-    entity wrapper<callable_tag>::wrapper
   function-instantiation
     entity deduce_unique<unique_tag>::const operator wrapper<callable_tag> &
   function-instantiation

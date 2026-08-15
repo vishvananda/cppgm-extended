@@ -4,10 +4,6 @@ translation-unit
     selected instantiation
     bind #1 = &sample source=explicit
 template-closure-events
-  ensure-definition
-    entity api::detail::run_test
-  ensure-definition
-    entity sample
   function-instantiation
     entity api::detail::run_test
   function-instantiation

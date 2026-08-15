@@ -86,6 +86,39 @@ class WitnessPathNormalizationTests(unittest.TestCase):
 
         self.assertEqual(output.count("  class-use at "), 2)
 
+    def test_public_witness_canonicalizes_definition_demands(self):
+        document = witness_document("pa22")
+        document["closure_events"] = [
+            {
+                "kind": "ensure-definition",
+                "location": "/checkout/pa22/tests/spec/movable.t:7:3",
+                "entity": "box<int>::move()",
+                "reason": "ensure-definition",
+            },
+            {
+                "kind": "require-definition",
+                "location": "/checkout/pa22/tests/spec/movable.t:8:3",
+                "entity": "box<int>::move()",
+                "reason": "require-definition",
+            },
+            {
+                "kind": "ensure-definition",
+                "location": "/checkout/pa22/tests/spec/movable.t:9:3",
+                "entity": "helper<int>()",
+                "reason": "ensure-definition",
+            },
+        ]
+
+        public_output = RENDERER.render_emit_templates_text(document)
+        debug_output = RENDERER.render_emit_templates_debug_text(document)
+
+        self.assertEqual(public_output.count("  require-definition\n"), 2)
+        self.assertNotIn("  ensure-definition\n", public_output)
+        self.assertIn("    entity box<int>::move()", public_output)
+        self.assertIn("    entity helper<int>()", public_output)
+        self.assertIn("  ensure-definition at ", debug_output)
+        self.assertIn("  require-definition at ", debug_output)
+
     def test_const_normalization_does_not_rewrite_identifier_suffixes(self):
         self.assertEqual(
             RENDERER.normalize_public_type_spellings(

@@ -8038,28 +8038,61 @@ provenance differs. The compact public projection continues to coalesce those
 rows, while debug output retains them. CPPGM must not add semantic machinery
 solely to reproduce a multiplicity that the public format cannot distinguish.
 
-Closure correctness is compared as normalized semantic facts, not as a raw
-event log and not as one undifferentiated "some closure happened" bit:
+Closure correctness is compared as exact canonical public witness text, not as
+a raw event log and not as one undifferentiated "some closure happened" bit:
 
-- `require-definition` and `ensure-definition` both produce one
-  `definition-demand` fact for their normalized entity;
+- `require-definition` and `ensure-definition` both render as the public
+  `require-definition` kind and coalesce by normalized entity;
 - `function-instantiation`, `class-instantiation`, `alias-instantiation`,
   `variable-instantiation`, and `class-finalization` remain distinct terminal
   outcome facts;
 - event multiplicity, source location, trigger, trigger declaration, reason,
-  and detail do not participate in the ordinary correctness key; they remain
-  available in raw JSON and debug witness output;
-- a missing reference fact fails the closure gate;
-- an unexpected terminal outcome fails because it can indicate eager or
-  incorrect instantiation;
-- an additional `definition-demand` fact is reported as a warning for semantic
-  and performance investigation, but does not fail correctness by itself.
+  and detail do not participate in the compact public projection; they remain
+  available with the original require/ensure distinction in raw JSON and debug
+  witness output;
+- after that producer-side projection, any byte difference fails strict.
 
 Thus "at least one" means at least one event for every required normalized
 closure fact. It never means that one arbitrary closure row is sufficient for
-the translation unit or even for an entity. The matching harness must compare
-these fact sets explicitly so correctness does not depend on renderer
-multiplicity or ordering.
+the translation unit or even for an entity. Both patched Clang reference
+generation and CPPGM compact output apply the same canonical projection before
+the matching harness performs its exact comparison.
+
+### Definition-demand canonicalization adjudication, 2026-08-15
+
+Restoring byte-exact strict comparison exposed ten differences after source-use
+and terminal lifecycle output had otherwise converged. Eight were additional
+CPPGM `ensure-definition` rows and two were patched-Clang-only
+`ensure-definition` rows. The disputed entities were spread across PA19, PA22,
+PA23, and PA24 and covered destructors, inherited constructors, nested member
+calls, static-member initialization, overload recursion, and function-pointer
+template arguments.
+
+The differences were audited before canonicalization was accepted:
+
+- patched-Clang raw JSON and CPPGM debug output contain the same
+  `require-definition` and materialized `function-instantiation` for every one
+  of the ten entities;
+- CPPGM records exactly one `ensure-definition` transition per disputed
+  concrete binding, with no repeated ensure transition for the same binding;
+- the eight additional CPPGM ensure rows correspond to Clang materialization
+  events whose reason is already `ensure-definition`; patched Clang's
+  `InstantiateFunctionDefinition` hook deliberately omits the nested ensure
+  event when the current closure reason is already `EnsureDefinition`, but it
+  still records and performs the function instantiation;
+- CPPGM raw debug output contains both of the ensures that its old compact
+  renderer omitted, so those two differences were also projection rather than
+  missing demand generation;
+- enabling witness capture did not change template-instantiation requests,
+  template-definition upgrades, required-definition requests or upgrades, or
+  fixpoint iterations in any of the ten cases.
+
+The public normalization therefore merges only the event-kind distinction for
+the same normalized entity. It does not merge different entities or terminal
+outcomes; an extra demand for another entity and any terminal-instantiation
+difference still fail the byte-exact strict gate. Raw JSON and debug text keep
+the original kinds, triggers, locations, reasons, and materialization details
+for performance and correctness investigations.
 
 Parity work must consequently target the patched-Clang structured argument
 printer before Python presentation normalization. CPPGM may apply the same
@@ -8639,17 +8672,18 @@ Acceptance:
    add semantic state solely to reproduce or suppress Clang event
    multiplicity. Preserve locations, triggers, reasons, and details in debug
    output.
-4. Make the strict matcher compare normalized closure fact sets. Missing
-   facts and unexpected terminal outcomes fail; additional definition-demand
-   facts warn and require an explanation before the phase is promoted.
+4. Canonicalize `ensure-definition` and `require-definition` to the public
+   `require-definition` row in both producers, then keep the strict matcher
+   byte-exact. Any remaining difference fails and requires an explanation
+   before the phase is promoted.
 5. Recheck the two PA23 LowIR regressions while migrating conversion-function
    and enable-if ownership; lifecycle output and generated definitions must
    agree on the same semantic result.
 
-Acceptance: zero missing closure facts, zero unexpected terminal outcomes,
-all extra definition-demand warnings explained, exact PA23 LowIR, and no
-lifecycle-driven class/alias admission. Raw event multiplicity and provenance
-are diagnostic rather than ordinary correctness requirements.
+Acceptance: exact canonical closure output, exact PA23 LowIR, and no
+lifecycle-driven class/alias admission. Raw event multiplicity, provenance,
+and the require/ensure scheduling distinction are diagnostic rather than
+ordinary correctness requirements.
 
 ### Phase 5: Converge function-call and variable-use results
 
@@ -8700,7 +8734,7 @@ Run from a committed, clean worktree with an isolated object root:
 
 1. focused positive/negative fixtures for every migrated owner;
 2. ordinary and provenance strict with direct LowIR: 1,530/1,530, using exact
-   source-use matching and normalized closure-fact matching;
+   canonical public witness matching;
 3. PA1-PA38 report: 4,862/4,862 or the then-current fully explained count;
 4. provenance invariants for every event family;
 5. materialization, text-reparse, duplicate-semantic-walk, and analyzer unit

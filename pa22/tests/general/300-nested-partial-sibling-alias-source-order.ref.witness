@@ -8,8 +8,6 @@ translation-unit
     selected instantiation
     bind #1 = int source=deduced
 template-closure-events
-  ensure-definition
-    entity function<operation>::operator()
   function-instantiation
     entity function<operation>::operator()
   require-definition

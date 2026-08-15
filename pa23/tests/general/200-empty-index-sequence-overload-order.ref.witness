@@ -12,8 +12,6 @@ translation-unit
   alias-use at tests/general/200-empty-index-sequence-overload-order.t:25:18
     template index_sequence
 template-closure-events
-  ensure-definition
-    entity pick
   function-instantiation
     entity pick
   require-definition

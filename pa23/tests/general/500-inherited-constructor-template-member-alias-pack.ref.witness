@@ -9,8 +9,6 @@ translation-unit
 template-closure-events
   class-instantiation
     entity tuple_like<first, second, third>::tag
-  ensure-definition
-    entity tuple_like<first, second, third>::tuple_like
   function-instantiation
     entity tuple_like<first, second, third>::tuple_like
   require-definition

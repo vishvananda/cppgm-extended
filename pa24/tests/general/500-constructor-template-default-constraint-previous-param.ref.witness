@@ -26,8 +26,6 @@ translation-unit
     drop mutable_buffer::mutable_buffer reason=too_few_arguments
     drop mutable_buffer::mutable_buffer reason=worse_conversion
 template-closure-events
-  ensure-definition
-    entity mutable_buffer::mutable_buffer
   function-instantiation
     entity mutable_buffer::mutable_buffer
   require-definition

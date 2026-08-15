@@ -51,16 +51,6 @@ translation-unit
     bind #1 = view source=deduced
     drop string_like<char, traits>::operator= reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity string_like<char, traits>::data
-  ensure-definition
-    entity string_like<char, traits>::operator view
-  ensure-definition
-    entity string_like<char, traits>::operator=
-  ensure-definition
-    entity string_like<char, traits>::string_like
-  ensure-definition
-    entity view<char, traits>::view
   function-instantiation
     entity string_like<char, traits>::data
   function-instantiation

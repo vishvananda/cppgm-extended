@@ -10,8 +10,6 @@ translation-unit
 template-closure-events
   class-finalization
     entity box
-  ensure-definition
-    entity box<int>::add
   function-instantiation
     entity box<int>::add
   function-instantiation

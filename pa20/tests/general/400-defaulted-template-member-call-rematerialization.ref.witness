@@ -12,10 +12,6 @@ translation-unit
     bind #1 = int source=deduced
     drop append reason=non_deduced_mismatch
 template-closure-events
-  ensure-definition
-    entity Lazy<Lazy<Root, int>, int>::operator()
-  ensure-definition
-    entity append
   function-instantiation
     entity Lazy<Lazy<Root, int>, int>::Lazy
   function-instantiation

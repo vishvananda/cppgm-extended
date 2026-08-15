@@ -16,8 +16,6 @@ translation-unit
 template-closure-events
   class-instantiation
     entity A<int &>::B
-  ensure-definition
-    entity A<int &>::B::B
   function-instantiation
     entity A<int &>::B::B
   require-definition

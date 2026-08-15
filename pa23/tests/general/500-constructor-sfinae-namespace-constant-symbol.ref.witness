@@ -11,8 +11,6 @@ translation-unit
     bind #2 = 0 source=defaulted
     drop span<const char>::span reason=too_many_arguments
 template-closure-events
-  ensure-definition
-    entity span<const char>::span
   function-instantiation
     entity span<const char>::span
   require-definition

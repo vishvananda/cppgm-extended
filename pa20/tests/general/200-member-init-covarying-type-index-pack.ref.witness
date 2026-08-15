@@ -29,8 +29,6 @@ template-closure-events
     entity pair_like
   class-instantiation
     entity pair_like
-  ensure-definition
-    entity run
   function-instantiation
     entity get
   function-instantiation

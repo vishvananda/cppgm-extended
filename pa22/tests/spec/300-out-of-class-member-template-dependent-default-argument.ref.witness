@@ -23,10 +23,6 @@ translation-unit
     selected instantiation
     bind #1 = int source=deduced
 template-closure-events
-  ensure-definition
-    entity graph<int>::accept
-  ensure-definition
-    entity graph<int>::graph
   function-instantiation
     entity graph<int>::accept
   function-instantiation

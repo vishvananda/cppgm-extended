@@ -74,8 +74,6 @@ translation-unit
     bind #6 = unsigned long source=deduced
     drop get reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity get
   function-instantiation
     entity get
   function-instantiation

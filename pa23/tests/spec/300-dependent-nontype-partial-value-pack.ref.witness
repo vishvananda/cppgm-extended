@@ -34,8 +34,6 @@ translation-unit
     bind #1 = code source=explicit
     bind #2 = code source=defaulted
 template-closure-events
-  ensure-definition
-    entity match<condition<code>, code::first, code::second>::run
   function-instantiation
     entity compare_pack
   function-instantiation

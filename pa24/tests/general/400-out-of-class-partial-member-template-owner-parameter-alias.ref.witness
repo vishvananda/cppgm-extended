@@ -42,8 +42,6 @@ translation-unit
     bind #2 = false source=explicit
     specialize #1 = const int & source=deduced
 template-closure-events
-  ensure-definition
-    entity traits<const int &, false>::check
   function-instantiation
     entity peek
   function-instantiation

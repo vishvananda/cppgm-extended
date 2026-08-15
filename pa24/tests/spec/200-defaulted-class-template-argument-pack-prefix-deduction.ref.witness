@@ -18,10 +18,6 @@ translation-unit
     bind #1 = int source=deduced
     bind #2 = <int, int, tuples::null_type, tuples::null_type, tuples::null_type, tuples::null_type, tuples::null_type, tuples::null_type, tuples::null_type> source=deduced
 template-closure-events
-  ensure-definition
-    entity take
-  ensure-definition
-    entity tuples::tuple<int, int, int>::tuple
   function-instantiation
     entity take
   function-instantiation

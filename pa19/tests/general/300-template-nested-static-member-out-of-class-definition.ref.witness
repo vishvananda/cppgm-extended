@@ -10,8 +10,6 @@ translation-unit
 template-closure-events
   class-instantiation
     entity n::outer<int>::inner
-  ensure-definition
-    entity n::outer<int>::read
   function-instantiation
     entity n::outer<int>::read
   require-definition

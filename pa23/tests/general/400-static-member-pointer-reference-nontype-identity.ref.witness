@@ -16,14 +16,6 @@ translation-unit
     selected primary
     bind #1 = right_owner::value source=explicit
 template-closure-events
-  ensure-definition
-    entity pointer_holder<&left_owner::value>::read
-  ensure-definition
-    entity pointer_holder<&right_owner::value>::read
-  ensure-definition
-    entity reference_holder<left_owner::value>::read
-  ensure-definition
-    entity reference_holder<right_owner::value>::read
   function-instantiation
     entity pointer_holder<&left_owner::value>::read
   function-instantiation

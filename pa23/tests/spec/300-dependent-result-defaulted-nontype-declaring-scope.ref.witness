@@ -13,10 +13,6 @@ translation-unit
     bind #1 = long source=deduced
     bind #2 = double source=deduced
 template-closure-events
-  ensure-definition
-    entity units::box<long>::box
-  ensure-definition
-    entity units::operator/
   function-instantiation
     entity units::box<double>::box
   function-instantiation

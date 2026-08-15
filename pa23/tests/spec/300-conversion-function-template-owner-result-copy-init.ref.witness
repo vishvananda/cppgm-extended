@@ -20,8 +20,6 @@ translation-unit
     drop basic_string<char, char_traits, allocator>::basic_string reason=explicit_not_allowed
     drop basic_string<char, char_traits, allocator>::basic_string reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity basic_string_view<char>::operator basic_string
   function-instantiation
     entity basic_string<char, char_traits, allocator>::basic_string
   function-instantiation

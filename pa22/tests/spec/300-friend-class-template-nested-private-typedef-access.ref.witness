@@ -12,8 +12,6 @@ template-closure-events
     entity direct_wrapper<int>::iterator
   class-instantiation
     entity inherited_wrapper<int>::iterator
-  ensure-definition
-    entity check
   function-instantiation
     entity check
   function-instantiation

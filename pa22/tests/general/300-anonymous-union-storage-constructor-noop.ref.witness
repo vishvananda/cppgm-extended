@@ -11,8 +11,6 @@ translation-unit
 template-closure-events
   class-instantiation
     entity Node<Value>::(anonymous union at 19:3)
-  ensure-definition
-    entity Node<Value>::Node
   function-instantiation
     entity Node<Value>::Node
   require-definition

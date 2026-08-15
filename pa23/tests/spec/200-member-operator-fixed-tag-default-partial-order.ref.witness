@@ -61,18 +61,6 @@ translation-unit
     selected instantiation
     bind #1 = default_map source=deduced
 template-closure-events
-  ensure-definition
-    entity arg_list<tagged_argument<predecessor_tag, int>, empty_arg_list>::arg_list
-  ensure-definition
-    entity arg_list<tagged_argument<weight_tag, supplied_map>, arg_list<tagged_argument<predecessor_tag, int>, empty_arg_list>>::arg_list
-  ensure-definition
-    entity arg_list<tagged_argument<weight_tag, supplied_map>, arg_list<tagged_argument<predecessor_tag, int>, empty_arg_list>>::operator[]
-  ensure-definition
-    entity keyword<weight_tag>::operator|
-  ensure-definition
-    entity tagged_argument<predecessor_tag, int>::tagged_argument
-  ensure-definition
-    entity tagged_argument<weight_tag, supplied_map>::tagged_argument
   function-instantiation
     entity arg_list<tagged_argument<predecessor_tag, int>, empty_arg_list>::arg_list
   function-instantiation

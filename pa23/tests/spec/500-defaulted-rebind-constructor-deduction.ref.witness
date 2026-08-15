@@ -25,10 +25,6 @@ translation-unit
     drop offset_ptr<const compact_node<offset_ptr<void>>>::offset_ptr reason=bad_conversion
     drop offset_ptr<const compact_node<offset_ptr<void>>>::offset_ptr reason=too_many_arguments
 template-closure-events
-  ensure-definition
-    entity offset_ptr<compact_node<offset_ptr<void>>>::offset_ptr
-  ensure-definition
-    entity offset_ptr<const compact_node<offset_ptr<void>>>::offset_ptr
   function-instantiation
     entity offset_ptr<compact_node<offset_ptr<void>>>::offset_ptr
   function-instantiation

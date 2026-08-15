@@ -8,16 +8,6 @@ translation-unit
     selected instantiation
     bind #1 = long source=deduced
 template-closure-events
-  ensure-definition
-    entity context::executor<int>::executor
-  ensure-definition
-    entity context::executor<int>::require
-  ensure-definition
-    entity context::executor<int>::~executor
-  ensure-definition
-    entity context::executor<long>::execute
-  ensure-definition
-    entity context::executor<long>::~executor
   function-instantiation
     entity context::executor<int>::executor
   function-instantiation

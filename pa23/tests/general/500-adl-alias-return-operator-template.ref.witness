@@ -16,10 +16,6 @@ translation-unit
     selected instantiation
     bind #1 = fusion::vector<int> source=deduced
 template-closure-events
-  ensure-definition
-    entity fusion::clear
-  ensure-definition
-    entity fusion::operators::operator<<
   function-instantiation
     entity fusion::clear
   function-instantiation

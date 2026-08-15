@@ -17,8 +17,6 @@ translation-unit
     selected primary
     bind #1 = int source=explicit
 template-closure-events
-  ensure-definition
-    entity async_result<appended<binder<int>>>::initiate
   function-instantiation
     entity async_result<appended<binder<int>>>::init_wrapper<initiation>::init_wrapper
   function-instantiation

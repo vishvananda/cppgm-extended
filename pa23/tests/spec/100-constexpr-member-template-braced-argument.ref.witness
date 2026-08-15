@@ -4,8 +4,6 @@ translation-unit
     selected instantiation
     bind #1 = int source=defaulted
 template-closure-events
-  ensure-definition
-    entity optional::value_or
   function-instantiation
     entity optional::value_or
   require-definition

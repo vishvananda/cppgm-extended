@@ -22,10 +22,6 @@ translation-unit
     selected instantiation
     bind #1 = Y source=deduced
 template-closure-events
-  ensure-definition
-    entity lib::make
-  ensure-definition
-    entity lib::wrapper<X>::wrapper
   function-instantiation
     entity lib::make
   function-instantiation

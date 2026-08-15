@@ -12,8 +12,6 @@ translation-unit
     specialize #2 = int & source=deduced
     specialize #3 = <int &> source=deduced
 template-closure-events
-  ensure-definition
-    entity arg_list_factory<arg_list, int &, int &>::reverse
   function-instantiation
     entity arg_list::arg_list
   function-instantiation

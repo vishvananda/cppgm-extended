@@ -20,8 +20,6 @@ translation-unit
     bind #1 = pool::executor source=deduced
     drop any_executor<prefer_only<tracked>, prefer_only<untracked>>::any_executor reason=worse_conversion
 template-closure-events
-  ensure-definition
-    entity any_executor<prefer_only<tracked>, prefer_only<untracked>>::any_executor
   function-instantiation
     entity any_executor<prefer_only<tracked>, prefer_only<untracked>>::any_executor
   require-definition

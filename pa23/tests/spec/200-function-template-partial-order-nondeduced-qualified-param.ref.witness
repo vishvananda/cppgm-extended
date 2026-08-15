@@ -17,8 +17,6 @@ translation-unit
     bind #3 = long source=deduced
     drop select reason=better_candidate_selected
 template-closure-events
-  ensure-definition
-    entity select
   function-instantiation
     entity select
   require-definition

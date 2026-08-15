@@ -1662,6 +1662,12 @@ def render_emit_templates_debug_text(document: Dict) -> str:
     return render_emit_templates_text_impl(document, debug=True)
 
 
+def public_closure_event_kind(kind: str) -> str:
+    if kind == "ensure-definition":
+        return "require-definition"
+    return kind
+
+
 def public_render_events(document: Dict, debug: bool) -> List[Dict]:
     events = copy.deepcopy(list(document.get("events", [])))
     if debug:
@@ -1729,7 +1735,7 @@ def render_emit_templates_text_impl(document: Dict, debug: bool) -> str:
     closure_events = list(document.get("closure_events", []))
     if not debug:
         closure_events.sort(key=lambda event: (
-            event.get("kind", ""),
+            public_closure_event_kind(event.get("kind", "")),
             normalize_template_log_entity(event.get("entity", "")),
         ))
     if closure_events:
@@ -1737,6 +1743,8 @@ def render_emit_templates_text_impl(document: Dict, debug: bool) -> str:
         public_seen = set()
         for event in closure_events:
             kind = event.get("kind", "")
+            if not debug:
+                kind = public_closure_event_kind(kind)
             entity = normalize_template_log_entity(event.get("entity", ""))
             if not debug:
                 key = (kind, entity)

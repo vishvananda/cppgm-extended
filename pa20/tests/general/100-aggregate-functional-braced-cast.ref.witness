@@ -9,8 +9,6 @@ translation-unit
     bind #1 = item source=explicit
     bind #2 = 2 source=explicit
 template-closure-events
-  ensure-definition
-    entity make
   function-instantiation
     entity make
   function-instantiation

@@ -23,12 +23,6 @@ translation-unit
     bind #1 = int source=deduced
     drop A<2>::A reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity A<1>::A
-  ensure-definition
-    entity A<2>::A
-  ensure-definition
-    entity operator<
   function-instantiation
     entity A<1>::A
   function-instantiation

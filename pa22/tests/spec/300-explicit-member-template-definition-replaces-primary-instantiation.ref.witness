@@ -16,8 +16,6 @@ translation-unit
     selected instantiation
     bind #1 = int source=deduced
 template-closure-events
-  ensure-definition
-    entity Owner<int>::member
   function-instantiation
     entity Owner<int>::member
   require-definition

@@ -20,8 +20,6 @@ translation-unit
     selected instantiation
     bind #1 = traits::detail::has_description<E2> source=deduced
 template-closure-events
-  ensure-definition
-    entity test_trait_impl
   function-instantiation
     entity test_trait_impl
   require-definition

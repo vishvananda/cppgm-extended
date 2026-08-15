@@ -9,8 +9,6 @@ translation-unit
     bind #1 = int source=deduced
     drop home::put reason=non_deduced_mismatch
 template-closure-events
-  ensure-definition
-    entity home::put
   function-instantiation
     entity home::put
   require-definition

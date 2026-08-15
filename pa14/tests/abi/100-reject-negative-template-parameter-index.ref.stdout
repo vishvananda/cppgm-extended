@@ -1,1 +1,0 @@
-abimangle: tests/abi/100-reject-negative-template-parameter-index.t:1: ABI fact index must be decimal in '-1'

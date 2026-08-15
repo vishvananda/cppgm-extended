@@ -42,8 +42,6 @@ translation-unit
     specialize #2 = void source=deduced
     specialize #3 = <tuple<error_code>> source=deduced
 template-closure-events
-  ensure-definition
-    entity async_result<use_future_t<allocator>, void (tuple<error_code>)>::async_result
   function-instantiation
     entity async_result<use_future_t<allocator>, void (tuple<error_code>)>::async_result
   function-instantiation

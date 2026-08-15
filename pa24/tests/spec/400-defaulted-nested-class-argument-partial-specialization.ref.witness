@@ -106,20 +106,6 @@ translation-unit
     selected instantiation
     bind #1 = lambda_functor_base<pre_increment_decrement_action<increment_action>, tuple<identity<int>>> source=deduced
 template-closure-events
-  ensure-definition
-    entity default_statement
-  ensure-definition
-    entity lambda_functor<lambda_functor_base<pre_increment_decrement_action<increment_action>, tuple<identity<int>>>>::lambda_functor
-  ensure-definition
-    entity lambda_functor<placeholder>::lambda_functor
-  ensure-definition
-    entity lambda_functor_base<pre_increment_decrement_action<increment_action>, tuple<identity<int>>>::lambda_functor_base
-  ensure-definition
-    entity selected_case_of
-  ensure-definition
-    entity switch_statement
-  ensure-definition
-    entity tuple<identity<int>>::tuple
   function-instantiation
     entity default_statement
   function-instantiation

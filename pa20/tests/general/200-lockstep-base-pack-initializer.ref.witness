@@ -4,8 +4,6 @@ translation-unit
     selected primary
     bind #1 = <0, 1> source=explicit
 template-closure-events
-  ensure-definition
-    entity tuple<0, 1>::tuple
   function-instantiation
     entity base<0>::base
   function-instantiation

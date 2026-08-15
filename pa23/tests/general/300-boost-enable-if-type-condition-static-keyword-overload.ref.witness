@@ -29,8 +29,6 @@ translation-unit
     bind #1 = int source=deduced
     drop boost::parameter::keyword<boost::graph::keywords::tag::color_map>::operator| reason=substitution_failure
 template-closure-events
-  ensure-definition
-    entity boost::parameter::keyword<boost::graph::keywords::tag::color_map>::operator|
   function-instantiation
     entity boost::parameter::aux::default_<boost::graph::keywords::tag::color_map, const int>::default_
   function-instantiation

@@ -1,3 +1,0 @@
-ERROR: recursive constructor delegation
-Diagnostic context:
-analyze_function_binding_output [A::A owner=A]

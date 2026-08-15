@@ -5,8 +5,6 @@ translation-unit
     bind #1 = problem source=explicit
     bind #2 = callable source=deduced
 template-closure-events
-  ensure-definition
-    entity suite::except
   function-instantiation
     entity suite::except
   require-definition

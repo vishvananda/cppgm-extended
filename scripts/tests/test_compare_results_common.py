@@ -1821,148 +1821,45 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertIn("structural machine IR dumps do not match", result.stdout + result.stderr)
             self.assertTrue(testbase.with_suffix(".my.cmir").exists())
 
-    def test_witness_compare_matches_normalized_closure_fact_sets(self) -> None:
+    def test_witness_compare_requires_exact_closure_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa23"
-            source = textwrap.dedent(
-                """\
-                translation-unit
-                  alias-use at tests/100.t:2:1
-                    template alias
-                    bind #1 = int source=explicit
-                """
-            )
+            source = "translation-unit\n"
             reference = source + textwrap.dedent(
                 """\
                 template-closure-events
                   ensure-definition
                     entity make<int>
-                  function-instantiation
-                    entity make<int>
-                  class-finalization
-                    entity box<int>
                 """
             )
             generated = source + textwrap.dedent(
                 """\
                 template-closure-events
-                  class-finalization
-                    entity box<int>
-                    trigger source-use
                   require-definition
-                    entity make<int>
-                  ensure-definition
-                    entity make<int>
-                  function-instantiation
-                    entity make<int>
-                  function-instantiation
                     entity make<int>
                 """
             )
-            write_witness_case(root, "100", reference, generated)
-            result = run_compare("witness_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertNotIn("WARNING", result.stdout + result.stderr)
-
-    def test_witness_compare_warns_for_additional_definition_demand(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
-            source = "translation-unit\n"
-            generated = source + textwrap.dedent(
-                """\
-                template-closure-events
-                  require-definition
-                    entity extra<int>
-                """
-            )
-            testbase = write_witness_case(root, "101", source, generated)
+            testbase = write_witness_case(root, "100", reference, generated)
             result = run_compare("witness_t", root, "tests")
             output = result.stdout + result.stderr
-            self.assertEqual(result.returncode, 0, output)
-            self.assertIn("WARNING: additional definition-demand facts", output)
-            self.assertIn("extra<int>", output)
-            self.assertIn("warnings=1", output)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("witness output does not match reference", output)
             self.assertTrue(testbase.with_suffix(".my.witness.diff").exists())
 
-    def test_witness_compare_rejects_missing_definition_demand(self) -> None:
+    def test_witness_compare_accepts_exact_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa23"
-            source = "translation-unit\n"
-            reference = source + textwrap.dedent(
-                """\
-                template-closure-events
-                  ensure-definition
-                    entity required<int>
-                """
-            )
-            write_witness_case(root, "102", reference, source)
-            result = run_compare("witness_t", root, "tests")
-            output = result.stdout + result.stderr
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("missing definition-demand facts", output)
-            self.assertIn("required<int>", output)
-
-    def test_witness_compare_rejects_missing_and_unexpected_terminals(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
-            source = "translation-unit\n"
-            reference = source + textwrap.dedent(
-                """\
-                template-closure-events
-                  class-instantiation
-                    entity box<int>
-                """
-            )
-            generated = source + textwrap.dedent(
-                """\
-                template-closure-events
-                  variable-instantiation
-                    entity box<int>::value
-                """
-            )
-            write_witness_case(root, "103", reference, generated)
-            result = run_compare("witness_t", root, "tests")
-            output = result.stdout + result.stderr
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("missing terminal outcomes", output)
-            self.assertIn("class-instantiation box<int>", output)
-            self.assertIn("unexpected terminal outcomes", output)
-            self.assertIn("variable-instantiation box<int>::value", output)
-
-    def test_witness_compare_keeps_source_use_output_exact(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
-            reference = textwrap.dedent(
+            witness = textwrap.dedent(
                 """\
                 translation-unit
-                  alias-use at tests/104.t:2:1
-                    template identity
-                    bind #1 = int source=explicit
-                """
-            )
-            generated = reference.replace("int source=explicit", "long source=explicit")
-            write_witness_case(root, "104", reference, generated)
-            result = run_compare("witness_t", root, "tests")
-            output = result.stdout + result.stderr
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("source-use output does not match", output)
-
-    def test_witness_compare_rejects_unknown_closure_event_kind(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
-            source = "translation-unit\n"
-            generated = source + textwrap.dedent(
-                """\
                 template-closure-events
-                  speculative-instantiation
-                    entity box<int>
+                  ensure-definition
+                    entity make<int>
                 """
             )
-            write_witness_case(root, "105", source, generated)
+            write_witness_case(root, "101", witness, witness)
             result = run_compare("witness_t", root, "tests")
-            output = result.stdout + result.stderr
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("unknown closure event kind", output)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

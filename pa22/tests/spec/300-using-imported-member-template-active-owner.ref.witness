@@ -59,16 +59,6 @@ translation-unit
     selected instantiation
     bind #1 = arg_list<tagged_argument<VisitorTag, Visitor>, arg_list<tagged_argument<IndexTag, Map>>> source=deduced
 template-closure-events
-  ensure-definition
-    entity arg_list<tagged_argument<IndexTag, Map>>::arg_list
-  ensure-definition
-    entity arg_list<tagged_argument<VisitorTag, Visitor>, arg_list<tagged_argument<IndexTag, Map>>>::arg_list
-  ensure-definition
-    entity override_const_property
-  ensure-definition
-    entity tagged_argument<IndexTag, Map>::tagged_argument
-  ensure-definition
-    entity tagged_argument<VisitorTag, Visitor>::tagged_argument
   function-instantiation
     entity arg_list<tagged_argument<IndexTag, Map>>::arg_list
   function-instantiation

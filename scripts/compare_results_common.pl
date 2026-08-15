@@ -2463,104 +2463,6 @@ sub compare_lowir_text
 	        lowir_compare_failure_hint($ref_compare, $my_compare, $diff_path));
 }
 
-sub split_witness_sections
-{
-	my ($data) = @_;
-	if ($data =~ /^template-closure-events(?:\r?\n|\z)/m)
-	{
-		my $source_data = substr($data, 0, $-[0]);
-		my $closure_data = substr($data, $+[0]);
-		return ($source_data, $closure_data);
-	}
-	return ($data, '');
-}
-
-sub parse_witness_closure_facts
-{
-	my ($data) = @_;
-	my %definition_demands;
-	my %terminal_outcomes;
-	my %terminal_kinds = map { $_ => 1 } qw(
-		function-instantiation
-		class-instantiation
-		alias-instantiation
-		variable-instantiation
-		class-finalization
-	);
-	my @lines = split(/\r?\n/, $data, -1);
-	my $index = 0;
-	while ($index < scalar(@lines))
-	{
-		my $line = $lines[$index];
-		if ($line eq '')
-		{
-			++$index;
-			next;
-		}
-		return (undef, "unexpected closure line " . ($index + 1) . ": $line")
-			if $line !~ /^  ([a-z][a-z-]*)$/;
-		my $kind = $1;
-		return (undef, "unknown closure event kind '$kind'")
-			if $kind ne 'require-definition' &&
-			   $kind ne 'ensure-definition' &&
-			   !$terminal_kinds{$kind};
-		++$index;
-
-		my $entity;
-		while ($index < scalar(@lines) && $lines[$index] =~ /^    /)
-		{
-			my $field = $lines[$index];
-			if ($field =~ /^    entity (.+)$/)
-			{
-				return (undef, "closure event '$kind' has multiple entities")
-					if defined($entity);
-				$entity = $1;
-			}
-			++$index;
-		}
-		return (undef, "closure event '$kind' has no entity")
-			if !defined($entity) || $entity eq '';
-
-		# Entity spellings have already passed through the public witness
-		# normalizer.  Keep them exact here: the only semantic normalization
-		# performed by the matcher is the require/ensure demand equivalence.
-		if ($kind eq 'require-definition' || $kind eq 'ensure-definition')
-		{
-			$definition_demands{$entity} = 1;
-		}
-		else
-		{
-			$terminal_outcomes{"$kind\x1f$entity"} = 1;
-		}
-	}
-
-	return ({
-		definition_demands => \%definition_demands,
-		terminal_outcomes => \%terminal_outcomes,
-	}, undef);
-}
-
-sub witness_fact_difference
-{
-	my ($left, $right) = @_;
-	return sort grep { !exists($right->{$_}) } keys(%{$left});
-}
-
-sub summarize_witness_facts
-{
-	my ($facts, $terminal) = @_;
-	my $limit = 5;
-	my @shown = @{$facts}[0 .. ($#{$facts} < $limit - 1 ? $#{$facts} : $limit - 1)];
-	@shown = map {
-		my $value = $_;
-		$value =~ s/\x1f/ /g if $terminal;
-		$value;
-	} @shown;
-	my $summary = join(', ', @shown);
-	$summary .= ', ...' if scalar(@{$facts}) > $limit;
-	return scalar(@{$facts}) . " [$summary]";
-}
-
 sub compare_witness_text
 {
 	my ($ref_suffix, $my_suffix, $testbase) = @_;
@@ -2589,7 +2491,7 @@ sub compare_witness_text
 	return ('fail', "ERROR: missing witness output file (" . join(', ', @missing_output) . ")")
 		if scalar(@missing_output) != 0;
 
-	return ('ok', undef, undef) if $ref_data eq $my_data;
+	return ('ok', undef) if $ref_data eq $my_data;
 
 	my $diff_path = "$my_witness.diff";
 	my $diff_data = '';
@@ -2600,57 +2502,7 @@ sub compare_witness_text
 		close($diff_fh);
 	}
 	putrawdata($diff_path, defined($diff_data) ? $diff_data : '');
-
-	my ($ref_source, $ref_closure) = split_witness_sections($ref_data);
-	my ($my_source, $my_closure) = split_witness_sections($my_data);
-	return ('fail', "ERROR: witness source-use output does not match reference", undef)
-		if $ref_source ne $my_source;
-
-	my ($ref_facts, $ref_error) = parse_witness_closure_facts($ref_closure);
-	return ('fail', "ERROR: invalid reference witness closure: $ref_error", undef)
-		if !defined($ref_facts);
-	my ($my_facts, $my_error) = parse_witness_closure_facts($my_closure);
-	return ('fail', "ERROR: invalid generated witness closure: $my_error", undef)
-		if !defined($my_facts);
-
-	my @missing_demands = witness_fact_difference(
-		$ref_facts->{definition_demands},
-		$my_facts->{definition_demands});
-	my @extra_demands = witness_fact_difference(
-		$my_facts->{definition_demands},
-		$ref_facts->{definition_demands});
-	my @missing_terminals = witness_fact_difference(
-		$ref_facts->{terminal_outcomes},
-		$my_facts->{terminal_outcomes});
-	my @unexpected_terminals = witness_fact_difference(
-		$my_facts->{terminal_outcomes},
-		$ref_facts->{terminal_outcomes});
-
-	my @failures;
-	push @failures,
-		"missing definition-demand facts " .
-		summarize_witness_facts(\@missing_demands, 0)
-		if scalar(@missing_demands) != 0;
-	push @failures,
-		"missing terminal outcomes " .
-		summarize_witness_facts(\@missing_terminals, 1)
-		if scalar(@missing_terminals) != 0;
-	push @failures,
-		"unexpected terminal outcomes " .
-		summarize_witness_facts(\@unexpected_terminals, 1)
-		if scalar(@unexpected_terminals) != 0;
-	return ('fail', "ERROR: witness closure facts do not match reference: " .
-		join('; ', @failures), undef)
-		if scalar(@failures) != 0;
-
-	my $warning;
-	if (scalar(@extra_demands) != 0)
-	{
-		$warning = "WARNING: additional definition-demand facts " .
-			summarize_witness_facts(\@extra_demands, 0) .
-			"; inspect $diff_path";
-	}
-	return ('ok', undef, $warning);
+	return ('fail', "ERROR: witness output does not match reference");
 }
 
 sub canonical_exit_status
@@ -2860,7 +2712,6 @@ my $failed = 0;
 my $witness_compared = 0;
 my $witness_failures = 0;
 my $witness_skipped = 0;
-my $witness_warnings = 0;
 
 sub compare_label
 {
@@ -2923,7 +2774,7 @@ for my $test (@tests)
 
 	if ($mode eq 'witness_t')
 	{
-		my ($state, $message, $warning) =
+		my ($state, $message) =
 			compare_witness_text($ref_suffix, $my_suffix, $testbase);
 		if ($state eq 'skip')
 		{
@@ -2936,22 +2787,7 @@ for my $test (@tests)
 		if ($state eq 'ok')
 		{
 			++$npass;
-			if (defined($warning))
-			{
-				++$witness_warnings;
-				if ($verbose)
-				{
-					print "PASS\n$warning\n\n";
-				}
-				else
-				{
-					print "$display_test: $warning\n";
-				}
-			}
-			else
-			{
-				print "PASS\n\n" if $verbose;
-			}
+			print "PASS\n\n" if $verbose;
 			next;
 		}
 
@@ -3215,14 +3051,11 @@ if ($mode eq 'witness_t')
 		print compare_label() . ": " . ($failed ? "FAIL" : "PASS") .
 			" ($npass/$witness_compared compared";
 		print ", $witness_skipped skipped" if $witness_skipped != 0;
-		print ", $witness_warnings warnings" if $witness_warnings != 0;
 		print ")\n";
 	}
 	else
 	{
-		print "SUMMARY compared=$witness_compared failures=$witness_failures skipped=$witness_skipped";
-		print " warnings=$witness_warnings" if $witness_warnings != 0;
-		print "\n";
+		print "SUMMARY compared=$witness_compared failures=$witness_failures skipped=$witness_skipped\n";
 	}
 	append_keep_going_summary($repo_root, $cwd, $npass, $witness_compared, $failed)
 		if $keep_going && !$check_mode;

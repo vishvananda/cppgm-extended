@@ -15,12 +15,6 @@ translation-unit
     bind #1 = arg2 source=deduced
     bind #2 = convertible_to<arg1, empty_base> source=deduced
 template-closure-events
-  ensure-definition
-    entity convertible_to<arg1, empty_base>::const operator arg1 &
-  ensure-definition
-    entity convertible_to<arg2, convertible_to<arg1, empty_base>>::const operator arg2 &
-  ensure-definition
-    entity convertible_to<arg2, convertible_to<arg1, empty_base>>::convertible_to
   function-instantiation
     entity convertible_to<arg1, empty_base>::const operator arg1 &
   function-instantiation

@@ -36,8 +36,6 @@ translation-unit
     bind #2 = void source=defaulted
     specialize #1 = any_completion_executor source=deduced
 template-closure-events
-  ensure-definition
-    entity any_completion_executor::any_completion_executor
   function-instantiation
     entity any_completion_executor::any_completion_executor
   require-definition

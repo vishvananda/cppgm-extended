@@ -10,8 +10,6 @@ translation-unit
 template-closure-events
   class-instantiation
     entity ns::core<factory_marker<&ns::mark>>::holder_arg
-  ensure-definition
-    entity ns::core<factory_marker<&ns::mark>>::init
   function-instantiation
     entity factory_class<&ns::mark, int, int>::factory_class
   function-instantiation

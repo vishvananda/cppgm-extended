@@ -9,8 +9,6 @@ translation-unit
   alias-use at tests/general/300-empty-pack-unknown-bound-array-lowir.t:23:16
     template index_sequence
 template-closure-events
-  ensure-definition
-    entity walker::walk
   function-instantiation
     entity walker::walk
   require-definition

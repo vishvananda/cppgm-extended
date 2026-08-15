@@ -10,8 +10,6 @@ translation-unit
     bind #1 = int source=deduced
     drop keyword::operator= reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity keyword::operator=
   function-instantiation
     entity keyword::operator=
   function-instantiation

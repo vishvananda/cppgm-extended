@@ -17,8 +17,6 @@ translation-unit
     drop source<int>::operator type-parameter-0-0 reason=substitution_failure
     drop array<int, 2>::array reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity source<int>::operator array
   function-instantiation
     entity source<int>::operator array
   require-definition

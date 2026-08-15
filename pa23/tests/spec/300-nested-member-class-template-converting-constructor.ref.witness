@@ -17,8 +17,6 @@ translation-unit
     bind #1 = int source=deduced
     drop c<int>::i<long>::i reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity c<int>::i<long>::i
   function-instantiation
     entity c<int>::i<long>::i
   require-definition

@@ -10,8 +10,6 @@ translation-unit
     bind #1 = int source=explicit
     bind #2 = <void ()> source=explicit
 template-closure-events
-  ensure-definition
-    entity slot<void ()>::impl
   function-instantiation
     entity slot<void ()>::impl
   require-definition

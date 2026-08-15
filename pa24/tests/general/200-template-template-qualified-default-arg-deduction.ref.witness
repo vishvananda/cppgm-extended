@@ -43,10 +43,6 @@ translation-unit
     bind #1 = ns::marker source=defaulted
     bind #2 = ns::marker source=defaulted
 template-closure-events
-  ensure-definition
-    entity box<int>::box
-  ensure-definition
-    entity box<int>::value
   function-instantiation
     entity box<int>::box
   function-instantiation

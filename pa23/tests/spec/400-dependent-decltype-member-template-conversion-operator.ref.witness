@@ -5,8 +5,6 @@ translation-unit
     bind #1 = value_kind source=deduced
     bind #2 = 0 source=defaulted
 template-closure-events
-  ensure-definition
-    entity json_like::operator value_kind
   function-instantiation
     entity json_like::get
   function-instantiation

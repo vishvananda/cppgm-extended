@@ -28,8 +28,6 @@ translation-unit
 template-closure-events
   class-instantiation
     entity (anonymous namespace)::X<n::B, n::P>::N
-  ensure-definition
-    entity Run<(anonymous namespace)::X<n::B>, (anonymous namespace)::X<n::B, n::P>>::go
   function-instantiation
     entity Run<(anonymous namespace)::X<n::B>, (anonymous namespace)::X<n::B, n::P>>::go
   require-definition

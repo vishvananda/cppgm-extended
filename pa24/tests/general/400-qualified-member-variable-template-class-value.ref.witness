@@ -28,10 +28,6 @@ translation-unit
     selected primary
     bind #1 = 0 source=defaulted
 template-closure-events
-  ensure-definition
-    entity prop<>::static_query
-  ensure-definition
-    entity static_query_trait<ex, prop<>>::value
   function-instantiation
     entity prop<>::static_query
   function-instantiation

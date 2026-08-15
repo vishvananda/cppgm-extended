@@ -12,8 +12,6 @@ template-closure-events
     entity cleanup
   class-instantiation
     entity cleanup
-  ensure-definition
-    entity visit
   function-instantiation
     entity observe
   function-instantiation

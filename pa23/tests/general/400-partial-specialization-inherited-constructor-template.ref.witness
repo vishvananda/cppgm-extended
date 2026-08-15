@@ -12,10 +12,6 @@ translation-unit
     specialize #4 = void source=deduced
     specialize #5 = <int> source=deduced
 template-closure-events
-  ensure-definition
-    entity op<impl, work, handler, void (int)>::run
-  ensure-definition
-    entity op<impl, work, handler>::op
   function-instantiation
     entity impl::operator()
   function-instantiation

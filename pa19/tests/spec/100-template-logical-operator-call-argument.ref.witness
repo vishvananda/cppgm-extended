@@ -24,12 +24,6 @@ translation-unit
     bind #1 = binder source=deduced
     bind #2 = binder source=deduced
 template-closure-events
-  ensure-definition
-    entity operator&&
-  ensure-definition
-    entity operator||
-  ensure-definition
-    entity test
   function-instantiation
     entity operator&&
   function-instantiation

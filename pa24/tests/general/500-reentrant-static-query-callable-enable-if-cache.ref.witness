@@ -89,8 +89,6 @@ translation-unit
     bind #1 = api::executor source=explicit
     bind #2 = api::execution::detail::relationship::fork_t<0> source=explicit
 template-closure-events
-  ensure-definition
-    entity api::query_fn::impl::operator()
   function-instantiation
     entity api::query_fn::impl::operator()
   require-definition

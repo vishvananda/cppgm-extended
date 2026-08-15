@@ -15,8 +15,6 @@ translation-unit
 template-closure-events
   class-instantiation
     entity basic_tests<basic_any<>>::copy_counter
-  ensure-definition
-    entity basic_tests<basic_any<>>::run_tests
   function-instantiation
     entity basic_any<>::basic_any
   function-instantiation

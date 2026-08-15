@@ -6,8 +6,6 @@ translation-unit
     drop box::box reason=worse_conversion
     drop box::box reason=better_candidate_selected
 template-closure-events
-  ensure-definition
-    entity box::box
   function-instantiation
     entity box::box
   require-definition

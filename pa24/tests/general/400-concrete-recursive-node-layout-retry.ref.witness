@@ -35,8 +35,6 @@ template-closure-events
     entity boost::container::w<boost::container::base_node<recursive_slist> *>::x
   class-instantiation
     entity boost::container::w<recursive_slist *>::x
-  ensure-definition
-    entity boost::container::c<recursive_slist>::m_fn2
   function-instantiation
     entity boost::container::base_node<recursive_slist>::base_node
   function-instantiation

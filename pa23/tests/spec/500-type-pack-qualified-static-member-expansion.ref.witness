@@ -29,8 +29,6 @@ translation-unit
     bind #1 = bool source=explicit
     bind #2 = false source=explicit
 template-closure-events
-  ensure-definition
-    entity make_options
   function-instantiation
     entity make_options
   require-definition

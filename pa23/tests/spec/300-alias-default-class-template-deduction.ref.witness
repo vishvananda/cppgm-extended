@@ -8,8 +8,6 @@ translation-unit
     bind #1 = false source=deduced
     bind #2 = char source=deduced
 template-closure-events
-  ensure-definition
-    entity read
   function-instantiation
     entity read
   require-definition

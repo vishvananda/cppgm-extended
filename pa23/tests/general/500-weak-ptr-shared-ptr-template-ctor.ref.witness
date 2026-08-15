@@ -33,12 +33,6 @@ translation-unit
     bind #3 = deleter<Y> source=deduced
     bind #4 = X source=deduced
 template-closure-events
-  ensure-definition
-    entity dynamic_pointer_cast
-  ensure-definition
-    entity shared_ptr<X, int, deleter<Y>>::shared_ptr
-  ensure-definition
-    entity weak_ptr<Y, int, deleter<Y>>::weak_ptr
   function-instantiation
     entity dynamic_pointer_cast
   function-instantiation

@@ -11,8 +11,6 @@ translation-unit
     bind #3 = identity source=explicit
     bind #4 = hash_key source=explicit
 template-closure-events
-  ensure-definition
-    entity hash_code_base<key, key, identity, hash_key>::_M_hash_code
   function-instantiation
     entity hash_code_base<key, key, identity, hash_key>::_M_hash_code
   function-instantiation

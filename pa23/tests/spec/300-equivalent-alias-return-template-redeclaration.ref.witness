@@ -10,8 +10,6 @@ translation-unit
     selected instantiation
     bind #1 = int source=deduced
 template-closure-events
-  ensure-definition
-    entity compat::swap
   function-instantiation
     entity compat::swap
   require-definition

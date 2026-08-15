@@ -152,6 +152,41 @@ class ExportedDevMakefileTests(unittest.TestCase):
         self.assertEqual(actual, ASSIGNMENT_REFERENCE_TARGETS)
         self.assertEqual(len(pairs), 38)
 
+    def test_export_owns_failed_stdout_diagnostics_and_preserves_witness_refs(self):
+        script = EXPORT_SCRIPT.read_text()
+        self.assertIn(
+            'CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1 make -s -C "$dest" ref-test',
+            script,
+        )
+        self.assertIn('is_failed_stdout_diagnostic "$dest" "$path"', script)
+        self.assertNotIn('make -s -C "$dest" ref-test-strict', script)
+        self.assertIn(
+            'CPPGM_TEST_APP="$dest/reference-binaries/cppgm++" make -s -C "$dest" test-strict-nobuild',
+            script,
+        )
+
+        tracked_stdout = subprocess.run(
+            [
+                "git",
+                "ls-files",
+                "--",
+                "pa[0-9]*/**/*.ref.stdout",
+                "cppgm.tests/**/*.ref.stdout",
+            ],
+            cwd=REPO_ROOT,
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+        ).stdout.splitlines()
+        for stdout_name in tracked_stdout:
+            status_name = stdout_name.removesuffix(".stdout") + ".exit_status"
+            status = (REPO_ROOT / status_name).read_text().strip()
+            self.assertEqual(
+                status,
+                "EXIT_SUCCESS",
+                f"failed-case diagnostic must be export-owned: {stdout_name}",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

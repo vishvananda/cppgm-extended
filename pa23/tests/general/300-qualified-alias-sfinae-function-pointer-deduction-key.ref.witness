@@ -60,8 +60,6 @@ translation-unit
     selected instantiation
     bind #1 = traits::is_pair_like<const lib::pair<int, E1>> source=deduced
 template-closure-events
-  ensure-definition
-    entity boost::detail::test_trait_impl
   function-instantiation
     entity boost::detail::test_trait_impl
   require-definition

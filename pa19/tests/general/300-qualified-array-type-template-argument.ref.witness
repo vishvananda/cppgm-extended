@@ -4,8 +4,6 @@ translation-unit
     selected primary
     bind #1 = unsigned int[4] source=explicit
 template-closure-events
-  ensure-definition
-    entity box<unsigned[4]>::size
   function-instantiation
     entity box<unsigned[4]>::size
   require-definition

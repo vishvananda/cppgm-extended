@@ -18,8 +18,6 @@ translation-unit
     bind #1 = int source=deduced
     bind #2 = void (&)(int) source=deduced
 template-closure-events
-  ensure-definition
-    entity stream::async_read_some
   function-instantiation
     entity async_initiate
   function-instantiation

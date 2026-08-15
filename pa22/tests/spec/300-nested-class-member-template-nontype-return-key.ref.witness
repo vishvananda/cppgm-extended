@@ -25,10 +25,6 @@ translation-unit
     selected instantiation
     bind #1 = int source=deduced
 template-closure-events
-  ensure-definition
-    entity context::executor<allocator<void>, 4>::execute
-  ensure-definition
-    entity context::executor<allocator<void>, 4>::require
   function-instantiation
     entity context::executor<allocator<void>, 4>::execute
   function-instantiation

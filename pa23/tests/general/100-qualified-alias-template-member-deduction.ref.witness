@@ -36,10 +36,6 @@ translation-unit
     bind #1 = 0 source=explicit
     bind #2 = <int> source=deduced
 template-closure-events
-  ensure-definition
-    entity holder<int>::holder
-  ensure-definition
-    entity unsafe_get
   function-instantiation
     entity detail::base_impl<false, int>::base_impl
   function-instantiation

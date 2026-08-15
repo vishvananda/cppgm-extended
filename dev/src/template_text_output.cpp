@@ -1149,6 +1149,15 @@ const char * template_lifecycle_event_kind_text(
   return "unknown";
 }
 
+const char * public_template_lifecycle_event_kind_text(
+    template_api::TemplateLifecycleEventKind kind)
+{
+  if(kind == template_api::TemplateLifecycleEventKind::EnsureDefinition) {
+    return "require-definition";
+  }
+  return template_lifecycle_event_kind_text(kind);
+}
+
 const char * template_lifecycle_cause_text(
     template_api::TemplateLifecycleCause cause)
 {
@@ -1294,10 +1303,10 @@ std::string render_template_closure_events(
           const template_api::TemplateLifecycleEvent & left = lhs.get();
           const template_api::TemplateLifecycleEvent & right = rhs.get();
           return std::make_tuple(
-              std::string(template_lifecycle_event_kind_text(left.kind)),
+              std::string(public_template_lifecycle_event_kind_text(left.kind)),
               left.normalized_entity) <
               std::make_tuple(
-                  std::string(template_lifecycle_event_kind_text(right.kind)),
+                  std::string(public_template_lifecycle_event_kind_text(right.kind)),
                   right.normalized_entity);
         });
   }
@@ -1307,7 +1316,9 @@ std::string render_template_closure_events(
   std::set<std::pair<std::string, std::string> > public_seen;
 	  for(std::size_t i = 0; i < closure_events.size(); ++i) {
 	    const template_api::TemplateLifecycleEvent & event = closure_events[i].get();
-	    const std::string kind_text = template_lifecycle_event_kind_text(event.kind);
+	    const std::string kind_text = debug
+	        ? template_lifecycle_event_kind_text(event.kind)
+	        : public_template_lifecycle_event_kind_text(event.kind);
 	    const std::string entity_text = public_entity_text(event);
 	    if(!debug &&
 	       event.kind ==

@@ -26,10 +26,6 @@ translation-unit
     selected primary
     bind #1 = true source=deduced
 template-closure-events
-  ensure-definition
-    entity adaptor<int>::range<false>::range
-  ensure-definition
-    entity adaptor<int>::range<true>::range
   function-instantiation
     entity adaptor<int>::range<false>::range
   function-instantiation

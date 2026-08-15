@@ -6,8 +6,6 @@ translation-unit
     bind #2 = <void (int)> source=explicit
     bind #3 = int source=deduced
 template-closure-events
-  ensure-definition
-    entity initiate
   function-instantiation
     entity initiate
   require-definition

@@ -47,10 +47,6 @@ translation-unit
     bind #2 = 0 source=defaulted
     drop lib::key_value_types<lib::node_value<lib::basic_string<char, lib::char_traits<char>, lib::allocator<char>>, unsigned long>>::__get_value reason=substitution_failure
 template-closure-events
-  ensure-definition
-    entity lib::key_value_types<lib::node_value<lib::basic_string<char, lib::char_traits<char>, lib::allocator<char>>, unsigned long>>::__get_value
-  ensure-definition
-    entity lib::table<lib::pair<const lib::basic_string<char, lib::char_traits<char>, lib::allocator<char>>, unsigned long>, lib::node_types<lib::node_value<lib::basic_string<char, lib::char_traits<char>, lib::allocator<char>>, unsigned long>>>::assign
   function-instantiation
     entity lib::key_value_types<lib::node_value<lib::basic_string<char, lib::char_traits<char>, lib::allocator<char>>, unsigned long>>::__get_value
   function-instantiation

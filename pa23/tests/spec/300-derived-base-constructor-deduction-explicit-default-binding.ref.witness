@@ -14,8 +14,6 @@ translation-unit
     bind #1 = derived source=deduced
     drop target<>::target reason=worse_conversion
 template-closure-events
-  ensure-definition
-    entity target<>::target
   function-instantiation
     entity target<>::target
   require-definition

@@ -25,8 +25,6 @@ translation-unit
     drop vector<int, int, int, const char *>::vector reason=too_many_arguments
     drop vector<int, int, int, const char *>::vector reason=too_many_arguments
 template-closure-events
-  ensure-definition
-    entity vector<int, int, int, const char *>::vector
   function-instantiation
     entity vector<int, int, int, const char *>::vector
   require-definition

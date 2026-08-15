@@ -18,8 +18,6 @@ translation-unit
     drop adaptor<A<int>, 1>::adaptor reason=too_many_arguments
     drop adaptor<A<int>, 1>::adaptor reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity adaptor<A<int>, 1>::adaptor
   function-instantiation
     entity A<int>::A
   function-instantiation

@@ -14,10 +14,6 @@ translation-unit
     drop box<const type>::box reason=explicit_not_allowed
     drop box<const type>::box reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity box<const type>::box
-  ensure-definition
-    entity box<type>::box
   function-instantiation
     entity box<const type>::box
   function-instantiation

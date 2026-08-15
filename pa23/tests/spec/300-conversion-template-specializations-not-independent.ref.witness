@@ -8,10 +8,6 @@ translation-unit
     selected instantiation
     bind #1 = const value source=deduced
 template-closure-events
-  ensure-definition
-    entity const source::operator value *
-  ensure-definition
-    entity source::operator value *
   function-instantiation
     entity const source::operator value *
   function-instantiation

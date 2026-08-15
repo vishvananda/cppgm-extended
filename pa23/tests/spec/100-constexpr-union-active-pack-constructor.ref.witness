@@ -30,10 +30,6 @@ translation-unit
     drop U<int>::U reason=bad_conversion
     drop U<int>::U reason=worse_conversion
 template-closure-events
-  ensure-definition
-    entity U<int>::U
-  ensure-definition
-    entity forward
   function-instantiation
     entity U<int>::U
   function-instantiation

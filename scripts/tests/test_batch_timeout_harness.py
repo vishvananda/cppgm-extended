@@ -341,6 +341,56 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
             self.assertEqual((tests / "basic.my").read_text(), "generated output\n")
             self.assertEqual((tests / "basic.my.stdout").read_text(), "stdout log\nstderr log\n")
 
+    def test_failed_reference_stdout_is_kept_only_when_requested(self):
+        with tempfile.TemporaryDirectory(prefix="failed-reference-stdout.") as temp_dir:
+            pa = Path(temp_dir) / "pa15"
+            tests = pa / "tests"
+            app = pa / "reject.py"
+            test = tests / "bad.t"
+
+            tests.mkdir(parents=True)
+            test.write_text("bad input\n")
+            app.write_text(
+                "#!/usr/bin/env python3\n"
+                "import sys\n"
+                "print('host-specific diagnostic')\n"
+                "sys.exit(1)\n"
+            )
+            app.chmod(0o755)
+
+            command = [
+                "perl",
+                str(REPO_ROOT / "scripts" / "run_all_tests_common.pl"),
+                "text_t",
+                str(app),
+                "ref",
+                "tests",
+            ]
+            result = run(
+                *command,
+                cwd=pa,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual((tests / "bad.ref.exit_status").read_text(), "EXIT_FAILURE\n")
+            self.assertFalse((tests / "bad.ref.stdout").exists())
+
+            env = os.environ.copy()
+            env["CPPGM_KEEP_FAILED_REFERENCE_STDOUT"] = "1"
+            result = run(
+                *command,
+                cwd=pa,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(
+                (tests / "bad.ref.stdout").read_text(),
+                "host-specific diagnostic\n",
+            )
+
     def test_witness_run_skips_tests_without_witness_reference(self):
         with tempfile.TemporaryDirectory(prefix="run-witness-filter.") as temp_dir:
             pa = Path(temp_dir) / "pa22"

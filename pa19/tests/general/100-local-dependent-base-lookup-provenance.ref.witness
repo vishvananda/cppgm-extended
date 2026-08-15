@@ -12,8 +12,6 @@ template-closure-events
     entity local
   class-instantiation
     entity local
-  ensure-definition
-    entity run
   function-instantiation
     entity run
   function-instantiation

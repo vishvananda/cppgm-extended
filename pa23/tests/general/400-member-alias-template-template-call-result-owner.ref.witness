@@ -60,8 +60,6 @@ template-closure-events
     entity parameter::aux::arg_list<parameter::aux::tagged_argument<other_tag, const double>, parameter::aux::arg_list<parameter::aux::tagged_argument<requested_tag, requested_type>>>::binding
   class-instantiation
     entity parameter::aux::arg_list<parameter::aux::tagged_argument<requested_tag, requested_type>>::binding
-  ensure-definition
-    entity use
   function-instantiation
     entity extractor<requested_feature>::operator()
   function-instantiation

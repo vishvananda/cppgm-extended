@@ -14,10 +14,6 @@ translation-unit
     drop target_ns::view<char>::view reason=explicit_not_allowed
     drop target_ns::view<char>::view reason=bad_conversion
 template-closure-events
-  ensure-definition
-    entity source_ns::view<char>::operator view
-  ensure-definition
-    entity source_ns::view<char>::view
   function-instantiation
     entity source_ns::view<char>::operator view
   function-instantiation

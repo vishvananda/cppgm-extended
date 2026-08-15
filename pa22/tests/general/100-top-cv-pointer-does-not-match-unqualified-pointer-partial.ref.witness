@@ -15,8 +15,6 @@ translation-unit
     bind #1 = const B *volatile * source=explicit
     specialize #1 = const B *volatile source=deduced
 template-closure-events
-  ensure-definition
-    entity holder<const B *volatile *>::render
   function-instantiation
     entity holder<B>::render
   function-instantiation

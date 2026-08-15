@@ -17,12 +17,6 @@ translation-unit
 template-closure-events
   class-instantiation
     entity leaf::result<char>::error_result
-  ensure-definition
-    entity leaf::result<char>::error
-  ensure-definition
-    entity leaf::result<char>::error_result::operator result
-  ensure-definition
-    entity leaf::result<char>::result
   function-instantiation
     entity leaf::result<char>::error
   function-instantiation

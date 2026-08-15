@@ -13,10 +13,6 @@ translation-unit
     selected instantiation
     bind #1 = action source=deduced
 template-closure-events
-  ensure-definition
-    entity parser_base<rule>::operator[]
-  ensure-definition
-    entity rule::operator=
   function-instantiation
     entity parser_action<rule, action>::parser_action
   function-instantiation

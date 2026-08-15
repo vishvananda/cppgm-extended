@@ -5,8 +5,6 @@ translation-unit
     bind #1 = int & source=defaulted
     bind #2 = int & source=defaulted
 template-closure-events
-  ensure-definition
-    entity Box::operator*
   function-instantiation
     entity Box::operator*
   require-definition
