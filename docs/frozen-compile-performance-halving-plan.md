@@ -2153,8 +2153,25 @@ order:
    but its one-run screen regressed instructions by `0.491%` and footprint by
    `0.127%`. Both forms were restored. The retained typed inner sources remove
    the profitable virtual chains without duplicating the buffer implementation.
-17. In progress: refresh attribution after closing preprocessing dispatch and
-   continue with an unclosed construction or semantic-traversal slice.
+17. Completed: refresh attribution after closing preprocessing dispatch and
+   reject a broad AST type-lookup result cache with current population evidence.
+   The exact frame-pointer sample attributes `2,315` of `14,424` samples to
+   `lookup_type_from_ast_node` inclusively, but the stability census shows that
+   the inclusive cost is mostly distinct semantic work: `199,335` calls contain
+   `173,241` first stable observations and only `21,803` stable repeats. There
+   are `9,690` third-or-later observations that a conservative promotion cache
+   could serve, `85` equal-value results with a different shared pointer, and
+   no changed repeated result. A scope-, syntax-, and mutation-validated cache
+   limited to non-template qualified nodes emits the frozen object but uses
+   `108,712,229,770` instructions, a `0.281%` regression, while footprint also
+   regresses `0.432%`. Restore direct lookup. The phase record confirms that the
+   next work should remove common unique semantic work: output seed takes
+   `6,597 ms`, instantiated-template output `3,451 ms`, and late synthesized
+   output `4,058 ms`; LowIR collection is only about `1.4 s`.
+18. In progress: attribute the common function-body semantic path inside output
+   seed and late synthesized output, then census a construction or traversal
+   that is paid once for each unique body. Do not reopen broad AST/type caches
+   without a new reuse population.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, general container swaps, common-record
@@ -2415,3 +2432,4 @@ experiment before starting the next candidate.
 | dispatch BufferedIterator sources through a concrete-source tag | the exact candidate preserved the buffer protocol and passed the focused UTF-8/trigraph reducer, but used `114,585,533,837` instructions, about `4.4%` more than the checkpoint | a branch on every source operation costs more than virtual dispatch. Restore the generic iterator; commit `d94a9aa4a` removes the two proven virtual chains with typed references and no per-character tag | `/tmp/cppgm-tagged-translation-source-screen.json` and `/tmp/cppgm-concrete-translation-source-final.json` |
 | specialize only the outer translation buffer's dereference and increment | the exact screen was close enough to require paired evidence. Three interleaved pairs measured parent and candidate medians of `108,464,014,169` and `108,418,368,725` instructions, a `0.042%` improvement. Footprint improved `0.025%`, RSS regressed `0.881%`, wall time improved `0.461%`, and user time improved `0.448%`; only one of three wall and user pairs agreed | the candidate misses the CPU, balanced, memory-density, and allocation-and-latency lanes. Restore the generic outer buffer; the retained concrete inner sources already capture the useful dispatch removal | `/tmp/cppgm-translation-buffer-screen.json` and `/tmp/cppgm-translation-buffer-{parent,candidate}-{1,2,3}.time` |
 | specialize all five hot outer translation-buffer operations | the candidate directly implemented dereference, increment, peek, next, pop, and extraction against `FullTranslator`, preserving exact output on the UTF-8/trigraph reducer. Its one-run screen used `108,940,165,427` instructions, a `0.491%` regression from the retained record, and raised footprint by `0.127%`; RSS improved by `0.796%` | this is an obvious CPU loss and fails every lane even before accounting for roughly 150 lines of duplicated buffer protocol. Restore the shared `BufferedIterator` implementation and close further preprocessing dispatch work without a different representation | `/tmp/cppgm-translation-buffer-full-screen.json` |
+| promote stable qualified AST type-node lookup results after two observations | the current frame-pointer profile attributes `2,315` of `14,424` samples to `lookup_type_from_ast_node` inclusively. A frozen census measured `199,335` calls, `173,241` first stable observations, `21,803` stable repeats, and only `9,690` third-or-later observations; repeated results changed zero times. The candidate admitted only non-template qualified nodes and validated scope instance, syntax identity and shape, reference-only mode, and mutation state before reuse. It emitted the frozen object at `108,712,229,770` instructions, with RSS `697,638,912 B` and footprint `516,517,888 B` | compared with the retained `108,407,409,101`-instruction record, instructions regress `0.281%` and footprint regresses `0.432%`; the `0.201%` RSS improvement cannot qualify through any lane. Restore direct lookup and treat the inclusive stack as common unique semantic resolution rather than reusable AST results | `/tmp/cppgm-d94-frame-profile-2.sample.txt`, `/tmp/cppgm-type-node-lookup-census-3.stderr`, and `/tmp/cppgm-qualified-type-node-promotion-screen.json` |
