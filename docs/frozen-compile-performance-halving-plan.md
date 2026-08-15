@@ -1997,13 +1997,15 @@ type cache easily meets the density lane, but the narrower retained
 canonicalization already supplies that memory saving with an instruction win.
 
 The footprint-led refinement at `1d51346ae` was also applied to every existing
-row, not only to the candidate that motivated the distinction. It does not
-reopen another closed experiment. The one-fetch normalizer, dependent-root
-memo, sparse template-angle cache, and template-parameter string borrowing
-already received current paired retries. The identifier-token vector reaches
-only a `0.478` score, the flat snapshot misses the `0.15%` instruction
-component, and symbol reservation makes latency worse. Earlier rejections that
-do meet a multi-signal lane have already produced retained descendants:
+row, not only to the candidate that motivated the distinction. It does not by
+itself reopen another closed experiment. The one-fetch normalizer,
+dependent-root memo, sparse template-angle cache, and template-parameter
+string borrowing already received current paired retries. The identifier-token
+vector reaches only a `0.478` score; the later inline descendant below removes
+its common allocation and receives two new paired batches. The flat snapshot
+misses the `0.15%` instruction component, and symbol reservation makes latency
+worse. Earlier rejections that do meet a multi-signal lane have already
+produced retained descendants:
 template-parameter identity and visible-name sorting through the balanced
 lane, `CppAstNode` and packed `CallSemNode` through memory density, sparse
 `Scope` storage through retained density, and contiguous template-body value
@@ -2258,9 +2260,57 @@ halving target. Evidence is in
 `/tmp/cppgm-type-dependency-expired-census.json`, and
 `/tmp/cppgm-type-dependency-flat-final.json`.
 
+#### Inline identifier-token checkpoint at `7f4a6eafb`
+
+Several semantic text queries collect the unique identifiers in a short string
+and then iterate or probe that set. The old `IdentifierTokenSet` used an
+`unordered_set` and reserved from text length before seeing the identifier
+population. The frozen census counts `328,420` ephemeral sets with `654,801`
+unique names and capacity for `1,934,344` pointers. Of those sets, `216,674`
+contain one name, `47,945` contain two, and `320,266`, or `97.5%`, contain at
+most eight.
+
+The retained container keeps eight atom pointers inline and uses a vector only
+for overflow. Insertion remains unique by interned pointer identity. Synthesized
+identifiers longer than 128 bytes retain the existing owned-string storage, so
+copies keep their pointers alive exactly as before. The representation changes
+no parser, lookup, or interning contract, and it preserves the collection API
+instead of duplicating token scans across its consumers.
+
+Atom-pointer storage is allocation-free for the `320,266` sets at or below the
+inline limit; only `8,154` sets can allocate overflow. Long owned identifiers
+retain their separate existing allocation. Even using the lower bound for the
+census's five-to-eight-name bucket, at least `591,947` former hash-node
+allocations move inline. Bucket allocation and hash-table reserve traffic also
+disappear from the common path, but they are not needed for the retention
+claim. This is the allocation-aware refinement anticipated by the rejected
+heap-vector experiment, without treating fewer allocations as proof of lower
+latency.
+
+The first three interleaved pairs measured parent and candidate instruction
+medians of `108,328,921,332` and `107,840,400,575`, a `0.4510%` improvement.
+RSS improved `0.2635%`; footprint regressed `0.0057%`; and the RSS-led balance
+score was `0.5827`. All three instruction pairs agreed and two RSS pairs
+agreed. Because RSS supplied the decisive term, a second independent batch was
+required. It improved instructions by `0.2442%`, RSS by `0.6397%`, and
+footprint by `0.0304%`, with all three pairs agreeing for every signal. Its
+balance score was `0.5641`. Latency and cycles did not improve consistently,
+so this checkpoint makes no allocation-and-latency claim.
+
+Every frozen object has SHA-256 `4fc1303a...5c4`. Direct strict passes
+`1530/1530`, and the full direct report passes `4863/4863`. The clean
+three-run checkpoint is `107,962,121,312` instructions, `690,991,104 B`
+maximum RSS, and `499,093,504 B` footprint. This is `38.0090%` below the
+starting instruction count and leaves `20,883,235,840` instructions to the
+halving target. Evidence is in
+`/tmp/cppgm-identifier-token-census.stderr`,
+`/tmp/cppgm-identifier-token-inline8-screen.json`,
+`/tmp/cppgm-identifier-token-inline8-{parent,candidate}-pair{1,2,3,4,5,6}.json`,
+and `/tmp/cppgm-identifier-token-inline8-final.json`.
+
 #### Revised investigation order
 
-The `37.77%` cumulative reduction leaves `21,292,206,237` instructions. A chain
+The `38.01%` cumulative reduction leaves `20,883,235,840` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -2499,7 +2549,15 @@ order:
    both in every pair. The footprint-led score is `0.5750`; RSS regresses
    `1.0527%` but remains inside its hard gate, while cycles improve `1.7529%`.
    Commit `1d51346ae` clears the refined balanced lane, emits exact bytes, and
-   passes strict `1530/1530` plus full report `4863/4863`.
+   passes strict `1530/1530` plus full report `4863/4863`. The fresh release
+   sample then returned to the rejected identifier-token vector lead. A census
+   showed `97.5%` of `328,420` sets contain at most eight names. Keeping those
+   atom pointers inline makes pointer storage allocation-free in `320,266`
+   name sets and moves at least `591,947` hash nodes inline. Two independent
+   batches improve instructions by `0.4510%` and `0.2442%`; confirmed RSS gains
+   produce balanced scores of `0.5827` and `0.5641`. Commit `7f4a6eafb` retains the
+   allocation-aware representation with exact bytes and both full correctness
+   gates.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, unrelated container swaps, pool allocators,
@@ -2606,6 +2664,7 @@ Fill one row after each retained commit.
 | `627f7a904` | allocate seven sparse scope binding containers only on first insertion and remove one cache-state padding hole | `108,476,020,745` | `-37.71%` | `688,439,296` | `499,806,208` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-scope-function-sets-final.json`; paired footprint: `-0.801%`; paired instructions: `+0.058%`; net retained semantic storage: `-4,001,496 B` |
 | `234afcdfd` | store template-body visible-value scratch as contiguous interned-name pairs | `108,408,862,229` | `-37.75%` | `689,704,960` | `500,039,680` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-value-linear-final.json`; about `1,730,202` allocation calls removed; paired wall: `-1.0505%`; user: `-1.2685%`; cycles: `-1.2476%`; instructions: `-0.0827%` |
 | `1d51346ae` | store persistent type-dependency root results in a flat table and validate recycled addresses by weak expiration | `108,371,091,709` | `-37.77%` | `680,058,880` | `499,105,792` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-type-dependency-flat-final.json`; 2,751,903 persistent hits; paired instructions: `-0.3833%`; footprint: `-0.1917%`; balance score: `0.5750` |
+| `7f4a6eafb` | keep up to eight unique identifier-token atoms inline and allocate only overflow | `107,962,121,312` | `-38.01%` | `690,991,104` | `499,093,504` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-identifier-token-inline8-final.json`; 97.5% of sets stay inline; paired instruction batches: `-0.4510%` and `-0.2442%`; balance scores: `0.5827` and `0.5641` |
 
 ## Rejected work ledger
 
@@ -2772,7 +2831,7 @@ experiment before starting the next candidate.
 | borrow cached direct-function lookup results and keep small dedupe-key arrays inline | the census counted `168,890` cache hits, including `18,336` nonempty result copies with `607,002` elements and `4,856,016 B` of copied pointer storage. Large dedupe calls made `39,941` scratch allocations for `24,145,776 B`; `29,752` calls needed at most 32 keys. Borrowing the cache result screened at `108,483,777,944` instructions. Adding a 32-key inline buffer used `108,601,642,678`, `0.044%` above the retained record, while footprint improved `0.053%` | the borrowed cache view removes too little traffic, and the inline buffer gives the hot function a larger stack frame. The composite misses every lane. Restore the owning API and vector scratch | `/tmp/cppgm-direct-function-census.json`, `/tmp/cppgm-direct-function-census-2.stderr`, `/tmp/cppgm-direct-function-borrowed-screen.json`, and `/tmp/cppgm-direct-function-borrowed-inline-screen.json` |
 | emit template-id argument ranges during the delimiter scan | the frame profile attributed `91` allocation-leaf samples to the temporary eight-element delimiter vector. The candidate emitted ranges directly into the caller's existing result vector and preserved the frozen object. The first three pairs appeared close to the balanced lane at `-0.145%` instructions and `-1.193%` RSS, so the required independent RSS confirmation was run. That batch measured `+0.027%` instructions and `-1.054%` RSS. Across all six pairs, medians moved by `-0.004%` instructions, `-0.868%` RSS, `+0.008%` footprint, `+0.101%` wall time, and `+0.084%` user time | the second batch shows that the first instruction result was sampling variation. The stable RSS shift alone meets neither density lane, and latency does not qualify the allocation lane. Restore the shared delimiter API and its local vector | `/tmp/cppgm-template-range-direct-screen.json` and `/tmp/cppgm-template-range-{parent,candidate}-pair{1,2,3,4,5,6}.json` |
 | keep template-body visible-value scratch in atom-sorted vectors | three pairs improved instructions by `0.1265%`, with all three pairs agreeing, but RSS regressed `0.5832%`, footprint regressed `0.0836%`, and wall time regressed `0.1214%` | ordering is not part of the private scratch-table contract, and ordered insertion adds shifts without earning a retention lane. Keep the contiguous representation but use linear pointer-identity lookup and append order; commit `234afcdfd` clears the allocation-and-latency lane | `/tmp/cppgm-template-body-value-vector-screen.json` and `/tmp/cppgm-template-body-vector-{parent,candidate}-pair{1,2,3}.json` |
-| store `IdentifierTokenSet` atoms in a unique linear vector | a frozen census counted `328,420` ephemeral sets containing `654,801` unique atoms. The existing text-length reserve held capacity for `1,934,344` pointers. The vector candidate preserved exact output and improved instructions in all six pairs. Independent batches improved instructions by `0.3549%` and `0.3706%`, but their balance scores were only `0.478` and `0.422`; combined latency improved `0.345%`. Reducing the initial reserve to two pointers matched the `80.7%` of sets with at most two entries but weakened the three-pair result to `0.2075%` instructions, `0.0030%` RSS regression, `0.0074%` footprint improvement, and `0.0409%` wall regression | neither vector form reaches the CPU, balanced, memory, or allocation-and-latency lane. Restore the hash set. Reopen only with a representation that removes the remaining vector allocation or combines construction with a consumer in the same identifier-token path | `/tmp/cppgm-identifier-token-census.stderr`, `/tmp/cppgm-identifier-token-vector-screen.json`, `/tmp/cppgm-identifier-token-{parent,candidate}-pair{1,2,3,4,5,6}.json`, `/tmp/cppgm-identifier-token-vector-reserve2-screen.json`, and `/tmp/cppgm-identifier-token-r2-{parent,candidate}-pair{1,2,3}.json` |
+| store `IdentifierTokenSet` atoms in a unique heap vector | a frozen census counted `328,420` ephemeral sets containing `654,801` unique atoms. The existing text-length reserve held capacity for `1,934,344` pointers. The vector candidate preserved exact output and improved instructions in all six pairs. Independent batches improved instructions by `0.3549%` and `0.3706%`, but their balance scores were only `0.478` and `0.422`; combined latency improved `0.345%`. Reducing the initial reserve to two pointers matched the `80.7%` of sets with at most two entries but weakened the three-pair result to `0.2075%` instructions, `0.0030%` RSS regression, `0.0074%` footprint improvement, and `0.0409%` wall regression | both heap-vector forms remain rejected. Commit `7f4a6eafb` follows the row's reopening condition: eight inline atoms cover `97.5%` of sets and remove the remaining common allocation. Two independent batches score `0.5827` and `0.5641` under the RSS-led balanced lane | `/tmp/cppgm-identifier-token-census.stderr`, `/tmp/cppgm-identifier-token-vector-screen.json`, `/tmp/cppgm-identifier-token-{parent,candidate}-pair{1,2,3,4,5,6}.json`, `/tmp/cppgm-identifier-token-vector-reserve2-screen.json`, `/tmp/cppgm-identifier-token-r2-{parent,candidate}-pair{1,2,3}.json`, and `/tmp/cppgm-identifier-token-inline8-{parent,candidate}-pair{1,2,3,4,5,6}.json` |
 | share copied parser `NameSet` storage until mutation | namespace reopening copied `1,691,467` hash entries across four name categories, while the active scopes added only `5,737` entries; `3,826` of `4,980` committed category-scopes were unchanged and the frozen compile performed no rollback. A byte-exact `shared_ptr` copy-on-write form nevertheless regressed median instructions by `0.0675%`, wall time by `0.1211%`, and user time by `0.0848%` across three pairs. Footprint improved in every pair but by only `0.1450%`; RSS improved `0.1789%` with one disagreeing pair. Replacing atomic shared ownership with a one-pointer intrusive count screened at `108,739,116,623` instructions and `499,572,736 B` footprint, worse than the paired form | copy elimination does not compensate for an ownership branch and indirection on every hotter name lookup and insertion. Neither form reaches a retention lane. Restore inline hash storage; revisit namespace reopening only with an overlay or transaction design that leaves ordinary `NameSet` access unchanged | `/tmp/cppgm-namespace-name-copy-census.json`, `/tmp/cppgm-nameset-cow-screen.json`, `/tmp/cppgm-nameset-cow-{parent,candidate}-pair{1,2,3}.json`, and `/tmp/cppgm-nameset-intrusive-screen.json` |
 | use a raw `Type` pointer while classifying null pointer constants | the wrapper keeps the selected top-level type alive through `ExprInfo`, so a local raw pointer avoids two `shared_ptr` handoffs. The exact screen used `108,656,745,539` instructions and `504,123,392 B` of footprint | instructions regress `0.095%` and memory stays flat. The narrower call site does not rescue the rejected compiler-wide borrowed `strip_top_level_cv` form. Restore the shared helper | `/tmp/cppgm-null-pointer-raw-type-screen.json` |
 | combine direct required-callee traversal with one scan for aliased special-member bodies | the direct walker removes `112,043` temporary allocation/deallocation pairs and `1,477,512` requested bytes. Base and complete constructor or destructor entry points share one analyzed body; the clone changes its root symbol and alias list, so the second callee scan cannot discover a new body edge. The exact composite screened at `108,266,218,271` instructions. Five interleaved pairs measured parent and candidate medians of `108,410,905,430` and `108,347,889,027`, a `0.058%` gain. Median wall time regressed `0.971%`, user time `0.889%`, cycles `0.635%`, RSS `1.492%`, and footprint `0.079%`; all five wall and user pairs regressed | the allocation-and-latency lane requires a `1%` wall-time improvement. This candidate moves wall time in the opposite direction and misses the CPU and memory lanes. Restore both traversal changes | `/tmp/cppgm-output-rescan-child-vector-census.stderr`, `/tmp/cppgm-output-callee-direct-clone-skip-screen.json`, and `/tmp/cppgm-output-callee-{parent,candidate}-pair{1,2,3,4,5}.json` |
