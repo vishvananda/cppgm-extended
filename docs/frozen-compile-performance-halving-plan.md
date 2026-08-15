@@ -2151,9 +2151,45 @@ target. Evidence is in `/tmp/cppgm-lazy-scope-function-sets-census.stderr`,
 `/tmp/cppgm-lazy-scope-fset-{parent,candidate}-pair{1,2,3}.json`, and
 `/tmp/cppgm-lazy-scope-function-sets-final.json`.
 
+#### Template-body value scratch allocation checkpoint at `234afcdfd`
+
+Template-body validation repeatedly extends and copies a private table from
+interned value names to their visible types. The old `unordered_map` allocated
+one hash node per entry even though the table has no unordered-map API or
+iteration-order contract outside this file. The retained form stores
+`(Atom, TypePtr)` pairs in one vector and uses pointer-identity linear lookup.
+Lexical shadowing still updates the first visible entry, and a nested
+declaration still receives an owning copy of its parent's scratch state.
+
+The frozen census counted `1,623,866` inserted entries and `176,979` entries
+copied across `1,672` nonempty scratch copies. The old maps therefore required
+at least `1,800,845` node allocations, excluding bucket arrays. The vector form
+made `68,971` growth allocations and `1,672` nonempty copy allocations. It
+removes about `1,730,202` allocation calls, over seventeen times the
+allocation lane's `100,000`-call floor. Its cumulative vector allocation
+requests were `107,363,304 B`; no byte-saving claim is needed for acceptance.
+
+A sorted-vector prototype first improved paired instructions by `0.1265%` but
+regressed RSS by `0.5832%`, footprint by `0.0836%`, and wall time by `0.1214%`.
+Removing the unused ordering also removed insertion shifts. Five interleaved
+parent/linear-vector pairs improved median instructions by `0.0827%`, wall
+time by `1.0505%`, user time by `1.2685%`, cycles by `1.2476%`, and RSS by
+`0.7832%`. All five wall, user, and cycle pairs agreed. Footprint regressed by
+only `0.0541%`, inside the `1%` hard gate.
+
+Every frozen object has SHA-256 `4fc1303a...5c4`. Direct strict passes
+`1530/1530`, and the full direct report passes `4863/4863`. The clean
+three-run checkpoint is `108,408,862,229` instructions, `689,704,960 B`
+maximum RSS, and `500,039,680 B` footprint. This is `37.7525%` below the
+starting instruction count and leaves `21,329,976,757` instructions to the
+halving target. Evidence is in
+`/tmp/cppgm-template-body-value-census.stderr`,
+`/tmp/cppgm-template-body-linear-{parent,candidate}-pair{1,2,3,4,5}.json`,
+and `/tmp/cppgm-template-body-value-linear-final.json`.
+
 #### Revised investigation order
 
-The `36.33%` cumulative reduction leaves `23,811,131,417` instructions. A chain
+The `37.75%` cumulative reduction leaves `21,329,976,757` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -2350,7 +2386,7 @@ order:
    footprint by `1.0024%`, and holds the instruction regression to `0.0977%`.
    Commit `7f4913c4d` therefore clears the memory-density lane with focused,
    strict, and full-report correctness.
-20. In progress: refresh attribution at the 108.554B density checkpoint and
+20. In progress: refresh attribution at the 108.409B allocation checkpoint and
    rank new work-removal candidates in output seed, instantiated-template
    output, and late synthesized output. Prefer common unique-body construction
    or traversal; do not reopen broad AST/type caches without a new reuse
@@ -2371,7 +2407,16 @@ order:
    footprint pairs agree. After adding back `357,744 B` for populated lazy
    container headers, net semantic storage still falls by `4,001,496 B`.
    Commit `627f7a904` clears the retained-density lane and both full
-   correctness gates.
+   correctness gates. Allocator ownership then identified the template-id
+   delimiter vector and template-body visible-value scratch as the next two
+   candidates. Six pairs rejected direct delimiter-to-range emission as
+   instruction, footprint, and latency flat. Replacing the template-body
+   scratch hash table with an order-free contiguous atom vector removes about
+   `1.73M` allocation calls. Five pairs improve wall, user, and cycles by
+   `1.05%`, `1.27%`, and `1.25%`, with all pairs agreeing; instructions and
+   RSS also improve, while footprint stays inside the hard gate. Commit
+   `234afcdfd` clears the allocation-and-latency lane and both full correctness
+   gates.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, unrelated container swaps, pool allocators,
@@ -2476,6 +2521,7 @@ Fill one row after each retained commit.
 | `d4fe39d7c` | pack CallSem kind/category flags and store recursive children in one-pointer, single-allocation arrays | `108,502,199,146` | `-37.70%` | `696,795,136` | `509,206,528` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-callsem-packed-children-final.json`; paired footprint: `-1.042%`, or `-5,361,664 B`; paired instructions: `-0.031%`; retained CallSem storage: `-9,004,008 B` |
 | `7f4913c4d` | allocate source-declaration anchors only for diagnostic/witness access and compact direct FunctionBinding scalar state | `108,553,548,041` | `-37.67%` | `690,688,000` | `504,020,992` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-anchor-function-binding-layout-final.json`; paired footprint: `-1.0024%`, or `-5,103,616 B`; paired instructions: `+0.0977%`; retained inline storage: `-5,710,440 B` |
 | `627f7a904` | allocate seven sparse scope binding containers only on first insertion and remove one cache-state padding hole | `108,476,020,745` | `-37.71%` | `688,439,296` | `499,806,208` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-scope-function-sets-final.json`; paired footprint: `-0.801%`; paired instructions: `+0.058%`; net retained semantic storage: `-4,001,496 B` |
+| `234afcdfd` | store template-body visible-value scratch as contiguous interned-name pairs | `108,408,862,229` | `-37.75%` | `689,704,960` | `500,039,680` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-value-linear-final.json`; about `1,730,202` allocation calls removed; paired wall: `-1.0505%`; user: `-1.2685%`; cycles: `-1.2476%`; instructions: `-0.0827%` |
 
 ## Rejected work ledger
 
@@ -2640,6 +2686,7 @@ experiment before starting the next candidate.
 | promote stable qualified AST type-node lookup results after two observations | the current frame-pointer profile attributes `2,315` of `14,424` samples to `lookup_type_from_ast_node` inclusively. A frozen census measured `199,335` calls, `173,241` first stable observations, `21,803` stable repeats, and only `9,690` third-or-later observations; repeated results changed zero times. The candidate admitted only non-template qualified nodes and validated scope instance, syntax identity and shape, reference-only mode, and mutation state before reuse. It emitted the frozen object at `108,712,229,770` instructions, with RSS `697,638,912 B` and footprint `516,517,888 B` | compared with the retained `108,407,409,101`-instruction record, instructions regress `0.281%` and footprint regresses `0.432%`; the `0.201%` RSS improvement cannot qualify through any lane. Restore direct lookup and treat the inclusive stack as common unique semantic resolution rather than reusable AST results | `/tmp/cppgm-d94-frame-profile-2.sample.txt`, `/tmp/cppgm-type-node-lookup-census-3.stderr`, and `/tmp/cppgm-qualified-type-node-promotion-screen.json` |
 | borrow cached direct-function lookup results and keep small dedupe-key arrays inline | the census counted `168,890` cache hits, including `18,336` nonempty result copies with `607,002` elements and `4,856,016 B` of copied pointer storage. Large dedupe calls made `39,941` scratch allocations for `24,145,776 B`; `29,752` calls needed at most 32 keys. Borrowing the cache result screened at `108,483,777,944` instructions. Adding a 32-key inline buffer used `108,601,642,678`, `0.044%` above the retained record, while footprint improved `0.053%` | the borrowed cache view removes too little traffic, and the inline buffer gives the hot function a larger stack frame. The composite misses every lane. Restore the owning API and vector scratch | `/tmp/cppgm-direct-function-census.json`, `/tmp/cppgm-direct-function-census-2.stderr`, `/tmp/cppgm-direct-function-borrowed-screen.json`, and `/tmp/cppgm-direct-function-borrowed-inline-screen.json` |
 | emit template-id argument ranges during the delimiter scan | the frame profile attributed `91` allocation-leaf samples to the temporary eight-element delimiter vector. The candidate emitted ranges directly into the caller's existing result vector and preserved the frozen object. The first three pairs appeared close to the balanced lane at `-0.145%` instructions and `-1.193%` RSS, so the required independent RSS confirmation was run. That batch measured `+0.027%` instructions and `-1.054%` RSS. Across all six pairs, medians moved by `-0.004%` instructions, `-0.868%` RSS, `+0.008%` footprint, `+0.101%` wall time, and `+0.084%` user time | the second batch shows that the first instruction result was sampling variation. The stable RSS shift alone meets neither density lane, and latency does not qualify the allocation lane. Restore the shared delimiter API and its local vector | `/tmp/cppgm-template-range-direct-screen.json` and `/tmp/cppgm-template-range-{parent,candidate}-pair{1,2,3,4,5,6}.json` |
+| keep template-body visible-value scratch in atom-sorted vectors | three pairs improved instructions by `0.1265%`, with all three pairs agreeing, but RSS regressed `0.5832%`, footprint regressed `0.0836%`, and wall time regressed `0.1214%` | ordering is not part of the private scratch-table contract, and ordered insertion adds shifts without earning a retention lane. Keep the contiguous representation but use linear pointer-identity lookup and append order; commit `234afcdfd` clears the allocation-and-latency lane | `/tmp/cppgm-template-body-value-vector-screen.json` and `/tmp/cppgm-template-body-vector-{parent,candidate}-pair{1,2,3}.json` |
 | use a raw `Type` pointer while classifying null pointer constants | the wrapper keeps the selected top-level type alive through `ExprInfo`, so a local raw pointer avoids two `shared_ptr` handoffs. The exact screen used `108,656,745,539` instructions and `504,123,392 B` of footprint | instructions regress `0.095%` and memory stays flat. The narrower call site does not rescue the rejected compiler-wide borrowed `strip_top_level_cv` form. Restore the shared helper | `/tmp/cppgm-null-pointer-raw-type-screen.json` |
 | combine direct required-callee traversal with one scan for aliased special-member bodies | the direct walker removes `112,043` temporary allocation/deallocation pairs and `1,477,512` requested bytes. Base and complete constructor or destructor entry points share one analyzed body; the clone changes its root symbol and alias list, so the second callee scan cannot discover a new body edge. The exact composite screened at `108,266,218,271` instructions. Five interleaved pairs measured parent and candidate medians of `108,410,905,430` and `108,347,889,027`, a `0.058%` gain. Median wall time regressed `0.971%`, user time `0.889%`, cycles `0.635%`, RSS `1.492%`, and footprint `0.079%`; all five wall and user pairs regressed | the allocation-and-latency lane requires a `1%` wall-time improvement. This candidate moves wall time in the opposite direction and misses the CPU and memory lanes. Restore both traversal changes | `/tmp/cppgm-output-rescan-child-vector-census.stderr`, `/tmp/cppgm-output-callee-direct-clone-skip-screen.json`, and `/tmp/cppgm-output-callee-{parent,candidate}-pair{1,2,3,4,5}.json` |
 | make every sparse `Scope` associative container lazy | the broad form removed `4,649,856 B` of inline storage and improved footprint in every pair. Three pairs measured parent and candidate instruction medians of `108,371,344,968` and `108,765,017,627`, a `0.363%` regression | retained bytes do not override the `0.15%` instruction hard gate. Keep `values` eager; the narrowed form retains `4,001,496 B` of net semantic savings with instructions inside the cap | `/tmp/cppgm-lazy-scope-associative-census.stderr` and `/tmp/cppgm-lazy-scope-{parent,candidate}-pair{1,2,3}.json` |
