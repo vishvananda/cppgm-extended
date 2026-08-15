@@ -5283,6 +5283,19 @@ void append_declaring_scope_template_bound_names(const Scope * scope,
   }
 }
 
+void append_declaring_scope_type_names(const Scope * scope,
+                                       std::set<std::string> & names)
+{
+  for(const Scope * current = scope; current; current = current->parent) {
+    for(const auto & entry : current->named_types) {
+      names.insert(entry.first);
+    }
+    if(current->namespace_scope || current->parent == nullptr) {
+      break;
+    }
+  }
+}
+
 void overlay_default_argument_use_scope_bindings(
     Scope & target,
     const Scope & use_scope,
@@ -5319,8 +5332,15 @@ std::set<std::string> deduction_overlay_excluded_names(const FunctionTemplateDec
   std::set<std::string> names = function_template_parameter_names(decl.parameters);
   Scope * deduction_parent = function_template_deduction_parent_scope(decl);
   append_declaring_scope_template_bound_names(deduction_parent, names);
+  // A use-site overlay supplies concrete enclosing-template arguments, but it
+  // must not shadow an ordinary type name found by unqualified lookup at the
+  // function template's declaration. This matters for inherited member
+  // templates when the derived class declares a different alias with the same
+  // name as an alias in the base template.
+  append_declaring_scope_type_names(deduction_parent, names);
   if(deduction_parent != decl.declaring_scope) {
     append_declaring_scope_template_bound_names(decl.declaring_scope, names);
+    append_declaring_scope_type_names(decl.declaring_scope, names);
   }
   return names;
 }

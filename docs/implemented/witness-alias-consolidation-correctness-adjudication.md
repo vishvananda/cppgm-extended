@@ -174,3 +174,41 @@ PA22 ordinary suite (`309/309`), and the original failing PA35 libc++ `<string>`
 case compiles.  The direct-text strict gate passes all `1,531` configured
 witness comparisons, and the full direct-text PA1-PA38 report passes
 `4,926/4,926`.
+
+The PA39 ladder then exposed a distinct two-phase lookup defect while the
+self-host compiler compiled libc++ 21's hash-table implementation.  An
+inherited member function template was declared in a base specialization that
+defined `node_value_type` as its node wrapper.  The derived/use scope defined
+the same alias as the container pair.  CPPGM correctly chose the base as the
+deduction parent, but its use-site binding overlay installed the derived alias
+directly in that scope.  The derived spelling therefore shadowed the ordinary
+type found by unqualified lookup at the function template declaration.  Two
+complementary `enable_if` overloads both appeared viable, and CPPGM selected
+the node-only body for a pair argument.
+
+Deduction overlays now exclude ordinary type names visible through the
+function template's declaring scope, as well as template parameter and
+template-bound names.  The overlay still supplies concrete enclosing-template
+arguments, but it can no longer replace a lexical type declaration.  The
+header-free regression is
+`pa23/tests/general/300-inherited-member-template-sfinae-lexical-type-shadow.t`.
+It binds a use-site template parameter with the colliding name, verifies both
+complementary candidate selections, and uses only C++11 traits owned by PA23.
+Host Clang accepts the fixture warning-clean; the pre-fix CPPGM compiler fails
+inside the node-only body; and the fixed compiler passes its ordinary check.
+Its ordinary reference was generated from the corrected compiler behavior,
+while its witness reference was generated independently by the patched-Clang
+materializer.  The PA23 placement audit classifies it at `pa23:300` with no
+later-feature dependency.
+
+Validation again used only the standard `~/ralph-ci` lane, with
+`u26-clang-libcxx` as the sole active flavor and all builds capped at four jobs.
+The focused ordinary and witness comparisons pass, PA23 passes `401/401`, and
+the full direct-text strict gate passes PA19 `279/279`, PA20 `158/158`, PA22
+`294/294`, PA23 `386/386`, and PA24 `415/415` (`1,532` comparisons total).  The
+full direct-text PA1-PA38 report passes `4,927/4,927`, and the debugger gate
+passes for PA13, PA37, and PA38.  The isolated PA39 self-host ladder at
+`../obj/pa39/u26-clang-libcxx-alias-final-j4` passes through PA10.  In
+particular, the original `macroizer.cpp` failure point, the modified
+`template_resolution.cpp`, and the final `cppgm++` link all build successfully
+against libc++ 21 before PA10 passes `157/157`.
