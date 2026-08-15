@@ -107,3 +107,37 @@ their patched-Clang witness references after this change.
   maximum RSS was 749,625,344 bytes (-1.98%), and peak footprint was
   568,500,224 bytes (-0.14%).  The comparison report is
   `/tmp/cppgm-correctness-final-perf.json`.
+
+## Cross-host CI follow-up, 2026-08-15
+
+The first Linux GCC lane exposed two order-sensitive failures after the direct
+alias-resolution fast path landed.  Neither difference changed the reference
+oracle.
+
+`pa35/tests/compile/600-shared-ptr-allocator-shadowing.t` failed because the
+shared direct alias resolver let an invalid nested `decltype` probe escape as
+`std::logic_error`.  This operation is a non-authoritative local type probe in
+ordinary semantic analysis, so the failure means "no type" and participates
+in SFINAE.  The resolver now converts that exception to a failed local lookup.
+Witness capture remains authoritative and rethrows it; swallowing the same
+exception there creates an incorrect extra PA24 value-instantiation event.
+
+`pa24/tests/general/500-reentrant-static-query-callable-enable-if-cache.t`
+missed the concrete fork-property value instantiation only on GCC.  Partial
+specialization matching correctly isolated dependencies from rejected
+candidates, but the selected-candidate replay inspected only the expanded
+alias target.  A cached `enable_if_t<true>` result no longer contains the
+source expression that proved viability.  The replay now scans the selected
+partial specialization's original structured argument syntax before alias
+target expansion.  It therefore recovers
+`is_applicable_property<executor, fork_t<0>>::value` transactionally without
+publishing facts from losing candidates or adding a witness cache mirror.
+
+Validation used only the standard `~/ralph-ci` `u24-gcc` lane, with no other
+lane active.  The exact PA35 compile case and exact PA24 witness comparison
+pass.  With `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1`, the configured strict suites
+pass PA19 `279/279`, PA20 `158/158`, PA22 `293/293`, PA23 `385/385`, and PA24
+`415/415`; the full PA1-PA38 report passes `4925/4925`.  A PA39 self-host ladder
+through PA10 also passes from the isolated object root
+`../obj/pa39/u24-gcc-alias-j4`; both the ladder and self-host object build were
+capped at four jobs.

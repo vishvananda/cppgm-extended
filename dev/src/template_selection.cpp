@@ -555,6 +555,20 @@ void replay_selected_partial_class_value_dependencies(
             partial_arguments,
             partial_pack_sizes.empty() ? nullptr : &partial_pack_sizes);
     for(std::size_t i = 0; i < partial.arg_syntaxes.size(); ++i) {
+      // Replay the selected source argument before expanding its alias target.
+      // Alias resolution can cache only the substituted result (for example,
+      // enable_if<true>::type), which no longer identifies the concrete value
+      // member whose expression made this specialization viable.
+      std::vector<TemplateValueDependency> syntax_dependencies;
+      template_argument_semantics::
+          append_structured_bool_value_dependencies_in_template_argument_syntax(
+              services,
+              template_api::make_template_environment(replay_scope),
+              partial.arg_syntaxes[i],
+              syntax_dependencies);
+      template_argument_semantics::note_template_value_dependencies_for_witness(
+          *services.semantic_context,
+          syntax_dependencies);
       replay_alias_template_id_value_dependencies(
           services,
           template_api::make_template_environment(replay_scope),
