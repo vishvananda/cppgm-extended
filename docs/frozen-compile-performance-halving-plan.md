@@ -1894,6 +1894,7 @@ candidate qualifies through one of these lanes:
 | CPU throughput | `I >= 0.50%` | Three interleaved pairs; memory stays inside the hard gates. |
 | balanced CPU and memory | `I >= 0.15%`, neither memory signal regresses by more than `0.25%`, and the balance score is at least `0.50` | Three interleaved pairs; repeat the batch when RSS, rather than footprint, makes the score cross `0.50`. |
 | memory density | instruction regression is no worse than `0.15%`, and either footprint improves by at least `1%` and `4 MiB`, or footprint improves by at least `0.5%` while confirmed RSS improves by at least `1%` | Three interleaved pairs, retained-size census, and an independent RSS confirmation when the second form is used. |
+| retained density | instruction regression is no worse than `0.15%`; an owner-complete census reduces live semantic storage by at least `3 MiB` and `0.75%` of the parent frozen footprint; peak footprint improves by at least `0.5%`; RSS stays inside the hard gate | Three interleaved pairs with at least two footprint agreements. The accounting must include inline records, populated container headers, and payload storage, so moving bytes outside the record cannot qualify. |
 | allocation and latency | at least `100,000` allocation/deallocation calls or `8 MiB` of requested allocation traffic disappear; instruction and memory hard gates hold; quiet median wall time improves by at least `1%`, with user time or cycles agreeing | Five quiet interleaved pairs plus the allocation census. Allocation count by itself is not enough. |
 
 The allocation lane treats removed allocator traffic as a reason to measure,
@@ -1903,6 +1904,13 @@ is permitted only when quiet end-to-end latency confirms the benefit. The
 balanced lane handles the other important case directly: a change can qualify
 below the `0.5%` instruction threshold when it improves both CPU work and
 memory by a material combined amount.
+
+The retained-density lane covers a different measurement gap. Peak footprint
+can miss a real persistent-layout reduction when the affected owners do not all
+coincide with the process peak or when the allocator retains already acquired
+pages. It therefore accepts a small instruction cost only when an exhaustive
+live-owner census proves a material net reduction and the process footprint
+also moves in the same direction. A `sizeof` calculation alone is not enough.
 
 Two sub-threshold edits may be measured together only when they share a hot
 path, state contract, or data representation. The composite must qualify as a
@@ -2107,6 +2115,41 @@ is in `/tmp/cppgm-source-anchor-census.stderr`,
 `/tmp/cppgm-lazy-anchor-function-binding-layout-screen.json`,
 `/tmp/cppgm-lazy-layout-{parent,candidate}-pair{1,2,3}.json`, and
 `/tmp/cppgm-lazy-anchor-function-binding-layout-final.json`.
+
+#### Sparse scope binding density checkpoint at `627f7a904`
+
+This checkpoint reopens the early rejected lazy-`Scope` set experiment with a
+current population census and a narrower record-level design. The frozen graph
+contains 36,327 scopes. Only 2,614 have named-type access overrides; 3,691 have
+bound type-pack names; 1,021 have bound value names; 93 have bound value-pack
+names; 2,027 have bound template names; 4,266 have function sets; and 1,194
+have collected template declarations. Those seven sparse containers now keep
+one pointer inline and allocate their ordered container only on first insert.
+The frequently populated bound-type-name set and value map stay direct.
+
+Grouping the two cache-valid flags also removes one alignment hole. `Scope`
+falls from 584 to 464 bytes, a `4,359,240 B` inline reduction. Populated lazy
+containers add back `357,744 B` of map/set headers, leaving a net semantic
+storage reduction of `4,001,496 B`. This is `0.794%` of the paired parent
+footprint. Element payload storage is unchanged, so the calculation does not
+claim allocator bookkeeping or move payload bytes outside the census.
+
+Three interleaved pairs measured parent and candidate instruction medians of
+`108,501,706,790` and `108,565,142,583`, a `0.058%` regression inside the
+hard cap. Median footprint fell from `503,934,976 B` to `499,900,416 B`, a
+`0.801%` improvement, and all three pairs agreed. Median RSS fell from
+`698,191,872 B` to `690,040,832 B`, a `1.167%` improvement, again with all
+three pairs agreeing. The retained-density lane decides the result; no latency
+claim is made.
+
+Every frozen object has SHA-256 `4fc1303a...5c4`. Direct strict passes
+`1530/1530`, and the full direct report passes `4863/4863`. The final
+three-run record is `108,476,020,745` instructions, `688,439,296 B` maximum
+RSS, and `499,806,208 B` footprint. This is `37.7139%` below the starting
+instruction count and leaves `21,397,135,273` instructions to the halving
+target. Evidence is in `/tmp/cppgm-lazy-scope-function-sets-census.stderr`,
+`/tmp/cppgm-lazy-scope-fset-{parent,candidate}-pair{1,2,3}.json`, and
+`/tmp/cppgm-lazy-scope-function-sets-final.json`.
 
 #### Revised investigation order
 
@@ -2319,7 +2362,16 @@ order:
    skipped the second scan of cloned base/complete special-member bodies.
    Five pairs improved instructions by `0.058%`, while wall time, user time,
    cycles, RSS, and footprint regressed. Restore the parent and continue below
-   the common body-analysis stack.
+   the common body-analysis stack. The memory-census review then found 36,327
+   scopes carrying several mostly empty ordered containers. A narrowed lazy
+   representation plus cache-flag reordering reduces `Scope` from 584 to 464
+   bytes. Its reported semantic census falls by `4,359,240 B`, from
+   `249,575,355` to `245,216,115 B`. Three pairs keep the instruction
+   regression to `0.058%`; median footprint improves `0.801%`, and all three
+   footprint pairs agree. After adding back `357,744 B` for populated lazy
+   container headers, net semantic storage still falls by `4,001,496 B`.
+   Commit `627f7a904` clears the retained-density lane and both full
+   correctness gates.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, unrelated container swaps, pool allocators,
@@ -2423,6 +2475,7 @@ Fill one row after each retained commit.
 | `d94a9aa4a` | call the concrete UTF-8 and full-translation sources directly while preserving each lookahead buffer | `108,407,409,101` | `-37.75%` | `699,043,840` | `514,293,760` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-concrete-translation-source-final.json`; paired instructions: `-1.449%`; cycles: `-1.412%`; user time: `-1.141%`; exact PA1 UTF-8/trigraph reducer |
 | `d4fe39d7c` | pack CallSem kind/category flags and store recursive children in one-pointer, single-allocation arrays | `108,502,199,146` | `-37.70%` | `696,795,136` | `509,206,528` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-callsem-packed-children-final.json`; paired footprint: `-1.042%`, or `-5,361,664 B`; paired instructions: `-0.031%`; retained CallSem storage: `-9,004,008 B` |
 | `7f4913c4d` | allocate source-declaration anchors only for diagnostic/witness access and compact direct FunctionBinding scalar state | `108,553,548,041` | `-37.67%` | `690,688,000` | `504,020,992` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-anchor-function-binding-layout-final.json`; paired footprint: `-1.0024%`, or `-5,103,616 B`; paired instructions: `+0.0977%`; retained inline storage: `-5,710,440 B` |
+| `627f7a904` | allocate seven sparse scope binding containers only on first insertion and remove one cache-state padding hole | `108,476,020,745` | `-37.71%` | `688,439,296` | `499,806,208` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-scope-function-sets-final.json`; paired footprint: `-0.801%`; paired instructions: `+0.058%`; net retained semantic storage: `-4,001,496 B` |
 
 ## Rejected work ledger
 
@@ -2457,7 +2510,7 @@ experiment before starting the next candidate.
 | hold a local reference to the runtime-reference node symbol | three-run median regressed to `164,574,311,869` instructions | repeated inline accessors produced better code than the local alias | `/tmp/cppgm-runtime-symbol-local-ref-final.json` |
 | hash the template-argument identifier membership set | `164,510,368,737` instructions | the identifier sets are too small to repay hash-table overhead | `/tmp/cppgm-template-argument-identifiers-hash-screen.json` |
 | store template-argument identifiers as interned atoms | `164,238,424,503` instructions, only `-0.006%` from the retained runtime-symbol checkpoint | pointer membership avoids string ownership but does not move the workload; remove the added global interning traffic | `/tmp/cppgm-template-argument-atoms-screen.json` |
-| make five rarely populated `Scope` sets lazy | `163,441,532,001` instructions, only `-0.01%` from the retained sparse-clone checkpoint; footprint fell by about 3.4 MiB | the pointer-backed headers save memory but do not advance compile throughput; keep the direct ordered-set layout | `/tmp/cppgm-scope-lazy-rare-sets-screen.json` |
+| make five rarely populated `Scope` sets lazy | `163,441,532,001` instructions, only `-0.01%` from the retained sparse-clone checkpoint; footprint fell by about 3.4 MiB | the old instruction-only rule rejected this form. The current population review reopened it under retained density, kept the common set direct, included adjacent sparse maps and cache padding, and retained the measured result in `627f7a904` | `/tmp/cppgm-scope-lazy-rare-sets-screen.json` and `/tmp/cppgm-lazy-scope-function-sets-final.json` |
 | raw-pointer fast path for `class_info_for_type` | `163,528,784,054` instructions | the 1.85M-call counter is dominated by the existing embedded `named_class_info` return; avoiding one shared-owner copy was flat to worse | `/tmp/cppgm-class-info-raw-fast-path-screen.json` |
 | return dependent alias-template cache hits before scope construction | `160,065,541,131` instructions, only `-0.12%` from the retained concrete-hit checkpoint | the concrete fast path captures the useful population; keep dependent results on the scope-sensitive redirect and repair path | `/tmp/cppgm-alias-dependent-hit-screen.json` |
 | move enum-underlying and host-ABI chunk storage into the named-type side record | footprint fell by about 6.9 MiB, but instructions rose to `161,042,270,068` (`+0.49%` from the retained concrete-hit checkpoint) | the smaller common allocation does not repay the extra named-record access; reject the primary-signal regression | `/tmp/cppgm-type-named-side-record-screen.json` |
@@ -2588,3 +2641,5 @@ experiment before starting the next candidate.
 | borrow cached direct-function lookup results and keep small dedupe-key arrays inline | the census counted `168,890` cache hits, including `18,336` nonempty result copies with `607,002` elements and `4,856,016 B` of copied pointer storage. Large dedupe calls made `39,941` scratch allocations for `24,145,776 B`; `29,752` calls needed at most 32 keys. Borrowing the cache result screened at `108,483,777,944` instructions. Adding a 32-key inline buffer used `108,601,642,678`, `0.044%` above the retained record, while footprint improved `0.053%` | the borrowed cache view removes too little traffic, and the inline buffer gives the hot function a larger stack frame. The composite misses every lane. Restore the owning API and vector scratch | `/tmp/cppgm-direct-function-census.json`, `/tmp/cppgm-direct-function-census-2.stderr`, `/tmp/cppgm-direct-function-borrowed-screen.json`, and `/tmp/cppgm-direct-function-borrowed-inline-screen.json` |
 | use a raw `Type` pointer while classifying null pointer constants | the wrapper keeps the selected top-level type alive through `ExprInfo`, so a local raw pointer avoids two `shared_ptr` handoffs. The exact screen used `108,656,745,539` instructions and `504,123,392 B` of footprint | instructions regress `0.095%` and memory stays flat. The narrower call site does not rescue the rejected compiler-wide borrowed `strip_top_level_cv` form. Restore the shared helper | `/tmp/cppgm-null-pointer-raw-type-screen.json` |
 | combine direct required-callee traversal with one scan for aliased special-member bodies | the direct walker removes `112,043` temporary allocation/deallocation pairs and `1,477,512` requested bytes. Base and complete constructor or destructor entry points share one analyzed body; the clone changes its root symbol and alias list, so the second callee scan cannot discover a new body edge. The exact composite screened at `108,266,218,271` instructions. Five interleaved pairs measured parent and candidate medians of `108,410,905,430` and `108,347,889,027`, a `0.058%` gain. Median wall time regressed `0.971%`, user time `0.889%`, cycles `0.635%`, RSS `1.492%`, and footprint `0.079%`; all five wall and user pairs regressed | the allocation-and-latency lane requires a `1%` wall-time improvement. This candidate moves wall time in the opposite direction and misses the CPU and memory lanes. Restore both traversal changes | `/tmp/cppgm-output-rescan-child-vector-census.stderr`, `/tmp/cppgm-output-callee-direct-clone-skip-screen.json`, and `/tmp/cppgm-output-callee-{parent,candidate}-pair{1,2,3,4,5}.json` |
+| make every sparse `Scope` associative container lazy | the broad form removed `4,649,856 B` of inline storage and improved footprint in every pair. Three pairs measured parent and candidate instruction medians of `108,371,344,968` and `108,765,017,627`, a `0.363%` regression | retained bytes do not override the `0.15%` instruction hard gate. Keep `values` eager; the narrowed form retains `4,001,496 B` of net semantic savings with instructions inside the cap | `/tmp/cppgm-lazy-scope-associative-census.stderr` and `/tmp/cppgm-lazy-scope-{parent,candidate}-pair{1,2,3}.json` |
+| lazify rare function pack-size and ABI-tag storage along with the scope containers | the pack-size and rare-vector screens reached `499,126,272 B` and `499,748,864 B` of footprint, but added representation and append surfaces without producing a stronger peak result than the scope-only design | the allocator kept the same useful size class for the ABI-tag refinement, while the pack-size form spread `.get()` ownership changes across template instantiation and symbol emission. Restore direct function metadata and retain the cohesive scope record change only | `/tmp/cppgm-lazy-rare-semantic-containers-screen.json` and `/tmp/cppgm-lazy-rare-semantic-maps-tags-screen.json` |
