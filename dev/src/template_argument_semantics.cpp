@@ -19431,16 +19431,25 @@ bool try_resolve_alias_template_id_locally(
     return false;
   }
 
-  out = services.semantic_context->instantiate_alias_template_with_syntax(
-      *alias_template,
-      raw_scope,
-      arg_texts,
-      arg_syntaxes,
-      request.allow_class_templates,
-      false,
-      &raw_argument_scope,
-      request.source_location.empty() ? nullptr : &request.source_location,
-      request.source_syntax);
+  try {
+    out = services.semantic_context->instantiate_alias_template_with_syntax(
+        *alias_template,
+        raw_scope,
+        arg_texts,
+        arg_syntaxes,
+        request.allow_class_templates,
+        false,
+        &raw_argument_scope,
+        request.source_location.empty() ? nullptr : &request.source_location,
+        request.source_syntax);
+  } catch(const std::logic_error &) {
+    // Direct ordinary lookup is a soft SFINAE probe.  Witness replay remains
+    // authoritative so it cannot silently change the observed dependency set.
+    if(services.witness_context.session != nullptr) {
+      throw;
+    }
+    return false;
+  }
   if(out && (request.top_const || request.top_volatile)) {
     out = apply_cv(out, request.top_const, request.top_volatile);
   }
