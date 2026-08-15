@@ -5326,13 +5326,12 @@ private:
   {
     for(size_t i = 0; i < texts.size(); ++i) {
       const IdentifierTokenSet & identifiers = identifier_tokens_for(texts[i]);
-      for(unordered_set<IdentifierTokenSet::InternedName>::const_iterator it =
-              identifiers.names.begin();
-          it != identifiers.names.end();
-          ++it) {
+      for(size_t identifier_index = 0;
+          identifier_index < identifiers.size();
+          ++identifier_index) {
         if(current_class_member_scope_has_unqualified_member_name(
                scope,
-               **it,
+               *identifiers[identifier_index],
                required_source_template,
                type_members_only)) {
           return true;

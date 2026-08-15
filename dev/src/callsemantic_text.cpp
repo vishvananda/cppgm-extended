@@ -705,7 +705,6 @@ bool is_identifier_text(const string & text)
 IdentifierTokenSet collect_identifier_tokens(const string & text)
 {
   IdentifierTokenSet out;
-  out.reserve(std::min<std::size_t>(text.size() / 4 + 1, 32));
   size_t i = 0;
   while(i < text.size()) {
     const unsigned char ch = static_cast<unsigned char>(text[i]);

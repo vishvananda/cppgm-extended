@@ -11097,8 +11097,11 @@ bool text_mentions_dependent_leaf_template_bound_type_name(
 {
   const callsemantic_internal::IdentifierTokenSet identifiers =
       callsemantic_internal::collect_identifier_tokens(text);
-  for(callsemantic_internal::IdentifierTokenSet::InternedName interned_name :
-      identifiers.names) {
+  for(size_t identifier_index = 0;
+      identifier_index < identifiers.size();
+      ++identifier_index) {
+    callsemantic_internal::IdentifierTokenSet::InternedName interned_name =
+        identifiers[identifier_index];
     const string & name = *interned_name;
     for(Scope * current = &scope; current; current = current->parent) {
       if(current->namespace_scope || current->parent == nullptr) {
@@ -28069,8 +28072,11 @@ bool text_mentions_template_placeholders_in_tokens(
         return false;
       };
 
-  for(callsemantic_internal::IdentifierTokenSet::InternedName interned_name :
-      identifiers.names) {
+  for(size_t identifier_index = 0;
+      identifier_index < identifiers.size();
+      ++identifier_index) {
+    callsemantic_internal::IdentifierTokenSet::InternedName interned_name =
+        identifiers[identifier_index];
     const string & name = *interned_name;
     if(identifier_mentions_template_type_placeholder(name) ||
        identifier_mentions_template_value_placeholder(name) ||
@@ -28101,8 +28107,11 @@ bool text_mentions_dependent_non_namespace_binding_names_in_tokens(
       {
         return service_type_depends_on_template_parameter(services, type);
       };
-  for(callsemantic_internal::IdentifierTokenSet::InternedName interned_name :
-      identifiers.names) {
+  for(size_t identifier_index = 0;
+      identifier_index < identifiers.size();
+      ++identifier_index) {
+    callsemantic_internal::IdentifierTokenSet::InternedName interned_name =
+        identifiers[identifier_index];
     const string & name = *interned_name;
     bool seen_type_name = false;
     bool seen_value_name = false;
@@ -28224,8 +28233,11 @@ bool text_mentions_non_namespace_binding_names(
   Scope & raw_scope = scope.require();
   const callsemantic_internal::IdentifierTokenSet identifiers =
       callsemantic_internal::collect_identifier_tokens(text);
-  for(callsemantic_internal::IdentifierTokenSet::InternedName interned_name :
-      identifiers.names) {
+  for(size_t identifier_index = 0;
+      identifier_index < identifiers.size();
+      ++identifier_index) {
+    callsemantic_internal::IdentifierTokenSet::InternedName interned_name =
+        identifiers[identifier_index];
     const string & name = *interned_name;
     for(Scope * current = &raw_scope; current; current = current->parent) {
       if(current->namespace_scope || current->parent == nullptr) {
@@ -28250,8 +28262,11 @@ bool text_mentions_current_specialization_names(
   Scope & raw_scope = scope.require();
   const callsemantic_internal::IdentifierTokenSet identifiers =
       callsemantic_internal::collect_identifier_tokens(text);
-  for(callsemantic_internal::IdentifierTokenSet::InternedName interned_name :
-      identifiers.names) {
+  for(size_t identifier_index = 0;
+      identifier_index < identifiers.size();
+      ++identifier_index) {
+    callsemantic_internal::IdentifierTokenSet::InternedName interned_name =
+        identifiers[identifier_index];
     const string & name = *interned_name;
     for(Scope * current = &raw_scope; current; current = current->parent) {
       if(!current->class_info) {

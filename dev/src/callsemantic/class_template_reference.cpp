@@ -565,8 +565,11 @@ public:
   {
     const callsemantic_internal::IdentifierTokenSet identifiers =
         callsemantic_internal::collect_identifier_tokens(text);
-    for(callsemantic_internal::IdentifierTokenSet::InternedName interned_name :
-        identifiers.names) {
+    for(size_t identifier_index = 0;
+        identifier_index < identifiers.size();
+        ++identifier_index) {
+      callsemantic_internal::IdentifierTokenSet::InternedName interned_name =
+          identifiers[identifier_index];
       if(named_type_is_current_specialization_member_type(scope,
                                                          *interned_name)) {
         return true;
