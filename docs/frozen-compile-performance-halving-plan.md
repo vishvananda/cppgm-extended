@@ -1968,7 +1968,7 @@ The full ledger re-audit changes these old decisions:
 | bulk-sort visible template-body names | `+0.236 / +0.066 / +0.637%` | balance score `0.555`; historical result was only a screen | The cohesive source-view and destination-sort form passed two balanced batches and was retained in `2ba26c3f4`. |
 | 16-entry sparse template-angle cache | `+0.322 / +0.116 / +0.430%` | balance score `0.537`; historical result was only a screen | The current retry scored `0.442`; the packed refinement scored `0.284`. Keep the dense vectors. |
 | reorder `CppAstNode` into 176 bytes | `+0.147 / +1.689 / +0.695%` | memory-density lane; historical result was only a screen | Run a current paired decision and retained-size census. |
-| compact `CallSemNode` child storage | `-0.022 / +0.563 / +1.169%` | memory-density lane; historical result was only a screen | Run a current paired decision. Retain only if the container remains simpler than a pool and clears full correctness. |
+| compact `CallSemNode` child storage | `-0.022 / +0.563 / +1.169%` | memory-density lane; historical result was only a screen | The current 72-byte retry still missed, but packing the adjacent kind/category fields made the same child-storage design a cohesive 64-byte record. The composite passed the density lane and was retained in `d4fe39d7c`. |
 | allocate `Scope::named_type_access` on first use | `+0.170 / +0.058 / +1.237%` | balance score `0.788`; historical result was only a screen and RSS supplied most of the score | The current retry scored `0.083` and regressed instructions and RSS. Keep the direct map. |
 | inline `strip_top_level_cv` and return the selected pointer by reference | `+0.165 / -0.074 / +1.980%` | balance score `1.155`; historical result was only a screen and RSS supplied most of the score | The current retry improved instructions in all three pairs but scored only `0.225` because memory was flat to worse. Keep the value-returning API. |
 | retain compacted named-type display strings | `+0.035 / unknown / negative one-run RSS` | misses every lane in its original by-value form | Reopen through a new ownership form after the fresh census found `922,353` stable repeats. The borrowed lazy view removes reconstruction and the return copy, clears the CPU lane at `2.892%`, and is retained in `8d58a3d6a`. |
@@ -1999,6 +1999,58 @@ old rehydration census counted 19,000 linkage-upgrade calls. Current metrics
 report 1,102 symbol-upgrade requests after registration-time synthesized
 linkage. Do not retry the rehydration guard, deferred provisional symbol
 construction, or complete-entry symbol reuse without a new census.
+
+#### Packed CallSem output checkpoint
+
+The refined review reopened the one-pointer `CallSemNode` child container. Its
+historical 72-byte record reduced memory but missed the density threshold in a
+confirmation batch. A fresh adjacent-field audit found the missing cohesive
+piece: `CallSemKind` and `CallValueCategory` occupied two full words beside a
+partially used 64-bit flag group. Giving both enums an unsigned 64-bit
+underlying type and storing them in guarded 7-bit and 2-bit fields lets the
+one-pointer child representation reduce `CallSemNode` from 88 bytes to 64.
+The unsigned underlying type is required: a signed 7-bit enum field cannot
+represent the final five of the current 69 kinds. A compile-time bound now
+prevents future kinds from overflowing the field.
+
+`CallSemChildren` owns one allocation containing an eight-byte size/capacity
+header followed by the nodes. Copies are deep, moves transfer the allocation,
+and `clear` destroys nodes while retaining capacity. Its iterator and
+reference invalidation rules match the vector operations it exposes: reserve,
+growth, and insert invalidate them. The container has no cache, epoch, pool,
+or cross-owner state. It deliberately provides only the operations used by
+CallSem construction, so the lifetime contract remains local despite the
+larger implementation than `std::vector`.
+
+The retained census at
+`/tmp/cppgm-callsem-packed-memory-census.stderr` counts `201,463` output nodes.
+Inline node storage falls from `17,728,744 B` to `12,893,632 B`, a
+`4,835,112 B` reduction. Child backing storage falls from `18,620,272 B` to
+`14,451,376 B`, another `4,168,896 B`. The census therefore attributes
+`9,004,008 B` less retained CallSem storage to the composite representation.
+The child container does not claim an allocation-count win: a nonempty child
+array still uses one allocation, as the old vector buffer did.
+
+Three sequential interleaved pairs measured parent and candidate instruction
+medians of `108,423,136,754` and `108,389,359,491`, a `0.031%` improvement;
+two instruction pairs agreed. Median footprint fell from `514,498,560 B` to
+`509,136,896 B`, a `5,361,664 B` or `1.042%` improvement, and all three pairs
+agreed. Median RSS rose `0.334%`, within the hard gate and not used for the
+decision. Cycles improved `0.203%` with all three pairs agreeing. This clears
+the first memory-density rule without relying on RSS. The post-commit
+three-run record is `108,502,199,146` instructions, `696,795,136 B` maximum
+RSS, and `509,206,528 B` footprint; a small rolling instruction increase is
+allowed because the paired density decision stays inside the `0.15%` CPU cap.
+
+Every measured object has frozen SHA-256 `4fc1303a...5c4`. Focused PA12, PA15,
+PA19, and PA22 pass `878/878`; direct strict passes `1530/1530`; and the full
+direct report passes `4863/4863`. The portable C++11 release build uses normal
+`operator new` and adds no host-specific flags. Evidence is in
+`/tmp/cppgm-callsem-kind-flags-screen.json`,
+`/tmp/cppgm-callsem-packed-children-screen.json`,
+`/tmp/cppgm-callsem-packed-{parent,candidate}-pair{1,2,3}.json`,
+`/tmp/cppgm-callsem-packed-memory-census.stderr`, and
+`/tmp/cppgm-callsem-packed-children-final.json`.
 
 #### Revised investigation order
 
@@ -2168,16 +2220,28 @@ order:
    next work should remove common unique semantic work: output seed takes
    `6,597 ms`, instantiated-template output `3,451 ms`, and late synthesized
    output `4,058 ms`; LowIR collection is only about `1.4 s`.
-18. In progress: attribute the common function-body semantic path inside output
+18. Completed: retain the cohesive packed CallSem output representation. The
+   earlier one-pointer child container missed the density gate at 72 bytes per
+   node. Packing the adjacent kind and value-category fields reduces the full
+   record from 88 to 64 bytes. The retained census shows `9,004,008 B` less
+   CallSem storage. Three interleaved pairs improve median footprint by
+   `1.042%` or `5,361,664 B`, keep instructions `0.031%` better, and agree on
+   footprint in all pairs and instructions in two. The candidate clears the
+   memory-density lane, emits exact bytes, and passes focused `878/878`, direct
+   strict `1530/1530`, and full report `4863/4863`. The post-commit record is
+   `37.70%` below the original baseline and leaves `21,423,313,674`
+   instructions to the halving target.
+19. In progress: attribute the common function-body semantic path inside output
    seed and late synthesized output, then census a construction or traversal
    that is paid once for each unique body. Do not reopen broad AST/type caches
    without a new reuse population.
 
 Keep these families closed without new population evidence: broad AST/type
-caches, text interner replacements, general container swaps, common-record
-compaction, custom allocation, alias observation, and LowIR ownership. Their
-repeated forms show that allocation or byte removal alone does not predict
-retired-instruction improvement on this host.
+caches, text interner replacements, unrelated container swaps, pool allocators,
+alias observation, and LowIR ownership. The packed CallSem exception required
+a retained-size census and crossed the density lane as one cohesive record
+change; byte or allocation removal alone still does not predict instruction
+improvement on this host.
 
 ### Phase 8: final halving proof
 
@@ -2272,6 +2336,7 @@ Fill one row after each retained commit.
 | `9bcbc6fc6` | store immutable parser lookup snapshots in null-delimited contiguous atom buffers | `110,890,016,889` | `-36.33%` | `696,147,968` | `514,641,920` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lookup-snapshot-final.json`; paired instructions: `-0.204%`; footprint: `-0.602%`; balance score: `0.806` |
 | `ee4ad64b0` | borrow dependent-class template argument vectors for read-only semantic queries | `109,780,001,232` | `-36.97%` | `693,858,304` | `514,256,896` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-class-argument-view-final.json`; removed about 345,726 vector allocations and 222,012,728 requested bytes; paired instructions: `-0.863%`; user time: `-1.051%` |
 | `d94a9aa4a` | call the concrete UTF-8 and full-translation sources directly while preserving each lookahead buffer | `108,407,409,101` | `-37.75%` | `699,043,840` | `514,293,760` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-concrete-translation-source-final.json`; paired instructions: `-1.449%`; cycles: `-1.412%`; user time: `-1.141%`; exact PA1 UTF-8/trigraph reducer |
+| `d4fe39d7c` | pack CallSem kind/category flags and store recursive children in one-pointer, single-allocation arrays | `108,502,199,146` | `-37.70%` | `696,795,136` | `509,206,528` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-callsem-packed-children-final.json`; paired footprint: `-1.042%`, or `-5,361,664 B`; paired instructions: `-0.031%`; retained CallSem storage: `-9,004,008 B` |
 
 ## Rejected work ledger
 
@@ -2356,7 +2421,7 @@ experiment before starting the next candidate.
 | replace the diagnostic-context frame vector with intrusive RAII frames | normal semantic work no longer pushed or popped `Frame` objects in a heap-capable vector, while exception-time realization retained the same outer-to-inner stack, but the exact-output screen used `128,353,586,846` instructions, only about `0.07%` below the retained median | diagnostic frame bookkeeping is visible but not material to the frozen compile. Restore the simpler vector and leave exception diagnostics unchanged | `/tmp/cppgm-diagnostic-intrusive-stack-screen.json` |
 | replace `Scope::values` ordered maps with hash maps | the frozen memory census found 14,102 entries across 36,331 scopes, with only 4,988 nonempty maps. The candidate emitted exact frozen bytes and used `128,340,237,385` instructions, about `0.08%` below the retained `128,444,585,958` median | most value maps are too small to repay hashing and bucket storage. Restore ordered maps and avoid an iteration-order contract change for a sub-threshold result | `/tmp/cppgm-memory-census-current.stderr` and `/tmp/cppgm-scope-values-unordered-screen.json` |
 | move the exception and alignment AST node vectors into the existing sparse record | removing two pointers from each common `CppAstNode` reduced peak footprint from the retained `554,516,480 B` median to `549,568,512 B`, and the frozen object stayed exact. The screen used `128,937,061,931` instructions, about `0.38%` above the retained median | memory density alone does not repay sparse-record access on these traversals. Restore the inline lazy handles and do not move the hotter qualifier vectors behind the same pointer | `/tmp/cppgm-ast-rare-node-vectors-screen.json` |
-| replace each recursive `CallSemNode` child vector with a one-pointer, single-allocation container | the retained-output census counted 201,469 nodes, including 87,199 leaves that paid an empty three-word vector header. The current 72-byte form emitted exact frozen objects in two independent three-pair batches. The first improved instructions by `0.062%`, RSS by `1.622%`, and footprint by `0.828%`. The confirmation improved instructions by `0.077%`, RSS by only `0.801%`, and footprint by `0.780%`. All footprint and RSS pairs agreed; two instruction pairs agreed in each batch | reject after the required RSS confirmation missed the `1%` threshold. Footprint stays below the independent `1%` density form, and instructions stay below the balanced lane's `0.15%` floor. Restore `std::vector`; do not accept a 340-line recursive container on the favorable first batch alone | `/tmp/cppgm-callsem-duplicate-census.stderr`, `/tmp/cppgm-callsem-compact-current-screen.json`, and `/tmp/cppgm-callsem-compact-{parent,candidate}-{1,2,3,4,5,6}.time` |
+| replace each recursive `CallSemNode` child vector with a one-pointer, single-allocation container | the original 72-byte form emitted exact objects but improved footprint by only `0.828%` and `0.780%` in two batches, so it remained rejected. The current adjacent-field audit packs `CallSemKind` and `CallValueCategory` into existing flag storage, producing one cohesive 64-byte record. Across `201,463` nodes the composite removes `9,004,008 B` of retained CallSem storage. Three current pairs improve median footprint by `1.042%` or `5,361,664 B` and instructions by `0.031%`; all footprint pairs and two instruction pairs agree | reopen and retain the composite in `d4fe39d7c`. It now clears the memory-density lane without RSS, keeps vector-like ownership and invalidation rules explicit, uses no pool or cache, emits the frozen object, and passes focused `878/878`, direct strict `1530/1530`, and full report `4863/4863`. The 72-byte child-only form remains rejected as an isolated edit | `/tmp/cppgm-callsem-duplicate-census.stderr`, `/tmp/cppgm-callsem-compact-{parent,candidate}-{1,2,3,4,5,6}.time`, `/tmp/cppgm-callsem-kind-flags-screen.json`, `/tmp/cppgm-callsem-packed-{parent,candidate}-pair{1,2,3}.json`, and `/tmp/cppgm-callsem-packed-children-final.json` |
 | pool recursive `CallSemNode` child-vector storage in reusable slabs | the construction census counted 276,542 node constructions, and a pooled-allocator census measured 1,686,253 child-buffer allocation requests with 1,570,427 free-list reuse hits. The instrumented form used `128,117,455,767` instructions; removing normal-mode census increments and thread-local pool access improved that to `128,051,791,175`, only `0.31%` below the retained median. The best form emitted the exact frozen object, reduced one-run RSS to `695,099,392 B`, and raised footprint to `560,300,032 B` | macOS's small-object allocator handles this traffic efficiently enough that slab lookup and lifetime bookkeeping consume most of the saved work. The result remains below the `0.5%` threshold after two forms and increases footprint, so restore the default allocator | `/tmp/cppgm-callsem-construction.stderr`, `/tmp/cppgm-callsem-child-pool-census.stderr`, `/tmp/cppgm-callsem-child-pool-screen.json`, and `/tmp/cppgm-callsem-child-pool-screen-2.json` |
 | extend special-member body reuse to virtual-base and deleting variants | the frozen census found two virtual-base constructor pairs, one virtual-base destructor triplet, and 13 nonvirtual deleting destructors. Those entry-specific paths contain 398 CallSem nodes; the frozen object remained exact | the residual population cannot repay a partial-tree reuse mechanism. Keep virtual-base setup, virtual-base teardown, and deleting deallocation on their existing paths | `/tmp/cppgm-special-member-variant-census.stderr` |
 | store the persistent type-dependency memo result in each `Type` | the existing memo served 2,981,946 persistent hits with 56,590 misses and 17,709 stale-address detections. Disabling it used `128,801,711,184` instructions. Replacing its pointer hash and `weak_ptr` check with a byte in existing `Type` padding emitted exact frozen bytes and used `127,139,069,875` instructions, flat against the retained `127,129,199,627` median | the current memo earns its cost, while its lookup representation does not consume enough of the full compile to meet the retention floor. Restore the ownership-safe map and close this representation family with the earlier flat-table and fast-path trials | `/tmp/cppgm-type-dependency-memo.stderr`, `/tmp/cppgm-type-dependency-memo-off-screen.json`, and `/tmp/cppgm-type-dependency-inline-state-screen.json` |
