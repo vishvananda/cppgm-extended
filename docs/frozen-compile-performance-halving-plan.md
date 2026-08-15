@@ -1989,10 +1989,14 @@ source materialization, and zero-allocation lookup walkers lack the required
 allocation volume or quiet latency evidence and remain closed.
 
 The latest rows remain closed. ABI type-IR borrowing, substitution child
-moves, alias-observation bypass, early negative class admission, CallSem
-coallocation, and FunctionBinding compaction all ran against the 118.246B
-checkpoint. Each form was flat or regressed instructions. Denominator shrink
-cannot change those decisions.
+moves, alias-observation bypass, early negative class admission, and CallSem
+coallocation all ran against the 118.246B checkpoint. Each form was flat or
+regressed instructions. The old FunctionBinding cold-string side record also
+remains closed. Its source-anchor component is different: the same cache type
+is embedded in seven high-population owner families, and the refined density
+lane permits a shared lazy representation plus layout-only padding removal.
+That narrower composite is retained below; denominator shrink alone did not
+change the decision.
 
 The symbol-registration rejections also lost their original population. The
 old rehydration census counted 19,000 linkage-upgrade calls. Current metrics
@@ -2051,6 +2055,58 @@ direct report passes `4863/4863`. The portable C++11 release build uses normal
 `/tmp/cppgm-callsem-packed-{parent,candidate}-pair{1,2,3}.json`,
 `/tmp/cppgm-callsem-packed-memory-census.stderr`, and
 `/tmp/cppgm-callsem-packed-children-final.json`.
+
+#### Lazy source-anchor and FunctionBinding density checkpoint
+
+The historical FunctionBinding experiment put two rare strings and one source
+anchor behind a FunctionBinding-specific side record, then moved every scalar
+field. It saved memory but added branches to ordinary symbol and `noexcept`
+queries. The current retry isolates the representation that is actually cold:
+`SourceDeclAnchorCache` itself. Source anchors are populated only through the
+diagnostic and witness accessors in `semantic_trace.cpp`; successful ordinary
+compilation does not need their strings. The unpopulated cache is now one
+pointer rather than a boolean and two inline strings.
+
+Population allocates the two-string record on first diagnostic or witness
+access. The source AST is immutable, so the derived locations need no mutation
+epoch or invalidation during the owner's lifetime. Copies deep-copy populated
+locations, moves transfer them, and references into a populated cache remain
+valid until owner assignment or destruction. The normal empty copy path does
+not allocate. The implementation is portable C++11 and uses ordinary
+`operator new`; it adds no allocator, pool, host flag, or cross-owner state.
+
+The current census counts `68,398` embedded anchors across FunctionBinding,
+FunctionTemplateDecl, ClassInfo, ValueBinding, ClassTemplateDecl,
+AliasTemplateDecl, and VariableTemplateDecl owners. Reducing each anchor from
+56 bytes to 8 removes `3,283,104 B` of inline storage. Keeping FunctionBinding's
+small enums and booleans in one direct-access block removes alignment holes and
+reduces its record from 824 bytes to 704; across `33,713` bindings, the 72-byte
+layout component removes another `2,427,336 B`. The combined retained-size
+reduction is `5,710,440 B`. Rare symbol-override and explicit-`noexcept` strings
+remain inline, so the hot access branches from the old rejected form do not
+return.
+
+Three sequential interleaved pairs measured parent and candidate instruction
+medians of `108,472,048,985` and `108,578,026,360`, a `0.0977%` regression
+inside the density lane's `0.15%` cap. Median footprint fell from
+`509,136,896 B` to `504,033,280 B`, a `5,103,616 B` or `1.0024%` improvement;
+all three footprint pairs agreed. Median RSS improved `0.9172%`, with all three
+pairs agreeing, but RSS is not needed for the decision. Wall, user, and cycles
+were slightly worse in the median batch, so this checkpoint makes no latency
+claim. It clears the first memory-density rule on footprint and retained bytes.
+
+Every measured object has frozen SHA-256 `4fc1303a...5c4`. Focused PA12, PA15,
+PA19, and PA22 pass `878/878`; direct strict passes `1530/1530`; and the full
+direct report passes `4863/4863`. The post-commit record is
+`108,553,548,041` instructions, `690,688,000 B` maximum RSS, and
+`504,020,992 B` footprint. This is `37.67%` below the starting instruction
+count and leaves `21,474,662,569` instructions to the halving target. Evidence
+is in `/tmp/cppgm-source-anchor-census.stderr`,
+`/tmp/cppgm-lazy-anchor-layout-census.stderr`,
+`/tmp/cppgm-lazy-source-anchor-screen.json`,
+`/tmp/cppgm-lazy-anchor-function-binding-layout-screen.json`,
+`/tmp/cppgm-lazy-layout-{parent,candidate}-pair{1,2,3}.json`, and
+`/tmp/cppgm-lazy-anchor-function-binding-layout-final.json`.
 
 #### Revised investigation order
 
@@ -2231,7 +2287,7 @@ order:
    strict `1530/1530`, and full report `4863/4863`. The post-commit record is
    `37.70%` below the original baseline and leaves `21,423,313,674`
    instructions to the halving target.
-19. In progress: attribute the common function-body semantic path inside output
+19. Completed: audit the common function-body semantic path inside output
    seed and late synthesized output. The first body-property lead is closed:
    the frozen compile's early member `static_assert` scan visits only `1,137`
    AST nodes, while final class validation visits `984`; neither finds a
@@ -2244,9 +2300,18 @@ order:
    already rejected empty template-bound overlay guard finds `107,725` empty
    calls among `263,533` template-only overlays. Three pairs improve
    instructions by only `0.026%` and footprint by `0.015%`, while wall, user,
-   and cycles regress in every pair. Restore the uniform overlay. Continue
-   with a construction or traversal paid once for each unique body; do not
-   reopen broad AST/type caches without a new reuse population.
+   and cycles regress in every pair. Restore the uniform overlay. The same
+   review reopened only the cold source-anchor component of the historical
+   FunctionBinding compaction. Its shared lazy representation plus direct
+   scalar regrouping removes `5,710,440 B` of retained storage, improves paired
+   footprint by `1.0024%`, and holds the instruction regression to `0.0977%`.
+   Commit `7f4913c4d` therefore clears the memory-density lane with focused,
+   strict, and full-report correctness.
+20. In progress: refresh attribution at the 108.554B density checkpoint and
+   rank new work-removal candidates in output seed, instantiated-template
+   output, and late synthesized output. Prefer common unique-body construction
+   or traversal; do not reopen broad AST/type caches without a new reuse
+   population, and do not combine unrelated below-threshold edits.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, unrelated container swaps, pool allocators,
@@ -2349,6 +2414,7 @@ Fill one row after each retained commit.
 | `ee4ad64b0` | borrow dependent-class template argument vectors for read-only semantic queries | `109,780,001,232` | `-36.97%` | `693,858,304` | `514,256,896` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-dependent-class-argument-view-final.json`; removed about 345,726 vector allocations and 222,012,728 requested bytes; paired instructions: `-0.863%`; user time: `-1.051%` |
 | `d94a9aa4a` | call the concrete UTF-8 and full-translation sources directly while preserving each lookahead buffer | `108,407,409,101` | `-37.75%` | `699,043,840` | `514,293,760` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-concrete-translation-source-final.json`; paired instructions: `-1.449%`; cycles: `-1.412%`; user time: `-1.141%`; exact PA1 UTF-8/trigraph reducer |
 | `d4fe39d7c` | pack CallSem kind/category flags and store recursive children in one-pointer, single-allocation arrays | `108,502,199,146` | `-37.70%` | `696,795,136` | `509,206,528` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-callsem-packed-children-final.json`; paired footprint: `-1.042%`, or `-5,361,664 B`; paired instructions: `-0.031%`; retained CallSem storage: `-9,004,008 B` |
+| `7f4913c4d` | allocate source-declaration anchors only for diagnostic/witness access and compact direct FunctionBinding scalar state | `108,553,548,041` | `-37.67%` | `690,688,000` | `504,020,992` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-anchor-function-binding-layout-final.json`; paired footprint: `-1.0024%`, or `-5,103,616 B`; paired instructions: `+0.0977%`; retained inline storage: `-5,710,440 B` |
 
 ## Rejected work ledger
 
@@ -2491,7 +2557,7 @@ experiment before starting the next candidate.
 | bypass all alias source-observation setup when witness capture and template-resolution tracing are disabled | the broader form skipped source-occurrence argument construction, observation records, completion ownership probes, and parameterized-pattern completion setup. It emitted exact frozen bytes and used `118,273,002,736` instructions, effectively flat at `0.023%` above the retained checkpoint | the per-instantiation mode branch offsets the disabled setup. Restore the uniform caller path and close this family together with the earlier partial source-materialization result | `/tmp/cppgm-alias-source-observation-off-screen.json` |
 | admit metadata-free negative `class_info_for_type` results before declaration collection completes | the existing registry epoch and metadata guards made the earlier admission exact. It converted 21,330 registry misses into named-key cache hits, reducing misses from 30,928 to 9,598, but used `118,388,459,077` instructions, `0.121%` above the retained checkpoint | the added negative-cache traffic costs as much as the second hash lookup it avoids. Restore post-declaration admission and keep the cache focused on stable negatives | `/tmp/cppgm-early-negative-class-cache-census.stderr` and `/tmp/cppgm-early-negative-class-cache-screen.json` |
 | coallocate CallSem optional payloads with their shared control blocks | coallocating the common extra record, rare payloads, qualified names, and interned symbols emitted the exact frozen object but used `118,748,695,498` instructions, `0.425%` above the retained checkpoint. Restricting coallocation to the roughly 91K common extra records was worse at `118,923,591,013`, a `0.573%` regression | the larger allocation changes recover part of the common-record loss but do not make the family competitive. Restore separate object and control-block allocations and keep the existing copy-on-write representation | `/tmp/cppgm-callsem-make-shared-screen.json` and `/tmp/cppgm-callsem-extra-make-shared-screen.json` |
-| move cold `FunctionBinding` strings and source anchors to a side record, then compact scalar layout | only 266 of 33,713 bindings stored an explicit `noexcept` expression and 50 stored an object-symbol override; source anchors are unused in normal compilation. Moving that union behind one pointer reduced footprint by about 2.7 MiB but used `118,374,356,578` instructions, `0.109%` above the retained checkpoint. Grouping scalar state removed alignment holes and reduced the record from 824 to 656 bytes, but used `118,496,295,717` instructions, a `0.212%` regression, while reducing footprint by about 5.8 MiB | density alone does not repay cold-access branches or the changed hot-field layout. Restore the original direct fields and close `FunctionBinding` compaction unless a future change removes work as well as bytes | `/tmp/cppgm-function-binding-rare-census.stderr`, `/tmp/cppgm-function-binding-cold-metadata-screen.json`, and `/tmp/cppgm-function-binding-compact-layout-screen.json` |
+| move cold `FunctionBinding` strings and source anchors to a side record, then compact scalar layout | only 266 of 33,713 bindings stored an explicit `noexcept` expression and 50 stored an object-symbol override; source anchors are unused in normal compilation. Moving that union behind one pointer reduced footprint by about 2.7 MiB but used `118,374,356,578` instructions, `0.109%` above the retained checkpoint. Grouping scalar state reduced the record from 824 to 656 bytes, but used `118,496,295,717` instructions, a `0.212%` regression, while reducing footprint by about 5.8 MiB | keep the cold-string side record rejected because it adds branches to ordinary symbol and `noexcept` queries. Commit `7f4913c4d` extracts the valid subset: make the shared source-anchor type lazy across 68,398 owners, retain direct strings, and regroup only direct scalar fields. That composite clears the current memory-density lane | `/tmp/cppgm-function-binding-rare-census.stderr`, `/tmp/cppgm-function-binding-cold-metadata-screen.json`, `/tmp/cppgm-function-binding-compact-layout-screen.json`, `/tmp/cppgm-lazy-anchor-layout-census.stderr`, and `/tmp/cppgm-lazy-layout-{parent,candidate}-pair{1,2,3}.json` |
 | retry the interned template-body scope-value snapshot after atom-set compaction | the safe cache stored `(Atom, ValueBinding*)` entries, rebuilt after erase/clear/swap, and preserved live mapped-value updates. The census recorded 44,552 scope visits, 35,194 hits, 9,358 builds, 68 invalidation rebuilds, 3,092 source entries scanned, and 1,825,503 cached entries replayed. A lean optional-vector form screened at `118,075,598,689` instructions. Three interleaved binary pairs measured retained and candidate medians of `118,654,162,513` and `118,365,277,484`, a `288,885,029` instruction or `0.243%` reduction. Median RSS changed from `710,828,032` to `712,835,072`; footprint changed from `524,652,544` to `525,099,008`. All six objects had the frozen SHA-256 | the isolated source view remained rejected. Commit `2ba26c3f4` later removed destination replay in the same collector and met the balanced lane in two independent batches | `/tmp/cppgm-template-body-value-snapshot-census.stderr`, `/tmp/cppgm-template-body-value-snapshot-{screen,lean-screen}.json`, and `/tmp/cppgm-template-body-value-{retained,candidate}-{1,2,3}.time` |
 | skip template-bound overlay work for sources with no relevant names | a detailed census measured 276,899 source-scope requests, 166,963 unchanged results, and only 2,413 repeated stable target/source pairs. `115,809` requests made no insertion attempt; `107,924` of those had no relevant source names. An early return emitted the exact frozen object and screened at `111,894,594,757` instructions, about `0.18%` below the clean retained median. The current body-path audit reconfirmed `107,725` empty calls among `263,533` template-only overlays. Three current pairs measure only a `0.026%` instruction gain and `0.015%` footprint gain, while median wall, user, and cycles regress `0.793%`, `0.569%`, and `0.415%`, with all timing pairs worse | two checkpoints now show that a result cache has too little exact-pair reuse and the five empty generic helpers are already cheaper than the additional five-condition branch. Restore the uniform traversal and keep the censuses as evidence against another unchanged retry | `/tmp/cppgm-overlay-detailed-2.stderr`, `/tmp/cppgm-overlay-empty-screen.json`, `/tmp/cppgm-overlay-empty-wrapper-screen.json`, `/tmp/cppgm-overlay-empty-excluded-screen.json`, `/tmp/cppgm-template-bound-overlay-census.stderr`, and `/tmp/cppgm-empty-overlay-{parent,candidate}-pair{1,2,3}.json` |
 | use inline visit sets for conversion-function class, virtual-base, and direct-binding traversal | 23,399 conversion-group roots and 21,968 conversion-name roots visited at most four classes and one virtual base, with no duplicate class or virtual-base insertion. The per-class direct-binding set reached two entries and rejected 20,669 duplicate probes. Reusing the retained inline visit set for all three emitted exact bytes but screened at `112,486,953,373` instructions; a binding-only form used `112,540,821,783`, and capacity-sized sets used `112,392,376,486` | the tree allocations are real, but linear scans, larger stack state, and the overflow-vector branch cost more on this path. All three forms regress instructions and miss the allocation-and-latency lane. Restore the tree sets | `/tmp/cppgm-conversion-traversal-census.stderr`, `/tmp/cppgm-conversion-inline-screen.json`, `/tmp/cppgm-conversion-binding-inline-screen.json`, and `/tmp/cppgm-conversion-inline-sized-screen.json` |
