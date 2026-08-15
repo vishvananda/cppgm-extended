@@ -94,34 +94,145 @@ private:
 };
 
 // Template-body validation copies this lexical scratch table at nested
-// declarations. Keep its interned-name entries contiguous so each copy needs
-// one allocation instead of one hash node per visible value.
-typedef std::vector<std::pair<text_intern::Atom, TypePtr> > TemplateBodyValueTypes;
+// declarations. Keep its entries contiguous and add one compact lookup index
+// only after linear scans become expensive.
+class TemplateBodyValueTypes
+{
+public:
+  typedef std::pair<text_intern::Atom, TypePtr> value_type;
+  typedef std::vector<value_type>::iterator iterator;
+  typedef std::vector<value_type>::const_iterator const_iterator;
+
+  iterator begin()
+  {
+    return values_.begin();
+  }
+
+  const_iterator begin() const
+  {
+    return values_.begin();
+  }
+
+  iterator end()
+  {
+    return values_.end();
+  }
+
+  const_iterator end() const
+  {
+    return values_.end();
+  }
+
+  std::size_t size() const
+  {
+    return values_.size();
+  }
+
+  iterator find(text_intern::Atom atom)
+  {
+    std::size_t position = 0;
+    return find_position(atom, position) ?
+        values_.begin() + position : values_.end();
+  }
+
+  const_iterator find(text_intern::Atom atom) const
+  {
+    std::size_t position = 0;
+    return find_position(atom, position) ?
+        values_.begin() + position : values_.end();
+  }
+
+  void push_back(const value_type & value)
+  {
+    values_.push_back(value);
+    if(values_.size() == index_threshold) {
+      rebuild_index(index_threshold * 2);
+      return;
+    }
+    if(index_.empty()) {
+      return;
+    }
+    if(values_.size() * 4 > index_.size() * 3) {
+      rebuild_index(index_.size() * 2);
+      return;
+    }
+    insert_index(value.first, values_.size() - 1);
+  }
+
+private:
+  struct IndexEntry
+  {
+    text_intern::Atom atom = nullptr;
+    std::size_t position = 0;
+  };
+
+  static const std::size_t index_threshold = 32;
+
+  static std::size_t hash(text_intern::Atom atom)
+  {
+    std::size_t value = reinterpret_cast<std::size_t>(atom) >> 3;
+    value ^= value >> (sizeof(std::size_t) * 4);
+    return value * static_cast<std::size_t>(0x9e3779b97f4a7c15ULL);
+  }
+
+  bool find_position(text_intern::Atom atom, std::size_t & position) const
+  {
+    if(index_.empty()) {
+      for(std::size_t i = 0; i < values_.size(); ++i) {
+        if(values_[i].first == atom) {
+          position = i;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    std::size_t slot = hash(atom) & (index_.size() - 1);
+    while(index_[slot].atom) {
+      if(index_[slot].atom == atom) {
+        position = index_[slot].position;
+        return true;
+      }
+      slot = (slot + 1) & (index_.size() - 1);
+    }
+    return false;
+  }
+
+  void insert_index(text_intern::Atom atom, std::size_t position)
+  {
+    std::size_t slot = hash(atom) & (index_.size() - 1);
+    while(index_[slot].atom) {
+      slot = (slot + 1) & (index_.size() - 1);
+    }
+    index_[slot].atom = atom;
+    index_[slot].position = position;
+  }
+
+  void rebuild_index(std::size_t capacity)
+  {
+    std::vector<IndexEntry> replacement(capacity);
+    index_.swap(replacement);
+    for(std::size_t i = 0; i < values_.size(); ++i) {
+      insert_index(values_[i].first, i);
+    }
+  }
+
+  std::vector<value_type> values_;
+  std::vector<IndexEntry> index_;
+};
 
 static TemplateBodyValueTypes::iterator find_template_body_value_type(
     TemplateBodyValueTypes & value_types,
     text_intern::Atom atom)
 {
-  for(TemplateBodyValueTypes::iterator it = value_types.begin();
-      it != value_types.end(); ++it) {
-    if(it->first == atom) {
-      return it;
-    }
-  }
-  return value_types.end();
+  return value_types.find(atom);
 }
 
 static TemplateBodyValueTypes::const_iterator find_template_body_value_type(
     const TemplateBodyValueTypes & value_types,
     text_intern::Atom atom)
 {
-  for(TemplateBodyValueTypes::const_iterator it = value_types.begin();
-      it != value_types.end(); ++it) {
-    if(it->first == atom) {
-      return it;
-    }
-  }
-  return value_types.end();
+  return value_types.find(atom);
 }
 
 static void record_template_body_value_type(TemplateBodyValueTypes & value_types,
