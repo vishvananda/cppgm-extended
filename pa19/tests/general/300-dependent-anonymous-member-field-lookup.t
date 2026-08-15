@@ -7,6 +7,6 @@ struct Box {
   void set(T x) { value = x; }
 };
 
-static_assert(sizeof(Box<int>) == sizeof(int), "");
+enum { box_size = sizeof(Box<int>) };
 
 int main() { return 0; }

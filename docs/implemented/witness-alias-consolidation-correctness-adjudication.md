@@ -133,6 +133,14 @@ target expansion.  It therefore recovers
 `is_applicable_property<executor, fork_t<0>>::value` transactionally without
 publishing facts from losing candidates or adding a witness cache mirror.
 
+The placement audit also found that
+`pa19/tests/general/300-dependent-anonymous-member-field-lookup.t` used a
+PA20-owned `static_assert` only to force `Box<int>` and its anonymous member to
+instantiate.  A namespace-scope enum initializer now takes `sizeof(Box<int>)`
+instead.  This preserves the PA19 instantiation purpose and the existing LowIR
+byte-for-byte while removing the later feature.  Its source-location-only
+witness change was regenerated through the patched-Clang materializer.
+
 Validation used only the standard `~/ralph-ci` `u24-gcc` lane, with no other
 lane active.  The exact PA35 compile case and exact PA24 witness comparison
 pass.  With `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1`, the configured strict suites
