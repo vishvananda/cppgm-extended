@@ -23076,7 +23076,7 @@ private:
   }
 
   FunctionBinding * find_exact_function_binding(
-      map<string, vector<FunctionBinding *> > & functions,
+      const map<string, vector<FunctionBinding *> > & functions,
       const string & name,
       const TypePtr & type,
       const FunctionTemplateRegistrationIdentity & template_identity =
@@ -23092,7 +23092,7 @@ private:
   }
 
   FunctionBinding * find_defined_function_binding(
-      map<string, vector<FunctionBinding *> > & functions,
+      const map<string, vector<FunctionBinding *> > & functions,
       const string & name,
       const TypePtr & type,
       const FunctionTemplateRegistrationIdentity & template_identity =

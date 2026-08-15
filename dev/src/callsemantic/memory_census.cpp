@@ -1415,16 +1415,16 @@ void census_scope(const Scope * scope,
                  map_storage_bytes(scope->named_value_packs.get()) +
                  map_storage_bytes(scope->named_pack_sizes.get()) +
                  set_storage_bytes(scope->template_bound_type_names) +
-                 set_storage_bytes(scope->template_bound_type_pack_names) +
-                 set_storage_bytes(scope->template_bound_value_names) +
-                 set_storage_bytes(scope->template_bound_value_pack_names) +
-                 set_storage_bytes(scope->template_bound_template_names) +
+                 set_storage_bytes(scope->template_bound_type_pack_names.get()) +
+                 set_storage_bytes(scope->template_bound_value_names.get()) +
+                 set_storage_bytes(scope->template_bound_value_pack_names.get()) +
+                 set_storage_bytes(scope->template_bound_template_names.get()) +
                  map_storage_bytes(scope->values) +
                  map_storage_bytes(scope->namespace_bindings.get()) +
-                 map_storage_bytes(scope->function_sets) +
+                 map_storage_bytes(scope->function_sets.get()) +
                  map_storage_bytes(scope->class_templates.get()) +
                  map_storage_bytes(scope->function_templates.get()) +
-                 set_storage_bytes(scope->collected_template_declarations) +
+                 set_storage_bytes(scope->collected_template_declarations.get()) +
                  map_storage_bytes(scope->alias_templates.get()) +
                  map_storage_bytes(scope->variable_templates.get()) +
                  vector_storage_bytes(scope->using_directives) +
@@ -1442,20 +1442,20 @@ void census_scope(const Scope * scope,
                      set_storage_bytes(scope->template_bound_type_names));
   census.note_detail("scope.storage.template_bound_type_pack_names",
                      set_storage_bytes(
-                         scope->template_bound_type_pack_names));
+                         scope->template_bound_type_pack_names.get()));
   census.note_detail("scope.storage.template_bound_value_names",
                      set_storage_bytes(
-                         scope->template_bound_value_names));
+                         scope->template_bound_value_names.get()));
   census.note_detail("scope.storage.template_bound_value_pack_names",
                      set_storage_bytes(
-                         scope->template_bound_value_pack_names));
+                         scope->template_bound_value_pack_names.get()));
   census.note_detail("scope.storage.template_bound_template_names",
                      set_storage_bytes(
-                         scope->template_bound_template_names));
+                         scope->template_bound_template_names.get()));
   census.note_detail("scope.storage.values",
                      map_storage_bytes(scope->values));
   census.note_detail("scope.storage.function_sets",
-                     map_storage_bytes(scope->function_sets));
+                     map_storage_bytes(scope->function_sets.get()));
   census.note_detail("scope.storage.class_templates",
                      map_storage_bytes(scope->class_templates.get()));
   census.note_detail("scope.storage.function_templates",

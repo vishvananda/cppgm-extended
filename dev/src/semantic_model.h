@@ -531,6 +531,162 @@ private:
   std::unique_ptr<Map> values_;
 };
 
+template<typename Key,
+         typename Compare = std::less<Key> >
+class LazySet
+{
+public:
+  typedef std::set<Key, Compare> Set;
+  typedef typename Set::key_type key_type;
+  typedef typename Set::value_type value_type;
+  typedef typename Set::size_type size_type;
+  typedef typename Set::iterator iterator;
+  typedef typename Set::const_iterator const_iterator;
+
+  LazySet() = default;
+
+  LazySet(const LazySet & other)
+      : values_(other.values_ ? new Set(*other.values_) : nullptr)
+  {
+  }
+
+  LazySet(LazySet && other) noexcept = default;
+
+  LazySet & operator=(const LazySet & other)
+  {
+    if(this != &other) {
+      values_.reset(other.values_ ? new Set(*other.values_) : nullptr);
+    }
+    return *this;
+  }
+
+  LazySet & operator=(LazySet && other) noexcept = default;
+
+  iterator begin()
+  {
+    return values_ ? values_->begin() : empty_set().begin();
+  }
+
+  const_iterator begin() const
+  {
+    return values_ ? values_->begin() : empty_set().begin();
+  }
+
+  iterator end()
+  {
+    return values_ ? values_->end() : empty_set().end();
+  }
+
+  const_iterator end() const
+  {
+    return values_ ? values_->end() : empty_set().end();
+  }
+
+  iterator find(const key_type & key)
+  {
+    return values_ ? values_->find(key) : empty_set().end();
+  }
+
+  const_iterator find(const key_type & key) const
+  {
+    return values_ ? values_->find(key) : empty_set().end();
+  }
+
+  size_type count(const key_type & key) const
+  {
+    return values_ ? values_->count(key) : 0;
+  }
+
+  bool empty() const
+  {
+    return !values_ || values_->empty();
+  }
+
+  size_type size() const
+  {
+    return values_ ? values_->size() : 0;
+  }
+
+  std::pair<iterator, bool> insert(const value_type & value)
+  {
+    return mutable_values().insert(value);
+  }
+
+  std::pair<iterator, bool> insert(value_type && value)
+  {
+    return mutable_values().insert(std::move(value));
+  }
+
+  template<typename InputIterator>
+  void insert(InputIterator first, InputIterator last)
+  {
+    if(first != last) {
+      mutable_values().insert(first, last);
+    }
+  }
+
+  size_type erase(const key_type & key)
+  {
+    if(!values_) {
+      return 0;
+    }
+    const size_type erased = values_->erase(key);
+    reset_if_empty();
+    return erased;
+  }
+
+  void clear()
+  {
+    values_.reset();
+  }
+
+  void swap(Set & other)
+  {
+    if(!values_) {
+      if(other.empty()) {
+        return;
+      }
+      values_.reset(new Set);
+    }
+    values_->swap(other);
+    reset_if_empty();
+  }
+
+  const Set & get() const
+  {
+    return values_ ? *values_ : empty_set();
+  }
+
+  operator const Set &() const
+  {
+    return get();
+  }
+
+private:
+  static Set & empty_set()
+  {
+    static Set empty;
+    return empty;
+  }
+
+  Set & mutable_values()
+  {
+    if(!values_) {
+      values_.reset(new Set);
+    }
+    return *values_;
+  }
+
+  void reset_if_empty()
+  {
+    if(values_ && values_->empty()) {
+      values_.reset();
+    }
+  }
+
+  std::unique_ptr<Set> values_;
+};
+
 struct Scope
 {
   explicit Scope(Scope * parent = nullptr,
@@ -642,15 +798,15 @@ struct Scope
       static_cast<std::size_t>(-1);
   mutable std::unique_ptr<std::vector<std::string> >
       cached_function_local_named_type_names;
-  std::map<std::string, MemberAccess> named_type_access;
+  LazyMap<std::string, MemberAccess> named_type_access;
   LazyMap<std::string, std::vector<cpp_decl::TypePtr> > named_type_packs;
   LazyMap<std::string, std::vector<ValueBinding> > named_value_packs;
   LazyMap<std::string, std::size_t> named_pack_sizes;
   std::set<std::string> template_bound_type_names;
-  std::set<std::string> template_bound_type_pack_names;
-  std::set<std::string> template_bound_value_names;
-  std::set<std::string> template_bound_value_pack_names;
-  std::set<std::string> template_bound_template_names;
+  LazySet<std::string> template_bound_type_pack_names;
+  LazySet<std::string> template_bound_value_names;
+  LazySet<std::string> template_bound_value_pack_names;
+  LazySet<std::string> template_bound_template_names;
   LazyMap<std::string, template_model::TemplateArgument>
       template_bound_template_arguments;
   std::map<std::string, ValueBinding> values;
@@ -678,7 +834,7 @@ struct Scope
   // unit.
   std::unique_ptr<std::map<std::string, std::size_t> >
       namespace_binding_first_token_starts;
-  std::map<std::string, std::vector<FunctionBinding *> > function_sets;
+  LazyMap<std::string, std::vector<FunctionBinding *> > function_sets;
   // Namespace collection is eager, including using-declarations that occur
   // after deferred bodies.  Imported bindings retain the point at which each
   // using-declaration made them visible so ADL can honor point-of-declaration.
@@ -697,7 +853,7 @@ struct Scope
       std::map<std::string,
                std::map<const FunctionTemplateDecl *, const CppAstNode *> > >
       function_template_introduction_nodes;
-  std::set<const CppAstNode *> collected_template_declarations;
+  LazySet<const CppAstNode *> collected_template_declarations;
   LazyMap<std::string, AliasTemplateDecl *> alias_templates;
   LazyMap<std::string, VariableTemplateDecl *> variable_templates;
   // Namespace collection is eager so declarations remain available to lazy
@@ -716,11 +872,11 @@ struct Scope
       cached_direct_function_lookups;
   std::size_t direct_function_lookup_cache_epoch = 0;
   mutable bool cached_binding_scope_fingerprint_valid = false;
+  mutable bool cached_instance_scope_fingerprint_valid = false;
   mutable std::size_t cached_binding_scope_fingerprint = 0;
   mutable std::size_t cached_binding_scope_fingerprint_epoch = 0;
   mutable std::size_t cached_binding_scope_parent_fingerprint = 0;
   mutable std::size_t cached_binding_scope_global_epoch = 0;
-  mutable bool cached_instance_scope_fingerprint_valid = false;
   mutable std::size_t cached_instance_scope_fingerprint = 0;
 };
 

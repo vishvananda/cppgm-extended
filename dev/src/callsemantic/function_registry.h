@@ -89,7 +89,8 @@ bool function_binding_matches_instantiation_identity(
     const std::string & instantiation_key);
 
 semantic_model::FunctionBinding * find_exact_function_binding(
-    std::map<std::string, std::vector<semantic_model::FunctionBinding *> > & functions,
+    const std::map<std::string,
+                   std::vector<semantic_model::FunctionBinding *> > & functions,
     const std::string & name,
     const cpp_decl::TypePtr & type,
     semantic_model::FunctionTemplateDecl * source_template = nullptr,
@@ -98,7 +99,8 @@ semantic_model::FunctionBinding * find_exact_function_binding(
         static_cast<semantic_model::RefQualifier>(0));
 
 semantic_model::FunctionBinding * find_defined_function_binding(
-    std::map<std::string, std::vector<semantic_model::FunctionBinding *> > & functions,
+    const std::map<std::string,
+                   std::vector<semantic_model::FunctionBinding *> > & functions,
     const std::string & name,
     const cpp_decl::TypePtr & type,
     semantic_model::FunctionTemplateDecl * source_template = nullptr,

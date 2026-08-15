@@ -86,14 +86,15 @@ void erase_function_pointer_from_indexed_queue(
   index -= std::min(index, removed_before_index);
 }
 
-void erase_function_pointer_map(std::map<std::string, std::vector<FunctionBinding *> > & bindings,
+template<typename FunctionMap>
+void erase_function_pointer_map(FunctionMap & bindings,
                                 FunctionBinding * binding)
 {
-  for(std::map<std::string, std::vector<FunctionBinding *> >::iterator it = bindings.begin();
+  for(typename FunctionMap::iterator it = bindings.begin();
       it != bindings.end();) {
     erase_function_pointer(it->second, binding);
     if(it->second.empty()) {
-      bindings.erase(it++);
+      it = bindings.erase(it);
     } else {
       ++it;
     }
@@ -388,7 +389,7 @@ bool function_binding_matches_instantiation_identity(
 }
 
 FunctionBinding * find_exact_function_binding(
-    std::map<std::string, std::vector<FunctionBinding *> > & functions,
+    const std::map<std::string, std::vector<FunctionBinding *> > & functions,
     const std::string & name,
     const TypePtr & type,
     FunctionTemplateDecl * source_template,
@@ -397,7 +398,7 @@ FunctionBinding * find_exact_function_binding(
 {
   const std::string canonical_name =
       semantic_lookup::canonical_function_lookup_name(name);
-  std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
+  std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
       functions.find(canonical_name);
   if(found == functions.end()) {
     return nullptr;
@@ -415,7 +416,7 @@ FunctionBinding * find_exact_function_binding(
 }
 
 FunctionBinding * find_defined_function_binding(
-    std::map<std::string, std::vector<FunctionBinding *> > & functions,
+    const std::map<std::string, std::vector<FunctionBinding *> > & functions,
     const std::string & name,
     const TypePtr & type,
     FunctionTemplateDecl * source_template,
@@ -424,7 +425,7 @@ FunctionBinding * find_defined_function_binding(
 {
   const std::string canonical_name =
       semantic_lookup::canonical_function_lookup_name(name);
-  std::map<std::string, std::vector<FunctionBinding *> >::iterator found =
+  std::map<std::string, std::vector<FunctionBinding *> >::const_iterator found =
       functions.find(canonical_name);
   if(found == functions.end()) {
     return nullptr;

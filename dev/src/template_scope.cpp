@@ -713,7 +713,8 @@ void overlay_scope_bindings_impl(Scope & target,
   }
 
   const std::set<std::string> * pack_names =
-      mode == OVERLAY_TEMPLATE_BOUND_ONLY ? &source.template_bound_type_pack_names : nullptr;
+      mode == OVERLAY_TEMPLATE_BOUND_ONLY ?
+          &source.template_bound_type_pack_names.get() : nullptr;
   changed |= overlay_selected_entries(target.named_type_packs,
                                       source.named_type_packs,
                                       pack_names,
@@ -768,7 +769,8 @@ void overlay_scope_bindings_impl(Scope & target,
   }
 
   const std::set<std::string> * value_names =
-      mode == OVERLAY_TEMPLATE_BOUND_ONLY ? &source.template_bound_value_names : nullptr;
+      mode == OVERLAY_TEMPLATE_BOUND_ONLY ?
+          &source.template_bound_value_names.get() : nullptr;
   changed |=
       overlay_selected_entries(target.values, source.values, value_names, excluded_names);
   if(value_names) {
@@ -789,7 +791,8 @@ void overlay_scope_bindings_impl(Scope & target,
   }
 
   const std::set<std::string> * template_names =
-      mode == OVERLAY_TEMPLATE_BOUND_ONLY ? &source.template_bound_template_names : nullptr;
+      mode == OVERLAY_TEMPLATE_BOUND_ONLY ?
+          &source.template_bound_template_names.get() : nullptr;
   if(mode == OVERLAY_ALL_BINDINGS || template_names) {
     changed |= overlay_selected_entries(target.class_templates,
                                         source.class_templates,
