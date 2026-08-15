@@ -283,7 +283,9 @@ def parse_inception_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
 
 
 def capture_processes() -> List[ProcessInfo]:
-    output = run_capture(["ps", "-axo", "pid=,ppid=,etimes=,command="])
+    # BSD/macOS ps does not provide GNU ps's integer `etimes` keyword. Both
+    # implementations provide `etime` in [[dd-]hh:]mm:ss form.
+    output = run_capture(["ps", "-axo", "pid=,ppid=,etime=,command="])
     processes: List[ProcessInfo] = []
     for line in output.splitlines():
         line = line.rstrip()
@@ -294,7 +296,7 @@ def capture_processes() -> List[ProcessInfo]:
             continue
         pid = int(match.group(1))
         ppid = int(match.group(2))
-        elapsed_seconds = int(match.group(3))
+        elapsed_seconds = parse_elapsed_text(match.group(3))
         command = match.group(4)
         try:
             argv = shlex.split(command)
@@ -1060,7 +1062,13 @@ def discover_builds(processes: Sequence[ProcessInfo],
 
 def discover_build_processes(processes: Sequence[ProcessInfo]) -> List[ProcessInfo]:
     roots: List[ProcessInfo] = []
-    make_pids = {process.pid for process in processes if is_make_process(process)}
+    pa39_make_pids: Set[int] = set()
+    for process in processes:
+        if not is_make_process(process) or "-C" not in process.argv:
+            continue
+        c_index = process.argv.index("-C")
+        if c_index + 1 < len(process.argv) and process.argv[c_index + 1] == "pa39":
+            pa39_make_pids.add(process.pid)
     for process in processes:
         if not is_make_process(process):
             continue
@@ -1073,7 +1081,7 @@ def discover_build_processes(processes: Sequence[ProcessInfo]) -> List[ProcessIn
             continue
         if c_index + 1 >= len(argv) or argv[c_index + 1] != "pa39":
             continue
-        if process.ppid in make_pids:
+        if process.ppid in pa39_make_pids:
             continue
         roots.append(process)
     return roots

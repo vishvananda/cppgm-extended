@@ -78,20 +78,29 @@ class WatchSelfhostBuildTests(unittest.TestCase):
             / "types.d",
         )
 
-    def test_process_capture_uses_unambiguous_elapsed_seconds(self):
+    def test_process_capture_parses_portable_elapsed_time(self):
         original_run_capture = watch.run_capture
+        captured_command = []
         try:
-            watch.run_capture = lambda command: (
-                "  98765   43210       7 compiler -c source.cpp\n"
-            )
+            def fake_run_capture(command):
+                captured_command.extend(command)
+                return (
+                    "  98765   43210 1-02:03:04 compiler -c source.cpp\n"
+                )
+
+            watch.run_capture = fake_run_capture
             processes = watch.capture_processes()
         finally:
             watch.run_capture = original_run_capture
 
+        self.assertEqual(
+            captured_command,
+            ["ps", "-axo", "pid=,ppid=,etime=,command="],
+        )
         self.assertEqual(len(processes), 1)
         self.assertEqual(processes[0].pid, 98765)
         self.assertEqual(processes[0].ppid, 43210)
-        self.assertEqual(processes[0].elapsed_seconds, 7)
+        self.assertEqual(processes[0].elapsed_seconds, 93784)
         self.assertEqual(processes[0].argv, ["compiler", "-c", "source.cpp"])
 
     def test_repository_root_is_inferred_from_pa39_process_cwd(self):
@@ -106,6 +115,35 @@ class WatchSelfhostBuildTests(unittest.TestCase):
                 watch.repository_root_from_working_directory(root / "pa39"),
                 root.resolve(),
             )
+
+    def test_root_inception_make_does_not_hide_pa39_build(self):
+        processes = [
+            watch.ProcessInfo(
+                pid=100,
+                ppid=1,
+                elapsed_seconds=12,
+                command="make inception",
+                argv=["make", "inception"],
+            ),
+            watch.ProcessInfo(
+                pid=101,
+                ppid=100,
+                elapsed_seconds=10,
+                command="make -C pa39 compare-cppgm++-inception",
+                argv=["make", "-C", "pa39", "compare-cppgm++-inception"],
+            ),
+            watch.ProcessInfo(
+                pid=102,
+                ppid=101,
+                elapsed_seconds=8,
+                command="make -C pa39 nested",
+                argv=["make", "-C", "pa39", "nested"],
+            ),
+        ]
+
+        roots = watch.discover_build_processes(processes)
+
+        self.assertEqual([process.pid for process in roots], [101])
 
 
 if __name__ == "__main__":
