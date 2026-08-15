@@ -2347,6 +2347,39 @@ halving target. Evidence is in
 `/tmp/cppgm-template-body-value-index32-{parent,candidate}-pair{1,2,3}.json`,
 and `/tmp/cppgm-template-body-value-flat-index-final.json`.
 
+#### Contiguous scope named-type table rejection
+
+The next frame-pointer sample attributed 103 non-const and 34 const leaf
+samples to `Scope::named_types` string-hash lookup. Those leaves are spread
+across 112 static call sites, so the owner is the shared table representation
+rather than one redundant caller. The retained memory census found 36,327
+scopes, 34,916 nonempty named-type tables, 94,214 entries, and `4,817,224 B`
+of table storage. The population is strongly skewed toward small tables:
+1,411 scopes are empty; 11,203 have one entry; 11,802 have two; 9,292 have
+three or four; 1,156 have five to eight; 1,076 have nine to sixteen; 376 have
+seventeen to thirty-two; and only 11 exceed thirty-two.
+
+The screened replacement stored entries contiguously, used linear lookup below
+eight entries, and built an open-addressed string-to-position index for larger
+tables. It preserved the existing lookup, insertion, erase, iteration, copy,
+move, and swap surface and emitted the frozen SHA-256 `4fc1303a...5c4`.
+Three interleaved pairs measured parent and candidate instruction medians of
+`107,039,923,584` and `106,918,636,975`, a `0.1133%` improvement. Footprint
+improved `0.1240%` and RSS `0.5565%`, each in all three pairs. The balance
+score is only `0.3916`: the result misses both the `0.15%` instruction
+component and the `0.50` score. It also misses the two density lanes. Median
+cycles regressed `1.1007%`, and only one pair improved wall or user time, so
+the candidate cannot qualify through allocation and latency either.
+
+Keep the node-based named-type table. The small-table population was real, but
+contiguous entry storage and the large-table index did not remove enough work
+to justify a custom compiler-wide container. Evidence is in
+`/tmp/cppgm-c235-frame-profile.sample.txt`,
+`/tmp/cppgm-c235-memory-census.stderr`,
+`/tmp/cppgm-named-type-population.stderr`,
+`/tmp/cppgm-named-type-flat-screen.json`, and
+`/tmp/cppgm-named-type-flat-{parent,candidate}-pair{1,2,3}.json`.
+
 #### Revised investigation order
 
 The `38.56%` cumulative reduction leaves `19,929,558,931` instructions. A chain
@@ -2604,6 +2637,12 @@ order:
    improve instructions by `0.6581%`, with all pairs agreeing; footprint also
    improves in all three. Commit `c2351a9de` clears the CPU lane and both full
    correctness gates. A 64-entry crossover screened worse and remains closed.
+   The following caller-attributed profile found the shared scope named-type
+   hash table as a 137-sample leaf family. Although 92.8% of scopes have at
+   most four entries, a contiguous small-table representation with a flat
+   index above eight entries scored only `0.3916` across three pairs and
+   regressed median cycles. Restore `unordered_map` and keep broad scope-name
+   container replacement closed without a different key representation.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, unrelated container swaps, pool allocators,
@@ -2885,3 +2924,4 @@ experiment before starting the next candidate.
 | combine direct required-callee traversal with one scan for aliased special-member bodies | the direct walker removes `112,043` temporary allocation/deallocation pairs and `1,477,512` requested bytes. Base and complete constructor or destructor entry points share one analyzed body; the clone changes its root symbol and alias list, so the second callee scan cannot discover a new body edge. The exact composite screened at `108,266,218,271` instructions. Five interleaved pairs measured parent and candidate medians of `108,410,905,430` and `108,347,889,027`, a `0.058%` gain. Median wall time regressed `0.971%`, user time `0.889%`, cycles `0.635%`, RSS `1.492%`, and footprint `0.079%`; all five wall and user pairs regressed | the allocation-and-latency lane requires a `1%` wall-time improvement. This candidate moves wall time in the opposite direction and misses the CPU and memory lanes. Restore both traversal changes | `/tmp/cppgm-output-rescan-child-vector-census.stderr`, `/tmp/cppgm-output-callee-direct-clone-skip-screen.json`, and `/tmp/cppgm-output-callee-{parent,candidate}-pair{1,2,3,4,5}.json` |
 | make every sparse `Scope` associative container lazy | the broad form removed `4,649,856 B` of inline storage and improved footprint in every pair. Three pairs measured parent and candidate instruction medians of `108,371,344,968` and `108,765,017,627`, a `0.363%` regression | retained bytes do not override the `0.15%` instruction hard gate. Keep `values` eager; the narrowed form retains `4,001,496 B` of net semantic savings with instructions inside the cap | `/tmp/cppgm-lazy-scope-associative-census.stderr` and `/tmp/cppgm-lazy-scope-{parent,candidate}-pair{1,2,3}.json` |
 | lazify rare function pack-size and ABI-tag storage along with the scope containers | the pack-size and rare-vector screens reached `499,126,272 B` and `499,748,864 B` of footprint, but added representation and append surfaces without producing a stronger peak result than the scope-only design | the allocator kept the same useful size class for the ABI-tag refinement, while the pack-size form spread `.get()` ownership changes across template instantiation and symbol emission. Restore direct function metadata and retain the cohesive scope record change only | `/tmp/cppgm-lazy-rare-semantic-containers-screen.json` and `/tmp/cppgm-lazy-rare-semantic-maps-tags-screen.json` |
+| store small `Scope::named_types` tables contiguously and add a flat position index at eight entries | a current census found 94,214 entries across 34,916 nonempty tables; 33,708 of 36,327 scopes have at most four entries, while only 11 exceed 32. The exact candidate replaced per-entry hash nodes with a contiguous vector and indexed larger tables. Three pairs improved median instructions by `0.1133%`, footprint by `0.1240%`, and RSS by `0.5565%`; the balance score was `0.3916`, while cycles regressed `1.1007%` and only one timing pair improved | the small-table hypothesis is valid, but the compiler-wide custom container misses the balanced, density, CPU, and allocation-and-latency lanes. Restore `unordered_map`; reopen only with a key representation that removes string hashing rather than another entry-layout variant | `/tmp/cppgm-c235-frame-profile.sample.txt`, `/tmp/cppgm-named-type-population.stderr`, `/tmp/cppgm-named-type-flat-screen.json`, and `/tmp/cppgm-named-type-flat-{parent,candidate}-pair{1,2,3}.json` |
