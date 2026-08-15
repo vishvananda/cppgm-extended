@@ -28843,8 +28843,143 @@ struct TypeDependencyOperationEntry
 
 struct TypeDependencyRootResult
 {
+  const Type * key = nullptr;
   weak_ptr<Type> type;
   unsigned char state = 0;
+  bool ever_used = false;
+};
+
+// Root results survive operation-local recursion.  Keep their hot raw-pointer
+// lookup contiguous, while retaining a weak owner solely to reject recycled
+// Type addresses without extending the Type lifetime.
+class TypeDependencyRootTable
+{
+public:
+  TypeDependencyRootResult * find(const Type * type)
+  {
+    if(entries_.empty()) {
+      return nullptr;
+    }
+    size_t index = hash(type) & (entries_.size() - 1);
+    for(size_t probes = 0; probes < entries_.size(); ++probes) {
+      TypeDependencyRootResult & entry = entries_[index];
+      if(!entry.ever_used) {
+        return nullptr;
+      }
+      if(entry.key == type) {
+        return &entry;
+      }
+      index = (index + 1) & (entries_.size() - 1);
+    }
+    return nullptr;
+  }
+
+  void store(const TypePtr & type, unsigned char state)
+  {
+    ensure_insert_capacity();
+    size_t index = hash(type.get()) & (entries_.size() - 1);
+    size_t first_tombstone = static_cast<size_t>(-1);
+    for(;;) {
+      TypeDependencyRootResult & entry = entries_[index];
+      if(!entry.ever_used) {
+        const size_t target = first_tombstone == static_cast<size_t>(-1) ?
+            index : first_tombstone;
+        TypeDependencyRootResult & inserted = entries_[target];
+        if(inserted.ever_used) {
+          --tombstones_;
+        }
+        inserted.key = type.get();
+        inserted.type = type;
+        inserted.state = state;
+        inserted.ever_used = true;
+        ++size_;
+        return;
+      }
+      if(entry.key == type.get()) {
+        entry.type = type;
+        entry.state = state;
+        return;
+      }
+      if(entry.key == nullptr &&
+         first_tombstone == static_cast<size_t>(-1)) {
+        first_tombstone = index;
+      }
+      index = (index + 1) & (entries_.size() - 1);
+    }
+  }
+
+  void erase(TypeDependencyRootResult * entry)
+  {
+    if(!entry || entry->key == nullptr) {
+      return;
+    }
+    entry->key = nullptr;
+    entry->type.reset();
+    entry->state = 0;
+    --size_;
+    ++tombstones_;
+  }
+
+  void clear()
+  {
+    vector<TypeDependencyRootResult>().swap(entries_);
+    size_ = 0;
+    tombstones_ = 0;
+  }
+
+  size_t size() const
+  {
+    return size_;
+  }
+
+  size_t capacity() const
+  {
+    return entries_.size();
+  }
+
+private:
+  static size_t hash(const Type * type)
+  {
+    size_t value = reinterpret_cast<size_t>(type) >> 3;
+    value ^= value >> (sizeof(size_t) * 4);
+    return value * static_cast<size_t>(0x9e3779b97f4a7c15ULL);
+  }
+
+  void ensure_insert_capacity()
+  {
+    if(entries_.empty()) {
+      rehash(1024);
+      return;
+    }
+    if((size_ + tombstones_ + 1) * 4 < entries_.size() * 3) {
+      return;
+    }
+    const size_t capacity =
+        size_ * 2 < entries_.size() ? entries_.size() : entries_.size() * 2;
+    rehash(capacity);
+  }
+
+  void rehash(size_t capacity)
+  {
+    vector<TypeDependencyRootResult> replacement(capacity);
+    for(size_t i = 0; i < entries_.size(); ++i) {
+      TypeDependencyRootResult & source = entries_[i];
+      if(source.key == nullptr) {
+        continue;
+      }
+      size_t index = hash(source.key) & (capacity - 1);
+      while(replacement[index].ever_used) {
+        index = (index + 1) & (capacity - 1);
+      }
+      replacement[index] = std::move(source);
+    }
+    entries_.swap(replacement);
+    tombstones_ = 0;
+  }
+
+  vector<TypeDependencyRootResult> entries_;
+  size_t size_ = 0;
+  size_t tombstones_ = 0;
 };
 
 struct TypeDependencyOperationState
@@ -28853,7 +28988,7 @@ struct TypeDependencyOperationState
   size_t depth = 0;
   vector<TypeDependencyOperationEntry> entries;
   unordered_map<const Type *, size_t> large_index;
-  unordered_map<const Type *, TypeDependencyRootResult> root_results;
+  TypeDependencyRootTable root_results;
   const semantic_model::ClassIndexMap * root_result_model = nullptr;
   size_t hits = 0;
   size_t misses = 0;
@@ -28880,7 +29015,9 @@ struct TypeDependencyOperationState
                    "type-dependency-memo hits=%zu misses=%zu cycles=%zu "
                    "max-entries=%zu root-calls=%zu root-dependent=%zu "
                    "reused-addresses=%zu "
-                   "persistent-hits=%zu persistent-misses=%zu\n",
+                   "persistent-hits=%zu persistent-misses=%zu "
+                   "persistent-entries=%zu persistent-capacity=%zu "
+                   "type-size=%zu\n",
                    hits,
                    misses,
                    cycles,
@@ -28889,7 +29026,10 @@ struct TypeDependencyOperationState
                    root_dependent,
                    reused_root_addresses,
                    persistent_hits,
-                   persistent_misses);
+                   persistent_misses,
+                   root_results.size(),
+                   root_results.capacity(),
+                   sizeof(Type));
     }
   }
 };
@@ -29081,10 +29221,7 @@ static void note_type_dependency_root_result(
   if(dependent) {
     ++state.root_dependent;
   }
-  TypeDependencyRootResult result;
-  result.type = type;
-  result.state = dependent ? 2 : 1;
-  state.root_results[type.get()] = result;
+  state.root_results.store(type, dependent ? 2 : 1);
 }
 
 static bool find_persistent_type_dependency_root_result(
@@ -29097,21 +29234,21 @@ static bool find_persistent_type_dependency_root_result(
     state.root_results.clear();
     state.root_result_model = type_system.model.classes_by_key;
   }
-  unordered_map<const Type *, TypeDependencyRootResult>::iterator found =
-      state.root_results.find(type.get());
-  if(found == state.root_results.end()) {
+  TypeDependencyRootResult * found = state.root_results.find(type.get());
+  if(!found) {
     ++state.persistent_misses;
     return false;
   }
-  TypePtr retained = found->second.type.lock();
-  if(!retained || retained.get() != type.get()) {
+  // A live object cannot share its address with the cached live object.  An
+  // expired owner therefore identifies the only possible address-reuse case.
+  if(found->type.expired()) {
     state.root_results.erase(found);
     ++state.reused_root_addresses;
     ++state.persistent_misses;
     return false;
   }
   ++state.persistent_hits;
-  dependent = found->second.state == 2;
+  dependent = found->state == 2;
   return true;
 }
 
