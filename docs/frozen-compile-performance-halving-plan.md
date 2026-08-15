@@ -2232,9 +2232,17 @@ order:
    `37.70%` below the original baseline and leaves `21,423,313,674`
    instructions to the halving target.
 19. In progress: attribute the common function-body semantic path inside output
-   seed and late synthesized output, then census a construction or traversal
-   that is paid once for each unique body. Do not reopen broad AST/type caches
-   without a new reuse population.
+   seed and late synthesized output. The first body-property lead is closed:
+   the frozen compile's early member `static_assert` scan visits only `1,137`
+   AST nodes, while final class validation visits `984`; neither finds a
+   positive body. The reopened recursive-input view is also closed. A direct
+   loop in the currently attributed output-requirement rescan removes `112,043`
+   small allocation/deallocation pairs, but five quiet pairs improve median
+   wall and user time by only `0.360%` and `0.379%`, instructions by `0.074%`,
+   and leave memory flat. It misses the allocation-and-latency and balanced
+   lanes, so the vector helper is restored. Continue with a construction or
+   traversal paid once for each unique body; do not reopen broad AST/type
+   caches without a new reuse population.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, unrelated container swaps, pool allocators,
@@ -2366,7 +2374,8 @@ experiment before starting the next candidate.
 | borrow the top-level-CV child inside `class_info_for_type` | `166,119,709,124` instructions | shared-owner traffic was not the 2.14M-probe bottleneck; reject the regression | `/tmp/cppgm-class-info-borrowed-cv-screen.json` |
 | probe argument identifiers directly when overlaying function-local types | `165,959,328,141` instructions | local named-type maps are smaller than the argument token sets; iteration wins | `/tmp/cppgm-local-type-direct-probes-screen.json` |
 | make the unused normal-compile `FunctionBinding` source-anchor cache lazy | footprint fell by about 2.1 MiB but instructions rose to `166,344,947,939` | reject the instruction regression; a larger cohesive record slice is required | `/tmp/cppgm-function-anchor-side-record-screen.json` |
-| replace recursive `CallSemNode` child vectors with a zero-allocation indexed view | LowIR-only screen was `165,749,705,323`; all walkers were `165,670,523,261` | operation removal was real but instruction results were flat; remove it from the retained symbol fast path | `/tmp/cppgm-callsem-zero-allocation-walk-screen.json`, `/tmp/cppgm-callsem-zero-allocation-walk-all-screen.json` |
+| replace recursive `CallSemNode` input-child pointer vectors with a zero-allocation view | the historical LowIR-only screen was `165,749,705,323`; converting all walkers used `165,670,523,261`, also flat. The current profile attributes the output-requirement rescan, so a narrower retry directly traversed ordinary children and the rare lowered-condition edge. A census measured `199,242` recursive calls, `112,043` removable allocation/deallocation pairs, `184,689` child edges, and `1,477,512` requested bytes. Five current pairs improve median instructions by `0.074%`, wall by `0.360%`, and user time by `0.379%`; wall and user improve in all five pairs, while memory is flat and cycles agree in only two | the narrower direct loop still misses the allocation lane's `1%` latency floor and the balanced lane's `0.15%` instruction floor. Restore the shared helper. Reopen only if a later design removes another cohesive traversal, not merely the same small pointer allocations | `/tmp/cppgm-callsem-zero-allocation-walk-screen.json`, `/tmp/cppgm-callsem-zero-allocation-walk-all-screen.json`, `/tmp/cppgm-output-rescan-child-vector-census.stderr`, `/tmp/cppgm-direct-output-rescan-screen.json`, and `/tmp/cppgm-output-rescan-{parent,candidate}-pair{1,2,3,4,5}.json` |
+| cache whether each member-function body contains an early `static_assert` | the output-path census measured `443` early class scans covering `377` bodies and `1,137` AST nodes, plus `3,983` final validation calls whose filters admitted only `224` bodies and `984` AST nodes. Both passes found zero positive bodies in the frozen compile | the traversal is too small to justify a summary bit, key, or invalidation rule. Remove the census and retain the direct scan | `/tmp/cppgm-static-assert-body-scan-census.stderr` |
 | hold a local reference to the runtime-reference node symbol | three-run median regressed to `164,574,311,869` instructions | repeated inline accessors produced better code than the local alias | `/tmp/cppgm-runtime-symbol-local-ref-final.json` |
 | hash the template-argument identifier membership set | `164,510,368,737` instructions | the identifier sets are too small to repay hash-table overhead | `/tmp/cppgm-template-argument-identifiers-hash-screen.json` |
 | store template-argument identifiers as interned atoms | `164,238,424,503` instructions, only `-0.006%` from the retained runtime-symbol checkpoint | pointer membership avoids string ownership but does not move the workload; remove the added global interning traffic | `/tmp/cppgm-template-argument-atoms-screen.json` |
