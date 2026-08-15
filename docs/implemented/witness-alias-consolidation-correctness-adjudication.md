@@ -212,3 +212,27 @@ passes for PA13, PA37, and PA38.  The isolated PA39 self-host ladder at
 particular, the original `macroizer.cpp` failure point, the modified
 `template_resolution.cpp`, and the final `cppgm++` link all build successfully
 against libc++ 21 before PA10 passes `157/157`.
+
+## Final cross-lane validation, 2026-08-15
+
+We validated commit `834ccd8f6` through `~/ralph-ci` with one active flavor at
+a time.  We ran each test command to completion before starting the next and
+limited every build and subtest pool to four jobs.
+
+The `u24-clang-libcxx` flavor passed the full direct-text PA1-PA38 report at
+`4,927/4,927`, the strict gate at `1,532/1,532`, and the PA13/PA37/PA38 debugger
+gate.  Its isolated PA39 object root,
+`../obj/pa39/u24-clang-libcxx-alias-final-j4`, passed the ladder through PA10,
+including PA10 at `157/157`.
+
+The `u26-gcc` flavor passed the same `4,927/4,927` report, `1,532/1,532` strict
+gate, and PA13/PA37/PA38 debugger gate.  Its isolated PA39 object root,
+`../obj/pa39/u26-gcc-alias-final-j4`, also passed through PA10 at `157/157`.
+That run self-compiled both `macroizer.cpp` and the modified
+`template_resolution.cpp` before linking the final driver.
+
+[GitHub Actions run 31883595723](https://github.com/vishvananda/cppgm-extended/actions/runs/31883595723)
+tested the final commit in all four supported Linux flavors: Ubuntu 24.04 and
+26.04, each with GCC/libstdc++ and Clang/libc++.  GitHub Actions marked every
+build, placement, direct-text report, strict, debugger, and
+self-host-through-PA10 job as passed.
