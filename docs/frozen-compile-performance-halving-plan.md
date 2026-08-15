@@ -1847,7 +1847,7 @@ Evidence is in `/tmp/cppgm-post-inline-profile.sample.txt`,
 `/tmp/cppgm-delimited-snapshot-{parent,candidate}-{1,2,3}.time`, and
 `/tmp/cppgm-lookup-snapshot-final.json`.
 
-#### Multi-signal retention rubric, adopted at `3686d87b0`
+#### Multi-signal retention rubric, adopted at `3686d87b0` and refined at `1d51346ae`
 
 The former rolling `0.5%` instruction floor was useful for rejecting noise, but
 it was too blunt. It undervalued changes that reduce CPU work and memory
@@ -1886,13 +1886,19 @@ I + max(F, 0.5 * R)
 ```
 
 Taking the larger memory term avoids counting the same storage twice. RSS has
-half weight because it is less stable than the macOS footprint counter. A
-candidate qualifies through one of these lanes:
+half weight because it is less stable than the macOS footprint counter. The
+selected memory term must be positive. When footprint supplies the selected
+term, it must improve in at least two pairs and RSS need only stay inside the
+general `3%` hard gate. When RSS supplies the selected term, footprint may
+regress by at most `0.25%` and a second independent batch must confirm RSS.
+This asymmetry lets the stable footprint counter decide a result without a
+noisy RSS veto, but does not let noisy RSS rescue a footprint regression on one
+batch. A candidate qualifies through one of these lanes:
 
 | Lane | Acceptance rule | Required evidence |
 | --- | --- | --- |
 | CPU throughput | `I >= 0.50%` | Three interleaved pairs; memory stays inside the hard gates. |
-| balanced CPU and memory | `I >= 0.15%`, neither memory signal regresses by more than `0.25%`, and the balance score is at least `0.50` | Three interleaved pairs; repeat the batch when RSS, rather than footprint, makes the score cross `0.50`. |
+| balanced CPU and memory | `I >= 0.15%`, the selected memory term is positive, and the balance score is at least `0.50`; apply the footprint-led or RSS-led guard above | Three interleaved pairs with at least two instruction agreements and two agreements for the selected memory signal; repeat the batch when RSS makes the score cross `0.50`. |
 | memory density | instruction regression is no worse than `0.15%`, and either footprint improves by at least `1%` and `4 MiB`, or footprint improves by at least `0.5%` while confirmed RSS improves by at least `1%` | Three interleaved pairs, retained-size census, and an independent RSS confirmation when the second form is used. |
 | retained density | instruction regression is no worse than `0.15%`; an owner-complete census reduces live semantic storage by at least `3 MiB` and `0.75%` of the parent frozen footprint; peak footprint improves by at least `0.5%`; RSS stays inside the hard gate | Three interleaved pairs with at least two footprint agreements. The accounting must include inline records, populated container headers, and payload storage, so moving bytes outside the record cannot qualify. |
 | allocation and latency | at least `100,000` allocation/deallocation calls or `8 MiB` of requested allocation traffic disappear; instruction and memory hard gates hold; quiet median wall time improves by at least `1%`, with user time or cycles agreeing | Five quiet interleaved pairs plus the allocation census. Allocation count by itself is not enough. |
@@ -1903,7 +1909,9 @@ for lookup work or retained pages. This is why a slight instruction regression
 is permitted only when quiet end-to-end latency confirms the benefit. The
 balanced lane handles the other important case directly: a change can qualify
 below the `0.5%` instruction threshold when it improves both CPU work and
-memory by a material combined amount.
+memory by a material combined amount. A footprint-led result is not a claim
+that RSS must fall; it is a claim that exact CPU work and the more stable peak
+footprint both fall while RSS remains safely bounded.
 
 The retained-density lane covers a different measurement gap. Peak footprint
 can miss a real persistent-layout reduction when the affected owners do not all
@@ -1987,6 +1995,21 @@ old `CppAst` bitfield layout meets the density lane but is superseded by the
 smaller and faster 176-byte field reorder above. The raw template-parameter
 type cache easily meets the density lane, but the narrower retained
 canonicalization already supplies that memory saving with an instruction win.
+
+The footprint-led refinement at `1d51346ae` was also applied to every existing
+row, not only to the candidate that motivated the distinction. It does not
+reopen another closed experiment. The one-fetch normalizer, dependent-root
+memo, sparse template-angle cache, and template-parameter string borrowing
+already received current paired retries. The identifier-token vector reaches
+only a `0.478` score, the flat snapshot misses the `0.15%` instruction
+component, and symbol reservation makes latency worse. Earlier rejections that
+do meet a multi-signal lane have already produced retained descendants:
+template-parameter identity and visible-name sorting through the balanced
+lane, `CppAstNode` and packed `CallSemNode` through memory density, sparse
+`Scope` storage through retained density, and contiguous template-body value
+scratch through allocation and latency. The flat type-dependency table below
+is the new footprint-led result; no old result was accepted from historical
+one-run data alone.
 
 The allocation re-audit does not retroactively accept a custom allocator. The
 CallSem child-buffer pool reused `1,570,427` allocation requests and improved
@@ -2187,9 +2210,57 @@ halving target. Evidence is in
 `/tmp/cppgm-template-body-linear-{parent,candidate}-pair{1,2,3,4,5}.json`,
 and `/tmp/cppgm-template-body-value-linear-final.json`.
 
+#### Flat persistent type-dependency memo checkpoint at `1d51346ae`
+
+Template services repeatedly ask whether the same root type is dependent. The
+old persistent `unordered_map` served about `2.75M` hits for only about `27.7K`
+misses, but each hit still performed a node-based hash lookup and locked a
+`weak_ptr`. The final form stores the same results in one power-of-two,
+open-addressed table keyed by the raw `Type` address. The weak owner remains in
+the entry only to detect expiration; it is never promoted on a hit.
+
+The lifetime rule is local. A matching raw address with a live weak owner must
+refer to the same live object, because two live objects cannot occupy the same
+address. An expired owner identifies destruction and possible address reuse,
+so that entry becomes a tombstone and the query is recomputed. Changing the
+semantic model clears the table. The table keeps no strong type reference and
+adds no field, construction work, or identity state to `Type`.
+
+The frozen census reports `2,751,903` persistent hits, `27,689` misses,
+`20,858` live entries, and capacity `32,768`. It rejects `6,831` expired
+address entries. `Type` remains 296 bytes. A weak-lock table screened exact but
+essentially flat. A per-Type identity prototype passed the numerical balanced
+lane, but required a process-wide ID and atomic work in every Type constructor.
+An owner-order-only table avoided that global state, but three pairs improved
+instructions by `0.217%` and footprint by `0.190%`, only a `0.407` score.
+Checking expiration directly preserves the simpler lifetime design and removes
+the remaining ownership comparisons.
+
+Three fresh interleaved pairs measured parent and candidate instruction
+medians of `108,582,508,538` and `108,166,328,288`, a `0.3833%` improvement.
+All three instruction pairs agreed. Median footprint fell from `500,019,200 B`
+to `499,060,736 B`, a `0.1917%` improvement, again with all three pairs
+agreeing. The footprint-led balance score is `0.5750`. RSS rose `1.0527%`,
+inside the general `3%` hard gate and not used to qualify the result. Cycles
+improved `1.7529%`, wall time `0.6090%`, and user time `0.6750%`; all three
+pairs agreed for each signal.
+
+Every frozen object has SHA-256 `4fc1303a...5c4`. Direct strict passes
+`1530/1530`, and the full direct report passes `4863/4863`. The clean
+three-run checkpoint is `108,371,091,709` instructions, `680,058,880 B`
+maximum RSS, and `499,105,792 B` footprint. This is `37.7742%` below the
+starting instruction count and leaves `21,292,206,237` instructions to the
+halving target. Evidence is in
+`/tmp/cppgm-type-dependency-table-census.json`,
+`/tmp/cppgm-type-dependency-{open,identity,owner,expired}-table-screen.json`,
+`/tmp/cppgm-type-dependency-owner-{parent,candidate}-pair{1,2,3}.json`,
+`/tmp/cppgm-type-dependency-expired-{parent,candidate}-pair{1,2,3}.json`,
+`/tmp/cppgm-type-dependency-expired-census.json`, and
+`/tmp/cppgm-type-dependency-flat-final.json`.
+
 #### Revised investigation order
 
-The `37.75%` cumulative reduction leaves `21,329,976,757` instructions. A chain
+The `37.77%` cumulative reduction leaves `21,292,206,237` instructions. A chain
 of boundary-sized representation changes will not close that gap. New work
 must start with operation counts and favor semantic work removal. Use this
 order:
@@ -2416,7 +2487,19 @@ order:
    `1.05%`, `1.27%`, and `1.25%`, with all pairs agreeing; instructions and
    RSS also improve, while footprint stays inside the hard gate. Commit
    `234afcdfd` clears the allocation-and-latency lane and both full correctness
-   gates.
+   gates. The next parser-owner census counted `1,691,467` namespace name-set
+   entries copied across `4,980` category-scope pushes even though only `5,737`
+   new entries were added and `3,826` scopes were unchanged. Both global
+   copy-on-write representations were rejected: `shared_ptr` ownership
+   regressed paired instructions and latency while improving footprint by only
+   `0.145%`, and a non-atomic intrusive refinement screened worse. The next
+   type-dependency review replaced a node-based persistent map and weak-owner
+   lock on `2.75M` hits with a flat raw-address table plus expiration check.
+   Three pairs improve instructions by `0.3833%` and footprint by `0.1917%`,
+   both in every pair. The footprint-led score is `0.5750`; RSS regresses
+   `1.0527%` but remains inside its hard gate, while cycles improve `1.7529%`.
+   Commit `1d51346ae` clears the refined balanced lane, emits exact bytes, and
+   passes strict `1530/1530` plus full report `4863/4863`.
 
 Keep these families closed without new population evidence: broad AST/type
 caches, text interner replacements, unrelated container swaps, pool allocators,
@@ -2522,6 +2605,7 @@ Fill one row after each retained commit.
 | `7f4913c4d` | allocate source-declaration anchors only for diagnostic/witness access and compact direct FunctionBinding scalar state | `108,553,548,041` | `-37.67%` | `690,688,000` | `504,020,992` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-anchor-function-binding-layout-final.json`; paired footprint: `-1.0024%`, or `-5,103,616 B`; paired instructions: `+0.0977%`; retained inline storage: `-5,710,440 B` |
 | `627f7a904` | allocate seven sparse scope binding containers only on first insertion and remove one cache-state padding hole | `108,476,020,745` | `-37.71%` | `688,439,296` | `499,806,208` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-lazy-scope-function-sets-final.json`; paired footprint: `-0.801%`; paired instructions: `+0.058%`; net retained semantic storage: `-4,001,496 B` |
 | `234afcdfd` | store template-body visible-value scratch as contiguous interned-name pairs | `108,408,862,229` | `-37.75%` | `689,704,960` | `500,039,680` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-template-body-value-linear-final.json`; about `1,730,202` allocation calls removed; paired wall: `-1.0505%`; user: `-1.2685%`; cycles: `-1.2476%`; instructions: `-0.0827%` |
+| `1d51346ae` | store persistent type-dependency root results in a flat table and validate recycled addresses by weak expiration | `108,371,091,709` | `-37.77%` | `680,058,880` | `499,105,792` | SHA-256 `4fc1303a...5c4` | `1530/1530` | `4863/4863` | `/tmp/cppgm-type-dependency-flat-final.json`; 2,751,903 persistent hits; paired instructions: `-0.3833%`; footprint: `-0.1917%`; balance score: `0.5750` |
 
 ## Rejected work ledger
 
@@ -2680,6 +2764,7 @@ experiment before starting the next candidate.
 | keep only CallSem ranking metadata in copied overload candidates | the change removed `68,178` full tree copies, `415,984` copied nodes, `186,767` child allocations, and `30,606,928` requested bytes. Five exact interleaved pairs improved instructions by `0.070%` and RSS by `0.082%`, but regressed wall time by `0.469%`, user time by `0.569%`, and footprint by `0.045%`; only one latency pair improved | this is a large allocation reduction, but it fails the allocation-and-latency lane and every CPU/memory lane. Restore full candidate copies until a representation change also reduces ranking latency | `/tmp/cppgm-call-ranking-metadata-census.stderr`, `/tmp/cppgm-call-ranking-metadata-screen-2.json`, and `/tmp/cppgm-call-ranking-{parent,candidate}-{1,2,3,4,5}.time` |
 | borrow dependent-alias template argument vectors from their owning Type | a current census measured `362,565` accessor calls but only `12,257` copying hits, `19,986` arguments, `12,257` outer-vector allocations, and `5,915,856` requested bytes | this adjacent population is far below the allocation lane and much smaller than the retained dependent-class slice. Remove the census and avoid changing roughly thirty callers without stronger profile attribution | `/tmp/cppgm-dependent-alias-argument-copy-census.stderr` |
 | store persistent type-dependency root results on each Type | the existing weak map serves about `2.75M` hits for `27,264` misses. A model-pointer field removed the map and emitted exact bytes at `109,634,424,717` instructions, a `0.133%` gain; footprint improved `0.264%`, RSS regressed `0.141%`, and the score was about `0.396`. A clone-safe atomic epoch packed into existing Type padding emitted exact bytes at `109,810,890,704` instructions, losing the CPU gain while RSS rose to `706,428,928 B` | both forms miss every lane. The hot lookup count does not justify adding state to every Type; restore the weak root map | `/tmp/cppgm-type-dependency-inline-cache-screen.json` and `/tmp/cppgm-type-dependency-epoch-cache-screen.json` |
+| validate flat type-dependency table hits with weak promotion, owner ordering, or a per-Type identity | the weak-lock form screened at `108,391,169,939` instructions. The owner-order form improved paired instructions by `0.217%` and footprint by `0.190%`, for a `0.407` score. A padding-only per-Type identity improved paired instructions by `0.310%` and footprint by `0.262%`, for a passing `0.572` score, but added a process-wide ID and atomic assignment to every Type construction | weak promotion and owner ordering miss the balanced lane. The identity form passes numerically but is superseded by commit `1d51346ae`: raw-address lookup plus weak expiration has the same address-reuse contract, a `0.575` score, and no Type field or global identity state | `/tmp/cppgm-type-dependency-open-table-screen.json`, `/tmp/cppgm-type-dependency-owner-{parent,candidate}-pair{1,2,3}.json`, and `/tmp/cppgm-type-dependency-identity-{parent,candidate}-pair{1,2,3}.json` |
 | dispatch BufferedIterator sources through a concrete-source tag | the exact candidate preserved the buffer protocol and passed the focused UTF-8/trigraph reducer, but used `114,585,533,837` instructions, about `4.4%` more than the checkpoint | a branch on every source operation costs more than virtual dispatch. Restore the generic iterator; commit `d94a9aa4a` removes the two proven virtual chains with typed references and no per-character tag | `/tmp/cppgm-tagged-translation-source-screen.json` and `/tmp/cppgm-concrete-translation-source-final.json` |
 | specialize only the outer translation buffer's dereference and increment | the exact screen was close enough to require paired evidence. Three interleaved pairs measured parent and candidate medians of `108,464,014,169` and `108,418,368,725` instructions, a `0.042%` improvement. Footprint improved `0.025%`, RSS regressed `0.881%`, wall time improved `0.461%`, and user time improved `0.448%`; only one of three wall and user pairs agreed | the candidate misses the CPU, balanced, memory-density, and allocation-and-latency lanes. Restore the generic outer buffer; the retained concrete inner sources already capture the useful dispatch removal | `/tmp/cppgm-translation-buffer-screen.json` and `/tmp/cppgm-translation-buffer-{parent,candidate}-{1,2,3}.time` |
 | specialize all five hot outer translation-buffer operations | the candidate directly implemented dereference, increment, peek, next, pop, and extraction against `FullTranslator`, preserving exact output on the UTF-8/trigraph reducer. Its one-run screen used `108,940,165,427` instructions, a `0.491%` regression from the retained record, and raised footprint by `0.127%`; RSS improved by `0.796%` | this is an obvious CPU loss and fails every lane even before accounting for roughly 150 lines of duplicated buffer protocol. Restore the shared `BufferedIterator` implementation and close further preprocessing dispatch work without a different representation | `/tmp/cppgm-translation-buffer-full-screen.json` |
@@ -2688,6 +2773,7 @@ experiment before starting the next candidate.
 | emit template-id argument ranges during the delimiter scan | the frame profile attributed `91` allocation-leaf samples to the temporary eight-element delimiter vector. The candidate emitted ranges directly into the caller's existing result vector and preserved the frozen object. The first three pairs appeared close to the balanced lane at `-0.145%` instructions and `-1.193%` RSS, so the required independent RSS confirmation was run. That batch measured `+0.027%` instructions and `-1.054%` RSS. Across all six pairs, medians moved by `-0.004%` instructions, `-0.868%` RSS, `+0.008%` footprint, `+0.101%` wall time, and `+0.084%` user time | the second batch shows that the first instruction result was sampling variation. The stable RSS shift alone meets neither density lane, and latency does not qualify the allocation lane. Restore the shared delimiter API and its local vector | `/tmp/cppgm-template-range-direct-screen.json` and `/tmp/cppgm-template-range-{parent,candidate}-pair{1,2,3,4,5,6}.json` |
 | keep template-body visible-value scratch in atom-sorted vectors | three pairs improved instructions by `0.1265%`, with all three pairs agreeing, but RSS regressed `0.5832%`, footprint regressed `0.0836%`, and wall time regressed `0.1214%` | ordering is not part of the private scratch-table contract, and ordered insertion adds shifts without earning a retention lane. Keep the contiguous representation but use linear pointer-identity lookup and append order; commit `234afcdfd` clears the allocation-and-latency lane | `/tmp/cppgm-template-body-value-vector-screen.json` and `/tmp/cppgm-template-body-vector-{parent,candidate}-pair{1,2,3}.json` |
 | store `IdentifierTokenSet` atoms in a unique linear vector | a frozen census counted `328,420` ephemeral sets containing `654,801` unique atoms. The existing text-length reserve held capacity for `1,934,344` pointers. The vector candidate preserved exact output and improved instructions in all six pairs. Independent batches improved instructions by `0.3549%` and `0.3706%`, but their balance scores were only `0.478` and `0.422`; combined latency improved `0.345%`. Reducing the initial reserve to two pointers matched the `80.7%` of sets with at most two entries but weakened the three-pair result to `0.2075%` instructions, `0.0030%` RSS regression, `0.0074%` footprint improvement, and `0.0409%` wall regression | neither vector form reaches the CPU, balanced, memory, or allocation-and-latency lane. Restore the hash set. Reopen only with a representation that removes the remaining vector allocation or combines construction with a consumer in the same identifier-token path | `/tmp/cppgm-identifier-token-census.stderr`, `/tmp/cppgm-identifier-token-vector-screen.json`, `/tmp/cppgm-identifier-token-{parent,candidate}-pair{1,2,3,4,5,6}.json`, `/tmp/cppgm-identifier-token-vector-reserve2-screen.json`, and `/tmp/cppgm-identifier-token-r2-{parent,candidate}-pair{1,2,3}.json` |
+| share copied parser `NameSet` storage until mutation | namespace reopening copied `1,691,467` hash entries across four name categories, while the active scopes added only `5,737` entries; `3,826` of `4,980` committed category-scopes were unchanged and the frozen compile performed no rollback. A byte-exact `shared_ptr` copy-on-write form nevertheless regressed median instructions by `0.0675%`, wall time by `0.1211%`, and user time by `0.0848%` across three pairs. Footprint improved in every pair but by only `0.1450%`; RSS improved `0.1789%` with one disagreeing pair. Replacing atomic shared ownership with a one-pointer intrusive count screened at `108,739,116,623` instructions and `499,572,736 B` footprint, worse than the paired form | copy elimination does not compensate for an ownership branch and indirection on every hotter name lookup and insertion. Neither form reaches a retention lane. Restore inline hash storage; revisit namespace reopening only with an overlay or transaction design that leaves ordinary `NameSet` access unchanged | `/tmp/cppgm-namespace-name-copy-census.json`, `/tmp/cppgm-nameset-cow-screen.json`, `/tmp/cppgm-nameset-cow-{parent,candidate}-pair{1,2,3}.json`, and `/tmp/cppgm-nameset-intrusive-screen.json` |
 | use a raw `Type` pointer while classifying null pointer constants | the wrapper keeps the selected top-level type alive through `ExprInfo`, so a local raw pointer avoids two `shared_ptr` handoffs. The exact screen used `108,656,745,539` instructions and `504,123,392 B` of footprint | instructions regress `0.095%` and memory stays flat. The narrower call site does not rescue the rejected compiler-wide borrowed `strip_top_level_cv` form. Restore the shared helper | `/tmp/cppgm-null-pointer-raw-type-screen.json` |
 | combine direct required-callee traversal with one scan for aliased special-member bodies | the direct walker removes `112,043` temporary allocation/deallocation pairs and `1,477,512` requested bytes. Base and complete constructor or destructor entry points share one analyzed body; the clone changes its root symbol and alias list, so the second callee scan cannot discover a new body edge. The exact composite screened at `108,266,218,271` instructions. Five interleaved pairs measured parent and candidate medians of `108,410,905,430` and `108,347,889,027`, a `0.058%` gain. Median wall time regressed `0.971%`, user time `0.889%`, cycles `0.635%`, RSS `1.492%`, and footprint `0.079%`; all five wall and user pairs regressed | the allocation-and-latency lane requires a `1%` wall-time improvement. This candidate moves wall time in the opposite direction and misses the CPU and memory lanes. Restore both traversal changes | `/tmp/cppgm-output-rescan-child-vector-census.stderr`, `/tmp/cppgm-output-callee-direct-clone-skip-screen.json`, and `/tmp/cppgm-output-callee-{parent,candidate}-pair{1,2,3,4,5}.json` |
 | make every sparse `Scope` associative container lazy | the broad form removed `4,649,856 B` of inline storage and improved footprint in every pair. Three pairs measured parent and candidate instruction medians of `108,371,344,968` and `108,765,017,627`, a `0.363%` regression | retained bytes do not override the `0.15%` instruction hard gate. Keep `values` eager; the narrowed form retains `4,001,496 B` of net semantic savings with instructions inside the cap | `/tmp/cppgm-lazy-scope-associative-census.stderr` and `/tmp/cppgm-lazy-scope-{parent,candidate}-pair{1,2,3}.json` |
