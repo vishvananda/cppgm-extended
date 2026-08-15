@@ -141,6 +141,25 @@ instead.  This preserves the PA19 instantiation purpose and the existing LowIR
 byte-for-byte while removing the later feature.  Its source-location-only
 witness change was regenerated through the patched-Clang materializer.
 
+The LLVM 21 libc++ lane exposed a separate qualified-lookup gap through its
+new compressed-pair layout spelling.  The alignment expression
+`::std::__compressed_pair_alignment<allocator_type>` names a variable template
+declared in libc++'s inline ABI namespace.  Direct value, class-template, and
+alias-template lookup already included inline namespace children, but direct
+variable-template lookup inspected only the written namespace's local map.
+`lookup_direct_variable_template` now applies the same inline-child lookup
+rule, so all of its constant-expression and ordinary-expression consumers see
+the injected declaration.
+
+The header-free PA22 reducer is
+`pa22/tests/general/200-variable-template-alignas-member-alias.t`.  It combines
+an inline-namespace variable template with an outer member alias used by an
+anonymous nested record's `alignas`.  Host Clang accepts it while the pre-fix
+CPPGM compiler reported `unsupported alignas`; the fixed compiler emits and
+runs the expected eight-byte layout.  Its ordinary LowIR reference was
+generated after the host-oracle check, and its witness reference came from the
+patched-Clang materializer.
+
 Validation used only the standard `~/ralph-ci` `u24-gcc` lane, with no other
 lane active.  The exact PA35 compile case and exact PA24 witness comparison
 pass.  With `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1`, the configured strict suites
@@ -149,3 +168,9 @@ pass PA19 `279/279`, PA20 `158/158`, PA22 `293/293`, PA23 `385/385`, and PA24
 through PA10 also passes from the isolated object root
 `../obj/pa39/u24-gcc-alias-j4`; both the ladder and self-host object build were
 capped at four jobs.
+
+On the sole `~/ralph-ci` `u26-clang-libcxx` lane, the reducer passes the full
+PA22 ordinary suite (`309/309`), and the original failing PA35 libc++ `<string>`
+case compiles.  The direct-text strict gate passes all `1,531` configured
+witness comparisons, and the full direct-text PA1-PA38 report passes
+`4,926/4,926`.

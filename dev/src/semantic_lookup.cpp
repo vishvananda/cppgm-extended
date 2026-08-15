@@ -6006,7 +6006,22 @@ AliasTemplateDecl * lookup_direct_alias_template(Scope & scope, const string & n
 VariableTemplateDecl * lookup_direct_variable_template(Scope & scope, const string & name)
 {
   map<string, VariableTemplateDecl *>::iterator found = scope.variable_templates.find(name);
-  return found == scope.variable_templates.end() ? nullptr : found->second;
+  if(found != scope.variable_templates.end()) {
+    return found->second;
+  }
+  return lookup_inline_namespace_children<VariableTemplateDecl *>(
+      scope,
+      [&name](Scope & child) -> VariableTemplateDecl *
+      {
+        map<string, VariableTemplateDecl *>::iterator nested =
+            child.variable_templates.find(name);
+        return nested == child.variable_templates.end() ?
+            nullptr : nested->second;
+      },
+      [](VariableTemplateDecl * decl) -> bool
+      {
+        return decl != nullptr;
+      });
 }
 
 void collect_direct_function_templates(Scope & scope,
@@ -7469,9 +7484,7 @@ VariableTemplateDecl * lookup_variable_template(SemanticContext & ctx,
             return member.variable_template;
           }
         }
-        map<string, VariableTemplateDecl *>::iterator found =
-            target.variable_templates.find(lookup_name);
-        return found == target.variable_templates.end() ? nullptr : found->second;
+        return lookup_direct_variable_template(target, lookup_name);
       };
 
   if(qualified.rooted || !qualified.qualifiers.empty()) {
@@ -7502,9 +7515,7 @@ VariableTemplateDecl * lookup_variable_template(SemanticContext & ctx,
             return member.variable_template;
           }
         }
-        map<string, VariableTemplateDecl *>::iterator found =
-            target.variable_templates.find(lookup_name);
-        return found == target.variable_templates.end() ? nullptr : found->second;
+        return lookup_direct_variable_template(target, lookup_name);
       };
 
   return lookup_unqualified_with_present<VariableTemplateDecl *>(
@@ -7539,9 +7550,7 @@ VariableTemplateDecl * lookup_variable_template_node(
       return member.variable_template;
     }
   }
-  map<string, VariableTemplateDecl *>::iterator found =
-      target->variable_templates.find(qualified.name);
-  return found == target->variable_templates.end() ? nullptr : found->second;
+  return lookup_direct_variable_template(*target, qualified.name);
 }
 
 Scope * resolve_qualified_scope_for_class_or_namespace(SemanticContext & ctx,
