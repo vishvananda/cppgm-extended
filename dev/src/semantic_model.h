@@ -152,22 +152,99 @@ inline void remove_output_requirement(unsigned int & flags, OutputRequirementKin
 
 struct SourceDeclAnchorCache
 {
-  mutable bool cached = false;
-  mutable std::string name_location;
-  mutable std::string approximate_location;
+  // Source anchors are populated only when diagnostic or witness tracing asks
+  // for one. Keep the normal compilation state pointer-sized; the source AST
+  // is immutable, so a populated cache remains valid for the owner's lifetime.
+  // Copies retain independent cached strings and moves transfer their storage.
+  struct Locations
+  {
+    std::string name;
+    std::string approximate;
+  };
+
+  SourceDeclAnchorCache() {}
+
+  SourceDeclAnchorCache(const SourceDeclAnchorCache & other)
+    : locations_(other.locations_ ? new Locations(*other.locations_) : nullptr)
+  {}
+
+  SourceDeclAnchorCache & operator=(const SourceDeclAnchorCache & other)
+  {
+    if(this == &other) {
+      return *this;
+    }
+    if(!other.locations_) {
+      locations_.reset();
+    } else if(locations_) {
+      *locations_ = *other.locations_;
+    } else {
+      locations_.reset(new Locations(*other.locations_));
+    }
+    return *this;
+  }
+
+  SourceDeclAnchorCache(SourceDeclAnchorCache && other) noexcept
+    : locations_(std::move(other.locations_))
+  {}
+
+  SourceDeclAnchorCache & operator=(SourceDeclAnchorCache && other) noexcept
+  {
+    locations_ = std::move(other.locations_);
+    return *this;
+  }
+
+  bool cached() const { return static_cast<bool>(locations_); }
+
+  void mark_cached() const
+  {
+    if(!locations_) {
+      locations_.reset(new Locations());
+    }
+  }
+
+  const std::string & name_location() const
+  {
+    return locations_ ? locations_->name : empty_location();
+  }
+
+  std::string & mutable_name_location() const
+  {
+    mark_cached();
+    return locations_->name;
+  }
+
+  const std::string & approximate_location() const
+  {
+    return locations_ ? locations_->approximate : empty_location();
+  }
+
+  std::string & mutable_approximate_location() const
+  {
+    mark_cached();
+    return locations_->approximate;
+  }
+
+private:
+  static const std::string & empty_location()
+  {
+    static const std::string empty;
+    return empty;
+  }
+
+  mutable std::unique_ptr<Locations> locations_;
 };
 
 inline const std::string & source_decl_anchor_location(
     const SourceDeclAnchorCache & cache)
 {
-  return !cache.name_location.empty() ? cache.name_location :
-                                        cache.approximate_location;
+  return !cache.name_location().empty() ? cache.name_location() :
+                                          cache.approximate_location();
 }
 
 inline bool source_decl_anchor_has_name_location(
     const SourceDeclAnchorCache & cache)
 {
-  return !cache.name_location.empty();
+  return !cache.name_location().empty();
 }
 
 struct VariableTemplateInstantiationIdentity
@@ -665,23 +742,31 @@ struct FunctionBinding
   const CppAstNode * definition_node = nullptr;
   std::vector<std::string> declaration_abi_tags;
   std::vector<std::string> definition_abi_tags;
-  bool definition_suppresses_declaration_abi_tags = false;
   const CppAstNode * parameter_syntax_node = nullptr;
   const CppAstNode * body = nullptr;
   const CppAstNode * function_qualifier = nullptr;
-  bool has_definition = false;
   ClassInfo * owner_class = nullptr;
   ClassInfo * lexical_access_class = nullptr;
   FunctionBinding * lexical_access_function = nullptr;
-  bool hidden_friend_only = false;
+  ClassInfo * inherited_constructor_access_class = nullptr;
+
+  // Keep the small scalar state in one logical block. This preserves direct
+  // field access while avoiding repeated pointer-alignment holes between the
+  // groups below.
   MemberAccess access = MA_PUBLIC;
+  RefQualifier ref_qualifier = RQ_NONE;
+  BuiltinConstantEvaluationKind builtin_constant_evaluation_kind = BCEK_NONE;
+  ExplicitFunctionNothrowKind explicit_function_nothrow_kind = EFNK_UNINITIALIZED;
+  unsigned int output_requirements = ORK_NONE;
+  bool definition_suppresses_declaration_abi_tags = false;
+  bool has_definition = false;
+  bool hidden_friend_only = false;
   bool is_method = false;
   bool is_constexpr = false;
   bool is_inline = false;
   bool is_force_inline = false;
   bool is_constructor = false;
   bool is_inherited_constructor = false;
-  ClassInfo * inherited_constructor_access_class = nullptr;
   bool is_destructor = false;
   bool is_conversion_operator = false;
   bool is_defaulted = false;
@@ -692,7 +777,6 @@ struct FunctionBinding
   bool is_move_assignment = false;
   bool is_const_method = false;
   bool is_volatile_method = false;
-  RefQualifier ref_qualifier = RQ_NONE;
   bool is_deleted = false;
   // Once the owning class is complete, the deleted state of an explicitly
   // defaulted special member is structural and cannot change.  Remember that
@@ -706,48 +790,46 @@ struct FunctionBinding
   bool is_final = false;
   bool is_c_linkage = false;
   bool is_builtin = false;
-  BuiltinConstantEvaluationKind builtin_constant_evaluation_kind = BCEK_NONE;
   bool permits_host_builtin_missing_nothrow_redeclaration = false;
-  std::string object_symbol_override;
-  symbol_linkage::SymbolIdentity symbol;
   mutable bool cached_lookup_dedupe_key_valid = false;
-  mutable std::size_t cached_lookup_dedupe_name_hash = 0;
-  mutable std::size_t cached_lookup_dedupe_type_hash = 0;
-  mutable const cpp_decl::Type * cached_lookup_dedupe_type = nullptr;
-  mutable std::size_t cached_lookup_dedupe_name_size = 0;
   bool has_virtual_slot = false;
-  std::size_t virtual_slot = 0;
   bool synthesized = false;
   bool is_aggregate_constructor = false;
-  unsigned int output_requirements = ORK_NONE;
   bool output_emitted = false;
   bool definition_output_in_progress = false;
   bool definition_output_emitted = false;
   bool odr_mergeable_definition = false;
   bool template_definition_materialized_by_enclosing_closure = false;
   bool template_definition_required_by_public_source_call = false;
-  ExplicitFunctionNothrowKind explicit_function_nothrow_kind = EFNK_UNINITIALIZED;
-  const CppAstNode * explicit_function_nothrow_cached_qualifier = nullptr;
-  std::string explicit_function_nothrow_expr_text;
   bool explicit_function_nothrow_eval_cached = false;
   bool explicit_function_nothrow_eval_value = false;
   bool suppress_implicit_instantiation_definition = false;
   bool is_explicit_instantiation_definition = false;
   bool exclude_from_explicit_instantiation = false;
+  bool has_instantiation_arguments = false;
+  bool is_explicit_specialization = false;
+  bool instantiated_signature_finalized = false;
+
+  std::string object_symbol_override;
+  symbol_linkage::SymbolIdentity symbol;
+  mutable std::size_t cached_lookup_dedupe_name_hash = 0;
+  mutable std::size_t cached_lookup_dedupe_type_hash = 0;
+  mutable const cpp_decl::Type * cached_lookup_dedupe_type = nullptr;
+  mutable std::size_t cached_lookup_dedupe_name_size = 0;
+  std::size_t virtual_slot = 0;
+  const CppAstNode * explicit_function_nothrow_cached_qualifier = nullptr;
+  std::string explicit_function_nothrow_expr_text;
   std::unique_ptr<CallSemNode> cached_body_output;
   const CppAstNode * ctor_initializer = nullptr;
   FunctionBinding * delegating_constructor_target = nullptr;
   FunctionTemplateDecl * source_template = nullptr;
   std::vector<template_model::TemplateArgument> instantiation_arguments;
-  bool has_instantiation_arguments = false;
   std::string instantiation_use_location;
-  bool is_explicit_specialization = false;
   std::map<std::string, std::size_t> instantiation_pack_sizes;
   std::string template_instantiation_key;
   // A concrete function-template specialization has one immutable signature.
   // Signature-only overload probes may reuse it without rebuilding the
   // template argument scope once initial substitution and validation finish.
-  bool instantiated_signature_finalized = false;
   std::unique_ptr<FunctionTemplateInstantiationCacheEntries>
       instantiation_cache_entries;
   mutable SourceDeclAnchorCache declaration_anchor;

@@ -1908,10 +1908,10 @@ std::string function_template_witness_decl_anchor_location(
 {
   const semantic_model::SourceDeclAnchorCache & decl_anchor =
       semantic_trace::function_template_decl_anchor(ctx, decl);
-  if(!decl_anchor.name_location.empty()) {
-    return normalize_template_witness_location(decl_anchor.name_location);
+  if(!decl_anchor.name_location().empty()) {
+    return normalize_template_witness_location(decl_anchor.name_location());
   }
-  return normalize_template_witness_location(decl_anchor.approximate_location);
+  return normalize_template_witness_location(decl_anchor.approximate_location());
 }
 
 std::string function_template_witness_decl_location(SemanticContext & ctx,

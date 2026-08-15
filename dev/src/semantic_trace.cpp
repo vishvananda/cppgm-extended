@@ -542,16 +542,16 @@ const semantic_model::SourceDeclAnchorCache & function_template_decl_anchor(
     return empty_source_decl_anchor_cache();
   }
   semantic_model::SourceDeclAnchorCache & cache = decl->declaration_anchor;
-  if(cache.cached) {
+  if(cache.cached()) {
     return cache;
   }
-  cache.cached = true;
-  cache.name_location = function_template_name_location_impl(ctx, decl);
+  cache.mark_cached();
+  cache.mutable_name_location() = function_template_name_location_impl(ctx, decl);
   const std::vector<std::pair<std::string, std::string> > locations =
       template_decl_locations(ctx, decl);
   for(std::size_t i = 0; i < locations.size(); ++i) {
     if(locations[i].first != "name") {
-      cache.approximate_location = locations[i].second;
+      cache.mutable_approximate_location() = locations[i].second;
       break;
     }
   }
@@ -566,10 +566,10 @@ const semantic_model::SourceDeclAnchorCache & function_binding_decl_anchor(
     return empty_source_decl_anchor_cache();
   }
   semantic_model::SourceDeclAnchorCache & cache = binding->declaration_anchor;
-  if(cache.cached) {
+  if(cache.cached()) {
     return cache;
   }
-  cache.cached = true;
+  cache.mark_cached();
   const std::string unqualified_name =
       semantic_utils::unqualified_member_name(
           semantic_lookup::canonical_function_lookup_name(binding->name));
@@ -577,13 +577,13 @@ const semantic_model::SourceDeclAnchorCache & function_binding_decl_anchor(
   if(binding->source_template) {
     const semantic_model::SourceDeclAnchorCache & template_cache =
         function_template_decl_anchor(ctx, binding->source_template);
-    if(!template_cache.name_location.empty()) {
-      cache.name_location = template_cache.name_location;
-      cache.approximate_location = template_cache.approximate_location;
+    if(!template_cache.name_location().empty()) {
+      cache.mutable_name_location() = template_cache.name_location();
+      cache.mutable_approximate_location() = template_cache.approximate_location();
       return cache;
     }
-    if(!template_cache.approximate_location.empty()) {
-      cache.approximate_location = template_cache.approximate_location;
+    if(!template_cache.approximate_location().empty()) {
+      cache.mutable_approximate_location() = template_cache.approximate_location();
       return cache;
     }
   }
@@ -593,46 +593,47 @@ const semantic_model::SourceDeclAnchorCache & function_binding_decl_anchor(
      binding->owner_class->source_template &&
      binding->owner_class->source_template->class_node &&
      !unqualified_name.empty()) {
-    cache.name_location = node_name_location(ctx,
-                                             binding->owner_class->source_template->class_node,
-                                             unqualified_name,
-                                             prefer_last_name);
-    if(!cache.name_location.empty()) {
+    cache.mutable_name_location() =
+        node_name_location(ctx,
+                           binding->owner_class->source_template->class_node,
+                           unqualified_name,
+                           prefer_last_name);
+    if(!cache.name_location().empty()) {
       return cache;
     }
   }
   if(binding->declaration_node && !unqualified_name.empty()) {
-    cache.name_location = node_name_location(ctx,
-                                             binding->declaration_node,
-                                             unqualified_name,
-                                             prefer_last_name);
-    if(!cache.name_location.empty()) {
-      cache.approximate_location =
+    cache.mutable_name_location() = node_name_location(ctx,
+                                                       binding->declaration_node,
+                                                       unqualified_name,
+                                                       prefer_last_name);
+    if(!cache.name_location().empty()) {
+      cache.mutable_approximate_location() =
           node_location_or_empty(ctx, binding->declaration_node);
       return cache;
     }
   }
   if(binding->parameter_syntax_node && !unqualified_name.empty()) {
-    cache.name_location = node_name_location(ctx,
-                                             binding->parameter_syntax_node,
-                                             unqualified_name,
-                                             prefer_last_name);
-    if(!cache.name_location.empty()) {
+    cache.mutable_name_location() = node_name_location(ctx,
+                                                       binding->parameter_syntax_node,
+                                                       unqualified_name,
+                                                       prefer_last_name);
+    if(!cache.name_location().empty()) {
       return cache;
     }
   }
   if(binding->definition_node && !unqualified_name.empty()) {
-    cache.name_location = node_name_location(ctx,
-                                             binding->definition_node,
-                                             unqualified_name,
-                                             prefer_last_name);
-    if(!cache.name_location.empty()) {
-      cache.approximate_location =
+    cache.mutable_name_location() = node_name_location(ctx,
+                                                       binding->definition_node,
+                                                       unqualified_name,
+                                                       prefer_last_name);
+    if(!cache.name_location().empty()) {
+      cache.mutable_approximate_location() =
           node_location_or_empty(ctx, binding->definition_node);
       return cache;
     }
   }
-  cache.approximate_location = binding->definition_node ?
+  cache.mutable_approximate_location() = binding->definition_node ?
       node_location_or_empty(ctx, binding->definition_node) :
       node_location_or_empty(ctx, binding->declaration_node);
   return cache;
@@ -646,25 +647,28 @@ const semantic_model::SourceDeclAnchorCache & class_decl_anchor(
     return empty_source_decl_anchor_cache();
   }
   semantic_model::SourceDeclAnchorCache & cache = info->declaration_anchor;
-  if(cache.cached) {
+  if(cache.cached()) {
     return cache;
   }
-  cache.cached = true;
+  cache.mark_cached();
   const CppAstNode * primary_node = info->class_node;
   if(primary_node == nullptr && info->source_template != nullptr) {
     primary_node = info->source_template->class_node;
   }
   if(primary_node != nullptr && !info->name.empty()) {
-    cache.name_location = node_name_location(ctx, primary_node, info->name, false);
+    cache.mutable_name_location() =
+        node_name_location(ctx, primary_node, info->name, false);
   }
-  if(cache.name_location.empty() && info->template_output_node != nullptr && !info->name.empty()) {
-    cache.name_location =
+  if(cache.name_location().empty() &&
+     info->template_output_node != nullptr && !info->name.empty()) {
+    cache.mutable_name_location() =
         node_name_location(ctx, info->template_output_node, info->name, false);
   }
-  cache.approximate_location = primary_node ? node_location_or_empty(ctx, primary_node) :
-                                              std::string();
-  if(cache.approximate_location.empty() && info->template_output_node != nullptr) {
-    cache.approximate_location = node_location_or_empty(ctx, info->template_output_node);
+  cache.mutable_approximate_location() =
+      primary_node ? node_location_or_empty(ctx, primary_node) : std::string();
+  if(cache.approximate_location().empty() && info->template_output_node != nullptr) {
+    cache.mutable_approximate_location() =
+        node_location_or_empty(ctx, info->template_output_node);
   }
   return cache;
 }
@@ -677,13 +681,15 @@ const semantic_model::SourceDeclAnchorCache & class_template_decl_anchor(
     return empty_source_decl_anchor_cache();
   }
   semantic_model::SourceDeclAnchorCache & cache = decl->declaration_anchor;
-  if(cache.cached) {
+  if(cache.cached()) {
     return cache;
   }
-  cache.cached = true;
+  cache.mark_cached();
   if(decl->class_node != nullptr && !decl->name.empty()) {
-    cache.name_location = node_name_location(ctx, decl->class_node, decl->name, false);
-    cache.approximate_location = node_location_or_empty(ctx, decl->class_node);
+    cache.mutable_name_location() =
+        node_name_location(ctx, decl->class_node, decl->name, false);
+    cache.mutable_approximate_location() =
+        node_location_or_empty(ctx, decl->class_node);
   }
   return cache;
 }
@@ -696,32 +702,34 @@ const semantic_model::SourceDeclAnchorCache & value_decl_anchor(
     return empty_source_decl_anchor_cache();
   }
   semantic_model::SourceDeclAnchorCache & cache = binding->declaration_anchor;
-  if(cache.cached) {
+  if(cache.cached()) {
     return cache;
   }
-  cache.cached = true;
+  cache.mark_cached();
   if(binding->declaration_node != nullptr && !binding->name.empty()) {
-    cache.name_location = node_name_location(ctx,
-                                             binding->declaration_node,
-                                             binding->name,
-                                             false);
-    cache.approximate_location = node_location_or_empty(ctx, binding->declaration_node);
-    if(!cache.name_location.empty()) {
+    cache.mutable_name_location() = node_name_location(ctx,
+                                                       binding->declaration_node,
+                                                       binding->name,
+                                                       false);
+    cache.mutable_approximate_location() =
+        node_location_or_empty(ctx, binding->declaration_node);
+    if(!cache.name_location().empty()) {
       return cache;
     }
   }
   if(binding->definition_node != nullptr && !binding->name.empty()) {
-    cache.name_location = node_name_location(ctx,
-                                             binding->definition_node,
-                                             binding->name,
-                                             false);
-    cache.approximate_location = node_location_or_empty(ctx, binding->definition_node);
-    if(!cache.name_location.empty()) {
+    cache.mutable_name_location() = node_name_location(ctx,
+                                                       binding->definition_node,
+                                                       binding->name,
+                                                       false);
+    cache.mutable_approximate_location() =
+        node_location_or_empty(ctx, binding->definition_node);
+    if(!cache.name_location().empty()) {
       return cache;
     }
   }
-  if(cache.approximate_location.empty()) {
-    cache.approximate_location = binding->definition_node ?
+  if(cache.approximate_location().empty()) {
+    cache.mutable_approximate_location() = binding->definition_node ?
         node_location_or_empty(ctx, binding->definition_node) :
         node_location_or_empty(ctx, binding->declaration_node);
   }
@@ -736,12 +744,12 @@ const semantic_model::SourceDeclAnchorCache & alias_template_decl_anchor(
     return empty_source_decl_anchor_cache();
   }
   semantic_model::SourceDeclAnchorCache & cache = decl->declaration_anchor;
-  if(cache.cached) {
+  if(cache.cached()) {
     return cache;
   }
-  cache.cached = true;
+  cache.mark_cached();
   if(decl->type_id != nullptr) {
-    cache.approximate_location = node_location_or_empty(ctx, decl->type_id);
+    cache.mutable_approximate_location() = node_location_or_empty(ctx, decl->type_id);
   }
   return cache;
 }
@@ -754,14 +762,15 @@ const semantic_model::SourceDeclAnchorCache & variable_template_decl_anchor(
     return empty_source_decl_anchor_cache();
   }
   semantic_model::SourceDeclAnchorCache & cache = decl->declaration_anchor;
-  if(cache.cached) {
+  if(cache.cached()) {
     return cache;
   }
-  cache.cached = true;
+  cache.mark_cached();
   if(decl->declarator != nullptr && !decl->name.empty()) {
-    cache.name_location = node_name_location(ctx, decl->declarator, decl->name, true);
+    cache.mutable_name_location() =
+        node_name_location(ctx, decl->declarator, decl->name, true);
   }
-  cache.approximate_location = decl->declarator ?
+  cache.mutable_approximate_location() = decl->declarator ?
       node_location_or_empty(ctx, decl->declarator) :
       node_location_or_empty(ctx, decl->specifiers);
   return cache;
