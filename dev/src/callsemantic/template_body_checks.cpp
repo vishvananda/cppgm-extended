@@ -13,7 +13,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <unordered_map>
 #include <vector>
 
 namespace callsemantic {
@@ -94,14 +93,50 @@ private:
   std::vector<text_intern::Atom> names;
 };
 
-typedef std::unordered_map<text_intern::Atom, TypePtr> TemplateBodyValueTypes;
+// Template-body validation copies this lexical scratch table at nested
+// declarations. Keep its interned-name entries contiguous so each copy needs
+// one allocation instead of one hash node per visible value.
+typedef std::vector<std::pair<text_intern::Atom, TypePtr> > TemplateBodyValueTypes;
+
+static TemplateBodyValueTypes::iterator find_template_body_value_type(
+    TemplateBodyValueTypes & value_types,
+    text_intern::Atom atom)
+{
+  for(TemplateBodyValueTypes::iterator it = value_types.begin();
+      it != value_types.end(); ++it) {
+    if(it->first == atom) {
+      return it;
+    }
+  }
+  return value_types.end();
+}
+
+static TemplateBodyValueTypes::const_iterator find_template_body_value_type(
+    const TemplateBodyValueTypes & value_types,
+    text_intern::Atom atom)
+{
+  for(TemplateBodyValueTypes::const_iterator it = value_types.begin();
+      it != value_types.end(); ++it) {
+    if(it->first == atom) {
+      return it;
+    }
+  }
+  return value_types.end();
+}
 
 static void record_template_body_value_type(TemplateBodyValueTypes & value_types,
                                             const std::string & name,
                                             const TypePtr & type)
 {
   if(!name.empty()) {
-    value_types[text_intern::intern(name)] = type;
+    text_intern::Atom atom = text_intern::intern(name);
+    TemplateBodyValueTypes::iterator position =
+        find_template_body_value_type(value_types, atom);
+    if(position == value_types.end()) {
+      value_types.push_back(std::make_pair(atom, type));
+    } else {
+      position->second = type;
+    }
   }
 }
 
@@ -113,7 +148,8 @@ static TypePtr lookup_template_body_value_type(
   if(!atom) {
     return TypePtr();
   }
-  TemplateBodyValueTypes::const_iterator found = value_types.find(atom);
+  TemplateBodyValueTypes::const_iterator found =
+      find_template_body_value_type(value_types, atom);
   return found == value_types.end() ? TypePtr() : found->second;
 }
 
@@ -156,9 +192,15 @@ static void collect_visible_scope_values_for_template_body(
     names.append_template_body_values(scope_values);
     for(std::size_t i = 0; i < scope_values.size(); ++i) {
       text_intern::Atom atom = scope_values[i].first;
-      TemplateBodyValueTypes::iterator found = value_types.find(atom);
+      TemplateBodyValueTypes::iterator found =
+          find_template_body_value_type(value_types, atom);
       if(found == value_types.end() || !found->second) {
-        value_types[atom] = scope_values[i].second->type;
+        if(found == value_types.end()) {
+          value_types.push_back(
+              std::make_pair(atom, scope_values[i].second->type));
+        } else {
+          found->second = scope_values[i].second->type;
+        }
       }
     }
   }
