@@ -40,7 +40,8 @@ built the same way.
   compares your placement decisions with the course solution's.
 
 The course solution's own dumps are pinned in the regression lane
-(`regression/pa38/`, see `../cppgm.tests/regression/README.md`) together
+(`tests/regression/`, see `TESTING_AND_REFERENCES.md` at the repository
+root) together
 with the controls that name its placement decisions.  That lane runs with
 `make test` and is not part of the assignment's contract.  `make
 test-variants` runs the course suite under other designs of the same
@@ -602,10 +603,10 @@ make test
 - `tests/behavior/o1`
 - `tests/behavior/o2`
 - `tests/behavior/o3`
-- `course/pa38/driver` for the `cppgm++ --stats-functions -c` diagnostic
-- the regression roots under `regression/pa38/`: the course solution's
+- `tests/driver` for the `cppgm++ --stats-functions -c` diagnostic
+- the regression roots under `tests/regression/`: the course solution's
   pinned dumps and the controls that name its placement decisions
-  (`regression/pa38/controls`), not part of the assignment's contract
+  (`tests/regression/controls`), not part of the assignment's contract
 
 Run the debug metadata preservation lanes with:
 
@@ -632,7 +633,7 @@ N3485 source-language clauses.
   successful lowering and generated-program behavior where several valid
   machine-IR layouts are possible. These tests do not compare a machine-IR
   oracle.
-- `regression/pa38/controls` (the regression lane) checks only documented focused relationships: selected
+- `tests/regression/controls` (the regression lane) checks only documented focused relationships: selected
   frame homes and edge movement, residency of a repeatedly compared
   iteration-local call result across an intervening call, reservation of a
   future cyclic result span against earlier reactive results and completed
@@ -688,7 +689,7 @@ N3485 source-language clauses.
   generated programs, permits equivalent physical-
   register choices, and does not compare a complete MIR dump or executable
   image.
-- A survivor-property pass also reuses selected small `course/pa38/o1`
+- A survivor-property pass also reuses selected small `tests/o1`
   reducers at `-O0` and `-O1`. It checks only local relationships such as a
   frame home disappearing while its guarded twin remains, a call result being
   stored directly to an existing home, or a constant address remaining a

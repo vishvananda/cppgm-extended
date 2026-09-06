@@ -67,9 +67,7 @@ make test
 
 `make` builds `lowir2cy86`. `make test` runs the LowIR-to-CY86 suite
 under `tests/spec/`, then the behavior suite under `tests/behavior/`, which
-assembles and runs each translation. If a `course/pa13` extension suite is
-present, the Makefile runs it after the local suite using the same harness
-contract.
+assembles and runs each translation.
 
 ### Required Driver Surface
 

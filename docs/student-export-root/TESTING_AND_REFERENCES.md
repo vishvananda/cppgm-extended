@@ -56,14 +56,23 @@ remains a real host compiler.
 
 ## Test Locations
 
-- Assignment-local tests live in `paN/tests/`.
-- Shared course tests live in `cppgm.tests/course/paN/`.
-- Later PA handouts may describe additional folders such as strict, debuginfo,
-  object-inspection, or link tests.
+- Every test an assignment runs lives in `paN/tests/`.  Later PA handouts
+  describe the buckets under it (strict, structural, behavior, debuginfo,
+  object-inspection, link, driver).
+- `paN/tests/controls/` holds focused property checks that have no complete
+  reference output; the assignment's Makefile routes each to its checker.
+- `paN/tests/regression/` (PA29, PA37 and PA38) pins the course solution's
+  own outputs and its pass-specific controls.  It runs with `make test` and
+  with `make test-regression`, but it is not part of the assignment's
+  contract: a fixture whose only justification is the shape the course
+  solution produces belongs there, never in a graded bucket, and a
+  different design that meets the quality bar is expected to fail it.
+- `cppgm.tests/undefined/paN/` keeps inputs whose outcome the course leaves
+  unspecified.  No lane runs them.
 
-Add focused regression tests for new bugs. Put shared student tests under
-`cppgm.tests/course/paN/` when they should travel with the course-wide harness;
-put PA-local tests under `paN/tests/` when they are specific to one assignment.
+Add focused regression tests for new bugs under the `paN/tests/` of the
+earliest assignment that owns the behaviour, in the numeric group of the
+feature the test exercises.
 
 Do not create a dormant proposed or candidate test tree. When a new course
 requirement intentionally changes a checked-in semantic, LowIR, MIR, or object

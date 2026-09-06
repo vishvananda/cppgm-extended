@@ -1,0 +1,1 @@
+ERROR: invalid implicit call conversion at tests/compile/420-hosted-fixed-vector-builtin-type-bad.t:4:10

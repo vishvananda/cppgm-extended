@@ -194,7 +194,7 @@ Create minimal failures before modifying their owners:
 | native level selection differs between driver paths | PA38 | compare structural MIR/behavior for explicit maximum and the chosen default surface |
 | a frozen C++ file exposes a language/backend failure | its first language/backend PA | reduce the syntax and semantics there; do not add the first regression only to PA39 |
 
-The test files go under `cppgm.tests/course/paN/`; harness extensions may live
+The test files go under `paN/tests/`; harness extensions may live
 with the owning PA.  Reference files are not regenerated to conceal changed
 behavior.
 

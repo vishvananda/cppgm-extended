@@ -60,10 +60,10 @@ remain byte-identical for the owning reducers:
 
 | Fact | Baseline control | Direct/replay O1 SHA-256 |
 | --- | --- | --- |
-| lifecycle inline/root policy | `course/pa37/object-roundtrip/490-lifecycle-base-entry-inline.cpp` | `7f0844bffb1e05090f3b948ea9309eecae5412bcc298d8ff07dd5e4fb95a90b9` |
-| exception/unwind boundary | `course/pa37/object-roundtrip/470-inferred-no-unwind-object-eh.cpp` | `373d7b7027a65945000ff74e978db1654b5dbefe9d868d80a89b013c486cf5d6` |
+| lifecycle inline/root policy | `tests/object-roundtrip/490-lifecycle-base-entry-inline.cpp` | `7f0844bffb1e05090f3b948ea9309eecae5412bcc298d8ff07dd5e4fb95a90b9` |
+| exception/unwind boundary | `tests/object-roundtrip/470-inferred-no-unwind-object-eh.cpp` | `373d7b7027a65945000ff74e978db1654b5dbefe9d868d80a89b013c486cf5d6` |
 | reference/by-address ABI | `tests/object-roundtrip/100-lowir-object-boundary.cpp` | `80b150f82a0f3563bc8bf42e57409b1eb64208c4911b7749713a1ec4d93dadfa` |
-| debug locations | `course/pa37/object-roundtrip/410-debug-local-literal-canonicalization.cpp` in debuginfo mode | `c532272962c33e6d1dfefd591f92e9888c095d6499bf324b2b5ffd4cda724c1a` |
+| debug locations | `tests/object-roundtrip/410-debug-local-literal-canonicalization.cpp` in debuginfo mode | `c532272962c33e6d1dfefd591f92e9888c095d6499bf324b2b5ffd4cda724c1a` |
 | explicit section placement | missing at baseline; L6 must add the PA32 reducer before this fact is durable | missing |
 | unreachable control flow | missing at baseline; L4 must add direct-versus-serialized coverage with the terminator | missing |
 

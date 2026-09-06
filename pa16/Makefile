@@ -18,8 +18,7 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-COURSE_TEST_ROOT = $(wildcard course/pa16)
-COURSE_CONTROL_TEST_ROOT ?= course/pa16/controls
+CONTROL_TEST_ROOT ?= tests/controls
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 
@@ -63,28 +62,20 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
-ifeq ($(COURSE_TEST_ROOT),)
-test: $(TEST_DEPS)
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
-	@scripts/compare_results.pl ref my tests
-else
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
 	@$(MAKE) test-seams
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
-	@if [ -d "$(COURSE_CONTROL_TEST_ROOT)" ]; then \
+	@if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
 		perl ../scripts/check_pa16_string_literal_storage.pl \
-			$(CPPGM_TEST_APP) "$(COURSE_CONTROL_TEST_ROOT)"; \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
 		perl ../scripts/check_pa16_lifecycle_policy.pl \
-			$(CPPGM_TEST_APP) "$(COURSE_CONTROL_TEST_ROOT)"; \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
 		perl ../scripts/check_pa16_goto_lifetime_cleanup.pl \
-			$(CPPGM_TEST_APP) "$(COURSE_CONTROL_TEST_ROOT)"; \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
 		perl ../scripts/check_pa16_unreachable_terminator.pl \
-			$(CPPGM_TEST_APP) "$(COURSE_CONTROL_TEST_ROOT)"; \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
 	fi
-endif
 
 # The LowIR comparison seams: the harness's own unit tests, then every
 # rewrite of this lane's outputs that ../pa13/lowir.md says the comparison
@@ -98,19 +89,19 @@ ref-test:
 	@$(REF_TEST_RUN)
 
 REF_TEST_RUN = case "$(TEST)" in \
-	$(COURSE_CONTROL_TEST_ROOT)/*) echo "$(TEST): focused LowIR property has no reference sidecar" ;; \
+	$(CONTROL_TEST_ROOT)/*) echo "$(TEST): focused LowIR property has no reference sidecar" ;; \
 	*) scripts/run_all_tests.pl $(REF_TEST_APP) ref "$(if $(strip $(TEST)),$(TEST),tests)" ;; \
 esac
 
 CHECK_RUN = case "$(TEST)" in \
-	$(COURSE_CONTROL_TEST_ROOT)/*string-literal-readonly*) perl ../scripts/check_pa16_string_literal_storage.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
-	$(COURSE_CONTROL_TEST_ROOT)/*lifecycle-inline-policy*) perl ../scripts/check_pa16_lifecycle_policy.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
-	$(COURSE_CONTROL_TEST_ROOT)/*goto-lifetime-cleanup*) perl ../scripts/check_pa16_goto_lifetime_cleanup.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
-	$(COURSE_CONTROL_TEST_ROOT)/*unreachable-terminator*) perl ../scripts/check_pa16_unreachable_terminator.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	$(CONTROL_TEST_ROOT)/*string-literal-readonly*) perl ../scripts/check_pa16_string_literal_storage.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	$(CONTROL_TEST_ROOT)/*lifecycle-inline-policy*) perl ../scripts/check_pa16_lifecycle_policy.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	$(CONTROL_TEST_ROOT)/*goto-lifetime-cleanup*) perl ../scripts/check_pa16_goto_lifetime_cleanup.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	$(CONTROL_TEST_ROOT)/*unreachable-terminator*) perl ../scripts/check_pa16_unreachable_terminator.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
 esac
 CHECK_COMPARE = case "$(TEST)" in \
-	$(COURSE_CONTROL_TEST_ROOT)/*) true ;; \
+	$(CONTROL_TEST_ROOT)/*) true ;; \
 	*) scripts/compare_results.pl ref check "$(TEST)" ;; \
 esac
 

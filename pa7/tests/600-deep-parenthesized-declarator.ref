@@ -1,0 +1,6 @@
+1 translation units
+start translation unit tests/600-deep-parenthesized-declarator.t
+start unnamed namespace
+variable x int
+end namespace
+end translation unit
