@@ -614,6 +614,9 @@ private:
 		const std::vector<NodeId>& argument_syntax,
 		const std::vector<ExpressionInfo>& arguments, bool retained_lookup,
 		std::vector<BindingId>* candidates, EntityId* naming_class);
+	void ResolveRetainedDependentCallPatterns(NodeId callee, ScopeId scope,
+		std::vector<BindingId>* candidates,
+		std::vector<std::size_t>* patterns, EntityId* naming_class);
 	bool RetainedCallAllowsArgumentDependentLookup(NodeId callee) const;
 	std::vector<BindingId> FunctionSet(BindingId binding,
 		bool exclude_template_specializations = false);
