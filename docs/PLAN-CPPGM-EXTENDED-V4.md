@@ -335,11 +335,49 @@ against reference-generated refs, regenerated in Phase 3).
   `export-assignments.yml` publish; verify the published
   `cppgm-assignments` builds and passes from a clean clone.
 
+### Phase 7b: pre-combination audits
+
+Four audits that must close before the assignments are combined (added
+2026-09-06, after the CI drive):
+
+1. **Student scaffolding headers.**  Audit every scaffolding header the
+   handouts give students (the `dev/src` support headers named in each
+   `paN/README.md` starter kit, the LowIR and machine-IR model/serialization
+   headers, the harness-facing interfaces).  Each header must be one our
+   implementation actually consumes on its real path; a header we ship but
+   do not use is not a valid contract and is either retired or the
+   implementation is rewired to use it.  Expect light rewriting of the
+   LowIR/MIR serialization so the student-facing readers and writers are
+   the ones the compiler itself uses, and update any header whose shape
+   drifted from the implementation.
+2. **Assignment export.**  Re-run `scripts/export_student_repo.sh` from
+   `v4` and confirm the exported tree still builds and passes its suites in
+   the gcc and clang/libc++ flavors from a clean clone, with the reference
+   bundle -- the Phase 7 check, repeated after every change to the shared
+   scripts, scaffolds, or copied-path lists.
+3. **Diagnostics.**  Audit every error message the compiler can emit
+   (`ThrowSemanticError`, `ThrowSource`, the lexical, preprocessing,
+   parsing, lowering, and native diagnostics): each must say what is wrong
+   in terms a student recognizes and carry source-location information
+   (file, line, column; the instantiation or inlining context where that
+   is what locates the problem).  Messages that name only internal
+   identifiers, or none at all, are rewritten; the audit records the
+   inventory so it can be re-run.
+4. **Tests from `~/work/fable`.**  That tree carries tests this one does
+   not (about 4.7k `.t` files against 6k here, with per-assignment
+   differences in both directions, e.g. pa22 400 vs 343, pa28 183 vs 45).
+   Pull the new ones in through a full audit: place each in the assignment
+   and cluster the placement auditor accepts (`--fail-on-early` stays
+   clean), update the source and expected output for our compiler changes
+   (reference movement classified as in `docs/v4/ref-deltas.md`), confirm
+   our compiler passes each, and drop any that duplicate an existing test
+   (same shape and oracle) rather than adding a second copy.
+
 ### Phase 8 (deferred): assignment combination
 
 `docs/assignment-restructure-plan.md` (fold `cpplink`, refocus the EH
 lesson, five templating lessons with an integration lesson, re-axis the
-hosted area) is not started until Phases 0 to 7 are closed and `main`
+hosted area) is not started until Phases 0 to 7b are closed and `main`
 carries the new reference.
 
 ## Decisions
@@ -369,6 +407,9 @@ carries the new reference.
   cluster; the auditor clean; the seams lane green.
 - Every reference delta against the old reference classified; every
   README difference reviewed; the trackers under `docs/v4/` complete.
+- Phase 7b closed: the scaffolding headers are the ones the implementation
+  uses, the export is re-verified, every diagnostic is useful and located,
+  and the `~/work/fable` tests are merged through the audit.
 
 ## Risks
 
