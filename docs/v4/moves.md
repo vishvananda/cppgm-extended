@@ -282,3 +282,40 @@ it must not disturb genuine parameter declarations (a first attempt did).
 
 Conversion function templates also still mangle their conversion type from
 the deduced argument (`cvi` where the host writes `cvT_`).
+
+### Update: the gcc-13 selfhost cause found and fixed
+
+The 24.04 gcc self-host failure was g++-13 at `-O3` miscompiling the parser
+through a strict-aliasing assumption: a compiler built by g++-13 `-O3`
+desyncs while parsing int128-configured standard headers (`expected linkage
+declaration` at `stdlib.h`, `expected namespace declaration` at
+`stl_algobase.h`).  The same source compiles at `-O2`, with
+`-fno-strict-aliasing`, and with g++-15 `-O3`; neither UBSan nor valgrind
+flags it, so it is an optimizer-exploited aliasing violation the compiler
+cannot diagnose and could not be localized to a file.  Fixed by building the
+tools with `-fno-strict-aliasing` (`dev/Makefile`), which changes only the
+host build of the tools, not the code they emit; the byte-exact references
+are unchanged.
+
+Two items remain on the self-host lanes after that fix:
+
+- **`__alloc` declaration-versus-expression ambiguity (clang cells).**
+  libc++'s `basic_string::__assign_with_sentinel` writes
+  `const basic_string __temp(__init_with_sentinel_tag(), std::move(__first),
+  std::move(__last), __alloc());`.  The parser commits to the declaration
+  reading, treating `std::move` and the member `__alloc` as parameter
+  type-names, then the analyzer reports `unknown type name: __alloc`.  It
+  reproduces with every host compiler
+  (`pa35 .../red/sentinel.cpp` in the scratch reduction).  A correct fix is
+  architectural: the qualified names and the member lack parse-time type
+  facts, so the declaration/expression choice needs semantic feedback
+  (tentative parse, re-parse as an expression when a "parameter type" turns
+  out not to name a type).  A narrow parse-time guard is not enough and a
+  broad one regressed ~350 tests.
+
+- **A flaky build/test race in the self-host chain.**  `make -C pa39
+  test-pa6 CXX=../dev/cppgm++` under `-j` intermittently reports the pa6
+  suite failing (0/N) while the freshly built `recog-self` is byte-correct
+  and `test-pa6-nobuild` passes 48/48; `-j1` always passes.  A missing
+  ordering between the checkpoint link and the sub-make test lets the test
+  occasionally run before the staged binary is in place.
