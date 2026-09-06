@@ -377,8 +377,8 @@ Four audits that must close before the assignments are combined (added
 
 Two plans, both deferred until Phases 0 to 7b are closed and `main` carries
 the new reference.  `docs/early-assignment-consolidation-plan.md` covers
-PA1-PA9 and is measured on how much of what an assignment makes a student
-build the production compiler actually links;
+PA1-PA9, measured on how much of what an assignment makes a student build
+the production compiler actually links and on what each handout teaches;
 `docs/assignment-restructure-plan.md` is the historical decision record for
 the middle and late assignments.  Both run content first and renumber last.
 
