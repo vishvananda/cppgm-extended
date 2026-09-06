@@ -530,6 +530,14 @@ struct Program
 {
   StringPool strings;
   std::vector<StringId> symbol_names;
+  // Parallel to symbol_names: the mangled object symbol for an external
+  // reference whose internal presentation name is not its linker name.
+  // Populated only for symbols with no local definition; invalid otherwise.
+  // Consumed by native object emission to name undefined relocations that
+  // are neither locally defined nor carried by a function/global declaration
+  // (for example an out-of-line inherited virtual reached only through a
+  // vtable slot).  Never affects LowIR text.
+  std::vector<StringId> symbol_object_names;
   std::vector<GlobalDeclaration> global_declarations;
   std::vector<GlobalDefinition> globals;
   std::vector<FunctionDeclaration> function_declarations;
