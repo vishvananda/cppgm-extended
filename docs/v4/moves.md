@@ -323,24 +323,62 @@ Two items remain on the self-host lanes after that fix:
   direct-init-nullary-member-call.t`.  This unblocked the clang and libc++
   self-host lanes at `post_tokenizer.cpp`.
 
-- **libc++ `basic_streambuf::seekpos` vtable reference (clang cells, PA10).**
-  With `__alloc` fixed the clang/libc++ self-host reaches PA10 (compiling
-  `cppgm++` with itself), which fails at link: `driver.o` and
-  `lowering/core/driver.o` hold a `.data` vtable slot with an undefined
+- **libc++ `basic_streambuf::seekpos` vtable reference (clang cells, PA10).
+  RESOLVED** (commit "Name undefined vtable relocations by their object
+  symbol").  With `__alloc` fixed the clang/libc++ self-host reaches PA10
+  (compiling `cppgm++` with itself), which failed at link: `driver.o` and
+  `lowering/core/driver.o` held a `.data` vtable slot with an undefined
   reference to `std::__1::basic_streambuf<char>::seekpos`, a virtual the
-  driver's stream type inherits from libc++ but that no object defines.  The
-  emitted symbol is in cppgm++'s own name form.  Reduced to eight lines
-  (`docs/v4/reducers/streambuf-vtable-seekpos.cpp`: a class deriving from
-  `std::streambuf` whose `seekpos` is only reached through the vtable, never
-  called) and localized: `MangleFunction` (`dev/src/lowering/abi/mangling.cpp`)
-  returns the empty string for such a virtual, so `program_lowerer.cpp` falls
-  back to the presentation name (`std____1__basic_streambuf...seekpos`)
-  instead of the Itanium mangling `_ZNSt3__1...7seekpos...` that libc++.so
-  exports, and ld cannot resolve the slot.  A direct call (`pubseekpos`)
-  mangles correctly, so the ABI recipe is computed only when the function is
-  called, not when it is merely a vtable slot; the fix must compute it for a
-  vtable-referenced inherited virtual.  Left for a dedicated pass:
-  `MangleFunction` is byte-exact-critical.
+  driver's stream type inherits from libc++ but that no object defines.
+  Reduced to eight lines (`docs/v4/reducers/streambuf-vtable-seekpos.cpp`).
+  The earlier "`MangleFunction` returns empty" diagnosis was wrong:
+  `MangleFunction` returns the correct Itanium mangling
+  `_ZNSt3__1...7seekpos...`, and the vtable slot's symbol carries it as its
+  object name.  The real cause was in the LowIR adapter
+  (`dev/src/lowir/io/frontend_adapter.cpp`): it built the program's
+  `symbol_names` from the internal presentation names only, dropping the
+  mangled object name for a symbol that has no local definition and no
+  declaration (an inherited virtual reached only through a vtable slot is
+  never called, never defined, so nothing puts it in `function_declarations`).
+  Native object emission then had no object symbol for the fixup and spelled
+  the undefined relocation with the internal name.  Fix: carry each external
+  reference's mangled object name in a parallel `symbol_object_names` channel
+  (populated only for symbols with no local definition, retained in the
+  object-only pruning pass) and, in `elf_format.cpp`, name an undefined fixup
+  by that object symbol when it is neither locally defined nor declared.  The
+  channel is consumed only by native object emission, so LowIR text is
+  unchanged (byte-exact report identical); under libstdc++ `seekpos` is
+  inline and stays a weak definition, so the branch never fires there.
+  Validated: the reduction compiles, links against libc++, and runs; the
+  24.04 clang self-host now links the PA10 stage and passes pa1-pa9.
+
+- **AST-writer self-host miscompile (clang cells, PA10, exposed by the
+  seekpos fix).**  With linking fixed, the clang self-host builds and runs
+  `cppgm++-self` through pa1-pa9 green, then every valid PA10 input
+  (`--emit-ast`, e.g. `int main(){}`) segfaults; only a syntax-error input
+  "passes" (rejected before any AST is written).  Root-caused, not yet
+  fixed.  The crash is a SIGSEGV in libc++'s `__pad_and_output` reached from
+  `SyntaxArena::Write`'s `output << strings_.Get(node.tag)`; `--emit-types`,
+  `--emit-semantics` and `--emit-lowir` all work, so it is specific to the
+  AST text dump.  It is not the seekpos fix: the self-compiled `arena.o` is
+  byte-identical whether compiled by the fixed or unfixed compiler.  It is
+  not `arena.o` or the front end: swapping clang-compiled `arena.o`,
+  `frontend_intern.o`, or the whole preprocess+syntax+support group into the
+  self link does not fix it.  It is a weak libc++ template instantiation:
+  `__pad_and_output` is emitted weak by many objects, ld takes the first
+  (`cppgm++-runner.o`), and that instantiation is miscompiled; forcing a
+  clang-built `operator<<(ostream, string)` object to win the weak
+  resolution makes the crash vanish and the AST dump correct.
+  Disassembly of the miscompiled `__pad_and_output` shows it entering the
+  padding path (`__iob.width() > 0`) with a garbage count and then
+  dereferencing a garbage streambuf pointer at `mov (%r8),%r9`, though the
+  driver sets no field width -- a bad field-width / stack-slot read at `-O3`.
+  A standalone `ofstream << setw(n) << string` compiled by `cppgm++` at every
+  `-O` level runs correctly, so the trigger is context-specific to the
+  instantiation in `cppgm++-runner.o`.  This is a distinct pre-existing
+  backend codegen defect (same class as the gcc-cell KW_TRUE self-host
+  miscompile), and needs a dedicated backend pass over the `-O3` codegen of
+  that instantiation.
 
 - **A flaky build/test race in the self-host chain.**  `make -C pa39
   test-pa6 CXX=../dev/cppgm++` under `-j` intermittently reports the pa6
