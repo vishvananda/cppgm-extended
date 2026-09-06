@@ -1,12 +1,10 @@
-function @read(%a : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z4readR1A] {
+function @read(%a : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z4readR1A] {
   slot $a : ptr
-  slot $a__pvb0 : ptr
 
   block ^entry:
     store ptr %a, $a
-    store ptr %__pvbptr0, $a__pvb0
-    %t1 = load ptr $a__pvb0
-    %t2 = index i8 %t1, 0
+    %t1 = load ptr $a
+    %t2 = index i8 %t1, 4
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     return i32 %t4
@@ -48,13 +46,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @poison(0, %t6)
     %t7 = addr $d
     %t8 = index i8 %t7, 0
-    %t9 = load ptr %t8
-    %t10 = index i8 %t9, -24
-    %t11 = load i64 %t10
-    %t12 = index i8 %t8, %t11
-    %t13 = call i32 @read(%t8, %t12)
-    %t14 = cmp eq i32 %t13, 7
-    branch %t14, ^cond_then_1, ^cond_else_2
+    %t9 = call i32 @read(%t8)
+    %t10 = cmp eq i32 %t9, 7
+    branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -65,8 +59,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load i32 $cond__1
-    return i32 %t15
+    %t11 = load i32 $cond__1
+    return i32 %t11
 }
 function @D__D(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr

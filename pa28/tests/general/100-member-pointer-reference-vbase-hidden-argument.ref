@@ -15,19 +15,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $writer
     %t7 = addr $ss
     %t8 = index i8 %t7, 0
-    %t9 = load ptr %t8
-    %t10 = index i8 %t9, -24
-    %t11 = load i64 %t10
-    %t12 = index i8 %t8, %t11
-    %t13 = load i128 $member
-    %t14 = convert trunc i64 i128 %t13
-    %t15 = copy ptr %t14
-    call void %t15(%t6, %t8, %t12) as (%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr) -> void
-    %t16 = addr $ss
-    %t17 = index i8 %t16, 4
-    %t18 = call i32 @IOS__get(%t17)
-    %t19 = cmp eq i32 %t18, 9
-    branch %t19, ^cond_then_1, ^cond_else_2
+    %t9 = load i128 $member
+    %t10 = convert trunc i64 i128 %t9
+    %t11 = copy ptr %t10
+    call void %t11(%t6, %t8) as (%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=8]) -> void
+    %t12 = addr $ss
+    %t13 = index i8 %t12, 4
+    %t14 = call i32 @IOS__get(%t13)
+    %t15 = cmp eq i32 %t14, 9
+    branch %t15, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -38,8 +34,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t20 = load i32 $cond__1
-    return i32 %t20
+    %t16 = load i32 $cond__1
+    return i32 %t16
 }
 function @StringStream__StringStream(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN12StringStreamC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -56,17 +52,15 @@ function @StringStream__StringStream(%this : ptr [object_bytes=8]) -> void [bind
     call void @OStream__OStream__base_entry(%t4, %t6)
     return void
 }
-function @Writer__mark(%this : ptr [object_bytes=1], %os : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZNK6Writer4markER7OStream, inline_hint=yes] {
+function @Writer__mark(%this : ptr [object_bytes=1], %os : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZNK6Writer4markER7OStream, inline_hint=yes] {
   slot $this : ptr
   slot $os : ptr
-  slot $os__pvb0 : ptr
 
   block ^entry:
     store ptr %this, $this
     store ptr %os, $os
-    store ptr %__pvbptr0, $os__pvb0
-    %t1 = load ptr $os__pvb0
-    %t2 = index i8 %t1, 0
+    %t1 = load ptr $os
+    %t2 = index i8 %t1, 4
     call void @IOS__set(%t2, 9)
     return void
 }

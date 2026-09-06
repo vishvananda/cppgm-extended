@@ -159,8 +159,11 @@ PA28 supports the following in addition to the PA27 subset:
 
 - virtual inheritance for shared base-subobject layout in complete objects
 - field access through shared virtual bases
-- supported constructor and hidden-argument forwarding cases that carry virtual-base
-  subobject addresses through existing value-semantics machinery
+- supported constructor and hidden-argument forwarding cases: a by-value parameter of a
+  class with virtual bases carries each virtual base's subobject address as a hidden
+  pointer argument after the visible parameters, since the complete type is visible to
+  both caller and callee; a reference or pointer parameter carries no such hidden argument
+  and instead reaches its virtual bases through the object's own vtable at each use
 - polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
   bases
 - virtual dispatch through primary views whose virtual-base ABI carries
@@ -249,3 +252,17 @@ Keep a synthesized constructor or destructor base entry's ABI identity
 separate from inlining policy. The entry may need its own object symbol or
 retained definition, but it gains `no_inline=yes` only when the source-level
 function has the corresponding prohibition.
+
+Choose where a virtual base's address comes from by how the parameter is
+passed, not by whether the function happens to see the complete type. A
+by-value parameter forces its complete type on every caller, so the caller
+can compute each virtual base's address and pass it as a hidden pointer
+argument. A reference or pointer parameter does not: a caller may hold only a
+forward declaration, in which case it cannot compute a hidden virtual-base
+argument, while the definition, compiled where the type is complete, would
+expect one -- the two disagree across a translation unit. Give a reference or
+pointer parameter no hidden virtual-base argument and recover each virtual
+base's address from the object's vtable at the point of use, the way the same
+access on any other reference or pointer already does. Restricting the hidden
+argument to by-value parameters keeps the calling convention identical whether
+or not a translation unit has the complete type in view.

@@ -1,4 +1,4 @@
-declare function @consume(%arg0 : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr) -> void [binding=strong, object=_Z7consumeR1D]
+declare function @consume(%arg0 : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z7consumeR1D]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $d : obj<8x4>
@@ -7,8 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     call void @D__D(%t1)
     %t2 = addr $d
-    %t3 = index i8 %t2, 4
-    call void @consume(%t2, %t3)
+    call void @consume(%t2)
     return i32 0
 }
 function @D__D(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {

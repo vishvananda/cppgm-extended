@@ -12,16 +12,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $h
     %t6 = addr $d
     %t7 = index i8 %t6, 0
-    %t8 = load ptr %t7
-    %t9 = index i8 %t8, -24
-    %t10 = load i64 %t9
-    %t11 = index i8 %t7, %t10
-    call void @Holder__Holder(%t5, %t7, %t11)
-    %t12 = addr $h
-    %t13 = call i32 @Holder__f(%t12)
-    %t14 = cmp ne i32 %t13, 7
-    %t15 = convert trunc i32 i64 %t14
-    return i32 %t15
+    call void @Holder__Holder(%t5, %t7)
+    %t8 = addr $h
+    %t9 = call i32 @Holder__f(%t8)
+    %t10 = cmp ne i32 %t9, 7
+    %t11 = convert trunc i32 i64 %t10
+    return i32 %t11
 }
 function @D__D(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -40,15 +36,13 @@ function @D__D(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN1
     call void @C__C__base_entry(%t6, %t8)
     return void
 }
-function @Holder__Holder(%this : ptr [object_bytes=8], %b : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN6HolderC1ER1B, inline_hint=yes] {
+function @Holder__Holder(%this : ptr [object_bytes=8], %b : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN6HolderC1ER1B, inline_hint=yes] {
   slot $this : ptr
   slot $b : ptr
-  slot $b__pvb0 : ptr
 
   block ^entry:
     store ptr %this, $this
     store ptr %b, $b
-    store ptr %__pvbptr0, $b__pvb0
     %t1 = load ptr $b
     %t2 = load ptr $this
     %t3 = index i8 [projection=field] %t2, 0
