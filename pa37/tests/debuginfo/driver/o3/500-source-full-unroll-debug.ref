@@ -1,8 +1,8 @@
 global @observed : i32 [binding=strong, object=_Z8observed] = zero
 
-function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] !dbg(course/pa37/debuginfo/driver/o3/500-source-full-unroll-debug.t, 3, 1) {
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] !dbg(tests/debuginfo/driver/o3/500-source-full-unroll-debug.t, 3, 1) {
   block ^entry:
-    %dbg_i__1 = copy i32 0 !dbg(course/pa37/debuginfo/driver/o3/500-source-full-unroll-debug.t, 5, 3)
+    %dbg_i__1 = copy i32 0 !dbg(tests/debuginfo/driver/o3/500-source-full-unroll-debug.t, 5, 3)
     jump ^for_cond_1
 
   block ^for_cond_1:
@@ -12,8 +12,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] !dbg(course
 
   block ^for_body_2:
     store volatile i32 %t0, @observed
-    %t5 = binary add i32 %t0, 1 !dbg(course/pa37/debuginfo/driver/o3/500-source-full-unroll-debug.t, 5, 16)
-    %dbg_i__2 = copy i32 %t5 !dbg(course/pa37/debuginfo/driver/o3/500-source-full-unroll-debug.t, 5, 3)
+    %t5 = binary add i32 %t0, 1 !dbg(tests/debuginfo/driver/o3/500-source-full-unroll-debug.t, 5, 16)
+    %dbg_i__2 = copy i32 %t5 !dbg(tests/debuginfo/driver/o3/500-source-full-unroll-debug.t, 5, 3)
     jump ^for_cond_1
 
   block ^for_end_4:
@@ -29,5 +29,5 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] !dbg(course
 
   block ^cond_end_7:
     %t9 = phi i32 [^cond_then_5: 0, ^cond_else_6: 1]
-    return i32 %t9 !dbg(course/pa37/debuginfo/driver/o3/500-source-full-unroll-debug.t, 7, 3)
+    return i32 %t9 !dbg(tests/debuginfo/driver/o3/500-source-full-unroll-debug.t, 7, 3)
 }
