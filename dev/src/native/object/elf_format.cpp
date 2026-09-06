@@ -1016,6 +1016,9 @@ std::vector<HostRelocation> host_relocations(
     } else if(symbol < labels.symbol_known.size() &&
               labels.symbol_known[symbol]) {
       relocation.program_symbol = fixup.target;
+    } else if(symbol < program.symbol_object_names.size() &&
+              program.symbol_object_names[symbol].valid()) {
+      relocation.object_symbol = program.symbol_object_names[symbol];
     } else {
       relocation.target = host_symbol_spelling(
         lowir_model::lowir_symbol_name(program, fixup.target));

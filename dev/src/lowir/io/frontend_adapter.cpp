@@ -808,6 +808,8 @@ void DiscardObjectOnlyPresentation(lowir_model::LowirProgram* program)
 	};
 	for (std::size_t i = 0; i < program->symbol_names.size(); ++i)
 		retain(program->symbol_names[i]);
+	for (std::size_t i = 0; i < program->symbol_object_names.size(); ++i)
+		retain(program->symbol_object_names[i]);
 	for (std::size_t i = 0; i < program->global_declarations.size(); ++i)
 		retain_metadata(program->global_declarations[i].metadata);
 	for (std::size_t i = 0; i < program->function_declarations.size(); ++i)
@@ -844,9 +846,19 @@ lowir_model::LowirProgram AdaptTypedLowirForBackend(
 	lowir_model::LowirProgram target;
 	target.presentation_policy = presentation_policy;
 	target.symbol_names.reserve(source.symbols.size());
+	target.symbol_object_names.reserve(source.symbols.size());
 	for (std::size_t i = 0; i < source.symbols.size(); ++i)
+	{
 		lowir_model::append_lowir_symbol(target,
 			source.symbols[i].name);
+		// An external reference (no local definition) whose mangled object
+		// name differs from its internal presentation name must be named by
+		// the object name in the linked image; carry it alongside so native
+		// object emission can resolve the undefined relocation.
+		target.symbol_object_names.push_back(
+			!source.symbols[i].definition_emitted ?
+				source.symbols[i].object_name : lowir_model::StringId());
+	}
 	target.global_declarations.reserve(source.global_declarations.size());
 	for (std::size_t i = 0; i < source.global_declarations.size(); ++i)
 	{
