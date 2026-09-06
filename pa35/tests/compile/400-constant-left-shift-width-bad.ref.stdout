@@ -1,0 +1,1 @@
+ERROR: invalid constant shift count at tests/compile/400-constant-left-shift-width-bad.t:1:19

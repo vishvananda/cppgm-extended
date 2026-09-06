@@ -74,6 +74,17 @@ Add focused regression tests for new bugs under the `paN/tests/` of the
 earliest assignment that owns the behaviour, in the numeric group of the
 feature the test exercises.
 
+## Fixture Numbering
+
+A fixture's name starts with a three-digit number.  From PA10 on the number
+is the cluster of the feature the fixture exercises, a multiple of one
+hundred (`100-`, `200-`, ...); the assignment's handout describes what each
+cluster covers, and `scripts/audit_pa_feature_placement.py` checks that a
+fixture sits in the cluster of the latest feature it uses and in the
+assignment that owns it.  PA1 to PA9 number more finely, with the tens
+naming a sub-group inside a cluster.  The regression lane and the controls
+are outside the audit and keep whatever number says most about them.
+
 Do not create a dormant proposed or candidate test tree. When a new course
 requirement intentionally changes a checked-in semantic, LowIR, MIR, or object
 contract, update the authoritative reference and put the reducer directly in

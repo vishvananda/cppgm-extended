@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <map>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace cppgm
@@ -112,33 +111,47 @@ struct Member
 	int rank;
 };
 
+// A member with the position it occupies, ordered by rank and then by that
+// position (a plain struct: the self-hosted build does not sort nested
+// pairs).
+struct Placed
+{
+	std::size_t position;
+	int rank;
+	std::size_t definition;
+
+	bool operator<(const Placed& other) const
+	{
+		if (rank != other.rank) return rank < other.rank;
+		return position < other.position;
+	}
+};
+
 // Sort the members of one family by rank, keeping their relative order
 // within a rank, across the positions the family occupies in `order`.
 void OrderFamily(const std::vector<Member>& members,
 	std::vector<std::size_t>* order,
 	std::vector<std::size_t>* position_of)
 {
-	std::vector<std::pair<std::size_t, int> > placed;
+	std::vector<Placed> placed;
 	placed.reserve(members.size());
-	for (std::size_t i = 0; i < members.size(); ++i)
-		placed.push_back(std::make_pair(
-			(*position_of)[members[i].definition], members[i].rank));
 	std::vector<std::size_t> positions;
-	positions.reserve(placed.size());
-	for (std::size_t i = 0; i < placed.size(); ++i)
-		positions.push_back(placed[i].first);
-	std::sort(positions.begin(), positions.end());
-	std::vector<std::pair<std::pair<int, std::size_t>, std::size_t> > ranked;
-	ranked.reserve(placed.size());
+	positions.reserve(members.size());
 	for (std::size_t i = 0; i < members.size(); ++i)
-		ranked.push_back(std::make_pair(
-			std::make_pair(placed[i].second, placed[i].first),
-			members[i].definition));
-	std::sort(ranked.begin(), ranked.end());
-	for (std::size_t i = 0; i < ranked.size(); ++i)
 	{
-		(*order)[positions[i]] = ranked[i].second;
-		(*position_of)[ranked[i].second] = positions[i];
+		Placed entry;
+		entry.position = (*position_of)[members[i].definition];
+		entry.rank = members[i].rank;
+		entry.definition = members[i].definition;
+		placed.push_back(entry);
+		positions.push_back(entry.position);
+	}
+	std::sort(positions.begin(), positions.end());
+	std::sort(placed.begin(), placed.end());
+	for (std::size_t i = 0; i < placed.size(); ++i)
+	{
+		(*order)[positions[i]] = placed[i].definition;
+		(*position_of)[placed[i].definition] = positions[i];
 	}
 }
 
@@ -183,16 +196,24 @@ void OrderSpecialMemberFamilies(ir::Program* program)
 			bool monotone = true;
 			// Members were collected in emission order, which is still their
 			// order unless an earlier family moved one; check by position.
-			std::vector<std::pair<std::size_t, int> > by_position;
+			std::vector<Placed> by_position;
 			for (std::size_t i = 0; i < family_members.size(); ++i)
-				by_position.push_back(std::make_pair(
-					position_of[family_members[i].definition],
-					family_members[i].rank));
+			{
+				Placed entry;
+				entry.position = position_of[family_members[i].definition];
+				entry.rank = 0;
+				entry.definition = family_members[i].definition;
+				by_position.push_back(entry);
+			}
 			std::sort(by_position.begin(), by_position.end());
 			for (std::size_t i = 0; i < by_position.size() && monotone; ++i)
 			{
-				if (i && by_position[i].second < last_rank) monotone = false;
-				last_rank = by_position[i].second;
+				int rank = 0;
+				for (std::size_t m = 0; m < family_members.size(); ++m)
+					if (family_members[m].definition == by_position[i].definition)
+						rank = family_members[m].rank;
+				if (i && rank < last_rank) monotone = false;
+				last_rank = rank;
 			}
 			if (monotone) continue;
 			OrderFamily(family_members, &order, &position_of);
@@ -203,7 +224,7 @@ void OrderSpecialMemberFamilies(ir::Program* program)
 	reordered.reserve(count);
 	for (std::size_t i = 0; i < count; ++i)
 		reordered.push_back(program->functions[order[i]]);
-	program->functions.swap(reordered);
+	program->functions = std::move(reordered);
 }
 
 }

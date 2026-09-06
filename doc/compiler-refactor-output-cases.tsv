@@ -8,13 +8,13 @@ recognition	recog	pa6/tests/500-nested-template-delimiter-context.t	no	-o {outpu
 namespace-semantics	nsdecl	pa7/tests/200-using-directive-anchor-nested.t	no	-o {output} {input}	file
 namespace-initialization	nsinit	pa8/tests/120-constant-conversion-linkage.t.1	no	-o {output} {input} {root}/pa8/tests/120-constant-conversion-linkage.t.2	file
 cy86	cy86	pa9/tests/100-empty-program.t.1	no	-o {output} {input}	file
-syntax	cppgm++	pa10/tests/value-and-call-condition.t	no	--emit-ast -o {output} {input}	file
-types	cppgm++	pa11/tests/200-qualified-scoped-enum-definition-lookup.t	no	--emit-types -o {output} {input}	file
-semantics	cppgm++	pa12/tests/conditional-const-enum-preserves-type.t	no	--emit-semantics -o {output} {input}	file
+syntax	cppgm++	pa10/tests/general/100-value-and-call-condition.t	no	--emit-ast -o {output} {input}	file
+types	cppgm++	pa11/tests/general/200-qualified-scoped-enum-definition-lookup.t	no	--emit-types -o {output} {input}	file
+semantics	cppgm++	pa12/tests/general/100-conditional-const-enum-preserves-type.t	no	--emit-semantics -o {output} {input}	file
 abi-mangle	abimangle	pa14/tests/abi/100-global-function.t	no	-o {output} {input}	file
-source-lowir	cppgm++	pa15/tests/canonical-comparison-result.t	no	--emit-lowir -O0 -o {output} {input}	file
+source-lowir	cppgm++	pa15/tests/general/100-canonical-comparison-result.t	no	--emit-lowir -O0 -o {output} {input}	file
 optimized-lowir	lowiropt	pa13/tests/spec/100-ret0.t	no	-O1 -o {output} {input}	file
 lowir-cy86	lowir2cy86	pa13/tests/spec/100-ret0.t	no	-o {output} {input}	file
 lowir-native	lowir2native	pa13/tests/spec/100-ret0.t	no	-O0 -o {output} {input}	file
-source-object	cppgm++	pa15/tests/canonical-comparison-result.t	no	-O0 -c -o {output} {input}	file
+source-object	cppgm++	pa15/tests/general/100-canonical-comparison-result.t	no	-O0 -c -o {output} {input}	file
 

@@ -381,20 +381,20 @@ Comparison rules:
 
 Assembling with `cy86` is the only part of this path that is not PA13 work. It
 supplies the execution that CY86 text alone cannot, which is why a behavior
-case can state an expected exit status: `default-eh-unhandled` exits 23 through
+case can state an expected exit status: `100-default-eh-unhandled` exits 23 through
 the default unhandled-exception path, while the remaining cases exit 0.
 
 Behavior cases cover the LowIR forms whose meaning is a runtime result rather
 than a spelling:
 
-- control flow that merges values, in `phi-control-flow` and
-  `switch-terminator`, where the returned value is only correct if the edge
+- control flow that merges values, in `100-phi-control-flow` and
+  `200-switch-terminator`, where the returned value is only correct if the edge
   transfers and the multi-way dispatch are
-- the default exception path, in `default-eh-caught` and
-  `default-eh-unhandled`
+- the default exception path, in `100-default-eh-caught` and
+  `100-default-eh-unhandled`
 - `unreachable` as a terminator on a branch that is never taken
 - an atomic read-modify-write and the value it leaves behind, in
-  `atomic-add-fetch`
+  `200-atomic-add-fetch`
 - the call-boundary, copy-elision, index-projection, object-extent,
   stable-prefix-query, and global-section metadata, each of which must survive
   translation and still produce a working program

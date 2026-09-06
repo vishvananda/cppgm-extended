@@ -1384,7 +1384,12 @@ private:
           all_values.find(operand_spelling(value));
         if(found == all_values.end() ||
            !same_lowir_type(*found->second, ins.type))
-          ThrowLowirInputError("phi incoming temporary type mismatch");
+          ThrowLowirInputError("phi incoming temporary type mismatch: " +
+            operand_spelling(value) + " is " +
+            (found == all_values.end() ? std::string("undefined") :
+              lowir_type_text(*found->second)) + ", the phi %" +
+            lowir_value_name(program_.strings, function, ins.dest) + " is " + lowir_type_text(ins.type) +
+            " in function @" + lowir_symbol_name(program_, function.symbol));
       } else if(value.kind == Operand::OP_GLOBAL && ins.type.kind != LTK_PTR) {
         ThrowLowirInputError("phi global operand requires ptr type");
       } else if(value.kind == Operand::OP_FLOAT &&

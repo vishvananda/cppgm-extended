@@ -58,13 +58,13 @@ endif
 			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
 		perl ../scripts/check_pa29_native_contracts.pl \
 			$(CPPGM_TEST_APP) \
-			tests/behavior/scratch-carried-frame-reloads.t; \
+			tests/behavior/900-scratch-carried-frame-reloads.t; \
 		perl ../scripts/check_pa29_native_contracts.pl \
 			$(CPPGM_TEST_APP) \
-			tests/behavior/deferred-address-parameter-carrier-reuse.t; \
+			tests/behavior/900-deferred-address-parameter-carrier-reuse.t; \
 		perl ../scripts/check_pa29_native_contracts.pl \
 			$(CPPGM_TEST_APP) \
-			tests/behavior/cost-directed-small-zeroinit.t; \
+			tests/behavior/800-cost-directed-small-zeroinit.t; \
 	fi
 
 test-regression: $(TEST_DEPS)

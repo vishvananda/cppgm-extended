@@ -36,7 +36,7 @@ endif
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-O1_TEST = $(wildcard tests/330-host-eh-nested-catch-forward-at-o1.t)
+O1_TEST = $(wildcard tests/general/300-host-eh-nested-catch-forward-at-o1.t)
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 

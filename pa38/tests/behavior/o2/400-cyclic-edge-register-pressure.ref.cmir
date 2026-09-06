@@ -1,0 +1,105 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @data
+  storage data
+  item i64 0
+  item i64 0
+
+global @a
+  storage scalar i64
+  init i64 1
+
+global @b
+  storage scalar i64
+  init i64 2
+
+global @c
+  storage scalar i64
+  init i64 3
+
+global @d
+  storage scalar i64
+  init i64 4
+
+function @noop
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    mov rax, 0
+    ret rax
+
+function @probe
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues direct
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $counter -> [rbp-<off0>] : i64
+
+  block ^entry
+    load.i64 <gpr0>, @a
+    load.i64 <gpr1>, @b
+    load.i64 <gpr2>, @c
+    load.i64 <gpr3>, @d
+    store.i64 [rbp-<off0>], 0
+
+  block ^condition
+    load.i64 <gpr4>, [rbp-<off0>]
+    cmp.i64 <gpr4>, 2
+    jae ^done
+
+  block ^body
+    mov r8, @data
+    mov rdx, <gpr4>
+    imul rdx, 8
+    add r8, rdx
+    store.i64 [r8], <gpr4>
+    call @noop [args=(), unwind=no]
+    lea r9, [<gpr0>+<gpr1>]
+    lea r8, [<gpr2>+<gpr3>]
+    add r9, r8
+    add r9, 7
+    lea r8, [<gpr4>+<off0>]
+    store.i64 [rbp-<off0>], r8
+    cmp.i64 r9, 17
+    je ^condition
+    jmp ^failure
+
+  block ^done
+    mov rcx, @data
+    load.i64 r9, [rcx+<off0>]
+    cmp.i64 r9, 1
+    setne rax
+    movzx rax, rax
+    ret rax
+
+  block ^failure
+    mov rax, 1
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    call @probe [args=(), unwind=no]
+    ret rax

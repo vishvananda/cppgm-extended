@@ -288,6 +288,9 @@ struct SourceOutputInvocation
   bool has_debug_info = false;
   bool line_tables = false;
   bool collect_stats = false;
+  // Emit modes preprocess freestanding unless `--hosted` asks for the host
+  // compiler's include paths and predefined macros, as `-c` always does.
+  bool hosted = false;
   lowir_opt::InlinePolicyOverrides inline_limits;
 };
 
@@ -326,33 +329,37 @@ SourceOutputInvocation parse_source_output_invocation(
       invocation.line_tables = args[i] != "-g0";
       continue;
     }
-    if(allow_lowir_options && args[i] == "-I") {
+    if(args[i] == "-I") {
       consume_required_option_argument(args, i, "-I", "include path");
       invocation.include_paths.push_back(args[i]);
       continue;
     }
-    if(allow_lowir_options && starts_with(args[i], "-I") &&
+    if(starts_with(args[i], "-I") &&
        args[i].size() > 2) {
       invocation.include_paths.push_back(args[i].substr(2));
       continue;
     }
-    if(allow_lowir_options && (args[i] == "-D" || args[i] == "-U")) {
+    if((args[i] == "-D" || args[i] == "-U")) {
       const bool define = args[i] == "-D";
       consume_required_option_argument(args, i, args[i], "macro");
       invocation.macro_actions.push_back(
         DriverInvocation::MacroAction(define, args[i]));
       continue;
     }
-    if(allow_lowir_options && starts_with(args[i], "-D") &&
+    if(starts_with(args[i], "-D") &&
        args[i].size() > 2) {
       invocation.macro_actions.push_back(
         DriverInvocation::MacroAction(true, args[i].substr(2)));
       continue;
     }
-    if(allow_lowir_options && starts_with(args[i], "-U") &&
+    if(starts_with(args[i], "-U") &&
        args[i].size() > 2) {
       invocation.macro_actions.push_back(
         DriverInvocation::MacroAction(false, args[i].substr(2)));
+      continue;
+    }
+    if(args[i] == "--hosted") {
+      invocation.hosted = true;
       continue;
     }
     if(args[i] == "-c" || args[i] == "-E" || is_query_driver_flag(args[i])) {
@@ -596,6 +603,8 @@ DriverInvocation parse_driver_invocation(const vector<string> & args)
 }
 
 cppgm::PreprocessingOptions make_preprocessing_options();
+cppgm::PreprocessingOptions make_preprocessing_options(
+    const SourceOutputInvocation & invocation);
 
 string normalize_native_target(const string & target)
 {
@@ -1754,6 +1763,25 @@ int run_link_driver(const DriverInvocation & invocation,
   return EXIT_SUCCESS;
 }
 
+// The include paths, macro actions and hosted choice of a source-output
+// invocation, applied to freshly made preprocessing options.
+cppgm::PreprocessingOptions make_preprocessing_options(
+    const SourceOutputInvocation & invocation)
+{
+  cppgm::PreprocessingOptions options = make_preprocessing_options();
+  options.include_search_paths = invocation.include_paths;
+  if(invocation.hosted)
+    cppgm::ConfigureHostedPreprocessing(&options, true,
+      invocation.has_optimization_level &&
+      invocation.optimization_level >= 1);
+  for(size_t i = 0; i < invocation.macro_actions.size(); ++i)
+    options.macro_actions.push_back(
+      cppgm::PreprocessingOptions::MacroAction(
+        invocation.macro_actions[i].define,
+        invocation.macro_actions[i].argument));
+  return options;
+}
+
 cppgm::PreprocessingOptions make_preprocessing_options()
 {
   const time_t now = time(0);
@@ -1787,7 +1815,8 @@ int run_emit_ast_mode(const vector<string> & args)
       "unable to open output file: " + invocation.output);
   }
 
-  const cppgm::PreprocessingOptions options = make_preprocessing_options();
+  const cppgm::PreprocessingOptions options =
+      make_preprocessing_options(invocation);
 
   output << invocation.inputs.size() << " translation units\n";
   for(size_t i = 0; i < invocation.inputs.size(); ++i) {
@@ -1848,7 +1877,8 @@ int run_emit_types_mode(const vector<string> & args)
     cppgm::driver_errors::ThrowInputOutput(
       "unable to open output file: " + invocation.output);
   }
-  const cppgm::PreprocessingOptions options = make_preprocessing_options();
+  const cppgm::PreprocessingOptions options =
+      make_preprocessing_options(invocation);
   output << invocation.inputs.size() << " translation units\n";
   for(size_t i = 0; i < invocation.inputs.size(); ++i) {
     const string & path = invocation.inputs[i];
@@ -2005,7 +2035,8 @@ int run_emit_semantics_mode(const vector<string> & args)
     cppgm::driver_errors::ThrowInputOutput(
       "unable to open output file: " + invocation.output);
   }
-  const cppgm::PreprocessingOptions options = make_preprocessing_options();
+  const cppgm::PreprocessingOptions options =
+      make_preprocessing_options(invocation);
   output << invocation.inputs.size() << " translation units\n";
   for(size_t i = 0; i < invocation.inputs.size(); ++i) {
     const string & path = invocation.inputs[i];
@@ -2194,7 +2225,8 @@ int run_emit_lowir_mode(const vector<string> & args)
 		cppgm::driver_errors::ThrowInputOutput(
 			"unable to open output file: " + invocation.output);
 	}
-	cppgm::PreprocessingOptions options = make_preprocessing_options();
+	cppgm::PreprocessingOptions options =
+		make_preprocessing_options(invocation);
 	vector<cppgm::lowering::Source> sources;
 	for(size_t i = 0; i < invocation.inputs.size(); ++i) {
 		const string & path = invocation.inputs[i];
@@ -2209,23 +2241,15 @@ int run_emit_lowir_mode(const vector<string> & args)
 	const bool object_capable_output = invocation.has_debug_info ||
 		invocation.has_optimization_level;
 	if(!object_capable_output) {
-		for(size_t i = 0; i < invocation.macro_actions.size(); ++i)
-			options.macro_actions.push_back(
-				cppgm::PreprocessingOptions::MacroAction(
-					invocation.macro_actions[i].define,
-					invocation.macro_actions[i].argument));
 		cppgm::lowering::WriteLowIR(sources, options, output,
 			invocation.collect_stats ? &stats : 0);
 	} else {
-		options.include_search_paths = invocation.include_paths;
-		cppgm::ConfigureHostedPreprocessing(&options, true,
-			invocation.has_optimization_level &&
-			invocation.optimization_level >= 1);
-		for(size_t i = 0; i < invocation.macro_actions.size(); ++i)
-			options.macro_actions.push_back(
-				cppgm::PreprocessingOptions::MacroAction(
-					invocation.macro_actions[i].define,
-					invocation.macro_actions[i].argument));
+		// An object-capable output is always hosted; `--hosted` has already
+		// configured it when given.
+		if(!invocation.hosted)
+			cppgm::ConfigureHostedPreprocessing(&options, true,
+				invocation.has_optimization_level &&
+				invocation.optimization_level >= 1);
 		lowir_model::LowirProgram program;
 		{
 			cppgm::lowering::ir::Program typed =
