@@ -242,9 +242,43 @@ synced here; every language defect has a fixture in its owning assignment.
 | 24.04 clang | `base polymorphism facts are incomplete` in `std::function` | a lambda closure made an empty base of libc++'s compressed pair never had its facts computed | a complete base's facts are computed on demand; the diagnostic names both classes | `700-hosted-function-nullary-base-reentry-compile` on that cell |
 | 24.04 gcc | `no viable overload for _S_right` in `_Rb_tree::_M_erase` | a derived-to-base pointer conversion on a class template specialization the program had only named | call conversions complete the pointee on demand | the PA35 map fixtures on that cell |
 
-With these fixes the Ubuntu 24.04 clang cell (clang 18, libc++ 18) is
-green.  Still open: libstdc++ 13's `__copy_move_backward` names the wrong
-explicit specialization's `__assign_one` (`700-libstdcxx-regex-compiler-
-member-alias-call`, the one failure left on the 24.04 gcc cell), and
-conversion function templates still mangle their conversion type from the
-deduced argument (`cvi` where the host writes `cvT_`).
+With these fixes the Ubuntu 24.04 clang cell's test-report is green, and
+all four build cells, both audit jobs, every test-debuginfo job and three of
+four test-report jobs pass.  Four CI checks remain red, root-caused to two
+classes:
+
+**Retained dependent-qualifier resolution (test-report, 24.04 gcc).**
+`700-libstdcxx-regex-compiler-member-alias-call` fails because
+`__copy_move_backward<_IsMove, true, rait>::__copy_move_b` calls
+`std::__copy_move<_IsMove, false, rait>::__assign_one`, a qualifier
+dependent on the enclosing template's `_IsMove`.  `retained_call_template_sets_`
+caches the member-template pattern (and `retained_call_naming_classes_` the
+naming class) from whichever specialization is instantiated first
+(`__copy_move<false,false>`, entity 604).  A later instantiation
+(`__copy_move<true,false>`, 605) replays the same callee node; the
+naming-class guard in `RetainedFunctionCallCandidates` compares the pattern
+owner (604) against the *recorded* naming class (604) and so accepts it,
+and the qualified-call rebuild in `CompleteFunctionCallTemplateCandidates`
+does not fire because it looks up `active_name[0]` ("std") in the active
+class's member scope and finds nothing.  A fix must re-resolve the
+dependent qualifier in the active specialization's scope rather than reuse
+the recorded set; it touches the same retained-replay logic that a broad
+first attempt regressed by ~350 tests, so it needs its own validated pass.
+
+**Host-config self-host codegen (test-through-pa10, 24.04 gcc + clang, 26.04
+clang).**  A `cppgm++` built by gcc 13 or clang miscompiles the recognizer
+so its grammar-terminal map drops `KW_TRUE`, and PA6's empty test fails at
+grammar load.  Reproduced with a fresh gcc-13-configured self-build; the
+obvious suspects each compile correctly in isolation (`SimpleTokenKindName`'s
+122-entry static `const char*` table, the enum-derived `kSimpleTokenCount`,
+and the `unordered_map` fill), so it is a subtler uninitialized-read or
+codegen bug in `cppgm++` itself, in the same class as the three
+table-growth use-after-frees already fixed, not yet isolated to a function.
+The 24.04 clang lane also hits `unknown type name: __alloc` in
+`basic_string::__assign_with_sentinel`, a declaration-vs-expression
+ambiguity where a value-name parameter (`u` in `holder temp(tag(), u,
+__alloc())`) is wrongly accepted as a parameter type; the narrow guard for
+it must not disturb genuine parameter declarations (a first attempt did).
+
+Conversion function templates also still mangle their conversion type from
+the deduced argument (`cvi` where the host writes `cvT_`).
