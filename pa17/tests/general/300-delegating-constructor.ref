@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @Value__Value(%this : ptr) -> void [binding=weak, object=_ZN5ValueC1Ev] {
+function @Value__Value(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5ValueC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -32,7 +32,7 @@ function @Value__Value(%this : ptr) -> void [binding=weak, object=_ZN5ValueC1Ev]
     call void @Value__Value__ov2(%t1, 7)
     return void
 }
-function @Value__Value__ov2(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN5ValueC1Ei] {
+function @Value__Value__ov2(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN5ValueC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

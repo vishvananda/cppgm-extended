@@ -6,20 +6,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $r
     %t2 = addr $buf
-    %t3 = unary decay ptr %t2
-    %t4 = addr $buf
-    %t5 = unary decay ptr %t4
-    %t6 = index i8 %t5, 8
-    %t7 = call obj<16x8> @convert(1, 2, %t3, %t6)
-    copyobj 16x8 %t7, %t1
-    %t8 = addr $r
-    %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load ptr %t9
-    %t11 = addr $buf
-    %t12 = unary decay ptr %t11
-    %t13 = index i8 %t12, 11
-    %t14 = cmp eq ptr %t10, %t13
-    branch %t14, ^cond_then_1, ^cond_else_2
+    %t3 = addr $buf
+    %t4 = index i8 %t3, 8
+    %t5 = call obj<16x8> @convert(1, 2, %t2, %t4)
+    copyobj 16x8 %t5, %t1
+    %t6 = addr $r
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = load ptr %t7
+    %t9 = addr $buf
+    %t10 = index i8 %t9, 11
+    %t11 = cmp eq ptr %t8, %t10
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -30,8 +27,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load i32 $cond__1
-    return i32 %t15
+    %t12 = load i32 $cond__1
+    return i32 %t12
 }
 function @convert(%value : u32, %exponent : i32, %first : ptr, %last : ptr) -> obj<16x8> [binding=strong, object=_Z7convertIf12traits_floatE6resultNT0_12carrier_uintEiPcS4_] {
   slot $value : u32
@@ -53,10 +50,10 @@ function @convert(%value : u32, %exponent : i32, %first : ptr, %last : ptr) -> o
     %t6 = load i32 $exponent
     %t7 = convert sext i64 i32 %t6
     %t8 = index i8 %t5, %t7
-    call void @result__result__ov4(%t1, %t8, 0)
+    call void @result__result__aggregate(%t1, %t8, 0)
     return obj<16x8> $retobj__1
 }
-function @result__result__ov4(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwind=no, binding=weak, object=_ZN6resultC1EPci] {
+function @result__result__aggregate(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $ptr : ptr
   slot $ec : i32
@@ -75,4 +72,3 @@ function @result__result__ov4(%this : ptr, %ptr : ptr, %ec : i32) -> void [unwin
     store i32 %t4, %t6
     return void
 }
-alias object _ZN6resultC2EPci = @result__result__ov4

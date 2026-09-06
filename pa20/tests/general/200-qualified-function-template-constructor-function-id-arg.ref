@@ -10,11 +10,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $argobj__1
     %t4 = addr @qft_ctor_arg__lock_and_sleep
     %t5 = addr $mtx
-    call void @qft_ctor_arg__adapter_mutex_type___adapter(%t3, %t4, 0, %t5)
+    call void @qft_ctor_arg__adapter_mutex_type___adapter_mutex_type_(%t3, %t4, 0, %t5)
     %t6 = call i32 @qft_ctor_arg__launch(%t2, $argobj__1)
     return i32 %t6
 }
-function @qft_ctor_arg__adapter_mutex_type___adapter(%this : ptr, %func : ptr, %arg : ptr, %object : ptr [pass=reference]) -> void [binding=weak, object=_ZN12qft_ctor_arg7adapterI10mutex_typeEC1EPFvPvRS1_ES3_S4_] {
+function @qft_ctor_arg__lock_and_sleep(%arg : ptr, %mtx : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12qft_ctor_arg14lock_and_sleepI10mutex_typeEEvPvRT_] {
+  slot $arg : ptr
+  slot $mtx : ptr
+
+  block ^entry:
+    store ptr %arg, $arg
+    store ptr %mtx, $mtx
+    %t1 = load ptr $arg
+    %t2 = load ptr $mtx
+    return void
+}
+function @qft_ctor_arg__adapter_mutex_type___adapter_mutex_type_(%this : ptr [object_bytes=24], %func : ptr, %arg : ptr, %object : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12qft_ctor_arg7adapterI10mutex_typeEC1EPFvPvRS1_ES3_S4_, inline_hint=yes] {
   slot $this : ptr
   slot $func : ptr
   slot $arg : ptr
@@ -39,18 +50,7 @@ function @qft_ctor_arg__adapter_mutex_type___adapter(%this : ptr, %func : ptr, %
     store ptr %t7, %t9
     return void
 }
-function @qft_ctor_arg__lock_and_sleep(%arg : ptr, %mtx : ptr [pass=reference]) -> void [binding=weak, object=_ZN12qft_ctor_arg14lock_and_sleepI10mutex_typeEEvPvRT_] {
-  slot $arg : ptr
-  slot $mtx : ptr
-
-  block ^entry:
-    store ptr %arg, $arg
-    store ptr %mtx, $mtx
-    %t1 = load ptr $arg
-    %t2 = load ptr $mtx
-    return void
-}
-function @qft_ctor_arg__launch(%h : ptr [pass=reference], %f : obj<24x8>) -> i32 [binding=weak, object=_ZN12qft_ctor_arg6launchINS_7adapterI10mutex_typeEEEEiRiT_] {
+function @qft_ctor_arg__launch(%h : ptr [pass=by_address, object_bytes=4], %f : obj<24x8>) -> i32 [binding=weak, object=_ZN12qft_ctor_arg6launchINS_7adapterI10mutex_typeEEEEiRiT_] {
   slot $h : ptr
   slot $f : obj<24x8>
 
@@ -64,7 +64,7 @@ function @qft_ctor_arg__launch(%h : ptr [pass=reference], %f : obj<24x8>) -> i32
     call void @qft_ctor_arg__adapter_mutex_type___operator__(%t4)
     return i32 0
 }
-function @qft_ctor_arg__adapter_mutex_type___operator__(%this : ptr) -> void [binding=weak, object=_ZNK12qft_ctor_arg7adapterI10mutex_typeEclEv] {
+function @qft_ctor_arg__adapter_mutex_type___operator__(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZNK12qft_ctor_arg7adapterI10mutex_typeEclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -73,12 +73,12 @@ function @qft_ctor_arg__adapter_mutex_type___operator__(%this : ptr) -> void [bi
     %t2 = index i8 [projection=field] %t1, 8
     %t3 = load ptr %t2
     %t4 = load ptr $this
-    %t5 = index i8 [projection=reference_field] %t4, 16
+    %t5 = index i8 [projection=field] %t4, 16
     %t6 = load ptr %t5
     %t7 = load ptr $this
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = load ptr %t8
-    call void %t9(%t3, %t6) as (%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void
+    call void %t9(%t3, %t6) as (%arg0 : ptr, %arg1 : ptr [pass=by_address, object_bytes=1]) -> void
     return void
 }
-alias object _ZN12qft_ctor_arg7adapterI10mutex_typeEC2EPFvPvRS1_ES3_S4_ = @qft_ctor_arg__adapter_mutex_type___adapter
+alias object _ZN12qft_ctor_arg7adapterI10mutex_typeEC2EPFvPvRS1_ES3_S4_ = @qft_ctor_arg__adapter_mutex_type___adapter_mutex_type_

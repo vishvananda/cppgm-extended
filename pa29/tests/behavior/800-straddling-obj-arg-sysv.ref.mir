@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -12,15 +12,14 @@ function @read_pair
     param %c -> rdx : i64
     param %d -> rcx : i64
     param %e -> r8 : i64
-    param %pair -> r9 : i64
     param %pair -> [rbp+16] : i64
+    param %pair -> [rbp+24] : i64
     return i64 -> rax
   frame
-    stack_size 80
+    stack_size 64
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
     param-slot %a -> [rbp-8] : i64
     param-slot %b -> [rbp-16] : i64
     param-slot %c -> [rbp-24] : i64
@@ -34,59 +33,44 @@ function @read_pair
     store.i64 [rbp-24], rdx
     store.i64 [rbp-32], rcx
     store.i64 [rbp-40], r8
-    store.i64 [rbp-56], r9
     load.i64 rax, [rbp+16]
+    store.i64 [rbp-56], rax
+    load.i64 rax, [rbp+24]
     store.i64 [rbp-48], rax
-    lea rcx, [rbp-56]
-    load.i64 r8, [rcx]
-    lea r9, [rbp-56]
-    lea r9, [r9+8]
-    load.i64 rbx, [r9]
-    add r8, rbx
-    mov rax, r8
-    ret rax
+    load.i64 r8, [rbp-56]
+    add r8, [rbp-48]
+    ret r8
 
 function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     slot $pair -> [rbp-16] : obj<16x8>
 
   block ^entry
-    mov rax, 100
-    lea rcx, [rbp-16]
-    store.i64 [rcx], rax
-    lea r8, [rbp-16]
-    lea r8, [r8+8]
-    mov rax, 23
-    store.i64 [r8], rax
+    store.i64 [rbp-16], 100
+    store.i64 [rbp-8], 23
     sub rsp, 16
+    lea rdi, [rsp]
+    lea rsi, [rbp-16]
+    copy_bytes 16x8, rdi, rsi
     mov rdi, 1
     mov rsi, 2
     mov rdx, 3
     mov rcx, 4
     mov r8, 5
-    lea r11, [rbp-16]
-    load.i64 r9, [r11]
-    lea r11, [rbp-16]
-    load.i64 r11, [r11+8]
-    store.i64 [rsp], r11
-    call @read_pair
+    call @read_pair [args=(rcx,rdx,rsi,rdi,r8), stack=16]
     add rsp, 16
-    mov r8, rax
     mov rdx, 123
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     ret rax

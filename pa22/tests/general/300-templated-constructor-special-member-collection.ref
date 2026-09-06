@@ -9,10 +9,10 @@ function @make_pair_int() -> obj<1x1> [binding=strong, object=_Z13make_pair_intv
     %t2 = addr $refarg__2
     store i32 2, $refarg__3
     %t3 = addr $refarg__3
-    call void @pair_int___pair__ov3(%t1, %t2, %t3)
+    call void @pair_int___pair_int___ov3(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @pair_int___pair__ov3(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4pairIiEC1IiiLi0EEEOT_OT0_] {
+function @pair_int___pair_int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4pairIiEC1IiiLi0EEEOT_OT0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -23,4 +23,4 @@ function @pair_int___pair__ov3(%this : ptr, %__param1 : ptr [pass=reference], %_
     store ptr %__param2, $__param2
     return void
 }
-alias object _ZN4pairIiEC2IiiLi0EEEOT_OT0_ = @pair_int___pair__ov3
+alias object _ZN4pairIiEC2IiiLi0EEEOT_OT0_ = @pair_int___pair_int___ov3

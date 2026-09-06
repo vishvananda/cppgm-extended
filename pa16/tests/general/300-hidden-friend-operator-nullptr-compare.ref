@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @Handle__Handle(%this : ptr) -> void [binding=weak, object=_ZN6HandleC1Ev] {
+function @Handle__Handle(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6HandleC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -34,7 +34,7 @@ function @Handle__Handle(%this : ptr) -> void [binding=weak, object=_ZN6HandleC1
     store ptr 0, %t2
     return void
 }
-function @Handle__Handle__ov2(%this : ptr, %x : ptr) -> void [binding=weak, object=_ZN6HandleC1EPi] {
+function @Handle__Handle__ov2(%this : ptr [object_bytes=8], %x : ptr) -> void [binding=weak, object=_ZN6HandleC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 
@@ -47,7 +47,7 @@ function @Handle__Handle__ov2(%this : ptr, %x : ptr) -> void [binding=weak, obje
     store ptr %t1, %t3
     return void
 }
-function @operator__(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> u8 [binding=weak, object=_ZneRK6HandleS1_] {
+function @operator__(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=weak, object=_ZneRK6HandleS1_, inline_hint=yes] {
   slot $a : ptr
   slot $b : ptr
 
@@ -61,7 +61,7 @@ function @operator__(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> u8
     %t5 = convert trunc u8 i64 %t4
     return u8 %t5
 }
-function @operator____sym2(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> u8 [binding=weak, object=_ZeqRK6HandleS1_] {
+function @operator____sym2(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=weak, object=_ZeqRK6HandleS1_, inline_hint=yes] {
   slot $a : ptr
   slot $b : ptr
 

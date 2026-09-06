@@ -168,7 +168,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^try_end_3:
     return i32 1
 }
-function @Guard__Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardC1Ev] {
+function @Guard__Guard(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5GuardC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -178,7 +178,7 @@ function @Guard__Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardC1Ev]
     store i32 %t2, @depth
     return void
 }
-function @Guard___Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardD1Ev] {
+function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

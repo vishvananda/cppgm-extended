@@ -1,4 +1,4 @@
-declare function @LibraryBase__LibraryBase__base_entry(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=strong, object=_ZN11LibraryBaseC2ERKNS_5TokenE]
+declare function @LibraryBase__LibraryBase__base_entry(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZN11LibraryBaseC2ERKNS_5TokenE]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $token : obj<4x4>
@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Hard__Hard(%t6, %t7)
     return i32 0
 }
-function @Soft__Soft__base_entry(%this : ptr, %token : ptr [pass=reference]) -> void [binding=weak, object=_ZN4SoftC2ERKN11LibraryBase5TokenE] {
+function @Soft__Soft__base_entry(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4SoftC2ERKN11LibraryBase5TokenE, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $token : ptr
 
@@ -26,12 +26,12 @@ function @Soft__Soft__base_entry(%this : ptr, %token : ptr [pass=reference]) -> 
     store ptr %this, $this
     store ptr %token, $token
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $token
     call void @LibraryBase__LibraryBase__base_entry(%t2, %t3)
     return void
 }
-function @Soft__Soft(%this : ptr, %token : ptr [pass=reference]) -> void [binding=weak, object=_ZN4SoftC1ERKN11LibraryBase5TokenE] {
+function @Soft__Soft(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4SoftC1ERKN11LibraryBase5TokenE, inline_hint=yes] {
   slot $this : ptr
   slot $token : ptr
 
@@ -39,12 +39,12 @@ function @Soft__Soft(%this : ptr, %token : ptr [pass=reference]) -> void [bindin
     store ptr %this, $this
     store ptr %token, $token
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $token
     call void @LibraryBase__LibraryBase__base_entry(%t2, %t3)
     return void
 }
-function @Hard__Hard(%this : ptr, %token : ptr [pass=reference]) -> void [binding=weak, object=_ZN4HardC1ERKN11LibraryBase5TokenE] {
+function @Hard__Hard(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4HardC1ERKN11LibraryBase5TokenE, inline_hint=yes] {
   slot $this : ptr
   slot $token : ptr
 
@@ -52,10 +52,9 @@ function @Hard__Hard(%this : ptr, %token : ptr [pass=reference]) -> void [bindin
     store ptr %this, $this
     store ptr %token, $token
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $token
     call void @Soft__Soft__base_entry(%t2, %t3)
     return void
 }
-alias object _ZN4SoftC2ERKN11LibraryBase5TokenE = @Soft__Soft
 alias object _ZN4HardC2ERKN11LibraryBase5TokenE = @Hard__Hard

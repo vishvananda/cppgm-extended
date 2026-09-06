@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = convert trunc i32 i64 %t14
     return i32 %t15
 }
-function @pointer__operatorint_(%this : ptr) -> ptr [binding=weak, object=_ZNK7pointercvPiEv, inline_hint=yes] {
+function @pointer__operatorint_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK7pointercvPiEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @boost__ref(%t : ptr [pass=reference]) -> obj<8x8> [binding=weak, object=_ZN5boost3refI6StreamEENS_17reference_wrapperIT_EERS3_] {
+function @boost__ref(%t : ptr [pass=by_address, object_bytes=1]) -> obj<8x8> [binding=weak, object=_ZN5boost3refI6StreamEENS_17reference_wrapperIT_EERS3_] {
   slot $t : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -42,8 +42,17 @@ function @boost__ref(%t : ptr [pass=reference]) -> obj<8x8> [binding=weak, objec
     store ptr %t, $t
     %t1 = addr $retobj__1
     %t2 = load ptr $t
-    call void @boost__reference_wrapper_Stream___reference_wrapper(%t1, %t2)
+    call void @boost__reference_wrapper_Stream___reference_wrapper_Stream_(%t1, %t2)
     return obj<8x8> $retobj__1
+}
+function @Logger__set_stream(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN6Logger10set_streamER6Stream, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
 }
 function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [binding=weak, object=_ZN5boost4bindIv6LoggerR6StreamPS1_NS_17reference_wrapperIS2_EEEEiMT0_FT_T1_ET2_T3_] {
   slot $f : i128
@@ -103,16 +112,7 @@ function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [bindi
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @Logger__set_stream(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6Logger10set_streamER6Stream] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
-function @boost__reference_wrapper_Stream___reference_wrapper(%this : ptr, %t : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost17reference_wrapperI6StreamEC1ERS1_] {
+function @boost__reference_wrapper_Stream___reference_wrapper_Stream_(%this : ptr [object_bytes=8], %t : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost17reference_wrapperI6StreamEC1ERS1_, inline_hint=yes] {
   slot $this : ptr
   slot $t : ptr
 
@@ -125,4 +125,4 @@ function @boost__reference_wrapper_Stream___reference_wrapper(%this : ptr, %t : 
     store ptr %t1, %t3
     return void
 }
-alias object _ZN5boost17reference_wrapperI6StreamEC2ERS1_ = @boost__reference_wrapper_Stream___reference_wrapper
+alias object _ZN5boost17reference_wrapperI6StreamEC2ERS1_ = @boost__reference_wrapper_Stream___reference_wrapper_Stream_

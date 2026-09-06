@@ -31,20 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__2
     return i32 %t8
 }
-function @consumer__consumer(%this : ptr, %input : ptr [pass=by_address]) -> void [binding=weak, object=_ZN8consumerC1E12copied_value] {
-  slot $this : ptr
-  slot $input : obj<4x4>
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = index i8 [projection=field] %input, 0
-    %t2 = load i32 %t1
-    %t3 = load ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    store i32 %t2, %t4
-    return void
-}
-function @copied_value__copied_value(%this : ptr) -> void [binding=weak, object=_ZN12copied_valueC1Ev] {
+function @copied_value__copied_value(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN12copied_valueC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -54,7 +41,7 @@ function @copied_value__copied_value(%this : ptr) -> void [binding=weak, object=
     store i32 4, %t2
     return void
 }
-function @copied_value__copied_value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN12copied_valueC1ERKS_] {
+function @copied_value__copied_value__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN12copied_valueC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -70,12 +57,25 @@ function @copied_value__copied_value__ov2(%this : ptr, %other : ptr [pass=refere
     store i32 %t4, %t6
     return void
 }
+function @consumer__consumer(%this : ptr [object_bytes=4], %input : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8consumerC1E12copied_value, inline_hint=yes] {
+  slot $this : ptr
+  slot $input : obj<4x4>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = index i8 [projection=field] %input, 0
+    %t2 = load i32 %t1
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    return void
+}
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     %t1 = addr @default_source
     call void @copied_value__copied_value(%t1)
     return void
 }
-alias object _ZN8consumerC2E12copied_value = @consumer__consumer
 alias object _ZN12copied_valueC2Ev = @copied_value__copied_value
 alias object _ZN12copied_valueC2ERKS_ = @copied_value__copied_value__ov2
+alias object _ZN8consumerC2E12copied_value = @consumer__consumer

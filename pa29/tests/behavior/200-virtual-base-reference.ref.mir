@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -38,12 +38,10 @@ function @YB___YB
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
 
   block ^entry
-    mov r9, rdi
-    mov rbx, @YB__vtable
-    store.ptr [r9], rbx
+    mov r8, @YB__vtable
+    store.ptr [rdi], r8
     ret
 
 function @YB__YB
@@ -55,12 +53,10 @@ function @YB__YB
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
 
   block ^entry
-    mov r9, rdi
-    mov rbx, @YB__vtable
-    store.ptr [r9], rbx
+    mov r8, @YB__vtable
+    store.ptr [rdi], r8
     ret
 
 function @YD__f
@@ -86,13 +82,14 @@ function @YD__YD
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
+    slot $this -> [rbp-8] : ptr
 
   block ^entry
-    mov rbx, rdi
-    mov r8, rdi
-    call @YB__YB
-    mov r8, rbx
+    store.ptr [rbp-8], rdi
+    load.ptr r8, [rbp-8]
+    mov rdi, r8
+    call @YB__YB [args=(rdi)]
+    load.ptr r8, [rbp-8]
     mov r9, @YD__vtable
     store.ptr [r8], r9
     ret
@@ -106,16 +103,16 @@ function @YD___YD
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
+    slot $this -> [rbp-8] : ptr
 
   block ^entry
-    mov r8, rdi
-    mov r9, rdi
-    mov rbx, @YD__vtable
-    store.ptr [r9], rbx
-    mov r9, rdi
+    store.ptr [rbp-8], rdi
+    load.ptr r8, [rbp-8]
+    mov r9, @YD__vtable
+    store.ptr [r8], r9
+    load.ptr r8, [rbp-8]
     mov rdi, r8
-    call @YB___YB
+    call @YB___YB [args=(rdi)]
     ret
 
 function @g
@@ -123,19 +120,15 @@ function @g
     param %b -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
 
   block ^entry
-    mov r8, rdi
-    mov r9, rdi
-    load.ptr rbx, [r9]
-    load.ptr r10, [rbx]
-    mov rdi, r9
-    call *r10
+    load.ptr r8, [rdi]
+    load.ptr r9, [r8]
+    call *r9 [args=(rdi)]
     ret rax
 
 function @main
@@ -151,11 +144,10 @@ function @main
 
   block ^entry
     lea rdi, [rbp-8]
-    call @YD__YD
+    call @YD__YD [args=(rdi)]
     lea rdi, [rbp-8]
-    call @g
+    call @g [args=(rdi)]
     mov rbx, rax
     lea rdi, [rbp-8]
-    call @YD___YD
-    mov rax, rbx
-    ret rax
+    call @YD___YD [args=(rdi)]
+    ret rbx

@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @boost__size(%__param0 : ptr [pass=reference]) -> i64 [binding=weak, object=_ZN5boost4sizeIA4_cEENS_10range_sizeIKT_E4typeERS4_] {
+function @boost__size(%__param0 : ptr [pass=by_address, object_bytes=4]) -> i64 [binding=weak, object=_ZN5boost4sizeIA4_cEEmRKT_] {
   slot $__param0 : ptr
 
   block ^entry:

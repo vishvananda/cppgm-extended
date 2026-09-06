@@ -36,7 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @holder_int___pick(%this : ptr, %__param1 : i32) -> obj<1x1> [binding=weak, object=_ZN6holderIiE4pickIiiiEE5threei] {
+function @holder_int___pick(%this : ptr [object_bytes=1], %__param1 : i32) -> obj<1x1> [binding=weak, object=_ZN6holderIiE4pickIiiiEE5threei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $retobj__1 : obj<1x1>
@@ -45,14 +45,5 @@ function @holder_int___pick(%this : ptr, %__param1 : i32) -> obj<1x1> [binding=w
     store ptr %this, $this
     store i32 %__param1, $__param1
     %t1 = addr $retobj__1
-    call void @three__three(%t1)
     return obj<1x1> $retobj__1
 }
-function @three__three(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5threeC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN5threeC2Ev = @three__three

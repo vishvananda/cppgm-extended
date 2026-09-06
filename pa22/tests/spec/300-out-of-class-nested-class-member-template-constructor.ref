@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $result
     %t4 = addr $source
     %t5 = addr $value
-    call void @body_long_int___reader__reader(%t3, %t4, %t5)
+    call void @body_long_int___reader__reader__ov3(%t3, %t4, %t5)
     %t6 = addr $result
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load i32 %t7
@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load i32 $cond__1
     return i32 %t14
 }
-function @body_long_int___reader__reader(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4bodyIlE6readerC1ILb0EiEER6headerIXT_ET0_ERNS0_10value_typeE] {
+function @body_long_int___reader__reader__ov3(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN4bodyIlE6readerC1ILb0EiEER6headerILb0ET0_ERNS0_10value_typeE] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -66,4 +66,4 @@ function @body_long_int___reader__reader(%this : ptr, %__param1 : ptr [pass=refe
     store i32 %t7, %t9
     return void
 }
-alias object _ZN4bodyIlE6readerC2ILb0EiEER6headerIXT_ET0_ERNS0_10value_typeE = @body_long_int___reader__reader
+alias object _ZN4bodyIlE6readerC2ILb0EiEER6headerILb0ET0_ERNS0_10value_typeE = @body_long_int___reader__reader__ov3

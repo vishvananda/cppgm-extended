@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    call void @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type___tuple(%t1, 0, 0, 0)
+    call void @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type___tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type_(%t1, 0, 0, 0)
     %t2 = addr $value
     %t3 = call i32 @take(%t2)
     %t4 = cmp eq i32 %t3, 2
@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type___tuple(%this : ptr, %__param1 : i32, %__param2 : i32, %__param3 : i32) -> void [binding=weak, object=_ZN6tuples5tupleIiiiNS_9null_typeES1_S1_S1_S1_S1_S1_EC1Eiii] {
+function @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type___tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type_(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32, %__param3 : i32) -> void [binding=weak, object=_ZN6tuples5tupleIiiiNS_9null_typeES1_S1_S1_S1_S1_S1_EC1Eiii, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $__param2 : i32
@@ -35,7 +35,7 @@ function @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tup
     store i32 %__param3, $__param3
     return void
 }
-function @take(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4takeIiJiiEEiRKN6tuples5tupleIT_DpT0_9null_typeS6_S6_S6_S6_S6_S6_S6_EE] {
+function @take(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4takeIiJiiEEiRKN6tuples5tupleIT_T0_NS0_9null_typeES4_S4_S4_S4_S4_S4_S4_EE] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -44,4 +44,4 @@ function @take(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
-alias object _ZN6tuples5tupleIiiiNS_9null_typeES1_S1_S1_S1_S1_S1_EC2Eiii = @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type___tuple
+alias object _ZN6tuples5tupleIiiiNS_9null_typeES1_S1_S1_S1_S1_S1_EC2Eiii = @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type___tuple_int__int__int__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type__tuples__null_type_

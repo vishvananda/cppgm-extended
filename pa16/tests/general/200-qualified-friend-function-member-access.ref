@@ -1,4 +1,4 @@
-function @N__eq(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> i32 [binding=strong, object=_ZN1N2eqERKNS_1XES2_] {
+function @N__eq(%a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_ZN1N2eqERKNS_1XES2_] {
   slot $a : ptr
   slot $b : ptr
 
@@ -40,7 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @N__X__X(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1N1XC1Ei] {
+function @N__X__X(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1N1XC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

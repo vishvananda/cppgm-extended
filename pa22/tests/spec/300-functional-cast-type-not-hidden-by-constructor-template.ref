@@ -1,7 +1,7 @@
-declare function @O_int___O__ov3(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1OIiEC1IiEEOT_]
-declare function @O_int_const_____O(%arg0 : ptr) -> void [binding=weak, object=_ZN1OIRKiEC1Ev]
-declare function @O_int_const_____O__ov2(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1OIRKiEC1ES1_]
 declare function @use(%arg0 : obj<1x1>) -> void [binding=strong, object=_Z3use1OIRKiE]
+declare function @O_int___O_int___ov3(%arg0 : ptr [object_bytes=4], %arg1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1OIiEC1IiEEOT_, inline_hint=yes]
+declare function @O_lvalue_reference_to_const_int___O_int___ov2(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1OIRKiEC1ES1_]
+declare function @O_lvalue_reference_to_const_int___O_int_(%arg0 : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1OIRKiEC1Ev]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : obj<4x4>
@@ -12,14 +12,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     store i32 0, $refarg__1
     %t2 = addr $refarg__1
-    call void @O_int___O__ov3(%t1, %t2)
+    call void @O_int___O_int___ov3(%t1, %t2)
     %t3 = addr $argobj__2
     %t4 = addr $value
     %t5 = call obj<1x1> @O_int___operatorO_Tconst__(%t4)
     call void @use($argobj__2)
     return i32 0
 }
-function @O_int___operatorO_Tconst__(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNKR1OIiEcvS_IRKiEEv] {
+function @O_int___operatorO_Tconst__(%this : ptr [object_bytes=4]) -> obj<1x1> [binding=weak, object=_ZNKR1OIiEcvS_IRKiEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 
@@ -31,11 +31,11 @@ function @O_int___operatorO_Tconst__(%this : ptr) -> obj<1x1> [binding=weak, obj
   block ^condobj_then_1:
     %t2 = load ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    call void @O_int_const_____O__ov2(%t1, %t3)
+    call void @O_lvalue_reference_to_const_int___O_int___ov2(%t1, %t3)
     jump ^condobj_end_3
 
   block ^condobj_else_2:
-    call void @O_int_const_____O(%t1)
+    call void @O_lvalue_reference_to_const_int___O_int_(%t1)
     jump ^condobj_end_3
 
   block ^condobj_end_3:

@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @abi_case__fetch(%in : ptr [pass=reference], %out : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8abi_case5fetchIcNS_6traitsIcEENS_5allocIcEEEERNS_6streamIT_T0_EES9_RNS_2v26bufferIS6_S7_T1_EE] {
+function @abi_case__fetch(%in : ptr [pass=by_address, object_bytes=4], %out : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN8abi_case5fetchIcNS_6traitsIcEENS_5allocIcEEEERNS_6streamIT_T0_EES9_RNS_2v26bufferIS6_S7_T1_EE] {
   slot $in : ptr
   slot $out : ptr
 

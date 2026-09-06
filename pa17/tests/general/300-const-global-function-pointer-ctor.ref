@@ -1,4 +1,4 @@
-global @h [binding=internal, object=_ZL1h] = {
+global @h [binding=internal, object=_Z1h] = {
   zero 8
 }
 
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @H__H(%this : ptr, %p_in : ptr) -> void [binding=weak, object=_ZN1HC1EPFvvE] {
+function @H__H(%this : ptr [object_bytes=8], %p_in : ptr) -> void [binding=weak, object=_ZN1HC1EPFvvE, inline_hint=yes] {
   slot $this : ptr
   slot $p_in : ptr
 

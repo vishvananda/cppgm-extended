@@ -9,10 +9,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @f
     store i32 0, $refarg__1
     %t2 = addr $refarg__1
-    %t3 = call i32 @S_int_________g(%t1, %t2)
+    %t3 = call i32 @S_lvalue_reference_to_function_of____returning_int___g(%t1, %t2)
     return i32 %t3
 }
-function @S_int_________g(%t : ptr [pass=reference], %u : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1SIRFivEE1gIiEEDTcmcmscS0_fp_scT_fp0_cvi_EES1_OS4_] {
+function @S_lvalue_reference_to_function_of____returning_int___g(%t : ptr [pass=by_address], %u : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN1SIRFivEE1gIiEEiS1_OT_, inline_hint=yes] {
   slot $t : ptr
   slot $u : ptr
 

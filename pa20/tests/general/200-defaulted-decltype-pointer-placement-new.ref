@@ -1,4 +1,4 @@
-declare function @operatornew(%arg0 : i64, %arg1 : ptr) -> ptr [binding=strong, object=_ZnwmPv]
+declare function @operatornew__ov2(%arg0 : i64, %arg1 : ptr) -> ptr [binding=strong, object=_ZnwmPv]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $src : ptr
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @construct_at(%ptr : ptr, %args : ptr [pass=reference]) -> ptr [binding=weak, object=_Z12construct_atIP4ItemJRS1_EPS1_EPT_S5_DpOT0_] {
+function @construct_at(%ptr : ptr, %args : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z12construct_atIP4ItemRS1_PS1_EPT_S5_DpOT0_] {
   slot $ptr : ptr
   slot $args : ptr
 
@@ -37,7 +37,7 @@ function @construct_at(%ptr : ptr, %args : ptr [pass=reference]) -> ptr [binding
     store ptr %args, $args
     %t1 = convert sext i64 i32 8
     %t2 = load ptr $ptr
-    %t3 = call ptr @operatornew(%t1, %t2)
+    %t3 = call ptr @operatornew__ov2(%t1, %t2)
     %t4 = load ptr $args
     %t5 = load ptr %t4
     store ptr %t5, %t3

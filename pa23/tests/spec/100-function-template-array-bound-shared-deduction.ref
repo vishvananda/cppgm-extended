@@ -38,7 +38,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @same_extent(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z11same_extentIiLi4EEiRAT0__T_S2_] {
+function @same_extent(%__param0 : ptr [pass=by_address, object_bytes=16], %__param1 : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=weak, object=_Z11same_extentIiLi4EEiRAT0__T_S2_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

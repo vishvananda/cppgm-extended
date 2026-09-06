@@ -16,14 +16,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 %t7
     return i32 %t8
 }
-function @Y__Y(%this : ptr) -> void [binding=weak, object=_ZN1YC1Ev] {
+function @Y__Y(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1YC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @Y__Y__ov2(%this : ptr, %r : ptr [pass=reference]) -> void [binding=weak, object=_ZN1YC1ERKS_] {
+function @Y__Y__ov2(%this : ptr [alias=noalias, object_bytes=4], %r : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN1YC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $r : ptr
 

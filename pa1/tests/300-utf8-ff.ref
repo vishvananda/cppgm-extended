@@ -1,1 +1,1 @@
-ERROR:1:1:Invalid utf-8 character
+ERROR: invalid UTF-8 leading byte

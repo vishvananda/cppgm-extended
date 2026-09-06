@@ -1,4 +1,4 @@
-function @Y__get(%this : ptr) -> i32 [binding=strong, object=_ZN1Y3getEv] {
+function @Y__get(%this : ptr [object_bytes=4]) -> i32 [binding=strong, object=_ZN1Y3getEv] {
   slot $this : ptr
 
   block ^entry:

@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 118
   i8 97
   i8 108
@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @probe(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5probeIN13serialization7wrappedEEN9enable_ifIXeqstT_stDTdtcl7declvalIRKS3_EE5valueEEiE4typeES5_] {
+function @probe(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z5probeIN13serialization7wrappedEEiRKT_] {
   slot $__param0 : ptr
 
   block ^entry:

@@ -1,4 +1,4 @@
-function @read(%elements : ptr, %subscript : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4readP7elementRi] {
+function @read(%elements : ptr, %subscript : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z4readP7elementRi] {
   slot $elements : ptr
   slot $subscript : ptr
 
@@ -21,14 +21,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $values
-    call void @element__element__ov4(%t1, 7)
+    call void @element__element__aggregate(%t1, 7)
     store i32 0, $subscript
     %t2 = addr $values
-    %t3 = unary decay ptr %t2
-    %t4 = addr $subscript
-    %t5 = call i32 @read(%t3, %t4)
-    %t6 = cmp eq i32 %t5, 7
-    branch %t6, ^cond_then_1, ^cond_else_2
+    %t3 = addr $subscript
+    %t4 = call i32 @read(%t2, %t3)
+    %t5 = cmp eq i32 %t4, 7
+    branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -39,10 +38,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
-    return i32 %t7
+    %t6 = load i32 $cond__1
+    return i32 %t6
 }
-function @element__element__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN7elementC1Ei] {
+function @element__element__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 
@@ -55,4 +54,3 @@ function @element__element__ov4(%this : ptr, %value : i32) -> void [unwind=no, b
     store i32 %t1, %t3
     return void
 }
-alias object _ZN7elementC2Ei = @element__element__ov4

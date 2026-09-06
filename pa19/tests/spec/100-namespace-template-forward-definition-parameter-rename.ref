@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @N__fpos_int___get(%this : ptr) -> i32 [binding=weak, object=_ZN1N4fposIiE3getEv] {
+function @N__fpos_int___get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN1N4fposIiE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -31,18 +31,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @active_owner_case__buffer_active_owner_case__item__active_owner_case____cppgm_class_template_identity_3_0_0___begin(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZN17active_owner_case6bufferINS_4itemENS_9allocatorIS1_EEE5beginEv, inline_hint=yes] {
+function @active_owner_case__buffer_active_owner_case__item__active_owner_case____cppgm_class_template_identity_3_0_0___begin(%ret : ptr [pass=indirect_result, object_bytes=8], %this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN17active_owner_case6bufferINS_4itemENS_9allocatorIS1_EEE5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = unary decay ptr %t2
-    call void @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov3(%ret, %t3)
+    call void @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov3(%ret, %t2)
     return void
 }
-function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___operator_(%ret : ptr [pass=indirect_result], %this : ptr, %n : i64) -> void [binding=weak, object=_ZNK17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEplEl, inline_hint=yes] {
+function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___operator_(%ret : ptr [pass=indirect_result, object_bytes=8], %this : ptr [object_bytes=8], %n : i64) -> void [binding=weak, object=_ZNK17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEplEl, inline_hint=yes] {
   slot $this : ptr
   slot $n : i64
 
@@ -55,7 +54,7 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
     %t3 = call ptr @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___operator__(%ret, %t2)
     return void
 }
-function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_1_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_12const_traitsIS4_EEEC1ERKNS0_IS5_NS_15nonconst_traitsIS4_EEEE, inline_hint=yes] {
+function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_1_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov2(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_12const_traitsIS4_EEEC1ERKNS0_IS5_NS_15nonconst_traitsIS4_EEEE, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -70,7 +69,7 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
     store ptr %t3, %t5
     return void
 }
-function @active_owner_case__buffer_active_owner_case__item__active_owner_case____cppgm_class_template_identity_3_0_0___rotate(%this : ptr, %next : obj<8x8>) -> i64 [binding=weak, object=_ZN17active_owner_case6bufferINS_4itemENS_9allocatorIS1_EEE6rotateENS_4iterIS4_NS_12const_traitsIS3_EEEE, inline_hint=yes] {
+function @active_owner_case__buffer_active_owner_case__item__active_owner_case____cppgm_class_template_identity_3_0_0___rotate(%this : ptr [object_bytes=16], %next : obj<8x8>) -> i64 [binding=weak, object=_ZN17active_owner_case6bufferINS_4itemENS_9allocatorIS1_EEE6rotateENS_4iterIS4_NS_12const_traitsIS3_EEEE, inline_hint=yes] {
   slot $this : ptr
   slot $next : obj<8x8>
   slot $arg__1 : obj<8x8>
@@ -86,7 +85,7 @@ function @active_owner_case__buffer_active_owner_case__item__active_owner_case__
     %t5 = call i64 @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_1_2_0___operator_(%t2, %t3)
     return i64 %t5
 }
-function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov3(%this : ptr, %value : ptr) -> void [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEC1EPS2_, inline_hint=yes] {
+function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov3(%this : ptr [object_bytes=8], %value : ptr) -> void [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEC1EPS2_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -99,7 +98,7 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
     store ptr %t1, %t3
     return void
 }
-function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEC1ERKS8_, inline_hint=yes] {
+function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEC1ERKS8_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -114,7 +113,7 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
     store ptr %t3, %t5
     return void
 }
-function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___operator__(%this : ptr, %n : i64) -> ptr [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEpLEl, inline_hint=yes] {
+function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___operator__(%this : ptr [object_bytes=8], %n : i64) -> ptr [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEpLEl, inline_hint=yes] {
   slot $this : ptr
   slot $n : i64
 
@@ -133,7 +132,7 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
     %t9 = load ptr $this
     return ptr %t9
 }
-function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_1_2_0___operator_(%this : ptr, %other : ptr [pass=reference]) -> i64 [binding=weak, object=_ZNK17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_12const_traitsIS4_EEEmiINS_15nonconst_traitsIS4_EEEElRKNS0_IS5_T_EE, inline_hint=yes] {
+function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_1_2_0___operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> i64 [binding=weak, object=_ZNK17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_12const_traitsIS4_EEEmiINS_15nonconst_traitsIS4_EEEElRKNS0_IS5_T_EE, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

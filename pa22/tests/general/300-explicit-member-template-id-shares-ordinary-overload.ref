@@ -1,4 +1,4 @@
-function @S__choose(%this : ptr, %__param1 : ptr) -> i32 [binding=strong, object=_ZN1S6chooseEPKc] {
+function @S__choose(%this : ptr [object_bytes=1], %__param1 : ptr) -> i32 [binding=strong, object=_ZN1S6chooseEPKc] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @S__run(%t2)
     return i32 %t3
 }
-function @S__run(%this : ptr) -> i32 [binding=weak, object=_ZN1S3runEv] {
+function @S__run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1S3runEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -25,7 +25,7 @@ function @S__run(%this : ptr) -> i32 [binding=weak, object=_ZN1S3runEv] {
     %t2 = call i32 @S__choose__ov2(%t1, 0)
     return i32 %t2
 }
-function @S__choose__ov2(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZN1S6chooseIiEEii] {
+function @S__choose__ov2(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZN1S6chooseIiEEii, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

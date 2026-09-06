@@ -3,7 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @check()
     return i32 %t1
 }
-function @check() -> i32 [binding=weak, object=_Z5checkIZ4mainE5localEiv] {
+function @check() -> i32 [binding=internal, object=_Z5checkIZ4mainE5localEiv] {
   slot $value : i128
   slot $cond__1 : i32
 

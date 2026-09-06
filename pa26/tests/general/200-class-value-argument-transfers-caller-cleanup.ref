@@ -1,10 +1,17 @@
-declare function @operatordelete(%arg0 : ptr) -> void [effects=readwrite, unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
-
-declare function @operatornew(%arg0 : i64) -> ptr [effects=readwrite, binding=strong, object=cppgm_builtin_operator_new]
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
 
 global @Value__live : i32 [binding=strong, object=_ZN5Value4liveE] = 0
 
-function @consume(%value : ptr [pass=by_address]) -> i32 [binding=strong, object=_Z7consume5Value] {
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
+function @consume(%value : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z7consume5Value] {
   slot $value : obj<8x8>
 
   block ^entry:
@@ -14,7 +21,6 @@ function @consume(%value : ptr [pass=by_address]) -> i32 [binding=strong, object
     call void @Value___Value(%value)
     return i32 %t3
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $source : obj<8x8>
   slot $result : i32
@@ -98,11 +104,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Value___Value(%t21)
     return i32 %t20
 }
-
-function @Value___Value(%this : ptr) -> void [binding=weak, object=_ZN5ValueD1Ev] {
+function @Value___Value(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5ValueD1Ev, inline_hint=yes] {
   slot $this : ptr
+  slot $function_exception__1 : ptr
 
   block ^entry:
+    eh_try ^function_exception_landing_1
     store ptr %this, $this
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
@@ -111,10 +118,21 @@ function @Value___Value(%this : ptr) -> void [binding=weak, object=_ZN5ValueD1Ev
     %t4 = load i32 @Value__live
     %t5 = binary sub i32 %t4, 1
     store i32 %t5, @Value__live
+    eh_end
+    return void
+
+  block ^function_exception_landing_1:
+    eh_catch_all, 1
+    %t6 = exception ptr
+    store ptr %t6, $function_exception__1
+    jump ^function_exception_action_2
+
+  block ^function_exception_action_2:
+    %t7 = load ptr $function_exception__1
+    call void @cppgm_call_terminate(%t7)
     return void
 }
-
-function @Value__Value(%this : ptr) -> void [binding=weak, object=_ZN5ValueC1Ev] {
+function @Value__Value(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5ValueC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -130,8 +148,7 @@ function @Value__Value(%this : ptr) -> void [binding=weak, object=_ZN5ValueC1Ev]
     store i32 %t6, @Value__live
     return void
 }
-
-function @Value__Value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5ValueC1ERKS_] {
+function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN5ValueC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -153,3 +170,6 @@ function @Value__Value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void 
     store i32 %t10, @Value__live
     return void
 }
+alias object _ZN5ValueD2Ev = @Value___Value
+alias object _ZN5ValueC2Ev = @Value__Value
+alias object _ZN5ValueC2ERKS_ = @Value__Value__ov2

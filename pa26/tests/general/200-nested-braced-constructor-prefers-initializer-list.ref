@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $argobj__1
     %t3 = addr $initlist__2
     call void @item__item(%t3, 1, 2)
-    %t4 = index i8 %t3, 8
+    %t4 = index i8 [projection=array_element] %t3, 8
     call void @item__item(%t4, 3, 4)
     store ptr %t3, %t2
     %t5 = index i8 %t2, 8
@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__3
     return i32 %t10
 }
-function @item__item(%this : ptr, %k : i32, %v : i32) -> void [binding=weak, object=_ZN4itemC1Eii] {
+function @item__item(%this : ptr [object_bytes=8], %k : i32, %v : i32) -> void [binding=weak, object=_ZN4itemC1Eii, inline_hint=yes] {
   slot $this : ptr
   slot $k : i32
   slot $v : i32
@@ -52,7 +52,7 @@ function @item__item(%this : ptr, %k : i32, %v : i32) -> void [binding=weak, obj
     store i32 %t4, %t6
     return void
 }
-function @Box__Box__ov3(%this : ptr, %__param1 : obj<16x8>) -> void [binding=weak, object=_ZN3BoxC1ESt16initializer_listI4itemE] {
+function @Box__Box__ov3(%this : ptr [object_bytes=4], %__param1 : obj<16x8>) -> void [binding=weak, object=_ZN3BoxC1ESt16initializer_listI4itemE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<16x8>
 

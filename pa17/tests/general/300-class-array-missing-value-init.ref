@@ -8,13 +8,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = index i8 %t1, 4
     call void @C__C(%t2)
     %t3 = addr $arr
-    %t4 = unary decay ptr %t3
-    %t5 = binary mul i64 1, 4
-    %t6 = index i8 [projection=array_element] %t4, %t5
-    %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
-    %t9 = cmp eq i32 %t8, 7
-    branch %t9, ^cond_then_1, ^cond_else_2
+    %t4 = binary mul i64 1, 4
+    %t5 = index i8 [projection=array_element] %t3, %t4
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load i32 %t6
+    %t8 = cmp eq i32 %t7, 7
+    branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -25,10 +24,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
-    return i32 %t10
+    %t9 = load i32 $cond__1
+    return i32 %t9
 }
-function @C__C(%this : ptr) -> void [binding=weak, object=_ZN1CC1Ev] {
+function @C__C(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1CC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

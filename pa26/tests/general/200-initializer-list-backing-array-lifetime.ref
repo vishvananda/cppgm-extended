@@ -9,7 +9,6 @@ function @observe(%__param0 : obj<16x8>) -> i32 [binding=strong, object=_Z7obser
     %t2 = load i32 @Item__live
     return i32 %t2
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $call__1 : i32
   slot $argobj__2 : obj<16x8>
@@ -171,8 +170,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = load i32 $cond__6
     return i32 %t24
 }
-
-function @Item__Item(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN4ItemC1Ei] {
+function @Item__Item(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4ItemC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -184,8 +182,7 @@ function @Item__Item(%this : ptr, %__param1 : i32) -> void [binding=weak, object
     store i32 %t2, @Item__live
     return void
 }
-
-function @Item___Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemD1Ev] {
+function @Item___Item(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4ItemD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -195,8 +192,7 @@ function @Item___Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemD1Ev] {
     store i32 %t2, @Item__live
     return void
 }
-
-function @std__initializer_list_Item___size(%this : ptr) -> i64 [binding=weak, object=_ZNKSt16initializer_listI4ItemE4sizeEv] {
+function @std__initializer_list_Item___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI4ItemE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -206,3 +202,5 @@ function @std__initializer_list_Item___size(%this : ptr) -> i64 [binding=weak, o
     %t3 = load i64 %t2
     return i64 %t3
 }
+alias object _ZN4ItemC2Ei = @Item__Item
+alias object _ZN4ItemD2Ev = @Item___Item

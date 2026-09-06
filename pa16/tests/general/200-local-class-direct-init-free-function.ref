@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = binary sub i32 %t6, 7
     return i32 %t7
 }
-function @M__M(%this : ptr) -> void [binding=weak, object=_ZN1MC1Ev] {
+function @M__M(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1MC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -24,7 +24,7 @@ function @M__M(%this : ptr) -> void [binding=weak, object=_ZN1MC1Ev] {
     store i32 7, %t2
     return void
 }
-function @Lock__Lock(%this : ptr, %m : ptr [pass=reference]) -> void [binding=weak, object=_ZN4LockC1ER1M] {
+function @Lock__Lock(%this : ptr [object_bytes=4], %m : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4LockC1ER1M, inline_hint=yes] {
   slot $this : ptr
   slot $m : ptr
 

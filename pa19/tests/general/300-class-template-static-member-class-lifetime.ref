@@ -1,4 +1,4 @@
-global @stack_object___top_ [binding=weak, object=_ZN5stackI6objectE4top_E] = {
+global @__cppgm_class_template_identity_0_0_0__top_ [binding=weak, object=_ZN5stackI6objectE4top_E] = {
   zero 4
 }
 
@@ -8,23 +8,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = binary sub i32 %t1, 7
     return i32 %t2
 }
-function @stack_object___value() -> i32 [binding=weak, object=_ZN5stackI6objectE5valueEv] {
+function @stack_object___value() -> i32 [binding=weak, object=_ZN5stackI6objectE5valueEv, inline_hint=yes] {
   block ^entry:
-    %t1 = addr @stack_object___top_
+    %t1 = addr @__cppgm_class_template_identity_0_0_0__top_
     %t2 = call i32 @holder__value(%t1)
     return i32 %t2
 }
-function @holder__value(%this : ptr) -> i32 [binding=weak, object=_ZNK6holder5valueEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    return i32 %t3
-}
-function @holder__holder(%this : ptr) -> void [binding=weak, object=_ZN6holderC1Ev] {
+function @holder__holder(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6holderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -34,9 +24,19 @@ function @holder__holder(%this : ptr) -> void [binding=weak, object=_ZN6holderC1
     store i32 7, %t2
     return void
 }
+function @holder__value(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZNK6holder5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    return i32 %t3
+}
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
-    %t1 = addr @stack_object___top_
+    %t1 = addr @__cppgm_class_template_identity_0_0_0__top_
     call void @holder__holder(%t1)
     return void
 }

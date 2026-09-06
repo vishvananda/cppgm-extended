@@ -1,18 +1,3 @@
-function @operator_(%n : i64, %it : ptr [pass=reference]) -> obj<8x8> [binding=weak, object=_ZpllRK4Iter] {
-  slot $n : i64
-  slot $it : ptr
-  slot $retobj__1 : obj<8x8>
-
-  block ^entry:
-    store i64 %n, $n
-    store ptr %it, $it
-    %t1 = addr $retobj__1
-    %t2 = load ptr $it
-    %t3 = load i64 $n
-    %t4 = call obj<8x8> @Iter__operator_(%t2, %t3)
-    copyobj 8x8 %t4, %t1
-    return obj<8x8> $retobj__1
-}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $it : obj<8x8>
   slot $a : obj<8x8>
@@ -66,7 +51,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load i32 $cond__1
     return i32 %t18
 }
-function @Iter__Iter(%this : ptr, %x : i64) -> void [binding=weak, object=_ZN4IterC1El] {
+function @Iter__Iter(%this : ptr [object_bytes=8], %x : i64) -> void [binding=weak, object=_ZN4IterC1El, inline_hint=yes] {
   slot $this : ptr
   slot $x : i64
 
@@ -79,7 +64,7 @@ function @Iter__Iter(%this : ptr, %x : i64) -> void [binding=weak, object=_ZN4It
     store i64 %t1, %t3
     return void
 }
-function @Iter__operator_(%this : ptr, %n : i64) -> obj<8x8> [binding=weak, object=_ZNK4IterplEl] {
+function @Iter__operator_(%this : ptr [object_bytes=8], %n : i64) -> obj<8x8> [binding=weak, object=_ZNK4IterplEl, inline_hint=yes] {
   slot $this : ptr
   slot $n : i64
   slot $t : obj<8x8>
@@ -99,7 +84,22 @@ function @Iter__operator_(%this : ptr, %n : i64) -> obj<8x8> [binding=weak, obje
     copyobj 8x8 %t7, %t6
     return obj<8x8> $retobj__1
 }
-function @Iter__operator__(%this : ptr, %n : i64) -> ptr [binding=weak, object=_ZN4IterpLEl] {
+function @operator_(%n : i64, %it : ptr [pass=by_address, object_bytes=8]) -> obj<8x8> [binding=weak, object=_ZpllRK4Iter, inline_hint=yes] {
+  slot $n : i64
+  slot $it : ptr
+  slot $retobj__1 : obj<8x8>
+
+  block ^entry:
+    store i64 %n, $n
+    store ptr %it, $it
+    %t1 = addr $retobj__1
+    %t2 = load ptr $it
+    %t3 = load i64 $n
+    %t4 = call obj<8x8> @Iter__operator_(%t2, %t3)
+    copyobj 8x8 %t4, %t1
+    return obj<8x8> $retobj__1
+}
+function @Iter__operator__(%this : ptr [object_bytes=8], %n : i64) -> ptr [binding=weak, object=_ZN4IterpLEl, inline_hint=yes] {
   slot $this : ptr
   slot $n : i64
 

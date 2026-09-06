@@ -1,8 +1,6 @@
-declare function @guard__guard(%arg0 : ptr) -> void [binding=strong, object=_ZN5guardC1Ev]
-
-declare function @item__item(%arg0 : ptr) -> void [binding=strong, object=_ZN4itemC1Ev]
-
-declare function @guard___guard(%arg0 : ptr) -> void [binding=strong, object=_ZN5guardD1Ev]
+declare function @guard__guard(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN5guardC1Ev]
+declare function @guard___guard(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5guardD1Ev]
+declare function @item__item(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN4itemC1Ev]
 
 global @storage : i64 [binding=strong, object=_Z7storage] = zero
 
@@ -16,7 +14,6 @@ function @operatornew__ov2(%__param0 : i64, %p : ptr) -> ptr [unwind=no, binding
     %t1 = load ptr $p
     return ptr %t1
 }
-
 function @build() -> void [binding=strong, object=_Z5buildv] {
   slot $cleanup : obj<1x1>
 

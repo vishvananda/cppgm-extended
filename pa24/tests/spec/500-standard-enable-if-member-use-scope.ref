@@ -30,7 +30,7 @@ function @outer__call() -> i32 [binding=weak, object=_ZN5outer4callIiEEiv] {
     %t4 = call i32 @outer__helpers__serialize(%t2, %t3)
     return i32 %t4
 }
-function @outer__helpers__serialize(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN5outer7helpers9serializeINS_6detail7encoderEiEENSt9enable_ifIXsrSt10is_base_ofIS3_T_EE5valueEiE4typeERS5_RKT0_] {
+function @outer__helpers__serialize(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN5outer7helpers9serializeINS_6detail7encoderEiEENSt9enable_ifIXsrSt10is_base_ofIS3_T_EE5valueEiE4typeERS5_RKT0_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

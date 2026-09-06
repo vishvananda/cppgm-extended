@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @Derived___Derived(%this : ptr) -> void [binding=weak, object=_ZN7DerivedD1Ev] {
+function @Derived___Derived(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $guard : obj<1x1>
 
@@ -40,21 +40,21 @@ function @Derived___Derived(%this : ptr) -> void [binding=weak, object=_ZN7Deriv
     call void @Guard___Guard(%t5)
     eh_end
     %t6 = load ptr $this
-    %t7 = index i8 [projection=base_subobject] %t6, 0
-    call void @Base___Base__base_entry(%t7)
+    %t7 = index i8 %t6, 0
+    call void @Base___Base(%t7)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t8 = load ptr $this
-    %t9 = index i8 [projection=base_subobject] %t8, 0
-    call void @Base___Base__base_entry(%t9)
+    %t9 = index i8 %t8, 0
+    call void @Base___Base(%t9)
     eh_end
     resume
 
   block ^destructor_end_2:
     return void
 }
-function @Guard___Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardD1Ev] {
+function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -65,7 +65,7 @@ function @Guard___Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardD1Ev
     store i32 %t3, @order
     return void
 }
-function @Base___Base__base_entry(%this : ptr) -> void [binding=weak, object=_ZN4BaseD2Ev] {
+function @Base___Base(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -78,3 +78,4 @@ function @Base___Base__base_entry(%this : ptr) -> void [binding=weak, object=_ZN
 }
 alias object _ZN7DerivedD2Ev = @Derived___Derived
 alias object _ZN5GuardD2Ev = @Guard___Guard
+alias object _ZN4BaseD2Ev = @Base___Base

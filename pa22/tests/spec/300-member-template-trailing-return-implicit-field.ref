@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @wrapper__call_it(%this : ptr) -> i32 [binding=weak, object=_ZN7wrapper7call_itIiEEiv] {
+function @wrapper__call_it(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN7wrapper7call_itIiEEiv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -47,7 +47,7 @@ function @wrapper__call_it(%this : ptr) -> i32 [binding=weak, object=_ZN7wrapper
     %t7 = call i32 @table__call(%t3, %t6)
     return i32 %t7
 }
-function @table__call(%this : ptr, %value : ptr) -> i32 [binding=weak, object=_ZNK5table4callEPi] {
+function @table__call(%this : ptr [object_bytes=1], %value : ptr) -> i32 [binding=weak, object=_ZNK5table4callEPi, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 

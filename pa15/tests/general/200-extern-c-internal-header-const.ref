@@ -1,4 +1,4 @@
-global @n__value : u32 [linkage=c, binding=internal, object=_ZN1n5valueE] = 12
+global @n__value : u32 [storage=readonly, linkage=c, binding=internal, object=_ZN1n5valueE] = 12
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

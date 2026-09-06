@@ -30,13 +30,12 @@ function @boost__container__test__test_emplace_back() -> u8 [binding=weak, objec
     %t1 = addr $c
     %t2 = addr $c
     %t3 = addr $expected
-    %t4 = unary decay ptr %t3
-    %t5 = binary mul i64 0, 4
-    %t6 = index i8 [projection=array_element] %t4, %t5
-    %t7 = call u8 @boost__container__test__test_expected_container(%t2, %t6, 1, 0)
-    return u8 %t7
+    %t4 = binary mul i64 0, 4
+    %t5 = index i8 [projection=array_element] %t3, %t4
+    %t6 = call u8 @boost__container__test__test_expected_container(%t2, %t5, 1, 0)
+    return u8 %t6
 }
-function @boost__container__test__test_expected_container(%__param0 : ptr [pass=reference], %__param1 : ptr, %__param2 : u32, %__param3 : u32) -> u8 [binding=weak, object=_ZN5boost9container4test23test_expected_containerI1VEENS0_3dtl11enable_if_cIXntsr5boost9container3dtl7is_pairINT_10value_typeEEE5valueEbE4typeERKS6_PKNS1_10EmplaceIntEjj] {
+function @boost__container__test__test_expected_container(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr, %__param2 : u32, %__param3 : u32) -> u8 [binding=weak, object=_ZN5boost9container4test23test_expected_containerI1VEEbRKT_PKNS1_10EmplaceIntEjj] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : u32

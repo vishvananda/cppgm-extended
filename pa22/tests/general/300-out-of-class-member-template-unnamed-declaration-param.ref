@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @owner_int___read(%this : ptr) -> i32 [binding=weak, object=_ZN5ownerIiE4readILi3EEEiv] {
+function @owner_int___read(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5ownerIiE4readILi3EEEiv] {
   slot $this : ptr
 
   block ^entry:
@@ -31,7 +31,7 @@ function @owner_int___read(%this : ptr) -> i32 [binding=weak, object=_ZN5ownerIi
     %t3 = call i32 @value_int___get(%t2)
     return i32 %t3
 }
-function @value_int___get(%this : ptr) -> i32 [binding=weak, object=_ZN5valueIiE3getILi3EEEiv] {
+function @value_int___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5valueIiE3getILi3EEEiv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -3,7 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @H__Box_int___f(3, 2)
     return i32 %t1
 }
-function @H__Box_int___f(%a : i32, %b : i32) -> i32 [binding=weak, object=_ZN1H3BoxIiE1fEii] {
+function @H__Box_int___f(%a : i32, %b : i32) -> i32 [binding=weak, object=_ZN1H3BoxIiE1fEii, inline_hint=yes] {
   slot $a : i32
   slot $b : i32
 

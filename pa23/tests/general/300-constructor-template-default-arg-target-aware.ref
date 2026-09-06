@@ -17,7 +17,7 @@ function @make_box(%a : obj<4x4>, %b : obj<4x4>) -> obj<12x4> [binding=strong, o
     %t6 = addr $argobj__3
     %t7 = addr $b
     copyobj 4x4 %t7, %t6
-    call void @box__box(%t3, $argobj__2, $argobj__3, 0)
+    call void @box__box__ov3(%t3, $argobj__2, $argobj__3, 0)
     return obj<12x4> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -100,7 +100,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t29 = load i32 $cond__3
     return i32 %t29
 }
-function @box__box(%this : ptr, %a : obj<4x4>, %b : obj<4x4>, %x : i32) -> void [binding=weak, object=_ZN3boxC1I4iterEET_S2_i] {
+function @box__box__ov3(%this : ptr [object_bytes=12], %a : obj<4x4>, %b : obj<4x4>, %x : i32) -> void [binding=weak, object=_ZN3boxC1I4iterEET_S2_i, inline_hint=yes] {
   slot $this : ptr
   slot $a : obj<4x4>
   slot $b : obj<4x4>
@@ -131,4 +131,4 @@ function @box__box(%this : ptr, %a : obj<4x4>, %b : obj<4x4>, %x : i32) -> void 
     store i32 %t13, %t15
     return void
 }
-alias object _ZN3boxC2I4iterEET_S2_i = @box__box
+alias object _ZN3boxC2I4iterEET_S2_i = @box__box__ov3

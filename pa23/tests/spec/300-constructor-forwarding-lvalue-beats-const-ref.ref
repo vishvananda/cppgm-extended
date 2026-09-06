@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 42, $value
     %t1 = addr $wrapped
     %t2 = addr $value
-    call void @result_int___result__ov4(%t1, %t2, 0)
+    call void @result_int___result_int___ov4(%t1, %t2, 0)
     %t3 = addr $wrapped
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @result_int___result__ov4(%this : ptr, %value : ptr [pass=reference], %__param2 : ptr) -> void [binding=weak, object=_ZN6resultIiEC1IRiEEOT_PDTclsr6resultIiEE14accepts_lvaluescS3_fp_EE] {
+function @result_int___result_int___ov4(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=4], %__param2 : ptr) -> void [binding=weak, object=_ZN6resultIiEC1IRiEEOT_P41__function_template_nondeduced_type_shape, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $__param2 : ptr
@@ -40,10 +40,10 @@ function @result_int___result__ov4(%this : ptr, %value : ptr [pass=reference], %
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr $value
-    call void @reference_int___reference(%t2, %t3)
+    call void @reference_int___reference_int_(%t2, %t3)
     return void
 }
-function @reference_int___reference(%this : ptr, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZN9referenceIiEC1ERi] {
+function @reference_int___reference_int_(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN9referenceIiEC1ERi, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -56,5 +56,5 @@ function @reference_int___reference(%this : ptr, %value : ptr [pass=reference]) 
     store ptr %t1, %t3
     return void
 }
-alias object _ZN6resultIiEC2IRiEEOT_PDTclsr6resultIiEE14accepts_lvaluescS3_fp_EE = @result_int___result__ov4
-alias object _ZN9referenceIiEC2ERi = @reference_int___reference
+alias object _ZN6resultIiEC2IRiEEOT_P41__function_template_nondeduced_type_shape = @result_int___result_int___ov4
+alias object _ZN9referenceIiEC2ERi = @reference_int___reference_int_

@@ -4,7 +4,6 @@ function @destroy(%pointer : ptr) -> void [binding=strong, object=_Z7destroyP4It
   block ^entry:
     store ptr %pointer, $pointer
     %t1 = load ptr $pointer
-    call void @Item___Item(%t1)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -36,11 +35,3 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @Item___Item(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4ItemD1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN4ItemD2Ev = @Item___Item

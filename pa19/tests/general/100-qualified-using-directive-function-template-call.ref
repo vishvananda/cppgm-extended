@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @lib__algorithm__call_begin(%range : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN3lib9algorithm10call_beginI10range_likeEEiRT_] {
+function @lib__algorithm__call_begin(%range : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN3lib9algorithm10call_beginI10range_likeEEiRT_] {
   slot $range : ptr
 
   block ^entry:
@@ -30,7 +30,7 @@ function @lib__algorithm__call_begin(%range : ptr [pass=reference]) -> i32 [bind
     %t2 = call i32 @lib__range_adl_barrier__begin(%t1)
     return i32 %t2
 }
-function @lib__range_adl_barrier__begin(%range : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN3lib17range_adl_barrier5beginI10range_likeEEiRT_] {
+function @lib__range_adl_barrier__begin(%range : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN3lib17range_adl_barrier5beginI10range_likeEEiRT_] {
   slot $range : ptr
 
   block ^entry:
@@ -39,7 +39,7 @@ function @lib__range_adl_barrier__begin(%range : ptr [pass=reference]) -> i32 [b
     %t2 = call i32 @range_like__begin(%t1)
     return i32 %t2
 }
-function @range_like__begin(%this : ptr) -> i32 [binding=weak, object=_ZN10range_like5beginEv] {
+function @range_like__begin(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN10range_like5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

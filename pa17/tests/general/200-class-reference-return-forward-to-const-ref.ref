@@ -1,6 +1,6 @@
-declare function @move_ref(%arg0 : ptr [pass=reference]) -> ptr [binding=strong, object=_Z8move_refR1S]
+declare function @move_ref(%arg0 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z8move_refR1S]
 
-function @read_ref(%s : ptr [pass=reference]) -> i32 [binding=strong, object=_Z8read_refRK1S] {
+function @read_ref(%s : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z8read_refRK1S] {
   slot $s : ptr
 
   block ^entry:

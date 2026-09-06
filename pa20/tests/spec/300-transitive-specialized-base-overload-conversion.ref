@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $f
     %t2 = addr $f
     %t3 = call ptr @make()
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     call void @F__operator____ov2(%t2, %t4)
     return i32 0
 }
@@ -13,7 +13,7 @@ function @make() -> ptr [binding=weak, object=_Z4makeIiEP1DIT_Ev] {
   block ^entry:
     return ptr 0
 }
-function @F__operator____ov2(%this : ptr, %__param1 : ptr) -> void [binding=weak, object=_ZN1FclEP1B] {
+function @F__operator____ov2(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN1FclEP1B, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

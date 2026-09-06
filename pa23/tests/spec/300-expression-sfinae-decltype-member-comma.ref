@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @has_value(%value : ptr [pass=reference], %__param1 : i32) -> u8 [binding=weak, object=_Z9has_valueI7presentEDTcmdtfp_6membercvb_EERKT_i] {
+function @has_value(%value : ptr [pass=by_address, object_bytes=1], %__param1 : i32) -> u8 [binding=weak, object=_Z9has_valueI7presentEbRKT_i] {
   slot $value : ptr
   slot $__param1 : i32
 
@@ -54,7 +54,7 @@ function @has_value(%value : ptr [pass=reference], %__param1 : i32) -> u8 [bindi
     %t3 = load u8 %t2
     return u8 %t3
 }
-function @has_value__ov3(%__param0 : ptr [pass=reference], %__param1 : i64) -> u8 [binding=weak, object=_Z9has_valueI7missingEbRKT_l] {
+function @has_value__ov3(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i64) -> u8 [binding=weak, object=_Z9has_valueI7missingEbRKT_l] {
   slot $__param0 : ptr
   slot $__param1 : i64
 

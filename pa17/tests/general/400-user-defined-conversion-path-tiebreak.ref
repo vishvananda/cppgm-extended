@@ -1,4 +1,4 @@
-function @pick(%__param0 : ptr [pass=reference], %__param1 : u8) -> i32 [binding=strong, object=_Z4pickR6streamb] {
+function @pick(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : u8) -> i32 [binding=strong, object=_Z4pickR6streamb] {
   slot $__param0 : ptr
   slot $__param1 : u8
 
@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = call i32 @pick(%t5, %t9)
     return i32 %t10
 }
-function @source__operatorint(%this : ptr) -> i32 [binding=weak, object=_ZNK6sourcecviEv] {
+function @source__operatorint(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK6sourcecviEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

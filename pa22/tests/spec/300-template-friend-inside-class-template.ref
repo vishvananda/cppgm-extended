@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $argobj__2
-    call void @box_int___box(%t1, 9)
+    call void @box_int___box_int_(%t1, 9)
     %t2 = call i32 @read($argobj__2)
     %t3 = cmp eq i32 %t2, 9
     branch %t3, ^cond_then_1, ^cond_else_2
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @box_int___box(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3boxIiEC1Ei] {
+function @box_int___box_int_(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3boxIiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -45,4 +45,4 @@ function @read(%b : obj<4x4>) -> i32 [binding=weak, object=_Z4readIiEi3boxIT_E] 
     %t4 = load i32 %t3
     return i32 %t4
 }
-alias object _ZN3boxIiEC2Ei = @box_int___box
+alias object _ZN3boxIiEC2Ei = @box_int___box_int_

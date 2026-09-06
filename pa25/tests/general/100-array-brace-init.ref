@@ -9,8 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 %t1, 8
     store i32 3, %t3
     %t4 = addr $a
-    %t5 = unary decay ptr %t4
-    %t6 = index i32 [projection=array_element] %t5, 1
-    %t7 = load i32 %t6
-    return i32 %t7
+    %t5 = index i32 [projection=array_element] %t4, 1
+    %t6 = load i32 %t5
+    return i32 %t6
 }

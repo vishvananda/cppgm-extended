@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @Property__Property(%this : ptr) -> void [binding=weak, object=_ZN8PropertyC1Ev] {
+function @Property__Property(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN8PropertyC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -33,7 +33,7 @@ function @Property__Property(%this : ptr) -> void [binding=weak, object=_ZN8Prop
     store u32 1, %t2
     return void
 }
-function @Property__operatorread_access_t(%this : ptr) -> ptr [binding=weak, object=_ZNK8PropertycvRKjEv] {
+function @Property__operatorread_access_t(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZNK8PropertycvRKjEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

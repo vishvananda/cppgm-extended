@@ -1,3 +1,7 @@
+function @boost_like__json__object__table__allocate() -> ptr [binding=weak, object=_ZN10boost_like4json6object5table8allocateEv, inline_hint=yes] {
+  block ^entry:
+    return ptr 0
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
@@ -16,8 +20,4 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t2 = load i32 $cond__1
     return i32 %t2
-}
-function @boost_like__json__object__table__allocate() -> ptr [binding=weak, object=_ZN10boost_like4json6object5table8allocateEv] {
-  block ^entry:
-    return ptr 0
 }

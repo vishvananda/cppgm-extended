@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @probe__find(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK5probe4findIiEEiRKT_] {
+function @probe__find(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK5probe4findIiEEiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -36,7 +36,7 @@ function @probe__find(%this : ptr, %value : ptr [pass=reference]) -> i32 [bindin
     %t3 = call i32 @probe__tag__ov2(%t1, %t2)
     return i32 %t3
 }
-function @probe__tag__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK5probe3tagIiEEiRKT_] {
+function @probe__tag__ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK5probe3tagIiEEiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

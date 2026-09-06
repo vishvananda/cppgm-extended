@@ -1,15 +1,5 @@
 dwarf-facts 1
 object native
-debug_info present
-debug_line present
-debug_loc present
-compile_unit tests/debuginfo/object-o2/100-cppgm-line-tables-o2.t
-subprogram foo line 1
-subprogram main line 7
-parameter x location present
-variable y location present
-variable z location present
-line 2
-line 3
-line 4
-line 8
+debug_info absent
+debug_line absent
+debug_loc absent

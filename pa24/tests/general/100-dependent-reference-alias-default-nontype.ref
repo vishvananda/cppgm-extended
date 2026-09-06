@@ -1,4 +1,4 @@
-global @Box_int___count : i64 [binding=weak, object=_ZN3BoxIiE5countE] = 4
+global @__cppgm_class_template_identity_3_0_0__count : i64 [storage=readonly, binding=weak, object=_ZN3BoxIiE5countE] = 4
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $box : obj<1x1>
@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = convert trunc i32 i64 %t5
     return i32 %t6
 }
-function @Box_int___get(%this : ptr) -> i64 [binding=weak, object=_ZNK3BoxIiE3getEv] {
+function @Box_int___get(%this : ptr [object_bytes=1]) -> i64 [binding=weak, object=_ZNK3BoxIiE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

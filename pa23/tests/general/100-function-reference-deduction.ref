@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @apply(%fn : ptr [pass=reference], %value : i32) -> i32 [binding=weak, object=_Z5applyIiiET_RFS0_T0_ES1_] {
+function @apply(%fn : ptr [pass=by_address], %value : i32) -> i32 [binding=weak, object=_Z5applyIiiET_RFS0_T0_ES1_] {
   slot $fn : ptr
   slot $value : i32
 
@@ -38,7 +38,6 @@ function @apply(%fn : ptr [pass=reference], %value : i32) -> i32 [binding=weak, 
     store i32 %value, $value
     %t1 = load i32 $value
     %t2 = load ptr $fn
-    %t3 = unary decay ptr %t2
-    %t4 = call i32 %t3(%t1) as (%arg0 : i32) -> i32
-    return i32 %t4
+    %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
+    return i32 %t3
 }

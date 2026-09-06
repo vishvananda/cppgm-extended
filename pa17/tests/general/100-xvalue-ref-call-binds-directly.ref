@@ -1,4 +1,4 @@
-function @as_rvalue(%owner : ptr [pass=reference]) -> ptr [binding=strong, object=_Z9as_rvalueR5Owner] {
+function @as_rvalue(%owner : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=strong, object=_Z9as_rvalueR5Owner] {
   slot $owner : ptr
 
   block ^entry:
@@ -6,7 +6,7 @@ function @as_rvalue(%owner : ptr [pass=reference]) -> ptr [binding=strong, objec
     %t1 = load ptr $owner
     return ptr %t1
 }
-function @consume(%owner : ptr [pass=reference]) -> i32 [binding=strong, object=_Z7consumeO5Owner] {
+function @consume(%owner : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z7consumeO5Owner] {
   slot $owner : ptr
   slot $cond__1 : i32
 
@@ -83,7 +83,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load i32 $cond__1
     return i32 %t15
 }
-function @Owner__Owner(%this : ptr, %ptr : ptr) -> void [binding=weak, object=_ZN5OwnerC1EPi] {
+function @Owner__Owner(%this : ptr [object_bytes=8], %ptr : ptr) -> void [binding=weak, object=_ZN5OwnerC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $ptr : ptr
 
@@ -96,4 +96,12 @@ function @Owner__Owner(%this : ptr, %ptr : ptr) -> void [binding=weak, object=_Z
     store ptr %t1, %t3
     return void
 }
+function @Owner___Owner(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5OwnerD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
 alias object _ZN5OwnerC2EPi = @Owner__Owner
+alias object _ZN5OwnerD2Ev = @Owner___Owner

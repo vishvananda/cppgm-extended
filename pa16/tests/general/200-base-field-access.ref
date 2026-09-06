@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $x
     call void @YB__YB(%t1)
     %t2 = addr $x
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load i32 %t4
     %t6 = addr $x
@@ -14,20 +14,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = binary add i32 %t5, %t8
     return i32 %t9
 }
-function @YB__YB(%this : ptr) -> void [binding=weak, object=_ZN2YBC1Ev] {
+function @YB__YB(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN2YBC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @YA__YA__base_entry(%t2)
     %t3 = load ptr $this
     %t4 = index i8 [projection=field] %t3, 4
     store i32 2, %t4
     return void
 }
-function @YA__YA__base_entry(%this : ptr) -> void [binding=weak, object=_ZN2YAC2Ev] {
+function @YA__YA__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN2YAC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

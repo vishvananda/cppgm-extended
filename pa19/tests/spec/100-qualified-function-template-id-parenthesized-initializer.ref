@@ -41,7 +41,7 @@ function @helper__id(%value : i32) -> i32 [binding=weak, object=_ZN6helper2idIiE
     %t1 = load i32 $value
     return i32 %t1
 }
-function @holder__holder(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN6holderC1Ei] {
+function @holder__holder(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN6holderC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

@@ -6,21 +6,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $fun
     %t2 = addr $f
-    call void @F_void_____F(%t2)
+    call void @F_void_____F_void___(%t2)
     %t3 = addr $f
     %t4 = addr $argobj__1
     %t5 = addr $fun
-    %t6 = call ptr @F_void_____operator___ov2(%t3, $argobj__1)
+    %t6 = call ptr @F_void_____operator___ov3(%t3, $argobj__1)
     return i32 0
 }
-function @F_void_____F(%this : ptr) -> void [binding=weak, object=_ZN1FIFvvEEC1Ev] {
+function @F_void_____F_void___(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1FIFvvEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @F_void_____operator___ov2(%this : ptr, %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN1FIFvvEEaSI3FunEERS1_T_] {
+function @F_void_____operator___ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN1FIFvvEEaSI3FunEERS1_T_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -29,4 +29,4 @@ function @F_void_____operator___ov2(%this : ptr, %__param1 : obj<1x1>) -> ptr [b
     %t1 = load ptr $this
     return ptr %t1
 }
-alias object _ZN1FIFvvEEC2Ev = @F_void_____F
+alias object _ZN1FIFvvEEC2Ev = @F_void_____F_void___

@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @f(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z1fI5tokenEiRKT_] {
+function @f(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z1fI5tokenEiRKT_] {
   slot $__param0 : ptr
 
   block ^entry:

@@ -1,13 +1,12 @@
-function @get(%u : ptr [pass=reference]) -> i32 [binding=strong, object=_Z3getR1U] {
+function @get(%u : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z3getR1U] {
   slot $u : ptr
 
   block ^entry:
     store ptr %u, $u
     %t1 = load ptr $u
     %t2 = addr @__lambda_get_t31_36
-    %t3 = unary decay ptr %t2
-    %t4 = call i32 %t3(%t1) as (%arg0 : ptr [pass=reference]) -> i32
-    return i32 %t4
+    %t3 = call i32 %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=4]) -> i32
+    return i32 %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $u : obj<4x4>
@@ -20,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 7
     return i32 %t4
 }
-function @__lambda_get_t31_36(%x : ptr [pass=reference]) -> i32 [binding=internal] {
+function @__lambda_get_t31_36(%x : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=internal, object=_Z19__lambda_get_t31_36R1U, object_root=yes] {
   slot $x : ptr
 
   block ^entry:
@@ -30,7 +29,7 @@ function @__lambda_get_t31_36(%x : ptr [pass=reference]) -> i32 [binding=interna
     %t3 = load i32 %t2
     return i32 %t3
 }
-function @U__U(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1UC1Ei] {
+function @U__U(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1UC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

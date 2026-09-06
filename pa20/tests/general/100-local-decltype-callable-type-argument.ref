@@ -1,4 +1,4 @@
-function @takes_int_array(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z15takes_int_arrayR5arrayIiLj10EE] {
+function @takes_int_array(%__param0 : ptr [pass=by_address, object_bytes=40]) -> i32 [binding=strong, object=_Z15takes_int_arrayR5arrayIiLj10EE] {
   slot $__param0 : ptr
 
   block ^entry:

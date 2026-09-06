@@ -4,7 +4,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__2
-    call void @Fun__Fun(%t1)
     %t2 = call i32 @Fun__operator__(%t1, 4)
     %t3 = cmp eq i32 %t2, 5
     branch %t3, ^cond_then_1, ^cond_else_2
@@ -21,14 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @Fun__Fun(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3FunC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @Fun__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZNKR3FunclEi] {
+function @Fun__operator__(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZNKR3FunclEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
@@ -39,4 +31,3 @@ function @Fun__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, object=_Z
     %t2 = binary add i32 %t1, 1
     return i32 %t2
 }
-alias object _ZN3FunC2Ev = @Fun__Fun

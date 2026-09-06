@@ -1,6 +1,6 @@
 global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
 
-function @make_value(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z10make_valuev] {
+function @make_value(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z10make_valuev] {
   block ^entry:
     call void @value__value(%ret, 7)
     return void
@@ -65,7 +65,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__2
     return i32 %t13
 }
-function @value__value(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN5valueC1Ei] {
+function @value__value(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN5valueC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -78,7 +78,7 @@ function @value__value(%this : ptr, %input : i32) -> void [binding=weak, object=
     store i32 %t1, %t3
     return void
 }
-function @value___value(%this : ptr) -> void [binding=weak, object=_ZN5valueD1Ev] {
+function @value___value(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5valueD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

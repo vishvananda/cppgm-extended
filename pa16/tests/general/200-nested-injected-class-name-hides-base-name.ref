@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @wrapper__node__self(%this : ptr) -> ptr [binding=weak, object=_ZN7wrapper4node4selfEv] {
+function @wrapper__node__self(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZN7wrapper4node4selfEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -12,23 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 3
     return i32 %t5
 }
-function @__lambda_main_t16_18__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEv, prefer_local=yes] {
-  slot $this : ptr
-  slot $inner : obj<1x1>
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = addr $inner
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=reference_field] %t2, 0
-    %t4 = load ptr %t3
-    %t5 = load i32 %t4
-    %t6 = addr $inner
-    %t7 = call i32 @__lambda_main_t16_18____lambda___lambda_main_t16_18__operator___t25_27__operator__(%t6)
-    %t8 = binary add i32 %t5, %t7
-    return i32 %t8
-}
-function @__lambda_main_t16_18____lambda___lambda_main_t16_18__operator___t25_27__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZZ4mainENK3$_0clEvENKUlvE_clEv, prefer_local=yes] {
+function @__lambda_main_t16_18____lambda_nested_t25_27__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZZ4mainENK3$_0clEvENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 
@@ -37,4 +21,20 @@ function @__lambda_main_t16_18____lambda___lambda_main_t16_18__operator___t25_27
     store i32 2, $value
     %t1 = load i32 $value
     return i32 %t1
+}
+function @__lambda_main_t16_18__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $inner : obj<1x1>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $inner
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr %t3
+    %t5 = load i32 %t4
+    %t6 = addr $inner
+    %t7 = call i32 @__lambda_main_t16_18____lambda_nested_t25_27__operator__(%t6)
+    %t8 = binary add i32 %t5, %t7
+    return i32 %t8
 }

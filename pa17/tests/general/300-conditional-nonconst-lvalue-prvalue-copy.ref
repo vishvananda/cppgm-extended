@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^condobj_end_3
 
   block ^condobj_end_3:
-    call void @Value__Value__ov3(%t2, %t3)
+    call void @Value__Value__ov3(%t2, %t3) [elision=copy]
     %t5 = addr $result
     %t6 = addr $local
     %t7 = index i8 [projection=field] %t6, 0
@@ -59,7 +59,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load i32 $cond__2
     return i32 %t14
 }
-function @Value__Value(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN5ValueC1Ei] {
+function @Value__Value(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN5ValueC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -72,7 +72,7 @@ function @Value__Value(%this : ptr, %input : i32) -> void [binding=weak, object=
     store i32 %t1, %t3
     return void
 }
-function @Value__Value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5ValueC1ERKS_] {
+function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5ValueC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -90,7 +90,7 @@ function @Value__Value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void 
     store i32 %t7, @copies
     return void
 }
-function @Value__Value__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5ValueC1EOS_] {
+function @Value__Value__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5ValueC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

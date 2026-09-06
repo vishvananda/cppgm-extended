@@ -43,7 +43,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @container__insert(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN9container6insertERi] {
+function @container__insert(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN9container6insertERi, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -51,12 +51,12 @@ function @container__insert(%this : ptr, %value : ptr [pass=reference]) -> i32 [
     store ptr %this, $this
     store ptr %value, $value
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $value
     %t4 = call i32 @ordered__insert_(%t2, 0, %t3, 0)
     return i32 %t4
 }
-function @ordered__insert_(%this : ptr, %__param1 : i32, %value : ptr [pass=reference], %variant : i32) -> i32 [binding=weak, object=_ZN7ordered7insert_IiEEiiRiT_] {
+function @ordered__insert_(%this : ptr [object_bytes=1], %__param1 : i32, %value : ptr [pass=by_address, object_bytes=4], %variant : i32) -> i32 [binding=weak, object=_ZN7ordered7insert_IiEEiiRiT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $value : ptr
@@ -70,14 +70,14 @@ function @ordered__insert_(%this : ptr, %__param1 : i32, %value : ptr [pass=refe
     %t1 = load ptr $value
     store i32 7, %t1
     %t2 = load ptr $this
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = load ptr $value
     %t5 = load i32 $variant
     %t6 = call i32 @root__insert_(%t3, 0, %t4, %t5)
     %t7 = binary add i32 %t6, 1
     return i32 %t7
 }
-function @root__insert_(%this : ptr, %__param1 : i32, %value : ptr [pass=reference], %__param3 : i32) -> i32 [binding=weak, object=_ZN4root7insert_EiRii] {
+function @root__insert_(%this : ptr [object_bytes=1], %__param1 : i32, %value : ptr [pass=by_address, object_bytes=4], %__param3 : i32) -> i32 [binding=weak, object=_ZN4root7insert_EiRii, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $value : ptr

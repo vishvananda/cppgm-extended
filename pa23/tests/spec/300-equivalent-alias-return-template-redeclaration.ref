@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 2
     return i32 %t4
 }
-function @compat__swap(%left : ptr [pass=reference], %right : ptr [pass=reference]) -> void [binding=weak, object=_ZN6compat4swapIiEENS_9enable_ifIXsr6__and_INS_6__not_INS_15__is_tuple_likeIT_EEEENS_21is_move_constructibleIS4_EENS_18is_move_assignableIS4_EEEE5valueEvE4typeERS4_SD_] {
+function @compat__swap(%left : ptr [pass=by_address, object_bytes=4], %right : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6compat4swapIiEEvRT_S2_] {
   slot $left : ptr
   slot $right : ptr
   slot $tmp : i32

@@ -8,10 +8,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    %t3 = call i32 @derived_dependent_base_int____run(%t2)
+    %t3 = call i32 @derived___cppgm_class_template_identity_0_0_0___run(%t2)
     return i32 %t3
 }
-function @derived_dependent_base_int____run(%this : ptr) -> i32 [binding=weak, object=_ZN7derivedI14dependent_baseIiEE3runEv] {
+function @derived___cppgm_class_template_identity_0_0_0___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN7derivedI14dependent_baseIiEE3runEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

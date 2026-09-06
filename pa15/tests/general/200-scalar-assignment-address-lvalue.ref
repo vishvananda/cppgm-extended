@@ -1,4 +1,4 @@
-function @assign_address(%value : ptr [pass=reference], %next : i32) -> ptr [binding=strong, object=_Z14assign_addressRii] {
+function @assign_address(%value : ptr [pass=by_address, object_bytes=4], %next : i32) -> ptr [binding=strong, object=_Z14assign_addressRii] {
   slot $value : ptr
   slot $next : i32
 

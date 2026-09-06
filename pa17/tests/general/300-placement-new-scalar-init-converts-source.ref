@@ -1,4 +1,4 @@
-function @operatornew(%__param0 : i64, %p : ptr) -> ptr [binding=strong, object=_ZnwmPv] {
+function @operatornew__ov2(%__param0 : i64, %p : ptr) -> ptr [binding=strong, object=_ZnwmPv] {
   slot $__param0 : i64
   slot $p : ptr
 
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 7, $i
     %t1 = convert sext i64 i32 4
     %t2 = addr $f
-    %t3 = call ptr @operatornew(%t1, %t2)
+    %t3 = call ptr @operatornew__ov2(%t1, %t2)
     %t4 = load i32 $i
     %t5 = convert sitofp f32 i32 %t4
     store f32 %t5, %t3

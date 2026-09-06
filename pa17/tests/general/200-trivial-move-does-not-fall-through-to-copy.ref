@@ -1,4 +1,4 @@
-function @forward(%v : ptr [pass=reference]) -> ptr [binding=strong, object=_Z7forwardR5value] {
+function @forward(%v : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z7forwardR5value] {
   slot $v : ptr
 
   block ^entry:
@@ -14,7 +14,7 @@ function @take(%__param0 : obj<4x4>) -> void [binding=strong, object=_Z4take5val
     copyobj 4x4 %__param0, %t1
     return void
 }
-function @copy(%v : ptr [pass=reference]) -> void [binding=strong, object=_Z4copyRK5value] {
+function @copy(%v : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z4copyRK5value] {
   slot $v : ptr
   slot $copied : obj<4x4>
 
@@ -41,14 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @take($argobj__1)
     return i32 0
 }
-function @value__value(%this : ptr) -> void [binding=weak, object=_ZN5valueC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @value__value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5valueC1ERKS_] {
+function @value__value__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5valueC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -56,11 +49,18 @@ function @value__value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void 
     store ptr %this, $this
     store ptr %other, $other
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $other
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     copyobj 4x4 %t4, %t2
     return void
 }
-alias object _ZN5valueC2Ev = @value__value
+function @value__value(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5valueC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
 alias object _ZN5valueC2ERKS_ = @value__value__ov2
+alias object _ZN5valueC2Ev = @value__value

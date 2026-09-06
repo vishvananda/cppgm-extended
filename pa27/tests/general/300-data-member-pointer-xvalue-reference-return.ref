@@ -1,4 +1,4 @@
-function @select_member(%object : ptr [pass=reference], %member : i64) -> ptr [binding=strong, object=_Z13select_memberO1XMS_i] {
+function @select_member(%object : ptr [pass=by_address, object_bytes=4], %member : i64) -> ptr [binding=strong, object=_Z13select_memberO1XMS_i] {
   slot $object : ptr
   slot $member : i64
 

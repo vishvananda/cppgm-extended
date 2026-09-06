@@ -1,11 +1,11 @@
-function @select(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z6selectRKPc] {
+function @select(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z6selectRKPc] {
   slot $__param0 : ptr
 
   block ^entry:
     store ptr %__param0, $__param0
     return i32 1
 }
-function @select__ov2(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z6selectOPc] {
+function @select__ov2(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z6selectOPc] {
   slot $__param0 : ptr
 
   block ^entry:

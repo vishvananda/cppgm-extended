@@ -6,11 +6,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $source
     %t2 = addr $result
     %t3 = addr $source
-    %t4 = index i8 [projection=base_subobject] %t3, 0
-    call void @target_alloc___target__ov3(%t2, %t4)
+    %t4 = index i8 %t3, 0
+    call void @target_template_parameter_alloc___target_template_parameter_alloc___ov3(%t2, %t4)
     return i32 0
 }
-function @target_alloc___target__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6targetI5allocEC1I7derivedEERK4baseIT_1AE] {
+function @target_template_parameter_alloc___target_template_parameter_alloc___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN6targetI5allocEC1I7derivedEERK4baseIT_5allocE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -19,4 +19,4 @@ function @target_alloc___target__ov3(%this : ptr, %__param1 : ptr [pass=referenc
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN6targetI5allocEC2I7derivedEERK4baseIT_1AE = @target_alloc___target__ov3
+alias object _ZN6targetI5allocEC2I7derivedEERK4baseIT_5allocE = @target_template_parameter_alloc___target_template_parameter_alloc___ov3

@@ -1,4 +1,4 @@
-function @accept(%__param0 : ptr [pass=reference]) -> u8 [binding=strong, object=_Z6acceptR8Analyzer] {
+function @accept(%__param0 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_Z6acceptR8Analyzer] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @Analyzer__f(%t2)
     return i32 %t3
 }
-function @Analyzer__f(%this : ptr) -> i32 [binding=weak, object=_ZN8Analyzer1fEv] {
+function @Analyzer__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN8Analyzer1fEv, inline_hint=yes] {
   slot $this : ptr
   slot $outer : obj<8x8>
   slot $cond__1 : i32
@@ -40,7 +40,7 @@ function @Analyzer__f(%this : ptr) -> i32 [binding=weak, object=_ZN8Analyzer1fEv
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @Analyzer____lambda_Analyzer__f_t24_28__operator__(%this : ptr) -> u8 [binding=weak, object=_ZZN8Analyzer1fEvENKUlvE_clEv] {
+function @Analyzer____lambda_Analyzer__f_t24_28__operator__(%this : ptr [object_bytes=8]) -> u8 [binding=internal, object=_ZZN8Analyzer1fEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
   slot $inner : obj<8x8>
 
@@ -52,10 +52,10 @@ function @Analyzer____lambda_Analyzer__f_t24_28__operator__(%this : ptr) -> u8 [
     %t4 = load ptr %t3
     store ptr %t4, %t1
     %t5 = addr $inner
-    %t6 = call u8 @Analyzer____lambda_Analyzer__f_t24_28____lambda_Analyzer____lambda_Analyzer__f_t24_28__operator___t35_39__operator__(%t5)
+    %t6 = call u8 @Analyzer____lambda_Analyzer__f_t24_28____lambda_nested_t35_39__operator__(%t5)
     return u8 %t6
 }
-function @Analyzer____lambda_Analyzer__f_t24_28____lambda_Analyzer____lambda_Analyzer__f_t24_28__operator___t35_39__operator__(%this : ptr) -> u8 [binding=weak, object=_ZZZN8Analyzer1fEvENKUlvE_clEvENKUlvE_clEv] {
+function @Analyzer____lambda_Analyzer__f_t24_28____lambda_nested_t35_39__operator__(%this : ptr [object_bytes=8]) -> u8 [binding=internal, object=_ZZZN8Analyzer1fEvENKUlvE_clEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

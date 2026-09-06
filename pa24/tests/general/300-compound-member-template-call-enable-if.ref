@@ -6,10 +6,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 1, $value
     %t1 = addr $b
     %t2 = addr $value
-    call void @box_int___box__ov3(%t1, %t2)
+    call void @box_int___box_int___ov3(%t1, %t2)
     return i32 0
 }
-function @box_int___box__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN3boxIiEC1I5checkIiETnN9enable_ifIXaaclsrT_5firstIiEEclsrT_6secondIiEEEiE4typeELi0EEERKi] {
+function @box_int___box_int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3boxIiEC1I5checkIiELi0EEERKi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -18,4 +18,4 @@ function @box_int___box__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> v
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN3boxIiEC2I5checkIiETnN9enable_ifIXaaclsrT_5firstIiEEclsrT_6secondIiEEEiE4typeELi0EEERKi = @box_int___box__ov3
+alias object _ZN3boxIiEC2I5checkIiELi0EEERKi = @box_int___box_int___ov3

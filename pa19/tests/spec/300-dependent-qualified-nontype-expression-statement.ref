@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @Derived_int___run(%this : ptr, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZN7DerivedIiE3runERi] {
+function @Derived_int___run(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7DerivedIiE3runERi, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -36,7 +36,7 @@ function @Derived_int___run(%this : ptr, %value : ptr [pass=reference]) -> void 
     call void @Base_int___touch(%t1)
     return void
 }
-function @Base_int___touch(%value : ptr [pass=reference]) -> void [binding=weak, object=_ZN4BaseIiE5touchERi] {
+function @Base_int___touch(%value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4BaseIiE5touchERi, inline_hint=yes] {
   slot $value : ptr
 
   block ^entry:

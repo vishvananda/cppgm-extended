@@ -9,10 +9,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $discard__1
     %t4 = addr $f
     %t5 = addr $value
-    %t6 = call obj<1x1> @functor_int___operator___ov2(%t4, %t5)
+    %t6 = call obj<1x1> @functor_int___operator___ov3(%t4, %t5)
     return i32 0
 }
-function @functor_int___operator___ov2(%this : ptr, %value : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZNK7functorIiEaSI6actualEE5pair2IS0_N13copy_argumentIKT_E4typeEERS6_] {
+function @functor_int___operator___ov3(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK7functorIiEaSI6actualEE5pair2IS0_KT_ERS4_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $retobj__1 : obj<1x1>
@@ -23,10 +23,10 @@ function @functor_int___operator___ov2(%this : ptr, %value : ptr [pass=reference
     %t1 = addr $retobj__1
     %t2 = load ptr $this
     %t3 = load ptr $value
-    call void @pair2_functor_int___actual_const___pair2(%t1, %t2, %t3)
+    call void @pair2___cppgm_class_template_identity_2_0_0__actual_const___pair2___cppgm_class_template_identity_2_0_0__actual_const_(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @pair2_functor_int___actual_const___pair2(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5pair2I7functorIiEK6actualEC1ERKS1_RS3_] {
+function @pair2___cppgm_class_template_identity_2_0_0__actual_const___pair2___cppgm_class_template_identity_2_0_0__actual_const_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5pair2I7functorIiEK6actualEC1ERKS1_RS3_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -37,4 +37,4 @@ function @pair2_functor_int___actual_const___pair2(%this : ptr, %__param1 : ptr 
     store ptr %__param2, $__param2
     return void
 }
-alias object _ZN5pair2I7functorIiEK6actualEC2ERKS1_RS3_ = @pair2_functor_int___actual_const___pair2
+alias object _ZN5pair2I7functorIiEK6actualEC2ERKS1_RS3_ = @pair2___cppgm_class_template_identity_2_0_0__actual_const___pair2___cppgm_class_template_identity_2_0_0__actual_const_

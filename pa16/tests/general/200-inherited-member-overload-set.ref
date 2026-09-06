@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120
   i8 0
 }
@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t2, $first
     store i8 0, $out
     %t3 = addr $object
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     %t5 = load ptr $first
     %t6 = load ptr $first
     %t7 = index i8 %t6, 1
@@ -36,7 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @Base__select(%this : ptr, %__param1 : ptr, %__param2 : ptr, %__param3 : ptr) -> i32 [binding=weak, object=_ZN4Base6selectEPKcS1_Pc] {
+function @Base__select(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : ptr) -> i32 [binding=weak, object=_ZN4Base6selectEPKcS1_Pc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

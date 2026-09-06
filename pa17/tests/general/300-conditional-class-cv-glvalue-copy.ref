@@ -1,7 +1,7 @@
 global @copies : i32 [binding=strong, object=_Z6copies] = zero
 global @moves : i32 [binding=strong, object=_Z5moves] = zero
 
-function @choose(%ret : ptr [pass=indirect_result], %use_local : u8, %fallback : ptr [pass=reference]) -> void [binding=strong, object=_Z6choosebRK5Value] {
+function @choose(%ret : ptr [pass=indirect_result, object_bytes=4], %use_local : u8, %fallback : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z6choosebRK5Value] {
   slot $use_local : u8
   slot $fallback : ptr
   slot $local : obj<4x4>
@@ -106,7 +106,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = load i32 $cond__1
     return i32 %t22
 }
-function @Value__Value(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN5ValueC1Ei] {
+function @Value__Value(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN5ValueC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -119,7 +119,7 @@ function @Value__Value(%this : ptr, %input : i32) -> void [binding=weak, object=
     store i32 %t1, %t3
     return void
 }
-function @Value__Value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5ValueC1ERKS_] {
+function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5ValueC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

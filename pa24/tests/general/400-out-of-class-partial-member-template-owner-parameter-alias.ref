@@ -1,5 +1,5 @@
-global @__local_static__function_symbol_5f5a347065656b4969694550545f5254305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32373a3132 : i32 [binding=weak, object=@__local_static__function_symbol_5f5a347065656b4969694550545f5254305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32373a3132] = 7
-global @__local_static__function_symbol_5f5a347065656b49696945504b545f524b54305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32303a3132 : i32 [binding=weak, object=@__local_static__function_symbol_5f5a347065656b49696945504b545f524b54305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32303a3132] = 7
+global @__local_static__function_symbol_5f5a347065656b4969694550545f5254305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32373a3132 : i32 [binding=weak, object=__local_static__function_symbol_5f5a347065656b4969694550545f5254305f__decl0__value] = 7
+global @__local_static__function_symbol_5f5a347065656b49696945504b545f524b54305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32303a3132 : i32 [binding=weak, object=__local_static__function_symbol_5f5a347065656b49696945504b545f524b54305f__decl0__value] = 7
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : i32
@@ -14,10 +14,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     store ptr %t1, $const_value
     %t2 = addr $value
-    %t3 = call ptr @traits_int_const____false___check__ov2(%t2)
+    %t3 = call ptr @traits_lvalue_reference_to_const_int__false___check__ov2(%t2)
     store ptr %t3, $direct
     %t4 = load ptr $const_value
-    %t5 = call ptr @traits_int_const____false___check(%t4)
+    %t5 = call ptr @traits_lvalue_reference_to_const_int__false___check(%t4)
     store ptr %t5, $const_direct
     %t6 = load ptr $direct
     %t7 = load i32 %t6
@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load i32 $cond__1
     return i32 %t14
 }
-function @traits_int_const____false___check__ov2(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN6traitsIRKiLb0EE5checkIiEEPiRT_] {
+function @traits_lvalue_reference_to_const_int__false___check__ov2(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN6traitsIRKiLb0EE5checkIiEEPiRT_] {
   slot $value : ptr
 
   block ^entry:
@@ -61,7 +61,7 @@ function @traits_int_const____false___check__ov2(%value : ptr [pass=reference]) 
     %t2 = call ptr @peek__ov2(%t1)
     return ptr %t2
 }
-function @traits_int_const____false___check(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN6traitsIRKiLb0EE5checkIiEEPS0_RKT_] {
+function @traits_lvalue_reference_to_const_int__false___check(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN6traitsIRKiLb0EE5checkIiEEPS0_RKT_] {
   slot $value : ptr
 
   block ^entry:
@@ -70,7 +70,7 @@ function @traits_int_const____false___check(%value : ptr [pass=reference]) -> pt
     %t2 = call ptr @peek(%t1)
     return ptr %t2
 }
-function @peek__ov2(%__param0 : ptr [pass=reference]) -> ptr [binding=weak, object=_Z4peekIiiEPT_RT0_] {
+function @peek__ov2(%__param0 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z4peekIiiEPT_RT0_] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -78,7 +78,7 @@ function @peek__ov2(%__param0 : ptr [pass=reference]) -> ptr [binding=weak, obje
     %t1 = addr @__local_static__function_symbol_5f5a347065656b4969694550545f5254305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32373a3132
     return ptr %t1
 }
-function @peek(%__param0 : ptr [pass=reference]) -> ptr [binding=weak, object=_Z4peekIiiEPKT_RKT0_] {
+function @peek(%__param0 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z4peekIiiEPKT_RKT0_] {
   slot $__param0 : ptr
 
   block ^entry:

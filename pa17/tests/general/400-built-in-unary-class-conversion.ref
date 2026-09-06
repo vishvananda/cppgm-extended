@@ -57,7 +57,40 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = load i32 $cond__2
     return i32 %t22
 }
-function @scalar_box__operator_(%this : ptr, %value : i64) -> ptr [binding=weak, object=_ZN10scalar_boxaSEl] {
+function @scalar_box__scalar_box__ov2(%this : ptr [object_bytes=8], %value : i64) -> void [binding=weak, object=_ZN10scalar_boxC1El, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i64
+
+  block ^entry:
+    store ptr %this, $this
+    store i64 %value, $value
+    %t1 = load i64 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i64 %t1, %t3
+    return void
+}
+function @scalar_box__scalar_box(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN10scalar_boxC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i64 0, %t2
+    return void
+}
+function @scalar_box__operatorlong(%this : ptr [object_bytes=8]) -> i64 [binding=weak, object=_ZNK10scalar_boxcvlEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i64 %t2
+    return i64 %t3
+}
+function @scalar_box__operator_(%this : ptr [object_bytes=8], %value : i64) -> ptr [binding=weak, object=_ZN10scalar_boxaSEl, inline_hint=yes] {
   slot $this : ptr
   slot $value : i64
 
@@ -71,7 +104,7 @@ function @scalar_box__operator_(%this : ptr, %value : i64) -> ptr [binding=weak,
     %t4 = load ptr $this
     return ptr %t4
 }
-function @scalar_box__operatorlong(%this : ptr) -> i64 [binding=weak, object=_ZNK10scalar_boxcvlEv] {
+function @scalar_box__value(%this : ptr [object_bytes=8]) -> i64 [binding=weak, object=_ZNK10scalar_box5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -81,38 +114,5 @@ function @scalar_box__operatorlong(%this : ptr) -> i64 [binding=weak, object=_ZN
     %t3 = load i64 %t2
     return i64 %t3
 }
-function @scalar_box__scalar_box(%this : ptr) -> void [binding=weak, object=_ZN10scalar_boxC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i64 0, %t2
-    return void
-}
-function @scalar_box__scalar_box__ov2(%this : ptr, %value : i64) -> void [binding=weak, object=_ZN10scalar_boxC1El] {
-  slot $this : ptr
-  slot $value : i64
-
-  block ^entry:
-    store ptr %this, $this
-    store i64 %value, $value
-    %t1 = load i64 $value
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store i64 %t1, %t3
-    return void
-}
-function @scalar_box__value(%this : ptr) -> i64 [binding=weak, object=_ZNK10scalar_box5valueEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i64 %t2
-    return i64 %t3
-}
-alias object _ZN10scalar_boxC2Ev = @scalar_box__scalar_box
 alias object _ZN10scalar_boxC2El = @scalar_box__scalar_box__ov2
+alias object _ZN10scalar_boxC2Ev = @scalar_box__scalar_box

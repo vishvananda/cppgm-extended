@@ -3,15 +3,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    call void @pairish_unsigned_long_int__unsigned_long_int___pairish(%t1)
+    call void @pairish_unsigned_long_int__unsigned_long_int___pairish_unsigned_long_int__unsigned_long_int___ov3(%t1)
     %t2 = addr $value
     return i32 0
 }
-function @pairish_unsigned_long_int__unsigned_long_int___pairish(%this : ptr) -> void [binding=weak, object=_ZN7pairishImmEC1ILb1ETnN9enable_ifIXclsr12CheckArgsDepIXT_EEE23enable_implicit_defaultEEiE4typeELi0EEEv] {
+function @pairish_unsigned_long_int__unsigned_long_int___pairish_unsigned_long_int__unsigned_long_int___ov3(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN7pairishImmEC1ILb1ELi0EEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-alias object _ZN7pairishImmEC2ILb1ETnN9enable_ifIXclsr12CheckArgsDepIXT_EEE23enable_implicit_defaultEEiE4typeELi0EEEv = @pairish_unsigned_long_int__unsigned_long_int___pairish
+alias object _ZN7pairishImmEC2ILb1ELi0EEEv = @pairish_unsigned_long_int__unsigned_long_int___pairish_unsigned_long_int__unsigned_long_int___ov3

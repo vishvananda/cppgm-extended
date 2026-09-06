@@ -1,4 +1,4 @@
-function @test(%src : ptr [pass=reference]) -> void [binding=strong, object=_Z4testRK8functionIFivEE] {
+function @test(%src : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z4testRK8functionIFivEE] {
   slot $src : ptr
   slot $dst : obj<1x1>
 
@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @function_int_____operator_(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8functionIFivEEaSERKS1_] {
+function @function_int_____operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZN8functionIFivEEaSERKS1_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

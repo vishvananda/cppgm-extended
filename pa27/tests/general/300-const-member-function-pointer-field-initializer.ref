@@ -9,14 +9,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @const_member_function_pointer_field_initializer__holder__holder(%t1, %t4)
     return i32 0
 }
-function @const_member_function_pointer_field_initializer__tester__foo(%this : ptr) -> void [binding=weak, object=_ZNK47const_member_function_pointer_field_initializer6tester3fooEv] {
+function @const_member_function_pointer_field_initializer__tester__foo(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZNK47const_member_function_pointer_field_initializer6tester3fooEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @const_member_function_pointer_field_initializer__holder__holder(%this : ptr, %p : i128) -> void [binding=weak, object=_ZN47const_member_function_pointer_field_initializer6holderC1EMNS_6testerEKFvvE] {
+function @const_member_function_pointer_field_initializer__holder__holder(%this : ptr [object_bytes=16], %p : i128) -> void [binding=weak, object=_ZN47const_member_function_pointer_field_initializer6holderC1EMNS_6testerEKFvvE, inline_hint=yes] {
   slot $this : ptr
   slot $p : i128
 

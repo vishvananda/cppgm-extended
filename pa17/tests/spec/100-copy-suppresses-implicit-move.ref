@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @CopiesOnMove__CopiesOnMove(%this : ptr) -> void [binding=weak, object=_ZN12CopiesOnMoveC1Ev] {
+function @CopiesOnMove__CopiesOnMove(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN12CopiesOnMoveC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -37,7 +37,7 @@ function @CopiesOnMove__CopiesOnMove(%this : ptr) -> void [binding=weak, object=
     store i32 0, %t2
     return void
 }
-function @CopiesOnMove__CopiesOnMove__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN12CopiesOnMoveC1ERKS_] {
+function @CopiesOnMove__CopiesOnMove__ov2(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN12CopiesOnMoveC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

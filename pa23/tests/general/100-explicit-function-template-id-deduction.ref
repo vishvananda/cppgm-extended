@@ -1,6 +1,6 @@
-declare function @chrono__duration_cast(%arg0 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN6chrono13duration_castINS_7secondsENS_11nanosecondsEEET_RKT0_]
+declare function @chrono__duration_cast(%arg0 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN6chrono13duration_castINS_7secondsENS_11nanosecondsEEET_RKT0_]
 
-function @f(%ns : ptr [pass=reference]) -> obj<1x1> [binding=strong, object=_Z1fRKN6chrono11nanosecondsE] {
+function @f(%ns : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=strong, object=_Z1fRKN6chrono11nanosecondsE] {
   slot $ns : ptr
   slot $retobj__1 : obj<1x1>
 

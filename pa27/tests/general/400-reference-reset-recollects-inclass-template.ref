@@ -1,5 +1,5 @@
-global @interface_x__holder_target___table [binding=weak, object=_ZN11interface_x6holderI6targetE5tableE] = {
-  ptr addr @example__member_interface_x__vtable__info_target____wrap__ov2
+global @interface_x____cppgm_class_template_identity_3_2_0__table [binding=weak, object=_ZN11interface_x6holderI6targetE5tableE] = {
+  ptr addr @example__member_interface_x__vtable____cppgm_class_template_identity_2_2_0___wrap__ov2
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -15,14 +15,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @interface_x__call(%t4, 1)
     return i32 0
 }
-function @interface_x__interface_x__ov3(%this : ptr, %that : ptr [pass=reference]) -> void [binding=weak, object=_ZN11interface_xC1I6targetEERT_] {
+function @interface_x__interface_x__ov3(%this : ptr [object_bytes=16], %that : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN11interface_xC1I6targetEERT_, inline_hint=yes] {
   slot $this : ptr
   slot $that : ptr
 
   block ^entry:
     store ptr %this, $this
     store ptr %that, $that
-    %t1 = addr @interface_x__holder_target___table
+    %t1 = addr @interface_x____cppgm_class_template_identity_3_2_0__table
     %t2 = load ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store ptr %t1, %t3
@@ -32,20 +32,7 @@ function @interface_x__interface_x__ov3(%this : ptr, %that : ptr [pass=reference
     store ptr %t4, %t6
     return void
 }
-function @example__member_interface_x__vtable__info_target____wrap__ov2(%c : ptr, %a0 : i32) -> void [binding=weak, object=_ZN7example6memberIN11interface_x6vtable4infoI6targetEEE4wrapIXadL_ZNKS4_4callEiEEiEEvPvT0_] {
-  slot $c : ptr
-  slot $a0 : i32
-
-  block ^entry:
-    store ptr %c, $c
-    store i32 %a0, $a0
-    %t1 = load ptr $c
-    %t2 = load i32 $a0
-    %t3 = addr @target__call
-    call void %t3(%t1, %t2) as (%arg0 : ptr, %arg1 : i32) -> void
-    return void
-}
-function @interface_x__call(%this : ptr, %value : i32) -> void [binding=weak, object=_ZNK11interface_x4callEi] {
+function @interface_x__call(%this : ptr [object_bytes=16], %value : i32) -> void [binding=weak, object=_ZNK11interface_x4callEi, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 
@@ -64,13 +51,26 @@ function @interface_x__call(%this : ptr, %value : i32) -> void [binding=weak, ob
     call void %t9(%t3, %t4) as (%arg0 : ptr, %arg1 : i32) -> void
     return void
 }
-function @target__call(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZNK6target4callEi] {
+function @target__call(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZNK6target4callEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
   block ^entry:
     store ptr %this, $this
     store i32 %__param1, $__param1
+    return void
+}
+function @example__member_interface_x__vtable____cppgm_class_template_identity_2_2_0___wrap__ov2(%c : ptr, %a0 : i32) -> void [binding=weak, object=_ZN7example6memberIN11interface_x6vtable4infoI6targetEEE4wrapIXadL_ZNKS4_4callEiEEiEENS5_6resultEPvT0_, inline_hint=yes] {
+  slot $c : ptr
+  slot $a0 : i32
+
+  block ^entry:
+    store ptr %c, $c
+    store i32 %a0, $a0
+    %t1 = load ptr $c
+    %t2 = load i32 $a0
+    %t3 = addr @target__call
+    call void %t3(%t1, %t2) as (%arg0 : ptr [object_bytes=1], %arg1 : i32) -> void
     return void
 }
 alias object _ZN11interface_xC2I6targetEERT_ = @interface_x__interface_x__ov3

@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $h
-    call void @Holder_int___Holder(%t1)
+    call void @Holder_int___Holder_int_(%t1)
     %t2 = addr $h
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @Holder_int___Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderIiEC1Ev] {
+function @Holder_int___Holder_int_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6HolderIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -33,4 +33,4 @@ function @Holder_int___Holder(%this : ptr) -> void [binding=weak, object=_ZN6Hol
     store i32 3, %t2
     return void
 }
-alias object _ZN6HolderIiEC2Ev = @Holder_int___Holder
+alias object _ZN6HolderIiEC2Ev = @Holder_int___Holder_int_

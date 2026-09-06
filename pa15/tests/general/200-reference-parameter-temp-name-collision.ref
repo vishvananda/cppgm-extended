@@ -1,4 +1,4 @@
-function @same(%t1 : ptr [pass=reference], %t2 : ptr [pass=reference]) -> u8 [binding=strong, object=_Z4sameRKiS0_] {
+function @same(%t1 : ptr [pass=by_address, object_bytes=4], %t2 : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=strong, object=_Z4sameRKiS0_] {
   slot $t1 : ptr
   slot $t2 : ptr
 

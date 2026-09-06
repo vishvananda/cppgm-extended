@@ -1,10 +1,10 @@
-global @factory_calls : i32 [binding=strong, object=_Z13factory_calls] = 0
 global @__local_static__read_cached__decl0__cached [binding=internal] = {
   zero 24
 }
 global @__local_static__read_cached__decl0__cached__guard : i64 [binding=internal] = zero
+global @factory_calls : i32 [binding=strong, object=_Z13factory_calls] = 0
 
-function @make_wide(%ret : ptr [pass=indirect_result], %seed : i64) -> void [binding=strong, object=_Z9make_widel] {
+function @make_wide(%ret : ptr [pass=indirect_result, object_bytes=24], %seed : i64) -> void [binding=strong, object=_Z9make_widel] {
   slot $seed : i64
 
   block ^entry:

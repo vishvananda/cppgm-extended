@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @Owner_int___member(%this : ptr, %__param1 : i32) -> i32 [binding=weak, object=_ZN5OwnerIiE6memberIiEEiT_] {
+function @Owner_int___member(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZN5OwnerIiE6memberIiEEiT_] {
   slot $this : ptr
   slot $__param1 : i32
 

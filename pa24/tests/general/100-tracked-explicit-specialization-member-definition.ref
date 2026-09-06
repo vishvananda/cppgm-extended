@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @f()
     return i32 %t1
 }
-function @S_char___assign(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> void [binding=weak, object=_ZN1SIcE6assignERcRKc] {
+function @S_char___assign(%a : ptr [pass=by_address, object_bytes=1], %b : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1SIcE6assignERcRKc, inline_hint=yes] {
   slot $a : ptr
   slot $b : ptr
 

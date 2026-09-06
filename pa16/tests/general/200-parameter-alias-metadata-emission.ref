@@ -1,5 +1,5 @@
-declare function @__builtin_memcpy(%arg0 : ptr [capture=nocapture, access=write, alias=noalias], %arg1 : ptr [capture=nocapture, access=read, alias=noalias], %arg2 : i64) -> ptr [effects=readwrite, unwind=no, binding=strong, object=cppgm_builtin_memcpy]
-declare function @__builtin_memmove(%arg0 : ptr [capture=nocapture, access=readwrite], %arg1 : ptr [capture=nocapture, access=read], %arg2 : i64) -> ptr [effects=readwrite, unwind=no, binding=strong, object=cppgm_builtin_memmove]
+declare function @__builtin_memcpy(%arg0 : ptr [alias=noalias], %arg1 : ptr [alias=noalias], %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memcpy]
+declare function @__builtin_memmove(%arg0 : ptr, %arg1 : ptr, %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_memmove]
 
 function @copy4(%dst : ptr, %src : ptr) -> void [binding=strong, object=_Z5copy4PcPKc] {
   slot $dst : ptr

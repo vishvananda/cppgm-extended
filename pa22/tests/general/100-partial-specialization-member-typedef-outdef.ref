@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $map
     %t2 = addr $map
-    %t3 = call i32 @MapBase_Pair_int__char___enabled_tag___get(%t2)
+    %t3 = call i32 @MapBase___cppgm_class_template_identity_0_1_0__enabled_tag___get(%t2)
     %t4 = cmp eq i32 %t3, 7
     branch %t4, ^cond_then_1, ^cond_else_2
 
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @MapBase_Pair_int__char___enabled_tag___get(%this : ptr) -> i32 [binding=weak, object=_ZN7MapBaseI4PairIicE11enabled_tagE3getEv] {
+function @MapBase___cppgm_class_template_identity_0_1_0__enabled_tag___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN7MapBaseI4PairIicE11enabled_tagE3getEv] {
   slot $this : ptr
   slot $h : ptr
   slot $cond__1 : i32

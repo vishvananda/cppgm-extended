@@ -1,8 +1,7 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 
-declare global @__external_rtti_vtable____si_class_type_info [binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
-
-declare function @operatordelete(%arg0 : ptr) -> void [effects=readwrite, unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 global @__typeinfo_name__class_array_reference_cv_lazy [binding=weak, object=_ZTS23array_reference_cv_lazy] = {
   i8 50
@@ -32,12 +31,10 @@ global @__typeinfo_name__class_array_reference_cv_lazy [binding=weak, object=_ZT
   i8 121
   i8 0
 }
-
 global @__rtti_class_array_reference_cv_lazy [binding=weak, object=_ZTI23array_reference_cv_lazy] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__class_array_reference_cv_lazy
 }
-
 global @__typeinfo_name_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE [binding=weak, object=_ZTS28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE] = {
   i8 50
   i8 56
@@ -108,13 +105,11 @@ global @__typeinfo_name_type_28array_reference_cv_lazy_implI23array_reference_cv
   i8 69
   i8 0
 }
-
 global @__rtti_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE [binding=weak, object=_ZTI28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE
   ptr addr @__rtti_class_array_reference_cv_lazy
 }
-
 global @array_reference_cv_lazy__vtable [binding=weak, object=_ZTV23array_reference_cv_lazy] = {
   i64 0
   ptr addr @__rtti_class_array_reference_cv_lazy
@@ -122,23 +117,21 @@ global @array_reference_cv_lazy__vtable [binding=weak, object=_ZTV23array_refere
   ptr addr @array_reference_cv_lazy___array_reference_cv_lazy__deleting_entry
   ptr addr @array_reference_cv_lazy__operator__
 }
-
 global @__vtable_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE [binding=weak, object=_ZTV28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE] = {
   i64 0
   ptr addr @__rtti_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE
   ptr addr @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char____array_reference_cv_lazy_impl
-  ptr addr @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char____array_reference_cv_lazy_impl__deleting_entry
+  ptr addr @__cppgm_class_template_identity_1_3_0___array_reference_cv_lazy_impl__deleting_entry
   ptr addr @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char___operator__
 }
-
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 97
   i8 98
   i8 99
   i8 0
 }
 
-function @force(%lazy : ptr [pass=reference], %out : ptr [pass=reference]) -> void [binding=strong, object=_Z5forceRK23array_reference_cv_lazyR25array_reference_cv_stream] {
+function @force(%lazy : ptr [pass=by_address, object_bytes=8], %out : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z5forceRK23array_reference_cv_lazyR25array_reference_cv_stream] {
   slot $lazy : ptr
   slot $out : ptr
   slot $call__1 : ptr
@@ -164,7 +157,7 @@ function @force(%lazy : ptr [pass=reference], %out : ptr [pass=reference]) -> vo
     %t5 = load ptr %t1
     %t6 = index i8 %t5, 16
     %t7 = load ptr %t6
-    %t8 = call ptr %t7(%t1, %t4) as (%arg0 : ptr, %arg1 : ptr [pass=reference]) -> ptr
+    %t8 = call ptr %t7(%t1, %t4) as (%arg0 : ptr [object_bytes=24], %arg1 : ptr [pass=by_address, object_bytes=1]) -> ptr
     store ptr %t8, $call__1
     %t9 = load ptr $call__1
     call void @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char____array_reference_cv_lazy_impl(%t1)
@@ -178,13 +171,11 @@ function @force(%lazy : ptr [pass=reference], %out : ptr [pass=reference]) -> vo
   block ^call_unwind_end_4:
     return void
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-
-function @operator__(%ret : ptr [pass=indirect_result], %prev : ptr [pass=reference], %value : ptr [pass=reference]) -> void [binding=weak, object=_ZlsIA4_cE28array_reference_cv_lazy_implI23array_reference_cv_lazyT_RKS3_ERKS2_S5_] {
+function @operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %prev : ptr [pass=by_address, object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZlsIA4_cE28array_reference_cv_lazy_implI23array_reference_cv_lazyT_RKS3_ERKS2_S5_] {
   slot $prev : ptr
   slot $value : ptr
 
@@ -193,11 +184,10 @@ function @operator__(%ret : ptr [pass=indirect_result], %prev : ptr [pass=refere
     store ptr %value, $value
     %t1 = load ptr $prev
     %t2 = load ptr $value
-    call void @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char___array_reference_cv_lazy_impl(%ret, %t1, %t2)
+    call void @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char___array_reference_cv_lazy_impl_array_reference_cv_lazy__array_reference_cv_detail____cppgm_class_template_identity_0_2_0__lvalue_reference_to_const_struct_array_reference_cv_detail____cppgm_class_template_identity_0_2_0_(%ret, %t1, %t2)
     return void
 }
-
-function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char___operator__(%this : ptr, %out : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcEclER25array_reference_cv_stream] {
+function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char___operator__(%this : ptr [object_bytes=24], %out : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcEclER25array_reference_cv_stream, inline_hint=yes] {
   slot $this : ptr
   slot $out : ptr
   slot $arg__1 : obj<8x8>
@@ -212,7 +202,7 @@ function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char_
     %t5 = load ptr %t3
     %t6 = index i8 %t5, 16
     %t7 = load ptr %t6
-    %t8 = call ptr %t7(%t3, %t4) as (%arg0 : ptr, %arg1 : ptr [pass=reference]) -> ptr
+    %t8 = call ptr %t7(%t3, %t4) as (%arg0 : ptr [object_bytes=8], %arg1 : ptr [pass=by_address, object_bytes=1]) -> ptr
     %t9 = addr $arg__1
     %t10 = load ptr $this
     %t11 = index i8 [projection=field] %t10, 16
@@ -222,8 +212,7 @@ function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char_
     %t14 = call ptr @array_reference_cv_detail__operator__(%t8, %t9)
     return ptr %t14
 }
-
-function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char____array_reference_cv_lazy_impl__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcED0Ev] {
+function @__cppgm_class_template_identity_1_3_0___array_reference_cv_lazy_impl__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcED0Ev] {
   slot $this : ptr
 
   block ^entry:
@@ -236,7 +225,7 @@ function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char_
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t5 = index i8 %t4, 0
     call void @array_reference_cv_lazy___array_reference_cv_lazy__base_entry(%t5)
     eh_end
     jump ^destructor_suffix_next_4
@@ -254,7 +243,7 @@ function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char_
 
   block ^destructor_cleanup_1:
     %t8 = load ptr $this
-    %t9 = index i8 [projection=base_subobject] %t8, 0
+    %t9 = index i8 %t8, 0
     call void @array_reference_cv_lazy___array_reference_cv_lazy__base_entry(%t9)
     %t10 = load ptr $this
     call void @operatordelete(%t10)
@@ -264,8 +253,7 @@ function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char_
   block ^destructor_end_2:
     return void
 }
-
-function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char____array_reference_cv_lazy_impl(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcED1Ev] {
+function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char____array_reference_cv_lazy_impl(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -277,13 +265,13 @@ function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char_
     store ptr %t3, %t1
     eh_end
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t5 = index i8 %t4, 0
     call void @array_reference_cv_lazy___array_reference_cv_lazy__base_entry(%t5)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t6 = load ptr $this
-    %t7 = index i8 [projection=base_subobject] %t6, 0
+    %t7 = index i8 %t6, 0
     call void @array_reference_cv_lazy___array_reference_cv_lazy__base_entry(%t7)
     eh_end
     resume
@@ -291,8 +279,7 @@ function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char_
   block ^destructor_end_2:
     return void
 }
-
-function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char___array_reference_cv_lazy_impl(%this : ptr, %prev : ptr [pass=reference], %value : ptr [pass=reference]) -> void [binding=weak, object=_ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcEC1ERKS0_S4_] {
+function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char___array_reference_cv_lazy_impl_array_reference_cv_lazy__array_reference_cv_detail____cppgm_class_template_identity_0_2_0__lvalue_reference_to_const_struct_array_reference_cv_detail____cppgm_class_template_identity_0_2_0_(%this : ptr [object_bytes=24], %prev : ptr [pass=by_address, object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcEC1ERKS0_S4_, inline_hint=yes] {
   slot $this : ptr
   slot $prev : ptr
   slot $value : ptr
@@ -302,24 +289,32 @@ function @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char_
     store ptr %prev, $prev
     store ptr %value, $value
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @array_reference_cv_lazy__array_reference_cv_lazy__base_entry(%t2, 0)
-    %t3 = load ptr $this
-    %t4 = addr @__vtable_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE
-    %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
-    %t6 = load ptr $prev
-    %t7 = load ptr $this
-    %t8 = index i8 [projection=field] %t7, 8
-    store ptr %t6, %t8
-    %t9 = load ptr $value
-    %t10 = load ptr $this
-    %t11 = index i8 [projection=field] %t10, 16
-    store ptr %t9, %t11
+    eh_cleanup ^constructor_cleanup_1
+    %t5 = load ptr $this
+    %t6 = addr @__vtable_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE
+    %t7 = index i8 %t6, 16
+    store ptr %t7, %t5
+    %t8 = load ptr $prev
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 8
+    store ptr %t8, %t10
+    %t11 = load ptr $value
+    %t12 = load ptr $this
+    %t13 = index i8 [projection=field] %t12, 16
+    store ptr %t11, %t13
+    eh_end
     return void
-}
 
-function @array_reference_cv_lazy__operator__(%this : ptr, %out : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK23array_reference_cv_lazyclER25array_reference_cv_stream] {
+  block ^constructor_cleanup_1:
+    %t3 = load ptr $this
+    %t4 = index i8 %t3, 0
+    call void @array_reference_cv_lazy___array_reference_cv_lazy__base_entry(%t4)
+    eh_end
+    resume
+}
+function @array_reference_cv_lazy__operator__(%this : ptr [object_bytes=8], %out : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK23array_reference_cv_lazyclER25array_reference_cv_stream, inline_hint=yes] {
   slot $this : ptr
   slot $out : ptr
 
@@ -329,8 +324,7 @@ function @array_reference_cv_lazy__operator__(%this : ptr, %out : ptr [pass=refe
     %t1 = load ptr $out
     return ptr %t1
 }
-
-function @array_reference_cv_detail__print_helper(%t : ptr [pass=reference]) -> obj<8x8> [binding=weak, object=_ZN25array_reference_cv_detail12print_helperIA4_cEENS_14print_helper_tIT_EERKS3_] {
+function @array_reference_cv_detail__print_helper(%t : ptr [pass=by_address, object_bytes=4]) -> obj<8x8> [binding=weak, object=_ZN25array_reference_cv_detail12print_helperIA4_cEENS_14print_helper_tIT_EERKS3_] {
   slot $t : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -338,11 +332,10 @@ function @array_reference_cv_detail__print_helper(%t : ptr [pass=reference]) -> 
     store ptr %t, $t
     %t1 = addr $retobj__1
     %t2 = load ptr $t
-    call void @array_reference_cv_detail__print_helper_t_array_of_4_char___print_helper_t(%t1, %t2)
+    call void @array_reference_cv_detail__print_helper_t_array_of_4_char___print_helper_t_array_of_4_char_(%t1, %t2)
     return obj<8x8> $retobj__1
 }
-
-function @array_reference_cv_detail__operator__(%out : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN25array_reference_cv_detaillsIA4_cEER25array_reference_cv_streamS3_RKNS_14print_helper_tIT_EE] {
+function @array_reference_cv_detail__operator__(%out : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN25array_reference_cv_detaillsIA4_cEER25array_reference_cv_streamS3_RKNS_14print_helper_tIT_EE] {
   slot $out : ptr
   slot $__param1 : ptr
 
@@ -352,8 +345,7 @@ function @array_reference_cv_detail__operator__(%out : ptr [pass=reference], %__
     %t1 = load ptr $out
     return ptr %t1
 }
-
-function @array_reference_cv_lazy___array_reference_cv_lazy__base_entry(%this : ptr) -> void [binding=weak, object=_ZN23array_reference_cv_lazyD2Ev] {
+function @array_reference_cv_lazy___array_reference_cv_lazy__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN23array_reference_cv_lazyD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -364,7 +356,6 @@ function @array_reference_cv_lazy___array_reference_cv_lazy__base_entry(%this : 
     store ptr %t3, %t1
     return void
 }
-
 function @array_reference_cv_lazy___array_reference_cv_lazy__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN23array_reference_cv_lazyD0Ev] {
   slot $this : ptr
 
@@ -389,8 +380,7 @@ function @array_reference_cv_lazy___array_reference_cv_lazy__deleting_entry(%thi
   block ^destructor_end_2:
     return void
 }
-
-function @array_reference_cv_lazy___array_reference_cv_lazy(%this : ptr) -> void [binding=weak, object=_ZN23array_reference_cv_lazyD1Ev] {
+function @array_reference_cv_lazy___array_reference_cv_lazy(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN23array_reference_cv_lazyD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -401,8 +391,7 @@ function @array_reference_cv_lazy___array_reference_cv_lazy(%this : ptr) -> void
     store ptr %t3, %t1
     return void
 }
-
-function @array_reference_cv_lazy__array_reference_cv_lazy__base_entry(%this : ptr, %__param1 : u8) -> void [binding=weak, object=_ZN23array_reference_cv_lazyC2Eb] {
+function @array_reference_cv_lazy__array_reference_cv_lazy__base_entry(%this : ptr [object_bytes=8], %__param1 : u8) -> void [binding=weak, object=_ZN23array_reference_cv_lazyC2Eb, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : u8
 
@@ -415,8 +404,7 @@ function @array_reference_cv_lazy__array_reference_cv_lazy__base_entry(%this : p
     store ptr %t3, %t1
     return void
 }
-
-function @array_reference_cv_lazy__array_reference_cv_lazy(%this : ptr, %__param1 : u8) -> void [binding=weak, object=_ZN23array_reference_cv_lazyC1Eb] {
+function @array_reference_cv_lazy__array_reference_cv_lazy(%this : ptr [object_bytes=8], %__param1 : u8) -> void [binding=weak, object=_ZN23array_reference_cv_lazyC1Eb, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : u8
 
@@ -429,8 +417,7 @@ function @array_reference_cv_lazy__array_reference_cv_lazy(%this : ptr, %__param
     store ptr %t3, %t1
     return void
 }
-
-function @array_reference_cv_detail__print_helper_t_array_of_4_char___print_helper_t(%this : ptr, %t : ptr [pass=reference]) -> void [binding=weak, object=_ZN25array_reference_cv_detail14print_helper_tIA4_cEC1ERA4_Kc] {
+function @array_reference_cv_detail__print_helper_t_array_of_4_char___print_helper_t_array_of_4_char_(%this : ptr [object_bytes=8], %t : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN25array_reference_cv_detail14print_helper_tIA4_cEC1ERA4_Kc, inline_hint=yes] {
   slot $this : ptr
   slot $t : ptr
 
@@ -443,3 +430,6 @@ function @array_reference_cv_detail__print_helper_t_array_of_4_char___print_help
     store ptr %t1, %t3
     return void
 }
+alias object _ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcED2Ev = @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char____array_reference_cv_lazy_impl
+alias object _ZN28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcEC2ERKS0_S4_ = @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char___array_reference_cv_lazy_impl_array_reference_cv_lazy__array_reference_cv_detail____cppgm_class_template_identity_0_2_0__lvalue_reference_to_const_struct_array_reference_cv_detail____cppgm_class_template_identity_0_2_0_
+alias object _ZN25array_reference_cv_detail14print_helper_tIA4_cEC2ERA4_Kc = @array_reference_cv_detail__print_helper_t_array_of_4_char___print_helper_t_array_of_4_char_

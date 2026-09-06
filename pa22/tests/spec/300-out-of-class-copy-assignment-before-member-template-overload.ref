@@ -54,7 +54,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = load i32 $cond__1
     return i32 %t24
 }
-function @box_int___operator___ov3(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3boxIiEaSIlEERS0_RKS_IT_E] {
+function @box_int___operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN3boxIiEaSERKS0_] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 %t3, %t5
+    %t6 = load ptr $this
+    return ptr %t6
+}
+function @box_int___operator___ov3(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN3boxIiEaSIlEERS0_RKS_IT_E] {
   slot $this : ptr
   slot $other : ptr
 
@@ -70,20 +86,4 @@ function @box_int___operator___ov3(%this : ptr, %other : ptr [pass=reference]) -
     store i32 %t4, %t6
     %t7 = load ptr $this
     return ptr %t7
-}
-function @box_int___operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3boxIiEaSERKS0_] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
-    %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load ptr $this
-    return ptr %t6
 }

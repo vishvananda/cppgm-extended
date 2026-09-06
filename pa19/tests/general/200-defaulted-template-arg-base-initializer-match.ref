@@ -11,17 +11,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $b
     return i32 0
 }
-function @Derived__Derived(%this : ptr) -> void [binding=weak, object=_ZN7DerivedC1Ev] {
+function @Derived__Derived(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    call void @Base_char__Def_char____Base__base_entry(%t2, 0)
+    %t2 = index i8 %t1, 0
+    call void @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___base_entry(%t2, 0)
     return void
 }
-function @Derived__Derived__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN7DerivedC1EOS_] {
+function @Derived__Derived__ov2(%this : ptr [alias=noalias, object_bytes=1], %other : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN7DerivedC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -29,13 +29,13 @@ function @Derived__Derived__ov2(%this : ptr, %other : ptr [pass=reference]) -> v
     store ptr %this, $this
     store ptr %other, $other
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $other
-    %t4 = index i8 [projection=base_subobject] %t3, 0
-    call void @Base_char__Def_char____Base__ov2__base_entry(%t2, %t4)
+    %t4 = index i8 %t3, 0
+    call void @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___ov2__base_entry(%t2, %t4)
     return void
 }
-function @Base_char__Def_char____Base__base_entry(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC2Ei] {
+function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___base_entry(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -44,7 +44,7 @@ function @Base_char__Def_char____Base__base_entry(%this : ptr, %__param1 : i32) 
     store i32 %__param1, $__param1
     return void
 }
-function @Base_char__Def_char____Base(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC1Ei] {
+function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0_(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -53,7 +53,7 @@ function @Base_char__Def_char____Base(%this : ptr, %__param1 : i32) -> void [bin
     store i32 %__param1, $__param1
     return void
 }
-function @Base_char__Def_char____Base__ov2__base_entry(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC2EOS2_] {
+function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___ov2__base_entry(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC2EOS2_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -62,7 +62,7 @@ function @Base_char__Def_char____Base__ov2__base_entry(%this : ptr, %__param1 : 
     store ptr %__param1, $__param1
     return void
 }
-function @Base_char__Def_char____Base__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC1EOS2_] {
+function @Base_char____cppgm_class_template_identity_0_0_0___Base_char____cppgm_class_template_identity_0_0_0___ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN4BaseIc3DefIcEEC1EOS2_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -73,5 +73,3 @@ function @Base_char__Def_char____Base__ov2(%this : ptr, %__param1 : ptr [pass=re
 }
 alias object _ZN7DerivedC2Ev = @Derived__Derived
 alias object _ZN7DerivedC2EOS_ = @Derived__Derived__ov2
-alias object _ZN4BaseIc3DefIcEEC2Ei = @Base_char__Def_char____Base
-alias object _ZN4BaseIc3DefIcEEC2EOS2_ = @Base_char__Def_char____Base__ov2

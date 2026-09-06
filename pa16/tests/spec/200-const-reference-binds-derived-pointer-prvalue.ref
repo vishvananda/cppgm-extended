@@ -8,7 +8,7 @@ function @get() -> ptr [binding=strong, object=_Z3getv] {
     %t1 = addr @object
     return ptr %t1
 }
-function @push(%p : ptr [pass=reference]) -> void [binding=strong, object=_Z4pushRKP4Base] {
+function @push(%p : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z4pushRKP4Base] {
   slot $p : ptr
 
   block ^entry:
@@ -24,13 +24,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call ptr @get()
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     store ptr %t2, $refarg__1
     %t3 = addr $refarg__1
     call void @push(%t3)
     %t4 = load ptr @saved
     %t5 = addr @object
-    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t6 = index i8 %t5, 0
     %t7 = cmp eq ptr %t4, %t6
     branch %t7, ^cond_then_1, ^cond_else_2
 

@@ -1,4 +1,4 @@
-function @X__flags(%this : ptr) -> u32 [binding=weak, object=_ZNK1X5flagsEv] {
+function @X__flags(%this : ptr [object_bytes=4]) -> u32 [binding=weak, object=_ZNK1X5flagsEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

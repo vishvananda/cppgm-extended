@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call ptr @wrapper_void_____operator___ov3(%t1, 0)
     return i32 0
 }
-function @wrapper_void_____operator___ov3(%this : ptr, %__param1 : i32) -> ptr [binding=weak, object=_ZN7wrapperIFvvEEaSIiEERS1_T_] {
+function @wrapper_void_____operator___ov3(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN7wrapperIFvvEEaSIiEERS1_T_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 

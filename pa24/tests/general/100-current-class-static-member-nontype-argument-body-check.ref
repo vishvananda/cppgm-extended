@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @engine_unsigned_int__1__0__2___run(%this : ptr) -> u32 [binding=weak, object=_ZN6engineIjLj1ELj0ELj2EE3runEv] {
+function @engine_unsigned_int__1__0__2___run(%this : ptr [object_bytes=4]) -> u32 [binding=weak, object=_ZN6engineIjLj1ELj0ELj2EE3runEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -37,7 +37,7 @@ function @engine_unsigned_int__1__0__2___run(%this : ptr) -> u32 [binding=weak, 
     %t6 = convert trunc u32 i64 %t5
     return u32 %t6
 }
-function @helper_1__0__2__4294967295___next(%x : i64) -> i64 [binding=weak, object=_ZN6helperILy1ELy0ELy2ELy4294967295EE4nextEy] {
+function @helper_1__0__2__4294967295___next(%x : i64) -> i64 [binding=weak, object=_ZN6helperILy1ELy0ELy2ELy4294967295EE4nextEy, inline_hint=yes] {
   slot $x : i64
 
   block ^entry:

@@ -1,4 +1,4 @@
-function @forward(%ret : ptr [pass=indirect_result], %it : obj<24x8>) -> void [binding=strong, object=_Z7forward8PairIter] {
+function @forward(%ret : ptr [pass=indirect_result, object_bytes=24], %it : obj<24x8>) -> void [binding=strong, object=_Z7forward8PairIter] {
   slot $it : obj<24x8>
 
   block ^entry:

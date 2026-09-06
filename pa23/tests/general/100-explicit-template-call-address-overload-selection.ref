@@ -1,5 +1,5 @@
-declare function @first(%arg0 : f64) -> f64 [binding=weak, object=_Z5firstIdET_S0_]
 declare function @second(%arg0 : f64) -> f64 [binding=strong, object=_Z6secondd]
+declare function @first(%arg0 : f64) -> f64 [binding=weak, object=_Z5firstIdET_S0_]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

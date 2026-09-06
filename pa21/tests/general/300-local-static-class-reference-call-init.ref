@@ -26,10 +26,9 @@ function @read_table() -> i32 [binding=strong, object=_Z10read_tablev] {
   block ^local_static_ready_1:
     %t5 = load ptr @__local_static__read_table__decl0__table
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = unary decay ptr %t6
-    %t8 = index i32 [projection=array_element] %t7, 1
-    %t9 = load i32 %t8
-    return i32 %t9
+    %t7 = index i32 [projection=array_element] %t6, 1
+    %t8 = load i32 %t7
+    return i32 %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

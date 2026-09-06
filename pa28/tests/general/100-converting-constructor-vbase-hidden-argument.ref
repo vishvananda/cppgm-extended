@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $s
     call void @Stream__Stream(%t1)
     %t2 = addr $s
-    %t3 = index i8 [projection=base_subobject] %t2, 4
+    %t3 = index i8 %t2, 4
     %t4 = index i8 [projection=field] %t3, 0
     store i32 7, %t4
     %t5 = addr $argobj__2
@@ -41,17 +41,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @Stream__Stream(%this : ptr) -> void [binding=weak, object=_ZN6StreamC1Ev] {
+function @Stream__Stream(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6StreamC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 4
+    %t2 = index i8 %t1, 4
     call void @IOS__IOS__base_entry(%t2)
     return void
 }
-function @Iter__Iter(%this : ptr, %s : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN4IterC1ER6Stream] {
+function @Iter__Iter(%this : ptr [object_bytes=4], %s : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN4IterC1ER6Stream, inline_hint=yes] {
   slot $this : ptr
   slot $s : ptr
   slot $s__pvb0 : ptr
@@ -61,7 +61,7 @@ function @Iter__Iter(%this : ptr, %s : ptr [pass=reference], %__pvbptr0 : ptr) -
     store ptr %s, $s
     store ptr %__pvbptr0, $s__pvb0
     %t1 = load ptr $s__pvb0
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     %t5 = load ptr $this
@@ -69,7 +69,7 @@ function @Iter__Iter(%this : ptr, %s : ptr [pass=reference], %__pvbptr0 : ptr) -
     store i32 %t4, %t6
     return void
 }
-function @IOS__IOS__base_entry(%this : ptr) -> void [binding=weak, object=_ZN3IOSC2Ev] {
+function @IOS__IOS__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3IOSC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -79,7 +79,7 @@ function @IOS__IOS__base_entry(%this : ptr) -> void [binding=weak, object=_ZN3IO
     store i32 0, %t2
     return void
 }
-function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
+function @IOS__IOS(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3IOSC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -90,4 +90,3 @@ function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
     return void
 }
 alias object _ZN4IterC2ER6Stream = @Iter__Iter
-alias object _ZN3IOSC2Ev = @IOS__IOS

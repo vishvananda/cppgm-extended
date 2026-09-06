@@ -1,4 +1,4 @@
-function @operatornew(%__param0 : i64, %p : ptr) -> ptr [binding=strong, object=_ZnwmPv] {
+function @operatornew__ov2(%__param0 : i64, %p : ptr) -> ptr [binding=strong, object=_ZnwmPv] {
   slot $__param0 : i64
   slot $p : ptr
 
@@ -15,7 +15,7 @@ function @construct(%p : ptr) -> void [binding=strong, object=_Z9constructP1S] {
     store ptr %p, $p
     %t1 = convert sext i64 i32 4
     %t2 = load ptr $p
-    %t3 = call ptr @operatornew(%t1, %t2)
+    %t3 = call ptr @operatornew__ov2(%t1, %t2)
     call void @S__S(%t3, 16)
     return void
 }
@@ -46,7 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @S__S(%this : ptr, %i : u32) -> void [binding=weak, object=_ZN1SC1Ej] {
+function @S__S(%this : ptr [object_bytes=4], %i : u32) -> void [binding=weak, object=_ZN1SC1Ej, inline_hint=yes] {
   slot $this : ptr
   slot $i : u32
 

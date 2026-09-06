@@ -11,7 +11,7 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
     %t4 = index i8 [projection=field] %t3, 0
     store ptr %t2, %t4
     %t5 = addr $sb
-    %t6 = index i8 [projection=reference_field] %t5, 0
+    %t6 = index i8 [projection=field] %t5, 0
     %t7 = load ptr %t6
     %t8 = addr $x
     %t9 = cmp eq ptr %t7, %t8

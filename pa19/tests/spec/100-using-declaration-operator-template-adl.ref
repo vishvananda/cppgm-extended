@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @lib__operators__operator__(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN3lib9operatorseqINS_3seqES2_EEbRKT_RKT0_] {
+function @lib__operators__operator__(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN3lib9operatorseqINS_3seqES2_EEbRKT_RKT0_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

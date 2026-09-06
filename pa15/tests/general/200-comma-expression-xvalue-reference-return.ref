@@ -1,4 +1,4 @@
-function @move_value(%value : ptr [pass=reference]) -> ptr [binding=strong, object=_Z10move_valueRi] {
+function @move_value(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z10move_valueRi] {
   slot $value : ptr
 
   block ^entry:
@@ -6,7 +6,7 @@ function @move_value(%value : ptr [pass=reference]) -> ptr [binding=strong, obje
     %t1 = load ptr $value
     return ptr %t1
 }
-function @get(%value : ptr [pass=reference]) -> ptr [binding=strong, object=_Z3getRi] {
+function @get(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z3getRi] {
   slot $value : ptr
 
   block ^entry:

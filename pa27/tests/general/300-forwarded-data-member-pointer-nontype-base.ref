@@ -9,10 +9,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 [projection=field] %t2, 0
     store i32 7, %t3
     %t4 = addr $tmpobj__2
-    call void @member_record__int__1___member(%t4)
-    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t5 = index i8 %t4, 0
     %t6 = addr $value
-    %t7 = call ptr @member_base_record__int__1___operator__(%t5, %t6)
+    %t7 = call ptr @member_base_record__int__record__id___operator__(%t5, %t6)
     %t8 = load i32 %t7
     %t9 = cmp eq i32 %t8, 7
     branch %t9, ^cond_then_1, ^cond_else_2
@@ -29,14 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @member_record__int__1___member(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6memberI6recordiXadL_ZNS0_2idEEEEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @member_base_record__int__1___operator__(%this : ptr, %x : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK11member_baseI6recordiXadL_ZNS0_2idEEEEclERS0_] {
+function @member_base_record__int__record__id___operator__(%this : ptr [object_bytes=1], %x : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZNK11member_baseI6recordiXadL_ZNS0_2idEEEEclERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 
@@ -48,4 +40,3 @@ function @member_base_record__int__1___operator__(%this : ptr, %x : ptr [pass=re
     %t3 = index i8 [projection=field] %t1, %t2
     return ptr %t3
 }
-alias object _ZN6memberI6recordiXadL_ZNS0_2idEEEEC2Ev = @member_record__int__1___member

@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $source
     %t2 = addr $value
     %t3 = addr $source
-    call void @graph_int___graph__ov3(%t2, %t3)
+    call void @graph_int___graph_int___ov3(%t2, %t3)
     %t4 = addr $value
     %t5 = addr $source
     %t6 = call i32 @graph_int___accept(%t4, %t5)
@@ -32,7 +32,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @graph_int___accept(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN5graphIiE6acceptIiEEiR8sequenceIT_9allocatorIS3_EE] {
+function @graph_int___graph_int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5graphIiEC1IiEER8sequenceIT_9allocatorIS2_EE] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+function @graph_int___accept(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN5graphIiE6acceptIiEEiR8sequenceIT_9allocatorIS2_EE] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -43,17 +52,8 @@ function @graph_int___accept(%this : ptr, %__param1 : ptr [pass=reference]) -> i
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
-function @graph_int___graph__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5graphIiEC1IiEER8sequenceIT_9allocatorIS3_EE] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     return void
 }
-alias object _ZN5graphIiEC2IiEER8sequenceIT_9allocatorIS3_EE = @graph_int___graph__ov3
+alias object _ZN5graphIiEC2IiEER8sequenceIT_9allocatorIS2_EE = @graph_int___graph_int___ov3

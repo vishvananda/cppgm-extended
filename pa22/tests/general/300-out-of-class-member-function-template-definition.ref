@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @box_char___value(%t1, 0)
     return i32 %t2
 }
-function @box_char___value(%this : ptr, %__param1 : i32) -> i32 [binding=weak, object=_ZN3boxIcE5valueIiEEiT_] {
+function @box_char___value(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZN3boxIcE5valueIiEEiT_] {
   slot $this : ptr
   slot $__param1 : i32
   slot $cond__1 : i32

@@ -1,6 +1,6 @@
 global @global_value : i32 [binding=strong, object=_Z12global_value] = 0
 
-function @sink(%__param0 : ptr [pass=reference]) -> void [binding=strong, object=_Z4sinkRi] {
+function @sink(%__param0 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z4sinkRi] {
   slot $__param0 : ptr
 
   block ^entry:

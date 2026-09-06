@@ -1,4 +1,4 @@
-function @f(%x : ptr [pass=reference], %y : ptr [pass=reference]) -> void [binding=strong, object=_Z1fRPvS0_] {
+function @f(%x : ptr [pass=by_address, object_bytes=8], %y : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z1fRPvS0_] {
   slot $x : ptr
   slot $y : ptr
 
@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @swap_values(%x : ptr [pass=reference], %y : ptr [pass=reference]) -> void [binding=weak, object=_Z11swap_valuesIPvEvRT_S2_] {
+function @swap_values(%x : ptr [pass=by_address, object_bytes=8], %y : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_Z11swap_valuesIPvEvRT_S2_] {
   slot $x : ptr
   slot $y : ptr
   slot $t : ptr
@@ -38,7 +38,7 @@ function @swap_values(%x : ptr [pass=reference], %y : ptr [pass=reference]) -> v
     store ptr %t10, %t11
     return void
 }
-function @move_value(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z10move_valueIRPvEON16remove_referenceIT_E4typeEOS3_] {
+function @move_value(%value : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z10move_valueIRPvEON16remove_referenceIT_E4typeEOS3_] {
   slot $value : ptr
 
   block ^entry:

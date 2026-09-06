@@ -59,12 +59,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t2, %t1
     %t3 = addr $a
     %t4 = addr $addrs
-    %t5 = unary decay ptr %t4
-    %t6 = convert zext i64 u32 1
-    %t7 = call i64 @boost__atomics__detail__find_address_generic(%t3, %t5, %t6)
-    %t8 = convert zext i64 u32 0
-    %t9 = cmp eq i64 %t7, %t8
-    branch %t9, ^cond_then_1, ^cond_else_2
+    %t5 = convert zext i64 u32 1
+    %t6 = call i64 @boost__atomics__detail__find_address_generic(%t3, %t4, %t5)
+    %t7 = convert zext i64 u32 0
+    %t8 = cmp eq i64 %t6, %t7
+    branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -75,6 +74,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
-    return i32 %t10
+    %t9 = load i32 $cond__1
+    return i32 %t9
 }

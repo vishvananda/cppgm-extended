@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -35,9 +35,7 @@ function @mark
     epilogues shared
 
   block ^entry
-    mov r8, rdi
-    mov rax, 99
-    store.i64 [r8], rax
+    store.i64 [rdi], 99
     ret
 
 function @copy_then_mark_base
@@ -45,22 +43,18 @@ function @copy_then_mark_base
     param %this -> rdi : ptr
     return void -> void
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
 
   block ^entry
     mov r8, rdi
-    mov r9, rdi
-    mov rbx, @source
-    mov r12, @dest
-    mov rdi, r12
-    mov rsi, rbx
+    mov rdi, @dest
+    mov rsi, @source
     copy_bytes 24x8, rdi, rsi
-    mov rdi, r9
-    call @mark
+    mov rdi, r8
+    call @mark [args=(rdi)]
     ret
 
 function @main
@@ -73,9 +67,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, @cell
-    mov rdi, r8
-    call @copy_then_mark_base
+    mov rdi, @cell
+    call @copy_then_mark_base [args=(rdi)]
     load.i64 r8, @cell
     mov rdx, 99
     cmp.i64 r8, rdx
@@ -85,7 +78,6 @@ function @main
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    mov rax, r8
+    sext.i32 rax
     ret rax

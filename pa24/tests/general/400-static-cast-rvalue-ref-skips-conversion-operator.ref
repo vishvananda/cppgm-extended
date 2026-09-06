@@ -1,7 +1,7 @@
 global @converted : i32 [binding=strong, object=_Z9converted] = zero
 global @seen : i32 [binding=strong, object=_Z4seen] = zero
 
-function @consume(%value : ptr [pass=by_address]) -> void [binding=strong, object=_Z7consume6Holder] {
+function @consume(%value : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z7consume6Holder] {
   slot $value : obj<8x8>
   slot $cond__1 : i32
 
@@ -75,15 +75,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__2
     return i32 %t12
 }
-function @forward_like(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z12forward_likeI6HolderEOT_RS1_] {
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    return ptr %t1
-}
-function @Holder__Holder(%this : ptr, %q : ptr) -> void [binding=weak, object=_ZN6HolderC1EPi] {
+function @Holder__Holder(%this : ptr [object_bytes=8], %q : ptr) -> void [binding=weak, object=_ZN6HolderC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $q : ptr
 
@@ -96,7 +88,15 @@ function @Holder__Holder(%this : ptr, %q : ptr) -> void [binding=weak, object=_Z
     store ptr %t1, %t3
     return void
 }
-function @Holder__Holder__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN6HolderC1EOS_] {
+function @forward_like(%value : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z12forward_likeI6HolderEOT_RS1_] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}
+function @Holder__Holder__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN6HolderC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

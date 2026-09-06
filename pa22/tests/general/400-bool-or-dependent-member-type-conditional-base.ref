@@ -1,4 +1,4 @@
-global @boost__integral_constant_bool__true___value : u8 [binding=weak, object=_ZN5boost17integral_constantIbLb1EE5valueE] = 1
+global @boost____cppgm_class_template_identity_1_0_0__value : u8 [storage=readonly, binding=weak, object=_ZN5boost17integral_constantIbLb1EE5valueE] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

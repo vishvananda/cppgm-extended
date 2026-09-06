@@ -1,4 +1,4 @@
-function @sink(%value : ptr [pass=reference], %mapped : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4sinkRiRm] {
+function @sink(%value : ptr [pass=by_address, object_bytes=4], %mapped : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z4sinkRiRm] {
   slot $value : ptr
   slot $mapped : ptr
 
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 5
     return i32 %t5
 }
-function @run(%args : ptr [pass=reference], %args__pack2 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3runIJRiRmEEiDpOT_] {
+function @run(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z3runIJRiRmEEiDpOT_] {
   slot $args : ptr
   slot $args__pack2 : ptr
   slot $lambda : obj<1x1>
@@ -41,10 +41,10 @@ function @run(%args : ptr [pass=reference], %args__pack2 : ptr [pass=reference])
     %t4 = call ptr @std__forward(%t3)
     %t5 = load ptr $args__pack2
     %t6 = call ptr @std__forward__ov3(%t5)
-    %t7 = call i32 @__lambda_run__int___unsigned_long_int___t161_167__operator__(%t2, %t4, %t6)
+    %t7 = call i32 @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t161_167__operator__(%t2, %t4, %t6)
     return i32 %t7
 }
-function @std__forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIRiEOT_RNSt16remove_referenceIS1_E4typeE] {
+function @std__forward(%t : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZSt7forwardIRiEOT_RNSt16remove_referenceIS1_E4typeE] {
   slot $t : ptr
 
   block ^entry:
@@ -52,7 +52,7 @@ function @std__forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_
     %t1 = load ptr $t
     return ptr %t1
 }
-function @std__forward__ov3(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIRmEOT_RNSt16remove_referenceIS1_E4typeE] {
+function @std__forward__ov3(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZSt7forwardIRmEOT_RNSt16remove_referenceIS1_E4typeE] {
   slot $t : ptr
 
   block ^entry:
@@ -60,7 +60,7 @@ function @std__forward__ov3(%t : ptr [pass=reference]) -> ptr [binding=weak, obj
     %t1 = load ptr $t
     return ptr %t1
 }
-function @__lambda_run__int___unsigned_long_int___t161_167__operator__(%this : ptr, %args2 : ptr [pass=reference], %args2__pack2 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZZ3runIJRiRmEEiDpOT_ENKUlS0_S1_E_clES0_S1_] {
+function @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t161_167__operator__(%this : ptr [object_bytes=1], %args2 : ptr [pass=by_address, object_bytes=4], %args2__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=internal, object=_ZZ3runIJRiRmEEiDpOT_S4_ENKUlS0_S1_E_clES0_S1_, inline_hint=yes] {
   slot $this : ptr
   slot $args2 : ptr
   slot $args2__pack2 : ptr

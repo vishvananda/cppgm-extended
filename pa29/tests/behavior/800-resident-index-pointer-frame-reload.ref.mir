@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -22,75 +22,53 @@ function @touch
     param %e -> r9 : i64
     return void -> void
   frame
-    stack_size 64
+    stack_size 48
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %p -> [rbp-8] : ptr
-    param-slot %a -> [rbp-16] : i64
-    param-slot %b -> [rbp-24] : i64
-    param-slot %c -> [rbp-32] : i64
-    param-slot %d -> [rbp-40] : i64
-    param-slot %e -> [rbp-48] : i64
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    store.i64 [rbp-16], rsi
-    store.i64 [rbp-24], rdx
-    store.i64 [rbp-32], rcx
-    store.i64 [rbp-40], r8
-    store.i64 [rbp-48], r9
     ret
 
 function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12 r13 r14 r15
-    temp %p -> [rbp-8] : ptr
+    preserve rbx
 
   block ^entry
-    mov rbx, 1
-    mov r12, 2
-    mov r13, 3
-    mov r14, 4
-    mov r15, 5
-    mov r8, @bytes
-    mov rax, r8
-    lea rax, [rax+2]
-    store.ptr [rbp-8], rax
-    load.ptr rdi, [rbp-8]
-    mov rsi, rbx
-    mov rdx, r12
-    mov rcx, r13
-    mov r8, r14
-    mov r9, r15
-    call @touch
+    mov rbx, @bytes
+    lea rbx, [rbx+2]
+    mov rdi, rbx
+    mov rsi, 1
+    mov rdx, 2
+    mov rcx, 3
+    mov r8, 4
+    mov r9, 5
+    call @touch [args=(rcx,rdx,rsi,rdi,r8,r9)]
     mov r8, @bytes
     lea r8, [r8+2]
-    cmp.ptr [rbp-8], r8
+    cmp.ptr rbx, r8
     je ^good
     jmp ^bad
 
   block ^good
-    mov r8, rbx
-    add r8, r12
-    add r8, r13
-    add r8, r14
-    add r8, r15
+    mov r8, 1
+    add r8, 2
+    add r8, 3
+    add r8, 4
+    add r8, 5
     mov rdx, 15
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov rax, r8
+    cmp.i64 r8, 0
+    sete rax
+    movzx rax, rax
     ret rax
 
   block ^bad

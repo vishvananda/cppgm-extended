@@ -5,16 +5,14 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
     %t1 = addr $storage
     %t2 = addr $storage
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = unary decay ptr %t3
-    %t5 = index i8 [projection=array_element] %t4, 0
-    store i8 7, %t5
-    %t6 = addr $storage
-    %t7 = index i8 [projection=field] %t6, 0
-    %t8 = unary decay ptr %t7
-    %t9 = index i8 [projection=array_element] %t8, 0
-    %t10 = load i8 %t9
-    %t11 = convert sext i32 i8 %t10
-    return i32 %t11
+    %t4 = index i8 [projection=array_element] %t3, 0
+    store i8 7, %t4
+    %t5 = addr $storage
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = index i8 [projection=array_element] %t6, 0
+    %t8 = load i8 %t7
+    %t9 = convert sext i32 i8 %t8
+    return i32 %t9
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load i32 $cond__1
     return i32 %t2
 }
-function @ns__passthrough(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2ns11passthroughIcNS_6traitsIcEEEERNS_6streamIT_T0_EES7_] {
+function @ns__passthrough(%value : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZN2ns11passthroughIcNS_6traitsIcEEEERNS_6streamIT_T0_EES7_] {
   slot $value : ptr
 
   block ^entry:

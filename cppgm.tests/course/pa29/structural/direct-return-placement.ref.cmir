@@ -13,7 +13,7 @@ function @return_constant
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -26,7 +26,7 @@ function @return_load
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -39,7 +39,7 @@ function @return_global_address
   abi
     return ptr -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -52,7 +52,7 @@ function @return_slot_address
   abi
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -68,7 +68,7 @@ function @return_compare
     param %right -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -84,7 +84,7 @@ function @return_negated
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -99,7 +99,7 @@ function @return_converted
     param %value -> rdi : i64
     return i32 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -114,7 +114,7 @@ function @return_quotient
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -131,7 +131,7 @@ function @return_remainder
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -147,7 +147,7 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared

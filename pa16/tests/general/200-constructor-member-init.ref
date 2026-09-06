@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 %t3
     return i32 %t4
 }
-function @YP__YP(%this : ptr) -> void [binding=weak, object=_ZN2YPC1Ev] {
+function @YP__YP(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN2YPC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

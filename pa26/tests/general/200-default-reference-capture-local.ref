@@ -1,21 +1,20 @@
-declare global @__external_rtti__int [binding=strong, object=_ZTIi]
-declare global @__external_rtti_vtable____fundamental_type_info [binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
 
-global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
   i8 105
   i8 0
 }
-global @__rtti_int [storage=readonly, binding=weak, object=_ZTIi] = {
+global @__rtti_int [binding=weak, object=_ZTIi] = {
   ptr addr @__external_rtti_vtable____fundamental_type_info + 16
   ptr addr @__typeinfo_name__int
 }
-global @__ehobj_int [binding=weak, object=@__ehobj_int] = {
+global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
 
@@ -33,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 8
     return i32 %t5
 }
-function @__lambda_main_t16_20__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEv, prefer_local=yes] {
+function @__lambda_main_t16_20__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $catch__1 : ptr
   slot $error : ptr
@@ -64,7 +63,7 @@ function @__lambda_main_t16_20__operator__(%this : ptr) -> i32 [binding=strong, 
     eh_cleanup ^catch_cleanup_6
     store ptr %t6, $error
     %t7 = load ptr $this
-    %t8 = index i8 [projection=reference_field] %t7, 0
+    %t8 = index i8 [projection=field] %t7, 0
     %t9 = load ptr %t8
     %t10 = load i32 %t9
     %t11 = load ptr $error

@@ -1,6 +1,6 @@
-declare function @A_1___A__ov3(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1AILi1EEC1IiEERKT_]
-declare function @A_2___A__ov3(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1AILi2EEC1IiEERKT_]
-declare function @operator_(%arg0 : obj<1x1>, %arg1 : obj<1x1>) -> u8 [binding=weak, object=_ZltILi1ELi2EEb1AIXT_EES0_IXT0_EE]
+declare function @A_1___A_1___ov3(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1AILi1EEC1IiEERKT_, inline_hint=yes]
+declare function @A_2___A_1___ov3(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1AILi2EEC1IiEERKT_, inline_hint=yes]
+declare function @operator_(%arg0 : obj<1x1>, %arg1 : obj<1x1>) -> u8 [binding=weak, object=_ZltILi1ELi2EEb1AILi0EES0_ILi0EE]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $a : obj<1x1>
@@ -13,13 +13,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     store i32 0, $refarg__1
     %t2 = addr $refarg__1
-    call void @A_1___A__ov3(%t1, %t2)
+    call void @A_1___A_1___ov3(%t1, %t2)
     %t3 = addr $argobj__2
     %t4 = addr $a
     %t5 = addr $argobj__3
     store i32 1, $refarg__4
     %t6 = addr $refarg__4
-    call void @A_2___A__ov3(%t5, %t6)
+    call void @A_2___A_1___ov3(%t5, %t6)
     %t7 = call u8 @operator_($argobj__2, $argobj__3)
     return i32 0
 }

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @A__f(%t2)
     return i32 %t3
 }
-function @A__f(%this : ptr) -> i32 [binding=weak, object=_ZN1A1fEv] {
+function @A__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1A1fEv, inline_hint=yes] {
   slot $this : ptr
   slot $outer : obj<8x8>
 
@@ -20,7 +20,7 @@ function @A__f(%this : ptr) -> i32 [binding=weak, object=_ZN1A1fEv] {
     %t4 = call i32 @A____lambda_A__f_t56_60__operator__(%t3)
     return i32 %t4
 }
-function @A____lambda_A__f_t56_60__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZN1A1fEvENKUlvE_clEv] {
+function @A____lambda_A__f_t56_60__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZN1A1fEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
   slot $inner : obj<8x8>
 
@@ -32,10 +32,10 @@ function @A____lambda_A__f_t56_60__operator__(%this : ptr) -> i32 [binding=weak,
     %t4 = load ptr %t3
     store ptr %t4, %t1
     %t5 = addr $inner
-    %t6 = call i32 @A____lambda_A__f_t56_60____lambda_A____lambda_A__f_t56_60__operator___t67_71__operator__(%t5)
+    %t6 = call i32 @A____lambda_A__f_t56_60____lambda_nested_t67_71__operator__(%t5)
     return i32 %t6
 }
-function @A____lambda_A__f_t56_60____lambda_A____lambda_A__f_t56_60__operator___t67_71__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZZN1A1fEvENKUlvE_clEvENKUlvE_clEv] {
+function @A____lambda_A__f_t56_60____lambda_nested_t67_71__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZZN1A1fEvENKUlvE_clEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
   slot $tmpobj__1 : obj<4x4>
 
@@ -51,7 +51,7 @@ function @A____lambda_A__f_t56_60____lambda_A____lambda_A__f_t56_60__operator___
     %t7 = load i32 %t6
     return i32 %t7
 }
-function @A__make_e(%this : ptr) -> obj<4x4> [binding=weak, object=_ZN1A6make_eEv] {
+function @A__make_e(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZN1A6make_eEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -61,7 +61,7 @@ function @A__make_e(%this : ptr) -> obj<4x4> [binding=weak, object=_ZN1A6make_eE
     call void @E__E__ov2(%t1, 1)
     return obj<4x4> $retobj__1
 }
-function @E__E__ov2(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN1EC1Ei] {
+function @E__E__ov2(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN1EC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @service__make(%value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN7service4makeIK6objectEEiRT_] {
+function @service__make(%value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN7service4makeIK6objectEEiRT_, inline_hint=yes] {
   slot $value : ptr
   slot $tmpobj__1 : obj<1x1>
 
@@ -29,11 +29,11 @@ function @service__make(%value : ptr [pass=reference]) -> i32 [binding=weak, obj
     store ptr %value, $value
     %t1 = addr $tmpobj__1
     %t2 = load ptr $value
-    call void @service__wrapper_object_const__void___wrapper(%t1, %t2)
+    call void @service__wrapper_object_const__void___wrapper_object_const__void_(%t1, %t2)
     %t3 = call i32 @service__wrapper_object_const__void___get(%t1)
     return i32 %t3
 }
-function @service__wrapper_object_const__void___wrapper(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN7service7wrapperIK6objectvEC1ERS2_] {
+function @service__wrapper_object_const__void___wrapper_object_const__void_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7service7wrapperIK6objectvEC1ERS2_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -42,11 +42,11 @@ function @service__wrapper_object_const__void___wrapper(%this : ptr, %__param1 :
     store ptr %__param1, $__param1
     return void
 }
-function @service__wrapper_object_const__void___get(%this : ptr) -> i32 [binding=weak, object=_ZNK7service7wrapperIK6objectvE3getEv] {
+function @service__wrapper_object_const__void___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK7service7wrapperIK6objectvE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 7
 }
-alias object _ZN7service7wrapperIK6objectvEC2ERS2_ = @service__wrapper_object_const__void___wrapper
+alias object _ZN7service7wrapperIK6objectvEC2ERS2_ = @service__wrapper_object_const__void___wrapper_object_const__void_

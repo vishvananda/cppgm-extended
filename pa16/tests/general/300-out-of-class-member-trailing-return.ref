@@ -1,4 +1,4 @@
-function @array__begin(%this : ptr) -> ptr [unwind=no, binding=strong, object=_ZN5array5beginEv] {
+function @array__begin(%this : ptr [object_bytes=4]) -> ptr [unwind=no, binding=strong, object=_ZN5array5beginEv] {
   slot $this : ptr
 
   block ^entry:

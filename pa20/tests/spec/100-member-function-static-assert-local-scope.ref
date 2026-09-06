@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @test_suite__run(%t2)
     return i32 0
 }
-function @test_suite__run(%this : ptr) -> void [binding=weak, object=_ZN10test_suite3runEv] {
+function @test_suite__run(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN10test_suite3runEv, inline_hint=yes] {
   slot $this : ptr
   slot $object : obj<1x1>
   slot $value_result : obj<1x1>

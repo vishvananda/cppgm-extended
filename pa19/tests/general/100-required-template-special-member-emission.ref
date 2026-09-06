@@ -6,10 +6,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $a
-    call void @box_int___box(%t1)
+    call void @box_int___box_int_(%t1)
     %t2 = addr $b
     %t3 = addr $a
-    call void @box_int___box__ov2(%t2, %t3)
+    call void @box_int___box_int___ov2(%t2, %t3)
     %t4 = load i32 @total
     %t5 = addr $b
     %t6 = index i8 [projection=field] %t5, 0
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = binary sub i32 %t11, 7
     return i32 %t12
 }
-function @box_int___box(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3boxIiEC1Ev] {
+function @box_int___box_int_(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3boxIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -34,7 +34,20 @@ function @box_int___box(%this : ptr) -> void [unwind=no, binding=weak, object=_Z
     store i32 1, %t2
     return void
 }
-function @box_int___box__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN3boxIiEC1ERKS0_] {
+function @box_int____box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3boxIiED1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @total
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load i32 %t3
+    %t5 = binary add i32 %t1, %t4
+    store i32 %t5, @total
+    return void
+}
+function @box_int___box_int___ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3boxIiEC1ERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -50,19 +63,6 @@ function @box_int___box__ov2(%this : ptr, %other : ptr [pass=reference]) -> void
     store i32 %t4, %t6
     return void
 }
-function @box_int____box(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3boxIiED1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @total
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
-    %t5 = binary add i32 %t1, %t4
-    store i32 %t5, @total
-    return void
-}
-alias object _ZN3boxIiEC2Ev = @box_int___box
-alias object _ZN3boxIiEC2ERKS0_ = @box_int___box__ov2
+alias object _ZN3boxIiEC2Ev = @box_int___box_int_
 alias object _ZN3boxIiED2Ev = @box_int____box
+alias object _ZN3boxIiEC2ERKS0_ = @box_int___box_int___ov2

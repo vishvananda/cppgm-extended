@@ -4,10 +4,10 @@ function @use(%pointer : ptr) -> i64 [binding=strong, object=_Z3usePi] {
   block ^entry:
     store ptr %pointer, $pointer
     %t1 = load ptr $pointer
-    %t2 = call i64 @convert(1, %t1)
+    %t2 = call i64 @convert__ov2(1, %t1)
     return i64 %t2
 }
-function @convert(%__param0 : u32, %__param1 : ptr) -> i64 [binding=strong, object=_Z7convertIi6traitsIiEElNT0_7carrierEPT_] {
+function @convert__ov2(%__param0 : u32, %__param1 : ptr) -> i64 [binding=strong, object=_Z7convertIi6traitsIiEElNT0_7carrierEPT_] {
   slot $__param0 : u32
   slot $__param1 : ptr
 

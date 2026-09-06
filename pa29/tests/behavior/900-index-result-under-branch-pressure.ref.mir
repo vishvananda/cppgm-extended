@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -32,8 +32,7 @@ function @source
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    ret rax
+    ret rdi
 
 function @pressure
   abi
@@ -45,118 +44,116 @@ function @pressure
     param %c -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 144
-    scratch_bytes 48
+    stack_size 96
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
     preserve rbx r12 r13 r14 r15
-    temp %sib_bc -> [rbp-8] : i64
-    temp %address -> [rbp-16] : ptr
-    temp %q6 -> [rbp-24] : i64
-    temp %q7 -> [rbp-32] : i64
-    temp %q8 -> [rbp-40] : i64
+    param-slot %offset -> [rbp-8] : i64
+    param-slot %a -> [rbp-16] : i64
+    param-slot %b -> [rbp-24] : i64
+    param-slot %c -> [rbp-32] : i64
+    temp %sib_ab -> [rbp-40] : i64
+    temp %sib_bc -> [rbp-48] : i64
+    temp %q5 -> [rbp-40] : i64
+    temp %q6 -> [rbp-48] : i64
+    temp %q7 -> [rbp-56] : i64
 
   block ^entry
-    mov r14, rdx
-    mov rbx, rcx
-    mov r12, r8
-    mov r8, rsi
-    mov r13, r9
-    mov r9, rdi
-    cmp.i64 r9, 0
+    store.i64 [rbp-8], rdx
+    store.i64 [rbp-16], rcx
+    store.i64 [rbp-24], r8
+    store.i64 [rbp-32], r9
+    cmp.i64 rdi, 0
     jne ^high_pressure
     jmp ^select
 
   block ^select
-    cmp.i64 r8, 0
+    cmp.i64 rsi, 0
     jne ^compute
     jmp ^sibling_setup
 
   block ^sibling_setup
-    mov r15, rbx
-    add r15, r12
-    mov rax, r12
-    add rax, r13
-    store.i64 [rbp-8], rax
+    mov rbx, rcx
+    add rbx, r8
+    store.i64 [rbp-40], rbx
+    mov rbx, r8
+    add rbx, r9
+    store.i64 [rbp-48], rbx
     jmp ^sibling_use
 
   block ^compute
-    mov r8, @byte
-    mov r9, r14
-    add r9, 0
-    mov rax, r8
-    mov rdx, r9
-    add rax, rdx
-    store.ptr [rbp-16], rax
-    call @touch
-    load.ptr rcx, [rbp-16]
-    load.i8 r8, [rcx]
-    sext.i8 r8
+    mov r8, rdx
+    add r8, 0
+    mov rbx, @byte
+    add rbx, r8
+    call @touch [args=()]
+    load.i8 r8, [rbx]
     mov r9, r8
     zext.i8 r9
-    mov r8, rbx
-    add r8, r12
-    add r8, r13
+    load.i64 r8, [rbp-16]
+    add r8, [rbp-24]
+    add r8, [rbp-32]
     add r9, r8
-    mov rax, r9
-    ret rax
+    ret r9
 
   block ^sibling_use
-    mov r8, r15
-    add r8, rbx
-    load.i64 r9, [rbp-8]
-    add r9, r13
+    load.i64 r8, [rbp-40]
+    add r8, [rbp-16]
+    load.i64 r9, [rbp-48]
+    add r9, [rbp-32]
     add r8, r9
-    mov rax, r8
-    ret rax
+    ret r8
 
   block ^high_pressure
     mov rdi, 1
-    call @source
+    call @source [args=(rdi)]
     mov rbx, rax
     mov rdi, 2
-    call @source
+    call @source [args=(rdi)]
     mov r12, rax
     mov rdi, 3
-    call @source
+    call @source [args=(rdi)]
     mov r13, rax
     mov rdi, 4
-    call @source
+    call @source [args=(rdi)]
     mov r14, rax
     mov rdi, 5
-    call @source
+    call @source [args=(rdi)]
     mov r15, rax
     mov rdi, 6
-    call @source
-    store.i64 [rbp-24], rax
+    call @source [args=(rdi)]
+    store.i64 [rbp-40], r15
+    mov r15, rax
     mov rdi, 7
-    call @source
-    store.i64 [rbp-32], rax
+    call @source [args=(rdi)]
+    store.i64 [rbp-48], r15
+    mov r15, rax
     mov rdi, 8
-    call @source
-    store.i64 [rbp-40], rax
-    call @touch
+    call @source [args=(rdi)]
+    store.i64 [rbp-56], r15
+    mov r15, rax
+    call @touch [args=()]
     add rbx, r12
     add r13, r14
-    load.i64 rdx, [rbp-24]
-    add r15, rdx
-    load.i64 r8, [rbp-32]
-    load.i64 rdx, [rbp-40]
-    add r8, rdx
+    load.i64 r8, [rbp-40]
+    add r8, [rbp-48]
+    load.i64 r9, [rbp-56]
+    add r9, r15
     add rbx, r13
-    add r15, r8
-    add rbx, r15
-    mov rax, rbx
-    ret rax
+    add r8, r9
+    add rbx, r8
+    ret rbx
 
 function @main
   abi
     return i32 -> rax
   frame
-    stack_size 48
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
+    temp %actual -> [rbp-8] : i64
 
   block ^entry
     mov rdi, 0
@@ -165,13 +162,13 @@ function @main
     mov rcx, 1
     mov r8, 2
     mov r9, 3
-    call @pressure
-    mov r8, rax
+    call @pressure [args=(rcx,rdx,rsi,rdi,r8,r9)]
+    store.i64 [rbp-8], rax
+    load.i64 r8, [rbp-8]
     mov rdx, 48
     cmp.i64 r8, rdx
     setne r8
     movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    mov rax, r8
+    sext.i32 rax
     ret rax

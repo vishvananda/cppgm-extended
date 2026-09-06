@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
+function @X__X(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1XC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -34,7 +34,7 @@ function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
     call void @Y__Y(%t2)
     return void
 }
-function @Y__Y(%this : ptr) -> void [binding=weak, object=_ZN1YC1Ev] {
+function @Y__Y(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1YC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

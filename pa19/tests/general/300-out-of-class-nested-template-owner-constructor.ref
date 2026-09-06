@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @outer_int___inner__inner(%t1, 1, 2.0)
     return i32 0
 }
-function @outer_int___inner__inner(%this : ptr, %x : i32, %y : f64) -> void [binding=weak, object=_ZN5outerIiE5innerC1Eid] {
+function @outer_int___inner__inner(%this : ptr [object_bytes=1], %x : i32, %y : f64) -> void [binding=weak, object=_ZN5outerIiE5innerC1Eid, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
   slot $y : f64

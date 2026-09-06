@@ -1,5 +1,5 @@
+declare function @X__f(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZN1X1fERi]
 declare function @bind(%arg0 : i128, %arg1 : ptr, %arg2 : i32) -> i32 [binding=weak, object=_Z4bindIv1XRiPS0_iEiMT0_FT_T1_ET2_T3_]
-declare function @X__f(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=strong, object=_ZN1X1fERi]
 
 global @x [binding=strong, object=_Z1x] = {
   zero 1

@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @call(%t1, 0, 1)
     return i32 %t2
 }
-function @call(%__param0 : ptr, %__param1 : ptr, %__param2 : i32) -> i32 [binding=weak, object=_Z4callIlcJiEEiPFT_PT0_DpT1_ES2_DpS3_] {
+function @call(%__param0 : ptr, %__param1 : ptr, %__param2 : i32) -> i32 [binding=weak, object=_Z4callIlcJiEEiPFT_PT0_T1_zES2_DpS3_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : i32

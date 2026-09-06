@@ -4,51 +4,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $x
     %t2 = addr $x
-    call void @machine_f___row_0__int__0__self__on___execute(%t2, 0)
+    call void @machine_f___row_0__int__0__f__on___execute(%t2, 0)
     %t3 = addr $x
-    call void @machine_f___row_0__int__0__self__push___execute(%t3, 0)
+    call void @machine_f___row_0__int__0__f__push___execute(%t3, 0)
     return i32 0
 }
-function @machine_f___row_0__int__0__self__on___execute(%d : ptr [pass=reference], %event : i8) -> void [binding=weak, object=_ZN7machineI1fE3rowILi0EiLi0EXadL_ZNS0_2onEcEEE7executeERS0_c] {
-  slot $d : ptr
-  slot $event : i8
-
-  block ^entry:
-    store ptr %d, $d
-    store i8 %event, $event
-    %t1 = load ptr $d
-    %t2 = load i8 $event
-    %t3 = addr @f__on
-    call void %t3(%t1, %t2) as (%arg0 : ptr, %arg1 : i8) -> void
-    return void
-}
-function @machine_f___row_0__int__0__self__push___execute(%d : ptr [pass=reference], %event : i8) -> void [binding=weak, object=_ZN7machineI1fE3rowILi0EiLi0EXadL_ZNS0_4pushEcEEE7executeERS0_c] {
-  slot $d : ptr
-  slot $event : i8
-
-  block ^entry:
-    store ptr %d, $d
-    store i8 %event, $event
-    %t1 = load ptr $d
-    %t2 = load i8 $event
-    %t3 = addr @f__push
-    call void %t3(%t1, %t2) as (%arg0 : ptr, %arg1 : i8) -> void
-    return void
-}
-function @f__push(%this : ptr, %c : i8) -> void [binding=weak, object=_ZN1f4pushIcEEvT_] {
-  slot $this : ptr
-  slot $c : i8
-
-  block ^entry:
-    store ptr %this, $this
-    store i8 %c, $c
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    %t3 = load i8 $c
-    call void @machine_f___push(%t2, %t3)
-    return void
-}
-function @f__on(%this : ptr, %__param1 : i8) -> void [binding=weak, object=_ZN1f2onEc] {
+function @f__on(%this : ptr [object_bytes=1], %__param1 : i8) -> void [binding=weak, object=_ZN1f2onEc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i8
 
@@ -59,7 +20,46 @@ function @f__on(%this : ptr, %__param1 : i8) -> void [binding=weak, object=_ZN1f
     call void @f__push(%t1, 120)
     return void
 }
-function @machine_f___push(%this : ptr, %__param1 : i8) -> void [binding=weak, object=_ZN7machineI1fE4pushEc] {
+function @f__push(%this : ptr [object_bytes=1], %c : i8) -> void [binding=weak, object=_ZN1f4pushIcEEvT_, inline_hint=yes] {
+  slot $this : ptr
+  slot $c : i8
+
+  block ^entry:
+    store ptr %this, $this
+    store i8 %c, $c
+    %t1 = load ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = load i8 $c
+    call void @machine_f___push(%t2, %t3)
+    return void
+}
+function @machine_f___row_0__int__0__f__on___execute(%d : ptr [pass=by_address, object_bytes=1], %event : i8) -> void [binding=weak, object=_ZN7machineI1fE3rowILi0EiLi0EXadL_ZNS0_2onEcEEE7executeERS0_c, inline_hint=yes] {
+  slot $d : ptr
+  slot $event : i8
+
+  block ^entry:
+    store ptr %d, $d
+    store i8 %event, $event
+    %t1 = load ptr $d
+    %t2 = load i8 $event
+    %t3 = addr @f__on
+    call void %t3(%t1, %t2) as (%arg0 : ptr [object_bytes=1], %arg1 : i8) -> void
+    return void
+}
+function @machine_f___row_0__int__0__f__push___execute(%d : ptr [pass=by_address, object_bytes=1], %event : i8) -> void [binding=weak, object=_ZN7machineI1fE3rowILi0EiLi0EXadL_ZNS0_4pushIcEEvT_EEE7executeERS0_c, inline_hint=yes] {
+  slot $d : ptr
+  slot $event : i8
+
+  block ^entry:
+    store ptr %d, $d
+    store i8 %event, $event
+    %t1 = load ptr $d
+    %t2 = load i8 $event
+    %t3 = addr @f__push
+    call void %t3(%t1, %t2) as (%arg0 : ptr [object_bytes=1], %arg1 : i8) -> void
+    return void
+}
+function @machine_f___push(%this : ptr [object_bytes=1], %__param1 : i8) -> void [binding=weak, object=_ZN7machineI1fE4pushEc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i8
 

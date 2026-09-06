@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @Owner__run(%t2)
     return i32 %t3
 }
-function @Owner__run(%this : ptr) -> i32 [binding=weak, object=_ZN5Owner3runEv] {
+function @Owner__run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5Owner3runEv, inline_hint=yes] {
   slot $this : ptr
   slot $box : obj<4x4>
   slot $cond__1 : i32
@@ -16,7 +16,7 @@ function @Owner__run(%this : ptr) -> i32 [binding=weak, object=_ZN5Owner3runEv] 
     store ptr %this, $this
     %t1 = addr $box
     %t2 = load ptr $this
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = call i32 @Base__make_value(%t3)
     call void @Box__Box(%t1, %t4)
     %t5 = addr $box
@@ -37,7 +37,14 @@ function @Owner__run(%this : ptr) -> i32 [binding=weak, object=_ZN5Owner3runEv] 
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @Box__Box(%this : ptr, %init : i32) -> void [binding=weak, object=_ZN3BoxC1Ei] {
+function @Base__make_value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN4Base10make_valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 7
+}
+function @Box__Box(%this : ptr [object_bytes=4], %init : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $init : i32
 
@@ -49,12 +56,5 @@ function @Box__Box(%this : ptr, %init : i32) -> void [binding=weak, object=_ZN3B
     %t3 = index i8 [projection=field] %t2, 0
     store i32 %t1, %t3
     return void
-}
-function @Base__make_value(%this : ptr) -> i32 [binding=weak, object=_ZN4Base10make_valueEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return i32 7
 }
 alias object _ZN3BoxC2Ei = @Box__Box

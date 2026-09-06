@@ -1,7 +1,19 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare global @__external_rtti_vtable____si_class_type_info [binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 
-global @__typeinfo_name_type_Z5firstvE5local [storage=readonly, binding=weak, object=_ZTSZ5firstvE5local] = {
+global @__typeinfo_name__struct_base [binding=weak, object=_ZTS4base] = {
+  i8 52
+  i8 98
+  i8 97
+  i8 115
+  i8 101
+  i8 0
+}
+global @__rtti_struct_base [binding=weak, object=_ZTI4base] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_base
+}
+global @__typeinfo_name_type_Z5firstvE5local [binding=weak, object=_ZTSZ5firstvE5local] = {
   i8 90
   i8 53
   i8 102
@@ -19,29 +31,12 @@ global @__typeinfo_name_type_Z5firstvE5local [storage=readonly, binding=weak, ob
   i8 108
   i8 0
 }
-global @__typeinfo_name__struct_base [storage=readonly, binding=weak, object=_ZTS4base] = {
-  i8 52
-  i8 98
-  i8 97
-  i8 115
-  i8 101
-  i8 0
-}
-global @__rtti_struct_base [storage=readonly, binding=weak, object=_ZTI4base] = {
-  ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_base
-}
-global @__rtti_type_Z5firstvE5local [storage=readonly, binding=weak, object=_ZTIZ5firstvE5local] = {
+global @__rtti_type_Z5firstvE5local [binding=weak, object=_ZTIZ5firstvE5local] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name_type_Z5firstvE5local
   ptr addr @__rtti_struct_base
 }
-global @__vtable_type_Z5firstvE5local [storage=readonly, binding=weak, object=_ZTVZ5firstvE5local] = {
-  i64 0
-  ptr addr @__rtti_type_Z5firstvE5local
-  ptr addr @local__local_9518832232091432992__value
-}
-global @__typeinfo_name_type_Z6secondvE5local [storage=readonly, binding=weak, object=_ZTSZ6secondvE5local] = {
+global @__typeinfo_name_type_Z6secondvE5local [binding=weak, object=_ZTSZ6secondvE5local] = {
   i8 90
   i8 54
   i8 115
@@ -60,20 +55,25 @@ global @__typeinfo_name_type_Z6secondvE5local [storage=readonly, binding=weak, o
   i8 108
   i8 0
 }
-global @__rtti_type_Z6secondvE5local [storage=readonly, binding=weak, object=_ZTIZ6secondvE5local] = {
+global @__rtti_type_Z6secondvE5local [binding=weak, object=_ZTIZ6secondvE5local] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name_type_Z6secondvE5local
   ptr addr @__rtti_struct_base
 }
-global @__vtable_type_Z6secondvE5local [storage=readonly, binding=weak, object=_ZTVZ6secondvE5local] = {
-  i64 0
-  ptr addr @__rtti_type_Z6secondvE5local
-  ptr addr @local__local_2303702287257501577__value
-}
-global @base__vtable [storage=readonly, binding=weak, object=_ZTV4base] = {
+global @base__vtable [binding=weak, object=_ZTV4base] = {
   i64 0
   ptr addr @__rtti_struct_base
   ptr addr @base__value
+}
+global @__vtable_type_Z5firstvE5local [binding=weak, object=_ZTVZ5firstvE5local] = {
+  i64 0
+  ptr addr @__rtti_type_Z5firstvE5local
+  ptr addr @local__value
+}
+global @__vtable_type_Z6secondvE5local [binding=weak, object=_ZTVZ6secondvE5local] = {
+  i64 0
+  ptr addr @__rtti_type_Z6secondvE5local
+  ptr addr @local__value__sym2
 }
 
 function @first() -> i32 [binding=strong, object=_Z5firstv] {
@@ -82,14 +82,14 @@ function @first() -> i32 [binding=strong, object=_Z5firstv] {
 
   block ^entry:
     %t1 = addr $object
-    call void @local__local_9518832232091432992__local(%t1)
+    call void @local__local(%t1)
     %t2 = addr $object
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     store ptr %t3, $polymorphic
     %t4 = load ptr $polymorphic
     %t5 = load ptr %t4
     %t6 = load ptr %t5
-    %t7 = call i32 %t6(%t4) as (%arg0 : ptr) -> i32
+    %t7 = call i32 %t6(%t4) as (%arg0 : ptr [object_bytes=8]) -> i32
     return i32 %t7
 }
 function @second() -> i32 [binding=strong, object=_Z6secondv] {
@@ -98,14 +98,14 @@ function @second() -> i32 [binding=strong, object=_Z6secondv] {
 
   block ^entry:
     %t1 = addr $object
-    call void @local__local_2303702287257501577__local(%t1)
+    call void @local__local__sym2(%t1)
     %t2 = addr $object
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     store ptr %t3, $polymorphic
     %t4 = load ptr $polymorphic
     %t5 = load ptr %t4
     %t6 = load ptr %t5
-    %t7 = call i32 %t6(%t4) as (%arg0 : ptr) -> i32
+    %t7 = call i32 %t6(%t4) as (%arg0 : ptr [object_bytes=8]) -> i32
     return i32 %t7
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -144,20 +144,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @local__local_9518832232091432992__value(%this : ptr) -> i32 [binding=weak, object=_ZZ5firstvENK5local5valueEv] {
+function @local__value(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ5firstvENK5local5valueEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 1
 }
-function @local__local_9518832232091432992__local(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZ5firstvEN5localC1Ev] {
+function @local__local(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZ5firstvEN5localC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @base__base__base_entry(%t2)
     %t3 = load ptr $this
     %t4 = addr @__vtable_type_Z5firstvE5local
@@ -165,20 +165,27 @@ function @local__local_9518832232091432992__local(%this : ptr) -> void [unwind=n
     store ptr %t5, %t3
     return void
 }
-function @local__local_2303702287257501577__value(%this : ptr) -> i32 [binding=weak, object=_ZZ6secondvENK5local5valueEv] {
+function @base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4base5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 0
+}
+function @local__value__sym2(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ6secondvENK5local5valueEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 2
 }
-function @local__local_2303702287257501577__local(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZ6secondvEN5localC1Ev] {
+function @local__local__sym2(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZ6secondvEN5localC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @base__base__base_entry(%t2)
     %t3 = load ptr $this
     %t4 = addr @__vtable_type_Z6secondvE5local
@@ -186,7 +193,7 @@ function @local__local_2303702287257501577__local(%this : ptr) -> void [unwind=n
     store ptr %t5, %t3
     return void
 }
-function @base__base__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4baseC2Ev] {
+function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4baseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -197,12 +204,5 @@ function @base__base__base_entry(%this : ptr) -> void [unwind=no, binding=weak, 
     store ptr %t3, %t1
     return void
 }
-function @base__value(%this : ptr) -> i32 [binding=weak, object=_ZNK4base5valueEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return i32 0
-}
-alias object _ZZ5firstvEN5localC2Ev = @local__local_9518832232091432992__local
-alias object _ZZ6secondvEN5localC2Ev = @local__local_2303702287257501577__local
+alias object _ZZ5firstvEN5localC2Ev = @local__local
+alias object _ZZ6secondvEN5localC2Ev = @local__local__sym2

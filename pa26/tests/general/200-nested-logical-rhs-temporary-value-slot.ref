@@ -1,6 +1,6 @@
 global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
 
-function @use(%__param0 : ptr [pass=reference], %value : u8) -> u8 [unwind=no, binding=strong, object=_Z3useRK5Probeb] {
+function @use(%__param0 : ptr [pass=by_address, object_bytes=1], %value : u8) -> u8 [unwind=no, binding=strong, object=_Z3useRK5Probeb] {
   slot $__param0 : ptr
   slot $value : u8
 
@@ -10,7 +10,6 @@ function @use(%__param0 : ptr [pass=reference], %value : u8) -> u8 [unwind=no, b
     %t1 = load u8 $value
     return u8 %t1
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $gate : u8
   slot $land__1 : i64
@@ -26,7 +25,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     eh_try ^cleanup_resume_10
     %t2 = addr $arg__4
-    call void @Probe__Probe(%t2)
     eh_end
     jump ^call_unwind_end_11
 
@@ -84,8 +82,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_3:
     return i32 0
 }
-
-function @Probe___Probe(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5ProbeD1Ev] {
+function @Probe___Probe(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5ProbeD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -95,11 +92,4 @@ function @Probe___Probe(%this : ptr) -> void [unwind=no, binding=weak, object=_Z
     store i32 %t2, @destroyed
     return void
 }
-
-function @Probe__Probe(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5ProbeC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
+alias object _ZN5ProbeD2Ev = @Probe___Probe

@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = convert trunc i32 i64 %t7
     return i32 %t8
 }
-function @f(%__param0 : ptr [pass=reference], %__param1 : ptr, %__param2 : ptr) -> ptr [binding=weak, object=_Z1fI1VKS0_S1_EPKT_RT1_PT0_S4_] {
+function @f(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> ptr [binding=weak, object=_Z1fI1VKS0_S1_EPKT_RT1_PT0_S4_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

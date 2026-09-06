@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @F__operator__(%t3, 1, 2, 3)
     return i32 0
 }
-function @F__operator__(%this : ptr, %__param1 : i32, %__param2 : i32, %__param3 : i32) -> void [binding=weak, object=_ZNK1FclEiii] {
+function @F__operator__(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32, %__param3 : i32) -> void [binding=weak, object=_ZNK1FclEiii, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $__param2 : i32

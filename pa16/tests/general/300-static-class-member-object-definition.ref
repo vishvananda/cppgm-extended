@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 7
     return i32 %t4
 }
-function @Cell__Cell(%this : ptr) -> void [binding=weak, object=_ZN4CellC1Ev] {
+function @Cell__Cell(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4CellC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

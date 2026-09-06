@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @Derived__erase(%this : ptr, %__param1 : ptr [pass=reference]) -> i64 [binding=weak, object=_ZN7Derived5eraseERKi] {
+function @Derived__erase(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i64 [binding=weak, object=_ZN7Derived5eraseERKi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

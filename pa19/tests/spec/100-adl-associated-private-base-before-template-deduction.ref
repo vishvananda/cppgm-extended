@@ -1,4 +1,4 @@
-declare function @operator_new(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
 
 function @library__run() -> i32 [binding=strong, object=_ZN7library3runEv] {
   slot $arg__1 : obj<2x1>
@@ -18,21 +18,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 function @library__make_argument() -> ptr [binding=weak, object=_ZN7library13make_argumentIiEERNS_8argumentIT_EEv] {
   block ^entry:
     %t1 = convert sext i64 i32 1
-    %t2 = call ptr @operator_new(%t1)
-    call void @library__argument_int___argument(%t2)
+    %t2 = call ptr @operatornew(%t1)
     return ptr %t2
 }
-function @library__detail__choose(%__param0 : ptr [pass=reference]) -> obj<2x1> [binding=weak, object=_ZN7library6detail6chooseINS_8argumentIiEEEENS0_8selectedERT_] {
+function @library__detail__choose(%__param0 : ptr [pass=by_address, object_bytes=1]) -> obj<2x1> [binding=weak, object=_ZN7library6detail6chooseINS_8argumentIiEEEENS0_8selectedERT_] {
   slot $__param0 : ptr
   slot $retobj__1 : obj<2x1>
 
   block ^entry:
     store ptr %__param0, $__param0
     %t1 = addr $retobj__1
-    call void @library__detail__selected__selected(%t1)
     return obj<2x1> $retobj__1
 }
-function @library__classify(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN7library8classifyINS_6detail8selectedEEEiRKT_] {
+function @library__classify(%__param0 : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=weak, object=_ZN7library8classifyINS_6detail8selectedEEEiRKT_] {
   slot $__param0 : ptr
   slot $cond__1 : i32
 
@@ -55,19 +53,3 @@ function @library__classify(%__param0 : ptr [pass=reference]) -> i32 [binding=we
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @library__argument_int___argument(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7library8argumentIiEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @library__detail__selected__selected(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7library6detail8selectedC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN7library8argumentIiEC2Ev = @library__argument_int___argument
-alias object _ZN7library6detail8selectedC2Ev = @library__detail__selected__selected

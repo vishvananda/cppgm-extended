@@ -1,4 +1,4 @@
-function @member_pointer_null_compare_class__method(%this : ptr, %arg : i32) -> i32 [binding=strong, object=_ZN33member_pointer_null_compare_class6methodEi] {
+function @member_pointer_null_compare_class__method(%this : ptr [object_bytes=4], %arg : i32) -> i32 [binding=strong, object=_ZN33member_pointer_null_compare_class6methodEi] {
   slot $this : ptr
   slot $arg : i32
 

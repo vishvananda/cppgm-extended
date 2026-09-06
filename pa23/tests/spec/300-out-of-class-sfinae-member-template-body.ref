@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @container_int___insert(%this : ptr, %__param1 : obj<1x1>, %__param2 : obj<1x1>) -> i32 [binding=weak, object=_ZN9containerIiE6insertI7bidi_itTnN9enable_ifIXsr7is_bidiIT_EE5valueEiE4typeELi0EEEiS4_S4_] {
+function @container_int___insert(%this : ptr [object_bytes=1], %__param1 : obj<1x1>, %__param2 : obj<1x1>) -> i32 [binding=weak, object=_ZN9containerIiE6insertI7bidi_itTnN9enable_ifIXsr7is_bidiIT_EE5valueEiE4typeELi0EEEiS3_S3_] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : obj<1x1>

@@ -4,10 +4,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $c
     %t2 = addr $c
-    %t3 = call i32 @outer__v__C_int___f(%t2)
+    %t3 = call i32 @outer__C_int___f(%t2)
     return i32 %t3
 }
-function @outer__v__C_int___f(%this : ptr) -> i32 [binding=weak, object=_ZNK5outer1v1CIiE1fEv] {
+function @outer__C_int___f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK5outer1v1CIiE1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

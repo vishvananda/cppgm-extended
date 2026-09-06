@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 1
     return i32 %t4
 }
-function @Box_1___get(%this : ptr) -> i32 [binding=weak, object=_ZN3BoxILi1EE3getEv] {
+function @Box_1___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3BoxILi1EE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

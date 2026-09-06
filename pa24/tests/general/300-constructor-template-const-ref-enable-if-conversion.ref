@@ -7,16 +7,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $src
     store i64 7, $refarg__1
     %t2 = addr $refarg__1
-    call void @duration_like_long_long_int___duration_like__ov3(%t1, %t2)
+    call void @duration_like_long_long_int___duration_like_int___ov3(%t1, %t2)
     %t3 = addr $dst
     %t4 = addr $src
-    call void @duration_like_int___duration_like__ov3(%t3, %t4)
+    call void @duration_like_int___duration_like_int___ov3(%t3, %t4)
     %t5 = addr $dst
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load i32 %t6
     return i32 %t7
 }
-function @duration_like_long_long_int___duration_like__ov3(%this : ptr, %r : ptr [pass=reference]) -> void [binding=weak, object=_ZN13duration_likeIxEC1IxTnN9enable_ifIXsr14is_convertibleIRKT_xEE5valueEiE4typeELi0EEES5_] {
+function @duration_like_long_long_int___duration_like_int___ov3(%this : ptr [object_bytes=8], %r : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN13duration_likeIxEC1IxLi0EEERKT_, inline_hint=yes] {
   slot $this : ptr
   slot $r : ptr
 
@@ -30,7 +30,7 @@ function @duration_like_long_long_int___duration_like__ov3(%this : ptr, %r : ptr
     store i64 %t2, %t4
     return void
 }
-function @duration_like_int___duration_like__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxTnN9enable_ifIXntsr14is_convertibleIRKS_IT_EiEE5valueEiE4typeELi0EEES6_] {
+function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxLi0EEERKS_IT_E, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -46,5 +46,5 @@ function @duration_like_int___duration_like__ov3(%this : ptr, %other : ptr [pass
     store i32 %t4, %t6
     return void
 }
-alias object _ZN13duration_likeIxEC2IxTnN9enable_ifIXsr14is_convertibleIRKT_xEE5valueEiE4typeELi0EEES5_ = @duration_like_long_long_int___duration_like__ov3
-alias object _ZN13duration_likeIiEC2IxTnN9enable_ifIXntsr14is_convertibleIRKS_IT_EiEE5valueEiE4typeELi0EEES6_ = @duration_like_int___duration_like__ov3
+alias object _ZN13duration_likeIxEC2IxLi0EEERKT_ = @duration_like_long_long_int___duration_like_int___ov3
+alias object _ZN13duration_likeIiEC2IxLi0EEERKS_IT_E = @duration_like_int___duration_like_int___ov3

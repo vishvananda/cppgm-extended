@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = binary sub i32 %t1, 4
     return i32 %t2
 }
-function @tupleish_int___make() -> i32 [arity=variadic, binding=weak, object=_ZN8tupleishIJiEE4makeEz] {
+function @tupleish_int___make() -> i32 [arity=variadic, binding=weak, object=_ZN8tupleishIJiEE4makeEz, inline_hint=yes] {
   block ^entry:
     return i32 4
 }

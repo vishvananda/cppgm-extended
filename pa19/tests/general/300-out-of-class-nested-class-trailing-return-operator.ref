@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @outer_int___inner__operator_(%this : ptr) -> i32 [binding=weak, object=_ZN5outerIiE5innerdeEv] {
+function @outer_int___inner__operator_(%this : ptr [object_bytes=1]) -> i32 [binding=strong, object=_ZN5outerIiE5innerdeEv] {
   slot $this : ptr
 
   block ^entry:

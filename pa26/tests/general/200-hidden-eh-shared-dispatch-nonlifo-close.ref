@@ -1,18 +1,12 @@
-declare function @operator__(%arg0 : ptr [pass=reference], %arg1 : ptr) -> u8 [binding=strong, object=_ZeqRK4TextPKc]
+declare function @operator__(%arg0 : ptr [pass=by_address, object_bytes=1], %arg1 : ptr) -> u8 [binding=strong, object=_ZeqRK4TextPKc]
+declare function @Box__Box(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN3BoxC1Ev]
+declare function @Box___Box(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN3BoxD1Ev]
+declare function @Text__Text__ov2(%arg0 : ptr [object_bytes=1], %arg1 : ptr) -> void [binding=strong, object=_ZN4TextC1EPKc]
+declare function @Text__operator_(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=strong, object=_ZN4TextaSERKS_]
+declare function @Text___Text(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN4TextD1Ev]
+declare function @Box__get(%ret : ptr [pass=indirect_result, object_bytes=1], %arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZNK3Box3getEv]
 
-declare function @Box__Box(%arg0 : ptr) -> void [binding=strong, object=_ZN3BoxC1Ev]
-
-declare function @Text__Text__ov2(%arg0 : ptr, %arg1 : ptr) -> void [binding=strong, object=_ZN4TextC1EPKc]
-
-declare function @Text__operator_(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> ptr [binding=strong, object=_ZN4TextaSERKS_]
-
-declare function @Text___Text(%arg0 : ptr) -> void [binding=strong, object=_ZN4TextD1Ev]
-
-declare function @Box___Box(%arg0 : ptr) -> void [binding=strong, object=_ZN3BoxD1Ev]
-
-declare function @Box__get(%ret : ptr [pass=indirect_result], %arg0 : ptr) -> void [binding=strong, object=_ZNK3Box3getEv]
-
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 111
   i8 107
   i8 0

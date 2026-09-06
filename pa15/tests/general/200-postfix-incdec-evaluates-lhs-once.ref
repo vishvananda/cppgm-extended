@@ -8,26 +8,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @values
-    %t2 = unary decay ptr %t1
-    %t3 = load i32 @index
-    %t4 = binary add i32 %t3, 1
-    store i32 %t4, @index
-    %t5 = index i32 [projection=array_element] %t2, %t3
-    %t6 = load i32 %t5
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, %t5
-    %t8 = load i32 @index
-    %t9 = cmp ne i32 %t8, 1
-    branch %t9, ^lor_short_2, ^lor_rhs_1
+    %t2 = load i32 @index
+    %t3 = binary add i32 %t2, 1
+    store i32 %t3, @index
+    %t4 = index i32 [projection=array_element] %t1, %t2
+    %t5 = load i32 %t4
+    %t6 = binary add i32 %t5, 1
+    store i32 %t6, %t4
+    %t7 = load i32 @index
+    %t8 = cmp ne i32 %t7, 1
+    branch %t8, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
-    %t10 = addr @values
-    %t11 = unary decay ptr %t10
-    %t12 = index i32 [projection=array_element] %t11, 0
-    %t13 = load i32 %t12
-    %t14 = cmp ne i32 %t13, 1
-    %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $lor__1
+    %t9 = addr @values
+    %t10 = index i32 [projection=array_element] %t9, 0
+    %t11 = load i32 %t10
+    %t12 = cmp ne i32 %t11, 1
+    %t13 = cmp ne i64 %t12, 0
+    store i64 %t13, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
@@ -35,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t16 = load i64 $lor__1
-    %t17 = convert trunc i32 i64 %t16
-    return i32 %t17
+    %t14 = load i64 $lor__1
+    %t15 = convert trunc i32 i64 %t14
+    return i32 %t15
 }

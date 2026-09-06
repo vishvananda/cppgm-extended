@@ -1,6 +1,6 @@
-declare function @Box__Box__ov2(%arg0 : ptr, %arg1 : i32, %arg2 : ptr, %arg3 : i32) -> void [binding=strong, object=_ZN3BoxC1EiPKci]
+declare function @Box__Box__ov2(%arg0 : ptr [object_bytes=4], %arg1 : i32, %arg2 : ptr, %arg3 : i32) -> void [binding=strong, object=_ZN3BoxC1EiPKci]
 
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120
   i8 0
 }
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Box__Box__ov2(%t2, 1, %t4, 2)
     return i32 0
 }
-function @Source__c_str(%this : ptr) -> ptr [binding=weak, object=_ZNK6Source5c_strEv] {
+function @Source__c_str(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK6Source5c_strEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -1,7 +1,7 @@
 global @alive : i32 [binding=strong, object=_Z5alive] = zero
 global @choose_second : u8 [binding=strong, object=_Z13choose_second] = 1
 
-function @operator_(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=strong, object=_ZplRK5valueS1_] {
+function @operator_(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_ZplRK5valueS1_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $cond__1 : i32
@@ -104,7 +104,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = convert trunc i32 i64 %t11
     return i32 %t12
 }
-function @value__value(%this : ptr) -> void [binding=weak, object=_ZN5valueC1Ev] {
+function @value__value(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5valueC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -114,7 +114,7 @@ function @value__value(%this : ptr) -> void [binding=weak, object=_ZN5valueC1Ev]
     store i32 %t2, @alive
     return void
 }
-function @value___value(%this : ptr) -> void [binding=weak, object=_ZN5valueD1Ev] {
+function @value___value(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5valueD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

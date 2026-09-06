@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__2
     return i32 %t6
 }
-function @box_char___assign(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> void [binding=weak, object=_ZN3boxIcE6assignERcRKc] {
+function @box_char___assign(%a : ptr [pass=by_address, object_bytes=1], %b : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3boxIcE6assignERcRKc, inline_hint=yes] {
   slot $a : ptr
   slot $b : ptr
 

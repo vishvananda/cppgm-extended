@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @caller_int_const___call(%value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6callerIKiE4callERS0_] {
+function @caller_int_const___call(%value : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN6callerIKiE4callERS0_, inline_hint=yes] {
   slot $value : ptr
 
   block ^entry:
@@ -30,7 +30,7 @@ function @caller_int_const___call(%value : ptr [pass=reference]) -> i32 [binding
     %t2 = call i32 @pick(%t1)
     return i32 %t2
 }
-function @pick(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4pickIiEiRKT_] {
+function @pick(%__param0 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z4pickIiEiRKT_] {
   slot $__param0 : ptr
 
   block ^entry:

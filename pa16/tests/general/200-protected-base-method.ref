@@ -7,17 +7,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @YB__g(%t2)
     return i32 %t3
 }
-function @YB__g(%this : ptr) -> i32 [binding=weak, object=_ZN2YB1gEv] {
+function @YB__g(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN2YB1gEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = call i32 @YA__f(%t2)
     return i32 %t3
 }
-function @YA__f(%this : ptr) -> i32 [binding=weak, object=_ZN2YA1fEv] {
+function @YA__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN2YA1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

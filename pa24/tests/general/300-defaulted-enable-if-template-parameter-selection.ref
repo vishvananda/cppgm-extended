@@ -7,16 +7,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @allocator_int___allocate(%t2)
     return i32 %t3
 }
-function @allocator_int___allocate(%this : ptr) -> i32 [binding=weak, object=_ZN9allocatorIiE8allocateEv] {
+function @allocator_int___allocate(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN9allocatorIiE8allocateEv] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = call i32 @traits_allocator_int____max_size(%t1)
+    %t2 = call i32 @traits___cppgm_class_template_identity_1_1_0___max_size(%t1)
     return i32 %t2
 }
-function @traits_allocator_int____max_size(%a : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6traitsI9allocatorIiEE8max_sizeIS1_TnN9enable_ifIXsr12has_max_sizeIKT_EE5valueEiE4typeELi0EEEiRKS1_] {
+function @traits___cppgm_class_template_identity_1_1_0___max_size(%a : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6traitsI9allocatorIiEE8max_sizeIS1_Li0EEEiRKS1_, inline_hint=yes] {
   slot $a : ptr
 
   block ^entry:
@@ -25,7 +25,7 @@ function @traits_allocator_int____max_size(%a : ptr [pass=reference]) -> i32 [bi
     %t2 = call i32 @allocator_int___max_size(%t1)
     return i32 %t2
 }
-function @allocator_int___max_size(%this : ptr) -> i32 [binding=weak, object=_ZNK9allocatorIiE8max_sizeEv] {
+function @allocator_int___max_size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK9allocatorIiE8max_sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

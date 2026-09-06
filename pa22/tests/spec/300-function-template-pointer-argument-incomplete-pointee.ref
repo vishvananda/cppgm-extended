@@ -3,7 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @call__execute(0)
     return i32 0
 }
-function @call__execute(%__param0 : ptr) -> void [binding=weak, object=_ZN4call7executeI4lazyI1nEEEvPT_] {
+function @call__execute(%__param0 : ptr) -> void [binding=weak, object=_ZN4call7executeI4lazyI1nEEEvPT_, inline_hint=yes] {
   slot $__param0 : ptr
 
   block ^entry:

@@ -6,11 +6,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     store i32 5, $refarg__1
     %t2 = addr $refarg__1
-    call void @adaptor_A_int___1___adaptor__ov4(%t1, %t2)
+    call void @adaptor___cppgm_class_template_identity_2_0_0__1___adaptor___cppgm_class_template_identity_2_0_0__1___ov4(%t1, %t2)
     %t3 = addr $value
     return i32 0
 }
-function @adaptor_A_int___1___adaptor__ov4(%this : ptr, %alloc : ptr [pass=reference]) -> void [binding=weak, object=_ZN7adaptorI1AIiELm1EEC1IiEEOT_] {
+function @adaptor___cppgm_class_template_identity_2_0_0__1___adaptor___cppgm_class_template_identity_2_0_0__1___ov4(%this : ptr [object_bytes=1], %alloc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7adaptorI1AIiELm1EEC1IiEEOT_, inline_hint=yes] {
   slot $this : ptr
   slot $alloc : ptr
 
@@ -18,14 +18,22 @@ function @adaptor_A_int___1___adaptor__ov4(%this : ptr, %alloc : ptr [pass=refer
     store ptr %this, $this
     store ptr %alloc, $alloc
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $alloc
     %t4 = call ptr @std__forward(%t3)
     %t5 = load i32 %t4
-    call void @A_int___A__base_entry(%t2, %t5)
+    call void @A_int___A_char___base_entry(%t2, %t5)
     return void
 }
-function @A_int___A__base_entry(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN1AIiEC2Ei] {
+function @std__forward(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZSt7forwardIiEOT_RNSt16remove_referenceIS0_E4typeE] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}
+function @A_int___A_char___base_entry(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN1AIiEC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -34,12 +42,4 @@ function @A_int___A__base_entry(%this : ptr, %__param1 : i32) -> void [binding=w
     store i32 %__param1, $__param1
     return void
 }
-function @std__forward(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIiEOT_RNSt16remove_referenceIS0_E4typeE] {
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    return ptr %t1
-}
-alias object _ZN7adaptorI1AIiELm1EEC2IiEEOT_ = @adaptor_A_int___1___adaptor__ov4
+alias object _ZN7adaptorI1AIiELm1EEC2IiEEOT_ = @adaptor___cppgm_class_template_identity_2_0_0__1___adaptor___cppgm_class_template_identity_2_0_0__1___ov4

@@ -1,55 +1,9 @@
-function @S__S__base_entry(%this : ptr) -> void [unwind=no, binding=strong, object=_ZN1SC2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @S__S(%this : ptr) -> void [unwind=no, binding=strong, object=_ZN1SC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @S__S__ov2__base_entry(%this : ptr, %__param1 : ptr [pass=reference]) -> void [unwind=no, binding=strong, object=_ZN1SC2ERKS_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
-function @S__S__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [unwind=no, binding=strong, object=_ZN1SC1ERKS_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
-function @S___S__base_entry(%this : ptr) -> void [unwind=no, binding=strong, object=_ZN1SD2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @S___S(%this : ptr) -> void [unwind=no, binding=strong, object=_ZN1SD1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @f(%ret : ptr [pass=indirect_result]) -> void [unwind=no, binding=strong, object=_Z1fv] {
+function @f(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [unwind=no, binding=strong, object=_Z1fv] {
   block ^entry:
     call void @S__S(%ret)
     return void
 }
-function @g(%ret : ptr [pass=indirect_result]) -> void [unwind=no, binding=strong, object=_Z1gv] {
+function @g(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [unwind=no, binding=strong, object=_Z1gv] {
   block ^entry:
     call void @S__S(%ret)
     return void
@@ -75,10 +29,53 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^condobj_end_3
 
   block ^condobj_end_3:
-    call void @S__S__ov2(%t1, %t2)
+    call void @S__S__ov2(%t1, %t2) [elision=copy]
     call void @S___S(%t2)
     return i32 0
 }
-alias object _ZN1SC2Ev = @S__S
-alias object _ZN1SC2ERKS_ = @S__S__ov2
-alias object _ZN1SD2Ev = @S___S
+function @S__S__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SC2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @S__S(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @S__S__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SC2ERKS_, object_root=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SC1ERKS_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+function @S___S__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SD2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @S___S(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SD1Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}

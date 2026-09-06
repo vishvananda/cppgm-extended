@@ -11,12 +11,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = index i8 %t1, 3
     store i8 0, %t4
     %t5 = addr $text
-    %t6 = unary decay ptr %t5
-    %t7 = call ptr @next(%t6, 2)
-    %t8 = load i8 %t7
-    %t9 = convert sext i32 i8 %t8
-    %t10 = binary sub i32 %t9, 99
-    return i32 %t10
+    %t6 = call ptr @next(%t5, 2)
+    %t7 = load i8 %t6
+    %t8 = convert sext i32 i8 %t7
+    %t9 = binary sub i32 %t8, 99
+    return i32 %t9
 }
 function @next(%value : ptr, %count : i64) -> ptr [binding=weak, object=_Z4nextIPKcET_S2_N15iterator_traitsIS2_E15difference_typeE] {
   slot $value : ptr

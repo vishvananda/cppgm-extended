@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @Box__Box(%this : ptr, %value : i32) -> void [binding=weak, object=_ZN3BoxC1Ei] {
+function @Box__Box(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 
@@ -35,7 +35,7 @@ function @Box__Box(%this : ptr, %value : i32) -> void [binding=weak, object=_ZN3
     store i32 %t1, %t3
     return void
 }
-function @Box__run(%this : ptr) -> i32 [binding=weak, object=_ZN3Box3runEv] {
+function @Box__run(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN3Box3runEv, inline_hint=yes] {
   slot $this : ptr
   slot $unused : ptr
   slot $tmpobj__1 : obj<8x8>
@@ -50,7 +50,7 @@ function @Box__run(%this : ptr) -> i32 [binding=weak, object=_ZN3Box3runEv] {
     %t4 = call i32 @Box____lambda_Box__run_t39_41__operator__(%t2)
     return i32 %t4
 }
-function @Box____lambda_Box__run_t39_41__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZN3Box3runEvENKUlvE_clEv] {
+function @Box____lambda_Box__run_t39_41__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZN3Box3runEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -58,7 +58,7 @@ function @Box____lambda_Box__run_t39_41__operator__(%this : ptr) -> i32 [binding
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load i32 %t5
     return i32 %t6

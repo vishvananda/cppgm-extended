@@ -1,4 +1,4 @@
-function @make(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z4makev] {
+function @make(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [binding=strong, object=_Z4makev] {
   block ^entry:
     call void @Outer__Outer(%ret)
     %t1 = index i8 [projection=field] %ret, 0
@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__2
     return i32 %t10
 }
-function @Outer__Outer(%this : ptr) -> void [binding=weak, object=_ZN5OuterC1Ev] {
+function @Outer__Outer(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5OuterC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -47,35 +47,7 @@ function @Outer__Outer(%this : ptr) -> void [binding=weak, object=_ZN5OuterC1Ev]
     call void @MoveOnly__MoveOnly(%t2, 0)
     return void
 }
-function @Outer__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5OuteraSEOS_] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
-    %t5 = call ptr @MoveOnly__operator___ov2(%t2, %t4)
-    %t6 = load ptr $this
-    return ptr %t6
-}
-function @MoveOnly__MoveOnly(%this : ptr, %value : i32) -> void [binding=weak, object=_ZN8MoveOnlyC1Ei] {
-  slot $this : ptr
-  slot $value : i32
-
-  block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    return void
-}
-function @MoveOnly__MoveOnly__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN8MoveOnlyC1EOS_] {
+function @MoveOnly__MoveOnly__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN8MoveOnlyC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -93,7 +65,35 @@ function @MoveOnly__MoveOnly__ov3(%this : ptr, %other : ptr [pass=reference]) ->
     store i32 0, %t7
     return void
 }
-function @MoveOnly__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8MoveOnlyaSEOS_] {
+function @Outer__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN5OuteraSEOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $other
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = call ptr @MoveOnly__operator___ov2(%t2, %t4)
+    %t6 = load ptr $this
+    return ptr %t6
+}
+function @MoveOnly__MoveOnly(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN8MoveOnlyC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @MoveOnly__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN8MoveOnlyaSEOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -125,5 +125,5 @@ function @MoveOnly__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -
     return ptr %t11
 }
 alias object _ZN5OuterC2Ev = @Outer__Outer
-alias object _ZN8MoveOnlyC2Ei = @MoveOnly__MoveOnly
 alias object _ZN8MoveOnlyC2EOS_ = @MoveOnly__MoveOnly__ov3
+alias object _ZN8MoveOnlyC2Ei = @MoveOnly__MoveOnly

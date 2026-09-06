@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = load i32 $cond__1
     return i32 %t20
 }
-function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
+function @X__X(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1XC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -62,7 +62,7 @@ function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
     call void @Member__Member(%t2)
     return void
 }
-function @X__X__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN1XC1EOS_] {
+function @X__X__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN1XC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -76,7 +76,7 @@ function @X__X__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding
     call void @Member__Member__ov3(%t2, %t4)
     return void
 }
-function @Member__Member(%this : ptr) -> void [binding=weak, object=_ZN6MemberC1Ev] {
+function @Member__Member(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6MemberC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -86,7 +86,7 @@ function @Member__Member(%this : ptr) -> void [binding=weak, object=_ZN6MemberC1
     store i32 0, %t2
     return void
 }
-function @Member__Member__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN6MemberC1EOS_] {
+function @Member__Member__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN6MemberC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

@@ -1,4 +1,4 @@
-function @detail__set(%box : ptr [pass=reference]) -> void [binding=strong, object=_ZN6detail3setER3Box] {
+function @detail__set(%box : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZN6detail3setER3Box] {
   slot $box : ptr
 
   block ^entry:
@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
+function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -44,7 +44,7 @@ function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
     store i32 0, %t2
     return void
 }
-function @Box__get(%this : ptr) -> i32 [binding=weak, object=_ZNK3Box3getEv] {
+function @Box__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZNK3Box3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

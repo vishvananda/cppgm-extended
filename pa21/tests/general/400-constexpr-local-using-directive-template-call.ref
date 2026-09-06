@@ -18,12 +18,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @wrapped() -> i32 [binding=weak, object=_Z7wrappedv] {
+function @wrapped() -> i32 [binding=weak, object=_Z7wrappedv, inline_hint=yes] {
   block ^entry:
     %t1 = call i32 @detail__value()
     return i32 %t1
 }
-function @detail__value() -> i32 [binding=weak, object=_ZN6detail5valueILi7EEEiv] {
+function @detail__value() -> i32 [binding=weak, object=_ZN6detail5valueILi7EEEiv, inline_hint=yes] {
   block ^entry:
     return i32 7
 }

@@ -7,14 +7,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @List_int___resize(%t2)
     return i32 0
 }
-function @List_int___resize(%this : ptr) -> void [binding=weak, object=_ZN4ListIiE6resizeEv] {
+function @List_int___resize(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4ListIiE6resizeEv] {
   slot $this : ptr
   slot $p : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = copy ptr nullptr
     %t4 = copy ptr nullptr
     %t5 = call ptr @Base_int___create(%t2, %t3, %t4)
@@ -22,7 +22,7 @@ function @List_int___resize(%this : ptr) -> void [binding=weak, object=_ZN4ListI
     %t6 = load ptr $p
     return void
 }
-function @Base_int___create(%this : ptr, %__param1 : ptr, %__param2 : ptr) -> ptr [binding=weak, object=_ZN4BaseIiE6createEP4NodeS2_] {
+function @Base_int___create(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> ptr [binding=weak, object=_ZN4BaseIiE6createEP4NodeS2_DpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

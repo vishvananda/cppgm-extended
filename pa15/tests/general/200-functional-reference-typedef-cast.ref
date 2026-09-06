@@ -1,4 +1,4 @@
-function @f(%x : ptr [pass=reference]) -> ptr [binding=strong, object=_Z1fRKi] {
+function @f(%x : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z1fRKi] {
   slot $x : ptr
 
   block ^entry:

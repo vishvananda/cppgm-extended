@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @U__U(%this : ptr) -> void [binding=weak, object=_ZN1UC1Ev] {
+function @U__U(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1UC1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $refcall__1 : obj<4x4>
 
@@ -37,7 +37,17 @@ function @U__U(%this : ptr) -> void [binding=weak, object=_ZN1UC1Ev] {
     call void @H__H(%t2, %t3)
     return void
 }
-function @H__H(%this : ptr, %d : ptr [pass=reference]) -> void [binding=weak, object=_ZN1HC1EO1D] {
+function @D__D(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+function @H__H(%this : ptr [object_bytes=4], %d : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1HC1EO1D, inline_hint=yes] {
   slot $this : ptr
   slot $d : ptr
 
@@ -55,16 +65,6 @@ function @H__H(%this : ptr, %d : ptr [pass=reference]) -> void [binding=weak, ob
     store i32 0, %t7
     return void
 }
-function @D__D(%this : ptr) -> void [binding=weak, object=_ZN1DC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    return void
-}
 alias object _ZN1UC2Ev = @U__U
-alias object _ZN1HC2EO1D = @H__H
 alias object _ZN1DC2Ev = @D__D
+alias object _ZN1HC2EO1D = @H__H

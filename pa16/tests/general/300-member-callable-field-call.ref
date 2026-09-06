@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @Fn__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZNK2FnclEi] {
+function @Fn__operator__(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZNK2FnclEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

@@ -1,4 +1,4 @@
-declare function @convertible__operatorvalue_(%arg0 : ptr) -> ptr [binding=strong, object=_ZNK11convertiblecvP5valueEv]
+declare function @convertible__operatorvalue_(%arg0 : ptr [object_bytes=1]) -> ptr [binding=strong, object=_ZNK11convertiblecvP5valueEv]
 
 function @dereference(%input : obj<1x1>) -> ptr [binding=strong, object=_Z11dereference11convertible] {
   slot $input : obj<1x1>

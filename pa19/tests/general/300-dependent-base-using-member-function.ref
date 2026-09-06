@@ -8,17 +8,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 7
     return i32 %t4
 }
-function @split_int___spare(%this : ptr) -> i32 [binding=weak, object=_ZNK5splitIiE5spareEv] {
+function @split_int___spare(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK5splitIiE5spareEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    %t3 = call i32 @layout_split_int___int_____back_spare(%t2)
+    %t2 = index i8 %t1, 0
+    %t3 = call i32 @layout___cppgm_class_template_identity_1_0_0__int_____back_spare(%t2)
     return i32 %t3
 }
-function @layout_split_int___int_____back_spare(%this : ptr) -> i32 [binding=weak, object=_ZNK6layoutI5splitIiEiE12__back_spareEv] {
+function @layout___cppgm_class_template_identity_1_0_0__int_____back_spare(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK6layoutI5splitIiEiE12__back_spareEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

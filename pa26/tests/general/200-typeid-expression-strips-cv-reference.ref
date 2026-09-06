@@ -1,7 +1,7 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-declare function @operatornew(%arg0 : i64) -> ptr [effects=readwrite, role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
-declare function @operatordelete(%arg0 : ptr) -> void [effects=readwrite, unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 global @__typeinfo_name__struct_Foo [binding=weak, object=_ZTS3Foo] = {
   i8 51
@@ -38,7 +38,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @Foo__Foo(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3FooC1Ei] {
+function @Foo__Foo(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3FooC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -51,7 +51,7 @@ function @Foo__Foo(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3FooC
     store i32 %t1, %t3
     return void
 }
-function @same_cloned_type(%r : ptr [pass=reference]) -> i32 [binding=weak, object=_Z16same_cloned_typeI3FooEiRKT_] {
+function @same_cloned_type(%r : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z16same_cloned_typeI3FooEiRKT_] {
   slot $r : ptr
   slot $copy : ptr
   slot $same : i32
@@ -80,7 +80,7 @@ function @same_cloned_type(%r : ptr [pass=reference]) -> i32 [binding=weak, obje
     %t10 = load i32 $same
     return i32 %t10
 }
-function @Foo__Foo__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN3FooC1ERKS_] {
+function @Foo__Foo__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3FooC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @chainbuf_int__input__public____underflow(%t2)
     return i32 %t3
 }
-function @chainbuf_int__input__public____underflow(%this : ptr) -> i32 [binding=weak, object=_ZN8chainbufIi5input7public_E9underflowEv] {
+function @chainbuf_int__input__public____underflow(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN8chainbufIi5input7public_E9underflowEv, inline_hint=yes] {
   slot $this : ptr
   slot $t : obj<8x8>
 
@@ -18,7 +18,7 @@ function @chainbuf_int__input__public____underflow(%this : ptr) -> i32 [binding=
     call void @chainbuf_int__input__public____sentry__sentry(%t1, %t2)
     return i32 0
 }
-function @chainbuf_int__input__public____sentry__sentry(%this : ptr, %buf : ptr) -> void [binding=weak, object=_ZN8chainbufIi5input7public_E6sentryC1EPS2_] {
+function @chainbuf_int__input__public____sentry__sentry(%this : ptr [object_bytes=8], %buf : ptr) -> void [binding=weak, object=_ZN8chainbufIi5input7public_E6sentryC1EPS2_, inline_hint=yes] {
   slot $this : ptr
   slot $buf : ptr
 

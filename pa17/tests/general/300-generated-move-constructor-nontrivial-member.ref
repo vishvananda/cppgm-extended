@@ -51,7 +51,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load i32 $cond__1
     return i32 %t18
 }
-function @Wrapper__Wrapper(%this : ptr, %ptr : ptr) -> void [binding=weak, object=_ZN7WrapperC1EPi] {
+function @Wrapper__Wrapper(%this : ptr [object_bytes=8], %ptr : ptr) -> void [binding=weak, object=_ZN7WrapperC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $ptr : ptr
 
@@ -64,7 +64,7 @@ function @Wrapper__Wrapper(%this : ptr, %ptr : ptr) -> void [binding=weak, objec
     call void @Owner__Owner(%t2, %t3)
     return void
 }
-function @Wrapper__Wrapper__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN7WrapperC1EOS_] {
+function @Wrapper__Wrapper__ov3(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN7WrapperC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -78,7 +78,7 @@ function @Wrapper__Wrapper__ov3(%this : ptr, %other : ptr [pass=reference]) -> v
     call void @Owner__Owner__ov2(%t2, %t4)
     return void
 }
-function @Owner__Owner(%this : ptr, %ptr : ptr) -> void [binding=weak, object=_ZN5OwnerC1EPi] {
+function @Owner__Owner(%this : ptr [object_bytes=8], %ptr : ptr) -> void [binding=weak, object=_ZN5OwnerC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $ptr : ptr
 
@@ -91,7 +91,7 @@ function @Owner__Owner(%this : ptr, %ptr : ptr) -> void [binding=weak, object=_Z
     store ptr %t1, %t3
     return void
 }
-function @Owner__Owner__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5OwnerC1EOS_] {
+function @Owner__Owner__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN5OwnerC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

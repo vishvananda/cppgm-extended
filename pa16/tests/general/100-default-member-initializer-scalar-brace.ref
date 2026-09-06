@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @Cache__Cache(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5CacheC1Ev] {
+function @Cache__Cache(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN5CacheC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

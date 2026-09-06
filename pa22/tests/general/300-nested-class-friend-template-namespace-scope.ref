@@ -1,4 +1,4 @@
-function @force(%loc : ptr [pass=reference]) -> ptr [binding=strong, object=_Z5forceRK6Locale] {
+function @force(%loc : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=strong, object=_Z5forceRK6Locale] {
   slot $loc : ptr
 
   block ^entry:
@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @try_use_facet(%loc : ptr [pass=reference]) -> ptr [binding=weak, object=_Z13try_use_facetI5CtypeEPKT_RK6Locale] {
+function @try_use_facet(%loc : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z13try_use_facetI5CtypeEPKT_RK6Locale] {
   slot $loc : ptr
   slot $facets : ptr
 

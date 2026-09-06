@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = load i128 $method
     %t17 = convert trunc i64 i128 %t16
     %t18 = copy ptr %t17
-    %t19 = call i32 %t18(%t15, 4) as (%arg0 : ptr, %arg1 : i32) -> i32
+    %t19 = call i32 %t18(%t15, 4) as (%arg0 : ptr [object_bytes=4], %arg1 : i32) -> i32
     %t20 = cmp eq i32 %t19, 7
     %t21 = cmp ne i64 %t20, 0
     store i64 %t21, $land__2
@@ -58,7 +58,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = load i32 $cond__1
     return i32 %t23
 }
-function @S__plus(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZN1S4plusEi] {
+function @S__plus(%this : ptr [object_bytes=4], %x : i32) -> i32 [binding=weak, object=_ZN1S4plusEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

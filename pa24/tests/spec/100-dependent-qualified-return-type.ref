@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @get(%x : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_Z3getILm0EiERN13tuple_elementIXT_E5tupleIXT_ET0_EE4typeERS3_] {
+function @get(%x : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_Z3getILm0EiERN13tuple_elementIXT_E5tupleIXT_ET0_EE4typeERS1_ILm0ES2_E] {
   slot $x : ptr
 
   block ^entry:

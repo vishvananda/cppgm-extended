@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @h(%t2)
     return i32 %t3
 }
-function @h(%os : ptr [pass=reference]) -> i32 [binding=weak, object=_Z1hIiEiR1OIT_E] {
+function @h(%os : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z1hIiEiR1OIT_E] {
   slot $os : ptr
   slot $s : obj<1x1>
   slot $cond__1 : i32
@@ -33,7 +33,7 @@ function @h(%os : ptr [pass=reference]) -> i32 [binding=weak, object=_Z1hIiEiR1O
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @O_int___S__S(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1OIiE1SC1ERS0_] {
+function @O_int___S__S(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1OIiE1SC1ERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -42,7 +42,7 @@ function @O_int___S__S(%this : ptr, %__param1 : ptr [pass=reference]) -> void [b
     store ptr %__param1, $__param1
     return void
 }
-function @O_int___S__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK1OIiE1ScvbEv] {
+function @O_int___S__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK1OIiE1ScvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

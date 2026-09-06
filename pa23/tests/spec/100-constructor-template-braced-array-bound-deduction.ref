@@ -49,7 +49,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @storage_ptr__storage_ptr(%t22)
     %t23 = addr $opts
     %t24 = addr $parser_buf
-    call void @stream_parser__stream_parser(%t21, $argobj__1, %t23, %t24)
+    call void @stream_parser__stream_parser__ov3(%t21, $argobj__1, %t23, %t24)
     %t25 = addr $p
     %t26 = index i8 [projection=field] %t25, 0
     %t27 = load i32 %t26
@@ -68,7 +68,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t29 = load i32 $cond__2
     return i32 %t29
 }
-function @stream_parser__stream_parser(%this : ptr, %sp : obj<4x4>, %__param2 : ptr [pass=reference], %buffer : ptr [pass=reference]) -> void [binding=weak, object=_ZN13stream_parserC1ILm17EEE11storage_ptrRK13parse_optionsRAT__h] {
+function @storage_ptr__storage_ptr(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN11storage_ptrC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 5, %t2
+    return void
+}
+function @stream_parser__stream_parser__ov3(%this : ptr [object_bytes=4], %sp : obj<4x4>, %__param2 : ptr [pass=by_address, object_bytes=4], %buffer : ptr [pass=by_address, object_bytes=17]) -> void [binding=weak, object=_ZN13stream_parserC1ILm17EEE11storage_ptrRK13parse_optionsRAT__h, inline_hint=yes] {
   slot $this : ptr
   slot $sp : obj<4x4>
   slot $__param2 : ptr
@@ -86,12 +96,11 @@ function @stream_parser__stream_parser(%this : ptr, %sp : obj<4x4>, %__param2 : 
     %t4 = load i32 %t3
     %t5 = binary add i32 17, %t4
     %t6 = load ptr $buffer
-    %t7 = unary decay ptr %t6
-    %t8 = index u8 [projection=array_element] %t7, 0
-    %t9 = load u8 %t8
-    %t10 = convert zext i32 u8 %t9
-    %t11 = cmp eq i32 %t10, 0
-    branch %t11, ^cond_then_1, ^cond_else_2
+    %t7 = index u8 [projection=array_element] %t6, 0
+    %t8 = load u8 %t7
+    %t9 = convert zext i32 u8 %t8
+    %t10 = cmp eq i32 %t9, 0
+    branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -102,22 +111,12 @@ function @stream_parser__stream_parser(%this : ptr, %sp : obj<4x4>, %__param2 : 
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load i32 $cond__1
-    %t13 = binary add i32 %t5, %t12
-    %t14 = load ptr $this
-    %t15 = index i8 [projection=field] %t14, 0
-    store i32 %t13, %t15
+    %t11 = load i32 $cond__1
+    %t12 = binary add i32 %t5, %t11
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=field] %t13, 0
+    store i32 %t12, %t14
     return void
 }
-function @storage_ptr__storage_ptr(%this : ptr) -> void [binding=weak, object=_ZN11storage_ptrC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 5, %t2
-    return void
-}
-alias object _ZN13stream_parserC2ILm17EEE11storage_ptrRK13parse_optionsRAT__h = @stream_parser__stream_parser
 alias object _ZN11storage_ptrC2Ev = @storage_ptr__storage_ptr
+alias object _ZN13stream_parserC2ILm17EEE11storage_ptrRK13parse_optionsRAT__h = @stream_parser__stream_parser__ov3

@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 0
 }
 
@@ -49,7 +49,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__2
     return i32 %t12
 }
-function @path__path(%this : ptr, %__param1 : ptr) -> void [binding=weak, object=_ZN4pathC1EPKc] {
+function @path__path(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN4pathC1EPKc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -58,7 +58,7 @@ function @path__path(%this : ptr, %__param1 : ptr) -> void [binding=weak, object
     store ptr %__param1, $__param1
     return void
 }
-function @library__library(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN7libraryC1ERK4path] {
+function @library__library(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7libraryC1ERK4path, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

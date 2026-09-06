@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 1
     return i32 %t4
 }
-function @call_touch(%value : ptr [pass=reference]) -> i32 [binding=weak, object=_Z10call_touchIiEiR3boxIT_E] {
+function @call_touch(%value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z10call_touchIiEiR3boxIT_E] {
   slot $value : ptr
 
   block ^entry:
@@ -17,7 +17,7 @@ function @call_touch(%value : ptr [pass=reference]) -> i32 [binding=weak, object
     %t2 = call i32 @box_int___touch(%t1)
     return i32 %t2
 }
-function @box_int___touch(%this : ptr) -> i32 [binding=weak, object=_ZN3boxIiE5touchEv] {
+function @box_int___touch(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3boxIiE5touchEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

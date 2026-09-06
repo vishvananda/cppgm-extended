@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @operator_(0, %t2)
     return i32 0
 }
-function @operator_(%__param0 : i32, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZgtiRK8declaredILi0EE] {
+function @operator_(%__param0 : i32, %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZgtiRK8declaredILi0EE, inline_hint=yes] {
   slot $__param0 : i32
   slot $__param1 : ptr
 

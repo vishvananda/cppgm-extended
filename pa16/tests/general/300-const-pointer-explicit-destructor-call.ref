@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @value___value(%this : ptr) -> void [binding=weak, object=_ZN5valueD1Ev] {
+function @value___value(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5valueD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

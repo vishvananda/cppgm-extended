@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $result
     %t3 = addr $a
     %t4 = convert sext i64 i32 1
-    %t5 = call obj<16x8> @allocator_traits_allocator_int____allocate_at_least(%t3, %t4)
+    %t5 = call obj<16x8> @allocator_traits___cppgm_class_template_identity_1_0_0___allocate_at_least(%t3, %t4)
     copyobj 16x8 %t5, %t2
     %t6 = addr $result
     %t7 = index i8 [projection=field] %t6, 8
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @allocator_traits_allocator_int____allocate_at_least(%a : ptr [pass=reference], %n : i64) -> obj<16x8> [binding=weak, object=_ZN16allocator_traitsI9allocatorIiEE17allocate_at_leastERS1_m] {
+function @allocator_traits___cppgm_class_template_identity_1_0_0___allocate_at_least(%a : ptr [pass=by_address, object_bytes=1], %n : i64) -> obj<16x8> [binding=weak, object=_ZN16allocator_traitsI9allocatorIiEE17allocate_at_leastERS1_m, inline_hint=yes] {
   slot $a : ptr
   slot $n : i64
   slot $retobj__1 : obj<16x8>
@@ -44,7 +44,7 @@ function @allocator_traits_allocator_int____allocate_at_least(%a : ptr [pass=ref
     copyobj 16x8 %t4, %t1
     return obj<16x8> $retobj__1
 }
-function @allocator_int___allocate_at_least(%this : ptr, %n : i64) -> obj<16x8> [binding=weak, object=_ZN9allocatorIiE17allocate_at_leastEm] {
+function @allocator_int___allocate_at_least(%this : ptr [object_bytes=1], %n : i64) -> obj<16x8> [binding=weak, object=_ZNK9allocatorIiE17allocate_at_leastEm, inline_hint=yes] {
   slot $this : ptr
   slot $n : i64
   slot $retobj__1 : obj<16x8>
@@ -54,10 +54,10 @@ function @allocator_int___allocate_at_least(%this : ptr, %n : i64) -> obj<16x8> 
     store i64 %n, $n
     %t1 = addr $retobj__1
     %t2 = load i64 $n
-    call void @allocation_result_int____unsigned_long_int___allocation_result__ov4(%t1, 0, %t2)
+    call void @__cppgm_class_template_identity_0_1_0__allocation_result__aggregate(%t1, 0, %t2)
     return obj<16x8> $retobj__1
 }
-function @allocation_result_int____unsigned_long_int___allocation_result__ov4(%this : ptr, %ptr : ptr, %count : i64) -> void [unwind=no, binding=weak, object=_ZN17allocation_resultIPimEC1ES0_m] {
+function @__cppgm_class_template_identity_0_1_0__allocation_result__aggregate(%this : ptr, %ptr : ptr, %count : i64) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $ptr : ptr
   slot $count : i64
@@ -76,4 +76,3 @@ function @allocation_result_int____unsigned_long_int___allocation_result__ov4(%t
     store i64 %t4, %t6
     return void
 }
-alias object _ZN17allocation_resultIPimEC2ES0_m = @allocation_result_int____unsigned_long_int___allocation_result__ov4

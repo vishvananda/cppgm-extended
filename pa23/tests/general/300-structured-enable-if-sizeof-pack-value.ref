@@ -3,15 +3,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    call void @tuple_int___tuple(%t1)
+    call void @tuple_int___tuple_int___ov3(%t1)
     %t2 = addr $value
     return i32 0
 }
-function @tuple_int___tuple(%this : ptr) -> void [binding=weak, object=_ZN5tupleIJiEEC1IvLi0EEEv] {
+function @tuple_int___tuple_int___ov3(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5tupleIJiEEC1IvLi0EEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-alias object _ZN5tupleIJiEEC2IvLi0EEEv = @tuple_int___tuple
+alias object _ZN5tupleIJiEEC2IvLi0EEEv = @tuple_int___tuple_int___ov3

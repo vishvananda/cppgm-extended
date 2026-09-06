@@ -1,4 +1,4 @@
-function @Derived__run(%this : ptr) -> i32 [binding=strong, object=_ZN7Derived3runEv] {
+function @Derived__run(%this : ptr [object_bytes=1]) -> i32 [binding=strong, object=_ZN7Derived3runEv] {
   slot $this : ptr
   slot $p : ptr
   slot $cond__1 : i32

@@ -63,7 +63,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @put($argobj__1, 7)
     return i32 %t4
 }
-function @Stream__Stream(%this : ptr) -> void [binding=weak, object=_ZN6StreamC1Ev] {
+function @Stream__Stream(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6StreamC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -73,7 +73,7 @@ function @Stream__Stream(%this : ptr) -> void [binding=weak, object=_ZN6StreamC1
     store i32 5, %t2
     return void
 }
-function @Iterator__Iterator(%this : ptr, %stream : ptr [pass=reference]) -> void [binding=weak, object=_ZN8IteratorC1ER6Stream] {
+function @Iterator__Iterator(%this : ptr [object_bytes=4], %stream : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8IteratorC1ER6Stream, inline_hint=yes] {
   slot $this : ptr
   slot $stream : ptr
 

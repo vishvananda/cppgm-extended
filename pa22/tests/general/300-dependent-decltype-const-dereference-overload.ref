@@ -1,4 +1,4 @@
-declare function @box_int___operator___ov2(%arg0 : ptr) -> ptr [binding=weak, object=_ZNK3boxIiEdeEv]
+declare function @box_int___operator___ov2(%arg0 : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK3boxIiEdeEv]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $b : obj<1x1>
@@ -7,13 +7,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $b
     %t2 = addr $tmpobj__1
-    call void @deref__deref(%t2)
     %t3 = addr $b
     %t4 = call ptr @deref__operator__(%t2, %t3)
     %t5 = load i32 %t4
     return i32 %t5
 }
-function @deref__operator__(%this : ptr, %r : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK5derefclI3boxIiEEEDTdefp_ERKT_] {
+function @deref__operator__(%this : ptr [object_bytes=1], %r : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK5derefclI3boxIiEEERKiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $r : ptr
 
@@ -24,11 +23,3 @@ function @deref__operator__(%this : ptr, %r : ptr [pass=reference]) -> ptr [bind
     %t2 = call ptr @box_int___operator___ov2(%t1)
     return ptr %t2
 }
-function @deref__deref(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5derefC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN5derefC2Ev = @deref__deref

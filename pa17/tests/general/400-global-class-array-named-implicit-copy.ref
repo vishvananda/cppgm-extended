@@ -1,11 +1,11 @@
 global @copies : i32 [binding=strong, object=_Z6copies] = 0
-global @a [binding=internal, object=_ZL1a] = {
+global @a [binding=internal, object=_Z1a] = {
   zero 4
 }
-global @b [binding=internal, object=_ZL1b] = {
+global @b [binding=internal, object=_Z1b] = {
   zero 4
 }
-global @table [binding=internal, object=_ZL5table] = {
+global @table [binding=strong, object=_Z5table] = {
   zero 8
 }
 
@@ -16,26 +16,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @table
-    %t2 = unary decay ptr %t1
-    %t3 = binary mul i64 0, 4
-    %t4 = index i8 [projection=array_element] %t2, %t3
+    %t2 = binary mul i64 0, 4
+    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t4 = index i8 [projection=field] %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load i32 %t6
-    %t8 = cmp eq i32 %t7, 3
-    branch %t8, ^land_rhs_7, ^land_short_8
+    %t6 = load i32 %t5
+    %t7 = cmp eq i32 %t6, 3
+    branch %t7, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t9 = addr @table
-    %t10 = unary decay ptr %t9
-    %t11 = binary mul i64 1, 4
-    %t12 = index i8 [projection=array_element] %t10, %t11
-    %t13 = index i8 [projection=field] %t12, 0
-    %t14 = index i8 [projection=field] %t13, 0
-    %t15 = load i32 %t14
-    %t16 = cmp eq i32 %t15, 4
-    %t17 = cmp ne i64 %t16, 0
-    store i64 %t17, $land__3
+    %t8 = addr @table
+    %t9 = binary mul i64 1, 4
+    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = index i8 [projection=field] %t11, 0
+    %t13 = load i32 %t12
+    %t14 = cmp eq i32 %t13, 4
+    %t15 = cmp ne i64 %t14, 0
+    store i64 %t15, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -43,14 +41,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t18 = load i64 $land__3
-    branch %t18, ^land_rhs_4, ^land_short_5
+    %t16 = load i64 $land__3
+    branch %t16, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t19 = load i32 @copies
-    %t20 = cmp eq i32 %t19, 2
-    %t21 = cmp ne i64 %t20, 0
-    store i64 %t21, $land__2
+    %t17 = load i32 @copies
+    %t18 = cmp eq i32 %t17, 2
+    %t19 = cmp ne i64 %t18, 0
+    store i64 %t19, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -58,8 +56,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t22 = load i64 $land__2
-    branch %t22, ^cond_then_1, ^cond_else_2
+    %t20 = load i64 $land__2
+    branch %t20, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -70,10 +68,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t23 = load i32 $cond__1
-    return i32 %t23
+    %t21 = load i32 $cond__1
+    return i32 %t21
 }
-function @Counted__Counted(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN7CountedC1Ei] {
+function @Counted__Counted(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN7CountedC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -86,7 +84,7 @@ function @Counted__Counted(%this : ptr, %v : i32) -> void [binding=weak, object=
     store i32 %t1, %t3
     return void
 }
-function @Holder__Holder__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN6HolderC1ERKS_] {
+function @Holder__Holder(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN6HolderC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -100,7 +98,7 @@ function @Holder__Holder__ov2(%this : ptr, %other : ptr [pass=reference]) -> voi
     call void @Counted__Counted__ov2(%t2, %t4)
     return void
 }
-function @Counted__Counted__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN7CountedC1ERKS_] {
+function @Counted__Counted__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN7CountedC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -127,19 +125,17 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     %t4 = index i8 [projection=field] %t3, 0
     call void @Counted__Counted(%t4, 4)
     %t5 = addr @table
-    %t6 = unary decay ptr %t5
-    %t7 = binary mul i64 0, 4
-    %t8 = index i8 [projection=array_element] %t6, %t7
-    %t9 = addr @a
-    call void @Holder__Holder__ov2(%t8, %t9)
-    %t10 = addr @table
-    %t11 = unary decay ptr %t10
-    %t12 = binary mul i64 1, 4
-    %t13 = index i8 [projection=array_element] %t11, %t12
-    %t14 = addr @b
-    call void @Holder__Holder__ov2(%t13, %t14)
+    %t6 = binary mul i64 0, 4
+    %t7 = index i8 [projection=array_element] %t5, %t6
+    %t8 = addr @a
+    call void @Holder__Holder(%t7, %t8)
+    %t9 = addr @table
+    %t10 = binary mul i64 1, 4
+    %t11 = index i8 [projection=array_element] %t9, %t10
+    %t12 = addr @b
+    call void @Holder__Holder(%t11, %t12)
     return void
 }
 alias object _ZN7CountedC2Ei = @Counted__Counted
-alias object _ZN6HolderC2ERKS_ = @Holder__Holder__ov2
+alias object _ZN6HolderC2ERKS_ = @Holder__Holder
 alias object _ZN7CountedC2ERKS_ = @Counted__Counted__ov2

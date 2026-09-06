@@ -1,4 +1,4 @@
-function @make_aggregate(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z14make_aggregatev] {
+function @make_aggregate(%ret : ptr [pass=indirect_result, object_bytes=40]) -> void [binding=strong, object=_Z14make_aggregatev] {
   slot $arg__1 : obj<16x8>
   slot $arg__2 : obj<16x8>
 
@@ -8,7 +8,7 @@ function @make_aggregate(%ret : ptr [pass=indirect_result]) -> void [binding=str
     call void @Member__Member(%t1, 2)
     %t2 = addr $arg__2
     call void @Member__Member(%t2, 3)
-    call void @Aggregate__Aggregate__ov2(%ret, 1, %t1, %t2)
+    call void @Aggregate__Aggregate__aggregate(%ret, 1, %t1, %t2)
     eh_end
     jump ^call_unwind_end_2
 
@@ -125,7 +125,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t40 = load i32 $cond__1
     return i32 %t40
 }
-function @Member__Member(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN6MemberC1Ei] {
+function @Member__Member(%this : ptr [object_bytes=16], %value : i32) -> void [unwind=no, binding=weak, object=_ZN6MemberC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 
@@ -143,7 +143,41 @@ function @Member__Member(%this : ptr, %value : i32) -> void [unwind=no, binding=
     store i32 %t5, %t7
     return void
 }
-function @Aggregate__Aggregate__ov2(%this : ptr, %prefix : i32, %first : ptr [pass=by_address], %second : ptr [pass=by_address]) -> void [binding=weak, object=_ZN9AggregateC1Ei6MemberS0_] {
+function @Member__Member__ov2(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6MemberC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    %t5 = load ptr $other
+    %t6 = index i8 [projection=field] %t5, 8
+    %t7 = load i32 %t6
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=field] %t8, 8
+    store i32 %t7, %t9
+    return void
+}
+function @Member___Member(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6MemberD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Aggregate___Aggregate(%this : ptr [object_bytes=40]) -> void [unwind=no, binding=weak, object=_ZN9AggregateD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Aggregate__Aggregate__aggregate(%this : ptr, %prefix : i32, %first : ptr [pass=by_address], %second : ptr [pass=by_address]) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $prefix : i32
   slot $first : obj<16x8>
@@ -166,34 +200,7 @@ function @Aggregate__Aggregate__ov2(%this : ptr, %prefix : i32, %first : ptr [pa
     call void @Member___Member(%first)
     return void
 }
-function @Member__Member__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN6MemberC1ERKS_] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    store ptr %t2, %t4
-    %t5 = load ptr $other
-    %t6 = index i8 [projection=field] %t5, 8
-    %t7 = load i32 %t6
-    %t8 = load ptr $this
-    %t9 = index i8 [projection=field] %t8, 8
-    store i32 %t7, %t9
-    return void
-}
-function @Member___Member(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6MemberD1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 alias object _ZN6MemberC2Ei = @Member__Member
-alias object _ZN9AggregateC2Ei6MemberS0_ = @Aggregate__Aggregate__ov2
 alias object _ZN6MemberC2ERKS_ = @Member__Member__ov2
 alias object _ZN6MemberD2Ev = @Member___Member
+alias object _ZN9AggregateD2Ev = @Aggregate___Aggregate

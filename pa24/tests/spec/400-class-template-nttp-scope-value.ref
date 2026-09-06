@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @local_use__run(%t2)
     return i32 0
 }
-function @local_use__run(%this : ptr) -> void [binding=weak, object=_ZN9local_use3runEv] {
+function @local_use__run(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN9local_use3runEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -2,7 +2,7 @@ declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [rol
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 declare function @printf(%arg0 : ptr) -> i32 [arity=variadic, linkage=c, binding=strong]
 
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 37
   i8 112
   i8 10
@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @P___P(%t1)
     return i32 0
 }
-function @P___P(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1PD1Ev, inline_hint=yes] {
+function @P___P(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1PD1Ev, inline_hint=yes] {
   block ^entry:
     eh_try ^function_exception_landing_1
     jump ^__o1inl0__entry

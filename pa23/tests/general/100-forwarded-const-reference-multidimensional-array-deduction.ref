@@ -4,17 +4,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $value
     store i32 0, %t1
-    %t2 = index i8 %t1, 4
+    %t2 = index i8 [projection=array_element] %t1, 4
     store i32 0, %t2
-    %t3 = index i8 %t1, 8
+    %t3 = index i8 [projection=array_element] %t1, 8
     store i32 0, %t3
-    %t4 = index i8 %t3, 4
+    %t4 = index i8 [projection=array_element] %t3, 4
     store i32 0, %t4
     %t5 = addr $value
     call void @outer(%t5)
     return i32 0
 }
-function @outer(%value : ptr [pass=reference]) -> void [binding=weak, object=_Z5outerIA2_A2_iEvRKT_] {
+function @outer(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_Z5outerIA2_A2_iEvRKT_] {
   slot $value : ptr
 
   block ^entry:
@@ -23,7 +23,7 @@ function @outer(%value : ptr [pass=reference]) -> void [binding=weak, object=_Z5
     call void @inner(%t1)
     return void
 }
-function @inner(%__param0 : ptr [pass=reference]) -> void [binding=weak, object=_Z5innerIA2_A2_iEvRKT_] {
+function @inner(%__param0 : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_Z5innerIA2_A2_iEvRKT_] {
   slot $__param0 : ptr
   slot $copy : obj<16x4>
 
@@ -31,17 +31,16 @@ function @inner(%__param0 : ptr [pass=reference]) -> void [binding=weak, object=
     store ptr %__param0, $__param0
     %t1 = addr $copy
     store i32 0, %t1
-    %t2 = index i8 %t1, 4
+    %t2 = index i8 [projection=array_element] %t1, 4
     store i32 0, %t2
-    %t3 = index i8 %t1, 8
+    %t3 = index i8 [projection=array_element] %t1, 8
     store i32 0, %t3
-    %t4 = index i8 %t3, 4
+    %t4 = index i8 [projection=array_element] %t3, 4
     store i32 0, %t4
     %t5 = addr $copy
-    %t6 = unary decay ptr %t5
-    %t7 = binary mul i64 0, 8
-    %t8 = index i8 [projection=array_element] %t6, %t7
-    %t9 = index i32 [projection=array_element] %t8, 0
-    store i32 1, %t9
+    %t6 = binary mul i64 0, 8
+    %t7 = index i8 [projection=array_element] %t5, %t6
+    %t8 = index i32 [projection=array_element] %t7, 0
+    store i32 1, %t8
     return void
 }

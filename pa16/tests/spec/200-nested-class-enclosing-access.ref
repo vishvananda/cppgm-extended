@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @Outer__Outer(%this : ptr) -> void [binding=weak, object=_ZN5OuterC1Ev] {
+function @Outer__Outer(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5OuterC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -31,12 +31,12 @@ function @Outer__Outer(%this : ptr) -> void [binding=weak, object=_ZN5OuterC1Ev]
     %t2 = index i8 [projection=field] %t1, 4
     store i32 0, %t2
     %t3 = load ptr $this
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     store i32 0, %t5
     return void
 }
-function @Outer__run(%this : ptr) -> i32 [binding=weak, object=_ZN5Outer3runEv] {
+function @Outer__run(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN5Outer3runEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -45,7 +45,7 @@ function @Outer__run(%this : ptr) -> i32 [binding=weak, object=_ZN5Outer3runEv] 
     %t2 = call i32 @Outer__Nested__update(%t1)
     return i32 %t2
 }
-function @Outer__Nested__update(%object : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN5Outer6Nested6updateERS_] {
+function @Outer__Nested__update(%object : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN5Outer6Nested6updateERS_, inline_hint=yes] {
   slot $object : ptr
 
   block ^entry:
@@ -54,14 +54,14 @@ function @Outer__Nested__update(%object : ptr [pass=reference]) -> i32 [binding=
     %t2 = index i8 [projection=field] %t1, 4
     store i32 3, %t2
     %t3 = load ptr $object
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     store i32 4, %t5
     %t6 = load ptr $object
     %t7 = index i8 [projection=field] %t6, 4
     %t8 = load i32 %t7
     %t9 = load ptr $object
-    %t10 = index i8 [projection=base_subobject] %t9, 0
+    %t10 = index i8 %t9, 0
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = load i32 %t11
     %t13 = binary add i32 %t8, %t12

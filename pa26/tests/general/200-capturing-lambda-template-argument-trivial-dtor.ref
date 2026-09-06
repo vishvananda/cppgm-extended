@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @helper(1)
     return i32 %t1
 }
-function @StringLike__resize_and_overwrite(%this : ptr, %n : i32, %op : obj<4x4>) -> void [binding=weak, object=_ZN10StringLike20resize_and_overwriteIZ6helperiE3$_0EEviT_] {
+function @StringLike__resize_and_overwrite(%this : ptr [object_bytes=1], %n : i32, %op : obj<4x4>) -> void [binding=internal, object=_ZN10StringLike20resize_and_overwriteIZ6helperiE3$_0EEviT_, inline_hint=yes] {
   slot $this : ptr
   slot $n : i32
   slot $op : obj<4x4>
@@ -46,7 +46,14 @@ function @StringLike__resize_and_overwrite(%this : ptr, %n : i32, %op : obj<4x4>
     store i32 %t10, %t12
     return void
 }
-function @move_ref(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z8move_refIZ6helperiE3$_0EOT_RS1_] {
+function @StringLike__Terminator___Terminator(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZZN10StringLike20resize_and_overwriteIZ6helperiE3$_0EEviT_EN10TerminatorD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @move_ref(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=internal, object=_Z8move_refIZ6helperiE3$_0EOT_RS1_] {
   slot $value : ptr
 
   block ^entry:
@@ -54,7 +61,7 @@ function @move_ref(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_
     %t1 = load ptr $value
     return ptr %t1
 }
-function @__lambda_helper_t113_123__operator__(%this : ptr, %__param1 : ptr, %n : i64) -> i32 [binding=strong, object=_ZZ6helperiENK3$_0clEPcm, prefer_local=yes] {
+function @__lambda_helper_t113_123__operator__(%this : ptr [object_bytes=4], %__param1 : ptr, %n : i64) -> i32 [binding=internal, object=_ZZ6helperiENK3$_0clEPcm, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $n : i64
@@ -71,3 +78,4 @@ function @__lambda_helper_t113_123__operator__(%this : ptr, %__param1 : ptr, %n 
     %t6 = binary add i32 %t3, %t5
     return i32 %t6
 }
+alias object _ZZN10StringLike20resize_and_overwriteIZ6helperiE3$_0EEviT_EN10TerminatorD2Ev = @StringLike__Terminator___Terminator

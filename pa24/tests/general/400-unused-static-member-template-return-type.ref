@@ -4,10 +4,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $it
     %t2 = addr $it
-    %t3 = call ptr @convert_iterator_map_iterator_map_const__0____call__ov3(%t2)
+    %t3 = call ptr @convert_iterator___cppgm_class_template_identity_3_1_0___call__ov3(%t2)
     return i32 0
 }
-function @convert_iterator_map_iterator_map_const__0____call__ov3(%x : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN16convert_iteratorI12map_iteratorIK3mapLi0EEE4callERKS3_] {
+function @convert_iterator___cppgm_class_template_identity_3_1_0___call__ov3(%x : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZN16convert_iteratorI12map_iteratorIK3mapLi0EEE4callERKS3_, inline_hint=yes] {
   slot $x : ptr
   slot $argobj__1 : obj<1x1>
 
@@ -15,18 +15,10 @@ function @convert_iterator_map_iterator_map_const__0____call__ov3(%x : ptr [pass
     store ptr %x, $x
     %t1 = load ptr $x
     %t2 = addr $argobj__1
-    call void @true_tag__true_tag(%t2)
-    %t3 = call ptr @convert_iterator_map_iterator_map_const__0____call(%t1, $argobj__1)
+    %t3 = call ptr @convert_iterator___cppgm_class_template_identity_3_1_0___call(%t1, $argobj__1)
     return ptr %t3
 }
-function @true_tag__true_tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8true_tagC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @convert_iterator_map_iterator_map_const__0____call(%x : ptr [pass=reference], %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN16convert_iteratorI12map_iteratorIK3mapLi0EEE4callERKS3_8true_tag] {
+function @convert_iterator___cppgm_class_template_identity_3_1_0___call(%x : ptr [pass=by_address, object_bytes=1], %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN16convert_iteratorI12map_iteratorIK3mapLi0EEE4callERKS3_8true_tag, inline_hint=yes] {
   slot $x : ptr
   slot $__param1 : obj<1x1>
 
@@ -35,4 +27,3 @@ function @convert_iterator_map_iterator_map_const__0____call(%x : ptr [pass=refe
     %t1 = load ptr $x
     return ptr %t1
 }
-alias object _ZN8true_tagC2Ev = @true_tag__true_tag

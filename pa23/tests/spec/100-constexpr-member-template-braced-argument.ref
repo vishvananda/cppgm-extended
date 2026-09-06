@@ -1,4 +1,4 @@
-global @value [binding=internal, object=_ZL5value] = {
+global @value [binding=internal, object=_Z5value] = {
   zero 1
 }
 

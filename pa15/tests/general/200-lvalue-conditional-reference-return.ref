@@ -1,4 +1,4 @@
-function @choose(%condition : u8, %left : ptr [pass=reference], %right : ptr [pass=reference]) -> ptr [binding=strong, object=_Z6choosebRiS_] {
+function @choose(%condition : u8, %left : ptr [pass=by_address, object_bytes=4], %right : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z6choosebRiS_] {
   slot $condition : u8
   slot $left : ptr
   slot $right : ptr

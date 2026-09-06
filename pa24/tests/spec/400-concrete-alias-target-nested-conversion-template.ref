@@ -5,7 +5,7 @@ function @convert_error() -> obj<4x4> [binding=strong, object=_Z13convert_errorv
 
   block ^entry:
     %t1 = addr $source
-    call void @leaf__result_char___result(%t1, 9)
+    call void @leaf__result_char___result_typename___retained_template_parameter_shape_0_(%t1, 9)
     %t2 = addr $retobj__1
     %t3 = addr $tmpobj__2
     %t4 = addr $source
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @leaf__result_char___result(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN4leaf6resultIcEC1Ei] {
+function @leaf__result_char___result_typename___retained_template_parameter_shape_0_(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN4leaf6resultIcEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -54,7 +54,7 @@ function @leaf__result_char___result(%this : ptr, %input : i32) -> void [binding
     store i32 %t1, %t3
     return void
 }
-function @leaf__result_char___error_result__operatorresult_U_(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE12error_resultcvNS0_IT_EEIiEEv] {
+function @leaf__result_char___error(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE5errorEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -64,10 +64,10 @@ function @leaf__result_char___error_result__operatorresult_U_(%this : ptr) -> ob
     %t2 = load ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
-    call void @leaf__result_int___result(%t1, %t4)
+    call void @leaf____cppgm_class_template_identity_0_1_0__error_result__error_result__aggregate(%t1, %t4)
     return obj<4x4> $retobj__1
 }
-function @leaf__result_char___error(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE5errorEv] {
+function @leaf__result_char___error_result__operatorresult_U_(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE12error_resultcvNS0_IiEEIiEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -77,10 +77,10 @@ function @leaf__result_char___error(%this : ptr) -> obj<4x4> [binding=weak, obje
     %t2 = load ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
-    call void @leaf__result_char___error_result__error_result__ov4(%t1, %t4)
+    call void @leaf__result_int___result_typename___retained_template_parameter_shape_0_(%t1, %t4)
     return obj<4x4> $retobj__1
 }
-function @leaf__result_int___result(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN4leaf6resultIiEC1Ei] {
+function @leaf__result_int___result_typename___retained_template_parameter_shape_0_(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN4leaf6resultIiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -93,7 +93,7 @@ function @leaf__result_int___result(%this : ptr, %input : i32) -> void [binding=
     store i32 %t1, %t3
     return void
 }
-function @leaf__result_char___error_result__error_result__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN4leaf6resultIcE12error_resultC1Ei] {
+function @leaf____cppgm_class_template_identity_0_1_0__error_result__error_result__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 
@@ -106,6 +106,5 @@ function @leaf__result_char___error_result__error_result__ov4(%this : ptr, %valu
     store i32 %t1, %t3
     return void
 }
-alias object _ZN4leaf6resultIcEC2Ei = @leaf__result_char___result
-alias object _ZN4leaf6resultIiEC2Ei = @leaf__result_int___result
-alias object _ZN4leaf6resultIcE12error_resultC2Ei = @leaf__result_char___error_result__error_result__ov4
+alias object _ZN4leaf6resultIcEC2Ei = @leaf__result_char___result_typename___retained_template_parameter_shape_0_
+alias object _ZN4leaf6resultIiEC2Ei = @leaf__result_int___result_typename___retained_template_parameter_shape_0_

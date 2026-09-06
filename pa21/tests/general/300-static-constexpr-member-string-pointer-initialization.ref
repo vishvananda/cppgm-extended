@@ -1,10 +1,10 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 111
   i8 110
   i8 101
   i8 0
 }
-global @table_int___row [binding=weak, object=_ZN5tableIiE3rowE] = {
+global @__cppgm_class_template_identity_0_0_0__row [binding=weak, object=_ZN5tableIiE3rowE] = {
   zero 8
 }
 
@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = addr @table_int___row
+    %t1 = addr @__cppgm_class_template_identity_0_0_0__row
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
     %t4 = index i8 [projection=array_element] %t3, 0
@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @entry__entry(%this : ptr, %value : ptr) -> void [binding=weak, object=_ZN5entryC1EPKc] {
+function @entry__entry(%this : ptr [object_bytes=8], %value : ptr) -> void [binding=weak, object=_ZN5entryC1EPKc, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -48,7 +48,7 @@ function @entry__entry(%this : ptr, %value : ptr) -> void [binding=weak, object=
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
-    %t1 = addr @table_int___row
+    %t1 = addr @__cppgm_class_template_identity_0_0_0__row
     %t2 = addr @__strlit__1
     call void @entry__entry(%t1, %t2)
     return void

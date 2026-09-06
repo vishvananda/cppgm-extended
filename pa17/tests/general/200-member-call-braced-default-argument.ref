@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @parser__parser(%this : ptr) -> void [binding=weak, object=_ZN6parserC1Ev] {
+function @parser__parser(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6parserC1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $argobj__1 : obj<4x4>
 
@@ -35,7 +35,17 @@ function @parser__parser(%this : ptr) -> void [binding=weak, object=_ZN6parserC1
     call void @parser__reset(%t1, $argobj__1)
     return void
 }
-function @parser__reset(%this : ptr, %sp : obj<4x4>) -> void [binding=weak, object=_ZN6parser5resetE11storage_ptr] {
+function @storage_ptr__storage_ptr(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN11storage_ptrC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+function @parser__reset(%this : ptr [object_bytes=1], %sp : obj<4x4>) -> void [binding=weak, object=_ZN6parser5resetE11storage_ptr, inline_hint=yes] {
   slot $this : ptr
   slot $sp : obj<4x4>
 
@@ -47,16 +57,6 @@ function @parser__reset(%this : ptr, %sp : obj<4x4>) -> void [binding=weak, obje
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     store i32 %t4, @seen
-    return void
-}
-function @storage_ptr__storage_ptr(%this : ptr) -> void [binding=weak, object=_ZN11storage_ptrC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
     return void
 }
 alias object _ZN6parserC2Ev = @parser__parser

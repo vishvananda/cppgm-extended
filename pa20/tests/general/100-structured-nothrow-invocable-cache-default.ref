@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr 0, $p
     %t2 = addr $h
     %t3 = load ptr $p
-    %t4 = call i64 @std__hash_X_____operator__(%t2, %t3)
+    %t4 = call i64 @std__hash_pointer_to_struct_X___operator__(%t2, %t3)
     store i64 %t4, $v
     branch 1, ^cond_then_1, ^cond_else_2
 
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @std__hash_X_____operator__(%this : ptr, %__param1 : ptr) -> i64 [unwind=no, binding=weak, object=_ZNKSt4hashIP1XEclES1_] {
+function @std__hash_pointer_to_struct_X___operator__(%this : ptr [object_bytes=1], %__param1 : ptr) -> i64 [unwind=no, binding=weak, object=_ZNKSt4hashIP1XEclES1_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

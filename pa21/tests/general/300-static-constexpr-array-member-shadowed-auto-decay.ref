@@ -1,4 +1,4 @@
-global @constants_void___data [binding=weak, object=_ZN9constantsIvE4dataE] = {
+global @__cppgm_class_template_identity_0_0_0__data [binding=weak, object=_ZN9constantsIvE4dataE] = {
   u32 11
   u32 22
   u32 33
@@ -25,15 +25,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @reader__first() -> u32 [binding=weak, object=_ZN6reader5firstEv] {
+function @reader__first() -> u32 [binding=weak, object=_ZN6reader5firstEv, inline_hint=yes] {
   slot $data : ptr
 
   block ^entry:
-    %t1 = addr @constants_void___data
-    %t2 = unary decay ptr %t1
-    store ptr %t2, $data
-    %t3 = load ptr $data
-    %t4 = index u32 [projection=array_element] %t3, 0
-    %t5 = load u32 %t4
-    return u32 %t5
+    %t1 = addr @__cppgm_class_template_identity_0_0_0__data
+    store ptr %t1, $data
+    %t2 = load ptr $data
+    %t3 = index u32 [projection=array_element] %t2, 0
+    %t4 = load u32 %t3
+    return u32 %t4
 }

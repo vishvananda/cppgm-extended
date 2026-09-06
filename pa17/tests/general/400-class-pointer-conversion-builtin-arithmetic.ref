@@ -10,17 +10,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 2, %t2
     %t3 = addr $p
     %t4 = addr $values
-    %t5 = unary decay ptr %t4
-    %t6 = addr $p
-    %t7 = index i8 [projection=field] %t6, 0
-    store ptr %t5, %t7
-    %t8 = addr $p
-    %t9 = call ptr @pointer__operatorint_(%t8)
-    %t10 = binary mul i64 1, 4
-    %t11 = index i8 %t9, %t10
-    %t12 = load i32 %t11
-    %t13 = cmp eq i32 %t12, 2
-    branch %t13, ^cond_then_1, ^cond_else_2
+    %t5 = addr $p
+    %t6 = index i8 [projection=field] %t5, 0
+    store ptr %t4, %t6
+    %t7 = addr $p
+    %t8 = call ptr @pointer__operatorint_(%t7)
+    %t9 = binary mul i64 1, 4
+    %t10 = index i8 %t8, %t9
+    %t11 = load i32 %t10
+    %t12 = cmp eq i32 %t11, 2
+    branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -31,10 +30,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load i32 $cond__1
-    return i32 %t14
+    %t13 = load i32 $cond__1
+    return i32 %t13
 }
-function @pointer__operatorint_(%this : ptr) -> ptr [binding=weak, object=_ZNK7pointercvPiEv] {
+function @pointer__operatorint_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK7pointercvPiEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

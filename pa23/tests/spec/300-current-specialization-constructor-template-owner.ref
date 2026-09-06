@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @holder_int___make(%p : ptr) -> obj<8x8> [binding=weak, object=_ZN6holderIiE4makeIiEES0_PT_] {
+function @holder_int___make(%p : ptr) -> obj<8x8> [binding=weak, object=_ZN6holderIiE4makeIiEES0_PT_, inline_hint=yes] {
   slot $p : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -33,10 +33,10 @@ function @holder_int___make(%p : ptr) -> obj<8x8> [binding=weak, object=_ZN6hold
     store ptr %p, $p
     %t1 = addr $retobj__1
     %t2 = load ptr $p
-    call void @holder_int___holder__ov3(%t1, %t2)
+    call void @holder_int___holder_int___ov3(%t1, %t2)
     return obj<8x8> $retobj__1
 }
-function @holder_int___holder__ov3(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN6holderIiEC1IiEEPT_] {
+function @holder_int___holder_int___ov3(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN6holderIiEC1IiEEPT_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -49,4 +49,4 @@ function @holder_int___holder__ov3(%this : ptr, %p : ptr) -> void [binding=weak,
     store ptr %t1, %t3
     return void
 }
-alias object _ZN6holderIiEC2IiEEPT_ = @holder_int___holder__ov3
+alias object _ZN6holderIiEC2IiEEPT_ = @holder_int___holder_int___ov3

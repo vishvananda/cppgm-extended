@@ -1,4 +1,4 @@
-function @poll(%port : ptr, %device : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4pollPViR6Device] {
+function @poll(%port : ptr, %device : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z4pollPViR6Device] {
   slot $port : ptr
   slot $device : ptr
   slot $gate : i32

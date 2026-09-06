@@ -9,14 +9,13 @@ function @run_check() -> void [binding=weak, object=_Z9run_checkIiEvv] {
   block ^entry:
     store i32 0, $a
     %t1 = addr @algebra__is_distinct_equal
-    %t2 = unary decay ptr %t1
+    %t2 = addr $a
     %t3 = addr $a
     %t4 = addr $a
-    %t5 = addr $a
-    call void @algebra__check_partial(%t2, %t3, %t4, %t5)
+    call void @algebra__check_partial(%t1, %t2, %t3, %t4)
     return void
 }
-function @algebra__is_distinct_equal(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN7algebra17is_distinct_equalIiEENS_9enable_ifIXsr7is_goodIT_EE5valueEbE4typeERKS2_S6_] {
+function @algebra__is_distinct_equal(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=weak, object=_ZN7algebra17is_distinct_equalIiEENS_9enable_ifIXsrNS_7is_goodIT_EEE5valueEbE4typeERKS2_S7_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -25,7 +24,7 @@ function @algebra__is_distinct_equal(%__param0 : ptr [pass=reference], %__param1
     store ptr %__param1, $__param1
     return u8 1
 }
-function @algebra__check_partial(%equal : ptr, %a : ptr [pass=reference], %b : ptr [pass=reference], %c : ptr [pass=reference]) -> void [binding=weak, object=_ZN7algebra13check_partialIiiiEEvPNS_8equalityIT_E4typeERKS2_RKT0_RKT1_] {
+function @algebra__check_partial(%equal : ptr, %a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_address, object_bytes=4], %c : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7algebra13check_partialIiiiEEvPNS_8equalityIT_E4typeERKS2_RKT0_RKT1_] {
   slot $equal : ptr
   slot $a : ptr
   slot $b : ptr

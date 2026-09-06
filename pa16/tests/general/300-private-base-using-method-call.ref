@@ -4,12 +4,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $d
     %t2 = addr $d
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = call i32 @Base__f(%t3)
     %t5 = binary sub i32 %t4, 7
     return i32 %t5
 }
-function @Base__f(%this : ptr) -> i32 [binding=weak, object=_ZNK4Base1fEv] {
+function @Base__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK4Base1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

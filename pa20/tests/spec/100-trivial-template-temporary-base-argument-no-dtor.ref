@@ -11,16 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $argobj__1
     %t2 = addr $tmpobj__2
-    call void @trait_Payload_____trait(%t2)
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = call i32 @consume($argobj__1)
     return i32 %t4
 }
-function @trait_Payload_____trait(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5traitIP7PayloadEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN5traitIP7PayloadEC2Ev = @trait_Payload_____trait

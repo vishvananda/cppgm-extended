@@ -30,7 +30,7 @@ global @__rtti_type_PKc [binding=weak, object=_ZTIPKc] = {
 global @__ehobj_type_PKc [binding=internal, object=@__ehobj_type_PKc] = {
   zero 8
 }
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120
   i8 0
 }

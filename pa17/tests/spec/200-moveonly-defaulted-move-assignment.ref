@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @MoveOnly__MoveOnly(%this : ptr, %value : i32) -> void [binding=weak, object=_ZN8MoveOnlyC1Ei] {
+function @MoveOnly__MoveOnly(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN8MoveOnlyC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 
@@ -42,7 +42,7 @@ function @MoveOnly__MoveOnly(%this : ptr, %value : i32) -> void [binding=weak, o
     store i32 %t1, %t3
     return void
 }
-function @MoveOnly__operator___ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN8MoveOnlyaSEOS_] {
+function @MoveOnly__operator___ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN8MoveOnlyaSEOS_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

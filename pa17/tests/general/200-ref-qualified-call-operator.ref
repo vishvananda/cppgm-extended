@@ -7,31 +7,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $f
     %t3 = call i32 @F__operator__(%t2)
     %t4 = addr $tmpobj__1
-    call void @F__F(%t4)
     %t5 = call i32 @F__operator____ov2(%t4)
     %t6 = binary add i32 %t3, %t5
     %t7 = binary sub i32 %t6, 7
     return i32 %t7
 }
-function @F__F(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1FC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @F__operator__(%this : ptr) -> i32 [binding=weak, object=_ZNR1FclEv] {
+function @F__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNR1FclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 3
 }
-function @F__operator____ov2(%this : ptr) -> i32 [binding=weak, object=_ZNO1FclEv] {
+function @F__operator____ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNO1FclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 4
 }
-alias object _ZN1FC2Ev = @F__F

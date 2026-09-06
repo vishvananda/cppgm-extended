@@ -1,5 +1,5 @@
-global @source : i32 [binding=strong, object=_Z6source] = 5
 global @__local_static__read__decl0__reference : ptr [binding=internal] = zero
+global @source : i32 [binding=strong, object=_Z6source] = 5
 
 function @read() -> i32 [binding=strong, object=_Z4readv] {
   block ^entry:

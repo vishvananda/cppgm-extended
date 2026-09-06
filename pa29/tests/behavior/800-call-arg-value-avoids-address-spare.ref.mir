@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -26,16 +26,9 @@ function @capture
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %addr -> [rbp-8] : ptr
-    param-slot %b -> [rbp-16] : i64
-    param-slot %c -> [rbp-24] : i64
 
   block ^entry
-    store.ptr [rbp-8], rsi
-    store.i64 [rbp-16], rdx
-    store.i64 [rbp-24], rcx
-    mov r8, rdi
-    load.i64 rax, [r8]
+    load.i64 rax, [rdi]
     ret rax
 
 function @run
@@ -53,34 +46,24 @@ function @run
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %q -> [rbp-8] : i64
-    param-slot %r -> [rbp-16] : i64
-    param-slot %s -> [rbp-24] : i64
-    param-slot %t -> [rbp-32] : i64
-    param-slot %u -> [rbp-40] : i64
-    param-slot %v -> [rbp-48] : i64
-    slot $p -> [rbp-56] : ptr
+    param-slot %v -> [rbp-8] : i64
+    slot $p -> [rbp-16] : ptr
 
   block ^entry
-    store.i64 [rbp-8], rsi
-    store.i64 [rbp-16], rdx
-    store.i64 [rbp-24], rcx
-    store.i64 [rbp-32], r8
-    store.i64 [rbp-40], r9
     load.i64 rax, [rbp+16]
-    store.i64 [rbp-48], rax
-    store.ptr [rbp-56], rdi
+    store.i64 [rbp-8], rax
+    store.ptr [rbp-16], rdi
     jmp ^call
 
   block ^call
-    load.ptr r8, [rbp-56]
+    load.ptr r8, [rbp-16]
     mov r9, @wrong
+    lea r9, [r9+8]
     mov rdi, r8
     mov rsi, r9
-    lea rsi, [rsi+8]
     mov rdx, 2
     mov rcx, 3
-    call @capture
+    call @capture [args=(rcx,rdx,rsi,rdi)]
     ret rax
 
 function @main
@@ -93,9 +76,8 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, @good
     sub rsp, 16
-    mov rdi, r8
+    mov rdi, @good
     mov rsi, 2
     mov rdx, 3
     mov rcx, 4
@@ -103,18 +85,14 @@ function @main
     mov r9, 6
     mov r11, 7
     store.i64 [rsp], r11
-    call @run
+    call @run [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov r9, rax
     mov rdx, 42
-    cmp.i64 r9, rdx
-    sete r9
-    movzx r9, r9
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     mov rdx, 0
-    cmp.i64 r9, rdx
-    sete r9
-    movzx r9, r9
-    mov r8, r9
-    sext.i32 r8
-    mov rax, r8
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     ret rax

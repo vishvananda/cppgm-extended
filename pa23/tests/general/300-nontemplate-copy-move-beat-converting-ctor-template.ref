@@ -1,4 +1,4 @@
-declare function @h(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z1hv]
+declare function @h(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z1hv]
 
 global @which : i32 [binding=strong, object=_Z5which] = zero
 
@@ -11,3 +11,11 @@ function @g() -> i32 [binding=strong, object=_Z1gv] {
     %t2 = load i32 @which
     return i32 %t2
 }
+function @A_int____A(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1AIiED1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+alias object _ZN1AIiED2Ev = @A_int____A

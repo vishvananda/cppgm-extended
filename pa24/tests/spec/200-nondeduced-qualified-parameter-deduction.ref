@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @f(0, $argobj__1)
     return i32 %t4
 }
-function @f(%__param0 : i32, %__param1 : obj<1x1>) -> i32 [binding=weak, object=_Z1fIiEiN1aIT_E1bES2_] {
+function @f(%__param0 : i32, %__param1 : obj<1x1>) -> i32 [binding=weak, object=_Z1fIiEiN1aIT_E1bES0_IS1_E] {
   slot $__param0 : i32
   slot $__param1 : obj<1x1>
 

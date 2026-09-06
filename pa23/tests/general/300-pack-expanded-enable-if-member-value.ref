@@ -1,4 +1,4 @@
-function @S__g(%this : ptr) -> void [binding=strong, object=_ZN1S1gEv] {
+function @S__g(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN1S1gEv] {
   slot $this : ptr
   slot $f : obj<1x1>
   slot $arg__1 : obj<1x1>
@@ -8,7 +8,6 @@ function @S__g(%this : ptr) -> void [binding=strong, object=_ZN1S1gEv] {
     %t1 = addr $f
     %t2 = addr $f
     %t3 = addr $arg__1
-    call void @S__G__G(%t3)
     %t4 = call ptr @Function__operator___ov3(%t2, %t3)
     return void
 }
@@ -21,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S__g(%t2)
     return i32 0
 }
-function @Function__operator___ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN8FunctionaSIN1S1GEvEERS_OT_] {
+function @Function__operator___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZN8FunctionaSIN1S1GEvEERS_OT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -31,11 +30,3 @@ function @Function__operator___ov3(%this : ptr, %__param1 : ptr [pass=reference]
     %t1 = load ptr $this
     return ptr %t1
 }
-function @S__G__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1S1GC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN1S1GC2Ev = @S__G__G

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @C_int___f(%t2, 2, 1)
     return i32 %t3
 }
-function @C_int___f(%this : ptr, %a : i32, %b : i32) -> i32 [binding=weak, object=_ZN1CIiE1fEii] {
+function @C_int___f(%this : ptr [object_bytes=1], %a : i32, %b : i32) -> i32 [binding=weak, object=_ZN1CIiE1fEii, inline_hint=yes] {
   slot $this : ptr
   slot $a : i32
   slot $b : i32

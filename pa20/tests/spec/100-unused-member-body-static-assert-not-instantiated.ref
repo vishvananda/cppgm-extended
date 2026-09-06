@@ -38,7 +38,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @box_Incomplete___later(%this : ptr) -> i32 [binding=weak, object=_ZN3boxI10IncompleteE5laterEv] {
+function @box_Incomplete___later(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3boxI10IncompleteE5laterEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load i32 $cond__1
     return i32 %t19
 }
-function @sink_int___operator____ov2(%this : ptr, %value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN4sinkIiElsI7payloadEERS0_RKT_] {
+function @sink_int___operator____ov2(%this : ptr [object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN4sinkIiElsI7payloadEERS0_RKT_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 

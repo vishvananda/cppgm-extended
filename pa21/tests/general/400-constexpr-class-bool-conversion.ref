@@ -1,5 +1,5 @@
-global @box_value : u8 [binding=internal, object=_ZL9box_value] = 1
-global @and_value : u8 [binding=internal, object=_ZL9and_value] = 1
+global @box_value : u8 [storage=readonly, binding=internal, object=_Z9box_value] = 1
+global @and_value : u8 [storage=readonly, binding=internal, object=_Z9and_value] = 1
 global @box_sink [binding=strong, object=_Z8box_sink] = {
   zero 1
 }

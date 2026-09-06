@@ -30,13 +30,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $x
     call void @holder__holder(%t1, %t2)
     %t3 = addr $h
-    %t4 = index i8 [projection=reference_field] %t3, 0
+    %t4 = index i8 [projection=field] %t3, 0
     %t5 = load ptr %t4
     %t6 = load f64 %t5
     %t7 = call i32 @take(%t6)
     return i32 %t7
 }
-function @holder__holder(%this : ptr, %x : ptr [pass=reference]) -> void [binding=weak, object=_ZN6holderC1EOd] {
+function @holder__holder(%this : ptr [object_bytes=8], %x : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN6holderC1EOd, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 

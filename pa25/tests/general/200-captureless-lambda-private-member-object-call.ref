@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 7
     return i32 %t5
 }
-function @S__f(%this : ptr, %s : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK1S1fERS_] {
+function @S__f(%this : ptr [object_bytes=1], %s : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK1S1fERS_, inline_hint=yes] {
   slot $this : ptr
   slot $s : ptr
 
@@ -18,11 +18,10 @@ function @S__f(%this : ptr, %s : ptr [pass=reference]) -> i32 [binding=weak, obj
     store ptr %s, $s
     %t1 = load ptr $s
     %t2 = addr @__lambda_S__f_t29_36
-    %t3 = unary decay ptr %t2
-    %t4 = call i32 %t3(%t1) as (%arg0 : ptr [pass=reference]) -> i32
-    return i32 %t4
+    %t3 = call i32 %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=1]) -> i32
+    return i32 %t3
 }
-function @__lambda_S__f_t29_36(%x : ptr [pass=reference]) -> i32 [binding=internal] {
+function @__lambda_S__f_t29_36(%x : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=internal, object=_Z20__lambda_S__f_t29_36R1S, object_root=yes] {
   slot $x : ptr
 
   block ^entry:
@@ -31,7 +30,7 @@ function @__lambda_S__f_t29_36(%x : ptr [pass=reference]) -> i32 [binding=intern
     %t2 = call i32 @S__hidden(%t1)
     return i32 %t2
 }
-function @S__hidden(%this : ptr) -> i32 [binding=weak, object=_ZNK1S6hiddenEv] {
+function @S__hidden(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK1S6hiddenEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

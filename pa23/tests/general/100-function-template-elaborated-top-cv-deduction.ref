@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @pick_first(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> ptr [binding=weak, object=_Z10pick_firstI3FooERKT_S3_S3_] {
+function @pick_first(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z10pick_firstI3FooERKT_S3_S3_] {
   slot $lhs : ptr
   slot $rhs : ptr
   slot $condaddr__1 : ptr

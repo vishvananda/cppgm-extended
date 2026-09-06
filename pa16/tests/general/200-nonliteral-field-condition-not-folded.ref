@@ -54,7 +54,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load i32 $cond__1
     return i32 %t19
 }
-function @state__read(%this : ptr) -> u8 [binding=weak, object=_ZNK5state4readEv] {
+function @state__read(%this : ptr [object_bytes=16]) -> u8 [binding=weak, object=_ZNK5state4readEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

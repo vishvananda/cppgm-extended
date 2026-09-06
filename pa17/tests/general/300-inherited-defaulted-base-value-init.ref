@@ -8,7 +8,6 @@ function @operatornew__ov2(%__param0 : i64, %pointer : ptr) -> ptr [binding=stro
     %t1 = load ptr $pointer
     return ptr %t1
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $storage : obj<8x1>
   slot $i : i64
@@ -28,32 +27,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_body_2:
     %t5 = addr $storage
-    %t6 = unary decay ptr %t5
-    %t7 = load i64 $i
-    %t8 = index u8 [projection=array_element] %t6, %t7
-    store u8 255, %t8
+    %t6 = load i64 $i
+    %t7 = index u8 [projection=array_element] %t5, %t6
+    store u8 255, %t7
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t9 = load i64 $i
-    %t10 = binary add i64 %t9, 1
-    store i64 %t10, $i
+    %t8 = load i64 $i
+    %t9 = binary add i64 %t8, 1
+    store i64 %t9, $i
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t11 = convert sext i64 i32 8
-    %t12 = addr $storage
-    %t13 = unary decay ptr %t12
-    %t14 = call ptr @operatornew__ov2(%t11, %t13)
-    call void @holder__holder(%t14)
-    store ptr %t14, $object
-    %t15 = load ptr $object
+    %t10 = convert sext i64 i32 8
+    %t11 = addr $storage
+    %t12 = call ptr @operatornew__ov2(%t10, %t11)
+    call void @holder__holder(%t12)
+    store ptr %t12, $object
+    %t13 = load ptr $object
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = index i8 %t14, 0
     %t16 = index i8 [projection=field] %t15, 0
-    %t17 = index i8 [projection=base_subobject] %t16, 0
-    %t18 = index i8 [projection=field] %t17, 0
-    %t19 = load ptr %t18
-    %t20 = cmp eq ptr %t19, 0
-    branch %t20, ^cond_then_5, ^cond_else_6
+    %t17 = load ptr %t16
+    %t18 = cmp eq ptr %t17, 0
+    branch %t18, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
     store i32 0, $cond__1
@@ -64,11 +61,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t21 = load i32 $cond__1
-    return i32 %t21
+    %t19 = load i32 $cond__1
+    return i32 %t19
 }
-
-function @holder__holder(%this : ptr) -> void [binding=weak, object=_ZN6holderC1Ev] {
+function @holder__holder(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6holderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -78,3 +74,4 @@ function @holder__holder(%this : ptr) -> void [binding=weak, object=_ZN6holderC1
     zeroinit 8x8 %t2
     return void
 }
+alias object _ZN6holderC2Ev = @holder__holder

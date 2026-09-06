@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @traits__identity_element_lib__date___value() -> obj<4x4> [binding=weak, object=_ZN6traits16identity_elementIN3lib4dateEE5valueEv] {
+function @traits__identity_element_lib__date___value() -> obj<4x4> [binding=weak, object=_ZN6traits16identity_elementIN3lib4dateEE5valueEv, inline_hint=yes] {
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
@@ -32,7 +32,7 @@ function @traits__identity_element_lib__date___value() -> obj<4x4> [binding=weak
     call void @lib__date__date(%t1, 7)
     return obj<4x4> $retobj__1
 }
-function @lib__date__date(%this : ptr, %v_in : i32) -> void [binding=weak, object=_ZN3lib4dateC1Ei] {
+function @lib__date__date(%this : ptr [object_bytes=4], %v_in : i32) -> void [binding=weak, object=_ZN3lib4dateC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v_in : i32
 

@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -29,8 +29,7 @@ function @id
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    ret rax
+    ret rdi
 
 function @main
   abi
@@ -43,13 +42,11 @@ function @main
     preserve rbx
 
   block ^entry
-    call @one
+    call @one [args=()]
     mov rbx, rax
     mov rdi, 99
-    call @id
-    mov rdx, 7
-    cmp.i64 rbx, rdx
-    setne rbx
-    movzx rbx, rbx
-    mov rax, rbx
+    call @id [args=(rdi)]
+    cmp.i64 rbx, 7
+    setne rax
+    movzx rax, rax
     ret rax

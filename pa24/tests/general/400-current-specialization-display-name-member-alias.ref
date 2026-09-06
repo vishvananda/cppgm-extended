@@ -1,4 +1,4 @@
-global @p : ptr [binding=strong, object=_Z1p] = zero
+global @p : ptr [binding=internal, object=_Z1p] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

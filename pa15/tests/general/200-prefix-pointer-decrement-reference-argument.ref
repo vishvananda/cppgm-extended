@@ -1,4 +1,4 @@
-function @touch(%value : ptr [pass=reference]) -> ptr [binding=strong, object=_Z5touchRPi] {
+function @touch(%value : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=strong, object=_Z5touchRPi] {
   slot $value : ptr
 
   block ^entry:
@@ -14,23 +14,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $values
-    %t2 = unary decay ptr %t1
-    %t3 = binary mul i64 2, 4
-    %t4 = index i8 %t2, %t3
-    store ptr %t4, $p
-    %t5 = load ptr $p
-    %t6 = binary mul i64 1, 4
-    %t7 = binary sub i64 0, %t6
-    %t8 = index i8 %t5, %t7
-    store ptr %t8, $p
-    %t9 = addr $p
-    %t10 = call ptr @touch(%t9)
-    %t11 = addr $values
-    %t12 = unary decay ptr %t11
-    %t13 = binary mul i64 1, 4
-    %t14 = index i8 %t12, %t13
-    %t15 = cmp eq ptr %t10, %t14
-    branch %t15, ^cond_then_1, ^cond_else_2
+    %t2 = binary mul i64 2, 4
+    %t3 = index i8 %t1, %t2
+    store ptr %t3, $p
+    %t4 = load ptr $p
+    %t5 = binary mul i64 1, 4
+    %t6 = binary sub i64 0, %t5
+    %t7 = index i8 %t4, %t6
+    store ptr %t7, $p
+    %t8 = addr $p
+    %t9 = call ptr @touch(%t8)
+    %t10 = addr $values
+    %t11 = binary mul i64 1, 4
+    %t12 = index i8 %t10, %t11
+    %t13 = cmp eq ptr %t9, %t12
+    branch %t13, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -41,6 +39,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t16 = load i32 $cond__1
-    return i32 %t16
+    %t14 = load i32 $cond__1
+    return i32 %t14
 }

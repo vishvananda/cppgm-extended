@@ -2,7 +2,7 @@ global @storage [binding=strong, object=_Z7storage] = {
   zero 128
 }
 
-function @operatornew(%__param0 : i64, %address : ptr) -> ptr [binding=strong, object=_ZnwmPv] {
+function @operatornew__ov2(%__param0 : i64, %address : ptr) -> ptr [binding=strong, object=_ZnwmPv] {
   slot $__param0 : i64
   slot $address : ptr
 
@@ -19,15 +19,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = convert sext i64 i32 4
     %t2 = addr @storage
-    %t3 = unary decay ptr %t2
-    %t4 = call ptr @operatornew(%t1, %t3)
-    call void @Holder__Holder(%t4, 7)
-    store ptr %t4, $p
-    %t5 = load ptr $p
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load i32 %t6
-    %t8 = cmp eq i32 %t7, 7
-    branch %t8, ^cond_then_1, ^cond_else_2
+    %t3 = call ptr @operatornew__ov2(%t1, %t2)
+    call void @Holder__Holder(%t3, 7)
+    store ptr %t3, $p
+    %t4 = load ptr $p
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load i32 %t5
+    %t7 = cmp eq i32 %t6, 7
+    branch %t7, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -38,10 +37,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
-    return i32 %t9
+    %t8 = load i32 $cond__1
+    return i32 %t8
 }
-function @Holder__Holder(%this : ptr, %initial : i32) -> void [binding=weak, object=_ZN6HolderC1Ei] {
+function @Holder__Holder(%this : ptr [object_bytes=4], %initial : i32) -> void [binding=weak, object=_ZN6HolderC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $initial : i32
 

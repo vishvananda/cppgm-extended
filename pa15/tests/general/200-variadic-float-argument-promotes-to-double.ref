@@ -1,6 +1,6 @@
 declare function @sink(%arg0 : ptr) -> i32 [arity=variadic, linkage=c, binding=strong]
 
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 0
 }
 

@@ -21,7 +21,14 @@ function @f(%b : u8) -> i32 [binding=strong, object=_Z1fb] {
   block ^if_end_3:
     return i32 0
 }
-function @Guard__Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardC1Ev] {
+function @Guard__Guard(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5GuardC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -29,3 +36,4 @@ function @Guard__Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardC1Ev]
     return void
 }
 alias object _ZN5GuardC2Ev = @Guard__Guard
+alias object _ZN5GuardD2Ev = @Guard___Guard

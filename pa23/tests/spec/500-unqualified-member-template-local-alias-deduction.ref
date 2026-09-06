@@ -1,7 +1,7 @@
-declare function @get_compiler() -> ptr [binding=strong, object=_Z12get_compilerv]
-declare function @get_flag() -> ptr [binding=strong, object=_Z8get_flagv]
-declare function @get_matcher() -> ptr [binding=weak, object=_Z11get_matcherIiLb1EEPN6detail7matcherIT_XT0_EEEv]
 declare function @get_state() -> ptr [binding=strong, object=_Z9get_statev]
+declare function @get_flag() -> ptr [binding=strong, object=_Z8get_flagv]
+declare function @get_compiler() -> ptr [binding=strong, object=_Z12get_compilerv]
+declare function @get_matcher() -> ptr [binding=weak, object=_Z11get_matcherIiLb1EEPN6detail7matcherIiLb1EEEv]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @compiler_int___bracket(%this : ptr, %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN8compilerIiE7bracketILb1EEEbR4flagIXT_EE] {
+function @compiler_int___bracket(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN8compilerIiE7bracketILb1EEEbR4flagILb0EE] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $s : ptr
@@ -43,7 +43,7 @@ function @compiler_int___bracket(%this : ptr, %__param1 : ptr [pass=reference]) 
     %t6 = call u8 @compiler_int___term(%t3, %t4, %t5)
     return u8 %t6
 }
-function @compiler_int___term(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN8compilerIiE4termILb1EEEbR5stateRN6detail7matcherIiXT_EEE] {
+function @compiler_int___term(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address]) -> u8 [binding=weak, object=_ZN8compilerIiE4termILb1EEEbR5stateRN6detail7matcherIiLb0EEE] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

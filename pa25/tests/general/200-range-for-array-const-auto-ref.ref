@@ -22,24 +22,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_body_2:
     %t6 = addr $a
-    %t7 = unary decay ptr %t6
-    %t8 = load i32 $__idx1
-    %t9 = index i32 [projection=array_element] %t7, %t8
-    store ptr %t9, $x
-    %t10 = load i32 $s
-    %t11 = load ptr $x
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t10, %t12
-    store i32 %t13, $s
+    %t7 = load i32 $__idx1
+    %t8 = index i32 [projection=array_element] %t6, %t7
+    store ptr %t8, $x
+    %t9 = load i32 $s
+    %t10 = load ptr $x
+    %t11 = load i32 %t10
+    %t12 = binary add i32 %t9, %t11
+    store i32 %t12, $s
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t14 = load i32 $__idx1
-    %t15 = binary add i32 %t14, 1
-    store i32 %t15, $__idx1
+    %t13 = load i32 $__idx1
+    %t14 = binary add i32 %t13, 1
+    store i32 %t14, $__idx1
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t16 = load i32 $s
-    return i32 %t16
+    %t15 = load i32 $s
+    return i32 %t15
 }

@@ -1,17 +1,17 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 108
   i8 104
   i8 115
   i8 0
 }
-global @__strlit__2 [binding=internal] = {
+global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 114
   i8 104
   i8 115
   i8 0
 }
 
-function @pick(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4pickRK10StringLikeS1_] {
+function @pick(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_Z4pickRK10StringLikeS1_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -20,7 +20,7 @@ function @pick(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference
     store ptr %__param1, $__param1
     return i32 1
 }
-function @pick__ov2(%__param0 : ptr [pass=reference], %__param1 : ptr) -> i32 [binding=strong, object=_Z4pickRK10StringLikePKc] {
+function @pick__ov2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> i32 [binding=strong, object=_Z4pickRK10StringLikePKc] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call i32 @pick__ov2(%t3, %t4)
     return i32 %t5
 }
-function @StringLike__StringLike(%this : ptr, %__param1 : ptr) -> void [binding=weak, object=_ZN10StringLikeC1EPKc] {
+function @StringLike__StringLike(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN10StringLikeC1EPKc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

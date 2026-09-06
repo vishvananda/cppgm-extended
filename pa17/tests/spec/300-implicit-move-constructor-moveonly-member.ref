@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Outer__Outer(%t1)
     %t2 = addr $moved
     %t3 = addr $source
-    call void @Outer__Outer__ov3(%t2, %t3)
+    call void @Outer__Outer__ov2(%t2, %t3)
     %t4 = addr $moved
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = index i8 [projection=field] %t5, 0
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @Outer__Outer(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5OuterC1Ev] {
+function @Outer__Outer(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5OuterC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -38,7 +38,14 @@ function @Outer__Outer(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN
     call void @Inner__Inner(%t2)
     return void
 }
-function @Outer__Outer__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN5OuterC1EOS_] {
+function @Outer___Outer(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5OuterD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Outer__Outer__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5OuterC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -52,7 +59,7 @@ function @Outer__Outer__ov3(%this : ptr, %other : ptr [pass=reference]) -> void 
     call void @Inner__Inner__ov3(%t2, %t4)
     return void
 }
-function @Inner__Inner(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5InnerC1Ev] {
+function @Inner__Inner(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5InnerC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -62,7 +69,7 @@ function @Inner__Inner(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN
     store i32 7, %t2
     return void
 }
-function @Inner__Inner__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN5InnerC1EOS_] {
+function @Inner__Inner__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5InnerC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -82,6 +89,7 @@ function @Inner__Inner__ov3(%this : ptr, %other : ptr [pass=reference]) -> void 
     return void
 }
 alias object _ZN5OuterC2Ev = @Outer__Outer
-alias object _ZN5OuterC2EOS_ = @Outer__Outer__ov3
+alias object _ZN5OuterD2Ev = @Outer___Outer
+alias object _ZN5OuterC2EOS_ = @Outer__Outer__ov2
 alias object _ZN5InnerC2Ev = @Inner__Inner
 alias object _ZN5InnerC2EOS_ = @Inner__Inner__ov3

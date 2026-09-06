@@ -1,4 +1,4 @@
-global @box [binding=internal, object=_ZL3box] = {
+global @box [binding=internal, object=_Z3box] = {
   i32 0
 }
 
@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
+function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

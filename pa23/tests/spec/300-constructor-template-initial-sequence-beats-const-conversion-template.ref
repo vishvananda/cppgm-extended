@@ -5,8 +5,8 @@ function @make_error() -> obj<4x4> [binding=strong, object=_Z10make_errorv] {
   block ^entry:
     %t1 = addr $retobj__1
     %t2 = addr $arg__2
-    call void @error_id__error_id__ov4(%t2, 7)
-    call void @result_payload___result__ov3(%t1, %t2)
+    call void @error_id__error_id__aggregate(%t2, 7)
+    call void @result_payload___result_payload___ov3(%t1, %t2)
     return obj<4x4> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @result_payload___result__ov3(%this : ptr, %error : ptr [pass=reference]) -> void [binding=weak, object=_ZN6resultI7payloadEC1I8error_idEEOT_] {
+function @result_payload___result_payload___ov3(%this : ptr [object_bytes=4], %error : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6resultI7payloadEC1I8error_idEEOT_, inline_hint=yes] {
   slot $this : ptr
   slot $error : ptr
 
@@ -51,7 +51,7 @@ function @result_payload___result__ov3(%this : ptr, %error : ptr [pass=reference
     store i32 %t4, %t6
     return void
 }
-function @error_id__error_id__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN8error_idC1Ei] {
+function @error_id__error_id__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 
@@ -64,5 +64,4 @@ function @error_id__error_id__ov4(%this : ptr, %value : i32) -> void [unwind=no,
     store i32 %t1, %t3
     return void
 }
-alias object _ZN6resultI7payloadEC2I8error_idEEOT_ = @result_payload___result__ov3
-alias object _ZN8error_idC2Ei = @error_id__error_id__ov4
+alias object _ZN6resultI7payloadEC2I8error_idEEOT_ = @result_payload___result_payload___ov3

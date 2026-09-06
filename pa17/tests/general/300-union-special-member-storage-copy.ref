@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load i32 $cond__2
     return i32 %t14
 }
-function @Payload__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN7PayloadaSEOS_] {
+function @Payload__operator___ov2(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN7PayloadaSEOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

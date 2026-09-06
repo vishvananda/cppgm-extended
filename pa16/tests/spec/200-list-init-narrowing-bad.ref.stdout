@@ -1,4 +1,0 @@
-ERROR: narrowing conversion in list-initialization [target int] [source double] [init 1.5] [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:value=int}]
-Diagnostic context:
-analyze_function_binding_output [main]
-  analyze_statement [simple-declaration] at tests/spec/200-list-init-narrowing-bad.t:7:3

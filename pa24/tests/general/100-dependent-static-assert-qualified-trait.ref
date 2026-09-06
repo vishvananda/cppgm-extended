@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @box_int___value(%t2)
     return i32 %t3
 }
-function @box_int___value(%this : ptr) -> i32 [binding=weak, object=_ZNK3boxIiE5valueEv] {
+function @box_int___value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK3boxIiE5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

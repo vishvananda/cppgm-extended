@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -21,19 +21,14 @@ function @g
     param %__i -> rsi : i64
     return ptr -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
 
   block ^entry
-    mov rbx, rdi
-    load.ptr r12, [rbx]
-    mov rdx, rsi
-    imul rdx, 8
-    add r12, rdx
-    mov rax, r12
+    load.ptr r8, [rdi]
+    lea rax, [r8+rsi*8]
     ret rax
 
 function @main
@@ -46,15 +41,11 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, @holder
-    mov rdi, r8
+    mov rdi, @holder
     mov rsi, 2
-    call @g
-    mov r9, rax
-    load.i64 r8, [r9]
-    mov rdx, 33
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
+    call @g [args=(rsi,rdi)]
+    load.i64 r8, [rax]
+    cmp.i64 r8, 33
+    setne rax
+    movzx rax, rax
     ret rax

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @__lambda_main_t10_16__operator__(%t2, 4)
     return i32 %t3
 }
-function @__lambda_main_t10_16__operator__(%this : ptr, %x : i32) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEi, prefer_local=yes] {
+function @__lambda_main_t10_16__operator__(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEi, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

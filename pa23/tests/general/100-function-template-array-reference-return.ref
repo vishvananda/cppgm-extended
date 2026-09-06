@@ -1,6 +1,6 @@
-declare function @cast(%arg0 : ptr [pass=reference]) -> ptr [binding=weak, object=_Z4castIcLj1EERAT0__T_RAT0__Kc]
+declare function @cast(%arg0 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z4castIcLj1EERAT0__T_RAT0__Kc]
 
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 0
 }
 

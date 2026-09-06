@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -16,8 +16,7 @@ function @sink
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    ret rax
+    ret rdi
 
 function @run
   abi
@@ -30,34 +29,20 @@ function @run
     param %g -> [rbp+16] : i64
     return i64 -> rax
   frame
-    stack_size 80
+    stack_size 64
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %a -> [rbp-8] : i64
-    param-slot %b -> [rbp-16] : i64
-    param-slot %c -> [rbp-24] : i64
-    param-slot %d -> [rbp-32] : i64
-    param-slot %e -> [rbp-40] : i64
-    param-slot %f -> [rbp-48] : i64
-    param-slot %g -> [rbp-56] : i64
-    slot $cell -> [rbp-64] : i64
+    param-slot %g -> [rbp-8] : i64
+    slot $cell -> [rbp-24] : i64
 
   block ^entry
-    store.i64 [rbp-8], rdi
-    store.i64 [rbp-16], rsi
-    store.i64 [rbp-24], rdx
-    store.i64 [rbp-32], rcx
-    store.i64 [rbp-40], r8
-    store.i64 [rbp-48], r9
     load.i64 rax, [rbp+16]
-    store.i64 [rbp-56], rax
-    mov rax, 42
-    store.i64 [rbp-64], rax
-    lea r8, [rbp-64]
-    load.i64 r9, [r8]
-    mov rdi, r9
-    call @sink
+    store.i64 [rbp-8], rax
+    store.i64 [rbp-24], 42
+    load.i64 r8, [rbp-24]
+    mov rdi, r8
+    call @sink [args=(rdi)]
     ret rax
 
 function @main
@@ -79,18 +64,14 @@ function @main
     mov r9, 6
     mov r11, 7
     store.i64 [rsp], r11
-    call @run
+    call @run [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov r8, rax
     mov rdx, 42
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     ret rax

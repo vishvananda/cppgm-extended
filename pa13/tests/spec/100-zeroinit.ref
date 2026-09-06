@@ -42,3 +42,4 @@ fn__main__epilogue:
 g__dst:
 	data64 7;
 	data64 8;
+

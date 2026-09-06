@@ -5,11 +5,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $p
     %t2 = addr $p
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
     store i32 5, %t4
     %t5 = addr $p
-    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t6 = index i8 %t5, 0
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load i32 %t7
     %t9 = cmp eq i32 %t8, 5

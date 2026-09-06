@@ -1,4 +1,4 @@
-global @K : i32 [binding=internal, object=_ZL1K] = 3
+global @K : i32 [storage=readonly, binding=internal, object=_Z1K] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $b : obj<16x4>
@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @box_4___get(%this : ptr) -> i32 [binding=weak, object=_ZN3boxILi4EE3getEv] {
+function @box_4___get(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN3boxILi4EE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

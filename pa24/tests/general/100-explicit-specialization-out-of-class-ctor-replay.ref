@@ -1,51 +1,3 @@
-function @S_int___S__base_entry(%this : ptr) -> void [binding=strong, object=_ZN1SIiEC2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 2, %t2
-    return void
-}
-function @S_int___S(%this : ptr) -> void [binding=strong, object=_ZN1SIiEC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 2, %t2
-    return void
-}
-function @S_int___S__ov2__base_entry(%this : ptr, %x : i32) -> void [binding=strong, object=_ZN1SIiEC2Ei] {
-  slot $this : ptr
-  slot $x : i32
-
-  block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = binary add i32 %t1, 10
-    %t3 = load ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    store i32 %t2, %t4
-    return void
-}
-function @S_int___S__ov2(%this : ptr, %x : i32) -> void [binding=strong, object=_ZN1SIiEC1Ei] {
-  slot $this : ptr
-  slot $x : i32
-
-  block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = binary add i32 %t1, 10
-    %t3 = load ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    store i32 %t2, %t4
-    return void
-}
 function @f() -> i32 [binding=strong, object=_Z1fv] {
   slot $b : obj<4x4>
   slot $c : obj<4x4>
@@ -69,5 +21,51 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @f()
     return i32 %t1
 }
-alias object _ZN1SIiEC2Ev = @S_int___S
-alias object _ZN1SIiEC2Ei = @S_int___S__ov2
+function @S_int___S__base_entry(%this : ptr [object_bytes=4]) -> void [binding=strong, object=_ZN1SIiEC2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 2, %t2
+    return void
+}
+function @S_int___S(%this : ptr [object_bytes=4]) -> void [binding=strong, object=_ZN1SIiEC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 2, %t2
+    return void
+}
+function @S_int___S__ov2__base_entry(%this : ptr [object_bytes=4], %x : i32) -> void [binding=strong, object=_ZN1SIiEC2Ei, object_root=yes] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 10
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    return void
+}
+function @S_int___S__ov2(%this : ptr [object_bytes=4], %x : i32) -> void [binding=strong, object=_ZN1SIiEC1Ei] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 10
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    return void
+}

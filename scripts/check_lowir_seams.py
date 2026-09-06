@@ -82,6 +82,9 @@ def run_mode(assignment, lane, mode, scratch):
         changed += 1
     counts = os.path.join(scratch, mode + '.counts')
     environment = dict(os.environ, KEEP_GOING='1', CPPGM_TEST_COUNTS_FILE=counts)
+    # The lane is about the relaxed comparison by definition; CI's byte-exact
+    # switch (CPPGM_LOWIR_DIRECT_TEXT_COMPARE) does not apply to it.
+    environment.pop('CPPGM_LOWIR_DIRECT_TEXT_COMPARE', None)
     # Under KEEP_GOING the harness marks a failed lane with
     # <assignment>/.test_failed, which test-report reads as the assignment
     # failing.  A convention rewrite is expected to fail, so a marker this

@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i128 $derived_ptr
     %t8 = convert trunc i64 i128 %t7
     %t9 = copy ptr %t8
-    %t10 = call i32 %t9(%t6) as (%arg0 : ptr) -> i32
+    %t10 = call i32 %t9(%t6) as (%arg0 : ptr [object_bytes=1]) -> i32
     %t11 = cmp eq i32 %t10, 5
     branch %t11, ^cond_then_1, ^cond_else_2
 
@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @Base__f(%this : ptr) -> i32 [binding=weak, object=_ZN4Base1fEv] {
+function @Base__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN4Base1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

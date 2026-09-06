@@ -14,7 +14,7 @@ function @read
     param %address -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -27,7 +27,7 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared

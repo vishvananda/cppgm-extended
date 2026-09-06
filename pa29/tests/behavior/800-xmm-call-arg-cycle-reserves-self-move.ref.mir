@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -56,10 +56,12 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 64
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
+    temp %v6 -> [rbp-4] : f32
+    temp %v7 -> [rbp-8] : f32
 
   block ^entry
     fmov.f32 xmm0, 1.0f
@@ -68,16 +70,14 @@ function @main
     fmov.f32 xmm3, 4.0f
     fmov.f32 xmm4, 5.0f
     fmov.f32 xmm5, 6.0f
-    fmov.f32 xmm6, 7.0f
-    fmov.f32 xmm7, 8.0f
-    sub rsp, 16
-    fmov.f32 [rsp], xmm2
-    fmov.f32 xmm2, xmm4
-    fmov.f32 xmm4, xmm6
+    fmov.f32 [rbp-4], 7.0f
+    fmov.f32 [rbp-8], 8.0f
     fmov.f32 xmm6, xmm5
+    fmov.f32 xmm7, [rbp-8]
     fmov.f32 xmm5, xmm3
     fmov.f32 xmm3, xmm0
-    fmov.f32 xmm0, [rsp]
-    call @check
-    add rsp, 16
+    fmov.f32 xmm0, xmm2
+    fmov.f32 xmm2, xmm4
+    fmov.f32 xmm4, [rbp-4]
+    call @check [args=(xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7)]
     ret rax

@@ -1,4 +1,4 @@
-function @operator_(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> u8 [binding=strong, object=_ZorRK4FlagS1_] {
+function @operator_(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=strong, object=_ZorRK4FlagS1_] {
   slot $lhs : ptr
   slot $rhs : ptr
   slot $land__1 : i64
@@ -30,7 +30,7 @@ function @operator_(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) ->
     %t11 = convert trunc u8 i64 %t10
     return u8 %t11
 }
-function @operator___sym2(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> u8 [binding=strong, object=_ZeoRK4FlagS1_] {
+function @operator___sym2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=strong, object=_ZeoRK4FlagS1_] {
   slot $lhs : ptr
   slot $rhs : ptr
   slot $land__1 : i64
@@ -62,7 +62,7 @@ function @operator___sym2(%lhs : ptr [pass=reference], %rhs : ptr [pass=referenc
     %t11 = convert trunc u8 i64 %t10
     return u8 %t11
 }
-function @operator__(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> ptr [binding=strong, object=_ZaNR4FlagRKS_] {
+function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_ZaNR4FlagRKS_] {
   slot $lhs : ptr
   slot $rhs : ptr
 
@@ -82,7 +82,7 @@ function @operator__(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -
     %t10 = load ptr $lhs
     return ptr %t10
 }
-function @operator____sym2(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> ptr [binding=strong, object=_ZoRR4FlagRKS_] {
+function @operator____sym2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_ZoRR4FlagRKS_] {
   slot $lhs : ptr
   slot $rhs : ptr
 
@@ -103,7 +103,7 @@ function @operator____sym2(%lhs : ptr [pass=reference], %rhs : ptr [pass=referen
     %t11 = load ptr $lhs
     return ptr %t11
 }
-function @operator____sym3(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> ptr [binding=strong, object=_ZeOR4FlagRKS_] {
+function @operator____sym3(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_ZeOR4FlagRKS_] {
   slot $lhs : ptr
   slot $rhs : ptr
 
@@ -138,7 +138,7 @@ function @pick_bool__ov2(%__param0 : i32) -> i32 [binding=strong, object=_Z9pick
     store i32 %__param0, $__param0
     return i32 10
 }
-function @pick_flag(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z9pick_flagR4Flag] {
+function @pick_flag(%__param0 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z9pick_flagR4Flag] {
   slot $__param0 : ptr
 
   block ^entry:

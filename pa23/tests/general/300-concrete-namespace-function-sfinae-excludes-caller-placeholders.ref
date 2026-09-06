@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $value
     return i32 %t4
 }
-function @allocator_adaptor_int___construct(%this : ptr, %output : ptr) -> void [binding=weak, object=_ZN17allocator_adaptorIJiEE9constructIiJEEEvPT_DpT0_] {
+function @allocator_adaptor_int___construct(%this : ptr [object_bytes=4], %output : ptr) -> void [binding=weak, object=_ZN17allocator_adaptorIJiEE9constructIiJEEEvPT_DpT0_, inline_hint=yes] {
   slot $this : ptr
   slot $output : ptr
 
@@ -19,14 +19,14 @@ function @allocator_adaptor_int___construct(%this : ptr, %output : ptr) -> void 
     store ptr %this, $this
     store ptr %output, $output
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = call ptr @detail__adaptor_base_int___outer_allocator(%t2)
     %t4 = load i32 %t3
     %t5 = load ptr $output
     call void @detail__dispatch(%t4, 0, %t5)
     return void
 }
-function @detail__adaptor_base_int___outer_allocator(%this : ptr) -> ptr [binding=weak, object=_ZN6detail12adaptor_baseIiJEE15outer_allocatorEv] {
+function @detail__adaptor_base_int___outer_allocator(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN6detail12adaptor_baseIiJEE15outer_allocatorEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

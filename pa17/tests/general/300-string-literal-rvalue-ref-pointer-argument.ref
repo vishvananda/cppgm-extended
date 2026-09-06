@@ -1,12 +1,12 @@
-global @__strlit__1 [binding=internal] = {
+global @saved : ptr [binding=strong, object=_Z5saved] = 0
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 66
   i8 97
   i8 114
   i8 0
 }
-global @saved : ptr [binding=strong, object=_Z5saved] = 0
 
-function @sink(%p : ptr [pass=reference]) -> void [binding=strong, object=_Z4sinkOPKc] {
+function @sink(%p : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z4sinkOPKc] {
   slot $p : ptr
 
   block ^entry:

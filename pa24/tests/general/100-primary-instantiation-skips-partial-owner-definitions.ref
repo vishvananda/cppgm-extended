@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @box_int__int___f(%t1)
     return i32 0
 }
-function @box_int__int___f(%this : ptr) -> void [binding=weak, object=_ZN3boxIiiE1fEv] {
+function @box_int__int___f(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3boxIiiE1fEv] {
   slot $this : ptr
 
   block ^entry:

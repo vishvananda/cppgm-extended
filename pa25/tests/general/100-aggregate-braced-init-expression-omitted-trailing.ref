@@ -6,10 +6,10 @@ function @make_pair(%a : i32) -> obj<8x4> [binding=strong, object=_Z9make_pairi]
     store i32 %a, $a
     %t1 = addr $retobj__1
     %t2 = load i32 $a
-    call void @Pair__Pair__ov4(%t1, %t2)
+    call void @Pair__Pair__aggregate(%t1, %t2)
     return obj<8x4> $retobj__1
 }
-function @Pair__Pair__ov4(%this : ptr, %first : i32) -> void [unwind=no, binding=weak, object=_ZN4PairC1Ei] {
+function @Pair__Pair__aggregate(%this : ptr, %first : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $first : i32
 
@@ -25,4 +25,3 @@ function @Pair__Pair__ov4(%this : ptr, %first : i32) -> void [unwind=no, binding
     store i32 0, %t5
     return void
 }
-alias object _ZN4PairC2Ei = @Pair__Pair__ov4

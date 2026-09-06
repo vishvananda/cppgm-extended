@@ -1,15 +1,14 @@
-declare global @__external_rtti__int [binding=strong, object=_ZTIi]
-declare global @__external_rtti_vtable____fundamental_type_info [binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
 
-global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
   i8 105
   i8 0
 }
-global @__rtti_int [storage=readonly, binding=weak, object=_ZTIi] = {
+global @__rtti_int [binding=weak, object=_ZTIi] = {
   ptr addr @__external_rtti_vtable____fundamental_type_info + 16
   ptr addr @__typeinfo_name__int
 }
@@ -57,7 +56,7 @@ function @instantiate_value(%value : i32) -> obj<4x4> [binding=weak, object=_Z17
     copyobj 4x4 %t5, %t1
     return obj<4x4> $retobj__1
 }
-function @wrap_as_substitution(%fn : obj<8x8>, %context_fn : obj<1x1>) -> obj<4x4> [binding=weak, object=_Z20wrap_as_substitutionIZ17instantiate_valueIiE6ParsedT_EUlvE_ZS0_IiES1_T_EUlvE0_EDTclfp_EET_T0_] {
+function @wrap_as_substitution(%fn : obj<8x8>, %context_fn : obj<1x1>) -> obj<4x4> [binding=internal, object=_Z20wrap_as_substitutionIZ17instantiate_valueIiE6ParsedT_EUlvE_Z17instantiate_valueIiES1_S2_EUlvE0_EDTclfp_EES2_T0_] {
   slot $fn : obj<8x8>
   slot $context_fn : obj<1x1>
   slot $retobj__1 : obj<4x4>
@@ -88,7 +87,7 @@ function @wrap_as_substitution(%fn : obj<8x8>, %context_fn : obj<1x1>) -> obj<4x
     eh_cleanup ^catch_cleanup_6
     %t9 = addr $retobj__1
     %t10 = addr $context_fn
-    %t11 = call obj<4x4> @__lambda_instantiate_value__int_t93_97__operator__(%t10)
+    %t11 = call obj<4x4> @__lambda_instantiate_value__int_t93_97_n1__operator__(%t10)
     copyobj 4x4 %t11, %t9
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -106,7 +105,7 @@ function @wrap_as_substitution(%fn : obj<8x8>, %context_fn : obj<1x1>) -> obj<4x
     zeroinit 4x4 $retobj__1
     return obj<4x4> $retobj__1
 }
-function @__lambda_instantiate_value__int_t71_75__operator__(%this : ptr) -> obj<4x4> [binding=weak, object=_ZZ17instantiate_valueIiE6ParsedT_ENKUlvE_clEv] {
+function @__lambda_instantiate_value__int_t71_75__operator__(%this : ptr [object_bytes=8]) -> obj<4x4> [binding=internal, object=_ZZ17instantiate_valueIiE6ParsedT_ENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -114,13 +113,13 @@ function @__lambda_instantiate_value__int_t71_75__operator__(%this : ptr) -> obj
     store ptr %this, $this
     %t1 = addr $retobj__1
     %t2 = load ptr $this
-    %t3 = index i8 [projection=reference_field] %t2, 0
+    %t3 = index i8 [projection=field] %t2, 0
     %t4 = load ptr %t3
     %t5 = load i32 %t4
-    call void @Parsed__Parsed__ov4(%t1, %t5)
+    call void @Parsed__Parsed__aggregate(%t1, %t5)
     return obj<4x4> $retobj__1
 }
-function @__lambda_instantiate_value__int_t93_97__operator__(%this : ptr) -> obj<4x4> [binding=weak, object=_ZZ17instantiate_valueIiE6ParsedT_ENKUlvE0_clEv] {
+function @__lambda_instantiate_value__int_t93_97_n1__operator__(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=internal, object=_ZZ17instantiate_valueIiE6ParsedT_ENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -128,10 +127,10 @@ function @__lambda_instantiate_value__int_t93_97__operator__(%this : ptr) -> obj
     store ptr %this, $this
     %t1 = addr $retobj__1
     %t2 = unary neg i32 1
-    call void @Parsed__Parsed__ov4(%t1, %t2)
+    call void @Parsed__Parsed__aggregate(%t1, %t2)
     return obj<4x4> $retobj__1
 }
-function @Parsed__Parsed__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN6ParsedC1Ei] {
+function @Parsed__Parsed__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 
@@ -144,4 +143,3 @@ function @Parsed__Parsed__ov4(%this : ptr, %value : i32) -> void [unwind=no, bin
     store i32 %t1, %t3
     return void
 }
-alias object _ZN6ParsedC2Ei = @Parsed__Parsed__ov4

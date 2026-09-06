@@ -8,15 +8,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 0, %t2
     %t3 = addr $c
     %t4 = addr $values
-    %t5 = unary decay ptr %t4
-    %t6 = addr $values
-    %t7 = unary decay ptr %t6
-    %t8 = binary mul i64 1, 4
-    %t9 = index i8 %t7, %t8
-    %t10 = call i32 @C_int___f(%t3, %t5, %t9)
-    return i32 %t10
+    %t5 = addr $values
+    %t6 = binary mul i64 1, 4
+    %t7 = index i8 %t5, %t6
+    %t8 = call i32 @C_int___f(%t3, %t4, %t7)
+    return i32 %t8
 }
-function @C_int___f(%this : ptr, %first : ptr, %last : ptr) -> i32 [binding=weak, object=_ZN1CIiE1fIPiEEiT_S3_] {
+function @C_int___f(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> i32 [binding=weak, object=_ZN1CIiE1fIPiEEiT_S2_] {
   slot $this : ptr
   slot $first : ptr
   slot $last : ptr
@@ -31,7 +29,7 @@ function @C_int___f(%this : ptr, %first : ptr, %last : ptr) -> i32 [binding=weak
     %t4 = call i32 @C_int___g__ov2(%t1, %t2, %t3, 1)
     return i32 %t4
 }
-function @C_int___g__ov2(%this : ptr, %first : ptr, %last : ptr, %n : i32) -> i32 [binding=weak, object=_ZN1CIiE1gIPiEEiT_S3_i] {
+function @C_int___g__ov2(%this : ptr [object_bytes=1], %first : ptr, %last : ptr, %n : i32) -> i32 [binding=weak, object=_ZN1CIiE1gIPiEEiT_S2_i] {
   slot $this : ptr
   slot $first : ptr
   slot $last : ptr

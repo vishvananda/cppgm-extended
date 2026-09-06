@@ -69,24 +69,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load i32 $cond__1
     return i32 %t15
 }
-function @pointer_holder__left_owner__value___read() -> i32 [binding=weak, object=_ZN14pointer_holderIXadL_ZN10left_owner5valueEEEE4readEv] {
+function @pointer_holder__left_owner__value___read() -> i32 [binding=weak, object=_ZN14pointer_holderIXadL_ZN10left_owner5valueEEEE4readEv, inline_hint=yes] {
   block ^entry:
     %t1 = addr @left_owner__value
     %t2 = load i32 %t1
     return i32 %t2
 }
-function @pointer_holder__right_owner__value___read() -> i32 [binding=weak, object=_ZN14pointer_holderIXadL_ZN11right_owner5valueEEEE4readEv] {
+function @pointer_holder__right_owner__value___read() -> i32 [binding=weak, object=_ZN14pointer_holderIXadL_ZN11right_owner5valueEEEE4readEv, inline_hint=yes] {
   block ^entry:
     %t1 = addr @right_owner__value
     %t2 = load i32 %t1
     return i32 %t2
 }
-function @reference_holder_left_owner__value___read() -> i32 [binding=weak, object=_ZN16reference_holderIL_ZN10left_owner5valueEEE4readEv] {
+function @reference_holder_left_owner__value___read() -> i32 [binding=weak, object=_ZN16reference_holderIL_ZN10left_owner5valueEEE4readEv, inline_hint=yes] {
   block ^entry:
     %t1 = load i32 @left_owner__value
     return i32 %t1
 }
-function @reference_holder_right_owner__value___read() -> i32 [binding=weak, object=_ZN16reference_holderIL_ZN11right_owner5valueEEE4readEv] {
+function @reference_holder_right_owner__value___read() -> i32 [binding=weak, object=_ZN16reference_holderIL_ZN11right_owner5valueEEE4readEv, inline_hint=yes] {
   block ^entry:
     %t1 = load i32 @right_owner__value
     return i32 %t1

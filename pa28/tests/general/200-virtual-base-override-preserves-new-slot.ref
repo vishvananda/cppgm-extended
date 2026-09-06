@@ -1,7 +1,7 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
-declare function @D__tag(%arg0 : ptr) -> i32 [binding=strong, object=_ZN1D3tagEv]
+declare function @D__tag(%arg0 : ptr [object_bytes=16]) -> i32 [binding=strong, object=_ZN1D3tagEv]
 
 global @__typeinfo_name__struct_V [binding=weak, object=_ZTS1V] = {
   i8 49
@@ -43,7 +43,7 @@ global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D____view__V__8__vtable + 24
 }
 
-function @D__id(%this : ptr) -> i32 [binding=strong, object=_ZN1D2idEv] {
+function @D__id(%this : ptr [object_bytes=16]) -> i32 [binding=strong, object=_ZN1D2idEv] {
   slot $this : ptr
 
   block ^entry:

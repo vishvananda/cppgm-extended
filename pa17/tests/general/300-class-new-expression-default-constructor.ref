@@ -1,5 +1,5 @@
-declare function @operatornew(%arg0 : i64) -> ptr [effects=readwrite, role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
-declare function @S__S(%arg0 : ptr) -> void [binding=strong, object=_ZN1SC1Ev]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
+declare function @S__S(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN1SC1Ev]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : ptr

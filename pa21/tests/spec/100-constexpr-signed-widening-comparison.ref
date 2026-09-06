@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load i32 $cond__1
     return i32 %t2
 }
-function @signed_widen_equal() -> u8 [binding=weak, object=_Z18signed_widen_equalv] {
+function @signed_widen_equal() -> u8 [binding=weak, object=_Z18signed_widen_equalv, inline_hint=yes] {
   slot $tmpobj__1 : obj<8x8>
 
   block ^entry:
@@ -28,7 +28,7 @@ function @signed_widen_equal() -> u8 [binding=weak, object=_Z18signed_widen_equa
     %t4 = call u8 @value_holder__matches(%t1)
     return u8 %t4
 }
-function @value_holder__value_holder(%this : ptr, %v : i64) -> void [binding=weak, object=_ZN12value_holderC1Ex] {
+function @value_holder__value_holder(%this : ptr [object_bytes=8], %v : i64) -> void [binding=weak, object=_ZN12value_holderC1Ex, inline_hint=yes] {
   slot $this : ptr
   slot $v : i64
 
@@ -41,7 +41,7 @@ function @value_holder__value_holder(%this : ptr, %v : i64) -> void [binding=wea
     store i64 %t1, %t3
     return void
 }
-function @value_holder__matches(%this : ptr) -> u8 [binding=weak, object=_ZNK12value_holder7matchesEv] {
+function @value_holder__matches(%this : ptr [object_bytes=8]) -> u8 [binding=weak, object=_ZNK12value_holder7matchesEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

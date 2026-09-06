@@ -10,22 +10,21 @@ function @Holder__operatornew(%bytes : i64, %extra : i64) -> ptr [binding=strong
     store i64 %bytes, $bytes
     store i64 %extra, $extra
     %t1 = addr @storage
-    %t2 = unary decay ptr %t1
-    %t3 = load i64 $extra
-    %t4 = copy i64 %t3
-    %t5 = index i8 %t2, %t4
-    %t6 = load i64 $extra
-    %t7 = copy i64 %t6
-    %t8 = binary sub i64 0, %t7
-    %t9 = index i8 %t5, %t8
-    %t10 = load i64 $bytes
-    %t11 = copy i64 %t10
-    %t12 = index i8 %t9, %t11
-    %t13 = load i64 $bytes
-    %t14 = copy i64 %t13
-    %t15 = binary sub i64 0, %t14
-    %t16 = index i8 %t12, %t15
-    return ptr %t16
+    %t2 = load i64 $extra
+    %t3 = copy i64 %t2
+    %t4 = index i8 %t1, %t3
+    %t5 = load i64 $extra
+    %t6 = copy i64 %t5
+    %t7 = binary sub i64 0, %t6
+    %t8 = index i8 %t4, %t7
+    %t9 = load i64 $bytes
+    %t10 = copy i64 %t9
+    %t11 = index i8 %t8, %t10
+    %t12 = load i64 $bytes
+    %t13 = copy i64 %t12
+    %t14 = binary sub i64 0, %t13
+    %t15 = index i8 %t11, %t14
+    return ptr %t15
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $extra : i64
@@ -58,7 +57,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1Ev] {
+function @Holder__Holder(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

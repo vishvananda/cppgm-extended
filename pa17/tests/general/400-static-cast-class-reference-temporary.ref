@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = binary sub i32 %t6, 9
     return i32 %t7
 }
-function @wrapper__wrapper(%this : ptr, %p : ptr [pass=reference]) -> void [binding=weak, object=_ZN7wrapperC1ERK7tracked] {
+function @wrapper__wrapper(%this : ptr [object_bytes=4], %p : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7wrapperC1ERK7tracked, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 

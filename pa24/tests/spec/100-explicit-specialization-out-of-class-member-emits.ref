@@ -1,4 +1,4 @@
-function @explicit_specialization_member_emits_char___value(%this : ptr, %__param1 : i8) -> void [binding=strong, object=_ZN36explicit_specialization_member_emitsIcE5valueEc] {
+function @explicit_specialization_member_emits_char___value(%this : ptr [object_bytes=1], %__param1 : i8) -> void [binding=strong, object=_ZN36explicit_specialization_member_emitsIcE5valueEc] {
   slot $this : ptr
   slot $__param1 : i8
 

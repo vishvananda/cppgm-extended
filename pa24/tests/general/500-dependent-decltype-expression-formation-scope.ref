@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @expd(%__param0 : ptr [pass=reference]) -> ptr [binding=weak, object=_Z4expdIJiEEPN12unwrap_tupleINSt5decayIDTcldtclsr3stdE7declvalIN6detail31context_type_from_handlers_implIDpT_E4typeEEE3tupEEE4typeEE4typeEDpOS4_] {
+function @expd(%__param0 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z4expdIJiEEPSt5tupleIJiEEDpOT_] {
   slot $__param0 : ptr
 
   block ^entry:

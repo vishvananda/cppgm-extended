@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @n__id($argobj__1)
     return i32 %t2
 }
-function @n__token__token(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1n5tokenC1Ei] {
+function @n__token__token(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1n5tokenC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -17,11 +17,8 @@ function @make_value
     slot $value -> [rbp-8] : obj<8x8>
 
   block ^entry
-    mov rax, rdi
-    lea rcx, [rbp-8]
-    store.i64 [rcx], rax
-    lea r11, [rbp-8]
-    load.i64 rax, [r11]
+    store.i64 [rbp-8], rdi
+    load.i64 rax, [rbp-8]
     ret
 
 function @combine
@@ -44,8 +41,7 @@ function @combine
     load.i64 r9, [rbp-16]
     imul r8, 100
     add r8, r9
-    mov rax, r8
-    ret rax
+    ret r8
 
 function @main
   abi
@@ -60,26 +56,19 @@ function @main
 
   block ^entry
     mov rdi, 11
-    call @make_value
-    lea r11, [rbp-8]
-    store.i64 [r11], rax
+    call @make_value [args=(rdi)]
+    store.i64 [rbp-8], rax
     mov rdi, 22
-    call @make_value
-    lea r11, [rbp-16]
-    store.i64 [r11], rax
-    lea r11, [rbp-8]
-    load.i64 rdi, [r11]
-    lea r11, [rbp-16]
-    load.i64 rsi, [r11]
-    call @combine
-    mov r8, rax
+    call @make_value [args=(rdi)]
+    store.i64 [rbp-16], rax
+    load.i64 rdi, [rbp-8]
+    load.i64 rsi, [rbp-16]
+    call @combine [args=(rsi,rdi)]
     mov rdx, 1122
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov rax, r8
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
+    cmp.i64 rax, 0
+    sete rax
+    movzx rax, rax
     ret rax

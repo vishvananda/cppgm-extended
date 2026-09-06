@@ -3,7 +3,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^entry:
     %t1 = addr $a
-    call void @A_T__local_1397447077136375081___A(%t1)
+    call void @__cppgm_class_template_0_0__A_T_(%t1)
     return void
 }
 function @g() -> void [binding=strong, object=_Z1gv] {
@@ -11,7 +11,7 @@ function @g() -> void [binding=strong, object=_Z1gv] {
 
   block ^entry:
     %t1 = addr $a
-    call void @A_T__local_6765052551924661218___A(%t1)
+    call void @__cppgm_class_template_0_1__A_T_(%t1)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -20,19 +20,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @g()
     return i32 0
 }
-function @A_T__local_1397447077136375081___A(%this : ptr) -> void [binding=weak, object=_ZN1AIZ1fvE1TEC1Ev] {
+function @__cppgm_class_template_0_0__A_T_(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN1AIZ1fvE1TEC1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @A_T__local_6765052551924661218___A(%this : ptr) -> void [binding=weak, object=_ZN1AIZ1gvE1TEC1Ev] {
+function @__cppgm_class_template_0_1__A_T_(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN1AIZ1gvE1TEC1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-alias object _ZN1AIZ1fvE1TEC2Ev = @A_T__local_1397447077136375081___A
-alias object _ZN1AIZ1gvE1TEC2Ev = @A_T__local_6765052551924661218___A
+alias object _ZN1AIZ1fvE1TEC2Ev = @__cppgm_class_template_0_0__A_T_
+alias object _ZN1AIZ1gvE1TEC2Ev = @__cppgm_class_template_0_1__A_T_

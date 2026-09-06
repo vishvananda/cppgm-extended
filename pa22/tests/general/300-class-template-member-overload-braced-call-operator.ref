@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @hash_code_base_key__key__identity__hash_key____M_hash_code__ov2(%this : ptr, %n : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK14hash_code_baseI3keyS0_8identity8hash_keyE12_M_hash_codeERK10node_valueIS0_E] {
+function @hash_code_base_key__key__identity__hash_key____M_hash_code__ov2(%this : ptr [object_bytes=1], %n : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK14hash_code_baseI3keyS0_8identity8hash_keyE12_M_hash_codeERK10node_valueIS0_E, inline_hint=yes] {
   slot $this : ptr
   slot $n : ptr
   slot $tmpobj__1 : obj<1x1>
@@ -38,14 +38,22 @@ function @hash_code_base_key__key__identity__hash_key____M_hash_code__ov2(%this 
     store ptr %n, $n
     %t1 = load ptr $this
     %t2 = addr $tmpobj__1
-    call void @identity__identity(%t2)
     %t3 = load ptr $n
     %t4 = call ptr @node_value_key____M_v(%t3)
     %t5 = call ptr @identity__operator__(%t2, %t4)
     %t6 = call i32 @hash_code_base_key__key__identity__hash_key____M_hash_code(%t1, %t5)
     return i32 %t6
 }
-function @identity__operator__(%this : ptr, %x : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK8identityclIRK3keyEEOT_S5_] {
+function @node_value_key____M_v(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZNK10node_valueI3keyE4_M_vEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+function @identity__operator__(%this : ptr [object_bytes=1], %x : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZNK8identityclIRK3keyEEOT_S5_, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 
@@ -55,23 +63,7 @@ function @identity__operator__(%this : ptr, %x : ptr [pass=reference]) -> ptr [b
     %t1 = load ptr $x
     return ptr %t1
 }
-function @identity__identity(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8identityC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @node_value_key____M_v(%this : ptr) -> ptr [binding=weak, object=_ZNK10node_valueI3keyE4_M_vEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    return ptr %t2
-}
-function @hash_code_base_key__key__identity__hash_key____M_hash_code(%this : ptr, %k : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK14hash_code_baseI3keyS0_8identity8hash_keyE12_M_hash_codeERKS0_] {
+function @hash_code_base_key__key__identity__hash_key____M_hash_code(%this : ptr [object_bytes=1], %k : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK14hash_code_baseI3keyS0_8identity8hash_keyE12_M_hash_codeERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $k : ptr
   slot $tmpobj__1 : obj<1x1>
@@ -80,12 +72,11 @@ function @hash_code_base_key__key__identity__hash_key____M_hash_code(%this : ptr
     store ptr %this, $this
     store ptr %k, $k
     %t1 = addr $tmpobj__1
-    call void @hash_key__hash_key(%t1)
     %t2 = load ptr $k
     %t3 = call i32 @hash_key__operator__(%t1, %t2)
     return i32 %t3
 }
-function @hash_key__operator__(%this : ptr, %k : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK8hash_keyclERK3key] {
+function @hash_key__operator__(%this : ptr [object_bytes=1], %k : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK8hash_keyclERK3key, inline_hint=yes] {
   slot $this : ptr
   slot $k : ptr
 
@@ -97,12 +88,3 @@ function @hash_key__operator__(%this : ptr, %k : ptr [pass=reference]) -> i32 [b
     %t3 = load i32 %t2
     return i32 %t3
 }
-function @hash_key__hash_key(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8hash_keyC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN8identityC2Ev = @identity__identity
-alias object _ZN8hash_keyC2Ev = @hash_key__hash_key

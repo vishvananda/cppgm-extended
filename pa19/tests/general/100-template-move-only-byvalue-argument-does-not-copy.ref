@@ -1,4 +1,4 @@
-function @sink(%value : ptr [pass=by_address], %expected : ptr) -> i32 [binding=strong, object=_Z4sink3boxI9move_onlyEPi] {
+function @sink(%value : ptr [pass=by_address, object_bytes=8], %expected : ptr) -> i32 [binding=strong, object=_Z4sink3boxI9move_onlyEPi] {
   slot $value : obj<8x8>
   slot $expected : ptr
   slot $cond__1 : i32
@@ -37,28 +37,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @move_only__move_only(%t1, %t2)
     %t3 = addr $boxed
     %t4 = addr $source
-    call void @box_move_only___box(%t3, %t4)
+    call void @box_move_only___box_move_only_(%t3, %t4)
     %t5 = addr $arg__1
     %t6 = addr $boxed
-    call void @box_move_only___box__ov2(%t5, %t6)
+    call void @box_move_only___box_move_only___ov2(%t5, %t6)
     %t7 = addr $value
     %t8 = call i32 @sink(%t5, %t7)
     return i32 %t8
 }
-function @box_move_only___box(%this : ptr, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZN3boxI9move_onlyEC1EOS0_] {
-  slot $this : ptr
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $value
-    call void @move_only__move_only__ov2(%t2, %t3)
-    return void
-}
-function @move_only__move_only(%this : ptr, %value : ptr) -> void [binding=weak, object=_ZN9move_onlyC1EPi] {
+function @move_only__move_only(%this : ptr [object_bytes=8], %value : ptr) -> void [binding=weak, object=_ZN9move_onlyC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -71,7 +58,34 @@ function @move_only__move_only(%this : ptr, %value : ptr) -> void [binding=weak,
     store ptr %t1, %t3
     return void
 }
-function @move_only__move_only__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN9move_onlyC1EOS_] {
+function @box_move_only___box_move_only_(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN3boxI9move_onlyEC1EOS0_, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %value, $value
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $value
+    call void @move_only__move_only__ov2(%t2, %t3)
+    return void
+}
+function @box_move_only___box_move_only___ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN3boxI9move_onlyEC1EOS1_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $other
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @move_only__move_only__ov2(%t2, %t4)
+    return void
+}
+function @move_only__move_only__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN9move_onlyC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -89,21 +103,7 @@ function @move_only__move_only__ov2(%this : ptr, %other : ptr [pass=reference]) 
     store ptr 0, %t7
     return void
 }
-function @box_move_only___box__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN3boxI9move_onlyEC1EOS1_] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $other
-    %t4 = index i8 [projection=field] %t3, 0
-    call void @move_only__move_only__ov2(%t2, %t4)
-    return void
-}
-alias object _ZN3boxI9move_onlyEC2EOS0_ = @box_move_only___box
 alias object _ZN9move_onlyC2EPi = @move_only__move_only
+alias object _ZN3boxI9move_onlyEC2EOS0_ = @box_move_only___box_move_only_
+alias object _ZN3boxI9move_onlyEC2EOS1_ = @box_move_only___box_move_only___ov2
 alias object _ZN9move_onlyC2EOS_ = @move_only__move_only__ov2
-alias object _ZN3boxI9move_onlyEC2EOS1_ = @box_move_only___box__ov2

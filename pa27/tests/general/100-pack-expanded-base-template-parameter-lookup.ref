@@ -12,11 +12,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $refarg__2
     store i32 3, $refarg__3
     %t4 = addr $refarg__3
-    call void @vector_int__short_int__long_int___vector__ov2(%t1, %t2, %t3, %t4)
+    call void @vector_int__short_int__long_int___vector_int__short_int__long_int___ov4(%t1, %t2, %t3, %t4)
     %t5 = addr $v
     return i32 0
 }
-function @vector_int__short_int__long_int___vector__ov2(%this : ptr, %u : ptr [pass=reference], %u__pack2 : ptr [pass=reference], %u__pack3 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6vectorIJislEEC1IJiiiEEEDpOT_] {
+function @vector_int__short_int__long_int___vector_int__short_int__long_int___ov4(%this : ptr [object_bytes=16], %u : ptr [pass=by_address, object_bytes=4], %u__pack2 : ptr [pass=by_address, object_bytes=4], %u__pack3 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6vectorIJislEEC1IJiiiEEEDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $u : ptr
   slot $u__pack2 : ptr
@@ -29,16 +29,15 @@ function @vector_int__short_int__long_int___vector__ov2(%this : ptr, %u : ptr [p
     store ptr %u__pack2, $u__pack2
     store ptr %u__pack3, $u__pack3
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = addr $argobj__1
-    call void @vector_detail__each_elem__each_elem(%t3)
     %t4 = load ptr $u
     %t5 = load ptr $u__pack2
     %t6 = load ptr $u__pack3
-    call void @vector_detail__vector_data_detail__index_sequence_0__1__2___int__short_int__long_int___vector_data__ov2__base_entry(%t2, $argobj__1, %t4, %t5, %t6)
+    call void @vector_detail__vector_data_detail____cppgm_class_template_identity_0_11_0__int__short_int__long_int___vector_data_detail____cppgm_class_template_identity_0_11_0__int__short_int__long_int___ov4__base_entry(%t2, $argobj__1, %t4, %t5, %t6)
     return void
 }
-function @vector_detail__vector_data_detail__index_sequence_0__1__2___int__short_int__long_int___vector_data__ov2__base_entry(%this : ptr, %__param1 : obj<1x1>, %u : ptr [pass=reference], %u__pack2 : ptr [pass=reference], %u__pack3 : ptr [pass=reference]) -> void [binding=weak, object=_ZN13vector_detail11vector_dataIN6detail14index_sequenceIJLm0ELm1ELm2EEEEJislEEC2IJiiiEEENS_9each_elemEDpOT_] {
+function @vector_detail__vector_data_detail____cppgm_class_template_identity_0_11_0__int__short_int__long_int___vector_data_detail____cppgm_class_template_identity_0_11_0__int__short_int__long_int___ov4__base_entry(%this : ptr [object_bytes=16], %__param1 : obj<1x1>, %u : ptr [pass=by_address, object_bytes=4], %u__pack2 : ptr [pass=by_address, object_bytes=4], %u__pack3 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN13vector_detail11vector_dataIN6detail14index_sequenceIJLm0ELm1ELm2EEEEJislEEC2IJiiiEEENS_9each_elemEDpOT_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $u : ptr
@@ -51,20 +50,20 @@ function @vector_detail__vector_data_detail__index_sequence_0__1__2___int__short
     store ptr %u__pack2, $u__pack2
     store ptr %u__pack3, $u__pack3
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $u
-    call void @vector_detail__store_0__int___store__ov4__base_entry(%t2, %t3)
+    call void @vector_detail__store_0__int___store_2__long_int___ov4__base_entry(%t2, %t3)
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 4
+    %t5 = index i8 %t4, 4
     %t6 = load ptr $u__pack2
-    call void @vector_detail__store_1__short_int___store__ov4__base_entry(%t5, %t6)
+    call void @vector_detail__store_1__short_int___store_2__long_int___ov4__base_entry(%t5, %t6)
     %t7 = load ptr $this
-    %t8 = index i8 [projection=base_subobject] %t7, 8
+    %t8 = index i8 %t7, 8
     %t9 = load ptr $u__pack3
-    call void @vector_detail__store_2__long_int___store__ov4__base_entry(%t8, %t9)
+    call void @vector_detail__store_2__long_int___store_2__long_int___ov4__base_entry(%t8, %t9)
     return void
 }
-function @vector_detail__store_0__int___store__ov4__base_entry(%this : ptr, %u : ptr [pass=reference]) -> void [binding=weak, object=_ZN13vector_detail5storeILm0EiEC2IiEEOT_] {
+function @vector_detail__store_0__int___store_2__long_int___ov4__base_entry(%this : ptr [object_bytes=4], %u : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN13vector_detail5storeILm0EiEC2IiEEOT_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $u : ptr
 
@@ -78,7 +77,7 @@ function @vector_detail__store_0__int___store__ov4__base_entry(%this : ptr, %u :
     store i32 %t2, %t4
     return void
 }
-function @vector_detail__store_1__short_int___store__ov4__base_entry(%this : ptr, %u : ptr [pass=reference]) -> void [binding=weak, object=_ZN13vector_detail5storeILm1EsEC2IiEEOT_] {
+function @vector_detail__store_1__short_int___store_2__long_int___ov4__base_entry(%this : ptr [object_bytes=2], %u : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN13vector_detail5storeILm1EsEC2IiEEOT_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $u : ptr
 
@@ -93,7 +92,7 @@ function @vector_detail__store_1__short_int___store__ov4__base_entry(%this : ptr
     store i16 %t3, %t5
     return void
 }
-function @vector_detail__store_2__long_int___store__ov4__base_entry(%this : ptr, %u : ptr [pass=reference]) -> void [binding=weak, object=_ZN13vector_detail5storeILm2ElEC2IiEEOT_] {
+function @vector_detail__store_2__long_int___store_2__long_int___ov4__base_entry(%this : ptr [object_bytes=8], %u : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN13vector_detail5storeILm2ElEC2IiEEOT_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $u : ptr
 
@@ -108,12 +107,4 @@ function @vector_detail__store_2__long_int___store__ov4__base_entry(%this : ptr,
     store i64 %t3, %t5
     return void
 }
-function @vector_detail__each_elem__each_elem(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN13vector_detail9each_elemC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN6vectorIJislEEC2IJiiiEEEDpOT_ = @vector_int__short_int__long_int___vector__ov2
-alias object _ZN13vector_detail9each_elemC2Ev = @vector_detail__each_elem__each_elem
+alias object _ZN6vectorIJislEEC2IJiiiEEEDpOT_ = @vector_int__short_int__long_int___vector_int__short_int__long_int___ov4

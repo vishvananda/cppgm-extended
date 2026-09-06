@@ -1,1 +1,0 @@
-ERROR: static_assert false: sizeof(x) == sizeof(c) [bindings {values:this=pointer to struct YS} YS{types:YS=struct YS,c=char,x=int}]

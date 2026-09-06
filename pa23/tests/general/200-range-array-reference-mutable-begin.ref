@@ -22,9 +22,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t8, $first
     %t9 = load ptr $first
     %t10 = addr $data
-    %t11 = unary decay ptr %t10
-    %t12 = cmp eq ptr %t9, %t11
-    branch %t12, ^cond_then_1, ^cond_else_2
+    %t11 = cmp eq ptr %t9, %t10
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__2
@@ -35,10 +34,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__2
-    return i32 %t13
+    %t12 = load i32 $cond__2
+    return i32 %t12
 }
-function @find_not(%r : ptr [pass=reference], %x : ptr [pass=reference]) -> ptr [binding=weak, object=_Z8find_notIA5_iiEN14range_iteratorIT_E4typeERS2_RKT0_] {
+function @find_not(%r : ptr [pass=by_address, object_bytes=20], %x : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z8find_notIA5_iiEN14range_iteratorIT_E4typeERS2_RKT0_] {
   slot $r : ptr
   slot $x : ptr
 
@@ -53,7 +52,7 @@ function @find_not(%r : ptr [pass=reference], %x : ptr [pass=reference]) -> ptr 
     %t6 = call ptr @find_first(%t2, %t4, %t5)
     return ptr %t6
 }
-function @begin(%r : ptr [pass=reference]) -> ptr [binding=weak, object=_Z5beginIA5_iEN14range_iteratorIT_E4typeERS2_] {
+function @begin(%r : ptr [pass=by_address, object_bytes=20]) -> ptr [binding=weak, object=_Z5beginIA5_iEN14range_iteratorIT_E4typeERS2_] {
   slot $r : ptr
 
   block ^entry:
@@ -62,7 +61,7 @@ function @begin(%r : ptr [pass=reference]) -> ptr [binding=weak, object=_Z5begin
     %t2 = call ptr @range_begin(%t1)
     return ptr %t2
 }
-function @find_first(%first : ptr, %__param1 : ptr, %__param2 : ptr [pass=reference]) -> ptr [binding=weak, object=_Z10find_firstIPiS0_iET_S1_T0_RKT1_] {
+function @find_first(%first : ptr, %__param1 : ptr, %__param2 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z10find_firstIPiS0_iET_S1_T0_RKT1_] {
   slot $first : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -74,12 +73,11 @@ function @find_first(%first : ptr, %__param1 : ptr, %__param2 : ptr [pass=refere
     %t1 = load ptr $first
     return ptr %t1
 }
-function @range_begin(%a : ptr [pass=reference]) -> ptr [binding=weak, object=_Z11range_beginIiLm5EEPT_RAT0__S0_] {
+function @range_begin(%a : ptr [pass=by_address, object_bytes=20]) -> ptr [binding=weak, object=_Z11range_beginIiLm5EEPT_RAT0__S0_] {
   slot $a : ptr
 
   block ^entry:
     store ptr %a, $a
     %t1 = load ptr $a
-    %t2 = unary decay ptr %t1
-    return ptr %t2
+    return ptr %t1
 }

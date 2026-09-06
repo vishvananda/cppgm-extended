@@ -3,33 +3,32 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $table
-    call void @Uses_int___Uses(%t1)
+    call void @Uses_int___Uses_int_(%t1)
     return i32 0
 }
-function @Uses_int___Uses(%this : ptr) -> void [binding=weak, object=_ZN4UsesIiEC1Ev] {
+function @Uses_int___Uses_int_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4UsesIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    call void @std___Hashtable_int__int__int__int____Hashtable__base_entry(%t2)
+    %t2 = index i8 %t1, 0
+    call void @std___Hashtable_int__int__int__int____Hashtable_int__int__int__int___base_entry(%t2)
     return void
 }
-function @std___Hashtable_int__int__int__int____Hashtable__base_entry(%this : ptr) -> void [binding=weak, object=_ZNSt10_HashtableIiiiiEC2Ev] {
+function @std___Hashtable_int__int__int__int____Hashtable_int__int__int__int___base_entry(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZNSt10_HashtableIiiiiEC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $argobj__1 : obj<1x1>
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = addr $argobj__1
-    call void @std___Enable_default_constructor_tag___Enable_default_constructor_tag(%t3)
-    call void @std___Enable_default_constructor_true____detail___Hash_node_base____Enable_default_constructor__ov2__base_entry(%t2, $argobj__1)
+    call void @std___Enable_default_constructor_true__std____detail___Hash_node_base____Enable_default_constructor_true__std____detail___Hash_node_base___ov2__base_entry(%t2, $argobj__1)
     return void
 }
-function @std___Enable_default_constructor_true____detail___Hash_node_base____Enable_default_constructor__ov2__base_entry(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZNSt27_Enable_default_constructorILb1ENSt8__detail15_Hash_node_baseEEC2ESt31_Enable_default_constructor_tag] {
+function @std___Enable_default_constructor_true__std____detail___Hash_node_base____Enable_default_constructor_true__std____detail___Hash_node_base___ov2__base_entry(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZNSt27_Enable_default_constructorILb1ENSt8__detail15_Hash_node_baseEEC2ESt31_Enable_default_constructor_tag, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -37,12 +36,4 @@ function @std___Enable_default_constructor_true____detail___Hash_node_base____En
     store ptr %this, $this
     return void
 }
-function @std___Enable_default_constructor_tag___Enable_default_constructor_tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZNSt31_Enable_default_constructor_tagC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN4UsesIiEC2Ev = @Uses_int___Uses
-alias object _ZNSt31_Enable_default_constructor_tagC2Ev = @std___Enable_default_constructor_tag___Enable_default_constructor_tag
+alias object _ZN4UsesIiEC2Ev = @Uses_int___Uses_int_

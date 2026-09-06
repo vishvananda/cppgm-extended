@@ -1,17 +1,17 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 116
   i8 101
   i8 120
   i8 116
   i8 0
 }
-global @__strlit__2 [binding=internal] = {
+global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 104
   i8 105
   i8 0
 }
 
-function @operator__(%stream : ptr [pass=reference], %__param1 : i8) -> ptr [binding=strong, object=_ZlsR6Streamc] {
+function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 : i8) -> ptr [binding=strong, object=_ZlsR6Streamc] {
   slot $stream : ptr
   slot $__param1 : i8
 
@@ -29,7 +29,7 @@ function @operator__(%stream : ptr [pass=reference], %__param1 : i8) -> ptr [bin
     %t8 = load ptr $stream
     return ptr %t8
 }
-function @operator____ov2(%stream : ptr [pass=reference], %__param1 : ptr) -> ptr [binding=strong, object=_ZlsR6StreamPKc] {
+function @operator____ov2(%stream : ptr [pass=by_address, object_bytes=4], %__param1 : ptr) -> ptr [binding=strong, object=_ZlsR6StreamPKc] {
   slot $stream : ptr
   slot $__param1 : ptr
 
@@ -47,7 +47,7 @@ function @operator____ov2(%stream : ptr [pass=reference], %__param1 : ptr) -> pt
     %t8 = load ptr $stream
     return ptr %t8
 }
-function @manip(%stream : ptr [pass=reference]) -> ptr [binding=strong, object=_Z5manipR6Stream] {
+function @manip(%stream : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z5manipR6Stream] {
   slot $stream : ptr
 
   block ^entry:
@@ -85,13 +85,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load ptr $text
     %t11 = call ptr @operator____ov2(%t9, %t10)
     %t12 = addr @manip
-    %t13 = unary decay ptr %t12
-    %t14 = call ptr @Stream__operator____ov3(%t11, %t13)
-    %t15 = addr $stream
-    %t16 = index i8 [projection=field] %t15, 0
-    %t17 = load i32 %t16
-    %t18 = cmp eq i32 %t17, 3445
-    branch %t18, ^cond_then_1, ^cond_else_2
+    %t13 = call ptr @Stream__operator____ov3(%t11, %t12)
+    %t14 = addr $stream
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = load i32 %t15
+    %t17 = cmp eq i32 %t16, 3445
+    branch %t17, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -102,10 +101,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load i32 $cond__1
-    return i32 %t19
+    %t18 = load i32 $cond__1
+    return i32 %t18
 }
-function @Stream__operator____ov3(%this : ptr, %pf : ptr) -> ptr [binding=weak, object=_ZN6StreamlsEPFRS_S0_E] {
+function @Stream__operator____ov3(%this : ptr [object_bytes=4], %pf : ptr) -> ptr [binding=weak, object=_ZN6StreamlsEPFRS_S0_E, inline_hint=yes] {
   slot $this : ptr
   slot $pf : ptr
 
@@ -114,6 +113,6 @@ function @Stream__operator____ov3(%this : ptr, %pf : ptr) -> ptr [binding=weak, 
     store ptr %pf, $pf
     %t1 = load ptr $this
     %t2 = load ptr $pf
-    %t3 = call ptr %t2(%t1) as (%arg0 : ptr [pass=reference]) -> ptr
+    %t3 = call ptr %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=4]) -> ptr
     return ptr %t3
 }

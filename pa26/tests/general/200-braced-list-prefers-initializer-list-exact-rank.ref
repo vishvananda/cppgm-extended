@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @value__assign__ov2(%this : ptr, %__param1 : obj<16x8>) -> i32 [binding=weak, object=_ZN5value6assignESt16initializer_listIcE] {
+function @value__assign__ov2(%this : ptr [object_bytes=1], %__param1 : obj<16x8>) -> i32 [binding=weak, object=_ZN5value6assignESt16initializer_listIcE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<16x8>
 

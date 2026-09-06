@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @home__put(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN4home3putIiEEiRNS_6streamERKNS_4viewIT_EE] {
+function @home__put(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN4home3putIiEEiRNS_6streamERKNS_4viewIT_EE, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

@@ -18,13 +18,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $x
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = index i8 [projection=field] %t8, 8
-    %t10 = unary decay ptr %t9
-    %t11 = index i8 [projection=array_element] %t10, 0
-    %t12 = load i8 %t11
-    %t13 = convert sext i32 i8 %t12
-    %t14 = cmp eq i32 %t13, 0
-    %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $land__3
+    %t10 = index i8 [projection=array_element] %t9, 0
+    %t11 = load i8 %t10
+    %t12 = convert sext i32 i8 %t11
+    %t13 = cmp eq i32 %t12, 0
+    %t14 = cmp ne i64 %t13, 0
+    store i64 %t14, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -32,20 +31,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t16 = load i64 $land__3
-    branch %t16, ^land_rhs_4, ^land_short_5
+    %t15 = load i64 $land__3
+    branch %t15, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t17 = addr $x
-    %t18 = index i8 [projection=field] %t17, 0
-    %t19 = index i8 [projection=field] %t18, 8
-    %t20 = unary decay ptr %t19
-    %t21 = index i8 [projection=array_element] %t20, 1
-    %t22 = load i8 %t21
-    %t23 = convert sext i32 i8 %t22
-    %t24 = cmp eq i32 %t23, 0
-    %t25 = cmp ne i64 %t24, 0
-    store i64 %t25, $land__2
+    %t16 = addr $x
+    %t17 = index i8 [projection=field] %t16, 0
+    %t18 = index i8 [projection=field] %t17, 8
+    %t19 = index i8 [projection=array_element] %t18, 1
+    %t20 = load i8 %t19
+    %t21 = convert sext i32 i8 %t20
+    %t22 = cmp eq i32 %t21, 0
+    %t23 = cmp ne i64 %t22, 0
+    store i64 %t23, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -53,8 +51,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t26 = load i64 $land__2
-    branch %t26, ^cond_then_1, ^cond_else_2
+    %t24 = load i64 $land__2
+    branch %t24, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -65,10 +63,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t27 = load i32 $cond__1
-    return i32 %t27
+    %t25 = load i32 $cond__1
+    return i32 %t25
 }
-function @X__X(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1XC1Ev] {
+function @X__X(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1XC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -80,15 +78,13 @@ function @X__X(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1XC1Ev] 
     %t4 = load ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = index i8 [projection=field] %t5, 8
-    %t7 = unary decay ptr %t6
-    %t8 = index i8 [projection=array_element] %t7, 0
-    store i8 0, %t8
-    %t9 = load ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = index i8 [projection=field] %t10, 8
-    %t12 = unary decay ptr %t11
-    %t13 = index i8 [projection=array_element] %t12, 1
-    store i8 0, %t13
+    %t7 = index i8 [projection=array_element] %t6, 0
+    store i8 0, %t7
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = index i8 [projection=field] %t9, 8
+    %t11 = index i8 [projection=array_element] %t10, 1
+    store i8 0, %t11
     return void
 }
 alias object _ZN1XC2Ev = @X__X

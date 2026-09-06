@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @base_char___get(%t2)
     return i32 %t3
 }
-function @base_char___get(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN4baseIcE3getI7derivedIiEEENT_4typeERS4_] {
+function @base_char___get(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN4baseIcE3getI7derivedIiEEENT_4typeERS3_, inline_hint=yes] {
   slot $__param0 : ptr
 
   block ^entry:

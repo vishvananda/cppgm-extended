@@ -1,4 +1,4 @@
-function @f(%p : ptr [pass=reference]) -> f32 [binding=strong, object=_Z1fRKi] {
+function @f(%p : ptr [pass=by_address, object_bytes=4]) -> f32 [binding=strong, object=_Z1fRKi] {
   slot $p : ptr
   slot $cond__1 : f32
 

@@ -6,11 +6,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $handler
     %t2 = addr $r
     %t3 = addr $handler
-    call void @async_result_use_future_t_allocator___void_tuple_error_code_____async_result(%t2, %t3)
+    call void @async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class_template_identity_1_2_0____async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class_template_identity_1_2_0__(%t2, %t3)
     %t4 = addr $r
     return i32 0
 }
-function @async_result_use_future_t_allocator___void_tuple_error_code_____async_result(%this : ptr, %h : ptr [pass=reference]) -> void [binding=weak, object=_ZN12async_resultI12use_future_tI9allocatorEFv5tupleIJ10error_codeEEEEC1ER15promise_handlerIS6_S1_E] {
+function @async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class_template_identity_1_2_0____async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class_template_identity_1_2_0__(%this : ptr [object_bytes=1], %h : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12async_resultI12use_future_tI9allocatorEFv5tupleIJ10error_codeEEEEC1ER15promise_handlerIS6_S1_E, inline_hint=yes] {
   slot $this : ptr
   slot $h : ptr
 
@@ -18,12 +18,12 @@ function @async_result_use_future_t_allocator___void_tuple_error_code_____async_
     store ptr %this, $this
     store ptr %h, $h
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $h
-    call void @promise_async_result_void_tuple_error_code____allocator___promise_async_result__base_entry(%t2, %t3)
+    call void @promise_async_result_void___cppgm_class_template_identity_1_2_0___allocator___promise_async_result_void___cppgm_class_template_identity_1_2_0___allocator___base_entry(%t2, %t3)
     return void
 }
-function @promise_async_result_void_tuple_error_code____allocator___promise_async_result__base_entry(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN20promise_async_resultIFv5tupleIJ10error_codeEEE9allocatorEC2ER15promise_handlerIS3_S4_E] {
+function @promise_async_result_void___cppgm_class_template_identity_1_2_0___allocator___promise_async_result_void___cppgm_class_template_identity_1_2_0___allocator___base_entry(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN20promise_async_resultIFv5tupleIJ10error_codeEEE9allocatorEC2ER15promise_handlerIS3_S4_E, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -32,4 +32,4 @@ function @promise_async_result_void_tuple_error_code____allocator___promise_asyn
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN12async_resultI12use_future_tI9allocatorEFv5tupleIJ10error_codeEEEEC2ER15promise_handlerIS6_S1_E = @async_result_use_future_t_allocator___void_tuple_error_code_____async_result
+alias object _ZN12async_resultI12use_future_tI9allocatorEFv5tupleIJ10error_codeEEEEC2ER15promise_handlerIS6_S1_E = @async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class_template_identity_1_2_0____async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class_template_identity_1_2_0__

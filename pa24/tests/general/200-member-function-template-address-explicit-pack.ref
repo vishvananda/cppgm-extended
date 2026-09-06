@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $ctx
     %t6 = addr $ctx
     %t7 = load ptr $factory
-    %t8 = call ptr %t7(%t5, %t6) as (%arg0 : ptr [pass=reference], %arg1 : ptr) -> ptr
+    %t8 = call ptr %t7(%t5, %t6) as (%arg0 : ptr [pass=by_address, object_bytes=1], %arg1 : ptr) -> ptr
     %t9 = addr @global_service
     %t10 = cmp eq ptr %t8, %t9
     branch %t10, ^cond_then_1, ^cond_else_2
@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @service_registry__get(%this : ptr) -> ptr [binding=weak, object=_ZN16service_registry3getI7serviceEEPFPS1_R7contextPvEv] {
+function @service_registry__get(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZN16service_registry3getI7serviceEEPFPS1_R7contextPvEv, inline_hint=yes] {
   slot $this : ptr
   slot $factory : ptr
 
@@ -45,7 +45,7 @@ function @service_registry__get(%this : ptr) -> ptr [binding=weak, object=_ZN16s
     %t2 = load ptr $factory
     return ptr %t2
 }
-function @service_registry__create(%__param0 : ptr [pass=reference], %__param1 : ptr) -> ptr [binding=weak, object=_ZN16service_registry6createI7service7contextJEEEPS1_RS2_PvDpOT1_] {
+function @service_registry__create(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> ptr [binding=weak, object=_ZN16service_registry6createI7service7contextJEEEPS1_RS2_PvDpOT1_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

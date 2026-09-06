@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $box
     call void @Holder__Holder(%t4, %t5)
     %t6 = addr $holder
-    %t7 = index i8 [projection=reference_field] %t6, 0
+    %t7 = index i8 [projection=field] %t6, 0
     %t8 = load ptr %t7
     %t9 = index i8 [projection=field] %t8, 0
     store i32 9, %t9
@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 %t11
     return i32 %t12
 }
-function @Holder__Holder(%this : ptr, %box : ptr [pass=reference]) -> void [binding=weak, object=_ZN6HolderC1ER3Box] {
+function @Holder__Holder(%this : ptr [object_bytes=8], %box : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6HolderC1ER3Box, inline_hint=yes] {
   slot $this : ptr
   slot $box : ptr
 

@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @box__g(%this : ptr, %args : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN3box1gIJiEEEiDpOT_] {
+function @box__g(%this : ptr [object_bytes=1], %args : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN3box1gIJiEEEiDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $args : ptr
 
@@ -36,7 +36,7 @@ function @box__g(%this : ptr, %args : ptr [pass=reference]) -> i32 [binding=weak
     %t3 = call i32 @count(%t2)
     return i32 %t3
 }
-function @forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardIiEOT_RS0_] {
+function @forward(%t : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z7forwardIiEOT_RS0_] {
   slot $t : ptr
 
   block ^entry:
@@ -44,7 +44,7 @@ function @forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7for
     %t1 = load ptr $t
     return ptr %t1
 }
-function @count(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5countIiJiEEiDpOT0_] {
+function @count(%__param0 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z5countIiJiEEiDpOT0_] {
   slot $__param0 : ptr
 
   block ^entry:

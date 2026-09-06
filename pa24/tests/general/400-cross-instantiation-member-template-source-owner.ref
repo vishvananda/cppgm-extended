@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $f
     return i32 0
 }
-function @convert() -> obj<8x8> [unwind=no, binding=weak, object=_Z7convertI10double_tag6traitsIS0_EE3boxINT0_7carrierEEv] {
+function @convert() -> obj<8x8> [unwind=no, binding=weak, object=_Z7convertI10double_tag6traitsIS0_EE3boxIxEv] {
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
@@ -22,7 +22,7 @@ function @convert() -> obj<8x8> [unwind=no, binding=weak, object=_Z7convertI10do
     copyobj 8x8 %t2, %t1
     return obj<8x8> $retobj__1
 }
-function @convert__ov2() -> obj<4x4> [unwind=no, binding=weak, object=_Z7convertI9float_tag6traitsIS0_EE3boxINT0_7carrierEEv] {
+function @convert__ov2() -> obj<4x4> [unwind=no, binding=weak, object=_Z7convertI9float_tag6traitsIS0_EE3boxIiEv] {
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
@@ -31,7 +31,7 @@ function @convert__ov2() -> obj<4x4> [unwind=no, binding=weak, object=_Z7convert
     copyobj 4x4 %t2, %t1
     return obj<4x4> $retobj__1
 }
-function @impl_double_tag__traits_double_tag____compute(%value : i32) -> obj<8x8> [unwind=no, binding=weak, object=_ZN4implI10double_tag6traitsIS0_EE7computeI3boxIxE6policyEET_i] {
+function @impl_double_tag__traits_double_tag____compute(%value : i32) -> obj<8x8> [unwind=no, binding=weak, object=_ZN4implI10double_tag6traitsIS0_EE7computeI3boxIxE6policyEET_i, inline_hint=yes] {
   slot $value : i32
   slot $result : obj<8x8>
   slot $retobj__1 : obj<8x8>
@@ -48,7 +48,7 @@ function @impl_double_tag__traits_double_tag____compute(%value : i32) -> obj<8x8
     copyobj 8x8 %t6, %t5
     return obj<8x8> $retobj__1
 }
-function @impl_float_tag__traits_float_tag____compute(%value : i32) -> obj<4x4> [unwind=no, binding=weak, object=_ZN4implI9float_tag6traitsIS0_EE7computeI3boxIiE6policyEET_i] {
+function @impl_float_tag__traits_float_tag____compute(%value : i32) -> obj<4x4> [unwind=no, binding=weak, object=_ZN4implI9float_tag6traitsIS0_EE7computeI3boxIiE6policyEET_i, inline_hint=yes] {
   slot $value : i32
   slot $result : obj<4x4>
   slot $retobj__1 : obj<4x4>

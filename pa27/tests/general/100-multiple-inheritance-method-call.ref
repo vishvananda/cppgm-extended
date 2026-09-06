@@ -4,23 +4,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $c
     %t2 = addr $c
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
     store i32 2, %t4
     %t5 = addr $c
-    %t6 = index i8 [projection=base_subobject] %t5, 4
+    %t6 = index i8 %t5, 4
     %t7 = index i8 [projection=field] %t6, 0
     store i32 3, %t7
     %t8 = addr $c
-    %t9 = index i8 [projection=base_subobject] %t8, 0
+    %t9 = index i8 %t8, 0
     %t10 = call i32 @YA__fa(%t9)
     %t11 = addr $c
-    %t12 = index i8 [projection=base_subobject] %t11, 4
+    %t12 = index i8 %t11, 4
     %t13 = call i32 @YB__gb(%t12)
     %t14 = binary add i32 %t10, %t13
     return i32 %t14
 }
-function @YA__fa(%this : ptr) -> i32 [binding=weak, object=_ZN2YA2faEv] {
+function @YA__fa(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN2YA2faEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -30,7 +30,7 @@ function @YA__fa(%this : ptr) -> i32 [binding=weak, object=_ZN2YA2faEv] {
     %t3 = load i32 %t2
     return i32 %t3
 }
-function @YB__gb(%this : ptr) -> i32 [binding=weak, object=_ZN2YB2gbEv] {
+function @YB__gb(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN2YB2gbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

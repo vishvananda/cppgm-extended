@@ -8,17 +8,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $right
     call void @D__D(%t2)
     %t3 = addr $left
-    %t4 = index i8 [projection=base_subobject] %t3, 4
+    %t4 = index i8 %t3, 4
     %t5 = index i8 [projection=field] %t4, 0
     store i32 2, %t5
     %t6 = addr $right
-    %t7 = index i8 [projection=base_subobject] %t6, 4
+    %t7 = index i8 %t6, 4
     %t8 = index i8 [projection=field] %t7, 0
     store i32 5, %t8
     %t9 = addr $left
-    %t10 = index i8 [projection=base_subobject] %t9, 0
+    %t10 = index i8 %t9, 0
     %t11 = addr $right
-    %t12 = index i8 [projection=base_subobject] %t11, 0
+    %t12 = index i8 %t11, 0
     %t13 = load ptr %t10
     %t14 = index i8 %t13, -24
     %t15 = load i64 %t14
@@ -31,7 +31,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = binary sub i32 %t21, 7
     return i32 %t22
 }
-function @add(%left : ptr [pass=reference], %right : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr) -> i32 [binding=weak, object=_Z3addI1BS0_EiRT_RT0_] {
+function @D__D(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = load ptr $this
+    %t4 = index i8 %t3, 4
+    call void @B__B__base_entry(%t2, %t4)
+    return void
+}
+function @add(%left : ptr [pass=by_address, object_bytes=8], %right : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr, %__pvbptr1 : ptr) -> i32 [binding=weak, object=_Z3addI1BS0_EiRT_RT0_] {
   slot $left : ptr
   slot $left__pvb0 : ptr
   slot $right : ptr
@@ -43,29 +55,17 @@ function @add(%left : ptr [pass=reference], %right : ptr [pass=reference], %__pv
     store ptr %right, $right
     store ptr %__pvbptr1, $right__pvb0
     %t1 = load ptr $left__pvb0
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     %t5 = load ptr $right__pvb0
-    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t6 = index i8 %t5, 0
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load i32 %t7
     %t9 = binary add i32 %t4, %t8
     return i32 %t9
 }
-function @D__D(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    %t3 = load ptr $this
-    %t4 = index i8 %t3, 4
-    call void @B__B__base_entry(%t2, %t4)
-    return void
-}
-function @B__B__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev] {
+function @B__B__base_entry(%this : ptr [object_bytes=8], %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

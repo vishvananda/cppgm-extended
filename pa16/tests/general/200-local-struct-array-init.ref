@@ -1,8 +1,8 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120
   i8 0
 }
-global @__strlit__2 [binding=internal] = {
+global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 121
   i8 0
 }
@@ -15,29 +15,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $arr
     %t2 = addr @__strlit__1
-    call void @Pair__Pair__ov2(%t1, %t2, 0)
+    call void @Pair__Pair__aggregate(%t1, %t2, 0)
     %t3 = index i8 %t1, 16
     %t4 = addr @__strlit__2
-    call void @Pair__Pair__ov2(%t3, %t4, 1)
+    call void @Pair__Pair__aggregate(%t3, %t4, 1)
     %t5 = addr $arr
-    %t6 = unary decay ptr %t5
-    %t7 = binary mul i64 0, 16
-    %t8 = index i8 [projection=array_element] %t6, %t7
-    %t9 = index i8 [projection=field] %t8, 8
-    %t10 = load i32 %t9
-    %t11 = cmp eq i32 %t10, 0
-    branch %t11, ^land_rhs_4, ^land_short_5
+    %t6 = binary mul i64 0, 16
+    %t7 = index i8 [projection=array_element] %t5, %t6
+    %t8 = index i8 [projection=field] %t7, 8
+    %t9 = load i32 %t8
+    %t10 = cmp eq i32 %t9, 0
+    branch %t10, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t12 = addr $arr
-    %t13 = unary decay ptr %t12
-    %t14 = binary mul i64 1, 16
-    %t15 = index i8 [projection=array_element] %t13, %t14
-    %t16 = index i8 [projection=field] %t15, 8
-    %t17 = load i32 %t16
-    %t18 = cmp eq i32 %t17, 1
-    %t19 = cmp ne i64 %t18, 0
-    store i64 %t19, $land__2
+    %t11 = addr $arr
+    %t12 = binary mul i64 1, 16
+    %t13 = index i8 [projection=array_element] %t11, %t12
+    %t14 = index i8 [projection=field] %t13, 8
+    %t15 = load i32 %t14
+    %t16 = cmp eq i32 %t15, 1
+    %t17 = cmp ne i64 %t16, 0
+    store i64 %t17, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -45,8 +43,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t20 = load i64 $land__2
-    branch %t20, ^cond_then_1, ^cond_else_2
+    %t18 = load i64 $land__2
+    branch %t18, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -57,10 +55,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t21 = load i32 $cond__1
-    return i32 %t21
+    %t19 = load i32 $cond__1
+    return i32 %t19
 }
-function @Pair__Pair__ov2(%this : ptr, %prefix : ptr, %kind : i32) -> void [unwind=no, binding=weak, object=_ZN4PairC1EPKc1E] {
+function @Pair__Pair__aggregate(%this : ptr, %prefix : ptr, %kind : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $prefix : ptr
   slot $kind : i32
@@ -79,4 +77,3 @@ function @Pair__Pair__ov2(%this : ptr, %prefix : ptr, %kind : i32) -> void [unwi
     store i32 %t4, %t6
     return void
 }
-alias object _ZN4PairC2EPKc1E = @Pair__Pair__ov2

@@ -9,10 +9,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $value
     %t4 = addr $argobj__1
     %t5 = addr $p
-    %t6 = call ptr @lib__optional_edge___operator___ov2(%t3, $argobj__1)
+    %t6 = call ptr @lib__optional_edge___operator___ov3(%t3, $argobj__1)
     return i32 0
 }
-function @lib__optional_edge___operator___ov2(%this : ptr, %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN3lib8optionalI4edgeEaSI5proxyEENS_9enable_ifINS_6detail9candidateIS1_T_Xsr4sameIS1_S8_EE5valueEEERS2_E4typeES8_] {
+function @lib__optional_edge___operator___ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN3lib8optionalI4edgeEaSI5proxyEERS2_T_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 

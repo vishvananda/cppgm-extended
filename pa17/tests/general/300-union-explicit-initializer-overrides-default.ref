@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @Choice__Choice(%this : ptr) -> void [binding=weak, object=_ZN6ChoiceC1Ev] {
+function @Choice__Choice(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6ChoiceC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

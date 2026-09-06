@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @Box__operator_(%this : ptr) -> ptr [binding=weak, object=_ZN3BoxdeIRiS1_EET0_v] {
+function @Box__operator_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN3BoxdeIRiS1_EET0_v, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

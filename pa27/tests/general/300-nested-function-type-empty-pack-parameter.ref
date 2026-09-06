@@ -1,5 +1,5 @@
-declare function @pick(%arg0 : i128, %arg1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4pickIv1XJES0_JEEiMT0_KFT_DpT1_ERKT2_DpRKT3_]
-declare function @X__f(%arg0 : ptr) -> void [binding=strong, object=_ZNK1X1fEv]
+declare function @X__f(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZNK1X1fEv]
+declare function @pick(%arg0 : i128, %arg1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4pickIv1XS0_EiMT0_KFT_T1_zERKT2_DpRKT3_]
 
 global @x [binding=strong, object=_Z1x] = {
   zero 1

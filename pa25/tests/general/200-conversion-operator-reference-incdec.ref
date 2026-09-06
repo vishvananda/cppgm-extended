@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load i32 $cond__1
     return i32 %t14
 }
-function @Counter__Counter(%this : ptr, %initial : u32) -> void [binding=weak, object=_ZN7CounterC1Ej] {
+function @Counter__Counter(%this : ptr [object_bytes=4], %initial : u32) -> void [binding=weak, object=_ZN7CounterC1Ej, inline_hint=yes] {
   slot $this : ptr
   slot $initial : u32
 
@@ -46,7 +46,7 @@ function @Counter__Counter(%this : ptr, %initial : u32) -> void [binding=weak, o
     store u32 %t1, %t3
     return void
 }
-function @Counter__operatorunsigned_(%this : ptr) -> ptr [binding=weak, object=_ZN7CountercvRjEv] {
+function @Counter__operatorunsigned_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN7CountercvRjEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

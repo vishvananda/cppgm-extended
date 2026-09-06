@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     store ptr %t2, $value
     eh_try ^call_unwind_dispatch_4
     %t3 = load ptr $value
@@ -48,14 +48,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = convert trunc i32 i64 %t8
     return i32 %t9
 }
-function @base__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK4basecvbEv] {
+function @base__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK4basecvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return u8 0
 }
-function @object___object(%this : ptr) -> void [binding=weak, object=_ZN6objectD1Ev] {
+function @object___object(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6objectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -4,7 +4,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $argobj__2
-    call void @first_callable__first_callable(%t1)
     %t2 = call i32 @invoke($argobj__2)
     %t3 = cmp eq i32 %t2, 7
     branch %t3, ^cond_then_1, ^cond_else_2
@@ -30,7 +29,7 @@ function @invoke(%f1 : obj<1x1>) -> i32 [binding=weak, object=_Z6invokeI14first_
     %t1 = addr $value
     %t2 = addr $enc
     %t3 = addr $value
-    call void @json_encoder_json___json_encoder(%t2, %t3)
+    call void @json_encoder_json___json_encoder_json_(%t2, %t3)
     %t4 = addr $f1
     %t5 = addr $enc
     call void @first_callable__operator__(%t4, %t5)
@@ -39,7 +38,7 @@ function @invoke(%f1 : obj<1x1>) -> i32 [binding=weak, object=_Z6invokeI14first_
     %t8 = load i32 %t7
     return i32 %t8
 }
-function @json_encoder_json___json_encoder(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN12json_encoderI4jsonEC1ERS0_] {
+function @json_encoder_json___json_encoder_json_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12json_encoderI4jsonEC1ERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -51,14 +50,7 @@ function @json_encoder_json___json_encoder(%this : ptr, %__param1 : ptr [pass=re
     store i32 0, %t2
     return void
 }
-function @first_callable__first_callable(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN14first_callableC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @first_callable__operator__(%this : ptr, %enc : ptr [pass=reference]) -> void [binding=weak, object=_ZNK14first_callableclER12json_encoderI4jsonE] {
+function @first_callable__operator__(%this : ptr [object_bytes=1], %enc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZNK14first_callableclER12json_encoderI4jsonE, inline_hint=yes] {
   slot $this : ptr
   slot $enc : ptr
 
@@ -70,5 +62,4 @@ function @first_callable__operator__(%this : ptr, %enc : ptr [pass=reference]) -
     store i32 7, %t2
     return void
 }
-alias object _ZN12json_encoderI4jsonEC2ERS0_ = @json_encoder_json___json_encoder
-alias object _ZN14first_callableC2Ev = @first_callable__first_callable
+alias object _ZN12json_encoderI4jsonEC2ERS0_ = @json_encoder_json___json_encoder_json_

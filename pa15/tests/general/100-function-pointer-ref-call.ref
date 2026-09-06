@@ -16,7 +16,7 @@ function @call(%fp : ptr) -> i32 [binding=strong, object=_Z4callPFiiE] {
     %t2 = call i32 %t1(4) as (%arg0 : i32) -> i32
     return i32 %t2
 }
-function @invoke(%rf : ptr [pass=reference], %x : i32) -> i32 [binding=strong, object=_Z6invokeRFiiEi] {
+function @invoke(%rf : ptr [pass=by_address], %x : i32) -> i32 [binding=strong, object=_Z6invokeRFiiEi] {
   slot $rf : ptr
   slot $x : i32
 
@@ -25,17 +25,15 @@ function @invoke(%rf : ptr [pass=reference], %x : i32) -> i32 [binding=strong, o
     store i32 %x, $x
     %t1 = load i32 $x
     %t2 = load ptr $rf
-    %t3 = unary decay ptr %t2
-    %t4 = call i32 %t3(%t1) as (%arg0 : i32) -> i32
-    return i32 %t4
+    %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
+    return i32 %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @g
-    %t2 = unary decay ptr %t1
-    %t3 = call i32 @call(%t2)
-    %t4 = addr @g
-    %t5 = call i32 @invoke(%t4, 1)
-    %t6 = binary add i32 %t3, %t5
-    return i32 %t6
+    %t2 = call i32 @call(%t1)
+    %t3 = addr @g
+    %t4 = call i32 @invoke(%t3, 1)
+    %t5 = binary add i32 %t2, %t4
+    return i32 %t5
 }

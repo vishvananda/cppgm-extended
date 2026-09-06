@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @probe(%t2)
     return i32 %t3
 }
-function @probe(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5probeI3KeyRS0_EiOT0_] {
+function @probe(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z5probeI3KeyRS0_EiOT0_] {
   slot $__param0 : ptr
 
   block ^entry:

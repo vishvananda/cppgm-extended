@@ -1,4 +1,4 @@
-function @forward_box(%ret : ptr [pass=indirect_result], %value : ptr [pass=reference]) -> void [binding=strong, object=_Z11forward_boxRK3Box] {
+function @forward_box(%ret : ptr [pass=indirect_result, object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z11forward_boxRK3Box] {
   slot $value : ptr
 
   block ^entry:
@@ -50,20 +50,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     return i32 0
 }
-function @Box__Box(%this : ptr, %value : ptr) -> void [binding=weak, object=_ZN3BoxC1EPi] {
-  slot $this : ptr
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    return void
-}
-function @Box__Box__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN3BoxC1ERKS_] {
+function @Box__Box__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN3BoxC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -78,5 +65,18 @@ function @Box__Box__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [bin
     store ptr %t3, %t5
     return void
 }
-alias object _ZN3BoxC2EPi = @Box__Box
+function @Box__Box(%this : ptr [object_bytes=8], %value : ptr) -> void [binding=weak, object=_ZN3BoxC1EPi, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    return void
+}
 alias object _ZN3BoxC2ERKS_ = @Box__Box__ov2
+alias object _ZN3BoxC2EPi = @Box__Box

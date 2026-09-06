@@ -1,5 +1,5 @@
-declare function @operatornew__(%arg0 : i64) -> ptr [effects=readwrite, role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
-declare function @operatordelete__(%arg0 : ptr) -> void [effects=readwrite, unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete_array]
+declare function @operatornew__(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
+declare function @operatordelete__(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete_array]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : ptr

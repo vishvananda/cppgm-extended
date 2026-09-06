@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = binary sub i32 %t5, 7
     return i32 %t6
 }
-function @A__run(%this : ptr) -> i32 [binding=weak, object=_ZN1A3runEv] {
+function @A__run(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN1A3runEv, inline_hint=yes] {
   slot $this : ptr
   slot $f : obj<8x8>
 
@@ -24,7 +24,7 @@ function @A__run(%this : ptr) -> i32 [binding=weak, object=_ZN1A3runEv] {
     %t4 = call i32 @A____lambda_A__run_t17_21__operator__(%t3)
     return i32 %t4
 }
-function @A____lambda_A__run_t17_21__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZN1A3runEvENKUlvE_clEv] {
+function @A____lambda_A__run_t17_21__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZN1A3runEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -32,7 +32,7 @@ function @A____lambda_A__run_t17_21__operator__(%this : ptr) -> i32 [binding=wea
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load i32 %t5
     return i32 %t6

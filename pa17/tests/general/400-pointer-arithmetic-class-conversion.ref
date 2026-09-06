@@ -75,24 +75,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $two
     call void @offset__offset(%t6, 2)
     %t7 = addr $values
-    %t8 = unary decay ptr %t7
-    %t9 = addr $argobj__4
-    %t10 = addr $two
-    copyobj 4x4 %t10, %t9
-    %t11 = call i32 @read_at(%t8, $argobj__4)
-    %t12 = cmp eq i32 %t11, 5
-    branch %t12, ^land_rhs_7, ^land_short_8
+    %t8 = addr $argobj__4
+    %t9 = addr $two
+    copyobj 4x4 %t9, %t8
+    %t10 = call i32 @read_at(%t7, $argobj__4)
+    %t11 = cmp eq i32 %t10, 5
+    branch %t11, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t13 = addr $values
-    %t14 = unary decay ptr %t13
-    %t15 = addr $argobj__5
-    %t16 = addr $one
-    copyobj 4x4 %t16, %t15
-    %t17 = call i32 @read_reverse(%t14, $argobj__5)
-    %t18 = cmp eq i32 %t17, 3
-    %t19 = cmp ne i64 %t18, 0
-    store i64 %t19, $land__3
+    %t12 = addr $values
+    %t13 = addr $argobj__5
+    %t14 = addr $one
+    copyobj 4x4 %t14, %t13
+    %t15 = call i32 @read_reverse(%t12, $argobj__5)
+    %t16 = cmp eq i32 %t15, 3
+    %t17 = cmp ne i64 %t16, 0
+    store i64 %t17, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -100,21 +98,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t20 = load i64 $land__3
-    branch %t20, ^land_rhs_4, ^land_short_5
+    %t18 = load i64 $land__3
+    branch %t18, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t21 = addr $values
-    %t22 = unary decay ptr %t21
-    %t23 = binary mul i64 3, 4
-    %t24 = index i8 %t22, %t23
-    %t25 = addr $argobj__6
-    %t26 = addr $two
-    copyobj 4x4 %t26, %t25
-    %t27 = call i32 @read_before(%t24, $argobj__6)
-    %t28 = cmp eq i32 %t27, 3
-    %t29 = cmp ne i64 %t28, 0
-    store i64 %t29, $land__2
+    %t19 = addr $values
+    %t20 = binary mul i64 3, 4
+    %t21 = index i8 %t19, %t20
+    %t22 = addr $argobj__6
+    %t23 = addr $two
+    copyobj 4x4 %t23, %t22
+    %t24 = call i32 @read_before(%t21, $argobj__6)
+    %t25 = cmp eq i32 %t24, 3
+    %t26 = cmp ne i64 %t25, 0
+    store i64 %t26, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -122,8 +119,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t30 = load i64 $land__2
-    branch %t30, ^cond_then_1, ^cond_else_2
+    %t27 = load i64 $land__2
+    branch %t27, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -134,10 +131,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t31 = load i32 $cond__1
-    return i32 %t31
+    %t28 = load i32 $cond__1
+    return i32 %t28
 }
-function @offset__offset(%this : ptr, %value : i32) -> void [binding=weak, object=_ZN6offsetC1Ei] {
+function @offset__operatorint(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZNK6offsetcviEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    return i32 %t3
+}
+function @offset__offset(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN6offsetC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 
@@ -149,15 +156,5 @@ function @offset__offset(%this : ptr, %value : i32) -> void [binding=weak, objec
     %t3 = index i8 [projection=field] %t2, 0
     store i32 %t1, %t3
     return void
-}
-function @offset__operatorint(%this : ptr) -> i32 [binding=weak, object=_ZNK6offsetcviEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    return i32 %t3
 }
 alias object _ZN6offsetC2Ei = @offset__offset

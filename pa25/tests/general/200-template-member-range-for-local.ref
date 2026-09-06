@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @Box_int___f(%t2)
     return i32 %t3
 }
-function @Box_int___f(%this : ptr) -> i32 [binding=weak, object=_ZN3BoxIiE1fEv] {
+function @Box_int___f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3BoxIiE1fEv, inline_hint=yes] {
   slot $this : ptr
   slot $xs : obj<8x4>
   slot $total : i32
@@ -31,24 +31,23 @@ function @Box_int___f(%this : ptr) -> i32 [binding=weak, object=_ZN3BoxIiE1fEv] 
 
   block ^for_body_2:
     %t5 = addr $xs
-    %t6 = unary decay ptr %t5
-    %t7 = load i32 $__idx1
-    %t8 = index i32 [projection=array_element] %t6, %t7
-    %t9 = load i32 %t8
-    store i32 %t9, $x
-    %t10 = load i32 $total
-    %t11 = load i32 $x
-    %t12 = binary add i32 %t10, %t11
-    store i32 %t12, $total
+    %t6 = load i32 $__idx1
+    %t7 = index i32 [projection=array_element] %t5, %t6
+    %t8 = load i32 %t7
+    store i32 %t8, $x
+    %t9 = load i32 $total
+    %t10 = load i32 $x
+    %t11 = binary add i32 %t9, %t10
+    store i32 %t11, $total
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t13 = load i32 $__idx1
-    %t14 = binary add i32 %t13, 1
-    store i32 %t14, $__idx1
+    %t12 = load i32 $__idx1
+    %t13 = binary add i32 %t12, 1
+    store i32 %t13, $__idx1
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t15 = load i32 $total
-    return i32 %t15
+    %t14 = load i32 $total
+    return i32 %t14
 }

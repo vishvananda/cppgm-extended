@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -25,10 +25,8 @@ function @touch
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %scratch -> [rbp-8] : ptr
 
   block ^entry
-    store.ptr [rbp-8], rdi
     ret
 
 function @run
@@ -36,7 +34,7 @@ function @run
     param %base -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 80
+    stack_size 64
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -47,31 +45,25 @@ function @run
   block ^entry
     mov rbx, rdi
     lea rdi, [rbp-48]
-    call @touch
+    call @touch [args=(rdi)]
     load.i64 r8, @which
-    mov r9, rbx
-    mov rdx, r8
-    imul rdx, 8
-    add r9, rdx
+    lea r9, [rbx+r8*8]
     store.ptr [rbp-8], r9
-    mov r12, r9
-    mov r8, rbx
-    lea r8, [r8+16]
-    cmp.ptr r12, r8
+    load.ptr r8, [rbp-8]
+    lea r12, [rbx+16]
+    cmp.ptr r8, r12
     je ^check_value
     jmp ^bad
 
   block ^check_value
-    load.i64 r8, [r12]
+    load.i64 r9, [r8]
     mov rdx, 30
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov rax, r8
+    cmp.i64 r9, rdx
+    sete r9
+    movzx r9, r9
+    cmp.i64 r9, 0
+    sete rax
+    movzx rax, rax
     ret rax
 
   block ^bad
@@ -88,7 +80,6 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, @buffer
-    mov rdi, r8
-    call @run
+    mov rdi, @buffer
+    call @run [args=(rdi)]
     ret rax

@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     return i32 0
 }
-function @B__B__base_entry(%this : ptr) -> void [binding=weak, object=_ZN1BC2Ev] {
+function @B__B__base_entry(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1BC2Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

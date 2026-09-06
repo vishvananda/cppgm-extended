@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @Analyzer__f(%t2)
     return i32 %t3
 }
-function @Analyzer__f(%this : ptr) -> i32 [binding=weak, object=_ZN8Analyzer1fEv] {
+function @Analyzer__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN8Analyzer1fEv, inline_hint=yes] {
   slot $this : ptr
   slot $helper : obj<1x1>
   slot $outer : obj<8x8>
@@ -19,10 +19,10 @@ function @Analyzer__f(%this : ptr) -> i32 [binding=weak, object=_ZN8Analyzer1fEv
     %t3 = addr $helper
     store ptr %t3, %t2
     %t4 = addr $outer
-    %t5 = call i32 @Analyzer____lambda_Analyzer__f_t33_39__operator__(%t4, 4)
+    %t5 = call i32 @Analyzer____lambda_Analyzer__f_t33_39_n1__operator__(%t4, 4)
     return i32 %t5
 }
-function @Analyzer____lambda_Analyzer__f_t33_39__operator__(%this : ptr, %z : i32) -> i32 [binding=weak, object=_ZZN8Analyzer1fEvENKUliE0_clEi] {
+function @Analyzer____lambda_Analyzer__f_t33_39_n1__operator__(%this : ptr [object_bytes=8], %z : i32) -> i32 [binding=internal, object=_ZZN8Analyzer1fEvENKUliE0_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $z : i32
   slot $inner : obj<8x8>
@@ -32,15 +32,15 @@ function @Analyzer____lambda_Analyzer__f_t33_39__operator__(%this : ptr, %z : i3
     store i32 %z, $z
     %t1 = addr $inner
     %t2 = load ptr $this
-    %t3 = index i8 [projection=reference_field] %t2, 0
+    %t3 = index i8 [projection=field] %t2, 0
     %t4 = load ptr %t3
     store ptr %t4, %t1
     %t5 = addr $inner
     %t6 = load i32 $z
-    %t7 = call i32 @Analyzer____lambda_Analyzer__f_t33_39____lambda_Analyzer____lambda_Analyzer__f_t33_39__operator___t46_52__operator__(%t5, %t6)
+    %t7 = call i32 @Analyzer____lambda_Analyzer__f_t33_39_n1____lambda_nested_t46_52__operator__(%t5, %t6)
     return i32 %t7
 }
-function @Analyzer____lambda_Analyzer__f_t33_39____lambda_Analyzer____lambda_Analyzer__f_t33_39__operator___t46_52__operator__(%this : ptr, %y : i32) -> i32 [binding=weak, object=_ZZZN8Analyzer1fEvENKUliE0_clEiENKUliE_clEi] {
+function @Analyzer____lambda_Analyzer__f_t33_39_n1____lambda_nested_t46_52__operator__(%this : ptr [object_bytes=8], %y : i32) -> i32 [binding=internal, object=_ZZZN8Analyzer1fEvENKUliE0_clEiENKUliE_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $y : i32
 
@@ -48,13 +48,13 @@ function @Analyzer____lambda_Analyzer__f_t33_39____lambda_Analyzer____lambda_Ana
     store ptr %this, $this
     store i32 %y, $y
     %t1 = load ptr $this
-    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
     %t4 = load i32 $y
     %t5 = call i32 @Analyzer____lambda_Analyzer__f_t13_19__operator__(%t3, %t4)
     return i32 %t5
 }
-function @Analyzer____lambda_Analyzer__f_t13_19__operator__(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZZN8Analyzer1fEvENKUliE_clEi] {
+function @Analyzer____lambda_Analyzer__f_t13_19__operator__(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=internal, object=_ZZN8Analyzer1fEvENKUliE_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

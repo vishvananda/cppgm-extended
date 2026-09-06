@@ -21,7 +21,7 @@ function @use(%input : i32) -> i32 [binding=strong, object=_Z3usei] {
     %t8 = call obj<16x8> @append__ov2(%t3, %t7)
     copyobj 16x8 %t8, %t2
     %t9 = load i32 $input
-    %t10 = call i32 @Lazy_Lazy_Root__int__int_const_____int__int_const_____operator__(%t2, %t9)
+    %t10 = call i32 @Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int___operator__(%t2, %t9)
     return i32 %t10
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -44,7 +44,35 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @Lazy_Lazy_Root__int__int_const_____int__int_const_____operator__(%this : ptr, %input : i32) -> i32 [binding=weak, object=_ZNK4LazyIS_I4RootiRKiEiS2_EclEi] {
+function @append(%prev : ptr [pass=by_address, object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> obj<16x8> [binding=weak, object=_Z6appendIiE4LazyI4RootT_RKS2_ERKS1_S4_] {
+  slot $prev : ptr
+  slot $value : ptr
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store ptr %prev, $prev
+    store ptr %value, $value
+    %t1 = addr $retobj__1
+    %t2 = load ptr $prev
+    %t3 = load ptr $value
+    call void @Lazy_Root__int__lvalue_reference_to_const_int___Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int_(%t1, %t2, %t3)
+    return obj<16x8> $retobj__1
+}
+function @append__ov2(%prev : ptr [pass=by_address, object_bytes=16], %value : ptr [pass=by_address, object_bytes=4]) -> obj<16x8> [binding=weak, object=_Z6appendI4RootiiE4LazyIS1_IT_T0_RKS3_ET1_RKS7_ERKS6_S9_] {
+  slot $prev : ptr
+  slot $value : ptr
+  slot $retobj__1 : obj<16x8>
+
+  block ^entry:
+    store ptr %prev, $prev
+    store ptr %value, $value
+    %t1 = addr $retobj__1
+    %t2 = load ptr $prev
+    %t3 = load ptr $value
+    call void @Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int___Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int_(%t1, %t2, %t3)
+    return obj<16x8> $retobj__1
+}
+function @Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int___operator__(%this : ptr [object_bytes=16], %input : i32) -> i32 [binding=weak, object=_ZNK4LazyIS_I4RootiRKiEiS2_EclEi, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -52,46 +80,18 @@ function @Lazy_Lazy_Root__int__int_const_____int__int_const_____operator__(%this
     store ptr %this, $this
     store i32 %input, $input
     %t1 = load ptr $this
-    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
     %t4 = load i32 $input
-    %t5 = call i32 @Lazy_Root__int__int_const_____operator__(%t3, %t4)
+    %t5 = call i32 @Lazy_Root__int__lvalue_reference_to_const_int___operator__(%t3, %t4)
     %t6 = load ptr $this
-    %t7 = index i8 [projection=reference_field] %t6, 8
+    %t7 = index i8 [projection=field] %t6, 8
     %t8 = load ptr %t7
     %t9 = load i32 %t8
     %t10 = binary add i32 %t5, %t9
     return i32 %t10
 }
-function @append(%prev : ptr [pass=reference], %value : ptr [pass=reference]) -> obj<16x8> [binding=weak, object=_Z6appendIiE4LazyI4RootT_RKS2_ERKS1_S4_] {
-  slot $prev : ptr
-  slot $value : ptr
-  slot $retobj__1 : obj<16x8>
-
-  block ^entry:
-    store ptr %prev, $prev
-    store ptr %value, $value
-    %t1 = addr $retobj__1
-    %t2 = load ptr $prev
-    %t3 = load ptr $value
-    call void @Lazy_Root__int__int_const_____Lazy(%t1, %t2, %t3)
-    return obj<16x8> $retobj__1
-}
-function @append__ov2(%prev : ptr [pass=reference], %value : ptr [pass=reference]) -> obj<16x8> [binding=weak, object=_Z6appendI4RootiiE4LazyIS1_IT_T0_RKS3_ET1_RKS7_ERKS6_S9_] {
-  slot $prev : ptr
-  slot $value : ptr
-  slot $retobj__1 : obj<16x8>
-
-  block ^entry:
-    store ptr %prev, $prev
-    store ptr %value, $value
-    %t1 = addr $retobj__1
-    %t2 = load ptr $prev
-    %t3 = load ptr $value
-    call void @Lazy_Lazy_Root__int__int_const_____int__int_const_____Lazy(%t1, %t2, %t3)
-    return obj<16x8> $retobj__1
-}
-function @Lazy_Root__int__int_const_____Lazy(%this : ptr, %p : ptr [pass=reference], %v : ptr [pass=reference]) -> void [binding=weak, object=_ZN4LazyI4RootiRKiEC1ERKS0_S2_] {
+function @Lazy_Root__int__lvalue_reference_to_const_int___Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int_(%this : ptr [object_bytes=16], %p : ptr [pass=by_address, object_bytes=1], %v : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4LazyI4RootiRKiEC1ERKS0_S2_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
   slot $v : ptr
@@ -110,7 +110,26 @@ function @Lazy_Root__int__int_const_____Lazy(%this : ptr, %p : ptr [pass=referen
     store ptr %t4, %t6
     return void
 }
-function @Lazy_Root__int__int_const_____operator__(%this : ptr, %input : i32) -> i32 [binding=weak, object=_ZNK4LazyI4RootiRKiEclEi] {
+function @Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int___Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int_(%this : ptr [object_bytes=16], %p : ptr [pass=by_address, object_bytes=16], %v : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4LazyIS_I4RootiRKiEiS2_EC1ERKS3_S2_, inline_hint=yes] {
+  slot $this : ptr
+  slot $p : ptr
+  slot $v : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %p, $p
+    store ptr %v, $v
+    %t1 = load ptr $p
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $v
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 8
+    store ptr %t4, %t6
+    return void
+}
+function @Lazy_Root__int__lvalue_reference_to_const_int___operator__(%this : ptr [object_bytes=16], %input : i32) -> i32 [binding=weak, object=_ZNK4LazyI4RootiRKiEclEi, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -118,37 +137,18 @@ function @Lazy_Root__int__int_const_____operator__(%this : ptr, %input : i32) ->
     store ptr %this, $this
     store i32 %input, $input
     %t1 = load ptr $this
-    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
     %t4 = load i32 $input
     %t5 = call i32 @Root__operator__(%t3, %t4)
     %t6 = load ptr $this
-    %t7 = index i8 [projection=reference_field] %t6, 8
+    %t7 = index i8 [projection=field] %t6, 8
     %t8 = load ptr %t7
     %t9 = load i32 %t8
     %t10 = binary add i32 %t5, %t9
     return i32 %t10
 }
-function @Lazy_Lazy_Root__int__int_const_____int__int_const_____Lazy(%this : ptr, %p : ptr [pass=reference], %v : ptr [pass=reference]) -> void [binding=weak, object=_ZN4LazyIS_I4RootiRKiEiS2_EC1ERKS3_S2_] {
-  slot $this : ptr
-  slot $p : ptr
-  slot $v : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %p, $p
-    store ptr %v, $v
-    %t1 = load ptr $p
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $v
-    %t5 = load ptr $this
-    %t6 = index i8 [projection=field] %t5, 8
-    store ptr %t4, %t6
-    return void
-}
-function @Root__operator__(%this : ptr, %value : i32) -> i32 [binding=weak, object=_ZNK4RootclEi] {
+function @Root__operator__(%this : ptr [object_bytes=1], %value : i32) -> i32 [binding=weak, object=_ZNK4RootclEi, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 
@@ -158,5 +158,5 @@ function @Root__operator__(%this : ptr, %value : i32) -> i32 [binding=weak, obje
     %t1 = load i32 $value
     return i32 %t1
 }
-alias object _ZN4LazyI4RootiRKiEC2ERKS0_S2_ = @Lazy_Root__int__int_const_____Lazy
-alias object _ZN4LazyIS_I4RootiRKiEiS2_EC2ERKS3_S2_ = @Lazy_Lazy_Root__int__int_const_____int__int_const_____Lazy
+alias object _ZN4LazyI4RootiRKiEC2ERKS0_S2_ = @Lazy_Root__int__lvalue_reference_to_const_int___Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int_
+alias object _ZN4LazyIS_I4RootiRKiEiS2_EC2ERKS3_S2_ = @Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int___Lazy___cppgm_class_template_identity_0_4_0__int__lvalue_reference_to_const_int_

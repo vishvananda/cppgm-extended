@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $ar
     %t2 = addr $ar
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     store i32 11, %t5
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @interface_oarchive_text_oarchive___get_helper(%this : ptr, %archive : ptr) -> i32 [binding=weak, object=_ZN18interface_oarchiveI13text_oarchiveE10get_helperEPS0_] {
+function @interface_oarchive_text_oarchive___get_helper(%this : ptr [object_bytes=1], %archive : ptr) -> i32 [binding=weak, object=_ZN18interface_oarchiveI13text_oarchiveE10get_helperEPS0_, inline_hint=yes] {
   slot $this : ptr
   slot $archive : ptr
   slot $hc : ptr
@@ -38,7 +38,7 @@ function @interface_oarchive_text_oarchive___get_helper(%this : ptr, %archive : 
     store ptr %this, $this
     store ptr %archive, $archive
     %t1 = load ptr $archive
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = call ptr @basic_oarchive__get_helper_collection(%t2)
     store ptr %t3, $hc
     %t4 = load ptr $hc
@@ -46,7 +46,7 @@ function @interface_oarchive_text_oarchive___get_helper(%this : ptr, %archive : 
     %t6 = load i32 %t5
     return i32 %t6
 }
-function @basic_oarchive__get_helper_collection(%this : ptr) -> ptr [binding=weak, object=_ZN14basic_oarchive21get_helper_collectionEv] {
+function @basic_oarchive__get_helper_collection(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN14basic_oarchive21get_helper_collectionEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

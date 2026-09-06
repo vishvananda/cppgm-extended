@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__3
     return i32 %t10
 }
-function @Pick__Pick__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4PickC1ERKSt16initializer_listIiE] {
+function @Pick__Pick__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZN4PickC1ERKSt16initializer_listIiE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

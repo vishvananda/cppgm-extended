@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Wrapper___Wrapper(%t2)
     return i32 0
 }
-function @Wrapper___Wrapper(%this : ptr) -> void [binding=weak, object=_ZN7WrapperD1Ev] {
+function @Wrapper___Wrapper(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7WrapperD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -31,7 +31,7 @@ function @Wrapper___Wrapper(%this : ptr) -> void [binding=weak, object=_ZN7Wrapp
   block ^destructor_end_2:
     return void
 }
-function @Sink___Sink(%this : ptr) -> void [binding=weak, object=_ZN4SinkD1Ev] {
+function @Sink___Sink(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4SinkD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

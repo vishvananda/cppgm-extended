@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @base_int___f__ov2(%t1)
     return i32 %t2
 }
-function @base_int___f__ov2(%__param0 : ptr) -> i32 [binding=weak, object=_ZN4baseIiE1fIiEEiPT_] {
+function @base_int___f__ov2(%__param0 : ptr) -> i32 [binding=weak, object=_ZN4baseIiE1fIiEEiPT_, inline_hint=yes] {
   slot $__param0 : ptr
 
   block ^entry:

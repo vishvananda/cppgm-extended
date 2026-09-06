@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $value
     %t5 = call obj<4x4> @lib__make(%t4)
     copyobj 4x4 %t5, %t3
-    call void @lib__wrapper_X___wrapper__ov4(%t2, $argobj__3)
+    call void @lib__wrapper_X___wrapper_Y___ov4(%t2, $argobj__3)
     %t6 = addr $value
     %t7 = call i32 @accept($argobj__2, %t6)
     %t8 = cmp eq i32 %t7, 4
@@ -42,7 +42,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @lib__wrapper_X___wrapper__ov4(%this : ptr, %other : obj<4x4>) -> void [binding=weak, object=_ZN3lib7wrapperI1XEC1I1YvEENS0_IT_EE] {
+function @lib__make(%value : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZN3lib4makeI1YEEKNS_7wrapperIT_EERS3_] {
+  slot $value : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = addr $retobj__1
+    %t2 = load ptr $value
+    call void @lib__wrapper_Y___wrapper_Y_(%t1, %t2)
+    return obj<4x4> $retobj__1
+}
+function @lib__wrapper_X___wrapper_Y___ov4(%this : ptr [object_bytes=4], %other : obj<4x4>) -> void [binding=weak, object=_ZN3lib7wrapperI1XEC1I1YvEENS0_IT_EE, inline_hint=yes] {
   slot $this : ptr
   slot $other : obj<4x4>
 
@@ -59,18 +70,7 @@ function @lib__wrapper_X___wrapper__ov4(%this : ptr, %other : obj<4x4>) -> void 
     store i32 %t5, %t7
     return void
 }
-function @lib__make(%value : ptr [pass=reference]) -> obj<4x4> [binding=weak, object=_ZN3lib4makeI1YEEKNS_7wrapperIT_EERS3_] {
-  slot $value : ptr
-  slot $retobj__1 : obj<4x4>
-
-  block ^entry:
-    store ptr %value, $value
-    %t1 = addr $retobj__1
-    %t2 = load ptr $value
-    call void @lib__wrapper_Y___wrapper(%t1, %t2)
-    return obj<4x4> $retobj__1
-}
-function @lib__wrapper_Y___wrapper(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN3lib7wrapperI1YEC1ERS1_] {
+function @lib__wrapper_Y___wrapper_Y_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3lib7wrapperI1YEC1ERS1_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -82,5 +82,5 @@ function @lib__wrapper_Y___wrapper(%this : ptr, %__param1 : ptr [pass=reference]
     store i32 3, %t2
     return void
 }
-alias object _ZN3lib7wrapperI1XEC2I1YvEENS0_IT_EE = @lib__wrapper_X___wrapper__ov4
-alias object _ZN3lib7wrapperI1YEC2ERS1_ = @lib__wrapper_Y___wrapper
+alias object _ZN3lib7wrapperI1XEC2I1YvEENS0_IT_EE = @lib__wrapper_X___wrapper_Y___ov4
+alias object _ZN3lib7wrapperI1YEC2ERS1_ = @lib__wrapper_Y___wrapper_Y_

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Stream__state(%t2, 1)
     return i32 0
 }
-function @Stream__state(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN6Stream5stateEi] {
+function @Stream__state(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN6Stream5stateEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 

@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @stream_int__true___implementation__build(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6streamIiLb1EE14implementation5buildIicEEiRK7messageI4trueT_N8protocol6fieldsIT0_EEE] {
+function @stream_int__true___implementation__build(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6streamIiLb1EE14implementation5buildIicEEiRKN8protocol7messageILb1ET_NS3_6fieldsIT0_EEEE] {
   slot $this : ptr
   slot $__param1 : ptr
 

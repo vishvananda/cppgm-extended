@@ -1,33 +1,31 @@
-function @first(%a : ptr [pass=reference]) -> i32 [binding=strong, object=_Z5firstRA3_Ki] {
+function @first(%a : ptr [pass=by_address, object_bytes=12]) -> i32 [binding=strong, object=_Z5firstRA3_Ki] {
   slot $a : ptr
 
   block ^entry:
     store ptr %a, $a
     %t1 = load ptr $a
-    %t2 = unary decay ptr %t1
-    %t3 = index i32 [projection=array_element] %t2, 0
-    %t4 = load i32 %t3
-    return i32 %t4
+    %t2 = index i32 [projection=array_element] %t1, 0
+    %t3 = load i32 %t2
+    return i32 %t3
 }
-function @pick(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4pickRA3_Ki] {
+function @pick(%__param0 : ptr [pass=by_address, object_bytes=12]) -> i32 [binding=strong, object=_Z4pickRA3_Ki] {
   slot $__param0 : ptr
 
   block ^entry:
     store ptr %__param0, $__param0
     return i32 1
 }
-function @pick__ov2(%a : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4pickOA3_i] {
+function @pick__ov2(%a : ptr [pass=by_address, object_bytes=12]) -> i32 [binding=strong, object=_Z4pickOA3_i] {
   slot $a : ptr
   slot $cond__1 : i32
 
   block ^entry:
     store ptr %a, $a
     %t1 = load ptr $a
-    %t2 = unary decay ptr %t1
-    %t3 = index i32 [projection=array_element] %t2, 0
-    %t4 = load i32 %t3
-    %t5 = cmp eq i32 %t4, 1
-    branch %t5, ^cond_then_1, ^cond_else_2
+    %t2 = index i32 [projection=array_element] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = cmp eq i32 %t3, 1
+    branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 2, $cond__1
@@ -38,8 +36,8 @@ function @pick__ov2(%a : ptr [pass=reference]) -> i32 [binding=strong, object=_Z
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load i32 $cond__1
-    return i32 %t6
+    %t5 = load i32 $cond__1
+    return i32 %t5
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $argarr__1 : obj<12x4>

@@ -36,7 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = convert trunc i32 i64 %t7
     return i32 %t8
 }
-function @error_code__error_code(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN10error_codeC1Ei] {
+function @error_code__error_code(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN10error_codeC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -49,7 +49,7 @@ function @error_code__error_code(%this : ptr, %v : i32) -> void [binding=weak, o
     store i32 %t1, %t3
     return void
 }
-function @string__string(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN6stringC1Ei] {
+function @string__string(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN6stringC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -62,7 +62,7 @@ function @string__string(%this : ptr, %v : i32) -> void [binding=weak, object=_Z
     store i32 %t1, %t3
     return void
 }
-function @sender_error_code__string___send(%this : ptr, %args : obj<4x4>, %args__pack2 : obj<4x4>, %token : i32) -> i32 [binding=weak, object=_ZN6senderIJ10error_code6stringEE4sendIiEEiS0_S1_T_] {
+function @sender_error_code__string___send(%this : ptr [object_bytes=1], %args : obj<4x4>, %args__pack2 : obj<4x4>, %token : i32) -> i32 [binding=weak, object=_ZN6senderIJ10error_code6stringEE4sendIiEEiS0_S1_T_, inline_hint=yes] {
   slot $this : ptr
   slot $args : obj<4x4>
   slot $args__pack2 : obj<4x4>

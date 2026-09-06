@@ -6,8 +6,7 @@ global @__local_static__table__value__tokens32_43 [binding=internal] = {
 function @table() -> ptr [binding=strong, object=_Z5tablev] {
   block ^entry:
     %t1 = addr @__local_static__table__value__tokens32_43
-    %t2 = unary decay ptr %t1
-    return ptr %t2
+    return ptr %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
@@ -28,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load i32 $cond__1
     return i32 %t2
 }
-function @x__f(%this : ptr) -> void [binding=weak, object=_ZN1x1fEv] {
+function @x__f(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1x1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @outer__inner__box_int___set(%t2, 1)
     return i32 0
 }
-function @outer__inner__box_int___set(%this : ptr, %c : i32) -> void [binding=weak, object=_ZN5outer5inner3boxIiE3setEi] {
+function @outer__inner__box_int___set(%this : ptr [object_bytes=1], %c : i32) -> void [binding=weak, object=_ZN5outer5inner3boxIiE3setEi] {
   slot $this : ptr
   slot $c : i32
   slot $arg__1 : obj<1x1>
@@ -18,11 +18,11 @@ function @outer__inner__box_int___set(%this : ptr, %c : i32) -> void [binding=we
     %t1 = addr $arg__1
     %t2 = load i32 $c
     %t3 = load i32 $c
-    call void @outer__inner__range_int___range(%t1, %t2, %t3)
+    call void @outer__inner__range_int___range_int_(%t1, %t2, %t3)
     call void @outer__inner__sink(%t1)
     return void
 }
-function @outer__inner__range_int___range(%this : ptr, %__param1 : i32, %__param2 : i32) -> void [binding=weak, object=_ZN5outer5inner5rangeIiEC1Eii] {
+function @outer__inner__range_int___range_int_(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32) -> void [binding=weak, object=_ZN5outer5inner5rangeIiEC1Eii, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $__param2 : i32
@@ -33,11 +33,11 @@ function @outer__inner__range_int___range(%this : ptr, %__param1 : i32, %__param
     store i32 %__param2, $__param2
     return void
 }
-function @outer__inner__sink(%__param0 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5outer5inner4sinkIiEEvRKNS0_5rangeIT_EE] {
+function @outer__inner__sink(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5outer5inner4sinkIiEEvRKNS0_5rangeIT_EE] {
   slot $__param0 : ptr
 
   block ^entry:
     store ptr %__param0, $__param0
     return void
 }
-alias object _ZN5outer5inner5rangeIiEC2Eii = @outer__inner__range_int___range
+alias object _ZN5outer5inner5rangeIiEC2Eii = @outer__inner__range_int___range_int_

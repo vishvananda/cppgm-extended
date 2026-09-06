@@ -1,7 +1,7 @@
-global @payload [binding=internal, object=_ZL7payload] = {
+global @payload [binding=internal, object=_Z7payload] = {
   i32 7
 }
-global @adapted [binding=internal, object=_ZL7adapted] = {
+global @adapted [binding=internal, object=_Z7adapted] = {
   zero 4
 }
 
@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @Payload__Payload(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN7PayloadC1Ei] {
+function @Payload__Payload(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN7PayloadC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -22,7 +22,7 @@ function @Payload__Payload(%this : ptr, %v : i32) -> void [binding=weak, object=
     store i32 %t1, %t3
     return void
 }
-function @Adapted__Adapted(%this : ptr, %p : obj<4x4>) -> void [binding=weak, object=_ZN7AdaptedC1E7Payload] {
+function @Adapted__Adapted(%this : ptr [object_bytes=4], %p : obj<4x4>) -> void [binding=weak, object=_ZN7AdaptedC1E7Payload, inline_hint=yes] {
   slot $this : ptr
   slot $p : obj<4x4>
 
@@ -31,7 +31,7 @@ function @Adapted__Adapted(%this : ptr, %p : obj<4x4>) -> void [binding=weak, ob
     %t1 = addr $p
     copyobj 4x4 %p, %t1
     %t2 = load ptr $this
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = addr $p
     copyobj 4x4 %t4, %t3
     return void

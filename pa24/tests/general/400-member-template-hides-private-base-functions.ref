@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $tr
     %t3 = addr $value
     %t4 = addr $tr
-    %t5 = call u8 @matcher_traits__meta__true___derived_set_traits____match(%t3, 120, %t4)
+    %t5 = call u8 @matcher_traits__meta__true_____cppgm_class_template_identity_0_0_0___match(%t3, 120, %t4)
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @matcher_traits__meta__true___derived_set_traits____match(%this : ptr, %ch : i8, %tr : ptr [pass=reference]) -> u8 [binding=weak, object=_ZNK7matcherI6traitsN4meta5true_E11derived_setIS0_EE5matchEcRKS0_] {
+function @matcher_traits__meta__true_____cppgm_class_template_identity_0_0_0___match(%this : ptr [object_bytes=1], %ch : i8, %tr : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZNK7matcherI6traitsN4meta5true_E11derived_setIS0_EE5matchEcRKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $ch : i8
   slot $tr : ptr
@@ -38,11 +38,10 @@ function @matcher_traits__meta__true___derived_set_traits____match(%this : ptr, 
     %t3 = load i8 $ch
     %t4 = load ptr $tr
     %t5 = addr $argobj__1
-    call void @meta__true___true_(%t5)
     %t6 = call u8 @derived_set_traits___test(%t2, %t3, %t4, $argobj__1)
     return u8 %t6
 }
-function @derived_set_traits___test(%this : ptr, %__param1 : i8, %__param2 : ptr [pass=reference], %__param3 : obj<1x1>) -> u8 [binding=weak, object=_ZNK11derived_setI6traitsE4testIN4meta5true_EEEbcRKS0_T_] {
+function @derived_set_traits___test(%this : ptr [object_bytes=1], %__param1 : i8, %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : obj<1x1>) -> u8 [binding=weak, object=_ZNK11derived_setI6traitsE4testIN4meta5true_EEEbcRKS0_T_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i8
   slot $__param2 : ptr
@@ -54,11 +53,3 @@ function @derived_set_traits___test(%this : ptr, %__param1 : i8, %__param2 : ptr
     store ptr %__param2, $__param2
     return u8 1
 }
-function @meta__true___true_(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4meta5true_C1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN4meta5true_C2Ev = @meta__true___true_

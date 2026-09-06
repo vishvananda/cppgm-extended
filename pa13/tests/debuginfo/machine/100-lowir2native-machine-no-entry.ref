@@ -6,8 +6,9 @@ function @helper
   frame
     stack_size 0
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
-    mov r8, 7
-    mov rax, r8
+    mov rax, 7
     ret rax

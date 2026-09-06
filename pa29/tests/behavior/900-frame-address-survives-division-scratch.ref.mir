@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -9,30 +9,24 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
-    scratch_bytes 48
+    stack_size 16
+    scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
     slot $bytes -> [rbp-8] : obj<8x1>
 
   block ^entry
-    mov rax, 65
-    lea rcx, [rbp-8]
-    store.i8 [rcx], rax
+    store.i8 [rbp-8], 65
     mov r8, 200
-    mov rdx, 100
-    mov rcx, rdx
+    mov rcx, 100
     mov rax, r8
     mov rdx, 0
     div rcx
-    lea r9, [rbp-8]
-    lea r9, [r9+1]
-    mov rbx, rax
-    sext.i8 rbx
-    store.i8 [r9], rbx
-    load.i8 r8, [r9]
-    sext.i8 r8
+    mov r8, rax
+    mov r9, r8
+    sext.i8 r9
+    store.i8 [rbp-7], r9
+    load.i8 r8, [rbp-7]
     mov r9, r8
     zext.i8 r9
     sext.i32 r9
@@ -40,9 +34,7 @@ function @main
     cmp.i32 r9, rdx
     sete r9
     movzx r9, r9
-    mov rdx, 0
-    cmp.i32 r9, rdx
-    sete r9
-    movzx r9, r9
-    mov rax, r9
+    cmp.i32 r9, 0
+    sete rax
+    movzx rax, rax
     ret rax

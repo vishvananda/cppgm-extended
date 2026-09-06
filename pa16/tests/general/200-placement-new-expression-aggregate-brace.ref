@@ -1,4 +1,4 @@
-function @operatornew(%__param0 : i64, %p : ptr) -> ptr [unwind=no, binding=strong, object=_ZnwmPv] {
+function @operatornew__ov2(%__param0 : i64, %p : ptr) -> ptr [unwind=no, binding=strong, object=_ZnwmPv] {
   slot $__param0 : i64
   slot $p : ptr
 
@@ -14,11 +14,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = convert sext i64 i32 4
     %t2 = addr $storage
-    %t3 = call ptr @operatornew(%t1, %t2)
-    call void @table__table__ov4(%t3, 1)
+    %t3 = call ptr @operatornew__ov2(%t1, %t2)
+    call void @table__table__aggregate(%t3, 1)
     return i32 0
 }
-function @table__table__ov4(%this : ptr, %size : u32) -> void [unwind=no, binding=weak, object=_ZN5tableC1Ej] {
+function @table__table__aggregate(%this : ptr, %size : u32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $size : u32
 
@@ -31,4 +31,3 @@ function @table__table__ov4(%this : ptr, %size : u32) -> void [unwind=no, bindin
     store u32 %t1, %t3
     return void
 }
-alias object _ZN5tableC2Ej = @table__table__ov4

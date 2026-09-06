@@ -1,4 +1,4 @@
-function @g(%q : ptr [pass=reference], %d : ptr [pass=reference], %i : ptr [pass=reference]) -> void [binding=strong, object=_Z1gR1QIiERN1n1DIcEERi] {
+function @g(%q : ptr [pass=by_address, object_bytes=1], %d : ptr [pass=by_address, object_bytes=1], %i : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z1gR1QIiERN1n1DIcEERi] {
   slot $q : ptr
   slot $d : ptr
   slot $i : ptr
@@ -13,7 +13,7 @@ function @g(%q : ptr [pass=reference], %d : ptr [pass=reference], %i : ptr [pass
     call void @Q_int___f(%t1, %t2, %t3)
     return void
 }
-function @Q_int___f(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1QIiE1fIcEEvRKN1n1DIT_EERi] {
+function @Q_int___f(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1QIiE1fIcEEvRKN1n1DIT_EERi] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

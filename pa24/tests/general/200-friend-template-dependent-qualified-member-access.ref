@@ -4,13 +4,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $it
-    call void @Iter_Vec___Iter(%t1)
+    call void @Iter_Vec___Iter_Vec_(%t1)
     %t2 = addr $argobj__1
     %t3 = addr $it
     call void @use($argobj__1, 3)
     return i32 0
 }
-function @Iter_Vec___Iter(%this : ptr) -> void [binding=weak, object=_ZN4IterI3VecEC1Ev] {
+function @Iter_Vec___Iter_Vec_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4IterI3VecEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -30,4 +30,4 @@ function @use(%it : obj<1x1>, %n : i32) -> void [binding=weak, object=_Z3useI3Ve
     %t3 = addr $it
     return void
 }
-alias object _ZN4IterI3VecEC2Ev = @Iter_Vec___Iter
+alias object _ZN4IterI3VecEC2Ev = @Iter_Vec___Iter_Vec_

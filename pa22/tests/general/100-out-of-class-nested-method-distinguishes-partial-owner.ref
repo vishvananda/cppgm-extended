@@ -4,10 +4,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $value
     %t2 = addr $value
-    call void @A_int_____B__f(%t2)
+    call void @A_lvalue_reference_to_int___B__f(%t2)
     return i32 0
 }
-function @A_int_____B__f(%this : ptr) -> void [binding=weak, object=_ZN1AIRiE1B1fEv] {
+function @A_lvalue_reference_to_int___B__f(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN1AIRiE1B1fEv] {
   slot $this : ptr
 
   block ^entry:

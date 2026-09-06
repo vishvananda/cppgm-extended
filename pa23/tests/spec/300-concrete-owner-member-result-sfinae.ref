@@ -4,7 +4,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $arg__2
-    call void @result_int__void___result(%t1)
     %t2 = call i32 @read(%t1)
     %t3 = cmp eq i32 %t2, 7
     branch %t3, ^cond_then_1, ^cond_else_2
@@ -21,14 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @result_int__void___result(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6resultIivEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @read(%input : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4readIivET_O6resultIS0_T0_E] {
+function @read(%input : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4readIivET_O6resultIS0_T0_E] {
   slot $input : ptr
 
   block ^entry:
@@ -37,11 +29,10 @@ function @read(%input : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4re
     %t2 = call i32 @result_int__void___value(%t1)
     return i32 %t2
 }
-function @result_int__void___value(%this : ptr) -> i32 [binding=weak, object=_ZNO6resultIivE5valueIiEEN9enable_ifIXsr10is_movableIT_EE5valueEiE4typeEv] {
+function @result_int__void___value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNO6resultIivE5valueIiEEN9enable_ifIXsr10is_movableIT_EE5valueEiE4typeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 7
 }
-alias object _ZN6resultIivEC2Ev = @result_int__void___result

@@ -8,12 +8,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 7, $value
     %t1 = addr $arg
     %t2 = addr $tmpobj__1
-    call void @keyword__keyword(%t2)
     %t3 = addr $value
-    %t4 = call obj<8x8> @keyword__operator___ov2(%t2, %t3)
+    %t4 = call obj<8x8> @keyword__operator___ov3(%t2, %t3)
     copyobj 8x8 %t4, %t1
     %t5 = addr $arg
-    %t6 = index i8 [projection=reference_field] %t5, 0
+    %t6 = index i8 [projection=field] %t5, 0
     %t7 = load ptr %t6
     store i32 3, %t7
     %t8 = load i32 $value
@@ -32,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__2
     return i32 %t10
 }
-function @keyword__operator___ov2(%this : ptr, %value : ptr [pass=reference]) -> obj<8x8> [binding=weak, object=_ZNK7keywordaSIiEEN14lazy_enable_ifI9true_type15tagged_argumentI9graph_tagRT_EE4typeES6_] {
+function @keyword__operator___ov3(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> obj<8x8> [binding=weak, object=_ZNK7keywordaSIiEEN14lazy_enable_ifI9true_type15tagged_argumentI9graph_tagRT_EE4typeES6_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $retobj__1 : obj<8x8>
@@ -42,17 +41,10 @@ function @keyword__operator___ov2(%this : ptr, %value : ptr [pass=reference]) ->
     store ptr %value, $value
     %t1 = addr $retobj__1
     %t2 = load ptr $value
-    call void @tagged_argument_graph_tag__int_____tagged_argument(%t1, %t2)
+    call void @tagged_argument_graph_tag__lvalue_reference_to_int___tagged_argument_graph_tag__lvalue_reference_to_int_(%t1, %t2)
     return obj<8x8> $retobj__1
 }
-function @keyword__keyword(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7keywordC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @tagged_argument_graph_tag__int_____tagged_argument(%this : ptr, %x : ptr [pass=reference]) -> void [binding=weak, object=_ZN15tagged_argumentI9graph_tagRiEC1ES1_] {
+function @tagged_argument_graph_tag__lvalue_reference_to_int___tagged_argument_graph_tag__lvalue_reference_to_int_(%this : ptr [object_bytes=8], %x : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN15tagged_argumentI9graph_tagRiEC1ES1_, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 
@@ -65,5 +57,4 @@ function @tagged_argument_graph_tag__int_____tagged_argument(%this : ptr, %x : p
     store ptr %t1, %t3
     return void
 }
-alias object _ZN7keywordC2Ev = @keyword__keyword
-alias object _ZN15tagged_argumentI9graph_tagRiEC2ES1_ = @tagged_argument_graph_tag__int_____tagged_argument
+alias object _ZN15tagged_argumentI9graph_tagRiEC2ES1_ = @tagged_argument_graph_tag__lvalue_reference_to_int___tagged_argument_graph_tag__lvalue_reference_to_int_

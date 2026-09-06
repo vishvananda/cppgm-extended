@@ -3,7 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @std____1____copy_n(0, 1, 0)
     return i32 %t1
 }
-function @std____1____copy_n(%__param0 : ptr, %__param1 : i64, %__param2 : ptr) -> i32 [binding=weak, object=_ZNSt3__18__copy_nINS_17_ClassicAlgPolicyEPKcPcTnNS_9enable_ifIXsr7has_catIT0_EE5valueEiE4typeELi0EEEiS6_NS_8_IterOpsIT_E17__difference_typeIS6_EET1_] {
+function @std____1____copy_n(%__param0 : ptr, %__param1 : i64, %__param2 : ptr) -> i32 [binding=weak, object=_ZNSt3__18__copy_nINS_17_ClassicAlgPolicyEPKcPcTnNS_9enable_ifIXsrNS_7has_catIT0_EEE5valueEiE4typeELi0EEEiS6_41__function_template_nondeduced_type_shapeT1_] {
   slot $__param0 : ptr
   slot $__param1 : i64
   slot $__param2 : ptr

@@ -39,7 +39,7 @@ global @scope_destructions : i32 [binding=strong, object=_Z18scope_destructions]
 global @source [binding=strong, object=_Z6source] = {
   zero 4
 }
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 117
   i8 110
   i8 117
@@ -49,7 +49,7 @@ global @__strlit__1 [binding=internal] = {
   i8 0
 }
 
-function @operator_(%ret : ptr [pass=indirect_result], %__param0 : ptr, %right : ptr [pass=reference]) -> void [binding=strong, object=_ZplPKcRK4Text] {
+function @operator_(%ret : ptr [pass=indirect_result, object_bytes=4], %__param0 : ptr, %right : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZplPKcRK4Text] {
   slot $__param0 : ptr
   slot $right : ptr
 
@@ -190,7 +190,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = convert trunc i32 i64 %t10
     return i32 %t11
 }
-function @Text__Text(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN4TextC1Ei] {
+function @Text__Text(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN4TextC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -203,7 +203,7 @@ function @Text__Text(%this : ptr, %input : i32) -> void [binding=weak, object=_Z
     store i32 %t1, %t3
     return void
 }
-function @Text___Text(%this : ptr) -> void [binding=weak, object=_ZN4TextD1Ev] {
+function @Text___Text(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4TextD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -213,7 +213,7 @@ function @Text___Text(%this : ptr) -> void [binding=weak, object=_ZN4TextD1Ev] {
     store i32 %t2, @temporary_destructions
     return void
 }
-function @Scope___Scope(%this : ptr) -> void [binding=weak, object=_ZN5ScopeD1Ev] {
+function @Scope___Scope(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5ScopeD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -223,7 +223,7 @@ function @Scope___Scope(%this : ptr) -> void [binding=weak, object=_ZN5ScopeD1Ev
     store i32 %t2, @scope_destructions
     return void
 }
-function @Error__Error(%this : ptr, %text : ptr [pass=reference]) -> void [binding=weak, object=_ZN5ErrorC1ERK4Text] {
+function @Error__Error(%this : ptr [object_bytes=4], %text : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5ErrorC1ERK4Text, inline_hint=yes] {
   slot $this : ptr
   slot $text : ptr
 
@@ -238,7 +238,7 @@ function @Error__Error(%this : ptr, %text : ptr [pass=reference]) -> void [bindi
     store i32 %t3, %t5
     return void
 }
-function @Error___Error(%this : ptr) -> void [binding=weak, object=_ZN5ErrorD1Ev] {
+function @Error___Error(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5ErrorD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

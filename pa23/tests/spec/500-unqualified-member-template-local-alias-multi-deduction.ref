@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @detail__compiler___cppgm_class_template_identity_0_0_0___run(%this : ptr) -> u8 [binding=weak, object=_ZN6detail8compilerI6traitsIcEE3runEv] {
+function @detail__compiler___cppgm_class_template_identity_0_0_0___run(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN6detail8compilerI6traitsIcEE3runEv] {
   slot $this : ptr
 
   block ^entry:
@@ -29,7 +29,7 @@ function @detail__compiler___cppgm_class_template_identity_0_0_0___run(%this : p
     call void @detail__compiler___cppgm_class_template_identity_0_0_0___insert(%t1)
     return u8 0
 }
-function @detail__compiler___cppgm_class_template_identity_0_0_0___insert(%this : ptr) -> void [binding=weak, object=_ZN6detail8compilerI6traitsIcEE6insertILb1ELb0EEEvv] {
+function @detail__compiler___cppgm_class_template_identity_0_0_0___insert(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6detail8compilerI6traitsIcEE6insertILb1ELb0EEEvv] {
   slot $this : ptr
   slot $s : obj<1x1>
   slot $m : obj<1x1>
@@ -53,7 +53,7 @@ function @detail__compiler___cppgm_class_template_identity_0_0_0___insert(%this 
   block ^while_end_3:
     return void
 }
-function @detail__compiler___cppgm_class_template_identity_0_0_0___term(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN6detail8compilerI6traitsIcEE4termILb1ELb0EEEbR5stateRNS_7matcherIS2_Lb0ELb0EEE] {
+function @detail__compiler___cppgm_class_template_identity_0_0_0___term(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN6detail8compilerI6traitsIcEE4termILb1ELb0EEEbR5stateRNS_7matcherIS2_Lb0ELb0EEE] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

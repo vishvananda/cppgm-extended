@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -20,13 +20,9 @@ function @store_dec
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %dec -> [rbp-8] : i64
 
   block ^entry
-    store.i64 [rbp-8], rsi
-    mov r8, rdi
-    mov rax, 99
-    store.i64 [r8], rax
+    store.i64 [rdi], 99
     ret
 
 function @call_field_with_later_arg
@@ -34,23 +30,20 @@ function @call_field_with_later_arg
     param %this -> rdi : ptr
     return void -> void
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
     slot $this -> [rbp-8] : ptr
 
   block ^entry
-    mov r8, rdi
     store.ptr [rbp-8], rdi
-    store.ptr [rbp-8], r8
-    mov r9, r8
-    mov rbx, -1
+    store.ptr [rbp-8], rdi
+    load.ptr r8, [rbp-8]
+    lea r8, [r8+8]
     mov rdi, r8
-    lea rdi, [rdi+8]
-    mov rsi, rbx
-    call @store_dec
+    mov rsi, -1
+    call @store_dec [args=(rsi,rdi)]
     ret
 
 function @main
@@ -66,10 +59,9 @@ function @main
   block ^entry
     mov rbx, @pair
     mov rdi, rbx
-    call @call_field_with_later_arg
+    call @call_field_with_later_arg [args=(rdi)]
     load.i64 r8, @pair
-    lea rbx, [rbx+8]
-    load.i64 r9, [rbx]
+    load.i64 r9, [rbx+8]
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
@@ -83,7 +75,6 @@ function @main
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    mov rax, r8
+    sext.i32 rax
     ret rax

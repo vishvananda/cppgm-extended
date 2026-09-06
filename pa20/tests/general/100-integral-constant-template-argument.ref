@@ -1,4 +1,4 @@
-global @K : i32 [binding=internal, object=_ZL1K] = 3
+global @K : i32 [storage=readonly, binding=internal, object=_Z1K] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $b : obj<1x1>
@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @Box_4___get(%t2)
     return i32 %t3
 }
-function @Box_4___get(%this : ptr) -> i32 [binding=weak, object=_ZN3BoxILi4EE3getEv] {
+function @Box_4___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3BoxILi4EE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

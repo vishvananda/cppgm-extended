@@ -1,10 +1,10 @@
-global @static_constant_keyword___value [binding=weak, object=_ZN15static_constantI7keywordE5valueE] = {
+global @__cppgm_class_template_identity_0_0_0__value [binding=weak, object=_ZN15static_constantI7keywordE5valueE] = {
   zero 4
 }
 
 function @use_value() -> ptr [binding=strong, object=_Z9use_valuev] {
   block ^entry:
-    %t1 = addr @static_constant_keyword___value
+    %t1 = addr @__cppgm_class_template_identity_0_0_0__value
     return ptr %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

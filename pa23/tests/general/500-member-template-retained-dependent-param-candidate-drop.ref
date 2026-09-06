@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @run_insert(%t2)
     return i32 %t3
 }
-function @run_insert(%s : ptr [pass=reference]) -> i32 [binding=weak, object=_Z10run_insertI11string_likeIcEEiRT_] {
+function @run_insert(%s : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z10run_insertI11string_likeIcEEiRT_] {
   slot $s : ptr
   slot $first : obj<1x1>
   slot $last : obj<1x1>
@@ -43,7 +43,7 @@ function @run_insert(%s : ptr [pass=reference]) -> i32 [binding=weak, object=_Z1
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @string_like_char___insert(%this : ptr, %__param1 : ptr, %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertI14input_iteratorEEPcPKcT_S6_PN9enable_ifIXsr17is_input_iteratorIS6_EE5valueEvE4typeE] {
+function @string_like_char___insert(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertI14input_iteratorEEPcPKcT_S5_P41__function_template_nondeduced_type_shape] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : obj<1x1>

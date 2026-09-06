@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @n__buffer__buffer(%this : ptr) -> void [binding=weak, object=_ZN1n6bufferC1Ev] {
+function @n__buffer__buffer(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1n6bufferC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -38,7 +38,7 @@ function @n__buffer__buffer(%this : ptr) -> void [binding=weak, object=_ZN1n6buf
     store i32 0, %t2
     return void
 }
-function @n__fuzz__response(%this : ptr, %db : ptr [pass=reference]) -> void [binding=weak, object=_ZN1n4fuzz8responseERNS_6bufferE] {
+function @n__fuzz__response(%this : ptr [object_bytes=1], %db : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1n4fuzz8responseERNS_6bufferE, inline_hint=yes] {
   slot $this : ptr
   slot $db : ptr
 
@@ -52,7 +52,7 @@ function @n__fuzz__response(%this : ptr, %db : ptr [pass=reference]) -> void [bi
     call void @n__buffer__prepare(%t3)
     return void
 }
-function @n__fuzz__fields(%this : ptr, %db : ptr [pass=reference]) -> void [binding=weak, object=_ZN1n4fuzz6fieldsERNS_6bufferE] {
+function @n__fuzz__fields(%this : ptr [object_bytes=1], %db : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1n4fuzz6fieldsERNS_6bufferE, inline_hint=yes] {
   slot $this : ptr
   slot $db : ptr
 
@@ -64,7 +64,7 @@ function @n__fuzz__fields(%this : ptr, %db : ptr [pass=reference]) -> void [bind
     store i32 7, %t2
     return void
 }
-function @n__buffer__prepare(%this : ptr) -> void [binding=weak, object=_ZN1n6buffer7prepareEv] {
+function @n__buffer__prepare(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1n6buffer7prepareEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

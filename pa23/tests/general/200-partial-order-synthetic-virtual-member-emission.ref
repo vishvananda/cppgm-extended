@@ -1,6 +1,6 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_cache_int_const_ [storage=readonly, binding=weak, object=_ZTS5cacheIKiE] = {
+global @__typeinfo_name__struct___cppgm_class_template_identity_1_1_0 [binding=weak, object=_ZTS5cacheIKiE] = {
   i8 53
   i8 99
   i8 97
@@ -13,13 +13,13 @@ global @__typeinfo_name__struct_cache_int_const_ [storage=readonly, binding=weak
   i8 69
   i8 0
 }
-global @__rtti_struct_cache_int_const_ [storage=readonly, binding=weak, object=_ZTI5cacheIKiE] = {
+global @__rtti_struct___cppgm_class_template_identity_1_1_0 [binding=weak, object=_ZTI5cacheIKiE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_cache_int_const_
+  ptr addr @__typeinfo_name__struct___cppgm_class_template_identity_1_1_0
 }
-global @cache_int_const___vtable [storage=readonly, binding=weak, object=_ZTV5cacheIKiE] = {
+global @__cppgm_class_template_identity_1_1_0__vtable [binding=weak, object=_ZTV5cacheIKiE] = {
   i64 0
-  ptr addr @__rtti_struct_cache_int_const_
+  ptr addr @__rtti_struct___cppgm_class_template_identity_1_1_0
   ptr addr @cache_int_const___fill
 }
 
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $h
-    call void @holder_int_const___holder(%t1)
+    call void @holder_int_const___holder_int_const_(%t1)
     %t2 = const i64 2
     %t3 = const i64 2
     %t4 = cmp eq i64 %t2, %t3
@@ -47,28 +47,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @holder_int_const___holder(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6holderIKiEC1Ev] {
+function @holder_int_const___holder_int_const_(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6holderIKiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @cache_int_const___cache(%t2)
+    call void @cache_int_const___cache_int_const_(%t2)
     return void
 }
-function @cache_int_const___cache(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5cacheIKiEC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = addr @cache_int_const___vtable
-    %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    return void
-}
-function @cache_int_const___fill(%this : ptr) -> i32 [binding=weak, object=_ZN5cacheIKiE4fillEv] {
+function @cache_int_const___fill(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN5cacheIKiE4fillEv] {
   slot $this : ptr
   slot $text : obj<1x1>
 
@@ -76,15 +65,26 @@ function @cache_int_const___fill(%this : ptr) -> i32 [binding=weak, object=_ZN5c
     store ptr %this, $this
     %t1 = addr $text
     %t2 = addr $text
-    %t3 = call i32 @text_for_int_const___size(%t2)
+    %t3 = call i32 @text_for_const_int___size(%t2)
     return i32 %t3
 }
-function @text_for_int_const___size(%this : ptr) -> i32 [binding=weak, object=_ZN8text_forIKiE4sizeEv] {
+function @cache_int_const___cache_int_const_(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5cacheIKiEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @__cppgm_class_template_identity_1_1_0__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @text_for_const_int___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN8text_forIKiE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 2
 }
-alias object _ZN6holderIKiEC2Ev = @holder_int_const___holder
-alias object _ZN5cacheIKiEC2Ev = @cache_int_const___cache
+alias object _ZN6holderIKiEC2Ev = @holder_int_const___holder_int_const_
+alias object _ZN5cacheIKiEC2Ev = @cache_int_const___cache_int_const_

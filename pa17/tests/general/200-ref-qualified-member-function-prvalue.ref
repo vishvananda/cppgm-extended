@@ -3,23 +3,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
-    call void @X__X(%t1)
     %t2 = call i32 @X__f__ov2(%t1)
     %t3 = binary sub i32 %t2, 2
     return i32 %t3
 }
-function @X__X(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1XC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @X__f__ov2(%this : ptr) -> i32 [binding=weak, object=_ZNO1X1fEv] {
+function @X__f__ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNO1X1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 2
 }
-alias object _ZN1XC2Ev = @X__X

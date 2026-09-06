@@ -11,14 +11,13 @@ function @run() -> i32 [binding=strong, object=_Z3runv] {
     store i32 1, $ex
     %t1 = addr $tmpobj__1
     %t2 = addr $ex
-    call void @outer__inner__dispatch_int___dispatch(%t1, %t2)
+    call void @outer__inner__dispatch_int___dispatch_int_(%t1, %t2)
     %t3 = addr @handler
     %t4 = addr $argobj__2
-    call void @outer__inner__empty_work__empty_work(%t4)
     call void @outer__inner__dispatch_int___operator__(%t1, %t3, $argobj__2)
     return i32 0
 }
-function @outer__inner__dispatch_int___dispatch(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5outer5inner8dispatchIiEC1ERKi] {
+function @outer__inner__dispatch_int___dispatch_int_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5outer5inner8dispatchIiEC1ERKi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -27,7 +26,7 @@ function @outer__inner__dispatch_int___dispatch(%this : ptr, %__param1 : ptr [pa
     store ptr %__param1, $__param1
     return void
 }
-function @outer__inner__dispatch_int___operator__(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : obj<1x1>) -> void [binding=weak, object=_ZNK5outer5inner8dispatchIiEclIFvvENS0_10empty_workEEEvRT_T0_] {
+function @outer__inner__dispatch_int___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address], %__param2 : obj<1x1>) -> void [binding=weak, object=_ZNK5outer5inner8dispatchIiEclIFvvENS0_10empty_workEEEvRT_T0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : obj<1x1>
@@ -37,12 +36,4 @@ function @outer__inner__dispatch_int___operator__(%this : ptr, %__param1 : ptr [
     store ptr %__param1, $__param1
     return void
 }
-function @outer__inner__empty_work__empty_work(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5outer5inner10empty_workC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN5outer5inner8dispatchIiEC2ERKi = @outer__inner__dispatch_int___dispatch
-alias object _ZN5outer5inner10empty_workC2Ev = @outer__inner__empty_work__empty_work
+alias object _ZN5outer5inner8dispatchIiEC2ERKi = @outer__inner__dispatch_int___dispatch_int_

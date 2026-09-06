@@ -4,7 +4,7 @@ function @make_iterator() -> obj<8x8> [binding=strong, object=_Z13make_iteratorv
 
   block ^entry:
     %t1 = addr $x
-    call void @iterator_int___iterator(%t1)
+    call void @iterator_int___iterator_int_(%t1)
     %t2 = addr $retobj__1
     %t3 = addr $x
     copyobj 8x8 %t3, %t2
@@ -19,11 +19,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 8x8 %t2, %t1
     return i32 0
 }
-function @iterator_int___iterator(%this : ptr) -> void [binding=weak, object=_ZN8iteratorIiEC1Ev] {
+function @iterator_int___iterator_int_(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8iteratorIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-alias object _ZN8iteratorIiEC2Ev = @iterator_int___iterator
+alias object _ZN8iteratorIiEC2Ev = @iterator_int___iterator_int_

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @B__f(%x : i32) -> i32 [binding=weak, object=_ZN1B1fEi] {
+function @B__f(%x : i32) -> i32 [binding=weak, object=_ZN1B1fEi, inline_hint=yes] {
   slot $x : i32
 
   block ^entry:

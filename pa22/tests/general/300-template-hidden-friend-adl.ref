@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @get(%b : obj<4x4>) -> i32 [binding=weak, object=_Z3get3BoxIiE] {
+function @get(%b : obj<4x4>) -> i32 [binding=weak, object=_Z3get3BoxIiE, inline_hint=yes] {
   slot $b : obj<4x4>
 
   block ^entry:

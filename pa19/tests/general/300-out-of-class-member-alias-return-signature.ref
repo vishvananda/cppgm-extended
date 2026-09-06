@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 16x8 %t5, %t2
     return i32 0
 }
-function @tree_int___call(%this : ptr, %value : ptr [pass=reference]) -> obj<16x8> [binding=weak, object=_ZN4treeIiE4callERKi] {
+function @tree_int___call(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> obj<16x8> [binding=weak, object=_ZN4treeIiE4callERKi, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $retobj__1 : obj<16x8>
@@ -28,7 +28,7 @@ function @tree_int___call(%this : ptr, %value : ptr [pass=reference]) -> obj<16x
     copyobj 16x8 %t4, %t1
     return obj<16x8> $retobj__1
 }
-function @tree_int___get(%this : ptr, %value : ptr [pass=reference]) -> obj<16x8> [binding=weak, object=_ZN4treeIiE3getERKi] {
+function @tree_int___get(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> obj<16x8> [binding=weak, object=_ZN4treeIiE3getERKi] {
   slot $this : ptr
   slot $value : ptr
   slot $retobj__1 : obj<16x8>
@@ -37,14 +37,5 @@ function @tree_int___get(%this : ptr, %value : ptr [pass=reference]) -> obj<16x8
     store ptr %this, $this
     store ptr %value, $value
     %t1 = addr $retobj__1
-    call void @pair_node_base____node_base_____pair(%t1)
     return obj<16x8> $retobj__1
 }
-function @pair_node_base____node_base_____pair(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4pairIP9node_baseS1_EC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN4pairIP9node_baseS1_EC2Ev = @pair_node_base____node_base_____pair

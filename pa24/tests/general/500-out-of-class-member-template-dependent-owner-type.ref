@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @service_mutex_type___receive(%this : ptr, %impl : ptr [pass=reference], %handler : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN7serviceI10mutex_typeE7receiveI6traitsJFviEER7handlerEEiRNS1_19implementation_typeIT_JDpT0_EEEOT1_] {
+function @service_mutex_type___receive(%this : ptr [object_bytes=1], %impl : ptr [pass=by_address, object_bytes=4], %handler : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN7serviceI10mutex_typeE7receiveI6traitsFviER7handlerEEiRNS1_19implementation_typeIT_JT0_EEEOT1_] {
   slot $this : ptr
   slot $impl : ptr
   slot $handler : ptr
@@ -47,7 +47,7 @@ function @service_mutex_type___receive(%this : ptr, %impl : ptr [pass=reference]
     %t6 = binary add i32 %t3, %t5
     return i32 %t6
 }
-function @handler__operator__(%this : ptr) -> i32 [binding=weak, object=_ZN7handlerclEv] {
+function @handler__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN7handlerclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

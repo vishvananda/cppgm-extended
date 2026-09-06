@@ -1,4 +1,4 @@
-declare function @source__operatortarget(%arg0 : ptr) -> obj<1x1> [binding=strong, object=_ZNK6sourcecv6targetEv]
+declare function @source__operatortarget(%arg0 : ptr [object_bytes=1]) -> obj<1x1> [binding=strong, object=_ZNK6sourcecv6targetEv]
 
 function @convert(%value : obj<1x1>) -> obj<1x1> [binding=strong, object=_Z7convert6source] {
   slot $value : obj<1x1>
@@ -10,14 +10,14 @@ function @convert(%value : obj<1x1>) -> obj<1x1> [binding=strong, object=_Z7conv
     %t2 = addr $arg__2
     %t3 = addr $value
     %t4 = call obj<1x1> @source__operatortarget(%t3)
-    call void @target__target__ov3(%t1, %t2)
+    call void @target__target__ov2(%t1, %t2)
     return obj<1x1> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @target__target__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN6targetC1EOS_, trivial_lifecycle=yes] {
+function @target__target__ov2(%this : ptr [alias=noalias, object_bytes=1], %other : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6targetC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -26,4 +26,4 @@ function @target__target__ov3(%this : ptr, %other : ptr [pass=reference]) -> voi
     store ptr %other, $other
     return void
 }
-alias object _ZN6targetC2EOS_ = @target__target__ov3
+alias object _ZN6targetC2EOS_ = @target__target__ov2

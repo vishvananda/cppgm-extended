@@ -30,20 +30,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @Base__Nested_char___width() -> i32 [binding=weak, object=_ZN4Base6NestedIcE5widthEv] {
-  block ^entry:
-    %t1 = const i64 1
-    %t2 = convert trunc i32 i64 %t1
-    return i32 %t2
-}
-function @Base__width() -> i32 [binding=weak, object=_ZN4Base5widthIcEEiv] {
-  block ^entry:
-    %t1 = const i64 1
-    %t2 = convert trunc i32 i64 %t1
-    return i32 %t2
-}
-function @Base__read() -> i32 [binding=weak, object=_ZN4Base4readEv] {
+function @Base__read() -> i32 [binding=weak, object=_ZN4Base4readEv, inline_hint=yes] {
   block ^entry:
     %t1 = load i32 @Base__value
     return i32 %t1
+}
+function @Base__width() -> i32 [binding=weak, object=_ZN4Base5widthIcEEiv, inline_hint=yes] {
+  block ^entry:
+    %t1 = const i64 1
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
+}
+function @Base__Nested_char___width() -> i32 [binding=weak, object=_ZN4Base6NestedIcE5widthEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = const i64 1
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
 }

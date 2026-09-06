@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @mu(%__param0 : ptr [pass=reference], %value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z2muI11placeholderILi1EEiEN10mu_return2IXltLi0Esr14is_placeholderIT_EE5valueES3_T0_E4typeERS3_RS4_] {
+function @mu(%__param0 : ptr [pass=by_address, object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z2muI11placeholderILi1EEiERiRT_RT0_] {
   slot $__param0 : ptr
   slot $value : ptr
 

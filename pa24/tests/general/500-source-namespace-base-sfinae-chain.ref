@@ -11,10 +11,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $it
     %t3 = addr $it
     %t4 = addr $params
-    call void @outer__token_iterator_base_int__char__char_const____int___apply_modifier(%t3, %t4)
+    call void @outer__token_iterator_base_int__char__pointer_to_const_char__int___apply_modifier(%t3, %t4)
     return i32 0
 }
-function @outer__token_iterator_base_int__char__char_const____int___apply_modifier(%this : ptr, %m : ptr [pass=reference]) -> void [binding=internal, object=_ZN5outer19token_iterator_baseIicPKciE14apply_modifierIN5boost3nfp23named_parameter_combineINS6_15named_parameterIKiNS_12_GLOBAL__N_13maxERS9_EENS7_INS8_IS2_NSA_4keptES2_EENS8_IS2_NSA_7droppedES2_EEEEEEEEvRKT_, prefer_local=yes] {
+function @outer__token_iterator_base_int__char__pointer_to_const_char__int___apply_modifier(%this : ptr [object_bytes=8], %m : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN5outer19token_iterator_baseIicPKciE14apply_modifierIN5boost3nfp23named_parameter_combineINS5_15named_parameterIKiNS_12_GLOBAL__N_13maxERS8_EENS6_INS7_IS2_NS9_4keptES2_EENS7_IS2_NS9_7droppedES2_EEEEEEEEvRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $m : ptr
   slot $argobj__1 : obj<1x1>
@@ -30,7 +30,7 @@ function @outer__token_iterator_base_int__char__char_const____int___apply_modifi
     call void @boost__nfp__opt_assign(%t2, %t3, $argobj__1)
     return void
 }
-function @boost__nfp__opt_assign(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference], %__param2 : obj<1x1>) -> void [binding=internal, object=_ZN5boost3nfp10opt_assignImNS0_23named_parameter_combineINS0_15named_parameterIKiN5outer12_GLOBAL__N_13maxERS4_EENS2_INS3_IPKcNS6_4keptESB_EENS3_ISB_NS6_7droppedESB_EEEEEENS0_13typed_keywordImS7_EEEENS_11enable_if_cIXsr9has_paramIT0_T1_EE5valueEvE4typeERT_RKSL_SM_, prefer_local=yes] {
+function @boost__nfp__opt_assign(%__param0 : ptr [pass=by_address, object_bytes=8], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : obj<1x1>) -> void [binding=internal, object=_ZN5boost3nfp10opt_assignImNS0_23named_parameter_combineINS0_15named_parameterIKiN5outer12_GLOBAL__N_13maxERS4_EENS2_INS3_IPKcNS6_4keptESB_EENS3_ISB_NS6_7droppedESB_EEEEEENS0_13typed_keywordImS7_EEEENS_11enable_if_cIXsrNS0_9has_paramIT0_T1_EEE5valueEvE4typeERT_RKSL_SM_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : obj<1x1>

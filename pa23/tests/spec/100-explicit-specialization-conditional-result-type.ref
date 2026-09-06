@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @get(%kvp : ptr [pass=reference]) -> obj<4x4> [binding=strong, object=_Z3getILm0EENSt11conditionalIXeqT_Li0EEK11string_viewRK5valueE4typeERK14key_value_pair] {
+function @get(%kvp : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=strong, object=_Z3getILm0EEK11string_viewRK14key_value_pair] {
   slot $kvp : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -39,17 +39,17 @@ function @get(%kvp : ptr [pass=reference]) -> obj<4x4> [binding=strong, object=_
     copyobj 4x4 %t3, %t1
     return obj<4x4> $retobj__1
 }
-function @key_value_pair__key(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK14key_value_pair3keyEv] {
+function @key_value_pair__key(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK14key_value_pair3keyEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
     store ptr %this, $this
     %t1 = addr $retobj__1
-    call void @string_view__string_view__ov4(%t1, 7)
+    call void @string_view__string_view__aggregate(%t1, 7)
     return obj<4x4> $retobj__1
 }
-function @string_view__string_view__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN11string_viewC1Ei] {
+function @string_view__string_view__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 
@@ -62,4 +62,3 @@ function @string_view__string_view__ov4(%this : ptr, %value : i32) -> void [unwi
     store i32 %t1, %t3
     return void
 }
-alias object _ZN11string_viewC2Ei = @string_view__string_view__ov4

@@ -12,14 +12,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @basic_tree_int__int__int___const_reverse_iterator__const_reverse_iterator__ov3(%t2, $argobj__1)
     return i32 0
 }
-function @basic_tree_int__int__int___reverse_iterator__reverse_iterator(%this : ptr) -> void [binding=weak, object=_ZN10basic_treeIiiiE16reverse_iteratorC1Ev] {
+function @basic_tree_int__int__int___reverse_iterator__reverse_iterator(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN10basic_treeIiiiE16reverse_iteratorC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @basic_tree_int__int__int___const_reverse_iterator__const_reverse_iterator__ov3(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN10basic_treeIiiiE22const_reverse_iteratorC1ENS0_16reverse_iteratorE] {
+function @basic_tree_int__int__int___const_reverse_iterator__const_reverse_iterator__ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN10basic_treeIiiiE22const_reverse_iteratorC1ENS0_16reverse_iteratorE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 

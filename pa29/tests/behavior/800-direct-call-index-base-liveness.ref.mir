@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -21,10 +21,8 @@ function @g
     epilogues shared
 
   block ^entry
-    mov r8, rdi
-    store.i64 [r8], rsi
-    mov rax, r8
-    ret rax
+    store.i64 [rdi], rsi
+    ret rdi
 
 function @f
   abi
@@ -38,9 +36,7 @@ function @f
     epilogues shared
 
   block ^entry
-    mov r9, rdi
-    mov r8, rsi
-    call @g
+    call @g [args=(rsi,rdi)]
     ret rax
 
 function @main
@@ -52,14 +48,16 @@ function @main
     frame_pointer keep
     epilogues shared
     preserve rbx
+    temp %base -> [rbp-8] : ptr
 
   block ^entry
     mov rbx, @cell
-    mov rdi, rbx
+    store.ptr [rbp-8], rbx
+    load.ptr rdi, [rbp-8]
     mov rsi, 123
-    call @f
+    call @f [args=(rsi,rdi)]
     mov r8, rax
-    cmp.ptr r8, rbx
+    cmp.ptr r8, [rbp-8]
     jne ^bad_ptr
     jmp ^check_value
 
@@ -68,10 +66,9 @@ function @main
     ret rax
 
   block ^check_value
-    load.i64 r8, [rbx]
-    mov rdx, 123
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
+    load.ptr rcx, [rbp-8]
+    load.i64 r8, [rcx]
+    cmp.i64 r8, 123
+    setne rax
+    movzx rax, rax
     ret rax

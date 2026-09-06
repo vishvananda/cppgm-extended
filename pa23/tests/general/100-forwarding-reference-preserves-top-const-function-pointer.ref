@@ -10,15 +10,14 @@ function @forwarding_top_const__run(%slot : ptr) -> i32 [binding=strong, object=
     store ptr %slot, $slot
     %t1 = addr $out
     %t2 = addr @forwarding_top_const__target
-    %t3 = unary decay ptr %t2
-    %t4 = load ptr $slot
-    store ptr %t3, %t4
-    %t5 = addr $out
-    %t6 = load ptr $slot
-    %t7 = call i32 @forwarding_top_const__manager_int_________clone(%t5, %t6)
-    return i32 %t7
+    %t3 = load ptr $slot
+    store ptr %t2, %t3
+    %t4 = addr $out
+    %t5 = load ptr $slot
+    %t6 = call i32 @forwarding_top_const__manager_pointer_to_function_of____returning_int___clone(%t4, %t5)
+    return i32 %t6
 }
-function @forwarding_top_const__manager_int_________clone(%out : ptr [pass=reference], %slot : ptr) -> i32 [binding=weak, object=_ZN20forwarding_top_const7managerIPFivEE5cloneERNS_7storageEPS2_] {
+function @forwarding_top_const__manager_pointer_to_function_of____returning_int___clone(%out : ptr [pass=by_address, object_bytes=1], %slot : ptr) -> i32 [binding=weak, object=_ZN20forwarding_top_const7managerIPFivEE5cloneERNS_7storageEPS2_, inline_hint=yes] {
   slot $out : ptr
   slot $slot : ptr
 
@@ -27,10 +26,10 @@ function @forwarding_top_const__manager_int_________clone(%out : ptr [pass=refer
     store ptr %slot, $slot
     %t1 = load ptr $out
     %t2 = load ptr $slot
-    %t3 = call i32 @forwarding_top_const__manager_int_________init(%t1, %t2)
+    %t3 = call i32 @forwarding_top_const__manager_pointer_to_function_of____returning_int___init(%t1, %t2)
     return i32 %t3
 }
-function @forwarding_top_const__manager_int_________init(%out : ptr [pass=reference], %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN20forwarding_top_const7managerIPFivEE4initIRKS2_EEiRNS_7storageEOT_] {
+function @forwarding_top_const__manager_pointer_to_function_of____returning_int___init(%out : ptr [pass=by_address, object_bytes=1], %value : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN20forwarding_top_const7managerIPFivEE4initIRKS2_EEiRNS_7storageEOT_, inline_hint=yes] {
   slot $out : ptr
   slot $value : ptr
   slot $argobj__1 : obj<1x1>
@@ -42,11 +41,10 @@ function @forwarding_top_const__manager_int_________init(%out : ptr [pass=refere
     %t2 = load ptr $value
     %t3 = call ptr @forwarding_top_const__forward(%t2)
     %t4 = addr $argobj__1
-    call void @forwarding_top_const__true_type__true_type(%t4)
-    %t5 = call i32 @forwarding_top_const__manager_int_________create(%t1, %t3, $argobj__1)
+    %t5 = call i32 @forwarding_top_const__manager_pointer_to_function_of____returning_int___create(%t1, %t3, $argobj__1)
     return i32 %t5
 }
-function @forwarding_top_const__forward(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN20forwarding_top_const7forwardIRKPFivEEEOT_RNS_16remove_referenceIS5_E4typeE] {
+function @forwarding_top_const__forward(%value : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN20forwarding_top_const7forwardIRKPFivEEEOT_RNS_16remove_referenceIS5_E4typeE] {
   slot $value : ptr
 
   block ^entry:
@@ -54,7 +52,7 @@ function @forwarding_top_const__forward(%value : ptr [pass=reference]) -> ptr [b
     %t1 = load ptr $value
     return ptr %t1
 }
-function @forwarding_top_const__manager_int_________create(%__param0 : ptr [pass=reference], %value : ptr [pass=reference], %__param2 : obj<1x1>) -> i32 [binding=weak, object=_ZN20forwarding_top_const7managerIPFivEE6createIRKS2_EEiRNS_7storageEOT_NS_9true_typeE] {
+function @forwarding_top_const__manager_pointer_to_function_of____returning_int___create(%__param0 : ptr [pass=by_address, object_bytes=1], %value : ptr [pass=by_address, object_bytes=8], %__param2 : obj<1x1>) -> i32 [binding=weak, object=_ZN20forwarding_top_const7managerIPFivEE6createIRKS2_EEiRNS_7storageEOT_NS_9true_typeE, inline_hint=yes] {
   slot $__param0 : ptr
   slot $value : ptr
   slot $__param2 : obj<1x1>
@@ -67,11 +65,3 @@ function @forwarding_top_const__manager_int_________create(%__param0 : ptr [pass
     %t3 = call i32 %t2() as () -> i32
     return i32 %t3
 }
-function @forwarding_top_const__true_type__true_type(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN20forwarding_top_const9true_typeC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN20forwarding_top_const9true_typeC2Ev = @forwarding_top_const__true_type__true_type

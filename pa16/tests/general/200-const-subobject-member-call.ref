@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @Map__g(%this : ptr) -> i32 [binding=weak, object=_ZNK3Map1gEv] {
+function @Map__g(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK3Map1gEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -30,7 +30,7 @@ function @Map__g(%this : ptr) -> i32 [binding=weak, object=_ZNK3Map1gEv] {
     %t3 = call i32 @Table__f__ov2(%t2)
     return i32 %t3
 }
-function @Table__f__ov2(%this : ptr) -> i32 [binding=weak, object=_ZNK5Table1fEv] {
+function @Table__f__ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK5Table1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

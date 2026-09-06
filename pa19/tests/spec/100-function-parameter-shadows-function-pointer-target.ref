@@ -21,13 +21,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @g
-    %t2 = unary decay ptr %t1
-    %t3 = call ptr @preserve_target(%t2)
-    store ptr %t3, $target
-    %t4 = load ptr $target
-    %t5 = call i32 %t4(1) as (%arg0 : i32) -> i32
-    %t6 = cmp eq i32 %t5, 2
-    branch %t6, ^cond_then_1, ^cond_else_2
+    %t2 = call ptr @preserve_target(%t1)
+    store ptr %t2, $target
+    %t3 = load ptr $target
+    %t4 = call i32 %t3(1) as (%arg0 : i32) -> i32
+    %t5 = cmp eq i32 %t4, 2
+    branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -38,8 +37,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
-    return i32 %t7
+    %t6 = load i32 $cond__1
+    return i32 %t6
 }
 function @preserve_target(%f : ptr) -> ptr [binding=weak, object=_Z15preserve_targetIPFiiEET_S2_] {
   slot $f : ptr

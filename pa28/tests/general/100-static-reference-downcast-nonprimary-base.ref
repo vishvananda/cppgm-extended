@@ -1,8 +1,7 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
-declare global @__external_rtti_vtable____vmi_class_type_info [binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
-
-declare function @operatordelete(%arg0 : ptr) -> void [effects=readwrite, unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 global @__typeinfo_name__struct_downcast_root [binding=weak, object=_ZTS13downcast_root] = {
   i8 49
@@ -22,12 +21,10 @@ global @__typeinfo_name__struct_downcast_root [binding=weak, object=_ZTS13downca
   i8 116
   i8 0
 }
-
 global @__rtti_struct_downcast_root [binding=weak, object=_ZTI13downcast_root] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_downcast_root
 }
-
 global @__typeinfo_name__struct_downcast_leaf [binding=weak, object=_ZTS13downcast_leaf] = {
   i8 49
   i8 51
@@ -46,7 +43,6 @@ global @__typeinfo_name__struct_downcast_leaf [binding=weak, object=_ZTS13downca
   i8 102
   i8 0
 }
-
 global @__rtti_struct_downcast_leaf [binding=weak, object=_ZTI13downcast_leaf] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_downcast_leaf
@@ -55,7 +51,6 @@ global @__rtti_struct_downcast_leaf [binding=weak, object=_ZTI13downcast_leaf] =
   ptr addr @__rtti_struct_downcast_root
   i64 2050
 }
-
 global @downcast_leaf__vtable [binding=weak, object=_ZTV13downcast_leaf] = {
   i64 0
   ptr addr @__rtti_struct_downcast_leaf
@@ -63,21 +58,20 @@ global @downcast_leaf__vtable [binding=weak, object=_ZTV13downcast_leaf] = {
   ptr addr @downcast_leaf___downcast_leaf__deleting_entry
 }
 
-function @read(%root : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4readR13downcast_root] {
+function @read(%root : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z4readR13downcast_root] {
   slot $root : ptr
   slot $leaf : ptr
 
   block ^entry:
     store ptr %root, $root
     %t1 = load ptr $root
-    %t2 = index i8 [projection=base_subobject] %t1, -8
+    %t2 = index i8 %t1, -8
     store ptr %t2, $leaf
     %t3 = load ptr $leaf
     %t4 = index i8 [projection=field] %t3, 12
     %t5 = load i32 %t4
     return i32 %t5
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $leaf : obj<16x8>
   slot $cond__1 : i32
@@ -88,7 +82,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @downcast_leaf__downcast_leaf(%t1)
     eh_try ^cleanup_action_5
     %t2 = addr $leaf
-    %t3 = index i8 [projection=base_subobject] %t2, 8
+    %t3 = index i8 %t2, 8
     %t4 = call i32 @read(%t3)
     store i32 %t4, $call__2
     %t5 = load i32 $call__2
@@ -121,7 +115,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @downcast_leaf___downcast_leaf(%t9)
     return i32 %t8
 }
+function @downcast_leaf___downcast_leaf__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN13downcast_leafD2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
 
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @downcast_leaf__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
 function @downcast_leaf___downcast_leaf__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN13downcast_leafD0Ev] {
   slot $this : ptr
 
@@ -146,8 +150,7 @@ function @downcast_leaf___downcast_leaf__deleting_entry(%this : ptr) -> void [bi
   block ^destructor_end_2:
     return void
 }
-
-function @downcast_leaf___downcast_leaf(%this : ptr) -> void [binding=weak, object=_ZN13downcast_leafD1Ev] {
+function @downcast_leaf___downcast_leaf(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN13downcast_leafD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -158,14 +161,13 @@ function @downcast_leaf___downcast_leaf(%this : ptr) -> void [binding=weak, obje
     store ptr %t3, %t1
     return void
 }
-
-function @downcast_leaf__downcast_leaf(%this : ptr) -> void [binding=weak, object=_ZN13downcast_leafC1Ev] {
+function @downcast_leaf__downcast_leaf(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN13downcast_leafC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 8
+    %t2 = index i8 %t1, 8
     call void @downcast_root__downcast_root__base_entry(%t2, 3)
     %t3 = load ptr $this
     %t4 = addr @downcast_leaf__vtable
@@ -176,8 +178,7 @@ function @downcast_leaf__downcast_leaf(%this : ptr) -> void [binding=weak, objec
     store i32 11, %t7
     return void
 }
-
-function @downcast_root__downcast_root__base_entry(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN13downcast_rootC2Ei] {
+function @downcast_root__downcast_root__base_entry(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN13downcast_rootC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -190,8 +191,7 @@ function @downcast_root__downcast_root__base_entry(%this : ptr, %v : i32) -> voi
     store i32 %t1, %t3
     return void
 }
-
-function @downcast_root__downcast_root(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN13downcast_rootC1Ei] {
+function @downcast_root__downcast_root(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN13downcast_rootC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -204,3 +204,4 @@ function @downcast_root__downcast_root(%this : ptr, %v : i32) -> void [binding=w
     store i32 %t1, %t3
     return void
 }
+alias object _ZN13downcast_leafC2Ev = @downcast_leaf__downcast_leaf

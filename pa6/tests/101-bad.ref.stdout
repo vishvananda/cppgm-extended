@@ -1,1 +1,1 @@
-tests/101-bad.t: invalid token: @ near TT_LITERAL:@ at tests/101-bad.t:1:1
+tests/101-bad.t: invalid phase-7 token: @

@@ -1,5 +1,5 @@
-declare function @replay_outer_int___inner_int_____member(%arg0 : ptr) -> void [binding=weak, object=_ZN12replay_outerIiE5innerIRiE6memberEv]
-declare function @replay_outer_int___inner_int_const_____member(%arg0 : ptr) -> void [binding=weak, object=_ZN12replay_outerIiE5innerIRKiE6memberEv]
+declare function @replay_outer_int___inner_lvalue_reference_to_int___member(%arg0 : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN12replay_outerIiE5innerIRiE6memberEv]
+declare function @replay_outer_int___inner_lvalue_reference_to_const_int___member(%arg0 : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN12replay_outerIiE5innerIRKiE6memberEv]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $mark : obj<1x1>
@@ -33,17 +33,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t12, %t14
     %t15 = addr $discard__1
     %t16 = addr $tmpobj__2
-    call void @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____plus_leaf_____2__const_____impl(%t16)
     %t17 = addr $ap
-    call void @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____plus_leaf_____2__const_____operator__(%t15, %t16, %t17)
+    call void @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_2_0___operator__(%t15, %t16, %t17)
     %t18 = addr $discard__3
     %t19 = addr $tmpobj__4
-    call void @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____deref_leaf_____2__const_____impl(%t19)
     %t20 = addr $ad
-    call void @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____deref_leaf_____2__const_____operator__(%t18, %t19, %t20)
+    call void @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___operator__(%t18, %t19, %t20)
     return i32 0
 }
-function @use_default_replay(%it : ptr [pass=reference]) -> void [binding=strong, object=_Z18use_default_replayRN12replay_outerIiE5innerIRiEE] {
+function @use_default_replay(%it : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z18use_default_replayRN12replay_outerIiE5innerIRiEE] {
   slot $it : ptr
 
   block ^entry:
@@ -52,7 +50,7 @@ function @use_default_replay(%it : ptr [pass=reference]) -> void [binding=strong
     call void @replay_access__increment(%t1)
     return void
 }
-function @use_const_replay(%it : ptr [pass=reference]) -> void [binding=strong, object=_Z16use_const_replayRN12replay_outerIiE5innerIRKiEE] {
+function @use_const_replay(%it : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z16use_const_replayRN12replay_outerIiE5innerIRKiEE] {
   slot $it : ptr
 
   block ^entry:
@@ -61,7 +59,7 @@ function @use_const_replay(%it : ptr [pass=reference]) -> void [binding=strong, 
     call void @replay_access__increment__ov2(%t1)
     return void
 }
-function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____plus_leaf_____2__const_____operator__(%ret : ptr [pass=indirect_result], %this : ptr, %expr : ptr [pass=reference]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEclESD_] {
+function @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_2_0___operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEclESD_, inline_hint=yes] {
   slot $this : ptr
   slot $expr : ptr
   slot $begin : obj<1x1>
@@ -76,7 +74,7 @@ function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const__
     call void @end_expr__end_expr(%t2, 1)
     %t3 = index i8 [projection=field] %ret, 0
     %t4 = load ptr $expr
-    %t5 = call ptr @proto__right(%t4)
+    %t5 = call ptr @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0_(%t4)
     %t6 = index i8 [projection=field] %ret, 8
     %t7 = index i8 [projection=field] %t6, 0
     store ptr %t5, %t7
@@ -84,14 +82,7 @@ function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const__
     %t9 = index i8 [projection=field] %t8, 8
     return void
 }
-function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____plus_leaf_____2__const_____impl(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____deref_leaf_____2__const_____operator__(%ret : ptr [pass=indirect_result], %this : ptr, %expr : ptr [pass=reference]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEclESD_] {
+function @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___operator__(%ret : ptr [pass=indirect_result, object_bytes=24], %this : ptr [object_bytes=1], %expr : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZNK9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEclESD_, inline_hint=yes] {
   slot $this : ptr
   slot $expr : ptr
   slot $begin : obj<1x1>
@@ -106,7 +97,7 @@ function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const__
     call void @end_expr__end_expr(%t2, 1)
     %t3 = index i8 [projection=field] %ret, 0
     %t4 = load ptr $expr
-    %t5 = call ptr @proto__right__ov2(%t4)
+    %t5 = call ptr @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___ov2(%t4)
     %t6 = index i8 [projection=field] %ret, 8
     %t7 = index i8 [projection=field] %t6, 0
     store ptr %t5, %t7
@@ -114,52 +105,25 @@ function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const__
     %t9 = index i8 [projection=field] %t8, 8
     return void
 }
-function @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____deref_leaf_____2__const_____impl(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @replay_access__increment(%f : ptr [pass=reference]) -> void [binding=weak, object=_ZN13replay_access9incrementIN12replay_outerIiE5innerIRiEEEEvRT_] {
+function @replay_access__increment(%f : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN13replay_access9incrementIN12replay_outerIiE5innerIRiEEEEvRT_, inline_hint=yes] {
   slot $f : ptr
 
   block ^entry:
     store ptr %f, $f
     %t1 = load ptr $f
-    call void @replay_outer_int___inner_int_____member(%t1)
+    call void @replay_outer_int___inner_lvalue_reference_to_int___member(%t1)
     return void
 }
-function @replay_access__increment__ov2(%f : ptr [pass=reference]) -> void [binding=weak, object=_ZN13replay_access9incrementIN12replay_outerIiE5innerIRKiEEEEvRT_] {
+function @replay_access__increment__ov2(%f : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN13replay_access9incrementIN12replay_outerIiE5innerIRKiEEEEvRT_, inline_hint=yes] {
   slot $f : ptr
 
   block ^entry:
     store ptr %f, $f
     %t1 = load ptr $f
-    call void @replay_outer_int___inner_int_const_____member(%t1)
+    call void @replay_outer_int___inner_lvalue_reference_to_const_int___member(%t1)
     return void
 }
-function @proto__right(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR9plus_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
-  slot $e : ptr
-
-  block ^entry:
-    store ptr %e, $e
-    %t1 = load ptr $e
-    %t2 = index i8 [projection=reference_field] %t1, 8
-    %t3 = load ptr %t2
-    return ptr %t3
-}
-function @proto__right__ov2(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR10deref_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
-  slot $e : ptr
-
-  block ^entry:
-    store ptr %e, $e
-    %t1 = load ptr $e
-    %t2 = index i8 [projection=reference_field] %t1, 8
-    %t3 = load ptr %t2
-    return ptr %t3
-}
-function @begin_expr__begin_expr(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN10begin_exprC1Ei] {
+function @begin_expr__begin_expr(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN10begin_exprC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -168,7 +132,7 @@ function @begin_expr__begin_expr(%this : ptr, %__param1 : i32) -> void [binding=
     store i32 %__param1, $__param1
     return void
 }
-function @end_expr__end_expr(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN8end_exprC1Ei] {
+function @end_expr__end_expr(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN8end_exprC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -177,7 +141,25 @@ function @end_expr__end_expr(%this : ptr, %__param1 : i32) -> void [binding=weak
     store i32 %__param1, $__param1
     return void
 }
-alias object _ZN9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR9plus_leafEELi2EEEEC2Ev = @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____plus_leaf_____2__const_____impl
-alias object _ZN9as_marker4implIRKN5proto4exprI10tag_assignNS1_5list2IRK9mark_typeR10deref_leafEELi2EEEEC2Ev = @as_marker__impl_proto__expr_tag_assign__proto__list2_mark_type_const____deref_leaf_____2__const_____impl
+function @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0_(%e : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR9plus_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
+  slot $e : ptr
+
+  block ^entry:
+    store ptr %e, $e
+    %t1 = load ptr $e
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load ptr %t2
+    return ptr %t3
+}
+function @proto__right_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___ov2(%e : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN5proto5rightIKNS_4exprI10tag_assignNS_5list2IRK9mark_typeR10deref_leafEELi2EEEEENS_9result_of5rightIRT_E4typeESF_] {
+  slot $e : ptr
+
+  block ^entry:
+    store ptr %e, $e
+    %t1 = load ptr $e
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load ptr %t2
+    return ptr %t3
+}
 alias object _ZN10begin_exprC2Ei = @begin_expr__begin_expr
 alias object _ZN8end_exprC2Ei = @end_expr__end_expr

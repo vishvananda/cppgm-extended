@@ -2,14 +2,6 @@ global @ns__global [binding=strong, object=_ZN2ns6globalE] = {
   zero 1
 }
 
-function @source__operatorns__targetconst_(%this : ptr) -> ptr [binding=strong, object=_ZNK6sourcecvRKN2ns6targetEEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = addr @ns__global
-    return ptr %t1
-}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $s : obj<1x1>
   slot $r : ptr
@@ -18,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $s
     %t2 = addr $s
-    %t3 = call ptr @source__operatorns__targetconst_(%t2)
+    %t3 = call ptr @source__targetconst__(%t2)
     store ptr %t3, $r
     %t4 = load ptr $r
     %t5 = addr @ns__global
@@ -36,4 +28,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^cond_end_3:
     %t7 = load i32 $cond__1
     return i32 %t7
+}
+function @source__targetconst__(%this : ptr [object_bytes=1]) -> ptr [binding=strong, object=_ZNK6sourcecvRKN2ns6targetEEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr @ns__global
+    return ptr %t1
 }

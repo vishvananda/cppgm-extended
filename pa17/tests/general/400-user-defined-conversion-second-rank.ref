@@ -50,7 +50,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @value_c__operatorint(%this : ptr) -> i32 [binding=weak, object=_ZNK7value_ccviEv] {
+function @value_c__operatorint(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK7value_ccviEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

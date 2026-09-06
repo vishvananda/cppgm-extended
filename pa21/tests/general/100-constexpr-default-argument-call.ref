@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @f(%t1)
     return i32 %t2
 }
-function @twice(%x : i32) -> i32 [binding=weak, object=_Z5twicei] {
+function @twice(%x : i32) -> i32 [binding=weak, object=_Z5twicei, inline_hint=yes] {
   slot $x : i32
 
   block ^entry:

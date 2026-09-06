@@ -1,4 +1,4 @@
-function @begin(%seq : ptr [pass=reference]) -> obj<1x1> [binding=strong, object=_Z5beginR8init_seq] {
+function @begin(%seq : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=strong, object=_Z5beginR8init_seq] {
   slot $seq : ptr
   slot $retobj__1 : obj<1x1>
 
@@ -9,14 +9,14 @@ function @begin(%seq : ptr [pass=reference]) -> obj<1x1> [binding=strong, object
     call void @iterator__iterator__ov3(%t1, %t2)
     return obj<1x1> $retobj__1
 }
-function @deref(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z5derefRK8iterator] {
+function @deref(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_Z5derefRK8iterator] {
   slot $__param0 : ptr
 
   block ^entry:
     store ptr %__param0, $__param0
     return i32 7
 }
-function @front(%seq : ptr [pass=reference]) -> i32 [binding=strong, object=_Z5frontR8init_seq] {
+function @front(%seq : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_Z5frontR8init_seq] {
   slot $seq : ptr
   slot $tmpobj__1 : obj<1x1>
 
@@ -26,7 +26,7 @@ function @front(%seq : ptr [pass=reference]) -> i32 [binding=strong, object=_Z5f
     %t2 = load ptr $seq
     %t3 = call obj<1x1> @begin(%t2)
     copyobj 1x1 %t3, %t1
-    %t4 = index i8 [projection=base_subobject] %t1, 0
+    %t4 = index i8 %t1, 0
     %t5 = call i32 @operator_(%t4)
     return i32 %t5
 }
@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @iterator__iterator__ov3(%this : ptr, %init : ptr [pass=reference]) -> void [binding=weak, object=_ZN8iteratorC1I8init_seqEERKT_] {
+function @iterator__iterator__ov3(%this : ptr [object_bytes=1], %init : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8iteratorC1I8init_seqEERKT_, inline_hint=yes] {
   slot $this : ptr
   slot $init : ptr
 
@@ -66,7 +66,7 @@ function @iterator__iterator__ov3(%this : ptr, %init : ptr [pass=reference]) -> 
     call void @payload__payload__ov2(%t2, %t3)
     return void
 }
-function @operator_(%it : ptr [pass=reference]) -> i32 [binding=weak, object=_ZdeI8iteratorEiRK13iterator_baseIT_E] {
+function @operator_(%it : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZdeI8iteratorEiRK13iterator_baseIT_E] {
   slot $it : ptr
 
   block ^entry:
@@ -76,7 +76,7 @@ function @operator_(%it : ptr [pass=reference]) -> i32 [binding=weak, object=_Zd
     %t3 = call i32 @deref(%t2)
     return i32 %t3
 }
-function @payload__payload__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN7payloadC1ERK8init_seq] {
+function @payload__payload__ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7payloadC1ERK8init_seq, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -85,7 +85,7 @@ function @payload__payload__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -
     store ptr %__param1, $__param1
     return void
 }
-function @iterator_base_iterator___cast(%this : ptr) -> ptr [binding=weak, object=_ZNK13iterator_baseI8iteratorE4castEv] {
+function @iterator_base_iterator___cast(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK13iterator_baseI8iteratorE4castEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
