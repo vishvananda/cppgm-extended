@@ -333,6 +333,26 @@ on rehash; it does not reduce out of the full unit.  Same class as the prior
 "not isolated to a construct" finding, now localized to the rehash/cached-hash
 path.  The real remaining 24.04 gcc self-host blocker; needs a backend session.
 
+Isolated further 2026-09-06 to a single optimizer pass.  Compiling
+`recognizer.cpp` with the reproducing compiler at `-O0` yields a correct
+`recog`; `-O1`, `-O2`, `-O3` all break it, so it is an optimizer pass, not
+baseline codegen.  Bisecting the O1 per-function pipeline
+(`pipeline.cpp:optimize_function_bodies`, disabling passes by their
+`level >= 1` gate) pins it to **`promote_slots`** alone -- disabling only that
+pass makes `recog` correct with every other O1 pass on.  `promote_slots` is the
+slot-to-SSA (mem2reg) promotion (`promote_slots_with_analysis`, a
+dominance-frontier phi placement plus a sparse abstract-state rename); it
+miscompiles a slot in the libstdc++ 13 `unordered_map` insert/hash path within
+`recognizer.o` so the "KW_TRUE" node caches a wrong hash and rehashes to the
+wrong bucket.  It does not reduce to a small unit, but it HAS a LowIR-level
+reproducer: `--emit-lowir` works for this config, and
+`docs/v4/reducers/recog-kwtrue-promote-slots.lowir` (the `-O0` LowIR of
+`recognizer.cpp`) miscompiles when fed back through `cppgm++ -O1 -c` -- so the
+next session can reduce at the LowIR level and read exactly which promotion
+`promote_slots` gets wrong, rather than fight the C++ front end.  Local repro of
+the whole failure: build cppgm++ with `CXX=g++ CPPGM_HOST_CXX=g++-13`, then
+`make -C pa39 test-pa6 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++-13`.
+
 Two items remain on the self-host lanes after that fix:
 
 - **`__alloc` declaration-versus-expression ambiguity (clang cells) — fixed.**
