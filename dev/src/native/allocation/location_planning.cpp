@@ -616,6 +616,7 @@ void assign_candidate_registers_by_colouring(
 // unavoidable-header gate.
 LayoutScan scan_function_layout(
     const lowir_model::LowirFunction & function,
+    const analysis::ControlFlowQueries & control_flow,
     const std::vector<std::size_t> & block_start,
     const std::vector<std::size_t> & block_by_id,
     std::size_t function_end)
@@ -660,7 +661,15 @@ LayoutScan scan_function_layout(
           const std::size_t terminator = block_start[predecessor] +
             function.blocks[predecessor].instructions.size() - 1;
           start = std::min(start, terminator);
-          if(terminator >= position) phi_loop_carried[ins.dest] = 1;
+          // A predecessor laid out at or after the phi feeds a loop only
+          // when it shares the phi block's cycle.  The native driver's
+          // critical-edge split blocks sit at the end of the function, so
+          // their jumps are layout backedges into acyclic merges; the walk
+          // pins a loop-carried register through the cycle's own reads,
+          // which such a merge never performs.
+          if(terminator >= position &&
+             control_flow.BlocksShareCyclicComponent(predecessor, block))
+            phi_loop_carried[ins.dest] = 1;
         }
         continue;
       }
@@ -828,8 +837,9 @@ FunctionLocationTimeline plan_value_locations(
     block_by_id[id] = block;
   }
   const std::size_t function_end = position;
-  LayoutScan scan = scan_function_layout(function, block_start, block_by_id,
-                                         function_end);
+  analysis::ControlFlowQueries control_flow(function);
+  LayoutScan scan = scan_function_layout(function, control_flow, block_start,
+                                         block_by_id, function_end);
   *extension_spans = scan.spans;
   // The seam: another allocator may decide the plan from the same facts
   // and layout (planning_seam.h).
@@ -856,7 +866,6 @@ FunctionLocationTimeline plan_value_locations(
          facts.has(lowir_model::ValueId(static_cast<std::uint32_t>(raw)),
                    FunctionFacts::VF_LIVE_ACROSS_CALL))
         ++first_call_preserved_pressure;
-  analysis::ControlFlowQueries control_flow(function);
   std::vector<Candidate> candidates;
   for(std::size_t raw = 0; raw < function.value_names.size(); ++raw) {
     const lowir_model::ValueId value(static_cast<std::uint32_t>(raw));

@@ -89,7 +89,10 @@ struct LayoutScan
   // FunctionFacts::missing_position().
   std::vector<std::size_t> phi_transfer_start;
   // For each value: nonzero when the value is a loop-carried phi (one of
-  // its incoming edges is a layout backedge).
+  // its incoming edges is a layout backedge from a block in the phi
+  // block's cycle; a layout backedge from an acyclic block, such as a
+  // critical-edge split block placed at the end of the function, is an
+  // ordinary merge edge).
   std::vector<unsigned char> phi_loop_carried;
   // For each value: the position of its loop header when loop-carried.
   std::vector<std::size_t> phi_header_start;

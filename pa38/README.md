@@ -334,7 +334,12 @@ semantic-preserving rewrites where safe:
 - permit a bypassable, call-free loop to begin loop-carried integer or pointer
   `phi` residency on its first incoming edge, after any call-bearing prefix,
   when the complete incoming-edge-through-backedge interval has no call or
-  fixed-register clobber.  This local residency must use caller-saved capacity,
+  fixed-register clobber.  A `phi` is loop-carried only when a predecessor
+  laid out at or after it belongs to the same cycle; a merge whose late
+  predecessor is an acyclic block (a critical-edge split block placed at the
+  end of the function) keeps the ordinary frame home, since nothing in an
+  acyclic region pins the register between the merge's reads and that
+  predecessor's transfer.  This local residency must use caller-saved capacity,
   must not add a function-wide save/restore, and must not overlap another
   planned owner of that capacity.  When an earlier call-bearing prefix already
   creates full call-preserved pressure, the planner should prefer otherwise
