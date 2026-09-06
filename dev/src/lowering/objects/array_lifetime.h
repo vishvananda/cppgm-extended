@@ -39,6 +39,26 @@ protected:
 		return derived.ProjectAggregateMember(address, object_binding);
 	}
 
+	// A constructor loop emits its body once and runs it once per element.
+	// The cleanup segment the element constructor would start there (the
+	// unwind region of the objects already alive) is opened once and closed
+	// once at the end of the full expression, so it must open before the
+	// loop: started inside the body it is pushed per element and popped
+	// once, and the region stack no longer balances.  The condition is the
+	// one a call site uses to start the segment.
+	void EnsureConstructorLoopCleanupSegment(std::uint32_t action)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const DumpNode& record = derived.arena_.nodes[action];
+		if (record.kind != DUMP_CONSTRUCTOR_ACTION ||
+			record.binding == kNoBinding || record.elide_empty_constructor)
+			return;
+		if (!derived.full_expression_cleanup_active_) return;
+		if (derived.full_expression_deferred_cleanup_ ||
+			!derived.program_.bindings[record.binding].nonthrowing)
+			derived.EnsureFullExpressionCleanupSegment();
+	}
+
 	Operand BoundFlatArrayElementAddress(BindingId object_binding,
 		TypeId array_type, TypeId element_type, const Operand& index)
 	{
@@ -183,6 +203,7 @@ protected:
 		initialize.first = Operand(0, LowI64());
 		initialize.second = progress;
 		derived.Emit(initialize);
+		if (!trivial) EnsureConstructorLoopCleanupSegment(element_action);
 		derived.EmitJump(condition);
 		derived.SelectBlock(condition);
 		const Operand index = derived.LoadStorage(progress, LowI64());
@@ -532,6 +553,7 @@ protected:
 		initialize.first = Operand(0, LowI64());
 		initialize.second = index_slot;
 		derived.Emit(initialize);
+		EnsureConstructorLoopCleanupSegment(action);
 		derived.EmitJump(condition);
 		derived.SelectBlock(condition);
 		const Operand index = derived.LoadStorage(index_slot, LowI64());

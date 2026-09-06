@@ -215,8 +215,13 @@ for my $test (@tests)
 	my $o3_mir = mir_function($test, read_file($mir{O3}), $selected);
 	my @o2_preserved = preserved_registers($o2_mir);
 	my @o3_preserved = preserved_registers($o3_mir);
-	die "$test: native O3 did not reduce call-preserved address pressure\n"
-		if @o3_preserved + 2 > @o2_preserved;
+	# From -O1 the backend replays a base+constant index address from its
+	# base at each consumer instead of holding a second pointer, so only the
+	# base crosses the call at either level; O3 must not add to that.
+	die "$test: native O3 added call-preserved address pressure\n"
+		if @o3_preserved > @o2_preserved;
+	die "$test: native keeps a derived address in a call-preserved home\n"
+		if @o2_preserved > 1 || @o3_preserved > 1;
 	die "$test: native O3 increased the selected function's stack size\n"
 		if stack_size($o3_mir) > stack_size($o2_mir);
 	my ($o2_before_call) = $o2_mir =~ /(.*?^\s+call\s+\@)/ms;
@@ -225,8 +230,8 @@ for my $test (@tests)
 		scalar(() = $o2_before_call =~ /^\s+lea\s+/mg) : 0;
 	my $o3_leas = defined($o3_before_call) ?
 		scalar(() = $o3_before_call =~ /^\s+lea\s+/mg) : 0;
-	die "$test: native O3 did not remove pre-call derived-address setup\n"
-		if $o2_leas < @selected_offsets || $o3_leas >= $o2_leas;
+	die "$test: native recreated derived addresses before the call\n"
+		if $o2_leas != 0 || $o3_leas != 0;
 	my ($o3_after_call) = $o3_mir =~ /^\s+call\s+\@[^\n]+\n(.*)$/ms;
 	my %native_offsets;
 	while(defined($o3_after_call) &&

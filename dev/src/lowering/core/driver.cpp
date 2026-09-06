@@ -4,6 +4,7 @@
 #include "lowering/transforms/force_inline.h"
 #include "lowering/core/graph_lowering.h"
 #include "lowering/presentation/local_names.h"
+#include "lowering/presentation/special_member_order.h"
 #include "lowering/ir/model.h"
 #include "lowering/ir/render.h"
 #include "lowering/support/errors.h"
@@ -623,6 +624,7 @@ lowering::ir::Program lowering::BuildProgram(const std::vector<lowering::Source>
 	std::chrono::steady_clock::time_point coalesce_started;
 	if (stats) coalesce_started = std::chrono::steady_clock::now();
 	CoalesceLifecycleFunctions(&program, stats);
+	lowering::presentation::OrderSpecialMemberFamilies(&program);
 	lowering::inline_policy::RewriteProgram(
 		&program, stats, prune_unreachable_weak_functions);
 	if (stats)

@@ -84,23 +84,35 @@ not track (73 of them) are tracked now, as the local suites always were.
 
 ## Results
 
-- `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report` (the CI setting):
-  5,930 of 5,933 pass.  The three failures are the special member order
+- `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report` (the CI setting) first
+  passed 5,930 of 5,933.  The three failures were the special member order
   violations already recorded in `ref-deltas.md`
   (`pa22/tests/general/300-member-template-assignment-not-special-member`,
   `pa28/tests/general/100-diamond-virtual-destructor-slot-merge`,
   `pa28/tests/general/100-multibase-implicit-virtual-destructor-slot-merge`):
-  the compiler emits the move assignment before the copy assignment when
-  the move is demanded first, and the complete-entry vtable thunk before
-  the deleting-entry thunk.  `pa13/lowir.md` states the opposite order.
-  One more failure is in the PA38 regression lane:
+  the compiler emitted the move assignment before the copy assignment when
+  the move was demanded first, and the complete-entry vtable thunk before
+  the deleting-entry thunk, against the order `pa13/lowir.md` states.  A
+  presentation pass in the lowering driver now orders each special member
+  family (source commit "Open a constructor loop's cleanup segment before
+  the loop"); the three references were regenerated and the report passes
+  5,934 of 5,934.
+- The PA39 selfhost lane failed on
+  `dev/src/native/allocation/location_planning.cpp`: an array of more than
+  eight objects with destructors, declared while another such object was
+  alive, made the emitted construction loop open the enclosing cleanup
+  region once per element and close it once.  The same source commit opens
+  the segment before the loop; `pa16/tests/general/300-constructor-array-loop-enclosing-cleanup`
+  is the new fixture, and no other reference changed.
+- The PA38 regression control
   `tests/regression/controls/459-o3-parameter-address-rematerialization`
-  reports that native `-O3` did not reduce call-preserved address
-  pressure.  All four reproduce in the source tree at `36b42987` and at the
-  commit before the audit fix; they are compiler defects to fix before
-  Phase 7, not artefacts of the move.
+  reported that native `-O3` did not reduce call-preserved address
+  pressure.  It last passed at `f59dcabf` and failed from `7b97d1e9` ("Keep
+  a replayed index base live until its last replay"), which deliberately
+  keeps only the base of a replayed index address across a call from `-O1`
+  on, so the O2 baseline already has the pressure the control expected O3
+  to remove.  The control now pins that decision (only the base is
+  preserved at either level, no derived address is rebuilt before the
+  call, O3 adds no homes or frame) and the PA38 handout paragraph says the
+  same.
 - `make -C pa16 test-seams` passes (18 rewrites classified).
-- The PA39 selfhost lane fails on
-  `dev/src/native/allocation/location_planning.cpp`
-  (`assign_candidate_registers_by_colouring`: host EH protected-region
-  stack underflow); also a compiler defect that predates the audit fix.
