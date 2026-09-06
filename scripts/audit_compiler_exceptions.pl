@@ -135,6 +135,9 @@ find({
 	wanted => sub {
 		return if !-f $_;
 		return if $_ !~ /\.(?:c|cc|cpp|cxx|h|hh|hpp|hxx)\z/;
+		# The student scaffolds' not-implemented exception is theirs, not
+		# the compiler's.
+		return if $File::Find::name =~ m{/support/not_implemented\.h\z};
 		push @files, $File::Find::name;
 	},
 	no_chdir => 1,
