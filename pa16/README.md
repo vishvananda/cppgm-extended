@@ -176,16 +176,6 @@ For each test case `x`:
 `make test` runs the checked-in local suite under `tests/` and supplies
 `--emit-lowir -O0` through the harness.
 
-`make test` also runs `make test-seams` on `tests/general`
-(`../scripts/check_lowir_seams.py`): it rewrites the lane's own outputs
-along every line of the two lists in `../pa13/lowir.md` ("What The
-Comparison Absorbs And What It Enforces") and fails if a rewrite the list
-says is absorbed is rejected, or a rewrite the list says is a convention is
-accepted, or a list entry has lost its sentence.  PA16 hosts that check for
-all the source-to-LowIR assignments because its lane is the first with
-classes, retypes and helper functions; the invariant it keeps is that
-nothing the comparison rejects is unwritten.
-
 The PA16 suite is split by test role:
 
 - `tests/general/`: the default PA16 LowIR oracle suite. These tests cover object-model

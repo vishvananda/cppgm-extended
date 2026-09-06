@@ -65,7 +65,6 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
-	@$(MAKE) test-seams
 	@if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
 		perl ../scripts/check_pa16_string_literal_storage.pl \
 			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
@@ -81,6 +80,9 @@ test: $(TEST_DEPS)
 # rewrite of this lane's outputs that ../pa13/lowir.md says the comparison
 # absorbs must pass, and every rewrite it says the course enforces as a
 # convention must fail.  Needs the `.my` outputs `test` produces.
+# Maintainer lane: the invariant is about the comparison harness and the
+# contract text in ../pa13/lowir.md, not about an implementation, so the
+# repository-root report runs it rather than `make test`.
 test-seams:
 	@python3 ../scripts/tests/test_compare_lowir_results.py 2>&1 | tail -1
 	@python3 ../scripts/check_lowir_seams.py . tests/general
