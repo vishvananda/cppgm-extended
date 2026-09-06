@@ -131,18 +131,19 @@ protected:
 		const Derived& derived = static_cast<const Derived&>(*this);
 		type = derived.program_.types.RemoveTopCv(type);
 		const TypeRecord* shape = &derived.program_.types.Get(type);
-		while (shape->kind == TYPE_LVALUE_REFERENCE ||
+		// A reference or pointer parameter binds an object whose type may be
+		// incomplete in the caller's translation unit, so its virtual-base
+		// count is not a stable ABI fact: the caller would compute zero hidden
+		// pointers where a definition that sees the complete type computes the
+		// carry-all set, and the two disagree across the boundary.  Such a
+		// parameter therefore carries no companion virtual-base pointer; its
+		// virtual bases are reached through the object's own vtable at each
+		// use.  Only a by-value class parameter -- whose complete type both
+		// the caller and the definition must see -- carries the pointer.
+		if (shape->kind == TYPE_LVALUE_REFERENCE ||
 			shape->kind == TYPE_RVALUE_REFERENCE ||
-			shape->kind == TYPE_QUALIFIED)
-		{
-			type = derived.program_.types.RemoveTopCv(shape->child);
-			shape = &derived.program_.types.Get(type);
-		}
-		if (shape->kind == TYPE_POINTER)
-		{
-			type = derived.program_.types.RemoveTopCv(shape->child);
-			shape = &derived.program_.types.Get(type);
-		}
+			shape->kind == TYPE_POINTER)
+			return kNoEntity;
 		return shape->kind == TYPE_NAMED ? shape->entity : kNoEntity;
 	}
 
