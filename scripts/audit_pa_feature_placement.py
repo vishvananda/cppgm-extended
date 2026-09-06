@@ -2437,7 +2437,7 @@ def template_tracker_output_path(pas: list[str]) -> str:
     if pas == ["pa23"]:
         return "docs/pa23-template-placement-tracker.md"
     if tuple(pas) == STRICT_TEMPLATE_PAS:
-        return "docs/template-strict-placement-tracker.md"
+        return "docs/implemented/v3/template-strict-placement-tracker.md"
     return "docs/template-placement-tracker.md"
 
 
