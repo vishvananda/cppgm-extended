@@ -261,6 +261,27 @@ test-cells:
 # The course suites of the backend assignments under every design variant
 # of dev/src/backend_variant.h, in the default cell.  A course fixture that
 # fails a variant encodes the course solution's shape, not the contract.
+# The harness unit tests: the comparison, the workers, the audits and the
+# export, each a self-contained python unittest file under scripts/tests.
+HARNESS_TESTS = \
+	scripts/tests/test_audit_pa_feature_placement.py \
+	scripts/tests/test_batch_timeout_harness.py \
+	scripts/tests/test_check_object_expectations.py \
+	scripts/tests/test_compare_lowir_results.py \
+	scripts/tests/test_compare_results_common.py \
+	scripts/tests/test_cppgm_cmake_wrapper.py \
+	scripts/tests/test_dev_makefile_obj_isolation.py \
+	scripts/tests/test_dump_host_eh_object_facts_pl.py \
+	scripts/tests/test_exported_dev_makefile.py \
+	scripts/tests/test_machine_object_host_eh_roundtrip.py \
+	scripts/tests/test_pa29_mir_modes.py \
+	scripts/tests/test_report_elf_code_shape.py \
+	scripts/tests/test_run_ab_compile_benchmark.py \
+	scripts/tests/test_validate_perf_regression.py
+
+test-harness:
+	@set -e; for test in $(HARNESS_TESTS); do echo "== $$test"; python3 $$test; done
+
 test-variants:
 	@for pa in pa29 pa37 pa38; do $(MAKE) -C $$pa test-variants || exit 1; done
 

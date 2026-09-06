@@ -53,6 +53,16 @@ OBJ ?= ../obj
 GENERATED ?= $(OBJ)/generated
 BUILTIN_HOST_CONFIG = $(GENERATED)/cppgm_builtin_host_config.h
 OBJDIR = $(OBJ)/dev
+# The shared object root holds host-compiler objects only; a self-host or
+# other non-host build takes its own root (pa39 passes OBJ=../obj/pa39/...),
+# so the two never mix in one tree.
+SHARED_OBJ_ROOT = $(abspath ../obj)
+CURRENT_OBJ_ROOT = $(abspath $(OBJ))
+ifeq ($(CURRENT_OBJ_ROOT),$(SHARED_OBJ_ROOT))
+ifneq ($(abspath $(firstword $(CXX))),$(abspath $(firstword $(CPPGM_HOST_CXX))))
+$(error shared OBJ root $(OBJ) is only supported with host compiler $(CPPGM_HOST_CXX); use OBJ=<isolated-root> for selfhost or other non-host builds)
+endif
+endif
 DEPDIR = $(OBJDIR)/.d
 INC = -I$(SRC) -I$(GENERATED)
 

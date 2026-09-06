@@ -31,13 +31,16 @@ def docker_env():
 
 
 def have_docker_image(image):
-    result = subprocess.run(
-        ["docker", "image", "inspect", image],
-        env=docker_env(),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    try:
+            result = subprocess.run(
+            ["docker", "image", "inspect", image],
+            env=docker_env(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except FileNotFoundError:
+        return False
     return result.returncode == 0
 
 
