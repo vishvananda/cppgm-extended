@@ -27,16 +27,10 @@ permissions:
   contents: read
 
 jobs:
-  compare-cppgm-inception:
-    name: compare cppgm++ inception (non-required on PRs)
+  plan:
+    name: select flavors
     runs-on: ubuntu-24.04
-    container:
-      image: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', '26.04') && 'ubuntu:26.04' || 'ubuntu:24.04' }}
-    timeout-minutes: 300
-
-    defaults:
-      run:
-        shell: bash
+    timeout-minutes: 5
 
     if: >-
       github.event_name == 'workflow_dispatch' ||
@@ -45,13 +39,48 @@ jobs:
         (github.event.workflow_run.event == 'push' &&
          github.event.workflow_run.head_branch == 'main')))
 
+    outputs:
+      flavors: ${{ steps.select.outputs.flavors }}
+
+    steps:
+      - name: Select the selfhost flavors to compare
+        id: select
+        run: |
+          set -euo pipefail
+          # A manual run compares the one flavor it names; a completed Tests
+          # run compares every flavor whose self compiler that run uploaded.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            flavors='["${{ github.event.inputs.flavor }}"]'
+          else
+            flavors='["ubuntu-24.04-gcc","ubuntu-24.04-clang-libcxx","ubuntu-26.04-gcc","ubuntu-26.04-clang-libcxx"]'
+          fi
+          printf 'flavors=%s\n' "$flavors" >> "$GITHUB_OUTPUT"
+          printf 'Comparing inception for: %s\n' "$flavors"
+
+  compare-cppgm-inception:
+    name: compare cppgm++ inception / ${{ matrix.flavor }} (non-required on PRs)
+    needs: plan
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ contains(matrix.flavor, '26.04') && 'ubuntu:26.04' || 'ubuntu:24.04' }}
+    timeout-minutes: 300
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: ${{ fromJSON(needs.plan.outputs.flavors) }}
+
     env:
-      SELFHOST_FLAVOR: ${{ github.event.inputs.flavor || 'ubuntu-24.04-gcc' }}
-      CXX: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', 'clang-libcxx') && 'clang++' || 'g++' }}
-      CPPGM_HOST_CXX: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', 'clang-libcxx') && 'clang++' || 'g++' }}
-      CPPGM_STDLIB_FLAGS: ${{ contains(github.event.inputs.flavor || 'ubuntu-24.04-gcc', 'clang-libcxx') && '-stdlib=libc++' || '' }}
+      SELFHOST_FLAVOR: ${{ matrix.flavor }}
+      CXX: ${{ contains(matrix.flavor, 'clang-libcxx') && 'clang++' || 'g++' }}
+      CPPGM_HOST_CXX: ${{ contains(matrix.flavor, 'clang-libcxx') && 'clang++' || 'g++' }}
+      CPPGM_STDLIB_FLAGS: ${{ contains(matrix.flavor, 'clang-libcxx') && '-stdlib=libc++' || '' }}
       SELFHOST_RUN_ID: ${{ github.event.workflow_run.id || github.event.inputs.selfhost_run_id }}
-      ARTIFACT_NAME: cppgm-self-${{ github.event.inputs.flavor || 'ubuntu-24.04-gcc' }}
+      ARTIFACT_NAME: cppgm-self-${{ matrix.flavor }}
 
     steps:
       - name: Install host compiler

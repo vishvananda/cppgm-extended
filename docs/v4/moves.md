@@ -504,3 +504,68 @@ Two items remain on the self-host lanes after that fix:
   and `test-pa6-nobuild` passes 48/48; `-j1` always passes.  A missing
   ordering between the checkpoint link and the sub-make test lets the test
   occasionally run before the staged binary is in place.
+
+- **The gcc-24.04 KW_TRUE self-host miscompile: RESOLVED** (v3codex "Plan
+  loop-carried phis by cycle membership").  Not the LowIR optimizer:
+  `promote_slots` produced correct LowIR for libstdc++-13's
+  `_Hashtable::_M_insert_unique_node`; the native backend miscompiled that
+  LowIR.  The bucket-index merge `phi` in `if_end_3` has a critical incoming
+  edge from `entry`, and the native driver (`driver/session.cpp`,
+  `split_critical_phi_edges`) splits it into a block appended at the *end* of
+  the function -- invisible to `--emit-lowir`.  `scan_function_layout`
+  (allocation/location_planning.cpp) called any predecessor terminator laid
+  out at or after the phi a layout backedge, so the merge was planned as a
+  loop-carried "local phi": its register (rdi) was promoted on the
+  fall-through edge only, `if_end_3` read rdi, but nothing pinned the
+  register (the reactive walk pins loop-carried registers through
+  `cyclic_register_assumed_` / `CurrentBlockIsCyclic`, which are CFG facts,
+  and a split block makes no cycle), so `spill_candidate`'s free-eviction
+  clause (`has_spill_home && !cyclic`) dropped it in `if_then_4`; the split
+  block's transfer then wrote the frame home while `if_end_3` still read rdi
+  -> `buckets[garbage]` on every no-rehash insert, i.e. the node chained into
+  the wrong bucket: iteration finds `KW_TRUE`, `count()` does not.  Fix: a
+  phi is loop-carried only when the layout-later predecessor shares the phi
+  block's cycle (`ControlFlowQueries::BlocksShareCyclicComponent`); a
+  split-fed merge keeps the frame home.  Fixture
+  `pa38/tests/behavior/o1/100-split-edge-merge-phi-home.t` (the insert shape
+  in LowIR; the pre-fix `lowir2native` segfaults it).  Byte-exact report
+  5952/5952 unchanged, u24-gcc cell self-hosts PA1-PA10.  Why only the
+  libstdc++-13 config: libstdc++-15's `_M_insert_unique_node` has a different
+  shape and never planned the merge.  Follow-up worth considering: place split
+  blocks before their target so a forward critical edge never becomes a layout
+  backedge (also saves the `jmp`); not done here because it moves machine-IR
+  references broadly.
+
+- **The gcc-24.04 `__assign_one` ambiguity: RESOLVED** (v3codex "Drop
+  sibling replays when a dependent call adopts its owner").  Surfaced by the
+  naming-class fix (0d379e7c) in the u24-gcc cell only:
+  `ERROR: ambiguous overload for __assign_one among 2 candidates at
+  /usr/include/c++/13/bits/stl_algobase.h:439:6` compiling
+  `abi/itanium/abi_mangle.cpp` and `semantic/templates/function_instantiation.cpp`.
+  A temporary candidate dump showed both viable candidates were
+  `__assign_one<unsigned long, unsigned long>`: one from the active owner
+  `__copy_move<true,false,RA>`, one retained from the sibling replay
+  `__copy_move<false,false,RA>`.  `ResolveRetainedDependentCallPatterns` (the
+  dependent-qualifier branch, now its own helper so
+  `CompleteFunctionCallTemplateCandidates` stays under the 240-line file-audit
+  limit) adopted the fresh patterns' owner as naming class but kept the
+  sibling's retained specialization beside the new deduction.  It now drops
+  retained candidates whose owner the adopted class cannot reach
+  (`QueryBasePath`), mirroring the guard in `RetainedFunctionCallCandidates`.
+  Reproduction needs the CI cell: the same binary compiles the file on the
+  host, because `/usr/include/x86_64-linux-gnu/c++/13/bits/c++config.h`
+  differs (13.3: `__GLIBCXX__ 20240904`, `_GLIBCXX_TIME_BITS64_ABI_TAG`; 13.4:
+  `20260327`, `_GLIBCXX_HAVE_O_NONBLOCK`) and changes which `__assign_one`
+  specializations the earlier replays retain; `/usr/include/c++/13` itself is
+  byte-identical.  OPEN: no standalone fixture yet -- three synthetic
+  reproducers (`copier<Move,false,Tag>::assign_one` with and without a
+  namespace qualifier, and a libstdc++-shaped `copy_a2/copy_a1` chain)
+  compile cleanly with the pre-fix compiler because the `lib::` qualifier path
+  rebuilds the call from scope; the regression check is the u24-gcc cell's
+  `test-through-pa10`.
+
+- **CI: inception compares every selfhost flavor.**  `inception.yml` used to
+  compare one flavor per run (the `workflow_dispatch` input, defaulting to
+  `ubuntu-24.04-gcc` for the `workflow_run` trigger).  A `plan` job now emits
+  the flavor list -- the named flavor for a manual run, all four after a
+  completed Tests run -- and the compare job is a matrix over it.
