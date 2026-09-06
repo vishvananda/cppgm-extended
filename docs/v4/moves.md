@@ -283,19 +283,29 @@ it must not disturb genuine parameter declarations (a first attempt did).
 Conversion function templates also still mangle their conversion type from
 the deduced argument (`cvi` where the host writes `cvT_`).
 
-### Update: the gcc-13 selfhost cause found and fixed
+### Update: two distinct gcc self-host issues
 
-The 24.04 gcc self-host failure was g++-13 at `-O3` miscompiling the parser
-through a strict-aliasing assumption: a compiler built by g++-13 `-O3`
-desyncs while parsing int128-configured standard headers (`expected linkage
-declaration` at `stdlib.h`, `expected namespace declaration` at
-`stl_algobase.h`).  The same source compiles at `-O2`, with
-`-fno-strict-aliasing`, and with g++-15 `-O3`; neither UBSan nor valgrind
-flags it, so it is an optimizer-exploited aliasing violation the compiler
-cannot diagnose and could not be localized to a file.  Fixed by building the
-tools with `-fno-strict-aliasing` (`dev/Makefile`), which changes only the
-host build of the tools, not the code they emit; the byte-exact references
-are unchanged.
+A first investigation, conducted with the local host `g++` (which is g++-15,
+not g++-13 -- passing `CPPGM_HOST_CXX=g++-13` sets only the *embedded* config,
+not the build compiler), found that g++-15 at `-O3` miscompiles the parser
+through a strict-aliasing assumption when it later parses int128-configured
+headers.  `-fno-strict-aliasing` on the tool build fixes that and is retained
+(`dev/Makefile`, commit 63c4f466); it is byte-exact-neutral.  It does **not**
+fix the CI 24.04 gcc cell, which builds with the real g++-13.
+
+Building with the real g++-13.4 (in the Ubuntu 24.04 container, and locally
+with `CXX=g++-13`) reproduces the actual 24.04 failure: the compiler builds
+cleanly but the `recog` it produces cannot map the grammar terminal
+`KW_TRUE`, so pa6 reports every test failing with byte-identical-looking
+`BAD` output.  It is deterministic (`recog` fails 48/48; `-j1` and `-j4`
+alike), and the compiler itself is deterministic across repeated runs, so it
+is not the flaky race and not host non-determinism.  Isolated reductions of
+the token table (the static `const char*` array, the enum-derived count, and
+the `unordered_map` fill) all compile correctly under the g++-13-built
+compiler, so it is a heap-state-dependent codegen defect in cppgm++ specific
+to the g++-13 host configuration, exercised only by the full recognizer and
+not yet isolated to a construct.  It is the real remaining 24.04 gcc
+self-host blocker.
 
 Two items remain on the self-host lanes after that fix:
 
