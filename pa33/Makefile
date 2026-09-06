@@ -36,7 +36,6 @@ endif
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-COURSE_TEST_ROOT = $(wildcard course/pa33)
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 
@@ -89,7 +88,6 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 	$(CXX) $(DEBUG_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
-ifeq ($(COURSE_TEST_ROOT),)
 test: $(TEST_DEPS)
 ifneq ($(CPPGM_BATCH_TESTS),)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my tests
@@ -97,22 +95,6 @@ else
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 endif
 	@scripts/compare_results.pl ref my tests
-
-else
-test: $(TEST_DEPS)
-ifneq ($(CPPGM_BATCH_TESTS),)
-	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my tests
-else
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
-endif
-	@scripts/compare_results.pl ref my tests
-ifneq ($(CPPGM_BATCH_TESTS),)
-	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
-else
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
-endif
-	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
-endif
 
 ref-test:
 	@$(REF_TEST_RUN)

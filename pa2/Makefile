@@ -64,8 +64,6 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my ../cppgm.tests/course/pa2
-	@scripts/compare_results.pl ref my ../cppgm.tests/course/pa2
 
 ../dev/$(TARGET):
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX)

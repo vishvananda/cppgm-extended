@@ -42,7 +42,6 @@ CPPGM_HOSTCOMPAT_COMPILE_WORKERS ?= 3
 endif
 export CPPGM_HOSTCOMPAT_COMPILE_WORKERS
 COMPILE_TEST_ROOT ?= tests/compile
-COURSE_COMPILE_TEST_ROOT ?= course/pa35/compile
 ifneq ($(CPPGM_BATCH_TESTS),)
 export WRAPPED_BATCH_STDIN ?= 1
 endif
@@ -150,12 +149,10 @@ else
 	perl scripts/run_compile_tests.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 endif
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
-	$(call run_compile_course_bucket,$(COURSE_COMPILE_TEST_ROOT))
 
 test-batch: $(TEST_DEPS)
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) my $(COMPILE_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(COMPILE_TEST_ROOT)
-	$(call run_compile_course_bucket_batch,$(COURSE_COMPILE_TEST_ROOT))
 
 ref-test:
 ifneq ($(strip $(TEST)),)
@@ -168,12 +165,12 @@ ref-test-batch:
 	@perl ../scripts/run_cpphostcompat_compile_worker.pl $(REF_TEST_APP) ref $(COMPILE_TEST_ROOT)
 
 REF_TEST_RUN = case "$(TEST)" in \
-	$(COMPILE_TEST_ROOT)/*|$(COURSE_COMPILE_TEST_ROOT)/*) perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
+	$(COMPILE_TEST_ROOT)/*) perl scripts/run_compile_tests.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
 	*) echo "Usage: make ref-test TEST=$(COMPILE_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
-	'$(COMPILE_TEST_ROOT)/*|$(COURSE_COMPILE_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check {tests}'
+	'$(COMPILE_TEST_ROOT)/*::perl ../scripts/run_cpphostcompat_compile_worker.pl $(CPPGM_TEST_APP) check {tests}'
 include ../scripts/pa_run_check_targets.mk
 
 .PHONY: dev-shared-target ref-test ref-test-batch test-batch

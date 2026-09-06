@@ -59,7 +59,7 @@ are unchanged inherited header-division advisories, not PA32 failures.
   open-addressed table keyed by `TypeId`, canonical function `BindingId`, and
   recipe ID; also made dependent-parameter discovery visit-once.
 - Added
-  `cppgm.tests/course/pa32/200-canonical-template-type-dag-scaling.t`, a
+  `pa32/tests/200-canonical-template-type-dag-scaling.t`, a
   depth-24 compile/link/run regression that would exceed the old build budget.
 
 The repair is at the shared ownership points rather than at the observed

@@ -64,9 +64,7 @@ make
 make test
 ```
 
-`make` builds `cppgm++`. `make test` runs the local PA11 suite. If a
-`course/pa11` extension suite is present, the Makefile runs it after the local
-suite using the same harness contract.
+`make` builds `cppgm++`. `make test` runs the local PA11 suite.
 
 ### Required Driver Surface
 

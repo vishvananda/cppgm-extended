@@ -1,0 +1,1 @@
+ERROR: no viable overload for select in invoke candidate=function of (pointer to int) returning int object=<none> argument=pointer to long int at tests/compile/400-static-member-retained-no-viable-bad.t:9:12

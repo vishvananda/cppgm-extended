@@ -34,8 +34,9 @@ built the same way.
   compare your instruction selection with the course solution's.
 
 The course solution's own dumps are pinned in the regression lane
-(`regression/pa29/`, see `../cppgm.tests/regression/README.md`).  That lane
-runs with `make test` and is not part of the assignment's contract.
+(`tests/regression/`, see `TESTING_AND_REFERENCES.md` at the repository
+root).  That lane runs with `make test` and is not part of the assignment's
+contract.
 
 ### Prerequisites
 
@@ -75,7 +76,7 @@ The starter kit contains:
 - `tests/strict/` for raw-MIR oracle tests
 - `tests/structural/` for canonical-MIR oracle tests
 - `tests/behavior/` for generated-program behavior tests without a machine-IR oracle
-- `course/pa29/controls/` for focused property checks that inspect only the
+- `tests/controls/` for focused property checks that inspect only the
   documented MIR or native relationship and generated behavior, never a
   complete MIR dump or executable image
 
@@ -346,9 +347,7 @@ successful compilation and matching generated-program behavior, but they intenti
 not compare machine IR. The checked-in reference MIR remains useful for inspection
 and manual comparison.
 
-The course extension suite uses the same three directories under
-`course/pa29/`: `strict/`, `structural/`, and `behavior/`. Successful cases in
-all three lanes retain raw reference MIR. Only strict and structural tests use
+Successful cases in all three lanes retain raw reference MIR. Only strict and structural tests use
 it as a grading oracle.
 
 `make test` recursively runs the checked-in local suites:
@@ -356,6 +355,8 @@ it as a grading oracle.
 - `tests/strict/`
 - `tests/structural/`
 - `tests/behavior/`
+- `tests/controls/`, through `scripts/check_pa29_native_contracts.pl`
+- `tests/regression/{strict,structural,behavior}`, the regression lane
 
 These directories contain PA29-specific backend oracle tests, not source-standard tests.
 PA29 has no `tests/spec/` directory because the tested contract is the

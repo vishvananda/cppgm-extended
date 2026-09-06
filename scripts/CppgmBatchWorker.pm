@@ -101,6 +101,13 @@ sub collect_tests
 			elsif (-d $root)
 			{
 				find(sub {
+					# A `controls` or `regression` directory inside a suite
+					# is a lane of its own, run by its own target.
+					if (-d $_ && $_ ne $root && $_ =~ m{(?:^|/)(?:controls|regression)$})
+					{
+						$File::Find::prune = 1;
+						return;
+					}
 					return if !-f $_;
 					push @found, $File::Find::name if $File::Find::name =~ $pattern;
 				}, $root);

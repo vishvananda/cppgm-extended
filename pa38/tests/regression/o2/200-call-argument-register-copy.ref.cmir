@@ -1,0 +1,36 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @sink
+  abi
+    param %x -> rdi : i64
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    mov r8, 20
+    add r8, 22
+    mov rdi, r8
+    call @sink [args=(rdi)]
+    mov rax, 0
+    ret rax

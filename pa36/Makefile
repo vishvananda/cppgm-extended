@@ -36,7 +36,6 @@ REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
 TEST_DEPS ?= dev-shared-target
 RUN_CHECK_DEPS ?= dev-shared-target
 LINK_TEST_ROOT ?= tests/link
-COURSE_LINK_TEST_ROOT ?= course/pa36/link
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
 HOST_CXX_DEFAULT_DEF = -DCPPGM_DEFAULT_HOST_CXX='"$(CPPGM_HOST_CXX)"'
@@ -124,12 +123,10 @@ endef
 test: $(TEST_DEPS)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(LINK_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(LINK_TEST_ROOT)
-	$(call run_link_course_bucket,$(COURSE_LINK_TEST_ROOT))
 
 test-batch: $(TEST_DEPS)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(LINK_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(LINK_TEST_ROOT)
-	$(call run_link_course_bucket,$(COURSE_LINK_TEST_ROOT))
 
 ref-test:
 ifneq ($(strip $(TEST)),)
@@ -144,7 +141,7 @@ ref-test-batch:
 		perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref $(LINK_TEST_ROOT)
 
 REF_TEST_RUN = case "$(TEST)" in \
-	$(LINK_TEST_ROOT)/*|$(COURSE_LINK_TEST_ROOT)/*) CPPGM_CMAKE_COMPILER=$(REF_TEST_APP) perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
+	$(LINK_TEST_ROOT)/*) CPPGM_CMAKE_COMPILER=$(REF_TEST_APP) perl ../scripts/run_cpphostinterop_tests_worker.pl $(REF_TEST_APP) ref "$(TEST)" ;; \
 	*) echo "Usage: make ref-test TEST=$(LINK_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 

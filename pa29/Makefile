@@ -12,12 +12,10 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-COURSE_TEST_ROOT = $(wildcard course/pa29)
-COURSE_ORACLE_TEST_ROOTS = $(wildcard course/pa29/strict course/pa29/structural course/pa29/behavior)
-COURSE_CONTROL_TEST_ROOT ?= course/pa29/controls
+CONTROL_TEST_ROOT ?= tests/controls
 # Our own shape references live in the regression lane, outside the course
-# contract (cppgm.tests/regression/README.md).
-REGRESSION_ORACLE_TEST_ROOTS = $(wildcard regression/pa29/strict regression/pa29/structural regression/pa29/behavior)
+# contract (tests/regression; see docs/student-export-root/TESTING_AND_REFERENCES.md).
+REGRESSION_ORACLE_TEST_ROOTS = $(wildcard tests/regression/strict tests/regression/structural tests/regression/behavior)
 PERF_TOLERANCE_PERCENT ?= 10
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
@@ -42,16 +40,6 @@ $(OBJ)/debug/%.o: %.cpp
 	$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
 	mv -f $(DDEPDIR)/$*.Td $(DDEPDIR)/$*.d
 
-ifeq ($(COURSE_TEST_ROOT),)
-test: $(TEST_DEPS)
-ifneq ($(CPPGM_BATCH_TESTS),)
-	@perl ../scripts/run_lowir_native_tests_worker.pl $(CPPGM_TEST_APP) my tests
-else
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
-endif
-	@scripts/compare_results.pl ref my tests
-
-else
 # The course suite (test-course) judges by behaviour, contract shape where
 # the shape is the contract, and envelope; the regression suite
 # (test-regression) pins the course solution's dumps.  test-variants runs the
@@ -65,42 +53,18 @@ else
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 endif
 	@scripts/compare_results.pl ref my tests
-ifneq ($(CPPGM_BATCH_TESTS),)
-	@set -e; for root in $(COURSE_ORACLE_TEST_ROOTS); do \
-		perl ../scripts/run_lowir_native_tests_worker.pl \
-			$(CPPGM_TEST_APP) my "$$root"; \
-		case "$$root" in \
-			*/behavior) mode=mir_behavior_t ;; \
-			*/structural) mode=mir_structural_t ;; \
-			*) mode=mir_t ;; \
-		esac; \
-		perl ../scripts/compare_results_common.pl \
-			"$$mode" ref my "$$root"; \
-	done
-else
-	@set -e; for root in $(COURSE_ORACLE_TEST_ROOTS); do \
-		scripts/run_all_tests.pl $(CPPGM_TEST_APP) my "$$root"; \
-		case "$$root" in \
-			*/behavior) mode=mir_behavior_t ;; \
-			*/structural) mode=mir_structural_t ;; \
-			*) mode=mir_t ;; \
-		esac; \
-		perl ../scripts/compare_results_common.pl \
-			"$$mode" ref my "$$root"; \
-	done
-endif
-	@set -e; if [ -d "$(COURSE_CONTROL_TEST_ROOT)" ]; then \
+	@set -e; if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
 		perl ../scripts/check_pa29_native_contracts.pl \
-			$(CPPGM_TEST_APP) "$(COURSE_CONTROL_TEST_ROOT)"; \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
 		perl ../scripts/check_pa29_native_contracts.pl \
 			$(CPPGM_TEST_APP) \
-			course/pa29/behavior/scratch-carried-frame-reloads.t; \
+			tests/behavior/scratch-carried-frame-reloads.t; \
 		perl ../scripts/check_pa29_native_contracts.pl \
 			$(CPPGM_TEST_APP) \
-			course/pa29/behavior/deferred-address-parameter-carrier-reuse.t; \
+			tests/behavior/deferred-address-parameter-carrier-reuse.t; \
 		perl ../scripts/check_pa29_native_contracts.pl \
 			$(CPPGM_TEST_APP) \
-			course/pa29/behavior/cost-directed-small-zeroinit.t; \
+			tests/behavior/cost-directed-small-zeroinit.t; \
 	fi
 
 test-regression: $(TEST_DEPS)
@@ -135,24 +99,22 @@ test-variants: $(TEST_DEPS)
 		echo "== $(TARGET) course suite under variant $$variant"; \
 		CPPGM_BACKEND_VARIANT=$$variant $(MAKE) --no-print-directory test-course; \
 	done
-endif
 
 ref-test:
 	@$(REF_TEST_RUN)
 	@if [ -d tests/structural ]; then perl ../scripts/canonicalize_lowir_native_refs.pl tests/structural; fi
-	@if [ -d course/pa29/structural ]; then perl ../scripts/canonicalize_lowir_native_refs.pl course/pa29/structural; fi
 
 REF_TEST_RUN = case "$(TEST)" in \
-	$(COURSE_CONTROL_TEST_ROOT)/*) echo "$(TEST): focused native predicate has no reference sidecar" ;; \
+	$(CONTROL_TEST_ROOT)/*) echo "$(TEST): focused native predicate has no reference sidecar" ;; \
 	*) scripts/run_all_tests.pl $(REF_TEST_APP) ref "$(if $(strip $(TEST)),$(TEST),tests)" ;; \
 esac
 
 CHECK_RUN = case "$(TEST)" in \
-	$(COURSE_CONTROL_TEST_ROOT)/*) perl ../scripts/check_pa29_native_contracts.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	$(CONTROL_TEST_ROOT)/*) perl ../scripts/check_pa29_native_contracts.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
 esac
 CHECK_COMPARE = case "$(TEST)" in \
-	$(COURSE_CONTROL_TEST_ROOT)/*) true ;; \
+	$(CONTROL_TEST_ROOT)/*) true ;; \
 	*) scripts/compare_results.pl ref check "$(TEST)" ;; \
 esac
 
@@ -182,7 +144,7 @@ $(DDEPDIR)/%.d: ;
 # `x.ref.ir` sidecar.  `make test-perf-refs` writes the sidecars from the
 # current programs.  Skipped when valgrind is not installed.
 test-perf: $(TEST_DEPS)
-	@perl ../scripts/check_ir_envelope.pl $(PERF_TOLERANCE_PERCENT) tests/behavior $(wildcard course/pa29/behavior)
+	@perl ../scripts/check_ir_envelope.pl $(PERF_TOLERANCE_PERCENT) tests/behavior
 
 test-perf-refs: $(TEST_DEPS)
-	@perl ../scripts/check_ir_envelope.pl --write $(PERF_TOLERANCE_PERCENT) tests/behavior $(wildcard course/pa29/behavior)
+	@perl ../scripts/check_ir_envelope.pl --write $(PERF_TOLERANCE_PERCENT) tests/behavior

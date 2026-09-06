@@ -1,0 +1,102 @@
+function @take_box(%b : obj<8x8>) -> void [binding=strong, object=_Z8take_box3boxIlE] {
+  slot $b : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $b
+    copyobj 8x8 %b, %t1
+    %t2 = addr $b
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $narrow : obj<4x4>
+  slot $arg__1 : obj<8x8>
+  slot $source : obj<4x4>
+  slot $direct : obj<8x8>
+  slot $cond__2 : i32
+
+  block ^entry:
+    %t1 = addr $narrow
+    call void @box_int___box_int_(%t1)
+    %t2 = addr $arg__1
+    %t3 = addr $narrow
+    call void @box_long_int___box_int___ov4(%t2, %t3)
+    call void @take_box($arg__1)
+    %t4 = addr $source
+    call void @guarded_int___guarded_long_int_(%t4)
+    %t5 = addr $direct
+    %t6 = addr $source
+    call void @guarded_long_int___guarded_long_int___ov4(%t5, %t6)
+    %t7 = addr $direct
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = load i64 %t8
+    %t10 = cmp eq i64 %t9, 0
+    branch %t10, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__2
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t11 = load i32 $cond__2
+    return i32 %t11
+}
+function @box_int___box_int_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3boxIiEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @box_long_int___box_int___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3boxIlEC1IiEERKS_IT_E, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = convert sext i64 i32 %t3
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    store i64 %t4, %t6
+    return void
+}
+function @guarded_int___guarded_long_int_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7guardedIiEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @guarded_long_int___guarded_long_int___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7guardedIlEC1IiEERKS_IT_E, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = convert sext i64 i32 %t3
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    store i64 %t4, %t6
+    return void
+}
+alias object _ZN3boxIiEC2Ev = @box_int___box_int_
+alias object _ZN3boxIlEC2IiEERKS_IT_E = @box_long_int___box_int___ov4
+alias object _ZN7guardedIiEC2Ev = @guarded_int___guarded_long_int_
+alias object _ZN7guardedIlEC2IiEERKS_IT_E = @guarded_long_int___guarded_long_int___ov4

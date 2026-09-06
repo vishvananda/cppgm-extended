@@ -26,7 +26,8 @@ Prompt".
 - Reuse and extend earlier assignment code. Do not restart from scratch for a
   later PA.
 - Prefer real semantic fixes over test-specific workarounds.
-- If you add additional tests, put them under `cppgm.tests/course/paN/`.
+- If you add additional tests, put them under `paN/tests/`, in the numeric
+  group of the feature they exercise.
 - Do not hardcode answers for specific tests.
 - Do not shell out to reference binaries, previous solutions, or host compilers
   to produce required compiler output unless the PA handout explicitly makes

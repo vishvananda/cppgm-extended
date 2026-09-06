@@ -36,8 +36,7 @@ endif
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-COURSE_TEST_ROOT = $(wildcard course/pa32)
-COURSE_SECTION_CONTROL_ROOT ?= course/pa32/controls
+SECTION_CONTROL_ROOT ?= tests/controls
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 
@@ -90,16 +89,6 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 	$(CXX) $(DEBUG_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
-ifeq ($(COURSE_TEST_ROOT),)
-test: $(TEST_DEPS)
-ifneq ($(CPPGM_BATCH_TESTS),)
-	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my tests
-else
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
-endif
-	@scripts/compare_results.pl ref my tests
-
-else
 test: $(TEST_DEPS)
 ifneq ($(CPPGM_BATCH_TESTS),)
 	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my tests
@@ -108,26 +97,22 @@ else
 endif
 	@scripts/compare_results.pl ref my tests
 ifneq ($(CPPGM_BATCH_TESTS),)
-	@perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
 else
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
 endif
-	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
-	@if [ -d "$(COURSE_SECTION_CONTROL_ROOT)" ]; then \
+	@if [ -d "$(SECTION_CONTROL_ROOT)" ]; then \
 		perl ../scripts/check_pa32_section_contract.pl \
-			$(CPPGM_TEST_APP) "$(COURSE_SECTION_CONTROL_ROOT)"; \
+			$(CPPGM_TEST_APP) "$(SECTION_CONTROL_ROOT)"; \
 	fi
-endif
 
 ref-test:
 	@$(REF_TEST_RUN)
 
 CHECK_RUN = case "$(TEST)" in \
-	$(COURSE_SECTION_CONTROL_ROOT)/*) perl ../scripts/check_pa32_section_contract.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	$(SECTION_CONTROL_ROOT)/*) perl ../scripts/check_pa32_section_contract.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	*) perl ../scripts/run_cpphostinterop_tests_worker.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
 esac
 CHECK_COMPARE = case "$(TEST)" in \
-	$(COURSE_SECTION_CONTROL_ROOT)/*) true ;; \
+	$(SECTION_CONTROL_ROOT)/*) true ;; \
 	*) scripts/compare_results.pl ref check "$(TEST)" ;; \
 esac
 include ../scripts/pa_run_check_targets.mk

@@ -41,7 +41,7 @@ lines, of which roughly 200 are the allocator.
    original blocks.  Their jumps back into the body are layout backedges,
    so `layout.phi_loop_carried` is set for phis that are not loop phis in
    the source (`%result` in `@walk_guarded` of
-   `course/pa38/o1/420-loop-and-eh-placement`).  I found this from the
+   `tests/o1/420-loop-and-eh-placement`).  I found this from the
    MIR dump and my own debug print, not from any allowed file.  The header
    should say the layout is the post-split layout and that "loop-carried"
    means "has a layout-backedge predecessor", nothing more.

@@ -1,0 +1,99 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @make_value
+  abi
+    param %value -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    ret rdi
+
+function @clobber
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    mov rax, 5
+    ret rax
+
+function @probe
+  abi
+    param %take_old_path -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues direct
+    preserve <gpr0> <gpr1>
+    slot $joined -> [rbp-<off0>] : i64
+
+  block ^entry
+    test.i64 rdi, rdi
+    jne ^old_value
+
+  block ^constant_value
+    store.i64 [rbp-<off0>], 7
+    jmp ^merge
+
+  block ^old_value
+    mov rdi, 91
+    call @make_value [args=(rdi)]
+    mov <gpr0>, rax
+    call @clobber [args=()]
+    cmp.i64 <gpr0>, rax
+    je ^store_fallback
+
+  block ^store_old
+    store.i64 [rbp-<off0>], <gpr0>
+    jmp ^merge
+
+  block ^store_fallback
+    store.i64 [rbp-<off0>], 3
+
+  block ^merge
+    load.i64 <gpr1>, [rbp-<off0>]
+    test.i64 <gpr1>, <gpr1>
+    je ^return_zero
+
+  block ^use_current
+    call @clobber [args=()]
+    lea r9, [<gpr1>+rax]
+    ret r9
+
+  block ^return_zero
+    mov rax, 0
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues direct
+
+  block ^entry
+    mov rdi, 0
+    call @probe [args=(rdi)]
+    mov rdx, 12
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    ret rax

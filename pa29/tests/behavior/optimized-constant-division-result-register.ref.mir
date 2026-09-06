@@ -1,0 +1,73 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @saved_power
+  storage scalar i64
+  init i64 0
+
+global @saved_magic
+  storage scalar i64
+  init i64 0
+
+function @divide_and_store
+  abi
+    param %value -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    mov rcx, 32
+    mov rax, rdi
+    cqo
+    idiv rcx
+    mov r9, rax
+    store.i64 @saved_power, rax
+    add r9, 1
+    mov rcx, 7
+    mov rax, rdi
+    cqo
+    idiv rcx
+    mov r8, rax
+    store.i64 @saved_magic, rax
+    add r8, 1
+    load.i64 rsi, @saved_power
+    add rsi, @saved_magic
+    add r9, r8
+    add rsi, r9
+    ret rsi
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues direct
+    preserve r13
+
+  block ^entry
+    mov rdi, 224
+    call @divide_and_store [args=(rdi)]
+    mov rdx, 80
+    cmp.i64 rax, rdx
+    setne r13
+    movzx r13, r13
+    mov rdi, -224
+    call @divide_and_store [args=(rdi)]
+    mov rdx, -76
+    cmp.i64 rax, rdx
+    setne rax
+    movzx rax, rax
+    or r13, rax
+    mov rax, r13
+    sext.i32 rax
+    ret rax

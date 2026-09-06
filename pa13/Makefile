@@ -18,7 +18,6 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-COURSE_TEST_ROOT = $(wildcard course/pa13)
 LOCAL_TEST_ROOT = tests/spec
 REF_TEST_ROOT = $(LOCAL_TEST_ROOT)
 DEBUGINFO_TEST_ROOT = tests/debuginfo
@@ -56,24 +55,9 @@ $(OBJ)/debug/%.o: %.cpp
 	$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
 	mv -f $(DDEPDIR)/$*.Td $(DDEPDIR)/$*.d
 
-ifeq ($(COURSE_TEST_ROOT),)
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(LOCAL_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(LOCAL_TEST_ROOT)
-else
-test: $(TEST_DEPS)
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(LOCAL_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(LOCAL_TEST_ROOT)
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
-	@if [ -d "$(BEHAVIOR_TEST_ROOT)" ]; then \
-		perl ../scripts/run_lowir_program_tests_worker.pl \
-			$(CPPGM_TEST_APP) $(CY86_APP) my "$(BEHAVIOR_TEST_ROOT)"; \
-		perl ../scripts/compare_results_common.pl lowir_behavior_t \
-			ref my "$(BEHAVIOR_TEST_ROOT)"; \
-	fi
-	@perl ../scripts/audit_lowir_contract.pl
-endif
 
 ref-test:
 	@$(REF_TEST_RUN)

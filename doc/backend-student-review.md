@@ -1,5 +1,9 @@
 # The backend from the student's seat: audit
 
+Paths in the tables are as of the review.  The course roots have since moved
+into `paN/tests/` and the regression roots into `paN/tests/regression/`;
+see `TESTING_AND_REFERENCES.md`.
+
 Phase 1 of `PLAN-BACKEND-STUDENT-REVIEW.md`.  Tree `994a739a`, 2026-09-05.
 Every number below was produced by a script or a suite run on that tree;
 the scripts and logs are named where they matter.

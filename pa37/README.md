@@ -31,7 +31,8 @@ built the same way.
   solution's.
 
 The course solution's own outputs are pinned exactly in the regression lane
-(`regression/pa37/`, see `../cppgm.tests/regression/README.md`).  That lane
+(`tests/regression/`, see `TESTING_AND_REFERENCES.md` at the repository
+root).  That lane
 is the compiler team's memory of its decisions; it runs with `make test`
 but it is not part of the assignment's contract.
 
@@ -1057,9 +1058,8 @@ make test
 - `tests/driver/o2`
 - `tests/driver/o3`
 - `tests/object-roundtrip`
-- the course roots under `course/pa37/`
-- the regression roots under `regression/pa37/`, the course solution's
-  pinned outputs and the pass-specific controls (`regression/pa37/controls`),
+- the regression roots under `tests/regression/`, the course solution's
+  pinned outputs and the pass-specific controls (`tests/regression/controls`),
   which are not part of the assignment's contract
 
 These directories are organized by tool mode and validation mode, not by N3485

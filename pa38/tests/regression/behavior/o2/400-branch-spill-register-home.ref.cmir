@@ -1,0 +1,79 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @fallback
+  abi
+    return i8 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    mov rax, 3
+    ret rax
+
+function @accumulate
+  abi
+    param %take_call -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues direct
+    preserve <gpr0>
+    slot $digit -> [rbp-<off0>] : i8
+
+  block ^entry
+    mov <gpr0>, 2
+    imul <gpr0>, 10
+    test.i64 rdi, rdi
+    je ^direct
+
+  block ^call
+    call @fallback [args=(), unwind=no]
+    store.i8 [rbp-<off0>], rax
+    jmp ^join
+
+  block ^direct
+    store.i8 [rbp-<off0>], 3
+
+  block ^join
+    load.i8 r9, [rbp-<off0>]
+    mov r8, r9
+    sext.i8 r8
+    lea r9, [<gpr0>+r8]
+    ret r9
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+    preserve <gpr1>
+
+  block ^entry
+    mov rdi, 0
+    call @accumulate [args=(rdi), unwind=no]
+    mov <gpr1>, rax
+    mov rdi, 1
+    call @accumulate [args=(rdi), unwind=no]
+    mov rdx, 23
+    cmp.i64 <gpr1>, rdx
+    setne <gpr1>
+    movzx <gpr1>, <gpr1>
+    mov rdx, 23
+    cmp.i64 rax, rdx
+    setne r8
+    movzx r8, r8
+    or <gpr1>, r8
+    ret <gpr1>

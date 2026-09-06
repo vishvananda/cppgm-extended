@@ -1,0 +1,155 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @base_vtable
+  storage data
+  item zero 128
+
+global @derived_vtable
+  storage data
+  item zero 128
+
+function @token_ctor
+  abi
+    param %address -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    store.u8 [rdi], 99
+    ret
+
+function @construct
+  abi
+    param %this -> rdi : ptr
+    param %reference -> rsi : ptr
+    param %a -> rdx : i32
+    param %b -> rcx : i32
+    param %c -> r8 : i64
+    param %d -> r9 : u8
+    param %e -> [rbp+16] : u8
+    param %f -> [rbp+24] : i32
+    param %g -> [rbp+32] : i32
+    param %h -> [rbp+40] : i64
+    param %i -> [rbp+48] : i64
+    return void -> void
+  frame
+    stack_size 112
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+    param-slot %b -> [rbp-4] : i32
+    param-slot %e -> [rbp-5] : u8
+    param-slot %f -> [rbp-12] : i32
+    param-slot %g -> [rbp-16] : i32
+    param-slot %h -> [rbp-24] : i64
+    param-slot %i -> [rbp-32] : i64
+
+  block ^entry
+    store.i32 [rbp-4], rcx
+    load.u8 rax, [rbp+16]
+    store.u8 [rbp-5], rax
+    load.i32 rax, [rbp+24]
+    store.i32 [rbp-12], rax
+    load.i32 rax, [rbp+32]
+    store.i32 [rbp-16], rax
+    load.i64 rax, [rbp+40]
+    store.i64 [rbp-24], rax
+    load.i64 rax, [rbp+48]
+    store.i64 [rbp-32], rax
+    mov rbx, @base_vtable
+    lea rbx, [rbx+16]
+    store.ptr [rdi], rbx
+    mov rbx, @derived_vtable
+    lea rbx, [rbx+16]
+    store.ptr [rdi], rbx
+    store.ptr [rdi+8], rsi
+    store.i32 [rdi+16], rdx
+    store.i32 [rdi+20], rcx
+    store.i64 [rdi+24], r8
+    store.u8 [rdi+32], r9
+    load.u8 rax, [rbp-5]
+    store.u8 [rdi+33], rax
+    load.i32 rax, [rbp-12]
+    store.i32 [rdi+36], rax
+    load.i32 rax, [rbp-16]
+    store.i32 [rdi+40], rax
+    load.i64 rax, [rbp-24]
+    store.i64 [rdi+48], rax
+    load.i64 rax, [rbp-32]
+    store.i64 [rdi+56], rax
+    lea rbx, [rdi+72]
+    mov rdi, rbx
+    call @token_ctor [args=(rdi)]
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 160
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+    slot $object -> [rbp-96] : obj<96x8>
+    slot $reference -> [rbp-104] : i64
+
+  block ^entry
+    lea rdi, [rbp-96]
+    zero_bytes 96x8, rdi
+    lea rbx, [rbp-104]
+    sub rsp, 48
+    lea rdi, [rbp-96]
+    mov rsi, rbx
+    mov rdx, 11
+    mov rcx, 12
+    mov r8, 13
+    mov r9, 14
+    mov r11, 15
+    store.i64 [rsp], r11
+    mov r11, 16
+    store.i64 [rsp+8], r11
+    mov r11, 17
+    store.i64 [rsp+16], r11
+    mov r11, 18
+    store.i64 [rsp+24], r11
+    mov r11, 19
+    store.i64 [rsp+32], r11
+    call @construct [args=(rcx,rdx,rsi,rdi,r8,r9), stack=48]
+    add rsp, 48
+    load.ptr r8, [rbp-96]
+    mov r9, @derived_vtable
+    lea r9, [r9+16]
+    cmp.ptr r8, r9
+    setne r8
+    movzx r8, r8
+    load.ptr r9, [rbp-88]
+    cmp.ptr r9, rbx
+    setne r9
+    movzx r9, r9
+    load.i32 rdi, [rbp-80]
+    mov rdx, 11
+    cmp.i32 rdi, rdx
+    setne rdi
+    movzx rdi, rdi
+    load.u8 rsi, [rbp-24]
+    mov rdx, 99
+    cmp.u8 rsi, rdx
+    setne rsi
+    movzx rsi, rsi
+    or r8, r9
+    or rdi, rsi
+    or r8, rdi
+    mov rax, r8
+    sext.i32 rax
+    ret rax
