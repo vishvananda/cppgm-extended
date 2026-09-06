@@ -38,7 +38,12 @@ Q = $(if $(filter 1,$(V)),,@)
 quiet = @if [ "$(V)" != "1" ]; then printf '  %-7s %s\n' '$(1)' '$(2)'; fi
 CPPGM_TEST_RUNNER ?= 1
 CPPGM_STDLIB_FLAGS ?=
-CC_FLAGS ?= -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS)
+# -fno-strict-aliasing hardens the host build of the tools: gcc 13 at -O3
+# miscompiles the parser through a strict-aliasing assumption (the self-host
+# then desyncs on int128-configured standard headers).  The flag affects only
+# how the host compiler builds these tools, never the code they emit, so the
+# byte-exact references are unchanged.
+CC_FLAGS ?= -std=gnu++11 -Wall -O3 -fno-strict-aliasing $(CPPGM_STDLIB_FLAGS)
 TELEMETRY_OFF_OBJ ?= ../obj/dev-telemetry-off
 TELEMETRY_OFF_CC_FLAGS ?= $(CC_FLAGS) -DCPPGM_TELEMETRY_ENABLED=0
 # Hosted compiler workloads create and release many translation-unit-lifetime
