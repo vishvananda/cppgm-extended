@@ -1,1 +1,1 @@
-ERROR: invalid CY86 operand
+ERROR: invalid CY86 operand at tests/300-unparenthesized-negative-immediate-bad.t.1:1:15
