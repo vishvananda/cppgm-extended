@@ -1,4 +1,4 @@
-global @alignment_value : i64 [binding=internal, object=_ZL15alignment_value] = 0
+global @alignment_value : i64 [storage=readonly, binding=internal, object=_Z15alignment_value] = 0
 
 function @unique(%__param0 : obj<1x1>) -> u8 [binding=internal, object=_Z6unique10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EE] {
   slot $__param0 : obj<1x1>
@@ -13,10 +13,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $to_erase
-    call void @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0____long_int__unsigned_long_int__0___offset_ptr(%t1)
+    call void @offset_ptr___cppgm_class_template_identity_8_2_0__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0_(%t1)
     %t2 = addr $argobj__2
     %t3 = addr $to_erase
-    call void @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0___const__long_int__unsigned_long_int__0___offset_ptr__ov4(%t2, %t3, 0)
+    call void @offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0___ov4(%t2, %t3, 0)
     %t4 = call u8 @unique($argobj__2)
     branch %t4, ^cond_then_1, ^cond_else_2
 
@@ -32,7 +32,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0___const__long_int__unsigned_long_int__0___offset_ptr__ov4(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr) -> void [binding=weak, object=_ZN10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EEC1IS2_EERKS_IT_lmLm0EEPN21enable_if_convertibleIS6_S3_vE4typeE] {
+function @offset_ptr___cppgm_class_template_identity_8_2_0__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr) -> void [binding=weak, object=_ZN10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EEC1IS2_EERKS_IT_lmLm0EEP41__function_template_nondeduced_type_shape, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -43,12 +50,5 @@ function @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__
     store ptr %__param2, $__param2
     return void
 }
-function @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0____long_int__unsigned_long_int__0___offset_ptr(%this : ptr) -> void [binding=weak, object=_ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EEC2IS2_EERKS_IT_lmLm0EEPN21enable_if_convertibleIS6_S3_vE4typeE = @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0___const__long_int__unsigned_long_int__0___offset_ptr__ov4
-alias object _ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC2Ev = @offset_ptr_compact_node_offset_ptr_void__long_int__unsigned_long_int__0____long_int__unsigned_long_int__0___offset_ptr
+alias object _ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC2Ev = @offset_ptr___cppgm_class_template_identity_8_2_0__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0_
+alias object _ZN10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EEC2IS2_EERKS_IT_lmLm0EEP41__function_template_nondeduced_type_shape = @offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0___ov4

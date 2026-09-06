@@ -1,4 +1,4 @@
-function @take_arg1(%value : ptr [pass=reference]) -> i32 [binding=strong, object=_Z9take_arg1RK4arg1] {
+function @take_arg1(%value : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z9take_arg1RK4arg1] {
   slot $value : ptr
 
   block ^entry:
@@ -8,7 +8,7 @@ function @take_arg1(%value : ptr [pass=reference]) -> i32 [binding=strong, objec
     %t3 = load i32 %t2
     return i32 %t3
 }
-function @take_arg2(%value : ptr [pass=reference]) -> i32 [binding=strong, object=_Z9take_arg2RK4arg2] {
+function @take_arg2(%value : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z9take_arg2RK4arg2] {
   slot $value : ptr
 
   block ^entry:
@@ -25,9 +25,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    call void @convertible_to_arg2__convertible_to_arg1__empty_base____convertible_to(%t1)
+    call void @convertible_to_arg2____cppgm_class_template_identity_0_0_0___convertible_to_arg2____cppgm_class_template_identity_0_0_0_(%t1)
     %t2 = addr $value
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = call ptr @convertible_to_arg1__empty_base___operatorconstT_(%t3)
     %t5 = call i32 @take_arg1(%t4)
     %t6 = cmp eq i32 %t5, 7
@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t7 = addr $value
-    %t8 = call ptr @convertible_to_arg2__convertible_to_arg1__empty_base____operatorconstT_(%t7)
+    %t8 = call ptr @convertible_to_arg2____cppgm_class_template_identity_0_0_0___operatorconstT_(%t7)
     %t9 = call i32 @take_arg2(%t8)
     %t10 = cmp eq i32 %t9, 11
     %t11 = cmp ne i64 %t10, 0
@@ -62,20 +62,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @convertible_to_arg2__convertible_to_arg1__empty_base____convertible_to(%this : ptr) -> void [binding=weak, object=_ZN14convertible_toI4arg2S_I4arg110empty_baseEEC1Ev] {
+function @convertible_to_arg2____cppgm_class_template_identity_0_0_0___convertible_to_arg2____cppgm_class_template_identity_0_0_0_(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN14convertible_toI4arg2S_I4arg110empty_baseEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    call void @convertible_to_arg1__empty_base___convertible_to__base_entry(%t2)
+    %t2 = index i8 %t1, 0
+    call void @convertible_to_arg1__empty_base___convertible_to_arg2____cppgm_class_template_identity_0_0_0___base_entry(%t2)
     %t3 = load ptr $this
     %t4 = index i8 [projection=field] %t3, 4
     call void @arg2__arg2(%t4)
     return void
 }
-function @convertible_to_arg2__convertible_to_arg1__empty_base____operatorconstT_(%this : ptr) -> ptr [binding=weak, object=_ZNK14convertible_toI4arg2S_I4arg110empty_baseEEcvRKS0_Ev] {
+function @convertible_to_arg1__empty_base___operatorconstT_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZNK14convertible_toI4arg110empty_baseEcvRKS0_Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+function @convertible_to_arg2____cppgm_class_template_identity_0_0_0___operatorconstT_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK14convertible_toI4arg2S_I4arg110empty_baseEEcvRKS0_Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -84,7 +93,7 @@ function @convertible_to_arg2__convertible_to_arg1__empty_base____operatorconstT
     %t2 = index i8 [projection=field] %t1, 4
     return ptr %t2
 }
-function @convertible_to_arg1__empty_base___convertible_to__base_entry(%this : ptr) -> void [binding=weak, object=_ZN14convertible_toI4arg110empty_baseEC2Ev] {
+function @convertible_to_arg1__empty_base___convertible_to_arg2____cppgm_class_template_identity_0_0_0___base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN14convertible_toI4arg110empty_baseEC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -94,26 +103,7 @@ function @convertible_to_arg1__empty_base___convertible_to__base_entry(%this : p
     call void @arg1__arg1(%t2)
     return void
 }
-function @convertible_to_arg1__empty_base___operatorconstT_(%this : ptr) -> ptr [binding=weak, object=_ZNK14convertible_toI4arg110empty_baseEcvRKS0_Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    return ptr %t2
-}
-function @arg1__arg1(%this : ptr) -> void [binding=weak, object=_ZN4arg1C1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    return void
-}
-function @arg2__arg2(%this : ptr) -> void [binding=weak, object=_ZN4arg2C1Ev] {
+function @arg2__arg2(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4arg2C1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -123,6 +113,16 @@ function @arg2__arg2(%this : ptr) -> void [binding=weak, object=_ZN4arg2C1Ev] {
     store i32 11, %t2
     return void
 }
-alias object _ZN14convertible_toI4arg2S_I4arg110empty_baseEEC2Ev = @convertible_to_arg2__convertible_to_arg1__empty_base____convertible_to
-alias object _ZN4arg1C2Ev = @arg1__arg1
+function @arg1__arg1(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4arg1C1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
+alias object _ZN14convertible_toI4arg2S_I4arg110empty_baseEEC2Ev = @convertible_to_arg2____cppgm_class_template_identity_0_0_0___convertible_to_arg2____cppgm_class_template_identity_0_0_0_
 alias object _ZN4arg2C2Ev = @arg2__arg2
+alias object _ZN4arg1C2Ev = @arg1__arg1

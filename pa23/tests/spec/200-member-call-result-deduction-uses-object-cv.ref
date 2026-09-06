@@ -28,16 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @same_mutable(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z12same_mutableIiEiRT_S1_] {
-  slot $__param0 : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
-    return i32 1
-}
-function @Holder__get__ov2(%this : ptr) -> ptr [binding=weak, object=_ZN6Holder3getEv] {
+function @Holder__get__ov2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN6Holder3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -45,4 +36,13 @@ function @Holder__get__ov2(%this : ptr) -> ptr [binding=weak, object=_ZN6Holder3
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
+}
+function @same_mutable(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z12same_mutableIiEiRT_S1_] {
+  slot $__param0 : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %__param1, $__param1
+    return i32 1
 }

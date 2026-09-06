@@ -13,6 +13,7 @@ use POSIX qw(setpgid WNOHANG);
 use Text::ParseWords qw(shellwords);
 
 our @EXPORT_OK = qw(
+  app_args_for
   clear_progress_state
   close_worker
   collect_tests
@@ -100,6 +101,13 @@ sub collect_tests
 			elsif (-d $root)
 			{
 				find(sub {
+					# A `controls` or `regression` directory inside a suite
+					# is a lane of its own, run by its own target.
+					if (-d $_ && $_ ne $root && $_ =~ m{(?:^|/)(?:controls|regression)$})
+					{
+						$File::Find::prune = 1;
+						return;
+					}
 					return if !-f $_;
 					push @found, $File::Find::name if $File::Find::name =~ $pattern;
 				}, $root);
@@ -286,10 +294,25 @@ sub read_env_file
 	return \%env;
 }
 
-sub open_worker
+# The tool's arguments: CPPGM_APP_ARGS, plus the backend design variant the
+# course harness selects through CPPGM_BACKEND_VARIANT (`make test-variants`)
+# for the tools that have a backend.  The compiler takes the variant only as
+# the `--backend-variant <name>` option.
+sub app_args_for
 {
 	my ($app) = @_;
 	my @app_args = shellwords($ENV{CPPGM_APP_ARGS} || '');
+	my $variant = $ENV{CPPGM_BACKEND_VARIANT};
+	push @app_args, '--backend-variant', $variant
+		if defined($variant) && $variant ne '' &&
+		   $app =~ m{(?:^|/)(?:cppgm\+\+|lowiropt|lowir2native)(?:-ref)?$};
+	return @app_args;
+}
+
+sub open_worker
+{
+	my ($app) = @_;
+	my @app_args = app_args_for($app);
 	my ($worker_out, $worker_in);
 	my $pid = open2($worker_out,
 	               $worker_in,

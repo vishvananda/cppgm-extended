@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @to_unsigned_like(%value : i64) -> i64 [binding=weak, object=_Z16to_unsigned_likeIlEN7copy_cvIT_E5applyIN13make_unsignedIS1_E4typeEEES1_] {
+function @to_unsigned_like(%value : i64) -> i64 [binding=weak, object=_Z16to_unsigned_likeIlEmT_] {
   slot $value : i64
 
   block ^entry:

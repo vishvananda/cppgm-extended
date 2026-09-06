@@ -58,17 +58,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_9:
     return i32 0
 }
-function @ns__detail__range_begin__ov3(%a : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2ns6detail11range_beginIiLm3EEEPKiRAT0__T_] {
+function @ns__detail__range_begin__ov3(%a : ptr [pass=by_address, object_bytes=12]) -> ptr [binding=weak, object=_ZN2ns6detail11range_beginIiLm3EEEPKiRAT0__T_] {
   slot $a : ptr
 
   block ^entry:
     store ptr %a, $a
     store i32 3, @ns__selected
     %t1 = load ptr $a
-    %t2 = unary decay ptr %t1
-    return ptr %t2
+    return ptr %t1
 }
-function @ns__begin(%r : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2ns5beginIA3_iEEPKiRKT_] {
+function @ns__begin(%r : ptr [pass=by_address, object_bytes=12]) -> ptr [binding=weak, object=_ZN2ns5beginIA3_iEEPKiRKT_] {
   slot $r : ptr
 
   block ^entry:
@@ -77,13 +76,12 @@ function @ns__begin(%r : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2
     %t2 = call ptr @ns__detail__range_begin__ov2(%t1)
     return ptr %t2
 }
-function @ns__detail__range_begin__ov2(%a : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN2ns6detail11range_beginIiLm3EEEPKiRAT0__KT_] {
+function @ns__detail__range_begin__ov2(%a : ptr [pass=by_address, object_bytes=12]) -> ptr [binding=weak, object=_ZN2ns6detail11range_beginIiLm3EEEPKiRAT0__KT_] {
   slot $a : ptr
 
   block ^entry:
     store ptr %a, $a
     store i32 2, @ns__selected
     %t1 = load ptr $a
-    %t2 = unary decay ptr %t1
-    return ptr %t2
+    return ptr %t1
 }

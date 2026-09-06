@@ -1,4 +1,4 @@
-function @take(%__param0 : ptr [pass=reference]) -> void [binding=strong, object=_Z4takeRKN5outerIiE6holderE] {
+function @take(%__param0 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z4takeRKN5outerIiE6holderE] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = binary sub i32 %t5, 5
     return i32 %t6
 }
-function @outer_int___holder__holder(%this : ptr, %v : i64) -> void [binding=weak, object=_ZN5outerIiE6holderC1El] {
+function @outer_int___holder__holder(%this : ptr [object_bytes=4], %v : i64) -> void [binding=weak, object=_ZN5outerIiE6holderC1El, inline_hint=yes] {
   slot $this : ptr
   slot $v : i64
 

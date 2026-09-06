@@ -36,7 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @max_like(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> ptr [binding=weak, object=_Z8max_likeImERKT_S2_S2_] {
+function @max_like(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z8max_likeImERKT_S2_S2_] {
   slot $a : ptr
   slot $b : ptr
   slot $condaddr__1 : ptr

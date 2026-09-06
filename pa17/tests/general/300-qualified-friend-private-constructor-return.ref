@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @N__Id__Id(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN1N2IdC1EPi] {
+function @N__Id__Id(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN1N2IdC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -47,7 +47,7 @@ function @N__Id__Id(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN1N2I
     store ptr %t1, %t3
     return void
 }
-function @N__Id__get(%this : ptr) -> ptr [binding=weak, object=_ZNK1N2Id3getEv] {
+function @N__Id__get(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK1N2Id3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

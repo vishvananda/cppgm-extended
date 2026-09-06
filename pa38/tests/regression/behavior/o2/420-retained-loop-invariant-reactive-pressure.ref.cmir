@@ -1,0 +1,286 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @state
+  storage data
+  item i64 0
+  item i64 0
+  item i64 0
+  item i64 0
+
+global @arena
+  storage data
+  item i64 0
+  item i64 0
+  item i64 0
+  item i64 0
+  item i64 0
+  item i64 0
+  item i64 0
+  item i64 0
+
+global @stats
+  storage scalar i64
+  init i64 0
+
+global @result
+  storage scalar i64
+  init i64 0
+
+global @node
+  storage data
+  item i64 0
+  item i64 0
+  item i64 0
+  item i64 0
+
+global @edges
+  storage data
+  item u32 0
+  item u32 1
+  item u32 0
+  item u32 4294967295
+
+global @no_edge
+  storage scalar u32
+  init u32 4294967295
+
+function @edge_at
+  abi
+    param %base -> rdi : ptr
+    param %index -> rsi : i64
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    imul rsi, 8
+    mov rax, @edges
+    add rax, rsi
+    ret rax
+
+function @node_at
+  abi
+    param %base -> rdi : ptr
+    param %index -> rsi : i64
+    return ptr -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    mov rax, @node
+    ret rax
+
+function @payload
+  abi
+    param %arena_pointer -> rdi : ptr
+    param %value -> rsi : u32
+    return u32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    ret rsi
+
+function @append
+  abi
+    param %destination -> rdi : ptr
+    param %value -> rsi : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    ret
+
+function @walk
+  abi
+    param %this -> rdi : ptr
+    param %declarator -> rsi : u32
+    param %fallback -> rdx : u32
+    param %names -> rcx : ptr
+    return void -> void
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues direct
+    preserve <gpr0> <gpr1> <gpr2> <gpr3> <gpr4>
+    slot $fallback -> [rbp-<off0>] : u32
+    slot $payload -> [rbp-<off1>] : u32
+    temp %inner_edge -> [rbp-<off2>] : u32
+    temp %child_index -> [rbp-<off3>] : i64
+    temp %kind -> [rbp-<off4>] : u16
+    temp %inner_first -> [rbp-<off5>] : u32
+    temp %inner_edges_1 -> [rbp-<off3>] : ptr
+    temp %inner_wide -> [rbp-<off6>] : i64
+    temp %inner_record_1 -> [rbp-<off7>] : ptr
+    temp %inner_child -> [rbp-<off5>] : u32
+    temp %inner_next -> [rbp-<off5>] : u32
+    temp %next_edge -> [rbp-<off5>] : u32
+
+  block ^entry
+    mov <gpr1>, rdi
+    mov <gpr0>, rcx
+    store.u32 [rbp-<off0>], rdx
+    load.ptr r8, [rdi+<off0>]
+    lea r8, [r8+<off0>]
+    mov r9, rsi
+    zext.i32 r9
+    mov rdi, r8
+    mov rsi, r9
+    call @node_at [args=(rsi,rdi), unwind=no]
+    load.u32 r9, [rax+<off0>]
+    mov <gpr2>, r9
+
+  block ^outer_condition
+    cmp.u32 <gpr2>, @no_edge
+    je ^outer_done
+
+  block ^outer_body
+    load.ptr r8, [<gpr1>+<off0>]
+    lea r8, [r8+<off1>]
+    mov <gpr3>, <gpr2>
+    zext.i32 <gpr3>
+    mov rdi, r8
+    mov rsi, <gpr3>
+    call @edge_at [args=(rsi,rdi), unwind=no]
+    load.u32 r8, [rax]
+    load.ptr r9, [<gpr1>+<off0>]
+    load.ptr rdi, [r9+<off0>]
+    test.i64 rdi, rdi
+    je ^inspect
+
+  block ^record
+    load.i64 <gpr4>, [rdi]
+    add <gpr4>, 1
+    store.i64 [rdi], <gpr4>
+
+  block ^inspect
+    lea <gpr4>, [r9+<off1>]
+    mov rax, r8
+    zext.i32 rax
+    store.i64 [rbp-<off3>], rax
+    mov rdi, <gpr4>
+    load.i64 rsi, [rbp-<off3>]
+    call @node_at [args=(rsi,rdi), unwind=no]
+    load.u16 rax, [rax+<off1>]
+    store.u16 [rbp-<off4>], rax
+    load.u16 <gpr4>, [rbp-<off4>]
+    mov rdx, 121
+    cmp.u16 <gpr4>, rdx
+    sete <gpr4>
+    movzx <gpr4>, <gpr4>
+    mov rdx, 0
+    cmp.u8 <gpr4>, rdx
+    je ^outer_iterate
+
+  block ^inner_start
+    load.ptr <gpr4>, [<gpr1>+<off0>]
+    lea <gpr4>, [<gpr4>+<off0>]
+    mov rdi, <gpr4>
+    load.i64 rsi, [rbp-<off3>]
+    call @node_at [args=(rsi,rdi), unwind=no]
+    load.u32 rax, [rax+<off0>]
+    store.u32 [rbp-<off5>], rax
+    load.u32 <gpr5>, [rbp-<off5>]
+    store.u32 [rbp-<off2>], <gpr5>
+
+  block ^inner_condition
+    load.u32 rdx, @no_edge
+    cmp.u32 [rbp-<off2>], rdx
+    je ^inner_done
+
+  block ^inner_body
+    load.ptr <gpr4>, [<gpr1>+<off0>]
+    lea rax, [<gpr4>+<off1>]
+    store.ptr [rbp-<off3>], rax
+    load.u32 rax, [rbp-<off2>]
+    store.i64 [rbp-<off6>], rax
+    load.ptr rdi, [rbp-<off3>]
+    load.i64 rsi, [rbp-<off6>]
+    call @edge_at [args=(rsi,rdi), unwind=no]
+    store.ptr [rbp-<off7>], rax
+    load.ptr rcx, [rbp-<off7>]
+    load.u32 rax, [rcx]
+    store.u32 [rbp-<off5>], rax
+    mov rdi, <gpr4>
+    load.u32 rsi, [rbp-<off5>]
+    call @payload [args=(rsi,rdi), unwind=no]
+    store.u32 [rbp-<off1>], rax
+    mov rdi, <gpr0>
+    lea rsi, [rbp-<off1>]
+    call @append [args=(rsi,rdi), unwind=no]
+    load.ptr <gpr4>, [<gpr1>+<off0>]
+    lea <gpr4>, [<gpr4>+<off1>]
+    mov rdi, <gpr4>
+    load.i64 rsi, [rbp-<off6>]
+    call @edge_at [args=(rsi,rdi), unwind=no]
+    load.u32 rax, [rax+<off2>]
+    store.u32 [rbp-<off5>], rax
+    load.u32 <gpr5>, [rbp-<off5>]
+    store.u32 [rbp-<off2>], <gpr5>
+    jmp ^inner_condition
+
+  block ^inner_done
+    ret
+
+  block ^outer_iterate
+    load.ptr <gpr4>, [<gpr1>+<off0>]
+    lea <gpr4>, [<gpr4>+<off1>]
+    mov rdi, <gpr4>
+    mov rsi, <gpr3>
+    call @edge_at [args=(rsi,rdi), unwind=no]
+    load.u32 rax, [rax+<off2>]
+    store.u32 [rbp-<off5>], rax
+    load.u32 <gpr2>, [rbp-<off5>]
+    jmp ^outer_condition
+
+  block ^outer_done
+    mov rdi, <gpr0>
+    lea rsi, [rbp-<off0>]
+    call @append [args=(rsi,rdi), unwind=no]
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    mov rax, @arena
+    mov rcx, @state
+    store.ptr [rcx+<off0>], rax
+    mov rax, @stats
+    mov rcx, @arena
+    store.ptr [rcx+<off1>], rax
+    mov rdi, @state
+    mov rsi, 0
+    mov rdx, 0
+    mov rcx, @result
+    call @walk [args=(rcx,rdx,rsi,rdi), unwind=no]
+    load.i64 r9, @stats
+    cmp.i64 r9, 2
+    setne rax
+    movzx rax, rax
+    ret rax

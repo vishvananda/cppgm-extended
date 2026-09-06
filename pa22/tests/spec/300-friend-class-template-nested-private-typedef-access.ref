@@ -32,14 +32,14 @@ function @check() -> i32 [binding=weak, object=_Z5checkIiEiv] {
     %t7 = binary add i32 %t4, %t6
     return i32 %t7
 }
-function @direct_wrapper_int___iterator__read(%this : ptr) -> i32 [binding=weak, object=_ZN14direct_wrapperIiE8iterator4readEv] {
+function @direct_wrapper_int___iterator__read(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN14direct_wrapperIiE8iterator4readEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 7
 }
-function @inherited_wrapper_int___iterator__read(%this : ptr) -> i32 [binding=weak, object=_ZN17inherited_wrapperIiE8iterator4readEv] {
+function @inherited_wrapper_int___iterator__read(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN17inherited_wrapperIiE8iterator4readEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

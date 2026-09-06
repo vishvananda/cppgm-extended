@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @Derived__f(%t2, 0)
     return i32 %t3
 }
-function @Derived__f(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZN7Derived1fEi] {
+function @Derived__f(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZN7Derived1fEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

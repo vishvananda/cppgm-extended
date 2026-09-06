@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @pick(%t1, %t2)
     return i32 %t3
 }
-function @pick(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4pickIRiN1N1EEEiOT_OT0_] {
+function @pick(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z4pickIRiN1N1EEEiOT_OT0_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

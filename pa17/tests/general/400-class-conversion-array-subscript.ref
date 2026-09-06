@@ -9,14 +9,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = index i8 %t1, 4
     store i32 7, %t2
     %t3 = addr $values
-    %t4 = unary decay ptr %t3
-    %t5 = addr $tmpobj__2
-    call void @index__index(%t5)
-    %t6 = call i64 @index__operatorlong(%t5)
-    %t7 = index i32 [projection=array_element] %t4, %t6
-    %t8 = load i32 %t7
-    %t9 = cmp eq i32 %t8, 7
-    branch %t9, ^cond_then_1, ^cond_else_2
+    %t4 = addr $tmpobj__2
+    %t5 = call i64 @index__operatorlong(%t4)
+    %t6 = index i32 [projection=array_element] %t3, %t5
+    %t7 = load i32 %t6
+    %t8 = cmp eq i32 %t7, 7
+    branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -27,21 +25,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
-    return i32 %t10
+    %t9 = load i32 $cond__1
+    return i32 %t9
 }
-function @index__index(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5indexC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @index__operatorlong(%this : ptr) -> i64 [binding=weak, object=_ZNK5indexcvlEv] {
+function @index__operatorlong(%this : ptr [object_bytes=1]) -> i64 [binding=weak, object=_ZNK5indexcvlEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i64 1
 }
-alias object _ZN5indexC2Ev = @index__index

@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @f() -> i32 [binding=weak, object=_Z1fv] {
+function @f() -> i32 [binding=weak, object=_Z1fv, inline_hint=yes] {
   slot $cond__1 : i32
 
   block ^entry:

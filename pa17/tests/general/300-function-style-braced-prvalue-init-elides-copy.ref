@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 1
     return i32 %t5
 }
-function @value__value__ov2(%this : ptr, %high_ : i32, %low_ : i32) -> void [binding=weak, object=_ZN5valueC1Eii] {
+function @value__value__ov2(%this : ptr [object_bytes=8], %high_ : i32, %low_ : i32) -> void [binding=weak, object=_ZN5valueC1Eii, inline_hint=yes] {
   slot $this : ptr
   slot $high_ : i32
   slot $low_ : i32

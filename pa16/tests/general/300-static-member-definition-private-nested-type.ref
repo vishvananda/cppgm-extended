@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @holder__get() -> i32 [binding=weak, object=_ZN6holder3getEv] {
+function @holder__get() -> i32 [binding=weak, object=_ZN6holder3getEv, inline_hint=yes] {
   block ^entry:
     %t1 = load i32 @holder__value
     return i32 %t1

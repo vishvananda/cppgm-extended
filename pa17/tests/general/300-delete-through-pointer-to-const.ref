@@ -1,5 +1,5 @@
-declare function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
-declare function @operator_new(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
 
@@ -9,8 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = convert sext i64 i32 1
-    %t2 = call ptr @operator_new(%t1)
-    call void @object__object(%t2)
+    %t2 = call ptr @operatornew(%t1)
     store ptr %t2, $p
     %t3 = load ptr $p
     %t4 = cmp ne ptr %t3, 0
@@ -18,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^delete_nonnull_1:
     call void @object___object(%t3)
-    call void @operator_delete(%t3)
+    call void @operatordelete(%t3)
     jump ^delete_end_2
 
   block ^delete_end_2:
@@ -38,14 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @object__object(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6objectC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @object___object(%this : ptr) -> void [binding=weak, object=_ZN6objectD1Ev] {
+function @object___object(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6objectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -53,5 +45,4 @@ function @object___object(%this : ptr) -> void [binding=weak, object=_ZN6objectD
     store i32 1, @destroyed
     return void
 }
-alias object _ZN6objectC2Ev = @object__object
 alias object _ZN6objectD2Ev = @object___object

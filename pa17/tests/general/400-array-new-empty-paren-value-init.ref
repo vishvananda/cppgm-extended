@@ -1,5 +1,5 @@
-declare function @operator_delete__(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete_array]
-declare function @operator_new__(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new_array]
+declare function @operatornew__(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
+declare function @operatordelete__(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete_array]
 
 function @count() -> i64 [binding=strong, object=_Z5countv] {
   block ^entry:
@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i64 @count()
     store i64 %t1, $array_new_size__1
-    %t2 = call ptr @operator_new__(%t1)
+    %t2 = call ptr @operatornew__(%t1)
     %t3 = load i64 $array_new_size__1
     store i64 0, $zeroinit_offset__2
     jump ^zeroinit_cond_1
@@ -34,6 +34,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^zeroinit_end_3:
     store ptr %t2, $p
     %t8 = load ptr $p
-    call void @operator_delete__(%t8)
+    call void @operatordelete__(%t8)
     return i32 0
 }

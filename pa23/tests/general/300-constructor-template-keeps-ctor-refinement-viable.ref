@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 97
   i8 98
   i8 99
@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__2
     return i32 %t8
 }
-function @String__String__ov3(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN6StringC1IPKcEET_] {
+function @String__String__ov3(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN6StringC1IPKcEET_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -47,7 +47,7 @@ function @String__String__ov3(%this : ptr, %p : ptr) -> void [binding=weak, obje
     store ptr %t1, %t3
     return void
 }
-function @Stream__Stream__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6StreamC1ERK6String] {
+function @Stream__Stream__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN6StreamC1ERK6String, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

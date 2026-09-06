@@ -1,0 +1,2701 @@
+#include "semantic/model/program.h"
+#include "semantic/presentation/lambdas.h"
+#include "support/exceptions.h"
+
+#include <algorithm>
+#include <ostream>
+
+namespace cppgm
+{
+namespace semantic
+{
+namespace
+{
+
+std::size_t PairHash(std::uint32_t left, std::uint32_t right)
+{
+	std::uint64_t mixed =
+		(static_cast<std::uint64_t>(left) << 32) | right;
+	mixed ^= mixed >> 30;
+	mixed *= 0xbf58476d1ce4e5b9ULL;
+	mixed ^= mixed >> 27;
+	return static_cast<std::size_t>(mixed);
+}
+
+inline void CombineTypeHash(std::size_t* seed, std::uint64_t value)
+{
+	*seed ^= static_cast<std::size_t>(value) +
+		static_cast<std::size_t>(0x9e3779b9U) +
+		(*seed << 6) + (*seed >> 2);
+}
+
+std::size_t IndexCapacityFor(std::size_t entries, std::size_t minimum)
+{
+	std::size_t capacity = minimum;
+	while (entries + 1 > capacity * 7 / 10) capacity *= 2;
+	return capacity;
+}
+
+const char* FundamentalName(FundamentalKind kind)
+{
+	switch (kind)
+	{
+	case FUND_BOOL: return "bool";
+	case FUND_CHAR: return "char";
+	case FUND_SIGNED_CHAR: return "signed char";
+	case FUND_UNSIGNED_CHAR: return "unsigned char";
+	case FUND_SHORT_INT: return "short int";
+	case FUND_UNSIGNED_SHORT_INT: return "unsigned short int";
+	case FUND_INT: return "int";
+	case FUND_UNSIGNED_INT: return "unsigned int";
+	case FUND_LONG_INT: return "long int";
+	case FUND_UNSIGNED_LONG_INT: return "unsigned long int";
+	case FUND_LONG_LONG_INT: return "long long int";
+	case FUND_UNSIGNED_LONG_LONG_INT: return "unsigned long long int";
+	case FUND_FLOAT: return "float";
+	case FUND_DOUBLE: return "double";
+	case FUND_LONG_DOUBLE: return "long double";
+	case FUND_VOID: return "void";
+	case FUND_NULLPTR_T: return "nullptr_t";
+	case FUND_WCHAR_T: return "wchar_t";
+	case FUND_CHAR16_T: return "char16_t";
+	case FUND_CHAR32_T: return "char32_t";
+	case FUND_INT128: return "__int128_t";
+	case FUND_UINT128: return "__uint128_t";
+	case FUND_FLOAT16: return "_Float16";
+	case FUND_FLOAT32: return "_Float32";
+	case FUND_FLOAT32X: return "_Float32x";
+	case FUND_FLOAT64: return "_Float64";
+	case FUND_FLOAT64X: return "_Float64x";
+	case FUND_STDFLOAT128: return "_Float128";
+	case FUND_FLOAT128: return "__float128";
+	}
+	ThrowInternalCompilerError("invalid fundamental type");
+}
+
+std::size_t FundamentalObjectSize(FundamentalKind kind)
+{
+	switch (kind)
+	{
+	case FUND_BOOL: case FUND_CHAR: case FUND_SIGNED_CHAR:
+	case FUND_UNSIGNED_CHAR: return 1;
+	case FUND_SHORT_INT: case FUND_UNSIGNED_SHORT_INT:
+	case FUND_CHAR16_T: case FUND_FLOAT16: return 2;
+	case FUND_INT: case FUND_UNSIGNED_INT: case FUND_FLOAT:
+	case FUND_WCHAR_T: case FUND_CHAR32_T:
+	case FUND_FLOAT32: return 4;
+	case FUND_LONG_INT: case FUND_UNSIGNED_LONG_INT:
+	case FUND_LONG_LONG_INT: case FUND_UNSIGNED_LONG_LONG_INT:
+	case FUND_DOUBLE: case FUND_FLOAT32X: case FUND_FLOAT64: return 8;
+	case FUND_LONG_DOUBLE: case FUND_INT128: case FUND_UINT128:
+	case FUND_FLOAT64X: case FUND_STDFLOAT128: case FUND_FLOAT128: return 16;
+	case FUND_NULLPTR_T: return 8;
+	case FUND_VOID: break;
+	}
+	ThrowSemanticError("incomplete fundamental type");
+}
+
+const char* FlavorName(NamedFlavor flavor)
+{
+	switch (flavor)
+	{
+	case NAMED_STRUCT: return "struct";
+	case NAMED_CLASS: return "class";
+	case NAMED_UNION: return "union";
+	case NAMED_ENUM: return "enum";
+	case NAMED_ENUM_CLASS: return "enum class";
+	case NAMED_TYPENAME_PARAMETER: return "typename";
+	case NAMED_TEMPLATE_PARAMETER: return "template-parameter";
+	case NAMED_NONE: break;
+	}
+	ThrowInternalCompilerError("invalid named type flavor");
+}
+
+const char* FunctionReturnText(std::uint8_t cv,
+	std::uint8_t ref_qualifier)
+{
+	if (ref_qualifier == FUNCTION_REF_LVALUE)
+	{
+		if (cv == CV_CONST) return ") const & returning ";
+		if (cv == CV_VOLATILE) return ") volatile & returning ";
+		if (cv == (CV_CONST | CV_VOLATILE))
+			return ") const volatile & returning ";
+		return ") & returning ";
+	}
+	if (ref_qualifier == FUNCTION_REF_RVALUE)
+	{
+		if (cv == CV_CONST) return ") const && returning ";
+		if (cv == CV_VOLATILE) return ") volatile && returning ";
+		if (cv == (CV_CONST | CV_VOLATILE))
+			return ") const volatile && returning ";
+		return ") && returning ";
+	}
+	if (cv == CV_CONST) return ") const returning ";
+	if (cv == CV_VOLATILE) return ") volatile returning ";
+	if (cv == (CV_CONST | CV_VOLATILE))
+		return ") const volatile returning ";
+	return ") returning ";
+}
+
+template <typename T, std::size_t InlineCapacity>
+class SmallStack
+{
+public:
+	SmallStack() : size_(0), spilled_(false) {}
+	bool Empty() const { return size_ == 0; }
+	T& Back()
+	{
+		return spilled_ ? overflow_.back() : inline_[size_ - 1];
+	}
+	void Pop()
+	{
+		if (spilled_) overflow_.pop_back();
+		--size_;
+	}
+	void Push(const T& value)
+	{
+		if (!spilled_ && size_ < InlineCapacity)
+		{
+			inline_[size_++] = value;
+			return;
+		}
+		if (!spilled_)
+		{
+			overflow_.reserve(InlineCapacity * 2);
+			overflow_.insert(overflow_.end(), inline_,
+				inline_ + InlineCapacity);
+			spilled_ = true;
+		}
+		overflow_.push_back(value);
+		++size_;
+	}
+	std::size_t StorageBytes() const
+	{
+		return sizeof(inline_) + overflow_.capacity() * sizeof(T);
+	}
+
+private:
+	T inline_[InlineCapacity];
+	std::vector<T> overflow_;
+	std::size_t size_;
+	bool spilled_;
+};
+
+}
+
+NamePath::NamePath() : global(false), size_(0)
+{
+	std::fill(inline_parts_, inline_parts_ + 4, 0);
+}
+
+void NamePath::Reserve(std::size_t count)
+{
+	if (count > 4) overflow_parts_.reserve(count);
+}
+
+void NamePath::Push(NameId name)
+{
+	if (size_ < 4 && overflow_parts_.empty())
+		inline_parts_[size_] = name;
+	else
+	{
+		if (overflow_parts_.empty())
+			overflow_parts_.insert(overflow_parts_.end(), inline_parts_,
+				inline_parts_ + 4);
+		overflow_parts_.push_back(name);
+	}
+	++size_;
+}
+
+void NamePath::Pop()
+{
+	if (size_ == 0) ThrowInternalCompilerError("empty qualified name");
+	if (!overflow_parts_.empty()) overflow_parts_.pop_back();
+	--size_;
+}
+
+bool NamePath::Empty() const
+{
+	return size_ == 0;
+}
+
+std::size_t NamePath::Size() const
+{
+	return size_;
+}
+
+NameId NamePath::operator[](std::size_t index) const
+{
+	return overflow_parts_.empty() ? inline_parts_[index] :
+		overflow_parts_[index];
+}
+
+NameId NamePath::Last() const
+{
+	return Empty() ? 0 : (*this)[size_ - 1];
+}
+
+TypeRecord::TypeRecord()
+	: kind(TYPE_INVALID), child(kNoType), entity(kNoEntity), bound(0),
+	  dependent_bound_type(kNoType),
+	  dependent_bound_parameter(kNoTemplateParameter),
+	  parameter_offset(0), parameter_count(0), cv(CV_NONE),
+	  ref_qualifier(FUNCTION_REF_NONE), variadic(false),
+	  bitint_unsigned(false), zero_length_array(false),
+	  fundamental(FUND_INT)
+{
+}
+
+TypeTable::TypeTable() : slots_(64, 0), index_probes_(0)
+{
+	types_.push_back(TypeRecord());
+}
+
+TypeId TypeTable::Fundamental(FundamentalKind kind)
+{
+	TypeRecord candidate;
+	candidate.kind = TYPE_FUNDAMENTAL;
+	candidate.fundamental = kind;
+	return Intern(candidate, 0, 0);
+}
+
+TypeId TypeTable::Named(EntityId entity)
+{
+	TypeRecord candidate;
+	candidate.kind = TYPE_NAMED;
+	candidate.entity = entity;
+	return Intern(candidate, 0, 0);
+}
+
+TypeId TypeTable::Unary(TypeKind kind, TypeId child)
+{
+	TypeRecord candidate;
+	candidate.kind = kind;
+	candidate.child = child;
+	return Intern(candidate, 0, 0);
+}
+
+TypeId TypeTable::TryQualify(TypeId type, std::uint8_t cv)
+{
+	if (cv == CV_NONE) return type;
+	const TypeRecord& record = Get(type);
+	if (record.kind == TYPE_ARRAY)
+	{
+		const TypeId qualified_child = TryQualify(record.child, cv);
+		if (qualified_child == kNoType) return kNoType;
+		return record.dependent_bound_parameter == kNoTemplateParameter ?
+			(record.zero_length_array ? TryZeroLengthArray(qualified_child) :
+			 TryArray(qualified_child, record.bound)) :
+			TryDependentArray(qualified_child,
+				record.dependent_bound_type,
+				record.dependent_bound_parameter);
+	}
+	if (record.kind == TYPE_LVALUE_REFERENCE ||
+		record.kind == TYPE_RVALUE_REFERENCE) return type;
+	if (record.kind == TYPE_FUNCTION) return kNoType;
+	if (record.kind == TYPE_QUALIFIED)
+		return TryQualify(record.child,
+			static_cast<std::uint8_t>(record.cv | cv));
+	TypeRecord candidate;
+	candidate.kind = TYPE_QUALIFIED;
+	candidate.child = type;
+	candidate.cv = cv;
+	return Intern(candidate, 0, 0);
+}
+
+TypeId TypeTable::Qualify(TypeId type, std::uint8_t cv)
+{
+	const TypeId result = TryQualify(type, cv);
+	if (result == kNoType)
+		ThrowSemanticError("cv-qualified function type");
+	return result;
+}
+
+bool TypeTable::IsAtomic(TypeId type) const
+{
+	const TypeRecord& record = Get(type);
+	return record.kind == TYPE_QUALIFIED &&
+		(record.cv & CV_ATOMIC) != 0;
+}
+
+TypeId TypeTable::TryPointer(TypeId type)
+{
+	if (IsReference(type)) return kNoType;
+	return Unary(TYPE_POINTER, type);
+}
+
+TypeId TypeTable::Pointer(TypeId type)
+{
+	const TypeId result = TryPointer(type);
+	if (result == kNoType)
+		ThrowSemanticError("pointer to reference type");
+	return result;
+}
+
+TypeId TypeTable::TryBlockPointer(TypeId function)
+{
+	return Get(function).kind == TYPE_FUNCTION ?
+		Unary(TYPE_BLOCK_POINTER, function) : kNoType;
+}
+
+TypeId TypeTable::BlockPointer(TypeId function)
+{
+	const TypeId result = TryBlockPointer(function);
+	if (result == kNoType)
+		ThrowSemanticError("block pointer target is not a function type");
+	return result;
+}
+
+TypeId TypeTable::TryMemberPointer(TypeId owner, TypeId member)
+{
+	owner = RemoveTopCv(owner);
+	const TypeRecord& class_type = Get(owner);
+	if (class_type.kind != TYPE_NAMED) return kNoType;
+	TypeRecord candidate;
+	candidate.kind = TYPE_MEMBER_POINTER;
+	candidate.child = member;
+	candidate.entity = class_type.entity;
+	candidate.bound = owner;
+	return Intern(candidate, 0, 0);
+}
+
+TypeId TypeTable::MemberPointer(TypeId owner, TypeId member)
+{
+	const TypeId result = TryMemberPointer(owner, member);
+	if (result == kNoType)
+		ThrowSemanticError("member pointer owner is not a class");
+	return result;
+}
+
+TypeId TypeTable::TryReference(TypeKind kind, TypeId type)
+{
+	if (kind != TYPE_LVALUE_REFERENCE && kind != TYPE_RVALUE_REFERENCE)
+		ThrowInternalCompilerError("invalid reference kind");
+	const TypeRecord& record = Get(type);
+	if (record.kind == TYPE_LVALUE_REFERENCE)
+		return Unary(TYPE_LVALUE_REFERENCE, record.child);
+	if (record.kind == TYPE_RVALUE_REFERENCE)
+		return Unary(kind == TYPE_LVALUE_REFERENCE ? TYPE_LVALUE_REFERENCE :
+			TYPE_RVALUE_REFERENCE, record.child);
+	if (record.kind == TYPE_FUNDAMENTAL && record.fundamental == FUND_VOID)
+		return kNoType;
+	return Unary(kind, type);
+}
+
+TypeId TypeTable::Reference(TypeKind kind, TypeId type)
+{
+	const TypeId result = TryReference(kind, type);
+	if (result == kNoType)
+		ThrowSemanticError("reference to void type");
+	return result;
+}
+
+TypeId TypeTable::TryArray(TypeId type, std::uint64_t bound)
+{
+	const TypeRecord& record = Get(type);
+	if (record.kind == TYPE_LVALUE_REFERENCE ||
+		record.kind == TYPE_RVALUE_REFERENCE || record.kind == TYPE_FUNCTION ||
+		(record.kind == TYPE_FUNDAMENTAL &&
+		 record.fundamental == FUND_VOID))
+		return kNoType;
+	TypeRecord candidate;
+	candidate.kind = TYPE_ARRAY;
+	candidate.child = type;
+	candidate.bound = bound;
+	return Intern(candidate, 0, 0);
+}
+
+TypeId TypeTable::Array(TypeId type, std::uint64_t bound)
+{
+	const TypeId result = TryArray(type, bound);
+	if (result == kNoType)
+		ThrowSemanticError("invalid array element type");
+	return result;
+}
+
+TypeId TypeTable::TryVector(TypeId element, std::uint64_t bytes)
+{
+	element = RemoveTopCv(element);
+	const TypeRecord& lane = Get(element);
+	if (lane.kind != TYPE_FUNDAMENTAL ||
+		lane.fundamental == FUND_VOID || lane.fundamental == FUND_NULLPTR_T ||
+		lane.fundamental == FUND_LONG_DOUBLE || bytes == 0 ||
+		(bytes & (bytes - 1)) != 0) return kNoType;
+	const std::size_t lane_bytes = FundamentalObjectSize(lane.fundamental);
+	if (lane_bytes == 0 || bytes % lane_bytes != 0) return kNoType;
+	TypeRecord candidate;
+	candidate.kind = TYPE_VECTOR;
+	candidate.child = element;
+	candidate.bound = bytes;
+	return Intern(candidate, 0, 0);
+}
+
+TypeId TypeTable::Vector(TypeId element, std::uint64_t bytes)
+{
+	const TypeId result = TryVector(element, bytes);
+	if (result == kNoType)
+		ThrowSemanticError("invalid GNU vector element type or byte width");
+	return result;
+}
+
+TypeId TypeTable::TryDependentArray(TypeId type, TypeId bound_type,
+	std::uint32_t parameter)
+{
+	if (parameter == kNoTemplateParameter)
+		ThrowInternalCompilerError("dependent array has no parameter");
+	const TypeRecord& record = Get(type);
+	if (record.kind == TYPE_LVALUE_REFERENCE ||
+		record.kind == TYPE_RVALUE_REFERENCE || record.kind == TYPE_FUNCTION ||
+		(record.kind == TYPE_FUNDAMENTAL &&
+		 record.fundamental == FUND_VOID))
+		return kNoType;
+	TypeRecord candidate;
+	candidate.kind = TYPE_ARRAY;
+	candidate.child = type;
+	candidate.dependent_bound_type = bound_type;
+	candidate.dependent_bound_parameter = parameter;
+	return Intern(candidate, 0, 0);
+}
+
+TypeId TypeTable::DependentArray(TypeId type, TypeId bound_type,
+	std::uint32_t parameter)
+{
+	const TypeId result = TryDependentArray(type, bound_type, parameter);
+	if (result == kNoType)
+		ThrowSemanticError("invalid dependent array element type");
+	return result;
+}
+
+TypeId TypeTable::TryFunction(TypeId result,
+	const std::vector<TypeId>& parameters, bool variadic, std::uint8_t cv,
+	std::uint8_t ref_qualifier)
+{
+	const TypeRecord& returned = Get(result);
+	if (returned.kind == TYPE_ARRAY || returned.kind == TYPE_FUNCTION)
+		return kNoType;
+	if (parameters.size() > std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many function parameters");
+	TypeRecord candidate;
+	candidate.kind = TYPE_FUNCTION;
+	candidate.child = result;
+	candidate.parameter_count =
+		static_cast<std::uint32_t>(parameters.size());
+	candidate.variadic = variadic;
+	candidate.cv = cv;
+	candidate.ref_qualifier = ref_qualifier;
+	return Intern(candidate, parameters.empty() ? 0 : &parameters[0],
+		parameters.size());
+}
+
+TypeId TypeTable::Function(TypeId result,
+	const std::vector<TypeId>& parameters, bool variadic, std::uint8_t cv,
+	std::uint8_t ref_qualifier)
+{
+	const TypeId type = TryFunction(
+		result, parameters, variadic, cv, ref_qualifier);
+	if (type == kNoType)
+		ThrowSemanticError("invalid function return type");
+	return type;
+}
+
+TypeId TypeTable::RemoveTopCv(TypeId type) const
+{
+	const TypeRecord& record = Get(type);
+	return record.kind == TYPE_QUALIFIED ? record.child : type;
+}
+
+bool TypeTable::IsFunction(TypeId type) const
+{
+	return Get(type).kind == TYPE_FUNCTION;
+}
+
+bool TypeTable::IsReference(TypeId type) const
+{
+	const TypeKind kind = Get(type).kind;
+	return kind == TYPE_LVALUE_REFERENCE || kind == TYPE_RVALUE_REFERENCE;
+}
+
+bool TypeTable::IsNamed(TypeId type) const
+{
+	return Get(RemoveTopCv(type)).kind == TYPE_NAMED;
+}
+
+const TypeRecord& TypeTable::Get(TypeId type) const
+{
+	if (type == kNoType || type >= types_.size())
+		ThrowInternalCompilerError("invalid PA11 type identity");
+	return types_[type];
+}
+
+const TypeId* TypeTable::Parameters(TypeId function) const
+{
+	const TypeRecord& record = Get(function);
+	if (record.kind != TYPE_FUNCTION)
+		ThrowInternalCompilerError("parameters requested for non-function type");
+	return record.parameter_count == 0 ? 0 :
+		&parameters_[record.parameter_offset];
+}
+
+std::size_t TypeTable::Size() const
+{
+	return types_.size() - 1;
+}
+
+std::size_t TypeTable::IndexProbes() const
+{
+	return index_probes_;
+}
+
+std::size_t TypeTable::StorageBytes() const
+{
+	return types_.capacity() * sizeof(TypeRecord) +
+		parameters_.capacity() * sizeof(TypeId) +
+		slots_.capacity() * sizeof(TypeId);
+}
+
+void TypeTable::ReserveStorage(std::size_t expected_types)
+{
+	types_.reserve(expected_types + 1);
+	parameters_.reserve(expected_types);
+	const std::size_t capacity =
+		IndexCapacityFor(expected_types + 1, slots_.size());
+	if (capacity > slots_.size()) Rehash(capacity);
+}
+
+std::size_t TypeTable::Hash(const TypeRecord& record,
+	const TypeId* parameters, std::size_t count) const
+{
+	std::size_t hash = 0;
+	CombineTypeHash(&hash, record.kind);
+	CombineTypeHash(&hash, record.child);
+	CombineTypeHash(&hash, record.entity);
+	CombineTypeHash(&hash, record.bound);
+	CombineTypeHash(&hash, record.dependent_bound_type);
+	CombineTypeHash(&hash, record.dependent_bound_parameter);
+	CombineTypeHash(&hash, record.cv);
+	CombineTypeHash(&hash, record.ref_qualifier);
+	CombineTypeHash(&hash, record.variadic ? 1 : 0);
+	CombineTypeHash(&hash, record.bitint_unsigned ? 1 : 0);
+	CombineTypeHash(&hash, record.zero_length_array ? 1 : 0);
+	CombineTypeHash(&hash, record.fundamental);
+	for (std::size_t i = 0; i < count; ++i)
+		CombineTypeHash(&hash, parameters[i]);
+	return hash;
+}
+
+bool TypeTable::Equal(const TypeRecord& existing,
+	const TypeRecord& candidate, const TypeId* parameters,
+	std::size_t count) const
+{
+	if (existing.kind != candidate.kind || existing.child != candidate.child ||
+		existing.entity != candidate.entity || existing.bound != candidate.bound ||
+		existing.dependent_bound_type != candidate.dependent_bound_type ||
+		existing.dependent_bound_parameter !=
+			candidate.dependent_bound_parameter ||
+		existing.cv != candidate.cv ||
+		existing.ref_qualifier != candidate.ref_qualifier ||
+		existing.variadic != candidate.variadic ||
+		existing.bitint_unsigned != candidate.bitint_unsigned ||
+		existing.zero_length_array != candidate.zero_length_array ||
+		existing.fundamental != candidate.fundamental ||
+		existing.parameter_count != count) return false;
+	for (std::size_t i = 0; i < count; ++i)
+		if (parameters_[existing.parameter_offset + i] != parameters[i])
+			return false;
+	return true;
+}
+
+TypeId TypeTable::Intern(TypeRecord candidate, const TypeId* parameters,
+	std::size_t count)
+{
+	if (parameters_.size() > std::numeric_limits<std::uint32_t>::max() - count)
+		ThrowSemanticResourceLimit("canonical type parameter storage is too large");
+	if ((types_.size() + 1) * 10 > slots_.size() * 7)
+		Rehash(slots_.size() * 2);
+	const std::size_t mask = slots_.size() - 1;
+	std::size_t slot = Hash(candidate, parameters, count) & mask;
+	while (slots_[slot] != 0)
+	{
+		++index_probes_;
+		const TypeId type = slots_[slot];
+		if (Equal(types_[type], candidate, parameters, count)) return type;
+		slot = (slot + 1) & mask;
+	}
+	++index_probes_;
+	if (types_.size() > std::numeric_limits<TypeId>::max())
+		ThrowSemanticResourceLimit("too many canonical types");
+	candidate.parameter_offset =
+		static_cast<std::uint32_t>(parameters_.size());
+	if (count != 0)
+		parameters_.insert(parameters_.end(), parameters, parameters + count);
+	const TypeId type = static_cast<TypeId>(types_.size());
+	types_.push_back(candidate);
+	slots_[slot] = type;
+	return type;
+}
+
+void TypeTable::Rehash(std::size_t capacity)
+{
+	std::vector<TypeId> replacement(capacity, 0);
+	const std::size_t mask = capacity - 1;
+	for (TypeId type = 1; type < types_.size(); ++type)
+	{
+		const TypeRecord& record = types_[type];
+		const TypeId* parameters = record.parameter_count == 0 ? 0 :
+			&parameters_[record.parameter_offset];
+		std::size_t slot = Hash(record, parameters,
+			record.parameter_count) & mask;
+		while (replacement[slot] != 0) slot = (slot + 1) & mask;
+		replacement[slot] = type;
+	}
+	slots_.swap(replacement);
+}
+
+EntityRecord::EntityRecord()
+	: emission_name(0), identity_name(0),
+	  owner(kNoScope), member_scope(kNoScope),
+	  direct_base(kNoEntity), enclosing_class(kNoEntity),
+	  local_context(kNoBinding), lambda_call_operator(kNoBinding),
+	  template_argument_list(kNoTemplateArgumentList),
+	  template_argument_begin(kNoBinding), template_argument_count(0),
+	  template_argument_pack_begin(kNoTemplateParameter),
+	  direct_base_begin(0), direct_base_count(0),
+	  virtual_base_begin(0), virtual_base_count(0),
+	  abi_tag_begin(0), abi_tag_count(0),
+	  flavor(NAMED_NONE), emission_name_form(ENTITY_EMISSION_TERMINAL),
+	  type(kNoType),
+	  underlying(kNoType), declaration(kNoBinding),
+	  union_default_member(kNoBinding), object_size(0), nonvirtual_size(0),
+	  object_alignment(0), nonvirtual_alignment(0), natural_alignment(0),
+	  requested_alignment(0),
+	  packing_alignment(0), direct_base_offset(0),
+	  base_access(ACCESS_PUBLIC), complete(false),
+	  layout_complete(false),
+	  has_user_declared_constructor(false),
+	  has_user_provided_constructor(false), default_constructible(false),
+	  trivial_default_constructor(false), has_user_declared_destructor(false),
+	  destructible(true), trivial_destructor(true), has_direct_base(false),
+	  is_aggregate(false), empty_class(false), indirect_class_value_abi(false),
+	  indirect_class_result_abi(false),
+	  indirect_class_parameter_abi(false), polymorphic_class(false),
+	  abstract_class(false), final_class(false),
+	  nonlinear_base_graph(false),
+	  has_nonzero_base_subobject_offset(false), has_volatile_subobject(false),
+	  has_union_subobject(false),
+	  deferred_template_completion(false),
+	  explicit_instantiation_suppressed(false),
+	  explicit_template_specialization(false),
+	  class_template_presentation(false), unnamed_class(false),
+	  lambda_closure(false),
+	  local_name_ordinal(0), lambda_ordinal(0), lambda_capture_count(0),
+	  template_parameter_ordinal(kNoTemplateParameter)
+{
+}
+
+BindingRecord::BindingRecord()
+	: owner(kNoScope), name(0), presentation_name_override(0),
+	  object_section_name(0),
+	  assembly_name(0),
+	  kind(BIND_VARIABLE), type(kNoType),
+	  conversion_target(kNoType),
+	  next(kNoBinding), member_owner(kNoEntity), access_owner(kNoEntity),
+	  overload_ordinal(0), layout_fact(kNoBindingLayoutFact),
+	  template_argument_list(kNoTemplateArgumentList),
+	  template_argument_begin(0), template_argument_count(0),
+	  abi_tag_begin(0), abi_tag_count(0),
+	  exception_type_begin(0), exception_type_count(0),
+	  function_template_abi_recipe(kNoFunctionTemplateAbiRecipe),
+	  exception_boundary(FUNCTION_EXCEPTION_BOUNDARY_NONE),
+	  display_flavor(NAMED_NONE), display_type_name(0),
+		  canonical(kNoBinding), lifecycle_base_entry(kNoBinding),
+		  demand_reason_mask(0), value(0),
+		  operator_kind(OPERATOR_NONE),
+		  builtin_function(BUILTIN_FUNCTION_NONE),
+		  hosted_integer_intrinsic(hosted_builtin::INTEGER_INTRINSIC_NONE),
+		  hosted_floating_intrinsic(hosted_builtin::FLOATING_INTRINSIC_NONE),
+		  hosted_memory_intrinsic(hosted_builtin::MEMORY_INTRINSIC_NONE),
+		  operator_literal_suffix(0), language_linkage(LANGUAGE_LINKAGE_CPP),
+	  storage_class(STORAGE_CLASS_NONE), access(ACCESS_PUBLIC),
+	  function_effects(FUNCTION_EFFECTS_DEFAULT),
+	  constant(false), nonthrowing(false), noreturn_function(false),
+	  unnamed_namespace_linkage(false),
+	  thread_local_storage(false),
+	  non_static_data_member(false), mutable_member(false), bit_field(false),
+	  potentially_overlapping_member(false), anonymous_union_storage(false),
+	  static_member_function(false),
+	  has_default_member_initializer(false), conversion_function(false),
+	  constructor(false),
+	  constructor_base_entry(false),
+	  destructor(false), destructor_base_entry(false), inline_function(false),
+	  force_inline(false), no_inline(false), stable_prefix_query(false),
+	  virtual_function(false), pure_virtual(false), final_virtual(false),
+	  override_specifier(false), weak_odr(false), weak_symbol(false),
+	  object_output_root(false),
+	  emission_demanded(false), explicit_instantiation_suppressed(false),
+	  excluded_from_explicit_instantiation(false),
+	  explicit_function_specialization(false),
+	  template_parameter_constant(false),
+	  variable_template_specialization(false),
+	  force_indirect_class_result_abi(false),
+	  closure_template_specialization(false),
+	  function_template_specialization(false), lambda_invocation(false),
+	  compiler_generated(false), source_view_suppressed(false),
+	  source_view_qualified_name(false), source_view_qualified_type(false)
+{
+}
+
+BindingLayoutFact::BindingLayoutFact()
+	: member_offset(0), requested_alignment(0), bit_offset(0), bit_width(0),
+	  bit_storage_bits(0), member_ordinal(kNoBinding)
+{
+}
+
+struct Program::ScopeRecord
+{
+	ScopeId parent;
+	ScopeKind kind;
+	NameId name, emission_name;
+	EntityId entity;
+	std::uint32_t depth;
+	BindingId first_binding;
+	BindingId last_binding;
+	std::uint32_t first_child;
+	std::uint32_t last_child;
+	std::uint32_t first_incoming_using;
+	std::uint32_t first_visible_name;
+	std::uint32_t first_name_entry;
+	std::uint32_t name_entry_count;
+	bool inline_namespace, internal_linkage, has_using_name_relations,
+		source_view_suppressed, source_view_qualified;
+
+	ScopeRecord()
+		: parent(kNoScope), kind(SCOPE_NAMESPACE), name(0), emission_name(0),
+		  entity(kNoEntity), depth(0),
+		  first_binding(kNoBinding), last_binding(kNoBinding),
+		  first_child(std::numeric_limits<std::uint32_t>::max()),
+		  last_child(std::numeric_limits<std::uint32_t>::max()),
+		  first_incoming_using(std::numeric_limits<std::uint32_t>::max()),
+		  first_visible_name(std::numeric_limits<std::uint32_t>::max()),
+		  first_name_entry(std::numeric_limits<std::uint32_t>::max()),
+		  name_entry_count(0),
+		  inline_namespace(false), internal_linkage(false),
+		  has_using_name_relations(false), source_view_suppressed(false),
+		  source_view_qualified(false) {}
+};
+
+struct Program::NameEntry
+{
+	ScopeId scope;
+	NameId name;
+	ScopeId name_space;
+	TypeId type;
+	BindingId type_declaration;
+	BindingId ordinary;
+	std::uint32_t next_in_scope;
+	bool function_template, variable_template;
+	// A namespace-alias and a namespace definition share name_space, so the
+	// alias must be distinguishable: N3485 7.3.2/3 forbids reopening one.
+	bool namespace_alias;
+
+	NameEntry()
+		: scope(kNoScope), name(0), name_space(kNoScope), type(kNoType),
+		  type_declaration(kNoBinding), ordinary(kNoBinding),
+		  next_in_scope(std::numeric_limits<std::uint32_t>::max()),
+		  function_template(false), variable_template(false),
+		  namespace_alias(false) {}
+};
+
+struct Program::UsingEdge
+{
+	ScopeId owner;
+	ScopeId target;
+	ScopeId injection;
+	std::uint32_t next_incoming;
+	UsingEdge(ScopeId owner_value, ScopeId target_value,
+		ScopeId injection_value,
+		std::uint32_t next_incoming_value)
+		: owner(owner_value), target(target_value), injection(injection_value),
+		  next_incoming(next_incoming_value) {}
+};
+
+struct Program::ScopeVisibleName
+{
+	ScopeId scope;
+	NameId name;
+	std::uint32_t first_relation;
+	std::uint32_t next_in_scope;
+	ScopeVisibleName(ScopeId scope_value, NameId name_value,
+		std::uint32_t next_value)
+		: scope(scope_value), name(name_value),
+		  first_relation(std::numeric_limits<std::uint32_t>::max()),
+		  next_in_scope(next_value) {}
+};
+
+struct Program::UsingNameRelation
+{
+	std::uint32_t edge;
+	NameId name;
+	std::uint32_t next;
+	UsingNameRelation(std::uint32_t edge_value, NameId name_value,
+		std::uint32_t next_value)
+		: edge(edge_value), name(name_value), next(next_value) {}
+};
+
+struct Program::ChildEdge
+{
+	ScopeId child;
+	std::uint32_t next;
+	explicit ChildEdge(ScopeId child_value)
+		: child(child_value),
+		  next(std::numeric_limits<std::uint32_t>::max()) {}
+};
+
+struct Program::TemplateArgumentListRecord
+{
+	std::uint32_t first, count;
+	std::size_t hash;
+
+	TemplateArgumentListRecord(std::uint32_t first_value,
+		std::uint32_t count_value, std::size_t hash_value)
+		: first(first_value), count(count_value), hash(hash_value) {}
+};
+
+Program::Program(InternedStringTable& strings)
+	: names(strings), lookup_queries(0), lookup_scope_visits(0),
+	  lookup_edge_visits(0),
+	  base_path_queries(0), base_path_cache_hits(0),
+	  base_path_cache_misses(0), base_path_edge_visits(0),
+	  virtual_base_path_visits(0), virtual_base_layout_lookups(0),
+	  virtual_base_layout_probes(0),
+	  direct_base_validation_visits(0),
+	  name_index_probes(0), using_index_probes(0),
+	  template_argument_list_requests(0),
+	  template_argument_list_cache_hits(0),
+	  template_argument_list_index_probes(0),
+	  standard_namespace_(kNoScope), using_edge_slots_(64, 0),
+	  visible_name_slots_(64, 0),
+	  using_name_relation_slots_(64, 0),
+	  entry_slots_(64, 0),
+	  template_argument_list_slots_(32, 0),
+	  lookup_generation_(1),
+	  direct_base_input_generation_(0),
+	  base_path_generation_(0),
+	  base_path_cache_slots_(64, 0),
+	  lookup_pending_generation_(0)
+{
+	NewScope(kNoScope, SCOPE_NAMESPACE, names.Intern("<global>"));
+}
+
+void Program::RehashTemplateArgumentLists(std::size_t capacity)
+{
+	std::vector<std::uint32_t> replacement(capacity, 0);
+	const std::size_t mask = capacity - 1;
+	for (std::size_t i = 0; i < template_argument_lists_.size(); ++i)
+	{
+		std::size_t slot = template_argument_lists_[i].hash & mask;
+		while (replacement[slot] != 0) slot = (slot + 1) & mask;
+		replacement[slot] = static_cast<std::uint32_t>(i + 1);
+	}
+	template_argument_list_slots_.swap(replacement);
+}
+
+TemplateArgumentListId Program::InternTemplateArgumentList(
+	const std::vector<TemplateArgument>& arguments,
+	std::uint32_t* first, std::uint32_t* count)
+{
+	++template_argument_list_requests;
+	std::size_t hash = MixHash(0, arguments.size());
+	for (std::size_t i = 0; i < arguments.size(); ++i)
+	{
+		hash = MixHash(hash, arguments[i].kind);
+		hash = MixHash(hash, arguments[i].type);
+		hash = MixHash(hash, arguments[i].source_value_type);
+		hash = MixHash(hash, static_cast<std::uint64_t>(arguments[i].value));
+		hash = MixHash(hash, arguments[i].value_binding);
+		hash = MixHash(hash, arguments[i].dependent_parameter);
+		hash = MixHash(hash, arguments[i].pack_expansion ? 1 : 0);
+	}
+	if ((template_argument_lists_.size() + 1) * 10 >
+		template_argument_list_slots_.size() * 7)
+		RehashTemplateArgumentLists(template_argument_list_slots_.size() * 2);
+	const std::size_t mask = template_argument_list_slots_.size() - 1;
+	std::size_t slot = hash & mask;
+	while (template_argument_list_slots_[slot] != 0)
+	{
+		++template_argument_list_index_probes;
+		const TemplateArgumentListId id =
+			template_argument_list_slots_[slot] - 1;
+		const TemplateArgumentListRecord& record =
+			template_argument_lists_[id];
+		bool equal = record.hash == hash && record.count == arguments.size();
+		for (std::size_t i = 0; equal && i < arguments.size(); ++i)
+			equal = canonical_template_arguments[record.first + i] ==
+				arguments[i];
+		if (equal)
+		{
+			++template_argument_list_cache_hits;
+			if (first) *first = record.first;
+			if (count) *count = record.count;
+			return id;
+		}
+		slot = (slot + 1) & mask;
+	}
+	++template_argument_list_index_probes;
+	if (template_argument_lists_.size() >= kNoTemplateArgumentList ||
+		arguments.size() > std::numeric_limits<std::uint32_t>::max() ||
+		template_arguments.size() >
+			std::numeric_limits<std::uint32_t>::max() - arguments.size())
+		ThrowSemanticResourceLimit("too many canonical template argument lists");
+	if (template_arguments.size() != canonical_template_arguments.size())
+		ThrowInternalCompilerError("canonical template argument storage diverged");
+	const std::uint32_t range_first =
+		static_cast<std::uint32_t>(template_arguments.size());
+	const std::uint32_t range_count =
+		static_cast<std::uint32_t>(arguments.size());
+	for (std::size_t i = 0; i < arguments.size(); ++i)
+		template_arguments.push_back(arguments[i].type);
+	canonical_template_arguments.insert(canonical_template_arguments.end(),
+		arguments.begin(), arguments.end());
+	const TemplateArgumentListId id = static_cast<TemplateArgumentListId>(
+		template_argument_lists_.size());
+	template_argument_lists_.push_back(TemplateArgumentListRecord(
+		range_first, range_count, hash));
+	template_argument_list_slots_[slot] = id + 1;
+	if (first) *first = range_first;
+	if (count) *count = range_count;
+	return id;
+}
+
+Program::~Program()
+{
+}
+
+ScopeId Program::GlobalScope() const
+{
+	return 0;
+}
+
+void Program::ReserveSemanticStorage(std::size_t syntax_nodes)
+{
+	const std::size_t scope_hint = syntax_nodes - syntax_nodes / 3;
+	scopes_.reserve(scope_hint);
+	child_edges_.reserve(scope_hint);
+	entries_.reserve(syntax_nodes);
+	bindings.reserve(syntax_nodes);
+	types.ReserveStorage(syntax_nodes / 4);
+	const std::size_t index_capacity =
+		IndexCapacityFor(syntax_nodes, entry_slots_.size());
+	if (index_capacity > entry_slots_.size()) RehashEntries(index_capacity);
+}
+
+ScopeId Program::NewScope(ScopeId parent, ScopeKind kind, NameId name,
+	EntityId entity, ScopeId output_parent)
+{
+	if (scopes_.size() >= kNoScope)
+		ThrowSemanticResourceLimit("too many PA11 scopes");
+	const ScopeId scope = static_cast<ScopeId>(scopes_.size());
+	scopes_.push_back(ScopeRecord());
+	ScopeRecord& record = scopes_.back();
+	record.parent = parent;
+	record.kind = kind;
+	record.name = name;
+	record.emission_name = name;
+	record.entity = entity;
+	record.depth = parent == kNoScope ? 0 : scopes_[parent].depth + 1;
+	record.internal_linkage = parent != kNoScope &&
+		scopes_[parent].internal_linkage;
+	lookup_marks_.push_back(0);
+	lookup_pending_heads_.push_back(std::numeric_limits<std::uint32_t>::max());
+	lookup_pending_head_marks_.push_back(0);
+	lookup_pending_target_marks_.push_back(0);
+	const ScopeId tree_parent = output_parent == kNoScope ? parent : output_parent;
+	if (tree_parent != kNoScope)
+	{
+		const std::uint32_t edge =
+			static_cast<std::uint32_t>(child_edges_.size());
+		child_edges_.push_back(ChildEdge(scope));
+		ScopeRecord& owner = scopes_[tree_parent];
+		if (owner.first_child == std::numeric_limits<std::uint32_t>::max())
+			owner.first_child = edge;
+		else child_edges_[owner.last_child].next = edge;
+		owner.last_child = edge;
+	}
+	return scope;
+}
+
+ScopeId Program::OpenNamespace(ScopeId parent, NameId name, bool is_inline,
+	bool internal_linkage)
+{
+	NameEntry* entry = EnsureEntry(parent, name);
+	if (entry->ordinary != kNoBinding || entry->type != kNoType)
+		ThrowSemanticError("namespace conflicts with existing binding");
+	// N3485 7.3.2/3: a namespace-alias names an existing namespace; it is not
+	// itself a namespace and cannot be extended by a namespace-definition.
+	if (entry->namespace_alias)
+		ThrowSemanticError("namespace definition reopens a namespace alias");
+	if (entry->name_space == kNoScope)
+	{
+		entry->name_space = NewScope(parent, SCOPE_NAMESPACE, name);
+		// Record the ABI-designated namespace once at semantic ingress.
+		if (parent == GlobalScope() && names.Get(name) == "std")
+			standard_namespace_ = entry->name_space;
+	}
+	if (is_inline)
+	{
+		scopes_[entry->name_space].inline_namespace = true;
+		AddUsingEdge(parent, entry->name_space);
+	}
+	if (internal_linkage)
+		scopes_[entry->name_space].internal_linkage = true;
+	return entry->name_space;
+}
+
+void Program::SetScopeEmissionName(ScopeId scope, NameId name)
+{
+	if (scope >= scopes_.size())
+		ThrowInternalCompilerError("invalid emission scope identity");
+	scopes_[scope].emission_name = name;
+}
+
+void Program::SetSourceViewQualifiedScope(ScopeId scope)
+{
+	if (scope >= scopes_.size())
+		ThrowInternalCompilerError("invalid source-view scope");
+	scopes_[scope].source_view_qualified = true;
+}
+
+void Program::SuppressSourceViewSince(
+	std::size_t binding_begin, std::size_t scope_begin)
+{
+	if (binding_begin > bindings.size() || scope_begin > scopes_.size())
+		ThrowInternalCompilerError("invalid source-view suppression boundary");
+	for (std::size_t i = binding_begin; i < bindings.size(); ++i)
+		bindings[i].source_view_suppressed = true;
+	for (std::size_t i = scope_begin; i < scopes_.size(); ++i)
+		scopes_[i].source_view_suppressed = true;
+}
+
+void Program::AddNamespaceAlias(ScopeId owner, NameId name, ScopeId target)
+{
+	NameEntry* entry = EnsureEntry(owner, name);
+	if (entry->ordinary != kNoBinding || entry->type != kNoType ||
+		(entry->name_space != kNoScope && entry->name_space != target))
+		ThrowSemanticError("invalid namespace alias binding");
+	entry->name_space = target;
+	entry->namespace_alias = true;
+}
+
+void Program::AddUsingEdge(ScopeId owner, ScopeId target)
+{
+	if ((using_edges_.size() + 1) * 10 > using_edge_slots_.size() * 7)
+		RehashUsingEdges(using_edge_slots_.size() * 2);
+	const std::size_t mask = using_edge_slots_.size() - 1;
+	std::size_t slot = PairHash(owner, target) & mask;
+	while (using_edge_slots_[slot] != 0)
+	{
+		++using_index_probes;
+		const UsingEdge& existing =
+			using_edges_[using_edge_slots_[slot] - 1];
+		if (existing.owner == owner && existing.target == target) return;
+		slot = (slot + 1) & mask;
+	}
+	++using_index_probes;
+	if (using_edges_.size() >=
+		std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many PA11 using edges");
+	ScopeId owner_namespace = owner;
+	while (owner_namespace != kNoScope &&
+		scopes_[owner_namespace].kind != SCOPE_NAMESPACE)
+		owner_namespace = scopes_[owner_namespace].parent;
+	if (owner_namespace == kNoScope || target >= scopes_.size() ||
+		scopes_[target].kind != SCOPE_NAMESPACE)
+		ThrowInternalCompilerError("using edge has no namespace injection scope");
+	ScopeId left = owner_namespace;
+	ScopeId right = target;
+	while (scopes_[left].depth > scopes_[right].depth)
+		left = scopes_[left].parent;
+	while (scopes_[right].depth > scopes_[left].depth)
+		right = scopes_[right].parent;
+	while (left != right)
+	{
+		left = scopes_[left].parent;
+		right = scopes_[right].parent;
+	}
+	const ScopeId injection = left;
+	const std::uint32_t edge =
+		static_cast<std::uint32_t>(using_edges_.size());
+	if (scopes_[target].first_incoming_using ==
+		std::numeric_limits<std::uint32_t>::max())
+		IndexDirectUsingNames(target);
+	using_edges_.push_back(UsingEdge(owner, target, injection,
+		scopes_[target].first_incoming_using));
+	using_edge_slots_[slot] = edge + 1;
+	scopes_[target].first_incoming_using = edge;
+	for (std::uint32_t visible = scopes_[target].first_visible_name;
+		visible != std::numeric_limits<std::uint32_t>::max();
+		visible = visible_names_[visible].next_in_scope)
+	{
+		const NameId visible_name = visible_names_[visible].name;
+		bool owner_became_visible = false;
+		if (!AddUsingNameRelation(
+			edge, visible_name, &owner_became_visible)) continue;
+		if (owner_became_visible) PropagateUsingName(owner, visible_name);
+	}
+}
+
+void Program::PublishFunctionTemplateName(ScopeId owner, NameId name)
+{
+	NameEntry* entry = EnsureEntry(owner, name);
+	if (entry->function_template) return;
+	entry->function_template = true;
+}
+
+void Program::PublishVariableTemplateName(ScopeId owner, NameId name)
+{
+	NameEntry* entry = EnsureEntry(owner, name);
+	if (entry->variable_template) return;
+	entry->variable_template = true;
+}
+
+void Program::RehashUsingEdges(std::size_t capacity)
+{
+	std::vector<std::uint32_t> replacement(capacity, 0);
+	const std::size_t mask = capacity - 1;
+	for (std::size_t i = 0; i < using_edges_.size(); ++i)
+	{
+		const UsingEdge& edge = using_edges_[i];
+		std::size_t slot = PairHash(edge.owner, edge.target) & mask;
+		while (replacement[slot] != 0) slot = (slot + 1) & mask;
+		replacement[slot] = static_cast<std::uint32_t>(i + 1);
+	}
+	using_edge_slots_.swap(replacement);
+}
+
+void Program::RehashVisibleNames(std::size_t capacity)
+{
+	visible_name_slots_.assign(capacity, 0);
+	const std::size_t mask = capacity - 1;
+	for (std::size_t i = 0; i < visible_names_.size(); ++i)
+	{
+		const ScopeVisibleName& fact = visible_names_[i];
+		std::size_t slot = PairHash(fact.scope, fact.name) & mask;
+		while (visible_name_slots_[slot] != 0) slot = (slot + 1) & mask;
+		visible_name_slots_[slot] = static_cast<std::uint32_t>(i + 1);
+	}
+}
+
+std::uint32_t Program::FindVisibleName(ScopeId scope, NameId name) const
+{
+	if (!scopes_[scope].has_using_name_relations)
+		return std::numeric_limits<std::uint32_t>::max();
+	const std::size_t mask = visible_name_slots_.size() - 1;
+	std::size_t slot = PairHash(scope, name) & mask;
+	while (visible_name_slots_[slot] != 0)
+	{
+		const std::uint32_t fact = visible_name_slots_[slot] - 1;
+		if (visible_names_[fact].scope == scope &&
+			visible_names_[fact].name == name)
+			return fact;
+		slot = (slot + 1) & mask;
+	}
+	return std::numeric_limits<std::uint32_t>::max();
+}
+
+std::uint32_t Program::EnsureVisibleName(ScopeId scope, NameId name,
+	bool* created)
+{
+	if ((visible_names_.size() + 1) * 10 > visible_name_slots_.size() * 7)
+		RehashVisibleNames(visible_name_slots_.size() * 2);
+	const std::size_t mask = visible_name_slots_.size() - 1;
+	std::size_t slot = PairHash(scope, name) & mask;
+	while (visible_name_slots_[slot] != 0)
+	{
+		const std::uint32_t fact = visible_name_slots_[slot] - 1;
+		if (visible_names_[fact].scope == scope &&
+			visible_names_[fact].name == name)
+		{
+			*created = false;
+			return fact;
+		}
+		slot = (slot + 1) & mask;
+	}
+	if (visible_names_.size() >= std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many visible scope names");
+	const std::uint32_t fact =
+		static_cast<std::uint32_t>(visible_names_.size());
+	visible_names_.push_back(ScopeVisibleName(
+		scope, name, scopes_[scope].first_visible_name));
+	scopes_[scope].first_visible_name = fact;
+	visible_name_slots_[slot] = fact + 1;
+	*created = true;
+	return fact;
+}
+
+void Program::RehashUsingNameRelations(std::size_t capacity)
+{
+	using_name_relation_slots_.assign(capacity, 0);
+	const std::size_t mask = capacity - 1;
+	for (std::size_t i = 0; i < using_name_relations_.size(); ++i)
+	{
+		const UsingNameRelation& relation = using_name_relations_[i];
+		std::size_t slot = PairHash(relation.edge, relation.name) & mask;
+		while (using_name_relation_slots_[slot] != 0)
+			slot = (slot + 1) & mask;
+		using_name_relation_slots_[slot] = static_cast<std::uint32_t>(i + 1);
+	}
+}
+
+std::uint32_t Program::FindUsingNameRelation(std::uint32_t edge,
+	NameId name) const
+{
+	const std::size_t mask = using_name_relation_slots_.size() - 1;
+	std::size_t slot = PairHash(edge, name) & mask;
+	while (using_name_relation_slots_[slot] != 0)
+	{
+		const std::uint32_t relation =
+			using_name_relation_slots_[slot] - 1;
+		if (using_name_relations_[relation].edge == edge &&
+			using_name_relations_[relation].name == name)
+			return relation;
+		slot = (slot + 1) & mask;
+	}
+	return std::numeric_limits<std::uint32_t>::max();
+}
+
+bool Program::AddUsingNameRelation(std::uint32_t edge, NameId name,
+	bool* owner_became_visible)
+{
+	if (FindUsingNameRelation(edge, name) !=
+		std::numeric_limits<std::uint32_t>::max())
+	{
+		*owner_became_visible = false;
+		return false;
+	}
+	if ((using_name_relations_.size() + 1) * 10 >
+		using_name_relation_slots_.size() * 7)
+		RehashUsingNameRelations(using_name_relation_slots_.size() * 2);
+	const ScopeId owner = using_edges_[edge].owner;
+	const std::uint32_t visible =
+		EnsureVisibleName(owner, name, owner_became_visible);
+	if (using_name_relations_.size() >=
+		std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many indexed using names");
+	const std::uint32_t relation =
+		static_cast<std::uint32_t>(using_name_relations_.size());
+	using_name_relations_.push_back(UsingNameRelation(
+		edge, name, visible_names_[visible].first_relation));
+	visible_names_[visible].first_relation = relation;
+	scopes_[owner].has_using_name_relations = true;
+	const std::size_t mask = using_name_relation_slots_.size() - 1;
+	std::size_t slot = PairHash(edge, name) & mask;
+	while (using_name_relation_slots_[slot] != 0) slot = (slot + 1) & mask;
+	using_name_relation_slots_[slot] = relation + 1;
+	return true;
+}
+
+void Program::PropagateUsingName(ScopeId scope, NameId name)
+{
+	using_name_worklist_.clear();
+	using_name_worklist_.push_back(scope);
+	for (std::size_t i = 0; i < using_name_worklist_.size(); ++i)
+	{
+		const ScopeId target = using_name_worklist_[i];
+		for (std::uint32_t edge = scopes_[target].first_incoming_using;
+			edge != std::numeric_limits<std::uint32_t>::max();
+			edge = using_edges_[edge].next_incoming)
+		{
+			bool owner_became_visible = false;
+			if (AddUsingNameRelation(edge, name, &owner_became_visible) &&
+				owner_became_visible)
+				using_name_worklist_.push_back(using_edges_[edge].owner);
+		}
+	}
+}
+
+void Program::IndexDirectUsingNames(ScopeId scope)
+{
+	std::vector<NameId> names;
+	names.reserve(scopes_[scope].name_entry_count);
+	for (std::uint32_t entry = scopes_[scope].first_name_entry;
+		entry != std::numeric_limits<std::uint32_t>::max();
+		entry = entries_[entry].next_in_scope)
+		names.push_back(entries_[entry].name);
+	for (std::vector<NameId>::const_reverse_iterator name = names.rbegin();
+		name != names.rend(); ++name)
+	{
+		bool created = false;
+		(void)EnsureVisibleName(scope, *name, &created);
+	}
+}
+
+void Program::PublishUsingName(ScopeId scope, NameId name)
+{
+	if (scopes_[scope].first_incoming_using ==
+		std::numeric_limits<std::uint32_t>::max()) return;
+	bool created = false;
+	(void)EnsureVisibleName(scope, name, &created);
+	if (created) PropagateUsingName(scope, name);
+}
+
+EntityId Program::NewEntity(NameId emission_name, NamedFlavor flavor,
+	bool complete, TypeId underlying, ScopeId owner, NameId identity_name,
+	EntityEmissionNameForm emission_name_form)
+{
+	if (entities.size() >= kNoEntity)
+		ThrowSemanticResourceLimit("too many PA11 entities");
+	const EntityId entity = static_cast<EntityId>(entities.size());
+	entities.push_back(EntityRecord());
+	base_jump_offsets_.push_back(0);
+	base_jump_counts_.push_back(0);
+	base_depths_.push_back(0);
+	deepest_nonpublic_base_depths_.push_back(0);
+	base_graph_versions_.push_back(1);
+	EntityRecord& record = entities.back();
+	record.emission_name = emission_name;
+	record.identity_name = identity_name == 0 ? emission_name : identity_name;
+	record.emission_name_form = emission_name_form;
+	record.owner = owner;
+	if (owner != kNoScope && owner < scopes_.size() &&
+		scopes_[owner].kind == SCOPE_CLASS)
+		record.enclosing_class = scopes_[owner].entity;
+	record.flavor = flavor;
+	record.complete = complete;
+	record.underlying = underlying;
+	record.type = types.Named(entity);
+	return entity;
+}
+
+void Program::BuildEmissionPath(ScopeId owner, NameId terminal,
+	std::vector<NameId>* path) const
+{
+	path->clear();
+	while (owner != kNoScope && owner != GlobalScope())
+	{
+		const ScopeRecord& scope = scopes_[owner];
+		if (scope.emission_name != 0 && (scope.kind == SCOPE_NAMESPACE ||
+			scope.kind == SCOPE_CLASS || scope.kind == SCOPE_ENUM))
+			path->push_back(scope.emission_name);
+		owner = scope.parent;
+	}
+	std::reverse(path->begin(), path->end());
+	path->push_back(terminal);
+}
+
+std::string Program::RenderEmissionName(ScopeId owner, NameId terminal,
+	std::size_t* components) const
+{
+	const EntityId owner_entity = owner < scopes_.size() ?
+		scopes_[owner].entity : kNoEntity;
+	if (owner_entity != kNoEntity && owner_entity < entities.size() &&
+		entities[owner_entity].lambda_closure)
+	{
+		std::size_t owner_components = 0;
+		std::string result = RenderEntityEmissionName(
+			owner_entity, &owner_components);
+		result += "::";
+		result += semantic::presentation::RenderLambdaMemberTerminal(
+			*this, owner_entity, terminal);
+		if (components) *components = owner_components + 1;
+		return result;
+	}
+	std::vector<NameId> path;
+	BuildEmissionPath(owner, terminal, &path);
+	if (components) *components = path.size();
+	std::size_t bytes = path.empty() ? 0 : (path.size() - 1) * 2;
+	for (std::size_t i = 0; i < path.size(); ++i)
+		bytes += names.Get(path[i]).size();
+	std::string result;
+	result.reserve(bytes);
+	for (std::size_t i = 0; i < path.size(); ++i)
+	{
+		if (i != 0) result += "::";
+		result += names.Get(path[i]);
+	}
+	return result;
+}
+
+std::string Program::RenderEntityEmissionName(EntityId entity,
+	std::size_t* components) const
+{
+	if (entity >= entities.size())
+		ThrowInternalCompilerError("invalid entity emission name");
+	const EntityRecord& record = entities[entity];
+	if (record.emission_name_form == ENTITY_EMISSION_LAMBDA)
+		return semantic::presentation::RenderLambdaEntityEmissionName(
+			*this, entity, components);
+	if (record.emission_name_form == ENTITY_EMISSION_OWNER_QUALIFIED)
+		return RenderEmissionName(
+			record.owner, record.emission_name, components);
+	if (components) *components = record.emission_name == 0 ? 0 : 1;
+	return names.Get(record.emission_name);
+}
+
+BindingId Program::AddBinding(ScopeId owner, BindingKind kind, NameId name,
+	TypeId type, bool constant, std::int64_t value, NamedFlavor display,
+	NameId display_type_name, BindingId canonical, bool merge_redeclaration)
+{
+	NameEntry* entry = EnsureEntry(owner, name);
+	bool composite_variable_type = false;
+	if (entry->name_space != kNoScope)
+		ThrowSemanticError("binding conflicts with namespace");
+	if (merge_redeclaration && canonical == kNoBinding &&
+		entry->ordinary != kNoBinding &&
+		(kind == BIND_FUNCTION || kind == BIND_VARIABLE))
+	{
+		const BindingRecord& previous = bindings[entry->ordinary];
+		if (previous.kind == kind && previous.type == type)
+			canonical = previous.canonical;
+		else if (previous.kind == BIND_VARIABLE && kind == BIND_VARIABLE)
+		{
+			TypeId composite = kNoType;
+			if (types.TryCompositeArrayType(
+				previous.type, type, &composite))
+			{
+				canonical = previous.canonical;
+				type = composite;
+				composite_variable_type = true;
+			}
+		}
+	}
+	if (bindings.size() >= kNoBinding)
+		ThrowSemanticResourceLimit("too many PA11 bindings");
+	const BindingId binding = static_cast<BindingId>(bindings.size());
+	bindings.push_back(BindingRecord());
+	BindingRecord& record = bindings.back();
+	record.owner = owner;
+	record.kind = kind;
+	record.name = name;
+	record.type = type;
+	record.constant = constant;
+	record.value = value;
+	record.display_flavor = display;
+	record.display_type_name = display_type_name;
+	if (canonical == kNoBinding && kind == BIND_TYPE && types.IsNamed(type))
+	{
+		const TypeRecord& named = types.Get(types.RemoveTopCv(type));
+		canonical = entities[named.entity].declaration;
+		if (canonical == kNoBinding)
+			entities[named.entity].declaration = binding;
+	}
+	record.canonical = canonical == kNoBinding ? binding : canonical;
+	if (composite_variable_type)
+		bindings[record.canonical].type = type;
+	ScopeRecord& scope = scopes_[owner];
+	if (scope.first_binding == kNoBinding) scope.first_binding = binding;
+	else bindings[scope.last_binding].next = binding;
+	scope.last_binding = binding;
+	if (kind == BIND_TYPE || kind == BIND_TYPE_ALIAS)
+	{
+		entry->type = type;
+		entry->type_declaration = binding;
+	}
+	else entry->ordinary = binding;
+	return binding;
+}
+
+BindingId Program::AddUnindexedBinding(ScopeId owner, BindingKind kind,
+	NameId name, TypeId type, BindingId canonical)
+{
+	if (bindings.size() >= kNoBinding)
+		ThrowSemanticResourceLimit("too many PA11 bindings");
+	const BindingId binding = static_cast<BindingId>(bindings.size());
+	bindings.push_back(BindingRecord());
+	BindingRecord& record = bindings.back();
+	record.owner = owner;
+	record.kind = kind;
+	record.name = name;
+	record.type = type;
+	record.canonical = canonical == kNoBinding ? binding : canonical;
+	ScopeRecord& scope = scopes_[owner];
+	if (scope.first_binding == kNoBinding) scope.first_binding = binding;
+	else bindings[scope.last_binding].next = binding;
+	scope.last_binding = binding;
+	return binding;
+}
+
+bool Program::IsStaticDataMember(BindingId binding) const
+{
+	if (binding == kNoBinding || binding >= bindings.size()) return false;
+	const BindingRecord& record = bindings[bindings[binding].canonical];
+	return record.kind == BIND_VARIABLE && record.member_owner != kNoEntity &&
+		!record.non_static_data_member;
+}
+
+const BindingLayoutFact& Program::BindingLayout(
+	const BindingRecord& binding) const
+{
+	return binding.layout_fact == kNoBindingLayoutFact ?
+		empty_binding_layout_ : binding_layout_facts_[binding.layout_fact];
+}
+
+BindingLayoutFact& Program::MutableBindingLayout(BindingRecord& binding)
+{
+	if (binding.layout_fact == kNoBindingLayoutFact)
+	{
+		if (binding_layout_facts_.size() >= kNoBindingLayoutFact)
+			ThrowSemanticResourceLimit("too many PA11 binding layout facts");
+		binding.layout_fact = static_cast<std::uint32_t>(
+			binding_layout_facts_.size());
+		binding_layout_facts_.push_back(BindingLayoutFact());
+	}
+	return binding_layout_facts_[binding.layout_fact];
+}
+
+BindingId Program::AddOutputTypeBinding(ScopeId owner, NameId display_name,
+	TypeId type, NamedFlavor display)
+{
+	if (bindings.size() >= kNoBinding)
+		ThrowSemanticResourceLimit("too many PA11 bindings");
+	const BindingId binding = static_cast<BindingId>(bindings.size());
+	bindings.push_back(BindingRecord());
+	BindingRecord& record = bindings.back();
+	record.owner = owner;
+	record.kind = BIND_TYPE;
+	record.name = display_name;
+	record.type = type;
+	record.display_flavor = display;
+	record.canonical = binding;
+	ScopeRecord& scope = scopes_[owner];
+	if (scope.first_binding == kNoBinding) scope.first_binding = binding;
+	else bindings[scope.last_binding].next = binding;
+	scope.last_binding = binding;
+	return binding;
+}
+
+void Program::SetTypeName(ScopeId owner, NameId name, TypeId type)
+{
+	NameEntry* entry = EnsureEntry(owner, name);
+	if (entry->name_space != kNoScope)
+		ThrowSemanticError("type conflicts with namespace");
+	entry->type = type;
+}
+
+void Program::SetEntityScope(EntityId entity, ScopeId scope)
+{
+	entities[entity].member_scope = scope;
+	if (scope >= scopes_.size())
+		ThrowInternalCompilerError("entity member scope is invalid");
+	scopes_[scope].entity = entity;
+}
+
+void Program::ResetClassDefinition(EntityId entity)
+{
+	if (entity >= entities.size())
+		ThrowInternalCompilerError("class reset entity is invalid");
+	const EntityRecord old = entities[entity];
+	if (old.member_scope != kNoScope)
+	{
+		if (old.member_scope >= scopes_.size())
+			ThrowInternalCompilerError("class reset member scope is invalid");
+		scopes_[old.member_scope].entity = kNoEntity;
+	}
+	EntityRecord reset;
+	reset.emission_name = old.emission_name;
+	reset.identity_name = old.identity_name;
+	reset.emission_name_form = old.emission_name_form;
+	reset.owner = old.owner;
+	reset.enclosing_class = old.enclosing_class;
+	reset.local_context = old.local_context;
+	reset.local_name_ordinal = old.local_name_ordinal;
+	reset.unnamed_class = old.unnamed_class;
+	reset.lambda_call_operator = old.lambda_call_operator;
+	reset.template_argument_list = old.template_argument_list;
+	reset.template_argument_begin = old.template_argument_begin;
+	reset.template_argument_count = old.template_argument_count;
+	reset.template_argument_pack_begin = old.template_argument_pack_begin;
+	reset.class_template_presentation = old.class_template_presentation;
+	reset.abi_tag_begin = old.abi_tag_begin;
+	reset.abi_tag_count = old.abi_tag_count;
+	reset.flavor = old.flavor;
+	reset.type = old.type;
+	reset.declaration = old.declaration;
+	entities[entity] = reset;
+	base_jump_offsets_[entity] = 0;
+	base_jump_counts_[entity] = 0;
+	base_depths_[entity] = 0;
+	deepest_nonpublic_base_depths_[entity] = 0;
+	if (++base_graph_versions_[entity] == 0)
+		base_graph_versions_[entity] = 1;
+}
+
+ScopeId Program::ParentScope(ScopeId scope) const
+{
+	if (scope >= scopes_.size()) return kNoScope;
+	return scopes_[scope].parent;
+}
+
+ScopeKind Program::KindOfScope(ScopeId scope) const
+{
+	if (scope >= scopes_.size())
+		ThrowInternalCompilerError("invalid scope kind query");
+	return scopes_[scope].kind;
+}
+
+bool Program::IsInlineNamespace(ScopeId scope) const
+{
+	return scope < scopes_.size() && scopes_[scope].inline_namespace;
+}
+
+bool Program::HasInternalLinkageScope(ScopeId scope) const
+{
+	return scope < scopes_.size() && scopes_[scope].internal_linkage;
+}
+
+NameId Program::NameOfScope(ScopeId scope) const
+{
+	if (scope >= scopes_.size()) return 0;
+	return scopes_[scope].name;
+}
+
+NameId Program::EmissionNameOfScope(ScopeId scope) const
+{
+	if (scope >= scopes_.size())
+		ThrowInternalCompilerError("invalid scope emission-name query");
+	return scopes_[scope].emission_name;
+}
+
+EntityId Program::EntityForScope(ScopeId scope) const
+{
+	if (scope >= scopes_.size()) return kNoEntity;
+	return scopes_[scope].entity;
+}
+
+void Program::SetDirectBase(EntityId derived, EntityId base, AccessKind access)
+{
+	std::vector<DirectBaseEdge> bases(1, DirectBaseEdge(base, access));
+	SetDirectBases(derived, bases);
+}
+
+void Program::SetDirectBases(EntityId derived,
+	const std::vector<DirectBaseEdge>& bases)
+{
+	if (derived >= entities.size())
+		ThrowInternalCompilerError("invalid direct base owner");
+	EntityRecord& record = entities[derived];
+	if (record.direct_base_count != 0)
+		ThrowInternalCompilerError("direct bases are already fixed");
+	if (record.member_scope != kNoScope)
+		ThrowInternalCompilerError(
+			"direct bases must be fixed before publishing the member scope");
+	if (direct_base_input_marks_.size() < entities.size())
+		direct_base_input_marks_.resize(entities.size(), 0);
+	if (direct_base_input_generation_ ==
+		std::numeric_limits<std::uint32_t>::max())
+	{
+		std::fill(direct_base_input_marks_.begin(),
+			direct_base_input_marks_.end(), 0);
+		direct_base_input_generation_ = 0;
+	}
+	const std::uint32_t input_generation = ++direct_base_input_generation_;
+	for (std::size_t i = 0; i < bases.size(); ++i)
+	{
+		++direct_base_validation_visits;
+		const EntityId base = bases[i].entity;
+		if (base >= entities.size())
+			ThrowInternalCompilerError("invalid direct base relationship");
+		if (derived == base)
+			ThrowSemanticError("invalid direct base relationship");
+		if (direct_base_input_marks_[base] == input_generation)
+			ThrowSemanticError("duplicate direct base");
+		direct_base_input_marks_[base] = input_generation;
+		if (IsBaseOf(derived, base))
+			ThrowSemanticError("cyclic class inheritance");
+		if (base_depths_[base] == std::numeric_limits<std::uint32_t>::max())
+			ThrowSemanticResourceLimit("class inheritance is too deep");
+	}
+	if (bases.size() > std::numeric_limits<std::uint32_t>::max() ||
+		direct_bases.size() > std::numeric_limits<std::uint32_t>::max() -
+			bases.size())
+		ThrowSemanticResourceLimit("too many direct base relationships");
+	record.direct_base_begin = static_cast<std::uint32_t>(direct_bases.size());
+	record.direct_base_count = static_cast<std::uint32_t>(bases.size());
+	direct_bases.insert(direct_bases.end(), bases.begin(), bases.end());
+	if (++base_graph_versions_[derived] == 0)
+		base_graph_versions_[derived] = 1;
+	if (bases.empty()) return;
+	record.direct_base = bases[0].entity;
+	record.base_access = bases[0].access;
+	record.has_direct_base = true;
+	std::uint32_t maximum_depth = 0;
+	std::uint32_t nonpublic_depth = 0;
+	for (std::size_t i = 0; i < bases.size(); ++i)
+	{
+		maximum_depth = std::max(maximum_depth, base_depths_[bases[i].entity]);
+		nonpublic_depth = std::max(nonpublic_depth,
+			bases[i].access == ACCESS_PUBLIC ?
+				deepest_nonpublic_base_depths_[bases[i].entity] :
+				base_depths_[bases[i].entity] + 1);
+		if (entities[bases[i].entity].nonlinear_base_graph)
+			record.nonlinear_base_graph = true;
+		if (bases[i].virtual_base) record.nonlinear_base_graph = true;
+	}
+	record.nonlinear_base_graph = record.nonlinear_base_graph || bases.size() != 1;
+	base_depths_[derived] = maximum_depth + 1;
+	deepest_nonpublic_base_depths_[derived] = nonpublic_depth;
+	if (record.nonlinear_base_graph) return;
+	std::uint32_t remaining_depth = base_depths_[derived];
+	std::uint8_t jump_count = 0;
+	while (remaining_depth != 0)
+	{
+		++jump_count;
+		remaining_depth >>= 1;
+	}
+	base_jump_offsets_[derived] = base_jumps_.size();
+	base_jump_counts_[derived] = jump_count;
+	base_jumps_.insert(base_jumps_.end(), jump_count, kNoEntity);
+	base_jumps_[base_jump_offsets_[derived]] = bases[0].entity;
+	for (std::size_t level = 1; level < jump_count; ++level)
+	{
+		const EntityId previous =
+			base_jumps_[base_jump_offsets_[derived] + level - 1];
+		base_jumps_[base_jump_offsets_[derived] + level] =
+			previous == kNoEntity || base_jump_counts_[previous] < level ?
+			kNoEntity : base_jumps_[base_jump_offsets_[previous] + level - 1];
+	}
+}
+
+const DirectBaseEdge& Program::DirectBase(EntityId derived,
+	std::size_t ordinal) const
+{
+	if (derived >= entities.size() || ordinal >= entities[derived].direct_base_count)
+		ThrowInternalCompilerError("invalid direct base edge query");
+	return direct_bases[entities[derived].direct_base_begin + ordinal];
+}
+
+DirectBaseEdge& Program::MutableDirectBase(EntityId derived,
+	std::size_t ordinal)
+{
+	if (derived >= entities.size() || ordinal >= entities[derived].direct_base_count)
+		ThrowInternalCompilerError("invalid direct base edge mutation");
+	if (++base_graph_versions_[derived] == 0)
+		base_graph_versions_[derived] = 1;
+	return direct_bases[entities[derived].direct_base_begin + ordinal];
+}
+
+Program::NameEntry* Program::EnsureEntry(ScopeId scope, NameId name)
+{
+	ScopeRecord& owner = scopes_[scope];
+	if (owner.name_entry_count <= 4)
+		for (std::uint32_t entry = owner.first_name_entry;
+			entry != std::numeric_limits<std::uint32_t>::max();
+			entry = entries_[entry].next_in_scope)
+			if (entries_[entry].name == name) return &entries_[entry];
+	if ((entries_.size() + 1) * 10 > entry_slots_.size() * 7)
+		RehashEntries(entry_slots_.size() * 2);
+	const std::size_t mask = entry_slots_.size() - 1;
+	std::size_t slot = PairHash(scope, name) & mask;
+	while (entry_slots_[slot] != 0)
+	{
+		++name_index_probes;
+		NameEntry& entry = entries_[entry_slots_[slot] - 1];
+		if (entry.scope == scope && entry.name == name) return &entry;
+		slot = (slot + 1) & mask;
+	}
+	++name_index_probes;
+	entries_.push_back(NameEntry());
+	NameEntry& entry = entries_.back();
+	entry.scope = scope;
+	entry.name = name;
+	entry.next_in_scope = owner.first_name_entry;
+	owner.first_name_entry = static_cast<std::uint32_t>(entries_.size() - 1);
+	++owner.name_entry_count;
+	entry_slots_[slot] = static_cast<std::uint32_t>(entries_.size());
+	PublishUsingName(scope, name);
+	return &entry;
+}
+
+const Program::NameEntry* Program::FindEntry(ScopeId scope,
+	NameId name) const
+{
+	const ScopeRecord& owner = scopes_[scope];
+	if (owner.name_entry_count <= 4)
+	{
+		for (std::uint32_t entry = owner.first_name_entry;
+			entry != std::numeric_limits<std::uint32_t>::max();
+			entry = entries_[entry].next_in_scope)
+			if (entries_[entry].name == name) return &entries_[entry];
+		return 0;
+	}
+	const std::size_t mask = entry_slots_.size() - 1;
+	std::size_t slot = PairHash(scope, name) & mask;
+	while (entry_slots_[slot] != 0)
+	{
+		++name_index_probes;
+		const NameEntry& entry = entries_[entry_slots_[slot] - 1];
+		if (entry.scope == scope && entry.name == name) return &entry;
+		slot = (slot + 1) & mask;
+	}
+	++name_index_probes;
+	return 0;
+}
+
+void Program::RehashEntries(std::size_t capacity)
+{
+	std::vector<std::uint32_t> replacement(capacity, 0);
+	const std::size_t mask = capacity - 1;
+	for (std::size_t i = 0; i < entries_.size(); ++i)
+	{
+		std::size_t slot = PairHash(entries_[i].scope, entries_[i].name) & mask;
+		while (replacement[slot] != 0) slot = (slot + 1) & mask;
+		replacement[slot] = static_cast<std::uint32_t>(i + 1);
+	}
+	entry_slots_.swap(replacement);
+}
+
+LookupResult Program::DirectLookup(ScopeId scope, NameId name,
+	LookupKind kind) const
+{
+	LookupResult result;
+	const NameEntry* entry = FindEntry(scope, name);
+	if (!entry) return result;
+	const EntityId scope_entity = scopes_[scope].entity;
+	if (scope_entity != kNoEntity)
+	{
+		const NamedFlavor flavor = entities[scope_entity].flavor;
+		if (IsClassNamedFlavor(flavor))
+			result.naming_class = scope_entity;
+	}
+	if (kind == LOOKUP_NAMESPACE || kind == LOOKUP_SCOPE_CARRIER)
+		result.name_space = entry->name_space;
+	if (kind == LOOKUP_TYPE || kind == LOOKUP_SCOPE_CARRIER)
+	{
+		result.type = entry->type;
+		result.type_declaration = entry->type_declaration;
+		result.type_declaration_canonical =
+			entry->type_declaration == kNoBinding ?
+			kNoBinding : bindings[entry->type_declaration].canonical;
+	}
+	if (kind == LOOKUP_ORDINARY)
+	{
+		result.ordinary = entry->ordinary;
+		result.ordinary_declaration = entry->ordinary == kNoBinding ?
+			kNoBinding : bindings[entry->ordinary].canonical;
+		// Function and variable templates occupy the ordinary lookup namespace.
+		// A local template-only entry therefore hides ordinary declarations in
+		// base or enclosing scopes even though it has no concrete binding to
+		// return from this half of lookup.
+		if (entry->function_template)
+			result.BeginFunctionTemplateLookup();
+		if (entry->variable_template)
+			result.BeginVariableTemplateLookup();
+	}
+	if (kind == LOOKUP_FUNCTION_TEMPLATE &&
+		(entry->ordinary != kNoBinding || entry->type != kNoType ||
+		 entry->function_template))
+	{
+		result.BeginFunctionTemplateLookup();
+		if (entry->function_template)
+			result.AddFunctionTemplateOwner(scope);
+	}
+	if (kind == LOOKUP_VARIABLE_TEMPLATE &&
+		(entry->ordinary != kNoBinding || entry->type != kNoType ||
+		 entry->variable_template))
+	{
+		result.BeginVariableTemplateLookup();
+		if (entry->variable_template)
+			result.AddVariableTemplateOwner(scope);
+	}
+	return result;
+}
+
+bool Program::MergeLookup(LookupResult* result,
+	const LookupResult& candidate, bool tolerate_ambiguity,
+	bool merge_equivalent_namespace_types) const
+{
+	if (candidate.Empty()) return true;
+	if (candidate.HasFunctionTemplateLookup())
+	{
+		if (!result->HasFunctionTemplateLookup())
+		{
+			*result = candidate;
+			return true;
+		}
+		for (std::size_t i = 0;
+			i < candidate.FunctionTemplateOwnerCount(); ++i)
+			result->AddFunctionTemplateOwner(
+				candidate.FunctionTemplateOwnerAt(i));
+		return true;
+	}
+	if (candidate.HasVariableTemplateLookup())
+	{
+		if (!result->HasVariableTemplateLookup())
+		{
+			*result = candidate;
+			return true;
+		}
+		for (std::size_t i = 0;
+			i < candidate.VariableTemplateOwnerCount(); ++i)
+			result->AddVariableTemplateOwner(
+				candidate.VariableTemplateOwnerAt(i));
+		return true;
+	}
+	if (result->Empty())
+	{
+		*result = candidate;
+		return true;
+	}
+	if (result->name_space != candidate.name_space ||
+		result->type != candidate.type ||
+		(result->type_declaration_canonical !=
+			candidate.type_declaration_canonical &&
+			(!merge_equivalent_namespace_types || result->type == kNoType)))
+	{
+		if (tolerate_ambiguity) return false;
+		ThrowSemanticError("ambiguous PA11 lookup");
+	}
+	if (result->ordinary == kNoBinding && candidate.ordinary == kNoBinding)
+		return true;
+	if (result->ordinary == kNoBinding || candidate.ordinary == kNoBinding)
+	{
+		if (tolerate_ambiguity) return false;
+		ThrowSemanticError("ambiguous PA11 lookup");
+	}
+	const bool result_functions =
+		bindings[result->ordinary].kind == BIND_FUNCTION;
+	const bool candidate_functions =
+		bindings[candidate.ordinary].kind == BIND_FUNCTION;
+	if (!result_functions || !candidate_functions)
+	{
+		if (result->OrdinaryCount() == 1 && candidate.OrdinaryCount() == 1 &&
+			bindings[result->ordinary].canonical ==
+				bindings[candidate.ordinary].canonical)
+			return true;
+		if (tolerate_ambiguity) return false;
+		ThrowSemanticError("ambiguous PA11 lookup");
+	}
+	for (std::size_t i = 0; i < candidate.OrdinaryCount(); ++i)
+		result->AddOrdinary(candidate.OrdinaryAt(i));
+	return true;
+}
+
+LookupResult Program::LookupGraph(ScopeId scope, NameId name,
+	LookupKind kind)
+{
+	return LookupGraphCandidate(scope, name, kind, 0);
+}
+
+LookupResult Program::LookupGraphCandidate(ScopeId scope, NameId name,
+	LookupKind kind, bool* ambiguous)
+{
+	if (ambiguous) *ambiguous = false;
+	const EntityId scope_entity = scopes_[scope].entity;
+	const EntityId naming_class = scope_entity != kNoEntity &&
+		(entities[scope_entity].flavor == NAMED_STRUCT ||
+		 entities[scope_entity].flavor == NAMED_CLASS ||
+		 entities[scope_entity].flavor == NAMED_UNION) ?
+		scope_entity : kNoEntity;
+	++lookup_generation_;
+	if (lookup_generation_ == 0)
+	{
+		std::fill(lookup_marks_.begin(), lookup_marks_.end(), 0);
+		lookup_generation_ = 1;
+	}
+	lookup_worklist_.clear();
+	lookup_marks_[scope] = lookup_generation_;
+	++lookup_scope_visits;
+	const LookupResult local = DirectLookup(scope, name, kind);
+	if (!local.Empty()) return local;
+	const EntityId owner_entity = scopes_[scope].entity;
+	if (owner_entity != kNoEntity)
+	{
+		const EntityRecord& owner_record = entities[owner_entity];
+		for (std::size_t base_index = 0;
+			base_index < owner_record.direct_base_count; ++base_index)
+		{
+			const ScopeId target = entities[
+				DirectBase(owner_entity, base_index).entity].member_scope;
+			if (target != kNoScope && lookup_marks_[target] != lookup_generation_)
+			{
+				++lookup_edge_visits;
+				lookup_marks_[target] = lookup_generation_;
+				lookup_worklist_.push_back(target);
+			}
+		}
+	}
+	const std::uint32_t scope_visible = FindVisibleName(scope, name);
+	for (std::uint32_t relation = scope_visible ==
+			std::numeric_limits<std::uint32_t>::max() ?
+			std::numeric_limits<std::uint32_t>::max() :
+			visible_names_[scope_visible].first_relation;
+		relation != std::numeric_limits<std::uint32_t>::max();
+		relation = using_name_relations_[relation].next)
+	{
+		++lookup_edge_visits;
+		const std::uint32_t edge = using_name_relations_[relation].edge;
+		const ScopeId target = using_edges_[edge].target;
+		if (lookup_marks_[target] == lookup_generation_) continue;
+		lookup_marks_[target] = lookup_generation_;
+		lookup_worklist_.push_back(target);
+	}
+	LookupResult result;
+	for (std::size_t i = 0; i < lookup_worklist_.size(); ++i)
+	{
+		const ScopeId current = lookup_worklist_[i];
+		++lookup_scope_visits;
+		const LookupResult direct = DirectLookup(current, name, kind);
+		if (!direct.Empty())
+		{
+			if (!MergeLookup(&result, direct, ambiguous != 0))
+			{
+				*ambiguous = true;
+				return LookupResult();
+			}
+			continue;
+		}
+		const EntityId current_entity = scopes_[current].entity;
+		if (current_entity != kNoEntity)
+		{
+			const EntityRecord& current_record = entities[current_entity];
+			for (std::size_t base_index = 0;
+				base_index < current_record.direct_base_count; ++base_index)
+			{
+				const ScopeId target = entities[
+					DirectBase(current_entity, base_index).entity].member_scope;
+				if (target != kNoScope &&
+					lookup_marks_[target] != lookup_generation_)
+				{
+					++lookup_edge_visits;
+					lookup_marks_[target] = lookup_generation_;
+					lookup_worklist_.push_back(target);
+				}
+			}
+		}
+		const std::uint32_t current_visible = FindVisibleName(current, name);
+		for (std::uint32_t relation = current_visible ==
+				std::numeric_limits<std::uint32_t>::max() ?
+				std::numeric_limits<std::uint32_t>::max() :
+				visible_names_[current_visible].first_relation;
+			relation != std::numeric_limits<std::uint32_t>::max();
+			relation = using_name_relations_[relation].next)
+		{
+			++lookup_edge_visits;
+			const std::uint32_t edge = using_name_relations_[relation].edge;
+			const ScopeId target = using_edges_[edge].target;
+			if (lookup_marks_[target] == lookup_generation_) continue;
+			lookup_marks_[target] = lookup_generation_;
+			lookup_worklist_.push_back(target);
+		}
+	}
+	if (!result.Empty() && naming_class != kNoEntity)
+		result.naming_class = naming_class;
+	return result;
+}
+
+LookupResult Program::LookupUnqualified(ScopeId scope, NameId name,
+	LookupKind kind)
+
+{
+	return LookupUnqualifiedCandidate(scope, name, kind, 0);
+}
+
+LookupResult Program::LookupUnqualifiedCandidate(ScopeId scope, NameId name,
+	LookupKind kind, bool* ambiguous)
+{
+	if (ambiguous) *ambiguous = false;
+	lookup_pending_targets_.clear();
+	lookup_pending_next_.clear();
+	++lookup_pending_generation_;
+	if (lookup_pending_generation_ == 0)
+	{
+		std::fill(lookup_pending_target_marks_.begin(),
+			lookup_pending_target_marks_.end(), 0);
+		std::fill(lookup_pending_head_marks_.begin(),
+			lookup_pending_head_marks_.end(), 0);
+		lookup_pending_generation_ = 1;
+	}
+
+	LookupResult result;
+	for (ScopeId current = scope; current != kNoScope;
+		current = scopes_[current].parent)
+	{
+		const std::uint32_t current_visible = FindVisibleName(current, name);
+		for (std::uint32_t relation = current_visible ==
+				std::numeric_limits<std::uint32_t>::max() ?
+				std::numeric_limits<std::uint32_t>::max() :
+				visible_names_[current_visible].first_relation;
+			relation != std::numeric_limits<std::uint32_t>::max();
+			relation = using_name_relations_[relation].next)
+		{
+			++lookup_edge_visits;
+			const std::uint32_t edge = using_name_relations_[relation].edge;
+			const UsingEdge& using_edge = using_edges_[edge];
+			if (lookup_pending_target_marks_[using_edge.target] ==
+				lookup_pending_generation_)
+				continue;
+			lookup_pending_target_marks_[using_edge.target] =
+				lookup_pending_generation_;
+			if (lookup_pending_targets_.size() >=
+				std::numeric_limits<std::uint32_t>::max())
+				ThrowSemanticResourceLimit("too many pending using targets");
+			const std::uint32_t pending =
+				static_cast<std::uint32_t>(lookup_pending_targets_.size());
+			lookup_pending_targets_.push_back(using_edge.target);
+			lookup_pending_next_.push_back(
+				lookup_pending_head_marks_[using_edge.injection] ==
+					lookup_pending_generation_ ?
+					lookup_pending_heads_[using_edge.injection] :
+					std::numeric_limits<std::uint32_t>::max());
+			lookup_pending_heads_[using_edge.injection] = pending;
+			lookup_pending_head_marks_[using_edge.injection] =
+				lookup_pending_generation_;
+		}
+
+		++lookup_scope_visits;
+		result = DirectLookup(current, name, kind);
+		const bool direct_type_result = result.type != kNoType;
+		const EntityId scope_entity = scopes_[current].entity;
+		if (result.Empty() && scope_entity != kNoEntity &&
+			(entities[scope_entity].flavor == NAMED_STRUCT ||
+			 entities[scope_entity].flavor == NAMED_CLASS ||
+			 entities[scope_entity].flavor == NAMED_UNION))
+		{
+			bool graph_ambiguous = false;
+			result = LookupGraphCandidate(
+				current, name, kind, ambiguous ? &graph_ambiguous : 0);
+			if (graph_ambiguous)
+			{
+				*ambiguous = true;
+				return LookupResult();
+			}
+		}
+
+		for (std::uint32_t pending =
+				lookup_pending_head_marks_[current] ==
+					lookup_pending_generation_ ? lookup_pending_heads_[current] :
+					std::numeric_limits<std::uint32_t>::max();
+			pending != std::numeric_limits<std::uint32_t>::max();
+			pending = lookup_pending_next_[pending])
+		{
+			bool graph_ambiguous = false;
+			const LookupResult candidate = LookupGraphCandidate(
+				lookup_pending_targets_[pending], name, kind,
+				ambiguous ? &graph_ambiguous : 0);
+			if (graph_ambiguous || !MergeLookup(&result, candidate,
+				ambiguous != 0, direct_type_result))
+			{
+				*ambiguous = true;
+				return LookupResult();
+			}
+		}
+		if (!result.Empty()) break;
+	}
+
+	return result;
+}
+
+ScopeId Program::CarrierScope(const LookupResult& result) const
+{
+	if (result.name_space != kNoScope) return result.name_space;
+	if (result.type != kNoType) return ScopeForType(result.type);
+	return kNoScope;
+}
+
+LookupResult Program::Lookup(ScopeId current, const NamePath& name,
+	LookupKind kind)
+{
+	++lookup_queries;
+	if (name.Empty()) return LookupResult();
+	if (name.Size() == 1)
+		return name.global ? LookupGraph(GlobalScope(), name[0], kind) :
+			LookupUnqualified(current, name[0], kind);
+	LookupResult carrier = name.global ?
+		LookupGraph(GlobalScope(), name[0], LOOKUP_SCOPE_CARRIER) :
+		LookupUnqualified(current, name[0], LOOKUP_SCOPE_CARRIER);
+	ScopeId owner = CarrierScope(carrier);
+	if (owner == kNoScope) return LookupResult();
+	for (std::size_t i = 1; i + 1 < name.Size(); ++i)
+	{
+		carrier = LookupGraph(owner, name[i], LOOKUP_SCOPE_CARRIER);
+		owner = CarrierScope(carrier);
+		if (owner == kNoScope) return LookupResult();
+	}
+	return LookupGraph(owner, name.Last(), kind);
+}
+
+LookupResult Program::LookupName(ScopeId current, NameId name,
+	LookupKind kind)
+{
+	++lookup_queries;
+	return LookupUnqualified(current, name, kind);
+}
+
+LookupResult Program::LookupNameCandidate(ScopeId current, NameId name,
+	LookupKind kind, bool* ambiguous)
+{
+	++lookup_queries;
+	return LookupUnqualifiedCandidate(current, name, kind, ambiguous);
+}
+
+LookupResult Program::LookupDirect(ScopeId scope, NameId name,
+	LookupKind kind)
+{
+	++lookup_queries;
+	return DirectLookup(scope, name, kind);
+}
+
+LookupResult Program::LookupMember(EntityId entity, NameId name,
+	LookupKind kind)
+{
+	++lookup_queries;
+	if (entity == kNoEntity || entity >= entities.size() ||
+		entities[entity].member_scope == kNoScope) return LookupResult();
+	return LookupGraph(entities[entity].member_scope, name, kind);
+}
+
+LookupResult Program::LookupQualifiedName(ScopeId owner, NameId name,
+	LookupKind kind)
+{
+	++lookup_queries;
+	return LookupGraph(owner, name, kind);
+}
+
+LookupResult Program::LookupQualified(ScopeId owner, const NamePath& name,
+	LookupKind kind)
+{
+	return LookupQualifiedCandidate(owner, name, kind, 0);
+}
+
+LookupResult Program::LookupQualifiedCandidate(ScopeId owner,
+	const NamePath& name, LookupKind kind, bool* ambiguous)
+{
+	if (ambiguous) *ambiguous = false;
+	++lookup_queries;
+	if (name.Empty() || owner == kNoScope) return LookupResult();
+	for (std::size_t i = 0; i + 1 < name.Size(); ++i)
+	{
+		const LookupResult carrier = LookupGraphCandidate(
+			owner, name[i], LOOKUP_SCOPE_CARRIER, ambiguous);
+		if (ambiguous && *ambiguous) return LookupResult();
+		owner = CarrierScope(carrier);
+		if (owner == kNoScope) return LookupResult();
+	}
+	return LookupGraphCandidate(owner, name.Last(), kind, ambiguous);
+}
+
+ScopeId Program::ResolveScope(ScopeId current, const NamePath& name)
+{
+	return CarrierScope(Lookup(current, name, LOOKUP_SCOPE_CARRIER));
+}
+
+ScopeId Program::ScopeForType(TypeId type) const
+{
+	type = types.RemoveTopCv(type);
+	const TypeRecord& record = types.Get(type);
+	if (record.kind != TYPE_NAMED) return kNoScope;
+	return entities[record.entity].member_scope;
+}
+
+std::size_t Program::FundamentalSize(FundamentalKind kind) const
+{
+	return FundamentalObjectSize(kind);
+}
+
+void Program::AppendType(std::string& output, TypeId type,
+	std::size_t* rendered_type_nodes,
+	std::size_t* stack_storage_bytes, ProgramRenderMode mode,
+	bool qualified_named_type) const
+{
+	struct Task
+	{
+		TypeId type;
+		const char* text;
+		bool is_type;
+		Task() : type(kNoType), text(0), is_type(false) {}
+		Task(TypeId value, bool type_task)
+			: type(value), text(0), is_type(type_task) {}
+		explicit Task(const char* value)
+			: type(kNoType), text(value), is_type(false) {}
+	};
+	SmallStack<Task, 8> tasks;
+	tasks.Push(Task(type, true));
+	while (!tasks.Empty())
+	{
+		const Task task = tasks.Back();
+		tasks.Pop();
+		if (!task.is_type)
+		{
+			output += task.text;
+			continue;
+		}
+		if (rendered_type_nodes) ++*rendered_type_nodes;
+		const TypeRecord& record = types.Get(task.type);
+		switch (record.kind)
+		{
+		case TYPE_FUNDAMENTAL:
+			output += FundamentalName(record.fundamental);
+			break;
+		case TYPE_BITINT:
+			output += record.bitint_unsigned ? "unsigned _BitInt(" : "_BitInt(";
+			if (record.dependent_bound_parameter == kNoTemplateParameter)
+				output += std::to_string(record.bound);
+			else output += "dependent";
+			output += ')';
+			break;
+		case TYPE_COMPLEX:
+			output += "_Complex ";
+			tasks.Push(Task(record.child, true));
+			break;
+		case TYPE_NAMED:
+		{
+			const EntityRecord& entity = entities[record.entity];
+			output += FlavorName(entity.flavor);
+			output += ' ';
+			if (mode != PROGRAM_RENDER_SOURCE_TYPES)
+				output += RenderEntityEmissionName(record.entity);
+			else if (qualified_named_type)
+				output += RenderEmissionName(entity.owner, entity.emission_name);
+			else output += names.Get(entity.emission_name);
+			break;
+		}
+		case TYPE_QUALIFIED:
+			if ((record.cv & CV_ATOMIC) != 0) output += "_Atomic ";
+			if ((record.cv & CV_CONST) != 0) output += "const ";
+			if ((record.cv & CV_VOLATILE) != 0) output += "volatile ";
+			tasks.Push(Task(record.child, true));
+			break;
+		case TYPE_POINTER:
+			output += "pointer to ";
+			tasks.Push(Task(record.child, true));
+			break;
+		case TYPE_BLOCK_POINTER:
+			output += "block-pointer to ";
+			tasks.Push(Task(record.child, true));
+			break;
+		case TYPE_LVALUE_REFERENCE:
+			output += "lvalue-reference to ";
+			tasks.Push(Task(record.child, true));
+			break;
+		case TYPE_RVALUE_REFERENCE:
+			output += "rvalue-reference to ";
+			tasks.Push(Task(record.child, true));
+			break;
+		case TYPE_ARRAY:
+			output += "array of ";
+			output += record.dependent_bound_parameter == kNoTemplateParameter ?
+				std::to_string(record.bound) : "dependent";
+			output += ' ';
+			tasks.Push(Task(record.child, true));
+			break;
+		case TYPE_FUNCTION:
+		{
+			output += "function of (";
+			const TypeId* parameters = types.Parameters(task.type);
+			tasks.Push(Task(record.child, true));
+			tasks.Push(Task(FunctionReturnText(record.cv,
+				record.ref_qualifier)));
+			if (record.variadic) tasks.Push(Task("..."));
+			for (std::size_t i = record.parameter_count; i != 0; --i)
+			{
+				if (i != record.parameter_count || record.variadic)
+					tasks.Push(Task(", "));
+				tasks.Push(Task(parameters[i - 1], true));
+			}
+			break;
+		}
+		case TYPE_MEMBER_POINTER:
+			output += "member-pointer of ";
+			tasks.Push(Task(record.child, true));
+			tasks.Push(Task(" to "));
+			tasks.Push(Task(static_cast<TypeId>(record.bound), true));
+			break;
+		case TYPE_VECTOR:
+			output += "vector of ";
+			if (record.dependent_bound_parameter == kNoTemplateParameter)
+			{
+				output += std::to_string(record.bound);
+				output += " bytes of ";
+			}
+			else output += "dependent lanes of ";
+			tasks.Push(Task(record.child, true));
+			break;
+		case TYPE_INVALID:
+			ThrowInternalCompilerError("cannot render invalid type");
+		}
+	}
+	if (stack_storage_bytes)
+		*stack_storage_bytes = std::max(*stack_storage_bytes,
+			tasks.StorageBytes());
+}
+
+std::string Program::RenderType(TypeId type) const
+{
+	std::string result;
+	result.reserve(64);
+	AppendType(result, type, 0, 0, PROGRAM_RENDER_ALL);
+	return result;
+}
+
+void Program::WriteType(std::ostream& output, TypeId type,
+	std::size_t* rendered_type_nodes,
+	std::size_t* stack_storage_bytes, ProgramRenderMode mode,
+	bool qualified_named_type) const
+{
+	std::string rendered;
+	rendered.reserve(64);
+	AppendType(rendered, type, rendered_type_nodes, stack_storage_bytes,
+		mode, qualified_named_type);
+	output << rendered;
+}
+
+void Program::WriteScope(std::ostream& output, ScopeId scope,
+	std::size_t depth, std::size_t* max_depth,
+	std::size_t* stack_storage_bytes,
+	std::size_t* rendered_type_nodes, ProgramRenderMode mode) const
+
+{
+	struct Frame
+	{
+		ScopeId scope;
+		std::uint32_t edge;
+		std::size_t depth;
+		bool entered;
+		Frame()
+			: scope(kNoScope),
+			  edge(std::numeric_limits<std::uint32_t>::max()),
+			  depth(0), entered(false) {}
+		Frame(ScopeId scope_value, std::size_t depth_value)
+			: scope(scope_value),
+			  edge(std::numeric_limits<std::uint32_t>::max()),
+			  depth(depth_value), entered(false) {}
+	};
+	SmallStack<Frame, 8> stack;
+	stack.Push(Frame(scope, depth));
+	while (!stack.Empty())
+	{
+		Frame& frame = stack.Back();
+		const ScopeRecord& record = scopes_[frame.scope];
+		if (mode == PROGRAM_RENDER_SOURCE_TYPES && !frame.entered &&
+			record.source_view_suppressed)
+		{
+			stack.Pop();
+			continue;
+		}
+		if (mode == PROGRAM_RENDER_SOURCE_TYPES && !frame.entered &&
+			record.kind == SCOPE_FUNCTION && record.name == 0)
+		{
+			stack.Pop();
+			continue;
+		}
+		if (!frame.entered)
+		{
+			if (max_depth) *max_depth = std::max(*max_depth, frame.depth);
+			for (std::size_t i = 0; i < frame.depth; ++i) output << "  ";
+			output << "scope ";
+			switch (record.kind)
+			{
+			case SCOPE_NAMESPACE:
+				output << "namespace " << names.Get(record.name); break;
+			case SCOPE_TEMPLATE_PARAMETERS:
+				output << "template-parameters"; break;
+			case SCOPE_CLASS:
+				output << "class ";
+				if (mode == PROGRAM_RENDER_SOURCE_TYPES &&
+					record.entity != kNoEntity)
+					output << names.Get(entities[record.entity].emission_name);
+				else output << names.Get(record.name);
+				break;
+			case SCOPE_ENUM:
+				output << "enum ";
+				if (mode == PROGRAM_RENDER_SOURCE_TYPES &&
+					record.source_view_qualified &&
+					record.entity != kNoEntity)
+				{
+					const EntityRecord& entity = entities[record.entity];
+					output << RenderEmissionName(
+						entity.owner, entity.emission_name);
+				}
+				else if (mode == PROGRAM_RENDER_SOURCE_TYPES &&
+					record.entity != kNoEntity)
+					output << names.Get(entities[record.entity].emission_name);
+				else output << names.Get(record.name);
+				break;
+			case SCOPE_FUNCTION:
+				output << "function " << names.Get(record.name); break;
+			case SCOPE_BLOCK: output << "block"; break;
+			}
+			output << '\n';
+			for (BindingId binding = record.first_binding;
+				binding != kNoBinding; binding = bindings[binding].next)
+			{
+				const BindingRecord& item = bindings[binding];
+				if (mode == PROGRAM_RENDER_SOURCE_TYPES &&
+					(item.compiler_generated || item.anonymous_union_storage ||
+					 item.source_view_suppressed))
+					continue;
+				if (mode == PROGRAM_RENDER_SOURCE_TYPES &&
+					item.kind == BIND_TYPE && record.entity != kNoEntity &&
+					item.type == entities[record.entity].type &&
+					item.name == entities[record.entity].identity_name)
+					continue;
+				for (std::size_t i = 0; i < frame.depth + 1; ++i)
+					output << "  ";
+				switch (item.kind)
+				{
+				case BIND_TYPE: output << "type "; break;
+				case BIND_TYPE_ALIAS: output << "type-alias "; break;
+				case BIND_ENUMERATOR: output << "enumerator "; break;
+				case BIND_FUNCTION: output << "function "; break;
+				case BIND_VARIABLE: output << "variable "; break;
+				case BIND_PARAMETER: output << "parameter "; break;
+				}
+				if (mode == PROGRAM_RENDER_SOURCE_TYPES &&
+					item.source_view_qualified_name)
+				{
+					const TypeRecord& named = types.Get(
+						types.RemoveTopCv(item.type));
+					if (named.kind != TYPE_NAMED)
+						ThrowInternalCompilerError(
+							"qualified source-view name has non-named type");
+					const EntityRecord& entity = entities[named.entity];
+					output << RenderEmissionName(
+						entity.owner, entity.emission_name);
+				}
+				else output << names.Get(item.name);
+				output << ' ';
+				if (item.kind == BIND_TYPE &&
+					item.display_flavor != NAMED_NONE)
+				{
+					output << FlavorName(item.display_flavor) << ' ';
+					if (mode == PROGRAM_RENDER_SOURCE_TYPES &&
+						item.source_view_qualified_type)
+					{
+						const TypeRecord& named = types.Get(
+							types.RemoveTopCv(item.type));
+						const EntityRecord& entity = entities[named.entity];
+						output << RenderEmissionName(
+							entity.owner, entity.emission_name);
+					}
+					else output << names.Get(item.name);
+				}
+				else if (item.display_type_name != 0)
+					output << FlavorName(item.display_flavor) << ' ' <<
+						names.Get(item.display_type_name);
+				else
+				{
+					std::size_t type_stack_storage = 0;
+					WriteType(output, item.type, rendered_type_nodes,
+						&type_stack_storage, mode,
+						item.source_view_qualified_type);
+					if (stack_storage_bytes)
+						*stack_storage_bytes = std::max(*stack_storage_bytes,
+							stack.StorageBytes() + type_stack_storage);
+				}
+				if (item.kind == BIND_ENUMERATOR) output << ' ' << item.value;
+				output << '\n';
+			}
+			frame.entered = true;
+			frame.edge = record.first_child;
+		}
+		if (frame.edge == std::numeric_limits<std::uint32_t>::max())
+		{
+			stack.Pop();
+			continue;
+		}
+		const std::uint32_t edge = frame.edge;
+		frame.edge = child_edges_[edge].next;
+		const std::size_t child_depth = frame.depth + 1;
+		stack.Push(Frame(child_edges_[edge].child, child_depth));
+	}
+	if (stack_storage_bytes)
+		*stack_storage_bytes = std::max(*stack_storage_bytes,
+			stack.StorageBytes());
+}
+
+void Program::Render(std::ostream& output, std::size_t* max_depth,
+	std::size_t* stack_storage_bytes,
+	std::size_t* rendered_type_nodes, ProgramRenderMode mode) const
+{
+	if (max_depth) *max_depth = 0;
+	if (stack_storage_bytes) *stack_storage_bytes = 0;
+	if (rendered_type_nodes) *rendered_type_nodes = 0;
+	output << "translation-unit\n";
+	WriteScope(output, GlobalScope(), 1, max_depth, stack_storage_bytes,
+		rendered_type_nodes, mode);
+}
+
+std::size_t Program::ScopeCount() const
+{
+	return scopes_.size();
+}
+
+std::size_t Program::BindingCount() const
+{
+	return bindings.size();
+}
+
+void Program::AccumulateScopeEmissionNames(
+	std::size_t* count, std::size_t* bytes) const
+{
+	for (std::size_t i = 0; i < scopes_.size(); ++i)
+	{
+		const NameId name = scopes_[i].emission_name;
+		if (name == 0) continue;
+		++*count;
+		*bytes += names.Get(name).size();
+	}
+}
+
+std::size_t Program::StorageBytes() const
+{
+	std::size_t bytes = names.StorageBytes() + types.StorageBytes() +
+		scopes_.capacity() * sizeof(ScopeRecord) +
+		child_edges_.capacity() * sizeof(ChildEdge) +
+		using_edges_.capacity() * sizeof(UsingEdge) +
+		using_edge_slots_.capacity() * sizeof(std::uint32_t) +
+		visible_names_.capacity() * sizeof(ScopeVisibleName) +
+		visible_name_slots_.capacity() * sizeof(std::uint32_t) +
+		using_name_relations_.capacity() * sizeof(UsingNameRelation) +
+		using_name_relation_slots_.capacity() * sizeof(std::uint32_t) +
+		using_name_worklist_.capacity() * sizeof(ScopeId) +
+		entries_.capacity() * sizeof(NameEntry) +
+		entry_slots_.capacity() * sizeof(std::uint32_t) +
+		template_argument_lists_.capacity() *
+			sizeof(TemplateArgumentListRecord) +
+		template_argument_list_slots_.capacity() * sizeof(std::uint32_t) +
+		lookup_marks_.capacity() * sizeof(std::uint32_t) +
+		lookup_worklist_.capacity() * sizeof(ScopeId) +
+		lookup_pending_heads_.capacity() * sizeof(std::uint32_t) +
+		lookup_pending_head_marks_.capacity() * sizeof(std::uint32_t) +
+		lookup_pending_targets_.capacity() * sizeof(ScopeId) +
+		lookup_pending_next_.capacity() * sizeof(std::uint32_t) +
+		lookup_pending_target_marks_.capacity() * sizeof(std::uint32_t) +
+		direct_bases.capacity() * sizeof(DirectBaseEdge) +
+		virtual_bases.capacity() * sizeof(VirtualBaseLayout) +
+		abi_tags.capacity() * sizeof(NameId) +
+		base_jumps_.capacity() * sizeof(EntityId) +
+		base_jump_offsets_.capacity() * sizeof(std::size_t) +
+		base_jump_counts_.capacity() * sizeof(std::uint8_t) +
+		base_depths_.capacity() * sizeof(std::uint32_t) +
+		deepest_nonpublic_base_depths_.capacity() * sizeof(std::uint32_t) +
+		direct_base_input_marks_.capacity() * sizeof(std::uint32_t) +
+		base_path_states_.capacity() * sizeof(BasePathState) +
+		base_path_scratch_.capacity() * sizeof(BasePathFrame) +
+		base_path_cache_entries_.capacity() * sizeof(BasePathCacheEntry) +
+		base_path_cache_slots_.capacity() * sizeof(std::uint32_t) +
+		virtual_base_index_entries_.capacity() * sizeof(VirtualBaseIndexEntry) +
+		virtual_base_index_slots_.capacity() * sizeof(std::uint32_t) +
+		base_graph_versions_.capacity() * sizeof(std::uint32_t) +
+		binding_layout_facts_.capacity() * sizeof(BindingLayoutFact) +
+		entities.capacity() * sizeof(EntityRecord) +
+		bindings.capacity() * sizeof(BindingRecord) +
+		function_exception_types.capacity() * sizeof(TypeId) +
+		template_arguments.capacity() * sizeof(TypeId) +
+		canonical_template_arguments.capacity() * sizeof(TemplateArgument) +
+		function_template_parameter_shapes.capacity() * sizeof(TypeId) +
+		function_template_abi_types.capacity() *
+			sizeof(FunctionTemplateAbiType) +
+		function_template_abi_arguments.capacity() *
+			sizeof(FunctionTemplateAbiArgument) +
+		function_template_abi_expressions.capacity() *
+			sizeof(FunctionTemplateAbiExpression) +
+		function_template_abi_template_parameter_types.capacity() *
+			sizeof(FunctionTemplateAbiTypeId) +
+		function_template_abi_function_parameter_types.capacity() *
+			sizeof(FunctionTemplateAbiTypeId) +
+		function_template_abi_recipes.capacity() *
+			sizeof(FunctionTemplateAbiRecipe);
+	return bytes;
+}
+
+}
+}

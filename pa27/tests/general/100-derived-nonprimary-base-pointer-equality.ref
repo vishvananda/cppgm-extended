@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $object
     store ptr %t2, $derived_pointer
     %t3 = addr $object
-    %t4 = index i8 [projection=base_subobject] %t3, 4
+    %t4 = index i8 %t3, 4
     store ptr %t4, $base_pointer
     %t5 = load ptr $derived_pointer
     %t6 = cmp eq ptr %t5, 0
@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^basecast_end_6
 
   block ^basecast_adjust_5:
-    %t7 = index i8 [projection=base_subobject] %t5, 4
+    %t7 = index i8 %t5, 4
     store ptr %t7, $basecast__1
     jump ^basecast_end_6
 
@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^basecast_end_12
 
   block ^basecast_adjust_11:
-    %t14 = index i8 [projection=base_subobject] %t12, 4
+    %t14 = index i8 %t12, 4
     store ptr %t14, $basecast__2
     jump ^basecast_end_12
 
@@ -72,7 +72,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = addr $object
     store ptr %t17, $const_derived_pointer
     %t18 = addr $object
-    %t19 = index i8 [projection=base_subobject] %t18, 4
+    %t19 = index i8 %t18, 4
     store ptr %t19, $volatile_base_pointer
     %t20 = load ptr $const_derived_pointer
     %t21 = cmp eq ptr %t20, 0
@@ -83,7 +83,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^basecast_end_18
 
   block ^basecast_adjust_17:
-    %t22 = index i8 [projection=base_subobject] %t20, 4
+    %t22 = index i8 %t20, 4
     store ptr %t22, $basecast__3
     jump ^basecast_end_18
 
@@ -91,7 +91,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = load ptr $basecast__3
     %t24 = load ptr $volatile_base_pointer
     %t25 = cmp eq ptr %t23, %t24
-    %t26 = cmp eq u8 %t25, 0
+    %t26 = cmp eq i64 %t25, 0
     branch %t26, ^if_then_13, ^if_else_14
 
   block ^if_then_13:
@@ -112,7 +112,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^basecast_end_24
 
   block ^basecast_adjust_23:
-    %t29 = index i8 [projection=base_subobject] %t27, 4
+    %t29 = index i8 %t27, 4
     store ptr %t29, $basecast__5
     jump ^basecast_end_24
 

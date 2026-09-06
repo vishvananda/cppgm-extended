@@ -8,7 +8,7 @@
 
 using namespace std;
 
-#include "exceptions.h"
+#include "support/not_implemented.h"
 
 bool HasBatchStdinArg(int argc, char** argv)
 {

@@ -66,8 +66,8 @@ make test
 ```
 
 `make` builds `lowir2cy86`. `make test` runs the LowIR-to-CY86 suite
-under `tests/spec/`. If a `course/pa13` extension suite is present, the
-Makefile runs it after the local suite using the same harness contract.
+under `tests/spec/`, then the behavior suite under `tests/behavior/`, which
+assembles and runs each translation.
 
 ### Required Driver Surface
 
@@ -159,8 +159,10 @@ Required metadata families:
 
 - top-level `role`, `linkage`, `binding`, `object`, function `tls_for`,
   `keep_alias`, `prefer_local`, and global `storage`
-- function `arity`, `effects`, `unwind`, and `return`
-- parameter `pass`, `capture`, `access`, and `alias`
+- function `object_root`, `force_inline`, `inline_hint`, and `no_inline`
+- function `arity`, `effects`, `unwind`, `return`, and `query`
+- direct void-call `elision=copy` permission
+- parameter `pass`, `alias`, and positive pointer-only `object_bytes`
 - index `projection`
 - function and instruction `!dbg(file, line, column)` locations with positive
   source line and column numbers
@@ -171,6 +173,22 @@ facts in LowIR text. PA13 translates those facts only to the extent needed for
 the CY86 adapter. It does not implement native object symbol binding, host ABI
 register assignment, or debugger behavior.
 
+Conservative/default states use omission rather than a second explicit
+spelling. For example, omitted function arity is fixed; `arity=variadic`
+records the non-default behavior that a later call validator must preserve.
+Boolean metadata is likewise a presence flag: `key=yes` records the feature
+and omission means false; `key=no` is not a second spelling.
+
+The `role` family includes the entry/init/fini and exception roles as well as
+the allocation, deallocation, termination, pure-virtual, dynamic-cast,
+bad-cast, bad-typeid, and RTTI runtime roles listed in
+`lowir.md`. Accept and validate those roles even when the CY86 adapter does not
+otherwise act on them.
+
+Undefined continuation is represented directly by the operand-free
+`unreachable` block terminator. It is not a callable runtime role. Like every
+terminator, it must be the final instruction in its block.
+
 You may keep a typed LowIR model internally, and the optional
 `dev/src/lowir_model.h` scaffold names the common program, symbol, type,
 operand, block, and instruction pieces. The typed model is support for the
@@ -178,9 +196,39 @@ text format, not a replacement for it: if a later backend or object writer
 needs a fact, that fact must be representable in serialized LowIR text and
 recoverable by parsing that text back in.
 
+In the typed scaffold, operands use compact IDs for values, slots, blocks, and
+program symbols. Integer literals must preserve their complete decoded value,
+including the high half of an `i128`. Floating literals must be interpreted as
+their stated f32, f64, or f80 type. Serializing the typed program must reproduce
+an equivalent LowIR literal even when the program created that value rather
+than reading its spelling from an input file.
+
+An explicit LowIR parser may use a pooled spelling ID while resolving a name,
+but must replace it with the corresponding semantic ID before returning the
+typed program. Debug locations use a `StringId` from the same pool for their
+source file spelling. Do not store a separate owning `std::string` in every
+operand or debug-location record.
+
+Top-level declarations and definitions carry `SymbolId`; the program symbol
+table maps each `SymbolId` to one pooled `StringId` for serialization and
+diagnostics. Global address data and object-alias targets likewise resolve to
+`SymbolId` before the typed program is returned. The explicit-text parser may
+hold a pooled spelling while it validates and resolves a forward reference,
+but declarations, definitions, and references must not retain duplicate
+owning symbol-name strings.
+
+Function-local presentation spellings use the same ownership rule. Slot and
+block tables carry pooled `StringId` values, and explicitly named values carry
+a pooled spelling ID. A compiler-generated temporary may instead retain its
+numeric ordinal and render `%tN` only when LowIR text is written. Validation,
+optimization, and lowering use `ValueId`, `SlotId`, and `BlockId`; behavior
+that must distinguish a special value is an explicit typed flag rather than a
+test of its rendered name.
+
 Required instructions:
 
-- `const`, `copy`, `addr`, `load`, and `store`
+- `const`, `copy`, `phi`, `addr`, `load`, and `store`, including the
+  `load volatile`/`store volatile` forms that pin an observable access
 - `atomic_load`, `atomic_store`, `atomic_exchange`,
   `atomic_compare_exchange`, `atomic_add_fetch`, `atomic_thread_fence`, and
   `atomic_signal_fence`
@@ -232,13 +280,20 @@ Reject structurally malformed LowIR, including:
 - undefined temporaries, slots, globals, functions, or blocks where PA13
   requires a definition
 - invalid metadata values
-- symbol-boundary metadata attached to an instruction or call site
+- `query=stable_prefix` on a variadic function, a function without a final
+  integer parameter, a function without a supported scalar result, or an
+  indirect call signature
+- symbol-boundary metadata attached to an instruction or call site; the
+  direct-call `elision=copy` permission is the sole call-site metadata family
 - zero line or column values in function or instruction debug locations
 - more than one `tls_for` wrapper for the same thread-local global
 - parameter metadata that is not legal for the parameter type
 - `indirect_result` parameters that are not first or are used on non-`void`
   functions
 - indirect calls that omit the required explicit signature
+- a `phi` that is not at the start of its block, omits or duplicates an
+  ordinary predecessor, names a non-predecessor, merges mismatched types, or
+  appears in an exception-handler target block
 
 Diagnostics are not graded, but the exit status is.
 
@@ -300,6 +355,53 @@ Comparison rules:
 PA13 does not use the relaxed source-to-LowIR matcher used by later
 `cppgm++ --emit-lowir` assignments. PA13 compares generated CY86 text directly.
 
+The harness also discovers every `.t` file under `tests/behavior/`. Those cases
+translate, assemble, and run, so they check that a retained LowIR form still
+produces a working program and not only well-formed CY86 text. For each test
+case `x.t`, it runs:
+
+```sh
+lowir2cy86 -o x.my x.t
+cy86 -o x.my.program x.my
+x.my.program
+```
+
+and records `x.my.impl.exit_status` for the translate-and-assemble step and
+`x.my.program.exit_status` for the program itself.
+
+Comparison rules:
+
+- `x.my.impl.exit_status` must match `x.ref.impl.exit_status`.
+- If the reference implementation status is `EXIT_FAILURE`, the test passes
+  after that comparison.
+- Otherwise `x.my` must match `x.ref` exactly, and both
+  `x.my.program.exit_status` and `x.my.program.stdout` must match their
+  references.
+- A behavior case may supply `x.stdin`, which is fed to the program.
+
+Assembling with `cy86` is the only part of this path that is not PA13 work. It
+supplies the execution that CY86 text alone cannot, which is why a behavior
+case can state an expected exit status: `100-default-eh-unhandled` exits 23 through
+the default unhandled-exception path, while the remaining cases exit 0.
+
+Behavior cases cover the LowIR forms whose meaning is a runtime result rather
+than a spelling:
+
+- control flow that merges values, in `100-phi-control-flow` and
+  `200-switch-terminator`, where the returned value is only correct if the edge
+  transfers and the multi-way dispatch are
+- the default exception path, in `100-default-eh-caught` and
+  `100-default-eh-unhandled`
+- `unreachable` as a terminator on a branch that is never taken
+- an atomic read-modify-write and the value it leaves behind, in
+  `200-atomic-add-fetch`
+- the call-boundary, copy-elision, index-projection, object-extent,
+  stable-prefix-query, and global-section metadata, each of which must survive
+  translation and still produce a working program
+
+Each case returns a value that is wrong unless the mechanism under test worked,
+so the recorded exit status is the assertion.
+
 ### Design Notes (Non-Normative)
 
 A robust `lowir2cy86` design usually has three layers:
@@ -310,3 +412,15 @@ A robust `lowir2cy86` design usually has three layers:
 
 Keep the translation monotonic. Adding a new LowIR instruction later should add
 a translation case without changing the CY86 output for existing PA13 programs.
+
+For `phi`, compact block and value identities make predecessor checks and edge
+transfer planning independent of label spelling. Emit the incoming assignments
+as parallel transfers on predecessor edges; a conditional or multi-way edge may
+need a small adapter label so transfers for an untaken edge do not execute.
+
+Represent `role` values with a compact enum after parsing. Later passes should
+compare the enum and `SymbolId`, not rendered role or symbol spellings.
+
+Represent `force_inline`, `inline_hint`, and `no_inline` as independent Boolean
+facts. This keeps a source inlining preference separate from a required or
+prohibited transform without adding string comparisons to optimizer paths.

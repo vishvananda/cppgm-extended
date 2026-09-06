@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @vertex__ov2(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z6vertexI11distributedEiRK5graphI8directedT_E] {
+function @vertex__ov2(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z6vertexI11distributedEiRK5graphI8directedT_E] {
   slot $__param0 : ptr
 
   block ^entry:

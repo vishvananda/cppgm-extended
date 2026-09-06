@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @selector_void___select(%this : ptr, %__param1 : ptr) -> i32 [binding=weak, object=_ZN8selectorIvE6selectIPiEEN9enable_ifIXsr10is_pointerIT_EE5valueEiE4typeES4_] {
+function @selector_void___select(%this : ptr [object_bytes=1], %__param1 : ptr) -> i32 [binding=weak, object=_ZN8selectorIvE6selectIPiEEN9enable_ifIXsr10is_pointerIT_EE5valueEiE4typeES4_] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -51,7 +51,7 @@ function @selector_void___select(%this : ptr, %__param1 : ptr) -> i32 [binding=w
     store ptr %__param1, $__param1
     return i32 11
 }
-function @selector_void___select__ov2(%this : ptr, %__param1 : i32) -> i64 [binding=weak, object=_ZN8selectorIvE6selectIiEEN9enable_ifIXntsr10is_pointerIT_EE5valueElE4typeES3_] {
+function @selector_void___select__ov2(%this : ptr [object_bytes=1], %__param1 : i32) -> i64 [binding=weak, object=_ZN8selectorIvE6selectIiEElT_] {
   slot $this : ptr
   slot $__param1 : i32
 

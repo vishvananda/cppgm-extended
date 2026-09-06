@@ -1,4 +1,4 @@
-function @g(%s : ptr, %n : i64, %a : ptr [pass=reference]) -> ptr [binding=strong, object=_Z1gPKDsmRS_] {
+function @g(%s : ptr, %n : i64, %a : ptr [pass=by_address, object_bytes=2]) -> ptr [binding=strong, object=_Z1gPKDsmRS_] {
   slot $s : ptr
   slot $n : i64
   slot $a : ptr
@@ -30,18 +30,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = index i8 %t1, 2
     store u16 0, %t2
     %t3 = addr $text
-    %t4 = unary decay ptr %t3
-    %t5 = convert sext i64 i32 1
-    %t6 = addr $text
-    %t7 = unary decay ptr %t6
-    %t8 = index u16 [projection=array_element] %t7, 0
-    %t9 = call ptr @g(%t4, %t5, %t8)
-    %t10 = addr $text
-    %t11 = unary decay ptr %t10
-    %t12 = binary mul i64 1, 2
-    %t13 = index i8 %t11, %t12
-    %t14 = cmp eq ptr %t9, %t13
-    branch %t14, ^cond_then_1, ^cond_else_2
+    %t4 = convert sext i64 i32 1
+    %t5 = addr $text
+    %t6 = index u16 [projection=array_element] %t5, 0
+    %t7 = call ptr @g(%t3, %t4, %t6)
+    %t8 = addr $text
+    %t9 = binary mul i64 1, 2
+    %t10 = index i8 %t8, %t9
+    %t11 = cmp eq ptr %t7, %t10
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -52,10 +49,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load i32 $cond__1
-    return i32 %t15
+    %t12 = load i32 $cond__1
+    return i32 %t12
 }
-function @std____find(%first : ptr, %last : ptr, %__param2 : ptr [pass=reference], %__param3 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt6__findIDsSt8identityLi0EEPKT_S3_S3_RS2_RT0_] {
+function @std____find(%first : ptr, %last : ptr, %__param2 : ptr [pass=by_address, object_bytes=2], %__param3 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZSt6__findIDsSt8identityLi0EEPKT_S3_S3_RS2_RT0_] {
   slot $first : ptr
   slot $last : ptr
   slot $__param2 : ptr

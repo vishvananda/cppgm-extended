@@ -1,7 +1,7 @@
-declare function @Box__Box__ov3(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1EOS_]
-declare function @Box___Box(%arg0 : ptr) -> void [binding=strong, object=_ZN3BoxD1Ev]
+declare function @Box___Box(%arg0 : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxD1Ev]
+declare function @Box__Box__ov3(%arg0 : ptr [alias=noalias, object_bytes=4], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=strong, object=_ZN3BoxC1EOS_]
 
-function @forward_box(%ret : ptr [pass=indirect_result], %box : ptr [pass=by_address]) -> void [binding=strong, object=_Z11forward_box3Box] {
+function @forward_box(%ret : ptr [pass=indirect_result, object_bytes=4], %box : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z11forward_box3Box] {
   slot $box : obj<4x4>
 
   block ^entry:

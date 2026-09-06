@@ -1,5 +1,5 @@
-declare function @Leaf__Leaf(%arg0 : ptr) -> void [binding=strong, object=_ZN4LeafC1Ev]
-declare function @Leaf__Leaf__ov2(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=strong, object=_ZN4LeafC1EOS_]
+declare function @Leaf__Leaf(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN4LeafC1Ev]
+declare function @Leaf__Leaf__ov2(%arg0 : ptr [alias=noalias, object_bytes=1], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=strong, object=_ZN4LeafC1EOS_]
 
 function @exercise() -> void [binding=strong, object=_Z8exercisev] {
   slot $value : obj<1x1>
@@ -16,7 +16,7 @@ function @exercise() -> void [binding=strong, object=_Z8exercisev] {
     %t4 = addr $value
     return void
 }
-function @Middle__Middle(%this : ptr, %source : ptr [pass=reference]) -> void [binding=weak, object=_ZN6MiddleC1EO4Leaf] {
+function @Middle__Middle(%this : ptr [object_bytes=1], %source : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN6MiddleC1EO4Leaf, inline_hint=yes] {
   slot $this : ptr
   slot $source : ptr
 
@@ -29,7 +29,7 @@ function @Middle__Middle(%this : ptr, %source : ptr [pass=reference]) -> void [b
     call void @Leaf__Leaf__ov2(%t2, %t3)
     return void
 }
-function @Outer__Outer(%this : ptr, %source : ptr [pass=reference]) -> void [binding=weak, object=_ZN5OuterC1EO6Middle] {
+function @Outer__Outer(%this : ptr [object_bytes=1], %source : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5OuterC1EO6Middle, inline_hint=yes] {
   slot $this : ptr
   slot $source : ptr
 
@@ -42,7 +42,7 @@ function @Outer__Outer(%this : ptr, %source : ptr [pass=reference]) -> void [bin
     call void @Middle__Middle__ov3(%t2, %t3)
     return void
 }
-function @Middle__Middle__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN6MiddleC1EOS_] {
+function @Middle__Middle__ov3(%this : ptr [alias=noalias, object_bytes=1], %other : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN6MiddleC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

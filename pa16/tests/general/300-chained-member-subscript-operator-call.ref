@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 %t7
     return i32 %t8
 }
-function @Inner__operator__(%this : ptr, %__param1 : i32) -> ptr [binding=weak, object=_ZN5InnerixEi] {
+function @Outer__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN5OuterixEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -24,7 +24,7 @@ function @Inner__operator__(%this : ptr, %__param1 : i32) -> ptr [binding=weak, 
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @Outer__operator__(%this : ptr, %__param1 : i32) -> ptr [binding=weak, object=_ZN5OuterixEi] {
+function @Inner__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN5InnerixEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 

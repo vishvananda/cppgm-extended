@@ -12,11 +12,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $a
     %t6 = addr $b
     %t7 = addr $c
-    call void @key_first__second__third___key__ov3(%t4, %t5, %t6, %t7)
+    call void @key_first__second__third___key_first__second__third___ov5(%t4, %t5, %t6, %t7)
     %t8 = addr $value
     return i32 0
 }
-function @key_first__second__third___key__ov3(%this : ptr, %args : ptr [pass=reference], %args__pack2 : ptr [pass=reference], %args__pack3 : ptr [pass=reference]) -> void [binding=weak, object=_ZN3keyIJ5first6second5thirdEEC1IJRS0_RS1_RS2_ETnN9enable_ifIXsr7acceptsIDpOT_EE5valueEiE4typeELi0EEEDpSA_] {
+function @key_first__second__third___key_first__second__third___ov5(%this : ptr [object_bytes=1], %args : ptr [pass=by_address, object_bytes=1], %args__pack2 : ptr [pass=by_address, object_bytes=1], %args__pack3 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3keyIJ5first6second5thirdEEC1ERS0_RS1_RS2_, inline_hint=yes] {
   slot $this : ptr
   slot $args : ptr
   slot $args__pack2 : ptr
@@ -28,14 +28,14 @@ function @key_first__second__third___key__ov3(%this : ptr, %args : ptr [pass=ref
     store ptr %args__pack2, $args__pack2
     store ptr %args__pack3, $args__pack3
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $args
     %t4 = load ptr $args__pack2
     %t5 = load ptr $args__pack3
-    call void @tuple_like_first__second__third___tuple_like__ov3__base_entry(%t2, %t3, %t4, %t5)
+    call void @tuple_like_first__second__third___tuple_like_first__second__third___ov4__base_entry(%t2, %t3, %t4, %t5)
     return void
 }
-function @tuple_like_first__second__third___tuple_like__ov3__base_entry(%this : ptr, %args : ptr [pass=reference], %args__pack2 : ptr [pass=reference], %args__pack3 : ptr [pass=reference]) -> void [binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEEC2IJRS0_RS1_RS2_ETnN9enable_ifIXsr7acceptsIDpOT_EE5valueEiE4typeELi0EEEDpSA_] {
+function @tuple_like_first__second__third___tuple_like_first__second__third___ov4__base_entry(%this : ptr [object_bytes=1], %args : ptr [pass=by_address, object_bytes=1], %args__pack2 : ptr [pass=by_address, object_bytes=1], %args__pack3 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEEC2IRS0_RS1_RS2_Li0EEEDpOT_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $args : ptr
   slot $args__pack2 : ptr
@@ -49,14 +49,13 @@ function @tuple_like_first__second__third___tuple_like__ov3__base_entry(%this : 
     store ptr %args__pack3, $args__pack3
     %t1 = load ptr $this
     %t2 = addr $argobj__1
-    call void @tuple_like_first__second__third___tag__tag(%t2)
     %t3 = load ptr $args
     %t4 = load ptr $args__pack2
     %t5 = load ptr $args__pack3
-    call void @tuple_like_first__second__third___tuple_like(%t1, $argobj__1, %t3, %t4, %t5)
+    call void @tuple_like_first__second__third___tuple_like_first__second__third___base_entry(%t1, $argobj__1, %t3, %t4, %t5)
     return void
 }
-function @tuple_like_first__second__third___tuple_like(%this : ptr, %__param1 : obj<1x1>, %__param2 : ptr [pass=reference], %__param3 : ptr [pass=reference], %__param4 : ptr [pass=reference]) -> void [binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEEC1ENS3_3tagERKS0_RKS1_RKS2_] {
+function @tuple_like_first__second__third___tuple_like_first__second__third___base_entry(%this : ptr [object_bytes=1], %__param1 : obj<1x1>, %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : ptr [pass=by_address, object_bytes=1], %__param4 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEEC2ENS3_3tagERKS0_RKS1_RKS2_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : ptr
@@ -70,13 +69,4 @@ function @tuple_like_first__second__third___tuple_like(%this : ptr, %__param1 : 
     store ptr %__param4, $__param4
     return void
 }
-function @tuple_like_first__second__third___tag__tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEE3tagC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN3keyIJ5first6second5thirdEEC2IJRS0_RS1_RS2_ETnN9enable_ifIXsr7acceptsIDpOT_EE5valueEiE4typeELi0EEEDpSA_ = @key_first__second__third___key__ov3
-alias object _ZN10tuple_likeIJ5first6second5thirdEEC2ENS3_3tagERKS0_RKS1_RKS2_ = @tuple_like_first__second__third___tuple_like
-alias object _ZN10tuple_likeIJ5first6second5thirdEE3tagC2Ev = @tuple_like_first__second__third___tag__tag
+alias object _ZN3keyIJ5first6second5thirdEEC2ERS0_RS1_RS2_ = @key_first__second__third___key_first__second__third___ov5

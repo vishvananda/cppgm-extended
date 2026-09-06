@@ -1,6 +1,6 @@
 global @expected_template_arguments : ptr [binding=internal, object=_Z27expected_template_arguments] = 0
 
-function @function_binding_qualified_name_for_symbol(%binding : ptr [pass=reference]) -> i32 [binding=internal, object=_Z42function_binding_qualified_name_for_symbolRK15FunctionBinding] {
+function @function_binding_qualified_name_for_symbol(%binding : ptr [pass=by_address]) -> i32 [binding=internal, object=_Z42function_binding_qualified_name_for_symbolRK15FunctionBinding] {
   slot $binding : ptr
 
   block ^entry:
@@ -10,7 +10,7 @@ function @function_binding_qualified_name_for_symbol(%binding : ptr [pass=refere
     %t3 = load i32 %t2
     return i32 %t3
 }
-function @function_binding_display_name_for_symbol(%binding : ptr [pass=reference]) -> i32 [binding=internal, object=_Z40function_binding_display_name_for_symbolRK15FunctionBinding] {
+function @function_binding_display_name_for_symbol(%binding : ptr [pass=by_address]) -> i32 [binding=internal, object=_Z40function_binding_display_name_for_symbolRK15FunctionBinding] {
   slot $binding : ptr
 
   block ^entry:
@@ -20,7 +20,7 @@ function @function_binding_display_name_for_symbol(%binding : ptr [pass=referenc
     %t3 = load i32 %t2
     return i32 %t3
 }
-function @function_object_symbol_key(%binding : ptr [pass=reference]) -> i32 [binding=internal, object=_Z26function_object_symbol_keyRK15FunctionBinding] {
+function @function_object_symbol_key(%binding : ptr [pass=by_address]) -> i32 [binding=internal, object=_Z26function_object_symbol_keyRK15FunctionBinding] {
   slot $binding : ptr
 
   block ^entry:
@@ -30,7 +30,7 @@ function @function_object_symbol_key(%binding : ptr [pass=reference]) -> i32 [bi
     %t3 = load i32 %t2
     return i32 %t3
 }
-function @make_function_symbol_identity(%ret : ptr [pass=indirect_result], %qualified_name : i32, %display_name : i32, %__param2 : u8, %__param3 : ptr, %options : ptr [pass=reference], %key : i32, %linkage : i32) -> void [binding=internal, object=_Z29make_function_symbol_identityiibPKiRK7Optionsi13SymbolLinkage] {
+function @make_function_symbol_identity(%ret : ptr [pass=indirect_result], %qualified_name : i32, %display_name : i32, %__param2 : u8, %__param3 : ptr, %options : ptr [pass=by_address], %key : i32, %linkage : i32) -> void [binding=internal, object=_Z29make_function_symbol_identityiibPKiRK7Optionsi13SymbolLinkage] {
   slot $qualified_name : i32
   slot $display_name : i32
   slot $__param2 : u8
@@ -51,17 +51,17 @@ function @make_function_symbol_identity(%ret : ptr [pass=indirect_result], %qual
     call void @SymbolIdentity__SymbolIdentity(%ret)
     %t1 = load i32 $qualified_name
     %t2 = index i8 [projection=field] %ret, 0
-    %t3 = unary decay ptr %t2
+    %t3 = copy ptr %t2
     %t4 = index i64 [projection=array_element] %t3, 0
     store i64 %t1, %t4
     %t5 = load i32 $display_name
     %t6 = index i8 [projection=field] %ret, 0
-    %t7 = unary decay ptr %t6
+    %t7 = copy ptr %t6
     %t8 = index i64 [projection=array_element] %t7, 1
     store i64 %t5, %t8
     %t9 = load i32 $key
     %t10 = index i8 [projection=field] %ret, 0
-    %t11 = unary decay ptr %t10
+    %t11 = copy ptr %t10
     %t12 = index i64 [projection=array_element] %t11, 2
     store i64 %t9, %t12
     %t13 = load ptr $options
@@ -144,7 +144,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t29 = addr $binding
     %t30 = index i8 [projection=field] %t29, 320
     %t31 = index i8 [projection=field] %t30, 0
-    %t32 = unary decay ptr %t31
+    %t32 = copy ptr %t31
     %t33 = index i32 [projection=array_element] %t32, 0
     store i32 7, %t33
     %t34 = addr $binding
@@ -252,7 +252,7 @@ function @SymbolIdentity__SymbolIdentity(%this : ptr) -> void [unwind=no, bindin
     store i32 1, %t10
     return void
 }
-function @SymbolIdentity__SymbolIdentity__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN14SymbolIdentityC1EOS_] {
+function @SymbolIdentity__SymbolIdentity__ov2(%this : ptr, %other : ptr [pass=by_address]) -> void [unwind=no, binding=weak, object=_ZN14SymbolIdentityC1EOS_] {
   slot $this : ptr
   slot $other : ptr
 
@@ -332,7 +332,7 @@ function @Analyzer__Analyzer(%this : ptr) -> void [unwind=no, binding=weak, obje
     store ptr %this, $this
     return void
 }
-function @Analyzer__direct_call_symbol(%ret : ptr [pass=indirect_result], %this : ptr, %target : ptr [pass=reference]) -> void [binding=weak, object=_ZN8Analyzer18direct_call_symbolERK15FunctionBinding] {
+function @Analyzer__direct_call_symbol(%ret : ptr [pass=indirect_result], %this : ptr, %target : ptr [pass=by_address]) -> void [binding=weak, object=_ZN8Analyzer18direct_call_symbolERK15FunctionBinding] {
   slot $this : ptr
   slot $target : ptr
   slot $options : obj<72x8>
@@ -447,7 +447,7 @@ function @Analyzer__direct_call_symbol(%ret : ptr [pass=indirect_result], %this 
     call void @SymbolIdentity__SymbolIdentity__ov2(%ret, %t84)
     return void
 }
-function @Analyzer__populate(%this : ptr, %options : ptr [pass=reference], %is_const_method : u8, %is_volatile_method : u8, %ref_qualifier : i32, %is_constructor : u8, %is_destructor : u8, %source_template : ptr, %instantiation_arguments : ptr, %has_instantiation_arguments : u8, %owner_class : ptr, %declaration_scope : ptr, %declaration_node : ptr, %definition_node : ptr) -> void [binding=weak, object=_ZN8Analyzer8populateER7OptionsbbibbPvPK17TemplateArgumentsbPKvS7_S7_S7_] {
+function @Analyzer__populate(%this : ptr, %options : ptr [pass=by_address], %is_const_method : u8, %is_volatile_method : u8, %ref_qualifier : i32, %is_constructor : u8, %is_destructor : u8, %source_template : ptr, %instantiation_arguments : ptr, %has_instantiation_arguments : u8, %owner_class : ptr, %declaration_scope : ptr, %declaration_node : ptr, %definition_node : ptr) -> void [binding=weak, object=_ZN8Analyzer8populateER7OptionsbbibbPvPK17TemplateArgumentsbPKvS7_S7_S7_] {
   slot $this : ptr
   slot $options : ptr
   slot $is_const_method : u8
@@ -559,7 +559,7 @@ function @TemplateArguments__TemplateArguments(%this : ptr) -> void [unwind=no, 
     store ptr %this, $this
     return void
 }
-function @SymbolIdentity__SymbolIdentity__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN14SymbolIdentityC1ERKS_] {
+function @SymbolIdentity__SymbolIdentity__ov3(%this : ptr, %other : ptr [pass=by_address]) -> void [unwind=no, binding=weak, object=_ZN14SymbolIdentityC1ERKS_] {
   slot $this : ptr
   slot $other : ptr
 

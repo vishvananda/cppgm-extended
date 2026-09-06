@@ -48,7 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = load i32 $cond__1
     return i32 %t17
 }
-function @apply(%value : ptr [pass=reference], %a : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5applyI5ValueEiRT_RK3Adl] {
+function @apply(%value : ptr [pass=by_address, object_bytes=4], %a : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z5applyI5ValueEiRT_RK3Adl, inline_hint=yes] {
   slot $value : ptr
   slot $a : ptr
 

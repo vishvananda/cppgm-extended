@@ -6,8 +6,8 @@ machine-readable form.
 
 The export policy is defined in `docs/student-assignment-export-process.md`.
 The README/scaffold worker processes are defined in
-`docs/student-export-readme-scaffold-subagent-plan.md` and
-`docs/student-scaffold-audit-subagent-plan.md`.
+`docs/implemented/v3/student-export-readme-scaffold-subagent-plan.md` and
+`docs/implemented/v3/student-scaffold-audit-subagent-plan.md`.
 
 The canonical PA handouts are the existing `paN/README.md` files. Export prep
 edits those files in place; it does not create duplicate export-only README

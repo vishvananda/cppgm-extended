@@ -1,28 +1,3 @@
-function @lookup__exchange__ov2(%left : obj<8x8>, %right : ptr [pass=reference]) -> void [binding=weak, object=_ZN6lookup8exchangeENS_13bit_referenceERb] {
-  slot $left : obj<8x8>
-  slot $right : ptr
-  slot $temporary : u8
-
-  block ^entry:
-    %t1 = addr $left
-    copyobj 8x8 %left, %t1
-    store ptr %right, $right
-    %t2 = addr $left
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load ptr %t3
-    %t5 = load u8 %t4
-    store u8 %t5, $temporary
-    %t6 = load ptr $right
-    %t7 = load u8 %t6
-    %t8 = addr $left
-    %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load ptr %t9
-    store u8 %t7, %t10
-    %t11 = load u8 $temporary
-    %t12 = load ptr $right
-    store u8 %t11, %t12
-    return void
-}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $left : i32
   slot $right : i32
@@ -113,7 +88,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = load i32 $cond__2
     return i32 %t23
 }
-function @lookup__exchange__ov3(%left : ptr [pass=reference], %right : ptr [pass=reference]) -> void [binding=weak, object=_ZN6lookup8exchangeIiEEvRT_S2_] {
+function @lookup__exchange__ov3(%left : ptr [pass=by_address, object_bytes=4], %right : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6lookup8exchangeIiEEvRT_S2_] {
   slot $left : ptr
   slot $right : ptr
   slot $temporary : i32
@@ -131,5 +106,30 @@ function @lookup__exchange__ov3(%left : ptr [pass=reference], %right : ptr [pass
     %t6 = load i32 $temporary
     %t7 = load ptr $right
     store i32 %t6, %t7
+    return void
+}
+function @lookup__exchange__ov2(%left : obj<8x8>, %right : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN6lookup8exchangeENS_13bit_referenceERb, inline_hint=yes] {
+  slot $left : obj<8x8>
+  slot $right : ptr
+  slot $temporary : u8
+
+  block ^entry:
+    %t1 = addr $left
+    copyobj 8x8 %left, %t1
+    store ptr %right, $right
+    %t2 = addr $left
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr %t3
+    %t5 = load u8 %t4
+    store u8 %t5, $temporary
+    %t6 = load ptr $right
+    %t7 = load u8 %t6
+    %t8 = addr $left
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load ptr %t9
+    store u8 %t7, %t10
+    %t11 = load u8 $temporary
+    %t12 = load ptr $right
+    store u8 %t11, %t12
     return void
 }

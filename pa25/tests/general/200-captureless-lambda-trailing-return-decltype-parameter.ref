@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = binary sub i32 %t7, 7
     return i32 %t8
 }
-function @S__S(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1SC1Ei] {
+function @S__S(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1SC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
@@ -28,7 +28,7 @@ function @S__S(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1SC1Ei] {
     call void @U__U__ov2(%t2, %t3)
     return void
 }
-function @S__S__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN1SC1EOS_] {
+function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN1SC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -39,12 +39,11 @@ function @S__S__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr $other
     %t4 = addr @__lambda_S__S_t68_81
-    %t5 = unary decay ptr %t4
-    %t6 = call ptr %t5(%t3) as (%arg0 : ptr [pass=reference]) -> ptr
-    copyobj 4x4 %t6, %t2
+    %t5 = call ptr %t4(%t3) as (%arg0 : ptr [pass=by_address, object_bytes=4]) -> ptr
+    copyobj 4x4 %t5, %t2
     return void
 }
-function @U__U__ov2(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1UC1Ei] {
+function @U__U__ov2(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1UC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
@@ -57,7 +56,7 @@ function @U__U__ov2(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1UC1
     store i32 %t1, %t3
     return void
 }
-function @__lambda_S__S_t68_81(%s : ptr [pass=reference]) -> ptr [binding=internal] {
+function @__lambda_S__S_t68_81(%s : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=internal, object=_Z20__lambda_S__S_t68_81R1S, object_root=yes] {
   slot $s : ptr
 
   block ^entry:

@@ -2,7 +2,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = call i32 @bit_iterator_holder_void___true__0___value()
+    %t1 = call i32 @bit_iterator___cppgm_class_template_identity_0_0_0__true__0___value()
     %t2 = cmp eq i32 %t1, 1
     branch %t2, ^cond_then_1, ^cond_else_2
 
@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @bit_iterator_holder_void___true__0___value() -> i32 [binding=weak, object=_ZN12bit_iteratorI6holderIvELb1ELi0EE5valueEv] {
+function @bit_iterator___cppgm_class_template_identity_0_0_0__true__0___value() -> i32 [binding=weak, object=_ZN12bit_iteratorI6holderIvELb1ELi0EE5valueEv, inline_hint=yes] {
   slot $cond__1 : i32
 
   block ^entry:

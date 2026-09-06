@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -13,8 +13,10 @@ function @ret3
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     mov rax, 3
@@ -24,11 +26,13 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     mov r8, @fp
     load.ptr <gpr0>, @fp
-    call *<gpr0>
+    call *<gpr0> [args=()]
     ret rax

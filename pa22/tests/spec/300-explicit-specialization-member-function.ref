@@ -34,11 +34,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
+function @tag_char___id() -> i32 [binding=weak, object=_ZN3tagIcE2idEv, inline_hint=yes] {
+  block ^entry:
+    return i32 1
+}
 function @tag_int___id() -> i32 [binding=weak, object=_ZN3tagIiE2idEv] {
   block ^entry:
     return i32 2
-}
-function @tag_char___id() -> i32 [binding=weak, object=_ZN3tagIcE2idEv] {
-  block ^entry:
-    return i32 1
 }

@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 7
     return i32 %t4
 }
-function @S__S(%this : ptr) -> void [binding=weak, object=_ZN1SC1Ev] {
+function @S__S(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1SC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -24,7 +24,7 @@ function @S__S(%this : ptr) -> void [binding=weak, object=_ZN1SC1Ev] {
     store ptr %t4, %t6
     return void
 }
-function @S__g(%this : ptr) -> i32 [binding=weak, object=_ZNK1S1gEv] {
+function @S__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK1S1gEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -36,7 +36,7 @@ function @S__g(%this : ptr) -> i32 [binding=weak, object=_ZNK1S1gEv] {
     %t5 = call i32 @S__f__ov2(%t1, %t4)
     return i32 %t5
 }
-function @S__f__ov2(%this : ptr, %__param1 : ptr) -> i32 [binding=weak, object=_ZNK1S1fEPKi] {
+function @S__f__ov2(%this : ptr [object_bytes=16], %__param1 : ptr) -> i32 [binding=weak, object=_ZNK1S1fEPKi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

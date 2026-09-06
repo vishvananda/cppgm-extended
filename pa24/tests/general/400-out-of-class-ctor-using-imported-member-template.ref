@@ -8,10 +8,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load ptr $p
     %t3 = load ptr $p
     %t4 = convert sext i64 i32 0
-    call void @Table_int___Table(%t1, %t2, %t3, %t4)
+    call void @Table_int___Table_int___ov3(%t1, %t2, %t3, %t4)
     return i32 0
 }
-function @Table_int___Table(%this : ptr, %first : ptr, %last : ptr, %hint : i64) -> void [binding=weak, object=_ZN5TableIiEC1IPiEET_S3_m] {
+function @Table_int___Table_int___ov3(%this : ptr [object_bytes=1], %first : ptr, %last : ptr, %hint : i64) -> void [binding=weak, object=_ZN5TableIiEC1IPiEET_S3_m] {
   slot $this : ptr
   slot $first : ptr
   slot $last : ptr
@@ -24,13 +24,13 @@ function @Table_int___Table(%this : ptr, %first : ptr, %last : ptr, %hint : i64)
     store i64 %hint, $hint
     %t1 = load i64 $hint
     %t2 = load ptr $this
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = load ptr $first
     %t5 = load ptr $last
     call void @InsertBase_int___insert__ov3(%t3, %t4, %t5)
     return void
 }
-function @InsertBase_int___insert__ov3(%this : ptr, %__param1 : ptr, %__param2 : ptr) -> void [binding=weak, object=_ZN10InsertBaseIiE6insertIPiEEvT_S3_] {
+function @InsertBase_int___insert__ov3(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> void [binding=weak, object=_ZN10InsertBaseIiE6insertIPiEEvT_S3_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -41,4 +41,4 @@ function @InsertBase_int___insert__ov3(%this : ptr, %__param1 : ptr, %__param2 :
     store ptr %__param2, $__param2
     return void
 }
-alias object _ZN5TableIiEC2IPiEET_S3_m = @Table_int___Table
+alias object _ZN5TableIiEC2IPiEET_S3_m = @Table_int___Table_int___ov3

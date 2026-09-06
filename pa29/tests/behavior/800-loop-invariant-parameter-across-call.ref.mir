@@ -1,0 +1,119 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @state
+  storage scalar i64
+  init i64 0
+
+global @trash
+  storage scalar i64
+  init i64 0
+
+function @sink
+  abi
+    param %value -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    ret
+
+function @write_and_clobber
+  abi
+    param %output -> rdi : ptr
+    param %value -> rsi : i64
+    param %other -> rdx : ptr
+    return void -> void
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    store.i64 [rdi], rsi
+    mov rdi, rdx
+    call @sink [args=(rdi)]
+    ret
+
+function @loop_store
+  abi
+    param %output -> rdi : ptr
+    param %other -> rsi : ptr
+    param %limit -> rdx : i64
+    return void -> void
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14
+    slot $iteration -> [rbp-8] : i64
+    temp %current -> [rbp-16] : i64
+
+  block ^entry
+    mov r13, rdi
+    mov r12, rsi
+    mov rbx, rdx
+    store.i64 [rbp-8], 0
+    jmp ^condition
+
+  block ^condition
+    load.i64 r14, [rbp-8]
+    store.i64 [rbp-16], r14
+    cmp.i64 [rbp-16], rbx
+    jb ^body
+    jmp ^done
+
+  block ^body
+    mov rdi, r13
+    load.i64 rsi, [rbp-16]
+    mov rdx, r12
+    call @write_and_clobber [args=(rdx,rsi,rdi)]
+    load.i64 r8, [rbp-16]
+    add r8, 1
+    store.i64 [rbp-8], r8
+    jmp ^condition
+
+  block ^done
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12
+
+  block ^entry
+    mov rbx, @state
+    mov r12, @trash
+    mov rdi, rbx
+    mov rsi, r12
+    mov rdx, 2
+    call @loop_store [args=(rdx,rsi,rdi)]
+    load.i64 r8, [rbx]
+    load.i64 r9, [r12]
+    mov rdx, 1
+    cmp.i64 r8, rdx
+    setne r8
+    movzx r8, r8
+    mov rdx, 0
+    cmp.i64 r9, rdx
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    mov rax, r8
+    sext.i32 rax
+    ret rax

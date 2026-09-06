@@ -58,7 +58,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @outer__status__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK5outer6statuscvbEv] {
+function @outer__status__operatorbool(%this : ptr [object_bytes=4]) -> u8 [binding=weak, object=_ZNK5outer6statuscvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -67,5 +67,6 @@ function @outer__status__operatorbool(%this : ptr) -> u8 [binding=weak, object=_
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load i32 %t2
     %t4 = cmp ne i32 %t3, 0
-    return u8 %t4
+    %t5 = convert trunc u8 i64 %t4
+    return u8 %t5
 }

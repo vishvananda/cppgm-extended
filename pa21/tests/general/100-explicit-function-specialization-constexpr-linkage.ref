@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 3
     return i32 %t4
 }
-function @cexpr() -> i32 [binding=weak, object=_Z5cexprIiEiv] {
+function @cexpr() -> i32 [binding=weak, object=_Z5cexprIiEiv, inline_hint=yes] {
   block ^entry:
     return i32 1
 }

@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -9,13 +9,14 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     mov r8, 0
-    mov rdx, 3472328296227680304
-    add r8, rdx
+    add r8, 3472328296227680304
     mov rax, r8
     mov rdx, 3472328296227680304
     cmp.i64 rax, rdx
@@ -28,8 +29,7 @@ function @main
 
   block ^check_sub
     mov r8, 3472328296227680304
-    mov rdx, 3472328296227680304
-    sub r8, rdx
+    sub r8, 3472328296227680304
     cmp.i64 r8, 0
     jne ^bad_sub
     jmp ^ok

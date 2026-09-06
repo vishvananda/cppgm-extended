@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $d
     %t2 = addr $d
-    %t3 = index i8 [projection=base_subobject] %t2, 4
+    %t3 = index i8 %t2, 4
     store ptr %t3, $p
     %t4 = load ptr $p
     %t5 = index i8 [projection=field] %t4, 0
@@ -14,6 +14,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load i32 %t7
     %t9 = cmp ne i32 %t8, 7
-    %t10 = convert zext i32 u8 %t9
+    %t10 = convert trunc i32 i64 %t9
     return i32 %t10
 }

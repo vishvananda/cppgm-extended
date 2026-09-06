@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = call ptr @Bits__operator_(%t4, %t5)
     return i32 0
 }
-function @Bits__Bits(%this : ptr) -> void [binding=weak, object=_ZN4BitsC1Ev] {
+function @Bits__Bits(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4BitsC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -34,7 +34,7 @@ function @Bits__Bits(%this : ptr) -> void [binding=weak, object=_ZN4BitsC1Ev] {
     store u32 %t10, %t12
     return void
 }
-function @Bits__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN4BitsaSERKS_] {
+function @Bits__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN4BitsaSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

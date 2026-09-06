@@ -35,28 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @outer__inner__invoke(%f : obj<8x8>) -> void [binding=weak, object=_ZN5outer5inner6invokeINS0_12shadow_makerEEEvT_] {
-  slot $f : obj<8x8>
-
-  block ^entry:
-    %t1 = addr $f
-    copyobj 8x8 %f, %t1
-    %t2 = addr $f
-    call void @outer__inner__shadow_maker__operator__(%t2)
-    return void
-}
-function @outer__inner__shadow_maker__operator__(%this : ptr) -> void [binding=weak, object=_ZN5outer5inner12shadow_makerclEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    store i32 19, %t3
-    return void
-}
-function @outer__inner__shadow_maker__shadow_maker(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN5outer5inner12shadow_makerC1EPi] {
+function @outer__inner__shadow_maker__shadow_maker(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN5outer5inner12shadow_makerC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -67,6 +46,27 @@ function @outer__inner__shadow_maker__shadow_maker(%this : ptr, %p : ptr) -> voi
     %t2 = load ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store ptr %t1, %t3
+    return void
+}
+function @outer__inner__invoke(%f : obj<8x8>) -> void [binding=weak, object=_ZN5outer5inner6invokeINS0_12shadow_makerEEEvT_] {
+  slot $f : obj<8x8>
+
+  block ^entry:
+    %t1 = addr $f
+    copyobj 8x8 %f, %t1
+    %t2 = addr $f
+    call void @outer__inner__shadow_maker__operator__(%t2)
+    return void
+}
+function @outer__inner__shadow_maker__operator__(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5outer5inner12shadow_makerclEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    store i32 19, %t3
     return void
 }
 alias object _ZN5outer5inner12shadow_makerC2EPi = @outer__inner__shadow_maker__shadow_maker

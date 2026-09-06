@@ -4,7 +4,7 @@ function @as_base(%d : ptr) -> ptr [binding=strong, object=_Z7as_baseP7Derived] 
   block ^entry:
     store ptr %d, $d
     %t1 = load ptr $d
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     return ptr %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $d
     %t2 = addr $d
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
     store i32 7, %t4
     %t5 = addr $d

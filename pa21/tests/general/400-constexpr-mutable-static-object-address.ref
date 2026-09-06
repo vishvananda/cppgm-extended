@@ -1,5 +1,5 @@
-global @mutable_scalar : i32 [binding=internal, object=_ZL14mutable_scalar] = 0
-global @mutable_object [binding=internal, object=_ZL14mutable_object] = {
+global @mutable_scalar : i32 [binding=internal, object=_Z14mutable_scalar] = 0
+global @mutable_object [binding=internal, object=_Z14mutable_object] = {
   zero 1
 }
 

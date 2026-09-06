@@ -1,15 +1,15 @@
-function @read(%out : ptr, %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z4readP7OStream] {
+function @read(%out : ptr) -> i32 [binding=strong, object=_Z4readP7OStream] {
   slot $out : ptr
 
   block ^entry:
     store ptr %out, $out
-    %t1 = index i8 [projection=base_subobject] %__pvbptr0, 4
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t1 = load ptr $out
+    %t2 = index i8 %t1, 4
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     return i32 %t4
 }
-function @call(%ptr : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr) -> i32 [binding=strong, object=_Z4callRKP12StringStream] {
+function @call(%ptr : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z4callRKP12StringStream] {
   slot $ptr : ptr
   slot $basecast__1 : ptr
 
@@ -25,21 +25,19 @@ function @call(%ptr : ptr [pass=reference], %__pvbptr0 : ptr, %__pvbptr1 : ptr) 
     jump ^basecast_end_3
 
   block ^basecast_adjust_2:
-    %t4 = index i8 [projection=base_subobject] %t2, 4
+    %t4 = index i8 %t2, 4
     store ptr %t4, $basecast__1
     jump ^basecast_end_3
 
   block ^basecast_end_3:
     %t5 = load ptr $basecast__1
-    %t6 = call i32 @read(%t5, %__pvbptr0)
+    %t6 = call i32 @read(%t5)
     return i32 %t6
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $stream : obj<16x4>
   slot $ptr : ptr
   slot $cond__1 : i32
-  slot $basecast__2 : ptr
-  slot $basecast__3 : ptr
 
   block ^entry:
     %t1 = addr $stream
@@ -47,38 +45,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $stream
     store ptr %t2, $ptr
     %t3 = addr $ptr
-    %t4 = load ptr %t3
-    %t5 = cmp eq ptr %t4, 0
-    branch %t5, ^basecast_null_4, ^basecast_adjust_5
-
-  block ^basecast_null_4:
-    store ptr 0, $basecast__2
-    jump ^basecast_end_6
-
-  block ^basecast_adjust_5:
-    %t6 = index i8 [projection=base_subobject] %t4, 8
-    store ptr %t6, $basecast__2
-    jump ^basecast_end_6
-
-  block ^basecast_end_6:
-    %t7 = load ptr $basecast__2
-    %t8 = cmp eq ptr %t4, 0
-    branch %t8, ^basecast_null_7, ^basecast_adjust_8
-
-  block ^basecast_null_7:
-    store ptr 0, $basecast__3
-    jump ^basecast_end_9
-
-  block ^basecast_adjust_8:
-    %t9 = index i8 [projection=base_subobject] %t4, 12
-    store ptr %t9, $basecast__3
-    jump ^basecast_end_9
-
-  block ^basecast_end_9:
-    %t10 = load ptr $basecast__3
-    %t11 = call i32 @call(%t3, %t7, %t10)
-    %t12 = cmp eq i32 %t11, 7
-    branch %t12, ^cond_then_1, ^cond_else_2
+    %t4 = call i32 @call(%t3)
+    %t5 = cmp eq i32 %t4, 7
+    branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -89,60 +58,60 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__1
-    return i32 %t13
+    %t6 = load i32 $cond__1
+    return i32 %t6
 }
-function @StringStream__StringStream(%this : ptr) -> void [binding=weak, object=_ZN12StringStreamC1Ev] {
+function @StringStream__StringStream(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN12StringStreamC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 8
+    %t2 = index i8 %t1, 8
     %t3 = load ptr $this
     %t4 = index i8 %t3, 12
     call void @BasicIOS__BasicIOS__base_entry(%t2, %t4)
     %t5 = load ptr $this
-    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t6 = index i8 %t5, 0
     %t7 = load ptr $this
     %t8 = index i8 %t7, 8
     %t9 = load ptr $this
     %t10 = index i8 %t9, 12
     call void @IOStream__IOStream__base_entry(%t6, %t8, %t10)
     %t11 = load ptr $this
-    %t12 = index i8 [projection=base_subobject] %t11, 12
+    %t12 = index i8 %t11, 12
     %t13 = index i8 [projection=field] %t12, 0
     store i32 7, %t13
     return void
 }
-function @IOStream__IOStream__base_entry(%this : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN8IOStreamC2Ev] {
+function @BasicIOS__BasicIOS__base_entry(%this : ptr [object_bytes=8], %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN8BasicIOSC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @IOStream__IOStream__base_entry(%this : ptr [object_bytes=16], %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN8IOStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @IStream__IStream__base_entry(%t2, %__vbptr0, %__vbptr1)
     %t3 = load ptr $this
-    %t4 = index i8 [projection=base_subobject] %t3, 4
+    %t4 = index i8 %t3, 4
     call void @OStream__OStream__base_entry(%t4, %__vbptr0, %__vbptr1)
     return void
 }
-function @BasicIOS__BasicIOS__base_entry(%this : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN8BasicIOSC2Ev] {
+function @IStream__IStream__base_entry(%this : ptr [object_bytes=8], %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7IStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @IStream__IStream__base_entry(%this : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7IStreamC2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @OStream__OStream__base_entry(%this : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7OStreamC2Ev] {
+function @OStream__OStream__base_entry(%this : ptr [object_bytes=8], %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7OStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -1,4 +1,4 @@
-global @A [binding=internal, object=_ZL1A] = {
+global @A [binding=internal, object=_Z1A] = {
   i32 1
   i32 4
 }

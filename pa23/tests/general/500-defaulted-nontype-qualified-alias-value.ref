@@ -7,10 +7,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @X__X(%t1)
     %t2 = addr $t
     %t3 = addr $value
-    call void @tuple_X______tuple__ov3(%t2, %t3)
+    call void @tuple_rvalue_reference_to_struct_X___tuple_rvalue_reference_to_struct_X___ov3(%t2, %t3)
     return i32 0
 }
-function @tuple_X______tuple__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5tupleIJO1XEEC1IJS0_ETnN9enable_ifIXsr3AndI17integral_constantIXeqsZT_sZT_EENS2_6EnableIJDpT_EEEEE5valueEiE4typeELi0EEEDpOS8_] {
+function @X__X(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1XC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @tuple_rvalue_reference_to_struct_X___tuple_rvalue_reference_to_struct_X___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5tupleIJO1XEEC1IS0_Li0EEEDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -19,12 +26,5 @@ function @tuple_X______tuple__ov3(%this : ptr, %__param1 : ptr [pass=reference])
     store ptr %__param1, $__param1
     return void
 }
-function @X__X(%this : ptr) -> void [binding=weak, object=_ZN1XC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN5tupleIJO1XEEC2IJS0_ETnN9enable_ifIXsr3AndI17integral_constantIXeqsZT_sZT_EENS2_6EnableIJDpT_EEEEE5valueEiE4typeELi0EEEDpOS8_ = @tuple_X______tuple__ov3
 alias object _ZN1XC2Ev = @X__X
+alias object _ZN5tupleIJO1XEEC2IS0_Li0EEEDpOT_ = @tuple_rvalue_reference_to_struct_X___tuple_rvalue_reference_to_struct_X___ov3

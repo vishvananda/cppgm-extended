@@ -6,7 +6,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "exceptions.h"
+#include "support/not_implemented.h"
 
 using namespace std;
 

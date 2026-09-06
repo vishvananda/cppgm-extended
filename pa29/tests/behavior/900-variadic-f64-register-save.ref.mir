@@ -1,0 +1,74 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @read_f64
+  abi
+    param %tag -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 256
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    temp %va-register-save -> [rbp-176] : obj<176x16>
+    slot $arguments -> [rbp-200] : obj<24x8>
+
+  block ^entry
+    store.i64 [rbp-176], rdi
+    store.i64 [rbp-168], rsi
+    store.i64 [rbp-160], rdx
+    store.i64 [rbp-152], rcx
+    store.i64 [rbp-144], r8
+    store.i64 [rbp-136], r9
+    fmov.f64 [rbp-128], xmm0
+    fmov.f64 [rbp-112], xmm1
+    fmov.f64 [rbp-96], xmm2
+    fmov.f64 [rbp-80], xmm3
+    fmov.f64 [rbp-64], xmm4
+    fmov.f64 [rbp-48], xmm5
+    fmov.f64 [rbp-32], xmm6
+    fmov.f64 [rbp-16], xmm7
+    lea rcx, [rbp-200]
+    mov rax, 8
+    store.i32 [rcx], rax
+    mov rax, 48
+    store.i32 [rcx+4], rax
+    lea rdx, [rbp+16]
+    store.ptr [rcx+8], rdx
+    lea rdx, [rbp-176]
+    store.ptr [rcx+16], rdx
+    load.i32 r8, [rbp-196]
+    mov r9, r8
+    zext.i32 r9
+    load.ptr r8, [rbp-184]
+    lea rdi, [r8+r9]
+    fmov.f64 xmm0, [rdi]
+    fptosi.f64.i64 r8, xmm0
+    ret r8
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rdi, 0
+    fmov.f64 xmm0, 42.0
+    mov rax, 1
+    call @read_f64 [args=(rax,rdi,xmm0), variadic]
+    mov rdx, 42
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
+    cmp.i64 rax, 0
+    sete rax
+    movzx rax, rax
+    ret rax

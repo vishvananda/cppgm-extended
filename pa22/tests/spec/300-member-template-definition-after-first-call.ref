@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = binary sub i32 %t1, 7
     return i32 %t2
 }
-function @box_int___apply(%this : ptr, %operation : obj<4x4>) -> i32 [binding=weak, object=_ZN3boxIiE5applyI7add_oneEEiT_] {
+function @box_int___apply(%this : ptr [object_bytes=1], %operation : obj<4x4>) -> i32 [binding=weak, object=_ZN3boxIiE5applyI7add_oneEEiT_, inline_hint=yes] {
   slot $this : ptr
   slot $operation : obj<4x4>
 
@@ -41,7 +41,7 @@ function @box_int___apply(%this : ptr, %operation : obj<4x4>) -> i32 [binding=we
     %t3 = call i32 @add_one__operator__(%t2, 1)
     return i32 %t3
 }
-function @add_one__operator__(%this : ptr, %value : i32) -> i32 [binding=weak, object=_ZNK7add_oneclEi] {
+function @add_one__operator__(%this : ptr [object_bytes=4], %value : i32) -> i32 [binding=weak, object=_ZNK7add_oneclEi, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 

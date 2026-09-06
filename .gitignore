@@ -32,3 +32,15 @@ pa*/tests/*.check.*
 .tmp-bsc*.cpp
 .test_counts
 scratch/
+
+# Toolchain identity stamp; forces a relink when the active cell changes.
+dev/.toolchain
+
+# Per-cell object roots and sanitizer builds.
+obj-clang/
+obj-clang-libcxx/
+obj-asan/
+obj-ubsan/
+obj-dbg/
+dev/obj-clang/
+dev/obj-clang-libcxx/

@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @Base_int___f__ov2(%p : ptr) -> ptr [binding=weak, object=_ZN4BaseIiE1fIdEEPT_S3_] {
+function @Base_int___f__ov2(%p : ptr) -> ptr [binding=weak, object=_ZN4BaseIiE1fIdEEPT_S3_, inline_hint=yes] {
   slot $p : ptr
 
   block ^entry:

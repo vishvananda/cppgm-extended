@@ -1,0 +1,6 @@
+preproc 1
+sof tests/500-attribute-probe.t
+identifier present
+identifier spelled
+identifier unknown
+eof

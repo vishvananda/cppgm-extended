@@ -15,10 +15,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $refarg__3
     store ptr 0, $refarg__4
     %t5 = addr $refarg__4
-    call void @vector_int__int__int__char_const_____vector__ov2(%t1, %t2, %t3, %t4, %t5)
+    call void @vector_int__int__int__pointer_to_const_char___vector_int__int__int__pointer_to_const_char___ov4(%t1, %t2, %t3, %t4, %t5)
     return i32 0
 }
-function @vector_int__int__int__char_const_____vector__ov2(%this : ptr, %u : ptr [pass=reference], %u__pack2 : ptr [pass=reference], %u__pack3 : ptr [pass=reference], %u__pack4 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6vectorIJiiiPKcEEC1IJiiiS1_EvEEDpOT_] {
+function @vector_int__int__int__pointer_to_const_char___vector_int__int__int__pointer_to_const_char___ov4(%this : ptr [object_bytes=1], %u : ptr [pass=by_address, object_bytes=4], %u__pack2 : ptr [pass=by_address, object_bytes=4], %u__pack3 : ptr [pass=by_address, object_bytes=4], %u__pack4 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN6vectorIJiiiPKcEEC1IiiiS1_vEEDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $u : ptr
   slot $u__pack2 : ptr
@@ -33,4 +33,4 @@ function @vector_int__int__int__char_const_____vector__ov2(%this : ptr, %u : ptr
     store ptr %u__pack4, $u__pack4
     return void
 }
-alias object _ZN6vectorIJiiiPKcEEC2IJiiiS1_EvEEDpOT_ = @vector_int__int__int__char_const_____vector__ov2
+alias object _ZN6vectorIJiiiPKcEEC2IiiiS1_vEEDpOT_ = @vector_int__int__int__pointer_to_const_char___vector_int__int__int__pointer_to_const_char___ov4

@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -9,8 +9,10 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 96
+    stack_size N
     scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
     temp %a -> [rbp-<off0>] : f80
     temp %b -> [rbp-<off1>] : f80
     temp %sum -> [rbp-<off2>] : f80

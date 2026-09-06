@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @matcher_int__long_int__char___find(%this : ptr) -> u8 [binding=weak, object=_ZN7matcherIilcE4findEv] {
+function @matcher_int__long_int__char___find(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN7matcherIilcE4findEv] {
   slot $this : ptr
   slot $pointer : i128
 
@@ -34,10 +34,10 @@ function @matcher_int__long_int__char___find(%this : ptr) -> u8 [binding=weak, o
     %t5 = load i128 $pointer
     %t6 = convert trunc i64 i128 %t5
     %t7 = copy ptr %t6
-    %t8 = call u8 %t7(%t4) as (%arg0 : ptr) -> u8
+    %t8 = call u8 %t7(%t4) as (%arg0 : ptr [object_bytes=1]) -> u8
     return u8 %t8
 }
-function @matcher_int__long_int__char___first(%this : ptr) -> u8 [binding=weak, object=_ZN7matcherIilcE5firstEv] {
+function @matcher_int__long_int__char___first(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN7matcherIilcE5firstEv] {
   slot $this : ptr
 
   block ^entry:

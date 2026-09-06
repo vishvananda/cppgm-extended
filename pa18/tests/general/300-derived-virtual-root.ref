@@ -1,28 +1,28 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare global @__external_rtti_vtable____si_class_type_info [binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
 
-global @__typeinfo_name__class_YD [storage=readonly, binding=weak, object=_ZTS2YD] = {
-  i8 50
-  i8 89
-  i8 68
-  i8 0
-}
-global @__typeinfo_name__class_YB [storage=readonly, binding=weak, object=_ZTS2YB] = {
+global @__typeinfo_name__class_YB [binding=weak, object=_ZTS2YB] = {
   i8 50
   i8 89
   i8 66
   i8 0
 }
-global @__rtti_class_YB [storage=readonly, binding=weak, object=_ZTI2YB] = {
+global @__rtti_class_YB [binding=weak, object=_ZTI2YB] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__class_YB
 }
-global @__rtti_class_YD [storage=readonly, binding=weak, object=_ZTI2YD] = {
+global @__typeinfo_name__class_YD [binding=weak, object=_ZTS2YD] = {
+  i8 50
+  i8 89
+  i8 68
+  i8 0
+}
+global @__rtti_class_YD [binding=weak, object=_ZTI2YD] = {
   ptr addr @__external_rtti_vtable____si_class_type_info + 16
   ptr addr @__typeinfo_name__class_YD
   ptr addr @__rtti_class_YB
 }
-global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
+global @YD__vtable [binding=weak, object=_ZTV2YD] = {
   i64 0
   ptr addr @__rtti_class_YD
   ptr addr @YD__g
@@ -37,10 +37,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $d
     %t3 = load ptr %t2
     %t4 = load ptr %t3
-    %t5 = call i32 %t4(%t2) as (%arg0 : ptr) -> i32
+    %t5 = call i32 %t4(%t2) as (%arg0 : ptr [object_bytes=8]) -> i32
     return i32 %t5
 }
-function @YD__YD(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2YDC1Ev] {
+function @YD__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YD1gEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 2
+}
+function @YD__YD(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -50,12 +57,5 @@ function @YD__YD(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN2YDC1E
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     return void
-}
-function @YD__g(%this : ptr) -> i32 [binding=weak, object=_ZN2YD1gEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return i32 2
 }
 alias object _ZN2YDC2Ev = @YD__YD

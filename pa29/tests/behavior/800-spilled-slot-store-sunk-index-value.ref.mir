@@ -1,0 +1,85 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @buffer
+  storage data
+  item i64 10
+  item i64 20
+  item i64 30
+  item i64 40
+
+global @which
+  storage scalar i64
+  init i64 2
+
+function @touch
+  abi
+    param %scratch -> rdi : ptr
+    return void -> void
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    ret
+
+function @run
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $saved -> [rbp-8] : ptr
+    slot $scratch -> [rbp-48] : obj<40x8>
+
+  block ^entry
+    lea rdi, [rbp-48]
+    call @touch [args=(rdi)]
+    load.i64 r8, @which
+    mov r9, @buffer
+    mov rdx, r8
+    imul rdx, 8
+    add r9, rdx
+    store.ptr [rbp-8], r9
+    load.ptr r8, [rbp-8]
+    mov r9, @buffer
+    lea r9, [r9+16]
+    cmp.ptr r8, r9
+    je ^check_value
+    jmp ^bad
+
+  block ^check_value
+    load.i64 r9, [r8]
+    mov rdx, 30
+    cmp.i64 r9, rdx
+    sete r9
+    movzx r9, r9
+    cmp.i64 r9, 0
+    sete rax
+    movzx rax, rax
+    ret rax
+
+  block ^bad
+    mov rax, 1
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    call @run [args=()]
+    ret rax

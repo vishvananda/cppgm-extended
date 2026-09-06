@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @Holder_int___run(%t2)
     return i32 %t3
 }
-function @Holder_int___run(%this : ptr) -> i32 [binding=weak, object=_ZN6HolderIiE3runEv] {
+function @Holder_int___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN6HolderIiE3runEv, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
   slot $cond__1 : i32

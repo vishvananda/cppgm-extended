@@ -1,5 +1,4 @@
-DEFAULT_BUILD_JOBS = $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
-HOST_UNAME_S = $(shell uname -s)
+DEFAULT_BUILD_JOBS = $(shell getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 1)
 ifeq ($(findstring -j,$(MAKEFLAGS)),)
 MAKEFLAGS += -j$(DEFAULT_BUILD_JOBS)
 endif
@@ -32,57 +31,36 @@ TARGETS = \
 	nsinit \
 	cy86
 
-AUX_TARGETS = mobjroundtrip
-ALL_FRONTEND_TARGETS = $(TARGETS) $(AUX_TARGETS)
-
-DEBUG_TARGETS = $(addsuffix -debug,$(TARGETS))
-
-LLVM_CXX_LOCAL = /usr/local/opt/llvm/bin/clang++
-LLVM_CXX_HOMEBREW = /opt/homebrew/opt/llvm/bin/clang++
-ifeq ($(HOST_UNAME_S),Darwin)
-ifeq ($(wildcard $(LLVM_CXX_LOCAL)),)
-ifneq ($(wildcard $(LLVM_CXX_HOMEBREW)),)
-LLVM_CXX_DEFAULT = $(LLVM_CXX_HOMEBREW)
-endif
-else
-LLVM_CXX_DEFAULT = $(LLVM_CXX_LOCAL)
-endif
-ifdef LLVM_CXX_DEFAULT
-HOST_CXX_DEFAULT = $(LLVM_CXX_DEFAULT)
-else
-HOST_CXX_DEFAULT = clang++
-endif
-else
-HOST_CXX_DEFAULT = g++
-endif
-
-ifeq ($(origin CXX), default)
-CXX := $(HOST_CXX_DEFAULT)
-endif
+CXX ?= g++
+CPPGM_HOST_CXX ?= $(CXX)
 V ?= 0
 Q = $(if $(filter 1,$(V)),,@)
 quiet = @if [ "$(V)" != "1" ]; then printf '  %-7s %s\n' '$(1)' '$(2)'; fi
-CPPGM_STDLIB_FLAGS ?=
-ifeq ($(origin CPPGM_HOST_CXX), undefined)
-CPPGM_HOST_CXX := $(CXX)
-endif
 CPPGM_TEST_RUNNER ?= 1
-CPPGM_WITNESS_PROVENANCE ?= 0
+CPPGM_STDLIB_FLAGS ?=
+# -fno-strict-aliasing hardens the host build of the tools: gcc 13 at -O3
+# miscompiles the parser through a strict-aliasing assumption (the self-host
+# then desyncs on int128-configured standard headers).  The flag affects only
+# how the host compiler builds these tools, never the code they emit, so the
+# byte-exact references are unchanged.
+CC_FLAGS ?= -std=gnu++11 -Wall -O3 -fno-strict-aliasing $(CPPGM_STDLIB_FLAGS)
+TELEMETRY_OFF_OBJ ?= ../obj/dev-telemetry-off
+TELEMETRY_OFF_CC_FLAGS ?= $(CC_FLAGS) -DCPPGM_TELEMETRY_ENABLED=0
+# Hosted compiler workloads create and release many translation-unit-lifetime
+# objects. Use the lower-overhead allocator when the Linux runtime package is
+# available, while keeping the handout build portable to hosts without it.
+HOST_ALLOC_LIBS ?= $(if $(wildcard /usr/lib/x86_64-linux-gnu/libjemalloc.so.2),-l:libjemalloc.so.2,)
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
-WITNESS_PROVENANCE_FLAGS = $(if $(filter 1,$(CPPGM_WITNESS_PROVENANCE)),-DCPPGM_ENABLE_WITNESS_PROVENANCE,)
-HOST_CXX_DEFAULT_DEF = -DCPPGM_DEFAULT_HOST_CXX='"$(CPPGM_HOST_CXX)"'
-OBJECT_ROOT_DEFAULT_DEF = -DCPPGM_DEFAULT_OBJECT_ROOT='"$(abspath $(OBJ))"'
-CC_FLAGS = -std=gnu++11 -Wall -O3 -fomit-frame-pointer $(CPPGM_STDLIB_FLAGS) $(WITNESS_PROVENANCE_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
-DEBUG_CC_FLAGS = -std=gnu++11 -Wall -O0 -g -fno-omit-frame-pointer $(CPPGM_STDLIB_FLAGS) $(WITNESS_PROVENANCE_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
 ENTRY_CC_FLAGS = $(CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
-ENTRY_DEBUG_CC_FLAGS = $(DEBUG_CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
-SRC = ../dev/src
-CALLSEMANTIC_SRC = $(wildcard $(SRC)/callsemantic/*.cpp)
+SRC = src
 OBJ ?= ../obj
 GENERATED ?= $(OBJ)/generated
 BUILTIN_HOST_CONFIG = $(GENERATED)/cppgm_builtin_host_config.h
-INC = -I$(SRC) -I$(GENERATED)
+OBJDIR = $(OBJ)/dev
+# The shared object root holds host-compiler objects only; a self-host or
+# other non-host build takes its own root (pa39 passes OBJ=../obj/pa39/...),
+# so the two never mix in one tree.
 SHARED_OBJ_ROOT = $(abspath ../obj)
 CURRENT_OBJ_ROOT = $(abspath $(OBJ))
 ifeq ($(CURRENT_OBJ_ROOT),$(SHARED_OBJ_ROOT))
@@ -90,11 +68,59 @@ ifneq ($(abspath $(firstword $(CXX))),$(abspath $(firstword $(CPPGM_HOST_CXX))))
 $(error shared OBJ root $(OBJ) is only supported with host compiler $(CPPGM_HOST_CXX); use OBJ=<isolated-root> for selfhost or other non-host builds)
 endif
 endif
-VPATH = $(SRC)
-RDEPDIR = $(OBJ)/release/.d
-DDEPDIR = $(OBJ)/debug/.d
+DEPDIR = $(OBJDIR)/.d
+INC = -I$(SRC) -I$(GENERATED)
 
-$(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
+include frontend_source_sets.mk
+$(foreach target,$(TARGETS),$(if $(filter undefined,$(origin FRONTEND_OBJ_BASENAMES_$(target))),$(error missing FRONTEND_OBJ_BASENAMES_$(target) in frontend_source_sets.mk),))
+
+frontend_obj_basenames = $(FRONTEND_OBJ_BASENAMES_$(1))
+frontend_objs = $(addprefix $(OBJDIR)/,$(addsuffix .o,$(call frontend_obj_basenames,$(1))))
+entry_obj = $(OBJDIR)/entry/$(1).o
+runner_obj = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),$(OBJDIR)/test_runner_enabled.o)
+link_objs = $(call entry_obj,$(1)) $(call frontend_objs,$(1)) $(call runner_obj)
+all_obj_basenames = $(sort $(foreach target,$(TARGETS),$(call frontend_obj_basenames,$(target))))
+COMPILE_CONFIG_STAMP = $(OBJDIR)/.compile_config
+# The tool binaries live in dev/ and are shared by every toolchain cell, while
+# the objects they link from live under $(OBJ), which each cell keeps to
+# itself.  Switching cells therefore leaves a binary newer than the objects
+# make would relink it from, so make skips the link and the previous cell's
+# compiler stays in place under the new cell's name.  Stamp the toolchain
+# identity next to the binaries so a cell switch forces the relink.
+TOOLCHAIN_STAMP = .toolchain
+RUNNER_STATE_STAMP = $(OBJDIR)/.test_runner_mode
+
+all: $(TARGETS)
+
+cppgm++-telemetry-off:
+	$(Q)$(MAKE) OBJ='$(TELEMETRY_OFF_OBJ)' CPPGM_TEST_RUNNER=0 \
+		CC_FLAGS='$(TELEMETRY_OFF_CC_FLAGS)' cppgm++-telemetry-off-build
+
+cppgm++-telemetry-off-build: $(call link_objs,cppgm++) $(RUNNER_STATE_STAMP) | $(OBJDIR)
+	$(call quiet,LINK,cppgm++-telemetry-off)
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o cppgm++-telemetry-off.tmp \
+		$(call link_objs,cppgm++) $(HOST_ALLOC_LIBS)
+	@if ! cmp -s cppgm++-telemetry-off.tmp cppgm++-telemetry-off 2>/dev/null; then \
+		mv -f cppgm++-telemetry-off.tmp cppgm++-telemetry-off; \
+	else rm -f cppgm++-telemetry-off.tmp; fi
+
+define FRONTEND_RULES
+$(1): $(call link_objs,$(1)) $(RUNNER_STATE_STAMP) $(TOOLCHAIN_STAMP) | $(OBJDIR)
+	$(call quiet,LINK,$$@)
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $$@.tmp $(call link_objs,$(1)) $(HOST_ALLOC_LIBS)
+	@if ! cmp -s $$@.tmp $$@ 2>/dev/null; then mv -f $$@.tmp $$@; else rm -f $$@.tmp; fi
+
+$(call entry_obj,$(1)): $(1).cpp $(COMPILE_CONFIG_STAMP)
+	@mkdir -p $$(@D) $(DEPDIR)/entry
+	$(call quiet,CXX,$$@)
+	$(Q)$(CXX) $(ENTRY_CC_FLAGS) $(INC) -c -MT $$@ -MMD -MP -MF $(DEPDIR)/entry/$(1).Td -o $$@ $$<
+	@mv -f $(DEPDIR)/entry/$(1).Td $(DEPDIR)/entry/$(1).d
+endef
+
+$(foreach target,$(TARGETS),$(eval $(call FRONTEND_RULES,$(target))))
+
+$(OBJDIR):
+	@mkdir -p $@
 
 FORCE:
 
@@ -102,100 +128,46 @@ $(BUILTIN_HOST_CONFIG): FORCE
 	@mkdir -p $(dir $@)
 	@CPPGM_BUILD_HOST_CXX='$(CPPGM_HOST_CXX)' \
 		CPPGM_STDLIB_FLAGS='$(CPPGM_STDLIB_FLAGS)' \
-		perl ./gen_builtin_host_config.pl > $@.tmp
-	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv $@.tmp $@; else rm -f $@.tmp; fi
-
-$(OBJ)/release/preprocessor.o $(OBJ)/debug/preprocessor.o: $(BUILTIN_HOST_CONFIG)
-
-COMMON_SRC_FILES = $(filter-out $(SRC)/test_runner.cpp,$(wildcard $(SRC)/*.cpp) $(CALLSEMANTIC_SRC))
-COMMON_OBJ_BASENAMES = $(patsubst $(SRC)/%.cpp,%,$(COMMON_SRC_FILES))
-common_objs = $(patsubst %,$(OBJ)/$(1)/%.o,$(COMMON_OBJ_BASENAMES))
-runner_obj = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),$(OBJ)/$(1)/test_runner_enabled.o)
-link_objs = $(call common_objs,$(1)) $(call runner_obj,$(1))
-runner_state_stamp = $(OBJ)/$(1)/.test_runner_mode
-link_prereqs = $(call link_objs,$(1)) $(call runner_state_stamp,$(1))
-include frontend_source_sets.mk
-$(foreach target,$(ALL_FRONTEND_TARGETS),$(if $(strip $(FRONTEND_OBJ_BASENAMES_$(target))),,$(error missing FRONTEND_OBJ_BASENAMES_$(target) in frontend_source_sets.mk)))
-frontend_obj_basenames = $(filter-out witness_provenance,$(FRONTEND_OBJ_BASENAMES_$(1))) $(if $(filter 1,$(CPPGM_WITNESS_PROVENANCE)),witness_provenance,)
-frontend_link_objs = $(addprefix $(OBJ)/$(1)/,$(addsuffix .o,$(call frontend_obj_basenames,$(2)))) $(call runner_obj,$(1))
-auxiliary_link_objs = $(addprefix $(OBJ)/release/,$(addsuffix .o,$(call frontend_obj_basenames,$(1))))
-
-all: $(TARGETS)
-
-debug-build: $(DEBUG_TARGETS)
-
-define DEV_FRONTEND_RULES
-$(1): $(1).cpp $(call frontend_link_objs,release,$(1)) $(call runner_state_stamp,release) | $(OBJ)/release
-	$(call quiet,LINK,$$@)
-	$(Q)$(CXX) $(ENTRY_CC_FLAGS) $(INC) -o $$@.tmp $$@.cpp $(call frontend_link_objs,release,$(1))
-	@if ! cmp -s $$@.tmp $$@ 2>/dev/null; then mv -f $$@.tmp $$@; else rm -f $$@.tmp; fi
-
-$(1)-debug: $(1).cpp $(call frontend_link_objs,debug,$(1)) $(call runner_state_stamp,debug) | $(OBJ)/debug
-	$(call quiet,LINK,$$@)
-	$(Q)$(CXX) $(ENTRY_DEBUG_CC_FLAGS) $(INC) -o $$@.tmp $(1).cpp $(call frontend_link_objs,debug,$(1))
-	@if ! cmp -s $$@.tmp $$@ 2>/dev/null; then mv -f $$@.tmp $$@; else rm -f $$@.tmp; fi
-endef
-
-$(foreach target,$(TARGETS),$(eval $(call DEV_FRONTEND_RULES,$(target))))
-
-mobjroundtrip: $(OBJ)/release mobjroundtrip.cpp $(call auxiliary_link_objs,mobjroundtrip)
-	$(call quiet,LINK,$@)
-	$(Q)$(CXX) $(CC_FLAGS) $(INC) -o $@.tmp $@.cpp $(call auxiliary_link_objs,$@)
+		perl gen_builtin_host_config.pl > $@.tmp
 	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv -f $@.tmp $@; else rm -f $@.tmp; fi
 
-$(OBJ)/release $(OBJ)/debug: %:
-	@- mkdir -p $@
+$(OBJDIR)/$(FRONTEND_BUILTIN_CONFIG_SOURCE_ID).o: $(BUILTIN_HOST_CONFIG)
 
-FORCE:
+$(TOOLCHAIN_STAMP): FORCE
+	@printf '%s\n%s\n%s\n' "$(CXX)" "$(CPPGM_STDLIB_FLAGS)" "$(OBJ)" > $@.tmp
+	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv -f $@.tmp $@; else rm -f $@.tmp; fi
 
-$(OBJ)/release/.test_runner_mode $(OBJ)/debug/.test_runner_mode: FORCE | $(OBJ)/release $(OBJ)/debug
+$(COMPILE_CONFIG_STAMP): FORCE | $(OBJDIR)
+	@printf '%s\n%s\n' "$(CC_FLAGS)" "$(ENTRY_CC_FLAGS)" > $@.tmp
+	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv -f $@.tmp $@; else rm -f $@.tmp; fi
+
+$(RUNNER_STATE_STAMP): FORCE | $(OBJDIR)
 	@current=$$(cat $@ 2>/dev/null || true); \
 	if [ "$$current" != "$(CPPGM_TEST_RUNNER)" ]; then \
 		printf '%s\n' '$(CPPGM_TEST_RUNNER)' > $@; \
 	fi
 
-$(OBJ)/release/.compile_config: FORCE | $(OBJ)/release
-	@printf '%s\n' "$(CC_FLAGS)" > $@.tmp
-	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv -f $@.tmp $@; else rm -f $@.tmp; fi
-
-$(OBJ)/debug/.compile_config: FORCE | $(OBJ)/debug
-	@printf '%s\n' "$(DEBUG_CC_FLAGS)" > $@.tmp
-	@if ! cmp -s $@.tmp $@ 2>/dev/null; then mv -f $@.tmp $@; else rm -f $@.tmp; fi
-
-$(OBJ)/release/%.o: $(SRC)/%.cpp $(OBJ)/release/.compile_config
-	@mkdir -p $(@D) $(dir $(RDEPDIR)/$*)
+$(OBJDIR)/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp $(COMPILE_CONFIG_STAMP)
+	@mkdir -p $(@D) $(DEPDIR)
 	$(call quiet,CXX,$@)
-	$(Q)$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(RDEPDIR)/$*.Td -o $@ $<
-	@mv -f $(RDEPDIR)/$*.Td $(RDEPDIR)/$*.d
+	$(Q)$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DEPDIR)/test_runner_enabled.Td -o $@ $<
+	@mv -f $(DEPDIR)/test_runner_enabled.Td $(DEPDIR)/test_runner_enabled.d
 
-$(OBJ)/debug/%.o: $(SRC)/%.cpp $(OBJ)/debug/.compile_config
-	@mkdir -p $(@D) $(dir $(DDEPDIR)/$*)
+$(OBJDIR)/%.o: $(SRC)/%.cpp $(COMPILE_CONFIG_STAMP)
+	@mkdir -p $(@D) $(dir $(DEPDIR)/$*)
 	$(call quiet,CXX,$@)
-	$(Q)$(CXX) $(DEBUG_CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
-	@mv -f $(DDEPDIR)/$*.Td $(DDEPDIR)/$*.d
-
-$(OBJ)/release/test_runner_enabled.o: $(SRC)/test_runner.cpp $(OBJ)/release/.compile_config
-	@mkdir -p $(@D) $(RDEPDIR)
-	$(call quiet,CXX,$@)
-	$(Q)$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(RDEPDIR)/test_runner_enabled.Td -o $@ $<
-	@mv -f $(RDEPDIR)/test_runner_enabled.Td $(RDEPDIR)/test_runner_enabled.d
-
-$(OBJ)/debug/test_runner_enabled.o: $(SRC)/test_runner.cpp $(OBJ)/debug/.compile_config
-	@mkdir -p $(@D) $(DDEPDIR)
-	$(call quiet,CXX,$@)
-	$(Q)$(CXX) $(DEBUG_CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
-	@mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
+	$(Q)$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td -o $@ $<
+	@mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d
 
 clean:
-	-rm -f $(TARGETS) $(AUX_TARGETS) $(DEBUG_TARGETS) $(OBJ)/release/*.o $(OBJ)/debug/*.o $(OBJ)/release/.compile_config $(OBJ)/debug/.compile_config
+	-rm -f $(TARGETS) cppgm++-telemetry-off $(TOOLCHAIN_STAMP)
+	-rm -rf $(OBJDIR)
 
-$(RDEPDIR)/%.d: ;
-.PRECIOUS: $(RDEPDIR)/%.d
+$(DEPDIR)/%.d: ;
+.PRECIOUS: $(DEPDIR)/%.d
 
-$(DDEPDIR)/%.d: ;
-.PRECIOUS: $(DDEPDIR)/%.d
+-include $(addprefix $(DEPDIR)/,$(addsuffix .d,$(all_obj_basenames)))
+-include $(addprefix $(DEPDIR)/entry/,$(addsuffix .d,$(TARGETS)))
+-include $(DEPDIR)/test_runner_enabled.d
 
--include $(patsubst %,$(RDEPDIR)/%.d,$(COMMON_OBJ_BASENAMES))
--include $(patsubst %,$(DDEPDIR)/%.d,$(COMMON_OBJ_BASENAMES))
--include $(RDEPDIR)/test_runner_enabled.d
--include $(DDEPDIR)/test_runner_enabled.d
+.PHONY: all clean FORCE cppgm++-telemetry-off cppgm++-telemetry-off-build

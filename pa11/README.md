@@ -64,9 +64,7 @@ make
 make test
 ```
 
-`make` builds `cppgm++`. `make test` runs the local PA11 suite. If a
-`course/pa11` extension suite is present, the Makefile runs it after the local
-suite using the same harness contract.
+`make` builds `cppgm++`. `make test` runs the local PA11 suite.
 
 ### Required Driver Surface
 
@@ -196,6 +194,8 @@ PA11 must support:
   while an elaborated enum specifier must name an existing enumeration
 - namespace-scope anonymous class, union, and enum specifiers when the same
   declaration immediately introduces a usable type name
+- namespace-scope anonymous-union declarations only when they include the
+  required `static` specifier
 - template declarations with type and template-template parameter scopes
 - simple declarations and function definitions
 - `typedef` and alias declarations
@@ -219,10 +219,29 @@ PA11 must support:
   subset, including short-circuit `&&` and `||` evaluation that does not
   evaluate an unselected operand
 - `static_assert` over the supported integral constant-expression subset
+- rejection of implicit conversion or comparison between a scoped-enum value
+  and an integer
 - `constexpr` object declarations treated as `const` objects for PA11 type and
   constant-value purposes
 - the supported `decltype(...)` forms listed in the tests and reference output
 - deterministic scope-tree output
+
+PA11 also rejects the following declaration forms:
+
+- an object declared with type `void`, which is an incomplete type that can
+  never be completed; `void` return types and pointers to `void` remain valid
+- a reference declared without an initializer, except as a parameter, a
+  function return type, a class member, or where `extern` is used explicitly
+- a qualified definition of a namespace or class member written outside a
+  scope that encloses the member's own scope
+- a member function body is a complete-class context (N3485 3.3.7/1), so a
+  member type declared later in the class is visible inside it; a body that
+  names one must not parse it as an expression
+- a namespace-definition that names an existing namespace-alias, since an alias
+  is another name for a namespace rather than a namespace that can be extended
+
+A reference initialized with a constant expression is itself usable as a
+constant expression, so reading through one may supply an array bound.
 
 The PA11 output should preserve enough declaration and type information for PA12
 to add expression and call semantics without reparsing the source.
@@ -283,6 +302,12 @@ A good PA11 design keeps these pieces separate:
 - lookup
 - declarator-derived type construction
 - deterministic printing
+
+Keep the semantic graph and analyzer reusable by later modes. The PA11 dump
+can be a source-facing view over that shared graph: distinguish source
+declarations from implicit implementation facts with typed metadata, and keep
+lookup/type identity separate from presentation. Avoid rebuilding semantic
+names by parsing rendered strings.
 
 Avoid baking PA8 image-construction or initialization behavior into the PA11
 core. Those ideas become useful again later, but this assignment should leave

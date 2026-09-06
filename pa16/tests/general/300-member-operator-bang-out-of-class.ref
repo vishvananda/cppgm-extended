@@ -1,4 +1,4 @@
-function @Box__operator_(%this : ptr) -> u8 [binding=strong, object=_ZNK3BoxntEv] {
+function @Box__operator_(%this : ptr [object_bytes=1]) -> u8 [binding=strong, object=_ZNK3BoxntEv] {
   slot $this : ptr
 
   block ^entry:

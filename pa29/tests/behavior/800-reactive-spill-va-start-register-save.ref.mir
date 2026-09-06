@@ -1,0 +1,123 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @sum_variadic
+  abi
+    param %tag -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 352
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14 r15
+    temp %va-register-save -> [rbp-176] : obj<176x16>
+    param-slot %tag -> [rbp-184] : i64
+    slot $ap -> [rbp-208] : obj<24x8>
+    temp %t9 -> [rbp-216] : i64
+    temp %t10 -> [rbp-224] : i64
+    temp %t11 -> [rbp-232] : i64
+    temp %t12 -> [rbp-240] : i64
+    temp %t8 -> [rbp-248] : i64
+    temp %t7 -> [rbp-256] : i64
+
+  block ^entry
+    store.i64 [rbp-176], rdi
+    store.i64 [rbp-168], rsi
+    store.i64 [rbp-160], rdx
+    store.i64 [rbp-152], rcx
+    store.i64 [rbp-144], r8
+    store.i64 [rbp-136], r9
+    fmov.f64 [rbp-128], xmm0
+    fmov.f64 [rbp-112], xmm1
+    fmov.f64 [rbp-96], xmm2
+    fmov.f64 [rbp-80], xmm3
+    fmov.f64 [rbp-64], xmm4
+    fmov.f64 [rbp-48], xmm5
+    fmov.f64 [rbp-32], xmm6
+    fmov.f64 [rbp-16], xmm7
+    store.i64 [rbp-184], rdi
+    mov r8, rdi
+    add r8, 1
+    mov r9, rdi
+    add r9, 2
+    add rdi, 3
+    load.i64 rsi, [rbp-184]
+    add rsi, 4
+    load.i64 rbx, [rbp-184]
+    add rbx, 5
+    load.i64 r12, [rbp-184]
+    add r12, 6
+    load.i64 r13, [rbp-184]
+    add r13, 7
+    load.i64 r14, [rbp-184]
+    add r14, 8
+    load.i64 r15, [rbp-184]
+    add r15, 9
+    store.i64 [rbp-216], r15
+    load.i64 r15, [rbp-184]
+    add r15, 10
+    store.i64 [rbp-224], r15
+    load.i64 r15, [rbp-184]
+    add r15, 11
+    store.i64 [rbp-232], r15
+    load.i64 r15, [rbp-184]
+    add r15, 12
+    lea rcx, [rbp-208]
+    mov rax, 8
+    store.i32 [rcx], rax
+    mov rax, 48
+    store.i32 [rcx+4], rax
+    lea rdx, [rbp+16]
+    store.ptr [rcx+8], rdx
+    lea rdx, [rbp-176]
+    store.ptr [rcx+16], rdx
+    store.i64 [rbp-240], r15
+    load.i32 r15, [rbp-208]
+    store.i64 [rbp-248], r14
+    mov r14, r15
+    zext.i32 r14
+    load.ptr r15, [rbp-192]
+    store.i64 [rbp-256], r13
+    load.i64 r13, [r15+r14]
+    add r8, r9
+    add r8, rdi
+    add r8, rsi
+    add r8, rbx
+    add r8, r12
+    add r8, [rbp-256]
+    add r8, [rbp-248]
+    add r8, [rbp-216]
+    add r8, [rbp-224]
+    add r8, [rbp-232]
+    add r8, [rbp-240]
+    add r8, r13
+    ret r8
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rdi, 0
+    mov rsi, 100
+    mov rax, 0
+    call @sum_variadic [args=(rax,rsi,rdi), variadic]
+    mov rdx, 178
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
+    mov rdx, 0
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
+    ret rax

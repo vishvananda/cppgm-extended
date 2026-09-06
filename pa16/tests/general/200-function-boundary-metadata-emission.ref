@@ -1,7 +1,6 @@
-declare function @__builtin_strlen(%arg0 : ptr [capture=nocapture, access=read]) -> i64 [effects=readonly, unwind=no, binding=strong, object=cppgm_builtin_strlen]
-declare function @__builtin_unreachable() -> void [effects=readnone, unwind=no, return=noreturn, binding=strong, object=cppgm_builtin_unreachable]
+declare function @__builtin_strlen(%arg0 : ptr) -> i64 [effects=readonly, unwind=no, binding=strong, object=cppgm_builtin_strlen]
 
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120
   i8 121
   i8 0
@@ -13,8 +12,7 @@ function @pure() -> i32 [unwind=no, binding=strong, object=_Z4purev] {
 }
 function @trap() -> void [binding=strong, object=_Z4trapv] {
   block ^entry:
-    call void @__builtin_unreachable()
-    return void
+    unreachable
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

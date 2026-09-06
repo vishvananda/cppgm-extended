@@ -99,21 +99,21 @@ function @call1__ov2(%f : obj<1x1>, %x : i32) -> i32 [binding=weak, object=_Z5ca
     %t3 = call i32 @fobj__operator____ov4(%t1, %t2)
     return i32 %t3
 }
-function @fobj__operator__(%this : ptr) -> i32 [binding=weak, object=_ZN4fobjclEv] {
+function @fobj__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN4fobjclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 0
 }
-function @fobj__operator____ov2(%this : ptr) -> i32 [binding=weak, object=_ZNK4fobjclEv] {
+function @fobj__operator____ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK4fobjclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 1
 }
-function @fobj__operator____ov3(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZN4fobjclEi] {
+function @fobj__operator____ov3(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZN4fobjclEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
@@ -124,7 +124,7 @@ function @fobj__operator____ov3(%this : ptr, %x : i32) -> i32 [binding=weak, obj
     %t2 = binary add i32 2, %t1
     return i32 %t2
 }
-function @fobj__operator____ov4(%this : ptr, %x : i32) -> i32 [binding=weak, object=_ZNK4fobjclEi] {
+function @fobj__operator____ov4(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZNK4fobjclEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

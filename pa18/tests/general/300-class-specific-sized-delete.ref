@@ -1,7 +1,8 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare function @object__operatordelete(%arg0 : ptr, %arg1 : i64) -> void [binding=strong, object=_ZN6objectdlEPvm]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_object [storage=readonly, binding=weak, object=_ZTS6object] = {
+declare function @object__operatordelete(%arg0 : ptr, %arg1 : i64) -> void [unwind=no, binding=strong, object=_ZN6objectdlEPvm]
+
+global @__typeinfo_name__struct_object [binding=weak, object=_ZTS6object] = {
   i8 54
   i8 111
   i8 98
@@ -11,11 +12,11 @@ global @__typeinfo_name__struct_object [storage=readonly, binding=weak, object=_
   i8 116
   i8 0
 }
-global @__rtti_struct_object [storage=readonly, binding=weak, object=_ZTI6object] = {
+global @__rtti_struct_object [binding=weak, object=_ZTI6object] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_object
 }
-global @object__vtable [storage=readonly, binding=weak, object=_ZTV6object] = {
+global @object__vtable [binding=weak, object=_ZTV6object] = {
   i64 0
   ptr addr @__rtti_struct_object
   ptr addr @object___object
@@ -61,7 +62,7 @@ function @object___object__deleting_entry(%this : ptr) -> void [binding=weak, ob
   block ^destructor_end_2:
     return void
 }
-function @object___object(%this : ptr) -> void [binding=weak, object=_ZN6objectD1Ev] {
+function @object___object(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6objectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

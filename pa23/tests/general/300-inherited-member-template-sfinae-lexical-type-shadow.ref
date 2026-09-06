@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i64 %t7, %t9
     %t10 = addr $values
     %t11 = addr $node
-    %t12 = call ptr @lib__v1__key_value_types_lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char____unsigned_long_int______get_value(%t11)
+    %t12 = call ptr @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value(%t11)
     %t13 = index i8 [projection=field] %t12, 8
     %t14 = load i64 %t13
     %t15 = convert sext i64 i32 1
@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = addr $tmpobj__3
     %t18 = addr $values
     %t19 = addr $value
-    %t20 = call obj<16x8> @lib__v1__table_lib__v1__pair_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char___const__unsigned_long_int___lib__v1__node_types_lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char____unsigned_long_int_____assign(%t18, %t19)
+    %t20 = call obj<16x8> @lib__v1__table_lib__v1____cppgm_class_template_identity_2_5_0__lib__v1____cppgm_class_template_identity_8_4_0___assign(%t18, %t19)
     copyobj 16x8 %t20, %t17
     %t21 = index i8 [projection=field] %t17, 8
     %t22 = load i64 %t21
@@ -61,7 +61,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = load i32 $cond__1
     return i32 %t27
 }
-function @lib__v1__table_lib__v1__pair_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char___const__unsigned_long_int___lib__v1__node_types_lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char____unsigned_long_int_____assign(%this : ptr, %value : ptr [pass=reference]) -> obj<16x8> [binding=weak, object=_ZN3lib2v15tableINS0_4pairIKNS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEENS0_10node_typesINS0_10node_valueIS8_mEEEEE6assignERSA_] {
+function @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value(%value : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueIS9_TnNS0_9enable_ifIXsrNS0_7is_sameIT_S9_EEE5valueEiE4typeELi0EEERKNS0_4pairIKS8_mEERSD_, inline_hint=yes] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = call ptr @lib__v1__node_value_lib__v1____cppgm_class_template_identity_5_2_0__unsigned_long_int_____get_value(%t1)
+    return ptr %t2
+}
+function @lib__v1__table_lib__v1____cppgm_class_template_identity_2_5_0__lib__v1____cppgm_class_template_identity_8_4_0___assign(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=16]) -> obj<16x8> [binding=weak, object=_ZN3lib2v15tableINS0_4pairIKNS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEENS0_10node_typesINS0_10node_valueIS8_mEEEEE6assignERSA_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $retobj__1 : obj<16x8>
@@ -71,28 +80,11 @@ function @lib__v1__table_lib__v1__pair_lib__v1__basic_string_char__lib__v1__char
     store ptr %value, $value
     %t1 = addr $retobj__1
     %t2 = load ptr $value
-    %t3 = call ptr @lib__v1__key_value_types_lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char____unsigned_long_int______get_value__ov2(%t2)
+    %t3 = call ptr @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value__ov2(%t2)
     copyobj 16x8 %t3, %t1
     return obj<16x8> $retobj__1
 }
-function @lib__v1__key_value_types_lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char____unsigned_long_int______get_value(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueIS9_TnNS0_9enable_ifIXsr7is_sameIT_S9_EE5valueEiE4typeELi0EEERKNS0_4pairIKS8_mEERSD_] {
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = call ptr @lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char____unsigned_long_int_____get_value(%t1)
-    return ptr %t2
-}
-function @lib__v1__key_value_types_lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char____unsigned_long_int______get_value__ov2(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueINS0_4pairIKS8_mEETnNS0_9enable_ifIXsr7is_sameIT_SE_EE5valueEiE4typeELi0EEERKSE_RSG_] {
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    return ptr %t1
-}
-function @lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_char___lib__v1__allocator_char____unsigned_long_int_____get_value(%this : ptr) -> ptr [binding=weak, object=_ZNK3lib2v110node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmE11__get_valueEv] {
+function @lib__v1__node_value_lib__v1____cppgm_class_template_identity_5_2_0__unsigned_long_int_____get_value(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZNK3lib2v110node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmE11__get_valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -100,4 +92,12 @@ function @lib__v1__node_value_lib__v1__basic_string_char__lib__v1__char_traits_c
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
+}
+function @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value__ov2(%value : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueINS0_4pairIKS8_mEETnNS0_9enable_ifIXsrNS0_7is_sameIT_SE_EEE5valueEiE4typeELi0EEERKSE_RSG_, inline_hint=yes] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
 }

@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @derived__f(%this : ptr) -> u32 [binding=weak, object=_ZN7derived1fEv] {
+function @derived__f(%this : ptr [object_bytes=1]) -> u32 [binding=weak, object=_ZN7derived1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

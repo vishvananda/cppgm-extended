@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @test(%token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4testI7handlerEDTcldtcl6resultIT_EE3getEERS1_] {
+function @test(%token : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z4testI7handlerEiRT_] {
   slot $token : ptr
   slot $r : obj<4x4>
 
@@ -39,7 +39,7 @@ function @test(%token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4te
     %t7 = call i32 @result_handler___get(%t6)
     return i32 %t7
 }
-function @handler__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN7handleraSERKS_] {
+function @handler__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN7handleraSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -52,7 +52,7 @@ function @handler__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr 
     %t3 = load ptr $this
     return ptr %t3
 }
-function @result_handler___get(%this : ptr) -> i32 [binding=weak, object=_ZN6resultI7handlerE3getEv] {
+function @result_handler___get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN6resultI7handlerE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -62,7 +62,7 @@ function @result_handler___get(%this : ptr) -> i32 [binding=weak, object=_ZN6res
     %t3 = call i32 @handler__get(%t2)
     return i32 %t3
 }
-function @handler__get(%this : ptr) -> i32 [binding=weak, object=_ZN7handler3getEv] {
+function @handler__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN7handler3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

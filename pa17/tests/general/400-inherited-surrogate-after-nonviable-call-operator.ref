@@ -16,8 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__2
-    call void @callable__callable(%t1)
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = call ptr @base__operatorbinary(%t2)
     %t4 = call i32 %t3(2, 3) as (%arg0 : i32, %arg1 : i32) -> i32
     %t5 = cmp eq i32 %t4, 5
@@ -35,20 +34,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @base__operatorbinary(%this : ptr) -> ptr [binding=weak, object=_ZN4basecvPFiiiEEv] {
+function @base__operatorbinary(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZN4basecvPFiiiEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = addr @add
-    %t2 = unary decay ptr %t1
-    return ptr %t2
+    return ptr %t1
 }
-function @callable__callable(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8callableC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN8callableC2Ev = @callable__callable

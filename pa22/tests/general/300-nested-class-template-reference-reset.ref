@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @interpreter__register_function(%t2, %t3)
     return i32 0
 }
-function @interpreter__register_function(%this : ptr, %f : ptr) -> void [binding=weak, object=_ZN11interpreter17register_functionIPFvvEEEvT_] {
+function @interpreter__register_function(%this : ptr [object_bytes=1], %f : ptr) -> void [binding=weak, object=_ZN11interpreter17register_functionIPFvvEEEvT_, inline_hint=yes] {
   slot $this : ptr
   slot $f : ptr
   slot $p : ptr
@@ -21,16 +21,16 @@ function @interpreter__register_function(%this : ptr, %f : ptr) -> void [binding
   block ^entry:
     store ptr %this, $this
     store ptr %f, $f
-    %t1 = addr @interpreter__invoker_void________int__long_int___apply
+    %t1 = addr @interpreter__invoker_pointer_to_function_of____returning_void__int__long_int___apply
     store ptr %t1, $p
     %t2 = load ptr $f
     store i32 0, $refarg__1
     %t3 = addr $refarg__1
     %t4 = load ptr $p
-    call void %t4(%t2, %t3) as (%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void
+    call void %t4(%t2, %t3) as (%arg0 : ptr, %arg1 : ptr [pass=by_address, object_bytes=4]) -> void
     return void
 }
-function @interpreter__invoker_void________int__long_int___apply(%f : ptr, %args : ptr [pass=reference]) -> void [binding=weak, object=_ZN11interpreter7invokerIPFvvEilE5applyIiEEvS2_RKT_] {
+function @interpreter__invoker_pointer_to_function_of____returning_void__int__long_int___apply(%f : ptr, %args : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN11interpreter7invokerIPFvvEilE5applyIiEEvS2_RKT_, inline_hint=yes] {
   slot $f : ptr
   slot $args : ptr
 
@@ -39,10 +39,10 @@ function @interpreter__invoker_void________int__long_int___apply(%f : ptr, %args
     store ptr %args, $args
     %t1 = load ptr $f
     %t2 = load ptr $args
-    call void @interpreter__invoker_void________long_int__long_int___apply(%t1, %t2)
+    call void @interpreter__invoker_pointer_to_function_of____returning_void__long_int__long_int___apply(%t1, %t2)
     return void
 }
-function @interpreter__invoker_void________long_int__long_int___apply(%__param0 : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN11interpreter7invokerIPFvvEllE5applyIiEEvS2_RKT_] {
+function @interpreter__invoker_pointer_to_function_of____returning_void__long_int__long_int___apply(%__param0 : ptr, %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN11interpreter7invokerIPFvvEllE5applyIiEEvS2_RKT_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

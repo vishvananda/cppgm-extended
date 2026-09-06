@@ -9,22 +9,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $os
     %t4 = addr $arg__1
     %t5 = addr $s
-    %t6 = call obj<1x1> @fusion__clear(%t5)
-    copyobj 1x1 %t6, %t4
+    %t6 = call obj<1x1> @fusion__clear_fusion____cppgm_class_template_identity_0_0_0_const_(%t5)
     %t7 = call ptr @fusion__operators__operator__(%t3, %t4)
     return i32 0
 }
-function @fusion__clear(%s : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN6fusion5clearINS_6vectorIJiEEEEENS_9result_of5clearIKT_E4typeERS7_] {
+function @fusion__clear_fusion____cppgm_class_template_identity_0_0_0_const_(%s : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN6fusion5clearINS_6vectorIJiEEEEENS1_IJEEERKT_] {
   slot $s : ptr
   slot $retobj__1 : obj<1x1>
 
   block ^entry:
     store ptr %s, $s
     %t1 = addr $retobj__1
-    call void @fusion__vector____vector(%t1)
     return obj<1x1> $retobj__1
 }
-function @fusion__operators__operator__(%os : ptr [pass=reference], %seq : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN6fusion9operatorslsINS_6vectorIJEEEEER6streamS6_RKT_] {
+function @fusion__operators__operator__(%os : ptr [pass=by_address, object_bytes=1], %seq : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZN6fusion9operatorslsINS_6vectorIJEEEEER6streamS5_RKT_] {
   slot $os : ptr
   slot $seq : ptr
 
@@ -34,11 +32,3 @@ function @fusion__operators__operator__(%os : ptr [pass=reference], %seq : ptr [
     %t1 = load ptr $os
     return ptr %t1
 }
-function @fusion__vector____vector(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6fusion6vectorIJEEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN6fusion6vectorIJEEC2Ev = @fusion__vector____vector

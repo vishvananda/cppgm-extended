@@ -1,6 +1,0 @@
-template_kernel_output_v1
-
-query 1 deduce_call sink(arr<2, const char>&)
-status ok
-selected function_template forwarder
-bind T = arr<2, const char>&

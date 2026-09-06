@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -9,8 +9,10 @@ function @lhs_true
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     mov rax, 1
@@ -20,8 +22,10 @@ function @rhs_true
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     mov rax, 1
@@ -31,18 +35,20 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
-    call @lhs_true
+    call @lhs_true [args=()]
     mov r8, rax
     cmp.i64 rax, 0
     jne ^rhs
     jmp ^false
 
   block ^rhs
-    call @rhs_true
+    call @rhs_true [args=()]
     cmp.i64 rax, 0
     jne ^true
     jmp ^false

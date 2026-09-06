@@ -1,0 +1,52 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @copied
+  storage data
+  item i64 0
+
+function @make_tag_spilled
+  abi
+    return obj<8x8> -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $tmp -> [rbp-8] : obj<8x8>
+    slot $force_spill -> [rbp-48] : obj<40x8>
+
+  block ^entry
+    store.i64 [rbp-8], 77
+    load.i64 rax, [rbp-8]
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    call @make_tag_spilled [args=()]
+    mov r11, @copied
+    store.i64 [r11], rax
+    load.i64 r8, @copied
+    mov rdx, 77
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rdx, 0
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rax, r8
+    sext.i32 rax
+    ret rax

@@ -1,0 +1,8 @@
+declare function @__builtin_fill_bytes(%arg0 : ptr, %arg1 : i32, %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_fill_bytes]
+
+function @zero_words(%first : ptr, %n : i64) -> void {
+  block ^entry:
+    %bytes = binary shl i64 %n, 2
+    %t0 = call ptr @__builtin_fill_bytes(%first, 0, %bytes)
+    return void
+}

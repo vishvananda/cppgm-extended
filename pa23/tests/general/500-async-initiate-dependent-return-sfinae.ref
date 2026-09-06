@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @timer_int___async_wait(%this : ptr, %token : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN5timerIiE10async_waitIiEEDTcl14async_initiateIT_FviEEcl7declvalIiEEfp_EEOS2_] {
+function @timer_int___async_wait(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN5timerIiE10async_waitIiEEiOT_, inline_hint=yes] {
   slot $this : ptr
   slot $token : ptr
   slot $initiation : i32
@@ -38,7 +38,7 @@ function @timer_int___async_wait(%this : ptr, %token : ptr [pass=reference]) -> 
     %t3 = call i32 @async_initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIiJFviEEiEDTclsr11enable_if_tIXsr11enable_if_tIXsr25are_completion_signaturesIDpT0_EE5valueE12has_initiateIT_JS2_EEEE5valueE12async_resultIS4_JS2_EEEE8initiatescT1_fp_scS4_fp0_EEOS8_RN13type_identityIS4_E4typeE] {
+function @async_initiate(%initiation : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z14async_initiateIiFviEiEN11enable_if_tINS1_IN25are_completion_signaturesIDpT0_E5valueE12has_initiateIT_DpS3_EE5valueE12async_resultIS7_DpS3_EE8initiateEOT1_RN13type_identityIS7_E4typeE] {
   slot $initiation : ptr
   slot $token : ptr
 
@@ -50,7 +50,7 @@ function @async_initiate(%initiation : ptr [pass=reference], %token : ptr [pass=
     %t3 = call i32 @async_result_int__void_int____initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_result_int__void_int____initiate(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN12async_resultIiJFviEEE8initiateIiiEEiOT_OT0_] {
+function @async_result_int__void_int____initiate(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN12async_resultIiJFviEEE8initiateIiiEEiOT_OT0_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

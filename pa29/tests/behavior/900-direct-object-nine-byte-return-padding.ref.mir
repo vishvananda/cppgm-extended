@@ -1,0 +1,61 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @copied
+  storage data
+  item zero 9
+
+function @make
+  abi
+    return obj<9x1> -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $value -> [rbp-16] : obj<9x1>
+
+  block ^entry
+    lea rdi, [rbp-16]
+    zero_bytes 9x1, rdi
+    store.i8 [rbp-16], 11
+    store.i8 [rbp-8], 22
+    load.i64 rax, [rbp-16]
+    load.i8 rdx, [rbp-8]
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    call @make [args=()]
+    mov r11, @copied
+    store.i64 [r11], rax
+    store.i8 [r11+8], rdx
+    load.i8 r8, @copied
+    mov r9, @copied
+    lea r9, [r9+8]
+    load.i8 rdi, [r9]
+    mov rdx, 11
+    cmp.i8 r8, rdx
+    sete r8
+    movzx r8, r8
+    mov rdx, 22
+    cmp.i8 rdi, rdx
+    sete rdi
+    movzx rdi, rdi
+    and r8, rdi
+    cmp.i64 r8, 0
+    sete rax
+    movzx rax, rax
+    ret rax

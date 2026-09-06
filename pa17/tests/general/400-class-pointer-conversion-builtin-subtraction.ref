@@ -10,7 +10,7 @@ function @distance(%first : obj<8x8>, %last : ptr) -> i64 [binding=strong, objec
     %t3 = call ptr @iterator__operatorconstint_(%t2)
     %t4 = load ptr $last
     %t5 = binary sub ptr %t3, %t4
-    %t6 = binary div i64 %t5, 4
+    %t6 = binary shr i64 %t5, 2
     return i64 %t6
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -22,18 +22,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $first
     %t2 = addr $values
-    %t3 = unary decay ptr %t2
-    %t4 = addr $first
-    %t5 = index i8 [projection=field] %t4, 0
-    store ptr %t3, %t5
-    %t6 = addr $argobj__2
-    %t7 = addr $first
-    copyobj 8x8 %t7, %t6
-    %t8 = addr $values
-    %t9 = unary decay ptr %t8
-    %t10 = call i64 @distance($argobj__2, %t9)
-    %t11 = cmp eq i64 %t10, 0
-    branch %t11, ^cond_then_1, ^cond_else_2
+    %t3 = addr $first
+    %t4 = index i8 [projection=field] %t3, 0
+    store ptr %t2, %t4
+    %t5 = addr $argobj__2
+    %t6 = addr $first
+    copyobj 8x8 %t6, %t5
+    %t7 = addr $values
+    %t8 = call i64 @distance($argobj__2, %t7)
+    %t9 = cmp eq i64 %t8, 0
+    branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -44,10 +42,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load i32 $cond__1
-    return i32 %t12
+    %t10 = load i32 $cond__1
+    return i32 %t10
 }
-function @iterator__operatorconstint_(%this : ptr) -> ptr [binding=weak, object=_ZNK8iteratorcvPKiEv] {
+function @iterator__operatorconstint_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK8iteratorcvPKiEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -8,11 +8,10 @@ function @sink(%__param0 : i32) -> void [binding=strong, object=_Z4sinki] {
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @sink
-    %t2 = unary decay ptr %t1
-    call void @Handler_void__void_____int___int___call(%t2, 1)
+    call void @Handler_void__pointer_to_function_of__int__returning_void__int___call(%t1, 1)
     return i32 0
 }
-function @Handler_void__void_____int___int___call(%f : ptr, %a : i32) -> void [binding=weak, object=_ZN7HandlerIvPFviEiE4callES1_i] {
+function @Handler_void__pointer_to_function_of__int__returning_void__int___call(%f : ptr, %a : i32) -> void [binding=weak, object=_ZN7HandlerIvPFviEiE4callES1_i, inline_hint=yes] {
   slot $f : ptr
   slot $a : i32
 
@@ -24,7 +23,7 @@ function @Handler_void__void_____int___int___call(%f : ptr, %a : i32) -> void [b
     call void @N__invoke_r(%t1, %t2)
     return void
 }
-function @N__invoke_r(%f : ptr, %a : i32) -> void [binding=weak, object=_ZN1N8invoke_rIvPFviEiEENS_9enable_ifIXsr7is_voidIT_EE5valueES4_E4typeET0_T1_] {
+function @N__invoke_r(%f : ptr, %a : i32) -> void [binding=weak, object=_ZN1N8invoke_rIvPFviEiEENS_9enable_ifIXsrNS_7is_voidIT_EEE5valueES4_E4typeET0_T1_] {
   slot $f : ptr
   slot $a : i32
 

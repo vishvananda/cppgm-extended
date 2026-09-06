@@ -23,10 +23,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @square
-    %t2 = unary decay ptr %t1
-    %t3 = call i32 @apply(%t2, 4)
-    %t4 = cmp eq i32 %t3, 16
-    branch %t4, ^cond_then_1, ^cond_else_2
+    %t2 = call i32 @apply(%t1, 4)
+    %t3 = cmp eq i32 %t2, 16
+    branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -37,8 +36,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
-    return i32 %t5
+    %t4 = load i32 $cond__1
+    return i32 %t4
 }
 function @apply(%fn : ptr, %value : i32) -> i32 [binding=weak, object=_Z5applyIiET_PFS0_S0_ES0_] {
   slot $fn : ptr

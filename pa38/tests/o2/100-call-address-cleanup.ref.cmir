@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -10,26 +10,27 @@ function @id
     param %p -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
 
   block ^entry
-    load.i32 r9, [rdi]
-    sext.i32 r9
-    ret r9
+    load.i32 rax, [rdi]
+    ret rax
 
 function @main
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues direct
     slot $x -> [rbp-<off0>] : i64
 
   block ^entry
-    mov rax, 7
-    lea rcx, [rbp-<off0>]
-    store.i32 [rbp-<off0>], rax
+    store.i32 [rbp-<off0>], 7
     lea rdi, [rbp-<off0>]
-    call @id
+    call @id [args=(rdi)]
     ret rax

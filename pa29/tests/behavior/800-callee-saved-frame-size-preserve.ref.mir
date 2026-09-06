@@ -1,0 +1,85 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @cell
+  storage data
+  item i64 9
+
+function @identity
+  abi
+    param %p -> rdi : ptr
+    return ptr -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    ret rdi
+
+function @probe
+  abi
+    param %this -> rdi : ptr
+    param %other -> rsi : ptr
+    param %tag -> rdx : i8
+    return ptr -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    param-slot %this -> [rbp-8] : ptr
+    param-slot %other -> [rbp-16] : ptr
+    param-slot %tag -> [rbp-17] : obj<1x1>
+
+  block ^entry
+    store.ptr [rbp-8], rdi
+    store.ptr [rbp-16], rsi
+    store.i8 [rbp-17], rdx
+    load.ptr rdi, [rbp-8]
+    call @identity [args=(rdi)]
+    load.ptr rdi, [rbp-16]
+    call @identity [args=(rdi)]
+    mov rdi, rax
+    call @identity [args=(rdi)]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+    slot $tag -> [rbp-1] : obj<1x1>
+
+  block ^entry
+    mov rbx, @cell
+    lea rdi, [rbp-1]
+    zero_bytes 1x1, rdi
+    mov rdi, rbx
+    mov rsi, rbx
+    load.i8 rdx, [rbp-1]
+    call @probe [args=(rdx,rsi,rdi)]
+    mov r8, rax
+    cmp.ptr r8, rbx
+    jne ^bad
+    jmp ^check
+
+  block ^check
+    load.i64 r9, [r8]
+    cmp.i64 r9, 9
+    setne rax
+    movzx rax, rax
+    ret rax
+
+  block ^bad
+    mov rax, 2
+    ret rax

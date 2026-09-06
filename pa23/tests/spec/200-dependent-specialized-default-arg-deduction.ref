@@ -2,7 +2,7 @@ global @boostish__file_name [binding=strong, object=_ZN8boostish9file_nameE] = {
   zero 1
 }
 
-function @boostish__log_type__write(%this : ptr, %b : ptr [pass=reference]) -> void [binding=strong, object=_ZN8boostish8log_type5writeERKNS_5beginE] {
+function @boostish__log_type__write(%this : ptr [object_bytes=1], %b : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_ZN8boostish8log_type5writeERKNS_5beginE] {
   slot $this : ptr
   slot $b : ptr
   slot $argobj__1 : obj<1x1>
@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @boostish__assign_op(%__param0 : ptr [pass=reference], %__param1 : obj<1x1>, %__param2 : i32) -> void [binding=weak, object=_ZN8boostish9assign_opIcKcEEvRN3lib2v112basic_stringIT_NS3_11char_traitsIS5_EENS3_9allocatorIS5_EEEENS_13basic_cstringIT0_EEi] {
+function @boostish__assign_op(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : obj<1x1>, %__param2 : i32) -> void [binding=weak, object=_ZN8boostish9assign_opIcKcEEvRN3lib2v112basic_stringIT_NS3_11char_traitsIS5_EENS3_9allocatorIS5_EEEENS_13basic_cstringIT0_EEi] {
   slot $__param0 : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : i32

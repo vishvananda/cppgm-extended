@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 40
   i8 104
   i8 97
@@ -22,7 +22,7 @@ global @__strlit__1 [binding=internal] = {
   i8 41
   i8 0
 }
-global @__strlit__2 [binding=internal] = {
+global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 40
   i8 104
   i8 97
@@ -52,7 +52,7 @@ global @__strlit__2 [binding=internal] = {
   i8 41
   i8 0
 }
-global @__strlit__3 [binding=internal] = {
+global @__strlit__3 [storage=readonly, binding=internal] = {
   i8 40
   i8 104
   i8 97
@@ -76,7 +76,7 @@ global @__strlit__3 [binding=internal] = {
   i8 41
   i8 0
 }
-global @__strlit__4 [binding=internal] = {
+global @__strlit__4 [storage=readonly, binding=internal] = {
   i8 40
   i8 104
   i8 97
@@ -106,7 +106,7 @@ global @__strlit__4 [binding=internal] = {
   i8 41
   i8 0
 }
-global @__strlit__5 [binding=internal] = {
+global @__strlit__5 [storage=readonly, binding=internal] = {
   i8 40
   i8 105
   i8 115
@@ -144,7 +144,7 @@ global @__strlit__5 [binding=internal] = {
   i8 41
   i8 0
 }
-global @__strlit__6 [binding=internal] = {
+global @__strlit__6 [storage=readonly, binding=internal] = {
   i8 40
   i8 105
   i8 115

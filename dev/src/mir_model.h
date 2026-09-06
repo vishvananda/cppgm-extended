@@ -2,6 +2,9 @@
 
 // Optional typed machine-IR model scaffold.
 //
+// This header is a teaching shape, not the course solution's own model: it
+// is deliberately simple (names are plain strings) so it can be read whole.
+//
 // The MIR dump is the serialized view of the backend program model introduced
 // by lowir2native. This header gives one possible in-memory shape for that
 // model. Native emission and MIR dumping should consume the same facts.
@@ -12,7 +15,7 @@
 #include <vector>
 
 #include "ir_symbol_model.h"
-#include "x86_register_model.h"
+#include "native/mir/registers.h"
 
 namespace mir_model {
 

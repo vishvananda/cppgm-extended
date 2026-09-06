@@ -1,11 +1,11 @@
-global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234 [binding=weak, object=@__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234] = {
+global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234 [binding=weak, object=__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__decl0__stored] = {
   zero 16
 }
-global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234__guard : i64 [binding=weak, object=@__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234__guard] = zero
-global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234 [binding=weak, object=@__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234] = {
+global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234__guard : i64 [binding=weak, object=__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f4931316c6f675f66756e63746f72454569545f__decl0__stored__guard] = zero
+global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234 [binding=weak, object=__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__decl0__stored] = {
   zero 16
 }
-global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234__guard : i64 [binding=weak, object=@__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234__guard] = zero
+global @__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__stored__source2061742074657374732f67656e6572616c2f3330302d66756e6374696f6e2d74656d706c6174652d6c6f63616c2d7374617469632d7065722d7370656369616c697a6174696f6e2e743a34323a3234__guard : i64 [binding=weak, object=__local_static__function_symbol_5f5a4e313066756e6374696f6e5f6e49764a45453961737369676e5f746f493132696e69745f66756e63746f72454569545f__decl0__stored__guard] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $fn : obj<1x1>
@@ -18,12 +18,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $fn
     %t2 = addr $fn
     %t3 = addr $argobj__1
-    call void @log_functor__log_functor(%t3)
     %t4 = call i32 @function_n_void___assign_to(%t2, $argobj__1)
     store i32 %t4, $a
     %t5 = addr $fn
     %t6 = addr $argobj__2
-    call void @init_functor__init_functor(%t6)
     %t7 = call i32 @function_n_void___assign_to__ov2(%t5, $argobj__2)
     store i32 %t7, $b
     %t8 = load i32 $a
@@ -50,7 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     return i32 0
 }
-function @function_n_void___assign_to(%this : ptr, %__param1 : obj<1x1>) -> i32 [binding=weak, object=_ZN10function_nIvJEE9assign_toI11log_functorEEiT_] {
+function @function_n_void___assign_to(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> i32 [binding=weak, object=_ZN10function_nIvJEE9assign_toI11log_functorEEiT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -85,7 +83,7 @@ function @function_n_void___assign_to(%this : ptr, %__param1 : obj<1x1>) -> i32 
     %t18 = binary add i32 %t13, %t17
     return i32 %t18
 }
-function @function_n_void___assign_to__ov2(%this : ptr, %__param1 : obj<1x1>) -> i32 [binding=weak, object=_ZN10function_nIvJEE9assign_toI12init_functorEEiT_] {
+function @function_n_void___assign_to__ov2(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> i32 [binding=weak, object=_ZN10function_nIvJEE9assign_toI12init_functorEEiT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -120,35 +118,19 @@ function @function_n_void___assign_to__ov2(%this : ptr, %__param1 : obj<1x1>) ->
     %t18 = binary add i32 %t13, %t17
     return i32 %t18
 }
-function @log_functor__log_functor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11log_functorC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @init_functor__init_functor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN12init_functorC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @manager_log_functor___call() -> i32 [binding=weak, object=_ZN7managerI11log_functorE4callEv] {
-  block ^entry:
-    return i32 10
-}
-function @manager_init_functor___call() -> i32 [binding=weak, object=_ZN7managerI12init_functorE4callEv] {
-  block ^entry:
-    return i32 20
-}
-function @invoker_log_functor___call() -> i32 [binding=weak, object=_ZN7invokerI11log_functorE4callEv] {
+function @invoker_log_functor___call() -> i32 [binding=weak, object=_ZN7invokerI11log_functorE4callEv, inline_hint=yes] {
   block ^entry:
     return i32 1
 }
-function @invoker_init_functor___call() -> i32 [binding=weak, object=_ZN7invokerI12init_functorE4callEv] {
+function @manager_log_functor___call() -> i32 [binding=weak, object=_ZN7managerI11log_functorE4callEv, inline_hint=yes] {
+  block ^entry:
+    return i32 10
+}
+function @invoker_init_functor___call() -> i32 [binding=weak, object=_ZN7invokerI12init_functorE4callEv, inline_hint=yes] {
   block ^entry:
     return i32 2
 }
-alias object _ZN11log_functorC2Ev = @log_functor__log_functor
-alias object _ZN12init_functorC2Ev = @init_functor__init_functor
+function @manager_init_functor___call() -> i32 [binding=weak, object=_ZN7managerI12init_functorE4callEv, inline_hint=yes] {
+  block ^entry:
+    return i32 20
+}

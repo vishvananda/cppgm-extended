@@ -5,13 +5,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $sink
     %t2 = addr @__lambda_main_t66_70
-    %t3 = unary decay ptr %t2
-    call void @Sink__Sink__ov3(%t1, %t3)
-    %t4 = addr $sink
-    %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
-    %t7 = cmp eq i32 %t6, 7
-    branch %t7, ^cond_then_1, ^cond_else_2
+    call void @Sink__Sink__ov3(%t1, %t2)
+    %t3 = addr $sink
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    %t6 = cmp eq i32 %t5, 7
+    branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -22,10 +21,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t8 = load i32 $cond__1
-    return i32 %t8
+    %t7 = load i32 $cond__1
+    return i32 %t7
 }
-function @Sink__Sink__ov3(%this : ptr, %f : ptr) -> void [binding=weak, object=_ZN4SinkC1IPFiiEEET_] {
+function @__lambda_main_t66_70(%x : i32) -> i32 [binding=internal, object=_Z20__lambda_main_t66_70i, object_root=yes] {
+  slot $x : i32
+
+  block ^entry:
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = binary add i32 %t1, 1
+    return i32 %t2
+}
+function @Sink__Sink__ov3(%this : ptr [object_bytes=4], %f : ptr) -> void [binding=weak, object=_ZN4SinkC1IPFiiEEET_, inline_hint=yes] {
   slot $this : ptr
   slot $f : ptr
 
@@ -38,14 +46,5 @@ function @Sink__Sink__ov3(%this : ptr, %f : ptr) -> void [binding=weak, object=_
     %t4 = index i8 [projection=field] %t3, 0
     store i32 %t2, %t4
     return void
-}
-function @__lambda_main_t66_70(%x : i32) -> i32 [binding=internal] {
-  slot $x : i32
-
-  block ^entry:
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = binary add i32 %t1, 1
-    return i32 %t2
 }
 alias object _ZN4SinkC2IPFiiEEET_ = @Sink__Sink__ov3

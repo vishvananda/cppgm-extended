@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @source__operatorT_(%this : ptr) -> ptr [binding=weak, object=_ZNK6sourcecvPT_I5valueEEv] {
+function @source__operatorT_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK6sourcecvP5valueIS0_EEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -37,7 +37,7 @@ function @source__operatorT_(%this : ptr) -> ptr [binding=weak, object=_ZNK6sour
     %t1 = copy ptr nullptr
     return ptr %t1
 }
-function @source__operatorT___ov2(%this : ptr) -> ptr [binding=weak, object=_ZNK6sourcecvPT_IK5valueEEv] {
+function @source__operatorT___ov2(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK6sourcecvPK5valueIS1_EEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

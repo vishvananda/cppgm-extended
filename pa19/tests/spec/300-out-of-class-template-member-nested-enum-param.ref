@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @Box_int___call(%t2, 0)
     return i32 %t3
 }
-function @Box_int___call(%this : ptr, %tag : i32) -> i32 [binding=weak, object=_ZN3BoxIiE4callENS0_3TagE] {
+function @Box_int___call(%this : ptr [object_bytes=1], %tag : i32) -> i32 [binding=weak, object=_ZN3BoxIiE4callENS0_3TagE, inline_hint=yes] {
   slot $this : ptr
   slot $tag : i32
 
@@ -19,7 +19,7 @@ function @Box_int___call(%this : ptr, %tag : i32) -> i32 [binding=weak, object=_
     %t3 = call i32 @Box_int___value(%t1, %t2)
     return i32 %t3
 }
-function @Box_int___value(%this : ptr, %tag : i32) -> i32 [binding=weak, object=_ZN3BoxIiE5valueENS0_3TagE] {
+function @Box_int___value(%this : ptr [object_bytes=1], %tag : i32) -> i32 [binding=weak, object=_ZN3BoxIiE5valueENS0_3TagE] {
   slot $this : ptr
   slot $tag : i32
 

@@ -36,6 +36,13 @@ sub process_one_test
 	unlink($test_out, "$test_out.stdout", "$test_out.exit_status");
 
 	my $env = read_env_file("$test_base.env");
+	my @include_args;
+	if (exists($env->{CPPGM_STDINC_PATHS}))
+	{
+		my $paths = delete($env->{CPPGM_STDINC_PATHS});
+		@include_args = ('-nostdinc', map { ('-isystem', $_) }
+			grep { $_ ne '' } split(/:/, $paths));
+	}
 	my @inputs = sort glob("$test*");
 	my $status;
 	my $build_timeout = get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 30);
@@ -44,7 +51,7 @@ sub process_one_test
 	if (scalar(keys %{$env}) != 0)
 	{
 		$status = run_command_capture(
-			cmd => [$app, '-E', '-o', $test_out, @inputs],
+			cmd => [$app, '-E', @include_args, '-o', $test_out, @inputs],
 			stdout => "$test_out.stdout",
 			stderr => "$test_out.stdout",
 			env => \%worker_env,
@@ -60,11 +67,18 @@ sub process_one_test
 			"$test_out.stdout",
 			\%worker_env,
 			'-E',
+			@include_args,
 			'-o',
 			$test_out,
 			@inputs);
 	}
 	write_named_status_code("$test_out.exit_status", $status);
+	# A failed case's diagnostic text is not a portable reference: the export
+	# regenerates it (CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1), the tree does
+	# not track it, as run_all_tests_common.pl does for the other lanes.
+	unlink("$test_out.stdout")
+		if $suffix eq 'ref' && $status != 0 &&
+		   ($ENV{CPPGM_KEEP_FAILED_REFERENCE_STDOUT} // '') !~ m/^(?:1|true|yes|on)$/i;
 }
 
 sub run_preproc_tests

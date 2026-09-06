@@ -10,11 +10,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i8 120, $refarg__3
     %t3 = addr $refarg__3
     %t4 = call obj<1x1> @boost__fusion__make_map(%t2, %t3)
-    copyobj 1x1 %t4, %t1
     call void @test_map(%t1)
     return i32 0
 }
-function @boost__fusion__make_map(%arg : ptr [pass=reference], %arg__pack2 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN5boost6fusion8make_mapIJ1A1BEJicEEENS0_3mapIJDpNS0_4pairIT_NS0_6detail10as_elementIT0_E4typeEEEEEEDpRKSA_] {
+function @boost__fusion__make_map(%arg : ptr [pass=by_address, object_bytes=4], %arg__pack2 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN5boost6fusion8make_mapI1A1BicEENS0_3mapIDpNS0_4pairIT_NS0_6detail10as_elementIT0_E4typeEEEEEDpRKS9_] {
   slot $arg : ptr
   slot $arg__pack2 : ptr
   slot $retobj__1 : obj<1x1>
@@ -25,10 +24,10 @@ function @boost__fusion__make_map(%arg : ptr [pass=reference], %arg__pack2 : ptr
     %t1 = addr $retobj__1
     %t2 = load ptr $arg
     %t3 = load ptr $arg__pack2
-    call void @boost__fusion__map_boost__fusion__pair_A__int___boost__fusion__pair_B__char____map__ov2(%t1, %t2, %t3)
+    call void @boost__fusion__map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___ov4(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @test_map(%map_value : ptr [pass=reference]) -> void [binding=weak, object=_Z8test_mapIN5boost6fusion3mapIJNS1_4pairI1AiEENS4_I1BcEEEEEEvRKT_] {
+function @test_map(%map_value : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_Z8test_mapIN5boost6fusion3mapIJNS1_4pairI1AiEENS3_I1BcEEEEEEvRKT_] {
   slot $map_value : ptr
 
   block ^entry:
@@ -36,7 +35,7 @@ function @test_map(%map_value : ptr [pass=reference]) -> void [binding=weak, obj
     %t1 = load ptr $map_value
     return void
 }
-function @boost__fusion__map_boost__fusion__pair_A__int___boost__fusion__pair_B__char____map__ov2(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6fusion3mapIJNS0_4pairI1AiEENS2_I1BcEEEEC1IJicEEEDpRKT_] {
+function @boost__fusion__map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost6fusion3mapIJNS0_4pairI1AiEENS2_I1BcEEEEC1IJicEEEDpRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -47,4 +46,4 @@ function @boost__fusion__map_boost__fusion__pair_A__int___boost__fusion__pair_B_
     store ptr %__param2, $__param2
     return void
 }
-alias object _ZN5boost6fusion3mapIJNS0_4pairI1AiEENS2_I1BcEEEEC2IJicEEEDpRKT_ = @boost__fusion__map_boost__fusion__pair_A__int___boost__fusion__pair_B__char____map__ov2
+alias object _ZN5boost6fusion3mapIJNS0_4pairI1AiEENS2_I1BcEEEEC2IJicEEEDpRKT_ = @boost__fusion__map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___map_boost__fusion____cppgm_class_template_identity_0_5_0__boost__fusion____cppgm_class_template_identity_0_7_0___ov4

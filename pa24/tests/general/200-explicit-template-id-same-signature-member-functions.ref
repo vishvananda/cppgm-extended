@@ -5,13 +5,13 @@ function @g() -> i32 [binding=strong, object=_Z1gv] {
     %t3 = binary add i32 %t1, %t2
     return i32 %t3
 }
-function @Box_int___f() -> i32 [binding=weak, object=_ZN3BoxIiE1fIcEEiv] {
+function @Box_int___f() -> i32 [binding=weak, object=_ZN3BoxIiE1fIcEEiv, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 1
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
-function @Box_int___f__ov2() -> i32 [binding=weak, object=_ZN3BoxIiE1fIlEEiv] {
+function @Box_int___f__ov2() -> i32 [binding=weak, object=_ZN3BoxIiE1fIlEEiv, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 8
     %t2 = convert trunc i32 i64 %t1

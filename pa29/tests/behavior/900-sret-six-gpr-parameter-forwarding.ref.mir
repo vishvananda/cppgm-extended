@@ -1,0 +1,140 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @first
+  storage data
+  item i64 0
+
+global @second
+  storage data
+  item i64 0
+
+global @third
+  storage data
+  item i64 0
+
+global @fourth
+  storage data
+  item i64 0
+
+function @target
+  abi
+    param %ret -> rdi : ptr
+    param %this -> rsi : ptr
+    param %class -> rdx : ptr
+    param %index -> rcx : i32
+    param %base -> r8 : u8
+    param %address -> r9 : ptr
+    param %vector -> [rbp+16] : ptr
+    return void -> void
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14 r15
+    param-slot %class -> [rbp-8] : ptr
+    param-slot %vector -> [rbp-16] : ptr
+
+  block ^entry
+    store.ptr [rbp-8], rdx
+    load.ptr rax, [rbp+16]
+    store.ptr [rbp-16], rax
+    mov rbx, @first
+    mov r12, @second
+    mov r13, @third
+    mov r14, @fourth
+    mov r15, rsi
+    cmp.ptr r15, rbx
+    setne r15
+    movzx r15, r15
+    mov rbx, rdx
+    cmp.ptr rbx, r12
+    setne rbx
+    movzx rbx, rbx
+    mov r12, rcx
+    mov rdx, 7
+    cmp.i32 r12, rdx
+    setne r12
+    movzx r12, r12
+    mov rsi, r8
+    mov rdx, 1
+    cmp.u8 rsi, rdx
+    setne rsi
+    movzx rsi, rsi
+    mov r8, r9
+    cmp.ptr r8, r13
+    setne r8
+    movzx r8, r8
+    load.ptr r13, [rbp-16]
+    cmp.ptr r13, r14
+    setne r13
+    movzx r13, r13
+    add r15, rbx
+    add r15, r12
+    add r15, rsi
+    add r15, r8
+    add r15, r13
+    store.i64 [rdi], r15
+    ret
+
+function @forward
+  abi
+    param %ret -> rdi : ptr
+    param %arg1 -> rsi : ptr
+    param %arg2 -> rdx : ptr
+    param %arg3 -> rcx : i32
+    param %arg4 -> r8 : u8
+    param %arg5 -> r9 : ptr
+    param %arg6 -> [rbp+16] : ptr
+    return void -> void
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+    param-slot %arg6 -> [rbp-8] : ptr
+
+  block ^entry
+    load.ptr rax, [rbp+16]
+    store.ptr [rbp-8], rax
+    lea rbx, [rsi-136]
+    sub rsp, 16
+    load.ptr r11, [rbp-8]
+    store.ptr [rsp], r11
+    mov rsi, rbx
+    call @target [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
+    add rsp, 16
+    ret
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $result -> [rbp-8] : i64
+
+  block ^entry
+    mov r8, @first
+    lea r8, [r8+136]
+    sub rsp, 16
+    mov r11, @fourth
+    store.ptr [rsp], r11
+    lea rdi, [rbp-8]
+    mov rsi, r8
+    mov rdx, @second
+    mov rcx, 7
+    mov r8, 1
+    mov r9, @third
+    call @forward [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
+    add rsp, 16
+    load.i64 rax, [rbp-8]
+    ret rax

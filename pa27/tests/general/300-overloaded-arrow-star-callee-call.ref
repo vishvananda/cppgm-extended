@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @DataMemberLambda__operator__(%this : ptr, %object : ptr) -> i32 [binding=weak, object=_ZNK16DataMemberLambdaclEP1S] {
+function @DataMemberLambda__operator__(%this : ptr [object_bytes=8], %object : ptr) -> i32 [binding=weak, object=_ZNK16DataMemberLambdaclEP1S, inline_hint=yes] {
   slot $this : ptr
   slot $object : ptr
 

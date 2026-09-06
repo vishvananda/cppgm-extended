@@ -7,7 +7,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @__lambda_main_t45_47__operator__(%t2)
     return i32 %t3
 }
-function @__lambda_main_t45_47__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEv, prefer_local=yes] {
+function @use(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=internal, object=_Z3useIZZ4mainENK3$_0clEvE5localEiR3boxIT_E] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 0
+}
+function @__cppgm_class_template_0_1___box(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=internal, object=_ZN3boxIZZ4mainENK3$_0clEvE5localED1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @__lambda_main_t45_47__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $x : obj<1x1>
 
@@ -18,10 +32,4 @@ function @__lambda_main_t45_47__operator__(%this : ptr) -> i32 [binding=strong, 
     %t3 = call i32 @use(%t2)
     return i32 %t3
 }
-function @use(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3useIZZ4mainENK3$_0clEvE5localEiR3boxIT_E] {
-  slot $__param0 : ptr
-
-  block ^entry:
-    store ptr %__param0, $__param0
-    return i32 0
-}
+alias object _ZN3boxIZZ4mainENK3$_0clEvE5localED2Ev = @__cppgm_class_template_0_1___box

@@ -1,4 +1,4 @@
-function @N__eq(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> i32 [binding=strong, object=_ZN1N2eqERKNS_1XES2_] {
+function @N__eq(%a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_ZN1N2eqERKNS_1XES2_] {
   slot $a : ptr
   slot $b : ptr
 
@@ -12,7 +12,7 @@ function @N__eq(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> i32 [bi
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load i32 %t5
     %t7 = cmp eq i32 %t3, %t6
-    %t8 = convert zext i32 u8 %t7
+    %t8 = convert trunc i32 i64 %t7
     return i32 %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -40,7 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @N__X__X(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1N1XC1Ei] {
+function @N__X__X(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1N1XC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

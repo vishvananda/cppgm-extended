@@ -7,10 +7,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $discard__1
     %t3 = addr $b
     %t4 = call obj<1x1> @Box__make(%t3)
-    copyobj 1x1 %t4, %t2
     return i32 0
 }
-function @Box__make(%this : ptr) -> obj<1x1> [binding=weak, object=_ZN3Box4makeEv] {
+function @Box__make(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN3Box4makeEv, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
   slot $retobj__1 : obj<1x1>
@@ -20,10 +19,10 @@ function @Box__make(%this : ptr) -> obj<1x1> [binding=weak, object=_ZN3Box4makeE
     store i32 0, $x
     %t1 = addr $retobj__1
     %t2 = addr $x
-    call void @Ref_Box___Ref(%t1, %t2, 1)
+    call void @Ref_Box___Ref_Box_(%t1, %t2, 1)
     return obj<1x1> $retobj__1
 }
-function @Ref_Box___Ref(%this : ptr, %__param1 : ptr, %__param2 : i32) -> void [binding=weak, object=_ZN3RefI3BoxEC1EPii] {
+function @Ref_Box___Ref_Box_(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : i32) -> void [binding=weak, object=_ZN3RefI3BoxEC1EPii, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : i32
@@ -34,4 +33,4 @@ function @Ref_Box___Ref(%this : ptr, %__param1 : ptr, %__param2 : i32) -> void [
     store i32 %__param2, $__param2
     return void
 }
-alias object _ZN3RefI3BoxEC2EPii = @Ref_Box___Ref
+alias object _ZN3RefI3BoxEC2EPii = @Ref_Box___Ref_Box_

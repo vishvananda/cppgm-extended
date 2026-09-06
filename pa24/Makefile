@@ -18,7 +18,6 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-COURSE_TEST_ROOT = $(wildcard course/pa24)
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 
@@ -54,53 +53,24 @@ $(OBJ)/debug/%.o: %.cpp
 	$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
 	mv -f $(DDEPDIR)/$*.Td $(DDEPDIR)/$*.d
 
-$(OBJ)/release/test_runner_enabled.o: $(SRC)/test_runner.cpp
+$(OBJ)/release/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(RDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(RDEPDIR)/test_runner_enabled.Td $(RDEPDIR)/test_runner_enabled.d
 
-$(OBJ)/debug/test_runner_enabled.o: $(SRC)/test_runner.cpp
+$(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
-ifeq ($(COURSE_TEST_ROOT),)
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
-
-test-strict: $(TEST_DEPS)
-	@rm -f .test_failed
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
-	@../scripts/run_witness_tests.pl $(CPPGM_TEST_APP) my tests
-	@scripts/compare_results.pl ref my tests
-	@../scripts/compare_witness_results.pl ref my tests
-	@test ! -f .test_failed
-else
-test: $(TEST_DEPS)
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
-	@scripts/compare_results.pl ref my tests
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
-
-test-strict: $(TEST_DEPS)
-	@rm -f .test_failed
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
-	@../scripts/run_witness_tests.pl $(CPPGM_TEST_APP) my tests
-	@scripts/compare_results.pl ref my tests
-	@../scripts/compare_witness_results.pl ref my tests
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
-	@test ! -f .test_failed
-endif
 
 ref-test:
 	@$(REF_TEST_RUN)
 
-ref-test-strict:
-	@../scripts/run_witness_tests.pl $(REF_TEST_APP) ref tests
-
 include ../scripts/pa_run_check_targets.mk
 
-.PHONY: dev-shared-target ref-test ref-test-strict
+.PHONY: dev-shared-target ref-test
 ../dev/$(TARGET):
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX)
 

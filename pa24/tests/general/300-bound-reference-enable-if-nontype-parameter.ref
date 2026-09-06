@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @call(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4callIR6stream5valueTnN9enable_ifIXsr3allI5probeIRT_RKT0_vEEE5valueEiE4typeELi0EEiOS5_S9_] {
+function @call(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4callIR6stream5valueLi0EEiOT_RKT0_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

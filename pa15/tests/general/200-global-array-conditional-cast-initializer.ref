@@ -1,4 +1,4 @@
-global @text [binding=internal, object=_ZL4text] = {
+global @text [binding=strong, object=_Z4text] = {
   i8 65
   i8 0
 }
@@ -6,10 +6,9 @@ global @text [binding=internal, object=_ZL4text] = {
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @text
-    %t2 = unary decay ptr %t1
-    %t3 = index i8 [projection=array_element] %t2, 0
-    %t4 = load i8 %t3
-    %t5 = convert sext i32 i8 %t4
-    %t6 = binary sub i32 %t5, 65
-    return i32 %t6
+    %t2 = index i8 [projection=array_element] %t1, 0
+    %t3 = load i8 %t2
+    %t4 = convert sext i32 i8 %t3
+    %t5 = binary sub i32 %t4, 65
+    return i32 %t5
 }

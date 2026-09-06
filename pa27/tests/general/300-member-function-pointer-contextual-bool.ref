@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     return i32 0
 }
-function @member_pointer_contextual_bool__f(%this : ptr) -> i32 [binding=weak, object=_ZN30member_pointer_contextual_bool1fEv] {
+function @member_pointer_contextual_bool__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN30member_pointer_contextual_bool1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

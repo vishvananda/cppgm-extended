@@ -5,7 +5,7 @@ function @f(%elapsed : obj<1x1>) -> u8 [binding=strong, object=_Z1fN1s1i1c8durat
   block ^entry:
     %t1 = addr $elapsed
     %t2 = addr $arg__1
-    call void @s__i__c__duration_long_long_int__s__i__c__milli___duration__ov2(%t2, 128)
+    call void @s__i__c__duration_long_long_int__s__i__c__milli___duration_typename___retained_template_parameter_shape_2__typename___retained_template_parameter_shape_3___ov2(%t2, 128)
     %t3 = call u8 @s__i__c__greater(%t1, %t2)
     return u8 %t3
 }
@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $argobj__2
-    call void @s__i__c__duration_long_long_int__s__i__c__nano___duration(%t1)
+    call void @s__i__c__duration_long_long_int__s__i__c__nano___duration_typename___retained_template_parameter_shape_2__typename___retained_template_parameter_shape_3_(%t1)
     %t2 = call u8 @f($argobj__2)
     branch %t2, ^cond_then_1, ^cond_else_2
 
@@ -31,14 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @s__i__c__duration_long_long_int__s__i__c__nano___duration(%this : ptr) -> void [binding=weak, object=_ZN1s1i1c8durationIxNS1_4nanoEEC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @s__i__c__duration_long_long_int__s__i__c__milli___duration__ov2(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN1s1i1c8durationIxNS1_5milliEEC1Ei] {
+function @s__i__c__duration_long_long_int__s__i__c__milli___duration_typename___retained_template_parameter_shape_2__typename___retained_template_parameter_shape_3___ov2(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN1s1i1c8durationIxNS1_5milliEEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -47,7 +40,7 @@ function @s__i__c__duration_long_long_int__s__i__c__milli___duration__ov2(%this 
     store i32 %__param1, $__param1
     return void
 }
-function @s__i__c__greater(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN1s1i1c7greaterIxNS1_4nanoExNS1_5milliEEEbRKNS1_8durationIT_T0_EERKNS5_IT1_T2_EE] {
+function @s__i__c__greater(%a : ptr [pass=by_address, object_bytes=1], %b : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN1s1i1c7greaterIxNS1_4nanoExNS1_5milliEEEbRKNS1_8durationIT_T0_EERKNS5_IT1_T2_EE] {
   slot $a : ptr
   slot $b : ptr
 
@@ -59,7 +52,14 @@ function @s__i__c__greater(%a : ptr [pass=reference], %b : ptr [pass=reference])
     %t3 = call u8 @s__i__c__less(%t1, %t2)
     return u8 %t3
 }
-function @s__i__c__less(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN1s1i1c4lessIxNS1_5milliExNS1_4nanoEEEbRKNS1_8durationIT_T0_EERKNS5_IT1_T2_EE] {
+function @s__i__c__duration_long_long_int__s__i__c__nano___duration_typename___retained_template_parameter_shape_2__typename___retained_template_parameter_shape_3_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1s1i1c8durationIxNS1_4nanoEEC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @s__i__c__less(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN1s1i1c4lessIxNS1_5milliExNS1_4nanoEEEbRKNS1_8durationIT_T0_EERKNS5_IT1_T2_EE] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -68,5 +68,5 @@ function @s__i__c__less(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=
     store ptr %__param1, $__param1
     return u8 1
 }
-alias object _ZN1s1i1c8durationIxNS1_4nanoEEC2Ev = @s__i__c__duration_long_long_int__s__i__c__nano___duration
-alias object _ZN1s1i1c8durationIxNS1_5milliEEC2Ei = @s__i__c__duration_long_long_int__s__i__c__milli___duration__ov2
+alias object _ZN1s1i1c8durationIxNS1_5milliEEC2Ei = @s__i__c__duration_long_long_int__s__i__c__milli___duration_typename___retained_template_parameter_shape_2__typename___retained_template_parameter_shape_3___ov2
+alias object _ZN1s1i1c8durationIxNS1_4nanoEEC2Ev = @s__i__c__duration_long_long_int__s__i__c__nano___duration_typename___retained_template_parameter_shape_2__typename___retained_template_parameter_shape_3_

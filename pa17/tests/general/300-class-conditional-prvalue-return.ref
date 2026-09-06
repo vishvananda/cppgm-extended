@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 1
     return i32 %t5
 }
-function @S__S(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN1SC1Ei] {
+function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN1SC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

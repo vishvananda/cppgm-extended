@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $scoped
     %t4 = addr $node
     %t5 = addr $alloc
-    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t6 = index i8 %t5, 0
     call void @Scoped__Scoped(%t3, %t4, %t6)
     %t7 = addr $scoped
     %t8 = index i8 [projection=field] %t7, 0
@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @Scoped__Scoped(%this : ptr, %node : ptr, %alloc : ptr) -> void [binding=weak, object=_ZN6ScopedC1EP4NodeP9AllocBase] {
+function @Scoped__Scoped(%this : ptr [object_bytes=4], %node : ptr, %alloc : ptr) -> void [binding=weak, object=_ZN6ScopedC1EP4NodeP9AllocBase, inline_hint=yes] {
   slot $this : ptr
   slot $node : ptr
   slot $alloc : ptr

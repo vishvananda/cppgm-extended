@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 %t3
     return i32 %t4
 }
-function @holder_tag__char___call() -> obj<4x4> [binding=weak, object=_ZN6holderI3tagcE4callEv] {
+function @holder_tag__char___call() -> obj<4x4> [binding=weak, object=_ZN6holderI3tagcE4callEv, inline_hint=yes] {
   slot $retobj__1 : obj<4x4>
 
   block ^entry:

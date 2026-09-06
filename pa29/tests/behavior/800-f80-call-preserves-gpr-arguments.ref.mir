@@ -1,0 +1,109 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @first
+  storage scalar i64
+  init i64 11
+
+global @second
+  storage scalar i64
+  init i64 22
+
+function @identity
+  abi
+    param %value -> rdi : ptr
+    return ptr -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    ret rdi
+
+function @check
+  abi
+    param %first -> rdi : ptr
+    param %value -> [rbp+16] : f80
+    param %second -> rsi : ptr
+    return i64 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    param-slot %first -> [rbp-8] : ptr
+    param-slot %value -> [rbp-32] : f80
+    param-slot %second -> [rbp-40] : ptr
+
+  block ^entry
+    store.ptr [rbp-8], rdi
+    fmov.f80 [rbp-32], [rbp+16]
+    store.ptr [rbp-40], rsi
+    mov r8, @first
+    mov r9, @second
+    load.ptr rdi, [rbp-8]
+    cmp.ptr rdi, r8
+    sete rdi
+    movzx rdi, rdi
+    feq.f80 rax, [rbp-32], 3.5L
+    mov r8, rax
+    load.ptr rsi, [rbp-40]
+    cmp.ptr rsi, r9
+    sete rsi
+    movzx rsi, rsi
+    and rdi, rsi
+    and rdi, r8
+    ret rdi
+
+function @forward
+  abi
+    param %first -> rdi : ptr
+    param %value -> [rbp+16] : f80
+    param %second -> rsi : ptr
+    return i64 -> rax
+  frame
+    stack_size 96
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    param-slot %first -> [rbp-8] : ptr
+    param-slot %value -> [rbp-32] : f80
+    param-slot %second -> [rbp-40] : ptr
+
+  block ^entry
+    store.ptr [rbp-8], rdi
+    fmov.f80 [rbp-32], [rbp+16]
+    store.ptr [rbp-40], rsi
+    load.ptr rdi, [rbp-8]
+    call @identity [args=(rdi)]
+    sub rsp, 16
+    fmov.f80 [rsp], [rbp-32]
+    mov rdi, rax
+    load.ptr rsi, [rbp-40]
+    call @check [args=(rsi,rdi), stack=16]
+    add rsp, 16
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    sub rsp, 16
+    fmov.f80 [rsp], 3.5L
+    mov rdi, @first
+    mov rsi, @second
+    call @forward [args=(rsi,rdi), stack=16]
+    add rsp, 16
+    ret rax

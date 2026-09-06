@@ -5,10 +5,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $source
-    call void @leaf__result_int___result(%t1)
+    call void @leaf__result_int___result_typename___retained_template_parameter_shape_0_(%t1)
     %t2 = addr $moved
     %t3 = addr $source
-    call void @leaf__result_int___result__ov2(%t2, %t3)
+    call void @leaf__result_int___result_typename___retained_template_parameter_shape_0___ov2(%t2, %t3)
     %t4 = addr $moved
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load i32 %t5
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @leaf__result_int___result(%this : ptr) -> void [binding=weak, object=_ZN4leaf6resultIiEC1Ev] {
+function @leaf__result_int___result_typename___retained_template_parameter_shape_0_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4leaf6resultIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -37,7 +37,7 @@ function @leaf__result_int___result(%this : ptr) -> void [binding=weak, object=_
     store i32 0, %t2
     return void
 }
-function @leaf__result_int___result__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4leaf6resultIiEC1EOS1_] {
+function @leaf__result_int___result_typename___retained_template_parameter_shape_0___ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN4leaf6resultIiEC1EOS1_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -52,7 +52,7 @@ function @leaf__result_int___result__ov2(%this : ptr, %other : ptr [pass=referen
     store i32 %t3, %t5
     return void
 }
-function @leaf__result_int___move_from(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN4leaf6resultIiE9move_fromIiEEiONS0_IT_EE] {
+function @leaf__result_int___move_from(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN4leaf6resultIiE9move_fromIiEEiONS0_IT_EE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -61,5 +61,5 @@ function @leaf__result_int___move_from(%this : ptr, %__param1 : ptr [pass=refere
     store ptr %__param1, $__param1
     return i32 7
 }
-alias object _ZN4leaf6resultIiEC2Ev = @leaf__result_int___result
-alias object _ZN4leaf6resultIiEC2EOS1_ = @leaf__result_int___result__ov2
+alias object _ZN4leaf6resultIiEC2Ev = @leaf__result_int___result_typename___retained_template_parameter_shape_0_
+alias object _ZN4leaf6resultIiEC2EOS1_ = @leaf__result_int___result_typename___retained_template_parameter_shape_0___ov2

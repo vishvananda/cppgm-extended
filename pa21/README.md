@@ -165,7 +165,9 @@ after a valid declaration is instantiated with concrete template arguments:
   already part of the supported language surface
 - `constexpr` free-function calls, including recursive calls and default arguments
 - `constexpr` constructors, including member-initializer lists and base/member
-  initialization for literal class types
+  initialization for literal class types; access checks performed while
+  evaluating those initializers use the constructor's class context, so a
+  derived constructor may invoke an accessible protected base constructor
 - `constexpr` member-function calls on constant objects
 - constant object values, not just integral scalars:
   - aggregate/class values
@@ -174,6 +176,9 @@ after a valid declaration is instantiated with concrete template arguments:
 - member access on constant objects via `.`
 - array and string-literal element access via `[]`
 - `constexpr` variables whose initializers must be fully evaluated at compile time
+- an automatic nonvolatile array of trivial scalar elements whose complete
+  initializer is known at compile time is initialized from readonly constant
+  data with one object copy; each automatic array still has distinct storage
 - reference-valued constant evaluation and `const T &` / reference parameter passing where
   the implemented object model already defines the underlying semantics
 - lookup and reuse of previously computed constant values, including qualified lookup and
@@ -182,6 +187,9 @@ after a valid declaration is instantiated with concrete template arguments:
   - constant initialization when the initializer is a constant expression
   - dynamic class-object local statics with the required guard/check behavior, including
     direct initialization from a class-prvalue factory call
+- ordinary namespace objects whose constant-initialization probe encounters a
+  core constant-expression failure use dynamic initialization; only contexts
+  that require a constant expression are rejected for that failure
 
 PA21 also owns the semantic validation side of C++11 `constexpr`, not just evaluation. In
 particular, the compiler should enforce the C++11-facing rules that matter for the
@@ -243,5 +251,8 @@ Useful intermediate representations include:
   evaluating an expression in a constant-evaluation context
 - reusable evaluated-value storage for bindings whose constant value is needed
   by lookup, template arguments, and later LowIR lowering
+- typed structural interning of identical automatic constant-data templates,
+  using data-item kinds, values, symbol identities, addends, size, and alignment
+  rather than rendered LowIR text
 - local-static initialization metadata that records whether LowIR lowering can
   emit a constant initializer or must emit guarded dynamic initialization

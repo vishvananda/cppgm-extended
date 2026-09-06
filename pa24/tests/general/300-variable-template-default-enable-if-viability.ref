@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @max_size_select(%t2)
     return i32 %t3
 }
-function @max_size_select(%a : ptr [pass=reference]) -> i32 [binding=weak, object=_Z15max_size_selectI5AllocTnN9enable_ifIX14has_max_size_vIKT_EEiE4typeELi0EEiRKS0_] {
+function @max_size_select(%a : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z15max_size_selectI5AllocLi0EEiRKS0_] {
   slot $a : ptr
 
   block ^entry:
@@ -16,7 +16,7 @@ function @max_size_select(%a : ptr [pass=reference]) -> i32 [binding=weak, objec
     %t2 = call i32 @Alloc__max_size(%t1)
     return i32 %t2
 }
-function @Alloc__max_size(%this : ptr) -> i32 [binding=weak, object=_ZNK5Alloc8max_sizeEv] {
+function @Alloc__max_size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK5Alloc8max_sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

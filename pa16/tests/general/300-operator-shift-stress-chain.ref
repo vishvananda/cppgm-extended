@@ -1,4 +1,4 @@
-function @operator__(%stream : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> ptr [binding=strong, object=_ZlsR6StreamRK5Token] {
+function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=strong, object=_ZlsR6StreamRK5Token] {
   slot $stream : ptr
   slot $__param1 : ptr
 

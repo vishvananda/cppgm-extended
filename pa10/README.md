@@ -62,9 +62,7 @@ make
 make test
 ```
 
-`make` builds `cppgm++`. `make test` runs the local PA10 suite. If a
-`course/pa10` extension suite is present, the Makefile runs it after the local
-suite using the same harness contract.
+`make` builds `cppgm++`. `make test` runs the local PA10 suite.
 
 ### Required Driver Surface
 
@@ -191,7 +189,13 @@ PA12 passes consume, including:
 - class, struct, union, enum, and scoped enum declarations
 - class members, access labels, bit-fields, base clauses, and constructor
   initializer syntax
-- template declarations with type, non-type, and template-template parameters
+- template declarations with type, non-type, and template-template parameters.
+  A parameter's kind belongs to that declaration: reusing a name that an
+  earlier declaration gave a different kind must not carry the earlier one
+  over, or the later parameter stops disambiguating the same way
+- dependent template arguments whose qualified operands participate in
+  parenthesized logical expressions, even when the prefix could also begin a
+  type-id
 - common template-id, explicit-instantiation, and explicit-specialization syntax
 - `static_assert`
 - declarator-derived syntax, including pointers, references, arrays, function

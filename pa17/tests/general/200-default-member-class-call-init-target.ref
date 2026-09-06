@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Holder__Holder(%t1)
     return i32 0
 }
-function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1Ev] {
+function @Holder__Holder(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -19,7 +19,7 @@ function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1
     copyobj 4x4 %t5, %t2
     return void
 }
-function @Range__begin(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK5Range5beginEv] {
+function @Range__begin(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK5Range5beginEv, inline_hint=yes] {
   slot $this : ptr
   slot $it : obj<4x4>
   slot $retobj__1 : obj<4x4>

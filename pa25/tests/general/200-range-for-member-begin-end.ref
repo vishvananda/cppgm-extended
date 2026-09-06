@@ -13,86 +13,45 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 2, %t2
     %t3 = addr $r
     %t4 = addr $data
-    %t5 = unary decay ptr %t4
-    call void @Range__Range(%t3, %t5)
+    call void @Range__Range(%t3, %t4)
     store i32 0, $s
-    %t6 = addr $__begin1
-    %t7 = addr $r
-    %t8 = call obj<8x8> @Range__begin(%t7)
-    copyobj 8x8 %t8, %t6
-    %t9 = addr $__end2
-    %t10 = addr $r
-    %t11 = call obj<8x8> @Range__end(%t10)
-    copyobj 8x8 %t11, %t9
+    %t5 = addr $__begin1
+    %t6 = addr $r
+    %t7 = call obj<8x8> @Range__begin(%t6)
+    copyobj 8x8 %t7, %t5
+    %t8 = addr $__end2
+    %t9 = addr $r
+    %t10 = call obj<8x8> @Range__end(%t9)
+    copyobj 8x8 %t10, %t8
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t12 = addr $__begin1
-    %t13 = addr $__end2
-    %t14 = call u8 @Iter__operator____ov2(%t12, %t13)
-    branch %t14, ^for_body_2, ^for_end_4
+    %t11 = addr $__begin1
+    %t12 = addr $__end2
+    %t13 = call u8 @Iter__operator__(%t11, %t12)
+    branch %t13, ^for_body_2, ^for_end_4
 
   block ^for_body_2:
-    %t15 = addr $__begin1
-    %t16 = call ptr @Iter__operator_(%t15)
-    %t17 = load i32 %t16
-    store i32 %t17, $x
-    %t18 = load i32 $s
-    %t19 = load i32 $x
-    %t20 = binary add i32 %t18, %t19
-    store i32 %t20, $s
+    %t14 = addr $__begin1
+    %t15 = call ptr @Iter__operator_(%t14)
+    %t16 = load i32 %t15
+    store i32 %t16, $x
+    %t17 = load i32 $s
+    %t18 = load i32 $x
+    %t19 = binary add i32 %t17, %t18
+    store i32 %t19, $s
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t21 = addr $__begin1
-    %t22 = call ptr @Iter__operator__(%t21)
+    %t20 = addr $__begin1
+    %t21 = call ptr @Iter__operator____sym2(%t20)
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t23 = load i32 $s
-    return i32 %t23
+    %t22 = load i32 $s
+    return i32 %t22
 }
-function @Iter__operator____ov2(%this : ptr, %o : ptr [pass=reference]) -> u8 [binding=weak, object=_ZNK4IterneERKS_] {
-  slot $this : ptr
-  slot $o : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %o, $o
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $o
-    %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load ptr %t5
-    %t7 = cmp ne ptr %t3, %t6
-    return u8 %t7
-}
-function @Iter__operator_(%this : ptr) -> ptr [binding=weak, object=_ZNK4IterdeEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    return ptr %t3
-}
-function @Iter__operator__(%this : ptr) -> ptr [binding=weak, object=_ZN4IterppEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = binary mul i64 1, 4
-    %t5 = index i8 %t3, %t4
-    store ptr %t5, %t2
-    %t6 = load ptr $this
-    return ptr %t6
-}
-function @Range__Range(%this : ptr, %data : ptr) -> void [binding=weak, object=_ZN5RangeC1EPi] {
+function @Range__Range(%this : ptr [object_bytes=8], %data : ptr) -> void [binding=weak, object=_ZN5RangeC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $data : ptr
 
@@ -105,7 +64,7 @@ function @Range__Range(%this : ptr, %data : ptr) -> void [binding=weak, object=_
     store ptr %t1, %t3
     return void
 }
-function @Range__begin(%this : ptr) -> obj<8x8> [binding=weak, object=_ZN5Range5beginEv] {
+function @Range__begin(%this : ptr [object_bytes=8]) -> obj<8x8> [binding=weak, object=_ZN5Range5beginEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -118,7 +77,7 @@ function @Range__begin(%this : ptr) -> obj<8x8> [binding=weak, object=_ZN5Range5
     call void @Iter__Iter(%t1, %t4)
     return obj<8x8> $retobj__1
 }
-function @Range__end(%this : ptr) -> obj<8x8> [binding=weak, object=_ZN5Range3endEv] {
+function @Range__end(%this : ptr [object_bytes=8]) -> obj<8x8> [binding=weak, object=_ZN5Range3endEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -133,7 +92,48 @@ function @Range__end(%this : ptr) -> obj<8x8> [binding=weak, object=_ZN5Range3en
     call void @Iter__Iter(%t1, %t6)
     return obj<8x8> $retobj__1
 }
-function @Iter__Iter(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN4IterC1EPi] {
+function @Iter__operator__(%this : ptr [object_bytes=8], %o : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=weak, object=_ZNK4IterneERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $o : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %o, $o
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $o
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = load ptr %t5
+    %t7 = cmp ne ptr %t3, %t6
+    %t8 = convert trunc u8 i64 %t7
+    return u8 %t8
+}
+function @Iter__operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK4IterdeEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    return ptr %t3
+}
+function @Iter__operator____sym2(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN4IterppEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = binary mul i64 1, 4
+    %t5 = index i8 %t3, %t4
+    store ptr %t5, %t2
+    %t6 = load ptr $this
+    return ptr %t6
+}
+function @Iter__Iter(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN4IterC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 

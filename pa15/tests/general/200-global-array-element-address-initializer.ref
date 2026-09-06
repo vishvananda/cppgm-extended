@@ -7,18 +7,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = load ptr @middle
     %t2 = addr @values
-    %t3 = unary decay ptr %t2
-    %t4 = binary sub ptr %t1, %t3
-    %t5 = binary div i64 %t4, 4
-    %t6 = binary sub i64 %t5, 1
-    %t7 = convert trunc i32 i64 %t6
-    return i32 %t7
+    %t3 = binary sub ptr %t1, %t2
+    %t4 = binary shr i64 %t3, 2
+    %t5 = binary sub i64 %t4, 1
+    %t6 = convert trunc i32 i64 %t5
+    return i32 %t6
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     %t1 = addr @values
-    %t2 = unary decay ptr %t1
-    %t3 = index i32 [projection=array_element] %t2, 1
-    store ptr %t3, @middle
+    %t2 = index i32 [projection=array_element] %t1, 1
+    store ptr %t2, @middle
     return void
 }

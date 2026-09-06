@@ -1,4 +1,4 @@
-function @sink(%value : ptr [pass=reference], %mapped : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4sinkRiRm] {
+function @sink(%value : ptr [pass=by_address, object_bytes=4], %mapped : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z4sinkRiRm] {
   slot $value : ptr
   slot $mapped : ptr
 
@@ -65,7 +65,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @run(%args : ptr [pass=reference], %args__pack2 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3runIJRiRmEEiDpOT_] {
+function @run(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z3runIJRiRmEEiDpOT_] {
   slot $args : ptr
   slot $args__pack2 : ptr
   slot $lambda : obj<16x8>
@@ -76,42 +76,42 @@ function @run(%args : ptr [pass=reference], %args__pack2 : ptr [pass=reference])
     %t1 = addr $lambda
     %t2 = load ptr $args
     store ptr %t2, %t1
-    %t3 = index i8 %t1, 8
+    %t3 = index i8 [projection=field] %t1, 8
     %t4 = load ptr $args__pack2
     store ptr %t4, %t3
     %t5 = addr $lambda
-    %t6 = call i32 @__lambda_run__int___unsigned_long_int___n1__operator__(%t5)
+    %t6 = call i32 @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t166_166__operator__(%t5)
     return i32 %t6
 }
-function @__lambda_run__int___unsigned_long_int___n1__operator__(%this : ptr) -> i32 [binding=weak, object=_ZZ3runIJRiRmEEiDpOT_ENKUlvE_clEv] {
+function @std__forward__ov3(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZSt7forwardIRmEOT_RNSt16remove_referenceIS1_E4typeE] {
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %t, $t
+    %t1 = load ptr $t
+    return ptr %t1
+}
+function @std__forward(%t : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZSt7forwardIRiEOT_RNSt16remove_referenceIS1_E4typeE] {
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %t, $t
+    %t1 = load ptr $t
+    return ptr %t1
+}
+function @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t166_166__operator__(%this : ptr [object_bytes=16]) -> i32 [binding=internal, object=_ZZ3runIJRiRmEEiDpOT_S4_ENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
     %t4 = call ptr @std__forward(%t3)
     %t5 = load ptr $this
-    %t6 = index i8 [projection=reference_field] %t5, 8
+    %t6 = index i8 [projection=field] %t5, 8
     %t7 = load ptr %t6
     %t8 = call ptr @std__forward__ov3(%t7)
     %t9 = call i32 @sink(%t4, %t8)
     return i32 %t9
-}
-function @std__forward(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIRiEOT_RNSt16remove_referenceIS1_E4typeE] {
-  slot $t : ptr
-
-  block ^entry:
-    store ptr %t, $t
-    %t1 = load ptr $t
-    return ptr %t1
-}
-function @std__forward__ov3(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt7forwardIRmEOT_RNSt16remove_referenceIS1_E4typeE] {
-  slot $t : ptr
-
-  block ^entry:
-    store ptr %t, $t
-    %t1 = load ptr $t
-    return ptr %t1
 }

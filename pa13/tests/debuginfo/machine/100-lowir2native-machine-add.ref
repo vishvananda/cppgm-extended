@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -11,10 +11,11 @@ function @main
   frame
     stack_size 0
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     mov r8, 40 !dbg(tests/debuginfo/machine/100-lowir2native-machine-add.t, 3, 10)
     add r8, 2 !dbg(tests/debuginfo/machine/100-lowir2native-machine-add.t, 3, 10)
     sext.i32 r8 !dbg(tests/debuginfo/machine/100-lowir2native-machine-add.t, 3, 10)
-    mov rax, r8
-    ret rax
+    ret r8

@@ -1,538 +1,70 @@
-# Checked-in frontend source-set manifest for reduced-link frontend builds.
-# Keep these object lists in sync with dev/src and frontend entrypoints.
+# Per-tool implementation source lists for the compiler.
+#
+# Add dev/src/foo.cpp to the responsibility list that owns it. For
+# subdirectories, use the path without `.cpp`, such as `syntax/parser/foo`.
+# Compose responsibility groups as `FRONTEND_SOURCE_IDS_*`; the
+# `FRONTEND_OBJ_BASENAMES_<tool>` variables remain the per-tool interface.
+# Keep the composed target order stable: it is also the canonical link order.
 
-FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native mobjroundtrip
+FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native
+FRONTEND_TEST_RUNNER_SOURCE_ID := support/testing/test_runner
+FRONTEND_BUILTIN_CONFIG_SOURCE_ID := preprocess/preprocessor
+FRONTEND_SOURCE_IDS_ERROR_SUPPORT := support/exceptions support/exception_types native/errors
 
-# abimangle: shared object(s)
-FRONTEND_OBJ_BASENAMES_abimangle := \
-	abi_mangle
+FRONTEND_SOURCE_IDS_PREPROCESS_TOKEN := preprocess/tokens/pp_tokenizer
+FRONTEND_SOURCE_IDS_PREPROCESS_POSTTOKEN := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOKEN) preprocess/tokens/post_tokenizer
+FRONTEND_SOURCE_IDS_PREPROCESS_CONTROL := $(FRONTEND_SOURCE_IDS_PREPROCESS_POSTTOKEN) preprocess/expressions/control_expression
+FRONTEND_SOURCE_IDS_PREPROCESS_MACRO := $(FRONTEND_SOURCE_IDS_PREPROCESS_CONTROL) preprocess/hosted/builtin_registry preprocess/hosted/preprocessor_probes preprocess/macros/macro_operator_code preprocess/macros/paint_table preprocess/macros/macro_processor
+FRONTEND_SOURCE_IDS_PREPROCESS_TOOL := $(FRONTEND_SOURCE_IDS_PREPROCESS_MACRO) preprocess/tool_support
 
-# pptoken: 2 shared object(s)
-FRONTEND_OBJ_BASENAMES_pptoken := \
-	encoding \
-	pptokenizer
+FRONTEND_SOURCE_IDS_ABI_MANGLE_TOOL := abi/itanium/abi_mangle_model abi/itanium/abi_mangle_parse abi/itanium/abi_mangle_identity abi/itanium/abi_mangle_graph_argument abi/itanium/abi_mangle_graph_type abi/itanium/abi_mangle_type_vocabulary abi/itanium/abi_mangle_presentation abi/itanium/abi_mangle_substitution abi/itanium/abi_mangle
 
-# posttoken: 5 shared object(s)
-FRONTEND_OBJ_BASENAMES_posttoken := \
-	encoding \
-	posttokenizer \
-	pptokenizer \
-	source_location \
-	types
+FRONTEND_SOURCE_IDS_RECOGNITION := recognition/recognizer
+FRONTEND_SOURCE_IDS_NAMESPACE_SEMANTIC := namespace_semantics/analysis
+FRONTEND_SOURCE_IDS_NAMESPACE_INITIALIZATION := namespace_initialization/model namespace_initialization/parser namespace_initialization/driver
+FRONTEND_SOURCE_IDS_CY86 := cy86/cy86_frontend cy86/cy86_backend cy86/cy86_program
 
-# ctrlexpr: 4 shared object(s)
-FRONTEND_OBJ_BASENAMES_ctrlexpr := \
-	calculator \
-	encoding \
-	pptokenizer \
-	types
+FRONTEND_SOURCE_IDS_CPPGM_PREPROCESS := preprocess/tokens/pp_tokenizer preprocess/tokens/post_tokenizer preprocess/expressions/control_expression preprocess/hosted/preprocessor_probes preprocess/macros/macro_operator_code preprocess/macros/paint_table preprocess/macros/macro_processor preprocess/preprocessor support/interning/frontend_intern preprocess/hosted/builtin_registry hosted_extension_registry
+FRONTEND_SOURCE_IDS_CPPGM_SYNTAX_PRIMARY := syntax/model/arena syntax/parser/brace_matching syntax/extensions/object_attributes syntax/parser/parser syntax/driver syntax/stats
+FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_PRIMARY := semantic/model/program semantic/object_model/type_layout semantic/object_model/inheritance semantic/extensions/hosted_extensions semantic/analysis/analyzer semantic/analysis/name_resolution semantic/analysis/capacity semantic/driver semantic/expressions/calls semantic/lifetime/elision semantic/declarations/analysis semantic/object_model/object_data semantic/extensions/abi_tags semantic/templates/preemption semantic/declarations/declarator_types semantic/extensions/hosted_builtins semantic/extensions/hosted_traits semantic/expressions/conversion_functions semantic/declarations/functions semantic/object_model/inheritance_analysis semantic/initialization/analysis semantic/initialization/allocation semantic/initialization/list_initialization semantic/expressions/literals semantic/expressions/operators semantic/presentation/render semantic/presentation/diagnostic_names semantic/analysis/scope semantic/lifetime/special_members semantic/analysis/storage semantic/analysis/index_tables semantic/extensions/regions semantic/object_model/virtual_base_model semantic/object_model/virtual_bases semantic/object_model/polymorphic_layout semantic/extensions/lambda_capture semantic/extensions/range_for semantic/extensions/exceptions semantic/initialization/initializer_lists semantic/object_model/rtti semantic/object_model/base_paths semantic/object_model/multiple_inheritance semantic/expressions/member_pointers semantic/templates/syntax_identity semantic/presentation/templates semantic/templates/classes semantic/templates/validation semantic/templates/function_deduction semantic/templates/function_instantiation semantic/templates/ambiguities semantic/constants/analysis semantic/templates/arguments semantic/templates/packs semantic/constants/scalar_evaluator semantic/constants/object_evaluator semantic/constants/address_evaluator semantic/lifetime/local_statics semantic/templates/aliases_and_lambdas semantic/declarations/friends semantic/templates/nondeduced_contexts semantic/templates/result_identity semantic/templates/function_abi_result semantic/templates/placeholders semantic/templates/integration semantic/lifetime/constructor_definitions semantic/object_model/polymorphism
+FRONTEND_SOURCE_IDS_CPPGM_ABI := abi/itanium/abi_mangle_model abi/itanium/abi_mangle_identity abi/itanium/abi_mangle_graph_argument abi/itanium/abi_mangle_graph_type abi/itanium/abi_mangle_type_vocabulary abi/itanium/abi_mangle_presentation abi/itanium/abi_mangle_substitution abi/itanium/abi_mangle
+FRONTEND_SOURCE_IDS_CPPGM_LOWERING_PRIMARY_BEFORE_OVERLOAD := lowering/ir/model lowering/core/program_lowerer lowering/abi/symbol_metadata lowering/abi/emission_policy lowering/abi/mangling lowering/core/driver lowering/support/identity_maps lowering/abi/symbol_names lowering/core/source_types lowering/ir/render lowering/objects/storage_facts lowering/objects/static_initialization
+FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_OVERLOAD := semantic/expressions/overload_resolution
+FRONTEND_SOURCE_IDS_CPPGM_LOWERING_PRIMARY_AFTER_OVERLOAD := lowering/objects/polymorphism lowering/objects/vtable_thunks lowir/io/frontend_adapter compiler_object/serialization compiler_object/linker compiler_object/elf_import
+FRONTEND_SOURCE_IDS_CPPGM_LOWIR_NATIVE_PRIMARY := lowir/io/parse lowir/io/prepare lowir/io/serialize lowir/analysis/inline lowir/optimize/inline_o1 lowir/optimize/pipeline lowir/optimize/constant_folding lowir/optimize/force_inline native/lowering/abi native/analysis/function native/mir/block_labels native/object/code_buffer native/eh/lowering native/allocation/frame_forwarding native/eh/host_regions native/mir/construction native/object/elf_format native/mir/optimize native/driver/program native/allocation/registers native/lowering/selection native/driver/session native/frame/stack native/lowering/varargs native/lowering/wide native/lowering/function native/object/elf_writer native/mir/model native/mir/serialize
+FRONTEND_SOURCE_IDS_CPPGM_NATIVE_EXTENSION := native/analysis/data_layout native/encoding/address_folding native/lowering/control_flow native/analysis/forward_edges native/encoding/instructions native/frame/epilogue native/encoding/scalar_memory native/encoding/strlen native/encoding/zeroing native/encoding/integers native/object/fixups native/object/string_table native/driver/stats_report
+FRONTEND_SOURCE_IDS_CPPGM_REPORT_AND_NATIVE_PLANNING := lowir/driver/stats_report native/allocation/movement_stats native/eh/references native/eh/lsda lowir/model/identity lowir/model/program native/allocation/spill_slots native/frame/layout native/frame/home_planning native/encoding/globals native/allocation/location_planning native/allocation/linear_scan
+FRONTEND_SOURCE_IDS_CPPGM_LOWIR_CLEANUP := lowir/optimize/cleanup_o1 lowir/optimize/slot_forward_o1 lowir/optimize/slot_promotion lowir/optimize/scalar_rules lowir/optimize/staged_copy_forwarding lowir/optimize/small_object_promotion lowir/optimize/unreachable
+FRONTEND_SOURCE_IDS_CPPGM_FRONTEND_LATE := semantic/declarations/entity_ownership lowering/transforms/force_inline lowering/presentation/local_names lowering/presentation/special_member_order lowering/core/reachability semantic/analysis/switch
+FRONTEND_SOURCE_IDS_CPPGM_LOWIR_ADVANCED := lowir/analysis/function_reachability lowir/analysis/function lowir/analysis/eh_context lowir/optimize/full_unroll_o3 lowir/optimize/private_table_prefilter lowir/optimize/interprocedural_specialization lowir/optimize/copy_elision lowir/optimize/loops lowir/optimize/loop_simplify lowir/optimize/boolean_cfg lowir/optimize/diamonds lowir/optimize/memory_gvn lowir/optimize/expression_key lowir/optimize/pre lowir/analysis/phi_edges native/lowering/phi
+FRONTEND_SOURCE_IDS_CPPGM_LOWIR_QUERY_SPLIT := lowir/optimize/terminal_query_split
+FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_EXTENSION := semantic/lifetime/lifetime semantic/templates/internal_identity semantic/templates/partial_storage semantic/constants/static_storage lowering/constants/templates semantic/object_model/zero_offset_layout semantic/extensions/gnu_asm semantic/extensions/numeric_types semantic/extensions/numeric semantic/extensions/numeric_templates semantic/extensions/complex semantic/extensions/pack_builtins semantic/initialization/aggregates semantic/extensions/compiler_builtins semantic/extensions/control_flow semantic/constants/wide_integer semantic/presentation/source_identity
+FRONTEND_SOURCE_IDS_CPPGM_LOWERING_SUPPORT := lowering/objects/cleanup_continuations lowering/objects/zero_initialization
+FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_FINAL := semantic/templates/shape semantic/expressions/conditions semantic/model/name_identity semantic/presentation/type_view semantic/presentation/type_projection semantic/declarations/anonymous_unions semantic/object_model/class_layout semantic/declarations/class_scope semantic/lifetime/constructor_demand semantic/lifetime/demand semantic/lifetime/demand_stats
+FRONTEND_SOURCE_IDS_CPPGM_SYNTAX_FINAL := syntax/model/tags
+FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_ENUM := semantic/declarations/enums
+FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_VOCABULARY := semantic/analysis/vocabulary
+FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_LAMBDA_PRESENTATION := semantic/presentation/lambdas
+FRONTEND_SOURCE_IDS_CPPGM_LOWIR_DEBUG := lowir/io/line_table_debug
 
-# macro: 9 shared object(s)
-FRONTEND_OBJ_BASENAMES_macro := \
-	calculator \
-	encoding \
-	file_timing \
-	macroizer \
-	posttokenizer \
-	pptokenizer \
-	preprocessor \
-	source_location \
-	types
+FRONTEND_SOURCE_IDS_LOWIR_CORE := lowir/model/identity lowir/model/program lowir/io/parse lowir/io/prepare
+FRONTEND_SOURCE_IDS_LOWIR_OPT_PRIMARY := $(FRONTEND_SOURCE_IDS_LOWIR_CORE) lowir/io/serialize lowir/analysis/function_reachability lowir/analysis/inline lowir/optimize/inline_o1 lowir/optimize/pipeline lowir/optimize/constant_folding
+FRONTEND_SOURCE_IDS_LOWIR_OPT_ADVANCED := lowir/driver/stats_report lowir/analysis/function lowir/analysis/eh_context lowir/optimize/full_unroll_o3 lowir/optimize/private_table_prefilter lowir/optimize/interprocedural_specialization lowir/optimize/copy_elision lowir/optimize/loops lowir/optimize/loop_simplify lowir/optimize/boolean_cfg lowir/optimize/diamonds lowir/optimize/memory_gvn lowir/optimize/expression_key lowir/optimize/pre lowir/optimize/cleanup_o1 lowir/optimize/slot_forward_o1 lowir/optimize/slot_promotion lowir/optimize/scalar_rules lowir/optimize/staged_copy_forwarding lowir/optimize/small_object_promotion lowir/optimize/unreachable lowir/analysis/phi_edges
 
-# preproc: 10 shared object(s)
-FRONTEND_OBJ_BASENAMES_preproc := \
-	calculator \
-	encoding \
-	file_timing \
-	macroizer \
-	posttokenizer \
-	pptokenizer \
-	preproc_output \
-	preprocessor \
-	source_location \
-	types
+FRONTEND_SOURCE_IDS_NATIVE_PRIMARY := $(FRONTEND_SOURCE_IDS_LOWIR_CORE) lowir/analysis/function_reachability lowir/optimize/force_inline native/mir/model native/mir/serialize native/lowering/abi native/analysis/function native/mir/block_labels native/object/code_buffer native/eh/lowering native/allocation/frame_forwarding native/eh/host_regions native/mir/construction native/object/elf_format native/mir/optimize native/driver/program native/allocation/registers native/lowering/selection native/driver/session native/frame/stack native/lowering/varargs native/lowering/wide native/lowering/function native/object/elf_writer
+FRONTEND_SOURCE_IDS_NATIVE_EXTENSION := native/driver/stats_report native/allocation/movement_stats native/analysis/data_layout native/encoding/address_folding native/lowering/control_flow native/analysis/forward_edges native/encoding/instructions native/frame/epilogue native/encoding/scalar_memory native/encoding/strlen native/encoding/zeroing native/encoding/integers native/object/fixups native/object/string_table native/eh/references native/eh/lsda native/allocation/spill_slots native/frame/layout native/frame/home_planning native/encoding/globals native/allocation/location_planning native/allocation/linear_scan lowir/analysis/phi_edges native/lowering/phi
 
-# recog: 15 shared object(s)
-FRONTEND_OBJ_BASENAMES_recog := \
-	calculator \
-	encoding \
-	file_timing \
-	macroizer \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	preprocessor \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	source_location \
-	template_angle_parser \
-	text_intern \
-	types
-
-# nsdecl: 85 shared object(s)
-FRONTEND_OBJ_BASENAMES_nsdecl := \
-	abi_mangle \
-	calculator \
-	callsem_output \
-	callsemantic \
-	callsemantic/class_template_reference \
-	callsemantic/constant_call_evaluation \
-	callsemantic/constant_value_lookup \
-	callsemantic/function_registry \
-	callsemantic/memory_census \
-	callsemantic/nothrow_analysis \
-	callsemantic/source_location_utils \
-	callsemantic/template_body_checks \
-	callsemantic/template_declaration_collector \
-	callsemantic/template_source_utils \
-	callsemantic/type_registry \
-	callsemantic/type_trait_analysis \
-	callsemantic_lookup \
-	callsemantic_phase_bridge \
-	callsemantic_text \
-	constant_value \
-	constexpr_eval \
-	constructor_lifecycle_service \
-	cpp_decl_ast \
-	cpp_decl_bridge \
-	cpp_decl_model \
-	cppast_dump \
-	cppast_parser \
-	encoding \
-	file_timing \
-	macroizer \
-	nsdecl_semantic \
-	output_requirement_engine \
-	pack_parameter_analysis \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	preprocessor \
-	qualified_name_parser \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	rtti_names \
-	semantic_builtins \
-	semantic_cache \
-	semantic_class_model \
-	semantic_consteval \
-	semantic_conversion \
-	semantic_declaration \
-	semantic_dependent_type \
-	semantic_expression \
-	semantic_fallback_audit \
-	semantic_hotspot \
-	semantic_lifetime \
-	semantic_lookup \
-	semantic_metrics \
-	semantic_model \
-	semantic_output \
-	semantic_overload \
-	semantic_parameter_recovery \
-	semantic_scope_mutation \
-	semantic_statement \
-	semantic_template_class \
-	semantic_template_function \
-	semantic_template_output_policy \
-	semantic_template_variable \
-	semantic_trace \
-	semantic_utils \
-	source_location \
-	symbol_linkage \
-	template_angle_parser \
-	text_intern \
-	template_api \
-	template_argument_semantics \
-	template_audit \
-	template_binding \
-	template_binding_ops \
-	template_decl_ast \
-	template_function_deduction_api \
-	template_function_signature \
-	template_instantiation \
-	template_model \
-	template_resolution \
-	template_resolution_ops \
-	template_scope \
-	template_selection \
-	template_specialization_ops \
-	template_signature_ops \
-	template_specialization \
-	witness_api \
-	witness_text \
-	witness_provenance \
-	template_type_ops \
-	types
-
-# nsinit: 86 shared object(s)
-FRONTEND_OBJ_BASENAMES_nsinit := \
-	abi_mangle \
-	calculator \
-	callsem_output \
-	callsemantic \
-	callsemantic/class_template_reference \
-	callsemantic/constant_call_evaluation \
-	callsemantic/constant_value_lookup \
-	callsemantic/function_registry \
-	callsemantic/memory_census \
-	callsemantic/nothrow_analysis \
-	callsemantic/source_location_utils \
-	callsemantic/template_body_checks \
-	callsemantic/template_declaration_collector \
-	callsemantic/template_source_utils \
-	callsemantic/type_registry \
-	callsemantic/type_trait_analysis \
-	callsemantic_lookup \
-	callsemantic_phase_bridge \
-	callsemantic_text \
-	constant_value \
-	constexpr_eval \
-	constructor_lifecycle_service \
-	cpp_decl_ast \
-	cpp_decl_bridge \
-	cpp_decl_model \
-	cppast_dump \
-	cppast_parser \
-	encoding \
-	file_timing \
-	macroizer \
-	nsinit_image \
-	nsinit_semantic \
-	output_requirement_engine \
-	pack_parameter_analysis \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	preprocessor \
-	qualified_name_parser \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	rtti_names \
-	semantic_builtins \
-	semantic_cache \
-	semantic_class_model \
-	semantic_consteval \
-	semantic_conversion \
-	semantic_declaration \
-	semantic_dependent_type \
-	semantic_expression \
-	semantic_fallback_audit \
-	semantic_hotspot \
-	semantic_lifetime \
-	semantic_lookup \
-	semantic_metrics \
-	semantic_model \
-	semantic_output \
-	semantic_overload \
-	semantic_parameter_recovery \
-	semantic_scope_mutation \
-	semantic_statement \
-	semantic_template_class \
-	semantic_template_function \
-	semantic_template_output_policy \
-	semantic_template_variable \
-	semantic_trace \
-	semantic_utils \
-	source_location \
-	symbol_linkage \
-	template_angle_parser \
-	text_intern \
-	template_api \
-	template_argument_semantics \
-	template_audit \
-	template_binding \
-	template_binding_ops \
-	template_decl_ast \
-	template_function_deduction_api \
-	template_function_signature \
-	template_instantiation \
-	template_model \
-	template_resolution \
-	template_resolution_ops \
-	template_scope \
-	template_selection \
-	template_specialization_ops \
-	template_signature_ops \
-	template_specialization \
-	witness_api \
-	witness_text \
-	witness_provenance \
-	template_type_ops \
-	types
-
-# cy86: 17 shared object(s)
-FRONTEND_OBJ_BASENAMES_cy86 := \
-	calculator \
-	cy86_compiler \
-	cy86_native_backend \
-	cy86_parser \
-	elf_writer \
-	encoding \
-	file_timing \
-	macho_writer \
-	macroizer \
-	native_format \
-	posttokenizer \
-	pptokenizer \
-	preprocessor \
-	source_location \
-	types \
-	x86_assembler
-
-# cppgm++: 112 shared object(s)
-FRONTEND_OBJ_BASENAMES_cppgm++ := \
-	abi_mangle \
-	calculator \
-	callsem_output \
-	callsemantic \
-	callsemantic/class_template_reference \
-	callsemantic/constant_call_evaluation \
-	callsemantic/constant_value_lookup \
-	callsemantic/function_registry \
-	callsemantic/memory_census \
-	callsemantic/nothrow_analysis \
-	callsemantic/source_location_utils \
-	callsemantic/template_body_checks \
-	callsemantic/template_declaration_collector \
-	callsemantic/template_source_utils \
-	callsemantic/type_registry \
-	callsemantic/type_trait_analysis \
-	callsemantic_lookup \
-	callsemantic_phase_bridge \
-	callsemantic_text \
-	cli_batch_frontend \
-	constant_value \
-	constexpr_eval \
-	constructor_lifecycle_service \
-	cpp_batch_frontend \
-	cpp_decl_ast \
-	cpp_decl_bridge \
-	cpp_decl_model \
-	cpp_driver_frontend \
-	cpp_text_generators \
-	cpp_tool_cli \
-	cpp_toolchain \
-	cppast_dump \
-	cppast_parser \
-	cy86_compiler \
-	cy86_native_backend \
-	cy86_parser \
-	eh_runtime \
-	elf_writer \
-	encoding \
-	file_timing \
-	host_builtin_runtime \
-	host_eh_object_sections \
-	lowir_internal \
-	lowir_machine_ir \
-	lowir_object_backend \
-	machine_ir_optimizer \
-	lowir_optimizer \
-	lowirgensemantic \
-	machine_linker \
-	machine_object \
-	macho_writer \
-	macroizer \
-	native_format \
-	optimization_level \
-	output_requirement_engine \
-	pack_parameter_analysis \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	preproc_output \
-	preprocessor \
-	qualified_name_parser \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	rtti_names \
-	runtime_symbol_policy \
-	semantic_builtins \
-	semantic_cache \
-	semantic_class_model \
-	semantic_consteval \
-	semantic_conversion \
-	semantic_declaration \
-	semantic_dependent_type \
-	semantic_expression \
-	semantic_fallback_audit \
-	semantic_hotspot \
-	semantic_lifetime \
-	semantic_lookup \
-	semantic_metrics \
-	semantic_model \
-	semantic_output \
-	semantic_overload \
-	semantic_parameter_recovery \
-	semantic_scope_mutation \
-	semantic_statement \
-	semantic_template_class \
-	semantic_template_function \
-	semantic_template_output_policy \
-	semantic_template_variable \
-	semantic_trace \
-	semantic_utils \
-	source_location \
-	symbol_linkage \
-	template_angle_parser \
-	text_intern \
-	template_api \
-	template_argument_semantics \
-	template_audit \
-	template_binding \
-	template_binding_ops \
-	template_decl_ast \
-	template_function_deduction_api \
-	template_function_signature \
-	template_instantiation \
-	template_model \
-	template_resolution \
-	template_resolution_ops \
-	template_scope \
-	template_selection \
-	template_specialization_ops \
-	template_signature_ops \
-	template_specialization \
-	template_text_output \
-	template_witness_renderer \
-	template_type_ops \
-	types \
-	typesemantic \
-	witness_text \
-	witness_api \
-	witness_provenance \
-	x86_assembler
-
-# lowiropt: 23 shared object(s)
-FRONTEND_OBJ_BASENAMES_lowiropt := \
-	abi_mangle \
-	cli_batch_frontend \
-	cpp_decl_bridge \
-	cpp_decl_model \
-	encoding \
-	host_builtin_runtime \
-	lowir_internal \
-	lowir_optimizer \
-	optimization_level \
-	pack_parameter_analysis \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	qualified_name_parser \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	semantic_utils \
-	source_location \
-	symbol_linkage \
-	template_angle_parser \
-	text_intern \
-	types
-
-# lowir2cy86: 32 shared object(s)
-FRONTEND_OBJ_BASENAMES_lowir2cy86 := \
-	abi_mangle \
-	calculator \
-	cpp_decl_bridge \
-	cpp_decl_model \
-	cy86_compiler \
-	cy86_native_backend \
-	cy86_parser \
-	eh_runtime \
-	elf_writer \
-	encoding \
-	file_timing \
-	lowir_backend \
-	lowir_cy86_backend \
-	lowir_internal \
-	macho_writer \
-	macroizer \
-	native_format \
-	pack_parameter_analysis \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	preprocessor \
-	qualified_name_parser \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	semantic_utils \
-	source_location \
-	symbol_linkage \
-	template_angle_parser \
-	text_intern \
-	types \
-	x86_assembler
-
-# lowir2native: 41 shared object(s)
-FRONTEND_OBJ_BASENAMES_lowir2native := \
-	abi_mangle \
-	calculator \
-	cli_batch_frontend \
-	cpp_decl_bridge \
-	cpp_decl_model \
-	cy86_compiler \
-	cy86_native_backend \
-	cy86_parser \
-	eh_runtime \
-	elf_writer \
-	encoding \
-	file_timing \
-	host_eh_object_sections \
-	lowir_driver_frontend \
-	lowir_internal \
-	lowir_machine_ir \
-	lowir_object_backend \
-	lowir_optimizer \
-	machine_ir \
-	machine_ir_optimizer \
-	machine_linker \
-	machine_object \
-	macho_writer \
-	macroizer \
-	native_format \
-	optimization_level \
-	pack_parameter_analysis \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	preprocessor \
-	qualified_name_parser \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	runtime_symbol_policy \
-	semantic_utils \
-	source_location \
-	symbol_linkage \
-	template_angle_parser \
-	text_intern \
-	types \
-	x86_assembler
-
-# mobjroundtrip: 19 shared object(s)
-FRONTEND_OBJ_BASENAMES_mobjroundtrip := \
-	abi_mangle \
-	cpp_decl_bridge \
-	cpp_decl_model \
-	encoding \
-	machine_object \
-	pack_parameter_analysis \
-	parser_trace \
-	posttokenizer \
-	pptokenizer \
-	qualified_name_parser \
-	recog_parser \
-	recog_token_buffer \
-	recog_token_cursor \
-	semantic_utils \
-	source_location \
-	symbol_linkage \
-	template_angle_parser \
-	text_intern \
-	types
+FRONTEND_OBJ_BASENAMES_abimangle := $(FRONTEND_SOURCE_IDS_ABI_MANGLE_TOOL) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_pptoken := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOKEN) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_posttoken := $(FRONTEND_SOURCE_IDS_PREPROCESS_POSTTOKEN) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_ctrlexpr := $(FRONTEND_SOURCE_IDS_PREPROCESS_CONTROL) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_macro := $(FRONTEND_SOURCE_IDS_PREPROCESS_MACRO) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_preproc := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOOL) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_recog := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOOL) $(FRONTEND_SOURCE_IDS_RECOGNITION) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_nsdecl := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOOL) $(FRONTEND_SOURCE_IDS_NAMESPACE_SEMANTIC) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_nsinit := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOOL) $(FRONTEND_SOURCE_IDS_NAMESPACE_INITIALIZATION) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_cy86 := $(FRONTEND_SOURCE_IDS_PREPROCESS_TOOL) $(FRONTEND_SOURCE_IDS_CY86) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_cppgm++ := $(FRONTEND_SOURCE_IDS_CPPGM_PREPROCESS) $(FRONTEND_SOURCE_IDS_CPPGM_SYNTAX_PRIMARY) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_PRIMARY) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_ENUM) $(FRONTEND_SOURCE_IDS_CPPGM_ABI) $(FRONTEND_SOURCE_IDS_CPPGM_LOWERING_PRIMARY_BEFORE_OVERLOAD) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_OVERLOAD) $(FRONTEND_SOURCE_IDS_CPPGM_LOWERING_PRIMARY_AFTER_OVERLOAD) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_NATIVE_PRIMARY) $(FRONTEND_SOURCE_IDS_CPPGM_NATIVE_EXTENSION) $(FRONTEND_SOURCE_IDS_CPPGM_REPORT_AND_NATIVE_PLANNING) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_CLEANUP) $(FRONTEND_SOURCE_IDS_CPPGM_FRONTEND_LATE) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_ADVANCED) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_EXTENSION) $(FRONTEND_SOURCE_IDS_CPPGM_LOWERING_SUPPORT) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_FINAL) $(FRONTEND_SOURCE_IDS_CPPGM_SYNTAX_FINAL) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_VOCABULARY) $(FRONTEND_SOURCE_IDS_CPPGM_SEMANTIC_LAMBDA_PRESENTATION) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_DEBUG) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_QUERY_SPLIT) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_lowiropt := $(FRONTEND_SOURCE_IDS_LOWIR_OPT_PRIMARY) $(FRONTEND_SOURCE_IDS_LOWIR_OPT_ADVANCED) $(FRONTEND_SOURCE_IDS_CPPGM_LOWIR_QUERY_SPLIT) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_lowir2cy86 := $(FRONTEND_SOURCE_IDS_LOWIR_CORE) lowir/cy86/converter $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)
+FRONTEND_OBJ_BASENAMES_lowir2native := $(FRONTEND_SOURCE_IDS_NATIVE_PRIMARY) $(FRONTEND_SOURCE_IDS_NATIVE_EXTENSION) $(FRONTEND_SOURCE_IDS_ERROR_SUPPORT)

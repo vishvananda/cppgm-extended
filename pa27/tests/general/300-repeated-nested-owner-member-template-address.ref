@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @owner_int___select__ov3(%t4)
     return i32 0
 }
-function @owner_int___select(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6selectIcEEvv] {
+function @owner_int___select(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIcEEvv, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<16x8>
 
@@ -30,10 +30,10 @@ function @owner_int___select(%this : ptr) -> void [binding=weak, object=_ZN5owne
     %t10 = load i128 %t9
     %t11 = convert trunc i64 i128 %t10
     %t12 = copy ptr %t11
-    call void %t12(%t7) as (%arg0 : ptr) -> void
+    call void %t12(%t7) as (%arg0 : ptr [object_bytes=16]) -> void
     return void
 }
-function @owner_int___select__ov2(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6selectIsEEvv] {
+function @owner_int___select__ov2(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIsEEvv, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<16x8>
 
@@ -52,10 +52,10 @@ function @owner_int___select__ov2(%this : ptr) -> void [binding=weak, object=_ZN
     %t10 = load i128 %t9
     %t11 = convert trunc i64 i128 %t10
     %t12 = copy ptr %t11
-    call void %t12(%t7) as (%arg0 : ptr) -> void
+    call void %t12(%t7) as (%arg0 : ptr [object_bytes=16]) -> void
     return void
 }
-function @owner_int___select__ov3(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6selectIlEEvv] {
+function @owner_int___select__ov3(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIlEEvv, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<16x8>
 
@@ -74,24 +74,24 @@ function @owner_int___select__ov3(%this : ptr) -> void [binding=weak, object=_ZN
     %t10 = load i128 %t9
     %t11 = convert trunc i64 i128 %t10
     %t12 = copy ptr %t11
-    call void %t12(%t7) as (%arg0 : ptr) -> void
+    call void %t12(%t7) as (%arg0 : ptr [object_bytes=16]) -> void
     return void
 }
-function @owner_int___nested__function(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIcEEvv] {
+function @owner_int___nested__function(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIcEEvv] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @owner_int___nested__function__ov2(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIsEEvv] {
+function @owner_int___nested__function__ov2(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIsEEvv] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @owner_int___nested__function__ov3(%this : ptr) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIlEEvv] {
+function @owner_int___nested__function__ov3(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIlEEvv] {
   slot $this : ptr
 
   block ^entry:

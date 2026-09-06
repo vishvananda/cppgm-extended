@@ -1,21 +1,21 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 95
   i8 95
   i8 97
   i8 0
 }
-global @__strlit__2 [binding=internal] = {
+global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 98
   i8 0
 }
-global @__strlit__3 [binding=internal] = {
+global @__strlit__3 [storage=readonly, binding=internal] = {
   i8 95
   i8 95
   i8 99
   i8 0
 }
 
-function @count_underscored(%names : ptr [pass=reference]) -> i32 [binding=strong, object=_Z17count_underscoredRKSt16initializer_listIPKcE] {
+function @count_underscored(%names : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=strong, object=_Z17count_underscoredRKSt16initializer_listIPKcE] {
   slot $names : ptr
   slot $count : i32
   slot $__idx1 : i32

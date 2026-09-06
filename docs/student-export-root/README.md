@@ -102,8 +102,8 @@ compiler. For PA39 self-host experiments, `CXX` may be `../dev/cppgm++`, while
    ```
 
 3. Edit the relevant files in `dev/` and `dev/src/`.
-4. Add focused tests as you work. Shared student tests belong under
-   `cppgm.tests/course/paN/`; assignment-local tests live under `paN/tests/`.
+4. Add focused tests as you work under `paN/tests/`, next to the fixtures
+   for the same feature.
 5. Run the assignment test and the through-milestone report:
 
    ```sh

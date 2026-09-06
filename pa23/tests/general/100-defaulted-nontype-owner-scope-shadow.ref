@@ -68,7 +68,7 @@ function @exercise__ov2() -> i32 [binding=weak, object=_Z8exerciseI11second_type
     %t8 = call i32 @container_second_type___assign(%t3, $argobj__1, $argobj__2, 0)
     return i32 %t8
 }
-function @container_first_type___assign(%this : ptr, %__param1 : obj<1x1>, %__param2 : obj<1x1>, %__param3 : ptr) -> i32 [binding=weak, object=_ZN9containerI10first_typeE6assignI14input_iteratorIS1_EEEiT_S5_PN13disable_if_orIv14is_convertibleIS5_mE21is_not_input_iteratorIS5_EE4typeE] {
+function @container_first_type___assign(%this : ptr [object_bytes=1], %__param1 : obj<1x1>, %__param2 : obj<1x1>, %__param3 : ptr) -> i32 [binding=weak, object=_ZN9containerI10first_typeE6assignI14input_iteratorIS1_EEEiT_S5_PN13disable_if_orIv14is_convertibleIS5_mE21is_not_input_iteratorIS5_EE4typeE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : obj<1x1>
@@ -79,7 +79,7 @@ function @container_first_type___assign(%this : ptr, %__param1 : obj<1x1>, %__pa
     store ptr %__param3, $__param3
     return i32 1
 }
-function @container_second_type___assign(%this : ptr, %__param1 : obj<1x1>, %__param2 : obj<1x1>, %__param3 : ptr) -> i32 [binding=weak, object=_ZN9containerI11second_typeE6assignI14input_iteratorIS1_EEEiT_S5_PN13disable_if_orIv14is_convertibleIS5_mE21is_not_input_iteratorIS5_EE4typeE] {
+function @container_second_type___assign(%this : ptr [object_bytes=1], %__param1 : obj<1x1>, %__param2 : obj<1x1>, %__param3 : ptr) -> i32 [binding=weak, object=_ZN9containerI11second_typeE6assignI14input_iteratorIS1_EEEiT_S5_PN13disable_if_orIv14is_convertibleIS5_mE21is_not_input_iteratorIS5_EE4typeE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : obj<1x1>

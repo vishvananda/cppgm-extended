@@ -12,11 +12,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 0, $value
     store ptr 0, $position
     %t2 = addr $f
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = load ptr $position
     %t5 = addr $value
     %t6 = addr $argobj__1
-    call void @tag__tag(%t6)
     %t7 = call i32 @layer_second___insert_(%t3, 0, %t4, %t5, $argobj__1)
     store i32 %t7, $result
     %t8 = load i32 $result
@@ -50,7 +49,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load i32 $cond__2
     return i32 %t14
 }
-function @layer_second___insert_(%this : ptr, %__param1 : i32, %position : ptr, %value : ptr [pass=reference], %variant : obj<1x1>) -> i32 [binding=weak, object=_ZN5layerI6secondE7insert_I3tagEEiiPiRiT_] {
+function @layer_second___insert_(%this : ptr [object_bytes=1], %__param1 : i32, %position : ptr, %value : ptr [pass=by_address, object_bytes=4], %variant : obj<1x1>) -> i32 [binding=weak, object=_ZN5layerI6secondE7insert_I3tagEEiiPiRiT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $position : ptr
@@ -68,8 +67,8 @@ function @layer_second___insert_(%this : ptr, %__param1 : i32, %position : ptr, 
     %t3 = binary add i32 %t2, 100
     store i32 %t3, %t1
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 0
-    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t5 = index i8 %t4, 0
+    %t6 = index i8 %t5, 0
     %t7 = load ptr $position
     %t8 = load ptr $value
     %t9 = addr $argobj__1
@@ -78,7 +77,7 @@ function @layer_second___insert_(%this : ptr, %__param1 : i32, %position : ptr, 
     %t12 = binary add i32 %t11, 100
     return i32 %t12
 }
-function @layer_terminal___insert_(%this : ptr, %__param1 : i32, %position : ptr, %value : ptr [pass=reference], %variant : obj<1x1>) -> i32 [binding=weak, object=_ZN5layerI8terminalE7insert_I3tagEEiiPiRiT_] {
+function @layer_terminal___insert_(%this : ptr [object_bytes=1], %__param1 : i32, %position : ptr, %value : ptr [pass=by_address, object_bytes=4], %variant : obj<1x1>) -> i32 [binding=weak, object=_ZN5layerI8terminalE7insert_I3tagEEiiPiRiT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $position : ptr
@@ -96,7 +95,7 @@ function @layer_terminal___insert_(%this : ptr, %__param1 : i32, %position : ptr
     %t3 = binary add i32 %t2, 100
     store i32 %t3, %t1
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t5 = index i8 %t4, 0
     %t6 = load ptr $position
     %t7 = load ptr $value
     %t8 = addr $argobj__1
@@ -105,14 +104,7 @@ function @layer_terminal___insert_(%this : ptr, %__param1 : i32, %position : ptr
     %t11 = binary add i32 %t10, 100
     return i32 %t11
 }
-function @tag__tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3tagC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @terminal__insert_(%this : ptr, %__param1 : i32, %position : ptr, %value : ptr [pass=reference], %__param4 : obj<1x1>) -> i32 [binding=weak, object=_ZN8terminal7insert_EiPiRi3tag] {
+function @terminal__insert_(%this : ptr [object_bytes=1], %__param1 : i32, %position : ptr, %value : ptr [pass=by_address, object_bytes=4], %__param4 : obj<1x1>) -> i32 [binding=weak, object=_ZN8terminal7insert_EiPiRi3tag, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $position : ptr
@@ -145,4 +137,3 @@ function @terminal__insert_(%this : ptr, %__param1 : i32, %position : ptr, %valu
     %t6 = load i32 %t5
     return i32 %t6
 }
-alias object _ZN3tagC2Ev = @tag__tag

@@ -1,12 +1,11 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
 
-global @__typeinfo_name__struct_thrown_value_int_ [storage=readonly, binding=weak, object=_ZTS12thrown_valueIiE] = {
+global @__typeinfo_name__struct___cppgm_class_template_identity_0_0_0 [binding=weak, object=_ZTS12thrown_valueIiE] = {
   i8 49
   i8 50
   i8 116
@@ -26,11 +25,11 @@ global @__typeinfo_name__struct_thrown_value_int_ [storage=readonly, binding=wea
   i8 69
   i8 0
 }
-global @__rtti_struct_thrown_value_int_ [storage=readonly, binding=weak, object=_ZTI12thrown_valueIiE] = {
+global @__rtti_struct___cppgm_class_template_identity_0_0_0 [binding=weak, object=_ZTI12thrown_valueIiE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_thrown_value_int_
+  ptr addr @__typeinfo_name__struct___cppgm_class_template_identity_0_0_0
 }
-global @__ehobj_struct_thrown_value_int_ [binding=weak, object=@__ehobj_struct_thrown_value_int_] = {
+global @__ehobj_struct___cppgm_class_template_identity_0_0_0 [binding=internal, object=@__ehobj_struct___cppgm_class_template_identity_0_0_0] = {
   zero 4
 }
 
@@ -43,18 +42,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $source
-    call void @thrown_value_int___thrown_value(%t1, 7)
+    call void @thrown_value_int___thrown_value_int_(%t1, 7)
     eh_try ^catch_dispatch_1
     %t2 = call ptr @__external_runtime____cxa_allocate_exception(4)
     %t3 = addr $source
-    call void @thrown_value_int___thrown_value__ov2(%t2, %t3)
-    %t4 = addr @__rtti_struct_thrown_value_int_
+    call void @thrown_value_int___thrown_value_int___ov2(%t2, %t3)
+    %t4 = addr @__rtti_struct___cppgm_class_template_identity_0_0_0
     call void @__external_runtime____cxa_throw(%t2, %t4, 0)
     eh_end
     return i32 0
 
   block ^catch_dispatch_1:
-    eh_catch @__rtti_struct_thrown_value_int_, 1
+    eh_catch @__rtti_struct___cppgm_class_template_identity_0_0_0, 1
     jump ^catch_entry_2
 
   block ^catch_entry_2:
@@ -116,7 +115,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^try_end_3:
     return i32 0
 }
-function @thrown_value_int___thrown_value(%this : ptr, %initial : i32) -> void [binding=weak, object=_ZN12thrown_valueIiEC1Ei] {
+function @thrown_value_int___thrown_value_int_(%this : ptr [object_bytes=4], %initial : i32) -> void [binding=weak, object=_ZN12thrown_valueIiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $initial : i32
 
@@ -129,7 +128,7 @@ function @thrown_value_int___thrown_value(%this : ptr, %initial : i32) -> void [
     store i32 %t1, %t3
     return void
 }
-function @thrown_value_int___thrown_value__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN12thrown_valueIiEC1EOS0_] {
+function @thrown_value_int___thrown_value_int___ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN12thrown_valueIiEC1EOS0_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -147,5 +146,5 @@ function @thrown_value_int___thrown_value__ov2(%this : ptr, %other : ptr [pass=r
     store i32 0, %t7
     return void
 }
-alias object _ZN12thrown_valueIiEC2Ei = @thrown_value_int___thrown_value
-alias object _ZN12thrown_valueIiEC2EOS0_ = @thrown_value_int___thrown_value__ov2
+alias object _ZN12thrown_valueIiEC2Ei = @thrown_value_int___thrown_value_int_
+alias object _ZN12thrown_valueIiEC2EOS0_ = @thrown_value_int___thrown_value_int___ov2

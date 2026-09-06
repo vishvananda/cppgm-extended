@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 7
     return i32 %t5
 }
-function @Box_int___count(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK3BoxIiE5countIiEEiRKT_] {
+function @Box_int___count(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK3BoxIiE5countIiEEiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

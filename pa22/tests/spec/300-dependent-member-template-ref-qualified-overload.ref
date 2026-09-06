@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @g(%t2, %t3)
     return i32 %t4
 }
-function @g(%x : ptr, %v : ptr [pass=reference]) -> i32 [binding=weak, object=_Z1gIiEiP1XRT_] {
+function @g(%x : ptr, %v : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z1gIiEiP1XRT_] {
   slot $x : ptr
   slot $v : ptr
 
@@ -22,7 +22,7 @@ function @g(%x : ptr, %v : ptr [pass=reference]) -> i32 [binding=weak, object=_Z
     %t3 = call i32 @X__f__ov2(%t1, %t2)
     return i32 %t3
 }
-function @X__f__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNR1X1fIiEEiRT_] {
+function @X__f__ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNR1X1fIiEEiRT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

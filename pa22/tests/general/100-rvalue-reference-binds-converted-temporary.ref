@@ -1,4 +1,4 @@
-function @consume(%value : ptr [pass=reference]) -> i16 [binding=strong, object=_Z7consumeOs] {
+function @consume(%value : ptr [pass=by_address, object_bytes=2]) -> i16 [binding=strong, object=_Z7consumeOs] {
   slot $value : ptr
 
   block ^entry:
@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__2
     return i32 %t9
 }
-function @forward__ov2(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardIsEOT_ON16remove_referenceIS0_E4typeE] {
+function @forward__ov2(%value : ptr [pass=by_address, object_bytes=2]) -> ptr [binding=weak, object=_Z7forwardIsEOT_ON16remove_referenceIS0_E4typeE] {
   slot $value : ptr
 
   block ^entry:

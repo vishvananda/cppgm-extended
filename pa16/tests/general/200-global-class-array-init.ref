@@ -1,8 +1,8 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 97
   i8 0
 }
-global @__strlit__2 [binding=internal] = {
+global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 98
   i8 0
 }
@@ -21,24 +21,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @table
-    %t2 = unary decay ptr %t1
-    %t3 = binary mul i64 0, 16
-    %t4 = index i8 [projection=array_element] %t2, %t3
-    %t5 = index i8 [projection=field] %t4, 8
-    %t6 = load i32 %t5
-    %t7 = cmp eq i32 %t6, 1
-    branch %t7, ^land_rhs_4, ^land_short_5
+    %t2 = binary mul i64 0, 16
+    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t4 = index i8 [projection=field] %t3, 8
+    %t5 = load i32 %t4
+    %t6 = cmp eq i32 %t5, 1
+    branch %t6, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t8 = addr @table
-    %t9 = unary decay ptr %t8
-    %t10 = binary mul i64 1, 16
-    %t11 = index i8 [projection=array_element] %t9, %t10
-    %t12 = index i8 [projection=field] %t11, 8
-    %t13 = load i32 %t12
-    %t14 = cmp eq i32 %t13, 2
-    %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $land__2
+    %t7 = addr @table
+    %t8 = binary mul i64 1, 16
+    %t9 = index i8 [projection=array_element] %t7, %t8
+    %t10 = index i8 [projection=field] %t9, 8
+    %t11 = load i32 %t10
+    %t12 = cmp eq i32 %t11, 2
+    %t13 = cmp ne i64 %t12, 0
+    store i64 %t13, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -46,8 +44,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t16 = load i64 $land__2
-    branch %t16, ^cond_then_1, ^cond_else_2
+    %t14 = load i64 $land__2
+    branch %t14, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -58,10 +56,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t17 = load i32 $cond__1
-    return i32 %t17
+    %t15 = load i32 $cond__1
+    return i32 %t15
 }
-function @Entry__Entry(%this : ptr, %name_ : ptr, %value_ : i32) -> void [binding=weak, object=_ZN5EntryC1EPKci] {
+function @Entry__Entry(%this : ptr [object_bytes=16], %name_ : ptr, %value_ : i32) -> void [binding=weak, object=_ZN5EntryC1EPKci, inline_hint=yes] {
   slot $this : ptr
   slot $name_ : ptr
   slot $value_ : i32

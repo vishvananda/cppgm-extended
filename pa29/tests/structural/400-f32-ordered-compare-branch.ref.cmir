@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -9,8 +9,10 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size N
     scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     fcmp.f32 1.0f, 2.0f

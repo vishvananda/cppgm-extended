@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -15,17 +15,16 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     mov r8, @cells
     lea r8, [r8+<off0>]
-    lea r8, [r8+<off0>]
-    load.i64 r9, [r8]
-    mov rdx, 17
-    cmp.i64 r9, rdx
-    sete r9
-    movzx r9, r9
-    mov rax, r9
+    load.i64 r9, [r8+<off0>]
+    cmp.i64 r9, 17
+    sete rax
+    movzx rax, rax
     ret rax

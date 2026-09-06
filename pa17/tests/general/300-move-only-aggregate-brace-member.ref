@@ -1,10 +1,10 @@
-function @make_value(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z10make_valuev] {
+function @make_value(%ret : ptr [pass=indirect_result, object_bytes=8]) -> void [binding=strong, object=_Z10make_valuev] {
   slot $arg__1 : obj<4x4>
 
   block ^entry:
     %t1 = addr $arg__1
     call void @move_only__move_only(%t1, 7)
-    call void @aggregate__aggregate__ov2(%ret, 3, %t1)
+    call void @aggregate__aggregate__aggregate(%ret, 3, %t1)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -51,7 +51,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @move_only__move_only(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN9move_onlyC1Ei] {
+function @move_only__move_only(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN9move_onlyC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -64,24 +64,7 @@ function @move_only__move_only(%this : ptr, %v : i32) -> void [binding=weak, obj
     store i32 %t1, %t3
     return void
 }
-function @aggregate__aggregate__ov2(%this : ptr, %prefix : i32, %member : ptr [pass=by_address]) -> void [binding=weak, object=_ZN9aggregateC1Ei9move_only] {
-  slot $this : ptr
-  slot $prefix : i32
-  slot $member : obj<4x4>
-
-  block ^entry:
-    store ptr %this, $this
-    store i32 %prefix, $prefix
-    %t1 = load i32 $prefix
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load ptr $this
-    %t5 = index i8 [projection=field] %t4, 4
-    call void @move_only__move_only__ov2(%t5, %member)
-    return void
-}
-function @move_only__move_only__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN9move_onlyC1EOS_] {
+function @move_only__move_only__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN9move_onlyC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -99,6 +82,22 @@ function @move_only__move_only__ov2(%this : ptr, %other : ptr [pass=reference]) 
     store i32 0, %t7
     return void
 }
+function @aggregate__aggregate__aggregate(%this : ptr, %prefix : i32, %member : ptr [pass=by_address]) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $prefix : i32
+  slot $member : obj<4x4>
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %prefix, $prefix
+    %t1 = load i32 $prefix
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 4
+    call void @move_only__move_only__ov2(%t5, %member)
+    return void
+}
 alias object _ZN9move_onlyC2Ei = @move_only__move_only
-alias object _ZN9aggregateC2Ei9move_only = @aggregate__aggregate__ov2
 alias object _ZN9move_onlyC2EOS_ = @move_only__move_only__ov2

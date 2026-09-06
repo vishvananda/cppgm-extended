@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @N__addressof(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN1N9addressofI6objectEEPT_RS2_] {
+function @N__addressof(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN1N9addressofI6objectEEPT_RS2_] {
   slot $value : ptr
 
   block ^entry:
@@ -34,7 +34,7 @@ function @N__addressof(%value : ptr [pass=reference]) -> ptr [binding=weak, obje
     %t2 = call ptr @N__detail__addressof(%t1)
     return ptr %t2
 }
-function @N__detail__addressof(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN1N6detail9addressofI6objectEENS0_9addrof_ifIXsr18use_direct_addressIT_EE5valueES4_E4typeERS4_] {
+function @N__detail__addressof(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN1N6detail9addressofI6objectEENS0_9addrof_ifIXsrNS0_18use_direct_addressIT_EEE5valueES4_E4typeERS4_] {
   slot $value : ptr
 
   block ^entry:

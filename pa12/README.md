@@ -66,9 +66,7 @@ make
 make test
 ```
 
-`make` builds `cppgm++`. `make test` runs the local PA12 suite. If a
-`course/pa12` extension suite is present, the Makefile runs it after the local
-suite using the same harness contract.
+`make` builds `cppgm++`. `make test` runs the local PA12 suite.
 
 ### Required Driver Surface
 
@@ -257,7 +255,8 @@ PA12 must support:
 - supported integral `constexpr` complete objects, enumerator constants, the
   course-supported `__builtin_constant_p` query over propagated integral
   expressions, and semantic recognition of a zero-argument `__builtin_abort`
-  call (without requiring its later control-flow lowering)
+  call (without requiring its later control-flow lowering); passing arguments
+  to `__builtin_abort` is rejected
 - rejection of type, call-arity, and control-flow violations within this
   supported slice, including mismatched indirect-call arity, nonconstant case
   labels, `break` or `continue` outside a permitted statement, `default`
@@ -335,3 +334,7 @@ A good PA12 design keeps these pieces separate:
 Treat the PA12 call layer as a base that later class and template assignments
 will extend. Avoid hard-coding assumptions that only work before member
 functions, constructors, user-defined conversions, or templates are introduced.
+
+Keep compiler-generated identities separate from ordinary source lookup.
+Anonymous entities should receive stable typed identities rather than names
+that are re-parsed or inserted into the source identifier namespace.

@@ -1,4 +1,4 @@
-function @operator_(%left : ptr [pass=reference], %right : ptr [pass=reference]) -> i32 [binding=strong, object=_ZmiRK4IterS1_] {
+function @operator_(%left : ptr [pass=by_address, object_bytes=4], %right : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_ZmiRK4IterS1_] {
   slot $left : ptr
   slot $right : ptr
 

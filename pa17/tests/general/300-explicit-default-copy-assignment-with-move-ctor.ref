@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 %t9
     return i32 %t10
 }
-function @Item__Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemC1Ev] {
+function @Item__Item(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4ItemC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -28,7 +28,7 @@ function @Item__Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemC1Ev] {
     store i32 0, %t2
     return void
 }
-function @Item__operator_(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN4ItemaSERKS_] {
+function @Item__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN4ItemaSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

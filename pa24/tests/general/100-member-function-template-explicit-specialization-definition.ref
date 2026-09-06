@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @path__string(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK4path6stringI11string_likeEET_v] {
+function @path__string(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK4path6stringI11string_likeEET_v, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -36,7 +36,7 @@ function @path__string(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK4path6
     call void @string_like__string_like(%t1)
     return obj<4x4> $retobj__1
 }
-function @string_like__string_like(%this : ptr) -> void [binding=weak, object=_ZN11string_likeC1Ev] {
+function @string_like__string_like(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN11string_likeC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

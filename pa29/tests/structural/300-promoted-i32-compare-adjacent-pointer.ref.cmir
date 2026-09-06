@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -9,30 +9,27 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
     slot $a -> [rbp-<off0>] : i32
     slot $b -> [rbp-<off1>] : i32
 
   block ^entry
-    mov rax, 0
-    store.i32 [rbp-<off0>], rax
-    mov rax, 2
-    store.i32 [rbp-<off1>], rax
+    store.i32 [rbp-<off0>], 0
+    store.i32 [rbp-<off1>], 2
     jmp ^cond
 
   block ^cond
     load.i32 r8, [rbp-<off0>]
-    sext.i32 r8
     load.i32 r9, [rbp-<off1>]
-    sext.i32 r9
     cmp.i64 r8, r9
     jne ^body
     jmp ^end
 
   block ^body
     load.i32 r8, [rbp-<off0>]
-    sext.i32 r8
     add r8, 1
     sext.i32 r8
     store.i32 [rbp-<off0>], r8

@@ -90,19 +90,25 @@ INCEPTION_SOURCE_ROOT ?= $(INCEPTION_ENTRY_ROOT)/src
 INCEPTION_BUILTIN_HOST_CONFIG = $(INCEPTION_GENERATED)/cppgm_builtin_host_config.h
 INCEPTION_INCLUDE_PATHS := $(INCEPTION_SOURCE_ROOT) $(INCEPTION_GENERATED)
 INCEPTION_DEFINES ?=
+# Extra cppgm++ compile flags for measurement harnesses (e.g. --inline-limit
+# doses).  Exported with ?= so a caller-provided value survives the
+# MAKEFLAGS-clearing object sub-make; empty by default.
+INCEPTION_EXTRA_CC_FLAGS ?=
+export INCEPTION_EXTRA_CC_FLAGS
 HOST_CXX_DEFAULT_DEF = -DCPPGM_DEFAULT_HOST_CXX='"$(CPPGM_HOST_CXX)"'
 OBJECT_ROOT_DEFAULT_DEF = -DCPPGM_DEFAULT_OBJECT_ROOT='"$(abspath $(INCEPTION_OBJ_ROOT_BASE))"'
-INCEPTION_CC_FLAGS = -std=gnu++11 -Wall -O$(INCEPTION_SELFHOST_OPT_LEVEL) $(CPPGM_STDLIB_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF)
+INCEPTION_CC_FLAGS = -std=gnu++11 -Wall -O$(INCEPTION_SELFHOST_OPT_LEVEL) $(CPPGM_STDLIB_FLAGS) $(HOST_CXX_DEFAULT_DEF) $(OBJECT_ROOT_DEFAULT_DEF) $(INCEPTION_EXTRA_CC_FLAGS)
 INCEPTION_ENTRY_CC_FLAGS = $(INCEPTION_CC_FLAGS) $(TEST_RUNNER_ENTRY_FLAGS)
 INCEPTION_LINKER_DETERMINISM_FLAGS =
 ifeq ($(HOST_UNAME_S),Darwin)
 INCEPTION_LINKER_DETERMINISM_FLAGS += -Wl,-reproducible
 endif
+INCEPTION_HOST_ALLOC_LIBS ?= $(if $(wildcard /usr/lib/x86_64-linux-gnu/libjemalloc.so.2),-l:libjemalloc.so.2,)
 INCEPTION_LINK_FLAGS = -std=gnu++11 $(CPPGM_STDLIB_FLAGS) $(INCEPTION_LINKER_DETERMINISM_FLAGS)
 include ../dev/frontend_source_sets.mk
 
-FRONTEND_TEST_RUNNER_SOURCE_ID ?= test_runner
-FRONTEND_BUILTIN_CONFIG_SOURCE_ID ?= preprocessor
+FRONTEND_TEST_RUNNER_SOURCE_ID ?= support/testing/test_runner
+FRONTEND_BUILTIN_CONFIG_SOURCE_ID ?= preprocess/preprocessor
 
 ifeq ($(abspath $(CXX)),$(abspath ../dev/cppgm++))
 INCEPTION_COMPILER_FLAVOR ?= selfhost
@@ -293,45 +299,6 @@ INCEPTION_STAGE_ARGS_pa35 =
 INCEPTION_STAGE_ARGS_pa36 =
 INCEPTION_STAGE_ARGS_pa37 =
 INCEPTION_STAGE_ARGS_pa38 =
-
-INCEPTION_COURSE_STAGE_pa1 = course/pa1
-INCEPTION_COURSE_STAGE_pa2 = course/pa2
-INCEPTION_COURSE_STAGE_pa3 = course/pa3
-INCEPTION_COURSE_STAGE_pa4 = course/pa4
-INCEPTION_COURSE_STAGE_pa5 = course/pa5
-INCEPTION_COURSE_STAGE_pa6 = course/pa6
-INCEPTION_COURSE_STAGE_pa7 = course/pa7
-INCEPTION_COURSE_STAGE_pa8 = course/pa8
-INCEPTION_COURSE_STAGE_pa9 = course/pa9
-INCEPTION_COURSE_STAGE_pa10 = course/pa10
-INCEPTION_COURSE_STAGE_pa11 = course/pa11
-INCEPTION_COURSE_STAGE_pa12 = course/pa12
-INCEPTION_COURSE_STAGE_pa13 = course/pa13
-INCEPTION_COURSE_STAGE_pa14 = course/pa14
-INCEPTION_COURSE_STAGE_pa15 = course/pa15
-INCEPTION_COURSE_STAGE_pa16 = course/pa16
-INCEPTION_COURSE_STAGE_pa17 = course/pa17
-INCEPTION_COURSE_STAGE_pa18 = course/pa18
-INCEPTION_COURSE_STAGE_pa19 = course/pa19
-INCEPTION_COURSE_STAGE_pa20 = course/pa20
-INCEPTION_COURSE_STAGE_pa21 = course/pa21
-INCEPTION_COURSE_STAGE_pa22 = course/pa22
-INCEPTION_COURSE_STAGE_pa23 = course/pa23
-INCEPTION_COURSE_STAGE_pa24 = course/pa24
-INCEPTION_COURSE_STAGE_pa25 = course/pa25
-INCEPTION_COURSE_STAGE_pa26 = course/pa26
-INCEPTION_COURSE_STAGE_pa27 = course/pa27
-INCEPTION_COURSE_STAGE_pa28 = course/pa28
-INCEPTION_COURSE_STAGE_pa29 = course/pa29
-INCEPTION_COURSE_STAGE_pa30 = course/pa30
-INCEPTION_COURSE_STAGE_pa31 = course/pa31
-INCEPTION_COURSE_STAGE_pa32 = course/pa32
-INCEPTION_COURSE_STAGE_pa33 = course/pa33
-INCEPTION_COURSE_STAGE_pa34 = course/pa34
-INCEPTION_COURSE_STAGE_pa35 = course/pa35
-INCEPTION_COURSE_STAGE_pa36 = course/pa36
-INCEPTION_COURSE_STAGE_pa37 = course/pa37
-INCEPTION_COURSE_STAGE_pa38 = course/pa38
 
 inception_checkpoint_entry = $(INCEPTION_ENTRY_ROOT)/$(1).cpp
 inception_source_path = $(INCEPTION_SOURCE_ROOT)/$(1).cpp
@@ -552,7 +519,7 @@ probe-self-link:
 	fi; \
 	echo "PROBE link target: $(PROBE_TARGET)"; \
 	echo "PROBE binary: $(PROBE_LINK_OUTPUT)"; \
-	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I$(INCEPTION_SOURCE_ROOT) -o "$(PROBE_LINK_OUTPUT)" $$inputs
+	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I$(INCEPTION_SOURCE_ROOT) -o "$(PROBE_LINK_OUTPUT)" $$inputs $(INCEPTION_HOST_ALLOC_LIBS)
 
 $(INCEPTION_BUILTIN_HOST_CONFIG): FORCE
 	@mkdir -p $(dir $@)
@@ -627,7 +594,7 @@ $(call inception_binary_path,$(1)): FORCE | $(INCEPTION_BIN_ROOT)
 		env MAKEFLAGS= $$(MAKE) -j$(INCEPTION_OBJECT_BUILD_JOBS) $(call inception_link_inputs,$(1)); \
 	fi
 	@rm -f "$(call inception_link_output_path,$(1)).tmp"
-	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I$(INCEPTION_SOURCE_ROOT) -o "$(call inception_link_output_path,$(1)).tmp" $(call inception_link_inputs,$(1))
+	$(CPPGM_HOST_CXX) $(INCEPTION_LINK_FLAGS) -I$(INCEPTION_SOURCE_ROOT) -o "$(call inception_link_output_path,$(1)).tmp" $(call inception_link_inputs,$(1)) $(INCEPTION_HOST_ALLOC_LIBS)
 	@if ! cmp -s "$(call inception_link_output_path,$(1)).tmp" "$$@" 2>/dev/null; then \
 		mv -f "$(call inception_link_output_path,$(1)).tmp" "$$@"; \
 	else \

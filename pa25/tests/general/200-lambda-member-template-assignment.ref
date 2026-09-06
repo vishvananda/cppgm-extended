@@ -27,7 +27,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__2
     return i32 %t9
 }
-function @Sink__operator___ov2(%this : ptr, %f : obj<1x1>) -> ptr [binding=weak, object=_ZN4SinkaSIZ4mainE3$_0EERS_T_] {
+function @Sink__Sink(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4SinkC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @Sink__operator___ov2(%this : ptr [object_bytes=4], %f : obj<1x1>) -> ptr [binding=internal, object=_ZN4SinkaSIZ4mainE3$_0EERS_T_, inline_hint=yes] {
   slot $this : ptr
   slot $f : obj<1x1>
 
@@ -41,7 +51,7 @@ function @Sink__operator___ov2(%this : ptr, %f : obj<1x1>) -> ptr [binding=weak,
     %t5 = load ptr $this
     return ptr %t5
 }
-function @__lambda_main_t80_84__operator__(%this : ptr, %x : i32) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEi, prefer_local=yes] {
+function @__lambda_main_t80_84__operator__(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEi, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
@@ -51,15 +61,5 @@ function @__lambda_main_t80_84__operator__(%this : ptr, %x : i32) -> i32 [bindin
     %t1 = load i32 $x
     %t2 = binary add i32 %t1, 1
     return i32 %t2
-}
-function @Sink__Sink(%this : ptr) -> void [binding=weak, object=_ZN4SinkC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
-    return void
 }
 alias object _ZN4SinkC2Ev = @Sink__Sink

@@ -86,7 +86,7 @@ copy_tracked_paths() {
       perl -0ne '
         chomp;
         next if m{(^|/)[^/]+-ref$};
-        next if m{\.py$};
+        next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite)\.py$};
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         next if m{^pa9/extras/};
@@ -132,9 +132,6 @@ reference_outputs_match() {
         <(perl "$repo_root/scripts/compare_results_common.pl" canonicalize-machine-ir "$export_path") \
         >/dev/null
       return
-      ;;
-    *.ref.witness)
-      return 1
       ;;
   esac
 
@@ -240,11 +237,9 @@ verify_regenerated_reference_outputs() {
 
   local ref_count
   local exit_status_count
-  local witness_count
   local exported_diagnostic_count=0
   ref_count=$(wc -l < "$source_list")
   exit_status_count=$(grep -c '\.exit_status$' "$source_list" || true)
-  witness_count=$(grep -c '\.ref\.witness$' "$source_list" || true)
   if [ -f "$exported_diagnostic_list" ]; then
     exported_diagnostic_count=$(wc -l < "$exported_diagnostic_list")
   fi
@@ -255,7 +250,7 @@ verify_regenerated_reference_outputs() {
     exit 1
   fi
   rm -rf "$tmp_dir"
-  echo "==> Verified $ref_count portable reference output files ($exit_status_count exit status files, $witness_count witness files)"
+  echo "==> Verified $ref_count portable reference output files ($exit_status_count exit status files)"
   echo "==> Retained $exported_diagnostic_count Linux-generated failed-case stdout examples"
 }
 
@@ -268,6 +263,33 @@ sanitize_student_makefile_defaults() {
     s/ifeq \(\$\(origin CPPGM_HOST_CXX\), undefined\)\nifeq \(\$\(abspath \$\(CXX\)\),\$\(abspath \.\.\/dev\/cppgm\+\+\)\)\n(?:ifdef LLVM_CXX_DEFAULT\n\tCPPGM_HOST_CXX := \$\(LLVM_CXX_DEFAULT\)\nelse\n\tCPPGM_HOST_CXX := clang\+\+\nendif|CPPGM_HOST_CXX := \$\(HOST_CXX_DEFAULT\))\nelse\n\t?CPPGM_HOST_CXX := \$\(CXX\)\nendif\nendif/ifeq (\$(origin CPPGM_HOST_CXX), undefined)\nifeq (\$(abspath \$(CXX)),\$(abspath ..\/dev\/cppgm++))\n\tCPPGM_HOST_CXX := g++\nelse\n\tCPPGM_HOST_CXX := \$(CXX)\nendif\nendif/g;
     s/INCEPTION_LINKER_DETERMINISM_FLAGS =\nifeq \(\$\(HOST_UNAME_S\),Darwin\)\nINCEPTION_LINKER_DETERMINISM_FLAGS \+= -Wl,-reproducible\nendif/INCEPTION_LINKER_DETERMINISM_FLAGS =/g;
   ' "$@"
+}
+
+# The root Makefile carries maintainer-only targets whose scripts never ship:
+# the architecture audits (scripts/audit_*.pl), the harness unit tests and the
+# telemetry-off build check (scripts/tests/*.py).  Drop those targets, the
+# audit prerequisite of test-report-nobuild, and their .PHONY names.
+sanitize_student_root_makefile() {
+  perl -0pi -e '
+    s/^test-report-nobuild: audit-compiler-exceptions$/test-report-nobuild:/m;
+    s/^audit-[a-z-]+:\n\t\@perl scripts\/audit_[a-z_]+\.pl\n\n?//mg;
+    s/^build-telemetry-off:\n(?:\t[^\n]*\n)+\n?//m;
+    s/^test-telemetry-off: build build-telemetry-off\n(?:\t[^\n]*\n)+\n?//m;
+    s/(?:^#[^\n]*\n)*^HARNESS_TESTS = \\\n(?:\t[^\n]*\n)+\n?^test-harness:\n(?:\t[^\n]*\n)+\n?//m;
+    s/\b(?:audit-[a-z-]+|build-telemetry-off|test-telemetry-off|test-harness) //g;
+    s/^\tif \[ -d pa16\/tests\/general \]; then \\\n\t\t\$\(MAKE\) -s -C pa16 test-seams \|\| touch pa16\/\.test_failed; \\\n\tfi; \\\n//m;
+  ' "$@"
+}
+
+# The PA16 seams lane checks the comparison harness against the contract text,
+# which is maintainer work: drop the target and its scripts from the export.
+sanitize_student_seams_makefile() {
+  if [ -f "$1" ]; then
+    perl -0pi -e '
+      s/^#[^\n]*\n(?:#[^\n]*\n)*test-seams:\n(?:\t[^\n]*\n)+\n?//m;
+      s/ test-seams\b//g;
+    ' "$1"
+  fi
 }
 
 sanitize_linux_student_scripts() {
@@ -314,7 +336,6 @@ shared_scripts=(
   scripts/check_object_expectations.pl
   scripts/canonicalize_lowir_native_refs.pl
   scripts/compare_results_common.pl
-  scripts/compare_witness_results.pl
   scripts/cppgm-cmake-wrapper.sh
   scripts/dump_host_eh_object_facts.pl
   scripts/ensure_reference_binaries.pl
@@ -329,9 +350,14 @@ shared_scripts=(
   scripts/run_routed_test_spec.pl
   scripts/run_reference_binary.sh
   scripts/run_with_timeout.pl
-  scripts/run_witness_tests.pl
   scripts/write_unresolved_symbol_report.pl
+  scripts/expect_ir.pl
 )
+# The control lanes the assignment Makefiles run with `make test` are Perl
+# scripts named scripts/check_*.pl; every one ships.
+for check_script in "$repo_root"/scripts/check_*.pl; do
+  shared_scripts+=("scripts/$(basename "$check_script")")
+done
 
 dev_public=(
   dev/.gitignore
@@ -339,16 +365,22 @@ dev_public=(
 )
 
 dev_support_files=(
-  dev/src/DebugPPTokenStream.h
-  dev/src/IPPTokenStream.h
-  dev/src/abi_mangle.h
-  dev/src/exceptions.h
+  dev/src/abi/itanium/abi_mangle.h
+  dev/src/abi/itanium/abi_mangle_expression.h
+  dev/src/abi/itanium/abi_mangle_facts.h
+  dev/src/abi/itanium/abi_mangle_reference.h
+  dev/src/abi/itanium/abi_mangle_stats.h
+  dev/src/abi/itanium/abi_mangle_terminal.h
+  dev/src/abi/itanium/abi_mangle_type_vocabulary.h
   dev/src/ir_symbol_model.h
   dev/src/lowir_model.h
   dev/src/mir_model.h
-  dev/src/test_runner.cpp
-  dev/src/tool_help_text.h
-  dev/src/x86_register_model.h
+  dev/src/native/mir/registers.h
+  dev/src/preprocess/tokens/DebugPPTokenStream.h
+  dev/src/preprocess/tokens/IPPTokenStream.h
+  dev/src/support/not_implemented.h
+  dev/src/support/testing/test_runner.cpp
+  dev/src/support/tool_help_text.h
 )
 
 copy_tracked_paths \
@@ -399,6 +431,7 @@ cat > "$dest/dev/frontend_source_sets.mk" <<'EOF'
 # subdirectories, use the path without `.cpp`, such as `parser/foo`.
 
 FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native
+FRONTEND_TEST_RUNNER_SOURCE_ID := support/testing/test_runner
 
 FRONTEND_OBJ_BASENAMES_abimangle :=
 FRONTEND_OBJ_BASENAMES_pptoken :=
@@ -510,7 +543,7 @@ $(RUNNER_STATE_STAMP): FORCE | $(OBJDIR)
 		printf '%s\n' '$(CPPGM_TEST_RUNNER)' > $@; \
 	fi
 
-$(OBJDIR)/test_runner_enabled.o: $(SRC)/test_runner.cpp $(COMPILE_CONFIG_STAMP)
+$(OBJDIR)/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp $(COMPILE_CONFIG_STAMP)
 	@mkdir -p $(@D) $(DEPDIR)
 	$(call quiet,CXX,$@)
 	$(Q)$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DEPDIR)/test_runner_enabled.Td -o $@ $<
@@ -552,6 +585,8 @@ for makefile in "${student_makefiles[@]}"; do
   fi
 done
 sanitize_student_makefile_defaults "${existing_student_makefiles[@]}"
+sanitize_student_root_makefile "$dest/Makefile"
+sanitize_student_seams_makefile "$dest/pa16/Makefile"
 sanitize_linux_student_scripts
 
 if [ -f "$dest/pa39/Makefile" ]; then
@@ -560,15 +595,6 @@ if [ -f "$dest/pa39/Makefile" ]; then
   ' "$dest/pa39/Makefile"
 fi
 
-cat >> "$dest/Makefile" <<'EOF'
-
-reference-binaries:
-	@scripts/ensure_reference_binaries.pl
-
-setup: reference-binaries
-
-.PHONY: reference-binaries setup
-EOF
 
 reference_targets=(
   abimangle
@@ -715,12 +741,6 @@ CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1 make -s -C "$dest" ref-test \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
   CPPGM_TEST_RUNNER=1
-echo "==> Validating reference binary against patched-Clang witness refs"
-CPPGM_TEST_APP="$dest/reference-binaries/cppgm++" make -s -C "$dest" test-strict-nobuild \
-  CXX="${CXX:-g++}" \
-  CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
-  CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
-  CPPGM_TEST_RUNNER=1
 find "$dest" -type f \( -name '*.my' -o -name '*.my.*' -o -name '.test_counts' -o -name '.test_failed' \) -delete
 make -s -C "$dest" ref-test-debuginfo \
   CXX="${CXX:-g++}" \
@@ -741,5 +761,81 @@ finalize_reference_binaries
     -c user.email="cppgm-export@example.invalid" \
     commit -q -m "Initial student export"
 )
+
+# Every script an exported Makefile names must have shipped: a lane that
+# `make test` runs from a script the export forgot fails for every student.
+check_exported_script_references() {
+  local missing=0 makefile dir ref path
+  # A target the export strips must leave no caller behind.
+  if grep -q 'test-seams' "$dest/Makefile" 2>/dev/null; then
+    echo "export: the root Makefile still calls test-seams" >&2
+    exit 1
+  fi
+  for makefile in "$dest/Makefile" "$dest"/pa*/Makefile; do
+    [ -f "$makefile" ] || continue
+    dir=$(dirname "$makefile")
+    while IFS= read -r ref; do
+      case "$ref" in
+        ../*) path="$dir/$ref" ;;
+        *) path="$dir/$ref" ;;
+      esac
+      if [ ! -e "$path" ]; then
+        echo "export: $makefile names $ref, which did not ship" >&2
+        missing=1
+      fi
+    done < <(sed 's/#.*//' "$makefile" | grep -o '[A-Za-z0-9_./-]*scripts/[A-Za-z0-9_./-]*\.\(pl\|py\|sh\|pm\|mk\)' | sort -u)
+  done
+  # The shipped scripts load one another by bare, quoted file name (the
+  # expectation evaluator); those must have shipped as well.
+  local script name
+  for script in "$dest"/scripts/*.pl "$dest"/scripts/*.pm "$dest"/scripts/*.py "$dest"/scripts/*.sh; do
+    [ -f "$script" ] || continue
+    while IFS= read -r name; do
+      [ "$name" = "$(basename "$script")" ] && continue
+      if [ ! -e "$dest/scripts/$name" ]; then
+        echo "export: $script names $name, which did not ship" >&2
+        missing=1
+      fi
+    done < <(sed 's/#.*//' "$script" | grep -o '"[A-Za-z0-9_]*\.\(pl\|pm\|py\|sh\)"' | tr -d '"' | sort -u)
+  done
+  if [ "$missing" -ne 0 ]; then
+    echo "export: exported files reference scripts that did not ship" >&2
+    exit 1
+  fi
+}
+check_exported_script_references
+
+# The optional typed-model scaffolding the handouts name is a teaching shape a
+# student may adapt or replace, so nothing in the course solution consumes it
+# and only this check keeps it from rotting: it must compile and run on its
+# own, with only the shipped student headers on the include path.
+check_exported_scaffold_model() {
+  local scratch unit
+  scratch=$(mktemp -d)
+  unit="$scratch/scaffold_model_smoke.cpp"
+  cat > "$unit" <<'EOF'
+#include "lowir_model.h"
+#include "mir_model.h"
+int main()
+{
+  lowir_model::Program program;
+  mir_model::Program machine;
+  ir_model::ExportedSymbol symbol;
+  program.functions.clear();
+  machine.functions.clear();
+  symbol.object_symbol = "_Z1fv";
+  return ir_model::has_object_symbol(symbol) ? 0 : 1;
+}
+EOF
+  if ! "${CXX:-g++}" -std=gnu++11 -Wall ${CPPGM_STDLIB_FLAGS:-} -I "$dest/dev/src" \
+       -o "$scratch/scaffold_model_smoke" "$unit" ||
+     ! "$scratch/scaffold_model_smoke"; then
+    echo "export: the shipped model scaffolds do not build on their own" >&2
+    rm -rf "$scratch"
+    exit 1
+  fi
+  rm -rf "$scratch"
+}
+check_exported_scaffold_model
 
 echo "==> Exported student repo to $dest"

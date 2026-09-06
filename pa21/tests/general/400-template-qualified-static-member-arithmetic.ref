@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @f() -> i32 [binding=weak, object=_Z1fv] {
+function @f() -> i32 [binding=weak, object=_Z1fv, inline_hint=yes] {
   block ^entry:
     %t1 = binary sub i32 64, 1
     return i32 %t1

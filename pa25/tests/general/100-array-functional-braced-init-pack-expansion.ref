@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @add_each() -> i32 [binding=weak, object=_Z8add_eachv] {
+function @add_each() -> i32 [binding=weak, object=_Z8add_eachIJEEiv] {
   slot $st : i32
   slot $discardarr__1 : obj<4x4>
 
@@ -64,7 +64,7 @@ function @add_each__ov2() -> i32 [binding=weak, object=_Z8add_eachIJicEEiv] {
     %t8 = load i32 $st
     return i32 %t8
 }
-function @add_impl(%st : ptr [pass=reference]) -> i32 [binding=weak, object=_Z8add_implIiEiRi] {
+function @add_impl(%st : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z8add_implIiEiRi] {
   slot $st : ptr
 
   block ^entry:
@@ -80,7 +80,7 @@ function @add_impl(%st : ptr [pass=reference]) -> i32 [binding=weak, object=_Z8a
     %t8 = load i32 %t7
     return i32 %t8
 }
-function @add_impl__ov2(%st : ptr [pass=reference]) -> i32 [binding=weak, object=_Z8add_implIcEiRi] {
+function @add_impl__ov2(%st : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z8add_implIcEiRi] {
   slot $st : ptr
 
   block ^entry:

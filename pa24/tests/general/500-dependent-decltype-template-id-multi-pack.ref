@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @make(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_Z4makeIJilEEPN6unwrapIN8identityIDTclptcvP7contextIJDpT_EELi0E5valueEEE4typeEE4typeEDpOS3_] {
+function @make(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z4makeIJilEEP4listIJilEEDpOT_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

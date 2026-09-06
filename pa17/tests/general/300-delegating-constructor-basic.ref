@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 %t3
     return i32 %t4
 }
-function @Y__Y(%this : ptr) -> void [binding=weak, object=_ZN1YC1Ev] {
+function @Y__Y(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1YC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -18,7 +18,7 @@ function @Y__Y(%this : ptr) -> void [binding=weak, object=_ZN1YC1Ev] {
     call void @Y__Y__ov2(%t1, 3)
     return void
 }
-function @Y__Y__ov2(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1YC1Ei] {
+function @Y__Y__ov2(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1YC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

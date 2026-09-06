@@ -1,4 +1,4 @@
-declare function @Log__set_stream(%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=strong, object=_ZN3Log10set_streamER7OStream]
+declare function @Log__set_stream(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_ZN3Log10set_streamER7OStream]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $os : obj<8x4>
@@ -10,42 +10,38 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @OStream__OStream(%t1)
     %t2 = addr $holder
     %t3 = addr $os
-    %t4 = index i8 %t3, 4
-    call void @Holder__Holder(%t2, %t3, %t4)
+    call void @Holder__Holder(%t2, %t3)
+    %t4 = addr $log
     %t5 = addr $log
-    %t6 = addr $log
-    %t7 = addr $holder
-    %t8 = call ptr @Holder__ref(%t7)
-    %t9 = index i8 %t8, 4
-    call void @Log__set_stream(%t6, %t8, %t9)
+    %t6 = addr $holder
+    %t7 = call ptr @Holder__ref(%t6)
+    call void @Log__set_stream(%t5, %t7)
     return i32 0
 }
-function @OStream__OStream(%this : ptr) -> void [binding=weak, object=_ZN7OStreamC1Ev] {
+function @OStream__OStream(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7OStreamC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 4
+    %t2 = index i8 %t1, 4
     call void @IOS__IOS__base_entry(%t2)
     return void
 }
-function @Holder__Holder(%this : ptr, %os : ptr [pass=reference], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN6HolderC1ER7OStream] {
+function @Holder__Holder(%this : ptr [object_bytes=8], %os : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN6HolderC1ER7OStream, inline_hint=yes] {
   slot $this : ptr
   slot $os : ptr
-  slot $os__pvb0 : ptr
 
   block ^entry:
     store ptr %this, $this
     store ptr %os, $os
-    store ptr %__pvbptr0, $os__pvb0
     %t1 = load ptr $os
     %t2 = load ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store ptr %t1, %t3
     return void
 }
-function @Holder__ref(%this : ptr) -> ptr [binding=weak, object=_ZNK6Holder3refEv] {
+function @Holder__ref(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK6Holder3refEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -55,7 +51,7 @@ function @Holder__ref(%this : ptr) -> ptr [binding=weak, object=_ZNK6Holder3refE
     %t3 = load ptr %t2
     return ptr %t3
 }
-function @IOS__IOS__base_entry(%this : ptr) -> void [binding=weak, object=_ZN3IOSC2Ev] {
+function @IOS__IOS__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3IOSC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -65,7 +61,7 @@ function @IOS__IOS__base_entry(%this : ptr) -> void [binding=weak, object=_ZN3IO
     store i32 0, %t2
     return void
 }
-function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
+function @IOS__IOS(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3IOSC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -76,4 +72,3 @@ function @IOS__IOS(%this : ptr) -> void [binding=weak, object=_ZN3IOSC1Ev] {
     return void
 }
 alias object _ZN6HolderC2ER7OStream = @Holder__Holder
-alias object _ZN3IOSC2Ev = @IOS__IOS

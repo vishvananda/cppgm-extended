@@ -3,7 +3,6 @@ function @make_ref_pick() -> obj<1x1> [binding=strong, object=_Z13make_ref_pickv
 
   block ^entry:
     %t1 = addr $retobj__1
-    call void @RefPick__RefPick(%t1)
     return obj<1x1> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -24,7 +23,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = binary add i32 %t5, %t8
     %t10 = addr $tmpobj__2
     %t11 = call obj<1x1> @make_ref_pick()
-    copyobj 1x1 %t11, %t10
     %t12 = call i32 @RefPick__pick__ov3(%t10)
     %t13 = binary add i32 %t9, %t12
     %t14 = cmp eq i32 %t13, 123
@@ -42,32 +40,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load i32 $cond__1
     return i32 %t15
 }
-function @RefPick__RefPick(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7RefPickC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @RefPick__pick(%this : ptr) -> i32 [binding=weak, object=_ZNR7RefPick4pickEv] {
+function @RefPick__pick(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNR7RefPick4pickEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 1
 }
-function @RefPick__pick__ov2(%this : ptr) -> i32 [binding=weak, object=_ZNKR7RefPick4pickEv] {
+function @RefPick__pick__ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNKR7RefPick4pickEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 2
 }
-function @RefPick__pick__ov3(%this : ptr) -> i32 [binding=weak, object=_ZNO7RefPick4pickEv] {
+function @RefPick__pick__ov3(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNO7RefPick4pickEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 3
 }
-alias object _ZN7RefPickC2Ev = @RefPick__RefPick

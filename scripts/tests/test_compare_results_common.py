@@ -57,21 +57,6 @@ def write_text(path: pathlib.Path, text: str) -> None:
     path.write_text(text)
 
 
-def write_witness_case(
-    root: pathlib.Path,
-    name: str,
-    reference: str,
-    generated: str,
-) -> pathlib.Path:
-    testbase = root / "tests" / name
-    write_text(testbase.with_suffix(".t"), "template<class T> struct box;\n")
-    write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-    write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-    write_text(testbase.with_suffix(".ref.witness"), reference)
-    write_text(testbase.with_suffix(".my.witness"), generated)
-    return testbase
-
-
 class CompareResultsCommonTests(unittest.TestCase):
     def test_lowir_compare_accepts_explicit_declarations_and_readonly_globals(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -338,54 +323,6 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertIn("i64 1", diff_text)
             self.assertIn("i64 2", diff_text)
 
-    def test_lowir_compare_accepts_reordered_special_member_definitions(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "102d"
-            write_text(testbase.with_suffix(".t"), "struct Box; int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            ref_lowir = textwrap.dedent(
-                """\
-                function @Box_copy(%this : ptr, %other : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1ERKS_] {
-                  block ^entry:
-                    return void
-                }
-
-                function @Box_move(%this : ptr, %other : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1EOS_] {
-                  block ^entry:
-                    return void
-                }
-
-                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-                  block ^entry:
-                    return i32 0
-                }
-                """
-            )
-            my_lowir = textwrap.dedent(
-                """\
-                function @Box_move(%this : ptr, %other : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1EOS_] {
-                  block ^entry:
-                    return void
-                }
-
-                function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-                  block ^entry:
-                    return i32 0
-                }
-
-                function @Box_copy(%this : ptr, %other : ptr [pass=reference]) -> void [binding=strong, object=_ZN3BoxC1ERKS_] {
-                  block ^entry:
-                    return void
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), ref_lowir)
-            write_text(testbase.with_suffix(".my"), my_lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
     def test_lowir_compare_same_name_pairing_requires_signature_match(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
@@ -596,29 +533,6 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("invalid reference LowIR", result.stdout + result.stderr)
 
-    def test_lowir_compare_accepts_role_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "120"
-            write_text(testbase.with_suffix(".t"), "int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            lowir = textwrap.dedent(
-                """\
-                declare global @exc_top : ptr [role=eh_top]
-
-                function @entry_point() -> i64 [role=entry] {
-                  block ^entry:
-                    %0 = addr @exc_top
-                    return i64 0
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), lowir)
-            write_text(testbase.with_suffix(".my"), lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
     def test_lowir_compare_accepts_explicit_object_export_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
@@ -785,7 +699,7 @@ class CompareResultsCommonTests(unittest.TestCase):
             write_text(testbase.with_suffix(".my"), my_lowir)
             result = run_compare("lowir_t", root, "tests")
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("relaxed metadata canonicalization", result.stdout + result.stderr)
+            self.assertIn("does not match reference after relaxed metadata", result.stdout + result.stderr)
 
     def test_lowir_compare_still_requires_same_function_identity_graph(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -836,7 +750,7 @@ class CompareResultsCommonTests(unittest.TestCase):
             write_text(testbase.with_suffix(".my"), my_lowir)
             result = run_compare("lowir_t", root, "tests")
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("relaxed metadata canonicalization", result.stdout + result.stderr)
+            self.assertIn("does not match reference after relaxed metadata", result.stdout + result.stderr)
 
     def test_lowir_compare_pairs_reordered_functions_by_structure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -915,28 +829,6 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("invalid reference LowIR", result.stdout + result.stderr)
 
-    def test_lowir_compare_accepts_parameter_pass_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "140"
-            write_text(testbase.with_suffix(".t"), "int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            lowir = textwrap.dedent(
-                """\
-                declare function @helper(%ret : ptr [pass=indirect_result], %obj : ptr [pass=by_address], %ref : ptr [pass=reference], %arr : ptr [pass=decay]) -> void
-
-                function @main() -> i64 {
-                  block ^entry:
-                    return i64 0
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), lowir)
-            write_text(testbase.with_suffix(".my"), lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
     def test_lowir_compare_accepts_direct_object_return_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
@@ -1014,26 +906,6 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("invalid reference LowIR", result.stdout + result.stderr)
 
-    def test_lowir_compare_accepts_parameter_capture_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "155"
-            write_text(testbase.with_suffix(".t"), "int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            lowir = textwrap.dedent(
-                """\
-                function @main(%buf : ptr [capture=nocapture], %ref : ptr [pass=reference, capture=maycapture]) -> i64 {
-                  block ^entry:
-                    return i64 0
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), lowir)
-            write_text(testbase.with_suffix(".my"), lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
     def test_lowir_compare_rejects_invalid_parameter_capture_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
@@ -1055,27 +927,6 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("invalid reference LowIR", result.stdout + result.stderr)
 
-    def test_lowir_compare_accepts_parameter_access_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "157"
-            write_text(testbase.with_suffix(".t"), "int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            lowir = textwrap.dedent(
-                """\
-                function @main(%dst : ptr [capture=nocapture, access=write],
-                               %src : ptr [access=read]) -> i64 {
-                  block ^entry:
-                    return i64 0
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), lowir)
-            write_text(testbase.with_suffix(".my"), lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
     def test_lowir_compare_rejects_invalid_parameter_access_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa19"
@@ -1096,27 +947,6 @@ class CompareResultsCommonTests(unittest.TestCase):
             result = run_compare("lowir_t", root, "tests")
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("invalid reference LowIR", result.stdout + result.stderr)
-
-    def test_lowir_compare_accepts_parameter_alias_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "159"
-            write_text(testbase.with_suffix(".t"), "int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            lowir = textwrap.dedent(
-                """\
-                function @main(%dst : ptr [capture=nocapture, access=write, alias=noalias],
-                               %src : ptr [capture=nocapture, access=read, alias=noalias]) -> i64 {
-                  block ^entry:
-                    return i64 0
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), lowir)
-            write_text(testbase.with_suffix(".my"), lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_lowir_compare_rejects_invalid_parameter_alias_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1184,54 +1014,6 @@ class CompareResultsCommonTests(unittest.TestCase):
                     return i64 7
                   block ^miss:
                     return i64 9
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), lowir)
-            write_text(testbase.with_suffix(".my"), lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
-    def test_lowir_compare_accepts_linkage_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "165"
-            write_text(testbase.with_suffix(".t"), "int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            lowir = textwrap.dedent(
-                """\
-                declare global @errno : i32 [linkage=c]
-                declare function @puts(%fmt : ptr [pass=decay]) -> i32 [arity=variadic, linkage=c]
-
-                function @main() -> i64 [linkage=c] {
-                  block ^entry:
-                    return i64 0
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), lowir)
-            write_text(testbase.with_suffix(".my"), lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
-    def test_lowir_compare_accepts_trivial_lifecycle_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "165b"
-            write_text(testbase.with_suffix(".t"), "int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            lowir = textwrap.dedent(
-                """\
-                function @S__S(%this : ptr) -> void [binding=weak, trivial_lifecycle=yes] {
-                  block ^entry:
-                    return void
-                }
-
-                function @main() -> i64 {
-                  block ^entry:
-                    return i64 0
                 }
                 """
             )
@@ -1389,32 +1171,6 @@ class CompareResultsCommonTests(unittest.TestCase):
             result = run_compare("lowir_t", root, "tests")
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("invalid reference LowIR", result.stdout + result.stderr)
-
-    def test_lowir_compare_accepts_prototype_relaxed_function_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
-            testbase = root / "tests" / "177"
-            write_text(testbase.with_suffix(".t"), "int main();\n")
-            write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
-            write_text(testbase.with_suffix(".my.exit_status"), "EXIT_SUCCESS\n")
-            lowir = textwrap.dedent(
-                """\
-                function @legacy() -> i64 [arity=prototype_relaxed] {
-                  block ^entry:
-                    return i64 0
-                }
-
-                function @main() -> i64 {
-                  block ^entry:
-                    %0 = call i64 @legacy(7, 11)
-                    return i64 %0
-                }
-                """
-            )
-            write_text(testbase.with_suffix(".ref"), lowir)
-            write_text(testbase.with_suffix(".my"), lowir)
-            result = run_compare("lowir_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_lowir_compare_accepts_indirect_call_signature_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1820,47 +1576,6 @@ class CompareResultsCommonTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("structural machine IR dumps do not match", result.stdout + result.stderr)
             self.assertTrue(testbase.with_suffix(".my.cmir").exists())
-
-    def test_witness_compare_requires_exact_closure_output(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
-            source = "translation-unit\n"
-            reference = source + textwrap.dedent(
-                """\
-                template-closure-events
-                  ensure-definition
-                    entity make<int>
-                """
-            )
-            generated = source + textwrap.dedent(
-                """\
-                template-closure-events
-                  require-definition
-                    entity make<int>
-                """
-            )
-            testbase = write_witness_case(root, "100", reference, generated)
-            result = run_compare("witness_t", root, "tests")
-            output = result.stdout + result.stderr
-            self.assertNotEqual(result.returncode, 0)
-            self.assertIn("witness output does not match reference", output)
-            self.assertTrue(testbase.with_suffix(".my.witness.diff").exists())
-
-    def test_witness_compare_accepts_exact_output(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
-            witness = textwrap.dedent(
-                """\
-                translation-unit
-                template-closure-events
-                  ensure-definition
-                    entity make<int>
-                """
-            )
-            write_witness_case(root, "101", witness, witness)
-            result = run_compare("witness_t", root, "tests")
-            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -20,30 +20,22 @@ function @clobber
     param %f -> r9 : i64
     return void -> void
   frame
-    stack_size 64
+    stack_size N
     scratch_bytes 0
-    param-slot %a -> [rbp-<off0>] : i64
-    param-slot %b -> [rbp-<off1>] : i64
-    param-slot %c -> [rbp-<off2>] : i64
-    param-slot %d -> [rbp-<off3>] : i64
-    param-slot %e -> [rbp-<off4>] : i64
-    param-slot %f -> [rbp-<off5>] : i64
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
-    store.i64 [rbp-<off0>], rdi
-    store.i64 [rbp-<off1>], rsi
-    store.i64 [rbp-<off2>], rdx
-    store.i64 [rbp-<off3>], rcx
-    store.i64 [rbp-<off4>], r8
-    store.i64 [rbp-<off5>], r9
     ret
 
 function @main
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
     slot $first -> [rbp-<off0>] : ptr
     slot $last -> [rbp-<off1>] : ptr
 
@@ -57,7 +49,7 @@ function @main
     mov rcx, 40
     mov r8, 50
     mov r9, 60
-    call @clobber
+    call @clobber [args=(rcx,rdx,rsi,rdi,r8,r9)]
     load.ptr rax, [rbp-<off0>]
     cmp.ptr rax, [rbp-<off1>]
     je ^done

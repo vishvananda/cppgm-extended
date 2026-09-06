@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $input
     %t2 = addr $value
     %t3 = addr $input
-    %t4 = call obj<4x4> @factory_definition_int__long_int____make(%t3, 0)
+    %t4 = call obj<4x4> @factory___cppgm_class_template_identity_0_0_0___make(%t3, 0)
     copyobj 4x4 %t4, %t2
     %t5 = addr $value
     %t6 = index i8 [projection=field] %t5, 0
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @factory_definition_int__long_int____make(%input : ptr [pass=reference], %__param1 : ptr) -> obj<4x4> [binding=weak, object=_ZN7factoryIJ10definitionIilEEE4makeIJS1_EEE5tupleIJDpN6resultINT_10class_typeENS6_9func_typeEE4typeEEER8providerPS4_IJDpS6_EE] {
+function @factory___cppgm_class_template_identity_0_0_0___make(%input : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> obj<4x4> [binding=weak, object=_ZN7factoryIJ10definitionIilEEE4makeIJS1_EEE5tupleIJiEER8providerPS4_IJT_EE, inline_hint=yes] {
   slot $input : ptr
   slot $__param1 : ptr
   slot $retobj__1 : obj<4x4>
@@ -38,17 +38,17 @@ function @factory_definition_int__long_int____make(%input : ptr [pass=reference]
     %t1 = addr $retobj__1
     %t2 = load ptr $input
     %t3 = call i32 @provider__get(%t2)
-    call void @tuple_int___tuple(%t1, %t3)
+    call void @tuple_int___tuple___cppgm_class_template_identity_0_0_0_(%t1, %t3)
     return obj<4x4> $retobj__1
 }
-function @provider__get(%this : ptr) -> i32 [binding=weak, object=_ZN8provider3getIilEEN6resultIT_T0_E4typeEv] {
+function @provider__get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN8provider3getIilEEN6resultIT_T0_E4typeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 0
 }
-function @tuple_int___tuple(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN5tupleIJiEEC1Ei] {
+function @tuple_int___tuple___cppgm_class_template_identity_0_0_0_(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN5tupleIJiEEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -61,4 +61,4 @@ function @tuple_int___tuple(%this : ptr, %input : i32) -> void [binding=weak, ob
     store i32 %t1, %t3
     return void
 }
-alias object _ZN5tupleIJiEEC2Ei = @tuple_int___tuple
+alias object _ZN5tupleIJiEEC2Ei = @tuple_int___tuple___cppgm_class_template_identity_0_0_0_

@@ -6,14 +6,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $d
     %t2 = addr $d
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = call i32 @Base_int___f(%t3, 1)
     %t5 = cmp eq i32 %t4, 1
     branch %t5, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t6 = addr $d
-    %t7 = call i32 @Derived_int___f(%t6, 1.5)
+    %t7 = call i32 @Derived_int___f__ov2(%t6, 1.5)
     %t8 = cmp eq i32 %t7, 2
     %t9 = cmp ne i64 %t8, 0
     store i64 %t9, $land__2
@@ -39,16 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @Derived_int___f(%this : ptr, %__param1 : f64) -> i32 [binding=weak, object=_ZN7DerivedIiE1fEd] {
-  slot $this : ptr
-  slot $__param1 : f64
-
-  block ^entry:
-    store ptr %this, $this
-    store f64 %__param1, $__param1
-    return i32 2
-}
-function @Base_int___f(%this : ptr, %__param1 : i32) -> i32 [binding=weak, object=_ZN4BaseIiE1fEi] {
+function @Base_int___f(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZN4BaseIiE1fEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -56,4 +47,13 @@ function @Base_int___f(%this : ptr, %__param1 : i32) -> i32 [binding=weak, objec
     store ptr %this, $this
     store i32 %__param1, $__param1
     return i32 1
+}
+function @Derived_int___f__ov2(%this : ptr [object_bytes=1], %__param1 : f64) -> i32 [binding=weak, object=_ZN7DerivedIiE1fEd, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : f64
+
+  block ^entry:
+    store ptr %this, $this
+    store f64 %__param1, $__param1
+    return i32 2
 }

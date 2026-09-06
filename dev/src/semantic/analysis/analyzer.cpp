@@ -1,0 +1,2921 @@
+#include "semantic/analysis/analyzer.h"
+#include "semantic/analysis/diagnostic_location.h"
+#include "semantic/analysis/switch.h"
+#include "semantic/extensions/hosted_extensions.h"
+#include "support/exception_types.h"
+#include "support/scoped_state.h"
+#include <algorithm>
+#include <chrono>
+#include <iomanip>
+#include <limits>
+#include <ostream>
+#include <sstream>
+#include <string>
+#include <unordered_set>
+#include <vector>
+namespace cppgm { namespace semantic {
+namespace {
+bool SyntaxUsesAnyIdentifier(const SyntaxArena& arena, NodeId node,
+	const std::unordered_set<NameId>& identifiers)
+{
+	if (identifiers.count(arena.SemanticPayloadId(node)) != 0) return true;
+	for (std::uint32_t edge = arena.FirstEdge(node); edge != kNoEdge;
+		edge = arena.NextEdge(edge))
+		if (SyntaxUsesAnyIdentifier(arena, arena.EdgeChild(edge), identifiers)) return true;
+	return false;
+}
+}
+NodeId Analyzer::FindChild(NodeId node, const char* tag) const
+{
+	return arena_->FindDirectChildTag(node, tag);
+}
+
+NodeId Analyzer::FindChild(NodeId node, SyntaxTagCode tag) const
+{
+	return arena_->FindDirectChildTag(node, tag);
+}
+
+NodeId Analyzer::FirstSemanticChild(NodeId node) const
+{
+	const std::uint32_t edge = arena_->FirstEdge(node);
+	return edge == kNoEdge ? kNoNode : arena_->EdgeChild(edge);
+}
+const std::string& Analyzer::PayloadSource(NodeId node) const
+{
+	return arena_->SemanticPayload(node);
+}
+std::uint32_t Analyzer::MakeDump(DumpKind kind, TypeId type,
+	ValueCategory category, NameId text, BindingId binding)
+{
+	const std::uint32_t node = dump_.Make(kind);
+	DumpNode& record = dump_.nodes[node];
+	record.type = type;
+	record.category = category;
+	record.text = text;
+	record.binding = binding;
+	record.operation_kind = OperationKindForName(text);
+	if (kind == DUMP_VARIABLE && binding != kNoBinding)
+	{
+		if (variable_node_by_binding_.size() <= binding)
+			variable_node_by_binding_.resize(
+				static_cast<std::size_t>(binding) + 1, kNoDumpEdge);
+		variable_node_by_binding_[binding] = node;
+	}
+	return node;
+}
+TypeId Analyzer::EffectiveType(TypeId type) const
+{
+	const TypeRecord record = program_->types.Get(type);
+	return record.kind == TYPE_LVALUE_REFERENCE ||
+		record.kind == TYPE_RVALUE_REFERENCE ? record.child : type;
+}
+bool Analyzer::IsVoid(TypeId type) const
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	const TypeRecord record = program_->types.Get(type);
+	return record.kind == TYPE_FUNDAMENTAL &&
+		record.fundamental == FUND_VOID;
+}
+bool Analyzer::IsNullptr(TypeId type) const
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	const TypeRecord record = program_->types.Get(type);
+	return record.kind == TYPE_FUNDAMENTAL &&
+		record.fundamental == FUND_NULLPTR_T;
+}
+bool Analyzer::IsConst(TypeId type) const
+{
+	type = EffectiveType(type);
+	const TypeRecord record = program_->types.Get(type);
+	return record.kind == TYPE_QUALIFIED && (record.cv & CV_CONST) != 0;
+}
+FundamentalKind Analyzer::FundamentalOf(TypeId type) const
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	const TypeRecord record = program_->types.Get(type);
+	if (record.kind != TYPE_FUNDAMENTAL)
+		ThrowInternalCompilerError("fundamental kind requested for non-fundamental");
+	return record.fundamental;
+}
+bool Analyzer::IsIntegral(TypeId type, bool allow_scoped_enum) const
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	const TypeRecord record = program_->types.Get(type);
+	if (record.kind == TYPE_BITINT) return true;
+	if (record.kind == TYPE_FUNDAMENTAL)
+		return record.fundamental != FUND_VOID &&
+			record.fundamental != FUND_NULLPTR_T &&
+			!IsExtendedFloatingFundamental(record.fundamental);
+	if (record.kind != TYPE_NAMED) return false;
+	const NamedFlavor flavor = program_->entities[record.entity].flavor;
+	return flavor == NAMED_ENUM || (allow_scoped_enum &&
+		flavor == NAMED_ENUM_CLASS);
+}
+
+bool Analyzer::IsFloating(TypeId type) const
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	const TypeRecord record = program_->types.Get(type);
+	return record.kind == TYPE_FUNDAMENTAL &&
+		IsExtendedFloatingFundamental(record.fundamental);
+}
+
+bool Analyzer::IsArithmetic(TypeId type) const
+{
+	return IsIntegral(type) || IsFloating(type);
+}
+
+bool Analyzer::IsPointer(TypeId type) const
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	return program_->types.Get(type).kind == TYPE_POINTER;
+}
+
+int Analyzer::IntegralRank(TypeId type) const
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	const TypeRecord record = program_->types.Get(type);
+	if (record.kind == TYPE_NAMED)
+	{
+		const EntityRecord& entity = program_->entities[record.entity];
+		return entity.underlying == kNoType ? 3 : IntegralRank(entity.underlying);
+	}
+	if (record.kind == TYPE_BITINT)
+		return record.dependent_bound_parameter == kNoTemplateParameter ?
+			static_cast<int>(7 + record.bound) : 7;
+	switch (record.fundamental)
+	{
+	case FUND_BOOL: return 0;
+	case FUND_CHAR: case FUND_SIGNED_CHAR: case FUND_UNSIGNED_CHAR: return 1;
+	case FUND_SHORT_INT: case FUND_UNSIGNED_SHORT_INT:
+	case FUND_CHAR16_T: return 2;
+	case FUND_INT: case FUND_UNSIGNED_INT: case FUND_WCHAR_T:
+	case FUND_CHAR32_T: return 3;
+	case FUND_LONG_INT: case FUND_UNSIGNED_LONG_INT: return 4;
+	case FUND_LONG_LONG_INT: case FUND_UNSIGNED_LONG_LONG_INT: return 5; case FUND_INT128: case FUND_UINT128: return 6;
+	default: return -1;
+	}
+}
+
+TypeId Analyzer::IntegralPromotionType(TypeId type) const
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	const TypeRecord record = program_->types.Get(type);
+	if (record.kind == TYPE_NAMED)
+	{
+		const EntityRecord& entity = program_->entities[record.entity];
+		if (entity.flavor == NAMED_ENUM_CLASS) return type;
+		type = entity.underlying;
+	}
+	if (IntegralRank(type) < 3)
+		return program_->types.Fundamental(FUND_INT);
+	return type;
+}
+
+TypeId Analyzer::CommonArithmeticType(TypeId left, TypeId right) const
+{
+	left = program_->types.RemoveTopCv(EffectiveType(left));
+	right = program_->types.RemoveTopCv(EffectiveType(right));
+	if (IsFloating(left) || IsFloating(right))
+	{
+		const TypeId floating_left = IsFloating(left) ? left : right;
+		const TypeId floating_right = IsFloating(right) ? right : left;
+		return FloatingConversionRank(FundamentalOf(floating_left)) >=
+			FloatingConversionRank(FundamentalOf(floating_right)) ?
+			floating_left : floating_right;
+	}
+	left = IntegralPromotionType(left);
+	right = IntegralPromotionType(right);
+	if (left == right) return left;
+	const int left_rank = IntegralRank(left);
+	const int right_rank = IntegralRank(right);
+	const bool left_unsigned = IsUnsignedIntegral(left);
+	const bool right_unsigned = IsUnsignedIntegral(right);
+	if (left_unsigned == right_unsigned)
+		return left_rank > right_rank ? left : right;
+	const TypeId unsigned_type = left_unsigned ? left : right;
+	const TypeId signed_type = left_unsigned ? right : left;
+	const int unsigned_rank = left_unsigned ? left_rank : right_rank;
+	const int signed_rank = left_unsigned ? right_rank : left_rank;
+	if (unsigned_rank >= signed_rank) return unsigned_type;
+	if (IntegralWidth(signed_type) > IntegralWidth(unsigned_type))
+		return signed_type;
+	const TypeRecord& signed_record = program_->types.Get(signed_type);
+	if (signed_record.kind == TYPE_BITINT)
+		return program_->types.BitInt(true, signed_record.bound);
+	switch (FundamentalOf(signed_type))
+	{
+	case FUND_INT:
+		return program_->types.Fundamental(FUND_UNSIGNED_INT);
+	case FUND_LONG_INT:
+		return program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+	case FUND_LONG_LONG_INT: return program_->types.Fundamental(FUND_UNSIGNED_LONG_LONG_INT);
+	case FUND_INT128: return program_->types.Fundamental(FUND_UINT128);
+	default:
+		ThrowInternalCompilerError(
+			"usual arithmetic conversion has no unsigned counterpart");
+	}
+}
+
+TypeId Analyzer::Decay(TypeId type) const
+{
+	type = EffectiveType(type);
+	const TypeRecord record = program_->types.Get(type);
+	if (record.kind == TYPE_ARRAY) return program_->types.Pointer(record.child);
+	if (record.kind == TYPE_FUNCTION) return program_->types.Pointer(type);
+	return program_->types.RemoveTopCv(type);
+}
+
+TypeId Analyzer::AdjustParameterType(TypeId type)
+{
+	const TypeRecord record = program_->types.Get(type);
+	if (record.kind == TYPE_ARRAY) return program_->types.Pointer(record.child);
+	if (record.kind == TYPE_FUNCTION) return program_->types.Pointer(type);
+	return program_->types.RemoveTopCv(type);
+}
+
+bool Analyzer::SimilarUnqualified(TypeId source, TypeId target) const
+{
+	source = program_->types.RemoveTopCv(source);
+	target = program_->types.RemoveTopCv(target);
+	if (source == target) return true;
+	const TypeRecord a = program_->types.Get(source);
+	const TypeRecord b = program_->types.Get(target);
+	if (a.kind != b.kind) return false;
+	switch (a.kind)
+	{
+	case TYPE_POINTER:
+	case TYPE_BLOCK_POINTER:
+	case TYPE_LVALUE_REFERENCE:
+	case TYPE_RVALUE_REFERENCE:
+	case TYPE_COMPLEX:
+		return SimilarUnqualified(a.child, b.child);
+	case TYPE_ARRAY:
+		return a.bound == b.bound && SimilarUnqualified(a.child, b.child);
+	case TYPE_FUNCTION:
+		if (a.parameter_count != b.parameter_count || a.variadic != b.variadic ||
+			!SimilarUnqualified(a.child, b.child)) return false;
+		for (std::size_t i = 0; i < a.parameter_count; ++i)
+			if (!SimilarUnqualified(program_->types.Parameters(source)[i],
+				program_->types.Parameters(target)[i])) return false;
+		return true;
+	default: return false;
+	}
+}
+
+bool Analyzer::QualificationConversion(TypeId source,
+	TypeId target) const
+{
+	std::vector<std::uint8_t> source_cv;
+	std::vector<std::uint8_t> target_cv;
+	TypeId a = source;
+	TypeId b = target;
+	while (true)
+	{
+		const TypeRecord ar = program_->types.Get(a);
+		const TypeRecord br = program_->types.Get(b);
+		if (ar.kind != TYPE_POINTER || br.kind != TYPE_POINTER) break;
+		a = ar.child;
+		b = br.child;
+		std::uint8_t acv = CV_NONE;
+		std::uint8_t bcv = CV_NONE;
+		if (program_->types.Get(a).kind == TYPE_QUALIFIED)
+		{
+			acv = program_->types.Get(a).cv;
+			a = program_->types.Get(a).child;
+		}
+		if (program_->types.Get(b).kind == TYPE_QUALIFIED)
+		{
+			bcv = program_->types.Get(b).cv;
+			b = program_->types.Get(b).child;
+		}
+		source_cv.push_back(acv);
+		target_cv.push_back(bcv);
+	}
+	if (!SimilarUnqualified(a, b) || source_cv.size() != target_cv.size())
+		return false;
+	for (std::size_t i = 0; i < source_cv.size(); ++i)
+	{
+		if (((source_cv[i] ^ target_cv[i]) & CV_ATOMIC) != 0)
+			return false;
+		if ((source_cv[i] & ~target_cv[i]) != 0) return false;
+		if (i > 0 && source_cv[i] != target_cv[i])
+			for (std::size_t j = 0; j < i; ++j)
+				if ((target_cv[j] & CV_CONST) == 0) return false;
+	}
+	return true;
+}
+
+ConversionRank Analyzer::Conversion(TypeId source,
+	ValueCategory category, bool integer_zero, TypeId target) const
+{
+	++conversion_checks_;
+	const TypeRecord target_record = program_->types.Get(target);
+	if (target_record.kind == TYPE_LVALUE_REFERENCE ||
+		target_record.kind == TYPE_RVALUE_REFERENCE)
+	{
+		const bool lvalue_reference =
+			target_record.kind == TYPE_LVALUE_REFERENCE;
+		if (lvalue_reference && category != VALUE_LVALUE &&
+			!IsConst(target_record.child)) return CONVERSION_INVALID;
+		TypeId from = program_->types.RemoveTopCv(EffectiveType(source));
+		TypeId to = program_->types.RemoveTopCv(target_record.child);
+		if (from == to)
+		{
+			if (!lvalue_reference && category == VALUE_LVALUE)
+				return CONVERSION_INVALID;
+			const TypeRecord source_top = program_->types.Get(EffectiveType(source));
+			const TypeRecord target_top = program_->types.Get(target_record.child);
+			const std::uint8_t source_cv = source_top.kind == TYPE_QUALIFIED ?
+				source_top.cv : CV_NONE;
+			const std::uint8_t target_cv = target_top.kind == TYPE_QUALIFIED ?
+				target_top.cv : CV_NONE;
+			if (((source_cv ^ target_cv) & CV_ATOMIC) != 0)
+				return CONVERSION_INVALID;
+			if ((source_cv & ~target_cv) != 0) return CONVERSION_INVALID;
+			// Same-type temporary materialization changes representation, not
+			// the exact-match rank of a const lvalue-reference binding.
+			return CONVERSION_EXACT;
+		}
+		if (QualificationConversion(EffectiveType(source), target_record.child))
+			return !lvalue_reference && category == VALUE_LVALUE ?
+				CONVERSION_INVALID : CONVERSION_EXACT;
+		const EntityId source_entity = EntityOf(from);
+		const EntityId target_entity = EntityOf(to);
+		const bool derived_to_base = source_entity != kNoEntity &&
+			target_entity != kNoEntity &&
+			BaseConversionAllowed(source_entity, target_entity);
+		const bool reference_related =
+			SimilarUnqualified(EffectiveType(source), target_record.child) ||
+			derived_to_base;
+		if (!reference_related &&
+			(!lvalue_reference || IsConst(target_record.child)))
+		{
+			const ConversionRank temporary = Conversion(source, category,
+				integer_zero, target_record.child);
+			if (temporary != CONVERSION_INVALID) return temporary;
+		}
+		if (derived_to_base)
+		{
+			const TypeRecord source_top = program_->types.Get(EffectiveType(source));
+			const TypeRecord target_top = program_->types.Get(target_record.child);
+			const std::uint8_t source_cv = source_top.kind == TYPE_QUALIFIED ?
+				source_top.cv : CV_NONE;
+			const std::uint8_t target_cv = target_top.kind == TYPE_QUALIFIED ?
+				target_top.cv : CV_NONE;
+			if ((source_cv & ~target_cv) == 0)
+				return CONVERSION_DERIVED_TO_BASE;
+		}
+		if (IsArithmetic(from) && IsArithmetic(to) &&
+			(IsConst(target_record.child) || !lvalue_reference))
+		{
+			const EntityId target_entity = EntityOf(to);
+			if (target_entity != kNoEntity &&
+				(program_->entities[target_entity].flavor == NAMED_ENUM ||
+				 program_->entities[target_entity].flavor == NAMED_ENUM_CLASS))
+				return CONVERSION_INVALID;
+			return lvalue_reference ? CONVERSION_BOOLEAN : CONVERSION_STANDARD;
+		}
+		return CONVERSION_INVALID;
+	}
+	TypeId from = Decay(source);
+	TypeId to = program_->types.RemoveTopCv(target);
+	if (from == to) return CONVERSION_EXACT;
+	const ConversionRank member_pointer = MemberPointerConversion(
+		from, integer_zero, to);
+	if (member_pointer != CONVERSION_INVALID) return member_pointer;
+	const EntityId derived_object = EntityOf(from);
+	const EntityId base_object = EntityOf(to);
+	if (derived_object != kNoEntity && base_object != kNoEntity &&
+		BaseConversionAllowed(derived_object, base_object))
+		return CONVERSION_DERIVED_TO_BASE;
+	if (IsNullptr(to) && integer_zero) return CONVERSION_STANDARD;
+	if (IsPointer(to) && (IsNullptr(from) || integer_zero))
+		return CONVERSION_STANDARD;
+	if (IsPointer(from) && IsPointer(to))
+	{
+		const TypeRecord source_pointer = program_->types.Get(from);
+		const TypeRecord target_pointer = program_->types.Get(to);
+		const EntityId derived = EntityOf(source_pointer.child);
+		const EntityId base = EntityOf(target_pointer.child);
+		if (derived != kNoEntity && base != kNoEntity &&
+			BaseConversionAllowed(derived, base))
+		{
+			const TypeRecord source_cv = program_->types.Get(source_pointer.child);
+			const TypeRecord target_cv = program_->types.Get(target_pointer.child);
+			const std::uint8_t scv = source_cv.kind == TYPE_QUALIFIED ?
+				source_cv.cv : CV_NONE;
+			const std::uint8_t tcv = target_cv.kind == TYPE_QUALIFIED ?
+				target_cv.cv : CV_NONE;
+			if (((scv ^ tcv) & CV_ATOMIC) == 0 &&
+				(scv & ~tcv) == 0) return CONVERSION_DERIVED_TO_BASE;
+		}
+		TypeId target_pointee = program_->types.RemoveTopCv(target_pointer.child);
+		const TypeRecord pointee = program_->types.Get(target_pointee);
+		if (pointee.kind == TYPE_FUNDAMENTAL &&
+			pointee.fundamental == FUND_VOID)
+		{
+			// Preserve array element cv through object-pointer-to-void conversion;
+			// otherwise a pointer to an array could silently discard const.
+			const std::uint8_t scv = ArrayElementCv(source_pointer.child);
+			const std::uint8_t tcv = ArrayElementCv(target_pointer.child);
+			return (scv & ~tcv) == 0 ? CONVERSION_STANDARD : CONVERSION_INVALID;
+		}
+		return QualificationConversion(from, to) ?
+			CONVERSION_STANDARD : CONVERSION_INVALID;
+	}
+	if (IsPointer(from) && to == program_->types.Fundamental(FUND_BOOL))
+		return CONVERSION_BOOLEAN;
+	if (IsArithmetic(from) && IsArithmetic(to))
+	{
+		const EntityId target_entity = EntityOf(to);
+		if (target_entity != kNoEntity &&
+			(program_->entities[target_entity].flavor == NAMED_ENUM ||
+			 program_->entities[target_entity].flavor == NAMED_ENUM_CLASS))
+			return CONVERSION_INVALID;
+		if (IsIntegral(from) && IsIntegral(to) &&
+			IntegralPromotionType(from) == to)
+			return CONVERSION_PROMOTION;
+		return CONVERSION_STANDARD;
+	}
+	return CONVERSION_INVALID;
+}
+
+ConversionRank Analyzer::Conversion(const ExpressionInfo& source,
+	TypeId target) const
+{
+	return Conversion(source.type, source.category,
+		source.integer_literal_zero, target);
+}
+
+ExpressionInfo Analyzer::ApplyTarget(ExpressionInfo value,
+	TypeId target, ConversionRank known_conversion)
+{
+	if (value.type == kNoType && CandidateSubstitutionFailed()) return value;
+	if (target == kNoType || IsTemplateNondeducedShapeType(value.type))
+	{
+		RecordExpressionFacts(value);
+		return value;
+	}
+	const ConversionRank conversion = known_conversion == CONVERSION_INVALID ?
+		Conversion(value, target) : known_conversion;
+	if (conversion == CONVERSION_INVALID)
+	{
+		const CallConversionFact implicit =
+			CallConversion(value, target, 0, 0);
+		if (implicit.rank != CONVERSION_INVALID)
+			return ApplyCallArgument(value, target, &implicit);
+		ThrowSemanticError("invalid implicit conversion from " +
+			DescribeType(value.type) + " to " +
+			DescribeType(target));
+	}
+	const TypeRecord target_record = program_->types.Get(target);
+	const TypeId nonreference = target_record.kind == TYPE_LVALUE_REFERENCE ||
+		target_record.kind == TYPE_RVALUE_REFERENCE ? target_record.child : target;
+	const TypeId conversion_target =
+		program_->types.RemoveTopCv(nonreference);
+	const TypeId conversion_source =
+		program_->types.RemoveTopCv(EffectiveType(value.type));
+	const TypeRecord& conversion_target_record =
+		program_->types.Get(conversion_target);
+	const bool target_is_bool =
+		conversion_target_record.kind == TYPE_FUNDAMENTAL &&
+		conversion_target_record.fundamental == FUND_BOOL;
+	const TypeRecord& conversion_source_record =
+		program_->types.Get(conversion_source);
+	value.converted_scalar_target = kNoType;
+	if (conversion_source != conversion_target &&
+		(IsIntegral(conversion_source, true) || IsFloating(conversion_source)) &&
+		(IsIntegral(conversion_target, true) || IsFloating(conversion_target)))
+		value.converted_scalar_target = conversion_target;
+	const bool reference_target = target_record.kind == TYPE_LVALUE_REFERENCE ||
+		target_record.kind == TYPE_RVALUE_REFERENCE;
+	const std::uint32_t source_object = ExpressionObject(value);
+	const std::uint32_t source_complete_object =
+		ExpressionCompleteObject(value);
+	std::uint32_t source_address = ExpressionAddress(value);
+	if (source_address == kNoConstexprAddress && value.constant &&
+		IsNullptr(conversion_source))
+		source_address = NullConstexprAddress();
+	if (source_address == kNoConstexprAddress &&
+		((!reference_target &&
+		  (conversion_source_record.kind == TYPE_ARRAY ||
+		   conversion_source_record.kind == TYPE_FUNCTION)) ||
+		 (reference_target && unevaluated_depth_ == 0 &&
+		  (constant_expression_required_depth_ != 0 ||
+		  constexpr_evaluation_depth_ != 0))))
+		source_address = LvalueAddress(&value);
+	const bool source_is_bool =
+		conversion_source_record.kind == TYPE_FUNDAMENTAL &&
+		conversion_source_record.fundamental == FUND_BOOL;
+	const EntityId conversion_source_entity = EntityOf(conversion_source);
+	const bool source_is_enum = conversion_source_entity != kNoEntity &&
+		(program_->entities[conversion_source_entity].flavor == NAMED_ENUM ||
+		 program_->entities[conversion_source_entity].flavor == NAMED_ENUM_CLASS);
+	if (target_is_bool && !source_is_bool)
+		dump_.nodes[value.node].boolean_conversion = true;
+	if (source_is_enum && conversion_source != conversion_target &&
+		IsArithmetic(conversion_target))
+		dump_.nodes[value.node].enum_arithmetic_conversion = true;
+	if (!target_is_bool && IsIntegral(conversion_source, true) &&
+		IsIntegral(conversion_target, true) &&
+		program_->SizeOf(conversion_target) < program_->SizeOf(conversion_source))
+		dump_.nodes[value.node].integer_narrowing_conversion = true;
+	if (conversion == CONVERSION_DERIVED_TO_BASE)
+	{
+		const std::uint32_t object = ExpressionObject(value);
+		const std::uint32_t complete_object = ExpressionCompleteObject(value);
+		const bool binds_temporary =
+			target_record.kind == TYPE_LVALUE_REFERENCE &&
+			value.category == VALUE_PRVALUE;
+		if (binds_temporary && EntityOf(value.type) != kNoEntity &&
+			dump_.nodes[value.node].kind != DUMP_TEMPORARY_OBJECT)
+			value = MaterializeTemporary(value);
+		std::uint64_t projection_offset = 0;
+		const std::size_t projections =
+			BaseProjectionCount(value.type, nonreference, &projection_offset);
+		if (projections == std::numeric_limits<std::size_t>::max() ||
+			projections > std::numeric_limits<std::uint32_t>::max())
+			ThrowInternalCompilerError(
+				"derived conversion has no bounded base path");
+		const ValueCategory category = binds_temporary ? VALUE_PRVALUE :
+			target_record.kind == TYPE_LVALUE_REFERENCE ? VALUE_LVALUE :
+			target_record.kind == TYPE_RVALUE_REFERENCE ?
+			VALUE_XVALUE : VALUE_PRVALUE;
+		const std::uint32_t cast = MakeDump(DUMP_CAST_EXPRESSION,
+			nonreference, category);
+		dump_.nodes[cast].base_projection_count =
+			static_cast<std::uint32_t>(projections);
+		dump_.nodes[cast].base_projection_offset = projection_offset;
+		dump_.nodes[cast].has_base_projection_offset = true;
+		dump_.Add(cast, value.node);
+		value.node = cast;
+		value.type = nonreference;
+		value.category = category;
+		value.binding = kNoBinding;
+		value.constant = false;
+		value.constexpr_object = kNoConstexprObject;
+		value.constexpr_complete_object = kNoConstexprObject;
+		const std::uint32_t projected = ProjectConstexprObject(
+			object, nonreference, &projection_offset);
+		if (projected != kNoConstexprObject)
+		{
+			SetExpressionSubobject(&value, projected, complete_object);
+			if (source_address != kNoConstexprAddress &&
+				projection_offset <= static_cast<std::uint64_t>(
+					std::numeric_limits<std::int64_t>::max()))
+				source_address = OffsetConstexprAddress(source_address,
+					static_cast<std::int64_t>(projection_offset), false);
+		}
+		++expression_count_;
+	}
+	if (reference_target &&
+		!SimilarUnqualified(EffectiveType(value.type), target_record.child) &&
+		conversion != CONVERSION_DERIVED_TO_BASE)
+	{
+		const std::uint32_t cast = MakeDump(DUMP_CAST_EXPRESSION,
+			nonreference, VALUE_PRVALUE);
+		dump_.Add(cast, value.node);
+		value.node = cast;
+		value.type = nonreference;
+		value.category = VALUE_PRVALUE;
+		value.binding = kNoBinding;
+		value.constant = false;
+		value.constexpr_object = kNoConstexprObject;
+		value.constexpr_complete_object = kNoConstexprObject;
+		++expression_count_;
+	}
+	const bool member_pointer_target = ApplyMemberPointerTarget(&value,
+		conversion_source, conversion_target);
+	if (!member_pointer_target && value.integer_literal_zero &&
+		(IsPointer(nonreference) || IsNullptr(nonreference)))
+	{
+		value.type = program_->types.RemoveTopCv(nonreference);
+		dump_.nodes[value.node].type = value.type;
+		source_address = NullConstexprAddress();
+	}
+	if (reference_target &&
+		program_->types.RemoveTopCv(EffectiveType(value.type)) !=
+			program_->types.RemoveTopCv(target_record.child) &&
+		IsArithmetic(value.type) && IsArithmetic(target_record.child))
+	{
+		const std::uint32_t cast = MakeDump(DUMP_CAST_EXPRESSION,
+			target_record.child, VALUE_PRVALUE);
+		dump_.Add(cast, value.node);
+		value.node = cast;
+		value.type = target_record.child;
+		value.category = VALUE_PRVALUE;
+		++expression_count_;
+	}
+	if (reference_target && source_address != kNoConstexprAddress)
+		SetExpressionLvalueAddress(&value, source_address);
+	else if (IsPointer(conversion_target) &&
+		source_address != kNoConstexprAddress)
+	{
+		SetExpressionAddress(&value, source_address);
+		if (source_object != kNoConstexprObject &&
+			source_complete_object != kNoConstexprObject)
+			SetExpressionSubobject(&value, source_object,
+				source_complete_object);
+	}
+	else if (target_is_bool &&
+		(IsPointer(Decay(conversion_source)) || IsNullptr(conversion_source)) &&
+		source_address != kNoConstexprAddress)
+	{
+		const ConstexprAddressValue* address =
+			ConstexprAddressAt(source_address);
+		SetExpressionScalar(&value, ConstexprScalarValue(
+			static_cast<std::int64_t>(address &&
+				address->kind != CONSTEXPR_ADDRESS_NULL)));
+	}
+	if (value.constant &&
+		(IsIntegral(conversion_source, true) || IsFloating(conversion_source)) &&
+		(IsIntegral(conversion_target, true) || IsFloating(conversion_target)))
+		SetExpressionScalar(&value, ConvertScalarConstant(conversion_source,
+			conversion_target, ExpressionScalar(value)));
+	RecordExpressionFacts(value);
+	return value;
+}
+
+bool Analyzer::IsModifiableLvalue(const ExpressionInfo& value) const
+{
+	return value.category == VALUE_LVALUE && !IsConst(value.type) &&
+		!program_->types.IsFunction(EffectiveType(value.type)) &&
+		!IsVoid(value.type);
+}
+void Analyzer::InstallSemanticErrorLocationHook()
+{
+	SetSemanticErrorLocationHook(&DescribeDiagnosticLocation);
+}
+
+const syntax::SyntaxArena* diagnostic_location_arena = 0;
+syntax::NodeId diagnostic_location_node = kNoNode;
+std::string diagnostic_instantiation;
+
+std::string DescribeDiagnosticLocation()
+{
+	if (diagnostic_location_arena == 0 ||
+		diagnostic_location_node == kNoNode) return std::string();
+	if (!diagnostic_location_arena->HasSourceLocation(
+		diagnostic_location_node)) return std::string();
+	const std::string& file =
+		diagnostic_location_arena->SourceFile(diagnostic_location_node);
+	if (file.empty()) return std::string();
+	const std::string where = " at " + file + ":" + std::to_string(
+		diagnostic_location_arena->SourceLine(diagnostic_location_node)) +
+		":" + std::to_string(
+		diagnostic_location_arena->SourceColumn(diagnostic_location_node));
+	return diagnostic_instantiation.empty() ? where :
+		where + " while instantiating " + diagnostic_instantiation;
+}
+
+ExpressionInfo Analyzer::AnalyzeExpression(NodeId node, ScopeId scope,
+	TypeId target)
+{
+	if (node == kNoNode) ThrowSemanticError("missing expression");
+	const ScopedDiagnosticLocation located(arena_, node);
+	ExpressionInfo prepared;
+	if (ReusePreparedBracedExpression(node, target, &prepared)) return prepared;
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_PARENTHESIZED_EXPRESSION))
+		return AnalyzeExpression(FirstSemanticChild(node), scope, target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_STATEMENT_EXPRESSION))
+		return AnalyzeStatementExpression(node, scope, target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_THROW_EXPRESSION))
+		return AnalyzeThrowExpression(node, scope);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_LITERAL))
+	{
+		std::string spelling = arena_->Payload(node);
+		if (spelling.compare(0, 11, "TT_LITERAL:") == 0)
+			spelling.erase(0, 11);
+		ExpressionInfo result;
+		std::size_t string_literal_end = 0;
+		if (StringLiteralTokenEnd(spelling, &string_literal_end))
+		{
+			if (TryAnalyzeUserDefinedStringLiteral(
+					spelling, scope, target, &result)) return result;
+			result = MakeStringLiteral(spelling);
+		}
+		else
+		{
+			if (spelling.find('\'') == std::string::npos &&
+				TryAnalyzeUserDefinedNumericLiteral(
+					spelling, scope, target, &result)) return result;
+			result = MakeBuiltinScalarLiteral(spelling, node);
+		}
+		return ApplyTarget(result, target);
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_KEYWORD_LITERAL))
+	{
+		const int keyword = PayloadTokenKind(node);
+		ExpressionInfo result;
+		if (keyword == KW_THIS)
+			result = AnalyzeThisExpression(scope);
+		else if (keyword == KW_NULLPTR)
+		{
+			result = MakeLiteral(program_->types.Fundamental(FUND_NULLPTR_T),
+				program_->names.UseInterned(arena_->PayloadId(node)));
+			result.constant = true;
+			result.value = 0;
+		}
+		else if (keyword == KW_TRUE || keyword == KW_FALSE)
+		{
+			result = MakeLiteral(program_->types.Fundamental(FUND_BOOL),
+				program_->names.UseInterned(arena_->PayloadId(node)));
+			result.constant = true;
+			result.value = keyword == KW_TRUE;
+		}
+		else ThrowSemanticError("unsupported keyword literal");
+		return ApplyTarget(result, target);
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_ID_EXPRESSION))
+	{
+		const std::string spelling = arena_->Payload(node);
+		ExpressionInfo compiler_value;
+		if (TryAnalyzeCompilerPredefinedValue(spelling, node, target, &compiler_value)) return compiler_value;
+		ExpressionInfo local;
+		if (FindChild(node, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME) == kNoNode &&
+			spelling.find("::") == std::string::npos &&
+			TryAnalyzeConstexprLocal(spelling, target, &local))
+			return local;
+		ExpressionInfo function_id;
+		if (AnalyzeFunctionId(node, scope, target, &function_id))
+		{
+			TypeId target_shape = target == kNoType ? kNoType :
+				program_->types.RemoveTopCv(target);
+			if (target_shape != kNoType &&
+				(program_->types.Get(target_shape).kind == TYPE_LVALUE_REFERENCE ||
+				 program_->types.Get(target_shape).kind == TYPE_RVALUE_REFERENCE))
+				target_shape = program_->types.Get(target_shape).child;
+			const TypeKind target_kind = target_shape == kNoType ? TYPE_FUNDAMENTAL :
+				program_->types.Get(target_shape).kind;
+			return target_kind == TYPE_POINTER ?
+				ApplyTarget(function_id, target) : function_id;
+		}
+		return AnalyzeNamedValue(spelling, scope, target, node);
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_BUILTIN_TYPE_TRAIT_EXPRESSION))
+		return ApplyTarget(AnalyzeBuiltinTypeTrait(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_BUILTIN_OFFSETOF_EXPRESSION))
+		return AnalyzeBuiltinOffsetof(node, scope, target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_CALL_EXPRESSION))
+		return AnalyzeCall(node, scope, target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_LAMBDA_EXPRESSION))
+		return AnalyzeLambdaExpression(node, scope, target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_UNARY_EXPRESSION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_POSTFIX_EXPRESSION))
+		return ApplyTarget(AnalyzeUnary(node, scope, target), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_BINARY_EXPRESSION))
+		return ApplyTarget(AnalyzeBinary(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_FOLD_EXPRESSION))
+		return ApplyTarget(AnalyzeFoldExpression(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_ASSIGNMENT_EXPRESSION))
+		return ApplyTarget(AnalyzeAssignment(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_CAST_EXPRESSION))
+		return ApplyTarget(AnalyzeCast(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_CONDITIONAL_EXPRESSION))
+		return ApplyTarget(AnalyzeConditional(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_SUBSCRIPT_EXPRESSION))
+		return ApplyTarget(AnalyzeSubscript(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_SIZEOF_EXPRESSION))
+		return ApplyTarget(AnalyzeSizeof(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_SIZEOF_PACK_EXPRESSION)) return ApplyTarget(AnalyzeSizeofPackExpression(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_TYPE_TRAIT_EXPRESSION) &&
+		PayloadTokenKind(node) == KW_ALIGNOF)
+		return ApplyTarget(AnalyzeSizeof(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_TYPE_TRAIT_EXPRESSION) &&
+		PayloadTokenKind(node) == KW_NOEXCEPT)
+		return ApplyTarget(AnalyzeNoexcept(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_TYPE_TRAIT_EXPRESSION) &&
+		PayloadTokenKind(node) == KW_TYPEID)
+		return ApplyTarget(AnalyzeTypeid(node, scope), target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_BRACED_INIT_LIST))
+		return AnalyzeBracedInit(node, scope, target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_NEW_EXPRESSION)) return AnalyzeNewExpression(node, scope, target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_DELETE_EXPRESSION))
+		return AnalyzeDeleteExpression(node, scope, target);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_MEMBER_EXPRESSION))
+		return ApplyTarget(AnalyzeMember(node, scope), target);
+	const NodeId first_child = FirstSemanticChild(node);
+	ThrowSemanticError("unsupported PA12 expression " + arena_->Tag(node) +
+		" at " + arena_->SourceFile(node) + ":" +
+		std::to_string(arena_->SourceLine(node)) + ":" +
+		std::to_string(arena_->SourceColumn(node)) + " in " +
+		(current_function_context_ == kNoBinding ? std::string("<namespace>") :
+		 program_->names.Get(program_->bindings[current_function_context_].name)) +
+		(first_child == kNoNode ? std::string() :
+		 " (child " + arena_->Tag(first_child) + ": " +
+		 PayloadSource(first_child) + ")"));
+}
+
+BindingId Analyzer::SelectOverload(ScopeId scope,
+	const std::vector<NodeId>& argument_syntax,
+	const std::vector<ExpressionInfo>& arguments,
+	const std::vector<BindingId>& candidates,
+	const ExpressionInfo* object, ObjectConversionFact* object_conversion,
+	std::vector<CallConversionFact>* argument_conversions)
+{
+	const std::size_t explicit_arity = argument_syntax.size();
+	const std::size_t arity = explicit_arity + (object ? 1 : 0);
+	if (arity != 0 && candidates.size() >
+		std::numeric_limits<std::size_t>::max() / arity)
+		ThrowSemanticResourceLimit("overload conversion table is too large");
+	std::vector<ConversionRank> ranks(candidates.size() * arity,
+		CONVERSION_ELLIPSIS);
+	std::vector<std::size_t> base_distances(candidates.size() * arity,
+		std::numeric_limits<std::size_t>::max());
+	std::vector<ConversionRank> actual_object_ranks(candidates.size(),
+		CONVERSION_INVALID);
+	std::vector<std::size_t> actual_object_distances(candidates.size(),
+		std::numeric_limits<std::size_t>::max());
+	std::vector<CallConversionFact> conversions(
+		candidates.size() * explicit_arity);
+	CallConversionTable conversion_cache;
+	std::vector<bool> viable(candidates.size(), true);
+	for (std::size_t c = 0; c < candidates.size(); ++c)
+	{
+		++overload_candidates_;
+		const FunctionInfo& function = GetFunction(candidates[c]);
+		const TypeRecord function_type = program_->types.Get(function.type);
+		const std::size_t explicit_offset = object ? 1 : 0;
+		if (function.member_owner != kNoType)
+		{
+			if (!object)
+			{
+				viable[c] = false;
+				continue;
+			}
+			if (!RefQualifierViable(*object, function_type))
+			{
+				viable[c] = false;
+				continue;
+			}
+			TypeId object_type = function.member_owner;
+			if ((function_type.cv & CV_CONST) != 0)
+				object_type = program_->types.Qualify(object_type, CV_CONST);
+			if ((function_type.cv & CV_VOLATILE) != 0)
+				object_type = program_->types.Qualify(object_type, CV_VOLATILE);
+			const ConversionRank object_rank = MemberObjectConversion(*object,
+				program_->types.Pointer(object_type), candidates[c]);
+			actual_object_ranks[c] = object_rank;
+			if (object_rank == CONVERSION_DERIVED_TO_BASE)
+				actual_object_distances[c] = BaseConversionDistance(
+					object->type, program_->types.Pointer(object_type));
+			std::size_t selection_distance = actual_object_distances[c];
+			const ConversionRank selection_rank =
+				MemberCandidateSelectionRank(
+					*object, candidates[c], object_rank, &selection_distance);
+			ranks[c * arity] = selection_rank;
+			if (selection_rank == CONVERSION_DERIVED_TO_BASE)
+				base_distances[c * arity] = selection_distance;
+			if (object_rank == CONVERSION_INVALID)
+			{
+				viable[c] = false;
+				continue;
+			}
+		}
+		else if (object)
+			ranks[c * arity] = CONVERSION_EXACT;
+		std::size_t required_parameters = function_type.parameter_count;
+		while (required_parameters != 0 &&
+			required_parameters <= function.parameters.size() &&
+			function.parameters[required_parameters - 1].default_argument != kNoNode)
+			--required_parameters;
+		if (explicit_arity < required_parameters ||
+			(!function_type.variadic &&
+			 explicit_arity > function_type.parameter_count))
+		{
+			viable[c] = false;
+			continue;
+		}
+		const TypeId* parameter_data = program_->types.Parameters(function.type);
+		std::vector<TypeId> parameters;
+		if (function_type.parameter_count != 0)
+			parameters.assign(parameter_data,
+				parameter_data + function_type.parameter_count);
+		for (std::size_t a = 0; a < explicit_arity; ++a)
+		{
+			ConversionRank rank = CONVERSION_ELLIPSIS;
+			if (a < function_type.parameter_count)
+			{
+				if (arguments[a].type != kNoType)
+				{
+					const CallConversionFact conversion = CallConversion(
+						arguments[a], parameters[a], &conversion_cache, a);
+					conversions[c * explicit_arity + a] = conversion;
+					rank = conversion.rank;
+				}
+				else
+				{
+					const CallConversionFact conversion =
+						UntypedCallArgumentConversion(
+							argument_syntax[a], scope, parameters[a]);
+					conversions[c * explicit_arity + a] = conversion;
+					rank = conversion.rank;
+				}
+			}
+			ranks[c * arity + explicit_offset + a] = rank;
+			if (rank == CONVERSION_DERIVED_TO_BASE)
+				base_distances[c * arity + explicit_offset + a] =
+					BaseConversionDistance(arguments[a].type, parameters[a]);
+			if (rank == CONVERSION_INVALID) viable[c] = false;
+		}
+	}
+	const auto better = [this, &ranks, &base_distances, &conversions,
+		&candidates, &arguments, arity, explicit_arity, object](
+		std::size_t left, std::size_t right) -> bool
+	{
+		++overload_order_comparisons_;
+		bool no_worse = true;
+		bool strictly_better = false;
+		for (std::size_t a = 0; a < arity; ++a)
+		{
+			const int preference = CompareCandidateArgument(ranks,
+				base_distances, conversions, candidates, left, right, a,
+				arity, explicit_arity, object);
+			if (preference < 0) no_worse = false;
+			if (preference > 0) strictly_better = true;
+		}
+		if (!no_worse) return false;
+		if (strictly_better) return true;
+		const FunctionInfo& left_function = GetFunction(candidates[left]);
+		const FunctionInfo& right_function = GetFunction(candidates[right]);
+		const TypeRecord& left_type =
+			program_->types.Get(left_function.type);
+		const TypeRecord& right_type =
+			program_->types.Get(right_function.type);
+		const TypeId* left_parameters =
+			program_->types.Parameters(left_function.type);
+		const TypeId* right_parameters =
+			program_->types.Parameters(right_function.type);
+		for (std::size_t a = 0; a < explicit_arity; ++a)
+		{
+			if (a >= left_type.parameter_count ||
+				a >= right_type.parameter_count)
+				continue;
+			const int preference = CompareReferenceBindings(
+				arguments[a], left_parameters[a], right_parameters[a]);
+			if (preference != 0) return preference > 0;
+		}
+		if (object && left_function.member_owner != kNoType &&
+			right_function.member_owner != kNoType)
+		{
+			const int preference = CompareImplicitObjectBindings(
+				object->category, program_->types.Get(left_function.type),
+				program_->types.Get(right_function.type));
+			if (preference != 0) return preference > 0;
+		}
+		const int template_preference = CompareFunctionTemplateConstraints(
+			left_function, right_function);
+		if (template_preference != 0) return template_preference > 0;
+		return !left_function.template_specialization &&
+			right_function.template_specialization;
+	};
+	std::size_t viable_count = 0;
+	std::size_t champion = candidates.size();
+	for (std::size_t c = 0; c < candidates.size(); ++c)
+	{
+		if (!viable[c]) continue;
+		++viable_count;
+		if (champion == candidates.size())
+		{
+			champion = c;
+			continue;
+		}
+		if (better(c, champion)) champion = c;
+	}
+	if (viable_count == 0)
+	{
+		if (!CandidateSubstitutionActive() && !candidates.empty())
+		{
+			std::string diagnostic = "no viable overload for " +
+				program_->names.Get(program_->bindings[candidates[0]].name) +
+				" in " + (current_function_context_ == kNoBinding ?
+				std::string("<namespace>") : program_->names.Get(
+					program_->bindings[current_function_context_].name)) +
+				" candidate=" + DescribeType(
+					GetFunction(candidates[0]).type) + " object=" +
+				(object ? DescribeType(object->type) : "<none>");
+			for (std::size_t i = 0; i < arguments.size(); ++i)
+				diagnostic += " argument=" + DescribeType(arguments[i].type);
+			ThrowSemanticError(diagnostic);
+		}
+		return CandidateOverloadFailure("no viable overload");
+	}
+	if (viable_count != 1)
+		for (std::size_t other = 0; other < candidates.size(); ++other)
+		{
+			if (other == champion || !viable[other]) continue;
+			if (!better(champion, other))
+				return CandidateOverloadFailure(
+					AmbiguousOverloadDetail(candidates).c_str());
+		}
+	if (object_conversion && object)
+	{
+		object_conversion->rank = actual_object_ranks[champion];
+		if (object_conversion->rank == CONVERSION_DERIVED_TO_BASE)
+		{
+			const std::size_t projections = actual_object_distances[champion];
+			if (projections == std::numeric_limits<std::size_t>::max() ||
+				projections > std::numeric_limits<std::uint32_t>::max())
+				ThrowInternalCompilerError(
+					"selected object conversion has no bounded base path");
+			object_conversion->base_projection_count =
+				static_cast<std::uint32_t>(projections);
+		}
+	}
+	if (argument_conversions)
+	{
+		argument_conversions->clear();
+		argument_conversions->reserve(explicit_arity);
+		for (std::size_t a = 0; a < explicit_arity; ++a)
+			argument_conversions->push_back(
+				conversions[champion * explicit_arity + a]);
+	}
+	return candidates[champion];
+}
+
+ExpressionInfo Analyzer::BuildResolvedCall(BindingId selected,
+	ScopeId scope, const std::vector<NodeId>& argument_syntax,
+	const std::vector<ExpressionInfo>& arguments,
+	const ExpressionInfo* object, TypeId target, EntityId naming_class,
+	const ObjectConversionFact* object_conversion,
+	const std::vector<CallConversionFact>* argument_conversions, bool suppress_virtual_dispatch)
+{
+	if (GetFunction(selected).deleted_function ||
+		GetFunction(selected).deleted_special_member)
+	{
+		if (CandidateSubstitutionActive())
+			return CandidateSubstitutionFailure();
+		ThrowSemanticError("selected function is deleted");
+	}
+	EntityId object_class = kNoEntity;
+	if (object)
+	{
+		TypeId object_type = program_->types.RemoveTopCv(
+			EffectiveType(object->type));
+		const TypeRecord object_shape = program_->types.Get(object_type);
+		if (object_shape.kind == TYPE_POINTER) object_type = object_shape.child;
+		object_class = EntityOf(object_type);
+	}
+	// A replayed dependent member-function-template call can retain the static
+	// object type while its original lookup result has no naming-class marker.
+	// For an unqualified member access that object class is the naming class;
+	// an explicitly qualified access already supplies a nonempty marker.
+	const EntityId access_naming_class = naming_class == kNoEntity ?
+		object_class : naming_class;
+	if (!CanAccessMember(selected, access_naming_class, object_class))
+	{
+		if (CandidateSubstitutionActive())
+			return CandidateSubstitutionFailure();
+		ThrowSemanticError("inaccessible member function " +
+			program_->names.Get(program_->bindings[selected].name) + " on " +
+			(object ? program_->RenderType(object->type) :
+			 std::string("<no object>")) + " in " +
+			(current_function_context_ == kNoBinding ? std::string("<namespace>") :
+			 program_->names.Get(program_->bindings[current_function_context_].name)) +
+			OwnerAndNamingTypes(selected, access_naming_class) +
+			" [member-owner=" + std::to_string(
+				program_->bindings[selected].member_owner) +
+			" access-owner=" + std::to_string(
+				program_->bindings[selected].access_owner) +
+			" naming-class=" + std::to_string(access_naming_class) +
+			" object-class=" + std::to_string(object_class) +
+			" access=" + std::to_string(program_->bindings[selected].access) + "]");
+	}
+	const FunctionInfo function = GetFunction(selected);
+	const bool nonstatic_member = function.member_owner != kNoType &&
+		!program_->bindings[selected].static_member_function;
+	const TypeRecord function_type = program_->types.Get(function.type);
+	const TypeId* parameter_data = program_->types.Parameters(function.type);
+	std::vector<TypeId> parameters;
+	if (function_type.parameter_count != 0)
+		parameters.assign(parameter_data,
+			parameter_data + function_type.parameter_count);
+	const TypeId result_type = function_type.child;
+	EnsureClassDefinition(result_type);
+	const TypeRecord returned = program_->types.Get(result_type);
+	const ValueCategory category = returned.kind == TYPE_LVALUE_REFERENCE ?
+		VALUE_LVALUE : returned.kind == TYPE_RVALUE_REFERENCE ?
+			VALUE_XVALUE : VALUE_PRVALUE;
+	const TypeId callable_type = function.member_owner == kNoType ?
+		function.type : AdaptMemberFunctionType(selected);
+	const BindingId emission_binding = program_->bindings[selected].canonical;
+	const std::uint32_t call = MakeDump(DUMP_CALL_EXPRESSION,
+		result_type, category, 0, emission_binding);
+	const std::uint32_t virtual_slot = VirtualSlotFor(selected);
+	if (!suppress_virtual_dispatch && object && virtual_slot != kNoDumpEdge)
+	{
+		dump_.nodes[call].virtual_call = true;
+		dump_.nodes[call].virtual_slot = virtual_slot;
+		if (object_class != kNoEntity &&
+			program_->entities[object_class].virtual_base_count != 0) MarkVtableDemand(object_class);
+	}
+	dump_.nodes[call].user_conversion_call = function.conversion_function;
+	dump_.nodes[call].explicit_user_conversion_call = function.conversion_function && function.explicit_conversion;
+	const std::uint32_t callee = MakeDump(DUMP_CALLEE, callable_type,
+		VALUE_NONE, 0, emission_binding);
+	dump_.Add(call, callee);
+	ExpressionInfo converted_object;
+	const ExpressionInfo* constexpr_receiver = object;
+	std::vector<ExpressionInfo> constexpr_arguments;
+	constexpr_arguments.reserve(function_type.parameter_count);
+	if (function.member_owner != kNoType)
+	{
+		if (!object) ThrowInternalCompilerError("selected member call has no object");
+		const TypeId object_parameter =
+			program_->types.Parameters(callable_type)[0];
+		ExpressionInfo qualified_object = *object;
+		const bool split_qualified_projection = suppress_virtual_dispatch &&
+			ApplyQualifiedMemberNamingTarget(
+				&qualified_object, naming_class, selected);
+		converted_object = ApplyMemberObjectTarget(
+			qualified_object, object_parameter, selected,
+			split_qualified_projection ? 0 : object_conversion);
+		PublishCallImplicitObject(call, converted_object.node);
+		constexpr_receiver = &converted_object;
+	}
+	for (std::size_t a = 0; a < arguments.size(); ++a)
+	{
+		ExpressionInfo argument = arguments[a];
+		if (a < function_type.parameter_count)
+		{
+			if (argument.type == kNoType)
+				argument = MaterializeCallArgument(
+					argument_syntax[a], scope, parameters[a], argument,
+					argument_conversions && a < argument_conversions->size() ?
+						&(*argument_conversions)[a] : 0);
+			else argument = ApplyCallArgument(argument, parameters[a],
+				argument_conversions && a < argument_conversions->size() ?
+					&(*argument_conversions)[a] : 0);
+			if (CandidateSubstitutionFailed()) return ExpressionInfo();
+			constexpr_arguments.push_back(argument);
+		}
+		else if (IsClassObjectType(argument.type))
+		{
+			if (dump_.nodes[argument.node].kind != DUMP_TEMPORARY_OBJECT)
+				argument = MaterializeTemporary(argument);
+			dump_.nodes[argument.node].argument_materialization = true;
+			dump_.nodes[argument.node].variadic_class_argument = true;
+		}
+		dump_.Add(call, argument.node);
+		if (a < function_type.parameter_count &&
+			IsClassObjectType(parameters[a]) &&
+			argument.category == VALUE_PRVALUE)
+		{
+			const EntityId parameter_entity = EntityOf(parameters[a]);
+			const EntityRecord* parameter_class =
+				parameter_entity == kNoEntity ? 0 :
+					&program_->entities[parameter_entity];
+			if (parameter_class && !parameter_class->trivial_destructor &&
+				!(parameter_class->indirect_class_parameter_abi &&
+				  parameter_class->object_size == 16 &&
+				  parameter_class->template_argument_count == 0))
+				dump_.nodes[call].full_expression_staging = true;
+		}
+	}
+	for (std::size_t a = arguments.size();
+		a < function_type.parameter_count; ++a)
+	{
+		if (a >= function.parameters.size() ||
+			function.parameters[a].default_argument == kNoNode)
+			ThrowInternalCompilerError("missing default argument fact");
+		ExpressionInfo argument = AnalyzeExpression(
+			function.parameters[a].default_argument,
+			function.parameters[a].default_scope, parameters[a]);
+		argument = ApplyCallArgument(argument, parameters[a]);
+		MarkDefaultArgumentSubtree(argument.node);
+		dump_.Add(call, argument.node);
+		constexpr_arguments.push_back(argument);
+	}
+	const EntityId result_entity = EntityOf(result_type);
+	const BindingId result_destructor = DestructorForType(result_type);
+	if (unevaluated_depth_ == 0 && result_destructor != kNoBinding &&
+		FunctionIsNonthrowing(selected) &&
+		!IsElidableAutomaticDestructor(result_destructor))
+		dump_.nodes[call].eager_full_expression_cleanup = true;
+	if (program_->bindings[emission_binding].closure_template_specialization &&
+		result_entity != kNoEntity &&
+		program_->entities[result_entity].indirect_class_value_abi)
+		program_->bindings[emission_binding].
+			force_indirect_class_result_abi = true;
+	ExpressionInfo result;
+	result.node = call;
+	result.type = result_type;
+	result.category = category;
+	result.binding = selected;
+	ConstexprScalarValue constexpr_value;
+	bool constexpr_has_scalar = false;
+	std::uint32_t constexpr_address = kNoConstexprAddress;
+	std::uint32_t constexpr_object = kNoConstexprObject;
+	std::uint32_t constexpr_complete_object = kNoConstexprObject;
+	bool folded_call = false;
+	bool evaluated_call = false;
+	if (constant_evaluation_suppressed_depth_ == 0 &&
+		(constant_expression_required_depth_ != 0 ||
+		 constexpr_evaluation_depth_ != 0) &&
+		TryEvaluateConstexprFunction(
+		selected, constexpr_arguments, &constexpr_value, &constexpr_has_scalar,
+		&constexpr_address,
+		&constexpr_object, &constexpr_complete_object, constexpr_receiver))
+	{
+		evaluated_call = true;
+		if (returned.kind == TYPE_LVALUE_REFERENCE ||
+			returned.kind == TYPE_RVALUE_REFERENCE)
+		{
+			if (constexpr_has_scalar)
+				SetExpressionScalar(&result,
+					NormalizeScalarConstant(EffectiveType(result_type),
+						constexpr_value));
+			if (constexpr_object != kNoConstexprObject)
+				SetExpressionSubobject(&result, constexpr_object,
+					constexpr_complete_object);
+			SetExpressionLvalueAddress(&result, constexpr_address);
+		}
+		else if (IsPointer(EffectiveType(result_type)))
+		{
+			SetExpressionAddress(&result, constexpr_address);
+			if (constexpr_object != kNoConstexprObject)
+				SetExpressionSubobject(&result, constexpr_object,
+					constexpr_complete_object);
+		}
+		else if (constexpr_object != kNoConstexprObject)
+		{
+			SetExpressionObject(&result, constexpr_object);
+			PublishDumpObject(call, constexpr_object);
+		}
+		else SetExpressionScalar(&result,
+			NormalizeScalarConstant(result_type, constexpr_value));
+		RecordExpressionFacts(result);
+		if (constant_expression_required_depth_ != 0 &&
+			preserve_constant_initializer_recipe_depth_ == 0 &&
+			!(nonstatic_member &&
+			  constant_initializer_required_depth_ != 0 &&
+			  (!constexpr_has_scalar ||
+			   local_constant_initializer_depth_ != 0)) &&
+			constexpr_address == kNoConstexprAddress &&
+			constexpr_object == kNoConstexprObject)
+		{
+			result = MakeLiteral(
+				result_type, InternScalar(result_type, constexpr_value));
+			SetExpressionScalar(&result,
+				NormalizeScalarConstant(result_type, constexpr_value));
+			RecordExpressionFacts(result);
+			folded_call = true;
+		}
+	}
+	const bool compile_time_only_call = evaluated_call &&
+		constant_expression_required_depth_ != 0 &&
+		!(nonstatic_member && constant_initializer_required_depth_ != 0 &&
+		  (!constexpr_has_scalar ||
+		   local_constant_initializer_depth_ != 0));
+	const bool demand_call = ShouldDemandResolvedCall(
+		selected, folded_call, compile_time_only_call);
+	if (demand_call && unevaluated_depth_ == 0 &&
+		GetFunction(selected).member_owner != kNoType &&
+		!GetFunction(selected).defined)
+		GetMutableFunction(selected).deferred = true;
+	if (resolved_call_demand_suppressed_depth_ != 0)
+		dump_.nodes[call].pending_runtime_call_demand = demand_call;
+	else if (demand_call) { DemandRetainedRuntimeCalls(call); DemandFunction(selected); }
+	++expression_count_;
+	return ApplyTarget(result, target);
+}
+// A call through a function or function-pointer type once overloading and
+// surrogates are out of the way: the arity check, the constexpr path, and
+// the call node with each argument converted to its parameter type.
+ExpressionInfo Analyzer::AnalyzeIndirectCall(ExpressionInfo callee,
+	ScopeId scope, const std::vector<NodeId>& argument_syntax,
+	const std::vector<ExpressionInfo>& analyzed_arguments, TypeId target)
+{
+	TypeId function_type = program_->types.RemoveTopCv(EffectiveType(callee.type));
+	TypeRecord callable = program_->types.Get(function_type);
+	const bool block_pointer_call = callable.kind == TYPE_BLOCK_POINTER;
+	if (callable.kind == TYPE_POINTER || block_pointer_call)
+	{
+		function_type = callable.child;
+		callable = program_->types.Get(function_type);
+	}
+	if (callable.kind != TYPE_FUNCTION)
+		return CandidateExpressionFailure("called object is not callable");
+	if (argument_syntax.size() < callable.parameter_count || (!callable.variadic && argument_syntax.size() != callable.parameter_count))
+		return CandidateExpressionFailure("indirect call arity mismatch");
+	ExpressionInfo constexpr_call;
+	if (!block_pointer_call && TryAnalyzeConstexprIndirectCall(&callee, scope, argument_syntax,
+		analyzed_arguments, target,
+		&constexpr_call)) return constexpr_call;
+	const TypeId* parameter_data = program_->types.Parameters(function_type);
+	std::vector<TypeId> parameters;
+	if (callable.parameter_count != 0)
+		parameters.assign(parameter_data,
+			parameter_data + callable.parameter_count);
+	const TypeId result_type = callable.child;
+	const TypeRecord returned = program_->types.Get(result_type);
+	const ValueCategory category = returned.kind == TYPE_LVALUE_REFERENCE ?
+		VALUE_LVALUE : returned.kind == TYPE_RVALUE_REFERENCE ?
+		VALUE_XVALUE : VALUE_PRVALUE;
+	const std::uint32_t call = MakeDump(DUMP_CALL_EXPRESSION,
+		result_type, category);
+	dump_.Add(call, callee.node);
+	for (std::size_t a = 0; a < argument_syntax.size(); ++a)
+	{
+		ExpressionInfo argument = analyzed_arguments[a];
+		if (a < callable.parameter_count)
+			argument = MaterializeCallArgument(
+				argument_syntax[a], scope, parameters[a], argument);
+		if (CandidateSubstitutionFailed()) return ExpressionInfo();
+		dump_.Add(call, argument.node);
+	}
+	ExpressionInfo result;
+	result.node = call;
+	result.type = result_type;
+	result.category = category;
+	++expression_count_;
+	return ApplyTarget(result, target);
+}
+
+ExpressionInfo Analyzer::AnalyzeCall(NodeId node, ScopeId scope, TypeId target)
+{
+	const NodeId callee_syntax = FirstSemanticChild(node);
+	if (callee_syntax == kNoNode) ThrowSemanticError("call without callee");
+	NodeId direct_callee_syntax = callee_syntax;
+	bool parenthesized_callee = false;
+	while (arena_->IsTag(direct_callee_syntax, ::cppgm::syntax::STAG_PARENTHESIZED_EXPRESSION)) {
+		parenthesized_callee = true;
+		direct_callee_syntax = FirstSemanticChild(direct_callee_syntax);
+		if (direct_callee_syntax == kNoNode)
+			ThrowSemanticError("empty parenthesized callee");
+	}
+	NodeId arguments_node = kNoNode; std::vector<NodeId> argument_syntax = CollectCallArgumentSyntax(node, &arguments_node);
+	if (NeedsBracedCallContext(argument_syntax)) return AnalyzeCallInBracedContext(node, scope, target);
+	ExpressionInfo typeof_cast;
+	if (TryAnalyzeTypeofFunctionalCast(direct_callee_syntax, argument_syntax, scope, target, &typeof_cast)) return typeof_cast;
+	std::vector<ExpressionInfo> analyzed_arguments;
+	bool arguments_analyzed = false;
+	ExpressionInfo member_call;
+	if (AnalyzeExplicitDestructorCall(callee_syntax, scope, argument_syntax, target, &member_call)) return member_call;
+	if (AnalyzeDirectMemberCall(callee_syntax, scope, argument_syntax, target, &member_call)) return member_call;
+	if (ExpandCallArgumentPacks(argument_syntax, scope, &argument_syntax, &analyzed_arguments)) arguments_analyzed = true;
+	if (CandidateSubstitutionFailed()) return ExpressionInfo();
+	std::size_t constexpr_callee_local = 0;
+	const bool local_callable =
+		arena_->IsTag(direct_callee_syntax, ::cppgm::syntax::STAG_ID_EXPRESSION) &&
+		FindChild(direct_callee_syntax, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME) == kNoNode && arena_->Payload(direct_callee_syntax).find("::") == std::string::npos &&
+		FindConstexprLocal(program_->names.Intern(
+			arena_->Payload(direct_callee_syntax)), &constexpr_callee_local);
+	if (arena_->IsTag(direct_callee_syntax, ::cppgm::syntax::STAG_ID_EXPRESSION) &&
+		!local_callable)
+	{
+		const std::string spelling = arena_->Payload(direct_callee_syntax);
+		NamePath callee_path = SyntaxNamePath(direct_callee_syntax);
+		NamePath explicit_template_base;
+		std::vector<NodeId> explicit_template_syntax;
+		const bool explicit_template_id = CollectExplicitTemplateArguments(
+			direct_callee_syntax, &explicit_template_base,
+			&explicit_template_syntax);
+		if (explicit_template_id) callee_path = explicit_template_base;
+		const bool qualified_callee = callee_path.global || callee_path.Size() > 1;
+		ExpressionInfo builtin;
+		// A compiler builtin is a global-namespace name, so `::__builtin_x`
+		// names the same one as `__builtin_x`; libc++ writes the qualified
+		// form so a user's macro cannot intercept it.  Any deeper
+		// qualification names something else and is not a builtin.
+		const std::string builtin_spelling =
+			callee_path.global && callee_path.Size() == 1 ?
+				program_->names.Get(callee_path.Last()) : spelling;
+		// Closed intrinsic handlers own builtin identity.  Only after all of them
+		// decline may the PA34 compatibility fallback resolve __builtin_x as x.
+		if (TryAnalyzeImmediateBuiltinCall(
+			builtin_spelling, scope, argument_syntax, target, &builtin))
+			return builtin;
+		if (spelling == "__builtin_invoke")
+			return AnalyzeBuiltinInvoke(scope, argument_syntax,
+				arguments_analyzed ? &analyzed_arguments : 0, target);
+		if (TryAnalyzeCompilerFunctionBuiltin(spelling, scope,
+			argument_syntax, node, target, &builtin)) return builtin;
+		if (TryAnalyzeCompilerFunctionAlias(spelling, scope, argument_syntax, target, &builtin)) return builtin;
+		EntityId function_naming_class = kNoEntity;
+		bool retained_lookup = false;
+		std::vector<BindingId> candidates = RetainedFunctionCallCandidates(
+			direct_callee_syntax, scope, spelling, &function_naming_class, &retained_lookup);
+		if (!arguments_analyzed)
+			for (std::size_t i = 0; i < argument_syntax.size(); ++i)
+				analyzed_arguments.push_back(
+					AnalyzeUntypedCallArgument(argument_syntax[i], scope));
+		arguments_analyzed = true;
+		const TypeId cast_type = ResolveFunctionalCastType(scope, spelling,
+			direct_callee_syntax);
+		const bool type_precedes_functions = FunctionalCastPrecedesFunctions(
+				spelling, scope, cast_type, direct_callee_syntax, candidates);
+		if (!type_precedes_functions)
+			CompleteFunctionCallTemplateCandidates(direct_callee_syntax, scope,
+				spelling, argument_syntax, analyzed_arguments, retained_lookup,
+				&candidates,
+				&function_naming_class);
+		if (!type_precedes_functions &&
+			!parenthesized_callee && !qualified_callee)
+		{
+			const NameId adl_name = explicit_template_id ?
+				explicit_template_base.Last() : program_->names.Intern(spelling);
+			CompleteArgumentDependentCallCandidates(adl_name,
+				explicit_template_id ? &explicit_template_syntax : 0, scope,
+				argument_syntax, analyzed_arguments, retained_lookup &&
+				!RetainedCallAllowsArgumentDependentLookup(direct_callee_syntax),
+				&candidates);
+		}
+		if (!type_precedes_functions && !candidates.empty())
+		{
+			bool has_member_candidate = false;
+			for (std::size_t i = 0; i < candidates.size(); ++i)
+				if (GetFunction(candidates[i]).member_owner != kNoType)
+					has_member_candidate = true;
+			ExpressionInfo implicit_object;
+			const ExpressionInfo* object = 0;
+			if (has_member_candidate)
+			{
+				const NameId this_name = program_->names.Intern("this");
+				const LookupResult found_this = program_->LookupName(
+					scope, this_name, LOOKUP_ORDINARY);
+				if (found_this.ordinary != kNoBinding)
+				{
+					implicit_object = AnalyzeThisExpression(scope);
+					object = &implicit_object;
+				}
+			}
+			if (object && qualified_callee)
+				ApplyQualifiedCallNamingTarget(
+					&implicit_object, function_naming_class, candidates);
+			ObjectConversionFact object_conversion;
+			std::vector<CallConversionFact> argument_conversions;
+			const BindingId selected = SelectOverload(scope, argument_syntax,
+				analyzed_arguments, candidates, object,
+				object ? &object_conversion : 0, &argument_conversions);
+			if (selected == kNoBinding) return ExpressionInfo();
+			return BuildResolvedCall(selected, scope, argument_syntax,
+				analyzed_arguments, object, target, function_naming_class,
+				object ? &object_conversion : 0, &argument_conversions,
+				qualified_callee);
+		}
+		if (cast_type != kNoType)
+		{
+			const TypeRecord cast_record = program_->types.Get(cast_type);
+			if (cast_record.kind == TYPE_ARRAY && arguments_node != kNoNode &&
+				arena_->IsTag(arguments_node, ::cppgm::syntax::STAG_BRACED_INIT_LIST))
+			{
+				ExpressionInfo initialized = AnalyzeBracedInit(
+					arguments_node, scope, cast_type);
+				initialized = MaterializeTemporary(initialized);
+				return target == kNoType ? initialized :
+					ApplyTarget(initialized, target);
+			}
+			// N3485 5.2.3/1: `T(expr)` with one operand is the cast `(T)expr`,
+			// and for a reference type that binds the operand rather than
+			// constructing anything.  `IsClassObjectType` looks through the
+			// reference, so without this a reference cast is aggregate- or
+			// constructor-initialized from its own operand -- libc++'s sort
+			// passes its comparator on as `_Comp_ref(__comp)`, whose
+			// `_Comp_ref` is a reference typedef.  The scalar path below
+			// already gives a reference cast the right value category.
+			const bool reference_cast =
+				cast_record.kind == TYPE_LVALUE_REFERENCE ||
+				cast_record.kind == TYPE_RVALUE_REFERENCE;
+			if (IsClassObjectType(cast_type) && !reference_cast)
+				return AnalyzeClassFunctionalCast(cast_type, scope,
+					argument_syntax, arguments_node, target,
+					arguments_analyzed ? &analyzed_arguments : 0);
+			if (argument_syntax.size() > 1)
+				ThrowSemanticError("too many functional cast arguments");
+			if (argument_syntax.empty())
+			{
+				ExpressionInfo zero = MakeLiteral(cast_type,
+					program_->names.Intern("0"));
+				zero.constant = true; zero.value = 0;
+				dump_.nodes[zero.node].value_initialization = true;
+				return ApplyTarget(zero, target);
+			}
+			ExpressionInfo operand = MaterializeFunctionalCastArgument(
+				argument_syntax[0], scope, cast_type, analyzed_arguments[0]);
+			if (CandidateSubstitutionFailed()) return ExpressionInfo();
+			if (arguments_node != kNoNode &&
+				arena_->IsTag(arguments_node, ::cppgm::syntax::STAG_BRACED_INIT_LIST) &&
+				IsBracedNarrowing(operand, cast_type))
+				return CandidateExpressionFailure(
+					"narrowing list-initialization conversion");
+			if (EntityOf(operand.type) != kNoEntity &&
+				ConvertingFunction(operand, cast_type, true).rank !=
+					CONVERSION_INVALID)
+				return ApplyTarget(
+					ApplyExplicitConversion(operand, cast_type), target);
+			const ValueCategory cast_category =
+				cast_record.kind == TYPE_LVALUE_REFERENCE ? VALUE_LVALUE :
+				cast_record.kind == TYPE_RVALUE_REFERENCE ? VALUE_XVALUE :
+				VALUE_PRVALUE;
+			const std::uint32_t cast = MakeDump(DUMP_CAST_EXPRESSION,
+				cast_type, cast_category);
+			dump_.Add(cast, operand.node);
+			ExpressionInfo result;
+			result.node = cast;
+			result.type = cast_type;
+			result.category = cast_category;
+			SetFunctionalScalarCast(&result, operand, cast_type);
+			++expression_count_;
+			return ApplyTarget(result, target);
+		}
+		NamePath explicit_base;
+		std::vector<NodeId> explicit_arguments;
+		if (CandidateSubstitutionActive() &&
+			CollectExplicitTemplateArguments(direct_callee_syntax,
+				&explicit_base, &explicit_arguments))
+			return CandidateSubstitutionFailure();
+		if (retained_lookup) return CandidateExpressionFailure("retained call has no viable function");
+	}
+	ExpressionInfo callee = AnalyzeExpression(callee_syntax, scope);
+	if (CandidateSubstitutionFailed()) return ExpressionInfo();
+	if (callee.type == kNoType) return CandidateExpressionFailure("call has no resolved callee type");
+	if (!arguments_analyzed)
+	{
+		for (std::size_t i = 0; i < argument_syntax.size(); ++i)
+			analyzed_arguments.push_back(
+				AnalyzeUntypedCallArgument(argument_syntax[i], scope));
+	}
+	ExpressionInfo call_operator;
+	if (IsCapturelessLambdaType(callee.type) &&
+		dump_.nodes[callee.node].kind == DUMP_BRACED_INIT_LIST &&
+		TryAnalyzeCallSurrogate(scope, callee, analyzed_arguments,
+			target, &call_operator)) return call_operator;
+	if (TryAnalyzeCallOperator(scope, callee, argument_syntax,
+		&analyzed_arguments, target, &call_operator)) return call_operator;
+	if (TryAnalyzeCallSurrogate(scope, callee, analyzed_arguments,
+		target, &call_operator)) return call_operator;
+	return AnalyzeIndirectCall(callee, scope, argument_syntax,
+		analyzed_arguments, target);
+}
+ExpressionInfo Analyzer::AnalyzeAssignment(NodeId node, ScopeId scope)
+{
+	const std::uint32_t first = arena_->FirstEdge(node);
+	const std::uint32_t second = first == kNoEdge ? kNoEdge :
+		arena_->NextEdge(first);
+	if (second == kNoEdge) ThrowSemanticError("invalid assignment");
+	const NodeId left_syntax = arena_->EdgeChild(first);
+	const NodeId right_syntax = arena_->EdgeChild(second);
+	const std::string operation = PayloadSource(node);
+	const int op = PayloadTokenKind(node);
+	const bool braced_assignment = op == OP_ASS &&
+		arena_->IsTag(right_syntax, ::cppgm::syntax::STAG_BRACED_INIT_LIST);
+	if (braced_assignment && !braced_initialization_context_)
+		return AnalyzeAssignmentInBracedContext(node, scope);
+	ExpressionInfo left = AnalyzeExpression(left_syntax, scope);
+	if (CandidateSubstitutionFailed()) return left;
+	ExpressionInfo right = braced_assignment ?
+		AnalyzeUntypedCallArgument(right_syntax, scope) :
+		AnalyzeExpression(right_syntax, scope);
+	if (CandidateSubstitutionFailed()) return right;
+	std::vector<NodeId> overloaded_syntax;
+	overloaded_syntax.push_back(left_syntax);
+	overloaded_syntax.push_back(right_syntax);
+	std::vector<ExpressionInfo> overloaded_operands;
+	overloaded_operands.push_back(left);
+	overloaded_operands.push_back(right);
+	ExpressionInfo overloaded;
+	if (TryAnalyzeOverloadedOperator(operation, scope, overloaded_syntax,
+		overloaded_operands, op == OP_ASS, kNoType, &overloaded))
+		return overloaded;
+	if (right.type == kNoType && braced_assignment)
+		right = AnalyzeBracedInit(right_syntax, scope, EffectiveType(left.type));
+	(void)ApplyBuiltinAssignmentConversion(operation, left, &right);
+	if (op == OP_ASS) right = ApplyTarget(right, EffectiveType(left.type));
+	if (!IsModifiableLvalue(left))
+		return CandidateExpressionFailure(
+			"assignment requires modifiable lvalue");
+	const bool pointer_add = IsPointerToCompleteObject(left.type) &&
+		(op == OP_PLUSASS || op == OP_MINUSASS) && IsIntegral(right.type);
+	const bool reverse_pointer_add = op == OP_PLUSASS &&
+		program_->types.RemoveTopCv(EffectiveType(left.type)) ==
+			program_->types.Fundamental(FUND_BOOL) &&
+		IsPointerToCompleteObject(Decay(right.type));
+	if (operation != "=")
+	{
+		const bool additive = op == OP_PLUSASS || op == OP_MINUSASS;
+		const bool arithmetic_operation = additive || op == OP_STARASS ||
+			op == OP_DIVASS;
+		const bool integral_operation = op == OP_MODASS ||
+			op == OP_LSHIFTASS || op == OP_RSHIFTASS || op == OP_BANDASS ||
+			op == OP_BORASS || op == OP_XORASS;
+		const bool arithmetic = arithmetic_operation &&
+			IsArithmetic(left.type) && IsArithmetic(right.type);
+		const bool integral = integral_operation && IsIntegral(left.type) &&
+			IsIntegral(right.type);
+		if (!pointer_add && !reverse_pointer_add && !arithmetic && !integral)
+			return CandidateExpressionFailure("invalid compound assignment");
+	}
+	const TypeId result_type = EffectiveType(left.type);
+	const std::uint32_t expression = MakeDump(DUMP_ASSIGNMENT_EXPRESSION,
+		result_type, VALUE_LVALUE,
+		program_->names.UseInterned(arena_->PayloadId(node)));
+	dump_.nodes[expression].target_typed_scalar_immediate =
+		HasTargetTypedSpecializedMemberImmediate(left, right);
+	dump_.nodes[expression].reverse_pointer_compound_assignment =
+		reverse_pointer_add;
+	if (operation != "=" && !pointer_add && !reverse_pointer_add)
+		dump_.nodes[expression].operand_type =
+			CommonArithmeticType(left.type, right.type);
+	dump_.Add(expression, left.node);
+	dump_.Add(expression, right.node);
+	ExpressionInfo result;
+	result.node = expression;
+	result.type = result_type;
+	result.category = VALUE_LVALUE;
+	if (constexpr_evaluation_depth_ != 0 &&
+		constant_evaluation_suppressed_depth_ == 0 &&
+		right.constant &&
+		(IsIntegral(result_type, true) || IsFloating(result_type)))
+	{
+		const std::size_t local = left.constexpr_local;
+		bool valid = local < constexpr_locals_.size();
+		ConstexprScalarValue assigned;
+		if (valid)
+		{
+			try
+			{
+				assigned = ConvertScalarConstant(
+					right.type, result_type, ExpressionScalar(right));
+			}
+			catch (const SemanticError&)
+			{
+				valid = false;
+			}
+		}
+		if (valid && operation != "=")
+		{
+			const std::string binary = operation.substr(0, operation.size() - 1);
+			const TypeId operand_type = dump_.nodes[expression].operand_type != kNoType ?
+				dump_.nodes[expression].operand_type : result_type;
+			try
+			{
+				const ConstexprScalarValue left_operand = ConvertScalarConstant(
+					result_type, operand_type, constexpr_locals_[local].value);
+				const ConstexprScalarValue right_operand = ConvertScalarConstant(
+					right.type, operand_type, ExpressionScalar(right));
+				assigned = ApplyConstantScalarBinary(
+					binary, left_operand, right_operand, operand_type);
+			}
+			catch (const SemanticError&)
+			{
+				valid = false;
+			}
+		}
+		if (valid)
+		{
+			assigned = NormalizeScalarConstant(result_type, assigned);
+			constexpr_locals_[local].value = assigned;
+			SetExpressionScalar(&result, assigned);
+			dump_.nodes[expression].constant = true;
+			if (assigned.kind == CONSTEXPR_SCALAR_INTEGRAL) { dump_.nodes[expression].constant_value = assigned.integral; dump_.nodes[expression].constant_high = assigned.integral_high; }
+		}
+	}
+	++expression_count_;
+	return result;
+}
+
+void Analyzer::AnalyzeTemplate(NodeId node, ScopeId scope,
+	AccessKind member_access)
+{
+	const NodeId clause = FindChild(node, ::cppgm::syntax::STAG_TEMPLATE_PARAMETER_CLAUSE);
+	const NodeId list = clause == kNoNode ? kNoNode :
+		FindChild(clause, ::cppgm::syntax::STAG_TEMPLATE_PARAMETER_LIST);
+	std::vector<TemplateParameter> parameters;
+	std::vector<NameId> parameter_name_list;
+	std::vector<NodeId> defaults;
+	ParseTemplateParameters(list, scope, &parameters, &parameter_name_list, &defaults);
+	NodeId target = kNoNode;
+	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		const NodeId child = arena_->EdgeChild(edge);
+		if (child != clause) target = child;
+	}
+	if (clause != kNoNode && list == kNoNode && target != kNoNode &&
+		AnalyzeExplicitTemplateSpecialization(target, scope, member_access))
+		return;
+	if (target != kNoNode && arena_->IsTag(target, ::cppgm::syntax::STAG_DEDUCTION_GUIDE_DECLARATION)) return;
+	if (target != kNoNode && arena_->IsTag(target, ::cppgm::syntax::STAG_ALIAS_DECLARATION))
+	{
+		ValidateRetainedTemplateDefinition(target, scope, parameters);
+		RegisterAliasTemplate(target, scope, member_access, parameters);
+		return;
+	}
+	if (target != kNoNode &&
+		AnalyzeFriendClassTemplate(target, scope, parameters)) return;
+	if (target != kNoNode && class_template_member_replay_depth_ == 0 &&
+		AnalyzeClassTemplateMember(target, scope, parameters)) return;
+	const bool source_class_template = source_type_view_ &&
+		target != kNoNode &&
+		(arena_->IsTag(target,
+			::cppgm::syntax::STAG_CLASS_SPECIFIER) ||
+		 arena_->IsTag(target,
+			::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION));
+	const std::size_t source_binding_begin = source_class_template ?
+		program_->BindingCount() : 0;
+	const std::size_t source_scope_begin = source_class_template ?
+		program_->ScopeCount() : 0;
+	if (target != kNoNode && !arena_->IsTag(target, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION))
+		ValidateRetainedTemplateDefinition(target, scope, parameters);
+	if (target != kNoNode &&
+		(arena_->IsTag(target, ::cppgm::syntax::STAG_CLASS_SPECIFIER) ||
+		 arena_->IsTag(target, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION)))
+	{
+		if (source_class_template)
+		{
+			AnalyzeClassTemplate(target, scope, parameters, member_access);
+			program_->SuppressSourceViewSince(
+				source_binding_begin, source_scope_begin);
+			ProjectSourceClassTemplate(target, scope, parameters);
+			return;
+		}
+		AnalyzeClassTemplate(target, scope, parameters, member_access);
+		return;
+	}
+	if (target != kNoNode && RetainVariableTemplate(
+		target, scope, parameters)) return;
+	const bool special_member_template = target != kNoNode &&
+		(arena_->IsTag(target, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DECLARATION) ||
+		 arena_->IsTag(target, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DEFINITION));
+	if (target == kNoNode ||
+		(!arena_->IsTag(target, ::cppgm::syntax::STAG_SIMPLE_DECLARATION) &&
+		 !arena_->IsTag(target, ::cppgm::syntax::STAG_FUNCTION_DEFINITION) &&
+		 !special_member_template))
+		ThrowSemanticError("unsupported PA12 templated declaration");
+	const NodeId specifiers = FindChild(target, special_member_template ?
+		"member-specifiers" : "decl-specifier-seq");
+	if (specifiers == kNoNode && !special_member_template)
+		ThrowSemanticError("invalid PA12 function template");
+	const bool definition = arena_->IsTag(target, ::cppgm::syntax::STAG_FUNCTION_DEFINITION) ||
+		arena_->IsTag(target, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DEFINITION);
+	const NodeId declarators = definition ? kNoNode :
+		FindChild(target, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
+	if (!definition && declarators == kNoNode && !special_member_template)
+		ThrowSemanticError("invalid PA12 function template");
+	std::vector<NodeId> pattern_declarators;
+	if (definition || special_member_template)
+	{
+		const NodeId declarator = FindChild(target, ::cppgm::syntax::STAG_DECLARATOR);
+		if (declarator == kNoNode)
+			ThrowSemanticError("invalid PA12 function template definition");
+		pattern_declarators.push_back(declarator);
+	}
+	else
+	{
+		for (std::uint32_t edge = arena_->FirstEdge(declarators); edge != kNoEdge;
+			edge = arena_->NextEdge(edge))
+		{
+			const NodeId declarator =
+				FindChild(arena_->EdgeChild(edge), ::cppgm::syntax::STAG_DECLARATOR);
+			if (declarator != kNoNode) pattern_declarators.push_back(declarator);
+		}
+	}
+	EnsureFunctionTemplateShapeParameters(parameters.size());
+	std::unordered_set<NameId> parameter_names;
+	for (std::size_t i = 0; i < parameters.size(); ++i)
+		if (parameters[i].name != 0)
+			parameter_names.insert(parameters[i].name);
+	bool deferred_dependent_result = false;
+	for (std::uint32_t edge = specifiers == kNoNode ? kNoEdge :
+		arena_->FirstEdge(specifiers);
+		edge != kNoEdge && !deferred_dependent_result;
+		edge = arena_->NextEdge(edge))
+	{
+		const NodeId specifier = arena_->EdgeChild(edge);
+		const NodeId structured = FindChild(specifier, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+		const bool deferred_shape =
+			arena_->IsTag(specifier, ::cppgm::syntax::STAG_DECLTYPE_SPECIFIER) ||
+			(arena_->IsTag(specifier, ::cppgm::syntax::STAG_DECL_SPECIFIER) &&
+			 FirstSemanticChild(specifier) != kNoNode) ||
+			structured != kNoNode;
+		if (deferred_shape &&
+			SyntaxUsesAnyIdentifier(*arena_, specifier, parameter_names))
+			deferred_dependent_result = true;
+	}
+	TypeId dependent_result_shape = kNoType;
+	if (deferred_dependent_result)
+		dependent_result_shape = DependentFunctionTemplateResultShape();
+	for (std::size_t i = 0; i < pattern_declarators.size(); ++i)
+	{
+		const NodeId declarator = pattern_declarators[i];
+		const NodeId exception_qualifier =
+			FindChild(declarator, ::cppgm::syntax::STAG_FUNCTION_QUALIFIER);
+		const NodeId exception_expression = exception_qualifier == kNoNode ?
+			kNoNode : FirstSemanticChild(exception_qualifier);
+		const bool dependent_exception_specification =
+			exception_expression != kNoNode && SyntaxUsesAnyIdentifier(
+				*arena_, exception_expression, parameter_names);
+		RegisterFunctionTemplatePattern(node, target, scope, member_access,
+			parameters, specifiers, declarator, definition,
+			special_member_template, dependent_result_shape,
+			dependent_exception_specification);
+	}
+}
+void Analyzer::AnalyzeNamespace(NodeId node, ScopeId scope,
+	std::uint32_t output_parent)
+{
+	std::string spelling = arena_->Payload(node);
+	const bool unnamed = spelling.empty() || spelling == "<unnamed>";
+	if (unnamed) spelling = "<unnamed>";
+	const NameId name = program_->names.Intern(spelling);
+	const bool is_inline = FindChild(node, ::cppgm::syntax::STAG_INLINE) != kNoNode;
+	const ScopeId child = program_->OpenNamespace(
+		scope, name, is_inline, unnamed);
+	program_->SetScopeEmissionName(child, unnamed ?
+		program_->names.Intern("_GLOBAL__N_1") : name);
+	if (scope_prefixes_.size() <= child)
+	{
+		scope_prefixes_.resize(static_cast<std::size_t>(child) + 1, 0);
+		scope_prefix_segments_.resize(static_cast<std::size_t>(child) + 1, 0);
+		scope_parents_.resize(static_cast<std::size_t>(child) + 1, kNoScope);
+		scope_nontrivial_object_lifetime_prefixes_.resize(
+			static_cast<std::size_t>(child) + 1, 0);
+		scope_lifetime_domains_.resize(
+			static_cast<std::size_t>(child) + 1, kNoScope);
+		scope_prefixes_[child] = unnamed ? ScopePrefixId(scope) :
+			std::numeric_limits<NameId>::max();
+		scope_prefix_segments_[child] = unnamed ? 0 : name;
+		scope_parents_[child] = scope;
+		InitializeInitializerListLifetimeScope(child, scope);
+		scope_nontrivial_object_lifetime_prefixes_[child] =
+			scope < scope_nontrivial_object_lifetime_prefixes_.size() ?
+				scope_nontrivial_object_lifetime_prefixes_[scope] : 0;
+		scope_lifetime_domains_[child] =
+			scope < scope_lifetime_domains_.size() ?
+				scope_lifetime_domains_[scope] : kNoScope;
+	}
+	if (unnamed) program_->AddUsingEdge(scope, child);
+	const std::uint32_t output_node = MakeDump(DUMP_NAMESPACE, kNoType,
+		VALUE_NONE, name);
+	dump_.Add(output_parent, output_node);
+	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		const NodeId declaration = arena_->EdgeChild(edge);
+		if (IsDeclaration(declaration))
+			AnalyzeDeclaration(declaration, child, output_node, false);
+	}
+}
+
+void Analyzer::AnalyzeDeclaration(NodeId node, ScopeId scope,
+	std::uint32_t output_parent, bool local)
+{
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_EMPTY_DECLARATION) || arena_->IsTag(node, ::cppgm::syntax::STAG_DEDUCTION_GUIDE_DECLARATION)) return;
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_LAYOUT_PACK_PUSH))
+	{
+		const std::int64_t parsed = ParseInteger(arena_->Payload(node));
+		if (parsed <= 0 ||
+			(static_cast<std::uint64_t>(parsed) &
+			 (static_cast<std::uint64_t>(parsed) - 1)) != 0)
+			ThrowSemanticError("invalid layout packing alignment");
+		pack_alignment_stack_.push_back(current_pack_alignment_);
+		current_pack_alignment_ = static_cast<std::size_t>(parsed);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_LAYOUT_PACK_POP))
+	{
+		if (pack_alignment_stack_.empty()) current_pack_alignment_ = 0;
+		else
+		{
+			current_pack_alignment_ = pack_alignment_stack_.back();
+			pack_alignment_stack_.pop_back();
+		}
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION))
+	{
+		AnalyzeTemplate(node, scope);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_STATIC_ASSERT_DECLARATION))
+		return AnalyzeStaticAssert(node, scope);
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_EXPLICIT_INSTANTIATION_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_EXPLICIT_INSTANTIATION_DEFINITION))
+	{
+		AnalyzeExplicitInstantiation(node, scope,
+			arena_->IsTag(node, ::cppgm::syntax::STAG_EXPLICIT_INSTANTIATION_DEFINITION));
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_NAMESPACE_DEFINITION))
+	{
+		AnalyzeNamespace(node, scope, output_parent);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_NAMESPACE_ALIAS_DEFINITION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_USING_DIRECTIVE) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_USING_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_ALIAS_DECLARATION))
+	{
+		AnalyzeUsing(node, scope, output_parent, local);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_SIMPLE_DECLARATION))
+	{
+		AnalyzeSimple(node, scope, output_parent, local);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_FUNCTION_DEFINITION))
+	{
+		AnalyzeFunction(node, scope, output_parent);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DEFINITION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DECLARATION))
+	{
+		AnalyzeOutOfClassSpecialMember(node, scope);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_CLASS_SPECIFIER) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION))
+	{
+		const TypeId type = AnalyzeClass(node, scope, std::string(), false);
+		const EntityId entity = EntityOf(type);
+		if (arena_->Payload(node).empty() && entity != kNoEntity &&
+			program_->entities[entity].flavor == NAMED_UNION)
+		{
+			if (!local)
+				ThrowSemanticError(
+					"namespace anonymous union must be static");
+			DeclareAnonymousUnionObject(node, scope, output_parent, type,
+				true, STORAGE_CLASS_NONE);
+		}
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_ENUM_SPECIFIER))
+	{
+		AnalyzeEnum(node, scope, std::string(), false);
+		if (local)
+		{
+			const std::uint32_t simple = MakeDump(DUMP_SIMPLE_DECLARATION);
+			dump_.Add(output_parent, simple);
+		}
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_LINKAGE_SPECIFICATION))
+	{
+		const LanguageLinkage previous_linkage = current_language_linkage_;
+		const bool direct_declaration = (arena_->Flags(node) & SYNTAX_FLAG_DIRECT_LINKAGE_DECLARATION) != 0;
+		current_language_linkage_ = arena_->Payload(node) == "C" ?
+			LANGUAGE_LINKAGE_C : LANGUAGE_LINKAGE_CPP;
+		if (direct_declaration) ++direct_linkage_declaration_depth_;
+		for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+			edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (IsDeclaration(child))
+				AnalyzeDeclaration(child, scope, output_parent, local);
+		}
+		if (direct_declaration) --direct_linkage_declaration_depth_;
+		current_language_linkage_ = previous_linkage;
+		return;
+	}
+	ThrowSemanticError("unsupported PA12 declaration: " + arena_->Tag(node));
+}
+
+// The class a qualified declarator names as its owner (`int C::x = 1;`),
+// so that the specifiers and initializers are analyzed in that class's
+// context; and the first declarator's name as a diagnostic hint.
+EntityId Analyzer::SimpleDeclarationClassContext(NodeId list, ScopeId scope,
+	bool qualified_lexical_scope, std::string* hint)
+{
+	EntityId declaration_class_context = kNoEntity;
+	if (list == kNoNode) return declaration_class_context;
+	const NodeId first = FirstSemanticChild(list);
+	const NodeId declarator = first == kNoNode ? kNoNode :
+		FindChild(first, ::cppgm::syntax::STAG_DECLARATOR);
+	if (declarator != kNoNode && DeclaratorName(declarator) != 0)
+		*hint = program_->names.Get(DeclaratorName(declarator));
+	if (declarator == kNoNode) return declaration_class_context;
+	NamePath owner_path = DeclaratorNamePath(declarator);
+	if (!owner_path.global && owner_path.Size() <= 1)
+		return declaration_class_context;
+	const ScopeId structured_owner = ResolveStructuredDeclaratorOwner(
+		declarator, scope, qualified_lexical_scope);
+	if (structured_owner != kNoScope)
+		return program_->EntityForScope(structured_owner);
+	owner_path.Pop();
+	const LookupResult owner_type = LookupPath(scope, owner_path, LOOKUP_TYPE);
+	if (owner_type.type != kNoType)
+		declaration_class_context = EntityOf(owner_type.type);
+	return declaration_class_context;
+}
+
+// After a local variable's initializer: a reference keeps the temporary it
+// binds to alive for the variable's lifetime and destroys the others now;
+// any other initializer ends its full-expression here, staged when the
+// destruction is conditional or may throw from static storage.
+void Analyzer::FinishLocalVariableInitializer(ScopeId scope,
+	std::uint32_t owner, BindingId binding, TypeId type,
+	const ExpressionInfo& initializer, std::uint32_t variable,
+	bool control_dependent)
+{
+	const bool extended_initializer_list =
+		ExtendInitializerListVariableLifetime(
+		type, scope, initializer.node, control_dependent);
+	if (program_->types.IsReference(type) && !control_dependent)
+	{
+		std::vector<std::uint32_t> temporaries;
+		CollectTemporaryObjects(initializer.node, &temporaries);
+		if (temporaries.empty()) return;
+		AddTemporaryLifetimeObligation(scope, temporaries.back());
+		for (std::size_t i = temporaries.size() - 1; i != 0; --i)
+		{
+			const std::uint32_t action =
+				MakeTemporaryDestructorAction(temporaries[i - 1]);
+			if (action != kNoDumpEdge) dump_.Add(owner, action);
+		}
+		return;
+	}
+	if (extended_initializer_list ||
+		dump_.nodes[variable].full_expression_staging) return;
+	const std::size_t edge_count = dump_.edges.size();
+	const bool static_storage = program_->bindings[binding].storage_class == STORAGE_CLASS_STATIC;
+	AppendFullExpressionDestructionActions(initializer.node, owner, static_storage);
+	if (control_dependent && dump_.edges.size() != edge_count &&
+		RequiresManagedConditionalFullExpression(initializer.node, edge_count))
+	{
+		dump_.nodes[owner].full_expression_staging = true;
+		MarkFullExpressionCalls(initializer.node);
+	}
+	if (static_storage && !InitializationActionsAreNonthrowing(initializer.node))
+		StageExceptionalFullExpression(initializer.node, owner, scope, true);
+}
+
+void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
+	std::uint32_t output_parent, bool local, bool qualified_lexical_scope,
+	bool demanded_template_storage)
+{
+	if (local && AnalyzeQualifiedAssignmentStatement(
+		node, scope, output_parent))
+		return;
+	if (local && (AnalyzeAmbiguousCallStatement(node, scope, output_parent) ||
+		AnalyzeAmbiguousRelationalDeclaration(node, scope, output_parent))) return;
+	if (local && AnalyzeAmbiguousDirectInitializer(
+		node, scope, output_parent))
+		return;
+	const NodeId specifiers = FindChild(node, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ), list = FindChild(node, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
+	std::string hint;
+	const EntityId declaration_class_context =
+		SimpleDeclarationClassContext(list, scope, qualified_lexical_scope, &hint);
+	const EntityId previous_class_context = current_class_context_;
+	if (declaration_class_context != kNoEntity) current_class_context_ = declaration_class_context;
+	const bool identity_only = HasDeclSpecifier(specifiers, "typedef");
+	const SpecInfo spec = identity_only ? BuildIdentityOnlySpecifiers(
+		specifiers, scope, hint, list != kNoNode) :
+		BuildSpecifiers(specifiers, scope, hint, list != kNoNode);
+	if (spec.virtual_specifier)
+		ThrowSemanticError(
+			"virtual specifier is only allowed in a class definition");
+	if (list == kNoNode)
+	{
+		AnalyzeDeclaratorlessSimpleDeclaration(specifiers, scope,
+			output_parent, local, spec);
+		current_class_context_ = previous_class_context;
+		return;
+	}
+	const std::uint32_t owner = local ? MakeDump(DUMP_SIMPLE_DECLARATION) :
+		output_parent;
+	if (local) dump_.Add(output_parent, owner);
+	for (std::uint32_t edge = arena_->FirstEdge(list); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		const NodeId item = arena_->EdgeChild(edge);
+		const NodeId declarator = FindChild(item, ::cppgm::syntax::STAG_DECLARATOR);
+		if (declarator == kNoNode) ThrowSemanticError("missing declarator");
+		if (IsStructuredBindingDeclarator(declarator)) { AnalyzeStructuredBindingDeclaration(item, declarator, spec, scope, owner, local); continue; }
+		const NamePath declared_path = DeclaratorNamePath(declarator);
+		const ScopeId structured_declaration_scope = qualified_lexical_scope ?
+			kNoScope : ResolveStructuredDeclaratorOwner(declarator, scope);
+		const ScopeId declaration_scope =
+			qualified_lexical_scope ? program_->ParentScope(scope) :
+			structured_declaration_scope != kNoScope ?
+				structured_declaration_scope :
+			declared_path.global || declared_path.Size() > 1 ?
+				ResolveOwner(scope, declared_path) : scope;
+		if (declaration_scope == kNoScope)
+			ThrowSemanticError("variable owner not found");
+		// N3485 7.3.1.2/2: a member of a named namespace may be defined
+		// outside it only in a namespace that encloses its own, and 9.4/2
+		// says the same for a static data member's class.
+		if (!local && !qualified_lexical_scope &&
+			(declared_path.global || declared_path.Size() > 1) &&
+			declaration_scope != scope)
+		{
+			bool encloses = false;
+			for (ScopeId owner_scope = declaration_scope;
+				owner_scope != kNoScope && !encloses;
+				owner_scope = program_->ParentScope(owner_scope))
+				encloses = owner_scope == scope;
+			if (!encloses)
+				ThrowSemanticError(
+					"qualified declaration is outside an enclosing scope");
+		}
+		const ScopeId semantic_scope = qualified_lexical_scope ?
+			scope : declaration_scope;
+		ExpressionInfo placeholder_initializer;
+		DeclaratorInfo parsed = BuildVariableDeclarator(item, declarator, spec, semantic_scope, local, &placeholder_initializer);
+		parsed.name = declared_path.Last();
+		if (parsed.name == 0) ThrowSemanticError("unnamed declaration");
+		if (spec.is_typedef)
+		{
+			program_->AddBinding(scope, BIND_TYPE_ALIAS, parsed.name, parsed.type);
+			const std::uint32_t alias = MakeDump(DUMP_TYPE_ALIAS, parsed.type,
+				VALUE_NONE, parsed.name);
+			dump_.Add(owner, alias);
+			continue;
+		}
+		if (program_->types.IsFunction(parsed.type))
+		{
+			AnalyzeSimpleFunctionDeclaration(node, item, declarator, scope,
+				declaration_scope, owner, declared_path, spec, parsed);
+			continue;
+		}
+		if (spec.is_constexpr)
+			parsed.type = program_->types.Qualify(parsed.type, CV_CONST);
+		const NodeId initializer_node = FindChild(item, ::cppgm::syntax::STAG_INITIALIZER);
+		if (spec.storage_class != STORAGE_CLASS_EXTERN ||
+			initializer_node != kNoNode)
+		{
+			EnsureClassDefinition(parsed.type);
+			DemandClassTemplateMemberDefinitions(
+				DestructedEntity(parsed.type));
+		}
+		// N3485 3.9.1/9: void is an incomplete type that can never be
+		// completed, so no object may be declared with it.
+		if (IsVoid(parsed.type))
+			ThrowSemanticError("variable has type void");
+		// N3485 8.3.2/5: an initializer may be omitted for a reference only
+		// in a parameter, a function return type, a class member declaration,
+		// or where extern is used explicitly.
+		const TypeKind declared_kind = program_->types.Get(parsed.type).kind;
+		if ((declared_kind == TYPE_LVALUE_REFERENCE ||
+			 declared_kind == TYPE_RVALUE_REFERENCE) &&
+			initializer_node == kNoNode &&
+			spec.storage_class != STORAGE_CLASS_EXTERN)
+			ThrowSemanticError("reference requires an initializer");
+		if (spec.is_constexpr && !IsConstexprLiteralType(parsed.type))
+			ThrowSemanticError(
+				"constexpr variable does not have literal type");
+		const LookupResult occupied =
+			program_->LookupDirect(declaration_scope, parsed.name, LOOKUP_ORDINARY);
+		if (occupied.ordinary != kNoBinding &&
+			program_->bindings[occupied.ordinary].kind == BIND_FUNCTION)
+			ThrowSemanticError("variable conflicts with function binding");
+		if (qualified_lexical_scope)
+			parsed.type = CompleteQualifiedStaticArrayType(
+				occupied.ordinary, parsed.type);
+		const BindingId binding = program_->AddBinding(declaration_scope,
+			BIND_VARIABLE,
+			parsed.name, parsed.type);
+		parsed.type = program_->bindings[binding].type;
+		PublishVariableDeclarationFacts(binding, declaration_scope,
+			parsed.name, parsed.type, spec, local);
+		ApplyVariableObjectAttributes(node, binding);
+		const bool static_constant_definition = IsStaticConstantDefinition(binding, initializer_node);
+		const bool constexpr_class_default =
+			spec.is_constexpr && IsClassObjectType(parsed.type) &&
+			!static_constant_definition;
+		if (spec.is_constexpr && initializer_node == kNoNode &&
+			!constexpr_class_default &&
+			!static_constant_definition &&
+			!(qualified_lexical_scope && program_->bindings[binding].constant))
+			ThrowSemanticError("constexpr variable requires initializer");
+		ExpressionInfo initializer;
+		bool has_initializer = initializer_node != kNoNode;
+		if (initializer_node != kNoNode)
+		{
+			const bool require_constant =
+				ShouldProbeConstantInitialization(local, spec, parsed.type);
+			const bool preserve_runtime_recipe =
+				ShouldPreserveRuntimeInitializerRecipe(local, spec,
+					parsed.type, initializer_node);
+			if (spec.placeholder_auto)
+			{
+				// The placeholder initializer was analyzed to deduce the
+				// type, with nothing to initialize yet, so a class prvalue
+				// stayed a temporary instead of being copy-initialized into
+				// the variable.  Now that the type is known, ask the ordinary
+				// path the question it could not be asked before; `E p = E();`
+				// and `auto p = E();` are the same initialization and have to
+				// produce the same graph.  Only that shape is re-analyzed, so
+				// deduction does not pay for it twice in general.
+				initializer = placeholder_initializer;
+				if (IsClassObjectType(parsed.type) &&
+					initializer.node != kNoDumpEdge &&
+					dump_.nodes[initializer.node].kind ==
+						DUMP_TEMPORARY_OBJECT)
+					initializer = AnalyzeConstantAwareVariableInitializer(
+						initializer_node, semantic_scope, parsed.type, local,
+						require_constant, preserve_runtime_recipe);
+			}
+			else
+				initializer = AnalyzeConstantAwareVariableInitializer(initializer_node,
+					semantic_scope, parsed.type, local, require_constant,
+					preserve_runtime_recipe);
+			if (program_->types.Get(parsed.type).IsIncompleteArray())
+			{
+				parsed.type = initializer.type;
+				program_->bindings[binding].type = parsed.type;
+			}
+			PublishVariableInitializer(binding, parsed.type, spec,
+				initializer, preserve_runtime_recipe);
+		}
+		else if (constexpr_class_default)
+		{
+			initializer = AnalyzeDefaultConstexprObjectInitializer(
+				parsed.type, semantic_scope, local);
+			PublishConstantVariableInitializer(
+				binding, parsed.type, spec, initializer);
+			has_initializer = true;
+		}
+		PublishCanonicalBindingConstant(binding);
+		if (demanded_template_storage) DemandStaticConstantInitializerDependencies(binding);
+		const bool deferred_template_constant_storage = !has_initializer &&
+			qualified_lexical_scope && program_->bindings[binding].constant &&
+			!demanded_template_storage &&
+			ClassTemplateHasNonTypeParameter(declaration_class_context);
+		if (!has_initializer &&
+			(qualified_lexical_scope || static_constant_definition) &&
+			!deferred_template_constant_storage)
+			has_initializer = MaterializeConstantDefinitionInitializer(
+				binding, &parsed.type, &initializer);
+		if (deferred_template_constant_storage) continue;
+		bool declaration_only = false;
+		const std::uint32_t variable = MakeVariableDeclarationDump(
+			parsed.type, parsed.name, binding, local, has_initializer, &declaration_only);
+		const std::uint32_t runtime_initializer =
+			PublishVariableInitializerActions(variable, binding, parsed.type,
+				initializer, has_initializer, declaration_only,
+				qualified_lexical_scope);
+		dump_.Add(owner, variable);
+		const NameId source_file = arena_->SourceLine(item) == 0 ? 0 : program_->names.Intern(arena_->SourceFile(item));
+		const bool control_dependent = local && has_initializer && HasControlDependentTemporary(initializer.node);
+		StageAutomaticInitializerException(runtime_initializer, variable, scope,
+			binding, parsed.type, local && runtime_initializer != kNoDumpEdge);
+		RegisterVariableLifetimeAndStorage(scope, local, declaration_only,
+			variable, binding, parsed.type, source_file,
+			static_cast<std::uint32_t>(arena_->SourceLine(item)),
+			static_cast<std::uint32_t>(arena_->SourceColumn(item)),
+			static_cast<std::uint32_t>(arena_->TokenFirst(item)),
+			static_cast<std::uint32_t>(arena_->TokenLast(item)),
+			has_initializer,
+			has_initializer && HasConstantInitializerFact(initializer));
+		if (local && has_initializer)
+			FinishLocalVariableInitializer(scope, owner, binding, parsed.type,
+				initializer, variable, control_dependent);
+	}
+	current_class_context_ = previous_class_context;
+}
+void Analyzer::AnalyzeFunction(NodeId node, ScopeId scope,
+	std::uint32_t output_parent, bool deferred_member_definition)
+{
+	const NodeId declarator = FindChild(node, ::cppgm::syntax::STAG_DECLARATOR);
+	const NamePath path = DeclaratorNamePath(declarator);
+	ScopeId structured_owner = kNoScope;
+	const NodeId structure = DeclaratorNameStructure(declarator);
+	const ScopeId path_owner = deferred_member_definition ?
+		program_->ParentScope(scope) : ResolveOwner(scope, path);
+	const EntityId previous_class = current_class_context_;
+	if (!deferred_member_definition && structure != kNoNode &&
+		(path.global || path.Size() > 1))
+	{
+		const EntityId provisional_class = path_owner == kNoScope ?
+			kNoEntity : program_->EntityForScope(path_owner);
+		ScopedValueRestore<EntityId> class_context(&current_class_context_,
+			provisional_class != kNoEntity ? provisional_class :
+				current_class_context_);
+		(void)LookupStructuredName(structure, scope,
+			LOOKUP_ORDINARY, &structured_owner);
+	}
+	const ScopeId owner = deferred_member_definition ?
+		path_owner :
+		structured_owner != kNoScope ? structured_owner :
+		path_owner;
+	if (owner == kNoScope) ThrowSemanticError("function owner not found");
+	const EntityId declaration_class = program_->EntityForScope(owner);
+	if (declaration_class != kNoEntity)
+		current_class_context_ = declaration_class;
+	const ScopeId semantic_scope = deferred_member_definition ? scope : owner;
+	const SpecInfo spec = BuildSpecifiers(FindChild(node, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ),
+		semantic_scope, std::string(), true);
+	if (spec.virtual_specifier ||
+		FindChild(declarator, ::cppgm::syntax::STAG_VIRT_SPECIFIER) != kNoNode)
+		ThrowSemanticError(
+			"virtual specifier is only allowed in a class definition");
+	DeclaratorInfo parsed = BuildDeclarator(declarator, spec.type, semantic_scope,
+		spec.placeholder_auto, declaration_class != kNoEntity && spec.storage_class != STORAGE_CLASS_STATIC);
+	parsed.placeholder_return_cv = spec.placeholder_cv;
+	parsed.name = path.Last();
+	if (!program_->types.IsFunction(parsed.type))
+		ThrowSemanticError("function definition has non-function type");
+	if (spec.is_constexpr)
+		parsed.type = ApplyConstexprDeclaredFunctionType(parsed.type,
+			owner, parsed.name, declaration_class);
+	if (spec.is_constexpr)
+		ValidateConstexprCallableType(parsed.type, false);
+	const BindingId binding = DeclareFunction(owner, parsed.name,
+		parsed.type, parsed.parameters, true, false, spec.storage_class,
+		current_language_linkage_, IsNonthrowing(declarator, parsed.parameter_scope));
+	ConfigureFunctionExceptionSpecification(binding, declarator, parsed.parameter_scope);
+	ApplyFunctionAsmLabel(declarator, binding);
+	ApplyFunctionAbiTagAttributes(node, binding);
+	PublishInlineFunctionFacts(
+		binding, spec.inline_specifier || spec.is_constexpr);
+	if (spec.inline_specifier)
+		GetMutableFunction(binding).inline_specified = true;
+	ConfigurePlaceholderFunctionReturn(
+		binding, parsed, spec.placeholder_cv);
+	ValidateFunctionRefQualifier(binding);
+	ValidateNonmemberOperator(binding);
+	{
+		FunctionInfo& function = GetMutableFunction(binding);
+		function.constexpr_function =
+			function.constexpr_function || spec.is_constexpr;
+		function.definition_body =
+			FunctionDefinitionPart(node, "compound-statement");
+		function.function_try_block = FindChild(node, ::cppgm::syntax::STAG_FUNCTION_TRY_BLOCK);
+	}
+	if (deferred_member_definition)
+	{
+		if (declaration_class == kNoEntity ||
+			program_->bindings[binding].member_owner != declaration_class)
+			ThrowSemanticError(
+				"class template member definition has no declaration");
+		FunctionInfo& function = GetMutableFunction(binding);
+		function.definition_body = FunctionDefinitionPart(node, "compound-statement");
+		function.lexical_scope = semantic_scope;
+		function.deferred = true;
+		current_class_context_ = previous_class;
+		return;
+	}
+	if (program_->bindings[binding].virtual_function &&
+		structured_owner != kNoScope &&
+		!program_->bindings[binding].inline_function)
+		MarkVtableDemand(program_->bindings[binding].member_owner);
+	const bool deferred = spec.is_constexpr ||
+		hosted_extension::DeferArtificialFunction(
+			*arena_, node, program_->bindings[binding].force_inline);
+	GetMutableFunction(binding).deferred = deferred;
+	if (deferred)
+	{
+		AnalyzeRetainedPlaceholderFunctionBody(binding);
+		current_class_context_ = previous_class;
+		return;
+	}
+	const bool member = GetFunction(binding).member_owner != kNoType;
+	const TypeId output_type = member ?
+		AdaptMemberFunctionType(binding) : parsed.type;
+	const std::uint32_t output_node = MakeDump(DUMP_FUNCTION_DEFINITION,
+		output_type, VALUE_NONE, 0, binding);
+	dump_.Add(output_parent, output_node);
+	const ScopeId function_scope = NewScope(owner, SCOPE_FUNCTION, parsed.name,
+		ScopePrefixId(owner));
+	if (member)
+	{
+		const TypeId this_type = program_->types.Parameters(output_type)[0];
+		const NameId this_name = program_->names.Intern("this");
+		const BindingId this_binding = program_->AddBinding(function_scope,
+			BIND_PARAMETER, this_name, this_type);
+		program_->bindings[this_binding].compiler_generated = true;
+		dump_.Add(output_node, MakeDump(DUMP_PARAMETER, this_type,
+			VALUE_NONE, this_name, this_binding));
+	}
+	for (std::size_t i = 0; i < parsed.parameters.size(); ++i)
+	{
+		ParameterInfo parameter = parsed.parameters[i];
+		if (parameter.name == 0)
+		{
+			const FunctionInfo& current = GetFunction(binding);
+			if (i < current.parameters.size())
+				parameter.name = current.parameters[i].name;
+		}
+		const BindingId parameter_binding = program_->AddBinding(function_scope,
+			BIND_PARAMETER, parameter.name, ParameterBindingType(parameter));
+		RecordSourceTypeOverride(parameter_binding, parameter.declared_type);
+		BindFunctionParameterPackElement(function_scope, parameter.pack_name, parameter_binding);
+		const std::uint32_t parameter_node = MakeDump(DUMP_PARAMETER,
+			parameter.function_type, VALUE_NONE, parameter.name, parameter_binding);
+		dump_.Add(output_node, parameter_node);
+		AddLifetimeObligation(function_scope, parameter_binding, parameter.function_type, false);
+	}
+	const TypeId previous_return = current_return_type_;
+	const BindingId previous_function = current_function_context_;
+	current_return_type_ = parsed.placeholder_return_kind ==
+		PLACEHOLDER_DECLARATOR_NONE ?
+		program_->types.Get(parsed.type).child : kNoType;
+	EntityId friend_of;
+	NodeId body, function_try_block;
+	bool constructor, destructor;
+	{
+		const FunctionInfo& resolved = GetFunction(binding);
+		friend_of = resolved.friend_of;
+		body = resolved.definition_body;
+		function_try_block = resolved.function_try_block;
+		constructor = resolved.constructor;
+		destructor = resolved.destructor;
+	}
+	current_class_context_ = friend_of != kNoEntity ?
+		friend_of : program_->bindings[binding].member_owner;
+	current_function_context_ = program_->bindings[binding].canonical;
+	BeginFunctionControlFlowFacts();
+	if (body != kNoNode)
+	{
+		if (function_try_block != kNoNode)
+		{
+			const std::uint32_t region = MakeDump(DUMP_TRY_STATEMENT);
+			dump_.Add(output_node, region);
+			AnalyzeCompound(body, function_scope, region);
+			AnalyzeFunctionTryHandlers(function_try_block,
+				function_scope, region, constructor ?
+					FUNCTION_TRY_BODY_CONSTRUCTOR : destructor ?
+					FUNCTION_TRY_BODY_DESTRUCTOR : FUNCTION_TRY_BODY_ORDINARY);
+		}
+		else AnalyzeCompound(body, function_scope, output_node);
+		CompletePlaceholderFunctionReturn(binding);
+		FinalizeNamedReturnSlot(output_node);
+	}
+	FinishFunctionControlFlowFacts();
+	dump_.nodes[output_node].type = member ?
+		AdaptMemberFunctionType(binding) : GetFunction(binding).type;
+	current_return_type_ = previous_return;
+	current_class_context_ = previous_class;
+	current_function_context_ = previous_function;
+}
+void Analyzer::AnalyzeSubstatement(NodeId node, ScopeId scope,
+	std::uint32_t output_parent)
+{
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_COMPOUND_STATEMENT))
+		AnalyzeCompound(node, scope, output_parent);
+	else
+	{
+		const ScopeId child = NewScope(scope, SCOPE_BLOCK, 0,
+			ScopePrefixId(scope));
+		if (IsDeclaration(node))
+			AnalyzeDeclaration(node, child, output_parent, true);
+		else AnalyzeStatement(node, child, output_parent);
+		AppendScopeDestructionActions(child, output_parent, scope);
+	}
+}
+
+void Analyzer::AnalyzeStatement(NodeId node, ScopeId scope,
+	std::uint32_t output_parent)
+{
+	if (AnalyzeHostedSelectionStatement(node, scope, output_parent)) return;
+	if (AnalyzeGnuAsmStatement(node, scope, output_parent)) return;
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_COMPOUND_STATEMENT))
+	{
+		AnalyzeCompound(node, scope, output_parent);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_RETURN_STATEMENT))
+	{
+		AnalyzeReturnStatement(node, scope, output_parent);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_EXPRESSION_STATEMENT))
+	{
+		const std::uint32_t statement = MakeDump(DUMP_EXPRESSION_STATEMENT);
+		dump_.Add(output_parent, statement);
+		const NodeId expression = FirstSemanticChild(node);
+		if (expression != kNoNode)
+		{
+			ExpressionInfo value = MaterializeDiscardedClassResult(
+				AnalyzeExpression(expression, scope));
+			dump_.Add(statement, value.node);
+			AppendFullExpressionDestructionActions(value.node, statement);
+			StageExceptionalFullExpression(value.node, statement, scope);
+		}
+		return;
+	}
+	if (AnalyzeExceptionStatement(node, scope, output_parent)) return;
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_IF_STATEMENT))
+	{
+		const ScopeId control = NewScope(scope, SCOPE_BLOCK, 0,
+			ScopePrefixId(scope));
+		const std::uint32_t statement = MakeDump(DUMP_IF_STATEMENT);
+		dump_.Add(output_parent, statement);
+		for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+			edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (arena_->IsTag(child, ::cppgm::syntax::STAG_CONDITION))
+				AnalyzeCondition(child, control, statement, false);
+			else if (arena_->IsTag(child, ::cppgm::syntax::STAG_THEN) || arena_->IsTag(child, ::cppgm::syntax::STAG_ELSE))
+			{
+				const std::uint32_t branch = MakeDump(arena_->IsTag(child, ::cppgm::syntax::STAG_THEN) ?
+					DUMP_THEN : DUMP_ELSE);
+				dump_.Add(statement, branch);
+				AnalyzeSubstatement(FirstSemanticChild(child), control, branch);
+			}
+		}
+		AppendScopeDestructionActions(control, output_parent, scope);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_WHILE_STATEMENT) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_DO_STATEMENT))
+	{
+		const bool is_do = arena_->IsTag(node, ::cppgm::syntax::STAG_DO_STATEMENT);
+		const ScopeId control = NewScope(scope, SCOPE_BLOCK, 0,
+			ScopePrefixId(scope));
+		const std::uint32_t statement = MakeDump(is_do ?
+			DUMP_DO_STATEMENT : DUMP_WHILE_STATEMENT);
+		dump_.Add(output_parent, statement);
+		++loop_depth_;
+		break_cleanup_stops_.push_back(control);
+		continue_cleanup_stops_.push_back(control);
+		for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+			edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (arena_->IsTag(child, ::cppgm::syntax::STAG_CONDITION))
+				AnalyzeCondition(child, control, statement, false);
+			else AnalyzeSubstatement(child, control, statement);
+		}
+		continue_cleanup_stops_.pop_back();
+		break_cleanup_stops_.pop_back();
+		--loop_depth_;
+		AppendScopeDestructionActions(control, output_parent, scope);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_FOR_STATEMENT))
+	{
+		const ScopeId control = NewScope(scope, SCOPE_BLOCK, 0,
+			ScopePrefixId(scope));
+		const std::uint32_t statement = MakeDump(DUMP_FOR_STATEMENT);
+		dump_.Add(output_parent, statement);
+		++loop_depth_;
+		break_cleanup_stops_.push_back(control);
+		continue_cleanup_stops_.push_back(control);
+		for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+			edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (arena_->IsTag(child, ::cppgm::syntax::STAG_FOR_INIT_STATEMENT))
+			{
+				const std::uint32_t init = MakeDump(DUMP_FOR_INIT_STATEMENT);
+				dump_.Add(statement, init);
+				const NodeId value = FirstSemanticChild(child);
+				if (value != kNoNode)
+				{
+					if (IsDeclaration(value))
+						AnalyzeDeclaration(value, control, init, true);
+					else dump_.Add(init, MaterializeDiscardedClassResult(
+						AnalyzeExpression(value, control)).node);
+					if (!IsDeclaration(value) &&
+						dump_.nodes[init].first_edge != kNoDumpEdge)
+					{
+						const std::uint32_t expression =
+							dump_.edges[dump_.nodes[init].first_edge].child;
+						StageControlFullExpression(expression, init, control);
+					}
+				}
+			}
+			else if (arena_->IsTag(child, ::cppgm::syntax::STAG_CONDITION))
+				AnalyzeCondition(child, control, statement, false);
+			else if (arena_->IsTag(child, ::cppgm::syntax::STAG_ITERATION))
+			{
+				const std::uint32_t iteration = MakeDump(DUMP_ITERATION);
+				dump_.Add(statement, iteration);
+				const ExpressionInfo value = MaterializeDiscardedClassResult(
+					AnalyzeExpression(FirstSemanticChild(child), control));
+				dump_.Add(iteration, value.node);
+				StageControlFullExpression(value.node, iteration, control);
+			}
+			else AnalyzeSubstatement(child, control, statement);
+		}
+		continue_cleanup_stops_.pop_back();
+		break_cleanup_stops_.pop_back();
+		--loop_depth_;
+		AppendScopeDestructionActions(control, output_parent, scope);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_RANGE_FOR_STATEMENT))
+	{
+		AnalyzeRangeFor(node, scope, output_parent);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_SWITCH_STATEMENT))
+	{
+		const ScopeId control = NewScope(scope, SCOPE_BLOCK, 0,
+			ScopePrefixId(scope));
+		const std::uint32_t statement = MakeDump(DUMP_SWITCH_STATEMENT);
+		dump_.Add(output_parent, statement);
+		++switch_depth_;
+		break_cleanup_stops_.push_back(control);
+		switch_label_entry_scopes_.push_back(control);
+		for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+			edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (arena_->IsTag(child, ::cppgm::syntax::STAG_CONDITION))
+				AnalyzeCondition(child, control, statement, true);
+			else AnalyzeSubstatement(child, control, statement);
+		}
+		break_cleanup_stops_.pop_back();
+		switch_label_entry_scopes_.pop_back();
+		--switch_depth_;
+		AppendScopeDestructionActions(control, output_parent, scope);
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_BREAK_STATEMENT))
+	{
+		if (loop_depth_ == 0 && switch_depth_ == 0)
+			ThrowSemanticError("break outside loop or switch");
+		const std::uint32_t statement = MakeDump(DUMP_BREAK_STATEMENT);
+		dump_.Add(output_parent, statement);
+		if (break_cleanup_stops_.empty())
+			ThrowInternalCompilerError("break has no cleanup boundary");
+		AppendScopeDestructionActions(scope, statement,
+			break_cleanup_stops_.back());
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_CONTINUE_STATEMENT))
+	{
+		if (loop_depth_ == 0) ThrowSemanticError("continue outside loop");
+		const std::uint32_t statement = MakeDump(DUMP_CONTINUE_STATEMENT);
+		dump_.Add(output_parent, statement);
+		if (continue_cleanup_stops_.empty())
+			ThrowInternalCompilerError("continue has no cleanup boundary");
+		AppendScopeDestructionActions(scope, statement,
+			continue_cleanup_stops_.back());
+		return;
+	}
+	if (arena_->IsTag(node, ::cppgm::syntax::STAG_CASE_STATEMENT) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_DEFAULT_STATEMENT))
+	{
+		if (switch_depth_ == 0)
+			ThrowSemanticError("case/default outside switch");
+		ValidateSwitchLabelEntry(scope, scope_parents_,
+			scope_switch_entry_barriers_, switch_label_entry_scopes_);
+		const bool is_case = arena_->IsTag(node, ::cppgm::syntax::STAG_CASE_STATEMENT);
+		const std::uint32_t statement = MakeDump(is_case ?
+			DUMP_CASE_STATEMENT : DUMP_DEFAULT_STATEMENT);
+		dump_.Add(output_parent, statement);
+		bool first = true;
+		for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+			edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (is_case && first)
+			{
+				ExpressionInfo label = AnalyzeExpression(child, scope);
+				if (!label.constant) ThrowSemanticError("nonconstant case label");
+				dump_.Add(statement, label.node);
+				first = false;
+			}
+			else if (IsDeclaration(child))
+				AnalyzeDeclaration(child, scope, statement, true);
+			else AnalyzeStatement(child, scope, statement);
+		}
+		return;
+	}
+	if (AnalyzeControlFlowLabelOrGoto(node, scope, output_parent)) return;
+	if (IsDeclaration(node))
+	{
+		AnalyzeDeclaration(node, scope, output_parent, true);
+		return;
+	}
+	ThrowSemanticError("unsupported PA12 statement: " + arena_->Tag(node));
+}
+
+void Analyzer::RenderNode(std::uint32_t node, std::size_t depth)
+{
+	RenderLine(dump_.nodes[node], depth);
+	for (std::uint32_t edge = dump_.nodes[node].first_edge;
+		edge != kNoDumpEdge; edge = dump_.edges[edge].next)
+		RenderNode(dump_.edges[edge].child, depth + 1);
+}
+
+void Analyzer::Render()
+{
+	RenderNode(root_, 0);
+}
+
+SemanticGraphView GraphStorage::View() const
+{
+	return SemanticGraphView(program, dump, namespace_objects,
+		local_static_objects, aggregate_helpers, class_polymorphism, root);
+}
+
+void Analyzer::Consume(const SyntaxArena& arena, NodeId root)
+{
+	arena_ = &arena;
+	if (&arena.SharedStrings() != &strings_)
+		ThrowInternalCompilerError("semantic analyzer does not own syntax strings");
+	Program& program = *program_;
+	ReserveSemanticCapacity(arena);
+	scope_prefixes_.resize(static_cast<std::size_t>(program.GlobalScope()) + 1, 0);
+	scope_prefix_segments_.resize(
+		static_cast<std::size_t>(program.GlobalScope()) + 1, 0);
+	scope_parents_.resize(static_cast<std::size_t>(program.GlobalScope()) + 1,
+		kNoScope);
+	scope_nontrivial_object_lifetime_prefixes_.resize(
+		static_cast<std::size_t>(program.GlobalScope()) + 1, 0);
+	scope_switch_entry_barriers_.resize(
+		static_cast<std::size_t>(program.GlobalScope()) + 1, 0);
+	scope_lifetime_domains_.resize(
+		static_cast<std::size_t>(program.GlobalScope()) + 1, kNoScope);
+	const BindingId nullptr_alias = program.AddBinding(
+		program.GlobalScope(), BIND_TYPE_ALIAS,
+		program.names.Intern("nullptr_t"),
+		program.types.Fundamental(FUND_NULLPTR_T));
+	program.bindings[nullptr_alias].compiler_generated = true;
+	root_ = MakeDump(DUMP_TRANSLATION_UNIT);
+	(void)EnsureBuiltinFunction(BUILTIN_FUNCTION_OPERATOR_NEW);
+	(void)EnsureBuiltinFunction(BUILTIN_FUNCTION_OPERATOR_DELETE);
+	(void)EnsureBuiltinFunction(BUILTIN_FUNCTION_OPERATOR_NEW_ARRAY);
+	(void)EnsureBuiltinFunction(BUILTIN_FUNCTION_OPERATOR_DELETE_ARRAY);
+#if CPPGM_TELEMETRY_ENABLED
+	const std::chrono::steady_clock::time_point analysis_started =
+		std::chrono::steady_clock::now();
+#endif
+	for (std::uint32_t edge = arena.FirstEdge(root); edge != kNoEdge;
+		edge = arena.NextEdge(edge))
+		AnalyzeDeclaration(arena.EdgeChild(edge), program.GlobalScope(), root_, false);
+	CompleteTranslationUnitDemand();
+	// The typed production path publishes linkage identity once, after all
+	// template-demand work has completed. Textual semantic output preserves
+	// the assignment's historical rendering contract and has no graph consumer.
+	if (!render_output_) PublishInternalIdentityFacts(&program);
+	if (source_type_view_) ApplySourceTypeOverrides();
+#if CPPGM_TELEMETRY_ENABLED
+	const std::chrono::steady_clock::time_point render_started =
+		std::chrono::steady_clock::now();
+#endif
+	if (render_output_) Render();
+#if CPPGM_TELEMETRY_ENABLED
+	if (stats_)
+	{
+		const std::chrono::steady_clock::time_point finished =
+			std::chrono::steady_clock::now();
+		stats_->semantic_nodes = dump_.nodes.size();
+		stats_->semantic_edges = dump_.edges.size();
+		stats_->interned_names = program.names.Size();
+		stats_->canonical_types = program.types.Size();
+		stats_->scopes = program.ScopeCount();
+		stats_->declarations = program.bindings.size() - 1;
+		stats_->expressions = expression_count_;
+		stats_->class_layouts = class_layouts_; stats_->class_layout_member_visits = class_layout_member_visits_;
+		PublishVirtualBaseStats();
+		stats_->class_zero_offset_subobject_visits =
+			class_zero_offset_subobject_visits_;
+		stats_->special_member_fact_lookups = special_member_fact_lookups_;
+		stats_->special_member_subobject_visits =
+			special_member_subobject_visits_;
+		stats_->constructor_member_action_visits =
+			constructor_member_action_visits_;
+		stats_->constructor_base_action_visits =
+			constructor_base_action_visits_;
+		stats_->constructor_delegation_action_visits =
+			constructor_delegation_action_visits_;
+		stats_->destructor_subobject_action_visits =
+			destructor_subobject_action_visits_;
+		stats_->lexical_cleanup_action_visits =
+			lexical_cleanup_action_visits_;
+		stats_->unwind_cleanup_scope_visits =
+			unwind_cleanup_scope_visits_;
+		stats_->unwind_cleanup_action_visits =
+			unwind_cleanup_action_visits_;
+		stats_->enclosing_lifetime_queries = enclosing_lifetime_queries_;
+		stats_->initializer_list_lifetime_queries = initializer_list_lifetime_queries_;
+		stats_->temporary_dependency_visits = temporary_dependency_visits_;
+		stats_->materialized_demand_visits = materialized_demand_visits_;
+		stats_->nonthrowing_action_visits = nonthrowing_action_visits_;
+		stats_->runtime_initializer_visits = runtime_initializer_visits_;
+		PublishInitializationStats();
+		stats_->empty_destructor_chain_visits = empty_destructor_chain_visits_;
+		stats_->empty_destructor_chain_cache_hits = empty_destructor_chain_cache_hits_;
+		stats_->namespace_object_actions = namespace_objects_.size();
+		stats_->lookup_queries = program.lookup_queries;
+		stats_->lookup_scope_visits = program.lookup_scope_visits;
+		stats_->lookup_edge_visits = program.lookup_edge_visits;
+		stats_->base_path_queries = program.base_path_queries;
+		stats_->base_path_cache_hits = program.base_path_cache_hits;
+		stats_->base_path_cache_misses = program.base_path_cache_misses;
+		stats_->base_path_edge_visits = program.base_path_edge_visits;
+		stats_->virtual_base_path_visits = program.virtual_base_path_visits;
+		stats_->associated_scope_visits = associated_scope_visits_;
+		stats_->associated_declaration_visits =
+			associated_declaration_visits_;
+		stats_->function_candidate_index_visits =
+			function_candidate_index_visits_;
+		stats_->overload_candidates = overload_candidates_;
+		stats_->overload_order_comparisons = overload_order_comparisons_;
+		stats_->conversion_checks = conversion_checks_;
+		stats_->call_conversion_cache_hits = call_conversion_cache_hits_;
+		stats_->call_conversion_cache_misses = call_conversion_cache_misses_;
+		stats_->braced_fact_cache_hits = braced_fact_cache_hits_;
+		stats_->braced_fact_cache_misses = braced_fact_cache_misses_;
+		stats_->function_signature_lookups = function_signature_lookups_;
+		stats_->polymorphic_classes = polymorphic_classes_;
+		stats_->virtual_slots = virtual_slots_;
+		stats_->virtual_signature_lookups = virtual_signature_lookups_;
+		stats_->virtual_overrides = virtual_overrides_;
+		stats_->virtual_slot_lookups = virtual_slot_lookups_;
+		stats_->vtable_demands = vtable_demands_;
+		stats_->access_checks = access_checks_;
+		stats_->access_path_visits = access_path_visits_;
+		stats_->access_grant_probes = access_grant_probes_;
+		stats_->template_specialization_requests =
+			template_specialization_requests_;
+		stats_->template_specialization_cache_hits =
+			template_specialization_cache_hits_;
+		stats_->function_template_default_materializations =
+			function_template_default_materializations_;
+		stats_->function_template_default_request_cache_hits =
+			function_template_default_request_cache_hits_;
+		stats_->function_template_default_failure_cache_hits =
+			function_template_default_failure_cache_hits_;
+		stats_->function_template_exception_specification_requests =
+			function_template_exception_specification_requests_;
+		stats_->function_template_exception_specification_cache_hits =
+			function_template_exception_specification_cache_hits_;
+		stats_->function_template_exception_specification_evaluations =
+			function_template_exception_specification_evaluations_;
+		stats_->template_argument_list_requests =
+			program.template_argument_list_requests;
+		stats_->template_argument_list_cache_hits =
+			program.template_argument_list_cache_hits;
+		stats_->template_argument_list_index_probes =
+			program.template_argument_list_index_probes;
+		stats_->template_partition_requests =
+			template_argument_partitions_.Requests();
+		stats_->template_partition_cache_hits =
+			template_argument_partitions_.CacheHits();
+		stats_->template_partition_index_probes =
+			template_argument_partitions_.IndexProbes();
+		stats_->function_template_result_identity_requests =
+			function_template_result_identities_.Requests();
+		stats_->function_template_result_identity_cache_hits =
+			function_template_result_identities_.CacheHits();
+		stats_->function_template_result_identity_index_probes =
+			function_template_result_identities_.IndexProbes();
+		stats_->function_template_result_identity_atom_visits =
+			function_template_result_identities_.AtomVisits();
+		stats_->template_partial_candidates = template_partial_candidates_;
+		stats_->template_partial_order_comparisons =
+			template_partial_order_comparisons_;
+		stats_->template_partial_shape_materializations =
+			template_partial_shape_materializations_;
+		stats_->template_partial_shape_cache_hits =
+			template_partial_shape_cache_hits_;
+		stats_->template_partial_deduction_visits =
+			template_partial_deduction_visits_;
+		stats_->function_template_deduction_visits =
+			function_template_deduction_visits_;
+		stats_->lambda_closure_requests = lambda_closure_requests_;
+		stats_->lambda_closure_cache_hits = lambda_closure_cache_hits_;
+		stats_->lambda_capture_summary_requests =
+			lambda_capture_uses_.Requests();
+		stats_->lambda_capture_summary_cache_hits =
+			lambda_capture_uses_.CacheHits();
+		stats_->lambda_capture_syntax_visits =
+			lambda_capture_uses_.SyntaxVisits();
+		stats_->lambda_capture_name_uses = lambda_capture_uses_.NameUses();
+		stats_->constexpr_call_requests = constexpr_call_requests_;
+		stats_->constexpr_call_cache_hits = constexpr_call_cache_hits_;
+		stats_->constant_conversion_fact_requests = constant_conversion_fact_requests_;
+		stats_->constant_conversion_fact_cache_hits = constant_conversion_fact_cache_hits_;
+		stats_->constexpr_local_index_probes =
+			constexpr_local_index_probes_;
+		stats_->constexpr_scope_index_probes =
+			constexpr_scope_index_probes_;
+		stats_->constexpr_object_projection_visits =
+			constexpr_object_projection_visits_;
+		stats_->constexpr_step_visits = constexpr_step_visits_;
+		stats_->constexpr_max_depth = constexpr_max_depth_;
+		stats_->constexpr_peak_locals = constexpr_peak_locals_;
+		stats_->constexpr_scratch_peak_nodes =
+			constexpr_scratch_peak_nodes_;
+		stats_->demand_worklist_pushes = demand_worklist_pushes_;
+		stats_->demanded_function_emissions = demanded_function_emissions_;
+		stats_->default_constructor_emissions = default_constructor_emissions_;
+		PublishFunctionDemandStats();
+		PublishBindingPopulationStats();
+		PublishPresentationPopulationStats();
+		const std::size_t shared_string_storage =
+			arena.SharedStrings().StorageBytes();
+		const std::size_t program_storage = program.StorageBytes();
+		stats_->semantic_program_storage_bytes = program_storage;
+		stats_->semantic_dump_storage_bytes = dump_.StorageBytes();
+		stats_->semantic_side_storage_bytes = SideStorageBytes();
+		stats_->semantic_shared_string_bytes = shared_string_storage;
+		stats_->semantic_storage_bytes =
+			(program_storage >= shared_string_storage ?
+			 program_storage - shared_string_storage : program_storage) +
+			stats_->semantic_dump_storage_bytes +
+			stats_->semantic_side_storage_bytes;
+		stats_->analysis_nanoseconds = static_cast<std::uint64_t>(
+			std::chrono::duration_cast<std::chrono::nanoseconds>(
+				render_started - analysis_started).count());
+		stats_->render_nanoseconds = static_cast<std::uint64_t>(
+			std::chrono::duration_cast<std::chrono::nanoseconds>(
+				finished - render_started).count());
+	}
+#endif
+	arena_ = 0;
+}
+
+} }

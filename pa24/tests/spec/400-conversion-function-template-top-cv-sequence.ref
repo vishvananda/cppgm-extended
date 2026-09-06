@@ -53,7 +53,6 @@ function @make_result() -> obj<4x4> [binding=weak, object=_Z11make_resultI6resul
   block ^entry:
     %t1 = addr $retobj__1
     %t2 = addr $tmpobj__2
-    call void @source__source(%t2)
     %t3 = call obj<4x4> @source__operatorType(%t2)
     copyobj 4x4 %t3, %t1
     return obj<4x4> $retobj__1
@@ -65,29 +64,21 @@ function @make_result__ov2() -> obj<4x4> [binding=weak, object=_Z11make_resultIK
   block ^entry:
     %t1 = addr $retobj__1
     %t2 = addr $tmpobj__2
-    call void @source__source(%t2)
     %t3 = call obj<4x4> @source__operatorType(%t2)
     copyobj 4x4 %t3, %t1
     return obj<4x4> $retobj__1
 }
-function @source__operatorType(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK6sourcecvT_I6resultIiEEEv] {
+function @source__operatorType(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK6sourcecv6resultIiEIS1_EEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
     store ptr %this, $this
     %t1 = addr $retobj__1
-    call void @result_int___result(%t1, 7)
+    call void @result_int___result_int_(%t1, 7)
     return obj<4x4> $retobj__1
 }
-function @source__source(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6sourceC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @result_int___result(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN6resultIiEC1Ei] {
+function @result_int___result_int_(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN6resultIiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -100,5 +91,4 @@ function @result_int___result(%this : ptr, %input : i32) -> void [binding=weak, 
     store i32 %t1, %t3
     return void
 }
-alias object _ZN6sourceC2Ev = @source__source
-alias object _ZN6resultIiEC2Ei = @result_int___result
+alias object _ZN6resultIiEC2Ei = @result_int___result_int_

@@ -1,0 +1,99 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @target
+  abi
+    param %pair -> rdi : i64
+    param %pair -> rsi : i64
+    param %io -> rdx : i64
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    param-slot %pair -> [rbp-16] : obj<16x8>
+    param-slot %io -> [rbp-24] : i64
+
+  block ^entry
+    store.i64 [rbp-16], rdi
+    store.i64 [rbp-8], rsi
+    store.i64 [rbp-24], rdx
+    load.i64 r8, [rbp-16]
+    add r8, [rbp-8]
+    add r8, [rbp-24]
+    ret r8
+
+function @mid
+  abi
+    param %fp -> rdi : ptr
+    param %a -> rsi : i64
+    param %b -> rdx : i64
+    param %c -> rcx : i64
+    param %d -> r8 : i64
+    param %e -> r9 : i64
+    param %f -> [rbp+16] : i64
+    param %g -> [rbp+24] : i64
+    return i64 -> rax
+  frame
+    stack_size 80
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    param-slot %f -> [rbp-8] : i64
+    param-slot %g -> [rbp-16] : i64
+    slot $pair -> [rbp-32] : obj<16x8>
+    slot $force_spill -> [rbp-72] : obj<40x8>
+
+  block ^entry
+    load.i64 rax, [rbp+16]
+    store.i64 [rbp-8], rax
+    load.i64 rax, [rbp+24]
+    store.i64 [rbp-16], rax
+    store.i64 [rbp-32], 1000
+    store.i64 [rbp-24], 2000
+    mov r10, rdi
+    load.i64 rdi, [rbp-32]
+    load.i64 rsi, [rbp-24]
+    mov rdx, 111
+    call *r10 [args=(rdx,rsi,rdi)]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    temp %r -> [rbp-8] : i64
+
+  block ^entry
+    sub rsp, 16
+    mov rdi, @target
+    mov rsi, 1
+    mov rdx, 2
+    mov rcx, 3
+    mov r8, 4
+    mov r9, 5
+    mov r11, 6
+    store.i64 [rsp], r11
+    mov r11, 7
+    store.i64 [rsp+8], r11
+    call @mid [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
+    add rsp, 16
+    store.i64 [rbp-8], rax
+    load.i64 r8, [rbp-8]
+    mov rdx, 3111
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
+    cmp.i64 r8, 0
+    sete rax
+    movzx rax, rax
+    ret rax

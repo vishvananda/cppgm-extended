@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $b
     %t3 = addr $value
     %t4 = addr $value
-    %t5 = call i32 @box_int_____run(%t2, %t3, %t4)
+    %t5 = call i32 @box_pointer_to_int___run(%t2, %t3, %t4)
     %t6 = cmp eq i32 %t5, 2
     branch %t6, ^cond_then_1, ^cond_else_2
 
@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @box_int_____run(%this : ptr, %first : ptr, %last : ptr) -> i32 [binding=weak, object=_ZN3boxIPiE3runES0_S0_] {
+function @box_pointer_to_int___run(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> i32 [binding=weak, object=_ZN3boxIPiE3runES0_S0_, inline_hint=yes] {
   slot $this : ptr
   slot $first : ptr
   slot $last : ptr
@@ -37,10 +37,10 @@ function @box_int_____run(%this : ptr, %first : ptr, %last : ptr) -> i32 [bindin
     %t1 = load ptr $this
     %t2 = load ptr $first
     %t3 = load ptr $last
-    %t4 = call i32 @box_int_____pick(%t1, %t2, %t3)
+    %t4 = call i32 @box_pointer_to_int___pick(%t1, %t2, %t3)
     return i32 %t4
 }
-function @box_int_____pick(%this : ptr, %__param1 : ptr, %__param2 : ptr) -> i32 [binding=weak, object=_ZN3boxIPiE4pickIS0_TnN9enable_ifIXsr6is_ptrIT_EE5valueEiE4typeELi0EEEiS4_S4_] {
+function @box_pointer_to_int___pick(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> i32 [binding=weak, object=_ZN3boxIPiE4pickIS0_TnN9enable_ifIXsr6is_ptrIT_EE5valueEiE4typeELi0EEEiS4_S4_] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

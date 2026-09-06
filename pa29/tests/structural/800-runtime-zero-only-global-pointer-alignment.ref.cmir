@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -17,18 +17,18 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
-    preserve <gpr0>
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
     mov r8, @table
     mov r9, r8
-    mov rdx, 15
-    or r9, rdx
-    mov <gpr0>, 15
-    not <gpr0>
-    and r9, <gpr0>
+    or r9, 15
+    mov rdi, 15
+    not rdi
+    and r9, rdi
     cmp.i64 r9, r8
     je ^ok
     jmp ^bad

@@ -1,0 +1,1 @@
+ERROR: unknown CY86 opcode: f32convf64 at tests/300-unsupported-conversion-opcode-bad.t.1:1:21

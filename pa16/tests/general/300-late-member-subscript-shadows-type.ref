@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 %t8
     return i32 %t9
 }
-function @container__operator__(%this : ptr, %i : i32) -> ptr [binding=weak, object=_ZN9containerixEi] {
+function @container__operator__(%this : ptr [object_bytes=16], %i : i32) -> ptr [binding=weak, object=_ZN9containerixEi, inline_hint=yes] {
   slot $this : ptr
   slot $i : i32
 
@@ -24,12 +24,11 @@ function @container__operator__(%this : ptr, %i : i32) -> ptr [binding=weak, obj
     store i32 %i, $i
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = unary decay ptr %t2
-    %t4 = load i32 $i
-    %t5 = index i32 [projection=array_element] %t3, %t4
-    return ptr %t5
+    %t3 = load i32 $i
+    %t4 = index i32 [projection=array_element] %t2, %t3
+    return ptr %t4
 }
-function @sets__make_set(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN4sets8make_setEi] {
+function @sets__make_set(%this : ptr [object_bytes=16], %x : i32) -> void [binding=weak, object=_ZN4sets8make_setEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

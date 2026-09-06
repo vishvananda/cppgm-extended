@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $input
-    call void @units__box_long_int___box(%t1, 6)
+    call void @units__box_long_int___box_double_(%t1, 6)
     %t2 = addr $result
     %t3 = addr $input
     call void @units__operator_(%t2, %t3, 2.0)
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @units__box_long_int___box(%this : ptr, %input : i64) -> void [binding=weak, object=_ZN5units3boxIlEC1El] {
+function @units__box_long_int___box_double_(%this : ptr [object_bytes=8], %input : i64) -> void [binding=weak, object=_ZN5units3boxIlEC1El, inline_hint=yes] {
   slot $this : ptr
   slot $input : i64
 
@@ -40,7 +40,7 @@ function @units__box_long_int___box(%this : ptr, %input : i64) -> void [binding=
     store i64 %t1, %t3
     return void
 }
-function @units__operator_(%ret : ptr [pass=indirect_result], %input : ptr [pass=reference], %scalar : f64) -> void [binding=weak, object=_ZN5unitsdvIldEENS_6detail13divide_resultINS_3boxIT_EET0_Xsr6is_boxIS6_EE5valueEE4typeERKS5_S6_] {
+function @units__operator_(%ret : ptr [pass=indirect_result, object_bytes=8], %input : ptr [pass=by_address, object_bytes=8], %scalar : f64) -> void [binding=weak, object=_ZN5unitsdvIldEENS_3boxIdEERKNS1_IT_EET0_] {
   slot $input : ptr
   slot $scalar : f64
 
@@ -53,10 +53,10 @@ function @units__operator_(%ret : ptr [pass=indirect_result], %input : ptr [pass
     %t4 = convert sitofp f64 i64 %t3
     %t5 = load f64 $scalar
     %t6 = binary div f64 %t4, %t5
-    call void @units__box_double___box(%ret, %t6)
+    call void @units__box_double___box_double_(%ret, %t6)
     return void
 }
-function @units__box_double___box(%this : ptr, %input : f64) -> void [binding=weak, object=_ZN5units3boxIdEC1Ed] {
+function @units__box_double___box_double_(%this : ptr [object_bytes=8], %input : f64) -> void [binding=weak, object=_ZN5units3boxIdEC1Ed, inline_hint=yes] {
   slot $this : ptr
   slot $input : f64
 
@@ -69,5 +69,5 @@ function @units__box_double___box(%this : ptr, %input : f64) -> void [binding=we
     store f64 %t1, %t3
     return void
 }
-alias object _ZN5units3boxIlEC2El = @units__box_long_int___box
-alias object _ZN5units3boxIdEC2Ed = @units__box_double___box
+alias object _ZN5units3boxIlEC2El = @units__box_long_int___box_double_
+alias object _ZN5units3boxIdEC2Ed = @units__box_double___box_double_

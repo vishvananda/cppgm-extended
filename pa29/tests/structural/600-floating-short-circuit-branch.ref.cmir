@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -19,31 +19,26 @@ function @check
     param %p -> rdi : ptr
     return void -> void
   frame
-    stack_size 64
+    stack_size N
     scratch_bytes 48
-    preserve <gpr0>
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
-    mov r9, rdi
-    mov r8, rdi
-    fmov.f64 xmm0, [r8]
+    fmov.f64 xmm0, [rdi]
     fcmp.f64 xmm0, 0.0
     jp ^rhs
     jne ^rhs
     jmp ^end
 
   block ^rhs
-    mov r8, r9
-    lea r8, [r8+<off0>]
-    load.i32 <gpr0>, [r8]
-    sext.i32 <gpr0>
-    cmp.i32 <gpr0>, 0
+    load.i32 r8, [rdi+<off0>]
+    cmp.i32 r8, 0
     jne ^then
     jmp ^end
 
   block ^then
-    mov rax, 1
-    store.i32 @seen, rax
+    store.i32 @seen, 1
     jmp ^end
 
   block ^end
@@ -53,13 +48,14 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
-    mov r8, @pair
-    mov rdi, r8
-    call @check
+    mov rdi, @pair
+    call @check [args=(rdi)]
     cmp.i32 @seen, 1
     je ^pass
     jmp ^fail

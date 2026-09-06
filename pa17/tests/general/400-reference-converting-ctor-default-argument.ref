@@ -1,9 +1,9 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120
   i8 0
 }
 
-function @take(%t : ptr [pass=reference]) -> i32 [binding=strong, object=_Z4takeRK4Text] {
+function @take(%t : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z4takeRK4Text] {
   slot $t : ptr
   slot $cond__1 : i32
 
@@ -40,7 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @take(%t1)
     return i32 %t4
 }
-function @Alloc__Alloc(%this : ptr) -> void [binding=weak, object=_ZN5AllocC1Ev] {
+function @Alloc__Alloc(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5AllocC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -50,7 +50,7 @@ function @Alloc__Alloc(%this : ptr) -> void [binding=weak, object=_ZN5AllocC1Ev]
     store i32 5, %t2
     return void
 }
-function @Text__Text__ov2(%this : ptr, %p : ptr, %a : ptr [pass=reference]) -> void [binding=weak, object=_ZN4TextC1EPKcRK5Alloc] {
+function @Text__Text__ov2(%this : ptr [object_bytes=4], %p : ptr, %a : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4TextC1EPKcRK5Alloc, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
   slot $a : ptr

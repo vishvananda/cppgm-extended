@@ -7,11 +7,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $direct
     %t2 = addr $arg__1
-    call void @Payload__Payload__ov4(%t2, 1, 2)
+    call void @Payload__Payload__aggregate(%t2, 1, 2)
     call void @Holder__Holder__ov2(%t1, %t2)
     %t3 = addr $functional
     %t4 = addr $arg__2
-    call void @Payload__Payload__ov4(%t4, 3, 4)
+    call void @Payload__Payload__aggregate(%t4, 3, 4)
     call void @Holder__Holder__ov2(%t3, %t4)
     %t5 = addr $direct
     %t6 = index i8 [projection=field] %t5, 0
@@ -25,7 +25,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = binary sub i32 %t13, 5
     return i32 %t14
 }
-function @Payload__Payload__ov4(%this : ptr, %code : i32, %detail : i32) -> void [unwind=no, binding=weak, object=_ZN7PayloadC1Eii] {
+function @Holder__Holder__ov2(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN6HolderC1EO7Payload, inline_hint=yes] {
+  slot $this : ptr
+  slot $v : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %v, $v
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $v
+    copyobj 8x4 %t3, %t2
+    return void
+}
+function @Payload__Payload__aggregate(%this : ptr, %code : i32, %detail : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $code : i32
   slot $detail : i32
@@ -44,18 +57,4 @@ function @Payload__Payload__ov4(%this : ptr, %code : i32, %detail : i32) -> void
     store i32 %t4, %t6
     return void
 }
-function @Holder__Holder__ov2(%this : ptr, %v : ptr [pass=reference]) -> void [binding=weak, object=_ZN6HolderC1EO7Payload] {
-  slot $this : ptr
-  slot $v : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %v, $v
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $v
-    copyobj 8x4 %t3, %t2
-    return void
-}
-alias object _ZN7PayloadC2Eii = @Payload__Payload__ov4
 alias object _ZN6HolderC2EO7Payload = @Holder__Holder__ov2

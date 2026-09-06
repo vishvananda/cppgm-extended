@@ -2,6 +2,9 @@
 
 // Optional typed LowIR model scaffold.
 //
+// This header is a teaching shape, not the course solution's own model: it
+// is deliberately simple (names are plain strings) so it can be read whole.
+//
 // LowIR text is the durable compiler boundary introduced in PA13. This header
 // gives one possible in-memory shape for that text. You may use it directly,
 // adapt it, or replace it with your own equivalent model, but backend-visible
@@ -15,6 +18,10 @@
 #include "ir_symbol_model.h"
 
 namespace lowir_model {
+
+// The metadata vocabulary is shared with the machine-IR scaffold and the
+// course solution; see ir_symbol_model.h.
+using namespace ir_model;
 
 struct ParseError : std::runtime_error
 {
@@ -46,119 +53,6 @@ struct Operand
   LowType literal_type;
 };
 
-enum SymbolRole
-{
-  SR_NONE,
-  SR_ENTRY,
-  SR_INIT,
-  SR_FINI,
-  SR_EH_TOP,
-  SR_EH_VALUE,
-  SR_EH_TYPE,
-  SR_EH_UNHANDLED,
-  SR_EH_ALLOCATE_EXCEPTION,
-  SR_EH_BEGIN_CATCH,
-  SR_EH_CALL_UNEXPECTED,
-  SR_EH_CURRENT_EXCEPTION_TYPE,
-  SR_EH_END_CATCH,
-  SR_EH_RETHROW,
-  SR_EH_THROW,
-  SR_EH_PERSONALITY,
-  SR_EH_RESUME
-};
-
-enum LanguageLinkageMode
-{
-  LLM_DEFAULT,
-  LLM_C,
-  LLM_CPP
-};
-
-enum SymbolBindingMode
-{
-  SBM_DEFAULT,
-  SBM_INTERNAL,
-  SBM_STRONG,
-  SBM_WEAK
-};
-
-enum ParamPassingMode
-{
-  PPM_DIRECT,
-  PPM_INDIRECT_RESULT,
-  PPM_BY_ADDRESS,
-  PPM_REFERENCE,
-  PPM_DECAY
-};
-
-enum ParamCaptureMode
-{
-  PCM_DEFAULT,
-  PCM_NOCAPTURE,
-  PCM_MAYCAPTURE
-};
-
-enum ParamAccessMode
-{
-  PAM_DEFAULT,
-  PAM_NONE,
-  PAM_READ,
-  PAM_WRITE,
-  PAM_READWRITE
-};
-
-enum ParamAliasMode
-{
-  PALM_DEFAULT,
-  PALM_NOALIAS
-};
-
-enum CallArityMode
-{
-  CAM_FIXED,
-  CAM_VARIADIC,
-  CAM_PROTOTYPE_RELAXED
-};
-
-enum CallEffectsMode
-{
-  CFXM_DEFAULT,
-  CFXM_READNONE,
-  CFXM_READONLY,
-  CFXM_READWRITE
-};
-
-enum CallUnwindMode
-{
-  CUM_DEFAULT,
-  CUM_MAY,
-  CUM_NO
-};
-
-enum CallReturnMode
-{
-  CRM_DEFAULT,
-  CRM_RETURNS,
-  CRM_NORETURN
-};
-
-enum GlobalStorageMode
-{
-  GSM_DEFAULT,
-  GSM_WRITABLE,
-  GSM_READONLY,
-  GSM_THREAD_LOCAL
-};
-
-enum IndexProjectionKind
-{
-  IPK_NONE,
-  IPK_ARRAY_ELEMENT,
-  IPK_FIELD,
-  IPK_BASE_SUBOBJECT,
-  IPK_REFERENCE_FIELD
-};
-
 struct SymbolMetadata
 {
   SymbolRole role = SR_NONE;
@@ -171,23 +65,12 @@ struct SymbolMetadata
   bool keep_internal_alias = false;
   bool prefer_local_object_binding = false;
   bool object_output_root = false;
-  bool object_trivial_lifecycle = false;
   bool force_inline = false;
-};
-
-struct FunctionBoundaryMetadata
-{
-  CallArityMode arity = CAM_FIXED;
-  CallEffectsMode effects = CFXM_DEFAULT;
-  CallUnwindMode unwind = CUM_DEFAULT;
-  CallReturnMode returns = CRM_DEFAULT;
 };
 
 struct ParameterMetadata
 {
   ParamPassingMode passing = PPM_DIRECT;
-  ParamCaptureMode capture = PCM_DEFAULT;
-  ParamAccessMode access = PAM_DEFAULT;
   ParamAliasMode alias = PALM_DEFAULT;
 };
 

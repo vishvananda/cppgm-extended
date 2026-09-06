@@ -5,13 +5,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $box
     %t2 = addr $box
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = unary decay ptr %t3
-    %t5 = index i32 [projection=array_element] %t4, 0
-    store i32 7, %t5
-    %t6 = addr $box
-    %t7 = index i8 [projection=field] %t6, 0
-    %t8 = unary decay ptr %t7
-    %t9 = index i32 [projection=array_element] %t8, 0
-    %t10 = load i32 %t9
-    return i32 %t10
+    %t4 = index i32 [projection=array_element] %t3, 0
+    store i32 7, %t4
+    %t5 = addr $box
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = index i32 [projection=array_element] %t6, 0
+    %t8 = load i32 %t7
+    return i32 %t8
 }

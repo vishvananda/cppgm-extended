@@ -48,7 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @probe__run()
     return i32 %t1
 }
-function @probe__incrementable__incrementable(%this : ptr) -> void [binding=weak, object=_ZN5probe13incrementableC1Ev] {
+function @probe__incrementable__incrementable(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5probe13incrementableC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -58,7 +58,7 @@ function @probe__incrementable__incrementable(%this : ptr) -> void [binding=weak
     store i32 0, %t2
     return void
 }
-function @probe__incrementable__operator__(%this : ptr) -> ptr [binding=weak, object=_ZN5probe13incrementableppEv] {
+function @probe__incrementable__operator__(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN5probe13incrementableppEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

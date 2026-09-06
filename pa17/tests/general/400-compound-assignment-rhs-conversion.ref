@@ -1,4 +1,4 @@
-function @Holder__operator__(%this : ptr, %rhs : ptr [pass=reference]) -> void [binding=strong, object=_ZN6HolderpLERKS_] {
+function @Holder__operator__(%this : ptr [object_bytes=8], %rhs : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_ZN6HolderpLERKS_] {
   slot $this : ptr
   slot $rhs : ptr
 
@@ -60,7 +60,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load i32 $cond__1
     return i32 %t19
 }
-function @Property__operatorread_access_t(%this : ptr) -> ptr [binding=weak, object=_ZNK8PropertycvRKmEv] {
+function @Property__operatorread_access_t(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK8PropertycvRKmEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -69,7 +69,7 @@ function @Property__operatorread_access_t(%this : ptr) -> ptr [binding=weak, obj
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1Ev] {
+function @Holder__Holder(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -79,7 +79,7 @@ function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1
     call void @Property__Property(%t2)
     return void
 }
-function @Property__Property(%this : ptr) -> void [binding=weak, object=_ZN8PropertyC1Ev] {
+function @Property__Property(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8PropertyC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

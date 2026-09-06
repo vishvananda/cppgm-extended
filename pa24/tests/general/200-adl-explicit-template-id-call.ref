@@ -11,24 +11,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call i32 @tuples__get(%t2)
     return i32 %t5
 }
-function @tuples__get(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6tuples3getILi0EiiEEiRKNS_5tupleIT0_T1_EE] {
-  slot $__param0 : ptr
-
-  block ^entry:
-    store ptr %__param0, $__param0
-    return i32 0
-}
-function @holder__key_extractors(%this : ptr) -> obj<8x4> [binding=weak, object=_ZNK6holder14key_extractorsEv] {
+function @holder__key_extractors(%this : ptr [object_bytes=1]) -> obj<8x4> [binding=weak, object=_ZNK6holder14key_extractorsEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<8x4>
 
   block ^entry:
     store ptr %this, $this
     %t1 = addr $retobj__1
-    call void @tuples__tuple_int__int___tuple__ov2(%t1, 1, 2)
+    call void @tuples____cppgm_class_template_identity_0_1_0__tuple__aggregate(%t1, 1, 2)
     return obj<8x4> $retobj__1
 }
-function @tuples__tuple_int__int___tuple__ov2(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=weak, object=_ZN6tuples5tupleIiiEC1Eii] {
+function @tuples__get(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN6tuples3getILi0EiiEEiRKNS_5tupleIT0_T1_EE] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 0
+}
+function @tuples____cppgm_class_template_identity_0_1_0__tuple__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $first : i32
   slot $second : i32
@@ -47,4 +47,3 @@ function @tuples__tuple_int__int___tuple__ov2(%this : ptr, %first : i32, %second
     store i32 %t4, %t6
     return void
 }
-alias object _ZN6tuples5tupleIiiEC2Eii = @tuples__tuple_int__int___tuple__ov2

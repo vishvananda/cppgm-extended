@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @std__initializer_list_int___size(%this : ptr) -> i64 [binding=weak, object=_ZNKSt16initializer_listIiE4sizeEv] {
+function @std__initializer_list_int___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listIiE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

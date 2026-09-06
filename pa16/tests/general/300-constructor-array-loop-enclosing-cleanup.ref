@@ -1,0 +1,174 @@
+global @constructed : i32 [binding=strong, object=_Z11constructed] = 0
+global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
+
+function @build() -> i32 [binding=strong, object=_Z5buildv] {
+  slot $earlier : obj<4x4>
+  slot $elements : obj<48x4>
+  slot $constructor_array_index__1 : i64
+  slot $destructor_array_index__2 : i64
+
+  block ^entry:
+    %t1 = addr $earlier
+    call void @Element__Element(%t1)
+    store i64 0, $constructor_array_index__1
+    eh_try ^cleanup_action_8
+    jump ^constructor_array_cond_1
+
+  block ^constructor_array_cond_1:
+    %t2 = load i64 $constructor_array_index__1
+    %t3 = cmp ult i64 %t2, 12
+    branch %t3, ^constructor_array_body_2, ^constructor_array_end_3
+
+  block ^constructor_array_body_2:
+    eh_try ^constructor_array_cleanup_4
+    %t4 = addr $elements
+    %t5 = binary mul i64 %t2, 4
+    %t6 = index i8 [projection=array_element] %t4, %t5
+    call void @Element__Element(%t6)
+    eh_end
+    %t7 = binary add i64 %t2, 1
+    store i64 %t7, $constructor_array_index__1
+    jump ^constructor_array_cond_1
+
+  block ^constructor_array_cleanup_4:
+    %t8 = load i64 $constructor_array_index__1
+    %t9 = cmp ne i64 %t8, 0
+    branch %t9, ^constructor_array_cleanup_body_5, ^constructor_array_resume_6
+
+  block ^constructor_array_cleanup_body_5:
+    %t10 = binary sub i64 %t8, 1
+    store i64 %t10, $constructor_array_index__1
+    %t11 = addr $elements
+    %t12 = binary mul i64 %t10, 4
+    %t13 = index i8 [projection=array_element] %t11, %t12
+    call void @Element___Element(%t13)
+    jump ^constructor_array_cleanup_4
+
+  block ^constructor_array_resume_6:
+    resume
+
+  block ^constructor_array_end_3:
+    eh_end
+    jump ^call_unwind_end_9
+
+  block ^cleanup_resume_7:
+    resume
+
+  block ^cleanup_action_8:
+    %t14 = addr $earlier
+    call void @Element___Element(%t14)
+    jump ^cleanup_resume_7
+
+  block ^call_unwind_end_9:
+    %t15 = load i32 @constructed
+    %t16 = load i32 @destroyed
+    %t17 = binary sub i32 %t15, %t16
+    %t18 = addr $elements
+    %t19 = binary mul i64 11, 4
+    %t20 = index i8 [projection=array_element] %t18, %t19
+    %t21 = index i8 [projection=field] %t20, 0
+    %t22 = load i32 %t21
+    %t23 = binary add i32 %t17, %t22
+    %t24 = addr $elements
+    store i64 12, $destructor_array_index__2
+    jump ^destructor_array_cond_10
+
+  block ^destructor_array_cond_10:
+    %t25 = load i64 $destructor_array_index__2
+    %t26 = cmp ne i64 %t25, 0
+    branch %t26, ^destructor_array_body_11, ^destructor_array_end_12
+
+  block ^destructor_array_body_11:
+    %t27 = binary sub i64 %t25, 1
+    store i64 %t27, $destructor_array_index__2
+    %t28 = binary mul i64 %t27, 4
+    %t29 = index i8 [projection=array_element] %t24, %t28
+    call void @Element___Element(%t29)
+    jump ^destructor_array_cond_10
+
+  block ^destructor_array_end_12:
+    %t30 = addr $earlier
+    call void @Element___Element(%t30)
+    return i32 %t23
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $during : i32
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+
+  block ^entry:
+    %t1 = call i32 @build()
+    store i32 %t1, $during
+    %t2 = load i32 $during
+    %t3 = cmp eq i32 %t2, 25
+    branch %t3, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t4 = load i32 @constructed
+    %t5 = cmp eq i32 %t4, 13
+    %t6 = cmp ne i64 %t5, 0
+    store i64 %t6, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t7 = load i64 $land__3
+    branch %t7, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t8 = load i32 @destroyed
+    %t9 = cmp eq i32 %t8, 13
+    %t10 = cmp ne i64 %t9, 0
+    store i64 %t10, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t11 = load i64 $land__2
+    branch %t11, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t12 = load i32 $cond__1
+    return i32 %t12
+}
+function @Element__Element(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7ElementC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @constructed
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    %t4 = load i32 @constructed
+    %t5 = binary add i32 %t4, 1
+    store i32 %t5, @constructed
+    return void
+}
+function @Element___Element(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN7ElementD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @destroyed
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @destroyed
+    return void
+}
+alias object _ZN7ElementC2Ev = @Element__Element
+alias object _ZN7ElementD2Ev = @Element___Element

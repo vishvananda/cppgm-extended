@@ -1,8 +1,8 @@
-global @p [binding=internal, object=_ZL1p] = {
+global @p [binding=internal, object=_Z1p] = {
   i32 3
   i32 4
 }
-global @arr [binding=internal, object=_ZL3arr] = {
+global @arr [binding=strong, object=_Z3arr] = {
   i32 10
   i32 20
   i32 30

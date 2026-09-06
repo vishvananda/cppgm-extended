@@ -7,17 +7,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $use
     return i32 0
 }
-function @Use__Use(%this : ptr) -> void [binding=weak, object=_ZN3UseC1Ev] {
+function @Use__Use(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3UseC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    call void @mini__tuple_Owner__Node____int___tuple__ov4(%t2, 0)
+    call void @mini__tuple_pointer_to_struct_Owner__Node__int___tuple_pointer_to_struct_Owner__Node__int___ov4(%t2, 0)
     return void
 }
-function @mini__tuple_Owner__Node____int___tuple__ov4(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN4mini5tupleIJPN5Owner4NodeEiEEC1ILb1ETnNS_11__enable_ifIXclsr17_TupleConstraintsIXT_ES3_iEE37__is_implicitly_default_constructibleEEbE4typeELb1EEEi] {
+function @mini__tuple_pointer_to_struct_Owner__Node__int___tuple_pointer_to_struct_Owner__Node__int___ov4(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4mini5tupleIJPN5Owner4NodeEiEEC1ILb1ELb1EEEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -27,4 +27,4 @@ function @mini__tuple_Owner__Node____int___tuple__ov4(%this : ptr, %__param1 : i
     return void
 }
 alias object _ZN3UseC2Ev = @Use__Use
-alias object _ZN4mini5tupleIJPN5Owner4NodeEiEEC2ILb1ETnNS_11__enable_ifIXclsr17_TupleConstraintsIXT_ES3_iEE37__is_implicitly_default_constructibleEEbE4typeELb1EEEi = @mini__tuple_Owner__Node____int___tuple__ov4
+alias object _ZN4mini5tupleIJPN5Owner4NodeEiEEC2ILb1ELb1EEEi = @mini__tuple_pointer_to_struct_Owner__Node__int___tuple_pointer_to_struct_Owner__Node__int___ov4

@@ -15,24 +15,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = index i8 %t3, 1
     store i8 0, %t4
     %t5 = addr $src_buf
-    %t6 = unary decay ptr %t5
-    store ptr %t6, $src
-    %t7 = addr $dst_buf
-    %t8 = unary decay ptr %t7
-    store ptr %t8, $dst
-    %t9 = addr $tmpobj__1
-    %t10 = load ptr $src
-    %t11 = load ptr $dst
-    %t12 = call obj<16x8> @helper(%t10, 2, %t11)
-    copyobj 16x8 %t12, %t9
-    %t13 = index i8 [projection=field] %t9, 8
-    %t14 = load ptr %t13
-    %t15 = load ptr $dst
-    %t16 = binary sub ptr %t14, %t15
-    %t17 = convert trunc i32 i64 %t16
-    return i32 %t17
+    store ptr %t5, $src
+    %t6 = addr $dst_buf
+    store ptr %t6, $dst
+    %t7 = addr $tmpobj__1
+    %t8 = load ptr $src
+    %t9 = load ptr $dst
+    %t10 = call obj<16x8> @helper(%t8, 2, %t9)
+    copyobj 16x8 %t10, %t7
+    %t11 = index i8 [projection=field] %t7, 8
+    %t12 = load ptr %t11
+    %t13 = load ptr $dst
+    %t14 = binary sub ptr %t12, %t13
+    %t15 = convert trunc i32 i64 %t14
+    return i32 %t15
 }
-function @helper(%first : ptr, %n : i64, %result : ptr) -> obj<16x8> [binding=weak, object=_Z6helperI6PolicyPcS1_TnN9enable_ifIXsr6is_ptrIT0_EE5valueEiE4typeELi0EE4PairIS3_T1_ES3_N7IterOpsIT_E15difference_typeIS3_EES7_] {
+function @helper(%first : ptr, %n : i64, %result : ptr) -> obj<16x8> [binding=weak, object=_Z6helperI6PolicyPcS1_TnN9enable_ifIXsr6is_ptrIT0_EE5valueEiE4typeELi0EE4PairIS3_T1_ES3_41__function_template_nondeduced_type_shapeS7_] {
   slot $first : ptr
   slot $n : i64
   slot $result : ptr

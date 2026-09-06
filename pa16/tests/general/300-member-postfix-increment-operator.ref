@@ -66,7 +66,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = load i32 $cond__1
     return i32 %t22
 }
-function @Counter__operator__(%this : ptr, %__param1 : i32) -> i32 [binding=weak, object=_ZN7CounterppEi] {
+function @Counter__operator__(%this : ptr [object_bytes=8], %__param1 : i32) -> i32 [binding=weak, object=_ZN7CounterppEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $old : i32

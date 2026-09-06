@@ -1,0 +1,128 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @table
+  storage data
+  item i64 11
+  item i64 22
+  item i64 33
+
+function @dirty_stack
+  abi
+    return void -> void
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $junk -> [rbp-64] : obj<64x8>
+
+  block ^entry
+    store.i64 [rbp-64], -1
+    store.i64 [rbp-56], -1
+    store.i64 [rbp-48], -1
+    store.i64 [rbp-40], -1
+    store.i64 [rbp-32], -1
+    store.i64 [rbp-24], -1
+    store.i64 [rbp-16], -1
+    store.i64 [rbp-8], -1
+    ret
+
+function @side_effect
+  abi
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    ret
+
+function @lookup
+  abi
+    param %a -> rdi : i32
+    param %b -> rsi : i32
+    param %c -> rdx : i32
+    param %d -> rcx : i32
+    param %e -> r8 : i32
+    param %level -> r9 : i32
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12
+    param-slot %a -> [rbp-4] : i32
+    param-slot %b -> [rbp-8] : i32
+    param-slot %c -> [rbp-12] : i32
+    param-slot %d -> [rbp-16] : i32
+    param-slot %e -> [rbp-20] : i32
+    param-slot %level -> [rbp-24] : i32
+
+  block ^entry
+    store.i32 [rbp-4], rdi
+    store.i32 [rbp-8], rsi
+    store.i32 [rbp-12], rdx
+    store.i32 [rbp-16], rcx
+    store.i32 [rbp-20], r8
+    store.i32 [rbp-24], r9
+    call @side_effect [args=()]
+    mov r8, @table
+    load.i32 r9, [rbp-24]
+    imul r9, 8
+    load.i64 rdi, [r8+r9]
+    load.i32 r8, [rbp-4]
+    imul r8, 1
+    load.i32 r9, [rbp-8]
+    imul r9, 1
+    load.i32 rsi, [rbp-12]
+    imul rsi, 1
+    load.i32 rbx, [rbp-16]
+    imul rbx, 1
+    load.i32 r12, [rbp-20]
+    imul r12, 1
+    add rdi, r8
+    add rdi, r9
+    add rdi, rsi
+    add rdi, rbx
+    add rdi, r12
+    ret rdi
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    temp %result -> [rbp-8] : i64
+
+  block ^entry
+    call @dirty_stack [args=()]
+    mov rdi, 2
+    mov rsi, 3
+    mov rdx, 4
+    mov rcx, 5
+    mov r8, 6
+    mov r9, 1
+    call @lookup [args=(rcx,rdx,rsi,rdi,r8,r9)]
+    store.i64 [rbp-8], rax
+    cmp.i64 [rbp-8], 42
+    je ^good
+    jmp ^bad
+
+  block ^good
+    mov rax, 0
+    ret rax
+
+  block ^bad
+    mov rax, 1
+    ret rax

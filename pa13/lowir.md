@@ -20,11 +20,12 @@ LowIR is:
 - block-based
 - text-based and deterministic
 - explicit about globals, functions, stack slots, temporaries, and control flow
-- non-SSA by requirement, but compatible with later SSA conversion if desired
+- not required to be in SSA form, while providing an explicit merge operation
+  for values selected by incoming control-flow edges
 
 LowIR text is the serialized form of the compiler-owned backend program model.
 Implementations may use a typed in-memory representation, and the starter
-support includes an optional `dev/src/lowir_model.h` scaffold for that shape,
+support includes an optional `dev/src/lowir/model/program.h` scaffold for that shape,
 but the text remains the durable boundary. A backend-visible fact that cannot
 be serialized to LowIR and parsed back is not part of the LowIR contract.
 
@@ -151,8 +152,7 @@ The declaration/definition split is explicit:
 declare global @name
 declare global @name : <type>
 declare function @name(%a : i64, %b : ptr) -> i64
-declare function @printf(%fmt : ptr [pass=decay]) -> i32 [arity=variadic]
-declare function @legacy() -> i64 [arity=prototype_relaxed]
+declare function @printf(%fmt : ptr) -> i32 [arity=variadic]
 ```
 
 Top-level declarations and definitions may also carry explicit symbol metadata:
@@ -162,17 +162,15 @@ declare global @shared_state : ptr [binding=weak]
 declare global @__external_rtti__int : ptr [binding=strong, object=_ZTIi]
 declare global @ro_table : ptr [storage=readonly]
 declare global @tls_state : i64 [storage=thread_local]
+declare global @placed_state : i64 [section=.cppgm_data]
 declare function @user_entry() -> i64 [role=entry]
-declare function @puts(%fmt : ptr [pass=decay]) -> i32 [arity=variadic, linkage=c]
-global @exc_top : ptr [role=eh_top, storage=readonly] = zero
+declare function @puts(%fmt : ptr) -> i32 [arity=variadic, linkage=c]
+global @lookup_table : ptr [storage=readonly, section=cppgm_ro] = zero
 global @tls_counter : i64 [storage=thread_local] = 7
 function @main() -> i64 [role=entry, binding=strong, keep_alias=yes] {
   ...
 }
 function @helper() -> i64 [binding=strong, object=_ZL6helperv, prefer_local=yes] {
-  ...
-}
-function @Tag__Tag(%this : ptr) -> void [binding=weak, trivial_lifecycle=yes] {
   ...
 }
 function @small_required_helper(%x : i64) -> i64 [force_inline=yes] {
@@ -184,13 +182,21 @@ function @boot() -> void [role=init, binding=strong] {
 ```
 
 The currently defined top-level metadata keys are `role`, `linkage`, `binding`, `object`,
-`tls_for` (functions only), `keep_alias`, `prefer_local`, `trivial_lifecycle`
-(functions only), `force_inline` (functions only), and `storage` (globals only).
+`tls_for` (functions only), `keep_alias`, `prefer_local`, `object_root`, `force_inline`
+(functions only), `inline_hint` (functions only), `no_inline` (functions only), and
+`storage` and `section` (globals only).
 
 The currently defined global `storage` values are:
 
 - `readonly`
 - `thread_local`
+
+`section=<name>` places a declared or defined global in a named ELF section.
+The first public form is intentionally token-safe: `<name>` must be nonempty
+and contain only ASCII letters, digits, `_`, and `.`. It does not accept a
+quoted name, whitespace, commas, hyphens, target segment syntax, or function
+placement. A declaration and definition of the same source object must agree
+on the section name before LowIR is produced.
 
 `storage=thread_local` is semantic TLS storage intent. Backend-specific descriptor
 sections and relocation forms are lower-layer object-format details. When a thread-local
@@ -205,32 +211,45 @@ The currently defined role values are:
   - `entry`
   - `init`
   - `fini`
-  - `eh_unhandled`
   - `eh_allocate_exception`
   - `eh_begin_catch`
-  - `eh_call_unexpected`
-  - `eh_current_exception_type`
   - `eh_end_catch`
   - `eh_rethrow`
   - `eh_throw`
   - `eh_personality`
   - `eh_resume`
+  - `allocate_memory`
+  - `free_memory`
+  - `terminate`
+  - `pure_virtual`
+  - `dynamic_cast`
+  - `bad_cast`
+  - `bad_typeid`
 - global roles:
-  - `eh_top`
-  - `eh_value`
-  - `eh_type`
+  - `rtti_class`
+  - `rtti_si`
+  - `rtti_vmi`
+  - `rtti_data`
 
-Only one symbol may own each singleton role inside a LowIR program. A role must also appear
-on the correct top-level kind: function roles on functions and global roles on globals.
+Only one symbol may own each singleton role inside a LowIR program. All roles
+listed above are singleton roles except `rtti_data`, which may describe each
+distinct runtime type-information object or category helper used by the
+program. A role must also appear on the correct top-level kind: function roles
+on functions and global roles on globals.
+
+The `terminate` role identifies the C++ termination runtime used at a
+non-throwing function boundary. A standalone backend may provide this runtime
+directly, while an object backend may retain the declared object symbol for the
+host C++ runtime.
 
 The currently defined linkage values are:
 
 - `c`
-- `cpp`
 
-`cpp` is the ordinary default and is normally omitted. `c` makes an otherwise ordinary symbol
-explicitly C-linked in the printed LowIR. The current emit-LowIR path uses `linkage=c` where
-the semantic frontend already knows the symbol has C linkage, such as `extern "C"` imports.
+Omission means ordinary C++ language linkage and has no explicit spelling. `c` makes an
+otherwise ordinary symbol explicitly C-linked in the printed LowIR. The current emit-LowIR
+path uses `linkage=c` where the semantic frontend already knows the symbol has C linkage,
+such as `extern "C"` imports.
 
 The currently defined binding values are:
 
@@ -246,27 +265,39 @@ The `object` metadata key carries an explicit backend/object symbol spelling for
 symbol. This is the textual carrier for cases where later object emission must use a concrete
 host/object name such as `puts`, `_ZTIi`, or a local mangled helper name.
 
-The `keep_alias` metadata key is a `yes`/`no` flag. `keep_alias=yes` requests that later object
-emission keep the LowIR-internal symbol spelling available as an alias even when `object=...`
-spells a different exported/backend name.
+The `keep_alias=yes` metadata flag requests that later object emission keep the LowIR-internal
+symbol spelling available as an alias even when `object=...` spells a different
+exported/backend name. Omission means false; there is no `keep_alias=no` spelling.
 
-The `prefer_local` metadata key is a `yes`/`no` flag. `prefer_local=yes` records that later
-object emission should prefer a local/private binding when that is legal, even if an explicit
-`object=...` spelling is also present.
+The `prefer_local=yes` metadata flag records that later object emission should prefer a
+local/private binding when that is legal, even if an explicit `object=...` spelling is also
+present. Omission means false; there is no `prefer_local=no` spelling.
 
-The `trivial_lifecycle` metadata key is a `yes`/`no` flag for top-level
-function declarations and definitions. `trivial_lifecycle=yes` records that the
-function is a semantically trivial C++ lifecycle helper, such as a trivial
-constructor or destructor wrapper. Object lowering may use this fact to remove
-otherwise unreferenced weak lifecycle wrappers after the frontend has serialized
-the LowIR boundary.
+The `object_root=yes` metadata flag records that the definition is a language-required
+object-emission root even when no LowIR instruction refers to it, as for a member emitted by
+an explicit template-instantiation definition. Omission means false; there is no
+`object_root=no` spelling.
 
-The `force_inline` metadata key is a `yes`/`no` flag for top-level function
-declarations and definitions. `force_inline=yes` records that eligible direct
+The `force_inline=yes` metadata flag on top-level function declarations and definitions
+records that eligible direct
 same-program calls must be expanded during object preparation at every
 optimization level. It does not relax call-boundary, ABI, type, recursion, or
 control-flow safety checks. Canonical `lowiropt -O0` preserves this metadata
-without performing the object-preparation transform.
+without performing the object-preparation transform. Omission means false; there is no
+`force_inline=no` spelling.
+
+The `inline_hint=yes` metadata flag on top-level function declarations and definitions
+records a source-language
+preference for inlining eligible direct calls. It may increase a bounded
+profitability limit, but does not require substitution, change linkage, make
+the definition an object root, or override `no_inline=yes`. Omission means false; there is no
+`inline_hint=no` spelling.
+
+The `no_inline=yes` metadata flag on top-level function declarations and definitions prevents
+optional inlining of
+calls to that function. It does not make the function an object-emission root,
+change its symbol binding, or suppress other semantics-preserving transforms. Omission means
+false; there is no `no_inline=no` spelling.
 
 `alias object <object-symbol> = @target` records an additional object-file symbol spelling
 that must resolve to the same emitted top-level LowIR function or global as `@target`.
@@ -296,12 +327,12 @@ again.
 Functions may also carry explicit call-boundary metadata after the return type:
 
 ```text
-declare function @printf(%fmt : ptr [pass=decay]) -> i32 [arity=variadic, effects=readonly]
-function @sum(%count : i64) -> i64 [arity=variadic, effects=readwrite] {
+declare function @printf(%fmt : ptr) -> i32 [arity=variadic, effects=readonly]
+function @sum(%count : i64) -> i64 [arity=variadic] {
   ...
 }
-declare function @legacy() -> i64 [arity=prototype_relaxed]
 declare function @trap() -> void [effects=readnone, unwind=no, return=noreturn]
+declare function @lookup(%table : ptr, %index : i64) -> i64 [query=stable_prefix]
 ```
 
 The currently defined function metadata keys are:
@@ -310,37 +341,28 @@ The currently defined function metadata keys are:
 - `effects`
 - `unwind`
 - `return`
+- `query`
 
 The currently defined arity values are:
 
-- `fixed`
 - `variadic`
-- `prototype_relaxed`
 
-`fixed` is the default and is normally omitted. `variadic` means the function accepts at least
-its declared parameter prefix plus any later variadic arguments. `prototype_relaxed` means the
-boundary does not promise strict fixed-arity checking at the call site; the current structural
-validator treats it as accepting at least its declared parameter prefix, like a more weakly
-specified variadic boundary. The current C++ emit path still only produces `fixed` or
-`variadic`; the `prototype_relaxed` spelling exists so LowIR can carry that boundary mode
-explicitly once an upstream frontend models it truthfully.
+Omission means fixed arity and has no explicit spelling. `variadic` means the function accepts
+at least its declared parameter prefix plus any later variadic arguments. LowIR does not reserve
+an additional arity mode for a hypothetical source boundary; a new mode requires a real
+producer, consumer, and property test.
 
 The currently defined call-effect values are:
 
 - `readnone`
 - `readonly`
-- `readwrite`
 
-`readwrite` is the ordinary conservative default when omitted. `readnone` means the boundary
-does not read or write memory. `readonly` means the boundary may read memory but does not
-write it.
+Omission is the ordinary conservative read/write default and has no explicit spelling.
+`readnone` means the boundary does not read or write memory. `readonly` means the boundary
+may read memory but does not write it.
 
-The currently defined unwind values are:
-
-- `may`
-- `no`
-
-`may` is the ordinary default when omitted. `no` means the boundary does not unwind.
+The currently defined unwind value is `no`. Omission means the call may unwind and has no
+explicit spelling.
 
 This is an IR-level fact, not a promise about how every frontend always infers
 it. In particular, the current `cppgm++ --emit-lowir` path only infers
@@ -349,18 +371,40 @@ it. In particular, the current `cppgm++ --emit-lowir` path only infers
 `noexcept(expr)` may still omit `unwind=no` until that semantic path has a
 cheap non-text-based implementation.
 
-The currently defined return values are:
+The currently defined return value is `noreturn`. Omission means the call returns normally
+and has no explicit spelling.
 
-- `returns`
-- `noreturn`
+The currently defined query value is `stable_prefix`. It is valid only on a
+fixed-arity function with at least one parameter, a final integer parameter,
+and a scalar result representable by the PA13 call boundary. The final
+parameter is the prefix index; all earlier parameters identify the queried
+object or family. After a normally returning call at index `n`, a normally
+returning call with the same earlier arguments at index `m >= n` preserves the
+result that another call at `n` would produce. The function may extend private
+or caller-supplied cache state while answering the higher query, but that work
+must not make the lower-prefix observation differ. Omission makes no such
+promise. A producer that emits this metadata is asserting the relationship;
+consumers need not rediscover it from the function body.
 
-`returns` is the ordinary default when omitted. `noreturn` means the boundary never returns
-normally.
+More precisely, after that return at `m`, replacing a later call at `n <= m`
+with the previously observed result at `n` has no other observable effect.
+This is the permission that lets a consumer remove the later call; merely
+returning an equal value while performing unrelated observable work does not
+satisfy the contract.
+
+This contract only relates normal returns. An intervening store, volatile or
+atomic operation, unclassified call, exceptional operation, different earlier
+argument, unknown index, negative index, or lower index does not establish the
+preservation relationship. Optimizers must retain those conservative
+boundaries unless another independent proof applies.
 
 Call signatures only accept call-boundary metadata such as `arity=...`, `effects=...`,
-`unwind=...`, and `return=...`. Top-level symbol metadata such as `role=...`, `linkage=...`,
-`binding=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, and
-`trivial_lifecycle=...` and `force_inline=...` are not valid on `as (...) -> ...`
+`unwind=...`, and `return=...`. The `query=stable_prefix` promise requires a
+direct function declaration or definition so consumers have a stable query-family
+identity; it is not valid on an indirect call signature. Top-level symbol metadata such as `role=...`, `linkage=...`,
+`binding=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, `object_root=...`, and
+`force_inline=...`, `inline_hint=...`, and
+`no_inline=...` are not valid on `as (...) -> ...`
 call signatures.
 
 Later backend lowering may also introduce internal compiler builtin helper symbols for
@@ -528,7 +572,7 @@ function @sum(%count : i64) -> i64 [arity=variadic] {
   ...
 }
 
-function @user_entry() -> i64 [arity=fixed, role=entry] {
+function @user_entry() -> i64 [role=entry] {
   ...
 }
 ```
@@ -545,38 +589,25 @@ function @user_entry() -> i64 [role=entry] !dbg(main.cpp, 1, 1) {
 Parameters may also carry explicit passing metadata after the parameter type:
 
 ```text
-function @helper(%ret : ptr [pass=indirect_result],
-                 %obj : ptr [pass=by_address],
-                 %ref : ptr [pass=reference],
-                 %arr : ptr [pass=decay],
-                 %buf : ptr [capture=nocapture, access=read, alias=noalias],
+function @helper(%ret : ptr [pass=indirect_result, object_bytes=24],
+                 %obj : ptr [pass=by_address, object_bytes=24],
+                 %ref : ptr [pass=by_address, object_bytes=8],
+                 %arr : ptr,
+                 %buf : ptr [alias=noalias],
                  %x : i64) -> void {
   ...
 }
 ```
 
-The currently defined parameter metadata keys are `pass`, `capture`, `access`,
-and `alias`.
+The currently defined parameter metadata keys are `pass`, `alias`, and
+`object_bytes`.
 
 The currently defined pass values are:
 
-- `direct`
 - `indirect_result`
 - `by_address`
-- `reference`
-- `decay`
 
-The currently defined capture values are:
-
-- `nocapture`
-- `maycapture`
-
-The currently defined access values are:
-
-- `none`
-- `read`
-- `write`
-- `readwrite`
+Omission means ordinary direct-value passing and has no explicit spelling.
 
 The currently defined alias values are:
 
@@ -585,21 +616,20 @@ The currently defined alias values are:
 The intended meaning is semantic, not host-ABI-specific:
 
 - `indirect_result`: this pointer names caller-owned result storage
-- `by_address`: this parameter is an indirect object/value boundary
-- `reference`: this parameter is a reference boundary
-- `decay`: this parameter came from array/function decay
-- `direct`: ordinary direct-value passing
-- `nocapture`: the callee does not retain the incoming pointer value beyond the call
-- `maycapture`: the callee may retain or otherwise capture the incoming pointer value
-- `none`: the callee does not dereference the incoming pointer
-- `read`: the callee only reads through the incoming pointer
-- `write`: the callee only writes through the incoming pointer
-- `readwrite`: the callee may both read and write through the incoming pointer
+- `by_address`: this parameter is an indirect object, value, or source-reference
+  boundary whose argument denotes addressable storage
 - `noalias`: this incoming pointer is disjoint from every other pointer
   parameter on the same boundary that also carries `alias=noalias`
+- `object_bytes=N`: the pointer denotes the beginning of a positive, complete
+  semantic object region containing `N` bytes. Memory accessed through that
+  parameter, or through a pointer derived from it and retained or returned by
+  the callee, remains inside that region. This is an object-model boundary,
+  not a claim that the callee reads or writes every byte and not a host ABI
+  size. Omission provides no bounded-region promise.
 
-For the current LowIR subset, non-`direct` pass modes require parameter type `ptr`.
-Capture, access, and alias metadata also currently require parameter type `ptr`.
+For the current LowIR subset, every explicitly spelled pass mode and alias
+metadata require parameter type `ptr`. `object_bytes` likewise requires `ptr`
+and a positive integer value.
 `indirect_result` must appear on the first parameter and requires function return type `void`.
 
 Stack slot syntax:
@@ -693,8 +723,10 @@ The intended convention is:
   `-> obj<8x4>` when the frontend wants that boundary explicitly represented in LowIR
 - complete object return-by-value may also use an explicit leading destination pointer
   `ptr [pass=indirect_result]` when the source boundary is itself indirect
-- source-level references use `ptr [pass=reference]`
-- decayed array/function parameters use `ptr [pass=decay]`
+- source-level references use the shared `ptr [pass=by_address]` boundary;
+  LowIR retains the required address semantics, not the source-level origin
+- array/function decay is represented by an ordinary `ptr`; LowIR does not
+  retain the source-level origin of an already-lowered pointer value
 - variadic functions use explicit `arity=variadic` metadata on the function declaration or
   definition
 - complete object locals may be represented by addressable storage rather than scalar
@@ -707,11 +739,11 @@ function @make_small_pair(%a : i64, %b : i64) -> obj<8x4> {
   ...
 }
 
-function @make_pair(%ret : ptr [pass=indirect_result], %a : i64, %b : i64) -> void {
+function @make_pair(%ret : ptr [pass=indirect_result, object_bytes=16], %a : i64, %b : i64) -> void {
   ...
 }
 
-function @consume_pair(%p : ptr [pass=by_address]) -> void {
+function @consume_pair(%p : ptr [pass=by_address, object_bytes=16]) -> void {
   ...
 }
 
@@ -719,7 +751,7 @@ function @sum_pair(%p : obj<8x4>) -> i64 {
   ...
 }
 
-function @consume_ref(%p : ptr [pass=reference]) -> void {
+function @consume_ref(%p : ptr [pass=by_address, object_bytes=16]) -> void {
   ...
 }
 ```
@@ -745,23 +777,20 @@ The preferred convention is role-driven:
 If present as definitions, backend adapters such as PA13 `lowir2cy86` should run the
 `init` hook before the `entry` function and the `fini` hook after it.
 
-Later hosted/EH lowering may also introduce reserved runtime-support roles:
+Later hosted/EH lowering may also introduce reserved function runtime-support roles:
 
-- globals:
-  - `eh_top`
-  - `eh_value`
-  - `eh_type`
 - functions:
-  - `eh_unhandled`
   - `eh_allocate_exception`
   - `eh_begin_catch`
-  - `eh_call_unexpected`
-  - `eh_current_exception_type`
   - `eh_end_catch`
   - `eh_rethrow`
   - `eh_throw`
   - `eh_personality`
   - `eh_resume`
+
+The PA13 CY86 scaffold owns its private exception-handler stack, exception-value storage,
+and unhandled-exception fallback. LowIR programs express exception flow through the EH
+operations below and do not name or replace that scaffold through symbol roles.
 
 For compatibility with earlier handwritten LowIR and pre-role test cases, the legacy
 spellings `@main`, `@__cppgm_init`, and `@__cppgm_fini` are still accepted when no explicit
@@ -791,6 +820,11 @@ The PA13 subset uses:
 valid with `f32`, `f64`, and `f80` types. `f80` literals use the usual `L` suffix, for
 example `1.25L`.
 
+Three values have no digit spelling and are written as words instead. `nullptr` is the
+null pointer constant and is valid with `ptr`. `inf` and `nan` are the floating infinity
+and quiet NaN, and `snan` is the signalling NaN; each may also be written
+in uppercase as `INFINITY`, `NAN`, or `SNAN`, and `inf` may carry a leading `-`.
+
 When adapting this IR to a runnable backend that lacks direct 80-bit registers, a practical
 representation is:
 
@@ -802,6 +836,31 @@ That keeps `index f80`, structured global layout, and later native/object loweri
 with the same LowIR storage model while still allowing PA13-style execution through a
 different internal calling convention if needed.
 
+### Control-Flow Value Merges
+
+```text
+%t = phi <type> [^predecessor: <value>, ...]
+```
+
+`phi` selects the value paired with the ordinary control-flow edge by which
+execution entered the current block. A `phi` must name every distinct ordinary
+predecessor of its block exactly once, and may not name any other block. All
+`phi` instructions in a block precede its ordinary instructions and execute in
+parallel, so one `phi` may use the value produced by another `phi` on a loop's
+previous iteration.
+
+The result and every incoming value have the same directly representable
+scalar type: `i1`, `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`, `f32`,
+`f64`, or `ptr`. A block reached as an exception handler target may not contain
+`phi`; exception state remains represented by the explicit exception/runtime
+instructions.
+
+A conditional scalar choice is represented with ordinary control flow: branch
+to the blocks that produce the alternative values, jump from those blocks to
+a merge block, and select the incoming value there with `phi`. This keeps the
+condition's control-flow relationship explicit and requires no separate
+branchless-choice instruction.
+
 ### Memory and Addressing
 
 ```text
@@ -809,7 +868,9 @@ different internal calling convention if needed.
 %t = addr @function
 %t = addr $slot
 %t = load <type> <storage>
+%t = load volatile <type> <storage>
 store <type> <value>, <storage>
+store volatile <type> <value>, <storage>
 %t = atomic_load <type> <ptr-value>, <order>
 atomic_store <type> <value>, <ptr-value>, <order>
 %t = atomic_exchange <type> <ptr-value>, <value>, <order>
@@ -826,11 +887,22 @@ lowering shape. The currently supported projection kinds are:
 
 - `array_element`
 - `field`
-- `base_subobject`
-- `reference_field`
 
-When omitted, `index` still means plain pointer arithmetic with no stronger semantic
-projection claim.
+`array_element` identifies scaled element addressing used by array and table
+transforms. `field` identifies a constant within-object byte projection used by
+the object-copy and zeroing transforms. When omitted, `index` means plain
+pointer arithmetic with no stronger optimization claim; already-lowered source
+origins such as base-subobject and reference-field selection have no separate
+LowIR spelling.
+
+`load volatile` and `store volatile` mark an observable access to a
+volatile-qualified object. Volatility is a property of the operation, not of
+the pointer type: no pass may remove, merge, reorder, or forward a volatile
+access, and storage reached by a volatile access may not be promoted or
+discarded. Ordinary `load`/`store` operations to the same storage keep their
+usual optimization freedoms. Bulk object operations (`copyobj`, `zeroinit`)
+have no volatile form; objects with volatile subobjects must be transferred
+through scalar volatile accesses.
 
 Atomic memory-order operands use the GNU/Clang order encoding:
 
@@ -866,6 +938,16 @@ Where:
 object-typed value, the operation copies from that semantic object value rather than
 requiring the IR to spell the host ABI chunking explicitly.
 
+`copyobj` is a non-overlapping semantic object copy: the source and destination
+spans must not overlap (byte-identical source and destination addresses are the
+one permitted degenerate case, and lowering may elide such a copy). Producers
+lower semantic object transfers, which never alias their storage, and native
+lowering is free to use forward byte copies or chunked register moves that would
+be wrong for overlapping spans. An overlap-capable move remains a hosted/runtime
+operation (`memmove`); if a later optimizer needs a first-class overlap-safe IR
+operation, it must be added as a distinct instruction rather than by weakening
+this contract.
+
 `zeroinit` writes zero to exactly `<bytes>` bytes starting at `<dst>`.
 
 These instructions are intended for lowered object storage, trivial copies, and simple static
@@ -890,7 +972,6 @@ Required PA13 unary operators:
 - `neg`
 - `not`
 - `bitnot`
-- `decay` for `ptr`
 - `bswap` for `i16`, `i32`, and `i64`
 
 Required PA13 binary operators:
@@ -968,9 +1049,10 @@ For runnable adapters such as PA13 `lowir2cy86`, a good implementation strategy 
 - keep the operation as a first-class LowIR unary op rather than expanding it during C++
   lowering, so later native/object backends can choose the best lowering directly
 
-`unary decay ptr` is a semantic identity on pointers. It exists to mark the point where an
-array or function entity decays into a pointer view, instead of forcing later passes to
-reconstruct that fact from surrounding address arithmetic alone.
+Array-to-pointer and function-to-pointer decay use the ordinary pointer value
+produced by `addr`, `index`, a parameter, or `copy ptr`. There is no decay-specific
+unary operation: once the source construct has become a `ptr`, its source-level
+origin does not change LowIR behavior.
 
 In the PA13 `lowir2cy86` scaffold, these operations may use a principled single-threaded
 interpretation:
@@ -1049,12 +1131,27 @@ the target stack requirement and restore the stack through the normal function
 epilogue. This is the stable LowIR lowering for source builtins such as
 `__builtin_alloca`; it is not a callable external symbol.
 
+### Variadic Argument Access
+
+```text
+va_start <list>
+%t = va_arg <type> <list>
+```
+
+`va_start` prepares the argument list object `<list>` in a function declared
+`[arity=variadic]`, and `va_arg` reads the next argument from it as `<type>` and advances
+it. These are the stable LowIR lowerings for `__builtin_va_start` and
+`__builtin_va_arg`; neither is a callable external symbol. PA13 only has to carry both
+forms through the text form, since the argument list layout is part of the calling
+convention that PA29 fixes.
+
 ### Calls
 
 ```text
 %t = call <type> @function(<arg-list>)
 %t = call <type> <callee-value>(<arg-list>) as (<param-list>) -> <type>
 call void @function(<arg-list>)
+call void @function(<destination>, <source>, ...) [elision=copy]
 call void <callee-value>(<arg-list>) as (<param-list>) -> void
 ```
 
@@ -1062,8 +1159,18 @@ The PA13 subset requires direct calls and calls through pointer-valued operands.
 For indirect calls, the explicit `as (...) -> ...` call signature is part of the
 stable LowIR surface because the callee operand alone does not describe the
 semantic boundary. That call signature may also carry call-boundary metadata
-such as `arity=variadic`, `effects=readonly`, `unwind=no`, or `return=noreturn`
+such as `arity=variadic`, `effects=readonly`, `unwind=no`, `return=noreturn`,
+or `query=stable_prefix`
 when needed.
+
+`[elision=copy]` is a source-language permission on a direct `void` call with
+at least destination and source arguments.  It says that an optimizing stage
+may omit this copy/move construction and redirect the complete construction
+of its private source temporary into the destination when the serialized
+control-flow and lifetime uses prove that rewrite safe.  It is not a command
+to erase the call: an `-O0` consumer executes the call and all ordinary source
+cleanup exactly as written.  The permission is invalid on value-returning or
+indirect calls and does not classify an unmarked call by its symbol spelling.
 
 ### Terminators
 
@@ -1073,10 +1180,15 @@ branch %cond, ^then, ^else
 switch %selector, ^default, <case-value>:^case, ...
 return void
 return <type> <value>
+unreachable
 ```
 
 `switch` is the first-class multi-way terminator form. It transfers control to
 the first matching `<case-value>:^case` arm, or to `^default` if no arm matches.
+
+`unreachable` states that execution cannot validly continue from that point.
+It takes no operands and emits no call or symbol declaration. A release backend
+may emit no bytes for this impossible continuation.
 
 ## PA22 Exception/Runtime Instructions
 
@@ -1139,6 +1251,87 @@ type already representable in LowIR.
 - Only terminators may transfer control.
 - Stack slots represent addressable local storage.
 - The text must be deterministic: the same input program should produce the same CY86 output.
+
+## What The Comparison Absorbs And What It Enforces
+
+The source-to-LowIR assignments (PA15 through PA28) and the optimizer's
+regression lane (PA37) judge an output by comparing it with the course
+solution's LowIR after a presentation canonicalization: the relaxed LowIR
+comparison of `scripts/compare_results_common.pl`. This section is the whole
+list of what that canonicalization absorbs, and of the conventions it
+enforces instead. A difference the comparison accepts is on the first list;
+a difference it rejects is on the second. `make test-seams` in PA16
+(`scripts/check_lowir_seams.py`) rewrites the course solution's own outputs
+along every line of both lists and fails when the lists and the comparison
+disagree.
+
+The rule behind the split: a normalization is worth having only when a
+student can hold it as one sentence and predict, reading their own output,
+whether it will compare equal. When the normalization would be harder to
+understand than the convention it protects against, the comparison does not
+absorb the difference; the convention is written here instead, so that a
+student reads the rule before failing it rather than reading a canonical
+diff of code they did not write.
+
+### The comparison absorbs
+
+- Names of temporaries, slots, blocks and parameters: each is renamed
+  positionally within its function.
+- The order of slot declarations.
+- The order of top-level entries: Program Structure above defines the
+  canonical presentation, and the comparison canonicalizes it.
+- A declaration nothing uses.
+- Internal symbol names: functions and globals that are not externally
+  visible are paired by their `role` and `object` metadata, then by shape,
+  then by position.
+- The order of items inside a metadata group, and the metadata keys that
+  belong to later stages (`linkage`, `binding`, `object`, `effects`,
+  `unwind`, `return`, `capture`, `access`, `alias`, the optimizer's
+  `force_inline`, `inline_hint` and `no_inline`, and the few others that
+  `lowir_metadata_item_ignored_for_compare` lists): they are validated but
+  not compared.
+- Indentation and blank lines.
+- A literal is its value, not its spelling. `16`, `0x10` and `020` are one
+  literal; `-1` and `4294967295` are one `i32`; `1.5`, `1.50` and `15e-1`
+  are one `f64`, and so is any decimal that rounds to the same `f64`;
+  `nullptr` and `0` are one `ptr`.
+- The operand order of a commutative operation does not matter. For
+  `binary add`, `mul`, `and`, `or` and `xor`, and for `cmp eq` and `ne`,
+  the two operands may appear in either order.
+
+### The comparison enforces
+
+Each of these is a choice the course fixes in words. The course solution
+follows them, and so must yours.
+
+- Branch sense follows the source. A conditional branch tests the value the
+  source wrote, in the source's sense: a comparison is one `cmp` with the
+  source's predicate (`!=` is `cmp ne`, never an inverted `cmp eq` with the
+  arms exchanged), `!x` is `cmp eq x, 0`, a bare scalar condition is
+  branched on directly, and the first target of the branch is the source's
+  true path.
+- A retype is a `copy`. A conversion that keeps the bits and changes only
+  the LowIR type (an integer to another type of the same width, an
+  enumeration to its underlying type, a bit-field read completing to its
+  declared type, a `nullptr` materialized as a `ptr` temporary) is written
+  `copy <type> <value>`; it is not omitted and it is not written as
+  `convert`.
+- Instructions follow the source's evaluation order. Where the source fixes
+  the order, the LowIR follows it: the right operand of an assignment is
+  evaluated before the address of its left operand. Where the language
+  leaves the order of independent operands open, the course fixes it left
+  to right: the operands of a binary operator, the arguments of a call, and
+  the loads each operand needs are evaluated in source order, and two
+  independent instructions are not exchanged.
+
+Why these are conventions rather than normalizations: absorbing branch
+sense needs a rewrite with a precondition (the compare's only use is the
+branch that follows it) and a table of inverted predicates; absorbing a
+missing `copy` would accept an output in which a temporary's type no
+longer says what its uses need; absorbing the order of independent
+instructions needs a dependency-respecting sort of every block, and would
+still leave the order of side effects pinned. Each is harder to hold than
+the sentence it would replace.
 
 ## Later Reserved Extensions
 

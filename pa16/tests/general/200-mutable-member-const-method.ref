@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @S__ptr(%this : ptr) -> ptr [binding=weak, object=_ZNK1S3ptrEv] {
+function @S__ptr(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZNK1S3ptrEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

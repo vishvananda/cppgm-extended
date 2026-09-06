@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     call void @Derived__Derived(%t1, 4, 5)
     %t2 = addr $d
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load i32 %t4
     %t6 = addr $d
@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = binary sub i32 %t9, 9
     return i32 %t10
 }
-function @Derived__Derived(%this : ptr, %a : i32, %b : i32) -> void [binding=weak, object=_ZN7DerivedC1Eii] {
+function @Derived__Derived(%this : ptr [object_bytes=8], %a : i32, %b : i32) -> void [binding=weak, object=_ZN7DerivedC1Eii, inline_hint=yes] {
   slot $this : ptr
   slot $a : i32
   slot $b : i32
@@ -25,7 +25,7 @@ function @Derived__Derived(%this : ptr, %a : i32, %b : i32) -> void [binding=wea
     store i32 %a, $a
     store i32 %b, $b
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load i32 $a
     call void @Base__Base__base_entry(%t2, %t3)
     %t4 = load i32 $b
@@ -34,7 +34,7 @@ function @Derived__Derived(%this : ptr, %a : i32, %b : i32) -> void [binding=wea
     store i32 %t4, %t6
     return void
 }
-function @Base__Base__base_entry(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4BaseC2Ei] {
+function @Base__Base__base_entry(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4BaseC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

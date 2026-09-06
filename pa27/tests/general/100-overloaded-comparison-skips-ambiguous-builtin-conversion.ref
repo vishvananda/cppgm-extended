@@ -1,4 +1,4 @@
-function @operator__(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=strong, object=_ZeqRK20front_extended_dequeRK5deque] {
+function @operator__(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_ZeqRK20front_extended_dequeRK5deque] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

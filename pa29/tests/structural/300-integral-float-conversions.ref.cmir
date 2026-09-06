@@ -1,7 +1,7 @@
 machine_ir x86_64 <host-target>
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -9,11 +9,12 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 96
+    stack_size N
     scratch_bytes 48
-    preserve <gpr0> <gpr1>
+    frame_pointer keep
+    epilogues shared
     temp %4 -> [rbp-<off0>] : f80
-    temp %7 -> [rbp-<off1>] : f80
+    temp %7 -> [rbp-<off0>] : f80
 
   block ^entry
     fptosi.f64.i64 r8, -42.75
@@ -27,19 +28,18 @@ function @main
     sete r9
     movzx r9, r9
     sitofp.i64.f80 [rbp-<off0>], -42
-    fptosi.f80.i64 <gpr0>, [rbp-<off0>]
+    fptosi.f80.i64 rdi, [rbp-<off0>]
     mov rdx, -42
-    cmp.i64 <gpr0>, rdx
-    sete <gpr0>
-    movzx <gpr0>, <gpr0>
-    uitofp.i64.f80 [rbp-<off1>], -1
-    fptoui.f80.i64 <gpr1>, [rbp-<off1>]
+    cmp.i64 rdi, rdx
+    sete rdi
+    movzx rdi, rdi
+    uitofp.i64.f80 [rbp-<off0>], -1
+    fptoui.f80.i64 rsi, [rbp-<off0>]
     mov rdx, -1
-    cmp.i64 <gpr1>, rdx
-    sete <gpr1>
-    movzx <gpr1>, <gpr1>
+    cmp.i64 rsi, rdx
+    sete rsi
+    movzx rsi, rsi
     add r8, r9
-    add r8, <gpr0>
-    add r8, <gpr1>
-    mov rax, r8
-    ret rax
+    add r8, rdi
+    add r8, rsi
+    ret r8

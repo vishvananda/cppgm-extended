@@ -3,19 +3,24 @@ function @f() -> void [binding=strong, object=_Z1fv] {
 
   block ^entry:
     %t1 = addr $a
-    %t2 = unary decay ptr %t1
-    %t3 = index i8 [projection=array_element] %t2, 0
-    call void @Local__local_16583248074186681365__Local(%t3)
-    %t4 = addr $a
-    %t5 = unary decay ptr %t4
-    call void @sift(%t5)
+    %t2 = index i8 [projection=array_element] %t1, 0
+    call void @Local__Local(%t2)
+    %t3 = addr $a
+    call void @sift(%t3)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @sift(%p : ptr) -> void [binding=weak, object=_Z4siftIZ1fvE5LocalEvPT_] {
+function @Local__Local(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZZ1fvEN5LocalC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @sift(%p : ptr) -> void [binding=internal, object=_Z4siftIZ1fvE5LocalEvPT_] {
   slot $p : ptr
   slot $top : obj<1x1>
 
@@ -24,10 +29,10 @@ function @sift(%p : ptr) -> void [binding=weak, object=_Z4siftIZ1fvE5LocalEvPT_]
     %t1 = addr $top
     %t2 = load ptr $p
     %t3 = call ptr @Ops_Policy___iter_move(%t2)
-    call void @Local__local_16583248074186681365__Local__ov3(%t1, %t3)
+    call void @Local__Local__ov3(%t1, %t3)
     return void
 }
-function @Ops_Policy___iter_move(%i : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3OpsI6PolicyE9iter_moveIZ1fvE5LocalEEOT_RS4_] {
+function @Ops_Policy___iter_move(%i : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=internal, object=_ZN3OpsI6PolicyE9iter_moveIZ1fvE5LocalEEOT_RS4_, inline_hint=yes] {
   slot $i : ptr
 
   block ^entry:
@@ -36,22 +41,7 @@ function @Ops_Policy___iter_move(%i : ptr [pass=reference]) -> ptr [binding=weak
     %t2 = call ptr @move_like(%t1)
     return ptr %t2
 }
-function @move_like(%t : ptr [pass=reference]) -> ptr [binding=weak, object=_Z9move_likeIZ1fvE5LocalEOT_RS1_] {
-  slot $t : ptr
-
-  block ^entry:
-    store ptr %t, $t
-    %t1 = load ptr $t
-    return ptr %t1
-}
-function @Local__local_16583248074186681365__Local(%this : ptr) -> void [binding=weak, object=_ZZ1fvEN5LocalC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @Local__local_16583248074186681365__Local__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZZ1fvEN5LocalC1EOS_] {
+function @Local__Local__ov3(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=internal, object=_ZZ1fvEN5LocalC1EOZ1fvE5Local, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -60,5 +50,13 @@ function @Local__local_16583248074186681365__Local__ov3(%this : ptr, %__param1 :
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZZ1fvEN5LocalC2Ev = @Local__local_16583248074186681365__Local
-alias object _ZZ1fvEN5LocalC2EOS_ = @Local__local_16583248074186681365__Local__ov3
+function @move_like(%t : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=internal, object=_Z9move_likeIZ1fvE5LocalEOT_RS1_] {
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %t, $t
+    %t1 = load ptr $t
+    return ptr %t1
+}
+alias object _ZZ1fvEN5LocalC2Ev = @Local__Local
+alias object _ZZ1fvEN5LocalC2EOZ1fvE5Local = @Local__Local__ov3

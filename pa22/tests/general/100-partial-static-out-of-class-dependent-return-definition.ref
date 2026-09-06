@@ -3,22 +3,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $arg__1
-    call void @V_int___V(%t1)
-    %t2 = call i32 @T_V_int____f(%t1)
+    %t2 = call i32 @T___cppgm_class_template_identity_0_1_0___f(%t1)
     return i32 %t2
 }
-function @V_int___V(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VIiEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @T_V_int____f(%__param0 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1TI1VIiEE1fERKS1_] {
+function @T___cppgm_class_template_identity_0_1_0___f(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN1TI1VIiEE1fERKS1_] {
   slot $__param0 : ptr
 
   block ^entry:
     store ptr %__param0, $__param0
     return i32 0
 }
-alias object _ZN1VIiEC2Ev = @V_int___V

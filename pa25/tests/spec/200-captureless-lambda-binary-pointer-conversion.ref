@@ -5,11 +5,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $f
     %t2 = addr @__lambda_main_t10_12
-    %t3 = unary decay ptr %t2
-    %t4 = addr @__lambda_main_t10_12
-    %t5 = unary decay ptr %t4
-    %t6 = cmp eq ptr %t3, %t5
-    branch %t6, ^cond_then_1, ^cond_else_2
+    %t3 = addr @__lambda_main_t10_12
+    %t4 = cmp eq ptr %t2, %t3
+    branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -20,10 +18,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
-    return i32 %t7
+    %t5 = load i32 $cond__1
+    return i32 %t5
 }
-function @__lambda_main_t10_12() -> void [binding=internal] {
+function @__lambda_main_t10_12() -> void [binding=internal, object=_Z20__lambda_main_t10_12v, object_root=yes] {
   block ^entry:
     return void
 }

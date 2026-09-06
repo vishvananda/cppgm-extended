@@ -10,9 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t2 = addr $argobj__3
-    call void @object__object(%t2)
     %t3 = addr $argobj__4
-    call void @property__property(%t3)
     %t4 = call i32 @call_deleted_query($argobj__3, $argobj__4, 0)
     %t5 = cmp eq i32 %t4, 2
     %t6 = cmp ne i64 %t5, 0
@@ -48,19 +46,3 @@ function @call_deleted_query(%__param0 : obj<1x1>, %__param1 : obj<1x1>, %__para
     store i64 %__param2, $__param2
     return i32 2
 }
-function @object__object(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6objectC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @property__property(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8propertyC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN6objectC2Ev = @object__object
-alias object _ZN8propertyC2Ev = @property__property

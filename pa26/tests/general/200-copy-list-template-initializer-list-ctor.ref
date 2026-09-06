@@ -1,4 +1,4 @@
-declare function @S__S(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1SC1IiEERKSt16initializer_listIT_E]
+declare function @S__S__ov3(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZN1SC1IiEERKSt16initializer_listIT_E, inline_hint=yes]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $s : obj<1x1>
@@ -17,6 +17,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t3, %t2
     %t6 = index i8 %t2, 8
     store i64 3, %t6
-    call void @S__S(%t1, %t2)
+    call void @S__S__ov3(%t1, %t2)
     return i32 0
 }

@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @std____1__copy_n(%__param0 : ptr, %__param1 : i64, %__param2 : ptr) -> i32 [binding=weak, object=_ZNSt3__16copy_nINS_18classic_alg_policyEPKcPcEEiT0_NS_8iter_opsIT_E15difference_typeIS5_EET1_] {
+function @std____1__copy_n(%__param0 : ptr, %__param1 : i64, %__param2 : ptr) -> i32 [binding=weak, object=_ZNSt3__16copy_nINS_18classic_alg_policyEPKcPcEEiT0_41__function_template_nondeduced_type_shapeT1_] {
   slot $__param0 : ptr
   slot $__param1 : i64
   slot $__param2 : ptr

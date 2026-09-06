@@ -1,7 +1,7 @@
 global @copies : i32 [binding=strong, object=_Z6copies] = 0
 global @moves : i32 [binding=strong, object=_Z5moves] = 0
 
-function @get(%ret : ptr [pass=indirect_result], %source : ptr [pass=reference]) -> void [binding=strong, object=_Z3getR3Box] {
+function @get(%ret : ptr [pass=indirect_result, object_bytes=4], %source : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z3getR3Box] {
   slot $source : ptr
 
   block ^entry:
@@ -90,7 +90,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t22 = load i32 $cond__1
     return i32 %t22
 }
-function @my_move(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7my_moveI3BoxEOT_RS1_] {
+function @my_move(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z7my_moveI3BoxEOT_RS1_] {
   slot $value : ptr
 
   block ^entry:
@@ -98,20 +98,7 @@ function @my_move(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z
     %t1 = load ptr $value
     return ptr %t1
 }
-function @Box__Box(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3BoxC1Ei] {
-  slot $this : ptr
-  slot $v : i32
-
-  block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    return void
-}
-function @Box__Box__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN3BoxC1EOS_] {
+function @Box__Box__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -132,5 +119,26 @@ function @Box__Box__ov3(%this : ptr, %other : ptr [pass=reference]) -> void [bin
     store i32 0, %t9
     return void
 }
-alias object _ZN3BoxC2Ei = @Box__Box
+function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Box__Box(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $v : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %v, $v
+    %t1 = load i32 $v
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
 alias object _ZN3BoxC2EOS_ = @Box__Box__ov3
+alias object _ZN3BoxD2Ev = @Box___Box
+alias object _ZN3BoxC2Ei = @Box__Box

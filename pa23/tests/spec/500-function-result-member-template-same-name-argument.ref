@@ -1,4 +1,4 @@
-declare function @owner_int___set() -> ptr [binding=weak, object=_ZN5ownerIiE3setI7wrapperI1EEEERKT_v]
+declare function @owner_int___set() -> ptr [binding=weak, object=_ZN5ownerIiE3setI7wrapperI1EEEERKT_v, inline_hint=yes]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $result : ptr

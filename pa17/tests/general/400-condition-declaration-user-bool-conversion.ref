@@ -36,7 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load i32 $cond__1
     return i32 %t2
 }
-function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
+function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -46,7 +46,7 @@ function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
     store i32 0, %t2
     return void
 }
-function @Box__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK3BoxcvbEv] {
+function @Box__operatorbool(%this : ptr [object_bytes=4]) -> u8 [binding=weak, object=_ZNK3BoxcvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -55,6 +55,7 @@ function @Box__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK3Boxcvb
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load i32 %t2
     %t4 = cmp ne i32 %t3, 0
-    return u8 %t4
+    %t5 = convert trunc u8 i64 %t4
+    return u8 %t5
 }
 alias object _ZN3BoxC2Ev = @Box__Box

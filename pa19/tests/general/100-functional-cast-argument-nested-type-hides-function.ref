@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @host__run() -> i32 [binding=weak, object=_ZN4host3runEv] {
+function @host__run() -> i32 [binding=weak, object=_ZN4host3runEv, inline_hint=yes] {
   slot $value : i32
   slot $argobj__1 : obj<8x8>
 
@@ -31,7 +31,7 @@ function @host__run() -> i32 [binding=weak, object=_ZN4host3runEv] {
     %t3 = load i32 $value
     return i32 %t3
 }
-function @host__shadow_maker__shadow_maker(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN4host12shadow_makerC1EPi] {
+function @host__shadow_maker__shadow_maker(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN4host12shadow_makerC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -54,7 +54,7 @@ function @invoke(%f : obj<8x8>) -> void [binding=weak, object=_Z6invokeIN4host12
     call void @host__shadow_maker__operator__(%t2)
     return void
 }
-function @host__shadow_maker__operator__(%this : ptr) -> void [binding=weak, object=_ZN4host12shadow_makerclEv] {
+function @host__shadow_maker__operator__(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4host12shadow_makerclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

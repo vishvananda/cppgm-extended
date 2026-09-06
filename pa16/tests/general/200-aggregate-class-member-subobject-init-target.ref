@@ -69,7 +69,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_9:
     return i32 0
 }
-function @First__First(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN5FirstC1Ei] {
+function @First__First(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN5FirstC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -82,7 +82,7 @@ function @First__First(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN5
     store i32 %t1, %t3
     return void
 }
-function @Second__Second(%this : ptr) -> void [binding=weak, object=_ZN6SecondC1Ev] {
+function @Second__Second(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6SecondC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

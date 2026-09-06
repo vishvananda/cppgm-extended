@@ -42,6 +42,29 @@ jobs:
       - name: Check exported dev Makefile relink stability
         run: python3 scripts/tests/test_exported_dev_makefile.py
 
+  audits:
+    name: source audits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Run the architecture audits
+        run: |
+          make audit-lowir-contract audit-compiler-layout \
+            audit-compiler-rename-manifest audit-compiler-exceptions \
+            audit-frontend-source-sets audit-semantic-owners \
+            audit-builtin-registry-tables audit-lowering-owners \
+            audit-native-owners
+
+      - name: Run the file audit
+        run: perl scripts/cppgm_file_audit.pl --paths dev
+
+      - name: Run the harness unit tests
+        run: make test-harness
+
   build:
     name: build / ${{ matrix.name }}
     runs-on: ubuntu-24.04
@@ -170,7 +193,6 @@ jobs:
             name: gcc + libstdc++ (ubuntu 24.04)
             image: ubuntu:24.04
             host_packages: build-essential
-            strict_packages: make libstdc++6
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
@@ -179,7 +201,6 @@ jobs:
             name: clang + libc++ (ubuntu 24.04)
             image: ubuntu:24.04
             host_packages: build-essential clang libc++-dev libc++abi-dev
-            strict_packages: make libc++-dev libc++abi-dev
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
@@ -188,7 +209,6 @@ jobs:
             name: gcc + libstdc++ (ubuntu 26.04)
             image: ubuntu:26.04
             host_packages: build-essential
-            strict_packages: make libstdc++6
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
@@ -197,7 +217,6 @@ jobs:
             name: clang + libc++ (ubuntu 26.04)
             image: ubuntu:26.04
             host_packages: build-essential clang libc++-dev libc++abi-dev
-            strict_packages: make libc++-dev libc++abi-dev
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
@@ -206,10 +225,6 @@ jobs:
           - id: test-report
             name: test-report
             command: make test-report-nobuild
-            timeout: 120
-          - id: test-strict
-            name: test-strict
-            command: make test-strict-nobuild
             timeout: 120
           - id: test-debuginfo
             name: test-debuginfo
@@ -234,9 +249,6 @@ jobs:
       - name: Install checkout and host compiler dependencies
         run: |
           packages="${{ matrix.flavor.host_packages }}"
-          if [ "${{ matrix.suite.id }}" = "test-strict" ]; then
-            packages="${{ matrix.flavor.strict_packages }}"
-          fi
           if [ "${{ matrix.suite.id }}" = "test-debuginfo" ]; then
             packages="$packages gdb"
           fi

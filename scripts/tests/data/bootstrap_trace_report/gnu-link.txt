@@ -1,5 +1,0 @@
-/usr/bin/ld: a.o: in function `main':
-a.cpp:(.text+0x15): undefined reference to `foo::bar()'
-/usr/bin/ld: a.o: in function `helper':
-a.cpp:(.text+0x25): undefined reference to `foo::bar()'
-collect2: error: ld returned 1 exit status

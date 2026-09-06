@@ -15,7 +15,7 @@ function @test() -> void [binding=weak, object=_Z4testIiiiN15ttp_default_arg12in
     call void @ttp_default_arg__pass(%t2, %t3)
     return void
 }
-function @ttp_default_arg__pass(%__param0 : ptr [pass=reference], %destination : ptr [pass=reference]) -> void [binding=weak, object=_ZN15ttp_default_arg4passIiiiNS_12interval_mapEiEEvRKT3_RT2_IT_T0_T1_NS_4lessIS6_EENS_4plusIS7_EENS_7sectionIS7_EENS_8intervalIS6_SA_EE9allocatorE] {
+function @ttp_default_arg__pass(%__param0 : ptr [pass=by_address, object_bytes=4], %destination : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN15ttp_default_arg4passIiiiNS_12interval_mapEiEEvRKT3_RT2_IT_T0_T1_NS_4lessIS6_EENS_4plusIS7_EENS_7sectionIS7_EENS_8intervalIS6_SA_EENS_9allocatorEE] {
   slot $__param0 : ptr
   slot $destination : ptr
 
@@ -23,10 +23,10 @@ function @ttp_default_arg__pass(%__param0 : ptr [pass=reference], %destination :
     store ptr %__param0, $__param0
     store ptr %destination, $destination
     %t1 = load ptr $destination
-    call void @ttp_default_arg__interval_map_int__int__int__ttp_default_arg__less_int___ttp_default_arg__plus_int___ttp_default_arg__section_int___ttp_default_arg__interval_int__ttp_default_arg__less_int____ttp_default_arg__allocator___clear(%t1)
+    call void @ttp_default_arg__interval_map_int__int__int__ttp_default_arg____cppgm_class_template_identity_0_5_0__ttp_default_arg____cppgm_class_template_identity_1_5_0__ttp_default_arg____cppgm_class_template_identity_2_5_0__ttp_default_arg____cppgm_class_template_identity_3_6_0__template_parameter_ttp_default_arg__allocator___clear(%t1)
     return void
 }
-function @ttp_default_arg__interval_map_int__int__int__ttp_default_arg__less_int___ttp_default_arg__plus_int___ttp_default_arg__section_int___ttp_default_arg__interval_int__ttp_default_arg__less_int____ttp_default_arg__allocator___clear(%this : ptr) -> void [binding=weak, object=_ZN15ttp_default_arg12interval_mapIiiiNS_4lessIiEENS_4plusIiEENS_7sectionIiEENS_8intervalIiS2_EENS_9allocatorEE5clearEv] {
+function @ttp_default_arg__interval_map_int__int__int__ttp_default_arg____cppgm_class_template_identity_0_5_0__ttp_default_arg____cppgm_class_template_identity_1_5_0__ttp_default_arg____cppgm_class_template_identity_2_5_0__ttp_default_arg____cppgm_class_template_identity_3_6_0__template_parameter_ttp_default_arg__allocator___clear(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN15ttp_default_arg12interval_mapIiiiNS_4lessIiEENS_4plusIiEENS_7sectionIiEENS_8intervalIiS2_EENS_9allocatorEE5clearEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -6,7 +6,7 @@ function @f(%s : obj<1x1>) -> u8 [binding=strong, object=_Z1f1S] {
     %t2 = call u8 @S__operatorbool(%t1)
     return u8 %t2
 }
-function @S__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK1ScvbEv] {
+function @S__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK1ScvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

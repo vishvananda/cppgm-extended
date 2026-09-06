@@ -1,4 +1,4 @@
-function @lib__operator__(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=strong, object=_ZN3libeqERKNS_8ExecutorES2_] {
+function @lib__operator__(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_ZN3libeqERKNS_8ExecutorES2_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @lib__run()
     return i32 %t1
 }
-function @lib__AtomicLike__operatorlong(%this : ptr) -> i64 [binding=weak, object=_ZNK3lib10AtomicLikecvlEv] {
+function @lib__AtomicLike__operatorlong(%this : ptr [object_bytes=1]) -> i64 [binding=weak, object=_ZNK3lib10AtomicLikecvlEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -9,7 +9,7 @@ global @result_control [binding=strong, object=_Z14result_control] = {
   i32 7
 }
 
-function @choose(%ret : ptr [pass=indirect_result], %local : u8) -> void [binding=strong, object=_Z6chooseb] {
+function @choose(%ret : ptr [pass=indirect_result, object_bytes=8], %local : u8) -> void [binding=strong, object=_Z6chooseb] {
   slot $local : u8
   slot $base : obj<8x8>
   slot $tmpobj__1 : obj<8x8>
@@ -29,37 +29,38 @@ function @choose(%ret : ptr [pass=indirect_result], %local : u8) -> void [bindin
 
   block ^condobj_else_2:
     %t5 = addr $tmpobj__1
-    eh_try ^call_unwind_dispatch_4
+    eh_try ^cleanup_action_5
     %t6 = addr @result_control
     call void @Result__Result(%t5, %t6)
     eh_end
-    jump ^call_unwind_end_5
+    jump ^call_unwind_end_6
 
-  block ^call_unwind_dispatch_4:
-    %t7 = addr $base
-    call void @Owner___Owner(%t7)
+  block ^cleanup_resume_4:
     resume
 
-  block ^call_unwind_end_5:
-    eh_try ^call_unwind_dispatch_6
+  block ^cleanup_action_5:
+    %t7 = addr $base
+    call void @Owner___Owner(%t7)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_6:
+    eh_try ^cleanup_action_7
     %t8 = index i8 [projection=field] %t5, 0
     call void @Owner__Owner__ov2(%ret, %t8)
     call void @Result___Result(%t5)
     eh_end
-    jump ^call_unwind_end_7
+    jump ^call_unwind_end_8
 
-  block ^call_unwind_dispatch_6:
+  block ^cleanup_action_7:
     call void @Result___Result(%t5)
-    %t9 = addr $base
-    call void @Owner___Owner(%t9)
-    resume
+    jump ^cleanup_action_5
 
-  block ^call_unwind_end_7:
+  block ^call_unwind_end_8:
     jump ^condobj_end_3
 
   block ^condobj_end_3:
-    %t10 = addr $base
-    call void @Owner___Owner(%t10)
+    %t9 = addr $base
+    call void @Owner___Owner(%t9)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -141,7 +142,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Owner___Owner(%t31)
     return i32 %t30
 }
-function @Owner__Owner(%this : ptr, %input : ptr) -> void [binding=weak, object=_ZN5OwnerC1EP7Control] {
+function @Owner__Owner(%this : ptr [object_bytes=8], %input : ptr) -> void [binding=weak, object=_ZN5OwnerC1EP7Control, inline_hint=yes] {
   slot $this : ptr
   slot $input : ptr
 
@@ -181,7 +182,7 @@ function @Owner__Owner(%this : ptr, %input : ptr) -> void [binding=weak, object=
     store i32 %t19, %t17
     return void
 }
-function @Owner___Owner(%this : ptr) -> void [binding=weak, object=_ZN5OwnerD1Ev] {
+function @Owner___Owner(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5OwnerD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -216,7 +217,7 @@ function @Owner___Owner(%this : ptr) -> void [binding=weak, object=_ZN5OwnerD1Ev
   block ^if_end_3:
     return void
 }
-function @Result__Result(%this : ptr, %control : ptr) -> void [binding=weak, object=_ZN6ResultC1EP7Control] {
+function @Result__Result(%this : ptr [object_bytes=8], %control : ptr) -> void [binding=weak, object=_ZN6ResultC1EP7Control, inline_hint=yes] {
   slot $this : ptr
   slot $control : ptr
 
@@ -227,9 +228,18 @@ function @Result__Result(%this : ptr, %control : ptr) -> void [binding=weak, obj
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr $control
     call void @Owner__Owner(%t2, %t3)
+    eh_cleanup ^constructor_cleanup_1
+    eh_end
     return void
+
+  block ^constructor_cleanup_1:
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    call void @Owner___Owner(%t5)
+    eh_end
+    resume
 }
-function @Owner__Owner__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5OwnerC1ERKS_] {
+function @Owner__Owner__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN5OwnerC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -265,7 +275,7 @@ function @Owner__Owner__ov2(%this : ptr, %other : ptr [pass=reference]) -> void 
   block ^if_end_3:
     return void
 }
-function @Result___Result(%this : ptr) -> void [binding=weak, object=_ZN6ResultD1Ev] {
+function @Result___Result(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6ResultD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

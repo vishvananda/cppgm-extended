@@ -1,6 +1,6 @@
-declare function @declval_int_() -> ptr [binding=internal]
+declare function @declval__ov2() -> ptr [binding=weak, object=_Z7declvalIiEOT_v]
 
-global @wrapper_basic_stream_socket_tcp__executor____npos : i32 [binding=weak, object=_ZN7wrapperI19basic_stream_socketI3tcp8executorEE4nposE] = 0
+global @__cppgm_class_template_identity_5_1_0__npos : i32 [storage=readonly, binding=weak, object=_ZN7wrapperI19basic_stream_socketI3tcp8executorEE4nposE] = 0
 
 function @handler(%__param0 : i32) -> void [binding=strong, object=_Z7handleri] {
   slot $__param0 : i32
@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr @handler
     store ptr %t4, $refarg__3
     %t5 = addr $refarg__3
-    %t6 = call i32 @wrapper_basic_stream_socket_tcp__executor____async_write_some(%t2, %t3, %t5)
+    %t6 = call i32 @wrapper___cppgm_class_template_identity_4_0_0___async_write_some(%t2, %t3, %t5)
     %t7 = cmp eq i32 %t6, 9
     branch %t7, ^cond_then_1, ^cond_else_2
 
@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @wrapper_basic_stream_socket_tcp__executor____async_write_some(%this : ptr, %buffer : ptr [pass=reference], %handler : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN7wrapperI19basic_stream_socketI3tcp8executorEE16async_write_someIiPFviEEEDTcldtcl7declvalIN11conditionalILb1ERS3_T0_E4typeEEE16async_write_somefp_scSA_fp0_EERKT_OSA_] {
+function @wrapper___cppgm_class_template_identity_4_0_0___async_write_some(%this : ptr [object_bytes=1], %buffer : ptr [pass=by_address, object_bytes=4], %handler : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN7wrapperI19basic_stream_socketI3tcp8executorEE16async_write_someIiPFviEEEiRKT_OT0_, inline_hint=yes] {
   slot $this : ptr
   slot $buffer : ptr
   slot $handler : ptr
@@ -55,7 +55,7 @@ function @wrapper_basic_stream_socket_tcp__executor____async_write_some(%this : 
     %t5 = call i32 @basic_stream_socket_tcp__executor___async_write_some(%t2, %t3, %t4)
     return i32 %t5
 }
-function @basic_stream_socket_tcp__executor___async_write_some(%this : ptr, %buffer : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN19basic_stream_socketI3tcp8executorE16async_write_someIiPFviEEEDTcl14async_initiateIT0_S4_Ecl7declvalIiEEscS6_fp0_EERKT_OS6_] {
+function @basic_stream_socket_tcp__executor___async_write_some(%this : ptr [object_bytes=1], %buffer : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN19basic_stream_socketI3tcp8executorE16async_write_someIiPFviEEEiRKT_OT0_, inline_hint=yes] {
   slot $this : ptr
   slot $buffer : ptr
   slot $token : ptr
@@ -64,12 +64,12 @@ function @basic_stream_socket_tcp__executor___async_write_some(%this : ptr, %buf
     store ptr %this, $this
     store ptr %buffer, $buffer
     store ptr %token, $token
-    %t1 = call ptr @declval_int_()
+    %t1 = call ptr @declval__ov2()
     %t2 = load ptr $token
     %t3 = call i32 @async_initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate(%initiation : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
+function @async_initiate(%initiation : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEN12async_resultIT_T0_E8initiateEOT1_OS3_] {
   slot $initiation : ptr
   slot $token : ptr
 
@@ -78,10 +78,10 @@ function @async_initiate(%initiation : ptr [pass=reference], %token : ptr [pass=
     store ptr %token, $token
     %t1 = load ptr $initiation
     %t2 = load ptr $token
-    %t3 = call i32 @async_result_void_____int___void_int____initiate(%t1, %t2)
+    %t3 = call i32 @async_result_pointer_to_function_of__int__returning_void__void_int____initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_result_void_____int___void_int____initiate(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN12async_resultIPFviES0_E8initiateIiS1_EEiOT_OT0_] {
+function @async_result_pointer_to_function_of__int__returning_void__void_int____initiate(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN12async_resultIPFviES0_E8initiateIiS1_EEiOT_OT0_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

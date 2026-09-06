@@ -7,7 +7,9 @@ REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
 DEBUGINFO_LOWIROPT_REF_APP ?= ../dev/lowiropt-ref
 DEBUGINFO_CPPGM_REF_APP ?= ../dev/cppgm++-ref
 DEBUGINFO_LOWIR2NATIVE_REF_APP ?= ../dev/lowir2native-ref
-TEST_DEPS ?= dev-shared-target
+TEST_DEPS ?= dev-shared-target cy86-target
+CY86_APP ?= ../dev/cy86
+BEHAVIOR_TEST_ROOT ?= tests/behavior
 CC_FLAGS = -std=gnu++11 -Wall -O3 $(CPPGM_STDLIB_FLAGS)
 SRC = ../dev/src
 GENERATED = ../obj/generated
@@ -16,7 +18,6 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-COURSE_TEST_ROOT = $(wildcard course/pa13)
 LOCAL_TEST_ROOT = tests/spec
 REF_TEST_ROOT = $(LOCAL_TEST_ROOT)
 DEBUGINFO_TEST_ROOT = tests/debuginfo
@@ -54,17 +55,9 @@ $(OBJ)/debug/%.o: %.cpp
 	$(CXX) $(CC_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/$*.Td -o $@ $<
 	mv -f $(DDEPDIR)/$*.Td $(DDEPDIR)/$*.d
 
-ifeq ($(COURSE_TEST_ROOT),)
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(LOCAL_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(LOCAL_TEST_ROOT)
-else
-test: $(TEST_DEPS)
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(LOCAL_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(LOCAL_TEST_ROOT)
-	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my $(COURSE_TEST_ROOT)
-	@scripts/compare_results.pl ref my $(COURSE_TEST_ROOT)
-endif
 
 ref-test:
 	@$(REF_TEST_RUN)
@@ -84,14 +77,24 @@ ref-test-debuginfo:
 	@CPPGM_CPPGM_APP='$(DEBUGINFO_CPPGM_REF_APP)' scripts/run_all_tests.pl scripts/cppgm-lldb-line-o1.sh ref $(DEBUGINFO_EXECUTABLE_O1_TEST_ROOT)
 	@CPPGM_CPPGM_APP='$(DEBUGINFO_CPPGM_REF_APP)' scripts/run_all_tests.pl scripts/cppgm-lldb-line-o2.sh ref $(DEBUGINFO_EXECUTABLE_O2_TEST_ROOT)
 
+CHECK_RUN = case "$(TEST)" in \
+	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
+esac
+CHECK_COMPARE = case "$(TEST)" in \
+	*) scripts/compare_results.pl ref check "$(TEST)" ;; \
+esac
+
 include ../scripts/pa_run_check_targets.mk
 
-.PHONY: dev-shared-target debuginfo-lowiropt-target debuginfo-cppgm-target debuginfo-lowir2native-target ref-test ref-test-debuginfo
+.PHONY: dev-shared-target cy86-target debuginfo-lowiropt-target debuginfo-cppgm-target debuginfo-lowir2native-target ref-test ref-test-debuginfo
 ../dev/$(TARGET):
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX)
 
 dev-shared-target:
 	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ]; then true; else $(MAKE) -C ../dev $(TARGET) CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX); fi
+
+cy86-target:
+	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ] && [ -x $(CY86_APP) ]; then true; else $(MAKE) -C ../dev cy86 CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX); fi
 
 debuginfo-lowiropt-target:
 	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ] && [ -x ../dev/lowiropt ]; then true; else $(MAKE) -C ../dev lowiropt CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX); fi

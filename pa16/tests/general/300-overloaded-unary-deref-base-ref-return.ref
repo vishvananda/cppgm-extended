@@ -1,11 +1,11 @@
-function @f(%box : ptr [pass=reference]) -> ptr [binding=strong, object=_Z1fR3Box] {
+function @f(%box : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z1fR3Box] {
   slot $box : ptr
 
   block ^entry:
     store ptr %box, $box
     %t1 = load ptr $box
     %t2 = call ptr @Box__operator_(%t1)
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     return ptr %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $box
     %t2 = addr $box
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     store i32 1, %t5
     %t6 = addr $box
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 7, %t9
     %t10 = addr $box
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = index i8 [projection=base_subobject] %t11, 0
+    %t12 = index i8 %t11, 0
     %t13 = index i8 [projection=field] %t12, 0
     %t14 = load i32 %t13
     %t15 = cmp eq i32 %t14, 7
@@ -46,7 +46,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = load i32 $cond__1
     return i32 %t16
 }
-function @Box__operator_(%this : ptr) -> ptr [binding=weak, object=_ZN3BoxdeEv] {
+function @Box__operator_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN3BoxdeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

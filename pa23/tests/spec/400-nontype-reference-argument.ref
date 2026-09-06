@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @ref_counter_global_value___bump() -> void [binding=weak, object=_ZN11ref_counterIL_Z12global_valueEE4bumpEv] {
+function @ref_counter_global_value___bump() -> void [binding=weak, object=_ZN11ref_counterIL_Z12global_valueEE4bumpEv, inline_hint=yes] {
   block ^entry:
     %t1 = load i32 @global_value
     %t2 = binary add i32 %t1, 1

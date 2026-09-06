@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @Member__select__ov2(%this : ptr) -> i32 [binding=weak, object=_ZNO6Member6selectEv] {
+function @Member__select__ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNO6Member6selectEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

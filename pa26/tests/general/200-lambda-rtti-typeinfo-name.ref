@@ -1,6 +1,6 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__class_LambdaRttiHost____lambda_LambdaRttiHost__capture_t25_29 [storage=readonly, binding=weak, object=_ZTSZN14LambdaRttiHost7captureEiEUliE_] = {
+global @__typeinfo_name__class_LambdaRttiHost____lambda_LambdaRttiHost__capture_t25_29 [binding=weak, object=_ZTSZN14LambdaRttiHost7captureEiEUliE_] = {
   i8 90
   i8 78
   i8 49
@@ -37,7 +37,7 @@ global @__typeinfo_name__class_LambdaRttiHost____lambda_LambdaRttiHost__capture_
   i8 95
   i8 0
 }
-global @__rtti_class_LambdaRttiHost____lambda_LambdaRttiHost__capture_t25_29 [storage=readonly, binding=weak, object=_ZTIZN14LambdaRttiHost7captureEiEUliE_] = {
+global @__rtti_class_LambdaRttiHost____lambda_LambdaRttiHost__capture_t25_29 [binding=weak, object=_ZTIZN14LambdaRttiHost7captureEiEUliE_] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__class_LambdaRttiHost____lambda_LambdaRttiHost__capture_t25_29
 }
@@ -64,7 +64,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @LambdaRttiHost__capture(%this : ptr, %base : i32) -> ptr [binding=weak, object=_ZN14LambdaRttiHost7captureEi] {
+function @LambdaRttiHost__capture(%this : ptr [object_bytes=1], %base : i32) -> ptr [binding=weak, object=_ZN14LambdaRttiHost7captureEi, inline_hint=yes] {
   slot $this : ptr
   slot $base : i32
   slot $add : obj<4x4>

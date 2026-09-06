@@ -1,4 +1,4 @@
-function @sink(%__param0 : ptr [pass=reference]) -> void [binding=strong, object=_Z4sinkRK6Target] {
+function @sink(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z4sinkRK6Target] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @sink(%t2)
     return i32 0
 }
-function @Target__Target__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6TargetC1ERK6Source] {
+function @Target__Target__ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN6TargetC1ERK6Source, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

@@ -1,4 +1,4 @@
-global @value : i32 [binding=internal, object=_ZL5value] = 6
+global @value : i32 [storage=readonly, binding=internal, object=_Z5value] = 6
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

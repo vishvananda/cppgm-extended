@@ -12,7 +12,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $value
     %t5 = addr $arg__1
     %t6 = addr $tmpobj__2
-    call void @source_int___source(%t6)
     %t7 = call obj<4x4> @source_int___operatorContainer(%t6)
     copyobj 4x4 %t7, %t5
     %t8 = call ptr @array_int__2___operator___ov2(%t4, %t5)
@@ -34,7 +33,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__3
     return i32 %t13
 }
-function @array_int__2___operator___ov2(%this : ptr, %other : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN5arrayIiLm2EEaSEOS0_] {
+function @source_int___operatorContainer(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK6sourceIiEcv5arrayIiLm2EEIS2_vvEEv, inline_hint=yes] {
+  slot $this : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $retobj__1
+    call void @__cppgm_class_template_identity_2_1_0__array__aggregate(%t1, 2)
+    return obj<4x4> $retobj__1
+}
+function @array_int__2___operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN5arrayIiLm2EEaSEOS0_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -47,24 +56,7 @@ function @array_int__2___operator___ov2(%this : ptr, %other : ptr [pass=referenc
     %t3 = load ptr $this
     return ptr %t3
 }
-function @source_int___operatorContainer(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK6sourceIiEcvT_I5arrayIiLm2EEvvEEv] {
-  slot $this : ptr
-  slot $retobj__1 : obj<4x4>
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = addr $retobj__1
-    call void @array_int__2___array__ov4(%t1, 2)
-    return obj<4x4> $retobj__1
-}
-function @source_int___source(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6sourceIiEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @array_int__2___array__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN5arrayIiLm2EEC1Ei] {
+function @__cppgm_class_template_identity_2_1_0__array__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 
@@ -77,5 +69,3 @@ function @array_int__2___array__ov4(%this : ptr, %value : i32) -> void [unwind=n
     store i32 %t1, %t3
     return void
 }
-alias object _ZN6sourceIiEC2Ev = @source_int___source
-alias object _ZN5arrayIiLm2EEC2Ei = @array_int__2___array__ov4

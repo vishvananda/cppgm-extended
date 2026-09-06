@@ -3,7 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @choose(1)
     return i32 0
 }
-function @choose(%value : u32) -> void [binding=weak, object=_Z6chooseIjEN4meta9enable_ifIXntsr4meta4sameINS0_8identityIT_E4typeEbEE5valueEvE4typeES3_] {
+function @choose(%value : u32) -> void [binding=weak, object=_Z6chooseIjEvT_] {
   slot $value : u32
 
   block ^entry:

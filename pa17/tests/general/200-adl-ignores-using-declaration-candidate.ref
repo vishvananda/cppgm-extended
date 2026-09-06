@@ -1,4 +1,4 @@
-function @A__B__f(%__param0 : ptr [pass=reference]) -> obj<4x4> [binding=strong, object=_ZN1A1B1fERK1S] {
+function @A__B__f(%__param0 : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=strong, object=_ZN1A1B1fERK1S] {
   slot $__param0 : ptr
   slot $y : obj<4x4>
   slot $retobj__1 : obj<4x4>
@@ -14,7 +14,7 @@ function @A__B__f(%__param0 : ptr [pass=reference]) -> obj<4x4> [binding=strong,
     copyobj 4x4 %t5, %t4
     return obj<4x4> $retobj__1
 }
-function @A__B__g(%s : ptr [pass=reference]) -> obj<4x4> [binding=strong, object=_ZN1A1B1gERK1S] {
+function @A__B__g(%s : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=strong, object=_ZN1A1B1gERK1S] {
   slot $s : ptr
   slot $retobj__1 : obj<4x4>
 

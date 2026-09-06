@@ -1,4 +1,4 @@
-function @overloaded_member_pointer_target_init__C__set(%this : ptr, %v : i32) -> void [binding=strong, object=_ZN37overloaded_member_pointer_target_init1C3setEi] {
+function @overloaded_member_pointer_target_init__C__set(%this : ptr [object_bytes=4], %v : i32) -> void [binding=strong, object=_ZN37overloaded_member_pointer_target_init1C3setEi] {
   slot $this : ptr
   slot $v : i32
 
@@ -11,7 +11,7 @@ function @overloaded_member_pointer_target_init__C__set(%this : ptr, %v : i32) -
     store i32 %t1, %t3
     return void
 }
-function @overloaded_member_pointer_target_init__C__set__ov2(%this : ptr, %v : i64) -> void [binding=strong, object=_ZN37overloaded_member_pointer_target_init1C3setEl] {
+function @overloaded_member_pointer_target_init__C__set__ov2(%this : ptr [object_bytes=4], %v : i64) -> void [binding=strong, object=_ZN37overloaded_member_pointer_target_init1C3setEl] {
   slot $this : ptr
   slot $v : i64
 
@@ -42,7 +42,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i128 $setter
     %t7 = convert trunc i64 i128 %t6
     %t8 = copy ptr %t7
-    call void %t8(%t5, 4) as (%arg0 : ptr, %arg1 : i32) -> void
+    call void %t8(%t5, 4) as (%arg0 : ptr [object_bytes=4], %arg1 : i32) -> void
     %t9 = addr $c
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = load i32 %t10
@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @overloaded_member_pointer_target_init__C__C(%this : ptr) -> void [binding=weak, object=_ZN37overloaded_member_pointer_target_init1CC1Ev] {
+function @overloaded_member_pointer_target_init__C__C(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN37overloaded_member_pointer_target_init1CC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

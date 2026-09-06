@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @Box__read(%this : ptr) -> i32 [binding=weak, object=_ZN3Box4readEv] {
+function @Box__read(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN3Box4readEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -33,7 +33,7 @@ function @Box__read(%this : ptr) -> i32 [binding=weak, object=_ZN3Box4readEv] {
     %t2 = call i32 @Box__pick(%t1)
     return i32 %t2
 }
-function @Box__pick(%this : ptr) -> i32 [binding=weak, object=_ZN3Box4pickEv] {
+function @Box__pick(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN3Box4pickEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

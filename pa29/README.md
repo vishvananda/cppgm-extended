@@ -15,6 +15,29 @@ The intent of this milestone is:
 - reuse the PA9 native backend knowledge without making CY86 the compiler IR
 - leave room for later optimization and additional native backends
 
+### How PA29 Is Specified
+
+This README separates three kinds of statement, and the course suite is
+built the same way.
+
+- The **contract** is what every implementation must do: the command line,
+  the LowIR family it accepts (Assignment Boundary), the machine-IR dump
+  format, the x86-64 ABI, and the behaviour of every generated program.
+- The **quality bar** is what the generated code must reach on the course
+  fixtures: the program behaves, and the machine IR stays inside each
+  fixture's size envelope (`x.ref.expect`) or, for the fixtures whose
+  shape is the contract, matches the canonical dump.  The Testing section
+  states it.
+- **One design** is how the course solution lowers LowIR: the five-stage
+  structure and the compact shapes in Design Notes.  A different lowering
+  that meets the bar is a correct PA29; only the contract-shape fixtures
+  compare your instruction selection with the course solution's.
+
+The course solution's own dumps are pinned in the regression lane
+(`tests/regression/`, see `TESTING_AND_REFERENCES.md` at the repository
+root).  That lane runs with `make test` and is not part of the assignment's
+contract.
+
 ### Prerequisites
 
 You should complete Programming Assignment 28 before starting this assignment.
@@ -44,7 +67,7 @@ The starter kit contains:
 - optional typed LowIR and machine-IR model scaffolding in
   `dev/src/lowir_model.h` and `dev/src/mir_model.h`, with shared
   exported-symbol and register support in `dev/src/ir_symbol_model.h` and
-  `dev/src/x86_register_model.h`
+  `dev/src/native/mir/registers.h`
 - a local test suite under `pa29/tests/`
 - the grammar for this assignment called `pa29.gram`
 - the authoritative LowIR specification in `../pa13/lowir.md`
@@ -53,6 +76,9 @@ The starter kit contains:
 - `tests/strict/` for raw-MIR oracle tests
 - `tests/structural/` for canonical-MIR oracle tests
 - `tests/behavior/` for generated-program behavior tests without a machine-IR oracle
+- `tests/controls/` for focused property checks that inspect only the
+  documented MIR or native relationship and generated behavior, never a
+  complete MIR dump or executable image
 
 Students should implement the assignment in `dev/lowir2native.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
@@ -107,13 +133,35 @@ deterministic machine-IR dump to `<mirfile>`.
 
 The machine-IR dump is the serialized form of the backend model used for native
 emission. You may keep a typed MIR internally, and the optional
-`dev/src/mir_model.h` scaffold gives one possible representation, but the dump
-must describe the same program that native emission consumes.
+`dev/src/mir_model.h` scaffold gives one possible representation,
+but the dump must describe the same program that native emission consumes.
+
+Integer immediates must preserve the complete input value, including values
+that use the high half of an `i128`. Floating immediates must be interpreted as
+their stated f32, f64, or f80 type so that globals, computations, and native
+data contain the correct target value. The same values must appear in the
+deterministic MIR dump and reach native encoding without loss.
+
+The deterministic MIR dump must retain the required parameter names,
+frame-slot display names, literal spellings, and debug source locations.
 
 Frame metadata is part of that final MIR contract. In particular, the
 callee-saved `preserve` list should name the callee-saved registers that the
 final instruction body actually uses after local setup/copy cleanup, and the
 stack size should match that final frame layout.
+
+The frame section also records the final native layout policy.  It contains
+`frame_pointer keep|omit` and `epilogues shared|direct`; these are the exact
+facts consumed by prologue/epilogue and unwind emission, not optimization
+hints.
+
+`--stats` writes one diagnostic record to standard error after successful
+lowering and encoding. Among its structural counters,
+`scratch_carried_reloads` reports bounded frame-reload windows whose native
+loads were satisfied from a carried scalar value. Counter values are
+diagnostic rather than canonical output; a focused test may require a positive
+reducer to exercise the relationship, but must not require an exact count from
+an unrelated program.
 
 That MIR dump path must work even for helper-only LowIR inputs that have no
 entry function. In that case the dumped MIR should simply omit the optional
@@ -197,23 +245,66 @@ for testing is still this textual machine-IR form:
 - per-function `abi`, `frame`, and ordered `block ^...` sections
 - one instruction or metadata line per indented row beneath those sections
 
+Machine operands use the following target-specific forms:
+
+- `rax` through `r15` for general-purpose registers
+- `xmm0` through `xmm7` for scalar floating-point registers
+- an integer or floating literal for an immediate value
+- `@name` or `^label` for a symbol or block label
+- `[register]` or `[register+displacement]` for register-based memory
+- `[base+index*scale+displacement]` for indexed memory, where `scale` is
+  `1`, `2`, `4`, or `8`; `*1` and a zero displacement are omitted
+- `[rbp+displacement]` for a frame location
+
+A direct call names a symbol, while an indirect call prefixes its register or
+memory target with `*`.  A call may also carry bracketed machine facts:
+
+```text
+call @consume [args=(rdi,rsi,xmm0), stack=16]
+call *r10 [args=(rdi), variadic, unwind=no]
+```
+
+`args=(...)` lists the physical argument registers read by the call.  An empty
+list is written as `args=()`.  `stack=N` records the bytes of caller-owned stack
+arguments, `variadic` records a variadic call boundary, `unwind=no` records a
+non-unwinding call, and `returns=noreturn` records a call that does not return.
+These facts are part of MIR because register liveness, stack cleanup, exception
+handling, and native emission all depend on them.
+
 For strict and structural MIR tests, the raw `.ref.mir` file is still checked in because it
 is the debugging-oriented dump students see directly from `--dump-machine-ir`.
 Structural tests also keep `x.ref.cmir`, the canonical oracle used for grading.
 
-For testing, PA29 uses three explicit comparison modes, split by directory:
+A fixture with an `x.ref.expect` sidecar is judged by that expectation in
+every lane (`../scripts/expect_ir.pl`): the program's behaviour as above,
+plus a size envelope over the machine-IR dump (instructions, blocks, calls,
+memory operands, pushes, per-function sizes with a 32-byte frame
+allowance) generated from the course solution's dump at 10% tolerance plus
+one (`../scripts/make_ir_expect.pl`), and outcome lines where the fixture
+states one.  Every course fixture in `tests/strict/` and `tests/structural/`
+carries one except the contract-shape cases: the object ABI, stack
+arguments beyond six, the mixed GPR and XMM call ABIs, call setup without
+preserve, pointer alignment, and callee-saved retention, whose shape is
+what the ABI and the caller depend on.  Their `x.ref.mir` files stay as
+informational examples.  `make test-perf` runs the behaviour programs
+under Cachegrind against `x.ref.ir` at `PERF_TOLERANCE_PERCENT` (10).
+
+For a fixture without an expectation, PA29 uses three explicit comparison
+modes, split by directory:
 
 1. `tests/strict/` compares the raw checked-in `.ref.mir` against the generated `.my.mir`,
    after only normalizing the host-target tag in the `machine_ir x86_64 <target>` header.
 2. `tests/structural/` compares the checked-in `.ref.cmir` against a canonicalized form of
    the generated `.my.mir`.
-3. `tests/behavior/` checks compilation and generated-program behavior only. It intentionally
-   has no machine-IR oracle.
+3. `tests/behavior/` checks compilation and generated-program behavior only.
+   It retains the reference machine-IR dump as an informational example for
+   students, but does not compare generated MIR with it.
 
 The structural canonicalization pass is intentionally conservative. It hides:
 
 - the host-target tag in the MIR header
-- exact stack/frame displacement numbers in memory operands
+- exact stack/frame displacement numbers in memory operands, and the
+  frame's total `stack_size`
 - interchangeable free GPR choices where the structural MIR shape is otherwise the same
 - interchangeable free XMM choices where the structural MIR shape is otherwise the same
 
@@ -237,7 +328,8 @@ That means a successful `PA29` test anchor now validates exactly these output fi
   - `x.ref.mir` with strict raw-MIR comparison and header normalization only
   - `x.ref.mir` plus `x.ref.cmir`, with structural canonical-MIR comparison using
     checked-in `x.ref.cmir`
-  - no MIR reference files for `tests/behavior/`
+  - an informational `x.ref.mir` that is present but not compared for
+    `tests/behavior/`
 
 In other words, `PA29` is not just "program behavior matches." The tests also validate the
 shape of the lowered backend output through one of those two explicit MIR oracles.
@@ -252,13 +344,19 @@ only need to implement `--dump-machine-ir` and produce raw `.mir`.
 The `tests/behavior/` directory is for correctness cases where several reasonable
 register-allocation or spill strategies are acceptable. Those tests still require
 successful compilation and matching generated-program behavior, but they intentionally do
-not compare a machine-IR oracle.
+not compare machine IR. The checked-in reference MIR remains useful for inspection
+and manual comparison.
+
+Successful cases in all three lanes retain raw reference MIR. Only strict and structural tests use
+it as a grading oracle.
 
 `make test` recursively runs the checked-in local suites:
 
 - `tests/strict/`
 - `tests/structural/`
 - `tests/behavior/`
+- `tests/controls/`, through `scripts/check_pa29_native_contracts.pl`
+- `tests/regression/{strict,structural,behavior}`, the regression lane
 
 These directories contain PA29-specific backend oracle tests, not source-standard tests.
 PA29 has no `tests/spec/` directory because the tested contract is the
@@ -330,6 +428,8 @@ PA15-PA28, including:
 - functions, blocks, slots, temporaries, and runtime hooks
 - direct and indirect calls
 - control flow, integer operations, and pointer/index operations
+- `phi` value merges as parallel transfers on their incoming control-flow
+  edges, including loop backedges and critical edges
 - floating scalar operations and comparisons over `f32`, `f64`, and `f80`
 - explicit scalar conversions:
   - `sitofp`
@@ -392,6 +492,15 @@ To complete PA29, implement these goals:
    first-class machine-IR branches and direct calls, not a normalized CY86-style
    fallback.
 
+   For a `switch` with at least sixteen case edges, an integer-literal case
+   should remain an immediate operand of its machine comparison.  When that
+   value fits the target comparison's immediate field, encode the comparison
+   directly instead of first copying the value to a scratch register.  A
+   nonliteral case value keeps the ordinary register-materialization path,
+   and smaller switches may use that path for every case.  This is a local
+   instruction-selection rule; it does not prescribe a particular selector
+   register, case order, block layout, or complete MIR.
+
 2. Direct startup/runtime wiring.
    The startup path should call `@__cppgm_init`, `@main`, and `@__cppgm_fini` as direct
    machine-IR call sites where those hooks exist.
@@ -401,6 +510,9 @@ To complete PA29, implement these goals:
    machine-IR operations such as `copy_bytes <bytes>x<align>` and
    `zero_bytes <bytes>x<align>`, rather than being expanded only through the old CY86
    lowering path.
+
+   The operands of `copy_bytes` and `zero_bytes` name their address registers
+   directly, without preceding MIR copies into fixed registers.
 
 4. Preserve the distinction between direct and indirect calls.
    The direct backend should still emit indirect machine-IR calls for truly indirect LowIR
@@ -442,6 +554,54 @@ To complete PA29, implement these goals:
    type in a floating store or return. It must be materialized as the requested floating
    value rather than routed through an integer-only move path.
 
+   An integer LowIR immediate stored to a frame, global, dereference, or indexed
+   destination remains an immediate value operand in MIR.  This includes an
+   `i64` value outside the sign-extended 32-bit encoding range; native emission
+   may materialize that value in a scratch register when encoding the store.
+
+   Multiplication by a positive power of two uses a shift in native encoding.
+   Multiplication by 3, 5, or 9 times a power of two uses one indexed-address
+   calculation followed by that shift. These substitutions retain full-width
+   wrapping integer behavior. Focused native controls check only those
+   instruction families inside a tiny entry function; they do not compare an
+   executable image or prescribe physical registers, prologue layout, or
+   instruction bytes.
+
+   The right operand of integer `add`, `sub`, `and`, `or`, and `xor` remains a
+   frame, global, dereference, or indexed memory operand when that location is
+   already selected.  Two-operand `imul` follows the same rule at 16, 32, and
+   64 bits, and an integer comparison may retain one memory operand.  The
+   result of a binary operation remains register-resident.  Division,
+   variable shifts, byte multiplication, floating operations, and a form that
+   would overwrite an address register before reading it still materialize the
+   required value.
+
+   A shift with a constant count retains that count as an immediate operand in
+   machine IR and uses the target's immediate-count instruction.  A variable
+   shift instead places its count directly in the target-required count
+   register.
+
+   A scalar copy may keep a stable source location, including an intact
+   incoming parameter register, when the copied result's complete interval
+   crosses no clobber and its source and result have the same machine
+   representation. This includes a bit-preserving `ptr`/`i64` copy; width- or
+   sign-changing conversions remain explicit. Such a copy should not add a
+   machine move.
+
+   A compiler-created scalar that is live across one adjacent block edge
+   should remain in its selected register when the source has only that
+   successor, the destination has only that predecessor, and the register
+   survives every intervening operation.  A value crossing a call may use a
+   callee-saved register for this purpose.  Joins, backedges, exception edges,
+   address-taking uses, and clobbered registers still require conservative
+   placement.
+
+   Instructions with fixed register effects must preserve an unrelated live
+   value already carried by one of those registers.  In particular, widening
+   a scalar to signed `i128` uses both halves of the target register pair, so a
+   later scalar operand in the high-half register must first receive another
+   stable location.
+
 9. Implement call-boundary correctness without requiring a clever allocator.
    PA29 must respect the native calling convention for direct calls, indirect calls,
    mixed GPR/XMM arguments, variadic register-save state, stack arguments, scalar and
@@ -457,6 +617,103 @@ To complete PA29, implement these goals:
    into different ABI registers. Forwarding those parameters after earlier scratch-using
    operations must preserve their original values too.
 
+   A `ptr [pass=by_address]` parameter denotes an addressable-storage
+   boundary, including a source reference after source lowering. If its actual
+   argument is a scalar temporary or register result rather than an existing
+   pointer, native lowering must give the value temporary storage, pass that
+   storage's address, and preserve the callee's observable load/store behavior.
+   This requirement is structural and behavioral; it does not prescribe a
+   physical register, frame offset, or complete MIR dump.
+
+   Eliminating a scalar parameter's initial store to and later load from a local slot
+   must preserve the parameter across every intervening instruction that clobbers its
+   incoming register, including a call or bulk-memory operation. The same selected
+   value must be used when an object or wide argument makes the call use extended ABI
+   classification. This requirement also applies at six or more integer or pointer
+   parameters, where all incoming argument registers are occupied.
+   While such a parameter remains live, its incoming register must not be assigned
+   to a temporary result merely because the function has a wide parameter boundary.
+   The register becomes reusable only after the parameter's final selected use.
+
+   When a frame-resident object or wide-integer chunk is assigned to a GPR
+   argument, MIR should load that chunk directly from its frame location. It
+   should not materialize the object's base address solely for the load.
+
+   Copying a stack-passed object may use the target's copy registers while
+   preparing a call. A scalar argument whose source occupies either copy
+   register must retain its value until its register or stack argument is
+   written, including when the scalar follows the object on the call stack.
+
+   A small bulk copy with a frame-resident source or destination may encode
+   its scalar chunks directly from that frame operand; it need not materialize
+   a temporary base address. The encoder must still preserve both logical
+   addresses and any live scalar values that overlap its scratch registers.
+   When both bulk-copy addresses need setup, forming one address must not
+   overwrite a parameter or deferred carrier still needed to form the other.
+   The lowering may reverse the setup order or stage one address in reserved
+   scratch; generated behavior must remain correct at both O0 and O1.
+
+   A direct three-argument call to the canonical builtin `memcpy` may become
+   a dynamic `copy_bytes` machine operation when its returned pointer is
+   unused.  After ordinary ABI argument setup, that operation consumes the
+   destination, source, and runtime byte count from their calling-convention
+   carriers and copies exactly that many bytes.  A call whose result is used,
+   an indirect call, an ordinary unmarked function, or a call with a different
+   argument shape remains a call.  This rule applies at O0 as part of native
+   instruction selection as well as at optimized levels; it does not prescribe
+   register allocation, frame layout, or surrounding MIR.
+
+   A fixed 16-byte zero may avoid string-operation setup with a cleared
+   reserved vector scratch and one unaligned store.  This direct form must be
+   smaller than the corresponding setup for every address-register choice,
+   preserve the integer condition flags, and must not consume an XMM register
+   available to ordinary value placement.  Other zero sizes retain the
+   existing exact target-byte comparison between direct scalar stores and the
+   compact string form.
+
+   For fixed copies through 32 bytes, direct chunks may also avoid the setup
+   for a string operation.  The direct encoder uses its reserved vector
+   scratch for each complete 16-byte chunk and scalar chunks for the tail.
+   This form extends through 64 bytes when the operation declares at least
+   eight-byte alignment.  Larger or more weakly aligned copies retain the
+   compact string-operation form.  Both forms must preserve the source bytes,
+   destination bytes, and declared scratch effects; vector chunks may not
+   consume an XMM register available to ordinary value placement.
+
+   At `-O1` or higher, a direct one-pointer call returning `i64` whose LowIR
+   declaration or definition carries `object=cppgm_builtin_strlen` may select
+   a bounded native prefix operation. MIR records that selected machine fact
+   on the call as `strlen_prefix=16`; `-O0`, ordinary functions, indirect
+   calls, and incompatible signatures retain the ordinary call form.
+
+   The x86-64 encoding may inspect one 16-byte SSE2 word only when that load
+   remains within the current 4 KiB page. If the word contains a zero byte, it
+   returns the first zero's byte offset. A page-edge address or a prefix
+   without a zero retains the original direct call as its fallback. The MIR
+   operation keeps the conservative call argument, clobber, unwind, and result
+   facts because the fallback is still a real call; its vector temporaries are
+   caller-saved encoding scratch rather than allocator-visible values.
+
+   Native emission may carry a compiler-created scalar temporary from its one
+   defining frame store to later typed reloads in the same block when the
+   complete bounded window is safe. A carried window must not cross a call,
+   bulk-memory or EH operation, floating/XMM operation, symbol/global access,
+   large-immediate scratch use, or any explicit or implicit definition of the
+   chosen carry register. Overlapping windows require distinct carry registers
+   or retain their frame traffic. The conservative frame form is always valid.
+
+   Direct object returns follow the same rule in both directions: returning a
+   frame-resident object loads its chunks directly into the ABI result
+   registers, and storing a direct object call result writes those registers
+   directly to its frame destination. A destination address created before
+   the call should remain frame-shaped through the later result copy rather
+   than occupying a register across the call.
+
+   An immediately returned integer quotient or remainder may use the fixed
+   division result register directly. If its dividend is frame-, global-, or
+   dereference-resident, MIR must first issue a typed load into a register;
+   a register-only `mov` must not carry a memory operand.
+
    Atomic operations are subject to the same pressure correctness requirement. Producing
    an atomic operation's returned old value in a loop must remain executable when its
    address and source values occupy the available general-purpose registers.
@@ -465,6 +722,15 @@ To complete PA29, implement these goals:
    backedges. Incoming parameters, values computed before a loop, and values recomputed
    on each iteration must retain their current value across calls without a later
    iteration overwriting an earlier spill home.
+
+   A `phi ptr` edge transfer whose source is a retained frame address transfers
+   the address value, not the scalar contents stored at that frame location.
+   The generated machine code must materialize the address before placing it in
+   the phi destination.
+
+   A representation-preserving scalar copy or decay may share its source's
+   physical location, but that location remains live until the final use of
+   every value that shares it.
 
 10. Keep mixed-width conversion and floating-bool materialization explicit.
    Mixed integer/float conversion chains should keep their conversion family and width
@@ -476,19 +742,46 @@ To complete PA29, implement these goals:
    or unsigned integer arithmetic should show the expected post-operation normalization
    instead of silently widening into an untyped 64-bit path.
 
-   Narrow values returned across a call boundary or loaded from frame storage must also
-   be normalized before a wider comparison or `switch`; stale upper bits must not affect
-   branch or case selection.
+   A typed integer load defines the complete logical register value: narrow
+   signed loads sign-extend and narrow unsigned loads zero-extend as part of
+   the load itself.  Do not add a separate normalization instruction after
+   such a load.  If native layout folds an address-setup instruction into the
+   load, the combined encoding must preserve the same signed or unsigned
+   extension.  Narrow values returned across a call boundary still require
+   explicit normalization before a wider comparison or `switch`; stale upper
+   bits must not affect branch or case selection.  A call result used only by
+   an immediate same-width store or return may remain in its ABI result carrier
+   without that normalization because only its low result bits cross the
+   boundary.  An immediately following explicit integer extension or
+   truncation also performs the required normalization itself.
+
+   The same rule applies when a narrow temporary is resident in memory and a
+   wider comparison consumes it.  Load and extend the temporary according to
+   its own logical type before the comparison; a direct compare-fed branch must
+   not read the wider comparison width from the narrow frame home, because
+   adjacent frame bytes are not part of the value.
+
+   A canonical typed integer immediate, a materialized Boolean, or an
+   identical preceding integer extension already establishes the complete
+   narrow value and should not be followed by a duplicate normalization.
 
 12. Keep the conservative `f80` path explicit rather than implicit.
    PA29 does not need to treat `f80` like ordinary XMM-resident `f32`/`f64`, but its
    conversions and truncation/extension path should still stay visible and testable in
    MIR.
 
-13. Cover direct compare-fed branch lowering at ordinary 64-bit integer width too.
+13. Cover direct compare-fed branch lowering at 64-bit and 128-bit integer widths too.
    The direct compare/branch quality rule is not limited to `i32` and `u32`. PA29 should
-   also show the same direct branch shape for straightforward `i64` comparisons. The core
-   oracle for this is the `500-i64-direct-compare-branch` family.
+   show the same direct branch shape for straightforward `i64` and `i128`
+   comparisons. An `i128` ordering comparison decides unequal high words with
+   the predicate's signed or unsigned ordering and compares the low words as
+   unsigned only when the high words are equal. It should branch without first
+   allocating a scalar Boolean result. When an `i128` comparison is instead
+   used as a value, register pressure must not make lowering fail; the
+   materialized Boolean may use a temporary frame home when no GPR is free.
+   The core ordinary-width oracle is the `500-i64-direct-compare-branch`
+   family, and the course suite supplies the wide structural and pressure
+   cases.
 
 14. Keep pointer/null comparisons on the direct machine compare/branch path.
    Ordinary pointer/null tests should remain visibly pointer-typed in MIR and branch
@@ -497,7 +790,27 @@ To complete PA29, implement these goals:
 
 15. Keep pointer/index address calculation visible as pointer arithmetic.
    Pointer indexing and pointer-difference behavior should stay structurally visible in MIR
-   rather than being hidden behind an unrelated compatibility path.
+   rather than being hidden behind an unrelated compatibility path. When a one-use
+   `index` feeds the following scalar load or store, that memory operand should
+   contain the base, index, scale, and displacement directly. A zero index
+   should not introduce a register copy or `lea`, and an unused `index` should
+   not emit an instruction. When an indexed address must remain as a value, the
+   MIR should use one `lea` rather than separate copy, multiply, and add
+   instructions. An address of frame storage used only by the following scalar
+   load, store, or constant index should remain frame-shaped: the memory
+   operation should use `[rbp+displacement]` directly, and the constant index
+   should incorporate its displacement without first materializing the base.
+   A constant derived address whose uses are all load, store, index, or bulk-
+   memory address operands may remain a base/index/displacement operand across
+   intervening instructions and control-flow edges when its register carriers
+   remain valid for the complete interval. It must be materialized when the
+   pointer value itself is observed or a required carrier is clobbered.
+
+   A scalar load or store of a locally bound global may keep the global symbol
+   as its MIR memory operand and encode a direct PC-relative access. A
+   preemptible or imported symbol must retain the indirect address path
+   required by the object ABI. Taking or otherwise observing the address still
+   produces a pointer value.
 
 16. Preserve mixed integer/floating call ABI classification.
    Calls that mix GPR and XMM arguments should keep that classification visible in MIR so
@@ -509,7 +822,9 @@ To complete PA29, implement these goals:
 
 18. Exercise non-64-bit atomic widths explicitly.
    The PA29 atomic contract is not only about `i64`; smaller-width atomic load/store
-   behavior should survive through the direct native backend.
+   behavior should survive through the direct native backend. An atomic load
+   result that remains live across a call must also have a frame fallback when
+   every preserved GPR is occupied.
 
 The PA29 tests intentionally include all of those cases so students can tell whether they
 have actually implemented a direct `LowIR -> machine IR -> native` path, rather than only
@@ -560,3 +875,117 @@ The cleanest PA29 structure is:
 The important architectural constraint is that PA29 should reuse PA9 knowledge without
 re-coupling the compiler to CY86. CY86 may remain useful as a secondary validation path, but
 the primary backend boundary should now be LowIR to machine IR and native code/data.
+
+For the compact MIR shapes used by the checked fixtures, useful implementation
+strategies include:
+
+- keep incoming parameters and call results in their ABI registers until an
+  emitted instruction invalidates that location
+- reserve every allocator-managed incoming register that still carries a live
+  parameter, including on a wide scalar boundary, and release it through the
+  ordinary typed use count after its final selected consumer
+- represent each instruction's fixed-register writes as a compact register
+  mask and keep a scalar in an incoming register only when its live interval
+  crosses none of those writes
+- when a full-width scalar call result also needs a stable later home, let an
+  earlier GPR call-argument use read its intact `rax` carrier directly
+- omit parameter homes and setup transfers when slot selection removes every
+  use that would have consumed them
+- omit a transfer to a stable parameter home when every selected consumer can
+  read the still-intact incoming ABI register
+- let a promoted or forwarded parameter-slot load continue to name the
+  parameter's stable selected home; its consumer can apply any required
+  register constraint directly, after accounting for clobbers between the
+  eliminated store and load
+- use the same selected parameter home when constructing ordinary and extended
+  call-argument move sets
+- let a representation-preserving scalar copy or decay share an intact parameter
+  location when the copied result's interval crosses no clobber
+- record each block's sole predecessor and successor in dense CFG facts so a
+  compiler-created scalar can retain its selected register across one exact
+  adjacent edge without constructing per-block live-value sets
+- lower `phi` values to parallel edge transfers; split a critical edge before
+  MIR selection so copies for an untaken successor never execute
+- retain a compact address-value bit on a parallel phi source so location
+  equality and cycle scheduling do not confuse a frame address with a scalar
+  stored at the same frame location; rematerialize that source with `lea`
+- select the signed or unsigned extending memory form directly for a typed
+  narrow integer load instead of emitting a partial load followed by a
+  register-only normalization
+- route address-setup/load folding through the same typed-load encoder so the
+  compact address form cannot discard narrow-value normalization
+- use the sole-use next instruction to recognize a narrow call result consumed
+  by a same-width store, return, or explicit integer conversion, while
+  retaining explicit normalization for wider consumers
+- carry a typed immediate's signed range and the result fact of Boolean or
+  integer-extension instructions into the adjacent normalization decision
+- retain integer constants as typed MIR immediates, letting native emission
+  materialize a scratch only when the concrete x86 encoding requires it, and
+  place division or variable-shift operands directly in their required
+  registers while keeping a fixed shift count on the shift instruction
+- when an `i64` bitwise AND has a constant mask that clears every upper
+  32-bit result bit, select the equivalent 32-bit x86 operation so the
+  architectural zero extension supplies the complete `i64` value; retain the
+  64-bit operation when any upper result bit may survive
+- admit direct division-to-return setup only when its dividend is already a
+  register or immediate; otherwise reuse the ordinary typed materialization
+  path before assigning `rax` and `rdx`
+- encode immediate memory stores directly at 8, 16, and 32 bits and for
+  sign-extended 32-bit values at 64 bits; choose an encoder scratch that does
+  not overlap a dereference base or index for other 64-bit values
+- compare the exact target-byte cost of a fixed small `zero_bytes` with its
+  `rep stosb` setup and use direct zero stores only when they are smaller;
+  encode the 16-byte case with a cleared reserved vector scratch and one
+  unaligned store, without consuming allocatable floating-point capacity
+- encode a 1-, 2-, 4-, or 8-byte `copy_bytes` as one complete scalar load and
+  store when that is cheaper than string-instruction setup; choose the scratch
+  from the MIR instruction's declared clobber set and keep both logical
+  address registers intact until their last use
+- encode a fixed `copy_bytes` through 32 bytes with reserved-scratch vector
+  chunks and a scalar tail, extending that direct form through 64 bytes for
+  operations with at least eight-byte declared alignment; keep larger or more
+  weakly aligned copies on the compact string-operation path
+- lower a direct canonical three-argument builtin `memcpy` with an unused
+  returned pointer to a dynamic `copy_bytes` operation after normal ABI
+  argument staging, while retaining calls for used results and unmarked or
+  incompatible callees
+- carry a sole-use load's typed frame, global, dereference, or indexed address
+  into an immediately following legal integer right operand, keeping its
+  address inputs live until the consuming instruction
+- keep an immediately returned quotient in `rax` and an immediately returned
+  remainder in `rdx`; the return instruction may name that selected result
+  carrier directly
+- lower a sole-use `i128` comparison and branch as high-word decisions plus an
+  unsigned low-word tie-break, and give a comparison used as a value a frame
+  fallback instead of requiring a free GPR
+- give an atomic load result a typed temporary frame home when its live range
+  requires a register class with no free member
+- prefer an available caller-saved register to adding a callee-saved register
+  to the frame's `preserve` list
+- reuse compatible compiler-created temporary frame locations when their value
+  lifetimes do not overlap, while keeping source slots and parameter slots
+  distinct
+- fold a one-use `index` into the following memory operand, omit work for an
+  unused or zero-displacement index, and use one `lea` when an indexed address
+  must remain as a value
+- retain a one-use frame address through a scalar memory consumer so the
+  selected memory operand names the frame location directly
+- classify address-only pointer results once in dense per-value facts and
+  retain a typed base/index/displacement value while its carriers are stable,
+  instead of repeatedly rescanning uses or keying hot-path state by text
+- load frame-resident object chunks directly into their ABI argument registers
+  instead of materializing a temporary object address
+- transfer direct-object return chunks between their frame locations and ABI
+  result registers without materializing a temporary object address
+- keep an indirect-call target in its selected register when argument setup
+  does not overwrite that register
+- use the address result's recorded final consumer to keep a nonadjacent
+  direct-object call-result destination frame-shaped without rescanning the
+  intervening instructions
+- count returns once during final native layout and share a restore/teardown
+  sequence only when its encoded bytes exceed the added branch bytes; keep
+  every semantic return and its result carrier in MIR
+
+These are suggestions, not required internal data structures or algorithms.
+Any implementation is acceptable if it preserves program behavior and produces
+the checked strict or structural MIR output.

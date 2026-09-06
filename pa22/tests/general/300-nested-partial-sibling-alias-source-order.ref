@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @function_operation___operator__(%t2, %t3)
     return i32 %t4
 }
-function @function_operation___operator__(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK8functionI9operationEclIiEEiRKT_] {
+function @function_operation___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK8functionI9operationEclIiEEiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

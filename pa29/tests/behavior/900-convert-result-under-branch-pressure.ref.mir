@@ -1,0 +1,97 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @pressure
+  abi
+    param %width -> rdi : u32
+    param %b -> rsi : i64
+    param %c -> rdx : i64
+    param %d -> rcx : i64
+    param %e -> r8 : i64
+    param %f -> r9 : i64
+    param %gate -> [rbp+16] : i64
+    return i64 -> rax
+  frame
+    stack_size 64
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14
+    param-slot %d -> [rbp-8] : i64
+    param-slot %gate -> [rbp-16] : i64
+    slot $selected -> [rbp-24] : i64
+
+  block ^entry
+    store.i64 [rbp-8], rcx
+    load.i64 rax, [rbp+16]
+    store.i64 [rbp-16], rax
+    load.i64 rax, [rbp-16]
+    cmp.i64 rax, 0
+    jne ^convert
+    jmp ^short
+
+  block ^convert
+    mov rbx, rsi
+    add rbx, 0
+    mov r12, rdi
+    zext.i32 r12
+    mov r13, 1
+    mov rcx, r12
+    shl r13, cl
+    store.i64 [rbp-24], r13
+    jmp ^merge
+
+  block ^short
+    store.i64 [rbp-24], 0
+    jmp ^merge
+
+  block ^merge
+    load.i64 r12, [rbp-24]
+    mov r13, rsi
+    add r13, rdx
+    load.i64 r14, [rbp-8]
+    add r14, r8
+    add r13, r14
+    add r9, rbx
+    add r13, r9
+    mov rbx, rdi
+    zext.i32 rbx
+    add r13, rbx
+    add r13, r12
+    ret r13
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    temp %actual -> [rbp-8] : i64
+
+  block ^entry
+    sub rsp, 16
+    mov rdi, 6
+    mov rsi, 2
+    mov rdx, 3
+    mov rcx, 4
+    mov r8, 5
+    mov r9, 6
+    mov r11, 1
+    store.i64 [rsp], r11
+    call @pressure [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
+    add rsp, 16
+    store.i64 [rbp-8], rax
+    load.i64 r8, [rbp-8]
+    mov rdx, 92
+    cmp.i64 r8, rdx
+    setne r8
+    movzx r8, r8
+    mov rax, r8
+    sext.i32 rax
+    ret rax

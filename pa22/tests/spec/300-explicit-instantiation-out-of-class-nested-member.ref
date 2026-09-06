@@ -16,17 +16,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 %t7
     return i32 %t8
 }
-function @adaptor_int___data(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK7adaptorIiE4dataEv, object_root=yes] {
+function @adaptor_int___data(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK7adaptorIiE4dataEv, object_root=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
     store ptr %this, $this
     %t1 = addr $retobj__1
-    call void @adaptor_int___range_false___range(%t1)
     return obj<4x4> $retobj__1
 }
-function @adaptor_int___range_false___begin(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK7adaptorIiE5rangeILb0EE5beginEv] {
+function @adaptor_int___range_false___begin(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK7adaptorIiE5rangeILb0EE5beginEv] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -36,14 +35,7 @@ function @adaptor_int___range_false___begin(%this : ptr) -> obj<4x4> [binding=we
     call void @adaptor_int___range_false___iterator__iterator(%t1)
     return obj<4x4> $retobj__1
 }
-function @adaptor_int___range_false___range(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7adaptorIiE5rangeILb0EEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @adaptor_int___range_false___iterator__iterator(%this : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb0EE8iteratorC1Ev] {
+function @adaptor_int___range_false___iterator__iterator(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb0EE8iteratorC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -53,5 +45,4 @@ function @adaptor_int___range_false___iterator__iterator(%this : ptr) -> void [b
     store i32 0, %t2
     return void
 }
-alias object _ZN7adaptorIiE5rangeILb0EEC2Ev = @adaptor_int___range_false___range
 alias object _ZN7adaptorIiE5rangeILb0EE8iteratorC2Ev = @adaptor_int___range_false___iterator__iterator

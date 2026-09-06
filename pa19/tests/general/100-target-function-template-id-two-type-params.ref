@@ -7,17 +7,16 @@ function @call(%f : ptr) -> void [binding=strong, object=_Z4callPFR6StreamI4Char
     %t1 = addr $s
     %t2 = addr $s
     %t3 = load ptr $f
-    %t4 = call ptr %t3(%t2) as (%arg0 : ptr [pass=reference]) -> ptr
+    %t4 = call ptr %t3(%t2) as (%arg0 : ptr [pass=by_address, object_bytes=1]) -> ptr
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @manip
-    %t2 = unary decay ptr %t1
-    call void @call(%t2)
+    call void @call(%t1)
     return i32 0
 }
-function @manip(%s : ptr [pass=reference]) -> ptr [binding=weak, object=_Z5manipI4Char6TraitsER6StreamIT_T0_ES6_] {
+function @manip(%s : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z5manipI4Char6TraitsER6StreamIT_T0_ES6_] {
   slot $s : ptr
 
   block ^entry:

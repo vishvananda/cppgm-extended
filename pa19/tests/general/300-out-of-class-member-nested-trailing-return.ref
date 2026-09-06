@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @Holder_int___read(%this : ptr) -> i32 [binding=weak, object=_ZNK6HolderIiE4readEv] {
+function @Holder_int___read(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK6HolderIiE4readEv] {
   slot $this : ptr
   slot $tmpobj__1 : obj<4x4>
 
@@ -35,7 +35,7 @@ function @Holder_int___read(%this : ptr) -> i32 [binding=weak, object=_ZNK6Holde
     %t5 = load i32 %t4
     return i32 %t5
 }
-function @Holder_int___locate(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK6HolderIiE6locateEv] {
+function @Holder_int___locate(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK6HolderIiE6locateEv] {
   slot $this : ptr
   slot $loc : obj<4x4>
   slot $retobj__1 : obj<4x4>

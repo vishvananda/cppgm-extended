@@ -5,10 +5,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $src
-    call void @wrap_int___wrap(%t1, 3)
+    call void @wrap_int___wrap_long_int_(%t1, 3)
     %t2 = addr $dst
     %t3 = addr $src
-    call void @wrap_long_int___wrap__ov4(%t2, %t3)
+    call void @wrap_long_int___wrap_long_int___ov4(%t2, %t3)
     %t4 = addr $dst
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load i32 %t5
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @wrap_int___wrap(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4wrapIiEC1Ei] {
+function @wrap_int___wrap_long_int_(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4wrapIiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -40,7 +40,7 @@ function @wrap_int___wrap(%this : ptr, %v : i32) -> void [binding=weak, object=_
     store i32 %t1, %t3
     return void
 }
-function @wrap_long_int___wrap__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4wrapIlEC1IiEERKS_IT_E] {
+function @wrap_long_int___wrap_long_int___ov4(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4wrapIlEC1IiEERKS_IT_E, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -56,5 +56,5 @@ function @wrap_long_int___wrap__ov4(%this : ptr, %other : ptr [pass=reference]) 
     store i32 %t4, %t6
     return void
 }
-alias object _ZN4wrapIiEC2Ei = @wrap_int___wrap
-alias object _ZN4wrapIlEC2IiEERKS_IT_E = @wrap_long_int___wrap__ov4
+alias object _ZN4wrapIiEC2Ei = @wrap_int___wrap_long_int_
+alias object _ZN4wrapIlEC2IiEERKS_IT_E = @wrap_long_int___wrap_long_int___ov4

@@ -7,10 +7,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $g
     %t2 = load ptr $p
     %t3 = convert sext i64 i32 1
-    call void @G_int_____G(%t1, %t2, %t3)
+    call void @G_pointer_to_int___G_pointer_to_int___ov3(%t1, %t2, %t3)
     return i32 0
 }
-function @G_int_____G(%this : ptr, %b : ptr, %n : i64) -> void [binding=weak, object=_ZN1GIPiEC1IS0_EET_m] {
+function @G_pointer_to_int___G_pointer_to_int___ov3(%this : ptr [object_bytes=1], %b : ptr, %n : i64) -> void [binding=weak, object=_ZN1GIPiEC1IS0_EET_m, inline_hint=yes] {
   slot $this : ptr
   slot $b : ptr
   slot $n : i64
@@ -21,4 +21,4 @@ function @G_int_____G(%this : ptr, %b : ptr, %n : i64) -> void [binding=weak, ob
     store i64 %n, $n
     return void
 }
-alias object _ZN1GIPiEC2IS0_EET_m = @G_int_____G
+alias object _ZN1GIPiEC2IS0_EET_m = @G_pointer_to_int___G_pointer_to_int___ov3

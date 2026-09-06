@@ -61,7 +61,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = load i32 $cond__3
     return i32 %t17
 }
-function @iterlib__range_sink__assign(%this : ptr, %first : obj<4x4>, %last : obj<4x4>) -> void [binding=weak, object=_ZN7iterlib10range_sink6assignENS_4iterES1_] {
+function @iterlib__range_sink__range_sink(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7iterlib10range_sinkC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    return void
+}
+function @iterlib__range_sink__assign(%this : ptr [object_bytes=4], %first : obj<4x4>, %last : obj<4x4>) -> void [binding=weak, object=_ZN7iterlib10range_sink6assignENS_4iterES1_, inline_hint=yes] {
   slot $this : ptr
   slot $first : obj<4x4>
   slot $last : obj<4x4>
@@ -85,11 +95,19 @@ function @iterlib__range_sink__assign(%this : ptr, %first : obj<4x4>, %last : ob
     %t8 = addr $argobj__3
     %t9 = addr $first
     %t10 = call obj<1x1> @iterlib__iterator_category(%t9)
-    copyobj 1x1 %t10, %t8
     call void @iterlib__range_sink__construct(%t3, $argobj__1, $argobj__2, $argobj__3)
     return void
 }
-function @iterlib__range_sink__construct(%this : ptr, %first : obj<4x4>, %last : obj<4x4>, %__param3 : obj<1x1>) -> void [binding=weak, object=_ZN7iterlib10range_sink9constructENS_4iterES1_NS_18input_iterator_tagE] {
+function @iterlib__iterator_category(%__param0 : ptr [pass=by_address, object_bytes=4]) -> obj<1x1> [binding=weak, object=_ZN7iterlib17iterator_categoryINS_4iterEEENS_18input_iterator_tagERKT_] {
+  slot $__param0 : ptr
+  slot $retobj__1 : obj<1x1>
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    %t1 = addr $retobj__1
+    return obj<1x1> $retobj__1
+}
+function @iterlib__range_sink__construct(%this : ptr [object_bytes=4], %first : obj<4x4>, %last : obj<4x4>, %__param3 : obj<1x1>) -> void [binding=weak, object=_ZN7iterlib10range_sink9constructENS_4iterES1_NS_18input_iterator_tagE, inline_hint=yes] {
   slot $this : ptr
   slot $first : obj<4x4>
   slot $last : obj<4x4>
@@ -115,32 +133,4 @@ function @iterlib__range_sink__construct(%this : ptr, %first : obj<4x4>, %last :
     store i32 %t7, %t9
     return void
 }
-function @iterlib__range_sink__range_sink(%this : ptr) -> void [binding=weak, object=_ZN7iterlib10range_sinkC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
-    return void
-}
-function @iterlib__iterator_category(%__param0 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN7iterlib17iterator_categoryINS_4iterEEENS_18input_iterator_tagERKT_] {
-  slot $__param0 : ptr
-  slot $retobj__1 : obj<1x1>
-
-  block ^entry:
-    store ptr %__param0, $__param0
-    %t1 = addr $retobj__1
-    call void @iterlib__input_iterator_tag__input_iterator_tag(%t1)
-    return obj<1x1> $retobj__1
-}
-function @iterlib__input_iterator_tag__input_iterator_tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7iterlib18input_iterator_tagC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 alias object _ZN7iterlib10range_sinkC2Ev = @iterlib__range_sink__range_sink
-alias object _ZN7iterlib18input_iterator_tagC2Ev = @iterlib__input_iterator_tag__input_iterator_tag

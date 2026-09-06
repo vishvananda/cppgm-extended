@@ -1,14 +1,14 @@
-global @bool__false___value : u8 [binding=weak, object=_ZN5bool_ILb0EE5valueE] = 0
+global @__cppgm_class_template_identity_0_0_0__value : u8 [storage=readonly, binding=weak, object=_ZN5bool_ILb0EE5valueE] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $h : obj<16x8>
 
   block ^entry:
     %t1 = addr $h
-    call void @holder_int___holder(%t1)
+    call void @holder_int___holder_int_(%t1)
     return i32 0
 }
-function @holder_int___holder(%this : ptr) -> void [binding=weak, object=_ZN6holderIiEC1Ev] {
+function @holder_int___holder_int_(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6holderIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -21,11 +21,20 @@ function @holder_int___holder(%this : ptr) -> void [binding=weak, object=_ZN6hol
     store i128 %t3, %t5
     return void
 }
-function @holder_int___good(%this : ptr) -> i32 [binding=weak, object=_ZNK6holderIiE4goodEv] {
+function @holder_int___bad(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK6holderIiE3badEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = const i64 1
+    %t2 = convert trunc i32 i64 %t1
+    return i32 %t2
+}
+function @holder_int___good(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK6holderIiE4goodEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 0
 }
-alias object _ZN6holderIiEC2Ev = @holder_int___holder
+alias object _ZN6holderIiEC2Ev = @holder_int___holder_int_

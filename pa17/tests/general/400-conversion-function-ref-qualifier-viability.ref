@@ -1,7 +1,7 @@
-declare function @S__operatorD(%arg0 : ptr) -> obj<1x1> [binding=strong, object=_ZNR1Scv1DEv]
 declare function @use(%arg0 : obj<1x1>) -> void [binding=strong, object=_Z3use1D]
+declare function @S__operatorD(%arg0 : ptr [object_bytes=1]) -> obj<1x1> [binding=strong, object=_ZNR1Scv1DEv]
 
-function @test(%value : ptr [pass=reference]) -> void [binding=strong, object=_Z4testR1S] {
+function @test(%value : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z4testR1S] {
   slot $value : ptr
   slot $argobj__1 : obj<1x1>
 
@@ -10,7 +10,6 @@ function @test(%value : ptr [pass=reference]) -> void [binding=strong, object=_Z
     %t1 = addr $argobj__1
     %t2 = load ptr $value
     %t3 = call obj<1x1> @S__operatorD(%t2)
-    copyobj 1x1 %t3, %t1
     call void @use($argobj__1)
     return void
 }

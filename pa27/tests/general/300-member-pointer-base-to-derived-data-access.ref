@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i64 %t2, $derived_ptr
     %t3 = addr $d
     %t4 = addr $d
-    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t5 = index i8 %t4, 0
     %t6 = index i8 [projection=field] %t5, 0
     store i32 5, %t6
     %t7 = addr $d

@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120
   i8 0
 }
@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $argobj__2
     %t4 = addr $initlist__3
     call void @Item__Item(%t4, 1)
-    %t5 = index i8 %t4, 1
+    %t5 = index i8 [projection=array_element] %t4, 1
     %t6 = addr @__strlit__1
     call void @Item__Item__ov2(%t5, %t6)
     store ptr %t4, %t3
@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @Item__Item(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN4ItemC1Ei] {
+function @Item__Item(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4ItemC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -46,7 +46,7 @@ function @Item__Item(%this : ptr, %__param1 : i32) -> void [binding=weak, object
     store i32 %__param1, $__param1
     return void
 }
-function @Item__Item__ov2(%this : ptr, %__param1 : ptr) -> void [binding=weak, object=_ZN4ItemC1EPKc] {
+function @Item__Item__ov2(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN4ItemC1EPKc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -55,7 +55,7 @@ function @Item__Item__ov2(%this : ptr, %__param1 : ptr) -> void [binding=weak, o
     store ptr %__param1, $__param1
     return void
 }
-function @Array__insert__ov3(%this : ptr, %__param1 : i32, %__param2 : obj<16x8>) -> i32 [binding=weak, object=_ZN5Array6insertEiSt16initializer_listI4ItemE] {
+function @Array__insert__ov3(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : obj<16x8>) -> i32 [binding=weak, object=_ZN5Array6insertEiSt16initializer_listI4ItemE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $__param2 : obj<16x8>

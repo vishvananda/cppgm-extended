@@ -1,13 +1,11 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
 
-global @order : i32 [binding=strong, object=_Z5order] = zero
-global @__typeinfo_name__struct_failure [storage=readonly, binding=weak, object=_ZTS7failure] = {
+global @__typeinfo_name__struct_failure [binding=weak, object=_ZTS7failure] = {
   i8 55
   i8 102
   i8 97
@@ -18,13 +16,14 @@ global @__typeinfo_name__struct_failure [storage=readonly, binding=weak, object=
   i8 101
   i8 0
 }
-global @__rtti_struct_failure [storage=readonly, binding=weak, object=_ZTI7failure] = {
+global @__rtti_struct_failure [binding=weak, object=_ZTI7failure] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_failure
 }
-global @__ehobj_struct_failure [binding=weak, object=@__ehobj_struct_failure] = {
+global @__ehobj_struct_failure [binding=internal, object=@__ehobj_struct_failure] = {
   zero 1
 }
+global @order : i32 [binding=strong, object=_Z5order] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : obj<1x1>
@@ -80,7 +79,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^try_end_3:
     return i32 2
 }
-function @Derived___Derived(%this : ptr) -> void [binding=weak, object=_ZN7DerivedD1Ev] {
+function @Derived___Derived(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN7DerivedD1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $guard : obj<1x1>
 
@@ -96,21 +95,21 @@ function @Derived___Derived(%this : ptr) -> void [binding=weak, object=_ZN7Deriv
     call void @Guard___Guard(%t5)
     eh_end
     %t6 = load ptr $this
-    %t7 = index i8 [projection=base_subobject] %t6, 0
-    call void @Base___Base__base_entry(%t7)
+    %t7 = index i8 %t6, 0
+    call void @Base___Base(%t7)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t8 = load ptr $this
-    %t9 = index i8 [projection=base_subobject] %t8, 0
-    call void @Base___Base__base_entry(%t9)
+    %t9 = index i8 %t8, 0
+    call void @Base___Base(%t9)
     eh_end
     resume
 
   block ^destructor_end_2:
     return void
 }
-function @Guard___Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardD1Ev] {
+function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -120,12 +119,11 @@ function @Guard___Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardD1Ev
     %t3 = binary add i32 %t2, 1
     store i32 %t3, @order
     %t4 = call ptr @__external_runtime____cxa_allocate_exception(1)
-    call void @failure__failure(%t4)
     %t5 = addr @__rtti_struct_failure
     call void @__external_runtime____cxa_throw(%t4, %t5, 0)
     return void
 }
-function @Base___Base__base_entry(%this : ptr) -> void [binding=weak, object=_ZN4BaseD2Ev] {
+function @Base___Base(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -136,13 +134,6 @@ function @Base___Base__base_entry(%this : ptr) -> void [binding=weak, object=_ZN
     store i32 %t3, @order
     return void
 }
-function @failure__failure(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7failureC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 alias object _ZN7DerivedD2Ev = @Derived___Derived
 alias object _ZN5GuardD2Ev = @Guard___Guard
-alias object _ZN7failureC2Ev = @failure__failure
+alias object _ZN4BaseD2Ev = @Base___Base

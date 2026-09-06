@@ -1,4 +1,4 @@
-function @operator___(%ref : ptr [pass=reference], %action : ptr [pass=reference]) -> i32 [binding=strong, object=_ZpmR3RefR6Action] {
+function @operator___(%ref : ptr [pass=by_address, object_bytes=4], %action : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_ZpmR3RefR6Action] {
   slot $ref : ptr
   slot $action : ptr
 

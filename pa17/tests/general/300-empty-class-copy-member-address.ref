@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $wrapper
     return i32 0
 }
-function @Wrapper__Wrapper(%this : ptr, %input : ptr [pass=reference]) -> void [binding=weak, object=_ZN7WrapperC1ERK5Empty] {
+function @Wrapper__Wrapper(%this : ptr [object_bytes=1], %input : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7WrapperC1ERK5Empty, inline_hint=yes] {
   slot $this : ptr
   slot $input : ptr
 

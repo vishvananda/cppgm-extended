@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = binary sub i32 %t13, 5
     return i32 %t14
 }
-function @guarded_extent(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_Z14guarded_extentIiLj5ETnN9enable_ifIXsr6is_intIT_EE5valueEiE4typeELi0EEiRAT0__S1_S5_] {
+function @guarded_extent(%__param0 : ptr [pass=by_address, object_bytes=20], %__param1 : ptr [pass=by_address, object_bytes=20]) -> i32 [binding=weak, object=_Z14guarded_extentIiLj5ETnN9enable_ifIXsr6is_intIT_EE5valueEiE4typeELi0EEiRAT0__S1_S5_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

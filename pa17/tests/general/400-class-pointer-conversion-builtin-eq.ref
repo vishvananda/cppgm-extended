@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 89
   i8 0
 }
@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @Y__operatorcharconst_(%this : ptr) -> ptr [binding=weak, object=_ZNK1YcvPKcEv] {
+function @Y__operatorcharconst_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK1YcvPKcEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

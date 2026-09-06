@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $c
     call void @context__context(%t1)
     %t2 = addr $c
-    %t3 = call ptr @use_service__ov2(%t2)
+    %t3 = call ptr @use_service(%t2)
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = load i32 %t4
     %t6 = cmp eq i32 %t5, 3
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @use_service(%ioc : ptr [pass=reference]) -> ptr [binding=strong, object=_Z11use_serviceI7serviceERT_R10io_context] {
+function @use_service__ov2(%ioc : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=strong, object=_Z11use_serviceI7serviceERT_R10io_context] {
   slot $ioc : ptr
 
   block ^entry:
@@ -33,16 +33,7 @@ function @use_service(%ioc : ptr [pass=reference]) -> ptr [binding=strong, objec
     %t2 = index i8 [projection=field] %t1, 4
     return ptr %t2
 }
-function @use_service__ov2(%e : ptr [pass=reference]) -> ptr [binding=weak, object=_Z11use_serviceI7serviceERT_R7context] {
-  slot $e : ptr
-
-  block ^entry:
-    store ptr %e, $e
-    %t1 = load ptr $e
-    %t2 = index i8 [projection=field] %t1, 0
-    return ptr %t2
-}
-function @context__context(%this : ptr) -> void [binding=weak, object=_ZN7contextC1Ev] {
+function @context__context(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7contextC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -56,7 +47,16 @@ function @context__context(%this : ptr) -> void [binding=weak, object=_ZN7contex
     store i32 3, %t5
     return void
 }
-function @service__service(%this : ptr) -> void [binding=weak, object=_ZN7serviceC1Ev] {
+function @use_service(%e : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z11use_serviceI7serviceERT_R7context] {
+  slot $e : ptr
+
+  block ^entry:
+    store ptr %e, $e
+    %t1 = load ptr $e
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
+}
+function @service__service(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7serviceC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
