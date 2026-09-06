@@ -369,16 +369,35 @@ Two items remain on the self-host lanes after that fix:
   (`cppgm++-runner.o`), and that instantiation is miscompiled; forcing a
   clang-built `operator<<(ostream, string)` object to win the weak
   resolution makes the crash vanish and the AST dump correct.
-  Disassembly of the miscompiled `__pad_and_output` shows it entering the
-  padding path (`__iob.width() > 0`) with a garbage count and then
-  dereferencing a garbage streambuf pointer at `mov (%r8),%r9`, though the
-  driver sets no field width -- a bad field-width / stack-slot read at `-O3`.
-  A standalone `ofstream << setw(n) << string` compiled by `cppgm++` at every
-  `-O` level runs correctly, so the trigger is context-specific to the
-  instantiation in `cppgm++-runner.o`.  This is a distinct pre-existing
-  backend codegen defect (same class as the gcc-cell KW_TRUE self-host
-  miscompile), and needs a dedicated backend pass over the `-O3` codegen of
-  that instantiation.
+  Runtime tracing of the crashing call shows the miscompiled function is one
+  frame up: `__put_character_sequence` forwards the string bytes correctly
+  (`__ob`/`__ep` point at "translation-unit") but passes a garbage ostream
+  (`__iob` is a code address, `__s` is garbage), so `__pad_and_output`
+  dereferences a bad streambuf.  The backtrace is itself corrupt (a
+  constructor "calls" `WriteTranslationUnit`), i.e. the call chain's stack is
+  smashed.
+
+  Deeper root cause: cppgm++ accesses a virtual base's members through a
+  companion `__pvbptr` pointer parameter it threads alongside every
+  `basic_ostream&`/`basic_ostream*`, rather than reading the virtual-base
+  offset from the object's vtable the way clang does
+  (`mov rax,[obj]; mov rax,[rax-0x18]; obj+rax+field`).  A five-line
+  reproducer confirms the ABI: `long get_width(basic_ostream& os){return
+  os.width_;}` where `basic_ostream : virtual basic_ios : ios_base` lowers to
+  `@get_width(%os, %__pvbptr0)` and reads `%__pvbptr0 + 8`; clang emits the
+  vtable vbase-offset load.  This companion-pointer ABI is self-consistent
+  for direct call chains (reference->pointer->reference round trips all run
+  correctly, since `__pvbptr` is threaded through each), so the failing case
+  is a boundary where the companion pointer cannot be threaded and is left
+  garbage -- a virtual dispatch, a stored/reloaded stream, or the sentry /
+  exception path inside `__put_character_sequence` -- not yet reduced to a
+  minimal crashing case.  Machinery: `dev/src/lowering/objects/virtual_bases.h`
+  (the `__vbptr`/`__pvbptr` parameter synthesis, `CarriesVirtualBase`,
+  `VirtualBoundaryEntity`).  This is a core virtual-inheritance ABI defect
+  (same class as the gcc-cell KW_TRUE self-host miscompile); the real fix is
+  to read virtual-base offsets from the vtable when the most-derived type is
+  not statically known, a large, high-risk change needing a dedicated pass
+  and full byte-exact + audit validation.
 
 - **A flaky build/test race in the self-host chain.**  `make -C pa39
   test-pa6 CXX=../dev/cppgm++` under `-j` intermittently reports the pa6
