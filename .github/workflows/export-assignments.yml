@@ -1,6 +1,7 @@
 name: Export Assignments
 
 on:
+  pull_request:
   workflow_run:
     workflows:
       - Tests
@@ -18,13 +19,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  validate:
+    name: Validate the student export
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v6
+
+      - name: Install export dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            binutils \
+            build-essential \
+            curl \
+            gdb \
+            git \
+            gzip \
+            perl \
+            rsync \
+            tar
+
+      # The export regenerates every reference with the built tools and holds
+      # the tracked ones to what the tree carries.  A failed-case diagnostic
+      # is not tracked and so is never compared by `make test-report`, which
+      # makes this the only gate that sees one change; on `main` alone it
+      # would see it only after the merge.
+      - name: Export assignments to a scratch destination
+        run: scripts/export_student_repo.sh --force "${RUNNER_TEMP}/cppgm-assignments-validate"
+
   export:
     name: Export student repository
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'main')
 
     steps:

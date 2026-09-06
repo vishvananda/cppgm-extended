@@ -44,6 +44,18 @@ Found (2026-09-06, all fixed in `scripts/export_student_repo.sh`):
   exported Makefile (comments ignored) and every quoted script name inside a
   shipped script must exist in the export, or the export fails.
 
+The export is also the only gate that sees a changed failed-case diagnostic.
+A negative test's stdout is deliberately not tracked -- the export refuses to
+run if one is checked in -- and is regenerated into the student repository,
+so `make test-report` never compares it; the export regenerates every
+reference with the built tools and holds the *tracked* ones (18,722 files,
+7,087 of them exit statuses) to what the tree carries.  That is how six
+references moved by the diagnostics work were caught while the byte-exact
+report was green at 5960/5960.  Until now that gate ran only on `main`,
+after a merge, so `export-assignments.yml` gained a `validate` job that runs
+the same export on every pull request without the push token or the publish
+steps.
+
 Verified after the fixes (2026-09-06): the exported tree's `make
 test-report` runs to its summary; with the shipped reference tools, pa16's
 control lanes, pa29 (course, behaviour, contract properties, regression),

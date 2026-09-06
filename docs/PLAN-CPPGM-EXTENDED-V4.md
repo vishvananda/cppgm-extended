@@ -402,7 +402,9 @@ carries the new reference.
   `test-debuginfo`, `test-through-pa10` in every flavor, inception compare,
   and the audits (`make audit-*`, the file audit) as a CI job.
 - The export produced from `v4` builds and passes its suites in the gcc
-  and clang/libc++ flavors from a clean clone, with the reference bundle.
+  and clang/libc++ flavors from a clean clone, with the reference bundle,
+  and `export-assignments.yml` validates that export on every pull request
+  rather than only after a merge to `main`.
 - No `cppgm.tests/course`; every test under `paN/tests` with a valid
   cluster; the auditor clean; the seams lane green.
 - Every reference delta against the old reference classified; every
