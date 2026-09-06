@@ -576,3 +576,87 @@ Two items remain on the self-host lanes after that fix:
   dispatch (`gh workflow run inception.yml --ref v4 -f selfhost_run_id=...
   -f flavor=ubuntu-26.04-clang-libcxx`, run 34041930622): the `plan` job and
   the matrix wiring work.
+
+- **Nested-pair `std::sort`: diagnosed, not fixed.**  Narrowed from the
+  original reducer to `std::pair<std::pair<int, size_t>, size_t>`: a plain
+  `std::swap` on one fails, `a.swap(b)` on one fails, and `std::sort` over a
+  *single*-level pair vector passes.  The failing call is `swap(first,
+  __p.first)` inside `std::pair::swap` (`stl_pair.h`), where `first` is
+  itself a pair: the generic `std::swap` is SFINAE-excluded for a tuple-like
+  argument, so the pair overload declared later in the header has to come
+  from argument-dependent lookup at instantiation.  Self-contained 30-line
+  reducers: `docs/v4/reducers/adl-late-overload-in-template.cpp` (g++
+  accepts, we reject) and `adl-late-overload-no-member-clash.cpp` (the same
+  shape with the member renamed).  Two contributing defects, both with
+  evidence:
+  1. The retained candidate set keeps the enclosing class's member of the
+     same name, and `CompleteArgumentDependentCallCandidates`
+     (`semantic/expressions/overload_resolution.cpp`) suppresses ADL as soon
+     as any candidate has a `member_owner`.  A block-scope using-declaration
+     hides that member ([basic.lookup.argdep]/1 suppresses ADL only when
+     *unqualified lookup* finds a member), so neither the member nor the
+     suppression belongs there.  The error names the member as the only
+     candidate.
+  2. Renaming the member does not fix it: the call then reports "retained
+     call has no viable function", so ADL at instantiation is also not
+     picking up a namespace-scope overload declared after the template's
+     definition.  Eligibility is not the gate -- the unqualified publication
+     sites (validation.cpp 1344, 1361, 1369) already record
+     `adl_eligible = true`; the gap is in candidate collection
+     (`AppendArgumentDependentCandidates`).
+
+- **Conversion-function-template mangling (`cvi` vs `cvT_`): diagnosed, not
+  fixed.**  `struct Holder { template <class T> operator T() const; };` with
+  `int v = h;` mangles as `_ZNK6HoldercviIiEEv` here and `_ZNK6HoldercvT_IiEEv`
+  under g++.  The Itanium ABI names a conversion function template by the
+  *unresolved* target type, a reference to the template parameter, not by the
+  deduced one.  The site is `lowering/abi/mangling.cpp`
+  (`terminal.function.type = facts.MakeType(binding.conversion_target)`),
+  which uses the specialization's substituted target; the encoder
+  (`abi_mangle.cpp`, the two `output_ += "cv"` sites) then writes whatever
+  type it is handed, and the vocabulary can already express the right thing
+  (`ABI_TYPE_TEMPLATE_PARAMETER`, encoded at abi_mangle.cpp:1347).  The fix
+  needs the *pattern's* declared target type, which lives in the analyzer's
+  `function_templates_` and is not reachable from the lowering layer, so it
+  is plumbing rather than a local edit: carry the unresolved conversion
+  target on the function fact beside `conversion_target`.  Not attempted
+  here: it changes symbol names, so it moves references, the host-compat
+  lanes and the self-host link together, and wants its own pass.  Deriving
+  the parameter index by matching the target against the template arguments
+  would cover `operator T()` but not `operator U<T>()`, and a heuristic in
+  the mangler is the wrong kind of risk.
+
+- **The `-j` self-host race: diagnosed, not fixed.**  The checkpoint binary
+  rule in `pa39/Makefile` is `FORCE`-based, so it runs on every visit, and
+  `test-$(checkpoint)` reaches its suite through a recursive sub-make.  Two
+  branches of a parallel build can therefore be inside the same checkpoint's
+  link while a sub-make is running that checkpoint's tests.  The link itself
+  is already atomic (it writes `.tmp` and `mv -f`s it), which is why the
+  staged binary always turns out byte-correct and the `-nobuild` suite
+  passes on a rerun; what the racing test sees is the tree mid-transition.
+  A lock is the right shape -- the repository root already serializes dev
+  builds with a `mkdir` lock -- but each recipe line runs in its own shell,
+  so the lock has to wrap the link, the compare and the move as one command;
+  a lock taken on its own line releases immediately and buys nothing.  That
+  restructuring of the link recipe was drafted and reverted rather than
+  landed half-done.  Reproduce with `make -C pa39 test-pa6 CXX=../dev/cppgm++`
+  under `-j`; `-j1` always passes.
+
+- **A standalone `__assign_one` fixture: still not found.**  Three synthetic
+  reproductions of the shape (sibling specializations of a class template
+  whose member template is called through a dependent qualifier, replayed by
+  two instantiations) compile cleanly with the pre-fix compiler, because the
+  qualifier path rebuilds the call from the active scope.  What makes the
+  real case fail is the instantiation order libstdc++ 13.3 produces, which
+  differs from 13.4 by `c++config.h` alone; the fixture would have to
+  reproduce that order rather than the shape.  The regression check is the
+  `u24-gcc` cell's `test-through-pa10`, which does exercise it.
+
+- **Placing critical-edge split blocks before their target: deliberately not
+  done.**  The native driver appends a split block at the end of the
+  function, which is what made a plain merge look loop-carried (the
+  loop-carried phi defect above).  Placing the block before its target would
+  also drop the `jmp` the appended block needs.  It is an optimisation, not a
+  correctness fix -- the loop-carried defect is fixed at its own cause -- and
+  it moves machine-IR references across pa29 and pa38, so it belongs to a
+  pass that can regenerate and review them.
