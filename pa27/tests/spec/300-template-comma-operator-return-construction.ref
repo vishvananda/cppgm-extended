@@ -72,7 +72,7 @@ function @append(%params : ptr [pass=by_address, object_bytes=4], %np : ptr [pas
     copyobj 8x4 %t5, %t1
     return obj<8x4> $retobj__1
 }
-function @named_parameter_base___cppgm_class_template_identity_2_1_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=4]) -> obj<8x4> [binding=weak, object=_ZNK20named_parameter_baseI15named_parameterIi8first_idEEcmIS0_Ii9second_idEEE23named_parameter_combineIT_S2_ERKS7_, inline_hint=yes] {
+function @named_parameter_base___cppgm_class_template_identity_2_1_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=4]) -> obj<8x4> [binding=weak, object=_ZNK20named_parameter_baseI15named_parameterIi8first_idEEcmIS0_Ii9second_idEEE23named_parameter_combineIT_S2_ERKS8_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<8x4>

@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @pair_like_int__int___pair_like_int__int___ov3(%t1, %t2, %t3)
     return i32 0
 }
-function @pair_like_int__int___pair_like_int__int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN9pair_likeIiiEC1I5checkIiiELi0EEERKiS4_, inline_hint=yes] {
+function @pair_like_int__int___pair_like_int__int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN9pair_likeIiiEC1I5checkIiiELi0EEERKiS5_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -21,4 +21,4 @@ function @pair_like_int__int___pair_like_int__int___ov3(%this : ptr [object_byte
     store ptr %__param2, $__param2
     return void
 }
-alias object _ZN9pair_likeIiiEC2I5checkIiiELi0EEERKiS4_ = @pair_like_int__int___pair_like_int__int___ov3
+alias object _ZN9pair_likeIiiEC2I5checkIiiELi0EEERKiS5_ = @pair_like_int__int___pair_like_int__int___ov3

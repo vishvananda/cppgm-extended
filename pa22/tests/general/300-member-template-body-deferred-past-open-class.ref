@@ -38,7 +38,7 @@ function @box_node___demand(%this : ptr [object_bytes=1], %dst : ptr [pass=by_ad
     call void @box_node___assign(%t1, %t2, %t3)
     return void
 }
-function @box_node___assign(%this : ptr [object_bytes=1], %dst : ptr [pass=by_address, object_bytes=8], %src : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN3boxI4nodeE6assignIS0_EEvRT_RKS2_] {
+function @box_node___assign(%this : ptr [object_bytes=1], %dst : ptr [pass=by_address, object_bytes=8], %src : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN3boxI4nodeE6assignIS0_EEvRT_RKS3_] {
   slot $this : ptr
   slot $dst : ptr
   slot $src : ptr

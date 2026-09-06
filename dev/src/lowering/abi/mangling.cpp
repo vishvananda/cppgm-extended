@@ -1025,13 +1025,16 @@ public:
 			recipe = &program_.function_template_abi_recipes[
 				function.function_template_abi_recipe];
 		}
-		if (function.template_argument_count != 0)
+		if (function.template_argument_count != 0 ||
+			(function.function_template_specialization && recipe &&
+			 recipe->template_parameter_pack))
 		{
 			if (recipe == 0)
 				ThrowLoweringInternal(
 					"function template specialization has no canonical recipe");
-			const std::size_t first = function.template_argument_begin;
 			const std::size_t count = function.template_argument_count;
+			const std::size_t first = count == 0 ? 0 :
+				function.template_argument_begin;
 			if (first > program_.template_arguments.size() ||
 				count > program_.template_arguments.size() - first)
 				ThrowLoweringInternal(
@@ -2045,7 +2048,8 @@ bool HasWeakLinkage(
 		canonical.explicit_instantiation_suppressed;
 	return canonical.weak_symbol || (!preempted &&
 		(record.weak_odr || primary_template_member ||
-		 (function && record.template_argument_count != 0 &&
+		 (function && (record.template_argument_count != 0 ||
+		   record.function_template_specialization) &&
 		  !record.explicit_function_specialization)));
 }
 
@@ -2058,9 +2062,12 @@ void AppendFunctionTemplateArgumentsAndResult(const semantic::Program& program,
 {
 	using namespace abi_mangle;
 	using namespace semantic;
-	if (binding.template_argument_count == 0) return;
-	const std::size_t first = binding.template_argument_begin;
+	// An empty pack is still a template argument list: "IJEE".
+	if (binding.template_argument_count == 0 &&
+		!(binding.function_template_specialization && recipe &&
+		  recipe->template_parameter_pack)) return;
 	const std::size_t count = binding.template_argument_count;
+	const std::size_t first = count == 0 ? 0 : binding.template_argument_begin;
 	if (first > program.template_arguments.size() ||
 		count > program.template_arguments.size() - first)
 		ThrowLoweringInternal(
@@ -2566,7 +2573,8 @@ std::string MangleVariable(const semantic::Program& program,
 	const bool needs_path =
 		target.target.function.kind == ABI_FUNCTION_TARGET_PATH ||
 		(target.target.function.kind == ABI_FUNCTION_TARGET_MEMBER &&
-		 binding.template_argument_count != 0);
+		 (binding.template_argument_count != 0 ||
+		  binding.function_template_specialization));
 	if (needs_path)
 	{
 		if (binding.name == 0)

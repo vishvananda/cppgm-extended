@@ -1188,12 +1188,27 @@ void Analyzer::AnalyzeClassMember(NodeId node, ScopeId scope,
 					!(IsConst(member_type) && IsIntegral(member_type, true)))
 					ThrowSemanticError("invalid in-class static data member initializer for " +
 						strings_.Get(parsed.name));
-				const ExpressionInfo value = spec.placeholder_auto ? placeholder_initializer :
-					AnalyzeInClassStaticInitializer(
-						FindChild(item, ::cppgm::syntax::STAG_INITIALIZER), scope, member_type);
-				if (!HasConstantInitializerFact(value))
+				ExpressionInfo value;
+				bool stands_in = false;
+				if (spec.placeholder_auto) value = placeholder_initializer;
+				else if (dependent_shape_completion_depth_ != 0)
+				{
+					// A shape-only completion keeps the constants it can compute;
+					// one the stand-ins cannot reach (libc++ derives numeric_limits
+					// digits from `type(-1) < type(0)`) has no value until a
+					// concrete specialization is completed.
+					stands_in = !TryAnalyzeInClassStaticInitializer(
+						FindChild(item, ::cppgm::syntax::STAG_INITIALIZER),
+						scope, member_type, &value) ||
+						!HasConstantInitializerFact(value);
+				}
+				else value = AnalyzeInClassStaticInitializer(
+					FindChild(item, ::cppgm::syntax::STAG_INITIALIZER), scope, member_type);
+				if (!stands_in && !HasConstantInitializerFact(value))
 					ThrowSemanticError(
 						"nonconstant in-class static data member initializer");
+				if (stands_in) {}
+				else {
 				const TypeRecord declared_array = program_->types.Get(
 					program_->types.RemoveTopCv(member_type));
 				const TypeRecord completed_array = program_->types.Get(
@@ -1210,6 +1225,7 @@ void Analyzer::AnalyzeClassMember(NodeId node, ScopeId scope,
 				PublishConstantVariableInitializer(member, member_type, spec, value);
 				PublishInClassStaticDefinitionPolicy(member, member_type, spec,
 					FindChild(item, ::cppgm::syntax::STAG_INITIALIZER));
+				}
 			}
 			else if (!non_static_data_member && spec.is_constexpr)
 				ThrowSemanticError(
@@ -1595,6 +1611,40 @@ void Analyzer::AnalyzeSpecialMember(NodeId node, ScopeId scope,
 		(source_definition || (!defaulted && !deleted));
 	RegisterClassSpecialMember(constructor);
 }
+// The type a structured (qualified or template-id) type specifier names.  A
+// substitution failure is reported through the flag; in a shape-only
+// completion the parameters stand in for the arguments, so a member type the
+// stand-ins cannot reach (libc++ asks `pointer_traits<_Ptr>::difference_type`
+// of a pointer it has not seen) stays a dependent shape and the concrete
+// specialization computes it.
+TypeId Analyzer::StructuredSpecifierType(NodeId child, NodeId structured_name,
+	ScopeId scope, TypeId deferred_type, bool* substitution_failed)
+{
+	const LookupResult found = LookupStructuredTypeSpecifier(
+		structured_name, scope, deferred_type,
+		(arena_->Flags(child) & SYNTAX_FLAG_TYPENAME) != 0);
+	if (deferred_type != kNoType && found.type == deferred_type)
+		return found.type;
+	if (found.type == kNoType)
+	{
+		if (CandidateSubstitutionActive())
+		{
+			RecordCandidateSubstitutionFailure();
+			*substitution_failed = true;
+			return kNoType;
+		}
+		if (dependent_shape_completion_depth_ != 0)
+			return DependentQualifiedTypeShape(structured_name);
+		const ScopedDiagnosticLocation at(arena_, child);
+		ThrowSemanticError("structured template type was not found: " +
+			PayloadSource(child));
+	}
+	if (found.type_declaration != kNoBinding &&
+		!CanAccessMember(found.type_declaration, found.naming_class))
+		ThrowSemanticError("inaccessible member type");
+	return found.type;
+}
+
 SpecInfo Analyzer::BuildSpecifiers(NodeId node, ScopeId scope,
 	const std::string& hint, bool has_declarators, bool type_id_context,
 	TypeId deferred_type)
@@ -1667,28 +1717,10 @@ SpecInfo Analyzer::BuildSpecifiers(NodeId node, ScopeId scope,
 			FindChild(child, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
 		if (structured_name != kNoNode)
 		{
-			const LookupResult found = LookupStructuredTypeSpecifier(
-				structured_name, scope, deferred_type,
-				(arena_->Flags(child) & SYNTAX_FLAG_TYPENAME) != 0);
-			result.type = found.type;
-			if (deferred_type != kNoType && result.type == deferred_type) continue;
-			if (result.type == kNoType)
-			{
-				if (CandidateSubstitutionActive())
-				{
-					RecordCandidateSubstitutionFailure();
-					return result;
-				}
-				{
-					const ScopedDiagnosticLocation at(arena_, child);
-					ThrowSemanticError(
-						"structured template type was not found: " +
-						PayloadSource(child));
-				}
-			}
-			if (found.type_declaration != kNoBinding &&
-				!CanAccessMember(found.type_declaration, found.naming_class))
-				ThrowSemanticError("inaccessible member type");
+			bool substitution_failed = false;
+			result.type = StructuredSpecifierType(child, structured_name,
+				scope, deferred_type, &substitution_failed);
+			if (substitution_failed) return result;
 			continue;
 		}
 		if (arena_->IsTag(child, ::cppgm::syntax::STAG_DECLTYPE_SPECIFIER) ||
@@ -2709,7 +2741,12 @@ void Analyzer::PublishUsingAccess(BindingId alias,
 	target.member_owner = original.member_owner;
 	target.access_owner = program_->EntityForScope(target.owner);
 	if (original.layout_fact != kNoBindingLayoutFact)
-		program_->MutableBindingLayout(target) = program_->BindingLayout(original);
+	{
+		// Copy first: allocating the alias's layout may grow the fact table
+		// and move the original's record.
+		const BindingLayoutFact layout = program_->BindingLayout(original);
+		program_->MutableBindingLayout(target) = layout;
+	}
 	target.access = access;
 	target.storage_class = original.storage_class;
 	target.non_static_data_member = original.non_static_data_member;

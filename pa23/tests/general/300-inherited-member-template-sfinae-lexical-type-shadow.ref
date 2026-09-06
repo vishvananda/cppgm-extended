@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t27 = load i32 $cond__1
     return i32 %t27
 }
-function @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value(%value : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueIS9_TnNS0_9enable_ifIXsrNS0_7is_sameIT_S9_EEE5valueEiE4typeELi0EEERKNS0_4pairIKS8_mEERSC_, inline_hint=yes] {
+function @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value(%value : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueIS9_TnNS0_9enable_ifIXsrNS0_7is_sameIT_S9_EEE5valueEiE4typeELi0EEERKNS0_4pairIKS8_mEERSD_, inline_hint=yes] {
   slot $value : ptr
 
   block ^entry:
@@ -93,7 +93,7 @@ function @lib__v1__node_value_lib__v1____cppgm_class_template_identity_5_2_0__un
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value__ov2(%value : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueINS0_4pairIKS8_mEETnNS0_9enable_ifIXsrNS0_7is_sameIT_SD_EEE5valueEiE4typeELi0EEERKSD_RSF_, inline_hint=yes] {
+function @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value__ov2(%value : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueINS0_4pairIKS8_mEETnNS0_9enable_ifIXsrNS0_7is_sameIT_SE_EEE5valueEiE4typeELi0EEERKSE_RSG_, inline_hint=yes] {
   slot $value : ptr
 
   block ^entry:

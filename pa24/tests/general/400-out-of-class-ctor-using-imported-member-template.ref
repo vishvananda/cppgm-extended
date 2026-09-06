@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Table_int___Table_int___ov3(%t1, %t2, %t3, %t4)
     return i32 0
 }
-function @Table_int___Table_int___ov3(%this : ptr [object_bytes=1], %first : ptr, %last : ptr, %hint : i64) -> void [binding=weak, object=_ZN5TableIiEC1IPiEET_S2_m] {
+function @Table_int___Table_int___ov3(%this : ptr [object_bytes=1], %first : ptr, %last : ptr, %hint : i64) -> void [binding=weak, object=_ZN5TableIiEC1IPiEET_S3_m] {
   slot $this : ptr
   slot $first : ptr
   slot $last : ptr
@@ -30,7 +30,7 @@ function @Table_int___Table_int___ov3(%this : ptr [object_bytes=1], %first : ptr
     call void @InsertBase_int___insert__ov3(%t3, %t4, %t5)
     return void
 }
-function @InsertBase_int___insert__ov3(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> void [binding=weak, object=_ZN10InsertBaseIiE6insertIPiEEvT_S2_, inline_hint=yes] {
+function @InsertBase_int___insert__ov3(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> void [binding=weak, object=_ZN10InsertBaseIiE6insertIPiEEvT_S3_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -41,4 +41,4 @@ function @InsertBase_int___insert__ov3(%this : ptr [object_bytes=1], %__param1 :
     store ptr %__param2, $__param2
     return void
 }
-alias object _ZN5TableIiEC2IPiEET_S2_m = @Table_int___Table_int___ov3
+alias object _ZN5TableIiEC2IPiEET_S3_m = @Table_int___Table_int___ov3

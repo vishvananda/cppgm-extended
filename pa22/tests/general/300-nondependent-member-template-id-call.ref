@@ -13,7 +13,7 @@ function @run() -> i32 [binding=weak, object=_Z3runIiEiv] {
     %t3 = call i32 @Holder_int___get(%t2, 4)
     return i32 %t3
 }
-function @Holder_int___get(%this : ptr [object_bytes=1], %value : i32) -> i32 [binding=weak, object=_ZN6HolderIiE3getIiEET_S1_, inline_hint=yes] {
+function @Holder_int___get(%this : ptr [object_bytes=1], %value : i32) -> i32 [binding=weak, object=_ZN6HolderIiE3getIiEET_S2_, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 

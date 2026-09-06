@@ -40,7 +40,7 @@ function @box_pointer_to_int___run(%this : ptr [object_bytes=1], %first : ptr, %
     %t4 = call i32 @box_pointer_to_int___pick(%t1, %t2, %t3)
     return i32 %t4
 }
-function @box_pointer_to_int___pick(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> i32 [binding=weak, object=_ZN3boxIPiE4pickIS0_TnN9enable_ifIXsr6is_ptrIT_EE5valueEiE4typeELi0EEEiS3_S3_] {
+function @box_pointer_to_int___pick(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> i32 [binding=weak, object=_ZN3boxIPiE4pickIS0_TnN9enable_ifIXsr6is_ptrIT_EE5valueEiE4typeELi0EEEiS4_S4_] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

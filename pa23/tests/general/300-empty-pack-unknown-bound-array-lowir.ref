@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @walker__walk($argobj__1)
     return i32 0
 }
-function @walker__walk(%__param0 : obj<1x1>) -> void [binding=weak, object=_ZN6walker4walkE16integer_sequenceImJLm0EEE, inline_hint=yes] {
+function @walker__walk(%__param0 : obj<1x1>) -> void [binding=weak, object=_ZN6walker4walkIJEEEv16integer_sequenceImJLm0EEE, inline_hint=yes] {
   slot $__param0 : obj<1x1>
   slot $a : obj<1x4>
 

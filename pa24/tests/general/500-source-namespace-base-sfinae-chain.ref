@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @outer__token_iterator_base_int__char__pointer_to_const_char__int___apply_modifier(%t3, %t4)
     return i32 0
 }
-function @outer__token_iterator_base_int__char__pointer_to_const_char__int___apply_modifier(%this : ptr [object_bytes=8], %m : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN5outer19token_iterator_baseIicPKciE14apply_modifierIN5boost3nfp23named_parameter_combineINS5_15named_parameterIKiNS_12_GLOBAL__N_13maxERS8_EENS6_INS7_IS2_NS9_4keptES2_EENS7_IS2_NS9_7droppedES2_EEEEEEEEvRKT_, inline_hint=yes] {
+function @outer__token_iterator_base_int__char__pointer_to_const_char__int___apply_modifier(%this : ptr [object_bytes=8], %m : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN5outer19token_iterator_baseIicPKciE14apply_modifierIN5boost3nfp23named_parameter_combineINS6_15named_parameterIKiNS_12_GLOBAL__N_13maxERS9_EENS7_INS8_IS2_NSA_4keptES2_EENS8_IS2_NSA_7droppedES2_EEEEEEEEvRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $m : ptr
   slot $argobj__1 : obj<1x1>

@@ -22,7 +22,7 @@ function @List_int___resize(%this : ptr [object_bytes=1]) -> void [binding=weak,
     %t6 = load ptr $p
     return void
 }
-function @Base_int___create(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> ptr [binding=weak, object=_ZN4BaseIiE6createEP4NodeS2_DpOT_, inline_hint=yes] {
+function @Base_int___create(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr) -> ptr [binding=weak, object=_ZN4BaseIiE6createIJEEEP4NodeS3_S3_DpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

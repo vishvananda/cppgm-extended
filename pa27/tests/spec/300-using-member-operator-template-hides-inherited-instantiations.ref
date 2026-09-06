@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = addr $result
     return i32 0
 }
-function @comma_base_first___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK10comma_baseI5firstEcmI6secondEE7combineIT_S0_ERKS4_, inline_hint=yes] {
+function @comma_base_first___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK10comma_baseI5firstEcmI6secondEE7combineIT_S0_ERKS5_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<1x1>
@@ -45,7 +45,7 @@ function @comma_base_first___operator_(%this : ptr [object_bytes=1], %np : ptr [
     call void @combine_second__first___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @comma_base___cppgm_class_template_identity_0_2_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<2x1> [binding=weak, object=_ZNK10comma_baseI7combineI6second5firstEEcmI5thirdEES0_IT_S3_ERKS6_, inline_hint=yes] {
+function @comma_base___cppgm_class_template_identity_0_2_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<2x1> [binding=weak, object=_ZNK10comma_baseI7combineI6second5firstEEcmI5thirdEES0_IT_S3_ERKS7_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<2x1>
@@ -59,7 +59,7 @@ function @comma_base___cppgm_class_template_identity_0_2_0___operator_(%this : p
     call void @combine_third____cppgm_class_template_identity_0_2_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%t1, %t2, %t3)
     return obj<2x1> $retobj__1
 }
-function @comma_base___cppgm_class_template_identity_0_3_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<3x1> [binding=weak, object=_ZNK10comma_baseI7combineI5thirdS0_I6second5firstEEEcmI6fourthEES0_IT_S5_ERKS8_, inline_hint=yes] {
+function @comma_base___cppgm_class_template_identity_0_3_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<3x1> [binding=weak, object=_ZNK10comma_baseI7combineI5thirdS0_I6second5firstEEEcmI6fourthEES0_IT_S5_ERKS9_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<3x1>

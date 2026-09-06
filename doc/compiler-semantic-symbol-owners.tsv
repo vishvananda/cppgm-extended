@@ -127,6 +127,7 @@ dev/src/semantic/constants/scalar_evaluator.cpp	AnalyzeConstexprInitializer	1	de
 dev/src/semantic/constants/scalar_evaluator.cpp	AnalyzeConstexprMemberInitializer	1	dev/src/semantic/constants/scalar_evaluator.cpp	keep
 dev/src/semantic/constants/scalar_evaluator.cpp	AnalyzeDefaultConstexprObjectInitializer	1	dev/src/semantic/constants/scalar_evaluator.cpp	keep
 dev/src/semantic/constants/scalar_evaluator.cpp	AnalyzeInClassStaticInitializer	1	dev/src/semantic/constants/scalar_evaluator.cpp	keep
+dev/src/semantic/constants/scalar_evaluator.cpp	TryAnalyzeInClassStaticInitializer	1	dev/src/semantic/constants/scalar_evaluator.cpp	keep
 dev/src/semantic/constants/scalar_evaluator.cpp	ApplyConstantScalarBinary	1	dev/src/semantic/constants/scalar_evaluator.cpp	keep
 dev/src/semantic/constants/scalar_evaluator.cpp	BindingObject	1	dev/src/semantic/constants/scalar_evaluator.cpp	keep
 dev/src/semantic/constants/scalar_evaluator.cpp	BindingScalar	1	dev/src/semantic/constants/scalar_evaluator.cpp	keep
@@ -203,6 +204,7 @@ dev/src/semantic/declarations/analysis.cpp	BuildClassDeclarationNamePath	1	dev/s
 dev/src/semantic/declarations/analysis.cpp	BuildDeclarator	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	BuildParameters	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	BuildSpecifiers	1	dev/src/semantic/declarations/analysis.cpp	keep
+dev/src/semantic/declarations/analysis.cpp	StructuredSpecifierType	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	BuildTypeId	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	CollectClassDirectBases	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	CompleteClassDefinition	1	dev/src/semantic/declarations/analysis.cpp	keep
@@ -274,6 +276,13 @@ dev/src/semantic/expressions/calls.cpp	CandidateSubstitutionFailure	1	dev/src/se
 dev/src/semantic/expressions/calls.cpp	CandidateTypeFormation	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	CollectCallArgumentSyntax	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	CollectFunctionCandidates	1	dev/src/semantic/expressions/calls.cpp	keep
+dev/src/semantic/expressions/calls.cpp	HidesSiblingSpecializationMember	1	dev/src/semantic/expressions/calls.cpp	keep
+dev/src/semantic/expressions/calls.cpp	CompareCandidateArgument	1	dev/src/semantic/expressions/calls.cpp	keep
+dev/src/semantic/expressions/calls.cpp	AmbiguousOverloadDetail	1	dev/src/semantic/expressions/calls.cpp	keep
+dev/src/semantic/expressions/calls.cpp	OwnerAndNamingTypes	1	dev/src/semantic/expressions/calls.cpp	keep
+dev/src/semantic/expressions/calls.cpp	MemberOwnerReachableFromContext	1	dev/src/semantic/expressions/calls.cpp	keep
+dev/src/semantic/expressions/calls.cpp	CandidateParameterType	1	dev/src/semantic/expressions/calls.cpp	keep
+dev/src/semantic/expressions/calls.cpp	CompareDerivedToBaseQualification	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	CompareImplicitObjectBindings	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	CompareReferenceBindings	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	EnsureBuiltinFunction	1	dev/src/semantic/expressions/calls.cpp	keep
@@ -357,6 +366,7 @@ dev/src/semantic/expressions/overload_resolution.cpp	BeginAssociatedLookup	1	dev
 dev/src/semantic/expressions/overload_resolution.cpp	BeginCandidateCollection	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	BuildConvertingArgument	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	BuiltinBinaryParameterTypes	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
+dev/src/semantic/expressions/overload_resolution.cpp	CompletePointeeClass	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	CallConversion	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	CompareCallConversions	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	CompleteArgumentDependentCallCandidates	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
@@ -373,6 +383,8 @@ dev/src/semantic/expressions/overload_resolution.cpp	TryAnalyzeCallOperator	1	de
 dev/src/semantic/expressions/overload_resolution.cpp	TryAnalyzeCallSurrogate	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	TryAnalyzeOverloadedOperator	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/extensions/abi_tags.cpp	ApplyClassAbiTagAttributes	1	dev/src/semantic/extensions/abi_tags.cpp	keep
+dev/src/semantic/extensions/abi_tags.cpp	CollectFunctionAbiTagNames	1	dev/src/semantic/extensions/abi_tags.cpp	keep
+dev/src/semantic/extensions/abi_tags.cpp	PublishFunctionAbiTags	1	dev/src/semantic/extensions/abi_tags.cpp	keep
 dev/src/semantic/extensions/abi_tags.cpp	ApplyFunctionAbiTagAttributes	1	dev/src/semantic/extensions/abi_tags.cpp	keep
 dev/src/semantic/extensions/compiler_builtins.cpp	AnalyzeBuiltinOffsetof	1	dev/src/semantic/extensions/compiler_builtins.cpp	keep
 dev/src/semantic/extensions/compiler_builtins.cpp	AnalyzePredefinedFunctionName	1	dev/src/semantic/extensions/compiler_builtins.cpp	keep

@@ -1259,6 +1259,22 @@ ExpressionInfo Analyzer::AnalyzeInClassStaticInitializer(
 		initializer, scope, type, false, true, true);
 }
 
+// A shape-only completion's stand-ins may not reach a constant; the caller
+// leaves the member without a value rather than failing the completion.
+bool Analyzer::TryAnalyzeInClassStaticInitializer(
+	NodeId initializer, ScopeId scope, TypeId type, ExpressionInfo* value)
+{
+	try
+	{
+		*value = AnalyzeInClassStaticInitializer(initializer, scope, type);
+		return true;
+	}
+	catch (const SemanticError&)
+	{
+		return false;
+	}
+}
+
 void Analyzer::InheritVariableRedeclarationFacts(BindingId binding)
 {
 	BindingRecord& declared = program_->bindings[binding];

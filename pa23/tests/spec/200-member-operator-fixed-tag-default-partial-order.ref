@@ -120,7 +120,7 @@ function @arg_list___cppgm_class_template_identity_2_5_0____cppgm_class_template
     copyobj 8x8 %t6, %t5
     return void
 }
-function @keyword_weight_tag___operator_(%this : ptr [object_bytes=1], %d : ptr [pass=by_address, object_bytes=2]) -> obj<8x8> [binding=weak, object=_ZNK7keywordI10weight_tagEorI11default_mapEE8default_IS0_T_ERS4_, inline_hint=yes] {
+function @keyword_weight_tag___operator_(%this : ptr [object_bytes=1], %d : ptr [pass=by_address, object_bytes=2]) -> obj<8x8> [binding=weak, object=_ZNK7keywordI10weight_tagEorI11default_mapEE8default_IS0_T_ERS5_, inline_hint=yes] {
   slot $this : ptr
   slot $d : ptr
   slot $retobj__1 : obj<8x8>

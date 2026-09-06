@@ -3,7 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @count_lambda_parameters()
     return i32 %t1
 }
-function @count_lambda_parameters() -> i32 [binding=strong, object=_Z23count_lambda_parametersv] {
+function @count_lambda_parameters() -> i32 [binding=weak, object=_Z23count_lambda_parametersIJEEiv] {
   slot $count : obj<1x1>
 
   block ^entry:
@@ -13,7 +13,7 @@ function @count_lambda_parameters() -> i32 [binding=strong, object=_Z23count_lam
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @__lambda_count_lambda_parameters_t16_21__operator__(%this : ptr [object_bytes=1]) -> i64 [binding=internal, object=_ZZ23count_lambda_parametersvENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
+function @__lambda_count_lambda_parameters_t16_21__operator__(%this : ptr [object_bytes=1]) -> i64 [binding=internal, object=_ZZ23count_lambda_parametersIJEEivENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

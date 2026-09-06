@@ -257,6 +257,30 @@ void Analyzer::ApplyClassAbiTagAttributes(
 	MergeAbiTags(program_, tags, &record.abi_tag_begin, &record.abi_tag_count);
 }
 
+void Analyzer::CollectFunctionAbiTagNames(NodeId declaration,
+	std::vector<NameId>* tags)
+{
+	CollectFunctionAbiTags(*arena_, program_, declaration, tags);
+}
+
+// A function template specialization takes the tags its pattern declared.
+void Analyzer::PublishFunctionAbiTags(BindingId binding,
+	const std::vector<NameId>& tags)
+{
+	if (binding == kNoBinding || binding >= program_->bindings.size())
+		ThrowInternalCompilerError("ABI-tagged specialization has no binding");
+	BindingRecord& record = program_->bindings[binding];
+	if (record.canonical == kNoBinding ||
+		record.canonical >= program_->bindings.size())
+		ThrowInternalCompilerError(
+			"ABI-tagged specialization has no canonical binding");
+	BindingRecord& canonical = program_->bindings[record.canonical];
+	MergeAbiTags(program_, tags,
+		&canonical.abi_tag_begin, &canonical.abi_tag_count);
+	record.abi_tag_begin = canonical.abi_tag_begin;
+	record.abi_tag_count = canonical.abi_tag_count;
+}
+
 void Analyzer::ApplyFunctionAbiTagAttributes(
 	NodeId declaration, BindingId binding)
 {

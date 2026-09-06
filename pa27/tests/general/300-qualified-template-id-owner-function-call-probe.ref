@@ -25,7 +25,7 @@ function @target__call(%this : ptr [object_bytes=1]) -> i32 [binding=weak, objec
     store ptr %this, $this
     return i32 1
 }
-function @other_action_member_pointer_action___apply(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by_address, object_bytes=16]) -> obj<1x1> [binding=weak, object=_ZN12other_actionI21member_pointer_actionE5applyI6resultP6targetKMS3_FivEEET_RT0_RT1_, inline_hint=yes] {
+function @other_action_member_pointer_action___apply(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by_address, object_bytes=16]) -> obj<1x1> [binding=weak, object=_ZN12other_actionI21member_pointer_actionE5applyI6resultP6targetKMS4_FivEEET_RT0_RT1_, inline_hint=yes] {
   slot $a : ptr
   slot $b : ptr
   slot $retobj__1 : obj<1x1>
@@ -39,7 +39,7 @@ function @other_action_member_pointer_action___apply(%a : ptr [pass=by_address, 
     %t4 = call obj<1x1> @action_helper_false__true___apply(%t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @action_helper_false__true___apply(%__param0 : ptr [pass=by_address, object_bytes=8], %__param1 : ptr [pass=by_address, object_bytes=16]) -> obj<1x1> [binding=weak, object=_ZN13action_helperILb0ELb1EE5applyI6resultP6targetKMS2_FivEEET_RT0_RT1_, inline_hint=yes] {
+function @action_helper_false__true___apply(%__param0 : ptr [pass=by_address, object_bytes=8], %__param1 : ptr [pass=by_address, object_bytes=16]) -> obj<1x1> [binding=weak, object=_ZN13action_helperILb0ELb1EE5applyI6resultP6targetKMS3_FivEEET_RT0_RT1_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $retobj__1 : obj<1x1>

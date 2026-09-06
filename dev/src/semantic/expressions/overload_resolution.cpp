@@ -1266,6 +1266,23 @@ ExpressionInfo Analyzer::ApplyExplicitConversion(
 		&object_conversion, 0);
 }
 
+// A derived-to-base pointer conversion needs the pointee's bases, so a class
+// template specialization the program has only named so far is completed
+// here; true when a definition was produced.
+bool Analyzer::CompletePointeeClass(TypeId type)
+{
+	if (type == kNoType) return false;
+	const TypeRecord& outer = program_->types.Get(
+		program_->types.RemoveTopCv(EffectiveType(type)));
+	if (outer.kind != TYPE_POINTER) return false;
+	const TypeId pointee = program_->types.RemoveTopCv(outer.child);
+	const EntityId entity = EntityOf(pointee);
+	if (entity == kNoEntity || program_->entities[entity].complete ||
+		!IsClassNamedFlavor(program_->entities[entity].flavor)) return false;
+	EnsureClassDefinition(pointee);
+	return program_->entities[entity].complete;
+}
+
 CallConversionFact Analyzer::CallConversion(
 	const ExpressionInfo& source, TypeId target,
 	CallConversionTable* cache, std::size_t source_ordinal)
@@ -1279,6 +1296,13 @@ CallConversionFact Analyzer::CallConversion(
 	{
 		EnsureClassDefinition(EffectiveType(source.type));
 		standard = Conversion(source, target);
+	}
+	if (standard == CONVERSION_INVALID)
+	{
+		const bool source_completed = CompletePointeeClass(source.type);
+		const bool target_completed = CompletePointeeClass(target);
+		if (source_completed || target_completed)
+			standard = Conversion(source, target);
 	}
 	if (standard != CONVERSION_INVALID)
 	{

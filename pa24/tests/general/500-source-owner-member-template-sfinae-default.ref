@@ -49,7 +49,7 @@ function @view_like__data(%this : ptr [object_bytes=1]) -> ptr [binding=weak, ob
     store ptr %this, $this
     return ptr 0
 }
-function @string_like_char___insert__ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : ptr, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertIPKcEEPcS2_T_S4_Pv, inline_hint=yes] {
+function @string_like_char___insert__ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : ptr, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertIPKcEEPcS3_T_S5_Pv, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

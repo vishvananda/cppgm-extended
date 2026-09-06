@@ -687,6 +687,7 @@ private:
 		NodeId specifiers);
 	NodeId ParseCompoundStatement();
 	NodeId ParseStatement();
+	bool StartsThisArgumentCast() const;
 	NodeId ParseExpression(int minimum_precedence = 1);
 	NodeId ParseUnaryExpression();
 	NodeId ParsePostfixExpression();
@@ -1392,6 +1393,7 @@ NodeId SyntaxParser::ParsePrimaryExpression()
 		const NodeId cast = arena_.Make("cast-expression", "OP_LPAREN:");
 		const bool type_like = At(KW_CONST) || At(KW_VOLATILE) ||
 			At(KW_STRUCT) || At(KW_CLASS) || At(KW_UNION) ||
+			At(KW_TYPENAME) ||
 			(position_ < tokens_.size() &&
 			 IsFundamentalKind(tokens_[position_].Kind())) ||
 			StartsHostedType(position_) || IsLikelyTypeIdentifier(position_) ||
@@ -1857,7 +1859,8 @@ NodeId SyntaxParser::ParseCompoundStatement()
 	{
 		if (AtEof()) throw Error("unterminated compound statement");
 		NodeId item = kNoNode;
-		const bool declaration_start = At(KW_TEMPLATE) || At(KW_USING) ||
+		const bool declaration_start = !StartsThisArgumentCast() &&
+			(At(KW_TEMPLATE) || At(KW_USING) ||
 			At(KW_NAMESPACE) ||
 			At(KW_TYPEDEF) || At(KW_TYPENAME) || At(KW_CLASS) || At(KW_STRUCT) || At(KW_UNION) ||
 			At(KW_ENUM) || At(KW_DECLTYPE) || At(KW_STATIC_ASSERT) || At(KW_EXTERN) ||
@@ -1867,7 +1870,7 @@ NodeId SyntaxParser::ParseCompoundStatement()
 			(IsLikelyTypeIdentifier(position_) && !AtOffset(1, OP_COLON2) &&
 			 !AtOffset(1, OP_LSQUARE) && !StartsQualifiedCallExpression()) ||
 			(((AtIdentifier() && AtOffset(1, OP_COLON2)) || At(OP_COLON2)) &&
-			 QualifiedStartsType() && !StartsQualifiedCallExpression());
+			 QualifiedStartsType() && !StartsQualifiedCallExpression()));
 		if (declaration_start)
 		{
 			const Mark declaration_mark = Checkpoint();
@@ -2038,7 +2041,8 @@ NodeId SyntaxParser::ParseStatement()
 		Expect(OP_SEMICOLON);
 		return statement;
 	}
-	const bool declaration_start = At(KW_USING) || At(KW_NAMESPACE) ||
+	const bool declaration_start = !StartsThisArgumentCast() &&
+		(At(KW_USING) || At(KW_NAMESPACE) ||
 		At(KW_TYPEDEF) || At(KW_TYPENAME) ||
 		At(KW_CLASS) || At(KW_STRUCT) || At(KW_UNION) || At(KW_ENUM) ||
 		At(KW_DECLTYPE) || At(KW_STATIC_ASSERT) || At(KW_EXTERN) ||
@@ -2048,7 +2052,7 @@ NodeId SyntaxParser::ParseStatement()
 		(IsLikelyTypeIdentifier(position_) && !AtOffset(1, OP_COLON2) &&
 		 !AtOffset(1, OP_LSQUARE) && !StartsQualifiedCallExpression()) ||
 		(((AtIdentifier() && AtOffset(1, OP_COLON2)) || At(OP_COLON2)) &&
-		 QualifiedStartsType() && !StartsQualifiedCallExpression());
+		 QualifiedStartsType() && !StartsQualifiedCallExpression()));
 	if (declaration_start)
 	{
 		const Mark declaration_mark = Checkpoint();
@@ -2063,6 +2067,14 @@ NodeId SyntaxParser::ParseStatement()
 	const NodeId statement = arena_.Make("expression-statement");
 	arena_.Add(statement, expression);
 	return statement;
+}
+// "type(*this, ...)" and "type(this, ...)" build a temporary: no declarator
+// begins with the this keyword, so the statement is an expression.
+bool SyntaxParser::StartsThisArgumentCast() const
+{
+	if (!AtOffset(1, OP_LPAREN)) return false;
+	return AtOffset(2, KW_THIS) ||
+		(AtOffset(2, OP_STAR) && AtOffset(3, KW_THIS));
 }
 NodeId SyntaxParser::ParseNamespace()
 {

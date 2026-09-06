@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @box_int___pick__ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : obj<1x1>) -> i32 [binding=weak, object=_ZN3boxIiE4pickIPcEEiT_S2_11forward_tag] {
+function @box_int___pick__ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : obj<1x1>) -> i32 [binding=weak, object=_ZN3boxIiE4pickIPcEEiT_S3_11forward_tag] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

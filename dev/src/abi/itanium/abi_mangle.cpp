@@ -29,6 +29,9 @@ using detail::number;
 using detail::source_name;
 using detail::SUBSTITUTION_EXPLICIT;
 using detail::SUBSTITUTION_FUNCTION_TEMPLATE_PREFIX;
+// Keys above this base name a member template prefix by its output position,
+// apart from the path ids namespace-scope template prefixes use.
+const size_t kMemberTemplatePrefixKeyBase = size_t(1) << 40;
 using detail::SUBSTITUTION_LOCAL_LAMBDA;
 using detail::SUBSTITUTION_LOCAL_LAMBDA_ORDINAL;
 using detail::SUBSTITUTION_MEMBER_TEMPLATE_PREFIX;
@@ -2277,6 +2280,12 @@ private:
         SUBSTITUTION_PATH, final->resolved_name_path()});
     } else if(final && !final->substitution.empty()) {
       substitutions_.add(explicit_or_path_key(final->substitution, final->name));
+    } else {
+      // A member template's <template-prefix> (the class prefix plus the
+      // template name) is a substitution candidate even though nothing in the
+      // same encoding can refer back to it; it still takes a number.
+      substitutions_.add(SubstitutionKey{
+        SUBSTITUTION_FUNCTION_TEMPLATE_PREFIX, kMemberTemplatePrefixKeyBase + output_.size()});
     }
     output_ += 'I'; encode_arguments(arguments); output_ += 'E';
   }

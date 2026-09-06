@@ -260,6 +260,22 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 {
 	if (class_polymorphism_.size() <= entity)
 		class_polymorphism_.resize(static_cast<std::size_t>(entity) + 1);
+	if (class_polymorphism_[entity].complete) return;
+	// A complete base whose facts were never asked for (a lambda closure
+	// libc++ makes an empty base of its compressed pair) gets them first;
+	// only a base still being defined is an error below.  This runs before
+	// the facts reference is taken: the recursion may grow the table.
+	for (std::size_t ordinal = 0;
+		ordinal < program_->entities[entity].direct_base_count; ++ordinal)
+	{
+		const EntityId base = program_->DirectBase(entity, ordinal).entity;
+		if ((base >= class_polymorphism_.size() ||
+			 !class_polymorphism_[base].complete) &&
+			program_->entities[base].complete)
+			CompleteClassPolymorphism(base);
+	}
+	if (class_polymorphism_.size() <= entity)
+		class_polymorphism_.resize(static_cast<std::size_t>(entity) + 1);
 	ClassPolymorphismFacts& facts = class_polymorphism_[entity];
 	if (facts.complete) return;
 	BeginPolymorphicVirtualViewIndex(facts);
@@ -270,7 +286,10 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 		const DirectBaseEdge& edge = program_->DirectBase(entity, ordinal);
 		if (edge.entity >= class_polymorphism_.size() ||
 			!class_polymorphism_[edge.entity].complete)
-			ThrowInternalCompilerError("base polymorphism facts are incomplete");
+			ThrowInternalCompilerError(
+				"base polymorphism facts are incomplete: " +
+				program_->names.Get(owner.identity_name) + " derives from " +
+				program_->names.Get(program_->entities[edge.entity].identity_name));
 		if (!edge.virtual_base && primary == owner.direct_base_count &&
 			(!class_polymorphism_[edge.entity].slots.empty() ||
 			 !class_polymorphism_[edge.entity].views.empty()))

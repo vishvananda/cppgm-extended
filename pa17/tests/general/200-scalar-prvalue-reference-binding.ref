@@ -1,0 +1,208 @@
+global @counter : i32 [binding=strong, object=_Z7counter] = 40
+global @global_bound : ptr [binding=strong, object=_Z12global_bound] = zero
+
+function @next() -> i32 [binding=strong, object=_Z4nextv] {
+  block ^entry:
+    %t1 = load i32 @counter
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @counter
+    return i32 %t2
+}
+function @make(%value : i32) -> obj<4x4> [binding=strong, object=_Z4makei] {
+  slot $value : i32
+  slot $result : obj<4x4>
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store i32 %value, $value
+    %t1 = addr $result
+    %t2 = load i32 $value
+    %t3 = addr $result
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 %t2, %t4
+    %t5 = addr $retobj__1
+    %t6 = addr $result
+    copyobj 4x4 %t6, %t5
+    return obj<4x4> $retobj__1
+}
+function @literal() -> i32 [binding=strong, object=_Z7literalv] {
+  slot $bound : ptr
+  slot $tmpref__1 : i32
+
+  block ^entry:
+    store i32 5, $tmpref__1
+    %t1 = addr $tmpref__1
+    store ptr %t1, $bound
+    %t2 = load ptr $bound
+    %t3 = load i32 %t2
+    return i32 %t3
+}
+function @call() -> i32 [binding=strong, object=_Z4callv] {
+  slot $bound : ptr
+  slot $tmpref__1 : i32
+
+  block ^entry:
+    %t1 = call i32 @next()
+    store i32 %t1, $tmpref__1
+    %t2 = addr $tmpref__1
+    store ptr %t2, $bound
+    %t3 = load ptr $bound
+    %t4 = load i32 %t3
+    %t5 = call i32 @next()
+    %t6 = binary add i32 %t4, %t5
+    %t7 = binary sub i32 %t6, 42
+    return i32 %t7
+}
+function @converting() -> i64 [binding=strong, object=_Z10convertingv] {
+  slot $bound : ptr
+  slot $tmpref__1 : i64
+
+  block ^entry:
+    %t1 = call i32 @next()
+    %t2 = convert sext i64 i32 %t1
+    store i64 %t2, $tmpref__1
+    %t3 = addr $tmpref__1
+    store ptr %t3, $bound
+    %t4 = load ptr $bound
+    %t5 = load i64 %t4
+    return i64 %t5
+}
+function @arithmetic() -> i32 [binding=strong, object=_Z10arithmeticv] {
+  slot $bound : ptr
+  slot $tmpref__1 : i32
+
+  block ^entry:
+    %t1 = call i32 @next()
+    %t2 = binary add i32 1, %t1
+    store i32 %t2, $tmpref__1
+    %t3 = addr $tmpref__1
+    store ptr %t3, $bound
+    %t4 = load ptr $bound
+    %t5 = load i32 %t4
+    return i32 %t5
+}
+function @conditional(%select : i32) -> i32 [binding=strong, object=_Z11conditionali] {
+  slot $select : i32
+  slot $bound : ptr
+  slot $tmpref__1 : i32
+  slot $tmpobj__2 : obj<4x4>
+
+  block ^entry:
+    store i32 %select, $select
+    %t1 = load i32 $select
+    branch %t1, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    %t2 = addr $tmpobj__2
+    %t3 = call obj<4x4> @make(7)
+    copyobj 4x4 %t3, %t2
+    %t4 = index i8 [projection=field] %t2, 0
+    %t5 = load i32 %t4
+    store i32 %t5, $tmpref__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 0, $tmpref__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t6 = load i32 $tmpref__1
+    store i32 %t6, $tmpref__1
+    %t7 = addr $tmpref__1
+    store ptr %t7, $bound
+    %t8 = load ptr $bound
+    %t9 = load i32 %t8
+    return i32 %t9
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = call i32 @literal()
+    %t2 = cmp ne i32 %t1, 5
+    branch %t2, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t3 = call i32 @call()
+    %t4 = cmp ne i32 %t3, 0
+    branch %t4, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    return i32 2
+
+  block ^if_else_5:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t5 = call i64 @converting()
+    %t6 = cmp ne i64 %t5, 43
+    branch %t6, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 3
+
+  block ^if_else_8:
+    jump ^if_end_9
+
+  block ^if_end_9:
+    %t7 = call i32 @arithmetic()
+    %t8 = cmp ne i32 %t7, 45
+    branch %t8, ^if_then_10, ^if_else_11
+
+  block ^if_then_10:
+    return i32 4
+
+  block ^if_else_11:
+    jump ^if_end_12
+
+  block ^if_end_12:
+    %t9 = call i32 @conditional(1)
+    %t10 = cmp ne i32 %t9, 7
+    branch %t10, ^if_then_13, ^if_else_14
+
+  block ^if_then_13:
+    return i32 5
+
+  block ^if_else_14:
+    jump ^if_end_15
+
+  block ^if_end_15:
+    %t11 = call i32 @conditional(0)
+    %t12 = cmp ne i32 %t11, 0
+    branch %t12, ^if_then_16, ^if_else_17
+
+  block ^if_then_16:
+    return i32 6
+
+  block ^if_else_17:
+    jump ^if_end_18
+
+  block ^if_end_18:
+    %t13 = load ptr @global_bound
+    %t14 = load i32 %t13
+    %t15 = cmp ne i32 %t14, 41
+    branch %t15, ^if_then_19, ^if_else_20
+
+  block ^if_then_19:
+    return i32 7
+
+  block ^if_else_20:
+    jump ^if_end_21
+
+  block ^if_end_21:
+    return i32 0
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  slot $tmpref__1 : i32
+
+  block ^entry:
+    %t1 = call i32 @next()
+    store i32 %t1, $tmpref__1
+    %t2 = addr $tmpref__1
+    store ptr %t2, @global_bound
+    return void
+}

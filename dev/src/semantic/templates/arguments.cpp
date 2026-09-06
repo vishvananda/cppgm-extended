@@ -1621,7 +1621,19 @@ bool Analyzer::AppendTemplateArgument(
 			{
 				const LookupResult known_type =
 					LookupSyntaxName(name, source_scope, LOOKUP_TYPE);
-				if (known_type.type != kNoType) return false;
+				if (known_type.type != kNoType)
+				{
+					// A value declared in a nearer scope hides the type: libc++'s
+					// numeric_limits passes its own `is_signed` and `digits`
+					// members while std::is_signed is a class template.
+					const LookupResult value = LookupSyntaxName(
+						name, source_scope, LOOKUP_ORDINARY);
+					const bool value_hides_type = value.ordinary != kNoBinding &&
+						(program_->bindings[value.ordinary].kind == BIND_VARIABLE ||
+						 program_->bindings[value.ordinary].kind == BIND_ENUMERATOR ||
+						 program_->bindings[value.ordinary].kind == BIND_PARAMETER);
+					if (!value_hides_type) return false;
+				}
 			}
 			if (name != kNoNode && arena_->IsTag(name, ::cppgm::syntax::STAG_TYPE_NAME) &&
 				call_clause != kNoNode &&

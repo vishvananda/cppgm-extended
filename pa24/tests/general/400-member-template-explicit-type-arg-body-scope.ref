@@ -10,7 +10,7 @@ function @g(%x : i64) -> i64 [binding=strong, object=_Z1gm] {
     %t3 = load i64 %t2
     return i64 %t3
 }
-function @X_int___f(%u1 : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN1XIiE1fImEEOT_RS1_, inline_hint=yes] {
+function @X_int___f(%u1 : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN1XIiE1fImEEOT_RS2_, inline_hint=yes] {
   slot $u1 : ptr
 
   block ^entry:

@@ -46,7 +46,7 @@ function @rule__rule(%this : ptr [object_bytes=4]) -> void [binding=weak, object
     store i32 0, %t2
     return void
 }
-function @parser_base_rule___operator__(%this : ptr [object_bytes=1], %action : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK11parser_baseI4ruleEixI6actionEE13parser_actionIS0_T_ERKS4_, inline_hint=yes] {
+function @parser_base_rule___operator__(%this : ptr [object_bytes=1], %action : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK11parser_baseI4ruleEixI6actionEE13parser_actionIS0_T_ERKS5_, inline_hint=yes] {
   slot $this : ptr
   slot $action : ptr
   slot $retobj__1 : obj<4x4>

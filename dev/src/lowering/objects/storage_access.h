@@ -303,7 +303,9 @@ protected:
 		}
 		ThrowLoweringSource("expression kind " +
 			std::to_string(static_cast<unsigned>(record.kind)) +
-			" does not designate scalar storage");
+			" does not designate scalar storage in function @" +
+			derived.output_.strings.get(derived.output_.symbols[
+				derived.function_->symbol].name));
 	}
 };
 

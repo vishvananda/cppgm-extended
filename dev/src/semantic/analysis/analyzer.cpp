@@ -926,32 +926,11 @@ BindingId Analyzer::SelectOverload(ScopeId scope,
 		bool strictly_better = false;
 		for (std::size_t a = 0; a < arity; ++a)
 		{
-			const ConversionRank left_rank = ranks[left * arity + a];
-			const ConversionRank right_rank = ranks[right * arity + a];
-			const std::size_t left_distance =
-				base_distances[left * arity + a];
-			const std::size_t right_distance =
-				base_distances[right * arity + a];
-			if (left_rank > right_rank ||
-				(left_rank == right_rank &&
-				 left_rank == CONVERSION_DERIVED_TO_BASE &&
-				 left_distance > right_distance))
-				no_worse = false;
-			if (left_rank < right_rank ||
-				(left_rank == right_rank &&
-				 left_rank == CONVERSION_DERIVED_TO_BASE &&
-				 left_distance < right_distance))
-				strictly_better = true;
-			if (left_rank == right_rank &&
-				a >= (object ? 1u : 0u))
-			{
-				const std::size_t argument = a - (object ? 1u : 0u);
-				const int preference = CompareCallConversions(
-					conversions[left * explicit_arity + argument],
-					conversions[right * explicit_arity + argument]);
-				if (preference < 0) no_worse = false;
-				if (preference > 0) strictly_better = true;
-			}
+			const int preference = CompareCandidateArgument(ranks,
+				base_distances, conversions, candidates, left, right, a,
+				arity, explicit_arity, object);
+			if (preference < 0) no_worse = false;
+			if (preference > 0) strictly_better = true;
 		}
 		if (!no_worse) return false;
 		if (strictly_better) return true;
@@ -1024,7 +1003,8 @@ BindingId Analyzer::SelectOverload(ScopeId scope,
 		{
 			if (other == champion || !viable[other]) continue;
 			if (!better(champion, other))
-				return CandidateOverloadFailure("ambiguous overload");
+				return CandidateOverloadFailure(
+					AmbiguousOverloadDetail(candidates).c_str());
 		}
 	if (object_conversion && object)
 	{
@@ -1090,6 +1070,7 @@ ExpressionInfo Analyzer::BuildResolvedCall(BindingId selected,
 			 std::string("<no object>")) + " in " +
 			(current_function_context_ == kNoBinding ? std::string("<namespace>") :
 			 program_->names.Get(program_->bindings[current_function_context_].name)) +
+			OwnerAndNamingTypes(selected, access_naming_class) +
 			" [member-owner=" + std::to_string(
 				program_->bindings[selected].member_owner) +
 			" access-owner=" + std::to_string(

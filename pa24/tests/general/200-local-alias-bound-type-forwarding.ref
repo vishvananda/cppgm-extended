@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = binary sub i32 %t7, 7
     return i32 %t8
 }
-function @Outer_pointer_to_int___mv(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN5OuterIPiE2mvIRPS0_EEON10remove_refIT_E4typeEOS5_, inline_hint=yes] {
+function @Outer_pointer_to_int___mv(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN5OuterIPiE2mvIRPS0_EEON10remove_refIT_E4typeEOS6_, inline_hint=yes] {
   slot $t : ptr
 
   block ^entry:

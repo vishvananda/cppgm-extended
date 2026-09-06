@@ -327,7 +327,13 @@ protected:
 			(opener + 2 >= parser.tokens_.size() ||
 			 parser.tokens_[opener + 2].Kind() !=
 				static_cast<std::uint16_t>(OP_LPAREN));
+		// "name<>" is a template-id however the name was classified: no
+		// expression reads "<" followed by ">".  A same-named non-template
+		// member of another class must not hide a member template.
+		const bool empty_argument_list =
+			first_argument_kind == static_cast<std::uint16_t>(OP_GT);
 		const bool unambiguous_type_argument = fundamental_type_argument ||
+			empty_argument_list ||
 			first_argument_kind == static_cast<std::uint16_t>(KW_TYPENAME) ||
 			first_argument_kind == static_cast<std::uint16_t>(KW_DECLTYPE) ||
 			first_argument_kind == static_cast<std::uint16_t>(KW_CLASS) ||

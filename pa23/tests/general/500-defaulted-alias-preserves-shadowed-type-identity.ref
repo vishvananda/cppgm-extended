@@ -25,7 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__2
     return i32 %t7
 }
-function @wrapper_void___wrapper_void___ov3(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7wrapperIvEC1I1RS1_TnN9enable_ifIXsr7acceptsIT0_vEE5valueEiE4typeELi0EEEOT_, inline_hint=yes] {
+function @wrapper_void___wrapper_void___ov3(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7wrapperIvEC1I1RS2_TnN9enable_ifIXsr7acceptsIT0_vEE5valueEiE4typeELi0EEEOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -37,4 +37,4 @@ function @wrapper_void___wrapper_void___ov3(%this : ptr [object_bytes=4], %__par
     store i32 7, %t2
     return void
 }
-alias object _ZN7wrapperIvEC2I1RS1_TnN9enable_ifIXsr7acceptsIT0_vEE5valueEiE4typeELi0EEEOT_ = @wrapper_void___wrapper_void___ov3
+alias object _ZN7wrapperIvEC2I1RS2_TnN9enable_ifIXsr7acceptsIT0_vEE5valueEiE4typeELi0EEEOT_ = @wrapper_void___wrapper_void___ov3

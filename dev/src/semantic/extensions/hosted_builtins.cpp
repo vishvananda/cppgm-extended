@@ -208,7 +208,9 @@ TypeId Analyzer::BuildBuiltinTransformType(NodeId node, ScopeId scope)
 		if (shape.kind == TYPE_NAMED &&
 			IsEnumEntity(program_->entities[shape.entity]))
 			return program_->entities[shape.entity].underlying;
-		if (FunctionTemplateTypeIsDependent(type)) return type;
+		// A shape-only completion transforms stand-ins: keep them.
+		if (FunctionTemplateTypeIsDependent(type) ||
+			dependent_shape_completion_depth_ != 0) return type;
 		ThrowSemanticError("underlying type operand is not an enum");
 	}
 	if (transform == TYPE_TRANSFORM_MAKE_SIGNED ||
@@ -225,7 +227,8 @@ TypeId Analyzer::BuildBuiltinTransformType(NodeId node, ScopeId scope)
 		}
 		if (shape.kind != TYPE_FUNDAMENTAL)
 		{
-			if (FunctionTemplateTypeIsDependent(type)) return type;
+			if (FunctionTemplateTypeIsDependent(type) ||
+				dependent_shape_completion_depth_ != 0) return type;
 			ThrowSemanticError("invalid signedness transform operand");
 		}
 		base = types->Fundamental(SignednessKind(shape.fundamental,
