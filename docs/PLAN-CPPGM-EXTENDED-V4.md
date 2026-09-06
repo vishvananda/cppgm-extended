@@ -1,8 +1,10 @@
 # Plan: make this implementation the reference in cppgm-extended (v4)
 
-Status: proposed 2026-09-06.  Written in this tree; it moves to
-`~/cppgm-extended/docs/` with the `v4` branch and becomes that repository's
-active plan, with the trackers described below beside it.
+Status: in progress on branch `v4` (2026-09-06).  Phases 0 to 6 have landed;
+Phase 7 is under way (export script and CI updated, the local export run and
+the CI drive remain); Phase 8 is deferred.  The trackers are in `docs/v4/`
+(`README.md` indexes them): `ref-deltas.md` (Phase 3), `moves.md` (Phases 4
+and 5 and the selfhost fixes), `readme-review.md` (Phase 6).
 
 ## Where the two trees stand
 

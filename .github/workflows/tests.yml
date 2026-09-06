@@ -42,6 +42,29 @@ jobs:
       - name: Check exported dev Makefile relink stability
         run: python3 scripts/tests/test_exported_dev_makefile.py
 
+  audits:
+    name: source audits
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Run the architecture audits
+        run: |
+          make audit-lowir-contract audit-compiler-layout \
+            audit-compiler-rename-manifest audit-compiler-exceptions \
+            audit-frontend-source-sets audit-semantic-owners \
+            audit-builtin-registry-tables audit-lowering-owners \
+            audit-native-owners
+
+      - name: Run the file audit
+        run: perl scripts/cppgm_file_audit.pl --paths dev
+
+      - name: Run the harness unit tests
+        run: make test-harness
+
   build:
     name: build / ${{ matrix.name }}
     runs-on: ubuntu-24.04
