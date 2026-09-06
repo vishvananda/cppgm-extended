@@ -153,5 +153,12 @@ run_tests(\@tests, $jobs, sub {
 	my $test_out = $test;
 	$test_out =~ s/\.t$/\.$suffix/;
 	my $sys_ret = system("bash", "scripts/run_one_compile_test.sh", $app, $test, $test_out);
-	write_named_status_code("$test_out.exit_status", system_status_to_exit_code($sys_ret));
+	my $code = system_status_to_exit_code($sys_ret);
+	write_named_status_code("$test_out.exit_status", $code);
+	# A failed case's diagnostic text is not a portable reference: the export
+	# regenerates it (CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1) and the tree does
+	# not track it, as the shared harness does for the other lanes.
+	unlink("$test_out.stdout")
+		if $suffix eq 'ref' && $code != 0 &&
+		   ($ENV{CPPGM_KEEP_FAILED_REFERENCE_STDOUT} // '') !~ m/^(?:1|true|yes|on)$/i;
 });

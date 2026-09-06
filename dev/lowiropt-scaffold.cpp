@@ -1,7 +1,7 @@
 // Student-facing scaffold for the PA37 `lowiropt` binary.
 
-#include "exceptions.h"
-#include "tool_help_text.h"
+#include "support/not_implemented.h"
+#include "support/tool_help_text.h"
 
 #include <iostream>
 #include <stdexcept>

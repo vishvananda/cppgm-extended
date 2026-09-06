@@ -73,6 +73,12 @@ sub process_one_test
 			@inputs);
 	}
 	write_named_status_code("$test_out.exit_status", $status);
+	# A failed case's diagnostic text is not a portable reference: the export
+	# regenerates it (CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1), the tree does
+	# not track it, as run_all_tests_common.pl does for the other lanes.
+	unlink("$test_out.stdout")
+		if $suffix eq 'ref' && $status != 0 &&
+		   ($ENV{CPPGM_KEEP_FAILED_REFERENCE_STDOUT} // '') !~ m/^(?:1|true|yes|on)$/i;
 }
 
 sub run_preproc_tests

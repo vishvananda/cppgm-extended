@@ -9,9 +9,9 @@
 
 using namespace std;
 
-#include "IPPTokenStream.h"
-#include "DebugPPTokenStream.h"
-#include "exceptions.h"
+#include "preprocess/tokens/IPPTokenStream.h"
+#include "preprocess/tokens/DebugPPTokenStream.h"
+#include "support/not_implemented.h"
 
 // Translation features you need to implement:
 // - utf8 decoder

@@ -1,7 +1,7 @@
 // Student-facing scaffold for the PA13 `lowir2cy86` binary.
 
-#include "exceptions.h"
-#include "tool_help_text.h"
+#include "support/not_implemented.h"
+#include "support/tool_help_text.h"
 
 #include <fstream>
 #include <iostream>

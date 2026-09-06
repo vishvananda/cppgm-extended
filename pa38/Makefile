@@ -95,6 +95,17 @@ define run_native_bucket
 	fi
 endef
 
+# A behaviour bucket's references are the program's outcome only; the worker
+# leaves no machine IR dump to canonicalize (README: "Behavior tests omit
+# x.ref.mir and x.ref.cmir").
+define run_native_behavior_bucket_ref
+	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
+		CPPGM_NATIVE_BEHAVIOR_ONLY=1 CPPGM_APP_ARGS='$(2)' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref $(1); \
+	else \
+		if [ "$(REPORT_EMPTY_OPTIONAL_TEST_ROOTS)" = "1" ]; then echo "$(TARGET) $(1): no tests"; fi; \
+	fi
+endef
+
 define run_native_bucket_ref
 	@if [ -d "$(1)" ] && find "$(1)" -type f -name '*.t' | grep -q .; then \
 		CPPGM_APP_ARGS='$(2)' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref $(1) && \
@@ -182,9 +193,9 @@ else
 	$(call run_native_bucket_ref,$(O1_TEST_ROOT),-O1)
 	$(call run_native_bucket_ref,$(O2_TEST_ROOT),-O2)
 	$(call run_native_bucket_ref,$(O3_TEST_ROOT),-O3)
-	$(call run_native_bucket_ref,$(BEHAVIOR_O1_TEST_ROOT),-O1)
-	$(call run_native_bucket_ref,$(BEHAVIOR_O2_TEST_ROOT),-O2)
-	$(call run_native_bucket_ref,$(BEHAVIOR_O3_TEST_ROOT),-O3)
+	$(call run_native_behavior_bucket_ref,$(BEHAVIOR_O1_TEST_ROOT),-O1)
+	$(call run_native_behavior_bucket_ref,$(BEHAVIOR_O2_TEST_ROOT),-O2)
+	$(call run_native_behavior_bucket_ref,$(BEHAVIOR_O3_TEST_ROOT),-O3)
 	$(call run_native_bucket_ref,$(REGRESSION_O1_TEST_ROOT),-O1)
 	$(call run_native_bucket_ref,$(REGRESSION_O2_TEST_ROOT),-O2)
 	$(call run_native_bucket_ref,$(REGRESSION_O3_TEST_ROOT),-O3)

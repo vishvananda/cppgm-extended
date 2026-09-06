@@ -9,7 +9,7 @@
 
 using namespace std;
 
-#include "exceptions.h"
+#include "support/not_implemented.h"
 
 // For pragma once implementation:
 // system-wide unique file id type `PA5FileId`
