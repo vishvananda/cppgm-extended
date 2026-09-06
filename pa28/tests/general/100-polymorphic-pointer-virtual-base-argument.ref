@@ -60,18 +60,20 @@ global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D____construction__B__0__s0__vtable + 24
 }
 
-function @read(%b : ptr [pass=by_address, object_bytes=16], %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z4readR1B] {
+function @read(%b : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=strong, object=_Z4readR1B] {
   slot $b : ptr
-  slot $b__pvb0 : ptr
 
   block ^entry:
     store ptr %b, $b
-    store ptr %__pvbptr0, $b__pvb0
-    %t1 = load ptr $b__pvb0
-    %t2 = index i8 %t1, 0
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
-    return i32 %t4
+    %t1 = load ptr $b
+    %t2 = load ptr %t1
+    %t3 = index i8 %t2, -24
+    %t4 = load i64 %t3
+    %t5 = index i8 %t1, %t4
+    %t6 = index i8 %t5, 0
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = load i32 %t7
+    return i32 %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $d : obj<16x8>
@@ -92,14 +94,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = index i8 %t9, 0
     store ptr %t10, $p
     %t11 = load ptr $p
-    %t12 = load ptr %t11
-    %t13 = index i8 %t12, -24
-    %t14 = load i64 %t13
-    %t15 = index i8 %t11, %t14
-    %t16 = call i32 @read(%t11, %t15)
-    %t17 = cmp ne i32 %t16, 7
-    %t18 = convert trunc i32 i64 %t17
-    return i32 %t18
+    %t12 = call i32 @read(%t11)
+    %t13 = cmp ne i32 %t12, 7
+    %t14 = convert trunc i32 i64 %t13
+    return i32 %t14
 }
 function @B__anchor(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1B6anchorEv, inline_hint=yes] {
   slot $this : ptr

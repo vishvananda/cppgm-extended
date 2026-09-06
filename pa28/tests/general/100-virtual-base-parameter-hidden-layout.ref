@@ -1,12 +1,10 @@
-function @read_b(%b : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z6read_bR1B] {
+function @read_b(%b : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z6read_bR1B] {
   slot $b : ptr
-  slot $b__pvb0 : ptr
 
   block ^entry:
     store ptr %b, $b
-    store ptr %__pvbptr0, $b__pvb0
-    %t1 = load ptr $b__pvb0
-    %t2 = index i8 %t1, 0
+    %t1 = load ptr $b
+    %t2 = index i8 %t1, 4
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     return i32 %t4
@@ -23,13 +21,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 7, %t4
     %t5 = addr $d
     %t6 = index i8 %t5, 0
-    %t7 = load ptr %t6
-    %t8 = index i8 %t7, -24
-    %t9 = load i64 %t8
-    %t10 = index i8 %t6, %t9
-    %t11 = call i32 @read_b(%t6, %t10)
-    %t12 = binary sub i32 %t11, 7
-    return i32 %t12
+    %t7 = call i32 @read_b(%t6)
+    %t8 = binary sub i32 %t7, 7
+    return i32 %t8
 }
 function @D__D(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr

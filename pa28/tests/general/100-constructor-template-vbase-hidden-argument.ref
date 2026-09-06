@@ -23,11 +23,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 7, %t4
     %t5 = addr $argobj__2
     %t6 = addr $s
-    %t7 = index i8 %t6, 4
-    call void @Holder__Holder__ov3(%t5, %t6, %t7)
-    %t8 = call i32 @take($argobj__2)
-    %t9 = cmp eq i32 %t8, 7
-    branch %t9, ^cond_then_1, ^cond_else_2
+    call void @Holder__Holder__ov3(%t5, %t6)
+    %t7 = call i32 @take($argobj__2)
+    %t8 = cmp eq i32 %t7, 7
+    branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -38,8 +37,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
-    return i32 %t10
+    %t9 = load i32 $cond__1
+    return i32 %t9
 }
 function @Stream__Stream(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6StreamC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -51,17 +50,15 @@ function @Stream__Stream(%this : ptr [object_bytes=8]) -> void [binding=weak, ob
     call void @IOS__IOS__base_entry(%t2)
     return void
 }
-function @Holder__Holder__ov3(%this : ptr [object_bytes=4], %s : ptr [pass=by_address, object_bytes=8], %__pvbptr0 : ptr) -> void [binding=weak, object=_ZN6HolderC1I6StreamEERT_, inline_hint=yes] {
+function @Holder__Holder__ov3(%this : ptr [object_bytes=4], %s : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN6HolderC1I6StreamEERT_, inline_hint=yes] {
   slot $this : ptr
   slot $s : ptr
-  slot $s__pvb0 : ptr
 
   block ^entry:
     store ptr %this, $this
     store ptr %s, $s
-    store ptr %__pvbptr0, $s__pvb0
-    %t1 = load ptr $s__pvb0
-    %t2 = index i8 %t1, 0
+    %t1 = load ptr $s
+    %t2 = index i8 %t1, 4
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     %t5 = load ptr $this

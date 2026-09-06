@@ -55,13 +55,11 @@ global @derived____vtt [binding=weak, object=_ZTT7derived, object_root=yes] = {
   ptr addr @derived____view__root__8__vtable + 24
 }
 
-function @call_second(%value : ptr [pass=by_address, object_bytes=16], %__pvbptr0 : ptr) -> i32 [binding=strong, object=_Z11call_secondR7derived] {
+function @call_second(%value : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=strong, object=_Z11call_secondR7derived] {
   slot $value : ptr
-  slot $value__pvb0 : ptr
 
   block ^entry:
     store ptr %value, $value
-    store ptr %__pvbptr0, $value__pvb0
     %t1 = load ptr $value
     %t2 = load ptr %t1
     %t3 = index i8 %t2, 8
