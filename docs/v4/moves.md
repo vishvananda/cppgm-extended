@@ -385,19 +385,40 @@ Two items remain on the self-host lanes after that fix:
   reproducer confirms the ABI: `long get_width(basic_ostream& os){return
   os.width_;}` where `basic_ostream : virtual basic_ios : ios_base` lowers to
   `@get_width(%os, %__pvbptr0)` and reads `%__pvbptr0 + 8`; clang emits the
-  vtable vbase-offset load.  This companion-pointer ABI is self-consistent
-  for direct call chains (reference->pointer->reference round trips all run
-  correctly, since `__pvbptr` is threaded through each), so the failing case
-  is a boundary where the companion pointer cannot be threaded and is left
-  garbage -- a virtual dispatch, a stored/reloaded stream, or the sentry /
-  exception path inside `__put_character_sequence` -- not yet reduced to a
-  minimal crashing case.  Machinery: `dev/src/lowering/objects/virtual_bases.h`
+  vtable vbase-offset load.  Machinery: `dev/src/lowering/objects/virtual_bases.h`
   (the `__vbptr`/`__pvbptr` parameter synthesis, `CarriesVirtualBase`,
-  `VirtualBoundaryEntity`).  This is a core virtual-inheritance ABI defect
-  (same class as the gcc-cell KW_TRUE self-host miscompile); the real fix is
-  to read virtual-base offsets from the vtable when the most-derived type is
-  not statically known, a large, high-risk change needing a dedicated pass
-  and full byte-exact + audit validation.
+  `VirtualBoundaryEntity`, and the contract built in `CacheVirtualBaseBoundary`).
+
+  Two compounding defects were isolated, and this crash needs both fixed:
+
+  1. **Contract inconsistent across translation units.**  `CacheVirtualBaseBoundary`
+     narrows a function's carried virtual bases below the carry-all default by
+     scanning the body (which bases are forwarded/demanded).  That scan is not
+     TU-stable for a weak/inline function: `arena.o` calls
+     `__put_character_sequence` with three arguments (demand-reduced, no
+     `__pvbptr` in `rcx`) while the definition the linker keeps, from
+     `cppgm++-runner.o`, reads `rcx` as `__pvbptr`.  Restricting the reduction
+     to TU-local (static / unnamed-namespace) functions and keeping carry-all
+     for weak/external ones makes `arena.o` pass `rcx` and matches the
+     definition -- verified at the object level -- but it changes the LowIR
+     parameter lists of cross-TU virtual-base functions (reference churn) and
+     did NOT by itself stop the crash, so it was reverted pending (2).
+
+  2. **`__pvbptr` corrupts as a stack argument.**  With (1) applied the pointer
+     is threaded correctly down to `WriteTranslationUnit` (gdb: its `__pvbptr`
+     equals the vtable-computed ios subobject exactly).  `RunTranslationUnit`
+     and `SyntaxArena::Write` have more than six parameters, so their appended
+     `__pvbptr` lands in a stack argument slot; by `__put_character_sequence`
+     it has become a code address (a return address, `Stats::Stats`), and the
+     backtrace is stack-smashed.  The companion pointer's stack-argument
+     placement/offset for many-parameter functions is wrong.
+
+  Both live in the `__pvbptr` companion-pointer scheme, a cppgm++ invention in
+  place of the Itanium vtable vbase-offset.  Same class as the gcc-cell
+  KW_TRUE self-host miscompile.  The robust fix is to read virtual-base offsets
+  from the vtable when the most-derived type is not statically known and retire
+  the companion pointer; that is a large, high-risk change needing a dedicated
+  pass and full byte-exact + audit validation.
 
 - **A flaky build/test race in the self-host chain.**  `make -C pa39
   test-pa6 CXX=../dev/cppgm++` under `-j` intermittently reports the pa6
