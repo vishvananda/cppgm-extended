@@ -299,19 +299,19 @@ are unchanged.
 
 Two items remain on the self-host lanes after that fix:
 
-- **`__alloc` declaration-versus-expression ambiguity (clang cells).**
+- **`__alloc` declaration-versus-expression ambiguity (clang cells) — fixed.**
   libc++'s `basic_string::__assign_with_sentinel` writes
   `const basic_string __temp(__init_with_sentinel_tag(), std::move(__first),
-  std::move(__last), __alloc());`.  The parser commits to the declaration
-  reading, treating `std::move` and the member `__alloc` as parameter
-  type-names, then the analyzer reports `unknown type name: __alloc`.  It
-  reproduces with every host compiler
-  (`pa35 .../red/sentinel.cpp` in the scratch reduction).  A correct fix is
-  architectural: the qualified names and the member lack parse-time type
-  facts, so the declaration/expression choice needs semantic feedback
-  (tentative parse, re-parse as an expression when a "parameter type" turns
-  out not to name a type).  A narrow parse-time guard is not enough and a
-  broad one regressed ~350 tests.
+  std::move(__last), __alloc());`.  The multi-argument direct-initializer
+  disambiguation already reads `std::move(a)` as a call, but treated the
+  last argument `__alloc()` -- a `name()` with an empty parameter clause --
+  as a value-initialized temporary of type `__alloc`, reporting
+  `unknown type name: __alloc`.  A `name()` whose name is callable and not a
+  type is a nullary call, so the statement is an initialization; recognized
+  now in `AnalyzeAmbiguousMultiDirectInitializer` (both passes) via
+  `NamesCallableNonType`.  Fixture: `pa17/tests/general/200-local-class-
+  direct-init-nullary-member-call.t`.  This unblocked the clang and libc++
+  self-host lanes at `post_tokenizer.cpp`.
 
 - **A flaky build/test race in the self-host chain.**  `make -C pa39
   test-pa6 CXX=../dev/cppgm++` under `-j` intermittently reports the pa6
