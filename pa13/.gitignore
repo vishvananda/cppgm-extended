@@ -7,3 +7,6 @@ tests/spec/100-structured-global-data
 testout
 .test_failed
 *.dSYM
+
+# Behaviour references: the program output the reference produced.
+!tests/behavior/*.ref.program.stdout
