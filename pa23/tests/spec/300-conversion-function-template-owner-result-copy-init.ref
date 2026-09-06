@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 97
   i8 98
   i8 99
@@ -10,7 +10,6 @@ function @make_view() -> obj<1x1> [binding=strong, object=_Z9make_viewv] {
 
   block ^entry:
     %t1 = addr $retobj__1
-    call void @basic_string_view_char___basic_string_view(%t1)
     return obj<1x1> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -25,14 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $value
     return i32 0
 }
-function @basic_string_view_char___basic_string_view(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN17basic_string_viewIcEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this : ptr) -> obj<1x1> [binding=weak, object=_ZNK17basic_string_viewIcEcv12basic_stringIc11char_traitsT_EI9allocatorEEv] {
+function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK17basic_string_viewIcEcv12basic_stringIc11char_traits9allocatorEIS3_EEv] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 
@@ -43,10 +35,26 @@ function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this 
     %t3 = call ptr @basic_string_view_char___data(%t2)
     %t4 = load ptr $this
     %t5 = call i64 @basic_string_view_char___size(%t4)
-    call void @basic_string_char__char_traits__allocator___basic_string__ov2(%t1, %t3, %t5)
+    call void @basic_string_char__char_traits__allocator___basic_string_char__char_traits__allocator___ov2(%t1, %t3, %t5)
     return obj<1x1> $retobj__1
 }
-function @basic_string_char__char_traits__allocator___basic_string__ov2(%this : ptr, %__param1 : ptr, %__param2 : i64) -> void [binding=weak, object=_ZN12basic_stringIc11char_traits9allocatorEC1EPKcm] {
+function @basic_string_view_char___data(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK17basic_string_viewIcE4dataEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr @__strlit__1
+    return ptr %t1
+}
+function @basic_string_view_char___size(%this : ptr [object_bytes=1]) -> i64 [binding=weak, object=_ZNK17basic_string_viewIcE4sizeEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = convert sext i64 i32 3
+    return i64 %t1
+}
+function @basic_string_char__char_traits__allocator___basic_string_char__char_traits__allocator___ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : i64) -> void [binding=weak, object=_ZN12basic_stringIc11char_traits9allocatorEC1EPKcm, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : i64
@@ -57,21 +65,4 @@ function @basic_string_char__char_traits__allocator___basic_string__ov2(%this : 
     store i64 %__param2, $__param2
     return void
 }
-function @basic_string_view_char___data(%this : ptr) -> ptr [binding=weak, object=_ZNK17basic_string_viewIcE4dataEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = addr @__strlit__1
-    return ptr %t1
-}
-function @basic_string_view_char___size(%this : ptr) -> i64 [binding=weak, object=_ZNK17basic_string_viewIcE4sizeEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = convert sext i64 i32 3
-    return i64 %t1
-}
-alias object _ZN17basic_string_viewIcEC2Ev = @basic_string_view_char___basic_string_view
-alias object _ZN12basic_stringIc11char_traits9allocatorEC2EPKcm = @basic_string_char__char_traits__allocator___basic_string__ov2
+alias object _ZN12basic_stringIc11char_traits9allocatorEC2EPKcm = @basic_string_char__char_traits__allocator___basic_string_char__char_traits__allocator___ov2

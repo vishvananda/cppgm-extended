@@ -15,10 +15,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = index i8 [projection=field] %t5, 0
     store i32 2139062143, %t6
     %t7 = addr $dst
-    %t8 = index i8 [projection=base_subobject] %t7, 0
+    %t8 = index i8 %t7, 0
     store ptr %t8, $lhs
     %t9 = addr $src
-    %t10 = index i8 [projection=base_subobject] %t9, 0
+    %t10 = index i8 %t9, 0
     store ptr %t10, $rhs
     %t11 = load ptr $lhs
     %t12 = load ptr $rhs
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load i32 $cond__1
     return i32 %t18
 }
-function @EmptyDerived__operator_(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN12EmptyDerivedaSERKS_] {
+function @EmptyDerived__operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [unwind=no, binding=weak, object=_ZN12EmptyDerivedaSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

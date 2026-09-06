@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load i32 $cond__1
     return i32 %t18
 }
-function @Outer_int___Ref__Ref(%this : ptr, %input : ptr [pass=reference]) -> void [binding=weak, object=_ZN5OuterIiE3RefC1ERi] {
+function @Outer_int___Ref__Ref(%this : ptr [object_bytes=8], %input : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5OuterIiE3RefC1ERi, inline_hint=yes] {
   slot $this : ptr
   slot $input : ptr
 
@@ -66,7 +66,7 @@ function @Outer_int___Ref__Ref(%this : ptr, %input : ptr [pass=reference]) -> vo
     store ptr %t1, %t3
     return void
 }
-function @Iter_int___operator__(%this : ptr) -> ptr [binding=weak, object=_ZN4IterIiEppEv] {
+function @Iter_int___operator__(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN4IterIiEppEv] {
   slot $this : ptr
 
   block ^entry:
@@ -79,7 +79,7 @@ function @Iter_int___operator__(%this : ptr) -> ptr [binding=weak, object=_ZN4It
     %t5 = load ptr $this
     return ptr %t5
 }
-function @Outer_int___Ref__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK5OuterIiE3RefcvbEv] {
+function @Outer_int___Ref__operatorbool(%this : ptr [object_bytes=8]) -> u8 [binding=weak, object=_ZNK5OuterIiE3RefcvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

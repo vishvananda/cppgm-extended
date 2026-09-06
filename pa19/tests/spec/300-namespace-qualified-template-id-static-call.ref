@@ -17,7 +17,7 @@ function @call_pointer_to(%p : ptr) -> i32 [binding=weak, object=_Z15call_pointe
     %t2 = call i32 @api__traits_int___pointer_to(%t1)
     return i32 %t2
 }
-function @api__traits_int___pointer_to(%p : ptr) -> i32 [binding=weak, object=_ZN3api6traitsIiE10pointer_toEPi] {
+function @api__traits_int___pointer_to(%p : ptr) -> i32 [binding=weak, object=_ZN3api6traitsIiE10pointer_toEPi, inline_hint=yes] {
   slot $p : ptr
 
   block ^entry:

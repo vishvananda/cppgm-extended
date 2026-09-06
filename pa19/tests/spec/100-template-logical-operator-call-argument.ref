@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = binary add i32 %t10, %t14
     return i32 %t15
 }
-function @operator__(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> u8 [binding=weak, object=_ZaaI6binderS0_EbRKT_RKT0_] {
+function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=weak, object=_ZaaI6binderS0_EbRKT_RKT0_] {
   slot $lhs : ptr
   slot $rhs : ptr
   slot $land__1 : i64
@@ -119,7 +119,7 @@ function @test(%f : u8, %a1 : u8, %a2 : u8, %r : u8) -> i32 [binding=weak, objec
     %t16 = load i32 $cond__1
     return i32 %t16
 }
-function @operator____sym2(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> u8 [binding=weak, object=_ZooI6binderS0_EbRKT_RKT0_] {
+function @operator____sym2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=weak, object=_ZooI6binderS0_EbRKT_RKT0_] {
   slot $lhs : ptr
   slot $rhs : ptr
   slot $lor__1 : i64

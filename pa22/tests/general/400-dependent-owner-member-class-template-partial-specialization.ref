@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @channel_service_int___implementation_type_int__void_____value(%this : ptr) -> i32 [binding=weak, object=_ZNK15channel_serviceIiE19implementation_typeIiJFvvEEE5valueEv] {
+function @channel_service_int___implementation_type_int__void_____value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK15channel_serviceIiE19implementation_typeIiJFvvEEE5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

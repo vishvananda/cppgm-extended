@@ -1,4 +1,4 @@
-declare function @function_void_int____operator___ov3(%arg0 : ptr, %arg1 : obj<1x1>) -> ptr [binding=weak, object=_ZN8functionIFviEJEEaSIZN1S1gEvE1GvEERS1_T_]
+declare function @function_void_int____operator___ov3(%arg0 : ptr [object_bytes=1], %arg1 : obj<1x1>) -> ptr [binding=internal, object=_ZN8functionIFviEJEEaSIZN1S1gEvE1GvEERS1_T_, inline_hint=yes]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $s : obj<1x1>
@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S__g(%t2)
     return i32 0
 }
-function @S__g(%this : ptr) -> void [binding=weak, object=_ZN1S1gEv] {
+function @S__g(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1S1gEv, inline_hint=yes] {
   slot $this : ptr
   slot $argobj__1 : obj<1x1>
 
@@ -18,15 +18,6 @@ function @S__g(%this : ptr) -> void [binding=weak, object=_ZN1S1gEv] {
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = addr $argobj__1
-    call void @S__G__local_10293493247336742806__G(%t3)
     %t4 = call ptr @function_void_int____operator___ov3(%t2, $argobj__1)
     return void
 }
-function @S__G__local_10293493247336742806__G(%this : ptr) -> void [unwind=no, binding=weak, object=_ZZN1S1gEvEN1GC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZZN1S1gEvEN1GC2Ev = @S__G__local_10293493247336742806__G

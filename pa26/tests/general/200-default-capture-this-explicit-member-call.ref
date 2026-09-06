@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @A__f(%this : ptr) -> u8 [binding=weak, object=_ZNK1A1fEv] {
+function @A__f(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK1A1fEv, inline_hint=yes] {
   slot $this : ptr
   slot $l : obj<8x8>
 
@@ -33,7 +33,16 @@ function @A__f(%this : ptr) -> u8 [binding=weak, object=_ZNK1A1fEv] {
     %t4 = call u8 @A____lambda_A__f_t26_30__operator__(%t3, 0)
     return u8 %t4
 }
-function @A____lambda_A__f_t26_30__operator__(%this : ptr, %x : i32) -> u8 [binding=weak, object=_ZZNK1A1fEvENKUliE_clEi] {
+function @A__dep(%this : ptr [object_bytes=1], %__param1 : i32) -> u8 [binding=weak, object=_ZNK1A3depEi, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    return u8 1
+}
+function @A____lambda_A__f_t26_30__operator__(%this : ptr [object_bytes=8], %x : i32) -> u8 [binding=internal, object=_ZZN1A1fEvENKUliE_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
@@ -46,13 +55,4 @@ function @A____lambda_A__f_t26_30__operator__(%this : ptr, %x : i32) -> u8 [bind
     %t4 = load i32 $x
     %t5 = call u8 @A__dep(%t3, %t4)
     return u8 %t5
-}
-function @A__dep(%this : ptr, %__param1 : i32) -> u8 [binding=weak, object=_ZNK1A3depEi] {
-  slot $this : ptr
-  slot $__param1 : i32
-
-  block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    return u8 1
 }

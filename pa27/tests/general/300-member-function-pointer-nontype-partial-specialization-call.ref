@@ -11,11 +11,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $tmpobj__2
     %t4 = addr $argobj__3
     %t5 = addr $maker
-    %t6 = call obj<1x1> @example__fast_mem_fn_maker_int__target_______const___make_fast_mem_fn(%t5)
+    %t6 = call obj<1x1> @example__fast_mem_fn_maker_member_pointer_of_class_target_to_function_of____const_returning_int___make_fast_mem_fn(%t5)
     %t7 = call obj<1x1> @make_holder($argobj__3)
     copyobj 1x1 %t7, %t3
     %t8 = addr $value
-    %t9 = call i32 @holder_example__fast_mem_fn_int__target_______const__target__id_1____apply(%t3, %t8)
+    %t9 = call i32 @holder_example____cppgm_class_template_identity_0_4_0___apply(%t3, %t8)
     %t10 = cmp eq i32 %t9, 7
     branch %t10, ^cond_then_1, ^cond_else_2
 
@@ -31,35 +31,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @example__fast_mem_fn_maker_int__target_______const___make_fast_mem_fn(%this : ptr) -> obj<1x1> [binding=weak, object=_ZN7example17fast_mem_fn_makerIM6targetKFivEE16make_fast_mem_fnIXadL_ZNKS1_2idEvEEEENS_11fast_mem_fnIS3_XT_ELi1EEEv] {
-  slot $this : ptr
-  slot $retobj__1 : obj<1x1>
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = addr $retobj__1
-    call void @example__fast_mem_fn_int__target_______const__target__id__1___fast_mem_fn(%t1)
-    return obj<1x1> $retobj__1
-}
-function @example__fast_mem_fn_int__target_______const__target__id__1___fast_mem_fn(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS1_2idEvEELi1EEC1Ev, trivial_lifecycle=yes] {
+function @target__id(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK6target2idEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
-    return void
-}
-function @holder_example__fast_mem_fn_int__target_______const__target__id_1____apply(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEE5applyIS2_EEiRKT_] {
-  slot $this : ptr
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $value
-    %t4 = call i32 @example__fast_mem_fn_int__target_______const__target__id__1___operator__(%t2, %t3)
-    return i32 %t4
+    return i32 7
 }
 function @make_holder(%value : obj<1x1>) -> obj<1x1> [binding=weak, object=_Z11make_holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEE6holderIT_ES7_] {
   slot $value : obj<1x1>
@@ -70,29 +47,32 @@ function @make_holder(%value : obj<1x1>) -> obj<1x1> [binding=weak, object=_Z11m
     %t1 = addr $retobj__1
     %t2 = addr $argobj__2
     %t3 = addr $value
-    call void @holder_example__fast_mem_fn_int__target_______const__target__id_1____holder(%t1, $argobj__2)
+    call void @holder_example____cppgm_class_template_identity_0_4_0___holder_example____cppgm_class_template_identity_0_4_0_(%t1, $argobj__2)
     return obj<1x1> $retobj__1
 }
-function @example__fast_mem_fn_int__target_______const__target__id__1___operator__(%this : ptr, %value : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK7example11fast_mem_fnIM6targetKFivEXadL_ZNKS1_2idEvEELi1EEclIS1_EEiRKT_] {
+function @example__fast_mem_fn_maker_member_pointer_of_class_target_to_function_of____const_returning_int___make_fast_mem_fn(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN7example17fast_mem_fn_makerIM6targetKFivEE16make_fast_mem_fnIXadL_ZNKS1_2idEvEEEENS_11fast_mem_fnIS3_XadL_ZNKS1_2idEvEELi1EEEv, inline_hint=yes] {
+  slot $this : ptr
+  slot $retobj__1 : obj<1x1>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $retobj__1
+    return obj<1x1> $retobj__1
+}
+function @holder_example____cppgm_class_template_identity_0_4_0___apply(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEE5applyIS2_EEiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
   block ^entry:
     store ptr %this, $this
     store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = addr @target__id
-    %t3 = call i32 %t2(%t1) as (%arg0 : ptr) -> i32
-    return i32 %t3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $value
+    %t4 = call i32 @example__fast_mem_fn_member_pointer_of_class_target_to_function_of____const_returning_int__target__id__1___operator__(%t2, %t3)
+    return i32 %t4
 }
-function @target__id(%this : ptr) -> i32 [binding=weak, object=_ZNK6target2idEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return i32 7
-}
-function @holder_example__fast_mem_fn_int__target_______const__target__id_1____holder(%this : ptr, %value : obj<1x1>) -> void [binding=weak, object=_ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC1ES5_] {
+function @holder_example____cppgm_class_template_identity_0_4_0___holder_example____cppgm_class_template_identity_0_4_0_(%this : ptr [object_bytes=1], %value : obj<1x1>) -> void [binding=weak, object=_ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC1ES5_, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<1x1>
 
@@ -102,5 +82,16 @@ function @holder_example__fast_mem_fn_int__target_______const__target__id_1____h
     %t2 = index i8 [projection=field] %t1, 0
     return void
 }
-alias object _ZN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS1_2idEvEELi1EEC2Ev = @example__fast_mem_fn_int__target_______const__target__id__1___fast_mem_fn
-alias object _ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC2ES5_ = @holder_example__fast_mem_fn_int__target_______const__target__id_1____holder
+function @example__fast_mem_fn_member_pointer_of_class_target_to_function_of____const_returning_int__target__id__1___operator__(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK7example11fast_mem_fnIM6targetKFivEXadL_ZNKS1_2idEvEELi1EEclIS1_EEiRKT_, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = addr @target__id
+    %t3 = call i32 %t2(%t1) as (%arg0 : ptr [object_bytes=1]) -> i32
+    return i32 %t3
+}
+alias object _ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC2ES5_ = @holder_example____cppgm_class_template_identity_0_4_0___holder_example____cppgm_class_template_identity_0_4_0_

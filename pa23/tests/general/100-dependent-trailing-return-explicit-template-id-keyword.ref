@@ -6,11 +6,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     %t2 = addr $value
     %t3 = addr $arg__1
-    call void @handler__handler(%t3)
     %t4 = call i32 @target_protocol___call(%t2, %t3)
     return i32 %t4
 }
-function @target_protocol___call(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6targetI8protocolE4callI7handlerEEDTcl8initiateIT_FvN8Protocol11socket_type6rebindIlE5otherEEEscPiLi0EEEOS4_] {
+function @target_protocol___call(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6targetI8protocolE4callI7handlerEEiOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -19,11 +18,3 @@ function @target_protocol___call(%this : ptr, %__param1 : ptr [pass=reference]) 
     store ptr %__param1, $__param1
     return i32 0
 }
-function @handler__handler(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7handlerC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN7handlerC2Ev = @handler__handler

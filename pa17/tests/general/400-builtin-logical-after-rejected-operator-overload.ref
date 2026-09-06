@@ -1,4 +1,4 @@
-function @library__both(%left : ptr [pass=reference], %right : ptr [pass=reference]) -> u8 [binding=strong, object=_ZN7library4bothERKNS_5matchES2_] {
+function @library__both(%left : ptr [pass=by_address, object_bytes=1], %right : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_ZN7library4bothERKNS_5matchES2_] {
   slot $left : ptr
   slot $right : ptr
   slot $land__1 : i64
@@ -51,7 +51,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @library__match__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK7library5matchcvbEv] {
+function @library__match__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK7library5matchcvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -61,7 +61,7 @@ function @library__match__operatorbool(%this : ptr) -> u8 [binding=weak, object=
     %t3 = load u8 %t2
     return u8 %t3
 }
-function @library__match__match(%this : ptr, %value : u8) -> void [binding=weak, object=_ZN7library5matchC1Eb] {
+function @library__match__match(%this : ptr [object_bytes=1], %value : u8) -> void [binding=weak, object=_ZN7library5matchC1Eb, inline_hint=yes] {
   slot $this : ptr
   slot $value : u8
 

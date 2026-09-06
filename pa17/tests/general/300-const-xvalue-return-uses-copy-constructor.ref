@@ -1,4 +1,4 @@
-function @as_const_xvalue(%value : ptr [pass=reference]) -> ptr [binding=strong, object=_Z15as_const_xvalueRK4item] {
+function @as_const_xvalue(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z15as_const_xvalueRK4item] {
   slot $value : ptr
 
   block ^entry:
@@ -6,17 +6,16 @@ function @as_const_xvalue(%value : ptr [pass=reference]) -> ptr [binding=strong,
     %t1 = load ptr $value
     return ptr %t1
 }
-function @take(%ret : ptr [pass=indirect_result], %values : ptr [pass=reference]) -> void [binding=strong, object=_Z4takeRA1_K4item] {
+function @take(%ret : ptr [pass=indirect_result, object_bytes=4], %values : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z4takeRA1_K4item] {
   slot $values : ptr
 
   block ^entry:
     store ptr %values, $values
     %t1 = load ptr $values
-    %t2 = unary decay ptr %t1
-    %t3 = binary mul i64 0, 4
-    %t4 = index i8 [projection=array_element] %t2, %t3
-    %t5 = call ptr @as_const_xvalue(%t4)
-    call void @item__item__ov2(%ret, %t5)
+    %t2 = binary mul i64 0, 4
+    %t3 = index i8 [projection=array_element] %t1, %t2
+    %t4 = call ptr @as_const_xvalue(%t3)
+    call void @item__item__ov2(%ret, %t4)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -39,14 +38,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t8 = addr $values
-    %t9 = unary decay ptr %t8
-    %t10 = binary mul i64 0, 4
-    %t11 = index i8 [projection=array_element] %t9, %t10
-    %t12 = index i8 [projection=field] %t11, 0
-    %t13 = load i32 %t12
-    %t14 = cmp eq i32 %t13, 7
-    %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $land__2
+    %t9 = binary mul i64 0, 4
+    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load i32 %t11
+    %t13 = cmp eq i32 %t12, 7
+    %t14 = cmp ne i64 %t13, 0
+    store i64 %t14, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -54,8 +52,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t16 = load i64 $land__2
-    branch %t16, ^cond_then_1, ^cond_else_2
+    %t15 = load i64 $land__2
+    branch %t15, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -66,20 +64,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t17 = load i32 $cond__1
-    return i32 %t17
+    %t16 = load i32 $cond__1
+    return i32 %t16
 }
-function @item__item(%this : ptr) -> void [binding=weak, object=_ZN4itemC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    return void
-}
-function @item__item__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN4itemC1ERKS_] {
+function @item__item__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN4itemC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -94,5 +82,15 @@ function @item__item__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [b
     store i32 %t3, %t5
     return void
 }
-alias object _ZN4itemC2Ev = @item__item
+function @item__item(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4itemC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 7, %t2
+    return void
+}
 alias object _ZN4itemC2ERKS_ = @item__item__ov2
+alias object _ZN4itemC2Ev = @item__item

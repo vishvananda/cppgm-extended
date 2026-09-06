@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 $cond__1
     return i32 %t4
 }
-function @operator__(%__param0 : ptr [pass=reference], %__param1 : i32) -> u8 [binding=weak, object=_ZeqI12any_executorIiEEN9enable_ifIXsr7is_sameIT_S1_EE5valueEbE4typeERKS3_i] {
+function @operator__(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i32) -> u8 [binding=weak, object=_ZeqI12any_executorIiEEN9enable_ifIXsr7is_sameIT_S1_EE5valueEbE4typeERKS3_i, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : i32
 

@@ -40,7 +40,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @equal(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_Z5equalI4path6sourceEN9enable_ifIXaasr7is_pathIT_EE5valuesr9is_sourceIT0_EE5valueEbE4typeERKS3_RKS4_] {
+function @equal(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_Z5equalI4path6sourceEbRKT_RKT0_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -49,7 +49,7 @@ function @equal(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=referenc
     store ptr %__param1, $__param1
     return u8 1
 }
-function @equal__ov2(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_Z5equalI6source4pathEN9enable_ifIXaasr7is_pathIT0_EE5valuesr9is_sourceIT_EE5valueEbE4typeERKS4_RKS3_] {
+function @equal__ov2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_Z5equalI6source4pathEbRKT_RKT0_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

@@ -1,4 +1,4 @@
-global @boost__parameter__keyword_boost__graph__keywords__tag__color_map___instance [binding=weak, object=_ZN5boost9parameter7keywordINS_5graph8keywords3tag9color_mapEE8instanceE] = {
+global @boost__parameter____cppgm_class_template_identity_7_1_0__instance [binding=weak, object=_ZN5boost9parameter7keywordINS_5graph8keywords3tag9color_mapEE8instanceE] = {
   zero 1
 }
 
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 8x8 %t5, %t2
     return i32 0
 }
-function @boost__parameter__keyword_boost__graph__keywords__tag__color_map___operator_(%this : ptr, %d : ptr [pass=reference]) -> obj<8x8> [binding=weak, object=_ZNK5boost9parameter7keywordINS_5graph8keywords3tag9color_mapEEorIiEENS_9enable_ifIN6detail12mp_if_c_implIXscbsr9is_scalarIT_EE5valueEXsrN5boost4mp11E7mp_trueENS9_SA_IXscbsr7is_sameINS5_9qualifierENS0_12in_referenceEEE5valueEXsrN5boost4mp11E7mp_trueESt7is_sameISC_NS0_17forward_referenceEEE4typeEE4typeENS0_3aux8default_IS5_KSB_EEE4typeERSM_] {
+function @boost__parameter__keyword_boost__graph__keywords__tag__color_map___operator_(%this : ptr [object_bytes=1], %d : ptr [pass=by_address, object_bytes=4]) -> obj<8x8> [binding=weak, object=_ZNK5boost9parameter7keywordINS_5graph8keywords3tag9color_mapEEorIiEENS0_3aux8default_IS5_KiEERKT_, inline_hint=yes] {
   slot $this : ptr
   slot $d : ptr
   slot $retobj__1 : obj<8x8>
@@ -27,10 +27,10 @@ function @boost__parameter__keyword_boost__graph__keywords__tag__color_map___ope
     store ptr %d, $d
     %t1 = addr $retobj__1
     %t2 = load ptr $d
-    call void @boost__parameter__aux__default__boost__graph__keywords__tag__color_map__int_const___default_(%t1, %t2)
+    call void @boost__parameter__aux__default__boost__graph__keywords__tag__color_map__int_const___default__boost__graph__keywords__tag__color_map__int_const_(%t1, %t2)
     return obj<8x8> $retobj__1
 }
-function @boost__parameter__aux__default__boost__graph__keywords__tag__color_map__int_const___default_(%this : ptr, %x : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost9parameter3aux8default_INS_5graph8keywords3tag9color_mapEKiEC1ERS7_] {
+function @boost__parameter__aux__default__boost__graph__keywords__tag__color_map__int_const___default__boost__graph__keywords__tag__color_map__int_const_(%this : ptr [object_bytes=8], %x : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5boost9parameter3aux8default_INS_5graph8keywords3tag9color_mapEKiEC1ERS7_, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 
@@ -43,4 +43,4 @@ function @boost__parameter__aux__default__boost__graph__keywords__tag__color_map
     store ptr %t1, %t3
     return void
 }
-alias object _ZN5boost9parameter3aux8default_INS_5graph8keywords3tag9color_mapEKiEC2ERS7_ = @boost__parameter__aux__default__boost__graph__keywords__tag__color_map__int_const___default_
+alias object _ZN5boost9parameter3aux8default_INS_5graph8keywords3tag9color_mapEKiEC2ERS7_ = @boost__parameter__aux__default__boost__graph__keywords__tag__color_map__int_const___default__boost__graph__keywords__tag__color_map__int_const_

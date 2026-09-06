@@ -1,5 +1,5 @@
-global @x : i32 [binding=internal, object=_ZL1x] = 720
-global @lit [binding=internal, object=_ZL3lit] = {
+global @x : i32 [storage=readonly, binding=internal, object=_Z1x] = 720
+global @lit [binding=internal, object=_Z3lit] = {
   i32 42
 }
 
@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @Lit__Lit(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3LitC1Ei] {
+function @Lit__Lit(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3LitC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

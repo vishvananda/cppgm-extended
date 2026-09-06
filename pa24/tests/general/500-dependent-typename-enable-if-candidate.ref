@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call i32 @outer(%t3, %t4)
     return i32 %t5
 }
-function @outer(%p : ptr, %u : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5outerIN5boost9container3dtl4pairIiiEES4_EiPT_RT0_] {
+function @outer(%p : ptr, %u : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z5outerIN5boost9container3dtl4pairIiiEES4_EiPT_RT0_] {
   slot $p : ptr
   slot $u : ptr
 
@@ -24,7 +24,7 @@ function @outer(%p : ptr, %u : ptr [pass=reference]) -> i32 [binding=weak, objec
     %t5 = call i32 @helper(%t2, %t4)
     return i32 %t5
 }
-function @helper(%p : ptr, %u : ptr [pass=reference]) -> i32 [binding=weak, object=_Z6helperIiEiPT_RS0_] {
+function @helper(%p : ptr, %u : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z6helperIiEiPT_RS0_] {
   slot $p : ptr
   slot $u : ptr
 

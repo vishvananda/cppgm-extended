@@ -44,7 +44,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load i32 $cond__1
     return i32 %t15
 }
-function @Use_n__A___size(%this : ptr) -> i32 [binding=weak, object=_ZN3UseIN1n1AEE4sizeEv] {
+function @Use_n__A___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3UseIN1n1AEE4sizeEv, inline_hint=yes] {
   slot $this : ptr
   slot $box : obj<4x4>
 
@@ -55,7 +55,7 @@ function @Use_n__A___size(%this : ptr) -> i32 [binding=weak, object=_ZN3UseIN1n1
     %t3 = convert trunc i32 i64 %t2
     return i32 %t3
 }
-function @Use_n__B___size(%this : ptr) -> i32 [binding=weak, object=_ZN3UseIN1n1BEE4sizeEv] {
+function @Use_n__B___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3UseIN1n1BEE4sizeEv, inline_hint=yes] {
   slot $this : ptr
   slot $box : obj<8x8>
 

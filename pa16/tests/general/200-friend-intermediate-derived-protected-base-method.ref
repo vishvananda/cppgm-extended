@@ -7,17 +7,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @archive_access__save(%t2)
     return i32 0
 }
-function @archive_access__save(%ar : ptr [pass=reference]) -> void [binding=weak, object=_ZN14archive_access4saveER7archive] {
+function @archive_access__save(%ar : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN14archive_access4saveER7archive, inline_hint=yes] {
   slot $ar : ptr
 
   block ^entry:
     store ptr %ar, $ar
     %t1 = load ptr $ar
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @archive_base__end_preamble(%t2)
     return void
 }
-function @archive_base__end_preamble(%this : ptr) -> void [binding=weak, object=_ZN12archive_base12end_preambleEv] {
+function @archive_base__end_preamble(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN12archive_base12end_preambleEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -1,4 +1,4 @@
-declare function @operator_new(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $result : ptr
@@ -51,12 +51,12 @@ function @make_pair_argument(%count : i64) -> ptr [binding=weak, object=_Z18make
   block ^entry:
     store i64 %count, $count
     %t1 = convert sext i64 i32 16
-    %t2 = call ptr @operator_new(%t1)
+    %t2 = call ptr @operatornew(%t1)
     %t3 = load i64 $count
-    call void @pair_argument_int___pair_argument(%t2, %t3, 0)
+    call void @pair_argument_int___pair_argument_int_(%t2, %t3, 0)
     return ptr %t2
 }
-function @pair_argument_int___pair_argument(%this : ptr, %count_ : i64, %value_ : i32) -> void [binding=weak, object=_ZN13pair_argumentIiEC1Emi] {
+function @pair_argument_int___pair_argument_int_(%this : ptr [object_bytes=16], %count_ : i64, %value_ : i32) -> void [binding=weak, object=_ZN13pair_argumentIiEC1Emi, inline_hint=yes] {
   slot $this : ptr
   slot $count_ : i64
   slot $value_ : i32
@@ -75,4 +75,4 @@ function @pair_argument_int___pair_argument(%this : ptr, %count_ : i64, %value_ 
     store i32 %t4, %t6
     return void
 }
-alias object _ZN13pair_argumentIiEC2Emi = @pair_argument_int___pair_argument
+alias object _ZN13pair_argumentIiEC2Emi = @pair_argument_int___pair_argument_int_

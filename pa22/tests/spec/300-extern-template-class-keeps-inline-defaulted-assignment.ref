@@ -1,4 +1,4 @@
-function @assign(%target : ptr [pass=reference], %source : ptr [pass=reference]) -> void [binding=strong, object=_Z6assignR15empty_allocatorIcERKS0_] {
+function @assign(%target : ptr [pass=by_address, object_bytes=1], %source : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z6assignR15empty_allocatorIcERKS0_] {
   slot $target : ptr
   slot $source : ptr
 
@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @assign(%t3, %t4)
     return i32 0
 }
-function @empty_allocator_char___operator_(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN15empty_allocatorIcEaSERKS0_] {
+function @empty_allocator_char___operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [unwind=no, binding=weak, object=_ZN15empty_allocatorIcEaSERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

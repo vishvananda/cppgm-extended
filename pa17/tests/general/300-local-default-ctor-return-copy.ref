@@ -1,4 +1,4 @@
-function @f(%ret : ptr [pass=indirect_result], %b : u8) -> void [binding=strong, object=_Z1fb] {
+function @f(%ret : ptr [pass=indirect_result, object_bytes=4], %b : u8) -> void [binding=strong, object=_Z1fb] {
   slot $b : u8
   slot $s : obj<4x4>
   slot $t : obj<4x4>
@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @S__S(%this : ptr) -> void [binding=weak, object=_ZN1SC1Ev] {
+function @S__S(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1SC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -63,7 +63,7 @@ function @S__S(%this : ptr) -> void [binding=weak, object=_ZN1SC1Ev] {
     store i32 7, %t2
     return void
 }
-function @S__S__ov2(%this : ptr, %o : ptr [pass=reference]) -> void [binding=weak, object=_ZN1SC1ERKS_] {
+function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=4], %o : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN1SC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $o : ptr
 

@@ -21,9 +21,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr @eq_char
     store ptr %t1, $fn
     %t2 = load ptr $fn
-    %t3 = unary decay ptr %t2
-    %t4 = call u8 %t3(58, 58) as (%arg0 : i8, %arg1 : i8) -> u8
-    branch %t4, ^cond_then_1, ^cond_else_2
+    %t3 = call u8 %t2(58, 58) as (%arg0 : i8, %arg1 : i8) -> u8
+    branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -34,6 +33,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
-    return i32 %t5
+    %t4 = load i32 $cond__1
+    return i32 %t4
 }

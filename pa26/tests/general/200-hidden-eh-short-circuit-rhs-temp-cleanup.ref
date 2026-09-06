@@ -1,7 +1,7 @@
 global @constructed : i32 [binding=strong, object=_Z11constructed] = 0
 global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
 
-function @use(%__param0 : ptr [pass=reference]) -> i32 [unwind=no, binding=strong, object=_Z3useRK5Probe] {
+function @use(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [unwind=no, binding=strong, object=_Z3useRK5Probe] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -110,7 +110,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @Probe___Probe(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5ProbeD1Ev] {
+function @Probe___Probe(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5ProbeD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

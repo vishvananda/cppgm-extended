@@ -9,7 +9,7 @@ function @makef
   abi
     return f32 -> xmm0
   frame
-    stack_size 48
+    stack_size N
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
@@ -22,7 +22,7 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size N
     scratch_bytes 48
     frame_pointer keep
     epilogues shared

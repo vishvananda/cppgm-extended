@@ -21,18 +21,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @owner__call_begin(%this : ptr) -> ptr [binding=weak, object=_ZN5owner10call_beginEv] {
+function @owner__call_begin(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZN5owner10call_beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = call ptr @layout__begin(%t3)
     return ptr %t4
 }
-function @layout__begin(%this : ptr) -> ptr [binding=weak, object=_ZN6layout5beginEv] {
+function @layout__begin(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZN6layout5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

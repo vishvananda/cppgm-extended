@@ -1,4 +1,4 @@
-function @operator__(%stream : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> ptr [binding=strong, object=_ZlsR6StreamRK5Token] {
+function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=strong, object=_ZlsR6StreamRK5Token] {
   slot $stream : ptr
   slot $__param1 : ptr
 
@@ -448,7 +448,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t399 = load i32 $cond__1
     return i32 %t399
 }
-function @Stream__operator__(%this : ptr, %__param1 : i64) -> ptr [binding=weak, object=_ZN6StreamlsEm] {
+function @Stream__operator__(%this : ptr [object_bytes=4], %__param1 : i64) -> ptr [binding=weak, object=_ZN6StreamlsEm, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i64
 

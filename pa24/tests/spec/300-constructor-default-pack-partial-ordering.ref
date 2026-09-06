@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__2
     return i32 %t9
 }
-function @any_like__any_like__ov4(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN8any_likeC1IiJEEE15in_place_type_tIT_EDpOT0_] {
+function @any_like__any_like__ov4(%this : ptr [object_bytes=4], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN8any_likeC1IiJEEE15in_place_type_tIT_EDpOT0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 

@@ -10,7 +10,7 @@ function @bump
     param %value -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -24,7 +24,7 @@ function @keep_across_edge
     param %seed -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -46,7 +46,7 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 48
+    stack_size N
     scratch_bytes 48
     frame_pointer keep
     epilogues shared

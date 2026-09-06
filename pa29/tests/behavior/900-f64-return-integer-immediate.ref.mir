@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -28,7 +28,7 @@ function @main
     epilogues shared
 
   block ^entry
-    call @one
+    call @one [args=()]
     fmov.f64 xmm0, xmm0
     feq.f64 rax, xmm0, 1.0
     mov r8, rax
@@ -36,7 +36,6 @@ function @main
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    mov rax, r8
+    sext.i32 rax
     ret rax

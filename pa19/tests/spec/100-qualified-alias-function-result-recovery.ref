@@ -22,11 +22,11 @@ function @api__make_pairish(%value : i32) -> obj<8x4> [binding=weak, object=_ZN3
     %t1 = load i32 $value
     %t2 = addr $retobj__1
     %t3 = addr $argobj__2
-    call void @api__text_char___text(%t3)
-    call void @api__pair_api__text_char__const__tag___pair(%t2, $argobj__2, 0)
+    call void @api__text_char___text_char_(%t3)
+    call void @api__pair_api____cppgm_class_template_identity_0_0_0_const__tag___pair_api____cppgm_class_template_identity_0_0_0_const__tag_(%t2, $argobj__2, 0)
     return obj<8x4> $retobj__1
 }
-function @api__text_char___text(%this : ptr) -> void [binding=weak, object=_ZN3api4textIcEC1Ev] {
+function @api__text_char___text_char_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3api4textIcEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -36,7 +36,7 @@ function @api__text_char___text(%this : ptr) -> void [binding=weak, object=_ZN3a
     store i32 1, %t2
     return void
 }
-function @api__pair_api__text_char__const__tag___pair(%this : ptr, %a : obj<4x4>, %b : i32) -> void [binding=weak, object=_ZN3api4pairIKNS_4textIcEENS_3tagEEC1ES2_S4_] {
+function @api__pair_api____cppgm_class_template_identity_0_0_0_const__tag___pair_api____cppgm_class_template_identity_0_0_0_const__tag_(%this : ptr [object_bytes=8], %a : obj<4x4>, %b : i32) -> void [binding=weak, object=_ZN3api4pairIKNS_4textIcEENS_3tagEEC1ES2_S4_, inline_hint=yes] {
   slot $this : ptr
   slot $a : obj<4x4>
   slot $b : i32
@@ -56,5 +56,5 @@ function @api__pair_api__text_char__const__tag___pair(%this : ptr, %a : obj<4x4>
     store i32 %t5, %t7
     return void
 }
-alias object _ZN3api4textIcEC2Ev = @api__text_char___text
-alias object _ZN3api4pairIKNS_4textIcEENS_3tagEEC2ES2_S4_ = @api__pair_api__text_char__const__tag___pair
+alias object _ZN3api4textIcEC2Ev = @api__text_char___text_char_
+alias object _ZN3api4pairIKNS_4textIcEENS_3tagEEC2ES2_S4_ = @api__pair_api____cppgm_class_template_identity_0_0_0_const__tag___pair_api____cppgm_class_template_identity_0_0_0_const__tag_

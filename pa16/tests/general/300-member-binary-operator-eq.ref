@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @L__operator__(%this : ptr, %y : ptr [pass=reference]) -> u8 [binding=weak, object=_ZNK1LeqERKS_] {
+function @L__operator__(%this : ptr [object_bytes=4], %y : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=weak, object=_ZNK1LeqERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $y : ptr
 

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @value(%t1)
     return i32 %t2
 }
-function @value(%input : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5valueIiET_RS0_] {
+function @value(%input : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_Z5valueIiET_RS0_] {
   slot $input : ptr
 
   block ^entry:

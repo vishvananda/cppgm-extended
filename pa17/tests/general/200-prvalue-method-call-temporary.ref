@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @P__get(%t1)
     return i32 %t2
 }
-function @P__P(%this : ptr) -> void [binding=weak, object=_ZN1PC1Ev] {
+function @P__P(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1PC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -17,7 +17,7 @@ function @P__P(%this : ptr) -> void [binding=weak, object=_ZN1PC1Ev] {
     store i32 4, %t2
     return void
 }
-function @P__get(%this : ptr) -> i32 [binding=weak, object=_ZN1P3getEv] {
+function @P__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN1P3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

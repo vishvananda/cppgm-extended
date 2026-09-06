@@ -1,5 +1,5 @@
-declare function @consume(%arg0 : ptr [pass=reference]) -> void [binding=strong, object=_Z7consumeRK6vector]
-declare function @vector__vector(%arg0 : ptr, %arg1 : obj<16x8>) -> void [binding=strong, object=_ZN6vectorC1ESt16initializer_listIiE]
+declare function @consume(%arg0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z7consumeRK6vector]
+declare function @vector__vector(%arg0 : ptr [object_bytes=1], %arg1 : obj<16x8>) -> void [binding=strong, object=_ZN6vectorC1ESt16initializer_listIiE]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $arg__1 : obj<1x1>

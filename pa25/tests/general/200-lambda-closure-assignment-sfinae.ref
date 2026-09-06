@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @owner_int___run(%t2)
     return i32 %t3
 }
-function @owner_int___run(%this : ptr) -> i32 [binding=weak, object=_ZN5ownerIiE3runEv] {
+function @owner_int___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5ownerIiE3runEv, inline_hint=yes] {
   slot $this : ptr
   slot $task : obj<8x8>
   slot $cond__1 : i32

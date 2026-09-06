@@ -1,8 +1,6 @@
-declare function @S__S(%arg0 : ptr) -> void [binding=strong, object=_ZN1SC1Ev]
-
-declare function @S___S(%arg0 : ptr) -> void [binding=strong, object=_ZN1SD1Ev]
-
-declare function @S__S__ov2(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=strong, object=_ZN1SC1ERKS_]
+declare function @S__S(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN1SC1Ev]
+declare function @S___S(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SD1Ev]
+declare function @S__S__ov2(%arg0 : ptr [alias=noalias, object_bytes=1], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=strong, object=_ZN1SC1ERKS_]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $x : obj<1x1>
@@ -78,8 +76,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S___S(%t21)
     return i32 0
 }
-
-function @E___E(%this : ptr) -> void [binding=weak, object=_ZN1ED1Ev] {
+function @E___E(%this : ptr [object_bytes=3]) -> void [unwind=no, binding=weak, object=_ZN1ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -140,3 +137,4 @@ function @E___E(%this : ptr) -> void [binding=weak, object=_ZN1ED1Ev] {
   block ^destructor_end_2:
     return void
 }
+alias object _ZN1ED2Ev = @E___E

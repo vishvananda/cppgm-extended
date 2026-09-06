@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @Compiler_int___validate(%f : i32) -> i32 [binding=weak, object=_ZN8CompilerIiE8validateEN5flags18syntax_option_typeE] {
+function @Compiler_int___validate(%f : i32) -> i32 [binding=weak, object=_ZN8CompilerIiE8validateEN5flags18syntax_option_typeE, inline_hint=yes] {
   slot $f : i32
 
   block ^entry:

@@ -1,4 +1,4 @@
-global @N__late__lower [binding=internal, object=_ZN1N4lateL5lowerE] = {
+global @N__late__lower [binding=internal, object=_ZN1N4late5lowerE] = {
   zero 1
 }
 

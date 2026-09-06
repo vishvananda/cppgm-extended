@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call ptr @Iter_false___operator_(%t3, %t4)
     return i32 0
 }
-function @Iter_false___operator_(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN4IterILb0EEaSERKS0_] {
+function @Iter_false___operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZN4IterILb0EEaSERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

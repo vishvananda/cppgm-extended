@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @holder_int___same_size(%t2, %t3)
     return i32 %t4
 }
-function @holder_int___same_size(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK6holderIiE9same_sizeIiEEiRKT_] {
+function @holder_int___same_size(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZNK6holderIiE9same_sizeIiEEiRKT_] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $cond__1 : i32

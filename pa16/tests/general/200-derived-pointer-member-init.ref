@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $iter
     return i32 0
 }
-function @Iter__Iter(%this : ptr, %node : ptr) -> void [binding=weak, object=_ZN4IterC1EP4Node] {
+function @Iter__Iter(%this : ptr [object_bytes=8], %node : ptr) -> void [binding=weak, object=_ZN4IterC1EP4Node, inline_hint=yes] {
   slot $this : ptr
   slot $node : ptr
 
@@ -18,7 +18,7 @@ function @Iter__Iter(%this : ptr, %node : ptr) -> void [binding=weak, object=_ZN
     store ptr %this, $this
     store ptr %node, $node
     %t1 = load ptr $node
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     store ptr %t2, %t4

@@ -67,7 +67,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t32 = load i32 $cond__8
     return i32 %t32
 }
-function @dijkstra_shortest_paths(%__param0 : ptr [pass=reference], %__param1 : i32, %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : obj<1x1>, %__param5 : obj<1x1>, %__param6 : obj<1x1>, %__param7 : obj<1x1>, %__param8 : i32, %__param9 : i32, %__param10 : obj<1x1>, %__param11 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_Z23dijkstra_shortest_pathsI5graph7visitor4pred4dist6weight5index7compare7combineiiiiiE12named_choiceRKT_N12graph_traitsIS9_E17vertex_descriptorET1_T2_T3_T4_T5_T6_T7_T8_T0_RK12named_paramsIT9_T10_T11_E] {
+function @dijkstra_shortest_paths(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i32, %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : obj<1x1>, %__param5 : obj<1x1>, %__param6 : obj<1x1>, %__param7 : obj<1x1>, %__param8 : i32, %__param9 : i32, %__param10 : obj<1x1>, %__param11 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_Z23dijkstra_shortest_pathsI5graph7visitor4pred4dist6weight5index7compare7combineiiiiiE12named_choiceRKT_N12graph_traitsIS9_E17vertex_descriptorET1_T2_T3_T4_T5_T6_T7_T8_T0_RK12named_paramsIT9_TA_TB_E] {
   slot $__param0 : ptr
   slot $__param1 : i32
   slot $__param2 : obj<1x1>
@@ -89,14 +89,5 @@ function @dijkstra_shortest_paths(%__param0 : ptr [pass=reference], %__param1 : 
     store i32 %__param9, $__param9
     store ptr %__param11, $__param11
     %t1 = addr $retobj__1
-    call void @named_choice__named_choice(%t1)
     return obj<1x1> $retobj__1
 }
-function @named_choice__named_choice(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN12named_choiceC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN12named_choiceC2Ev = @named_choice__named_choice

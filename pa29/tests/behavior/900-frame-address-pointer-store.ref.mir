@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -25,26 +25,23 @@ function @main
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
+    preserve rbx
     slot $backing -> [rbp-16] : obj<16x8>
     slot $saved -> [rbp-24] : ptr
 
   block ^entry
-    mov rax, 1
-    lea rcx, [rbp-16]
-    store.i64 [rcx], rax
-    call @touch
-    lea rax, [rbp-16]
-    store.ptr [rbp-24], rax
-    mov r8, rax
-    lea rdx, [rbp-16]
-    cmp.ptr r8, rdx
+    lea rbx, [rbp-16]
+    store.i64 [rbx], 1
+    call @touch [args=()]
+    store.ptr [rbp-24], rbx
+    load.ptr r8, [rbp-24]
+    cmp.ptr r8, rbx
     sete r8
     movzx r8, r8
     mov rdx, 0
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    mov rax, r8
+    sext.i32 rax
     ret rax

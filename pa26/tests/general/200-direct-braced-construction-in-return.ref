@@ -1,4 +1,4 @@
-declare function @vector__vector(%arg0 : ptr, %arg1 : obj<16x8>) -> void [binding=strong, object=_ZN6vectorC1ESt16initializer_listIiE]
+declare function @vector__vector(%arg0 : ptr [object_bytes=1], %arg1 : obj<16x8>) -> void [binding=strong, object=_ZN6vectorC1ESt16initializer_listIiE]
 
 function @make() -> obj<1x1> [binding=strong, object=_Z4makev] {
   slot $retobj__1 : obj<1x1>

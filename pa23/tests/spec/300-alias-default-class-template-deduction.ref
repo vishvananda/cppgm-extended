@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @read(%t2)
     return i32 0
 }
-function @read(%__param0 : ptr [pass=reference]) -> void [binding=weak, object=_Z4readILb0EcEvR7messageIXT_ET0_iE] {
+function @read(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_Z4readILb0EcEvR7messageILb0ET0_iE] {
   slot $__param0 : ptr
 
   block ^entry:

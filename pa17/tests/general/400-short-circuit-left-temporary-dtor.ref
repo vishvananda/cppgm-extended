@@ -1,10 +1,10 @@
 global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
 
-function @make(%ret : ptr [pass=indirect_result]) -> void [binding=strong, object=_Z4makev] {
+function @make(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z4makev] {
   block ^entry:
     return void
 }
-function @operator__(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=strong, object=_ZeqRK6objectS1_] {
+function @operator__(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_ZeqRK6objectS1_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -182,7 +182,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 %t22, $cleanup_return__8
     jump ^return_cleanup_action_18
 }
-function @object___object(%this : ptr) -> void [binding=weak, object=_ZN6objectD1Ev] {
+function @object___object(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6objectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

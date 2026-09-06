@@ -32,7 +32,7 @@ function @walk(%root : ptr) -> u8 [binding=weak, object=_Z4walkIP4InfoEbT_] {
     call void @push(%t2, %t3)
     return u8 1
 }
-function @push(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_Z4pushIP4InfoEvRKS0_RN3lib3VecIT_NS4_5AllocIS6_EEEE] {
+function @push(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_Z4pushIP4InfoEvRKS0_RN3lib3VecIT_NS4_5AllocIS6_EEEE] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @move_view_payload___get(%this : ptr) -> ptr [binding=weak, object=_ZNK9move_viewI7payloadE3getEv] {
+function @move_view_payload___get(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK9move_viewI7payloadE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

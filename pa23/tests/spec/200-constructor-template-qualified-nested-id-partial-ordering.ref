@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @lib__detail__make_dynamic(%__param0 : ptr [pass=reference]) -> obj<4x4> [binding=weak, object=_ZN3lib6detail12make_dynamicIN6vendor6detail9wrap_iterIPKcEENS0_17alternate_matcherINS0_10alternatesIS7_EENS_6traitsIcNS_11traits_implIcEEEEEEEENS0_8sequenceIT_EERKT0_] {
+function @lib__detail__make_dynamic(%__param0 : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZN3lib6detail12make_dynamicIN6vendor6detail9wrap_iterIPKcEENS0_17alternate_matcherINS0_10alternatesIS7_EENS_6traitsIcNS_11traits_implIcEEEEEEEENS0_8sequenceIT_EERKT0_] {
   slot $__param0 : ptr
   slot $ptr : obj<8x8>
   slot $retobj__1 : obj<4x4>
@@ -39,10 +39,10 @@ function @lib__detail__make_dynamic(%__param0 : ptr [pass=reference]) -> obj<4x4
     store ptr nullptr, %t3
     %t4 = addr $retobj__1
     %t5 = addr $ptr
-    call void @lib__detail__sequence_vendor__detail__wrap_iter_char_const______sequence__ov4(%t4, %t5)
+    call void @lib__detail__sequence_vendor__detail____cppgm_class_template_identity_0_1_0___sequence_vendor__detail____cppgm_class_template_identity_0_1_0___ov4(%t4, %t5)
     return obj<4x4> $retobj__1
 }
-function @lib__detail__sequence_vendor__detail__wrap_iter_char_const______sequence__ov4(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN3lib6detail8sequenceIN6vendor6detail9wrap_iterIPKcEEEC1INS_6traitsIcNS_11traits_implIcEEEEEERKNS_11counted_ptrINS0_12dynamic_nodeINS0_17alternate_matcherINS0_10alternatesIS7_EET_EES7_EEEE] {
+function @lib__detail__sequence_vendor__detail____cppgm_class_template_identity_0_1_0___sequence_vendor__detail____cppgm_class_template_identity_0_1_0___ov4(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN3lib6detail8sequenceIN6vendor6detail9wrap_iterIPKcEEEC1INS_6traitsIcNS_11traits_implIcEEEEEERKNS_11counted_ptrINS0_12dynamic_nodeINS0_17alternate_matcherINS0_10alternatesIS7_EET_EES7_EEEE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -54,4 +54,4 @@ function @lib__detail__sequence_vendor__detail__wrap_iter_char_const______sequen
     store i32 2, %t2
     return void
 }
-alias object _ZN3lib6detail8sequenceIN6vendor6detail9wrap_iterIPKcEEEC2INS_6traitsIcNS_11traits_implIcEEEEEERKNS_11counted_ptrINS0_12dynamic_nodeINS0_17alternate_matcherINS0_10alternatesIS7_EET_EES7_EEEE = @lib__detail__sequence_vendor__detail__wrap_iter_char_const______sequence__ov4
+alias object _ZN3lib6detail8sequenceIN6vendor6detail9wrap_iterIPKcEEEC2INS_6traitsIcNS_11traits_implIcEEEEEERKNS_11counted_ptrINS0_12dynamic_nodeINS0_17alternate_matcherINS0_10alternatesIS7_EET_EES7_EEEE = @lib__detail__sequence_vendor__detail____cppgm_class_template_identity_0_1_0___sequence_vendor__detail____cppgm_class_template_identity_0_1_0___ov4

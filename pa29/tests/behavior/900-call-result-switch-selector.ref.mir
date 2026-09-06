@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -42,16 +42,16 @@ function @classify
     preserve rbx
 
   block ^entry
-    call @pick
+    call @pick [args=()]
     mov rbx, rax
     sext.i32 rbx
-    call @spoil
+    call @spoil [args=()]
     mov rax, rbx
     mov rcx, -7
-    cmp.i32 rax, rcx
+    cmp.i64 rax, rcx
     je ^hit
     mov rcx, 9
-    cmp.i32 rax, rcx
+    cmp.i64 rax, rcx
     je ^wrong
     jmp ^default
 
@@ -77,8 +77,5 @@ function @main
     epilogues shared
 
   block ^entry
-    call @classify
-    mov r8, rax
-    sext.i32 r8
-    mov rax, r8
+    call @classify [args=()]
     ret rax

@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = index i8 [projection=field] %t3, 0
     store ptr %t2, %t4
     %t5 = addr $ref
-    %t6 = call ptr @optional_ref_int_____get(%t5)
+    %t6 = call ptr @optional_ref_lvalue_reference_to_int___get(%t5)
     %t7 = load i32 %t6
     %t8 = load i32 $value
     %t9 = cmp eq i32 %t7, %t8
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @optional_ref_int_____get(%this : ptr) -> ptr [binding=weak, object=_ZNK12optional_refIRiE3getEv] {
+function @optional_ref_lvalue_reference_to_int___get(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK12optional_refIRiE3getEv, inline_hint=yes] {
   slot $this : ptr
   slot $condaddr__1 : ptr
 
@@ -48,20 +48,19 @@ function @optional_ref_int_____get(%this : ptr) -> ptr [binding=weak, object=_ZN
     jump ^condaddr_end_3
 
   block ^condaddr_else_2:
-    %t7 = addr @__lambda_optional_ref_int_____get_n1
-    %t8 = unary decay ptr %t7
-    call void %t8() as () -> void
-    %t9 = load ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load ptr %t10
-    store ptr %t11, $condaddr__1
+    %t7 = addr @__lambda___cppgm_class_template_identity_0_0_0__get_t40_40
+    call void %t7() as () -> void
+    %t8 = load ptr $this
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load ptr %t9
+    store ptr %t10, $condaddr__1
     jump ^condaddr_end_3
 
   block ^condaddr_end_3:
-    %t12 = load ptr $condaddr__1
-    return ptr %t12
+    %t11 = load ptr $condaddr__1
+    return ptr %t11
 }
-function @__lambda_optional_ref_int_____get_n1() -> void [binding=internal] {
+function @__lambda___cppgm_class_template_identity_0_0_0__get_t40_40() -> void [binding=internal, object=_Z58__lambda___cppgm_class_template_identity_0_0_0__get_t40_40v, object_root=yes] {
   slot $marker : i32
 
   block ^entry:

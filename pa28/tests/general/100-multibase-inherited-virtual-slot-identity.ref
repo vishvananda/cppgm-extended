@@ -117,22 +117,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     call void @implementation__implementation(%t1)
     %t2 = addr $value
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     store ptr %t3, $view
     %t4 = load ptr $view
-    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t5 = index i8 %t4, 0
     %t6 = load ptr %t5
     %t7 = load ptr %t6
-    %t8 = call i32 %t7(%t5) as (%arg0 : ptr) -> i32
+    %t8 = call i32 %t7(%t5) as (%arg0 : ptr [object_bytes=8]) -> i32
     %t9 = cmp ne i32 %t8, 3
     branch %t9, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
     %t10 = load ptr $view
-    %t11 = index i8 [projection=base_subobject] %t10, 8
+    %t11 = index i8 %t10, 8
     %t12 = load ptr %t11
     %t13 = load ptr %t12
-    %t14 = call i32 %t13(%t11) as (%arg0 : ptr) -> i32
+    %t14 = call i32 %t13(%t11) as (%arg0 : ptr [object_bytes=8]) -> i32
     %t15 = cmp ne i32 %t14, 4
     %t16 = cmp ne i64 %t15, 0
     store i64 %t16, $lor__1
@@ -147,62 +147,62 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = convert trunc i32 i64 %t17
     return i32 %t18
 }
-function @implementation__first(%this : ptr) -> i32 [binding=weak, object=_ZN14implementation5firstEv] {
+function @implementation__first(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN14implementation5firstEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 3
 }
-function @implementation__second(%this : ptr) -> i32 [binding=weak, object=_ZN14implementation6secondEv] {
+function @implementation__second(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN14implementation6secondEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 4
 }
-function @implementation__implementation(%this : ptr) -> void [binding=weak, object=_ZN14implementationC1Ev] {
+function @implementation__implementation(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN14implementationC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @interface__interface__base_entry(%t2)
     %t3 = load ptr $this
     %t4 = addr @implementation__vtable
     %t5 = index i8 %t4, 16
     store ptr %t5, %t3
     %t6 = load ptr $this
-    %t7 = index i8 [projection=base_subobject] %t6, 8
+    %t7 = index i8 %t6, 8
     %t8 = addr @implementation____view__right__8__vtable
     %t9 = index i8 %t8, 16
     store ptr %t9, %t7
     return void
 }
-function @interface__interface__base_entry(%this : ptr) -> void [binding=weak, object=_ZN9interfaceC2Ev, no_inline=yes] {
+function @interface__interface__base_entry(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN9interfaceC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @left__left__base_entry(%t2)
     %t3 = load ptr $this
-    %t4 = index i8 [projection=base_subobject] %t3, 8
+    %t4 = index i8 %t3, 8
     call void @right__right__base_entry(%t4)
     %t5 = load ptr $this
     %t6 = addr @interface__vtable
     %t7 = index i8 %t6, 16
     store ptr %t7, %t5
     %t8 = load ptr $this
-    %t9 = index i8 [projection=base_subobject] %t8, 8
+    %t9 = index i8 %t8, 8
     %t10 = addr @interface____view__right__8__vtable
     %t11 = index i8 %t10, 16
     store ptr %t11, %t9
     return void
 }
-function @left__left__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN4leftC2Ev, no_inline=yes] {
+function @left__left__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4leftC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -213,7 +213,7 @@ function @left__left__base_entry(%this : ptr) -> void [unwind=no, binding=weak, 
     store ptr %t3, %t1
     return void
 }
-function @right__right__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5rightC2Ev, no_inline=yes] {
+function @right__right__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5rightC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

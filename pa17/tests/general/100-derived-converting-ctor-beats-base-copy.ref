@@ -27,27 +27,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @Derived__Derived(%this : ptr) -> void [binding=weak, object=_ZN7DerivedC1Ev] {
+function @Derived__Derived(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @Base__Base__base_entry(%t2)
     return void
 }
-function @Base__Base__base_entry(%this : ptr) -> void [binding=weak, object=_ZN4BaseC2Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
-    return void
-}
-function @Base__Base__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN4BaseC1ER7Derived] {
+function @Base__Base__ov2(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4BaseC1ER7Derived, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -57,6 +47,16 @@ function @Base__Base__ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> void
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     store i32 7, %t2
+    return void
+}
+function @Base__Base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
     return void
 }
 alias object _ZN7DerivedC2Ev = @Derived__Derived

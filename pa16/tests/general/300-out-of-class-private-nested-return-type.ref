@@ -1,4 +1,4 @@
-function @Resolver__resolve(%this : ptr, %value : i32) -> ptr [binding=strong, object=_ZN8Resolver7resolveEi] {
+function @Resolver__resolve(%this : ptr [object_bytes=8], %value : i32) -> ptr [binding=strong, object=_ZN8Resolver7resolveEi] {
   slot $this : ptr
   slot $value : i32
 
@@ -22,7 +22,7 @@ function @Resolver__resolve(%this : ptr, %value : i32) -> ptr [binding=strong, o
     %t13 = index i8 [projection=field] %t12, 0
     return ptr %t13
 }
-function @Resolver__go(%this : ptr, %value : i32) -> i32 [binding=strong, object=_ZN8Resolver2goEi] {
+function @Resolver__go(%this : ptr [object_bytes=8], %value : i32) -> i32 [binding=strong, object=_ZN8Resolver2goEi] {
   slot $this : ptr
   slot $value : i32
   slot $resolved : ptr

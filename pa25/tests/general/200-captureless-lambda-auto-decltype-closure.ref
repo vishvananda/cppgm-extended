@@ -9,22 +9,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $fn
     %t2 = addr @__lambda_main_t52_61
-    %t3 = unary decay ptr %t2
-    store ptr %t3, $pointer
-    %t4 = addr @__lambda_main_t52_61
-    %t5 = unary decay ptr %t4
-    store ptr %t5, $plus_pointer
-    %t6 = addr $fn
-    %t7 = call i32 @__lambda_main_t52_61__operator__(%t6, 3, 4)
-    %t8 = cmp eq i32 %t7, 7
-    branch %t8, ^land_rhs_7, ^land_short_8
+    store ptr %t2, $pointer
+    %t3 = addr @__lambda_main_t52_61
+    store ptr %t3, $plus_pointer
+    %t4 = addr $fn
+    %t5 = call i32 @__lambda_main_t52_61__operator__(%t4, 3, 4)
+    %t6 = cmp eq i32 %t5, 7
+    branch %t6, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t9 = load ptr $pointer
-    %t10 = call i32 %t9(4, 3) as (%arg0 : i32, %arg1 : i8) -> i32
-    %t11 = cmp eq i32 %t10, 7
-    %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $land__3
+    %t7 = load ptr $pointer
+    %t8 = call i32 %t7(4, 3) as (%arg0 : i32, %arg1 : i8) -> i32
+    %t9 = cmp eq i32 %t8, 7
+    %t10 = cmp ne i64 %t9, 0
+    store i64 %t10, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -32,15 +30,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t13 = load i64 $land__3
-    branch %t13, ^land_rhs_4, ^land_short_5
+    %t11 = load i64 $land__3
+    branch %t11, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t14 = load ptr $plus_pointer
-    %t15 = call i32 %t14(5, 2) as (%arg0 : i32, %arg1 : i8) -> i32
-    %t16 = cmp eq i32 %t15, 7
-    %t17 = cmp ne i64 %t16, 0
-    store i64 %t17, $land__2
+    %t12 = load ptr $plus_pointer
+    %t13 = call i32 %t12(5, 2) as (%arg0 : i32, %arg1 : i8) -> i32
+    %t14 = cmp eq i32 %t13, 7
+    %t15 = cmp ne i64 %t14, 0
+    store i64 %t15, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -48,8 +46,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t18 = load i64 $land__2
-    branch %t18, ^cond_then_1, ^cond_else_2
+    %t16 = load i64 $land__2
+    branch %t16, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -60,16 +58,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load i32 $cond__1
-    return i32 %t19
+    %t17 = load i32 $cond__1
+    return i32 %t17
 }
-function @__lambda_main_t52_61__operator__(%this : ptr, %lhs : i32, %rhs : i8) -> i32 [binding=strong, object=_ZZ4mainENK3$_0clEic, prefer_local=yes] {
-  slot $this : ptr
+function @__lambda_main_t52_61(%lhs : i32, %rhs : i8) -> i32 [binding=internal, object=_Z20__lambda_main_t52_61ic, object_root=yes] {
   slot $lhs : i32
   slot $rhs : i8
 
   block ^entry:
-    store ptr %this, $this
     store i32 %lhs, $lhs
     store i8 %rhs, $rhs
     %t1 = load i32 $lhs
@@ -78,11 +74,13 @@ function @__lambda_main_t52_61__operator__(%this : ptr, %lhs : i32, %rhs : i8) -
     %t4 = binary add i32 %t1, %t3
     return i32 %t4
 }
-function @__lambda_main_t52_61(%lhs : i32, %rhs : i8) -> i32 [binding=internal] {
+function @__lambda_main_t52_61__operator__(%this : ptr [object_bytes=1], %lhs : i32, %rhs : i8) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEic, prefer_local=yes, inline_hint=yes] {
+  slot $this : ptr
   slot $lhs : i32
   slot $rhs : i8
 
   block ^entry:
+    store ptr %this, $this
     store i32 %lhs, $lhs
     store i8 %rhs, $rhs
     %t1 = load i32 $lhs

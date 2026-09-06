@@ -1,24 +1,16 @@
 declare global @g_runtime_branch : i32 [binding=strong, object=_Z16g_runtime_branch]
 
-declare function @complete(%arg0 : ptr [pass=reference]) -> u8 [binding=strong, object=_Z8completeR6Cursor]
+declare function @complete(%arg0 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_Z8completeR6Cursor]
+declare function @process(%arg0 : i32, %arg1 : ptr [pass=by_address, object_bytes=1], %arg2 : u8) -> u8 [binding=strong, object=_Z7processiRK7Payloadb]
+declare function @Payload__Payload(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN7PayloadC1Ev]
+declare function @Payload___Payload(%arg0 : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN7PayloadD1Ev]
+declare function @Cursor__get(%ret : ptr [pass=indirect_result, object_bytes=8], %arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN6Cursor3getEv]
+declare function @Macroizer__active(%arg0 : ptr [object_bytes=1]) -> u8 [binding=strong, object=_ZN9Macroizer6activeEv]
+declare function @Macroizer__get(%ret : ptr [pass=indirect_result, object_bytes=8], %arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN9Macroizer3getEv]
+declare function @Payload__operator_(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=strong, object=_ZN7PayloadaSEOS_]
+declare function @Payload__Payload__ov2(%arg0 : ptr [alias=noalias, object_bytes=1], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=strong, object=_ZN7PayloadC1EOS_]
 
-declare function @process(%arg0 : i32, %arg1 : ptr [pass=reference], %arg2 : u8) -> u8 [binding=strong, object=_Z7processiRK7Payloadb]
-
-declare function @Payload__Payload(%arg0 : ptr) -> void [binding=strong, object=_ZN7PayloadC1Ev]
-
-declare function @Payload___Payload(%arg0 : ptr) -> void [binding=strong, object=_ZN7PayloadD1Ev]
-
-declare function @Cursor__get(%ret : ptr [pass=indirect_result], %arg0 : ptr) -> void [binding=strong, object=_ZN6Cursor3getEv]
-
-declare function @Macroizer__active(%arg0 : ptr) -> u8 [binding=strong, object=_ZN9Macroizer6activeEv]
-
-declare function @Macroizer__get(%ret : ptr [pass=indirect_result], %arg0 : ptr) -> void [binding=strong, object=_ZN9Macroizer3getEv]
-
-declare function @Payload__operator_(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> ptr [binding=strong, object=_ZN7PayloadaSEOS_]
-
-declare function @Payload__Payload__ov2(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> void [binding=strong, object=_ZN7PayloadC1EOS_]
-
-function @preproc_get(%ret : ptr [pass=indirect_result], %cursor : ptr [pass=reference], %macroizer : ptr [pass=reference]) -> void [binding=strong, object=_Z11preproc_getR6CursorR9Macroizer] {
+function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor : ptr [pass=by_address, object_bytes=1], %macroizer : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z11preproc_getR6CursorR9Macroizer] {
   slot $cursor : ptr
   slot $macroizer : ptr
   slot $token : obj<8x4>
@@ -226,8 +218,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result], %cursor : ptr [pass=ref
     call void @Tok___Tok(%t60)
     return void
 }
-
-function @Tok__Tok(%this : ptr) -> void [binding=weak, object=_ZN3TokC1Ev, trivial_lifecycle=yes] {
+function @Tok__Tok(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN3TokC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -235,29 +226,18 @@ function @Tok__Tok(%this : ptr) -> void [binding=weak, object=_ZN3TokC1Ev, trivi
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 4
     call void @Payload__Payload(%t2)
+    eh_cleanup ^constructor_cleanup_1
+    eh_end
     return void
-}
 
-function @Tok__operator___ov2(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3TokaSEOS_] {
-  slot $this : ptr
-  slot $other : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = load ptr $other
-    copyobj 4x4 %t2, %t1
+  block ^constructor_cleanup_1:
     %t3 = load ptr $this
     %t4 = index i8 [projection=field] %t3, 4
-    %t5 = load ptr $other
-    %t6 = index i8 [projection=field] %t5, 4
-    %t7 = call ptr @Payload__operator_(%t4, %t6)
-    %t8 = load ptr $this
-    return ptr %t8
+    call void @Payload___Payload(%t4)
+    eh_end
+    resume
 }
-
-function @Tok___Tok(%this : ptr) -> void [binding=weak, object=_ZN3TokD1Ev] {
+function @Tok___Tok(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN3TokD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -279,8 +259,25 @@ function @Tok___Tok(%this : ptr) -> void [binding=weak, object=_ZN3TokD1Ev] {
   block ^destructor_end_2:
     return void
 }
+function @Tok__operator___ov2(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN3TokaSEOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
 
-function @Tok__Tok__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN3TokC1EOS_] {
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = load ptr $other
+    copyobj 4x4 %t2, %t1
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    %t5 = load ptr $other
+    %t6 = index i8 [projection=field] %t5, 4
+    %t7 = call ptr @Payload__operator_(%t4, %t6)
+    %t8 = load ptr $this
+    return ptr %t8
+}
+function @Tok__Tok__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN3TokC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -297,7 +294,6 @@ function @Tok__Tok__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [bin
     call void @Payload__Payload__ov2(%t4, %t6)
     return void
 }
-
 function @Tok__Tok__aggregate(%this : ptr, %type : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $type : i32
@@ -314,3 +310,6 @@ function @Tok__Tok__aggregate(%this : ptr, %type : i32) -> void [unwind=no, bind
     call void @Payload__Payload(%t5)
     return void
 }
+alias object _ZN3TokC2Ev = @Tok__Tok
+alias object _ZN3TokD2Ev = @Tok___Tok
+alias object _ZN3TokC2EOS_ = @Tok__Tok__ov2

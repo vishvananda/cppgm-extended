@@ -5,7 +5,7 @@ global @__local_static__digits__decl0__arr [binding=internal] = {
   i8 51
 }
 
-function @digits() -> ptr [unwind=no, binding=strong, object=_Z6digitsv] {
+function @digits() -> ptr [binding=strong, object=_Z6digitsv] {
   block ^entry:
     %t1 = addr @__local_static__digits__decl0__arr
     return ptr %t1

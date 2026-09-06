@@ -7,11 +7,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     %t2 = addr $a
     %t3 = addr $value
-    %t4 = call i32 @traits_alloc_int____destroy(%t2, %t3)
+    %t4 = call i32 @traits___cppgm_class_template_identity_2_1_0___destroy(%t2, %t3)
     %t5 = binary sub i32 %t4, 1
     return i32 %t5
 }
-function @traits_alloc_int____destroy(%__param0 : ptr [pass=reference], %__param1 : ptr) -> i32 [binding=weak, object=_ZN6traitsI5allocIiEE7destroyIiTnN9enable_ifIXsr11has_destroyIS1_PT_EE5valueEiE4typeELi0EEEiRS1_S6_] {
+function @traits___cppgm_class_template_identity_2_1_0___destroy(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> i32 [binding=weak, object=_ZN6traitsI5allocIiEE7destroyIiTnN9enable_ifIXsr11has_destroyIS1_PT_EE5valueEiE4typeELi0EEEiRS1_S5_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

@@ -1,0 +1,1 @@
+ERROR: unknown expression name: host::__builtin_fabs at tests/compile/501-namespace-qualified-builtin-bad.t:5:33

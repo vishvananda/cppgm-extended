@@ -12,7 +12,7 @@ function @run(%items : ptr, %count : i32) -> i32 [binding=strong, object=_Z3runP
     %t2 = addr $outer
     %t3 = load ptr $items
     store ptr %t3, %t2
-    %t4 = index i8 %t2, 8
+    %t4 = index i8 [projection=field] %t2, 8
     %t5 = load i32 $count
     store i32 %t5, %t4
     %t6 = addr $outer
@@ -30,13 +30,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $items
-    call void @Item__Item__ov4(%t1, 7)
+    call void @Item__Item__aggregate(%t1, 7)
     %t2 = addr $items
-    %t3 = unary decay ptr %t2
-    %t4 = call i32 @run(%t3, 1)
-    return i32 %t4
+    %t3 = call i32 @run(%t2, 1)
+    return i32 %t3
 }
-function @__lambda_run_t34_38__operator__(%this : ptr) -> i32 [binding=strong, object=_ZZ3runP4ItemiENK3$_0clEv, prefer_local=yes] {
+function @__lambda_run_t34_38__operator__(%this : ptr [object_bytes=16]) -> i32 [binding=internal, object=_ZZ3runP4ItemiENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $match : obj<8x8>
 
@@ -50,10 +49,10 @@ function @__lambda_run_t34_38__operator__(%this : ptr) -> i32 [binding=strong, o
     %t5 = load ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = load ptr %t6
-    %t8 = call i32 @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__operator__(%t4, %t7)
+    %t8 = call i32 @__lambda_run_t34_38____lambda_nested_t45_53__operator__(%t4, %t7)
     return i32 %t8
 }
-function @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__operator__(%this : ptr, %source : ptr) -> i32 [binding=strong, object=_ZZZ3runP4ItemiENK3$_0clEvENKUlPKS_E_clES3_, prefer_local=yes] {
+function @__lambda_run_t34_38____lambda_nested_t45_53__operator__(%this : ptr [object_bytes=8], %source : ptr) -> i32 [binding=internal, object=_ZZZ3runP4ItemiENK3$_0clEvENK3$_0clEPKS_, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $source : ptr
   slot $parameter : ptr
@@ -63,7 +62,7 @@ function @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__
     store ptr %source, $source
     %t1 = load ptr $source
     %t2 = load ptr $this
-    %t3 = index i8 [projection=reference_field] %t2, 0
+    %t3 = index i8 [projection=field] %t2, 0
     %t4 = load ptr %t3
     %t5 = load i32 %t4
     %t6 = binary sub i32 %t5, 1
@@ -75,7 +74,7 @@ function @__lambda_run_t34_38____lambda___lambda_run_t34_38__operator___t45_53__
     %t11 = load i32 %t10
     return i32 %t11
 }
-function @Item__Item__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding=weak, object=_ZN4ItemC1Ei] {
+function @Item__Item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr
   slot $value : i32
 
@@ -88,4 +87,3 @@ function @Item__Item__ov4(%this : ptr, %value : i32) -> void [unwind=no, binding
     store i32 %t1, %t3
     return void
 }
-alias object _ZN4ItemC2Ei = @Item__Item__ov4

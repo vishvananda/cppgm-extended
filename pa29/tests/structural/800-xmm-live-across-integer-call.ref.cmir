@@ -14,7 +14,7 @@ function @clobber_xmm_from_integer
     param %value -> rdi : i32
     return i32 -> rax
   frame
-    stack_size 64
+    stack_size N
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
@@ -34,7 +34,7 @@ function @preserve_across_integer_call
     param %value -> xmm0 : f64
     return f64 -> xmm0
   frame
-    stack_size 64
+    stack_size N
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
@@ -56,7 +56,7 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 48
+    stack_size N
     scratch_bytes 48
     frame_pointer keep
     epilogues shared

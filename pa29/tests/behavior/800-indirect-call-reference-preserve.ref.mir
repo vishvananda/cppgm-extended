@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -20,8 +20,7 @@ function @id
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    ret rax
+    ret rdi
 
 function @wrap
   abi
@@ -29,19 +28,14 @@ function @wrap
     param %pf -> rsi : ptr
     return ptr -> rax
   frame
-    stack_size 16
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
 
   block ^entry
-    mov r9, rdi
-    mov r8, rsi
-    mov rbx, rdi
     mov r10, rsi
-    mov rdi, rbx
-    call *r10
+    call *r10 [args=(rdi)]
     ret rax
 
 function @main
@@ -56,13 +50,10 @@ function @main
 
   block ^entry
     mov rbx, @box
-    mov r8, @id
     mov rdi, rbx
-    mov rsi, r8
-    call @wrap
-    mov r9, rax
-    cmp.ptr r9, rbx
-    sete r9
-    movzx r9, r9
-    mov rax, r9
+    mov rsi, @id
+    call @wrap [args=(rsi,rdi)]
+    cmp.ptr rax, rbx
+    sete rax
+    movzx rax, rax
     ret rax

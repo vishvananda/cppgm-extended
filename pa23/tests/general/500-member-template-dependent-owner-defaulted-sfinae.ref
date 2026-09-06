@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @post(%ctx : ptr [pass=reference], %token : ptr [pass=reference]) -> i32 [binding=weak, object=_Z4postI7context7handlerEiRT_OT0_] {
+function @post(%ctx : ptr [pass=by_address, object_bytes=1], %token : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4postI7context7handlerEiRT_OT0_] {
   slot $ctx : ptr
   slot $token : ptr
   slot $arg__1 : obj<1x1>
@@ -38,14 +38,31 @@ function @post(%ctx : ptr [pass=reference], %token : ptr [pass=reference]) -> i3
     %t2 = addr $arg__2
     %t3 = load ptr $ctx
     %t4 = call obj<1x1> @context__get_executor(%t3)
-    call void @initiate_executor___initiate(%t1, %t2)
+    call void @initiate_executor___initiate_executor_(%t1, %t2)
     %t5 = load ptr $token
     %t6 = addr $arg__3
-    call void @empty_work_function__empty_work_function(%t6)
     %t7 = call i32 @async_result_initiate__ov2(%t1, %t5, %t6)
     return i32 %t7
 }
-function @async_result_initiate__ov2(%initiation : ptr [pass=reference], %token : ptr [pass=reference], %args : ptr [pass=reference]) -> i32 [binding=weak, object=_Z21async_result_initiateI8initiateI8executorE7handlerJ19empty_work_functionEEiOT_OT0_DpOT1_] {
+function @context__get_executor(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN7context12get_executorEv, inline_hint=yes] {
+  slot $this : ptr
+  slot $retobj__1 : obj<1x1>
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = addr $retobj__1
+    return obj<1x1> $retobj__1
+}
+function @initiate_executor___initiate_executor_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8initiateI8executorEC1ERKS0_, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+function @async_result_initiate__ov2(%initiation : ptr [pass=by_address, object_bytes=1], %token : ptr [pass=by_address, object_bytes=1], %args : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z21async_result_initiateI8initiateI8executorE7handlerJ19empty_work_functionEEiOT_OT0_DpOT1_] {
   slot $initiation : ptr
   slot $token : ptr
   slot $args : ptr
@@ -60,7 +77,7 @@ function @async_result_initiate__ov2(%initiation : ptr [pass=reference], %token 
     %t4 = call i32 @initiate_executor___operator__(%t1, %t2, %t3, 0, 0)
     return i32 %t4
 }
-function @initiate_executor___operator__(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference], %__param3 : ptr, %__param4 : ptr) -> i32 [binding=weak, object=_ZNK8initiateI8executorEclI7handler19empty_work_functionEEiOT_OT0_PN9enable_ifIXsr11is_executorIN11conditionalILb1ES0_S5_E4typeEEE5valueEvE4typeESF_] {
+function @initiate_executor___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : ptr, %__param4 : ptr) -> i32 [binding=weak, object=_ZNK8initiateI8executorEclI7handler19empty_work_functionEEiOT_OT0_P41__function_template_nondeduced_type_shapeS9_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -75,39 +92,4 @@ function @initiate_executor___operator__(%this : ptr, %__param1 : ptr [pass=refe
     store ptr %__param4, $__param4
     return i32 1
 }
-function @initiate_executor___initiate(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8initiateI8executorEC1ERKS0_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
-function @empty_work_function__empty_work_function(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN19empty_work_functionC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @context__get_executor(%this : ptr) -> obj<1x1> [binding=weak, object=_ZN7context12get_executorEv] {
-  slot $this : ptr
-  slot $retobj__1 : obj<1x1>
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = addr $retobj__1
-    call void @executor__executor(%t1)
-    return obj<1x1> $retobj__1
-}
-function @executor__executor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN8executorC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN8initiateI8executorEC2ERKS0_ = @initiate_executor___initiate
-alias object _ZN19empty_work_functionC2Ev = @empty_work_function__empty_work_function
-alias object _ZN8executorC2Ev = @executor__executor
+alias object _ZN8initiateI8executorEC2ERKS0_ = @initiate_executor___initiate_executor_

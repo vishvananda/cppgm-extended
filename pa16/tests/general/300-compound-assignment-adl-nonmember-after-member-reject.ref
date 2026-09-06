@@ -1,4 +1,4 @@
-function @boost__operator__(%target : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> ptr [binding=strong, object=_ZN5boostpLERN3lib6StringERKNS_7CstringE] {
+function @boost__operator__(%target : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=strong, object=_ZN5boostpLERN3lib6StringERKNS_7CstringE] {
   slot $target : ptr
   slot $__param1 : ptr
 
@@ -43,7 +43,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1Ev] {
+function @Holder__Holder(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -53,7 +53,7 @@ function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1
     call void @lib__String__String(%t2)
     return void
 }
-function @lib__String__String(%this : ptr) -> void [binding=weak, object=_ZN3lib6StringC1Ev] {
+function @lib__String__String(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3lib6StringC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

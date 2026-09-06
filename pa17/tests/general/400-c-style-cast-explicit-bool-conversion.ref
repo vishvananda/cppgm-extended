@@ -12,7 +12,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $argobj__2
-    call void @S__S(%t1)
     %t2 = call u8 @f($argobj__2)
     branch %t2, ^cond_then_1, ^cond_else_2
 
@@ -28,18 +27,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @S__S(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1SC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @S__operatorbool(%this : ptr) -> u8 [binding=weak, object=_ZNK1ScvbEv] {
+function @S__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK1ScvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return u8 1
 }
-alias object _ZN1SC2Ev = @S__S

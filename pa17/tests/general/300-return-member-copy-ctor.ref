@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = binary sub i32 %t11, 7
     return i32 %t12
 }
-function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1Ev] {
+function @Holder__Holder(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -32,7 +32,7 @@ function @Holder__Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderC1
     call void @Inner__Inner(%t2)
     return void
 }
-function @Holder__get(%ret : ptr [pass=indirect_result], %this : ptr) -> void [binding=weak, object=_ZNK6Holder3getEv] {
+function @Holder__get(%ret : ptr [pass=indirect_result, object_bytes=8], %this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZNK6Holder3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -42,7 +42,7 @@ function @Holder__get(%ret : ptr [pass=indirect_result], %this : ptr) -> void [b
     call void @Inner__Inner__ov2(%ret, %t2)
     return void
 }
-function @Inner__Inner(%this : ptr) -> void [binding=weak, object=_ZN5InnerC1Ev] {
+function @Inner__Inner(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5InnerC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -52,7 +52,7 @@ function @Inner__Inner(%this : ptr) -> void [binding=weak, object=_ZN5InnerC1Ev]
     store ptr 0, %t2
     return void
 }
-function @Inner__Inner__ov2(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN5InnerC1ERKS_] {
+function @Inner__Inner__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN5InnerC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

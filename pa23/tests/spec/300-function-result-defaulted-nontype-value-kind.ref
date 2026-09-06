@@ -1,4 +1,4 @@
-declare function @wrapper_int___f(%arg0 : ptr, %arg1 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN7wrapperIiE1fIiEEN3lib6resultI8identityINS4_IT_E4typeEEXL_ZNS_IiE5valueEEEE4typeERS5_]
+declare function @wrapper_int___f(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=4]) -> obj<1x1> [binding=weak, object=_ZN7wrapperIiE1fIiEE8identityIiERT_, inline_hint=yes]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $w : obj<1x1>

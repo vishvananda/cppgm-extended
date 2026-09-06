@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 0
 }
 
@@ -28,7 +28,7 @@ function @pick(%keep : u8, %b : obj<4x4>) -> obj<4x4> [binding=strong, object=_Z
   block ^condobj_end_3:
     return obj<4x4> $retobj__1
 }
-function @Box__Box(%this : ptr, %__param1 : ptr) -> void [binding=weak, object=_ZN3BoxC1EPKc] {
+function @Box__Box(%this : ptr [object_bytes=4], %__param1 : ptr) -> void [binding=weak, object=_ZN3BoxC1EPKc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

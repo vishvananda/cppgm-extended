@@ -1,4 +1,4 @@
-global @string_like_char___npos : i32 [binding=weak, object=_ZN11string_likeIcE4nposE] = 0
+global @__cppgm_class_template_identity_2_0_0__npos : i32 [storage=readonly, binding=weak, object=_ZN11string_likeIcE4nposE] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $s : obj<1x1>
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @string_like_char___insert(%this : ptr, %sv : obj<1x1>) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertI9view_likeEEPcT_] {
+function @string_like_char___insert(%this : ptr [object_bytes=1], %sv : obj<1x1>) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertI9view_likeEEPcT_, inline_hint=yes] {
   slot $this : ptr
   slot $sv : obj<1x1>
 
@@ -42,7 +42,14 @@ function @string_like_char___insert(%this : ptr, %sv : obj<1x1>) -> ptr [binding
     %t6 = call ptr @string_like_char___insert__ov2(%t1, 0, %t3, %t5, 0)
     return ptr %t6
 }
-function @string_like_char___insert__ov2(%this : ptr, %__param1 : ptr, %__param2 : ptr, %__param3 : ptr, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertIPKcEEPcS3_T_S5_Pv] {
+function @view_like__data(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK9view_like4dataEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return ptr 0
+}
+function @string_like_char___insert__ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : ptr, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertIPKcEEPcS2_T_S4_Pv, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -55,12 +62,5 @@ function @string_like_char___insert__ov2(%this : ptr, %__param1 : ptr, %__param2
     store ptr %__param2, $__param2
     store ptr %__param3, $__param3
     store ptr %__param4, $__param4
-    return ptr 0
-}
-function @view_like__data(%this : ptr) -> ptr [binding=weak, object=_ZNK9view_like4dataEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
     return ptr 0
 }

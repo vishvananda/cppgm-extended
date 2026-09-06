@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @storage_ptr__storage_ptr(%this : ptr) -> void [binding=weak, object=_ZN11storage_ptrC1Ev] {
+function @storage_ptr__storage_ptr(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN11storage_ptrC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -62,7 +62,7 @@ function @storage_ptr__storage_ptr(%this : ptr) -> void [binding=weak, object=_Z
     store i32 7, %t2
     return void
 }
-function @value__value(%this : ptr, %__param1 : i64, %sp : obj<4x4>) -> void [binding=weak, object=_ZN5valueC1EDn11storage_ptr] {
+function @value__value(%this : ptr [object_bytes=4], %__param1 : i64, %sp : obj<4x4>) -> void [binding=weak, object=_ZN5valueC1EDn11storage_ptr, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i64
   slot $sp : obj<4x4>

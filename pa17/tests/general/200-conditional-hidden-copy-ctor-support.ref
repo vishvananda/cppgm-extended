@@ -1,4 +1,4 @@
-function @Holder__by_ref(%this : ptr) -> ptr [binding=strong, object=_ZNK6Holder6by_refEv] {
+function @Holder__by_ref(%this : ptr [object_bytes=8]) -> ptr [binding=strong, object=_ZNK6Holder6by_refEv] {
   slot $this : ptr
 
   block ^entry:
@@ -7,7 +7,7 @@ function @Holder__by_ref(%this : ptr) -> ptr [binding=strong, object=_ZNK6Holder
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @by_value(%x : ptr [pass=reference]) -> obj<8x4> [binding=strong, object=_Z8by_valueRK1X] {
+function @by_value(%x : ptr [pass=by_address, object_bytes=8]) -> obj<8x4> [binding=strong, object=_Z8by_valueRK1X] {
   slot $x : ptr
   slot $retobj__1 : obj<8x4>
 
@@ -18,7 +18,7 @@ function @by_value(%x : ptr [pass=reference]) -> obj<8x4> [binding=strong, objec
     copyobj 8x4 %t2, %t1
     return obj<8x4> $retobj__1
 }
-function @f(%h : ptr [pass=reference], %in : ptr [pass=reference], %cond : u8) -> i32 [binding=strong, object=_Z1fR6HolderRK1Xb] {
+function @f(%h : ptr [pass=by_address, object_bytes=8], %in : ptr [pass=by_address, object_bytes=8], %cond : u8) -> i32 [binding=strong, object=_Z1fR6HolderRK1Xb] {
   slot $h : ptr
   slot $in : ptr
   slot $cond : u8

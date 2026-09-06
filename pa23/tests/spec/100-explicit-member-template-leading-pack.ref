@@ -3,22 +3,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
-    call void @box_int__float___box(%t1)
     call void @box_int__float___subset(%t1)
     return i32 0
 }
-function @box_int__float___box(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3boxIJifEEC1Ev, trivial_lifecycle=yes] {
+function @box_int__float___subset(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3boxIJifEE6subsetIfivEEvv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @box_int__float___subset(%this : ptr) -> void [binding=weak, object=_ZN3boxIJifEE6subsetIJfiEvEEvv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN3boxIJifEEC2Ev = @box_int__float___box

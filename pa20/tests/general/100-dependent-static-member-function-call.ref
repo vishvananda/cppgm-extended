@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = binary sub i32 %t1, 1
     return i32 %t2
 }
-function @duration_values_int___max() -> i32 [binding=weak, object=_ZN15duration_valuesIiE3maxEv] {
+function @duration_values_int___max() -> i32 [binding=weak, object=_ZN15duration_valuesIiE3maxEv, inline_hint=yes] {
   block ^entry:
     return i32 1
 }

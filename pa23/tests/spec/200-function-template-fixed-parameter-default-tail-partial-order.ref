@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = load i32 $cond__1
     return i32 %t14
 }
-function @generate_random_graph(%__param0 : ptr [pass=reference], %__param1 : i64, %__param2 : i64, %__param3 : ptr [pass=reference], %__param4 : u8, %__param5 : u8) -> obj<1x1> [binding=weak, object=_Z21generate_random_graphI5graph3rngE12fixed_choiceRT_N12graph_traitsIS3_E18vertices_size_typeES7_RT0_bb] {
+function @generate_random_graph(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i64, %__param2 : i64, %__param3 : ptr [pass=by_address, object_bytes=1], %__param4 : u8, %__param5 : u8) -> obj<1x1> [binding=weak, object=_Z21generate_random_graphI5graph3rngE12fixed_choiceRT_N12graph_traitsIS3_E18vertices_size_typeES7_RT0_bb] {
   slot $__param0 : ptr
   slot $__param1 : i64
   slot $__param2 : i64
@@ -54,14 +54,5 @@ function @generate_random_graph(%__param0 : ptr [pass=reference], %__param1 : i6
     store u8 %__param4, $__param4
     store u8 %__param5, $__param5
     %t1 = addr $retobj__1
-    call void @fixed_choice__fixed_choice(%t1)
     return obj<1x1> $retobj__1
 }
-function @fixed_choice__fixed_choice(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN12fixed_choiceC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN12fixed_choiceC2Ev = @fixed_choice__fixed_choice

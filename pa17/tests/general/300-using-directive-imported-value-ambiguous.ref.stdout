@@ -1,9 +1,0 @@
-ERROR: unknown id-expression i [template-id no] [scope ] [bindings ] [function A::D::f] [is_method no] [body_parent_scope A::D::<here>] [body_parent_bindings ] [body_function_scope A::D::<here>] [body_function_bindings ]
-Diagnostic context:
-analyze_function_binding_output [A::D::f]
-  analyze_statement [return-statement] at tests/general/300-using-directive-imported-value-ambiguous.t:17:7
-    analyze_expression_for_target [i -> int] at tests/general/300-using-directive-imported-value-ambiguous.t:17:14
-      semantic_expression::analyze_expression_for_target [i -> int] at tests/general/300-using-directive-imported-value-ambiguous.t:17:14
-        analyze_expression [i] at tests/general/300-using-directive-imported-value-ambiguous.t:17:14
-          semantic_expression::analyze_expression [i] at tests/general/300-using-directive-imported-value-ambiguous.t:17:14
-            analyze_id_expression [i] at tests/general/300-using-directive-imported-value-ambiguous.t:17:14

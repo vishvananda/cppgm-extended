@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = binary sub i32 %t7, 14
     return i32 %t8
 }
-function @number__operatorint(%this : ptr) -> i32 [binding=weak, object=_ZNK6numbercviEv] {
+function @number__operatorint(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK6numbercviEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

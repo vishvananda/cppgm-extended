@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -32,45 +32,32 @@ function @foo
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
-    param-slot %b -> [rbp-8] : i64
-    param-slot %c -> [rbp-16] : i64
-    param-slot %d -> [rbp-24] : i64
-    param-slot %f -> [rbp-32] : i64
 
   block ^entry
-    store.i64 [rbp-8], rsi
-    store.i64 [rbp-16], rdx
-    store.i64 [rbp-24], rcx
-    store.i64 [rbp-32], r9
-    mov r9, r8
-    mov rbx, rdi
-    add rbx, r9
-    mov rax, rbx
-    ret rax
+    add rdi, r8
+    ret rdi
 
 function @main
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
+    temp %r -> [rbp-8] : i64
 
   block ^entry
-    call @one
+    call @one [args=()]
     mov rdi, rax
     mov rsi, 20
     mov rdx, 30
     mov rcx, 40
     mov r8, 50
     mov r9, 60
-    call @foo
-    mov r9, rax
-    mov rdx, 51
-    cmp.i64 r9, rdx
-    setne r9
-    movzx r9, r9
-    mov rax, r9
+    call @foo [args=(rcx,rdx,rsi,rdi,r8,r9)]
+    store.i64 [rbp-8], rax
+    cmp.i64 [rbp-8], 51
+    setne rax
+    movzx rax, rax
     ret rax

@@ -9,7 +9,7 @@ function @take(%s : obj<4x4>) -> i32 [binding=strong, object=_Z4take1S] {
     %t4 = load i32 %t3
     return i32 %t4
 }
-function @pass(%s : ptr [pass=reference]) -> ptr [binding=strong, object=_Z4passO1S] {
+function @pass(%s : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z4passO1S] {
   slot $s : ptr
 
   block ^entry:
@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub i32 %t4, 7
     return i32 %t5
 }
-function @S__S(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN1SC1Ei] {
+function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN1SC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

@@ -43,3 +43,4 @@ fn__main__epilogue:
 
 g__table:
 	data64 fn__ret3;
+

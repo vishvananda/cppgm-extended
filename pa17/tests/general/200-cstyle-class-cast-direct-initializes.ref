@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @Token__Token(%this : ptr, %code : u32) -> void [binding=weak, object=_ZN5TokenC1Ej] {
+function @Token__Token(%this : ptr [object_bytes=4], %code : u32) -> void [binding=weak, object=_ZN5TokenC1Ej, inline_hint=yes] {
   slot $this : ptr
   slot $code : u32
 

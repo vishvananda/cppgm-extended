@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__2
     return i32 %t5
 }
-function @any_completion_executor__any_completion_executor__ov3(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN23any_completion_executorC1I15any_io_executorvEET_] {
+function @any_completion_executor__any_completion_executor__ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN23any_completion_executorC1I15any_io_executorvEET_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 

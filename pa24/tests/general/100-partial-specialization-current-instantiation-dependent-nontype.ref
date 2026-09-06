@@ -3,15 +3,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    call void @partial_current_instantiation_bits_1__3___partial_current_instantiation_bits(%t1)
+    call void @partial_current_instantiation_bits_1__3___partial_current_instantiation_bits_1__3_(%t1)
     %t2 = addr $value
     return i32 0
 }
-function @partial_current_instantiation_bits_1__3___partial_current_instantiation_bits(%this : ptr) -> void [binding=weak, object=_ZN34partial_current_instantiation_bitsILi1ELm3EEC1Ev] {
+function @partial_current_instantiation_bits_1__3___partial_current_instantiation_bits_1__3_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN34partial_current_instantiation_bitsILi1ELm3EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-alias object _ZN34partial_current_instantiation_bitsILi1ELm3EEC2Ev = @partial_current_instantiation_bits_1__3___partial_current_instantiation_bits
+alias object _ZN34partial_current_instantiation_bitsILi1ELm3EEC2Ev = @partial_current_instantiation_bits_1__3___partial_current_instantiation_bits_1__3_

@@ -1,4 +1,4 @@
-global @source__default_policy : i32 [binding=internal, object=_ZN6source14default_policyE] = 1
+global @source__default_policy : i32 [storage=readonly, binding=internal, object=_ZN6source14default_policyE] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

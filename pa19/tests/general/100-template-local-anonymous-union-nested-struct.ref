@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = call i32 @H_P___f(%t7, $argobj__1)
     return i32 %t10
 }
-function @H_P___f(%this : ptr, %v : obj<16x8>) -> i32 [binding=weak, object=_ZNK1HI1PE1fES0_] {
+function @H_P___f(%this : ptr [object_bytes=1], %v : obj<16x8>) -> i32 [binding=weak, object=_ZNK1HI1PE1fES0_, inline_hint=yes] {
   slot $this : ptr
   slot $v : obj<16x8>
   slot $__u : obj<16x8>
@@ -35,7 +35,7 @@ function @H_P___f(%this : ptr, %v : obj<16x8>) -> i32 [binding=weak, object=_ZNK
     %t6 = call ptr @P__operator_(%t4, %t5)
     return i32 0
 }
-function @P__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN1PaSERKS_] {
+function @P__operator_(%this : ptr [object_bytes=16], %other : ptr [pass=by_address, object_bytes=16]) -> ptr [unwind=no, binding=weak, object=_ZN1PaSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

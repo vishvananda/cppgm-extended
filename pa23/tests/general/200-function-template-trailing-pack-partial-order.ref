@@ -7,15 +7,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @g
-    %t2 = unary decay ptr %t1
-    store ptr %t2, $fp
-    %t3 = addr $fp
-    %t4 = call i32 @invoke__ov2(%t3)
-    %t5 = cmp ne i32 %t4, 7
-    %t6 = convert trunc i32 i64 %t5
-    return i32 %t6
+    store ptr %t1, $fp
+    %t2 = addr $fp
+    %t3 = call i32 @invoke__ov2(%t2)
+    %t4 = cmp ne i32 %t3, 7
+    %t5 = convert trunc i32 i64 %t4
+    return i32 %t5
 }
-function @invoke__ov2(%f : ptr [pass=reference]) -> i32 [binding=weak, object=_Z6invokeIRPFivEJEEiOT_DpOT0_] {
+function @invoke__ov2(%f : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z6invokeIRPFivEJEEiOT_DpOT0_] {
   slot $f : ptr
 
   block ^entry:

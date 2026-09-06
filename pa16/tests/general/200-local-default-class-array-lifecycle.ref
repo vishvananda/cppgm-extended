@@ -15,55 +15,46 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $elements
-    %t2 = unary decay ptr %t1
-    %t3 = index i8 [projection=array_element] %t2, 0
-    call void @Element__Element(%t3)
-    %t4 = addr $elements
-    %t5 = unary decay ptr %t4
-    %t6 = index i8 [projection=array_element] %t5, 1
+    %t2 = index i8 [projection=array_element] %t1, 0
+    call void @Element__Element(%t2)
+    %t3 = addr $elements
+    %t4 = index i8 [projection=array_element] %t3, 1
+    call void @Element__Element(%t4)
+    %t5 = addr $elements
+    %t6 = index i8 [projection=array_element] %t5, 2
     call void @Element__Element(%t6)
-    %t7 = addr $elements
-    %t8 = unary decay ptr %t7
-    %t9 = index i8 [projection=array_element] %t8, 2
-    call void @Element__Element(%t9)
-    %t10 = call i32 @observed()
-    %t11 = cmp ne i32 %t10, 30
-    branch %t11, ^if_then_1, ^if_else_2
+    %t7 = call i32 @observed()
+    %t8 = cmp ne i32 %t7, 30
+    branch %t8, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    %t12 = addr $elements
-    %t13 = unary decay ptr %t12
-    %t14 = index i8 [projection=array_element] %t13, 2
+    %t9 = addr $elements
+    %t10 = index i8 [projection=array_element] %t9, 2
+    call void @Element___Element(%t10)
+    %t11 = addr $elements
+    %t12 = index i8 [projection=array_element] %t11, 1
+    call void @Element___Element(%t12)
+    %t13 = addr $elements
+    %t14 = index i8 [projection=array_element] %t13, 0
     call void @Element___Element(%t14)
-    %t15 = addr $elements
-    %t16 = unary decay ptr %t15
-    %t17 = index i8 [projection=array_element] %t16, 1
-    call void @Element___Element(%t17)
-    %t18 = addr $elements
-    %t19 = unary decay ptr %t18
-    %t20 = index i8 [projection=array_element] %t19, 0
-    call void @Element___Element(%t20)
     return i32 1
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t21 = addr $elements
-    %t22 = unary decay ptr %t21
-    %t23 = index i8 [projection=array_element] %t22, 2
-    call void @Element___Element(%t23)
-    %t24 = addr $elements
-    %t25 = unary decay ptr %t24
-    %t26 = index i8 [projection=array_element] %t25, 1
-    call void @Element___Element(%t26)
-    %t27 = addr $elements
-    %t28 = unary decay ptr %t27
-    %t29 = index i8 [projection=array_element] %t28, 0
-    call void @Element___Element(%t29)
-    %t30 = call i32 @observed()
-    %t31 = cmp eq i32 %t30, 33
-    branch %t31, ^cond_then_4, ^cond_else_5
+    %t15 = addr $elements
+    %t16 = index i8 [projection=array_element] %t15, 2
+    call void @Element___Element(%t16)
+    %t17 = addr $elements
+    %t18 = index i8 [projection=array_element] %t17, 1
+    call void @Element___Element(%t18)
+    %t19 = addr $elements
+    %t20 = index i8 [projection=array_element] %t19, 0
+    call void @Element___Element(%t20)
+    %t21 = call i32 @observed()
+    %t22 = cmp eq i32 %t21, 33
+    branch %t22, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:
     store i32 0, $cond__1
@@ -74,20 +65,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_6
 
   block ^cond_end_6:
-    %t32 = load i32 $cond__1
-    return i32 %t32
+    %t23 = load i32 $cond__1
+    return i32 %t23
 }
-function @Element__Element(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7ElementC1Ev] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @constructed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @constructed
-    return void
-}
-function @Element___Element(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7ElementD1Ev] {
+function @Element___Element(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7ElementD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -97,5 +78,15 @@ function @Element___Element(%this : ptr) -> void [unwind=no, binding=weak, objec
     store i32 %t2, @destroyed
     return void
 }
-alias object _ZN7ElementC2Ev = @Element__Element
+function @Element__Element(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7ElementC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @constructed
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @constructed
+    return void
+}
 alias object _ZN7ElementD2Ev = @Element___Element
+alias object _ZN7ElementC2Ev = @Element__Element

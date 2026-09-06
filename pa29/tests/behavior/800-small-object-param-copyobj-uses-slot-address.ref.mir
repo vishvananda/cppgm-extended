@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -32,11 +32,8 @@ function @make_tag
     slot $tmp -> [rbp-8] : obj<8x8>
 
   block ^entry
-    mov rax, 77
-    lea rcx, [rbp-8]
-    store.i64 [rcx], rax
-    lea r11, [rbp-8]
-    load.i64 rax, [r11]
+    store.i64 [rbp-8], 77
+    load.i64 rax, [rbp-8]
     ret
 
 function @copy_after_call
@@ -52,9 +49,8 @@ function @copy_after_call
 
   block ^entry
     store.i64 [rbp-8], rdi
-    call @touch
-    mov r8, @copied
-    mov rdi, r8
+    call @touch [args=()]
+    mov rdi, @copied
     lea rsi, [rbp-8]
     copy_bytes 8x8, rdi, rsi
     ret
@@ -70,12 +66,10 @@ function @main
     temp %tag -> [rbp-8] : obj<8x8>
 
   block ^entry
-    call @make_tag
-    lea r11, [rbp-8]
-    store.i64 [r11], rax
-    lea r11, [rbp-8]
-    load.i64 rdi, [r11]
-    call @copy_after_call
+    call @make_tag [args=()]
+    store.i64 [rbp-8], rax
+    load.i64 rdi, [rbp-8]
+    call @copy_after_call [args=(rdi)]
     load.i64 r8, @copied
     mov rdx, 77
     cmp.i64 r8, rdx
@@ -85,7 +79,6 @@ function @main
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    mov rax, r8
+    sext.i32 rax
     ret rax

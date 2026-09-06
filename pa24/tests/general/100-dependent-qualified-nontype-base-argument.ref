@@ -3,24 +3,37 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $table
-    call void @Table_Traits___Table(%t1, 0)
+    call void @Table_Traits___Table_Traits_(%t1, 0)
     return i32 0
 }
-function @Table_Traits___Table(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN5TableI6TraitsEC1Ei] {
+function @Table_Traits___Table_Traits_(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN5TableI6TraitsEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
   block ^entry:
     store ptr %this, $this
     store i32 %__param1, $__param1
+    %t1 = load ptr $this
+    %t2 = index i8 %t1, 0
+    call void @AllocBox___cppgm_class_template_identity_2_3_0___AllocBox___cppgm_class_template_identity_2_3_0___base_entry(%t2)
     return void
 }
-function @Holder_Rebind_int__Node_int__false_____Holder(%this : ptr) -> void [binding=weak, object=_ZN6HolderI6RebindIi4NodeIiLb0EEEEC1Ev] {
+function @AllocBox___cppgm_class_template_identity_2_3_0___AllocBox___cppgm_class_template_identity_2_3_0___base_entry(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8AllocBoxI6RebindIi4NodeIiLb0EEEEC2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    call void @Holder___cppgm_class_template_identity_2_3_0___Holder___cppgm_class_template_identity_2_3_0_(%t2)
+    return void
+}
+function @Holder___cppgm_class_template_identity_2_3_0___Holder___cppgm_class_template_identity_2_3_0_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6HolderI6RebindIi4NodeIiLb0EEEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-alias object _ZN5TableI6TraitsEC2Ei = @Table_Traits___Table
-alias object _ZN6HolderI6RebindIi4NodeIiLb0EEEEC2Ev = @Holder_Rebind_int__Node_int__false_____Holder
+alias object _ZN5TableI6TraitsEC2Ei = @Table_Traits___Table_Traits_
+alias object _ZN6HolderI6RebindIi4NodeIiLb0EEEEC2Ev = @Holder___cppgm_class_template_identity_2_3_0___Holder___cppgm_class_template_identity_2_3_0_

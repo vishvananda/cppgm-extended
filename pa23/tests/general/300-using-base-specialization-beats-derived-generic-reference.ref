@@ -5,20 +5,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $d
     %t2 = addr $d
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = addr $argobj__1
-    call void @P_int___P(%t4)
     call void @B__f(%t3, $argobj__1)
     return i32 0
 }
-function @P_int___P(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1PIiEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @B__f(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN1B1fIiEEv1PIT_E] {
+function @B__f(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN1B1fIiEEv1PIT_E, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -26,4 +18,3 @@ function @B__f(%this : ptr, %__param1 : obj<1x1>) -> void [binding=weak, object=
     store ptr %this, $this
     return void
 }
-alias object _ZN1PIiEC2Ev = @P_int___P

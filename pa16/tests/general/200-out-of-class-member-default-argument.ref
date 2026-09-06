@@ -1,4 +1,4 @@
-function @Text__take(%this : ptr, %out : ptr, %n : i64, %pos : i64) -> i32 [binding=strong, object=_ZN4Text4takeEPcmm] {
+function @Text__take(%this : ptr [object_bytes=1], %out : ptr, %n : i64, %pos : i64) -> i32 [binding=strong, object=_ZN4Text4takeEPcmm] {
   slot $this : ptr
   slot $out : ptr
   slot $n : i64
@@ -35,12 +35,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i8 0, %t5
     %t6 = addr $text
     %t7 = addr $out
-    %t8 = unary decay ptr %t7
-    %t9 = convert sext i64 i32 3
-    %t10 = convert sext i64 i32 0
-    %t11 = call i32 @Text__take(%t6, %t8, %t9, %t10)
-    %t12 = cmp eq i32 %t11, 3
-    branch %t12, ^cond_then_1, ^cond_else_2
+    %t8 = convert sext i64 i32 3
+    %t9 = convert sext i64 i32 0
+    %t10 = call i32 @Text__take(%t6, %t7, %t8, %t9)
+    %t11 = cmp eq i32 %t10, 3
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -51,6 +50,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__1
-    return i32 %t13
+    %t12 = load i32 $cond__1
+    return i32 %t12
 }

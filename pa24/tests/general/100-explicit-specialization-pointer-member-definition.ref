@@ -1,4 +1,4 @@
-function @print_log_value_char_const_____operator__(%this : ptr, %__param1 : ptr) -> void [binding=strong, object=_ZN15print_log_valueIPKcEclES1_] {
+function @print_log_value_pointer_to_const_char___operator__(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=strong, object=_ZN15print_log_valueIPKcEclES1_] {
   slot $this : ptr
   slot $__param1 : ptr
 

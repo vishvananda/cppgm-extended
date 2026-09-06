@@ -3,14 +3,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $h
-    call void @holder_unsigned_int__int___holder(%t1)
+    call void @holder_unsigned_int__int___holder_unsigned_int__int_(%t1)
     %t2 = addr $h
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load u32 %t3
     %t5 = copy i32 %t4
     return i32 %t5
 }
-function @holder_unsigned_int__int___holder(%this : ptr) -> void [binding=weak, object=_ZN6holderIjiEC1Ev] {
+function @holder_unsigned_int__int___holder_unsigned_int__int_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6holderIjiEC1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $mask : u32
   slot $cond__1 : u32
@@ -67,4 +67,4 @@ function @holder_unsigned_int__int___holder(%this : ptr) -> void [binding=weak, 
     store u32 %t21, %t23
     return void
 }
-alias object _ZN6holderIjiEC2Ev = @holder_unsigned_int__int___holder
+alias object _ZN6holderIjiEC2Ev = @holder_unsigned_int__int___holder_unsigned_int__int_

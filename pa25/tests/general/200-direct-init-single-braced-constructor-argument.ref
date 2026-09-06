@@ -9,8 +9,8 @@ function @make(%ec : obj<4x4>) -> obj<4x4> [binding=strong, object=_Z4make10erro
     %t2 = addr $retobj__1
     %t3 = addr $arg__2
     %t4 = addr $ec
-    call void @completion_message_void_error_code____completion_message(%t3, 0, %t4)
-    call void @completion_payload_void_error_code____completion_payload(%t2, %t3)
+    call void @completion_message_void_error_code____completion_message_void_error_code____ov3(%t3, 0, %t4)
+    call void @completion_payload_void_error_code____completion_payload_void_error_code__(%t2, %t3)
     return obj<4x4> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -48,21 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @completion_payload_void_error_code____completion_payload(%this : ptr, %msg : ptr [pass=reference]) -> void [binding=weak, object=_ZN18completion_payloadIFv10error_codeEEC1EO18completion_messageIS1_E] {
-  slot $this : ptr
-  slot $msg : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %msg, $msg
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $msg
-    %t4 = index i8 [projection=field] %t3, 0
-    copyobj 4x4 %t4, %t2
-    return void
-}
-function @completion_message_void_error_code____completion_message(%this : ptr, %__param1 : i32, %arg : ptr [pass=reference]) -> void [binding=weak, object=_ZN18completion_messageIFv10error_codeEEC1IRS0_EEiOT_] {
+function @completion_message_void_error_code____completion_message_void_error_code____ov3(%this : ptr [object_bytes=4], %__param1 : i32, %arg : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN18completion_messageIFv10error_codeEEC1IRS0_EEiOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $arg : ptr
@@ -77,5 +63,19 @@ function @completion_message_void_error_code____completion_message(%this : ptr, 
     copyobj 4x4 %t3, %t2
     return void
 }
-alias object _ZN18completion_payloadIFv10error_codeEEC2EO18completion_messageIS1_E = @completion_payload_void_error_code____completion_payload
-alias object _ZN18completion_messageIFv10error_codeEEC2IRS0_EEiOT_ = @completion_message_void_error_code____completion_message
+function @completion_payload_void_error_code____completion_payload_void_error_code__(%this : ptr [object_bytes=4], %msg : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN18completion_payloadIFv10error_codeEEC1EO18completion_messageIS1_E, inline_hint=yes] {
+  slot $this : ptr
+  slot $msg : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %msg, $msg
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $msg
+    %t4 = index i8 [projection=field] %t3, 0
+    copyobj 4x4 %t4, %t2
+    return void
+}
+alias object _ZN18completion_messageIFv10error_codeEEC2IRS0_EEiOT_ = @completion_message_void_error_code____completion_message_void_error_code____ov3
+alias object _ZN18completion_payloadIFv10error_codeEEC2EO18completion_messageIS1_E = @completion_payload_void_error_code____completion_payload_void_error_code__

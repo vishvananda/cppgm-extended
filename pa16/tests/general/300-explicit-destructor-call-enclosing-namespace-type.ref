@@ -1,4 +1,17 @@
-function @ns__json__detail__holder___holder(%this : ptr) -> void [binding=weak, object=_ZN2ns4json6detail6holderD1Ev] {
+function @destroy(%h : ptr) -> void [binding=strong, object=_Z7destroyPN2ns4json6detail6holderE] {
+  slot $h : ptr
+
+  block ^entry:
+    store ptr %h, $h
+    %t1 = load ptr $h
+    call void @ns__json__detail__holder___holder(%t1)
+    return void
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}
+function @ns__json__detail__holder___holder(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2ns4json6detail6holderD1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -14,32 +27,18 @@ function @ns__json__detail__holder___holder(%this : ptr) -> void [binding=weak, 
     call void @ns__json__value___value(%t6)
     return void
 }
-function @ns__json__value___value__base_entry(%this : ptr) -> void [unwind=no, binding=strong, object=_ZN2ns4json5valueD2Ev] {
+function @ns__json__value___value__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN2ns4json5valueD2Ev, object_root=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @ns__json__value___value(%this : ptr) -> void [unwind=no, binding=strong, object=_ZN2ns4json5valueD1Ev] {
+function @ns__json__value___value(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN2ns4json5valueD1Ev] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @destroy(%h : ptr) -> void [binding=strong, object=_Z7destroyPN2ns4json6detail6holderE] {
-  slot $h : ptr
-
-  block ^entry:
-    store ptr %h, $h
-    %t1 = load ptr $h
-    call void @ns__json__detail__holder___holder(%t1)
-    return void
-}
-function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  block ^entry:
-    return i32 0
-}
-alias object _ZN2ns4json5valueD2Ev = @ns__json__value___value
 alias object _ZN2ns4json6detail6holderD2Ev = @ns__json__detail__holder___holder

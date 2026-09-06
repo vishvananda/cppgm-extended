@@ -1,4 +1,4 @@
-function @target(%__param0 : ptr [pass=reference]) -> void [binding=strong, object=_Z6targetOi] {
+function @target(%__param0 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z6targetOi] {
   slot $__param0 : ptr
 
   block ^entry:

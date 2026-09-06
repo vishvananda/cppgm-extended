@@ -1,4 +1,4 @@
-function @use(%p : ptr [pass=reference]) -> i32 [binding=strong, object=_Z3useR4pair] {
+function @use(%p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z3useR4pair] {
   slot $p : ptr
   slot $fx : obj<1x1>
   slot $fy : obj<1x1>
@@ -9,10 +9,10 @@ function @use(%p : ptr [pass=reference]) -> i32 [binding=strong, object=_Z3useR4
     %t2 = addr $fy
     %t3 = addr $fx
     %t4 = load ptr $p
-    %t5 = call i32 @foo_1___bar(%t3, %t4)
+    %t5 = call i32 @foo_pair__x___bar(%t3, %t4)
     %t6 = addr $fy
     %t7 = load ptr $p
-    %t8 = call i32 @foo_5___bar(%t6, %t7)
+    %t8 = call i32 @foo_pair__y___bar(%t6, %t7)
     %t9 = binary add i32 %t5, %t8
     return i32 %t9
 }
@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @foo_1___bar(%this : ptr, %p : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1xEEEE3barERS0_] {
+function @foo_pair__x___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1xEEEE3barERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -33,7 +33,7 @@ function @foo_1___bar(%this : ptr, %p : ptr [pass=reference]) -> i32 [binding=we
     %t4 = load i32 %t3
     return i32 %t4
 }
-function @foo_5___bar(%this : ptr, %p : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1yEEEE3barERS0_] {
+function @foo_pair__y___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1yEEEE3barERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 

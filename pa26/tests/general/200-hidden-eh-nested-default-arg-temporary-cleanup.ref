@@ -1,11 +1,10 @@
 global @observed : i32 [binding=strong, object=_Z8observed] = 0
-
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 120
   i8 0
 }
 
-function @record(%__param0 : ptr [pass=reference], %value : i32) -> void [binding=strong, object=_Z6recordRK5Guardi] {
+function @record(%__param0 : ptr [pass=by_address, object_bytes=1], %value : i32) -> void [binding=strong, object=_Z6recordRK5Guardi] {
   slot $__param0 : ptr
   slot $value : i32
 
@@ -16,7 +15,6 @@ function @record(%__param0 : ptr [pass=reference], %value : i32) -> void [bindin
     store i32 %t1, @observed
     return void
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $arg__1 : obj<1x1>
   slot $tmpobj__2 : obj<4x4>
@@ -88,16 +86,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__4
     return i32 %t9
 }
-
-function @Guard__Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardC1Ev] {
+function @Guard__Guard(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5GuardC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-
-function @Alloc__Alloc(%this : ptr) -> void [binding=weak, object=_ZN5AllocC1Ev] {
+function @Alloc__Alloc(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5AllocC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -107,8 +103,7 @@ function @Alloc__Alloc(%this : ptr) -> void [binding=weak, object=_ZN5AllocC1Ev]
     store i32 4, %t2
     return void
 }
-
-function @Target__Target(%this : ptr, %__param1 : ptr, %alloc : ptr [pass=reference]) -> void [binding=weak, object=_ZN6TargetC1EPKcRK5Alloc] {
+function @Target__Target(%this : ptr [object_bytes=4], %__param1 : ptr, %alloc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6TargetC1EPKcRK5Alloc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $alloc : ptr
@@ -125,27 +120,30 @@ function @Target__Target(%this : ptr, %__param1 : ptr, %alloc : ptr [pass=refere
     store i32 %t3, %t5
     return void
 }
-
-function @Target___Target(%this : ptr) -> void [binding=weak, object=_ZN6TargetD1Ev] {
+function @Target___Target(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6TargetD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-
-function @Alloc___Alloc(%this : ptr) -> void [binding=weak, object=_ZN5AllocD1Ev] {
+function @Alloc___Alloc(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5AllocD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-
-function @Guard___Guard(%this : ptr) -> void [binding=weak, object=_ZN5GuardD1Ev] {
+function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
+alias object _ZN5GuardC2Ev = @Guard__Guard
+alias object _ZN5AllocC2Ev = @Alloc__Alloc
+alias object _ZN6TargetC2EPKcRK5Alloc = @Target__Target
+alias object _ZN6TargetD2Ev = @Target___Target
+alias object _ZN5AllocD2Ev = @Alloc___Alloc
+alias object _ZN5GuardD2Ev = @Guard___Guard

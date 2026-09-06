@@ -3,10 +3,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    call void @target_int___target__ov3(%t1, 0)
+    call void @target_int___target_int___ov3(%t1, 0)
     return i32 0
 }
-function @target_int___target__ov3(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN6targetIiEC1IiTnN9enable_ifIXclsr5checkE7enabledIT_EEEE4typeELi0EEES3_] {
+function @target_int___target_int___ov3(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN6targetIiEC1IiLi0EEET_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -15,4 +15,4 @@ function @target_int___target__ov3(%this : ptr, %__param1 : i32) -> void [bindin
     store i32 %__param1, $__param1
     return void
 }
-alias object _ZN6targetIiEC2IiTnN9enable_ifIXclsr5checkE7enabledIT_EEEE4typeELi0EEES3_ = @target_int___target__ov3
+alias object _ZN6targetIiEC2IiLi0EEET_ = @target_int___target_int___ov3

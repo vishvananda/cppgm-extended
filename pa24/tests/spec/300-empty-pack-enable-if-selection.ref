@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 1
     return i32 %t4
 }
-function @traits_int___construct(%__param0 : ptr [pass=reference], %__param1 : ptr) -> i32 [binding=weak, object=_ZN6traitsIiE9constructIiJETnN9enable_ifIXsr13has_constructIiPT_DpT0_EE5valueEiE4typeELi0EEEiRiS4_DpOS5_] {
+function @traits_int___construct(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 : ptr) -> i32 [binding=weak, object=_ZN6traitsIiE9constructIiLi0EEEiRiPT_DpOT0_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

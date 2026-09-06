@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -14,15 +14,12 @@ function @increment
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
 
   block ^entry
-    mov r9, rdi
-    load.i32 rbx, [r9]
-    sext.i32 rbx
-    add rbx, 1
-    sext.i32 rbx
-    store.i32 [r9], rbx
+    load.i32 r8, [rdi]
+    add r8, 1
+    sext.i32 r8
+    store.i32 [rdi], r8
     ret
 
 function @main
@@ -33,32 +30,26 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
     slot $counter -> [rbp-8] : obj<8x4>
 
   block ^entry
-    lea rbx, [rbp-8]
-    mov rax, 0
-    store.i32 [rbx], rax
+    store.i32 [rbp-8], 0
     jmp ^loop_condition
 
   block ^loop_condition
-    load.i32 r8, [rbx]
-    sext.i32 r8
+    load.i32 r8, [rbp-8]
     cmp.i32 r8, 5
     jge ^loop_end
     jmp ^loop_body
 
   block ^loop_body
-    mov rdi, rbx
-    call @increment
+    lea rdi, [rbp-8]
+    call @increment [args=(rdi)]
     jmp ^loop_condition
 
   block ^loop_end
-    lea r8, [rbp-8]
-    load.i32 r9, [r8]
-    sext.i32 r9
-    cmp.i32 r9, 5
+    load.i32 r8, [rbp-8]
+    cmp.i32 r8, 5
     je ^good
     jmp ^bad
 

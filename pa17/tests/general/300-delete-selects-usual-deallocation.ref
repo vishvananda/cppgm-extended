@@ -1,8 +1,8 @@
-declare function @operator_new(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
 
 global @selected : i32 [binding=strong, object=_Z8selected] = zero
 
-function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete] {
+function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete] {
   slot $arg0 : ptr
 
   block ^entry:
@@ -10,7 +10,7 @@ function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, objec
     store i32 1, @selected
     return void
 }
-function @operatordelete(%__param0 : ptr, %__param1 : ptr) -> void [unwind=no, binding=strong, object=_ZdlPvS_] {
+function @operatordelete__ov2(%__param0 : ptr, %__param1 : ptr) -> void [unwind=no, binding=strong, object=_ZdlPvS_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -26,10 +26,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = convert sext i64 i32 4
-    %t2 = call ptr @operator_new(%t1)
+    %t2 = call ptr @operatornew(%t1)
     store ptr %t2, $p
     %t3 = load ptr $p
-    call void @operator_delete(%t3)
+    call void @operatordelete(%t3)
     %t4 = load i32 @selected
     %t5 = cmp eq i32 %t4, 1
     branch %t5, ^cond_then_1, ^cond_else_2

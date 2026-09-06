@@ -5,16 +5,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $source
-    call void @shared_ptr_X__int__deleter_Y____shared_ptr(%t1)
+    call void @shared_ptr_X__int____cppgm_class_template_identity_0_2_0___shared_ptr_Y__int____cppgm_class_template_identity_0_2_0_(%t1)
     %t2 = addr $target
     %t3 = addr $arg__1
     %t4 = addr $source
     %t5 = call obj<4x4> @dynamic_pointer_cast(%t4)
     copyobj 4x4 %t5, %t3
-    call void @weak_ptr_Y__int__deleter_Y____weak_ptr__ov4(%t2, %t3)
+    call void @weak_ptr_Y__int____cppgm_class_template_identity_0_2_0___weak_ptr_typename___retained_template_parameter_shape_0__int____cppgm_class_template_identity_0_2_0___ov4(%t2, %t3)
     return i32 0
 }
-function @shared_ptr_X__int__deleter_Y____shared_ptr(%this : ptr) -> void [binding=weak, object=_ZN10shared_ptrI1Xi7deleterI1YEEC1Ev] {
+function @shared_ptr_X__int____cppgm_class_template_identity_0_2_0___shared_ptr_Y__int____cppgm_class_template_identity_0_2_0_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN10shared_ptrI1Xi7deleterI1YEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -24,7 +24,17 @@ function @shared_ptr_X__int__deleter_Y____shared_ptr(%this : ptr) -> void [bindi
     store i32 0, %t2
     return void
 }
-function @weak_ptr_Y__int__deleter_Y____weak_ptr__ov4(%this : ptr, %r : ptr [pass=reference]) -> void [binding=weak, object=_ZN8weak_ptrI1Yi7deleterIS0_EEC1IS0_EERK10shared_ptrIT_iS2_E] {
+function @dynamic_pointer_cast(%__param0 : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=weak, object=_Z20dynamic_pointer_castI1Yi7deleterIS0_E1XE10shared_ptrIT_T0_T1_ERKS4_IT2_S6_S7_E] {
+  slot $__param0 : ptr
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    %t1 = addr $retobj__1
+    call void @shared_ptr_Y__int____cppgm_class_template_identity_0_2_0___shared_ptr_Y__int____cppgm_class_template_identity_0_2_0_(%t1)
+    return obj<4x4> $retobj__1
+}
+function @weak_ptr_Y__int____cppgm_class_template_identity_0_2_0___weak_ptr_typename___retained_template_parameter_shape_0__int____cppgm_class_template_identity_0_2_0___ov4(%this : ptr [object_bytes=4], %r : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8weak_ptrI1Yi7deleterIS0_EEC1IS0_EERK10shared_ptrIT_iS2_E, inline_hint=yes] {
   slot $this : ptr
   slot $r : ptr
 
@@ -39,17 +49,7 @@ function @weak_ptr_Y__int__deleter_Y____weak_ptr__ov4(%this : ptr, %r : ptr [pas
     store i32 %t3, %t5
     return void
 }
-function @dynamic_pointer_cast(%__param0 : ptr [pass=reference]) -> obj<4x4> [binding=weak, object=_Z20dynamic_pointer_castI1Yi7deleterIS0_E1XE10shared_ptrIT_T0_T1_ERKS4_IT2_S6_S7_E] {
-  slot $__param0 : ptr
-  slot $retobj__1 : obj<4x4>
-
-  block ^entry:
-    store ptr %__param0, $__param0
-    %t1 = addr $retobj__1
-    call void @shared_ptr_Y__int__deleter_Y____shared_ptr(%t1)
-    return obj<4x4> $retobj__1
-}
-function @shared_ptr_Y__int__deleter_Y____shared_ptr(%this : ptr) -> void [binding=weak, object=_ZN10shared_ptrI1Yi7deleterIS0_EEC1Ev] {
+function @shared_ptr_Y__int____cppgm_class_template_identity_0_2_0___shared_ptr_Y__int____cppgm_class_template_identity_0_2_0_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN10shared_ptrI1Yi7deleterIS0_EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -59,6 +59,6 @@ function @shared_ptr_Y__int__deleter_Y____shared_ptr(%this : ptr) -> void [bindi
     store i32 0, %t2
     return void
 }
-alias object _ZN10shared_ptrI1Xi7deleterI1YEEC2Ev = @shared_ptr_X__int__deleter_Y____shared_ptr
-alias object _ZN8weak_ptrI1Yi7deleterIS0_EEC2IS0_EERK10shared_ptrIT_iS2_E = @weak_ptr_Y__int__deleter_Y____weak_ptr__ov4
-alias object _ZN10shared_ptrI1Yi7deleterIS0_EEC2Ev = @shared_ptr_Y__int__deleter_Y____shared_ptr
+alias object _ZN10shared_ptrI1Xi7deleterI1YEEC2Ev = @shared_ptr_X__int____cppgm_class_template_identity_0_2_0___shared_ptr_Y__int____cppgm_class_template_identity_0_2_0_
+alias object _ZN8weak_ptrI1Yi7deleterIS0_EEC2IS0_EERK10shared_ptrIT_iS2_E = @weak_ptr_Y__int____cppgm_class_template_identity_0_2_0___weak_ptr_typename___retained_template_parameter_shape_0__int____cppgm_class_template_identity_0_2_0___ov4
+alias object _ZN10shared_ptrI1Yi7deleterIS0_EEC2Ev = @shared_ptr_Y__int____cppgm_class_template_identity_0_2_0___shared_ptr_Y__int____cppgm_class_template_identity_0_2_0_

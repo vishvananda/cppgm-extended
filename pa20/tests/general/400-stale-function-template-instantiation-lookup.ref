@@ -6,13 +6,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $n
     zeroinit 16x8 %t1
     %t2 = addr $n
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
     store ptr 0, %t4
     %t5 = addr $n
     %t6 = call ptr @descend(%t5)
     %t7 = addr $n
-    %t8 = index i8 [projection=base_subobject] %t7, 0
+    %t8 = index i8 %t7, 0
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = cmp eq ptr %t6, %t9
     branch %t10, ^cond_then_1, ^cond_else_2
@@ -29,7 +29,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-
 function @descend(%nd : ptr) -> ptr [binding=weak, object=_Z7descendIiEPP4baseP4nodeIT_E] {
   slot $nd : ptr
 
@@ -38,13 +37,12 @@ function @descend(%nd : ptr) -> ptr [binding=weak, object=_Z7descendIiEPP4baseP4
     %t1 = load ptr $nd
     %t2 = call ptr @addrof(%t1)
     %t3 = load ptr $nd
-    %t4 = index i8 [projection=base_subobject] %t3, 0
+    %t4 = index i8 %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = call ptr @addrof__ov2(%t5)
     return ptr %t6
 }
-
-function @addrof(%x : ptr [pass=reference]) -> ptr [binding=weak, object=_Z6addrofI4nodeIiEEPT_RS2_] {
+function @addrof(%x : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_Z6addrofI4nodeIiEEPT_RS2_] {
   slot $x : ptr
 
   block ^entry:
@@ -52,8 +50,7 @@ function @addrof(%x : ptr [pass=reference]) -> ptr [binding=weak, object=_Z6addr
     %t1 = load ptr $x
     return ptr %t1
 }
-
-function @addrof__ov2(%x : ptr [pass=reference]) -> ptr [binding=weak, object=_Z6addrofIP4baseEPT_RS2_] {
+function @addrof__ov2(%x : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z6addrofIP4baseEPT_RS2_] {
   slot $x : ptr
 
   block ^entry:

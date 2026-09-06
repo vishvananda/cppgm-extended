@@ -1,4 +1,4 @@
-function @f(%pattern : ptr [pass=by_address], %actual : ptr [pass=by_address]) -> u8 [unwind=no, binding=strong, object=_Z1f1SS_] {
+function @f(%pattern : ptr [pass=by_address, object_bytes=8], %actual : ptr [pass=by_address, object_bytes=8]) -> u8 [unwind=no, binding=strong, object=_Z1f1SS_] {
   slot $pattern : obj<8x8>
   slot $actual : obj<8x8>
   slot $pattern_cv_inner : obj<8x8>
@@ -65,14 +65,14 @@ function @f(%pattern : ptr [pass=by_address], %actual : ptr [pass=by_address]) -
     store u8 0, $cleanup_return__1
     jump ^return_cleanup_action_9
 }
-function @S___S(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1SD1Ev, object_root=yes] {
+function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1SD1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @S__S(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1SC1Ev] {
+function @S__S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1SC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -82,7 +82,7 @@ function @S__S(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1SC1Ev] 
     store ptr 0, %t2
     return void
 }
-function @S__S__ov2(%this : ptr, %o : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN1SC1ERKS_] {
+function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=8], %o : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1SC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $o : ptr
 
@@ -97,7 +97,7 @@ function @S__S__ov2(%this : ptr, %o : ptr [pass=reference]) -> void [unwind=no, 
     store ptr %t3, %t5
     return void
 }
-function @S__operatorbool(%this : ptr) -> u8 [unwind=no, binding=weak, object=_ZNK1ScvbEv] {
+function @S__operatorbool(%this : ptr [object_bytes=8]) -> u8 [unwind=no, binding=weak, object=_ZNK1ScvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -109,7 +109,7 @@ function @S__operatorbool(%this : ptr) -> u8 [unwind=no, binding=weak, object=_Z
     %t5 = convert trunc u8 i64 %t4
     return u8 %t5
 }
-function @S__operator_(%this : ptr, %o : ptr [pass=reference]) -> ptr [unwind=no, binding=weak, object=_ZN1SaSERKS_] {
+function @S__operator_(%this : ptr [object_bytes=8], %o : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN1SaSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $o : ptr
 

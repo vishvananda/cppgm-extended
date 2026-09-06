@@ -251,28 +251,28 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @V__anchor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1V6anchorEv] {
+function @V__anchor(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1V6anchorEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @D__D(%this : ptr) -> void [binding=weak, object=_ZN1DC1Ev] {
+function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 16
+    %t2 = index i8 %t1, 16
     call void @V__V__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
     %t5 = load ptr $this
-    %t6 = index i8 [projection=base_subobject] %t5, 0
+    %t6 = index i8 %t5, 0
     %t7 = addr @D____vtt
     %t8 = index i8 %t7, 8
     %t9 = load ptr $this
-    %t10 = index i8 [projection=base_subobject] %t9, 16
+    %t10 = index i8 %t9, 16
     call void @AB__AB__base_entry(%t6, %t8, %t10)
     eh_end
     eh_cleanup ^constructor_cleanup_2
@@ -281,7 +281,7 @@ function @D__D(%this : ptr) -> void [binding=weak, object=_ZN1DC1Ev] {
     %t19 = index i8 %t18, 24
     store ptr %t19, %t17
     %t20 = load ptr $this
-    %t21 = index i8 [projection=base_subobject] %t20, 8
+    %t21 = index i8 %t20, 8
     %t22 = addr @D____view__B__8__vtable
     %t23 = index i8 %t22, 24
     store ptr %t23, %t21
@@ -290,7 +290,7 @@ function @D__D(%this : ptr) -> void [binding=weak, object=_ZN1DC1Ev] {
     %t26 = index i8 %t25, -24
     %t27 = load i64 %t26
     %t28 = index i8 %t24, %t27
-    %t29 = index i8 [projection=base_subobject] %t28, 0
+    %t29 = index i8 %t28, 0
     %t30 = addr @D____view__V__16__vtable
     %t31 = index i8 %t30, 24
     store ptr %t31, %t29
@@ -299,22 +299,22 @@ function @D__D(%this : ptr) -> void [binding=weak, object=_ZN1DC1Ev] {
 
   block ^constructor_cleanup_1:
     %t3 = load ptr $this
-    %t4 = index i8 [projection=base_subobject] %t3, 16
+    %t4 = index i8 %t3, 16
     call void @V___V(%t4)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
     %t11 = load ptr $this
-    %t12 = index i8 [projection=base_subobject] %t11, 0
+    %t12 = index i8 %t11, 0
     %t13 = addr @D____vtt
     %t14 = index i8 %t13, 8
     %t15 = load ptr $this
-    %t16 = index i8 [projection=base_subobject] %t15, 16
+    %t16 = index i8 %t15, 16
     call void @AB___AB__base_entry(%t12, %t14, %t16)
     jump ^constructor_cleanup_1
 }
-function @D___D__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1DD2Ev, object_root=yes, no_inline=yes] {
+function @D___D__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1DD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -324,24 +324,24 @@ function @D___D__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void 
     %t2 = load ptr %__vtt
     store ptr %t2, %t1
     %t3 = load ptr $this
-    %t4 = index i8 [projection=base_subobject] %t3, 8
+    %t4 = index i8 %t3, 8
     %t5 = index i8 %__vtt, 64
     %t6 = load ptr %t5
     store ptr %t6, %t4
-    %t7 = index i8 [projection=base_subobject] %__vbptr0, 0
+    %t7 = index i8 %__vbptr0, 0
     %t8 = index i8 %__vtt, 72
     %t9 = load ptr %t8
     store ptr %t9, %t7
     eh_end
     %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 0
+    %t11 = index i8 %t10, 0
     %t12 = index i8 %__vtt, 8
     call void @AB___AB__base_entry(%t11, %t12, %__vbptr0)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t13 = load ptr $this
-    %t14 = index i8 [projection=base_subobject] %t13, 0
+    %t14 = index i8 %t13, 0
     %t15 = index i8 %__vtt, 8
     call void @AB___AB__base_entry(%t14, %t15, %__vbptr0)
     eh_end
@@ -350,7 +350,7 @@ function @D___D__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void 
   block ^destructor_end_2:
     return void
 }
-function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
+function @D___D(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN1DD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -361,7 +361,7 @@ function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
     %t3 = index i8 %t2, 24
     store ptr %t3, %t1
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 8
+    %t5 = index i8 %t4, 8
     %t6 = addr @D____view__B__8__vtable
     %t7 = index i8 %t6, 24
     store ptr %t7, %t5
@@ -370,45 +370,45 @@ function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
     %t10 = index i8 %t9, -24
     %t11 = load i64 %t10
     %t12 = index i8 %t8, %t11
-    %t13 = index i8 [projection=base_subobject] %t12, 0
+    %t13 = index i8 %t12, 0
     %t14 = addr @D____view__V__16__vtable
     %t15 = index i8 %t14, 24
     store ptr %t15, %t13
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t16 = load ptr $this
-    %t17 = index i8 [projection=base_subobject] %t16, 0
+    %t17 = index i8 %t16, 0
     %t18 = addr @D____vtt
     %t19 = index i8 %t18, 8
     %t20 = load ptr $this
-    %t21 = index i8 [projection=base_subobject] %t20, 16
+    %t21 = index i8 %t20, 16
     call void @AB___AB__base_entry(%t17, %t19, %t21)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
     %t22 = load ptr $this
-    %t23 = index i8 [projection=base_subobject] %t22, 16
+    %t23 = index i8 %t22, 16
     call void @V___V__base_entry(%t23)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
     %t24 = load ptr $this
-    %t25 = index i8 [projection=base_subobject] %t24, 16
+    %t25 = index i8 %t24, 16
     call void @V___V__base_entry(%t25)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t26 = load ptr $this
-    %t27 = index i8 [projection=base_subobject] %t26, 0
+    %t27 = index i8 %t26, 0
     %t28 = addr @D____vtt
     %t29 = index i8 %t28, 8
     %t30 = load ptr $this
-    %t31 = index i8 [projection=base_subobject] %t30, 16
+    %t31 = index i8 %t30, 16
     call void @AB___AB__base_entry(%t27, %t29, %t31)
     %t32 = load ptr $this
-    %t33 = index i8 [projection=base_subobject] %t32, 16
+    %t33 = index i8 %t32, 16
     call void @V___V__base_entry(%t33)
     eh_end
     resume
@@ -416,7 +416,7 @@ function @D___D(%this : ptr) -> void [binding=weak, object=_ZN1DD1Ev] {
   block ^destructor_end_2:
     return void
 }
-function @V__V__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VC2Ev, no_inline=yes] {
+function @V__V__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1VC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -430,7 +430,7 @@ function @V__V__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object
     store i32 %t5, @live
     return void
 }
-function @V__V(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VC1Ev] {
+function @V__V(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1VC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -444,18 +444,18 @@ function @V__V(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VC1Ev] 
     store i32 %t5, @live
     return void
 }
-function @AB__AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN2ABC2Ev, no_inline=yes] {
+function @AB__AB__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN2ABC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = index i8 %__vtt, 8
     call void @A__A__base_entry(%t2, %t3, %__vbptr0)
     eh_cleanup ^constructor_cleanup_1
     %t7 = load ptr $this
-    %t8 = index i8 [projection=base_subobject] %t7, 8
+    %t8 = index i8 %t7, 8
     %t9 = index i8 %__vtt, 24
     call void @B__B__base_entry(%t8, %t9, %__vbptr0)
     eh_end
@@ -464,11 +464,11 @@ function @AB__AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void
     %t14 = load ptr %__vtt
     store ptr %t14, %t13
     %t15 = load ptr $this
-    %t16 = index i8 [projection=base_subobject] %t15, 8
+    %t16 = index i8 %t15, 8
     %t17 = index i8 %__vtt, 40
     %t18 = load ptr %t17
     store ptr %t18, %t16
-    %t19 = index i8 [projection=base_subobject] %__vbptr0, 0
+    %t19 = index i8 %__vbptr0, 0
     %t20 = index i8 %__vtt, 48
     %t21 = load ptr %t20
     store ptr %t21, %t19
@@ -477,7 +477,7 @@ function @AB__AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void
 
   block ^constructor_cleanup_1:
     %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 0
+    %t5 = index i8 %t4, 0
     %t6 = index i8 %__vtt, 8
     call void @A___A__base_entry(%t5, %t6, %__vbptr0)
     eh_end
@@ -485,12 +485,12 @@ function @AB__AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void
 
   block ^constructor_cleanup_2:
     %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 8
+    %t11 = index i8 %t10, 8
     %t12 = index i8 %__vtt, 24
     call void @B___B__base_entry(%t11, %t12, %__vbptr0)
     jump ^constructor_cleanup_1
 }
-function @V___V__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VD2Ev, no_inline=yes] {
+function @V___V__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1VD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -504,7 +504,7 @@ function @V___V__base_entry(%this : ptr) -> void [unwind=no, binding=weak, objec
     store i32 %t5, @live
     return void
 }
-function @V___V(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VD1Ev] {
+function @V___V(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1VD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -518,7 +518,7 @@ function @V___V(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN1VD1Ev]
     store i32 %t5, @live
     return void
 }
-function @AB___AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN2ABD2Ev, no_inline=yes] {
+function @AB___AB__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN2ABD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -528,18 +528,18 @@ function @AB___AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> voi
     %t2 = load ptr %__vtt
     store ptr %t2, %t1
     %t3 = load ptr $this
-    %t4 = index i8 [projection=base_subobject] %t3, 8
+    %t4 = index i8 %t3, 8
     %t5 = index i8 %__vtt, 40
     %t6 = load ptr %t5
     store ptr %t6, %t4
-    %t7 = index i8 [projection=base_subobject] %__vbptr0, 0
+    %t7 = index i8 %__vbptr0, 0
     %t8 = index i8 %__vtt, 48
     %t9 = load ptr %t8
     store ptr %t9, %t7
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t10 = load ptr $this
-    %t11 = index i8 [projection=base_subobject] %t10, 8
+    %t11 = index i8 %t10, 8
     %t12 = index i8 %__vtt, 24
     call void @B___B__base_entry(%t11, %t12, %__vbptr0)
     eh_end
@@ -547,7 +547,7 @@ function @AB___AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> voi
 
   block ^destructor_suffix_cleanup_3:
     %t13 = load ptr $this
-    %t14 = index i8 [projection=base_subobject] %t13, 0
+    %t14 = index i8 %t13, 0
     %t15 = index i8 %__vtt, 8
     call void @A___A__base_entry(%t14, %t15, %__vbptr0)
     eh_end
@@ -555,18 +555,18 @@ function @AB___AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> voi
 
   block ^destructor_suffix_next_4:
     %t16 = load ptr $this
-    %t17 = index i8 [projection=base_subobject] %t16, 0
+    %t17 = index i8 %t16, 0
     %t18 = index i8 %__vtt, 8
     call void @A___A__base_entry(%t17, %t18, %__vbptr0)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t19 = load ptr $this
-    %t20 = index i8 [projection=base_subobject] %t19, 8
+    %t20 = index i8 %t19, 8
     %t21 = index i8 %__vtt, 24
     call void @B___B__base_entry(%t20, %t21, %__vbptr0)
     %t22 = load ptr $this
-    %t23 = index i8 [projection=base_subobject] %t22, 0
+    %t23 = index i8 %t22, 0
     %t24 = index i8 %__vtt, 8
     call void @A___A__base_entry(%t23, %t24, %__vbptr0)
     eh_end
@@ -575,7 +575,7 @@ function @AB___AB__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> voi
   block ^destructor_end_2:
     return void
 }
-function @A__A__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1AC2Ev, no_inline=yes] {
+function @A__A__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1AC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -583,13 +583,13 @@ function @A__A__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [
     %t1 = load ptr $this
     %t2 = load ptr %__vtt
     store ptr %t2, %t1
-    %t3 = index i8 [projection=base_subobject] %__vbptr0, 0
+    %t3 = index i8 %__vbptr0, 0
     %t4 = index i8 %__vtt, 8
     %t5 = load ptr %t4
     store ptr %t5, %t3
     return void
 }
-function @B__B__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, no_inline=yes] {
+function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -597,13 +597,13 @@ function @B__B__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [
     %t1 = load ptr $this
     %t2 = load ptr %__vtt
     store ptr %t2, %t1
-    %t3 = index i8 [projection=base_subobject] %__vbptr0, 0
+    %t3 = index i8 %__vbptr0, 0
     %t4 = index i8 %__vtt, 8
     %t5 = load ptr %t4
     store ptr %t5, %t3
     return void
 }
-function @A___A__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1AD2Ev, no_inline=yes] {
+function @A___A__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1AD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -611,13 +611,13 @@ function @A___A__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void 
     %t1 = load ptr $this
     %t2 = load ptr %__vtt
     store ptr %t2, %t1
-    %t3 = index i8 [projection=base_subobject] %__vbptr0, 0
+    %t3 = index i8 %__vbptr0, 0
     %t4 = index i8 %__vtt, 8
     %t5 = load ptr %t4
     store ptr %t5, %t3
     return void
 }
-function @B___B__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1BD2Ev, no_inline=yes] {
+function @B___B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -625,7 +625,7 @@ function @B___B__base_entry(%this : ptr, %__vtt : ptr, %__vbptr0 : ptr) -> void 
     %t1 = load ptr $this
     %t2 = load ptr %__vtt
     store ptr %t2, %t1
-    %t3 = index i8 [projection=base_subobject] %__vbptr0, 0
+    %t3 = index i8 %__vbptr0, 0
     %t4 = index i8 %__vtt, 8
     %t5 = load ptr %t4
     store ptr %t5, %t3

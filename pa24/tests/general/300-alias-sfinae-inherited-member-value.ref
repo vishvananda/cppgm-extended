@@ -8,10 +8,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $f
     %t2 = addr @one
-    call void @function_int_____function__ov3(%t1, %t2)
+    call void @function_int_____function_int_____ov3(%t1, %t2)
     return i32 0
 }
-function @function_int_____function__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8functionIFivEEC1IRS0_vEEOT_] {
+function @function_int_____function_int_____ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address]) -> void [binding=weak, object=_ZN8functionIFivEEC1IRS0_vEEOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -20,4 +20,4 @@ function @function_int_____function__ov3(%this : ptr, %__param1 : ptr [pass=refe
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN8functionIFivEEC2IRS0_vEEOT_ = @function_int_____function__ov3
+alias object _ZN8functionIFivEEC2IRS0_vEEOT_ = @function_int_____function_int_____ov3

@@ -1,4 +1,4 @@
-function @operator_(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> i32 [binding=strong, object=_ZmiRK4DateS1_] {
+function @operator_(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_ZmiRK4DateS1_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 
@@ -34,14 +34,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @Date__Date(%this : ptr) -> void [binding=weak, object=_ZN4DateC1Ev] {
+function @Date__Date(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4DateC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @Date__operator_(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZNK4DatemiERK6Period] {
+function @Date__operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK4DatemiERK6Period, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

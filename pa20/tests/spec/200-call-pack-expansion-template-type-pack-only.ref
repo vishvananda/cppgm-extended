@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @sizes_char__short_int___run(%this : ptr) -> i32 [binding=weak, object=_ZN5sizesIJcsEE3runEv] {
+function @sizes_char__short_int___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5sizesIJcsEE3runEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

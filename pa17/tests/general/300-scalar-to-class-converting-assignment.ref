@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__2
     return i32 %t9
 }
-function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
+function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -38,7 +38,7 @@ function @Box__Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxC1Ev] {
     store i32 0, %t2
     return void
 }
-function @Box__Box__ov2(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN3BoxC1Ei] {
+function @Box__Box__ov2(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -51,7 +51,7 @@ function @Box__Box__ov2(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN
     store i32 %t1, %t3
     return void
 }
-function @Box__operator_(%this : ptr, %other : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN3BoxaSERKS_] {
+function @Box__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN3BoxaSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

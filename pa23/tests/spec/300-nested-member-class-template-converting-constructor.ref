@@ -5,14 +5,14 @@ function @f(%value : obj<1x1>) -> obj<1x1> [binding=strong, object=_Z1fN1cIiE1iI
   block ^entry:
     %t1 = addr $retobj__1
     %t2 = addr $value
-    call void @c_int___i_long_int___i__ov3(%t1, %t2)
+    call void @c_int___i_long_int___i_int___ov3(%t1, %t2)
     return obj<1x1> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @c_int___i_long_int___i__ov3(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1cIiE1iIlEC1IiEERKNS0_S1_IT_EE] {
+function @c_int___i_long_int___i_int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1cIiE1iIlEC1IiEERKNS0_1iIT_EE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -21,4 +21,4 @@ function @c_int___i_long_int___i__ov3(%this : ptr, %__param1 : ptr [pass=referen
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN1cIiE1iIlEC2IiEERKNS0_S1_IT_EE = @c_int___i_long_int___i__ov3
+alias object _ZN1cIiE1iIlEC2IiEERKNS0_1iIT_EE = @c_int___i_long_int___i_int___ov3

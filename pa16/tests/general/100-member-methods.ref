@@ -9,17 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @YP__get(%t3)
     return i32 %t4
 }
-function @YP__get(%this : ptr) -> i32 [binding=weak, object=_ZN2YP3getEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    return i32 %t3
-}
-function @YP__set(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN2YP3setEi] {
+function @YP__set(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN2YP3setEi, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -31,4 +21,14 @@ function @YP__set(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN2YP3se
     %t3 = index i8 [projection=field] %t2, 0
     store i32 %t1, %t3
     return void
+}
+function @YP__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN2YP3getEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    return i32 %t3
 }

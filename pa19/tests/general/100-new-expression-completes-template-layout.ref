@@ -1,4 +1,4 @@
-declare function @operator_new(%arg0 : i64) -> ptr [binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $node : obj<1x1>
@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $node
     %t2 = addr $owner
     %t3 = addr $node
-    call void @Owner_Node___Owner(%t2, %t3)
+    call void @Owner_Node___Owner_Node_(%t2, %t3)
     %t4 = addr $owner
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load ptr %t5
@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load i32 $cond__1
     return i32 %t8
 }
-function @Owner_Node___Owner(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN5OwnerI4NodeEC1EPS0_] {
+function @Owner_Node___Owner_Node_(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN5OwnerI4NodeEC1EPS0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -36,16 +36,16 @@ function @Owner_Node___Owner(%this : ptr, %p : ptr) -> void [binding=weak, objec
     store ptr %this, $this
     store ptr %p, $p
     %t1 = convert sext i64 i32 8
-    %t2 = call ptr @operator_new(%t1)
+    %t2 = call ptr @operatornew(%t1)
     %t3 = load ptr $p
-    call void @Control_Node___Control(%t2, %t3)
-    %t4 = index i8 [projection=base_subobject] %t2, 0
+    call void @Control_Node___Control_Node_(%t2, %t3)
+    %t4 = index i8 %t2, 0
     %t5 = load ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     store ptr %t4, %t6
     return void
 }
-function @Control_Node___Control(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN7ControlI4NodeEC1EPS0_] {
+function @Control_Node___Control_Node_(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN7ControlI4NodeEC1EPS0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -58,5 +58,5 @@ function @Control_Node___Control(%this : ptr, %p : ptr) -> void [binding=weak, o
     store ptr %t1, %t3
     return void
 }
-alias object _ZN5OwnerI4NodeEC2EPS0_ = @Owner_Node___Owner
-alias object _ZN7ControlI4NodeEC2EPS0_ = @Control_Node___Control
+alias object _ZN5OwnerI4NodeEC2EPS0_ = @Owner_Node___Owner_Node_
+alias object _ZN7ControlI4NodeEC2EPS0_ = @Control_Node___Control_Node_

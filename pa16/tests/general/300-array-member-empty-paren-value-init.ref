@@ -10,23 +10,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Bits__Bits(%t1)
     %t2 = addr $bits
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = unary decay ptr %t3
-    %t5 = index i64 [projection=array_element] %t4, 0
-    %t6 = load i64 %t5
-    %t7 = convert sext i64 i32 0
-    %t8 = cmp eq i64 %t6, %t7
-    branch %t8, ^land_rhs_10, ^land_short_11
+    %t4 = index i64 [projection=array_element] %t3, 0
+    %t5 = load i64 %t4
+    %t6 = convert sext i64 i32 0
+    %t7 = cmp eq i64 %t5, %t6
+    branch %t7, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t9 = addr $bits
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = unary decay ptr %t10
-    %t12 = index i64 [projection=array_element] %t11, 1
-    %t13 = load i64 %t12
-    %t14 = convert sext i64 i32 0
-    %t15 = cmp eq i64 %t13, %t14
-    %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $land__4
+    %t8 = addr $bits
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = index i64 [projection=array_element] %t9, 1
+    %t11 = load i64 %t10
+    %t12 = convert sext i64 i32 0
+    %t13 = cmp eq i64 %t11, %t12
+    %t14 = cmp ne i64 %t13, 0
+    store i64 %t14, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -34,19 +32,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t17 = load i64 $land__4
-    branch %t17, ^land_rhs_7, ^land_short_8
+    %t15 = load i64 $land__4
+    branch %t15, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t18 = addr $bits
-    %t19 = index i8 [projection=field] %t18, 0
-    %t20 = unary decay ptr %t19
-    %t21 = index i64 [projection=array_element] %t20, 2
-    %t22 = load i64 %t21
-    %t23 = convert sext i64 i32 0
-    %t24 = cmp eq i64 %t22, %t23
-    %t25 = cmp ne i64 %t24, 0
-    store i64 %t25, $land__3
+    %t16 = addr $bits
+    %t17 = index i8 [projection=field] %t16, 0
+    %t18 = index i64 [projection=array_element] %t17, 2
+    %t19 = load i64 %t18
+    %t20 = convert sext i64 i32 0
+    %t21 = cmp eq i64 %t19, %t20
+    %t22 = cmp ne i64 %t21, 0
+    store i64 %t22, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -54,19 +51,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t26 = load i64 $land__3
-    branch %t26, ^land_rhs_4, ^land_short_5
+    %t23 = load i64 $land__3
+    branch %t23, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t27 = addr $bits
-    %t28 = index i8 [projection=field] %t27, 0
-    %t29 = unary decay ptr %t28
-    %t30 = index i64 [projection=array_element] %t29, 3
-    %t31 = load i64 %t30
-    %t32 = convert sext i64 i32 0
-    %t33 = cmp eq i64 %t31, %t32
-    %t34 = cmp ne i64 %t33, 0
-    store i64 %t34, $land__2
+    %t24 = addr $bits
+    %t25 = index i8 [projection=field] %t24, 0
+    %t26 = index i64 [projection=array_element] %t25, 3
+    %t27 = load i64 %t26
+    %t28 = convert sext i64 i32 0
+    %t29 = cmp eq i64 %t27, %t28
+    %t30 = cmp ne i64 %t29, 0
+    store i64 %t30, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -74,8 +70,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t35 = load i64 $land__2
-    branch %t35, ^cond_then_1, ^cond_else_2
+    %t31 = load i64 $land__2
+    branch %t31, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -86,34 +82,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t36 = load i32 $cond__1
-    return i32 %t36
+    %t32 = load i32 $cond__1
+    return i32 %t32
 }
-function @Bits__Bits(%this : ptr) -> void [binding=weak, object=_ZN4BitsC1Ev] {
+function @Bits__Bits(%this : ptr [object_bytes=32]) -> void [binding=weak, object=_ZN4BitsC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = unary decay ptr %t2
-    %t4 = index i64 [projection=array_element] %t3, 0
-    store i64 0, %t4
-    %t5 = load ptr $this
-    %t6 = index i8 [projection=field] %t5, 0
-    %t7 = unary decay ptr %t6
-    %t8 = index i64 [projection=array_element] %t7, 1
-    store i64 0, %t8
-    %t9 = load ptr $this
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = unary decay ptr %t10
-    %t12 = index i64 [projection=array_element] %t11, 2
+    %t3 = index i64 [projection=array_element] %t2, 0
+    store i64 0, %t3
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    %t6 = index i64 [projection=array_element] %t5, 1
+    store i64 0, %t6
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = index i64 [projection=array_element] %t8, 2
+    store i64 0, %t9
+    %t10 = load ptr $this
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = index i64 [projection=array_element] %t11, 3
     store i64 0, %t12
-    %t13 = load ptr $this
-    %t14 = index i8 [projection=field] %t13, 0
-    %t15 = unary decay ptr %t14
-    %t16 = index i64 [projection=array_element] %t15, 3
-    store i64 0, %t16
     return void
 }
 alias object _ZN4BitsC2Ev = @Bits__Bits

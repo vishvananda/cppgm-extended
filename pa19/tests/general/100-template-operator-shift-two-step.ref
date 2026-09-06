@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load i32 $cond__3
     return i32 %t18
 }
-function @operator__(%stream : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZlsIiER6StreamS1_RKT_] {
+function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZlsIiER6StreamS1_RKT_] {
   slot $stream : ptr
   slot $__param1 : ptr
 

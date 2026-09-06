@@ -8,11 +8,10 @@ function @select(%__param0 : ptr) -> i32 [binding=strong, object=_Z6selectPFRiS_
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr @source__function
-    %t2 = unary decay ptr %t1
-    %t3 = call i32 @select(%t2)
-    return i32 %t3
+    %t2 = call i32 @select(%t1)
+    return i32 %t2
 }
-function @source__function(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN6source8functionIiEERT_S2_] {
+function @source__function(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN6source8functionIiEERT_S2_] {
   slot $value : ptr
 
   block ^entry:

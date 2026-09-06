@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = binary sub i32 %t5, 3
     return i32 %t6
 }
-function @C__g(%this : ptr, %target : ptr [pass=reference], %name : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1C1gERiRKi] {
+function @C__g(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=4], %name : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN1C1gERiRKi, inline_hint=yes] {
   slot $this : ptr
   slot $target : ptr
   slot $name : ptr
@@ -31,7 +31,7 @@ function @C__g(%this : ptr, %target : ptr [pass=reference], %name : ptr [pass=re
     %t5 = call i32 @C__lookup(%t1, %t2, %t3, %t4)
     return i32 %t5
 }
-function @C__lookup(%this : ptr, %target : ptr [pass=reference], %name : ptr [pass=reference], %f : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1C6lookupIiZNS_1gERiRKiEUlS1_S3_E_EET_S1_S3_RKT0_] {
+function @C__lookup(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=4], %name : ptr [pass=by_address, object_bytes=4], %f : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=internal, object=_ZN1C6lookupIiZNS_1gERiRKiEUlS1_S3_E_EET_S1_S3_RKT0_, inline_hint=yes] {
   slot $this : ptr
   slot $target : ptr
   slot $name : ptr
@@ -48,7 +48,7 @@ function @C__lookup(%this : ptr, %target : ptr [pass=reference], %name : ptr [pa
     %t4 = call i32 @C____lambda_C__g_t63_74__operator__(%t1, %t2, %t3)
     return i32 %t4
 }
-function @C____lambda_C__g_t63_74__operator__(%this : ptr, %__param1 : ptr [pass=reference], %x : ptr [pass=reference]) -> i32 [binding=weak, object=_ZZN1C1gERiRKiENKUlS0_S2_E_clES0_S2_] {
+function @C____lambda_C__g_t63_74__operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %x : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=internal, object=_ZZN1C1gERiRKiENKUlS0_S2_E_clES0_S2_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $x : ptr

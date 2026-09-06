@@ -51,7 +51,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load i32 $cond__1
     return i32 %t18
 }
-function @copy_move_unwrap_like(%ret : ptr [pass=indirect_result], %first : ptr, %last : ptr, %out_first : ptr) -> void [binding=weak, object=_Z21copy_move_unwrap_likeI14copy_algorithmPiS1_S1_E9pair_likeIT0_T2_ES3_T1_S4_] {
+function @copy_move_unwrap_like(%ret : ptr [pass=indirect_result, object_bytes=16], %first : ptr, %last : ptr, %out_first : ptr) -> void [binding=weak, object=_Z21copy_move_unwrap_likeI14copy_algorithmPiS1_S1_E9pair_likeIT0_T2_ES3_T1_S4_] {
   slot $first : ptr
   slot $last : ptr
   slot $out_first : ptr
@@ -71,7 +71,6 @@ function @copy_move_unwrap_like(%ret : ptr [pass=indirect_result], %first : ptr,
     call void @unwrap_range_like(%t1, %t2, %t5)
     %t6 = addr $result
     %t7 = addr $tmpobj__1
-    call void @copy_algorithm__copy_algorithm(%t7)
     %t8 = addr $range
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = call ptr @move_like(%t9)
@@ -92,7 +91,7 @@ function @copy_move_unwrap_like(%ret : ptr [pass=indirect_result], %first : ptr,
     call void @make_pair_like(%ret, %t20, %t23)
     return void
 }
-function @move_like(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z9move_likeIPiEOT_RS1_] {
+function @move_like(%value : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z9move_likeIPiEOT_RS1_] {
   slot $value : ptr
 
   block ^entry:
@@ -100,7 +99,7 @@ function @move_like(%value : ptr [pass=reference]) -> ptr [binding=weak, object=
     %t1 = load ptr $value
     return ptr %t1
 }
-function @unwrap_range_like(%ret : ptr [pass=indirect_result], %first : ptr, %last : ptr) -> void [binding=weak, object=_Z17unwrap_range_likeIPiS0_E9pair_likeIT0_S2_ET_S4_] {
+function @unwrap_range_like(%ret : ptr [pass=indirect_result, object_bytes=16], %first : ptr, %last : ptr) -> void [binding=weak, object=_Z17unwrap_range_likeIPiS0_E9pair_likeIT0_S2_ET_S4_] {
   slot $first : ptr
   slot $last : ptr
   slot $refarg__1 : ptr
@@ -124,16 +123,16 @@ function @unwrap_range_like(%ret : ptr [pass=indirect_result], %first : ptr, %la
     call void @make_pair_like(%ret, %t5, %t10)
     return void
 }
-function @unwrap_iter_like(%value : ptr) -> ptr [binding=weak, object=_Z16unwrap_iter_likeIPi16unwrap_impl_likeIS0_Lb1EELi0EEDTclsrT0_6unwrapcl7declvalIT_EEEES4_] {
+function @unwrap_iter_like(%value : ptr) -> ptr [binding=weak, object=_Z16unwrap_iter_likeIPi16unwrap_impl_likeIS0_Lb1EELi0EENT0_6unwrapET_] {
   slot $value : ptr
 
   block ^entry:
     store ptr %value, $value
     %t1 = load ptr $value
-    %t2 = call ptr @unwrap_impl_like_int____true___unwrap(%t1)
+    %t2 = call ptr @unwrap_impl_like_pointer_to_int__true___unwrap(%t1)
     return ptr %t2
 }
-function @copy_algorithm__operator__(%ret : ptr [pass=indirect_result], %this : ptr, %first : ptr, %__param2 : ptr, %result : ptr) -> void [binding=weak, object=_ZN14copy_algorithmclIPiS1_EE9pair_likeIT_T0_ES3_S3_S4_] {
+function @copy_algorithm__operator__(%ret : ptr [pass=indirect_result, object_bytes=16], %this : ptr [object_bytes=1], %first : ptr, %__param2 : ptr, %result : ptr) -> void [binding=weak, object=_ZN14copy_algorithmclIPiS1_EE9pair_likeIT_T0_ES3_S3_S4_, inline_hint=yes] {
   slot $this : ptr
   slot $first : ptr
   slot $__param2 : ptr
@@ -151,7 +150,7 @@ function @copy_algorithm__operator__(%ret : ptr [pass=indirect_result], %this : 
     call void @make_pair_like(%ret, %t2, %t4)
     return void
 }
-function @make_pair_like(%ret : ptr [pass=indirect_result], %first : ptr [pass=reference], %second : ptr [pass=reference]) -> void [binding=weak, object=_Z14make_pair_likeIPiS0_E9pair_likeIT_T0_EOS2_OS3_] {
+function @make_pair_like(%ret : ptr [pass=indirect_result, object_bytes=16], %first : ptr [pass=by_address, object_bytes=8], %second : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_Z14make_pair_likeIPiS0_E9pair_likeIT_T0_EOS2_OS3_] {
   slot $first : ptr
   slot $second : ptr
 
@@ -162,10 +161,18 @@ function @make_pair_like(%ret : ptr [pass=indirect_result], %first : ptr [pass=r
     %t2 = call ptr @move_like(%t1)
     %t3 = load ptr $second
     %t4 = call ptr @move_like(%t3)
-    call void @pair_like_int____int_____pair_like__ov2(%ret, %t2, %t4)
+    call void @pair_like_pointer_to_int__pointer_to_int___pair_like_pointer_to_int__pointer_to_int___ov3(%ret, %t2, %t4)
     return void
 }
-function @pair_like_int____int_____pair_like__ov2(%this : ptr, %u1 : ptr [pass=reference], %u2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN9pair_likeIPiS0_EC1IS0_S0_EEOT_OT0_] {
+function @unwrap_impl_like_pointer_to_int__true___unwrap(%value : ptr) -> ptr [binding=weak, object=_ZN16unwrap_impl_likeIPiLb1EE6unwrapES0_, inline_hint=yes] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    return ptr %t1
+}
+function @pair_like_pointer_to_int__pointer_to_int___pair_like_pointer_to_int__pointer_to_int___ov3(%this : ptr [object_bytes=16], %u1 : ptr [pass=by_address, object_bytes=8], %u2 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN9pair_likeIPiS0_EC1IS0_S0_EEOT_OT0_, inline_hint=yes] {
   slot $this : ptr
   slot $u1 : ptr
   slot $u2 : ptr
@@ -188,20 +195,4 @@ function @pair_like_int____int_____pair_like__ov2(%this : ptr, %u1 : ptr [pass=r
     store ptr %t8, %t10
     return void
 }
-function @unwrap_impl_like_int____true___unwrap(%value : ptr) -> ptr [binding=weak, object=_ZN16unwrap_impl_likeIPiLb1EE6unwrapES0_] {
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    return ptr %t1
-}
-function @copy_algorithm__copy_algorithm(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN14copy_algorithmC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN9pair_likeIPiS0_EC2IS0_S0_EEOT_OT0_ = @pair_like_int____int_____pair_like__ov2
-alias object _ZN14copy_algorithmC2Ev = @copy_algorithm__copy_algorithm
+alias object _ZN9pair_likeIPiS0_EC2IS0_S0_EEOT_OT0_ = @pair_like_pointer_to_int__pointer_to_int___pair_like_pointer_to_int__pointer_to_int___ov3

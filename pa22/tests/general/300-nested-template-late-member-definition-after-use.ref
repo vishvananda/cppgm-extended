@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @outer_int___inner_long_int___call(%t2)
     return i32 0
 }
-function @outer_int___inner_long_int___call(%this : ptr) -> void [binding=weak, object=_ZN5outerIiE5innerIlE4callEv] {
+function @outer_int___inner_long_int___call(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5outerIiE5innerIlE4callEv] {
   slot $this : ptr
 
   block ^entry:

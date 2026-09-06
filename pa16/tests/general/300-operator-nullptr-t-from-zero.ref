@@ -1,4 +1,4 @@
-function @operator__(%p : ptr [pass=reference], %__param1 : i64) -> u8 [binding=strong, object=_ZneRK3PtrDn] {
+function @operator__(%p : ptr [pass=by_address, object_bytes=4], %__param1 : i64) -> u8 [binding=strong, object=_ZneRK3PtrDn] {
   slot $p : ptr
   slot $__param1 : i64
 

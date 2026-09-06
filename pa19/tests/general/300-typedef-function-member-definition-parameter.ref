@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @X_int___f(%t2, 0)
     return i32 0
 }
-function @X_int___f(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN1XIiE1fEi] {
+function @X_int___f(%this : ptr [object_bytes=1], %x : i32) -> void [binding=weak, object=_ZN1XIiE1fEi] {
   slot $this : ptr
   slot $x : i32
 

@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @N__Holder_int___run(%this : ptr) -> i32 [binding=weak, object=_ZN1N6HolderIiE3runEv] {
+function @N__Holder_int___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1N6HolderIiE3runEv] {
   slot $this : ptr
   slot $refarg__1 : i32
   slot $refarg__2 : i32
@@ -36,7 +36,7 @@ function @N__Holder_int___run(%this : ptr) -> i32 [binding=weak, object=_ZN1N6Ho
     %t4 = call i32 @N__Holder_int___make(%t1, 3, %t2, %t3)
     return i32 %t4
 }
-function @N__Holder_int___make(%this : ptr, %h : i32, %args : ptr [pass=reference], %args__pack2 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN1N6HolderIiE4makeIJiiEEEiiDpOT_] {
+function @N__Holder_int___make(%this : ptr [object_bytes=1], %h : i32, %args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN1N6HolderIiE4makeIJiiEEEiiDpOT_] {
   slot $this : ptr
   slot $h : i32
   slot $args : ptr

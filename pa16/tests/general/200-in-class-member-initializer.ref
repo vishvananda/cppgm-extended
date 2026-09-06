@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @Pair__Pair(%this : ptr) -> void [binding=weak, object=_ZN4PairC1Ev] {
+function @Pair__Pair(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4PairC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

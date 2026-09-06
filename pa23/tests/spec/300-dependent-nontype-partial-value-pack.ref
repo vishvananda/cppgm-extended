@@ -1,9 +1,9 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = call i32 @match_condition_code__code____code_0___code_1___run()
+    %t1 = call i32 @match___cppgm_class_template_identity_1_2_0__0__1___run()
     return i32 %t1
 }
-function @match_condition_code__code____code_0___code_1___run() -> i32 [binding=weak, object=_ZN5matchI9conditionI4codeS1_ELS1_0EJLS1_1EEE3runEv] {
+function @match___cppgm_class_template_identity_1_2_0__0__1___run() -> i32 [binding=weak, object=_ZN5matchI9conditionI4codeS1_ELS1_0EJLS1_1EEE3runEv, inline_hint=yes] {
   block ^entry:
     %t1 = call i32 @compare_pack(0, 0, 1)
     return i32 %t1

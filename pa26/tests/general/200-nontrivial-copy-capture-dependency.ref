@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $n
     return i32 %t5
 }
-function @A__A(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN1AC1EPi] {
+function @A__A(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN1AC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -27,7 +27,7 @@ function @A__A(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN1AC1EPi] 
     store ptr %t1, %t3
     return void
 }
-function @A__A__ov2(%this : ptr, %a : ptr [pass=reference]) -> void [binding=weak, object=_ZN1AC1ERKS_] {
+function @A__A__ov2(%this : ptr [alias=noalias, object_bytes=8], %a : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN1AC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $a : ptr
 

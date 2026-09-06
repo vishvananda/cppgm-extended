@@ -1,4 +1,4 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 44
   i8 0
 }
@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 1x1 %t3, %t1
     return i32 0
 }
-function @delimiter(%s : ptr) -> obj<1x1> [binding=weak, object=_Z9delimiterIcE14delimiter_typeIT_11char_traitsIS1_EEA_KS1_] {
+function @delimiter(%s : ptr) -> obj<1x1> [binding=weak, object=_Z9delimiterIcE14delimiter_typeIT_11char_traitsIS1_EEPKS1_] {
   slot $s : ptr
   slot $retobj__1 : obj<1x1>
   slot $arg__2 : obj<1x1>
@@ -23,11 +23,10 @@ function @delimiter(%s : ptr) -> obj<1x1> [binding=weak, object=_Z9delimiterIcE1
     %t1 = load ptr $s
     %t2 = addr $retobj__1
     %t3 = addr $arg__2
-    call void @string_like_char__char_traits_char____string_like(%t3)
-    call void @delimiter_type_char__char_traits_char____delimiter_type(%t2, %t3)
+    call void @delimiter_type_char__char_traits_char____delimiter_type_pointer_to_const_char____cppgm_class_template_identity_0_5_0_(%t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @delimiter_type_char__char_traits_char____delimiter_type(%this : ptr, %d : ptr [pass=reference]) -> void [binding=weak, object=_ZN14delimiter_typeIc11char_traitsIcEEC1ERK11string_likeIcS1_E] {
+function @delimiter_type_char__char_traits_char____delimiter_type_pointer_to_const_char____cppgm_class_template_identity_0_5_0_(%this : ptr [object_bytes=1], %d : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN14delimiter_typeIc11char_traitsIcEEC1ERK11string_likeIcS1_E, inline_hint=yes] {
   slot $this : ptr
   slot $d : ptr
 
@@ -38,12 +37,4 @@ function @delimiter_type_char__char_traits_char____delimiter_type(%this : ptr, %
     %t2 = index i8 [projection=field] %t1, 0
     return void
 }
-function @string_like_char__char_traits_char____string_like(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11string_likeIc11char_traitsIcEEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN14delimiter_typeIc11char_traitsIcEEC2ERK11string_likeIcS1_E = @delimiter_type_char__char_traits_char____delimiter_type
-alias object _ZN11string_likeIc11char_traitsIcEEC2Ev = @string_like_char__char_traits_char____string_like
+alias object _ZN14delimiter_typeIc11char_traitsIcEEC2ERK11string_likeIcS1_E = @delimiter_type_char__char_traits_char____delimiter_type_pointer_to_const_char____cppgm_class_template_identity_0_5_0_

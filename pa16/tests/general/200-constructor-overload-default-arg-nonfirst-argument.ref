@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @Item__Item(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4ItemC1Ei] {
+function @Item__Item(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4ItemC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -45,7 +45,7 @@ function @Item__Item(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4It
     store i32 %t1, %t3
     return void
 }
-function @Bucket__Bucket__ov2(%this : ptr, %count : i32, %item : ptr [pass=reference], %alloc : ptr [pass=reference]) -> void [binding=weak, object=_ZN6BucketC1EiRK4ItemRK5Alloc] {
+function @Bucket__Bucket__ov2(%this : ptr [object_bytes=4], %count : i32, %item : ptr [pass=by_address, object_bytes=4], %alloc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6BucketC1EiRK4ItemRK5Alloc, inline_hint=yes] {
   slot $this : ptr
   slot $count : i32
   slot $item : ptr

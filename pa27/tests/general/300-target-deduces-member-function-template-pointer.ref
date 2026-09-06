@@ -1,5 +1,5 @@
 declare function @consume(%arg0 : i128) -> void [binding=strong, object=_Z7consumeM6engineFviOlE]
-declare function @engine__run(%arg0 : ptr, %arg1 : i32, %arg2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN6engine3runIlEEviOT_]
+declare function @engine__run(%arg0 : ptr [object_bytes=1], %arg1 : i32, %arg2 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN6engine3runIlEEviOT_, inline_hint=yes]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

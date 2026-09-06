@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @apply(%value : i32, %fn : ptr [pass=reference]) -> i32 [binding=weak, object=_Z5applyIFiiEEiiRKT_] {
+function @apply(%value : i32, %fn : ptr [pass=by_address]) -> i32 [binding=weak, object=_Z5applyIFiiEEiiRKT_] {
   slot $value : i32
   slot $fn : ptr
 
@@ -24,7 +24,6 @@ function @apply(%value : i32, %fn : ptr [pass=reference]) -> i32 [binding=weak, 
     store ptr %fn, $fn
     %t1 = load i32 $value
     %t2 = load ptr $fn
-    %t3 = unary decay ptr %t2
-    %t4 = call i32 %t3(%t1) as (%arg0 : i32) -> i32
-    return i32 %t4
+    %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
+    return i32 %t3
 }

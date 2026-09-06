@@ -7,7 +7,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $b
     %t2 = addr $b
     %t3 = addr $argobj__2
-    call void @forward_tag__forward_tag(%t3)
     %t4 = call i32 @box_int___pick__ov2(%t2, 0, 0, $argobj__2)
     %t5 = cmp eq i32 %t4, 2
     branch %t5, ^cond_then_1, ^cond_else_2
@@ -24,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @box_int___pick__ov2(%this : ptr, %__param1 : ptr, %__param2 : ptr, %__param3 : obj<1x1>) -> i32 [binding=weak, object=_ZN3boxIiE4pickIPcEEiT_S3_11forward_tag] {
+function @box_int___pick__ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : obj<1x1>) -> i32 [binding=weak, object=_ZN3boxIiE4pickIPcEEiT_S2_11forward_tag] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -36,11 +35,3 @@ function @box_int___pick__ov2(%this : ptr, %__param1 : ptr, %__param2 : ptr, %__
     store ptr %__param2, $__param2
     return i32 2
 }
-function @forward_tag__forward_tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11forward_tagC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN11forward_tagC2Ev = @forward_tag__forward_tag

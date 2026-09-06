@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @operator__(%__param0 : ptr [pass=reference], %__param1 : i32) -> i32 [binding=weak, object=_ZpLIi3vecIiEiEiR5queueIT_T0_4lessINS4_10value_typeEEET1_] {
+function @operator__(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZpLIi3vecIiEiEiR5queueIT_T0_4lessI35__dependent_qualified_type_shape_55EET1_] {
   slot $__param0 : ptr
   slot $__param1 : i32
 

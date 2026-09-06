@@ -49,10 +49,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^catch_dispatch_1
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(8)
     %t2 = addr @f
-    %t3 = unary decay ptr %t2
-    store ptr %t3, %t1
-    %t4 = addr @__rtti_type_PFvvE
-    call void @__external_runtime____cxa_throw(%t1, %t4, 0)
+    store ptr %t2, %t1
+    %t3 = addr @__rtti_type_PFvvE
+    call void @__external_runtime____cxa_throw(%t1, %t3, 0)
     eh_end
     return i32 0
 
@@ -61,18 +60,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^catch_entry_2
 
   block ^catch_entry_2:
-    %t5 = exception ptr
-    %t6 = exception_selector i32
-    %t7 = cmp eq i32 %t6, 1
-    branch %t7, ^catch_body_4, ^catch_next_5
+    %t4 = exception ptr
+    %t5 = exception_selector i32
+    %t6 = cmp eq i32 %t5, 1
+    branch %t6, ^catch_body_4, ^catch_next_5
 
   block ^catch_body_4:
-    %t8 = call ptr @__external_runtime____cxa_begin_catch(%t5)
-    store ptr %t8, $catch__1
+    %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
+    store ptr %t7, $catch__1
     eh_cleanup ^catch_cleanup_6
-    store ptr %t8, $p
-    %t9 = load ptr $p
-    call void %t9() as () -> void
+    store ptr %t7, $p
+    %t8 = load ptr $p
+    call void %t8() as () -> void
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
@@ -86,8 +85,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^try_end_3:
-    %t10 = load i32 @called
-    %t11 = cmp eq i32 %t10, 0
-    %t12 = convert trunc i32 i64 %t11
-    return i32 %t12
+    %t9 = load i32 @called
+    %t10 = cmp eq i32 %t9, 0
+    %t11 = convert trunc i32 i64 %t10
+    return i32 %t11
 }

@@ -1,4 +1,4 @@
-function @user__num_vertices(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_ZN4user12num_verticesERKNS_5graphE] {
+function @user__num_vertices(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_ZN4user12num_verticesERKNS_5graphE] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @lib__vertex_list_graph_user__graph___const_constraints(%this : ptr, %cg : ptr [pass=reference]) -> void [binding=weak, object=_ZN3lib17vertex_list_graphIN4user5graphEE17const_constraintsERKS2_] {
+function @lib__vertex_list_graph_user__graph___const_constraints(%this : ptr [object_bytes=4], %cg : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3lib17vertex_list_graphIN4user5graphEE17const_constraintsERKS2_, inline_hint=yes] {
   slot $this : ptr
   slot $cg : ptr
 

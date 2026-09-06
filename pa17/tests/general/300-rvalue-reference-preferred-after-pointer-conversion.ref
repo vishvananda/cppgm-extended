@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @Values__operator____ov2(%this : ptr, %__param1 : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN6ValuesixEOPK6Entity] {
+function @Values__operator____ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN6ValuesixEOPK6Entity, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

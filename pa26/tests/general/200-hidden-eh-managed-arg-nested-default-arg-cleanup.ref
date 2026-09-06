@@ -1,35 +1,31 @@
-global @__strlit__1 [binding=internal] = {
+global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 115
   i8 117
   i8 109
   i8 0
 }
-
-global @__strlit__2 [binding=internal] = {
+global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 98
   i8 97
   i8 100
   i8 0
 }
-
-global @__strlit__3 [binding=internal] = {
+global @__strlit__3 [storage=readonly, binding=internal] = {
   i8 99
   i8 104
   i8 97
   i8 114
   i8 0
 }
-
-global @__strlit__4 [binding=internal] = {
+global @__strlit__4 [storage=readonly, binding=internal] = {
   i8 0
 }
-
-global @__strlit__5 [binding=internal] = {
+global @__strlit__5 [storage=readonly, binding=internal] = {
   i8 41
   i8 0
 }
 
-function @operator_(%ret : ptr [pass=indirect_result], %lhs : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> void [binding=strong, object=_ZplRK4TextS1_] {
+function @operator_(%ret : ptr [pass=indirect_result, object_bytes=4], %lhs : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_ZplRK4TextS1_] {
   slot $lhs : ptr
   slot $__param1 : ptr
   slot $condaddr__1 : ptr
@@ -79,8 +75,7 @@ function @operator_(%ret : ptr [pass=indirect_result], %lhs : ptr [pass=referenc
   block ^call_unwind_end_7:
     return void
 }
-
-function @operator___ov2(%ret : ptr [pass=indirect_result], %lhs : ptr [pass=reference], %__param1 : i8) -> void [binding=strong, object=_ZplRK4Textc] {
+function @operator___ov2(%ret : ptr [pass=indirect_result, object_bytes=4], %lhs : ptr [pass=by_address, object_bytes=4], %__param1 : i8) -> void [binding=strong, object=_ZplRK4Textc] {
   slot $lhs : ptr
   slot $__param1 : i8
   slot $cond__1 : ptr
@@ -130,7 +125,6 @@ function @operator___ov2(%ret : ptr [pass=indirect_result], %lhs : ptr [pass=ref
   block ^call_unwind_end_7:
     return void
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $delimiter : obj<4x4>
   slot $arg__1 : obj<4x4>
@@ -222,8 +216,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = load i32 $cond__5
     return i32 %t15
 }
-
-function @Alloc__Alloc(%this : ptr) -> void [binding=weak, object=_ZN5AllocC1Ev] {
+function @Alloc__Alloc(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5AllocC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -233,8 +226,7 @@ function @Alloc__Alloc(%this : ptr) -> void [binding=weak, object=_ZN5AllocC1Ev]
     store i32 3, %t2
     return void
 }
-
-function @Text__Text(%this : ptr, %__param1 : ptr, %alloc : ptr [pass=reference]) -> void [binding=weak, object=_ZN4TextC1EPKcRK5Alloc] {
+function @Text__Text(%this : ptr [object_bytes=4], %__param1 : ptr, %alloc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4TextC1EPKcRK5Alloc, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $alloc : ptr
@@ -251,19 +243,21 @@ function @Text__Text(%this : ptr, %__param1 : ptr, %alloc : ptr [pass=reference]
     store i32 %t3, %t5
     return void
 }
-
-function @Alloc___Alloc(%this : ptr) -> void [binding=weak, object=_ZN5AllocD1Ev] {
+function @Alloc___Alloc(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5AllocD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-
-function @Text___Text(%this : ptr) -> void [binding=weak, object=_ZN4TextD1Ev] {
+function @Text___Text(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4TextD1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
+alias object _ZN5AllocC2Ev = @Alloc__Alloc
+alias object _ZN4TextC2EPKcRK5Alloc = @Text__Text
+alias object _ZN5AllocD2Ev = @Alloc___Alloc
+alias object _ZN4TextD2Ev = @Text___Text

@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $outer
-    call void @wrapper_int__definition_int____wrapper(%t1, 9)
+    call void @wrapper_int____cppgm_class_template_identity_0_1_0___wrapper_int____cppgm_class_template_identity_0_1_0_(%t1, 9)
     %t2 = addr $outer
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @wrapper_int__definition_int____wrapper(%this : ptr, %inputs : i32) -> void [binding=weak, object=_ZN7wrapperIiJ10definitionIiEEEC1Ei] {
+function @wrapper_int____cppgm_class_template_identity_0_1_0___wrapper_int____cppgm_class_template_identity_0_1_0_(%this : ptr [object_bytes=4], %inputs : i32) -> void [binding=weak, object=_ZN7wrapperIiJ10definitionIiEEEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $inputs : i32
 
@@ -34,10 +34,10 @@ function @wrapper_int__definition_int____wrapper(%this : ptr, %inputs : i32) -> 
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load i32 $inputs
-    call void @tuple_definition_int____tuple(%t2, %t3)
+    call void @tuple___cppgm_class_template_identity_0_1_0___tuple___cppgm_class_template_identity_0_1_0_(%t2, %t3)
     return void
 }
-function @tuple_definition_int____tuple(%this : ptr, %input : i32) -> void [binding=weak, object=_ZN5tupleIJ10definitionIiEEEC1Ei] {
+function @tuple___cppgm_class_template_identity_0_1_0___tuple___cppgm_class_template_identity_0_1_0_(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN5tupleIJ10definitionIiEEEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 
@@ -50,5 +50,5 @@ function @tuple_definition_int____tuple(%this : ptr, %input : i32) -> void [bind
     store i32 %t1, %t3
     return void
 }
-alias object _ZN7wrapperIiJ10definitionIiEEEC2Ei = @wrapper_int__definition_int____wrapper
-alias object _ZN5tupleIJ10definitionIiEEEC2Ei = @tuple_definition_int____tuple
+alias object _ZN7wrapperIiJ10definitionIiEEEC2Ei = @wrapper_int____cppgm_class_template_identity_0_1_0___wrapper_int____cppgm_class_template_identity_0_1_0_
+alias object _ZN5tupleIJ10definitionIiEEEC2Ei = @tuple___cppgm_class_template_identity_0_1_0___tuple___cppgm_class_template_identity_0_1_0_

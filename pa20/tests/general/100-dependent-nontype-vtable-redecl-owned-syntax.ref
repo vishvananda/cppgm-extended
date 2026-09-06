@@ -1,7 +1,8 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct_Control_int__7_ [storage=readonly, binding=weak, object=_ZTS7ControlIiLi7EE] = {
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
+
+global @__typeinfo_name__struct___cppgm_class_template_identity_0_0_0 [binding=weak, object=_ZTS7ControlIiLi7EE] = {
   i8 55
   i8 67
   i8 111
@@ -19,15 +20,15 @@ global @__typeinfo_name__struct_Control_int__7_ [storage=readonly, binding=weak,
   i8 69
   i8 0
 }
-global @__rtti_struct_Control_int__7_ [storage=readonly, binding=weak, object=_ZTI7ControlIiLi7EE] = {
+global @__rtti_struct___cppgm_class_template_identity_0_0_0 [binding=weak, object=_ZTI7ControlIiLi7EE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
-  ptr addr @__typeinfo_name__struct_Control_int__7_
+  ptr addr @__typeinfo_name__struct___cppgm_class_template_identity_0_0_0
 }
-global @Control_int__7___vtable [storage=readonly, binding=weak, object=_ZTV7ControlIiLi7EE] = {
+global @__cppgm_class_template_identity_0_0_0__vtable [binding=weak, object=_ZTV7ControlIiLi7EE] = {
   i64 0
-  ptr addr @__rtti_struct_Control_int__7_
+  ptr addr @__rtti_struct___cppgm_class_template_identity_0_0_0
   ptr addr @Control_int__7____Control
-  ptr addr @Control_int__7____Control__deleting_entry
+  ptr addr @__cppgm_class_template_identity_0_0_0___Control__deleting_entry
   ptr addr @Control_int__7___value
 }
 
@@ -37,12 +38,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $control
-    call void @Control_int__7___Control(%t1)
+    call void @Control_int__7___Control_int__7_(%t1)
     %t2 = addr $control
     %t3 = load ptr %t2
     %t4 = index i8 %t3, 16
     %t5 = load ptr %t4
-    %t6 = call i32 %t5(%t2) as (%arg0 : ptr) -> i32
+    %t6 = call i32 %t5(%t2) as (%arg0 : ptr [object_bytes=8]) -> i32
     %t7 = cmp eq i32 %t6, 7
     branch %t7, ^cond_then_1, ^cond_else_2
 
@@ -60,58 +61,68 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Control_int__7____Control(%t9)
     return i32 %t8
 }
-function @Control_int__7____Control__deleting_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7ControlIiLi7EED0Ev] {
+function @Control_int__7____Control__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7ControlIiLi7EED2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
+function @__cppgm_class_template_identity_0_0_0___Control__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7ControlIiLi7EED0Ev] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
     %t1 = load ptr $this
-    %t2 = addr @Control_int__7___vtable
+    %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     eh_end
     %t4 = load ptr $this
-    call void @operator_delete(%t4)
+    call void @operatordelete(%t4)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t5 = load ptr $this
-    call void @operator_delete(%t5)
+    call void @operatordelete(%t5)
     eh_end
     resume
 
   block ^destructor_end_2:
     return void
 }
-function @Control_int__7____Control(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7ControlIiLi7EED1Ev] {
+function @Control_int__7____Control(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7ControlIiLi7EED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = addr @Control_int__7___vtable
+    %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     return void
 }
-function @Control_int__7___value(%this : ptr) -> i32 [unwind=no, binding=weak, object=_ZN7ControlIiLi7EE5valueEv] {
+function @Control_int__7___value(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZN7ControlIiLi7EE5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 7
 }
-function @Control_int__7___Control(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7ControlIiLi7EEC1Ev] {
+function @Control_int__7___Control_int__7_(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7ControlIiLi7EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = addr @Control_int__7___vtable
+    %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
     %t3 = index i8 %t2, 16
     store ptr %t3, %t1
     return void
 }
-alias object _ZN7ControlIiLi7EED2Ev = @Control_int__7____Control
-alias object _ZN7ControlIiLi7EEC2Ev = @Control_int__7___Control
+alias object _ZN7ControlIiLi7EEC2Ev = @Control_int__7___Control_int__7_

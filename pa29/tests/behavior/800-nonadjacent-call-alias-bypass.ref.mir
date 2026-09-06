@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -24,8 +24,7 @@ function @g
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    ret rax
+    ret rdi
 
 function @f
   abi
@@ -39,22 +38,13 @@ function @f
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %a -> [rbp-8] : ptr
-    param-slot %b -> [rbp-16] : ptr
-    param-slot %c -> [rbp-24] : ptr
-    slot $tmp -> [rbp-32] : obj<8x8>
+    slot $tmp -> [rbp-8] : obj<8x8>
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    store.ptr [rbp-16], rsi
-    store.ptr [rbp-24], rdx
-    mov r9, rcx
     mov r8, rcx
-    lea rdi, [rbp-32]
-    mov rsi, rcx
-    copy_bytes 8x8, rdi, rsi
+    copy_bytes 8x8, [rbp-8], rcx
     mov rdi, r8
-    call @g
+    call @g [args=(rdi)]
     ret rax
 
 function @main
@@ -65,18 +55,18 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
+    preserve rbx
 
   block ^entry
     mov r8, @other
-    mov r12, @src
+    mov rbx, @src
     mov rdi, r8
     mov rsi, r8
     mov rdx, r8
-    mov rcx, r12
-    call @f
-    mov rbx, rax
-    cmp.ptr rbx, r12
+    mov rcx, rbx
+    call @f [args=(rcx,rdx,rsi,rdi)]
+    mov r9, rax
+    cmp.ptr r9, rbx
     jne ^bad_ptr
     jmp ^check_value
 
@@ -85,10 +75,8 @@ function @main
     ret rax
 
   block ^check_value
-    load.i64 r8, [rbx]
-    mov rdx, 77
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
+    load.i64 r8, [r9]
+    cmp.i64 r8, 77
+    setne rax
+    movzx rax, rax
     ret rax

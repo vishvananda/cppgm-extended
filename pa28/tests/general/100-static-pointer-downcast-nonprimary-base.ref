@@ -1,8 +1,7 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
-declare global @__external_rtti_vtable____vmi_class_type_info [binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
-
-declare function @operatordelete(%arg0 : ptr) -> void [effects=readwrite, unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 global @__typeinfo_name__struct_base [binding=weak, object=_ZTS4base] = {
   i8 52
@@ -12,12 +11,10 @@ global @__typeinfo_name__struct_base [binding=weak, object=_ZTS4base] = {
   i8 101
   i8 0
 }
-
 global @__rtti_struct_base [binding=weak, object=_ZTI4base] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_base
 }
-
 global @__typeinfo_name__struct_leaf [binding=weak, object=_ZTS4leaf] = {
   i8 52
   i8 108
@@ -26,7 +23,6 @@ global @__typeinfo_name__struct_leaf [binding=weak, object=_ZTS4leaf] = {
   i8 102
   i8 0
 }
-
 global @__rtti_struct_leaf [binding=weak, object=_ZTI4leaf] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_leaf
@@ -35,7 +31,6 @@ global @__rtti_struct_leaf [binding=weak, object=_ZTI4leaf] = {
   ptr addr @__rtti_struct_base
   i64 2050
 }
-
 global @leaf__vtable [binding=weak, object=_ZTV4leaf] = {
   i64 0
   ptr addr @__rtti_struct_leaf
@@ -59,7 +54,7 @@ function @read(%root : ptr) -> i32 [binding=strong, object=_Z4readP4base] {
     jump ^basecast_end_3
 
   block ^basecast_adjust_2:
-    %t3 = index i8 [projection=base_subobject] %t1, -8
+    %t3 = index i8 %t1, -8
     store ptr %t3, $basecast__1
     jump ^basecast_end_3
 
@@ -71,7 +66,6 @@ function @read(%root : ptr) -> i32 [binding=strong, object=_Z4readP4base] {
     %t7 = load i32 %t6
     return i32 %t7
 }
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $object : obj<16x8>
   slot $root : ptr
@@ -82,7 +76,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $object
     call void @leaf__leaf(%t1)
     %t2 = addr $object
-    %t3 = index i8 [projection=base_subobject] %t2, 8
+    %t3 = index i8 %t2, 8
     store ptr %t3, $root
     eh_try ^cleanup_action_5
     %t4 = load ptr $root
@@ -118,7 +112,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @leaf___leaf(%t10)
     return i32 %t9
 }
+function @leaf___leaf__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4leafD2Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
 
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @leaf__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
 function @leaf___leaf__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN4leafD0Ev] {
   slot $this : ptr
 
@@ -143,8 +147,7 @@ function @leaf___leaf__deleting_entry(%this : ptr) -> void [binding=weak, object
   block ^destructor_end_2:
     return void
 }
-
-function @leaf___leaf(%this : ptr) -> void [binding=weak, object=_ZN4leafD1Ev] {
+function @leaf___leaf(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4leafD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -155,14 +158,13 @@ function @leaf___leaf(%this : ptr) -> void [binding=weak, object=_ZN4leafD1Ev] {
     store ptr %t3, %t1
     return void
 }
-
-function @leaf__leaf(%this : ptr) -> void [binding=weak, object=_ZN4leafC1Ev] {
+function @leaf__leaf(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN4leafC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 8
+    %t2 = index i8 %t1, 8
     call void @base__base__base_entry(%t2, 3)
     %t3 = load ptr $this
     %t4 = addr @leaf__vtable
@@ -173,8 +175,7 @@ function @leaf__leaf(%this : ptr) -> void [binding=weak, object=_ZN4leafC1Ev] {
     store i32 11, %t7
     return void
 }
-
-function @base__base__base_entry(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4baseC2Ei] {
+function @base__base__base_entry(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4baseC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -187,8 +188,7 @@ function @base__base__base_entry(%this : ptr, %v : i32) -> void [binding=weak, o
     store i32 %t1, %t3
     return void
 }
-
-function @base__base(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4baseC1Ei] {
+function @base__base(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4baseC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -201,3 +201,4 @@ function @base__base(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4ba
     store i32 %t1, %t3
     return void
 }
+alias object _ZN4leafC2Ev = @leaf__leaf

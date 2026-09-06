@@ -1,20 +1,20 @@
-declare global @__external_rtti_vtable____fundamental_type_info [binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
 
-global @__typeinfo_name__double [storage=readonly, binding=weak, object=_ZTSd] = {
-  i8 100
-  i8 0
-}
-global @__rtti_double [storage=readonly, binding=weak, object=_ZTId] = {
-  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
-  ptr addr @__typeinfo_name__double
-}
-global @__typeinfo_name__int [storage=readonly, binding=weak, object=_ZTSi] = {
+global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
   i8 105
   i8 0
 }
-global @__rtti_int [storage=readonly, binding=weak, object=_ZTIi] = {
+global @__rtti_int [binding=weak, object=_ZTIi] = {
   ptr addr @__external_rtti_vtable____fundamental_type_info + 16
   ptr addr @__typeinfo_name__int
+}
+global @__typeinfo_name__double [binding=weak, object=_ZTSd] = {
+  i8 100
+  i8 0
+}
+global @__rtti_double [binding=weak, object=_ZTId] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__double
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

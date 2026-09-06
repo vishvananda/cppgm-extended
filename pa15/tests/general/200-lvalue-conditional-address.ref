@@ -1,4 +1,4 @@
-function @f(%a : ptr [pass=reference], %b : ptr [pass=reference], %c : u8) -> ptr [binding=strong, object=_Z1fRiS_b] {
+function @f(%a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_address, object_bytes=4], %c : u8) -> ptr [binding=strong, object=_Z1fRiS_b] {
   slot $a : ptr
   slot $b : ptr
   slot $c : u8

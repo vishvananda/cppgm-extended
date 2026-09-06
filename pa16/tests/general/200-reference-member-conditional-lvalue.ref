@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condaddr_else_2:
     %t9 = addr $r
-    %t10 = index i8 [projection=reference_field] %t9, 0
+    %t10 = index i8 [projection=field] %t9, 0
     %t11 = load ptr %t10
     store ptr %t11, $condaddr__1
     jump ^condaddr_end_3
@@ -55,7 +55,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = load i32 $cond__2
     return i32 %t19
 }
-function @R__R(%this : ptr, %x : ptr [pass=reference]) -> void [binding=weak, object=_ZN1RC1ER1S] {
+function @R__R(%this : ptr [object_bytes=8], %x : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1RC1ER1S, inline_hint=yes] {
   slot $this : ptr
   slot $x : ptr
 

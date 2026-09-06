@@ -3,10 +3,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $f
-    call void @Function_void_int____Function__ov3(%t1, 1)
+    call void @Function_void_int____Function_void_int____ov3(%t1, 1)
     return i32 0
 }
-function @Function_void_int____Function__ov3(%this : ptr, %f : i32) -> void [binding=weak, object=_ZN8FunctionIFviEEC1IivEET_] {
+function @Function_void_int____Function_void_int____ov3(%this : ptr [object_bytes=1], %f : i32) -> void [binding=weak, object=_ZN8FunctionIFviEEC1IivEET_] {
   slot $this : ptr
   slot $f : i32
 
@@ -15,4 +15,4 @@ function @Function_void_int____Function__ov3(%this : ptr, %f : i32) -> void [bin
     store i32 %f, $f
     return void
 }
-alias object _ZN8FunctionIFviEEC2IivEET_ = @Function_void_int____Function__ov3
+alias object _ZN8FunctionIFviEEC2IivEET_ = @Function_void_int____Function_void_int____ov3

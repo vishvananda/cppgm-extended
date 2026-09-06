@@ -4,21 +4,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $it
-    call void @X_int__int____int____int______1024___X(%t1)
+    call void @X_int__pointer_to_int__lvalue_reference_to_int__pointer_to_pointer_to_int__1024___X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024_(%t1)
     %t2 = addr $cit
     %t3 = addr $it
-    call void @X_int__int_const____int_const____int_const___const____1024___X__ov4(%t2, %t3)
+    call void @X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024___X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024___ov4(%t2, %t3)
     %t4 = addr $cit
     return i32 0
 }
-function @X_int__int____int____int______1024___X(%this : ptr) -> void [binding=weak, object=_ZN1XIiPiRiPS0_Ll1024EEC1Ev] {
+function @X_int__pointer_to_int__lvalue_reference_to_int__pointer_to_pointer_to_int__1024___X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1XIiPiRiPS0_Ll1024EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @X_int__int_const____int_const____int_const___const____1024___X__ov4(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN1XIiPKiRS0_PKS1_Ll1024EEC1IPiRiPS7_Li0EEERKS_IiT_T0_T1_Ll1024EE] {
+function @X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024___X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1XIiPKiRS0_PKS1_Ll1024EEC1IPiRiPS6_Li0EEERKS_IiT_T0_T1_Ll1024EE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -27,5 +27,5 @@ function @X_int__int_const____int_const____int_const___const____1024___X__ov4(%t
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN1XIiPiRiPS0_Ll1024EEC2Ev = @X_int__int____int____int______1024___X
-alias object _ZN1XIiPKiRS0_PKS1_Ll1024EEC2IPiRiPS7_Li0EEERKS_IiT_T0_T1_Ll1024EE = @X_int__int_const____int_const____int_const___const____1024___X__ov4
+alias object _ZN1XIiPiRiPS0_Ll1024EEC2Ev = @X_int__pointer_to_int__lvalue_reference_to_int__pointer_to_pointer_to_int__1024___X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024_
+alias object _ZN1XIiPKiRS0_PKS1_Ll1024EEC2IPiRiPS6_Li0EEERKS_IiT_T0_T1_Ll1024EE = @X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024___X_int__pointer_to_const_int__lvalue_reference_to_const_int__pointer_to_const_pointer_to_const_int__1024___ov4

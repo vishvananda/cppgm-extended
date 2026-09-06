@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -19,20 +19,9 @@ function @clobber
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %a -> [rbp-8] : i64
-    param-slot %b -> [rbp-16] : i64
-    param-slot %c -> [rbp-24] : i64
-    param-slot %d -> [rbp-32] : i64
-    param-slot %f -> [rbp-40] : i64
 
   block ^entry
-    store.i64 [rbp-8], rdi
-    store.i64 [rbp-16], rsi
-    store.i64 [rbp-24], rdx
-    store.i64 [rbp-32], rcx
-    store.i64 [rbp-40], r9
-    mov rax, r8
-    ret rax
+    ret r8
 
 function @size
   abi
@@ -43,17 +32,15 @@ function @size
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %this -> [rbp-8] : ptr
 
   block ^entry
-    store.ptr [rbp-8], rdi
     mov rdi, 10
     mov rsi, 20
     mov rdx, 30
     mov rcx, 40
     mov r8, 12345
     mov r9, 60
-    call @clobber
+    call @clobber [args=(rcx,rdx,rsi,rdi,r8,r9)]
     mov rax, 1
     ret rax
 
@@ -67,15 +54,19 @@ function @check
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r13
+    preserve rbx
+    slot $this -> [rbp-8] : ptr
+    slot $index -> [rbp-16] : i64
 
   block ^entry
-    mov r9, rdi
-    mov r8, rsi
-    mov rbx, rsi
-    call @size
-    mov r13, rax
-    cmp.i64 rbx, r13
+    store.ptr [rbp-8], rdi
+    store.i64 [rbp-16], rsi
+    load.i64 rbx, [rbp-16]
+    load.ptr r8, [rbp-8]
+    mov rdi, r8
+    call @size [args=(rdi)]
+    mov r9, rax
+    cmp.i64 rbx, r9
     jae ^bad
     jmp ^good
 
@@ -99,5 +90,5 @@ function @main
   block ^entry
     mov rdi, 0
     mov rsi, 0
-    call @check
+    call @check [args=(rsi,rdi)]
     ret rax

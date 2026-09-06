@@ -6,22 +6,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $ioc
     %t2 = addr $tmpobj__1
     call void @maker__maker(%t2)
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     call void @io_context__io_context(%t1, %t3)
     call void @maker___maker(%t2)
     return i32 0
 }
-function @maker__maker(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5makerC1Ev] {
+function @maker__maker(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5makerC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @service_maker__service_maker__base_entry(%t2)
     return void
 }
-function @io_context__io_context(%this : ptr, %initial : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN10io_contextC1ERK13service_maker] {
+function @io_context__io_context(%this : ptr [object_bytes=1], %initial : ptr [pass=by_address, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN10io_contextC1ERK13service_maker, inline_hint=yes] {
   slot $this : ptr
   slot $initial : ptr
 
@@ -29,22 +29,29 @@ function @io_context__io_context(%this : ptr, %initial : ptr [pass=reference]) -
     store ptr %this, $this
     store ptr %initial, $initial
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $initial
     call void @context__context__base_entry(%t2, %t3)
     return void
 }
-function @service_maker__service_maker__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN13service_makerC2Ev] {
+function @maker___maker(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5makerD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @service_maker__service_maker__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN13service_makerC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     call void @noncopyable__noncopyable__base_entry(%t2)
     return void
 }
-function @context__context__base_entry(%this : ptr, %initial : ptr [pass=reference]) -> void [unwind=no, binding=weak, object=_ZN7contextC2ERK13service_maker] {
+function @context__context__base_entry(%this : ptr [object_bytes=1], %initial : ptr [pass=by_address, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7contextC2ERK13service_maker, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $initial : ptr
 
@@ -55,21 +62,14 @@ function @context__context__base_entry(%this : ptr, %initial : ptr [pass=referen
     call void @service_maker__make(%t1)
     return void
 }
-function @noncopyable__noncopyable__base_entry(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN11noncopyableC2Ev] {
+function @noncopyable__noncopyable__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN11noncopyableC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-function @service_maker__make(%this : ptr) -> void [unwind=no, binding=weak, object=_ZNK13service_maker4makeEv] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @maker___maker(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5makerD1Ev] {
+function @service_maker__make(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZNK13service_maker4makeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

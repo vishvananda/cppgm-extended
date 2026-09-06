@@ -1,4 +1,4 @@
-function @convert(%source : ptr [pass=reference]) -> obj<4x4> [binding=strong, object=_Z7convertRKN7adaptorIiE5rangeILb1EEE] {
+function @convert(%source : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=strong, object=_Z7convertRKN7adaptorIiE5rangeILb1EEE] {
   slot $source : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = convert trunc i32 i64 %t7
     return i32 %t8
 }
-function @adaptor_int___range_false___range_false___ov4(%this : ptr, %other : ptr [pass=reference], %__param2 : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb0EEC1ILb0EvEERKNS0_5rangeILb1EEEPT0_] {
+function @adaptor_int___range_false___range_false___ov4(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4], %__param2 : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb0EEC1ILb0EvEERKNS0_5rangeILb1EEEPT0_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
   slot $__param2 : ptr
@@ -57,7 +57,7 @@ function @adaptor_int___range_false___range_false___ov4(%this : ptr, %other : pt
     store i32 %t4, %t6
     return void
 }
-function @adaptor_int___range_true___range_false_(%this : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb1EEC1Ev] {
+function @adaptor_int___range_true___range_false_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb1EEC1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $cond__1 : i32
 

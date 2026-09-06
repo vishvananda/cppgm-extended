@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @explicit_specialization_member_owner__run()
     return i32 %t1
 }
-function @explicit_specialization_member_owner__box_void___apply(%this : ptr, %__param1 : i32) -> i32 [binding=weak, object=_ZN36explicit_specialization_member_owner3boxIvE5applyIiEEiT_] {
+function @explicit_specialization_member_owner__box_void___apply(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZN36explicit_specialization_member_owner3boxIvE5applyIiEEiT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 

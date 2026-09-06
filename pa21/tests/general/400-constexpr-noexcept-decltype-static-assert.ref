@@ -4,10 +4,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     store ptr 0, $p
     %t1 = load ptr $p
-    call void @box_char_const_____f(%t1)
+    call void @box_pointer_to_const_char___f(%t1)
     return i32 0
 }
-function @box_char_const_____f(%p : ptr) -> void [binding=weak, object=_ZN3boxIPKcE1fES1_] {
+function @box_pointer_to_const_char___f(%p : ptr) -> void [binding=weak, object=_ZN3boxIPKcE1fES1_, inline_hint=yes] {
   slot $p : ptr
   slot $q : ptr
 

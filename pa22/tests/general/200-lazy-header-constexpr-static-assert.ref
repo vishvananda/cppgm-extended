@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S__g(%t2)
     return i32 0
 }
-function @S__g(%this : ptr) -> void [binding=weak, object=_ZN1S1gEv] {
+function @S__g(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1S1gEv, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

@@ -1,4 +1,4 @@
-function @pass(%value : ptr [pass=reference]) -> obj<1x1> [binding=strong, object=_Z4passO1A] {
+function @pass(%value : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=strong, object=_Z4passO1A] {
   slot $value : ptr
   slot $retobj__1 : obj<1x1>
 

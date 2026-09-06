@@ -11,7 +11,7 @@ function @f() -> i64 [binding=strong, object=_Z1fv] {
     %t6 = cmp eq ptr %t5, 0
     return i64 %t6
 }
-function @R_Iter_int____R_Iter_int__(%this : ptr) -> void [binding=weak, object=_ZN1RI4IterIiEEC1Ev] {
+function @R_Iter_int____R_Iter_int__(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1RI4IterIiEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -21,7 +21,7 @@ function @R_Iter_int____R_Iter_int__(%this : ptr) -> void [binding=weak, object=
     call void @Iter_int___Iter(%t2)
     return void
 }
-function @Iter_int___Iter(%this : ptr) -> void [binding=weak, object=_ZN4IterIiEC1Ev] {
+function @Iter_int___Iter(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4IterIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

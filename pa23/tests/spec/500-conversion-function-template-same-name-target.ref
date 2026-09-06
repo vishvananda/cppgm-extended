@@ -16,10 +16,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $v
-    call void @source_ns__view_char___view(%t1, 6)
+    call void @source_ns__view_char___view_typename___retained_template_parameter_shape_0_(%t1, 6)
     %t2 = addr $argobj__2
     %t3 = addr $v
-    %t4 = call obj<4x4> @source_ns__view_char___operatortarget_ns__view_U_(%t3)
+    %t4 = call obj<4x4> @source_ns__view_char___view_U_(%t3)
     copyobj 4x4 %t4, %t2
     %t5 = call i32 @consume($argobj__2)
     %t6 = cmp eq i32 %t5, 7
@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @source_ns__view_char___view(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN9source_ns4viewIcEC1Ei] {
+function @source_ns__view_char___view_typename___retained_template_parameter_shape_0_(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN9source_ns4viewIcEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -50,7 +50,7 @@ function @source_ns__view_char___view(%this : ptr, %v : i32) -> void [binding=we
     store i32 %t1, %t3
     return void
 }
-function @source_ns__view_char___operatortarget_ns__view_U_(%this : ptr) -> obj<4x4> [binding=weak, object=_ZNK9source_ns4viewIcEcvN9target_ns4viewIT_EEIcEEv] {
+function @source_ns__view_char___view_U_(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK9source_ns4viewIcEcvN9target_ns4viewIcEEIcEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -61,10 +61,10 @@ function @source_ns__view_char___operatortarget_ns__view_U_(%this : ptr) -> obj<
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load i32 %t3
     %t5 = binary add i32 %t4, 1
-    call void @target_ns__view_char___view__ov2(%t1, %t5)
+    call void @target_ns__view_char___view_typename___retained_template_parameter_shape_0___ov2(%t1, %t5)
     return obj<4x4> $retobj__1
 }
-function @target_ns__view_char___view__ov2(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN9target_ns4viewIcEC1Ei] {
+function @target_ns__view_char___view_typename___retained_template_parameter_shape_0___ov2(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN9target_ns4viewIcEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 
@@ -77,5 +77,5 @@ function @target_ns__view_char___view__ov2(%this : ptr, %v : i32) -> void [bindi
     store i32 %t1, %t3
     return void
 }
-alias object _ZN9source_ns4viewIcEC2Ei = @source_ns__view_char___view
-alias object _ZN9target_ns4viewIcEC2Ei = @target_ns__view_char___view__ov2
+alias object _ZN9source_ns4viewIcEC2Ei = @source_ns__view_char___view_typename___retained_template_parameter_shape_0_
+alias object _ZN9target_ns4viewIcEC2Ei = @target_ns__view_char___view_typename___retained_template_parameter_shape_0___ov2

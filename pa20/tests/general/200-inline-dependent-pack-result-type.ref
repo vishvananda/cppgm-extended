@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @f(%t1)
     return i32 0
 }
-function @f(%p : ptr) -> void [binding=weak, object=_Z1fIiJEEN6resultIv4predIT_JDpT0_EEE4typeEPS2_DpS3_] {
+function @f(%p : ptr) -> void [binding=weak, object=_Z1fIiJEEN6resultIv4predIT_DpT0_EE4typeEPS2_DpS3_, inline_hint=yes] {
   slot $p : ptr
 
   block ^entry:

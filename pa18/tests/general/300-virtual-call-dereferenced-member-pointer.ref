@@ -1,4 +1,4 @@
-function @Slot__clear(%this : ptr) -> void [binding=strong, object=_ZN4Slot5clearEv] {
+function @Slot__clear(%this : ptr [object_bytes=8]) -> void [binding=strong, object=_ZN4Slot5clearEv] {
   slot $this : ptr
 
   block ^entry:
@@ -24,7 +24,7 @@ function @Slot__clear(%this : ptr) -> void [binding=strong, object=_ZN4Slot5clea
     %t13 = load ptr %t12
     %t14 = load ptr %t13
     %t15 = load ptr %t14
-    %t16 = call i32 %t15(%t13) as (%arg0 : ptr) -> i32
+    %t16 = call i32 %t15(%t13) as (%arg0 : ptr [object_bytes=8]) -> i32
     jump ^if_end_3
 
   block ^if_else_2:

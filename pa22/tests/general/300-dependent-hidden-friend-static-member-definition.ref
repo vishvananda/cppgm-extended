@@ -1,4 +1,4 @@
-global @__cppgm_class_template_identity_0_0_0__block_size : i64 [binding=weak, object=_ZN4IterIilE10block_sizeE] = 0
+global @__cppgm_class_template_identity_0_0_0__block_size : i64 [storage=readonly, binding=weak, object=_ZN4IterIilE10block_sizeE] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $it : obj<1x1>
@@ -24,7 +24,7 @@ function @hidden_friend_current_instantiation__compare() -> u8 [binding=strong, 
     %t5 = call u8 @hidden_friend_current_instantiation__operator__(%t3, %t4)
     return u8 %t5
 }
-function @operator_(%__param0 : i64, %__param1 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZpllRK4IterIilE] {
+function @operator_(%__param0 : i64, %__param1 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZpllRK4IterIilE, inline_hint=yes] {
   slot $__param0 : i64
   slot $__param1 : ptr
   slot $retobj__1 : obj<1x1>
@@ -35,7 +35,7 @@ function @operator_(%__param0 : i64, %__param1 : ptr [pass=reference]) -> obj<1x
     %t1 = addr $retobj__1
     return obj<1x1> $retobj__1
 }
-function @hidden_friend_current_instantiation__operator__(%left : ptr [pass=reference], %right : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN35hidden_friend_current_instantiationneERKNS_4iterIiEES3_] {
+function @hidden_friend_current_instantiation__operator__(%left : ptr [pass=by_address, object_bytes=1], %right : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN35hidden_friend_current_instantiationneERKNS_4iterIiEES3_, inline_hint=yes] {
   slot $left : ptr
   slot $right : ptr
 
@@ -49,7 +49,7 @@ function @hidden_friend_current_instantiation__operator__(%left : ptr [pass=refe
     %t5 = convert trunc u8 i64 %t4
     return u8 %t5
 }
-function @hidden_friend_current_instantiation__operator____sym2(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> u8 [binding=weak, object=_ZN35hidden_friend_current_instantiationeqERKNS_4iterIiEES3_] {
+function @hidden_friend_current_instantiation__operator____sym2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN35hidden_friend_current_instantiationeqERKNS_4iterIiEES3_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

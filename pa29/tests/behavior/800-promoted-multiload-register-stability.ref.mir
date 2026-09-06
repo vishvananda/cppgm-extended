@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -10,22 +10,19 @@ function @calc
     param %n -> rdi : i64
     return i64 -> rax
   frame
-    stack_size 32
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
     slot $n -> [rbp-8] : i64
 
   block ^entry
-    mov r8, rdi
-    add r8, 0
-    store.i64 [rbp-8], r8
+    add rdi, 0
+    store.i64 [rbp-8], rdi
+    load.i64 r8, [rbp-8]
     add r8, 2
-    load.i64 rbx, [rbp-8]
-    add r8, rbx
-    mov rax, r8
-    ret rax
+    add r8, [rbp-8]
+    ret r8
 
 function @main
   abi
@@ -38,17 +35,13 @@ function @main
 
   block ^entry
     mov rdi, 10
-    call @calc
-    mov r8, rax
+    call @calc [args=(rdi)]
     mov rdx, 22
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     ret rax

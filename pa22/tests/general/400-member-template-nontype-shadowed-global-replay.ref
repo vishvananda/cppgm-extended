@@ -1,4 +1,4 @@
-global @N : i64 [binding=internal, object=_ZL1N] = 6
+global @N : i64 [storage=readonly, binding=internal, object=_Z1N] = 6
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $first : ptr
@@ -19,37 +19,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load ptr $last
     %t8 = call obj<16x8> @std__make_pair(%t6, %t7)
     copyobj 16x8 %t8, %t5
-    %t9 = call ptr @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________operator___ov3(%t1, %t5)
+    %t9 = call ptr @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0___operator___ov3(%t1, %t5)
     return i32 0
 }
-function @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________operator___ov3(%this : ptr, %pair : ptr [pass=reference]) -> ptr [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EaSIS4_S4_EERS6_RKS2_IT_T0_E] {
-  slot $this : ptr
-  slot $pair : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %pair, $pair
-    %t1 = load ptr $pair
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $this
-    %t5 = index i8 [projection=base_subobject] %t4, 0
-    %t6 = index i8 [projection=reference_field] %t5, 0
-    %t7 = load ptr %t6
-    store ptr %t3, %t7
-    %t8 = load ptr $pair
-    %t9 = index i8 [projection=field] %t8, 8
-    %t10 = load ptr %t9
-    %t11 = load ptr $this
-    %t12 = index i8 [projection=base_subobject] %t11, 0
-    %t13 = index i8 [projection=field] %t12, 8
-    %t14 = index i8 [projection=reference_field] %t13, 0
-    %t15 = load ptr %t14
-    store ptr %t10, %t15
-    %t16 = load ptr $this
-    return ptr %t16
-}
-function @boost__tuples__tie(%t0 : ptr [pass=reference], %t1 : ptr [pass=reference]) -> obj<16x8> [binding=weak, object=_ZN5boost6tuples3tieIPSt4pairImmES4_EENS0_5tupleIRT_RT0_EES7_S9_] {
+function @boost__tuples__tie(%t0 : ptr [pass=by_address, object_bytes=8], %t1 : ptr [pass=by_address, object_bytes=8]) -> obj<16x8> [binding=weak, object=_ZN5boost6tuples3tieIPSt4pairImmES4_EENS0_5tupleIRT_RT0_EES7_S9_] {
   slot $t0 : ptr
   slot $t1 : ptr
   slot $retobj__1 : obj<16x8>
@@ -60,7 +33,7 @@ function @boost__tuples__tie(%t0 : ptr [pass=reference], %t1 : ptr [pass=referen
     %t2 = addr $retobj__1
     %t3 = load ptr $t0
     %t4 = load ptr $t1
-    call void @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________tuple(%t2, %t3, %t4)
+    call void @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0___tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0_(%t2, %t3, %t4)
     return obj<16x8> $retobj__1
 }
 function @std__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=_ZSt9make_pairIPSt4pairImmES2_ES0_IT_T0_ES3_S4_] {
@@ -74,10 +47,37 @@ function @std__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=
     %t1 = addr $retobj__1
     %t2 = load ptr $a
     %t3 = load ptr $b
-    call void @std__pair_std__pair_unsigned_long_int_unsigned_long_int_____std__pair_unsigned_long_int_unsigned_long_int______pair(%t1, %t2, %t3)
+    call void @std__pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__pointer_to_struct_std____cppgm_class_template_identity_0_1_0___pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__pointer_to_struct_std____cppgm_class_template_identity_0_1_0_(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
-function @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________tuple(%this : ptr, %t0 : ptr [pass=reference], %t1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EC1ES5_S5_] {
+function @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0___operator___ov3(%this : ptr [object_bytes=16], %pair : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EaSIS4_S4_EERS6_RKS2_IT_T0_E, inline_hint=yes] {
+  slot $this : ptr
+  slot $pair : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %pair, $pair
+    %t1 = load ptr $pair
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $this
+    %t5 = index i8 %t4, 0
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = load ptr %t6
+    store ptr %t3, %t7
+    %t8 = load ptr $pair
+    %t9 = index i8 [projection=field] %t8, 8
+    %t10 = load ptr %t9
+    %t11 = load ptr $this
+    %t12 = index i8 %t11, 0
+    %t13 = index i8 [projection=field] %t12, 8
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = load ptr %t14
+    store ptr %t10, %t15
+    %t16 = load ptr $this
+    return ptr %t16
+}
+function @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0___tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0_(%this : ptr [object_bytes=16], %t0 : ptr [pass=by_address, object_bytes=8], %t1 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EC1ES5_S5_, inline_hint=yes] {
   slot $this : ptr
   slot $t0 : ptr
   slot $t1 : ptr
@@ -89,70 +89,16 @@ function @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int____
     store ptr %t0, $t0
     store ptr %t1, $t1
     %t2 = load ptr $this
-    %t3 = index i8 [projection=base_subobject] %t2, 0
+    %t3 = index i8 %t2, 0
     %t4 = load ptr $t0
     %t5 = addr $arg__1
     %t6 = load ptr $t1
     %t7 = addr $arg__2
-    call void @boost__tuples__null_type__null_type(%t7)
-    call void @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type___cons(%t5, %t6, %t7)
-    call void @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons__base_entry(%t3, %t4, %t5)
+    call void @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples__null_type___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0_(%t5, %t6, %t7)
+    call void @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___base_entry(%t3, %t4, %t5)
     return void
 }
-function @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type___cons(%this : ptr, %h : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS0_9null_typeEEC1ES5_RKS6_] {
-  slot $this : ptr
-  slot $h : ptr
-  slot $__param2 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    store ptr %__param2, $__param2
-    %t1 = load ptr $h
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    return void
-}
-function @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons__base_entry(%this : ptr, %h : ptr [pass=reference], %t : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC2ES5_RKS7_] {
-  slot $this : ptr
-  slot $h : ptr
-  slot $t : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    store ptr %t, $t
-    %t1 = load ptr $h
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
-    %t6 = load ptr $t
-    copyobj 8x8 %t6, %t5
-    return void
-}
-function @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons(%this : ptr, %h : ptr [pass=reference], %t : ptr [pass=reference]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC1ES5_RKS7_] {
-  slot $this : ptr
-  slot $h : ptr
-  slot $t : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    store ptr %t, $t
-    %t1 = load ptr $h
-    %t2 = load ptr $this
-    %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $this
-    %t5 = index i8 [projection=field] %t4, 8
-    %t6 = load ptr $t
-    copyobj 8x8 %t6, %t5
-    return void
-}
-function @std__pair_std__pair_unsigned_long_int_unsigned_long_int_____std__pair_unsigned_long_int_unsigned_long_int______pair(%this : ptr, %a : ptr, %b : ptr) -> void [binding=weak, object=_ZNSt4pairIPS_ImmES1_EC1ES1_S1_] {
+function @std__pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__pointer_to_struct_std____cppgm_class_template_identity_0_1_0___pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__pointer_to_struct_std____cppgm_class_template_identity_0_1_0_(%this : ptr [object_bytes=16], %a : ptr, %b : ptr) -> void [binding=weak, object=_ZNSt4pairIPS_ImmES1_EC1ES1_S1_, inline_hint=yes] {
   slot $this : ptr
   slot $a : ptr
   slot $b : ptr
@@ -171,15 +117,59 @@ function @std__pair_std__pair_unsigned_long_int_unsigned_long_int_____std__pair_
     store ptr %t4, %t6
     return void
 }
-function @boost__tuples__null_type__null_type(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5boost6tuples9null_typeC1Ev, trivial_lifecycle=yes] {
+function @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples__null_type___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0_(%this : ptr [object_bytes=8], %h : ptr [pass=by_address, object_bytes=8], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS0_9null_typeEEC1ES5_RKS6_, inline_hint=yes] {
   slot $this : ptr
+  slot $h : ptr
+  slot $__param2 : ptr
 
   block ^entry:
     store ptr %this, $this
+    store ptr %h, $h
+    store ptr %__param2, $__param2
+    %t1 = load ptr $h
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
     return void
 }
-alias object _ZN5boost6tuples5tupleIRPSt4pairImmES5_EC2ES5_S5_ = @boost__tuples__tuple_std__pair_unsigned_long_int_unsigned_long_int_______std__pair_unsigned_long_int_unsigned_long_int________tuple
-alias object _ZN5boost6tuples4consIRPSt4pairImmENS0_9null_typeEEC2ES5_RKS6_ = @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type___cons
-alias object _ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC2ES5_RKS7_ = @boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__cons_std__pair_unsigned_long_int__unsigned_long_int_______boost__tuples__null_type____cons
-alias object _ZNSt4pairIPS_ImmES1_EC2ES1_S1_ = @std__pair_std__pair_unsigned_long_int_unsigned_long_int_____std__pair_unsigned_long_int_unsigned_long_int______pair
-alias object _ZN5boost6tuples9null_typeC2Ev = @boost__tuples__null_type__null_type
+function @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___base_entry(%this : ptr [object_bytes=16], %h : ptr [pass=by_address, object_bytes=8], %t : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC2ES5_RKS7_, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $h : ptr
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %h, $h
+    store ptr %t, $t
+    %t1 = load ptr $h
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    %t6 = load ptr $t
+    copyobj 8x8 %t6, %t5
+    return void
+}
+function @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0_(%this : ptr [object_bytes=16], %h : ptr [pass=by_address, object_bytes=8], %t : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC1ES5_RKS7_, inline_hint=yes] {
+  slot $this : ptr
+  slot $h : ptr
+  slot $t : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %h, $h
+    store ptr %t, $t
+    %t1 = load ptr $h
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store ptr %t1, %t3
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 8
+    %t6 = load ptr $t
+    copyobj 8x8 %t6, %t5
+    return void
+}
+alias object _ZN5boost6tuples5tupleIRPSt4pairImmES5_EC2ES5_S5_ = @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0___tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0_
+alias object _ZNSt4pairIPS_ImmES1_EC2ES1_S1_ = @std__pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__pointer_to_struct_std____cppgm_class_template_identity_0_1_0___pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__pointer_to_struct_std____cppgm_class_template_identity_0_1_0_
+alias object _ZN5boost6tuples4consIRPSt4pairImmENS0_9null_typeEEC2ES5_RKS6_ = @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples__null_type___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0_

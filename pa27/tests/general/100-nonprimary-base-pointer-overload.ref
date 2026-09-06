@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $d
     %t2 = addr $d
-    %t3 = index i8 [projection=base_subobject] %t2, 4
+    %t3 = index i8 %t2, 4
     %t4 = call i32 @pick(%t3)
     %t5 = cmp eq i32 %t4, 7
     branch %t5, ^cond_then_1, ^cond_else_2

@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -24,8 +24,7 @@ function @identity
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    ret rax
+    ret rdi
 
 function @check
   abi
@@ -38,27 +37,29 @@ function @check
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
-    preserve r12 r13 r14
-    param-slot %value -> [rbp-16] : f80
+    param-slot %first -> [rbp-8] : ptr
+    param-slot %value -> [rbp-32] : f80
+    param-slot %second -> [rbp-40] : ptr
 
   block ^entry
-    fmov.f80 [rbp-16], [rbp+16]
+    store.ptr [rbp-8], rdi
+    fmov.f80 [rbp-32], [rbp+16]
+    store.ptr [rbp-40], rsi
     mov r8, @first
-    mov r12, @second
-    mov r13, rdi
-    cmp.ptr r13, r8
-    sete r13
-    movzx r13, r13
-    feq.f80 rax, [rbp-16], 3.5L
+    mov r9, @second
+    load.ptr rdi, [rbp-8]
+    cmp.ptr rdi, r8
+    sete rdi
+    movzx rdi, rdi
+    feq.f80 rax, [rbp-32], 3.5L
     mov r8, rax
-    mov r14, rsi
-    cmp.ptr r14, r12
-    sete r14
-    movzx r14, r14
-    and r13, r14
-    and r13, r8
-    mov rax, r13
-    ret rax
+    load.ptr rsi, [rbp-40]
+    cmp.ptr rsi, r9
+    sete rsi
+    movzx rsi, rsi
+    and rdi, rsi
+    and rdi, r8
+    ret rdi
 
 function @forward
   abi
@@ -67,30 +68,25 @@ function @forward
     param %second -> rsi : ptr
     return i64 -> rax
   frame
-    stack_size 128
+    stack_size 96
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
-    param-slot %value -> [rbp-16] : f80
-    slot $value -> [rbp-32] : f80
-    temp %loaded_value -> [rbp-48] : f80
+    param-slot %first -> [rbp-8] : ptr
+    param-slot %value -> [rbp-32] : f80
+    param-slot %second -> [rbp-40] : ptr
 
   block ^entry
-    fmov.f80 [rbp-16], [rbp+16]
-    mov r8, rdi
-    mov rbx, rsi
-    fmov.f80 [rbp-32], [rbp-16]
-    mov r9, rdi
-    call @identity
-    mov r12, rax
-    fmov.f80 [rbp-48], [rbp-32]
-    mov r9, rbx
+    store.ptr [rbp-8], rdi
+    fmov.f80 [rbp-32], [rbp+16]
+    store.ptr [rbp-40], rsi
+    load.ptr rdi, [rbp-8]
+    call @identity [args=(rdi)]
     sub rsp, 16
-    mov rdi, r12
-    fmov.f80 [rsp], [rbp-48]
-    mov rsi, rbx
-    call @check
+    fmov.f80 [rsp], [rbp-32]
+    mov rdi, rax
+    load.ptr rsi, [rbp-40]
+    call @check [args=(rsi,rdi), stack=16]
     add rsp, 16
     ret rax
 
@@ -104,12 +100,10 @@ function @main
     epilogues shared
 
   block ^entry
-    mov r8, @first
-    mov r9, @second
     sub rsp, 16
-    mov rdi, r8
     fmov.f80 [rsp], 3.5L
-    mov rsi, r9
-    call @forward
+    mov rdi, @first
+    mov rsi, @second
+    call @forward [args=(rsi,rdi), stack=16]
     add rsp, 16
     ret rax

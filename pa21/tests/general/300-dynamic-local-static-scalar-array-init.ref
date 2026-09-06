@@ -20,8 +20,7 @@ function @read() -> i32 [binding=strong, object=_Z4readv] {
 
   block ^local_static_ready_1:
     %t5 = addr @__local_static__read__decl0__values
-    %t6 = unary decay ptr %t5
-    %t7 = index i32 [projection=array_element] %t6, 0
-    %t8 = load i32 %t7
-    return i32 %t8
+    %t6 = index i32 [projection=array_element] %t5, 0
+    %t7 = load i32 %t6
+    return i32 %t7
 }

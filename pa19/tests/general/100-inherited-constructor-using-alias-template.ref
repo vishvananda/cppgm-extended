@@ -6,10 +6,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $t
     %t2 = addr $h
     %t3 = addr $t
-    call void @YHolder_YTraits___YHolder(%t2, %t3)
+    call void @YHolder_YTraits___YHolder_YTraits_(%t2, %t3)
     return i32 0
 }
-function @YHolder_YTraits___YHolder(%this : ptr, %t : ptr [pass=reference]) -> void [binding=weak, object=_ZN7YHolderI7YTraitsEC1ERKS0_] {
+function @YHolder_YTraits___YHolder_YTraits_(%this : ptr [object_bytes=1], %t : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7YHolderI7YTraitsEC1ERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $t : ptr
 
@@ -19,10 +19,10 @@ function @YHolder_YTraits___YHolder(%this : ptr, %t : ptr [pass=reference]) -> v
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr $t
-    call void @YDerived_YTraits___YDerived(%t2, %t3)
+    call void @YDerived_YTraits___YDerived_YTraits_(%t2, %t3)
     return void
 }
-function @YDerived_YTraits___YDerived(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8YDerivedI7YTraitsEC1ERKS0_] {
+function @YDerived_YTraits___YDerived_YTraits_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8YDerivedI7YTraitsEC1ERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -30,12 +30,12 @@ function @YDerived_YTraits___YDerived(%this : ptr, %__param1 : ptr [pass=referen
     store ptr %this, $this
     store ptr %__param1, $__param1
     %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
+    %t2 = index i8 %t1, 0
     %t3 = load ptr $__param1
-    call void @YBase_YTraits___YBase__base_entry(%t2, %t3)
+    call void @YBase_YTraits___YBase_YTraits___base_entry(%t2, %t3)
     return void
 }
-function @YBase_YTraits___YBase__base_entry(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN5YBaseI7YTraitsEC2ERKS0_] {
+function @YBase_YTraits___YBase_YTraits___base_entry(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5YBaseI7YTraitsEC2ERKS0_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -44,5 +44,5 @@ function @YBase_YTraits___YBase__base_entry(%this : ptr, %__param1 : ptr [pass=r
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN7YHolderI7YTraitsEC2ERKS0_ = @YHolder_YTraits___YHolder
-alias object _ZN8YDerivedI7YTraitsEC2ERKS0_ = @YDerived_YTraits___YDerived
+alias object _ZN7YHolderI7YTraitsEC2ERKS0_ = @YHolder_YTraits___YHolder_YTraits_
+alias object _ZN8YDerivedI7YTraitsEC2ERKS0_ = @YDerived_YTraits___YDerived_YTraits_

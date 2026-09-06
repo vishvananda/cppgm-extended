@@ -1,4 +1,4 @@
-global @n__outer_int___inner__value : i32 [binding=weak, object=_ZN1n5outerIiE5inner5valueE] = 7
+global @n____cppgm_class_template_identity_0_0_0__inner__value : i32 [binding=strong, object=_ZN1n5outerIiE5inner5valueE] = 7
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
@@ -6,8 +6,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = binary sub i32 %t1, 7
     return i32 %t2
 }
-function @n__outer_int___read() -> i32 [binding=weak, object=_ZN1n5outerIiE4readEv] {
+function @n__outer_int___read() -> i32 [binding=weak, object=_ZN1n5outerIiE4readEv, inline_hint=yes] {
   block ^entry:
-    %t1 = load i32 @n__outer_int___inner__value
+    %t1 = load i32 @n____cppgm_class_template_identity_0_0_0__inner__value
     return i32 %t1
 }

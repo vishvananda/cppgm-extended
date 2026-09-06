@@ -1,5 +1,5 @@
-declare function @a() -> ptr [binding=strong, object=_Z1av]
 declare function @i() -> ptr [binding=strong, object=_Z1iv]
+declare function @a() -> ptr [binding=strong, object=_Z1av]
 
 function @g() -> void [binding=strong, object=_Z1gv] {
   block ^entry:
@@ -11,6 +11,6 @@ function @g() -> void [binding=strong, object=_Z1gv] {
     %t6 = index i8 %t2, %t5
     %t7 = load ptr %t1
     %t8 = load ptr %t7
-    call void %t8(%t1, %t2, %t6) as (%arg0 : ptr, %arg1 : ptr [pass=reference], %__pvbptr0 : ptr) -> void
+    call void %t8(%t1, %t2, %t6) as (%arg0 : ptr [object_bytes=8], %arg1 : ptr [pass=by_address, object_bytes=2], %__pvbptr0 : ptr) -> void
     return void
 }

@@ -1,4 +1,4 @@
-function @g(%s : ptr, %n : i64, %a : ptr [pass=reference]) -> ptr [binding=strong, object=_Z1gPKDsmRS_] {
+function @g(%s : ptr, %n : i64, %a : ptr [pass=by_address, object_bytes=2]) -> ptr [binding=strong, object=_Z1gPKDsmRS_] {
   slot $s : ptr
   slot $n : i64
   slot $a : ptr
@@ -20,7 +20,7 @@ function @g(%s : ptr, %n : i64, %a : ptr [pass=reference]) -> ptr [binding=stron
     %t10 = call ptr @std____find(%t2, %t7, %t8, %t9)
     return ptr %t10
 }
-function @std____find(%first : ptr, %last : ptr, %value : ptr [pass=reference], %proj : ptr [pass=reference]) -> ptr [binding=weak, object=_ZSt6__findIKDsDsSt8identityLi0EEPT_S3_S3_RKT0_RT1_] {
+function @std____find(%first : ptr, %last : ptr, %value : ptr [pass=by_address, object_bytes=2], %proj : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZSt6__findIKDsDsSt8identityLi0EEPT_S3_S3_RKT0_RT1_] {
   slot $first : ptr
   slot $last : ptr
   slot $value : ptr

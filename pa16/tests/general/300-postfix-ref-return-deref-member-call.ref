@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @Iter__operator_(%this : ptr) -> ptr [binding=weak, object=_ZN4IterdeEv] {
+function @Iter__operator_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN4IterdeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -37,7 +37,7 @@ function @Iter__operator_(%this : ptr) -> ptr [binding=weak, object=_ZN4IterdeEv
     %t1 = load ptr $this
     return ptr %t1
 }
-function @Iter__operator__(%this : ptr, %__param1 : i32) -> ptr [binding=weak, object=_ZN4IterppEi] {
+function @Iter__operator__(%this : ptr [object_bytes=4], %__param1 : i32) -> ptr [binding=weak, object=_ZN4IterppEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -54,7 +54,7 @@ function @Iter__operator__(%this : ptr, %__param1 : i32) -> ptr [binding=weak, o
     %t7 = load ptr $this
     return ptr %t7
 }
-function @Iter__set(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN4Iter3setEi] {
+function @Iter__set(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN4Iter3setEi, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

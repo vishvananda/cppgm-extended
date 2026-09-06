@@ -1,4 +1,4 @@
-global @source [binding=internal, object=_ZL6source] = {
+global @source [binding=internal, object=_Z6source] = {
   zero 1
 }
 

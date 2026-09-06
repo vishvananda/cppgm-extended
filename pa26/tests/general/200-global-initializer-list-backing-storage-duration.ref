@@ -56,7 +56,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t21 = convert trunc i32 i64 %t20
     return i32 %t21
 }
-function @item__item(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN4itemC1Ei] {
+function @item__item(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN4itemC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
@@ -72,7 +72,7 @@ function @item__item(%this : ptr, %x : i32) -> void [binding=weak, object=_ZN4it
     store i32 %t5, @live
     return void
 }
-function @item___item(%this : ptr) -> void [binding=weak, object=_ZN4itemD1Ev] {
+function @item___item(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4itemD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -82,7 +82,7 @@ function @item___item(%this : ptr) -> void [binding=weak, object=_ZN4itemD1Ev] {
     store i32 %t2, @live
     return void
 }
-function @std__initializer_list_item___begin(%this : ptr) -> ptr [binding=weak, object=_ZNKSt16initializer_listI4itemE5beginEv] {
+function @std__initializer_list_item___begin(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZNKSt16initializer_listI4itemE5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -124,15 +124,13 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
 function @__cppgm_fini() -> void [role=fini, binding=internal] {
   block ^entry:
     %t1 = addr @__cppgm_initlist_backing_1
-    %t2 = unary decay ptr %t1
-    %t3 = binary mul i64 1, 4
-    %t4 = index i8 [projection=array_element] %t2, %t3
-    call void @item___item(%t4)
-    %t5 = addr @__cppgm_initlist_backing_1
-    %t6 = unary decay ptr %t5
-    %t7 = binary mul i64 0, 4
-    %t8 = index i8 [projection=array_element] %t6, %t7
-    call void @item___item(%t8)
+    %t2 = binary mul i64 1, 4
+    %t3 = index i8 [projection=array_element] %t1, %t2
+    call void @item___item(%t3)
+    %t4 = addr @__cppgm_initlist_backing_1
+    %t5 = binary mul i64 0, 4
+    %t6 = index i8 [projection=array_element] %t4, %t5
+    call void @item___item(%t6)
     return void
 }
 alias object _ZN4itemC2Ei = @item__item

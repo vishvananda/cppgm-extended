@@ -1,4 +1,4 @@
-function @operator__(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> u8 [binding=strong, object=_ZaaRK5LogicS1_] {
+function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=strong, object=_ZaaRK5LogicS1_] {
   slot $lhs : ptr
   slot $rhs : ptr
 
@@ -16,7 +16,7 @@ function @operator__(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -
     %t9 = convert trunc u8 i64 %t8
     return u8 %t9
 }
-function @operator____sym2(%lhs : ptr [pass=reference], %rhs : ptr [pass=reference]) -> u8 [binding=strong, object=_ZooRK5LogicS1_] {
+function @operator____sym2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=strong, object=_ZooRK5LogicS1_] {
   slot $lhs : ptr
   slot $rhs : ptr
 

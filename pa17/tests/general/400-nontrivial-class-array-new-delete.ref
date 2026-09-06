@@ -1,5 +1,5 @@
-declare function @operatornew__(%arg0 : i64) -> ptr [effects=readwrite, role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
-declare function @operatordelete__(%arg0 : ptr) -> void [effects=readwrite, unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete_array]
+declare function @operatornew__(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
+declare function @operatordelete__(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete_array]
 
 global @constructed : i32 [binding=internal, object=_Z11constructed] = zero
 global @destroyed : i32 [binding=internal, object=_Z9destroyed] = zero
@@ -201,7 +201,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t58 = load i32 $cond__6
     return i32 %t58
 }
-function @Item__Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemC1Ev] {
+function @Item__Item(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4ItemC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -214,7 +214,7 @@ function @Item__Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemC1Ev] {
     store i32 %t2, %t4
     return void
 }
-function @Item___Item(%this : ptr) -> void [binding=weak, object=_ZN4ItemD1Ev] {
+function @Item___Item(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4ItemD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

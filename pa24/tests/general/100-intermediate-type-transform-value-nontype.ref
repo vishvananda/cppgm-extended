@@ -1,4 +1,4 @@
-global @bool__true___value : u8 [binding=weak, object=_ZN5bool_ILb1EE5valueE] = 1
+global @__cppgm_class_template_identity_0_2_0__value : u8 [storage=readonly, binding=weak, object=_ZN5bool_ILb1EE5valueE] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = load i32 %t3
     return i32 %t4
 }
-function @get(%a : ptr [pass=reference]) -> ptr [binding=weak, object=_Z3getILi0EJiEERiR1AIJDpT0_EE] {
+function @get(%a : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z3getILi0EJiEERiR1AIJT0_EE] {
   slot $a : ptr
 
   block ^entry:

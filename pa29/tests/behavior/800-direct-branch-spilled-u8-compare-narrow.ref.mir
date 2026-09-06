@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -13,20 +13,12 @@ function @probe
     param %d -> rcx : ptr
     return u8 -> rax
   frame
-    stack_size 48
+    stack_size 0
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %a -> [rbp-8] : ptr
-    param-slot %b -> [rbp-16] : ptr
-    param-slot %c -> [rbp-24] : ptr
-    param-slot %d -> [rbp-32] : ptr
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    store.ptr [rbp-16], rsi
-    store.ptr [rbp-24], rdx
-    store.ptr [rbp-32], rcx
     mov rax, 0
     ret rax
 
@@ -50,7 +42,7 @@ function @main
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12 r13 r14 r15
+    preserve rbx
     slot $value -> [rbp-24] : obj<24x8>
     slot $ud_suffix -> [rbp-48] : obj<24x8>
     slot $literal_type -> [rbp-52] : i32
@@ -60,51 +52,49 @@ function @main
     slot $k2 -> [rbp-80] : i64
     slot $k3 -> [rbp-88] : i64
     slot $k4 -> [rbp-96] : i64
-    temp %t6 -> [rbp-97] : u8
+    temp %a0 -> [rbp-104] : i64
+    temp %a1 -> [rbp-112] : i64
+    temp %a2 -> [rbp-120] : i64
+    temp %a3 -> [rbp-128] : i64
+    temp %a4 -> [rbp-136] : i64
 
   block ^entry
-    mov rax, 1
-    store.i32 [rbp-52], rax
-    mov rax, 10
-    store.i64 [rbp-64], rax
-    mov rax, 11
-    store.i64 [rbp-72], rax
-    mov rax, 12
-    store.i64 [rbp-80], rax
-    mov rax, 13
-    store.i64 [rbp-88], rax
-    mov rax, 14
-    store.i64 [rbp-96], rax
+    store.i32 [rbp-52], 1
+    store.i64 [rbp-64], 10
+    store.i64 [rbp-72], 11
+    store.i64 [rbp-80], 12
+    store.i64 [rbp-88], 13
+    store.i64 [rbp-96], 14
     lea rdi, [rbp-24]
     lea rsi, [rbp-48]
     lea rdx, [rbp-52]
     lea rcx, [rbp-48]
-    call @probe
-    mov r8, rax
-    zext.i8 r8
-    store.u8 [rbp-53], r8
+    call @probe [args=(rcx,rdx,rsi,rdi)]
+    store.u8 [rbp-53], rax
     load.i64 rbx, [rbp-64]
-    load.i64 r12, [rbp-72]
-    load.i64 r13, [rbp-80]
-    load.i64 r14, [rbp-88]
-    load.i64 r15, [rbp-96]
-    load.u8 rax, [rbp-53]
-    store.u8 [rbp-97], rax
-    call @clobber
-    load.u8 rax, [rbp-97]
-    cmp.i64 rax, 0
+    store.i64 [rbp-104], rbx
+    load.i64 rbx, [rbp-72]
+    store.i64 [rbp-112], rbx
+    load.i64 rbx, [rbp-80]
+    store.i64 [rbp-120], rbx
+    load.i64 rbx, [rbp-88]
+    store.i64 [rbp-128], rbx
+    load.i64 rbx, [rbp-96]
+    store.i64 [rbp-136], rbx
+    load.u8 rbx, [rbp-53]
+    call @clobber [args=()]
+    cmp.i64 rbx, 0
     je ^then
     jmp ^else
 
   block ^then
-    mov r8, rbx
-    add r8, r12
-    mov r9, r13
-    add r9, r14
+    load.i64 r8, [rbp-104]
+    add r8, [rbp-112]
+    load.i64 r9, [rbp-120]
+    add r9, [rbp-128]
     add r8, r9
-    add r8, r15
-    mov rax, r8
-    ret rax
+    add r8, [rbp-136]
+    ret r8
 
   block ^else
     mov rax, 0

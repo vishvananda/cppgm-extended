@@ -77,7 +77,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = load i32 $cond__1
     return i32 %t16
 }
-function @Guard__Guard(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5GuardC1Ev] {
+function @Guard__Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -85,7 +85,7 @@ function @Guard__Guard(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN
     store i32 1, @live
     return void
 }
-function @Guard___Guard(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev] {
+function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -96,7 +96,7 @@ function @Guard___Guard(%this : ptr) -> void [unwind=no, binding=weak, object=_Z
     store i32 %t2, @destroyed
     return void
 }
-function @Guard__operatorbool(%this : ptr) -> u8 [unwind=no, binding=weak, object=_ZNK5GuardcvbEv] {
+function @Guard__operatorbool(%this : ptr [object_bytes=1]) -> u8 [unwind=no, binding=weak, object=_ZNK5GuardcvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

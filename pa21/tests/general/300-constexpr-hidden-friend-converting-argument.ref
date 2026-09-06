@@ -2,7 +2,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @C__C(%this : ptr, %v : i32) -> void [binding=weak, object=_ZN1CC1Ei] {
+function @C__C(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN1CC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $v : i32
 

@@ -23,7 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load i32 $cond__1
     return i32 %t6
 }
-function @holder__holder(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6holderC1Ev] {
+function @holder__holder(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6holderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

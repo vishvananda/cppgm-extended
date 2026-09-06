@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @run(%w : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3runIiEiR7wrapperIT_E] {
+function @run(%w : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z3runIiEiR7wrapperIT_E] {
   slot $w : ptr
 
   block ^entry:
@@ -30,7 +30,7 @@ function @run(%w : ptr [pass=reference]) -> i32 [binding=weak, object=_Z3runIiEi
     %t2 = call i32 @wrapper_int___cast(%t1, 3)
     return i32 %t2
 }
-function @wrapper_int___cast(%this : ptr, %value : i32) -> i32 [binding=weak, object=_ZN7wrapperIiE4castIiEET_S2_] {
+function @wrapper_int___cast(%this : ptr [object_bytes=1], %value : i32) -> i32 [binding=weak, object=_ZN7wrapperIiE4castIiEET_S1_, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 

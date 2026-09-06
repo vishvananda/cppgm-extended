@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -40,8 +40,7 @@ function @data
     epilogues shared
 
   block ^entry
-    mov rax, rdi
-    ret rax
+    ret rdi
 
 function @size
   abi
@@ -52,10 +51,8 @@ function @size
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %this -> [rbp-8] : ptr
 
   block ^entry
-    store.ptr [rbp-8], rdi
     mov rax, 1
     ret rax
 
@@ -73,18 +70,12 @@ function @sink
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx
-    param-slot %this -> [rbp-8] : ptr
-    param-slot %src -> [rbp-16] : ptr
-    param-slot %data -> [rbp-24] : ptr
+    param-slot %type -> [rbp-4] : i32
 
   block ^entry
-    store.ptr [rbp-8], rdi
-    store.ptr [rbp-16], rsi
-    store.ptr [rbp-24], r8
-    mov rbx, rcx
+    store.i32 [rbp-4], rcx
     store.i64 @g_num, rdx
-    store.i32 @g_type, rbx
+    store.i32 @g_type, rcx
     store.i64 @g_nbytes, r9
     ret
 
@@ -92,40 +83,35 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 48
+    stack_size 16
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    preserve rbx r12 r13 r14 r15
+    preserve rbx r12
 
   block ^entry
     mov rbx, @box
-    mov r12, @strlit
-    mov r13, 1
     mov rdi, rbx
-    call @data
-    mov r14, rax
+    call @data [args=(rdi)]
+    mov r12, rax
     mov rdi, rbx
-    call @size
+    call @size [args=(rdi)]
     mov r8, rax
-    mov r9, @dispatch
-    load.ptr r15, [r9]
-    store.i64 [rbp-8], r8
-    mov r10, r15
+    load.ptr r9, @dispatch
+    mov r10, r9
     mov rdi, rbx
-    mov rsi, r12
-    mov rdx, r13
+    mov rsi, @strlit
+    mov rdx, 1
     mov rcx, 13
-    mov r8, r14
-    load.i64 r9, [rbp-8]
-    call *r10
+    mov r9, r8
+    mov r8, r12
+    call *r10 [args=(rcx,rdx,rsi,rdi,r8,r9)]
     cmp.i64 @g_num, 1
     je ^rhs
     jmp ^short
 
   block ^rhs
     load.i32 r8, @g_type
-    sext.i32 r8
     mov rdx, 13
     cmp.i32 r8, rdx
     sete r8
@@ -140,11 +126,9 @@ function @main
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    mov rax, r8
+    cmp.i64 r8, 0
+    setne rax
+    movzx rax, rax
     ret rax
 
   block ^short

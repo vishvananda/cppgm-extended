@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i16 2, %t3
     %t4 = addr $it
     %t5 = addr $value
-    call void @iter_cons_short_int__nil____iter(%t4, %t5)
+    call void @iter___cppgm_class_template_identity_0_1_0___iter___cppgm_class_template_identity_0_1_0_(%t4, %t5)
     %t6 = addr $it
     %t7 = call ptr @deref(%t6)
     store i16 7, %t7
@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__1
     return i32 %t13
 }
-function @iter_cons_short_int__nil____iter(%this : ptr, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZN4iterI4consIs3nilEEC1ERS2_] {
+function @iter___cppgm_class_template_identity_0_1_0___iter___cppgm_class_template_identity_0_1_0_(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4iterI4consIs3nilEEC1ERS2_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -46,15 +46,15 @@ function @iter_cons_short_int__nil____iter(%this : ptr, %value : ptr [pass=refer
     store ptr %t1, %t3
     return void
 }
-function @deref(%i : ptr [pass=reference]) -> ptr [binding=weak, object=_Z5derefI4consIs3nilEERNT_8car_typeERK4iterIS3_E] {
+function @deref(%i : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z5derefI4consIs3nilEERNT_8car_typeERK4iterIS3_E] {
   slot $i : ptr
 
   block ^entry:
     store ptr %i, $i
     %t1 = load ptr $i
-    %t2 = index i8 [projection=reference_field] %t1, 0
+    %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
     %t4 = index i8 [projection=field] %t3, 0
     return ptr %t4
 }
-alias object _ZN4iterI4consIs3nilEEC2ERS2_ = @iter_cons_short_int__nil____iter
+alias object _ZN4iterI4consIs3nilEEC2ERS2_ = @iter___cppgm_class_template_identity_0_1_0___iter___cppgm_class_template_identity_0_1_0_

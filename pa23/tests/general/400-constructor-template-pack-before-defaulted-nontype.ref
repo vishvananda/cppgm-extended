@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $value
     %t4 = addr $first
     %t5 = addr $second
-    call void @tuple_like_first_arg__second_arg___tuple_like(%t3, %t4, %t5)
+    call void @tuple_like_first_arg__second_arg___tuple_like_first_arg__second_arg___ov3(%t3, %t4, %t5)
     %t6 = addr $value
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load i32 %t7
@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @tuple_like_first_arg__second_arg___tuple_like(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : ptr [pass=reference]) -> void [binding=weak, object=_ZN10tuple_likeIJ9first_arg10second_argEEC1IJRS0_RS1_ETnPN9enable_ifIXsr15are_convertibleIDpOT_EE5valueEvE4typeELPv0EEEDpS8_] {
+function @tuple_like_first_arg__second_arg___tuple_like_first_arg__second_arg___ov3(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN10tuple_likeIJ9first_arg10second_argEEC1IRS0_RS1_LPv0EEEDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -43,4 +43,4 @@ function @tuple_like_first_arg__second_arg___tuple_like(%this : ptr, %__param1 :
     store i32 2, %t2
     return void
 }
-alias object _ZN10tuple_likeIJ9first_arg10second_argEEC2IJRS0_RS1_ETnPN9enable_ifIXsr15are_convertibleIDpOT_EE5valueEvE4typeELPv0EEEDpS8_ = @tuple_like_first_arg__second_arg___tuple_like
+alias object _ZN10tuple_likeIJ9first_arg10second_argEEC2IRS0_RS1_LPv0EEEDpOT_ = @tuple_like_first_arg__second_arg___tuple_like_first_arg__second_arg___ov3

@@ -6,21 +6,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $first
     %t2 = addr $argobj__1
-    call void @Deleter__Deleter(%t2)
-    call void @Count__Count(%t1, 0, $argobj__1)
+    call void @Count__Count__ov3(%t1, 0, $argobj__1)
     %t3 = addr $argobj__2
-    call void @tag_Deleter___tag(%t3)
     call void @make_holder(0, $argobj__2)
     return i32 0
 }
-function @tag_Deleter___tag(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3tagI7DeleterEC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @Count__Count(%this : ptr, %p : ptr, %__param2 : obj<1x1>) -> void [binding=weak, object=_ZN5CountC1IPi7DeleterEET_T0_] {
+function @Count__Count__ov3(%this : ptr [object_bytes=8], %p : ptr, %__param2 : obj<1x1>) -> void [binding=weak, object=_ZN5CountC1IPi7DeleterEET_T0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
   slot $__param2 : obj<1x1>
@@ -49,10 +40,10 @@ function @make_holder(%p : ptr, %d : obj<1x1>) -> void [binding=weak, object=_Z1
     %t2 = load ptr $p
     %t3 = addr $argobj__1
     %t4 = addr $d
-    call void @Holder__Holder(%t1, %t2, $argobj__1)
+    call void @Holder__Holder__ov3(%t1, %t2, $argobj__1)
     return void
 }
-function @Holder__Holder(%this : ptr, %p : ptr, %d : obj<1x1>) -> void [binding=weak, object=_ZN6HolderC1IPi3tagI7DeleterEEET_T0_] {
+function @Holder__Holder__ov3(%this : ptr [object_bytes=8], %p : ptr, %d : obj<1x1>) -> void [binding=weak, object=_ZN6HolderC1IPi3tagI7DeleterEEET_T0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
   slot $d : obj<1x1>
@@ -66,10 +57,10 @@ function @Holder__Holder(%this : ptr, %p : ptr, %d : obj<1x1>) -> void [binding=
     %t3 = load ptr $p
     %t4 = addr $argobj__1
     %t5 = addr $d
-    call void @Count__Count__ov3(%t2, %t3, $argobj__1)
+    call void @Count__Count__ov5(%t2, %t3, $argobj__1)
     return void
 }
-function @Count__Count__ov3(%this : ptr, %__param1 : ptr, %__param2 : obj<1x1>) -> void [binding=weak, object=_ZN5CountC1IPi7DeleterEET_3tagIT0_E] {
+function @Count__Count__ov5(%this : ptr [object_bytes=8], %__param1 : ptr, %__param2 : obj<1x1>) -> void [binding=weak, object=_ZN5CountC1IPi7DeleterEET_3tagIT0_E, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : obj<1x1>
@@ -82,15 +73,6 @@ function @Count__Count__ov3(%this : ptr, %__param1 : ptr, %__param2 : obj<1x1>) 
     store ptr 0, %t2
     return void
 }
-function @Deleter__Deleter(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7DeleterC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN3tagI7DeleterEC2Ev = @tag_Deleter___tag
-alias object _ZN5CountC2IPi7DeleterEET_T0_ = @Count__Count
-alias object _ZN6HolderC2IPi3tagI7DeleterEEET_T0_ = @Holder__Holder
-alias object _ZN5CountC2IPi7DeleterEET_3tagIT0_E = @Count__Count__ov3
-alias object _ZN7DeleterC2Ev = @Deleter__Deleter
+alias object _ZN5CountC2IPi7DeleterEET_T0_ = @Count__Count__ov3
+alias object _ZN6HolderC2IPi3tagI7DeleterEEET_T0_ = @Holder__Holder__ov3
+alias object _ZN5CountC2IPi7DeleterEET_3tagIT0_E = @Count__Count__ov5

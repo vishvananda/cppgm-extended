@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -15,24 +15,12 @@ function @clobber
     param %f -> r9 : i64
     return i64 -> rax
   frame
-    stack_size 64
+    stack_size 48
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %a -> [rbp-8] : i64
-    param-slot %b -> [rbp-16] : i64
-    param-slot %c -> [rbp-24] : i64
-    param-slot %d -> [rbp-32] : i64
-    param-slot %e -> [rbp-40] : i64
-    param-slot %f -> [rbp-48] : i64
 
   block ^entry
-    store.i64 [rbp-8], rdi
-    store.i64 [rbp-16], rsi
-    store.i64 [rbp-24], rdx
-    store.i64 [rbp-32], rcx
-    store.i64 [rbp-40], r8
-    store.i64 [rbp-48], r9
     mov rax, 0
     ret rax
 
@@ -115,38 +103,25 @@ function @f
     mov rcx, 4
     mov r8, 5
     mov r9, 6
-    call @clobber
+    call @clobber [args=(rcx,rdx,rsi,rdi,r8,r9)]
     store.i64 [rbp-112], rax
     load.i64 rax, [rbp-32]
-    mov rdx, -3
-    mov rcx, rdx
+    mov rcx, -3
     cqo
     idiv rcx
     store.i64 [rbp-120], rax
-    load.i64 rdx, [rbp-40]
-    add r15, rdx
-    load.i64 rdx, [rbp-48]
-    add r15, rdx
-    load.i64 rdx, [rbp-56]
-    add r15, rdx
-    load.i64 rdx, [rbp-64]
-    add r15, rdx
-    load.i64 rdx, [rbp-72]
-    add r15, rdx
-    load.i64 rdx, [rbp-80]
-    add r15, rdx
-    load.i64 rdx, [rbp-88]
-    add r15, rdx
-    load.i64 rdx, [rbp-96]
-    add r15, rdx
-    load.i64 rdx, [rbp-104]
-    add r15, rdx
-    load.i64 rdx, [rbp-120]
-    add r15, rdx
-    load.i64 rdx, [rbp-112]
-    add r15, rdx
-    mov rax, r15
-    ret rax
+    add r15, [rbp-40]
+    add r15, [rbp-48]
+    add r15, [rbp-56]
+    add r15, [rbp-64]
+    add r15, [rbp-72]
+    add r15, [rbp-80]
+    add r15, [rbp-88]
+    add r15, [rbp-96]
+    add r15, [rbp-104]
+    add r15, [rbp-120]
+    add r15, [rbp-112]
+    ret r15
 
 function @main
   abi
@@ -173,18 +148,14 @@ function @main
     store.i64 [rsp+16], r11
     mov r11, 18
     store.i64 [rsp+24], r11
-    call @f
+    call @f [args=(rcx,rdx,rsi,rdi,r8,r9), stack=32]
     add rsp, 32
-    mov r8, rax
     mov rdx, 112
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov r9, r8
-    sext.i32 r9
-    mov rax, r9
+    cmp.i64 rax, rdx
+    sete rax
+    movzx rax, rax
     ret rax

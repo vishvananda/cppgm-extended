@@ -9,7 +9,7 @@ function @shift_with_typed_count
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -24,7 +24,7 @@ function @explicit_truncation
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -38,7 +38,7 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
+    stack_size N
     scratch_bytes 48
     frame_pointer keep
     epilogues shared

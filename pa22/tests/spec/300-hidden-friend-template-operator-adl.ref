@@ -59,7 +59,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = load i32 $cond__1
     return i32 %t24
 }
-function @operator__(%out : ptr [pass=reference], %m : ptr [pass=reference]) -> ptr [binding=weak, object=_ZlsI4sinkERT_S2_RK5manip] {
+function @operator__(%out : ptr [pass=by_address, object_bytes=4], %m : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZlsI4sinkERT_S2_RK5manip, inline_hint=yes] {
   slot $out : ptr
   slot $m : ptr
 

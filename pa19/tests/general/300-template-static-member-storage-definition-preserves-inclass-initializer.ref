@@ -1,4 +1,4 @@
-global @Box_int___value : i32 [binding=weak, object=_ZN3BoxIiE5valueE] = 9
+global @__cppgm_class_template_identity_0_0_0__value : i32 [storage=readonly, binding=weak, object=_ZN3BoxIiE5valueE] = 9
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $box : obj<1x1>
@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = binary sub i32 %t3, 9
     return i32 %t4
 }
-function @Box_int___get(%this : ptr) -> i32 [binding=weak, object=_ZNK3BoxIiE3getEv] {
+function @Box_int___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK3BoxIiE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

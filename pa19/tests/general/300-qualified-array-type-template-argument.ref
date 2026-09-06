@@ -2,7 +2,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = call i32 @box_unsigned_int_4____size()
+    %t1 = call i32 @box_array_of_4_unsigned_int___size()
     %t2 = cmp eq i32 %t1, 16
     branch %t2, ^cond_then_1, ^cond_else_2
 
@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = load i32 $cond__1
     return i32 %t3
 }
-function @box_unsigned_int_4____size() -> i32 [binding=weak, object=_ZN3boxIA4_jE4sizeEv] {
+function @box_array_of_4_unsigned_int___size() -> i32 [binding=weak, object=_ZN3boxIA4_jE4sizeEv, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 16
     %t2 = convert trunc i32 i64 %t1

@@ -1,5 +1,5 @@
-declare function @P__operatorint_const_(%arg0 : ptr) -> ptr [binding=strong, object=_ZNK1PcvRKPiEv]
-declare function @operator_delete(%arg0 : ptr) -> void [unwind=no, binding=strong, object=cppgm_builtin_operator_delete]
+declare function @P__operatorint_const_(%arg0 : ptr [object_bytes=1]) -> ptr [binding=strong, object=_ZNK1PcvRKPiEv]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 function @f(%p : obj<1x1>) -> void [binding=strong, object=_Z1f1P] {
   slot $p : obj<1x1>
@@ -8,6 +8,6 @@ function @f(%p : obj<1x1>) -> void [binding=strong, object=_Z1f1P] {
     %t1 = addr $p
     %t2 = call ptr @P__operatorint_const_(%t1)
     %t3 = load ptr %t2
-    call void @operator_delete(%t3)
+    call void @operatordelete(%t3)
     return void
 }

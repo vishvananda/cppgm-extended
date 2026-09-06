@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t21 = binary add i32 %t19, %t20
     return i32 %t21
 }
-function @AliasBuffer__ptr(%this : ptr) -> ptr [binding=weak, object=_ZNK11AliasBuffer3ptrEv] {
+function @AliasBuffer__ptr(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK11AliasBuffer3ptrEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -43,7 +43,7 @@ function @AliasBuffer__ptr(%this : ptr) -> ptr [binding=weak, object=_ZNK11Alias
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @DirectBuffer__ptr(%this : ptr) -> ptr [binding=weak, object=_ZNK12DirectBuffer3ptrEv] {
+function @DirectBuffer__ptr(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK12DirectBuffer3ptrEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

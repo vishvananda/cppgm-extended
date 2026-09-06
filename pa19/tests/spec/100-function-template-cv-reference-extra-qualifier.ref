@@ -26,7 +26,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @cref_like(%value : ptr [pass=reference]) -> obj<8x8> [binding=weak, object=_Z9cref_likeIViE8ref_viewIKT_ERS3_] {
+function @cref_like(%value : ptr [pass=by_address, object_bytes=4]) -> obj<8x8> [binding=weak, object=_Z9cref_likeIViE8ref_viewIKT_ERS3_] {
   slot $value : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -37,7 +37,7 @@ function @cref_like(%value : ptr [pass=reference]) -> obj<8x8> [binding=weak, ob
     call void @ref_view_int_const_volatile___ref_view_int_const_volatile_(%t1, %t2)
     return obj<8x8> $retobj__1
 }
-function @ref_view_int_const_volatile___get(%this : ptr) -> ptr [binding=weak, object=_ZNK8ref_viewIVKiE3getEv, inline_hint=yes] {
+function @ref_view_int_const_volatile___get(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK8ref_viewIVKiE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -47,7 +47,7 @@ function @ref_view_int_const_volatile___get(%this : ptr) -> ptr [binding=weak, o
     %t3 = load ptr %t2
     return ptr %t3
 }
-function @ref_view_int_const_volatile___ref_view_int_const_volatile_(%this : ptr, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZN8ref_viewIVKiEC1ERS0_, inline_hint=yes] {
+function @ref_view_int_const_volatile___ref_view_int_const_volatile_(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8ref_viewIVKiEC1ERS0_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 

@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @counter__operatorlong__ov2(%this : ptr) -> i64 [binding=weak, object=_ZNK7countercvlEv] {
+function @counter__operatorlong__ov2(%this : ptr [object_bytes=1]) -> i64 [binding=weak, object=_ZNK7countercvlEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

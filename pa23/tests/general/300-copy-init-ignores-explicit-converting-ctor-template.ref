@@ -5,13 +5,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $source
-    call void @box_type___box(%t1)
+    call void @box_type___box_type_const_(%t1)
     %t2 = addr $source
     %t3 = index i8 [projection=field] %t2, 0
     store i32 41, %t3
     %t4 = addr $result
     %t5 = addr $source
-    call void @box_type_const___box__ov4(%t4, %t5)
+    call void @box_type_const___box_type_const___ov4(%t4, %t5)
     %t6 = addr $result
     %t7 = index i8 [projection=field] %t6, 0
     %t8 = load i32 %t7
@@ -30,7 +30,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @box_type___box(%this : ptr) -> void [binding=weak, object=_ZN3boxI4typeEC1Ev] {
+function @box_type___box_type_const_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3boxI4typeEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -40,7 +40,7 @@ function @box_type___box(%this : ptr) -> void [binding=weak, object=_ZN3boxI4typ
     store i32 0, %t2
     return void
 }
-function @box_type_const___box__ov4(%this : ptr, %other : ptr [pass=reference]) -> void [binding=weak, object=_ZN3boxIK4typeEC1IS0_EERKS_IT_E] {
+function @box_type_const___box_type_const___ov4(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3boxIK4typeEC1IS0_EERKS_IT_E, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -56,5 +56,5 @@ function @box_type_const___box__ov4(%this : ptr, %other : ptr [pass=reference]) 
     store i32 %t4, %t6
     return void
 }
-alias object _ZN3boxI4typeEC2Ev = @box_type___box
-alias object _ZN3boxIK4typeEC2IS0_EERKS_IT_E = @box_type_const___box__ov4
+alias object _ZN3boxI4typeEC2Ev = @box_type___box_type_const_
+alias object _ZN3boxIK4typeEC2IS0_EERKS_IT_E = @box_type_const___box_type_const___ov4

@@ -1,4 +1,4 @@
-global @data_4___bytes [binding=weak, object=_ZN4dataILm4EE5bytesE] = {
+global @__cppgm_class_template_identity_0_0_0__bytes [binding=weak, object=_ZN4dataILm4EE5bytesE] = {
   u8 1
   u8 2
   u8 3

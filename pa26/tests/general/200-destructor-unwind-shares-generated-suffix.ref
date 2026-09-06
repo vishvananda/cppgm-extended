@@ -1,13 +1,11 @@
-declare global @__external_rtti_vtable____class_type_info [binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare function @__external_runtime___Unwind_Resume() -> void [return=noreturn, role=eh_resume, linkage=c, binding=strong, object=_Unwind_Resume]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
-declare function @__external_runtime____gxx_personality_v0() -> void [role=eh_personality, linkage=c, binding=strong, object=__gxx_personality_v0]
 
-global @order : i32 [binding=strong, object=_Z5order] = zero
-global @__typeinfo_name__struct_failure [storage=readonly, binding=weak, object=_ZTS7failure] = {
+global @__typeinfo_name__struct_failure [binding=weak, object=_ZTS7failure] = {
   i8 55
   i8 102
   i8 97
@@ -18,13 +16,14 @@ global @__typeinfo_name__struct_failure [storage=readonly, binding=weak, object=
   i8 101
   i8 0
 }
-global @__rtti_struct_failure [storage=readonly, binding=weak, object=_ZTI7failure] = {
+global @__rtti_struct_failure [binding=weak, object=_ZTI7failure] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_failure
 }
-global @__ehobj_struct_failure [binding=weak, object=@__ehobj_struct_failure] = {
+global @__ehobj_struct_failure [binding=internal, object=@__ehobj_struct_failure] = {
   zero 1
 }
+global @order : i32 [binding=strong, object=_Z5order] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $owner : obj<3x1>
@@ -80,7 +79,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^try_end_3:
     return i32 2
 }
-function @Owner___Owner(%this : ptr) -> void [binding=weak, object=_ZN5OwnerD1Ev] {
+function @Owner___Owner(%this : ptr [object_bytes=3]) -> void [binding=weak, object=_ZN5OwnerD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -142,7 +141,7 @@ function @Owner___Owner(%this : ptr) -> void [binding=weak, object=_ZN5OwnerD1Ev
   block ^destructor_end_2:
     return void
 }
-function @Throwing___Throwing(%this : ptr) -> void [binding=weak, object=_ZN8ThrowingD1Ev] {
+function @Throwing___Throwing(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8ThrowingD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -152,12 +151,11 @@ function @Throwing___Throwing(%this : ptr) -> void [binding=weak, object=_ZN8Thr
     %t3 = binary add i32 %t2, 3
     store i32 %t3, @order
     %t4 = call ptr @__external_runtime____cxa_allocate_exception(1)
-    call void @failure__failure(%t4)
     %t5 = addr @__rtti_struct_failure
     call void @__external_runtime____cxa_throw(%t4, %t5, 0)
     return void
 }
-function @Second___Second(%this : ptr) -> void [binding=weak, object=_ZN6SecondD1Ev] {
+function @Second___Second(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6SecondD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -168,7 +166,7 @@ function @Second___Second(%this : ptr) -> void [binding=weak, object=_ZN6SecondD
     store i32 %t3, @order
     return void
 }
-function @First___First(%this : ptr) -> void [binding=weak, object=_ZN5FirstD1Ev] {
+function @First___First(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5FirstD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -179,15 +177,7 @@ function @First___First(%this : ptr) -> void [binding=weak, object=_ZN5FirstD1Ev
     store i32 %t3, @order
     return void
 }
-function @failure__failure(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN7failureC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
 alias object _ZN5OwnerD2Ev = @Owner___Owner
 alias object _ZN8ThrowingD2Ev = @Throwing___Throwing
 alias object _ZN6SecondD2Ev = @Second___Second
 alias object _ZN5FirstD2Ev = @First___First
-alias object _ZN7failureC2Ev = @failure__failure

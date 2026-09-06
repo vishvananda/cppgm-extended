@@ -1,4 +1,4 @@
-function @in_range(%value : ptr [pass=reference], %lo : ptr [pass=reference], %hi : ptr [pass=reference]) -> u8 [binding=strong, object=_Z8in_rangeRKdS0_S0_] {
+function @in_range(%value : ptr [pass=by_address, object_bytes=8], %lo : ptr [pass=by_address, object_bytes=8], %hi : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=strong, object=_Z8in_rangeRKdS0_S0_] {
   slot $value : ptr
   slot $lo : ptr
   slot $hi : ptr

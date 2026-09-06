@@ -1,11 +1,11 @@
-function @select_array(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z12select_arrayRA3_Ki] {
+function @select_array(%__param0 : ptr [pass=by_address, object_bytes=12]) -> i32 [binding=strong, object=_Z12select_arrayRA3_Ki] {
   slot $__param0 : ptr
 
   block ^entry:
     store ptr %__param0, $__param0
     return i32 1
 }
-function @select_array__ov2(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z12select_arrayOA3_Ki] {
+function @select_array__ov2(%__param0 : ptr [pass=by_address, object_bytes=12]) -> i32 [binding=strong, object=_Z12select_arrayOA3_Ki] {
   slot $__param0 : ptr
 
   block ^entry:

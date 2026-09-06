@@ -1,4 +1,4 @@
-function @ns__begin(%r : ptr [pass=reference]) -> obj<8x8> [binding=strong, object=_ZN2ns5beginERNS_5RangeE] {
+function @ns__begin(%r : ptr [pass=by_address, object_bytes=8]) -> obj<8x8> [binding=strong, object=_ZN2ns5beginERNS_5RangeE] {
   slot $r : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -11,7 +11,7 @@ function @ns__begin(%r : ptr [pass=reference]) -> obj<8x8> [binding=strong, obje
     call void @Iter__Iter(%t1, %t4)
     return obj<8x8> $retobj__1
 }
-function @ns__end(%r : ptr [pass=reference]) -> obj<8x8> [binding=strong, object=_ZN2ns3endERNS_5RangeE] {
+function @ns__end(%r : ptr [pass=by_address, object_bytes=8]) -> obj<8x8> [binding=strong, object=_ZN2ns3endERNS_5RangeE] {
   slot $r : ptr
   slot $retobj__1 : obj<8x8>
 
@@ -38,15 +38,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 4, %t2
     %t3 = addr $r
     %t4 = addr $data
-    %t5 = unary decay ptr %t4
-    call void @ns__Range__Range(%t3, %t5)
+    call void @ns__Range__Range(%t3, %t4)
+    %t5 = addr $owner
     %t6 = addr $owner
-    %t7 = addr $owner
-    %t8 = addr $r
-    %t9 = call i32 @Owner__sum(%t7, %t8)
-    return i32 %t9
+    %t7 = addr $r
+    %t8 = call i32 @Owner__sum(%t6, %t7)
+    return i32 %t8
 }
-function @Iter__Iter(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN4IterC1EPi] {
+function @Iter__Iter(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN4IterC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
@@ -59,7 +58,7 @@ function @Iter__Iter(%this : ptr, %p : ptr) -> void [binding=weak, object=_ZN4It
     store ptr %t1, %t3
     return void
 }
-function @ns__Range__Range(%this : ptr, %data : ptr) -> void [binding=weak, object=_ZN2ns5RangeC1EPi] {
+function @ns__Range__Range(%this : ptr [object_bytes=8], %data : ptr) -> void [binding=weak, object=_ZN2ns5RangeC1EPi, inline_hint=yes] {
   slot $this : ptr
   slot $data : ptr
 
@@ -72,7 +71,7 @@ function @ns__Range__Range(%this : ptr, %data : ptr) -> void [binding=weak, obje
     store ptr %t1, %t3
     return void
 }
-function @Owner__sum(%this : ptr, %r : ptr [pass=reference]) -> i32 [binding=weak, object=_ZN5Owner3sumERN2ns5RangeE] {
+function @Owner__sum(%this : ptr [object_bytes=1], %r : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN5Owner3sumERN2ns5RangeE, inline_hint=yes] {
   slot $this : ptr
   slot $r : ptr
   slot $total : i32
@@ -120,7 +119,7 @@ function @Owner__sum(%this : ptr, %r : ptr [pass=reference]) -> i32 [binding=wea
     %t18 = load i32 $total
     return i32 %t18
 }
-function @Iter__operator__(%this : ptr, %o : ptr [pass=reference]) -> u8 [binding=weak, object=_ZNK4IterneERKS_] {
+function @Iter__operator__(%this : ptr [object_bytes=8], %o : ptr [pass=by_address, object_bytes=8]) -> u8 [binding=weak, object=_ZNK4IterneERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $o : ptr
 
@@ -137,7 +136,7 @@ function @Iter__operator__(%this : ptr, %o : ptr [pass=reference]) -> u8 [bindin
     %t8 = convert trunc u8 i64 %t7
     return u8 %t8
 }
-function @Iter__operator_(%this : ptr) -> ptr [binding=weak, object=_ZNK4IterdeEv] {
+function @Iter__operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK4IterdeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -147,7 +146,7 @@ function @Iter__operator_(%this : ptr) -> ptr [binding=weak, object=_ZNK4IterdeE
     %t3 = load ptr %t2
     return ptr %t3
 }
-function @Iter__operator____sym2(%this : ptr) -> ptr [binding=weak, object=_ZN4IterppEv] {
+function @Iter__operator____sym2(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN4IterppEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

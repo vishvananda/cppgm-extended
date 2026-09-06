@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @f(%it : ptr [pass=reference], %n : i32, %end : ptr [pass=reference]) -> i32 [binding=weak, object=_Z1fI4iterEiRT_iRKS1_] {
+function @f(%it : ptr [pass=by_address, object_bytes=1], %n : i32, %end : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z1fI4iterEiRT_iRKS1_] {
   slot $it : ptr
   slot $n : i32
   slot $end : ptr
@@ -38,11 +38,10 @@ function @f(%it : ptr [pass=reference], %n : i32, %end : ptr [pass=reference]) -
     %t2 = load i32 $n
     %t3 = load ptr $end
     %t4 = addr $argobj__1
-    call void @traits_iter___cat__cat(%t4)
     %t5 = call i32 @iter_ops__adv(%t1, %t2, %t3, $argobj__1)
     return i32 %t5
 }
-function @iter_ops__adv(%__param0 : ptr [pass=reference], %n : i32, %__param2 : ptr [pass=reference], %__param3 : obj<1x1>) -> i32 [binding=weak, object=_ZN8iter_ops3advI4iterEEiRT_iRKS2_N6traitsIS2_E3catE] {
+function @iter_ops__adv(%__param0 : ptr [pass=by_address, object_bytes=1], %n : i32, %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : obj<1x1>) -> i32 [binding=weak, object=_ZN8iter_ops3advI4iterEEiRT_iRKS2_N6traitsIS2_E3catE, inline_hint=yes] {
   slot $__param0 : ptr
   slot $n : i32
   slot $__param2 : ptr
@@ -56,11 +55,3 @@ function @iter_ops__adv(%__param0 : ptr [pass=reference], %n : i32, %__param2 : 
     %t2 = binary add i32 %t1, 1
     return i32 %t2
 }
-function @traits_iter___cat__cat(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6traitsI4iterE3catC1Ev, trivial_lifecycle=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-alias object _ZN6traitsI4iterE3catC2Ev = @traits_iter___cat__cat

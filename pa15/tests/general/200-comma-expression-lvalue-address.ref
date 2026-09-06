@@ -22,32 +22,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $values
-    %t2 = unary decay ptr %t1
-    %t3 = index i32 [projection=array_element] %t2, 0
-    store i32 3, %t3
-    %t4 = addr $values
-    %t5 = unary decay ptr %t4
-    %t6 = index i32 [projection=array_element] %t5, 1
-    store i32 5, %t6
+    %t2 = index i32 [projection=array_element] %t1, 0
+    store i32 3, %t2
+    %t3 = addr $values
+    %t4 = index i32 [projection=array_element] %t3, 1
+    store i32 5, %t4
+    %t5 = addr $values
+    %t6 = call ptr @pick(%t5, 1)
+    store i32 9, %t6
     %t7 = addr $values
-    %t8 = unary decay ptr %t7
-    %t9 = call ptr @pick(%t8, 1)
-    store i32 9, %t9
-    %t10 = addr $values
-    %t11 = unary decay ptr %t10
-    %t12 = index i32 [projection=array_element] %t11, 0
-    %t13 = load i32 %t12
-    %t14 = cmp eq i32 %t13, 3
-    branch %t14, ^land_rhs_7, ^land_short_8
+    %t8 = index i32 [projection=array_element] %t7, 0
+    %t9 = load i32 %t8
+    %t10 = cmp eq i32 %t9, 3
+    branch %t10, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t15 = addr $values
-    %t16 = unary decay ptr %t15
-    %t17 = index i32 [projection=array_element] %t16, 1
-    %t18 = load i32 %t17
-    %t19 = cmp eq i32 %t18, 9
-    %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $land__3
+    %t11 = addr $values
+    %t12 = index i32 [projection=array_element] %t11, 1
+    %t13 = load i32 %t12
+    %t14 = cmp eq i32 %t13, 9
+    %t15 = cmp ne i64 %t14, 0
+    store i64 %t15, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -55,14 +50,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t21 = load i64 $land__3
-    branch %t21, ^land_rhs_4, ^land_short_5
+    %t16 = load i64 $land__3
+    branch %t16, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t22 = load i32 @side
-    %t23 = cmp eq i32 %t22, 1
-    %t24 = cmp ne i64 %t23, 0
-    store i64 %t24, $land__2
+    %t17 = load i32 @side
+    %t18 = cmp eq i32 %t17, 1
+    %t19 = cmp ne i64 %t18, 0
+    store i64 %t19, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -70,8 +65,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t25 = load i64 $land__2
-    branch %t25, ^cond_then_1, ^cond_else_2
+    %t20 = load i64 $land__2
+    branch %t20, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -82,6 +77,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t26 = load i32 $cond__1
-    return i32 %t26
+    %t21 = load i32 $cond__1
+    return i32 %t21
 }

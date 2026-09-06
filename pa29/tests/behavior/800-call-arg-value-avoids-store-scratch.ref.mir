@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -30,16 +30,9 @@ function @read_first
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %a -> [rbp-8] : i64
-    param-slot %b -> [rbp-16] : i64
-    param-slot %c -> [rbp-24] : i64
 
   block ^entry
-    store.i64 [rbp-8], rsi
-    store.i64 [rbp-16], rdx
-    store.i64 [rbp-24], rcx
-    mov r8, rdi
-    load.i64 rax, [r8]
+    load.i64 rax, [rdi]
     ret rax
 
 function @run
@@ -53,61 +46,47 @@ function @run
     param %v -> [rbp+16] : i64
     return i64 -> rax
   frame
-    stack_size 80
+    stack_size 64
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
-    param-slot %q -> [rbp-8] : i64
-    param-slot %r -> [rbp-16] : i64
-    param-slot %s -> [rbp-24] : i64
-    param-slot %t -> [rbp-32] : i64
-    param-slot %u -> [rbp-40] : i64
-    param-slot %v -> [rbp-48] : i64
-    slot $p -> [rbp-56] : ptr
-    slot $scratch -> [rbp-64] : i64
+    param-slot %v -> [rbp-8] : i64
+    slot $p -> [rbp-16] : ptr
+    slot $scratch -> [rbp-24] : i64
 
   block ^entry
-    store.i64 [rbp-8], rsi
-    store.i64 [rbp-16], rdx
-    store.i64 [rbp-24], rcx
-    store.i64 [rbp-32], r8
-    store.i64 [rbp-40], r9
     load.i64 rax, [rbp+16]
-    store.i64 [rbp-48], rax
-    store.ptr [rbp-56], rdi
-    mov rax, 5
-    store.i64 [rbp-64], rax
+    store.i64 [rbp-8], rax
+    store.ptr [rbp-16], rdi
+    store.i64 [rbp-24], 5
     jmp ^call
 
   block ^call
-    load.i64 rax, [rbp-64]
+    load.i64 rax, [rbp-24]
     store.i64 @sink, rax
-    load.ptr r8, [rbp-56]
+    load.ptr r8, [rbp-16]
     mov r9, @object
     lea r9, [r9+8]
-    mov rax, 123456789
-    store.i64 [r9], rax
+    store.i64 [r9], 123456789
     mov rdi, r8
     mov rsi, 1
     mov rdx, 2
     mov rcx, 3
-    call @read_first
+    call @read_first [args=(rcx,rdx,rsi,rdi)]
     ret rax
 
 function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
+    stack_size 48
     scratch_bytes 48
     frame_pointer keep
     epilogues shared
-    preserve rbx r12
 
   block ^entry
-    mov r8, @good
     sub rsp, 16
-    mov rdi, r8
+    mov rdi, @good
     mov rsi, 1
     mov rdx, 2
     mov rcx, 3
@@ -115,32 +94,31 @@ function @main
     mov r9, 5
     mov r11, 6
     store.i64 [rsp], r11
-    call @run
+    call @run [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
-    mov r9, rax
+    mov r8, rax
     mov rdx, 42
-    cmp.i64 r9, rdx
-    sete r9
-    movzx r9, r9
-    load.i64 r8, @sink
-    mov rdx, 5
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rbx, @object
-    lea rbx, [rbx+8]
-    load.i64 r12, [rbx]
-    mov rdx, 123456789
-    cmp.i64 r12, rdx
-    sete r12
-    movzx r12, r12
-    and r9, r8
-    and r9, r12
-    mov rdx, 0
+    load.i64 r9, @sink
+    mov rdx, 5
     cmp.i64 r9, rdx
     sete r9
     movzx r9, r9
-    mov r8, r9
-    sext.i32 r8
+    mov rdi, @object
+    lea rdi, [rdi+8]
+    load.i64 rsi, [rdi]
+    mov rdx, 123456789
+    cmp.i64 rsi, rdx
+    sete rsi
+    movzx rsi, rsi
+    and r8, r9
+    and r8, rsi
+    mov rdx, 0
+    cmp.i64 r8, rdx
+    sete r8
+    movzx r8, r8
     mov rax, r8
+    sext.i32 rax
     ret rax

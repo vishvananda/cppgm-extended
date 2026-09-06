@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $value
     return i32 %t11
 }
-function @unrolled_void___call(%i0 : ptr [pass=reference], %fn : ptr [pass=reference]) -> void [binding=weak, object=_ZN8unrolledIvE4callI4iterIiE7base_fnEEvRKT_RT0_] {
+function @unrolled_void___call(%i0 : ptr [pass=by_address, object_bytes=8], %fn : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8unrolledIvE4callI4iterIiE7base_fnEEvRKT_RT0_, inline_hint=yes] {
   slot $i0 : ptr
   slot $fn : ptr
 
@@ -35,7 +35,7 @@ function @unrolled_void___call(%i0 : ptr [pass=reference], %fn : ptr [pass=refer
     call void @base_fn__operator__(%t1, %t3)
     return void
 }
-function @unrolled_void___call__ov2(%i0 : ptr [pass=reference], %fn : ptr [pass=reference]) -> void [binding=weak, object=_ZN8unrolledIvE4callI4iterIiE10derived_fnEEvRKT_RT0_] {
+function @unrolled_void___call__ov2(%i0 : ptr [pass=by_address, object_bytes=8], %fn : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8unrolledIvE4callI4iterIiE10derived_fnEEvRKT_RT0_, inline_hint=yes] {
   slot $i0 : ptr
   slot $fn : ptr
 
@@ -48,29 +48,7 @@ function @unrolled_void___call__ov2(%i0 : ptr [pass=reference], %fn : ptr [pass=
     call void @derived_fn__operator__(%t1, %t3)
     return void
 }
-function @base_fn__operator__(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZNK7base_fnclIiEEvRT_] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
-function @derived_fn__operator__(%this : ptr, %value : ptr [pass=reference]) -> void [binding=weak, object=_ZN10derived_fnclIiEEvRT_] {
-  slot $this : ptr
-  slot $value : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=base_subobject] %t1, 0
-    %t3 = load ptr $value
-    call void @base_fn__operator__(%t2, %t3)
-    return void
-}
-function @iter_int___operator_(%this : ptr) -> ptr [binding=weak, object=_ZNK4iterIiEdeEv] {
+function @iter_int___operator_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK4iterIiEdeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -79,4 +57,26 @@ function @iter_int___operator_(%this : ptr) -> ptr [binding=weak, object=_ZNK4it
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load ptr %t2
     return ptr %t3
+}
+function @base_fn__operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZNK7base_fnclIiEEvRT_, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+function @derived_fn__operator__(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN10derived_fnclIiEEvRT_, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %value, $value
+    %t1 = load ptr $this
+    %t2 = index i8 %t1, 0
+    %t3 = load ptr $value
+    call void @base_fn__operator__(%t2, %t3)
+    return void
 }

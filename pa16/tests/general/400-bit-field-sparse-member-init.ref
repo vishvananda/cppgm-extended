@@ -6,8 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Bits__Bits(%t1)
     return i32 0
 }
-
-function @Bits__Bits(%this : ptr) -> void [binding=strong, object=_ZN4BitsC1Ev] {
+function @Bits__Bits(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4BitsC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -19,3 +18,4 @@ function @Bits__Bits(%this : ptr) -> void [binding=strong, object=_ZN4BitsC1Ev] 
     store u32 %t4, %t2
     return void
 }
+alias object _ZN4BitsC2Ev = @Bits__Bits

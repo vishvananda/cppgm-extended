@@ -1,4 +1,4 @@
-declare function @get(%arg0 : ptr [pass=reference]) -> ptr [binding=weak, object=_Z3getILm0EJRK1VEERN13tuple_elementIXT_E5tupleIJDpT0_EEE4typeERS7_]
+declare function @get(%arg0 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z3getILm0EJRK1VEERN13tuple_elementIXT_E5tupleIDpT0_EE4typeERS4_IJS5_EE]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $t : obj<1x1>
@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $wrapped
     return i32 0
 }
-function @Wrapped__Wrapped(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN7WrappedC1ERK1V] {
+function @Wrapped__Wrapped(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN7WrappedC1ERK1V, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

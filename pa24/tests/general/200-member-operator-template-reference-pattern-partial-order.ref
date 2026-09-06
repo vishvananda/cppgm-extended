@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 $cond__1
     return i32 %t5
 }
-function @nonconst_default_visitor___value() -> i32 [binding=weak, object=_ZN16nonconst_defaultI7visitorE5valueEv] {
+function @nonconst_default_visitor___value() -> i32 [binding=weak, object=_ZN16nonconst_defaultI7visitorE5valueEv, inline_hint=yes] {
   block ^entry:
     return i32 2
 }

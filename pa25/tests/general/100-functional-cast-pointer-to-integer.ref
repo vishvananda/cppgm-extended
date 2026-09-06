@@ -29,7 +29,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @Buffer__address(%this : ptr) -> i64 [binding=weak, object=_ZNK6Buffer7addressEv] {
+function @Buffer__address(%this : ptr [object_bytes=8]) -> i64 [binding=weak, object=_ZNK6Buffer7addressEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

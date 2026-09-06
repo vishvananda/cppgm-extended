@@ -1,4 +1,4 @@
-function @accept(%__param0 : ptr [pass=reference]) -> i32 [binding=strong, object=_Z6acceptRK8durationIl3tagILi1EEE] {
+function @accept(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_Z6acceptRK8durationIl3tagILi1EEE] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -12,21 +12,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $arg__1
     %t2 = addr $arg__2
-    call void @duration_int__tag_2____duration(%t2, 8)
-    call void @duration_long_int__tag_1____duration__ov4(%t1, %t2)
+    call void @duration_int____cppgm_class_template_identity_0_2_0___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1_(%t2, 8)
+    call void @duration_long_int____cppgm_class_template_identity_0_0_0___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1___ov4(%t1, %t2)
     %t3 = call i32 @accept(%t1)
     return i32 %t3
 }
-function @duration_long_int__tag_1____duration__ov4(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN8durationIl3tagILi1EEEC1IiS0_ILi2EEEERKS_IT_T0_E] {
-  slot $this : ptr
-  slot $__param1 : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    return void
-}
-function @duration_int__tag_2____duration(%this : ptr, %__param1 : i32) -> void [binding=weak, object=_ZN8durationIi3tagILi2EEEC1Ei] {
+function @duration_int____cppgm_class_template_identity_0_2_0___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1_(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN8durationIi3tagILi2EEEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -35,5 +26,14 @@ function @duration_int__tag_2____duration(%this : ptr, %__param1 : i32) -> void 
     store i32 %__param1, $__param1
     return void
 }
-alias object _ZN8durationIl3tagILi1EEEC2IiS0_ILi2EEEERKS_IT_T0_E = @duration_long_int__tag_1____duration__ov4
-alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int__tag_2____duration
+function @duration_long_int____cppgm_class_template_identity_0_0_0___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8durationIl3tagILi1EEEC1IiS0_ILi2EEEERKS_IT_T0_E, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    return void
+}
+alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int____cppgm_class_template_identity_0_2_0___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1_
+alias object _ZN8durationIl3tagILi1EEEC2IiS0_ILi2EEEERKS_IT_T0_E = @duration_long_int____cppgm_class_template_identity_0_0_0___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1___ov4
