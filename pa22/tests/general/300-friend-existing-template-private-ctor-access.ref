@@ -10,7 +10,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $s
     call void @n__basic_string_char__n__traits_char___n__alloc_char____basic_string(%t1)
     %t2 = addr $x
-    %t3 = addr $x
+    %t3 = addr @__strlit__1
+    %t4 = addr $s
+    %t5 = call obj<1x1> @n__operator_(%t3, %t4)
+    %t6 = addr $x
     return i32 0
 }
 function @n__basic_string_char__n__traits_char___n__alloc_char____basic_string(%this : ptr) -> void [binding=weak, object=_ZN1n12basic_stringIcNS_6traitsIcEENS_5allocIcEEEC1Ev] {
@@ -50,9 +53,7 @@ function @n__operator_(%lhs : ptr, %rhs : ptr [pass=reference]) -> obj<1x1> [bin
     %t11 = addr $arg__3
     %t12 = load ptr $rhs
     %t13 = call obj<1x1> @n__basic_string_char__n__traits_char___n__alloc_char____get_allocator(%t12)
-    copyobj 1x1 %t13, %t11
     %t14 = call obj<1x1> @n__basic_string_char__n__traits_char___n__alloc_char______alloc_traits__select_on_container_copy_construction(%t11)
-    copyobj 1x1 %t14, %t10
     call void @n__basic_string_char__n__traits_char___n__alloc_char____basic_string__ov2(%t5, $argobj__1, %t9, %t10)
     %t15 = addr $retobj__4
     %t16 = addr $r

@@ -1,25 +1,43 @@
-// (C) 2013 CPPGM Foundation www.cppgm.org.  All rights reserved.
+// Student-facing scaffold for the PA10+ `cppgm++` binary.
 
-#include "cli_batch_frontend.h"
-#include "abi_mangle.h"
-#include "abi_private_model.h"
-#include "cpp_batch_frontend.h"
-#include "cpp_driver_frontend.h"
-#include "cpp_text_generators.h"
-#include "cpp_tool_cli.h"
-#include "cpp_toolchain.h"
-#include "file_timing.h"
-#include "template_text_output.h"
-#include "tool_help_text.h"
-#include "witness_api.h"
+#include "support/exception_types.h"
+#include "support/driver_errors.h"
+#include "backend_variant.h"
+#include "support/telemetry.h"
+#include "syntax/syntax.h"
+#include "semantic/type_view.h"
+#include "semantic/semantic.h"
+#include "lowering/api.h"
+#include "lowir/io/frontend_adapter.h"
+#include "compiler_object/linker.h"
+#include "compiler_object/serialization.h"
+#include "compiler_object/elf_import.h"
+#include "compiler_object/errors.h"
+#include "lowir/analysis/function_reachability.h"
+#include "lowir/driver/stats_report.h"
+#include "lowir/io/prepare.h"
+#include "native/driver/stats.h"
+#include "native/driver/stats_report.h"
+#include "native/object/elf_writer.h"
+#include "lowir/optimize/pipeline.h"
+#include "preprocess/preprocessor.h"
+#include "lowir/io/line_table_debug.h"
+#include "support/tool_help_text.h"
 
+#include <chrono>
 #include <cctype>
-#include <iostream>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
 #include <fstream>
-#include <stdexcept>
-#include <set>
+#include <iostream>
+#include <iterator>
+#include <sstream>
 #include <string>
+#include <sys/stat.h>
 #include <utility>
+#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 using namespace std;
@@ -33,8 +51,61 @@ enum class EmitMode
   Types,
   Semantics,
   LowIR,
-  AbiFacts,
 };
+
+enum class DriverMode
+{
+  Query,
+  Preprocess,
+  Compile,
+  Link,
+};
+
+struct DriverInvocation
+{
+	struct MacroAction
+	{
+		bool define;
+		string argument;
+
+		MacroAction(bool is_definition, const string & value)
+			: define(is_definition), argument(value)
+		{}
+	};
+
+  DriverMode mode;
+  string output;
+  string target;
+	string query;
+  vector<string> inputs;
+  vector<string> include_paths;
+  vector<string> system_include_paths;
+  vector<string> library_paths;
+  vector<string> libraries;
+	vector<MacroAction> macro_actions;
+  vector<string> forced_includes;
+  int optimization_level;
+  bool line_tables;
+  bool collect_stats;
+  bool collect_function_census = false;
+  bool hosted_system_includes;
+  lowir_opt::InlinePolicyOverrides inline_limits;
+
+  DriverInvocation()
+      : mode(DriverMode::Link), optimization_level(0), line_tables(false),
+        collect_stats(false), hosted_system_includes(true)
+  {
+  }
+};
+
+vector<string> collect_args(int argc, char ** argv)
+{
+  vector<string> args;
+  for(int i = 1; i < argc; ++i) {
+    args.push_back(argv[i]);
+  }
+  return args;
+}
 
 bool has_arg(const vector<string> & args, const string & needle)
 {
@@ -49,6 +120,103 @@ bool has_arg(const vector<string> & args, const string & needle)
 bool has_help_arg(const vector<string> & args)
 {
   return has_arg(args, "--help") || has_arg(args, "-h");
+}
+
+bool starts_with(const string & value, const string & prefix)
+{
+  return value.size() >= prefix.size() &&
+      value.compare(0, prefix.size(), prefix) == 0;
+}
+
+bool is_query_driver_flag(const string & arg)
+{
+  return arg == "--version" ||
+      arg == "-v" ||
+      arg == "-dumpmachine" ||
+      arg == "-dumpversion" ||
+      arg == "-print-search-dirs";
+}
+
+bool is_optimization_flag(const string & arg)
+{
+  return starts_with(arg, "-O");
+}
+
+int parse_optimization_level(const string & arg)
+{
+  if(arg == "-O0") return 0;
+  if(arg == "-O1") return 1;
+  if(arg == "-O2") return 2;
+  if(arg == "-O3") return 3;
+  cppgm::driver_errors::ThrowInvocation(
+    "unsupported optimization level: " + arg);
+}
+
+bool is_debug_info_flag(const string & arg)
+{
+  return arg == "-g0" ||
+      arg == "-gline-tables-only" ||
+      arg == "-g" ||
+      starts_with(arg, "-g");
+}
+
+bool is_benign_driver_flag(const string & arg)
+{
+  return arg == "-Wall" ||
+      arg == "-Winvalid-offsetof" ||
+      arg == "-pipe" ||
+      arg == "-w" ||
+      arg == "-pg" ||
+      arg == "-pedantic" ||
+      arg == "-pedantic-errors" ||
+      starts_with(arg, "-W") ||
+      starts_with(arg, "-f") ||
+      starts_with(arg, "-m") ||
+      starts_with(arg, "-std=");
+}
+
+__attribute__((cold, noinline, noreturn))
+void missing_option_argument(const string & option,
+                             const string & expected)
+{
+  cppgm::driver_errors::ThrowInvocation(
+    "missing " + expected + " after " + option);
+}
+
+void consume_required_option_argument(const vector<string> & args,
+                                      size_t & i,
+                                      const string & option,
+                                      const string & expected)
+{
+  if(i + 1 >= args.size()) {
+    missing_option_argument(option, expected);
+  }
+  ++i;
+}
+
+bool consume_joined_or_separate_option(const vector<string> & args,
+                                       size_t & i,
+                                       const string & option,
+                                       const string & expected)
+{
+  if(args[i] == option) {
+    consume_required_option_argument(args, i, option, expected);
+    return true;
+  }
+  if(starts_with(args[i], option) && args[i].size() > option.size()) {
+    return true;
+  }
+  return false;
+}
+
+int run_not_implemented_batch_mode()
+{
+  string line;
+  while(getline(cin, line)) {
+    (void)line;
+    cout << "EXIT_NOT_IMPLEMENTED" << endl;
+  }
+  return EXIT_SUCCESS;
 }
 
 void consume_emit_flag(vector<string> & args,
@@ -71,19 +239,32 @@ void consume_emit_flag(vector<string> & args,
   }
 
   if(out != EmitMode::None) {
-    throw logic_error("multiple --emit-* options provided");
+    cppgm::driver_errors::ThrowInvocation(
+      "multiple --emit-* options provided");
   }
   out = value;
   args.swap(kept);
 }
 
-vector<string> collect_args(int argc, char ** argv)
+// `--backend-variant <name>` selects a design variant of the backend
+// (backend_variant.h).  Read before the mode's own options so every mode
+// sees it; an invocation without it selects the default.
+void consume_backend_variant(vector<string> & args)
 {
-  vector<string> args;
-  for(int i = 1; i < argc; ++i) {
-    args.push_back(argv[i]);
+  string variant;
+  vector<string> kept;
+  for(size_t i = 0; i < args.size(); ++i) {
+    if(args[i] == "--backend-variant") {
+      if(i + 1 >= args.size())
+        cppgm::driver_errors::ThrowInvocation(
+          "missing value after --backend-variant");
+      variant = args[++i];
+      continue;
+    }
+    kept.push_back(args[i]);
   }
-  return args;
+  cppgm_variant::select(variant);
+  args.swap(kept);
 }
 
 EmitMode parse_emit_mode(vector<string> & args)
@@ -93,271 +274,2389 @@ EmitMode parse_emit_mode(vector<string> & args)
   consume_emit_flag(args, "--emit-types", EmitMode::Types, mode);
   consume_emit_flag(args, "--emit-semantics", EmitMode::Semantics, mode);
   consume_emit_flag(args, "--emit-lowir", EmitMode::LowIR, mode);
-  consume_emit_flag(args, "--emit-abi-facts", EmitMode::AbiFacts, mode);
   return mode;
 }
 
-template<typename Fn>
-int run_main_with_args(const vector<string> & args, const Fn & fn)
+struct SourceOutputInvocation
 {
-  vector<string> argv_storage;
-  argv_storage.push_back("cppgm++");
-  argv_storage.insert(argv_storage.end(), args.begin(), args.end());
+  string output;
+  vector<string> inputs;
+  vector<string> include_paths;
+  vector<DriverInvocation::MacroAction> macro_actions;
+  int optimization_level = 0;
+  bool has_optimization_level = false;
+  bool has_debug_info = false;
+  bool line_tables = false;
+  bool collect_stats = false;
+  lowir_opt::InlinePolicyOverrides inline_limits;
+};
 
-  vector<char *> argv;
-  for(size_t i = 0; i < argv_storage.size(); ++i) {
-    argv.push_back(const_cast<char *>(argv_storage[i].c_str()));
+SourceOutputInvocation parse_source_output_invocation(
+                                    const vector<string> & args,
+                                    bool allow_lowir_options)
+{
+  SourceOutputInvocation invocation;
+
+  for(size_t i = 0; i < args.size(); ++i) {
+    if(args[i] == "-o") {
+      consume_required_option_argument(args, i, "-o", "output file");
+      invocation.output = args[i];
+      continue;
+    }
+    if(args[i] == "--stats") {
+      invocation.collect_stats = true;
+      continue;
+    }
+    if(allow_lowir_options && args[i] == "--inline-limit") {
+      consume_required_option_argument(args, i, "--inline-limit",
+        "name=value");
+      lowir_opt::apply_inline_limit_option(&invocation.inline_limits, args[i]);
+      continue;
+    }
+    if(allow_lowir_options && is_optimization_flag(args[i])) {
+      if(invocation.has_optimization_level)
+        cppgm::driver_errors::ThrowInvocation(
+          "multiple optimization levels provided");
+      invocation.has_optimization_level = true;
+      invocation.optimization_level = parse_optimization_level(args[i]);
+      continue;
+    }
+    if(allow_lowir_options && is_debug_info_flag(args[i])) {
+      invocation.has_debug_info = true;
+      invocation.line_tables = args[i] != "-g0";
+      continue;
+    }
+    if(allow_lowir_options && args[i] == "-I") {
+      consume_required_option_argument(args, i, "-I", "include path");
+      invocation.include_paths.push_back(args[i]);
+      continue;
+    }
+    if(allow_lowir_options && starts_with(args[i], "-I") &&
+       args[i].size() > 2) {
+      invocation.include_paths.push_back(args[i].substr(2));
+      continue;
+    }
+    if(allow_lowir_options && (args[i] == "-D" || args[i] == "-U")) {
+      const bool define = args[i] == "-D";
+      consume_required_option_argument(args, i, args[i], "macro");
+      invocation.macro_actions.push_back(
+        DriverInvocation::MacroAction(define, args[i]));
+      continue;
+    }
+    if(allow_lowir_options && starts_with(args[i], "-D") &&
+       args[i].size() > 2) {
+      invocation.macro_actions.push_back(
+        DriverInvocation::MacroAction(true, args[i].substr(2)));
+      continue;
+    }
+    if(allow_lowir_options && starts_with(args[i], "-U") &&
+       args[i].size() > 2) {
+      invocation.macro_actions.push_back(
+        DriverInvocation::MacroAction(false, args[i].substr(2)));
+      continue;
+    }
+    if(args[i] == "-c" || args[i] == "-E" || is_query_driver_flag(args[i])) {
+      cppgm::driver_errors::ThrowInvocation("invalid usage");
+    }
+    if(starts_with(args[i], "-")) {
+      cppgm::driver_errors::ThrowInvocation(
+        "unsupported option in emit mode: " + args[i]);
+    }
+    invocation.inputs.push_back(args[i]);
   }
 
-  return fn(static_cast<int>(argv.size()), argv.data());
+  if(invocation.output.empty() || invocation.inputs.empty()) {
+    cppgm::driver_errors::ThrowInvocation("invalid usage");
+  }
+  return invocation;
 }
 
-int run_text_mode(const vector<string> & args,
-                  const CppTextGenerator & generator)
+bool consume_dependency_option(const vector<string> & args, size_t & i)
 {
-  return run_main_with_args(
-      args,
-      [&](int argc, char ** argv) {
-        return run_cpp_text_frontend(argc, argv, generator);
-      });
+  if(args[i] == "-MMD" || args[i] == "-MD" || args[i] == "-MP") {
+    return true;
+  }
+  if(consume_joined_or_separate_option(args, i, "-MF", "depfile path")) {
+    return true;
+  }
+  if(consume_joined_or_separate_option(args, i, "-MT", "target")) {
+    return true;
+  }
+  if(consume_joined_or_separate_option(args, i, "-MQ", "target")) {
+    return true;
+  }
+  return false;
+}
+
+DriverInvocation parse_driver_invocation(const vector<string> & args)
+{
+  if(args.empty()) {
+    cppgm::driver_errors::ThrowInvocation("invalid usage");
+  }
+
+  DriverInvocation invocation;
+  if(is_query_driver_flag(args[0])) {
+    if(args.size() != 1) {
+      cppgm::driver_errors::ThrowInvocation(
+        "query flag must be used as a direct invocation");
+    }
+    invocation.mode = DriverMode::Query;
+		invocation.query = args[0];
+    return invocation;
+  }
+
+  bool compile_only = false;
+  bool preprocess_only = false;
+  bool explicit_outfile = false;
+  bool has_optimization_level = false;
+
+  for(size_t i = 0; i < args.size(); ++i) {
+    if(is_query_driver_flag(args[i])) {
+      cppgm::driver_errors::ThrowInvocation(
+        "query flag must be used as a direct invocation");
+    }
+    if(args[i] == "-c") {
+      compile_only = true;
+      continue;
+    }
+    if(args[i] == "-E") {
+      preprocess_only = true;
+      continue;
+    }
+    if(args[i] == "--stats" || args[i] == "--stats-functions") {
+      invocation.collect_stats = true;
+      invocation.collect_function_census |= args[i] == "--stats-functions";
+      continue;
+    }
+    if(args[i] == "--inline-limit") {
+      consume_required_option_argument(args, i, "--inline-limit",
+        "name=value");
+      lowir_opt::apply_inline_limit_option(&invocation.inline_limits, args[i]);
+      continue;
+    }
+    if(args[i] == "-nostdinc") {
+      invocation.hosted_system_includes = false;
+      continue;
+    }
+    if(args[i] == "-o") {
+      consume_required_option_argument(args, i, "-o", "output file");
+      if(explicit_outfile) {
+        cppgm::driver_errors::ThrowInvocation(
+          "multiple output files provided");
+      }
+      explicit_outfile = true;
+      invocation.output = args[i];
+      continue;
+    }
+    if(args[i] == "-I" || args[i] == "-L" || args[i] == "-l") {
+      const string option = args[i];
+      consume_required_option_argument(args, i, option,
+          option == "-I" || option == "-L" ? "path" :
+          "library name");
+      if(option == "-I") invocation.include_paths.push_back(args[i]);
+      else if(option == "-L") invocation.library_paths.push_back(args[i]);
+			else invocation.libraries.push_back(args[i]);
+			continue;
+		}
+		if(args[i] == "-D" || args[i] == "-U") {
+			const bool define = args[i] == "-D";
+			const string option = args[i];
+			consume_required_option_argument(args, i, option,
+				define ? "macro definition" : "macro name");
+			invocation.macro_actions.push_back(
+				DriverInvocation::MacroAction(define, args[i]));
+			continue;
+		}
+		if(args[i] == "-include") {
+			consume_required_option_argument(args, i, "-include", "file");
+			invocation.forced_includes.push_back(args[i]);
+      continue;
+    }
+    if(args[i] == "-isystem") {
+      consume_required_option_argument(args, i, "-isystem", "path");
+      invocation.system_include_paths.push_back(args[i]);
+      continue;
+    }
+    if(starts_with(args[i], "-isystem") &&
+       args[i].size() > string("-isystem").size()) {
+      invocation.system_include_paths.push_back(
+          args[i].substr(string("-isystem").size()));
+      continue;
+    }
+    if(starts_with(args[i], "-I") && args[i].size() > 2) {
+      invocation.include_paths.push_back(args[i].substr(2));
+      continue;
+    }
+    if(starts_with(args[i], "-L") && args[i].size() > 2) {
+      invocation.library_paths.push_back(args[i].substr(2));
+      continue;
+    }
+    if(starts_with(args[i], "-l") && args[i].size() > 2) {
+      invocation.libraries.push_back(args[i].substr(2));
+      continue;
+    }
+    if(starts_with(args[i], "-D") && args[i].size() > 2) {
+			invocation.macro_actions.push_back(
+				DriverInvocation::MacroAction(true, args[i].substr(2)));
+			continue;
+		}
+		if(starts_with(args[i], "-U") && args[i].size() > 2) {
+			invocation.macro_actions.push_back(
+				DriverInvocation::MacroAction(false, args[i].substr(2)));
+			continue;
+		}
+		if(starts_with(args[i], "-std=")) {
+			const string standard = args[i].substr(5);
+			string value;
+			if(standard == "c++11" || standard == "gnu++11") value = "201103L";
+			else if(standard == "c++14" || standard == "gnu++14") value = "201402L";
+			else if(standard == "c++17" || standard == "gnu++17") value = "201703L";
+			else cppgm::driver_errors::ThrowInvocation(
+				"unsupported language standard: " + standard);
+			invocation.macro_actions.push_back(
+				DriverInvocation::MacroAction(true, "__cplusplus=" + value));
+			continue;
+		}
+		if(args[i] == "-fno-exceptions") {
+			invocation.macro_actions.push_back(
+				DriverInvocation::MacroAction(false, "__EXCEPTIONS"));
+			invocation.macro_actions.push_back(
+				DriverInvocation::MacroAction(false, "__cpp_exceptions"));
+      continue;
+    }
+    if(args[i] == "--target") {
+      consume_required_option_argument(args, i, "--target", "target");
+      if(!invocation.target.empty())
+        cppgm::driver_errors::ThrowInvocation("multiple targets provided");
+      invocation.target = args[i];
+      continue;
+    }
+    if(starts_with(args[i], "--target=")) {
+      if(!invocation.target.empty())
+        cppgm::driver_errors::ThrowInvocation("multiple targets provided");
+      invocation.target = args[i].substr(string("--target=").size());
+      if(invocation.target.empty())
+        missing_option_argument("--target", "target");
+      continue;
+    }
+    if(is_optimization_flag(args[i])) {
+      if(has_optimization_level)
+        cppgm::driver_errors::ThrowInvocation(
+          "multiple optimization levels provided");
+      has_optimization_level = true;
+      invocation.optimization_level = parse_optimization_level(args[i]);
+      continue;
+    }
+    if(is_debug_info_flag(args[i])) {
+      invocation.line_tables = args[i] != "-g0";
+      continue;
+    }
+    if(starts_with(args[i], "-stdlib=")) {
+      // The standard library is chosen when this compiler is built, and its
+      // include paths are baked in then rather than scanned now.  A -stdlib=
+      // on the command line can only agree or disagree with that: the build
+      // that compiles this compiler with itself passes the same flag it was
+      // configured with, and honouring it silently when it differs would
+      // compile against one library's headers while claiming another.
+      const string baked = cppgm::HostedCompilerStdlibFlags();
+      if(baked.find(args[i]) == string::npos)
+        cppgm::driver_errors::ThrowInvocation(
+          "this compiler was built for " +
+          (baked.empty() ? string("the default standard library") : baked) +
+          " and cannot select " + args[i]);
+      continue;
+    }
+    if(consume_dependency_option(args, i) ||
+       is_benign_driver_flag(args[i])) {
+      continue;
+    }
+    if(starts_with(args[i], "-")) {
+      cppgm::driver_errors::ThrowInvocation(
+        "unsupported driver option: " + args[i]);
+    }
+    invocation.inputs.push_back(args[i]);
+  }
+
+  if(compile_only && preprocess_only) {
+    cppgm::driver_errors::ThrowInvocation("cannot combine -c and -E");
+  }
+  if(invocation.inputs.empty()) {
+    cppgm::driver_errors::ThrowInvocation("invalid usage");
+  }
+  if((compile_only || preprocess_only) && explicit_outfile && invocation.inputs.size() != 1) {
+    cppgm::driver_errors::ThrowInvocation(
+      "cannot specify -o when generating multiple output files");
+  }
+
+  invocation.mode =
+      preprocess_only ? DriverMode::Preprocess :
+      compile_only ? DriverMode::Compile :
+      DriverMode::Link;
+  return invocation;
+}
+
+cppgm::PreprocessingOptions make_preprocessing_options();
+
+string normalize_native_target(const string & target)
+{
+  if(target.empty() || target == "linux" ||
+     target == "x86_64-unknown-linux-gnu" ||
+     target == "x86_64-linux-gnu") {
+    return "linux";
+  }
+  cppgm::driver_errors::ThrowInvocation(
+    "unsupported native target: " + target);
+}
+
+bool regular_file_exists(const string & path)
+{
+  struct stat data;
+  return stat(path.c_str(), &data) == 0 && S_ISREG(data.st_mode);
+}
+
+string read_source_file(const string & path)
+{
+  ifstream input(path.c_str(), ios::in | ios::binary);
+  if(!input)
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to open source file: " + path);
+  input.seekg(0, ios::end);
+  const streamoff size = input.tellg();
+  if(size < 0)
+    return string(istreambuf_iterator<char>(input),
+                  istreambuf_iterator<char>());
+  string result(static_cast<size_t>(size), '\0');
+  input.seekg(0, ios::beg);
+  if(size != 0) input.read(&result[0], size);
+  if(!input)
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to read source file: " + path);
+  return result;
+}
+
+char hex_digit(unsigned int value)
+{
+	return value < 10 ? static_cast<char>('0' + value) :
+		static_cast<char>('A' + value - 10);
+}
+
+string hex_dump(const void * data, size_t size)
+{
+	const unsigned char * bytes = static_cast<const unsigned char *>(data);
+	string result(size * 2, '0');
+	for(size_t i = 0; i < size; ++i) {
+		result[i * 2] = hex_digit(bytes[i] >> 4);
+		result[i * 2 + 1] = hex_digit(bytes[i] & 0xF);
+	}
+	return result;
+}
+
+class DriverPreprocessorOutput : public cppgm::IPostTokenStream
+{
+public:
+	explicit DriverPreprocessorOutput(ostream & output) : output_(output) {}
+
+	void EmitInvalid(const string & source)
+	{
+		cppgm::driver_errors::ThrowLexicalSource(
+			"invalid phase-7 token: " + source);
+	}
+
+	void EmitSimple(const string & source, cppgm::SimpleTokenKind kind)
+	{
+		output_ << "simple " << source << ' ' <<
+			cppgm::SimpleTokenKindName(kind) << '\n';
+	}
+
+	void EmitIdentifier(const string & source)
+	{
+		output_ << "identifier " << source << '\n';
+	}
+
+	void EmitLiteral(const string & source, cppgm::FundamentalType type,
+		const void * data, size_t size)
+	{
+		output_ << "literal " << source << ' ' <<
+			cppgm::FundamentalTypeName(type) << ' ' << hex_dump(data, size) << '\n';
+	}
+
+	void EmitLiteralArray(const string & source, size_t elements,
+		cppgm::FundamentalType type, const void * data, size_t size)
+	{
+		output_ << "literal " << source << " array of " << elements << ' ' <<
+			cppgm::FundamentalTypeName(type) << ' ' << hex_dump(data, size) << '\n';
+	}
+
+	void EmitUserDefinedCharacter(const string & source, const string & suffix,
+		cppgm::FundamentalType type, const void * data, size_t size)
+	{
+		output_ << "user-defined-literal " << source << ' ' << suffix <<
+			" character " << cppgm::FundamentalTypeName(type) << ' ' <<
+			hex_dump(data, size) << '\n';
+	}
+
+	void EmitUserDefinedString(const string & source, const string & suffix,
+		size_t elements, cppgm::FundamentalType type, const void * data,
+		size_t size)
+	{
+		output_ << "user-defined-literal " << source << ' ' << suffix <<
+			" string array of " << elements << ' ' <<
+			cppgm::FundamentalTypeName(type) << ' ' << hex_dump(data, size) << '\n';
+	}
+
+	void EmitUserDefinedInteger(const string & source, const string & suffix,
+		const string & prefix)
+	{
+		output_ << "user-defined-literal " << source << ' ' << suffix <<
+			" integer " << prefix << '\n';
+	}
+
+	void EmitUserDefinedFloating(const string & source, const string & suffix,
+		const string & prefix)
+	{
+		output_ << "user-defined-literal " << source << ' ' << suffix <<
+			" floating " << prefix << '\n';
+	}
+
+	void EmitEof() { output_ << "eof\n"; }
+
+private:
+	ostream & output_;
+};
+
+void report_preprocessor_stats(const string & path,
+	const cppgm::PreprocessingStats & stats)
+{
+	cerr << "pa34_preproc_stats"
+		<< " file=" << path
+		<< " source_files=" << stats.source_files
+		<< " source_bytes=" << stats.source_bytes
+		<< " pp_tokens=" << stats.macros.tokenization.emitted_tokens
+		<< " post_tokens=" << stats.macros.postprocessing.emitted_tokens
+		<< " directives=" << stats.macros.directive_lines
+		<< " macro_lookups=" << stats.macros.macro_lookups
+		<< " expansions=" << stats.macros.expanded_tokens
+		<< " builtin_probes=" << stats.builtin_probes
+		<< " include_probes=" << stats.include_probes
+		<< " includes=" << stats.includes
+		<< " peak_include_depth=" << stats.peak_include_depth
+		<< " peak_line_tokens=" << stats.macros.peak_line_tokens
+		<< " peak_rescan_tokens=" << stats.macros.peak_rescan_tokens
+		<< " elapsed_ns=" << stats.elapsed_nanoseconds << '\n';
+}
+
+cppgm::PreprocessingOptions make_driver_preprocessing_options(
+    const DriverInvocation & invocation)
+{
+  cppgm::PreprocessingOptions options = make_preprocessing_options();
+  options.include_search_paths = invocation.include_paths;
+  options.system_include_search_paths = invocation.system_include_paths;
+	cppgm::ConfigureHostedPreprocessing(
+		&options, invocation.hosted_system_includes,
+		invocation.optimization_level >= 1);
+	for(size_t i = 0; i < invocation.macro_actions.size(); ++i) {
+		options.macro_actions.push_back(cppgm::PreprocessingOptions::MacroAction(
+			invocation.macro_actions[i].define,
+			invocation.macro_actions[i].argument));
+	}
+	options.forced_includes = invocation.forced_includes;
+	options.diagnostics = &cerr;
+  return options;
+}
+
+int run_preprocess_driver(const DriverInvocation & invocation)
+{
+	ofstream file_output;
+	ostream * output = &cout;
+	if(!invocation.output.empty()) {
+		file_output.open(invocation.output.c_str(), ios::out | ios::trunc);
+		if(!file_output) {
+			cppgm::driver_errors::ThrowInputOutput(
+				"unable to open output file: " + invocation.output);
+		}
+		output = &file_output;
+	}
+
+	const cppgm::PreprocessingOptions options =
+		make_driver_preprocessing_options(invocation);
+	DriverPreprocessorOutput tokens(*output);
+	*output << "preproc " << invocation.inputs.size() << '\n';
+	const bool collect_stats = invocation.collect_stats;
+	for(size_t i = 0; i < invocation.inputs.size(); ++i) {
+		const string & path = invocation.inputs[i];
+		const string source = read_source_file(path);
+		*output << "sof " << path << '\n';
+		cppgm::PreprocessingStats stats;
+		cppgm::PreprocessFile(path, source, tokens, options,
+			collect_stats ? &stats : 0);
+		if(collect_stats) report_preprocessor_stats(path, stats);
+	}
+	if(!*output)
+		cppgm::driver_errors::ThrowInputOutput(
+			"unable to write preprocessor output");
+	return EXIT_SUCCESS;
+}
+
+int run_query_driver(const string & query)
+{
+	if(query == "--version" || query == "-v") {
+		cout << "cppgm++ 0.34 (host configuration: " <<
+			cppgm::HostedCompilerCommand() << ")\n";
+		return EXIT_SUCCESS;
+	}
+	if(query == "-dumpmachine") {
+		cout << cppgm::HostedCompilerTarget();
+		return EXIT_SUCCESS;
+	}
+	if(query == "-dumpversion") {
+		cout << cppgm::HostedCompilerVersion();
+		return EXIT_SUCCESS;
+	}
+	if(query == "-print-search-dirs") {
+		cout << cppgm::HostedCompilerSearchDirs();
+		return EXIT_SUCCESS;
+	}
+	cppgm::driver_errors::ThrowInternal("unknown driver query");
+}
+
+
+void optimize_lowir(lowir_model::LowirProgram * program, int level,
+	const string & input, bool collect,
+	const lowir_opt::InlinePolicyOverrides & inline_limits)
+{
+	lowir_opt::Stats stats;
+	lowir_opt::optimize(*program, level, collect ? &stats : 0, &inline_limits);
+	if(collect)
+		lowir_driver_stats_report::ReportOptimizer(cerr, input, stats);
+}
+
+void report_lowir_preparation_stats(
+	const string & path, const cppgm::lowering::Stats & stats,
+	const lowir_model::LowirPreparationStats & preparation_stats)
+{
+	lowir_driver_stats_report::ReportPreparation(
+		cerr, path, stats, preparation_stats);
+}
+
+void report_compile_phase_stats(
+	const cppgm::lowering::Stats & stats,
+	const lowir_model::LowirPreparationStats & preparation_stats,
+	uint64_t typed_pipeline_nanoseconds, uint64_t adapter_nanoseconds,
+	uint64_t text_parse_nanoseconds, uint64_t prune_nanoseconds,
+	uint64_t debug_nanoseconds, uint64_t lowir_opt_nanoseconds)
+{
+	lowir_driver_stats_report::ReportCompilePhases(cerr, stats,
+		preparation_stats, typed_pipeline_nanoseconds, adapter_nanoseconds,
+		text_parse_nanoseconds, prune_nanoseconds, debug_nanoseconds,
+		lowir_opt_nanoseconds);
+}
+
+bool is_lowir_source_path(const string & path)
+{
+	return path.size() >= 6 && path.compare(path.size() - 6, 6, ".lowir") == 0;
+}
+
+void clear_nonsemantic_source_stats(lowir_model::LowirProgram * program)
+{
+	program->source_bytes = 0;
+	program->token_count = 0;
+}
+
+lowir_model::LowirProgram adapt_typed_lowir_for_object(
+	cppgm::lowering::ir::Program && typed,
+	const cppgm::lowering::Stats & lowering_stats,
+	bool collect_stats, lowir_model::PresentationPolicy presentation_policy,
+	lowir_model::LowirPreparationStats * preparation_stats,
+	uint64_t * elapsed_nanoseconds)
+{
+	chrono::steady_clock::time_point started;
+	if(collect_stats) started = chrono::steady_clock::now();
+	lowir_model::LowirProgram result =
+		cppgm::lowir_io::AdaptTypedLowirForBackend(
+		std::move(typed), collect_stats ? preparation_stats : 0,
+		presentation_policy);
+	if(collect_stats) {
+		preparation_stats->typed_lowir_peak_live_bytes =
+			lowering_stats.typed_storage_bytes +
+			preparation_stats->lowir_model_storage_bytes;
+		*elapsed_nanoseconds = static_cast<uint64_t>(
+			chrono::duration_cast<chrono::nanoseconds>(
+				chrono::steady_clock::now() - started).count());
+	}
+	return result;
+}
+
+struct SourceCompileTimings
+{
+	uint64_t text_parse_nanoseconds = 0;
+	uint64_t typed_pipeline_nanoseconds = 0;
+	uint64_t adapter_nanoseconds = 0;
+	uint64_t debug_nanoseconds = 0;
+	uint64_t prune_nanoseconds = 0;
+	uint64_t lowir_opt_nanoseconds = 0;
+};
+
+lowir_model::LowirProgram build_source_lowir(
+	const string & path, const string & source,
+	const DriverInvocation & invocation,
+	bool prune_unreachable_weak_functions,
+	lowir_model::PresentationPolicy presentation_policy,
+	cppgm::lowering::Stats * stats,
+	lowir_model::LowirPreparationStats * preparation_stats,
+	SourceCompileTimings * timings)
+{
+	const bool collect_stats = invocation.collect_stats;
+	if(is_lowir_source_path(path)) {
+		chrono::steady_clock::time_point started;
+		if(collect_stats) started = chrono::steady_clock::now();
+		lowir_model::LowirProgram result =
+			lowir_model::parse_lowir_program_text(
+				source, path, lowir_model::LEP_ALLOW_HELPERS_ONLY);
+		if(collect_stats) timings->text_parse_nanoseconds =
+			static_cast<uint64_t>(chrono::duration_cast<chrono::nanoseconds>(
+				chrono::steady_clock::now() - started).count());
+		if(prune_unreachable_weak_functions) {
+			if(collect_stats) started = chrono::steady_clock::now();
+			lowir_model::prune_unreachable_weak_functions(result);
+			if(collect_stats) timings->prune_nanoseconds =
+				static_cast<uint64_t>(
+					chrono::duration_cast<chrono::nanoseconds>(
+						chrono::steady_clock::now() - started).count());
+		}
+		return result;
+	}
+	vector<cppgm::lowering::Source> sources;
+	sources.push_back(cppgm::lowering::Source(path, source));
+	const cppgm::PreprocessingOptions options =
+		make_driver_preprocessing_options(invocation);
+	chrono::steady_clock::time_point started;
+	if(collect_stats) started = chrono::steady_clock::now();
+	cppgm::lowering::ir::Program typed =
+		cppgm::lowering::BuildProgram(sources, options,
+			collect_stats ? stats : 0, true, true,
+			prune_unreachable_weak_functions,
+			presentation_policy == lowir_model::PRESENTATION_SERIALIZABLE);
+	if(collect_stats) timings->typed_pipeline_nanoseconds =
+		static_cast<uint64_t>(chrono::duration_cast<chrono::nanoseconds>(
+			chrono::steady_clock::now() - started).count());
+	lowir_model::LowirProgram result = adapt_typed_lowir_for_object(
+		std::move(typed), *stats, collect_stats, presentation_policy,
+		preparation_stats, &timings->adapter_nanoseconds);
+	if(invocation.line_tables) {
+		if(collect_stats) started = chrono::steady_clock::now();
+		lowir_line_table_debug::attach_line_table_debug(&result, path, source);
+		if(collect_stats) timings->debug_nanoseconds =
+			static_cast<uint64_t>(chrono::duration_cast<chrono::nanoseconds>(
+				chrono::steady_clock::now() - started).count());
+	}
+	return result;
+}
+
+void report_generated_identity_stats(
+	const cppgm::semantic::Stats & semantic)
+{
+	static const char * const names[] = {
+		"local_type",
+		"anonymous_union_type",
+		"anonymous_enum",
+		"anonymous_union_storage",
+		"constructor_base_entry",
+		"destructor_base_entry",
+		"function_template_result_shape",
+		"function_template_parameter_shape",
+		"function_template_nondeduced_shape",
+		"class_template_nondeduced_shape",
+		"dependent_member_template_shape",
+		"dependent_qualified_type_shape",
+		"range_for_hidden",
+		"structured_binding_storage"
+	};
+	static_assert(sizeof(names) / sizeof(names[0]) ==
+		cppgm::semantic::SEMANTIC_GENERATED_IDENTITY_FAMILY_COUNT,
+		"generated identity stats labels are incomplete");
+	for (std::size_t family = 0;
+		family < cppgm::semantic::SEMANTIC_GENERATED_IDENTITY_FAMILY_COUNT; ++family)
+	{
+		cerr << " generated_identity_" << names[family] << "_renders="
+			 << semantic.generated_identity_renders[family]
+			 << " generated_identity_" << names[family] << "_components="
+			 << semantic.generated_identity_render_components[family]
+			 << " generated_identity_" << names[family] << "_bytes="
+			 << semantic.generated_identity_render_bytes[family];
+	}
+}
+
+void report_source_compile_stats(
+	const string & path, const cppgm::lowering::Stats & stats,
+	const lowir_model::LowirPreparationStats & preparation_stats,
+	const SourceCompileTimings & timings);
+
+cppgm::compiler_object::Object compile_source_object(
+    const string & path,
+    const DriverInvocation & invocation,
+	const string & target,
+	bool prune_unreachable_weak_functions,
+	lowir_model::PresentationPolicy presentation_policy)
+{
+	const bool collect_stats = invocation.collect_stats;
+  const string source = read_source_file(path);
+	cppgm::lowering::Stats stats;
+	SourceCompileTimings timings;
+  cppgm::compiler_object::Object object;
+  object.target = target;
+	lowir_model::LowirPreparationStats preparation_stats;
+	object.lowir = build_source_lowir(path, source, invocation,
+		prune_unreachable_weak_functions, presentation_policy, &stats,
+		&preparation_stats, &timings);
+	chrono::steady_clock::time_point optimize_started;
+	if(collect_stats) optimize_started = chrono::steady_clock::now();
+	optimize_lowir(&object.lowir, invocation.optimization_level, path,
+		collect_stats, invocation.inline_limits);
+	if(collect_stats) timings.lowir_opt_nanoseconds = static_cast<uint64_t>(
+		chrono::duration_cast<chrono::nanoseconds>(
+			chrono::steady_clock::now() - optimize_started).count());
+	clear_nonsemantic_source_stats(&object.lowir);
+	if(collect_stats)
+		report_source_compile_stats(path, stats, preparation_stats, timings);
+  return object;
+}
+
+void report_source_compile_stats(
+	const string & path, const cppgm::lowering::Stats & stats,
+	const lowir_model::LowirPreparationStats & preparation_stats,
+	const SourceCompileTimings & timings)
+{
+		const cppgm::semantic::Stats & semantic = stats.semantic;
+		cerr << "pa30_compile_stats"
+				 << " file=" << path
+				 << " source_bytes=" << stats.source_bytes
+			 << " tokens=" << semantic.tokens
+			 << " intern_calls=" << semantic.interning.table.calls
+			 << " intern_hits=" << semantic.interning.table.hits
+			 << " intern_misses=" << semantic.interning.table.misses
+			 << " intern_hash_bytes=" << semantic.interning.table.hash_bytes
+			 << " intern_slot_probes="
+			 << semantic.interning.table.occupied_slot_probes
+			 << " intern_text_comparisons="
+			 << semantic.interning.table.text_comparisons
+			 << " intern_rehashes=" << semantic.interning.table.rehashes
+			 << " intern_rehash_entries="
+			 << semantic.interning.table.rehash_entries
+			 << " intern_rehash_hash_bytes="
+			 << semantic.interning.table.rehash_hash_bytes
+			 << " intern_max_slot_probes="
+			 << semantic.interning.table.max_occupied_slot_probes
+			 << " source_location_interns="
+			 << semantic.interning.source_location_calls
+			 << " token_spelling_interns="
+			 << semantic.interning.token_spelling_calls
+			 << " syntax_tag_interns="
+			 << semantic.interning.syntax_tag_calls
+			 << " syntax_payload_interns="
+			 << semantic.interning.syntax_payload_calls
+			 << " syntax_tag_query_interns="
+			 << semantic.interning.syntax_tag_query_calls
+			 << " syntax_payload_update_interns="
+			 << semantic.interning.syntax_payload_update_calls
+			 << " syntax_tag_cache_hits="
+			 << semantic.interning.syntax_tag_cache_hits
+			 << " syntax_tag_cache_misses="
+			 << semantic.interning.syntax_tag_cache_misses
+			 << " source_file_cache_hits="
+			 << semantic.interning.source_file_cache_hits
+			 << " source_file_cache_misses="
+			 << semantic.interning.source_file_cache_misses
+			 << " syntax_nodes=" << semantic.syntax_nodes
+			 << " semantic_nodes=" << semantic.semantic_nodes
+			 << " semantic_edges=" << semantic.semantic_edges
+			 << " declarations=" << semantic.declarations
+			 << " canonical_types=" << semantic.canonical_types
+			 << " scopes=" << semantic.scopes
+			 << " name_path_parses="
+			 << semantic.name_path_parse_requests
+			 << " name_path_components="
+			 << semantic.name_path_parse_components
+			 << " name_path_single_component="
+			 << semantic.name_path_single_component_parses
+			 << " name_path_parse_syntax_fallbacks="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_SYNTAX_FALLBACK]
+			 << " name_path_parse_declarations="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_DECLARATION_CLASS] +
+				semantic.name_path_parse_families[
+					cppgm::semantic::NAME_PATH_PARSE_DECLARATION_ENUM] +
+				semantic.name_path_parse_families[
+					cppgm::semantic::NAME_PATH_PARSE_DECLARATION_PARAMETER] +
+				semantic.name_path_parse_families[
+					cppgm::semantic::NAME_PATH_PARSE_DECLARATION_MEMBER_POINTER] +
+				semantic.name_path_parse_families[
+					cppgm::semantic::NAME_PATH_PARSE_DECLARATION_USING]
+			 << " name_path_parse_declaration_classes="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_DECLARATION_CLASS]
+			 << " name_path_parse_declaration_enums="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_DECLARATION_ENUM]
+			 << " name_path_parse_declaration_parameters="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_DECLARATION_PARAMETER]
+			 << " name_path_parse_declaration_member_pointers="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_DECLARATION_MEMBER_POINTER]
+			 << " name_path_parse_declaration_using="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_DECLARATION_USING]
+			 << " name_path_parse_calls="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_CALL]
+			 << " name_path_parse_literals="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_LITERAL]
+			 << " name_path_parse_templates="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_TEMPLATE]
+			 << " name_path_parse_friends="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_FRIEND]
+			 << " name_path_parse_generated_library="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_GENERATED_LIBRARY]
+			 << " name_path_parse_semantic_id_recovery="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_SEMANTIC_ID_RECOVERY]
+			 << " name_path_parse_ambiguity="
+			 << semantic.name_path_parse_families[
+				cppgm::semantic::NAME_PATH_PARSE_AMBIGUITY]
+			 << " structured_name_paths="
+			 << semantic.structured_name_path_requests
+			 << " syntax_name_paths="
+			 << semantic.syntax_name_path_requests
+			 << " syntax_name_path_direct="
+			 << semantic.syntax_name_path_direct
+			 << " syntax_name_path_fallbacks="
+			 << semantic.syntax_name_path_fallbacks
+			 << " lookup_spelling_requests="
+			 << semantic.lookup_spelling_requests
+			 << " semantic_integer_parses="
+			 << semantic.semantic_integer_parses
+			 << " string_literal_decode_calls="
+			 << cppgm::StringLiteralDecodeCalls()
+			 << " floating_literal_parse_calls="
+			 << lowir_model::floating_literal_parse_calls()
+			 << " declarator_name_requests="
+			 << semantic.declarator_name_requests
+			 << " declarator_name_path_requests="
+			 << semantic.declarator_name_path_requests
+			 << " scope_prefix_requests="
+			 << semantic.scope_prefix_requests
+			 << " scope_prefix_cache_hits="
+			 << semantic.scope_prefix_cache_hits
+			 << " presentation_scope_prefix_renders="
+			 << semantic.presentation_renders[
+				cppgm::semantic::SEMANTIC_PRESENTATION_SCOPE_PREFIX]
+			 << " presentation_scope_prefix_components="
+			 << semantic.presentation_render_components[
+				cppgm::semantic::SEMANTIC_PRESENTATION_SCOPE_PREFIX]
+			 << " presentation_scope_prefix_bytes="
+			 << semantic.presentation_render_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_SCOPE_PREFIX]
+			 << " presentation_display_name_renders="
+			 << semantic.presentation_renders[
+				cppgm::semantic::SEMANTIC_PRESENTATION_DISPLAY_NAME]
+			 << " presentation_display_name_components="
+			 << semantic.presentation_render_components[
+				cppgm::semantic::SEMANTIC_PRESENTATION_DISPLAY_NAME]
+			 << " presentation_display_name_bytes="
+			 << semantic.presentation_render_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_DISPLAY_NAME]
+			 << " presentation_emission_name_renders="
+			 << semantic.presentation_renders[
+				cppgm::semantic::SEMANTIC_PRESENTATION_EMISSION_NAME]
+			 << " presentation_emission_name_components="
+			 << semantic.presentation_render_components[
+				cppgm::semantic::SEMANTIC_PRESENTATION_EMISSION_NAME]
+			 << " presentation_emission_name_bytes="
+			 << semantic.presentation_render_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_EMISSION_NAME]
+			 << " presentation_class_specialization_renders="
+			 << semantic.presentation_renders[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_SPECIALIZATION]
+			 << " presentation_class_specialization_components="
+			 << semantic.presentation_render_components[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_SPECIALIZATION]
+			 << " presentation_class_specialization_bytes="
+			 << semantic.presentation_render_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_SPECIALIZATION]
+			 << " presentation_class_storage_renders="
+			 << semantic.presentation_renders[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_STORAGE]
+			 << " presentation_class_storage_components="
+			 << semantic.presentation_render_components[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_STORAGE]
+			 << " presentation_class_storage_bytes="
+			 << semantic.presentation_render_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_STORAGE]
+			 << " presentation_class_scope_slot_renders="
+			 << semantic.presentation_renders[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_SCOPE_SLOT]
+			 << " presentation_class_scope_slot_components="
+			 << semantic.presentation_render_components[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_SCOPE_SLOT]
+			 << " presentation_class_scope_slot_bytes="
+			 << semantic.presentation_render_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_CLASS_SCOPE_SLOT]
+			 << " presentation_lambda_identity_renders="
+			 << semantic.presentation_renders[
+				cppgm::semantic::SEMANTIC_PRESENTATION_LAMBDA_IDENTITY]
+			 << " presentation_lambda_identity_components="
+			 << semantic.presentation_render_components[
+				cppgm::semantic::SEMANTIC_PRESENTATION_LAMBDA_IDENTITY]
+			 << " presentation_lambda_identity_bytes="
+			 << semantic.presentation_render_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_LAMBDA_IDENTITY]
+			 << " presentation_generated_identity_renders="
+			 << semantic.presentation_renders[
+				cppgm::semantic::SEMANTIC_PRESENTATION_GENERATED_IDENTITY]
+			 << " presentation_generated_identity_components="
+			 << semantic.presentation_render_components[
+				cppgm::semantic::SEMANTIC_PRESENTATION_GENERATED_IDENTITY]
+			 << " presentation_generated_identity_bytes="
+			 << semantic.presentation_render_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_GENERATED_IDENTITY]
+			 << " presentation_function_display_reads="
+			 << semantic.presentation_reads[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_FUNCTION_DISPLAY]
+			 << " presentation_function_display_retained="
+			 << semantic.presentation_retained_values[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_FUNCTION_DISPLAY]
+			 << " presentation_function_display_retained_bytes="
+			 << semantic.presentation_retained_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_FUNCTION_DISPLAY]
+			 << " presentation_binding_qualified_reads="
+			 << semantic.presentation_reads[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_BINDING_QUALIFIED]
+			 << " presentation_binding_qualified_retained="
+			 << semantic.presentation_retained_values[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_BINDING_QUALIFIED]
+			 << " presentation_binding_qualified_retained_bytes="
+			 << semantic.presentation_retained_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_BINDING_QUALIFIED]
+			 << " presentation_entity_presentation_reads="
+			 << semantic.presentation_reads[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_ENTITY_PRESENTATION]
+			 << " presentation_entity_presentation_retained="
+			 << semantic.presentation_retained_values[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_ENTITY_PRESENTATION]
+			 << " presentation_entity_presentation_retained_bytes="
+			 << semantic.presentation_retained_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_ENTITY_PRESENTATION]
+			 << " presentation_scope_emission_reads="
+			 << semantic.presentation_reads[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_SCOPE_EMISSION]
+			 << " presentation_scope_emission_retained="
+			 << semantic.presentation_retained_values[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_SCOPE_EMISSION]
+			 << " presentation_scope_emission_retained_bytes="
+			 << semantic.presentation_retained_bytes[
+				cppgm::semantic::SEMANTIC_PRESENTATION_READ_SCOPE_EMISSION]
+			 << " lookup_queries=" << semantic.lookup_queries
+			 << " lookup_scope_visits=" << semantic.lookup_scope_visits
+			 << " lookup_edge_visits=" << semantic.lookup_edge_visits
+			 << " overload_candidates=" << semantic.overload_candidates
+			 << " overload_order_comparisons="
+			 << semantic.overload_order_comparisons
+			 << " function_candidate_index_visits="
+			 << semantic.function_candidate_index_visits
+			 << " conversion_checks=" << semantic.conversion_checks
+			 << " call_conversion_cache_hits="
+			 << semantic.call_conversion_cache_hits
+			 << " call_conversion_cache_misses="
+			 << semantic.call_conversion_cache_misses
+			 << " braced_fact_cache_hits="
+			 << semantic.braced_fact_cache_hits
+			 << " braced_fact_cache_misses="
+			 << semantic.braced_fact_cache_misses
+			 << " template_requests=" << semantic.template_specialization_requests
+			 << " template_cache_hits=" << semantic.template_specialization_cache_hits
+			 << " constexpr_call_requests="
+			 << semantic.constexpr_call_requests
+			 << " constexpr_call_cache_hits="
+			 << semantic.constexpr_call_cache_hits
+			 << " constexpr_step_visits="
+			 << semantic.constexpr_step_visits
+			 << " demand_pushes=" << semantic.demand_worklist_pushes
+			 << " demanded_functions=" << semantic.demanded_function_emissions
+			 << " validation_only_completions="
+			 << semantic.definition_validation_only_completions
+			 << " emission_required_completions="
+			 << semantic.definition_emission_required_completions
+			 << " demand_requests=" << semantic.demand_requests
+			 << " demand_unique_edges=" << semantic.demand_unique_edges
+			 << " demand_root_edges=" << semantic.demand_root_edges
+			 << " demand_dependency_edges="
+			 << semantic.demand_dependency_edges
+			 << " demand_replayed_functions="
+			 << semantic.demand_replayed_functions
+			 << " demand_replayed_edges="
+			 << semantic.demand_replayed_edges
+			 << " demand_evaluated="
+			 << semantic.demand_evaluated_use_requests
+			 << " demand_retained_calls="
+			 << semantic.demand_retained_call_requests
+			 << " demand_addresses=" << semantic.demand_address_requests
+			 << " demand_lifecycle=" << semantic.demand_lifecycle_requests
+			 << " demand_vtable=" << semantic.demand_vtable_requests
+			 << " demand_static_lifecycle="
+			 << semantic.demand_static_lifecycle_requests
+			 << " demand_exception_cleanup="
+			 << semantic.demand_exception_cleanup_requests
+			 << " demand_explicit_instantiation="
+			 << semantic.demand_explicit_instantiation_requests
+			 << " demand_abi_support="
+			 << semantic.demand_abi_support_requests
+			 << " functions=" << stats.functions
+			 << " globals=" << stats.globals
+			 << " instructions=" << stats.instructions
+			 << " cleanup_state_probes=" << stats.cleanup_state_probes
+			 << " cleanup_state_hits=" << stats.cleanup_state_hits
+			 << " cleanup_unique_states=" << stats.cleanup_unique_states
+			 << " cleanup_blocks_emitted=" << stats.cleanup_blocks_emitted
+			 << " cleanup_destructor_actions_avoided=" <<
+				stats.cleanup_destructor_actions_avoided
+			 << " cleanup_resume_operations_avoided=" <<
+				stats.cleanup_resume_operations_avoided
+			 << " direct_class_call_destination_placements=" <<
+				stats.direct_class_call_destination_placements
+			 << " direct_class_call_staging_slots_avoided=" <<
+				stats.direct_class_call_staging_slots_avoided
+			 << " terminate_boundaries_explicit="
+			 << stats.terminate_boundaries_explicit
+			 << " terminate_boundaries_derived_special_member="
+			 << stats.terminate_boundaries_derived_special_member
+			 << " terminate_boundaries_template_specialization="
+			 << stats.terminate_boundaries_template_specialization
+			 << " terminate_boundaries_builtin_runtime="
+			 << stats.terminate_boundaries_builtin_runtime
+			 << " unexpected_boundaries=" << stats.unexpected_boundaries
+			 << " potentially_throwing_explicit_operations="
+			 << stats.potentially_throwing_explicit_operations
+			 << " potentially_throwing_indirect_calls="
+			 << stats.potentially_throwing_indirect_calls
+			 << " potentially_throwing_ordinary_calls="
+			 << stats.potentially_throwing_ordinary_calls
+			 << " potentially_throwing_special_member_calls="
+			 << stats.potentially_throwing_special_member_calls
+			 << " potentially_throwing_template_calls="
+			 << stats.potentially_throwing_template_calls
+			 << " potentially_throwing_builtin_runtime_calls="
+			 << stats.potentially_throwing_builtin_runtime_calls
+			 << " bit_field_storage_unit_transfers=" <<
+				stats.bit_field_storage_unit_transfers
+			 << " constant_template_bytes=" << stats.constant_template_bytes
+			 << " constant_template_globals=" << stats.constant_template_globals
+			 << " constant_template_copies=" << stats.constant_template_copies
+			 << " abi_production_mangles="
+			 << stats.abi.production_mangles
+			 << " abi_fact_records=" << stats.abi.records
+				<< " abi_fact_bytes=" << stats.abi.production_fact_bytes
+				<< " abi_type_definitions="
+				<< stats.abi.production_type_definitions
+				<< " abi_argument_definitions="
+				<< stats.abi.production_argument_definitions
+				<< " abi_expression_definitions="
+				<< stats.abi.production_expression_definitions
+				<< " abi_context_definitions="
+				<< stats.abi.production_context_definitions
+				<< " abi_entity_definitions="
+				<< stats.abi.production_entity_definitions;
+		lowir_driver_stats_report::ReportAbiResolution(cerr, stats.abi);
+		cerr << " force_inline_candidates=" << stats.force_inline_candidates
+			 << " force_inline_recursive_candidates="
+			 << stats.force_inline_recursive_candidates
+			 << " force_inline_call_probes=" << stats.force_inline_call_probes
+			 << " force_inline_calls=" << stats.force_inline_calls
+			 << " force_inline_blocks=" << stats.force_inline_blocks
+			 << " force_inline_cloned_instructions="
+			 << stats.force_inline_cloned_instructions
+			 << " post_inline_reachable_functions="
+			 << stats.post_inline_reachable_functions
+			 << " post_inline_unreachable_weak_functions="
+			 << stats.post_inline_unreachable_weak_functions
+			 << " post_inline_unreachable_internal_functions="
+			 << stats.post_inline_unreachable_internal_functions
+			 << " post_inline_pruned_functions="
+			 << stats.post_inline_pruned_functions
+			 << " post_inline_retained_external_strong="
+			 << stats.post_inline_retained_external_strong
+			 << " post_inline_retained_address_or_relocation="
+			 << stats.post_inline_retained_address_or_relocation
+			 << " post_inline_retained_direct_call="
+			 << stats.post_inline_retained_direct_call
+			 << " post_inline_retained_lifecycle="
+			 << stats.post_inline_retained_lifecycle
+			 << " post_inline_retained_eh_or_runtime="
+			 << stats.post_inline_retained_eh_or_runtime
+			 << " post_inline_retained_required_weak="
+			 << stats.post_inline_retained_required_weak
+			 << " post_inline_retained_object_output_root="
+			 << stats.post_inline_retained_object_output_root
+			 << " post_inline_retained_object_output_root_weak="
+			 << stats.post_inline_retained_object_output_root_weak
+			 << " post_inline_retained_object_output_root_internal="
+			 << stats.post_inline_retained_object_output_root_internal
+			 << " post_inline_retained_conservative_fallback="
+			 << stats.post_inline_retained_conservative_fallback
+			 << " sizeof_binding_record="
+			 << semantic.binding_record_size
+			 << " sizeof_entity_record="
+			 << semantic.entity_record_size
+			 << " sizeof_function_info="
+			 << semantic.function_info_size
+			 << " sizeof_dump_node="
+			 << semantic.dump_node_size
+			 << " semantic_program_bytes="
+			 << semantic.semantic_program_storage_bytes
+			 << " binding_layout_facts="
+			 << semantic.binding_layout_fact_records
+			 << " binding_template_facts="
+			 << semantic.binding_template_fact_records
+			 << " binding_output_facts="
+			 << semantic.binding_output_fact_records
+			 << " binding_operator_facts="
+			 << semantic.binding_operator_fact_records
+			 << " binding_value_records="
+			 << semantic.binding_value_records
+			 << " semantic_dump_bytes="
+			 << semantic.semantic_dump_storage_bytes
+			 << " semantic_side_bytes="
+			 << semantic.semantic_side_storage_bytes
+			 << " semantic_shared_string_bytes="
+			 << semantic.semantic_shared_string_bytes
+			 << " semantic_peak_bytes=" << semantic.peak_stage_storage_bytes;
+		report_generated_identity_stats(semantic);
+		for (std::size_t tag = 0;
+			tag < cppgm::syntax::STAG_COUNT; ++tag)
+		{
+			if (semantic.syntax_name_path_fallback_tags[tag] != 0)
+				cerr << " syntax_name_path_fallback_tag_"
+					 << cppgm::syntax::SyntaxTagSpelling(
+						static_cast<cppgm::syntax::SyntaxTagCode>(tag))
+					 << '=' << semantic.syntax_name_path_fallback_tags[tag];
+		}
+			report_compile_phase_stats(stats, preparation_stats,
+			timings.typed_pipeline_nanoseconds, timings.adapter_nanoseconds,
+			timings.text_parse_nanoseconds, timings.prune_nanoseconds,
+			timings.debug_nanoseconds, timings.lowir_opt_nanoseconds);
+		report_lowir_preparation_stats(path, stats, preparation_stats);
+}
+string find_library_object(const DriverInvocation & invocation,
+                           const string & library)
+{
+  for(size_t i = 0; i < invocation.library_paths.size(); ++i) {
+    string path = invocation.library_paths[i];
+    if(!path.empty() && path[path.size() - 1] != '/') path.push_back('/');
+    path += "lib" + library + ".o";
+    if(regular_file_exists(path)) return path;
+  }
+  cppgm::driver_errors::ThrowInputOutput("library not found: " + library);
+}
+
+int run_compile_driver(const DriverInvocation & invocation,
+                       const string & target)
+{
+  if(invocation.inputs.size() != 1 || invocation.output.empty())
+    cppgm::driver_errors::ThrowInvocation(
+      "compile mode requires one input and -o");
+	const bool private_object =
+      cppgm::compiler_object::UsesPrivateFormat(invocation.output);
+	const lowir_model::PresentationPolicy presentation_policy =
+		private_object || invocation.line_tables ?
+		lowir_model::PRESENTATION_SERIALIZABLE :
+		lowir_model::PRESENTATION_OBJECT_ONLY;
+  const cppgm::compiler_object::Object object =
+	  compile_source_object(invocation.inputs[0], invocation, target,
+		  !private_object, presentation_policy);
+	cppgm::compiler_object::SerializationStats serialization_stats;
+  lowir_native::Stats native_stats;
+  native_stats.function_census = invocation.collect_function_census;
+  if(private_object) {
+    cppgm::compiler_object::Write(
+      invocation.output, object,
+      invocation.collect_stats ? &serialization_stats : 0);
+  } else {
+    lowir_native::write_linux_relocatable(
+      invocation.output, object.lowir, target,
+      invocation.optimization_level,
+      invocation.collect_stats ? &native_stats : 0);
+  }
+  if(invocation.collect_stats) {
+    cerr << "pa31_object_stats"
+         << " private_object=" << (private_object ? 1 : 0)
+		 << " presentation_map_calls=" << native_stats.presentation_map_calls
+		 << " presentation_map_hits=" << native_stats.presentation_map_hits
+		 << " presentation_map_misses=" << native_stats.presentation_map_misses
+		 << " presentation_mapped_bytes="
+		 << native_stats.presentation_mapped_bytes
+		 << " presentation_map_storage_bytes="
+		 << native_stats.presentation_map_storage_bytes
+		 << " mir_string_entries=" << native_stats.mir_string_entries
+		 << " mir_spelling_bytes=" << native_stats.mir_spelling_bytes
+		 << " mir_string_storage_bytes="
+		 << native_stats.mir_string_storage_bytes
+		 << " mir_model_peak_live_bytes="
+		 << native_stats.mir_model_peak_live_bytes
+		 << " native_semantic_string_reads="
+		 << native_stats.native_semantic_string_reads
+		 << " native_literal_text_parses="
+		 << native_stats.native_literal_text_parses
+		 << " code_buffer_typed_labels="
+		 << native_stats.code_buffer_typed_labels
+		 << " code_buffer_object_labels="
+		 << native_stats.code_buffer_object_labels
+		 << " code_buffer_named_labels="
+		 << native_stats.code_buffer_named_labels
+		 << " code_buffer_typed_fixups="
+		 << native_stats.code_buffer_typed_fixups
+		 << " code_buffer_named_fixups="
+		 << native_stats.code_buffer_named_fixups
+		 << " elf_internal_string_entries="
+		 << native_stats.elf_internal_string_entries
+		 << " elf_imported_string_entries="
+		 << native_stats.elf_imported_string_entries
+		 << " elf_string_map_probes="
+		 << native_stats.elf_string_map_probes
+		 << " final_strtab_entries=" << native_stats.final_strtab_entries
+		 << " final_strtab_bytes=" << native_stats.final_strtab_bytes
+		 << " final_shstrtab_entries="
+		 << native_stats.final_shstrtab_entries
+		 << " final_shstrtab_bytes=" << native_stats.final_shstrtab_bytes;
+	lowir_native::report_elf_string_table_stats(cerr, native_stats);
+	cerr << " encoded_section_bytes=" << native_stats.encoded_section_bytes
+		 << " final_elf_live_bytes=" << native_stats.final_elf_live_bytes
+		 << " presentation_bridge_ns="
+		 << native_stats.presentation_bridge_nanoseconds
+		 << " native_literal_parse_ns="
+		 << native_stats.native_literal_parse_nanoseconds
+		 << " elf_string_table_ns="
+		 << native_stats.elf_string_table_nanoseconds;
+	lowir_native::report_codegen_pipeline_stats(cerr, native_stats);
+	cerr << " span_free_edge_releases="
+         << native_stats.span_free_edge_releases
+         << " planned_phi_registers="
+         << native_stats.planned_phi_registers
+         << " phi_register_homes="
+         << native_stats.phi_register_homes
+         << " planned_invariant_registers="
+         << native_stats.planned_invariant_registers
+         << " planned_grant_clobber_fails="
+         << native_stats.planned_grant_clobber_fails
+         << " planned_grant_busy_fails="
+         << native_stats.planned_grant_busy_fails
+         << " planned_grant_busy_fails_callee="
+         << native_stats.planned_grant_busy_fails_callee
+         << " planned_grant_busy_planned_holder="
+         << native_stats.planned_grant_busy_planned_holder
+         << " planned_defined_in_plan="
+         << native_stats.planned_defined_in_plan
+         << " planned_defined_in_plan_callee="
+         << native_stats.planned_defined_in_plan_callee
+         << " planned_defined_frame="
+         << native_stats.planned_defined_frame
+         << " planned_defined_frame_callee="
+         << native_stats.planned_defined_frame_callee
+         << " planned_defined_other_register="
+         << native_stats.planned_defined_other_register
+         << " planned_defined_other_register_callee="
+         << native_stats.planned_defined_other_register_callee
+         << " planned_defined_elsewhere="
+         << native_stats.planned_defined_elsewhere
+         << " planned_frame_homes_scalar_value="
+         << native_stats.planned_frame_homes_by_reason[0]
+         << " planned_frame_homes_object_value="
+         << native_stats.planned_frame_homes_by_reason[1]
+         << " planned_frame_homes_live_across_call="
+         << native_stats.planned_frame_homes_by_reason[2]
+         << " planned_frame_homes_edge_live="
+         << native_stats.planned_frame_homes_by_reason[3]
+         << " planned_frame_homes_register_pressure="
+         << native_stats.planned_frame_homes_by_reason[4]
+         << " planned_frame_homes_address_escape="
+         << native_stats.planned_frame_homes_by_reason[5]
+         << " planned_frame_homes_call_result="
+         << native_stats.planned_frame_homes_by_reason[6]
+         << " planned_frame_homes_extended="
+         << native_stats.planned_frame_homes_by_reason[7]
+         << " planned_frame_homes_unattributed="
+         << native_stats.planned_frame_homes_by_reason[8]
+         << " call_arg_frame_loads="
+         << native_stats.call_arg_frame_loads
+         << " call_arg_frame_loads_slot="
+         << native_stats.call_arg_frame_loads_slot
+         << " call_arg_frame_loads_parameter="
+         << native_stats.call_arg_frame_loads_parameter
+         << " call_arg_frame_loads_only_call_argument="
+         << native_stats.call_arg_frame_loads_only_call_argument
+         << " call_arg_frame_loads_storage_address="
+         << native_stats.call_arg_frame_loads_storage_address
+         << " call_arg_frame_loads_planned="
+         << native_stats.call_arg_frame_loads_planned
+         << " call_arg_frame_loads_crossing_unplanned="
+         << native_stats.call_arg_frame_loads_crossing_unplanned
+         << " call_arg_frame_loads_other="
+         << native_stats.call_arg_frame_loads_other
+         << " call_arg_frame_loads_oca_call_result="
+         << native_stats.call_arg_frame_loads_oca_call_result
+         << " call_arg_frame_loads_oca_crossing="
+         << native_stats.call_arg_frame_loads_oca_crossing
+         << " call_arg_frame_loads_oca_edge_live="
+         << native_stats.call_arg_frame_loads_oca_edge_live
+         << " call_arg_frame_loads_oca_multi_use="
+         << native_stats.call_arg_frame_loads_oca_multi_use
+         << " planner_candidate_call_arguments="
+         << native_stats.planner_candidate_call_arguments
+         << " planner_assigned_call_arguments="
+         << native_stats.planner_assigned_call_arguments
+         << " planner_assign_failures="
+         << native_stats.planner_assign_failures
+         << " planner_assign_failures_call_argument="
+         << native_stats.planner_assign_failures_call_argument
+         << " planned_grant_busy_parameter_holder="
+         << native_stats.planned_grant_busy_parameter_holder
+         << " planned_grant_busy_value_holder="
+         << native_stats.planned_grant_busy_value_holder
+         << " planned_grant_busy_no_holder="
+         << native_stats.planned_grant_busy_no_holder;
+    lowir_native::report_codegen_result_stats(cerr, native_stats);
+    cerr << " eh_region_states=" << native_stats.eh_region_states
+         << " eh_region_edges=" << native_stats.eh_region_edges
+         << " eh_call_sites=" << native_stats.eh_call_sites
+         << " eh_lsda_call_sites=" << native_stats.eh_lsda_call_sites
+         << " eh_coalesced_call_sites="
+         << native_stats.eh_coalesced_call_sites
+         << " eh_lsda_unprotected_call_sites="
+         << native_stats.eh_lsda_unprotected_call_sites
+         << " eh_lsda_uncovered_code_bytes="
+         << native_stats.eh_lsda_uncovered_code_bytes
+         << " eh_lsda_call_site_table_bytes="
+         << native_stats.eh_lsda_call_site_table_bytes
+         << " eh_lsda_unprotected_call_site_bytes="
+         << native_stats.eh_lsda_unprotected_call_site_bytes
+         << " semantic_resume_instructions="
+         << native_stats.semantic_resume_instructions
+         << " physical_resume_terminals="
+         << native_stats.physical_resume_terminals
+         << " shared_resume_branches="
+         << native_stats.shared_resume_branches
+         << " immediate_stores_selected="
+         << native_stats.immediate_stores_selected
+         << " memory_rhs_operations_selected="
+         << native_stats.memory_rhs_operations_selected
+         << " direct_zero_operations_selected="
+         << native_stats.direct_zero_operations_selected
+         << " direct_zero_stores_emitted="
+         << native_stats.direct_zero_stores_emitted
+         << " direct_zero_bytes=" << native_stats.direct_zero_bytes
+         << " native_returns=" << native_stats.native_returns
+         << " physical_epilogues=" << native_stats.physical_epilogues
+         << " fixups=" << native_stats.fixups
+         << " output_bytes=" << native_stats.output_bytes
+         << " lower_ns=" << native_stats.lower_nanoseconds
+         << " machine_opt_ns=" << native_stats.machine_opt_nanoseconds
+         << " encode_ns=" << native_stats.encode_nanoseconds
+         << " write_ns=" << native_stats.write_nanoseconds
+		 << " payload_reserved_bytes=" << serialization_stats.reserved_bytes
+		 << " payload_bytes=" << serialization_stats.output_bytes
+		 << " payload_buffer_growths=" << serialization_stats.buffer_growths
+		 << " payload_full_buffer_copies="
+		 << serialization_stats.full_buffer_copies
+		 << " payload_serialize_ns="
+		 << serialization_stats.elapsed_nanoseconds << '\n';
+    lowir_native::report_function_census(cerr, native_stats);
+  }
+  return EXIT_SUCCESS;
+}
+
+int run_link_driver(const DriverInvocation & invocation,
+                    const string & target)
+{
+  if(invocation.output.empty())
+    cppgm::driver_errors::ThrowInvocation("link mode requires -o");
+  const bool collect_stats = invocation.collect_stats;
+  vector<cppgm::compiler_object::Object> objects;
+  vector<lowir_native::RelocatableObject> foreign_objects;
+	chrono::steady_clock::time_point input_started;
+	if(collect_stats) input_started = chrono::steady_clock::now();
+  for(size_t i = 0; i < invocation.inputs.size(); ++i) {
+    if(cppgm::compiler_object::IsObject(invocation.inputs[i]))
+      objects.push_back(cppgm::compiler_object::Read(invocation.inputs[i]));
+    else if(cppgm::compiler_object::UsesPrivateFormat(
+              invocation.inputs[i]) ||
+            (invocation.inputs[i].size() >= 2 &&
+             invocation.inputs[i].compare(
+               invocation.inputs[i].size() - 2, 2, ".o") == 0))
+      cppgm::compiler_object::ThrowCompilerObjectInputError(
+        "native or invalid object cannot be linked by cppgm++: " +
+        invocation.inputs[i]);
+	else
+		objects.push_back(compile_source_object(invocation.inputs[i], invocation,
+											  target, false,
+			invocation.line_tables ?
+				lowir_model::PRESENTATION_SERIALIZABLE :
+				lowir_model::PRESENTATION_OBJECT_ONLY));
+  }
+  for(size_t i = 0; i < invocation.libraries.size(); ++i) {
+    const string path = find_library_object(invocation, invocation.libraries[i]);
+    if(cppgm::compiler_object::IsObject(path))
+      objects.push_back(cppgm::compiler_object::Read(path));
+    else
+      foreign_objects.push_back(cppgm::compiler_object::ImportElfRelocatable(
+          path, foreign_objects.size()));
+  }
+	uint64_t input_nanoseconds = 0;
+	if(collect_stats) input_nanoseconds = static_cast<uint64_t>(
+		chrono::duration_cast<chrono::nanoseconds>(
+			chrono::steady_clock::now() - input_started).count());
+  cppgm::compiler_object::LinkStats link_stats;
+  const lowir_model::LowirProgram lowir = cppgm::compiler_object::Link(
+      std::move(objects), target,
+	  invocation.line_tables ? lowir_model::PRESENTATION_SERIALIZABLE :
+		lowir_model::PRESENTATION_OBJECT_ONLY,
+      collect_stats ? &link_stats : 0);
+  lowir_native::Stats native_stats;
+  lowir_native::write_linux_executable(invocation.output, lowir, target,
+      foreign_objects, invocation.optimization_level,
+      collect_stats ? &native_stats : 0);
+  if(collect_stats) {
+    cerr << "pa30_driver_stats"
+         << " objects=" << link_stats.objects
+         << " symbols=" << link_stats.symbols
+         << " symbol_probes=" << link_stats.symbol_probes
+		 << " rename_probes=" << link_stats.rename_probes
+		 << " definitions=" << link_stats.definitions
+		 << " weak_coalesces=" << link_stats.coalesced_weak_definitions;
+	lowir_native::report_codegen_pipeline_stats(cerr, native_stats);
+	cerr << " planned_phi_registers="
+			 << native_stats.planned_phi_registers
+			 << " phi_register_homes="
+			 << native_stats.phi_register_homes
+			 << " planned_invariant_registers="
+			 << native_stats.planned_invariant_registers;
+		lowir_native::report_codegen_result_stats(cerr, native_stats);
+		cerr << " output_bytes=" << native_stats.output_bytes
+		 << " input_ns=" << input_nanoseconds
+		 << " link_ns=" << link_stats.link_nanoseconds
+		 << " lower_ns=" << native_stats.lower_nanoseconds
+		 << " machine_opt_ns=" << native_stats.machine_opt_nanoseconds
+		 << " encode_ns=" << native_stats.encode_nanoseconds
+		 << " write_ns=" << native_stats.write_nanoseconds << '\n';
+  }
+  return EXIT_SUCCESS;
+}
+
+cppgm::PreprocessingOptions make_preprocessing_options()
+{
+  const time_t now = time(0);
+  const tm * local = localtime(&now);
+  if(!local) {
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to determine build time");
+  }
+  const char * text = asctime(local);
+  if(!text) {
+    cppgm::driver_errors::ThrowInputOutput("unable to format build time");
+  }
+  const string formatted(text);
+  if(formatted.size() < 24) {
+    cppgm::driver_errors::ThrowInternal("invalid asctime result");
+  }
+  cppgm::PreprocessingOptions options;
+  options.build_date = formatted.substr(4, 7) + formatted.substr(20, 4);
+  options.build_time = formatted.substr(11, 8);
+  options.author = "Vishvananda Abrams";
+  return options;
 }
 
 int run_emit_ast_mode(const vector<string> & args)
 {
-  return run_text_mode(args, generate_cppast_translation_units);
+  const SourceOutputInvocation invocation =
+      parse_source_output_invocation(args, false);
+  ofstream output(invocation.output.c_str(), ios::out | ios::trunc);
+  if(!output) {
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to open output file: " + invocation.output);
+  }
+
+  const cppgm::PreprocessingOptions options = make_preprocessing_options();
+
+  output << invocation.inputs.size() << " translation units\n";
+  for(size_t i = 0; i < invocation.inputs.size(); ++i) {
+    const string & path = invocation.inputs[i];
+    ifstream input(path.c_str(), ios::in | ios::binary);
+    if(!input) {
+      cppgm::driver_errors::ThrowInputOutput(
+        "unable to open source file: " + path);
+    }
+    const string source((istreambuf_iterator<char>(input)),
+                        istreambuf_iterator<char>());
+    output << "start translation unit " << i + 1 << '\n';
+    cppgm::syntax::Stats stats;
+    cppgm::syntax::WriteTranslationUnit(path, source, options, output,
+        invocation.collect_stats ? &stats : 0);
+    if(invocation.collect_stats) {
+      cerr << "pa10_stats file=" << path
+           << " tokens=" << stats.tokens
+           << " syntax_nodes=" << stats.syntax_nodes
+           << " syntax_edges=" << stats.syntax_edges
+           << " syntax_output_bytes=" << stats.syntax_output_bytes
+           << " max_syntax_depth=" << stats.max_syntax_depth
+           << " checkpoints=" << stats.parser_checkpoints
+           << " rollbacks=" << stats.parser_rollbacks
+           << " template_probes=" << stats.template_argument_probes
+           << " template_scans=" << stats.template_argument_scans
+           << " template_cache_hits="
+           << stats.template_argument_cache_hits
+           << " template_scan_tokens=" << stats.template_argument_scan_tokens
+           << " max_template_scan_tokens="
+           << stats.max_template_argument_scan_tokens
+           << " failed_template_scans="
+           << stats.failed_template_argument_scans
+           << " parser_fact_changes=" << stats.parser_fact_changes
+           << " parser_storage_bytes=" << stats.parser_storage_bytes
+           << " render_stack_storage_bytes="
+           << stats.render_stack_storage_bytes
+           << " peak_stage_storage_bytes=" << stats.peak_stage_storage_bytes
+           << " parse_ns=" << stats.parse_nanoseconds
+           << " render_ns=" << stats.render_nanoseconds
+           << " elapsed_ns=" << stats.elapsed_nanoseconds << '\n';
+    }
+    output << "end translation unit\n";
+  }
+  if(!output) {
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to write output file: " + invocation.output);
+  }
+  return EXIT_SUCCESS;
 }
 
 int run_emit_types_mode(const vector<string> & args)
 {
-  return run_text_mode(args, generate_types_translation_units);
+  const SourceOutputInvocation invocation =
+      parse_source_output_invocation(args, false);
+  ofstream output(invocation.output.c_str(), ios::out | ios::trunc);
+  if(!output) {
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to open output file: " + invocation.output);
+  }
+  const cppgm::PreprocessingOptions options = make_preprocessing_options();
+  output << invocation.inputs.size() << " translation units\n";
+  for(size_t i = 0; i < invocation.inputs.size(); ++i) {
+    const string & path = invocation.inputs[i];
+    ifstream input(path.c_str(), ios::in | ios::binary);
+    if(!input) {
+      cppgm::driver_errors::ThrowInputOutput(
+        "unable to open source file: " + path);
+    }
+    const string source((istreambuf_iterator<char>(input)),
+                        istreambuf_iterator<char>());
+    output << "start translation unit " << i + 1 << '\n';
+    cppgm::semantic::TypeViewStats stats;
+    cppgm::semantic::WriteTypeView(path, source, options, output,
+        invocation.collect_stats ? &stats : 0);
+    if(invocation.collect_stats) {
+      cerr << "pa11_stats file=" << path
+           << " tokens=" << stats.tokens
+           << " syntax_nodes=" << stats.syntax_nodes
+           << " names=" << stats.interned_names
+           << " canonical_types=" << stats.canonical_types
+           << " scopes=" << stats.scopes
+           << " declarations=" << stats.declarations
+           << " lookup_queries=" << stats.lookup_queries
+           << " lookup_scope_visits=" << stats.lookup_scope_visits
+           << " lookup_edge_visits=" << stats.lookup_edge_visits
+           << " name_index_probes=" << stats.name_index_probes
+           << " type_index_probes=" << stats.type_index_probes
+           << " using_index_probes=" << stats.using_index_probes
+           << " name_path_parses=" << stats.name_path_parse_requests
+           << " name_path_components=" << stats.name_path_parse_components
+           << " name_path_single_component="
+           << stats.name_path_single_component_parses
+           << " name_path_parse_using="
+           << stats.name_path_parse_families[
+              cppgm::semantic::TYPE_NAME_PATH_PARSE_USING]
+           << " name_path_parse_classes="
+           << stats.name_path_parse_families[
+              cppgm::semantic::TYPE_NAME_PATH_PARSE_CLASS]
+           << " name_path_parse_enums="
+           << stats.name_path_parse_families[
+              cppgm::semantic::TYPE_NAME_PATH_PARSE_ENUM]
+           << " name_path_parse_declarators="
+           << stats.name_path_parse_families[
+              cppgm::semantic::TYPE_NAME_PATH_PARSE_DECLARATOR]
+           << " name_path_parse_type_lookup="
+           << stats.name_path_parse_families[
+              cppgm::semantic::TYPE_NAME_PATH_PARSE_TYPE_LOOKUP]
+           << " name_path_parse_expressions="
+           << stats.name_path_parse_families[
+              cppgm::semantic::TYPE_NAME_PATH_PARSE_EXPRESSION]
+           << " lookup_spelling_requests="
+           << stats.lookup_spelling_requests
+           << " lookup_spelling_type_lookup="
+           << stats.lookup_spelling_families[
+              cppgm::semantic::TYPE_NAME_PATH_PARSE_TYPE_LOOKUP]
+           << " lookup_spelling_expressions="
+           << stats.lookup_spelling_families[
+              cppgm::semantic::TYPE_NAME_PATH_PARSE_EXPRESSION]
+           << " structured_name_paths="
+           << stats.structured_name_path_requests
+           << " syntax_name_paths=" << stats.syntax_name_path_requests
+           << " syntax_name_path_direct=" << stats.syntax_name_path_direct
+           << " syntax_name_path_fallbacks="
+           << stats.syntax_name_path_fallbacks
+           << " rendered_type_nodes=" << stats.rendered_type_nodes
+           << " max_scope_depth=" << stats.max_scope_depth
+           << " render_stack_storage_bytes="
+           << stats.render_stack_storage_bytes
+           << " semantic_storage_bytes=" << stats.semantic_storage_bytes
+           << " peak_stage_storage_bytes=" << stats.peak_stage_storage_bytes
+           << " analysis_ns=" << stats.analysis_nanoseconds
+           << " render_ns=" << stats.render_nanoseconds
+           << " elapsed_ns=" << stats.elapsed_nanoseconds << '\n';
+    }
+    output << "end translation unit\n";
+  }
+  if(!output) {
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to write output file: " + invocation.output);
+  }
+  return EXIT_SUCCESS;
+}
+
+void append_template_analysis_stats(
+	ostream & output, const cppgm::semantic::Stats & stats)
+{
+	output << " function_template_default_materializations="
+		 << stats.function_template_default_materializations
+		 << " function_template_default_request_cache_hits="
+		 << stats.function_template_default_request_cache_hits
+		 << " function_template_default_failure_cache_hits="
+		 << stats.function_template_default_failure_cache_hits
+		 << " function_template_exception_specification_requests="
+		 << stats.function_template_exception_specification_requests
+		 << " function_template_exception_specification_cache_hits="
+		 << stats.function_template_exception_specification_cache_hits
+		 << " function_template_exception_specification_evaluations="
+		 << stats.function_template_exception_specification_evaluations
+		 << " template_argument_list_requests="
+		 << stats.template_argument_list_requests
+		 << " template_argument_list_cache_hits="
+		 << stats.template_argument_list_cache_hits
+		 << " template_argument_list_index_probes="
+		 << stats.template_argument_list_index_probes
+		 << " template_partition_requests="
+		 << stats.template_partition_requests
+		 << " template_partition_cache_hits="
+		 << stats.template_partition_cache_hits
+		 << " template_partition_index_probes="
+		 << stats.template_partition_index_probes
+		 << " function_template_result_identity_requests="
+		 << stats.function_template_result_identity_requests
+		 << " function_template_result_identity_cache_hits="
+		 << stats.function_template_result_identity_cache_hits
+		 << " function_template_result_identity_index_probes="
+		 << stats.function_template_result_identity_index_probes
+		 << " function_template_result_identity_atom_visits="
+		 << stats.function_template_result_identity_atom_visits
+		 << " function_template_result_identity_syntax_visits="
+		 << stats.function_template_result_identity_syntax_visits
+		 << " function_template_result_identity_environment_probes="
+		 << stats.function_template_result_identity_environment_probes
+		 << " function_template_result_identity_alias_expansions="
+		 << stats.function_template_result_identity_alias_expansions
+		 << " template_partial_candidates="
+		 << stats.template_partial_candidates
+		 << " template_partial_order_comparisons="
+		 << stats.template_partial_order_comparisons
+		 << " template_partial_shape_materializations="
+		 << stats.template_partial_shape_materializations
+		 << " template_partial_shape_cache_hits="
+		 << stats.template_partial_shape_cache_hits
+		 << " template_partial_deduction_visits="
+		 << stats.template_partial_deduction_visits
+		 << " function_template_deduction_visits="
+		 << stats.function_template_deduction_visits
+		 << " lambda_closure_requests=" << stats.lambda_closure_requests
+		 << " lambda_closure_cache_hits=" << stats.lambda_closure_cache_hits
+		 << " lambda_capture_summary_requests="
+		 << stats.lambda_capture_summary_requests
+		 << " lambda_capture_summary_cache_hits="
+		 << stats.lambda_capture_summary_cache_hits
+		 << " lambda_capture_syntax_visits="
+		 << stats.lambda_capture_syntax_visits
+		 << " lambda_capture_name_uses=" << stats.lambda_capture_name_uses;
 }
 
 int run_emit_semantics_mode(const vector<string> & args)
 {
-  return run_text_mode(
-      args,
-      [](const vector<string> & srcfiles) {
-        return generate_calls_translation_units(srcfiles);
-      });
+  const SourceOutputInvocation invocation =
+      parse_source_output_invocation(args, false);
+  ofstream output(invocation.output.c_str(), ios::out | ios::trunc);
+  if(!output) {
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to open output file: " + invocation.output);
+  }
+  const cppgm::PreprocessingOptions options = make_preprocessing_options();
+  output << invocation.inputs.size() << " translation units\n";
+  for(size_t i = 0; i < invocation.inputs.size(); ++i) {
+    const string & path = invocation.inputs[i];
+    ifstream input(path.c_str(), ios::in | ios::binary);
+    if(!input) {
+      cppgm::driver_errors::ThrowInputOutput(
+        "unable to open source file: " + path);
+    }
+    const string source((istreambuf_iterator<char>(input)),
+                        istreambuf_iterator<char>());
+    output << "start translation unit " << i + 1 << '\n';
+    cppgm::semantic::Stats stats;
+    cppgm::semantic::WriteTranslationUnit(path, source, options, output,
+        invocation.collect_stats ? &stats : 0);
+    if(invocation.collect_stats) {
+      cerr << "pa12_stats file=" << path
+           << " tokens=" << stats.tokens
+           << " syntax_nodes=" << stats.syntax_nodes
+           << " semantic_nodes=" << stats.semantic_nodes
+           << " semantic_edges=" << stats.semantic_edges
+           << " names=" << stats.interned_names
+           << " canonical_types=" << stats.canonical_types
+           << " scopes=" << stats.scopes
+           << " declarations=" << stats.declarations
+           << " expressions=" << stats.expressions
+           << " class_layouts=" << stats.class_layouts
+		   << " class_layout_member_visits="
+		   << stats.class_layout_member_visits
+		   << " virtual_base_layout_edge_visits="
+		   << stats.virtual_base_layout_edge_visits
+		   << " virtual_base_layout_facts="
+		   << stats.virtual_base_layout_facts
+		   << " virtual_base_layout_lookups="
+		   << stats.virtual_base_layout_lookups
+		   << " virtual_base_layout_probes="
+		   << stats.virtual_base_layout_probes
+		   << " direct_base_validation_visits="
+		   << stats.direct_base_validation_visits
+		   << " class_zero_offset_subobject_visits="
+           << stats.class_zero_offset_subobject_visits
+           << " special_member_fact_lookups="
+           << stats.special_member_fact_lookups
+           << " special_member_subobject_visits="
+           << stats.special_member_subobject_visits
+           << " constructor_member_action_visits="
+           << stats.constructor_member_action_visits
+		   << " constructor_base_action_visits="
+		   << stats.constructor_base_action_visits
+		   << " constructor_delegation_action_visits="
+		   << stats.constructor_delegation_action_visits
+		   << " destructor_subobject_action_visits="
+		   << stats.destructor_subobject_action_visits
+		   << " lexical_cleanup_action_visits="
+		   << stats.lexical_cleanup_action_visits
+		   << " unwind_cleanup_scope_visits="
+		   << stats.unwind_cleanup_scope_visits
+		   << " unwind_cleanup_action_visits="
+		   << stats.unwind_cleanup_action_visits
+		   << " initializer_list_lifetime_queries="
+		   << stats.initializer_list_lifetime_queries
+		   << " empty_constructor_chain_requests="
+		   << stats.empty_constructor_chain_requests
+		   << " empty_constructor_chain_cache_hits="
+		   << stats.empty_constructor_chain_cache_hits
+		   << " empty_constructor_chain_entity_visits="
+		   << stats.empty_constructor_chain_entity_visits
+		   << " empty_constructor_chain_dependency_edges="
+		   << stats.empty_constructor_chain_dependency_edges
+		   << " empty_destructor_chain_visits="
+		   << stats.empty_destructor_chain_visits
+		   << " empty_destructor_chain_cache_hits="
+		   << stats.empty_destructor_chain_cache_hits
+		   << " namespace_object_actions="
+		   << stats.namespace_object_actions
+           << " lookup_queries=" << stats.lookup_queries
+           << " lookup_scope_visits=" << stats.lookup_scope_visits
+           << " lookup_edge_visits=" << stats.lookup_edge_visits
+           << " base_path_queries=" << stats.base_path_queries
+           << " base_path_cache_hits=" << stats.base_path_cache_hits
+           << " base_path_cache_misses=" << stats.base_path_cache_misses
+           << " base_path_edge_visits=" << stats.base_path_edge_visits
+           << " virtual_base_path_visits="
+           << stats.virtual_base_path_visits
+           << " associated_scope_visits="
+           << stats.associated_scope_visits
+           << " associated_declaration_visits="
+           << stats.associated_declaration_visits
+           << " function_candidate_index_visits="
+           << stats.function_candidate_index_visits
+           << " overload_candidates=" << stats.overload_candidates
+           << " overload_order_comparisons="
+           << stats.overload_order_comparisons
+           << " conversion_checks=" << stats.conversion_checks
+           << " call_conversion_cache_hits="
+           << stats.call_conversion_cache_hits
+           << " call_conversion_cache_misses="
+           << stats.call_conversion_cache_misses
+           << " braced_fact_cache_hits=" << stats.braced_fact_cache_hits
+           << " braced_fact_cache_misses=" << stats.braced_fact_cache_misses
+           << " function_signature_lookups="
+           << stats.function_signature_lookups
+           << " polymorphic_classes=" << stats.polymorphic_classes
+           << " virtual_slots=" << stats.virtual_slots
+           << " virtual_signature_lookups="
+           << stats.virtual_signature_lookups
+		   << " virtual_overrides=" << stats.virtual_overrides
+		   << " polymorphic_virtual_view_lookups="
+		   << stats.polymorphic_virtual_view_lookups
+		   << " polymorphic_virtual_view_merges="
+		   << stats.polymorphic_virtual_view_merges
+           << " virtual_slot_lookups=" << stats.virtual_slot_lookups
+           << " vtable_demands=" << stats.vtable_demands
+           << " access_checks=" << stats.access_checks
+           << " access_path_visits=" << stats.access_path_visits
+           << " access_grant_probes=" << stats.access_grant_probes
+           << " template_specialization_requests="
+           << stats.template_specialization_requests
+           << " template_specialization_cache_hits="
+           << stats.template_specialization_cache_hits;
+		append_template_analysis_stats(cerr, stats);
+		cerr << " constexpr_call_requests=" << stats.constexpr_call_requests
+	           << " constexpr_call_cache_hits=" << stats.constexpr_call_cache_hits
+	           << " constant_conversion_fact_requests="
+	           << stats.constant_conversion_fact_requests
+	           << " constant_conversion_fact_cache_hits="
+	           << stats.constant_conversion_fact_cache_hits
+	           << " constexpr_local_index_probes="
+           << stats.constexpr_local_index_probes
+           << " constexpr_scope_index_probes="
+           << stats.constexpr_scope_index_probes
+           << " constexpr_object_projection_visits="
+           << stats.constexpr_object_projection_visits
+           << " constexpr_step_visits=" << stats.constexpr_step_visits
+           << " constexpr_max_depth=" << stats.constexpr_max_depth
+           << " constexpr_peak_locals=" << stats.constexpr_peak_locals
+           << " constexpr_scratch_peak_nodes="
+           << stats.constexpr_scratch_peak_nodes
+           << " demand_worklist_pushes=" << stats.demand_worklist_pushes
+           << " demanded_function_emissions="
+           << stats.demanded_function_emissions
+           << " default_constructor_emissions="
+           << stats.default_constructor_emissions
+           << " demand_requests=" << stats.demand_requests
+           << " demand_unique_edges=" << stats.demand_unique_edges
+           << " demand_root_edges=" << stats.demand_root_edges
+           << " demand_dependency_edges=" << stats.demand_dependency_edges
+           << " demand_evaluated=" << stats.demand_evaluated_use_requests
+           << " demand_retained_calls="
+           << stats.demand_retained_call_requests
+           << " demand_addresses=" << stats.demand_address_requests
+           << " demand_lifecycle=" << stats.demand_lifecycle_requests
+           << " demand_vtable=" << stats.demand_vtable_requests
+           << " demand_static_lifecycle="
+           << stats.demand_static_lifecycle_requests
+           << " demand_exception_cleanup="
+           << stats.demand_exception_cleanup_requests
+           << " demand_explicit_instantiation="
+           << stats.demand_explicit_instantiation_requests
+           << " demand_abi_support=" << stats.demand_abi_support_requests
+           << " semantic_storage_bytes=" << stats.semantic_storage_bytes
+           << " peak_stage_storage_bytes=" << stats.peak_stage_storage_bytes
+		   << " preprocess_ns=" << stats.preprocessing.elapsed_nanoseconds
+		   << " parse_ns=" << stats.parse_nanoseconds
+           << " analysis_ns=" << stats.analysis_nanoseconds
+           << " render_ns=" << stats.render_nanoseconds
+           << " elapsed_ns=" << stats.elapsed_nanoseconds << '\n';
+    }
+    output << "end translation unit\n";
+  }
+  if(!output) {
+    cppgm::driver_errors::ThrowInputOutput(
+      "unable to write output file: " + invocation.output);
+  }
+  return EXIT_SUCCESS;
 }
+
+void report_lowir_semantic_stats(const cppgm::lowering::Stats & stats);
+void report_lowir_lowering_stats(const cppgm::lowering::Stats & stats);
 
 int run_emit_lowir_mode(const vector<string> & args)
 {
-  try
-  {
-    const CppToolInvocation invocation = parse_cpp_tool_invocation(args);
-    if(invocation.query_only() ||
-       invocation.compile_only ||
-       invocation.preprocess_only ||
-       !invocation.explicit_outfile ||
-       invocation.inputs.empty()) {
-      throw logic_error("invalid usage");
-    }
-
-    ofstream out(invocation.outfile.c_str());
-    if(!out) {
-      throw logic_error("unable to open output file");
-    }
-    vector<witness::TemplateWitnessSession> witness_sessions;
-    vector<witness::TemplateWitnessSession> * witness_sink =
-        (invocation.witness_output.empty() &&
-         invocation.witness_debug_output.empty()) ?
-            nullptr : &witness_sessions;
-    const vector<CallSemNode> translation_units =
-        analyze_cpp_sources(invocation.inputs,
-                            invocation.preprocess_options,
-                            true,
-                            nullptr,
-                            witness_sink);
-    out << generate_lowir_from_translation_units(translation_units,
-                                                 invocation.optimization_level,
-                                                 invocation.debug_info_level);
-    if(!invocation.witness_output.empty()) {
-      ofstream witness_output(invocation.witness_output.c_str());
-      if(!witness_output) {
-        throw logic_error("unable to open witness output file");
-      }
-      witness_output << render_witness_sessions(invocation.inputs, witness_sessions);
-    }
-    if(!invocation.witness_debug_output.empty()) {
-      ofstream witness_debug_output(invocation.witness_debug_output.c_str());
-      if(!witness_debug_output) {
-        throw logic_error("unable to open witness debug output file");
-      }
-      witness_debug_output << render_witness_debug_sessions(invocation.inputs,
-                                                            witness_sessions);
-    }
-    return EXIT_SUCCESS;
-  }
-  catch(const exception & e)
-  {
-    cerr << "ERROR: " << e.what() << endl;
-    return EXIT_FAILURE;
-  }
+	const SourceOutputInvocation invocation =
+		parse_source_output_invocation(args, true);
+	ofstream output(invocation.output.c_str(), ios::out | ios::trunc);
+	if(!output) {
+		cppgm::driver_errors::ThrowInputOutput(
+			"unable to open output file: " + invocation.output);
+	}
+	cppgm::PreprocessingOptions options = make_preprocessing_options();
+	vector<cppgm::lowering::Source> sources;
+	for(size_t i = 0; i < invocation.inputs.size(); ++i) {
+		const string & path = invocation.inputs[i];
+		ifstream input(path.c_str(), ios::in | ios::binary);
+		if(!input)
+			cppgm::driver_errors::ThrowInputOutput(
+				"unable to open source file: " + path);
+		sources.push_back(cppgm::lowering::Source(path,
+			string((istreambuf_iterator<char>(input)), istreambuf_iterator<char>())));
+	}
+	cppgm::lowering::Stats stats;
+	const bool object_capable_output = invocation.has_debug_info ||
+		invocation.has_optimization_level;
+	if(!object_capable_output) {
+		for(size_t i = 0; i < invocation.macro_actions.size(); ++i)
+			options.macro_actions.push_back(
+				cppgm::PreprocessingOptions::MacroAction(
+					invocation.macro_actions[i].define,
+					invocation.macro_actions[i].argument));
+		cppgm::lowering::WriteLowIR(sources, options, output,
+			invocation.collect_stats ? &stats : 0);
+	} else {
+		options.include_search_paths = invocation.include_paths;
+		cppgm::ConfigureHostedPreprocessing(&options, true,
+			invocation.has_optimization_level &&
+			invocation.optimization_level >= 1);
+		for(size_t i = 0; i < invocation.macro_actions.size(); ++i)
+			options.macro_actions.push_back(
+				cppgm::PreprocessingOptions::MacroAction(
+					invocation.macro_actions[i].define,
+					invocation.macro_actions[i].argument));
+		lowir_model::LowirProgram program;
+		{
+			cppgm::lowering::ir::Program typed =
+				cppgm::lowering::BuildProgram(sources, options,
+					invocation.collect_stats ? &stats : 0, true, true, false);
+			program = cppgm::lowir_io::AdaptTypedLowirForBackend(
+				std::move(typed));
+		}
+		if(invocation.line_tables && sources.size() == 1)
+			lowir_line_table_debug::attach_line_table_debug(
+				&program, sources[0].path, sources[0].source);
+		optimize_lowir(&program, invocation.optimization_level,
+			sources.size() == 1 ? sources[0].path : "<translation-unit>",
+			invocation.collect_stats, invocation.inline_limits);
+		output << lowir_model::serialize_lowir_program(program);
+	}
+	if(!output)
+		cppgm::driver_errors::ThrowInputOutput(
+			"unable to write output file: " + invocation.output);
+	if(invocation.collect_stats) {
+		report_lowir_semantic_stats(stats);
+		report_lowir_lowering_stats(stats);
+	}
+	return EXIT_SUCCESS;
 }
 
-string abi_fact_label_component(string text)
+void report_lowir_semantic_stats(const cppgm::lowering::Stats & stats)
 {
-  if(text.empty()) {
-    return "case";
-  }
-  for(size_t i = 0; i < text.size(); ++i) {
-    const unsigned char ch = static_cast<unsigned char>(text[i]);
-    if(!isalnum(ch)) {
-      text[i] = '_';
-    }
-  }
-  return text;
+	const cppgm::semantic::Stats & semantic = stats.semantic;
+	cerr << "pa15_stats"
+			 << " source_bytes=" << stats.source_bytes
+			 << " tokens=" << semantic.tokens
+			 << " scopes=" << semantic.scopes
+			 << " declarations=" << semantic.declarations
+			 << " semantic_nodes=" << semantic.semantic_nodes
+			 << " semantic_edges=" << semantic.semantic_edges
+			 << " lowered_nodes=" << stats.lowered_nodes
+			 << " class_layouts=" << semantic.class_layouts
+			 << " class_layout_member_visits="
+			 << semantic.class_layout_member_visits
+			 << " virtual_base_layout_edge_visits="
+			 << semantic.virtual_base_layout_edge_visits
+			 << " virtual_base_layout_facts="
+			 << semantic.virtual_base_layout_facts
+			 << " virtual_base_layout_lookups="
+			 << semantic.virtual_base_layout_lookups
+			 << " virtual_base_layout_probes="
+			 << semantic.virtual_base_layout_probes
+			 << " direct_base_validation_visits="
+			 << semantic.direct_base_validation_visits
+			 << " class_zero_offset_subobject_visits="
+			 << semantic.class_zero_offset_subobject_visits
+			 << " special_member_fact_lookups="
+			 << semantic.special_member_fact_lookups
+			 << " special_member_subobject_visits="
+			 << semantic.special_member_subobject_visits
+			 << " constructor_member_action_visits="
+			 << semantic.constructor_member_action_visits
+			 << " constructor_base_action_visits="
+			 << semantic.constructor_base_action_visits
+			 << " constructor_delegation_action_visits="
+			 << semantic.constructor_delegation_action_visits
+			 << " destructor_subobject_action_visits="
+			 << semantic.destructor_subobject_action_visits
+			 << " lexical_cleanup_action_visits="
+			 << semantic.lexical_cleanup_action_visits
+			 << " unwind_cleanup_scope_visits="
+			 << semantic.unwind_cleanup_scope_visits
+			 << " unwind_cleanup_action_visits="
+			 << semantic.unwind_cleanup_action_visits
+			 << " enclosing_lifetime_queries="
+			 << semantic.enclosing_lifetime_queries
+			 << " initializer_list_lifetime_queries="
+			 << semantic.initializer_list_lifetime_queries
+			 << " temporary_dependency_visits="
+			 << semantic.temporary_dependency_visits
+			 << " materialized_demand_visits="
+			 << semantic.materialized_demand_visits
+			 << " nonthrowing_action_visits="
+			 << semantic.nonthrowing_action_visits
+			 << " runtime_initializer_visits="
+			 << semantic.runtime_initializer_visits
+			 << " static_constant_initializer_visits="
+			 << semantic.static_constant_initializer_visits
+			 << " static_constant_dependency_edges="
+			 << semantic.static_constant_dependency_edges
+			 << " empty_constructor_chain_requests="
+			 << semantic.empty_constructor_chain_requests
+			 << " empty_constructor_chain_cache_hits="
+			 << semantic.empty_constructor_chain_cache_hits
+			 << " empty_constructor_chain_entity_visits="
+			 << semantic.empty_constructor_chain_entity_visits
+			 << " empty_constructor_chain_dependency_edges="
+			 << semantic.empty_constructor_chain_dependency_edges
+			 << " empty_destructor_chain_visits="
+			 << semantic.empty_destructor_chain_visits
+			 << " empty_destructor_chain_cache_hits="
+			 << semantic.empty_destructor_chain_cache_hits
+			 << " namespace_object_actions="
+			 << semantic.namespace_object_actions
+			 << " lookup_queries=" << semantic.lookup_queries
+			 << " lookup_scope_visits=" << semantic.lookup_scope_visits
+			 << " lookup_edge_visits=" << semantic.lookup_edge_visits
+			 << " base_path_queries=" << semantic.base_path_queries
+			 << " base_path_cache_hits="
+			 << semantic.base_path_cache_hits
+			 << " base_path_cache_misses="
+			 << semantic.base_path_cache_misses
+			 << " base_path_edge_visits="
+			 << semantic.base_path_edge_visits
+			 << " virtual_base_path_visits="
+			 << semantic.virtual_base_path_visits
+			 << " associated_scope_visits="
+			 << semantic.associated_scope_visits
+			 << " associated_declaration_visits="
+			 << semantic.associated_declaration_visits
+			 << " function_candidate_index_visits="
+			 << semantic.function_candidate_index_visits
+			 << " overload_candidates=" << semantic.overload_candidates
+			 << " overload_order_comparisons="
+			 << semantic.overload_order_comparisons
+			 << " conversion_checks=" << semantic.conversion_checks
+			 << " call_conversion_cache_hits="
+			 << semantic.call_conversion_cache_hits
+			 << " call_conversion_cache_misses="
+			 << semantic.call_conversion_cache_misses
+			 << " braced_fact_cache_hits=" << semantic.braced_fact_cache_hits
+			 << " braced_fact_cache_misses=" << semantic.braced_fact_cache_misses
+			 << " function_signature_lookups="
+			 << semantic.function_signature_lookups
+			 << " polymorphic_classes=" << semantic.polymorphic_classes
+			 << " virtual_slots=" << semantic.virtual_slots
+			 << " virtual_signature_lookups="
+			 << semantic.virtual_signature_lookups
+			 << " virtual_overrides=" << semantic.virtual_overrides
+			 << " polymorphic_virtual_view_lookups="
+			 << semantic.polymorphic_virtual_view_lookups
+			 << " polymorphic_virtual_view_merges="
+			 << semantic.polymorphic_virtual_view_merges
+			 << " virtual_slot_lookups="
+			 << semantic.virtual_slot_lookups
+			 << " vtable_demands=" << semantic.vtable_demands
+			 << " access_checks=" << semantic.access_checks
+			 << " access_path_visits=" << semantic.access_path_visits
+			 << " access_grant_probes=" << semantic.access_grant_probes
+			 << " template_specialization_requests="
+			 << semantic.template_specialization_requests
+			 << " template_specialization_cache_hits="
+			 << semantic.template_specialization_cache_hits
+			 << " function_template_default_materializations="
+			 << semantic.function_template_default_materializations
+			 << " function_template_default_request_cache_hits="
+			 << semantic.function_template_default_request_cache_hits
+			 << " function_template_default_failure_cache_hits="
+			 << semantic.function_template_default_failure_cache_hits
+			 << " function_template_exception_specification_requests="
+			 << semantic.function_template_exception_specification_requests
+			 << " function_template_exception_specification_cache_hits="
+			 << semantic.function_template_exception_specification_cache_hits
+			 << " function_template_exception_specification_evaluations="
+			 << semantic.function_template_exception_specification_evaluations
+			 << " template_argument_list_requests="
+			 << semantic.template_argument_list_requests
+			 << " template_argument_list_cache_hits="
+			 << semantic.template_argument_list_cache_hits
+			 << " template_argument_list_index_probes="
+			 << semantic.template_argument_list_index_probes
+			 << " template_partition_requests="
+			 << semantic.template_partition_requests
+			 << " template_partition_cache_hits="
+			 << semantic.template_partition_cache_hits
+			 << " template_partition_index_probes="
+			 << semantic.template_partition_index_probes
+			 << " function_template_result_identity_requests="
+			 << semantic.function_template_result_identity_requests
+			 << " function_template_result_identity_cache_hits="
+			 << semantic.function_template_result_identity_cache_hits
+			 << " function_template_result_identity_index_probes="
+			 << semantic.function_template_result_identity_index_probes
+			 << " function_template_result_identity_atom_visits="
+			 << semantic.function_template_result_identity_atom_visits
+			 << " function_template_result_identity_syntax_visits="
+			 << semantic.function_template_result_identity_syntax_visits
+			 << " function_template_result_identity_environment_probes="
+			 << semantic.function_template_result_identity_environment_probes
+			 << " function_template_result_identity_alias_expansions="
+			 << semantic.function_template_result_identity_alias_expansions
+			 << " template_partial_candidates="
+			 << semantic.template_partial_candidates
+			 << " template_partial_order_comparisons="
+			 << semantic.template_partial_order_comparisons
+			 << " template_partial_shape_materializations="
+			 << semantic.template_partial_shape_materializations
+			 << " template_partial_shape_cache_hits="
+			 << semantic.template_partial_shape_cache_hits;
+	report_generated_identity_stats(semantic);
 }
 
-bool node_is_ordinary_abi_function(const CallSemNode & node)
+void report_lowir_lowering_stats(const cppgm::lowering::Stats & stats)
 {
-  if(node.kind != CallSemKind::function_definition &&
-     node.kind != CallSemKind::function_declaration) {
-    return false;
-  }
-  if(node.is_constructor ||
-     node.is_destructor ||
-     node.has_special_member_entry_point_kind) {
-    return false;
-  }
-  return symbol_linkage::has_exported_object_symbol(callsem_symbol(node));
+	const cppgm::semantic::Stats & semantic = stats.semantic;
+	cerr << " template_partial_deduction_visits="
+				 << semantic.template_partial_deduction_visits
+				 << " function_template_deduction_visits="
+				 << semantic.function_template_deduction_visits
+				 << " lambda_closure_requests="
+				 << semantic.lambda_closure_requests
+				 << " lambda_closure_cache_hits="
+				 << semantic.lambda_closure_cache_hits
+				 << " lambda_capture_summary_requests="
+				 << semantic.lambda_capture_summary_requests
+				 << " lambda_capture_summary_cache_hits="
+				 << semantic.lambda_capture_summary_cache_hits
+				 << " lambda_capture_syntax_visits="
+				 << semantic.lambda_capture_syntax_visits
+				 << " lambda_capture_name_uses="
+				 << semantic.lambda_capture_name_uses
+				 << " constexpr_call_requests="
+			 << semantic.constexpr_call_requests
+				 << " constexpr_call_cache_hits="
+			 << semantic.constexpr_call_cache_hits
+			 << " constant_conversion_fact_requests="
+			 << semantic.constant_conversion_fact_requests
+			 << " constant_conversion_fact_cache_hits="
+			 << semantic.constant_conversion_fact_cache_hits
+			 << " constexpr_local_index_probes="
+			 << semantic.constexpr_local_index_probes
+			 << " constexpr_scope_index_probes="
+			 << semantic.constexpr_scope_index_probes
+			 << " constexpr_object_projection_visits="
+			 << semantic.constexpr_object_projection_visits
+			 << " constexpr_step_visits="
+			 << semantic.constexpr_step_visits
+			 << " constexpr_max_depth="
+			 << semantic.constexpr_max_depth
+			 << " constexpr_peak_locals="
+			 << semantic.constexpr_peak_locals
+			 << " constexpr_scratch_peak_nodes="
+			 << semantic.constexpr_scratch_peak_nodes
+			 << " demand_worklist_pushes=" << semantic.demand_worklist_pushes
+			 << " demanded_function_emissions="
+			 << semantic.demanded_function_emissions
+			 << " default_constructor_emissions="
+			 << semantic.default_constructor_emissions
+			 << " demand_requests=" << semantic.demand_requests
+			 << " demand_unique_edges=" << semantic.demand_unique_edges
+			 << " demand_root_edges=" << semantic.demand_root_edges
+			 << " demand_dependency_edges="
+			 << semantic.demand_dependency_edges
+			 << " demand_evaluated="
+			 << semantic.demand_evaluated_use_requests
+			 << " demand_retained_calls="
+			 << semantic.demand_retained_call_requests
+			 << " demand_addresses=" << semantic.demand_address_requests
+			 << " demand_lifecycle=" << semantic.demand_lifecycle_requests
+			 << " demand_vtable=" << semantic.demand_vtable_requests
+			 << " demand_static_lifecycle="
+			 << semantic.demand_static_lifecycle_requests
+			 << " demand_exception_cleanup="
+			 << semantic.demand_exception_cleanup_requests
+			 << " demand_explicit_instantiation="
+			 << semantic.demand_explicit_instantiation_requests
+			 << " demand_abi_support="
+			 << semantic.demand_abi_support_requests
+			 << " functions=" << stats.functions
+			 << " globals=" << stats.globals
+			 << " blocks=" << stats.blocks
+			 << " instructions=" << stats.instructions
+			 << " abi_production_mangles="
+			 << stats.abi.production_mangles
+				 << " abi_fact_records=" << stats.abi.records
+				 << " abi_fact_bytes=" << stats.abi.production_fact_bytes;
+	lowir_driver_stats_report::ReportAbiResolution(cerr, stats.abi);
+	cerr << " binding_index_probes=" << stats.binding_index_probes
+			 << " slot_implicit_object_fact_reads="
+			 << stats.slot_implicit_object_fact_reads
+			 << " virtual_calls=" << stats.virtual_calls
+			 << " vptr_stores=" << stats.vptr_stores
+			 << " virtual_base_boundary_scan_nodes="
+			 << stats.virtual_base_boundary_scan_nodes
+			 << " virtual_base_boundary_facts="
+			 << stats.virtual_base_boundary_facts
+			 << " virtual_base_call_arguments="
+			 << stats.virtual_base_call_arguments
+			 << " virtual_base_boundary_binding_steps="
+			 << stats.virtual_base_boundary_binding_steps
+			 << " virtual_base_boundary_binding_cache_hits="
+			 << stats.virtual_base_boundary_binding_cache_hits
+			 << " virtual_base_boundary_binding_table_growth="
+			 << stats.virtual_base_boundary_binding_table_growth
+			 << " vtable_offset_rows=" << stats.vtable_offset_rows
+			 << " vtable_slots=" << stats.vtable_slots
+			 << " vtable_thunk_requests=" << stats.vtable_thunk_requests
+			 << " vtable_thunk_cache_hits="
+			 << stats.vtable_thunk_cache_hits
+			 << " vtable_thunk_index_probes="
+			 << stats.vtable_thunk_index_probes
+			 << " deleting_destructors=" << stats.deleting_destructors
+			 << " rtti_graph_nodes_visited="
+			 << stats.rtti_graph_nodes_visited
+			 << " rtti_demand_requests=" << stats.rtti_demand_requests
+			 << " rtti_types_demanded=" << stats.rtti_types_demanded
+			 << " rtti_symbol_lookups=" << stats.rtti_symbol_lookups
+			 << " rtti_base_dependency_visits="
+			 << stats.rtti_base_dependency_visits
+			 << " cleanup_dispatch_probes="
+			 << stats.cleanup_dispatch_probes
+			 << " cleanup_dispatch_cache_hits="
+			 << stats.cleanup_dispatch_cache_hits
+			 << " cleanup_dispatch_entries="
+			 << stats.cleanup_dispatch_entries
+			 << " cleanup_state_probes=" << stats.cleanup_state_probes
+			 << " cleanup_state_hits=" << stats.cleanup_state_hits
+			 << " cleanup_unique_states=" << stats.cleanup_unique_states
+			 << " cleanup_blocks_emitted=" << stats.cleanup_blocks_emitted
+			 << " cleanup_destructor_actions_avoided="
+			 << stats.cleanup_destructor_actions_avoided
+			 << " cleanup_resume_operations_avoided="
+			 << stats.cleanup_resume_operations_avoided
+			 << " direct_class_call_destination_placements="
+			 << stats.direct_class_call_destination_placements
+			 << " direct_class_call_staging_slots_avoided="
+			 << stats.direct_class_call_staging_slots_avoided
+			 << " bit_field_storage_unit_transfers="
+			 << stats.bit_field_storage_unit_transfers
+			 << " constant_template_bytes=" << stats.constant_template_bytes
+			 << " constant_template_globals="
+			 << stats.constant_template_globals
+			 << " constant_template_copies=" << stats.constant_template_copies
+			 << " conditional_lifetime_slots="
+			 << stats.conditional_lifetime_slots
+			 << " conditional_lifetime_marks="
+			 << stats.conditional_lifetime_marks
+				<< " branch_cleanup_actions="
+				<< stats.branch_cleanup_actions
+				<< " statement_scheduler_entries="
+				<< stats.statement_scheduler_entries
+				<< " statement_scheduler_nested_entries="
+				<< stats.statement_scheduler_nested_entries
+				<< " statement_scheduler_tasks="
+				<< stats.statement_scheduler_tasks
+				<< " statement_scheduler_peak_tasks="
+				<< stats.statement_scheduler_peak_tasks
+				<< " exception_selector_resets="
+			 << stats.exception_selector_resets
+			 << " exception_selector_table_growth="
+			 << stats.exception_selector_table_growth
+			 << " exception_selector_assignments="
+			 << stats.exception_selector_assignments
+			 << " terminate_boundaries_explicit="
+			 << stats.terminate_boundaries_explicit
+			 << " terminate_boundaries_derived_special_member="
+			 << stats.terminate_boundaries_derived_special_member
+			 << " terminate_boundaries_template_specialization="
+			 << stats.terminate_boundaries_template_specialization
+			 << " terminate_boundaries_builtin_runtime="
+			 << stats.terminate_boundaries_builtin_runtime
+			 << " unexpected_boundaries=" << stats.unexpected_boundaries
+			 << " potentially_throwing_explicit_operations="
+			 << stats.potentially_throwing_explicit_operations
+			 << " potentially_throwing_indirect_calls="
+			 << stats.potentially_throwing_indirect_calls
+			 << " potentially_throwing_ordinary_calls="
+			 << stats.potentially_throwing_ordinary_calls
+			 << " potentially_throwing_special_member_calls="
+			 << stats.potentially_throwing_special_member_calls
+			 << " potentially_throwing_template_calls="
+			 << stats.potentially_throwing_template_calls
+			 << " potentially_throwing_builtin_runtime_calls="
+			 << stats.potentially_throwing_builtin_runtime_calls
+			 << " force_inline_candidates=" << stats.force_inline_candidates
+			 << " force_inline_recursive_candidates="
+			 << stats.force_inline_recursive_candidates
+			 << " force_inline_call_probes=" << stats.force_inline_call_probes
+			 << " force_inline_calls=" << stats.force_inline_calls
+			 << " force_inline_blocks=" << stats.force_inline_blocks
+				 << " force_inline_cloned_instructions="
+				 << stats.force_inline_cloned_instructions
+				 << " typed_identity_paths=" << stats.typed_identity_paths
+				 << " typed_identity_types=" << stats.typed_identity_types
+				 << " typed_identity_bytes=" << stats.typed_identity_bytes
+				 << " typed_storage_bytes=" << stats.typed_storage_bytes
+			 << " semantic_peak_stage_bytes="
+			 << semantic.peak_stage_storage_bytes
+			 << " output_bytes=" << stats.output_bytes
+			 << " preprocess_ns="
+			 << semantic.preprocessing.elapsed_nanoseconds
+			 << " parse_ns=" << semantic.parse_nanoseconds
+			 << " semantic_ns=" << semantic.analysis_nanoseconds
+			 << " frontend_ns=" << semantic.elapsed_nanoseconds
+			 << " lowering_ns=" << stats.lowering_nanoseconds
+			 << " render_ns=" << stats.render_nanoseconds << '\n';
 }
 
-bool append_abi_symbol_fact_cases(
-    const symbol_linkage::SymbolIdentity & symbol,
-    abi_mangle::AbiMangleTargetKind target_kind,
-    abi_mangle::AbiFactFile & file,
-    set<string> & seen)
+int run_driver_mode(const vector<string> & args)
 {
-  if(symbol.linkage == symbol_linkage::SL_INTERNAL) {
-    return false;
+  const DriverInvocation invocation = parse_driver_invocation(args);
+  const string target = normalize_native_target(invocation.target);
+  switch(invocation.mode) {
+  case DriverMode::Query:
+		return run_query_driver(invocation.query);
+  case DriverMode::Preprocess:
+		return run_preprocess_driver(invocation);
+  case DriverMode::Compile:
+    return run_compile_driver(invocation, target);
+  case DriverMode::Link:
+    return run_link_driver(invocation, target);
   }
-  const size_t fact_count = symbol_linkage::abi_mangle_fact_count(symbol);
-  if(fact_count == 0) {
-    return false;
-  }
-  bool appended = false;
-  for(size_t i = 0; i < fact_count; ++i) {
-    const abi_mangle::AbiMangleTarget & target =
-        symbol_linkage::abi_mangle_fact_target(symbol, i);
-    const string & object_symbol =
-        symbol_linkage::abi_mangle_fact_object_symbol(symbol, i);
-    if(target.kind != target_kind || object_symbol.empty()) {
-      continue;
-    }
-    const string key =
-        to_string(static_cast<int>(target.kind)) + ":" + object_symbol;
-    if(!seen.insert(key).second) {
-      appended = true;
-      continue;
-    }
-    abi_mangle::AbiFactCase fact_case;
-    fact_case.label = abi_fact_label_component(
-        symbol.internal_symbol.empty() ? object_symbol : symbol.internal_symbol);
-    const vector<vector<string> > records =
-        abi_mangle::serialize_mangle_target_records(target);
-    fact_case.records.reserve(records.size());
-    for(size_t j = 0; j < records.size(); ++j) {
-      fact_case.records.push_back(
-          abi_mangle::parse_fact_record_words(records[j]));
-    }
-    file.cases.push_back(std::move(fact_case));
-    appended = true;
-  }
-  return appended;
-}
-
-bool append_abi_function_case(const CallSemNode & node,
-                              abi_mangle::AbiFactFile & file,
-                              set<string> & seen)
-{
-  return node_is_ordinary_abi_function(node) &&
-         append_abi_symbol_fact_cases(callsem_symbol(node),
-                                      abi_mangle::ABI_MANGLE_FUNCTION,
-                                      file,
-                                      seen);
-}
-
-bool append_abi_variable_case(const CallSemNode & node,
-                              abi_mangle::AbiFactFile & file,
-                              set<string> & seen)
-{
-  return node.kind == CallSemKind::variable &&
-         append_abi_symbol_fact_cases(callsem_symbol(node),
-                                      abi_mangle::ABI_MANGLE_VARIABLE,
-                                      file,
-                                      seen);
-}
-
-void collect_abi_fact_cases(const CallSemNode & node,
-                            abi_mangle::AbiFactFile & file,
-                            set<string> & seen)
-{
-  append_abi_function_case(node, file, seen);
-  append_abi_variable_case(node, file, seen);
-  for(size_t i = 0; i < node.children.size(); ++i) {
-    collect_abi_fact_cases(node.children[i], file, seen);
-  }
-}
-
-string generate_abi_fact_text_from_cpp_sources(const vector<string> & inputs,
-                                               const CppPreprocessOptions & options)
-{
-  symbol_linkage::AbiMangleFactCaptureScope abi_fact_capture(true);
-  const vector<CallSemNode> translation_units =
-      analyze_cpp_sources(inputs, options, true);
-  abi_mangle::AbiFactFile file;
-  set<string> seen;
-  for(size_t i = 0; i < translation_units.size(); ++i) {
-    collect_abi_fact_cases(translation_units[i], file, seen);
-  }
-  return abi_mangle::serialize_fact_file(file);
-}
-
-int run_emit_abi_facts_mode(const vector<string> & args)
-{
-  try
-  {
-    const CppToolInvocation invocation = parse_cpp_tool_invocation(args);
-    if(invocation.query_only() ||
-       invocation.compile_only ||
-       invocation.preprocess_only ||
-       !invocation.explicit_outfile ||
-       invocation.inputs.empty()) {
-      throw logic_error("invalid usage");
-    }
-    ofstream out(invocation.outfile.c_str());
-    if(!out) {
-      throw logic_error("unable to open output file");
-    }
-    out << generate_abi_fact_text_from_cpp_sources(invocation.inputs,
-                                                   invocation.preprocess_options);
-    return EXIT_SUCCESS;
-  }
-  catch(const exception & e)
-  {
-    cerr << "ERROR: " << e.what() << endl;
-    return EXIT_FAILURE;
-  }
-}
-
-int run_compile_or_link_mode(const vector<string> & args)
-{
-  if(has_arg(args, "-E")) {
-    return run_main_with_args(args, run_cpphostcompat_frontend);
-  }
-  return run_main_with_args(args, run_cpptoolchain_frontend);
+  cppgm::driver_errors::ThrowInternal("unreachable driver mode");
 }
 
 int run_cppgm(const vector<string> & raw_args)
 {
+#if !CPPGM_TELEMETRY_ENABLED
+  if(has_arg(raw_args, "--stats") || has_arg(raw_args, "--stats-functions")) {
+    cppgm::driver_errors::ThrowInvocation(
+      "statistics are unavailable in the telemetry-off build");
+  }
+#endif
+
+  if(has_arg(raw_args, "--batch-stdin")) {
+    return run_not_implemented_batch_mode();
+  }
+
   if(has_help_arg(raw_args)) {
     cout << cppgm_help_text();
     return EXIT_SUCCESS;
   }
 
   vector<string> args = raw_args;
+  consume_backend_variant(args);
   const EmitMode mode = parse_emit_mode(args);
 
   switch(mode) {
@@ -369,27 +2668,29 @@ int run_cppgm(const vector<string> & raw_args)
     return run_emit_semantics_mode(args);
   case EmitMode::LowIR:
     return run_emit_lowir_mode(args);
-  case EmitMode::AbiFacts:
-    return run_emit_abi_facts_mode(args);
   case EmitMode::None:
-    return run_compile_or_link_mode(args);
+    return run_driver_mode(args);
   }
 
-  throw logic_error("unreachable emit mode");
+  cppgm::driver_errors::ThrowInternal("unreachable emit mode");
 }
 
 }  // namespace
 
 int main(int argc, char ** argv)
 {
-  file_timing::startup_mark("main.enter");
-  const vector<string> args = collect_args(argc, argv);
-  file_timing::startup_mark("main.args_collected");
-  if(argc > 0 && argv[0]) {
-    set_cpp_tool_program_path(argv[0]);
+  try
+  {
+    return run_cppgm(collect_args(argc, argv));
   }
-  file_timing::startup_mark("main.program_path_set");
-  const int status = run_cppgm(args);
-  file_timing::startup_mark("main.exit");
-  return status;
+  catch(const CompilerError & e)
+  {
+    cerr << "ERROR: " << e.what() << endl;
+    return EXIT_FAILURE;
+  }
+  catch(const exception & e)
+  {
+    cerr << "ERROR: " << e.what() << endl;
+    return EXIT_FAILURE;
+  }
 }

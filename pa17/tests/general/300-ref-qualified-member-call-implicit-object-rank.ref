@@ -24,7 +24,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = binary add i32 %t5, %t8
     %t10 = addr $tmpobj__2
     %t11 = call obj<1x1> @make_ref_pick()
-    copyobj 1x1 %t11, %t10
     %t12 = call i32 @RefPick__pick__ov3(%t10)
     %t13 = binary add i32 %t9, %t12
     %t14 = cmp eq i32 %t13, 123

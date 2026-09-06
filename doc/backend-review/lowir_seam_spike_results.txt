@@ -1,0 +1,705 @@
+# LowIR comparison seam results (PLAN-LOWIR-COMPARISON-SEAMS.md).
+#
+# Each table is one lane: every rewrite mode of scripts/lowir_seam_rewrite.py
+# applied to the course solution's own outputs, compared with the references
+# by the real relaxed comparison (scripts/check_lowir_seams.py <pa> <lane>).
+# "changed" counts outputs the rewrite altered that the harness compares with
+# a reference.  Invariant: presentation and normalization rewrites pass every
+# fixture; a convention rewrite fails wherever it changed something.
+#
+# The first section is the spike that opened the plan (2026-09-05, tree
+# db0d03cd, three lanes, the old spike driver); the second is every PA15 to
+# PA28 lane and PA37's LowIR lanes after the plan landed.  The rewrites
+# R16-literal-spelling and R17-binary-commute were added with the plan; R10
+# now spells the default only where no unwind mode is present.
+
+# ===== Before (tree db0d03cd): pa16, pa19, pa22 general lanes =====
+# pa lane-mode pass/total (first failure message)
+pa16   R1-temps               pass/total=227 227    
+pa16   R2-labels              pass/total=227 227    
+pa16   R3-slots               pass/total=227 227    
+pa16   R4-slot-order          pass/total=227 227    
+pa16   R5-metadata-order      pass/total=227 227    
+pa16   R6-extra-declare       pass/total=227 227    
+pa16   R7-pure-swap           pass/total=103 227    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa16   R8-copy-elision        pass/total=223 227    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa16   R9-function-order      pass/total=227 227    
+pa16   R10-default-metadata   pass/total=204 227    ERROR: Can't use an undefined value as an ARRAY reference at /home/vishvananda/work/v3codex/scripts/compare_results_common.pl line 1413.
+pa16   R11-hex-literal        pass/total=118 227    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa16   R12-indent             pass/total=227 227    
+pa16   R13-blank-lines        pass/total=227 227    
+pa16   R14-branch-negate      pass/total=131 227    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa16   R15-cmp-commute        pass/total=115 227    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa16   R20-param-names        pass/total=227 227    
+pa19   R1-temps               pass/total=229 229    
+pa19   R2-labels              pass/total=229 229    
+pa19   R3-slots               pass/total=229 229    
+pa19   R4-slot-order          pass/total=229 229    
+pa19   R5-metadata-order      pass/total=229 229    
+pa19   R6-extra-declare       pass/total=229 229    
+pa19   R7-pure-swap           pass/total=131 229    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa19   R8-copy-elision        pass/total=228 229    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa19   R9-function-order      pass/total=229 229    
+pa19   R10-default-metadata   pass/total=213 229    ERROR: generated LowIR failed sanity validation: function @Box_int___Box_int___ov2 has invalid metadata: duplicate function metadata key 'unwind'; fun
+pa19   R11-hex-literal        pass/total=147 229    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa19   R12-indent             pass/total=229 229    
+pa19   R13-blank-lines        pass/total=229 229    
+pa19   R14-branch-negate      pass/total=172 229    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa19   R15-cmp-commute        pass/total=173 229    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa19   R20-param-names        pass/total=229 229    
+pa22   R1-temps               pass/total=211 211    
+pa22   R2-labels              pass/total=211 211    
+pa22   R3-slots               pass/total=211 211    
+pa22   R4-slot-order          pass/total=211 211    
+pa22   R5-metadata-order      pass/total=211 211    
+pa22   R6-extra-declare       pass/total=211 211    
+pa22   R7-pure-swap           pass/total=143 211    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa22   R8-copy-elision        pass/total=211 211    
+pa22   R9-function-order      pass/total=211 211    
+pa22   R10-default-metadata   pass/total=207 211    ERROR: Can't use an undefined value as an ARRAY reference at /home/vishvananda/work/v3codex/scripts/compare_results_common.pl line 1341.
+pa22   R11-hex-literal        pass/total=120 211    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa22   R12-indent             pass/total=211 211    
+pa22   R13-blank-lines        pass/total=211 211    
+pa22   R14-branch-negate      pass/total=147 211    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa22   R15-cmp-commute        pass/total=163 211    ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to /tmp/claude-
+pa22   R20-param-names        pass/total=211 211    
+
+# ===== After the plan landed: every lane =====
+
+# LowIR comparison seams on pa15/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   112/112     104      
+R2-labels              presentation   112/112     109      
+R3-slots               presentation   112/112     91       
+R20-param-names        presentation   112/112     47       
+R4-slot-order          presentation   112/112     58       
+R9-function-order      presentation   112/112     58       
+R6-extra-declare       presentation   112/112     109      
+R5-metadata-order      presentation   112/112     109      
+R10-default-metadata   presentation   112/112     108      
+R12-indent             presentation   112/112     109      
+R13-blank-lines        presentation   112/112     94       
+R11-hex-literal        normalization  112/112     52       
+R16-literal-spelling   normalization  112/112     104      
+R15-cmp-commute        normalization  112/112     52       
+R17-binary-commute     normalization  112/112     33       
+R14-branch-negate      convention     62/112      50       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     110/112     2        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     100/112     12       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa15/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa16/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   227/227     198      
+R2-labels              presentation   227/227     207      
+R3-slots               presentation   227/227     183      
+R20-param-names        presentation   227/227     153      
+R4-slot-order          presentation   227/227     135      
+R9-function-order      presentation   227/227     167      
+R6-extra-declare       presentation   227/227     208      
+R5-metadata-order      presentation   227/227     208      
+R10-default-metadata   presentation   227/227     207      
+R12-indent             presentation   227/227     207      
+R13-blank-lines        presentation   227/227     184      
+R11-hex-literal        normalization  227/227     109      
+R16-literal-spelling   normalization  227/227     207      
+R15-cmp-commute        normalization  227/227     112      
+R17-binary-commute     normalization  227/227     55       
+R14-branch-negate      convention     131/227     96       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     223/227     4        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     106/227     124      ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa16/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa16/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   15/15       11       
+R2-labels              presentation   15/15       11       
+R3-slots               presentation   15/15       11       
+R20-param-names        presentation   15/15       7        
+R4-slot-order          presentation   15/15       10       
+R9-function-order      presentation   15/15       8        
+R6-extra-declare       presentation   15/15       11       
+R5-metadata-order      presentation   15/15       11       
+R10-default-metadata   presentation   15/15       11       
+R12-indent             presentation   15/15       11       
+R13-blank-lines        presentation   15/15       11       
+R11-hex-literal        normalization  15/15       10       
+R16-literal-spelling   normalization  15/15       11       
+R15-cmp-commute        normalization  15/15       8        
+R17-binary-commute     normalization  15/15       2        
+R14-branch-negate      convention     8/15        7        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     15/15       0        
+R7-pure-swap           convention     9/15        6        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa16/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa17/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   199/199     193      
+R2-labels              presentation   199/199     195      
+R3-slots               presentation   199/199     192      
+R20-param-names        presentation   199/199     177      
+R4-slot-order          presentation   199/199     166      
+R9-function-order      presentation   199/199     179      
+R6-extra-declare       presentation   199/199     195      
+R5-metadata-order      presentation   199/199     195      
+R10-default-metadata   presentation   199/199     194      
+R12-indent             presentation   199/199     195      
+R13-blank-lines        presentation   199/199     192      
+R11-hex-literal        normalization  199/199     117      
+R16-literal-spelling   normalization  199/199     191      
+R15-cmp-commute        normalization  199/199     118      
+R17-binary-commute     normalization  199/199     48       
+R14-branch-negate      convention     91/199      108      ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     196/199     3        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     67/199      132      ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa17/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa17/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   29/29       10       
+R2-labels              presentation   29/29       10       
+R3-slots               presentation   29/29       10       
+R20-param-names        presentation   29/29       10       
+R4-slot-order          presentation   29/29       10       
+R9-function-order      presentation   29/29       10       
+R6-extra-declare       presentation   29/29       10       
+R5-metadata-order      presentation   29/29       10       
+R10-default-metadata   presentation   29/29       10       
+R12-indent             presentation   29/29       10       
+R13-blank-lines        presentation   29/29       10       
+R11-hex-literal        normalization  29/29       10       
+R16-literal-spelling   normalization  29/29       10       
+R15-cmp-commute        normalization  29/29       9        
+R17-binary-commute     normalization  29/29       1        
+R14-branch-negate      convention     20/29       9        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     29/29       0        
+R7-pure-swap           convention     21/29       8        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa17/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa18/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   16/16       14       
+R2-labels              presentation   16/16       15       
+R3-slots               presentation   16/16       14       
+R20-param-names        presentation   16/16       14       
+R4-slot-order          presentation   16/16       6        
+R9-function-order      presentation   16/16       14       
+R6-extra-declare       presentation   16/16       15       
+R5-metadata-order      presentation   16/16       15       
+R10-default-metadata   presentation   16/16       15       
+R12-indent             presentation   16/16       15       
+R13-blank-lines        presentation   16/16       14       
+R11-hex-literal        normalization  16/16       4        
+R16-literal-spelling   normalization  16/16       15       
+R15-cmp-commute        normalization  16/16       7        
+R17-binary-commute     normalization  16/16       1        
+R14-branch-negate      convention     8/16        8        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     16/16       0        
+R7-pure-swap           convention     15/16       1        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa18/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa18/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   13/13       9        
+R2-labels              presentation   13/13       10       
+R3-slots               presentation   13/13       9        
+R20-param-names        presentation   13/13       9        
+R4-slot-order          presentation   13/13       4        
+R9-function-order      presentation   13/13       9        
+R6-extra-declare       presentation   13/13       10       
+R5-metadata-order      presentation   13/13       10       
+R10-default-metadata   presentation   13/13       10       
+R12-indent             presentation   13/13       10       
+R13-blank-lines        presentation   13/13       9        
+R11-hex-literal        normalization  13/13       4        
+R16-literal-spelling   normalization  13/13       10       
+R15-cmp-commute        normalization  13/13       4        
+R17-binary-commute     normalization  13/13       0        
+R14-branch-negate      convention     9/13        4        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     13/13       0        
+R7-pure-swap           convention     13/13       0        
+pa18/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa19/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   229/229     171      
+R2-labels              presentation   229/229     205      
+R3-slots               presentation   229/229     162      
+R20-param-names        presentation   229/229     128      
+R4-slot-order          presentation   229/229     94       
+R9-function-order      presentation   229/229     144      
+R6-extra-declare       presentation   229/229     208      
+R5-metadata-order      presentation   229/229     208      
+R10-default-metadata   presentation   229/229     205      
+R12-indent             presentation   229/229     205      
+R13-blank-lines        presentation   229/229     162      
+R11-hex-literal        normalization  229/229     82       
+R16-literal-spelling   normalization  229/229     205      
+R15-cmp-commute        normalization  229/229     56       
+R17-binary-commute     normalization  229/229     19       
+R14-branch-negate      convention     172/229     57       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     228/229     1        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     132/229     101      ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa19/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa19/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   66/66       55       
+R2-labels              presentation   66/66       64       
+R3-slots               presentation   66/66       55       
+R20-param-names        presentation   66/66       39       
+R4-slot-order          presentation   66/66       38       
+R9-function-order      presentation   66/66       45       
+R6-extra-declare       presentation   66/66       64       
+R5-metadata-order      presentation   66/66       64       
+R10-default-metadata   presentation   66/66       64       
+R12-indent             presentation   66/66       64       
+R13-blank-lines        presentation   66/66       55       
+R11-hex-literal        normalization  66/66       39       
+R16-literal-spelling   normalization  66/66       64       
+R15-cmp-commute        normalization  66/66       32       
+R17-binary-commute     normalization  66/66       8        
+R14-branch-negate      convention     35/66       31       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     66/66       0        
+R7-pure-swap           convention     31/66       38       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa19/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa20/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   133/133     78       
+R2-labels              presentation   133/133     122      
+R3-slots               presentation   133/133     68       
+R20-param-names        presentation   133/133     40       
+R4-slot-order          presentation   133/133     31       
+R9-function-order      presentation   133/133     56       
+R6-extra-declare       presentation   133/133     123      
+R5-metadata-order      presentation   133/133     123      
+R10-default-metadata   presentation   133/133     122      
+R12-indent             presentation   133/133     122      
+R13-blank-lines        presentation   133/133     68       
+R11-hex-literal        normalization  133/133     38       
+R16-literal-spelling   normalization  133/133     121      
+R15-cmp-commute        normalization  133/133     29       
+R17-binary-commute     normalization  133/133     11       
+R14-branch-negate      convention     106/133     27       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     131/133     2        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     109/133     29       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa20/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa20/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   31/31       22       
+R2-labels              presentation   31/31       29       
+R3-slots               presentation   31/31       22       
+R20-param-names        presentation   31/31       15       
+R4-slot-order          presentation   31/31       16       
+R9-function-order      presentation   31/31       17       
+R6-extra-declare       presentation   31/31       29       
+R5-metadata-order      presentation   31/31       29       
+R10-default-metadata   presentation   31/31       29       
+R12-indent             presentation   31/31       29       
+R13-blank-lines        presentation   31/31       22       
+R11-hex-literal        normalization  31/31       18       
+R16-literal-spelling   normalization  31/31       29       
+R15-cmp-commute        normalization  31/31       14       
+R17-binary-commute     normalization  31/31       5        
+R14-branch-negate      convention     15/31       16       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     30/31       1        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     21/31       10       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa20/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa21/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   105/105     53       
+R2-labels              presentation   105/105     93       
+R3-slots               presentation   105/105     45       
+R20-param-names        presentation   105/105     25       
+R4-slot-order          presentation   105/105     18       
+R9-function-order      presentation   105/105     44       
+R6-extra-declare       presentation   105/105     94       
+R5-metadata-order      presentation   105/105     94       
+R10-default-metadata   presentation   105/105     93       
+R12-indent             presentation   105/105     93       
+R13-blank-lines        presentation   105/105     47       
+R11-hex-literal        normalization  105/105     28       
+R16-literal-spelling   normalization  105/105     94       
+R15-cmp-commute        normalization  105/105     25       
+R17-binary-commute     normalization  105/105     9        
+R14-branch-negate      convention     81/105      24       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     105/105     0        
+R7-pure-swap           convention     93/105      12       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa21/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa21/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   24/24       7        
+R2-labels              presentation   24/24       17       
+R3-slots               presentation   24/24       7        
+R20-param-names        presentation   24/24       6        
+R4-slot-order          presentation   24/24       4        
+R9-function-order      presentation   24/24       6        
+R6-extra-declare       presentation   24/24       17       
+R5-metadata-order      presentation   24/24       17       
+R10-default-metadata   presentation   24/24       17       
+R12-indent             presentation   24/24       17       
+R13-blank-lines        presentation   24/24       7        
+R11-hex-literal        normalization  24/24       5        
+R16-literal-spelling   normalization  24/24       17       
+R15-cmp-commute        normalization  24/24       4        
+R17-binary-commute     normalization  24/24       4        
+R14-branch-negate      convention     21/24       3        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     24/24       0        
+R7-pure-swap           convention     21/24       3        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa21/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa22/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   211/211     144      
+R2-labels              presentation   211/211     203      
+R3-slots               presentation   211/211     141      
+R20-param-names        presentation   211/211     78       
+R4-slot-order          presentation   211/211     74       
+R9-function-order      presentation   211/211     87       
+R6-extra-declare       presentation   211/211     203      
+R5-metadata-order      presentation   211/211     203      
+R10-default-metadata   presentation   211/211     203      
+R12-indent             presentation   211/211     203      
+R13-blank-lines        presentation   211/211     141      
+R11-hex-literal        normalization  211/211     91       
+R16-literal-spelling   normalization  211/211     200      
+R15-cmp-commute        normalization  211/211     48       
+R17-binary-commute     normalization  211/211     17       
+R14-branch-negate      convention     147/211     64       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     211/211     0        
+R7-pure-swap           convention     146/211     73       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa22/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa22/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   98/98       68       
+R2-labels              presentation   98/98       86       
+R3-slots               presentation   98/98       66       
+R20-param-names        presentation   98/98       52       
+R4-slot-order          presentation   98/98       50       
+R9-function-order      presentation   98/98       55       
+R6-extra-declare       presentation   98/98       86       
+R5-metadata-order      presentation   98/98       86       
+R10-default-metadata   presentation   98/98       86       
+R12-indent             presentation   98/98       86       
+R13-blank-lines        presentation   98/98       66       
+R11-hex-literal        normalization  98/98       53       
+R16-literal-spelling   normalization  98/98       83       
+R15-cmp-commute        normalization  98/98       40       
+R17-binary-commute     normalization  98/98       18       
+R14-branch-negate      convention     57/98       41       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     98/98       0        
+R7-pure-swap           convention     63/98       37       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa22/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa23/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   247/247     181      
+R2-labels              presentation   247/247     225      
+R3-slots               presentation   247/247     173      
+R20-param-names        presentation   247/247     137      
+R4-slot-order          presentation   247/247     120      
+R9-function-order      presentation   247/247     144      
+R6-extra-declare       presentation   247/247     231      
+R5-metadata-order      presentation   247/247     231      
+R10-default-metadata   presentation   247/247     225      
+R12-indent             presentation   247/247     225      
+R13-blank-lines        presentation   247/247     174      
+R11-hex-literal        normalization  247/247     103      
+R16-literal-spelling   normalization  247/247     227      
+R15-cmp-commute        normalization  247/247     72       
+R17-binary-commute     normalization  247/247     13       
+R14-branch-negate      convention     177/247     70       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     245/247     2        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     155/247     98       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa23/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa23/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   154/154     112      
+R2-labels              presentation   154/154     139      
+R3-slots               presentation   154/154     111      
+R20-param-names        presentation   154/154     97       
+R4-slot-order          presentation   154/154     86       
+R9-function-order      presentation   154/154     98       
+R6-extra-declare       presentation   154/154     139      
+R5-metadata-order      presentation   154/154     139      
+R10-default-metadata   presentation   154/154     139      
+R12-indent             presentation   154/154     139      
+R13-blank-lines        presentation   154/154     111      
+R11-hex-literal        normalization  154/154     71       
+R16-literal-spelling   normalization  154/154     138      
+R15-cmp-commute        normalization  154/154     53       
+R17-binary-commute     normalization  154/154     10       
+R14-branch-negate      convention     105/154     49       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     154/154     0        
+R7-pure-swap           convention     88/154      69       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa23/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa24/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   332/332     211      
+R2-labels              presentation   332/332     306      
+R3-slots               presentation   332/332     202      
+R20-param-names        presentation   332/332     131      
+R4-slot-order          presentation   332/332     123      
+R9-function-order      presentation   332/332     144      
+R6-extra-declare       presentation   332/332     311      
+R5-metadata-order      presentation   332/332     311      
+R10-default-metadata   presentation   332/332     306      
+R12-indent             presentation   332/332     306      
+R13-blank-lines        presentation   332/332     202      
+R11-hex-literal        normalization  332/332     107      
+R16-literal-spelling   normalization  332/332     304      
+R15-cmp-commute        normalization  332/332     56       
+R17-binary-commute     normalization  332/332     10       
+R14-branch-negate      convention     268/332     64       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     331/332     1        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     247/332     100      ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa24/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa24/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   90/90       72       
+R2-labels              presentation   90/90       90       
+R3-slots               presentation   90/90       73       
+R20-param-names        presentation   90/90       54       
+R4-slot-order          presentation   90/90       50       
+R9-function-order      presentation   90/90       58       
+R6-extra-declare       presentation   90/90       90       
+R5-metadata-order      presentation   90/90       90       
+R10-default-metadata   presentation   90/90       90       
+R12-indent             presentation   90/90       90       
+R13-blank-lines        presentation   90/90       73       
+R11-hex-literal        normalization  90/90       53       
+R16-literal-spelling   normalization  90/90       89       
+R15-cmp-commute        normalization  90/90       41       
+R17-binary-commute     normalization  90/90       7        
+R14-branch-negate      convention     46/90       44       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     90/90       0        
+R7-pure-swap           convention     54/90       36       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa24/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa25/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   118/118     108      
+R2-labels              presentation   118/118     113      
+R3-slots               presentation   118/118     108      
+R20-param-names        presentation   118/118     89       
+R4-slot-order          presentation   118/118     86       
+R9-function-order      presentation   118/118     90       
+R6-extra-declare       presentation   118/118     113      
+R5-metadata-order      presentation   118/118     113      
+R10-default-metadata   presentation   118/118     113      
+R12-indent             presentation   118/118     113      
+R13-blank-lines        presentation   118/118     108      
+R11-hex-literal        normalization  118/118     49       
+R16-literal-spelling   normalization  118/118     110      
+R15-cmp-commute        normalization  118/118     39       
+R17-binary-commute     normalization  118/118     38       
+R14-branch-negate      convention     79/118      39       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     114/118     4        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     58/118      61       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa25/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa25/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   3/3         3        
+R2-labels              presentation   3/3         3        
+R3-slots               presentation   3/3         3        
+R20-param-names        presentation   3/3         2        
+R4-slot-order          presentation   3/3         3        
+R9-function-order      presentation   3/3         3        
+R6-extra-declare       presentation   3/3         3        
+R5-metadata-order      presentation   3/3         3        
+R10-default-metadata   presentation   3/3         3        
+R12-indent             presentation   3/3         3        
+R13-blank-lines        presentation   3/3         3        
+R11-hex-literal        normalization  3/3         2        
+R16-literal-spelling   normalization  3/3         3        
+R15-cmp-commute        normalization  3/3         2        
+R17-binary-commute     normalization  3/3         1        
+R14-branch-negate      convention     1/3         2        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     3/3         0        
+R7-pure-swap           convention     0/3         3        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa25/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa26/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   105/105     99       
+R2-labels              presentation   105/105     100      
+R3-slots               presentation   105/105     95       
+R20-param-names        presentation   105/105     81       
+R4-slot-order          presentation   105/105     90       
+R9-function-order      presentation   105/105     84       
+R6-extra-declare       presentation   105/105     100      
+R5-metadata-order      presentation   105/105     100      
+R10-default-metadata   presentation   105/105     100      
+R12-indent             presentation   105/105     100      
+R13-blank-lines        presentation   105/105     97       
+R11-hex-literal        normalization  105/105     63       
+R16-literal-spelling   normalization  105/105     100      
+R15-cmp-commute        normalization  105/105     66       
+R17-binary-commute     normalization  105/105     36       
+R14-branch-negate      convention     41/105      64       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     105/105     0        
+R7-pure-swap           convention     41/105      70       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa26/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa26/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   1/1         0        
+R2-labels              presentation   1/1         1        
+R3-slots               presentation   1/1         0        
+R20-param-names        presentation   1/1         0        
+R4-slot-order          presentation   1/1         0        
+R9-function-order      presentation   1/1         0        
+R6-extra-declare       presentation   1/1         1        
+R5-metadata-order      presentation   1/1         1        
+R10-default-metadata   presentation   1/1         1        
+R12-indent             presentation   1/1         1        
+R13-blank-lines        presentation   1/1         0        
+R11-hex-literal        normalization  1/1         0        
+R16-literal-spelling   normalization  1/1         1        
+R15-cmp-commute        normalization  1/1         0        
+R17-binary-commute     normalization  1/1         0        
+R14-branch-negate      convention     1/1         0        
+R8-copy-elision        convention     1/1         0        
+R7-pure-swap           convention     1/1         0        
+pa26/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa27/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   88/88       71       
+R2-labels              presentation   88/88       83       
+R3-slots               presentation   88/88       67       
+R20-param-names        presentation   88/88       47       
+R4-slot-order          presentation   88/88       48       
+R9-function-order      presentation   88/88       48       
+R6-extra-declare       presentation   88/88       85       
+R5-metadata-order      presentation   88/88       85       
+R10-default-metadata   presentation   88/88       83       
+R12-indent             presentation   88/88       83       
+R13-blank-lines        presentation   88/88       67       
+R11-hex-literal        normalization  88/88       39       
+R16-literal-spelling   normalization  88/88       85       
+R15-cmp-commute        normalization  88/88       32       
+R17-binary-commute     normalization  88/88       13       
+R14-branch-negate      convention     56/88       32       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     68/88       20       ERROR: generated LowIR failed sanity validation: function @main block ^land_rhs_4 indirect call expects pointer-valued o
+R7-pure-swap           convention     49/88       43       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa27/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa27/tests/spec
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   8/8         7        
+R2-labels              presentation   8/8         7        
+R3-slots               presentation   8/8         7        
+R20-param-names        presentation   8/8         5        
+R4-slot-order          presentation   8/8         5        
+R9-function-order      presentation   8/8         5        
+R6-extra-declare       presentation   8/8         7        
+R5-metadata-order      presentation   8/8         7        
+R10-default-metadata   presentation   8/8         7        
+R12-indent             presentation   8/8         7        
+R13-blank-lines        presentation   8/8         7        
+R11-hex-literal        normalization  8/8         5        
+R16-literal-spelling   normalization  8/8         7        
+R15-cmp-commute        normalization  8/8         4        
+R17-binary-commute     normalization  8/8         1        
+R14-branch-negate      convention     4/8         4        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     6/8         2        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R7-pure-swap           convention     4/8         5        ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa27/tests/spec seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa28/tests/general
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   42/42       42       
+R2-labels              presentation   42/42       42       
+R3-slots               presentation   42/42       41       
+R20-param-names        presentation   42/42       40       
+R4-slot-order          presentation   42/42       32       
+R9-function-order      presentation   42/42       39       
+R6-extra-declare       presentation   42/42       42       
+R5-metadata-order      presentation   42/42       42       
+R10-default-metadata   presentation   42/42       42       
+R12-indent             presentation   42/42       42       
+R13-blank-lines        presentation   42/42       41       
+R11-hex-literal        normalization  42/42       23       
+R16-literal-spelling   normalization  42/42       42       
+R15-cmp-commute        normalization  42/42       24       
+R17-binary-commute     normalization  42/42       2        
+R14-branch-negate      convention     21/42       21       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+R8-copy-elision        convention     41/42       1        ERROR: generated LowIR failed sanity validation: function @main block ^entry indirect call expects pointer-valued operan
+R7-pure-swap           convention     18/42       24       ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonica
+pa28/tests/general seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa37/tests/o0
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   4/4         0        
+R2-labels              presentation   4/4         0        
+R3-slots               presentation   4/4         0        
+R20-param-names        presentation   4/4         0        
+R4-slot-order          presentation   4/4         0        
+R9-function-order      presentation   4/4         0        
+R6-extra-declare       presentation   4/4         0        
+R5-metadata-order      presentation   4/4         0        
+R10-default-metadata   presentation   4/4         0        
+R12-indent             presentation   4/4         0        
+R13-blank-lines        presentation   4/4         0        
+R11-hex-literal        normalization  4/4         0        
+R16-literal-spelling   normalization  4/4         0        
+R15-cmp-commute        normalization  4/4         0        
+R17-binary-commute     normalization  4/4         0        
+R14-branch-negate      convention     4/4         0        
+R8-copy-elision        convention     4/4         0        
+R7-pure-swap           convention     4/4         0        
+pa37/tests/o0 seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa37/tests/o1
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   71/71       0        
+R2-labels              presentation   71/71       0        
+R3-slots               presentation   71/71       0        
+R20-param-names        presentation   71/71       0        
+R4-slot-order          presentation   71/71       0        
+R9-function-order      presentation   71/71       0        
+R6-extra-declare       presentation   71/71       0        
+R5-metadata-order      presentation   71/71       0        
+R10-default-metadata   presentation   71/71       0        
+R12-indent             presentation   71/71       0        
+R13-blank-lines        presentation   71/71       0        
+R11-hex-literal        normalization  71/71       0        
+R16-literal-spelling   normalization  71/71       0        
+R15-cmp-commute        normalization  71/71       0        
+R17-binary-commute     normalization  71/71       0        
+R14-branch-negate      convention     71/71       0        
+R8-copy-elision        convention     70/71       0        ERROR: generated LowIR failed sanity validation: function @main block ^entry store expects pointer-valued operand, got %
+R7-pure-swap           convention     71/71       0        
+pa37/tests/o1 seams: PASS (18 rewrites)
+
+# LowIR comparison seams on pa37/tests/o2
+mode                   kind           pass/total  changed  first failure
+R1-temps               presentation   13/13       0        
+R2-labels              presentation   13/13       0        
+R3-slots               presentation   13/13       0        
+R20-param-names        presentation   13/13       0        
+R4-slot-order          presentation   13/13       0        
+R9-function-order      presentation   13/13       0        
+R6-extra-declare       presentation   13/13       0        
+R5-metadata-order      presentation   13/13       0        
+R10-default-metadata   presentation   13/13       0        
+R12-indent             presentation   13/13       0        
+R13-blank-lines        presentation   13/13       0        
+R11-hex-literal        normalization  13/13       0        
+R16-literal-spelling   normalization  13/13       0        
+R15-cmp-commute        normalization  13/13       0        
+R17-binary-commute     normalization  13/13       0        
+R14-branch-negate      convention     13/13       0        
+R8-copy-elision        convention     13/13       0        
+R7-pure-swap           convention     13/13       0        
+pa37/tests/o2 seams: PASS (18 rewrites)

@@ -7,7 +7,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $discard__1
     %t3 = addr $b
     %t4 = call obj<1x1> @Box__make(%t3)
-    copyobj 1x1 %t4, %t2
     return i32 0
 }
 function @Box__make(%this : ptr) -> obj<1x1> [binding=weak, object=_ZN3Box4makeEv] {

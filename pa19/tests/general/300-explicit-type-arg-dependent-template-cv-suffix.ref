@@ -7,7 +7,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $discard__1
     %t3 = addr $rex
     %t4 = call obj<1x1> @by_ref(%t3)
-    copyobj 1x1 %t4, %t2
     return i32 0
 }
 function @by_ref(%rex : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_Z6by_refIiEN5proto8terminalI17reference_wrapperIK11basic_regexIT_EEE4typeERS6_] {
@@ -25,7 +24,6 @@ function @by_ref(%rex : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=
     %t4 = addr $argobj__2
     %t5 = addr $ref
     %t6 = call obj<1x1> @proto__terminal_reference_wrapper_basic_regex_int__const____type__make($argobj__2)
-    copyobj 1x1 %t6, %t3
     return obj<1x1> $retobj__1
 }
 function @reference_wrapper_basic_regex_int__const___reference_wrapper(%this : ptr, %__param1 : ptr [pass=reference]) -> void [binding=weak, object=_ZN17reference_wrapperIK11basic_regexIiEEC1ERS2_] {

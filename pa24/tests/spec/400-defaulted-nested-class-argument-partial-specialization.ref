@@ -18,7 +18,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call obj<1x1> @default_statement(%t4)
     copyobj 1x1 %t5, %t3
     %t6 = call obj<1x1> @switch_statement(%t2, %t3)
-    copyobj 1x1 %t6, %t1
     %t7 = call ptr @selected_case_of($argobj__2)
     %t8 = cmp eq ptr %t7, 0
     branch %t8, ^cond_then_1, ^cond_else_2

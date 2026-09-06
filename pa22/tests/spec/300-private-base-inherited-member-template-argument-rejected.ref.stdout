@@ -1,0 +1,11 @@
+ERROR: failed class template instantiation: use<derived::member> [scope <here>] [arg_texts derived::member] [bindings ] [phase callsemantic] [top-level declaration 3 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier use<derived::member>
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier rejected
+}]
+Diagnostic context:
+collect_simple_declaration [use<derived::member>rejected;] at tests/spec/300-private-base-inherited-member-template-argument-rejected.t:21:1
+  lookup_type [use<derived::member>]

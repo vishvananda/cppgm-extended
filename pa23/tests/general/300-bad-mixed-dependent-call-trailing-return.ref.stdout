@@ -1,0 +1,45 @@
+ERROR: unknown non-dependent name in function template signature missing at tests/general/300-bad-mixed-dependent-call-trailing-return.t:5:55 [top-level declaration 0 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier F
+      type-parameter
+        parameter-key KW_CLASS:class
+        parameter-pack ...
+        identifier Ts
+  simple-declaration
+    decl-specifier-seq
+      decl-specifier KW_AUTO:auto
+    init-declarator-list
+      init-declarator
+        declarator
+          identifier skipped
+          parameter-clause
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:F
+              declarator
+                identifier f
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:Ts
+              declarator
+                parameter-pack ...
+                identifier args
+          trailing-return-type decltype(f(args...),missing())
+            type-id
+              type-specifier-seq
+                decltype-specifier decltype(f(args...),missing())
+                  binary-expression OP_COMMA:,
+                    call-expression
+                      id-expression f
+                      argument-list
+                        pack-expansion-expression
+                          id-expression args
+                    call-expression
+                      id-expression missing
+                      argument-list
+}]
+Diagnostic context:
+collect_template_declaration [template<class F,class...Ts>auto skipped(F f,Ts...args)->decltype(f(args...),missing());] at tests/general/300-bad-mixed-dependent-call-trailing-return.t:4:1

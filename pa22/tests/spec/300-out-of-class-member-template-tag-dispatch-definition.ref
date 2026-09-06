@@ -13,7 +13,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call ptr @source()
     %t4 = addr $argobj__2
     %t5 = call obj<1x1> @make_forward_tag()
-    copyobj 1x1 %t5, %t4
     %t6 = call i32 @box_int___pick__ov2(%t1, %t2, %t3, $argobj__2)
     %t7 = cmp eq i32 %t6, 2
     branch %t7, ^cond_then_1, ^cond_else_2

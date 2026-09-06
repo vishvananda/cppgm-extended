@@ -1,0 +1,10 @@
+ERROR: failed non-type template argument evaluation: (runtime_value(),1) [scope <here>] [bindings ] [parameter-scope <here>] [parameter-bindings ] [phase template-resolution] [top-level declaration 2 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier marker<(runtime_value(),1)>
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier invalid
+}]
+Diagnostic context:
+collect_simple_declaration [marker<(runtime_value(),1)>invalid;] at tests/general/500-bad-nontype-argument-discarded-runtime-comma.t:12:1

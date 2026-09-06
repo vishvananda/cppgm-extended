@@ -1,0 +1,10 @@
+ERROR: duplicate function definition [name f] [scope <global>] [type function of () returning void] at tests/400-double-func-def.t.1:2:1 [previous definition at tests/400-double-func-def.t.1:1:1] [top-level declaration 1 kind=function-definition ast={function-definition
+  decl-specifier-seq
+    decl-specifier KW_VOID:void
+  declarator
+    identifier f
+    parameter-clause
+  compound-statement
+}]
+Diagnostic context:
+collect_function_definition [void f(){}] at tests/400-double-func-def.t.1:2:1

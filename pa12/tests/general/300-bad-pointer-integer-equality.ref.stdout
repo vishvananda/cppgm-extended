@@ -1,0 +1,8 @@
+ERROR: unsupported comparison operands lhs=pointer to int rhs=int expr=== [function compare] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:value=pointer to int}]
+Diagnostic context:
+analyze_function_binding_output [compare]
+  analyze_statement [return-statement] at tests/general/300-bad-pointer-integer-equality.t:3:3
+    analyze_expression_for_target [== -> bool] at tests/general/300-bad-pointer-integer-equality.t:3:10
+      semantic_expression::analyze_expression_for_target [== -> bool] at tests/general/300-bad-pointer-integer-equality.t:3:10
+        analyze_expression [==] at tests/general/300-bad-pointer-integer-equality.t:3:10
+          semantic_expression::analyze_expression [==] at tests/general/300-bad-pointer-integer-equality.t:3:10

@@ -7,7 +7,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $argobj__2
     call void @local_collection_int___int_const_____local(%t2)
     %t3 = call obj<1x1> @collection_int___select($argobj__2)
-    copyobj 1x1 %t3, %t1
     return i32 0
 }
 function @local_collection_int___int_const_____local(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN5localI10collectionIiEPKiEC1Ev, trivial_lifecycle=yes] {

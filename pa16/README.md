@@ -92,6 +92,16 @@ functions, member functions, constructors, and destructors is in scope for the
 tested metadata path. Other explicit `noexcept(expr)` forms may lower
 conservatively without `unwind=no`.
 
+A call to `__builtin_unreachable()` lowers directly to the PA13
+`unreachable` block terminator. It does not emit a synthetic function
+declaration or call.
+
+The backing array for each C++ string literal is emitted as an internal
+structured global with `storage=readonly`.  This records the source array's
+const element contract in serializable LowIR; an ordinary writable character
+array must not gain that storage property merely because it has a static
+initializer.
+
 PA16 writes a single concatenated LowIR program consisting of:
 
 - zero or more `global` definitions
@@ -165,6 +175,16 @@ For each test case `x`:
 
 `make test` runs the checked-in local suite under `tests/` and supplies
 `--emit-lowir -O0` through the harness.
+
+`make test` also runs `make test-seams` on `tests/general`
+(`../scripts/check_lowir_seams.py`): it rewrites the lane's own outputs
+along every line of the two lists in `../pa13/lowir.md` ("What The
+Comparison Absorbs And What It Enforces") and fails if a rewrite the list
+says is absorbed is rejected, or a rewrite the list says is a convention is
+accepted, or a list entry has lost its sentence.  PA16 hosts that check for
+all the source-to-LowIR assignments because its lane is the first with
+classes, retypes and helper functions; the invariant it keeps is that
+nothing the comparison rejects is unwritten.
 
 The PA16 suite is split by test role:
 
@@ -252,6 +272,10 @@ PA16 supports the following in addition to the PA15 procedural subset:
   names a private nested type in the member's class context
 - constructors and destructors defined inside the class body
 - implicit default constructors and destructors when no user-declared one exists
+- semantically trivial constructor/destructor actions may be omitted directly;
+  if a retained helper must be substituted, use the ordinary mandatory inline
+  policy rather than a separate lifecycle label, let `no_inline` take
+  precedence for that helper, and decide `object_root` retention independently
 - demand-driven LowIR emission of the ctor/dtor helpers required by the supported lifetime
   paths above
 - constructor initializer lists for:
@@ -260,13 +284,27 @@ PA16 supports the following in addition to the PA15 procedural subset:
 - non-static default member initializers for the supported scalar and supported
   class/aggregate subobject construction forms, with explicit constructor member-initializers
   taking precedence
+- local-class default member initializers that use an enclosing integral
+  constant expression without odr-using the enclosing automatic object
 - aggregate initialization for the supported PA16 object subset, including namespace-scope
   aggregate arrays whose elements contain string-literal pointer members
 - local and namespace-scope class object lifetime:
   - constructor execution at declaration time / program startup
   - destructor execution at block exit, `return`, loop exit, and program shutdown
+  - a `goto` that leaves one or more active object scopes destroys those
+    objects in reverse construction order before transferring control; a
+    backward `goto` within one scope likewise destroys objects initialized
+    after the target label before reconstructing them on the next pass
   - per-thread initialization for namespace-scope `thread_local` class objects,
     with collision-free internal wrapper, guard, and initializer symbols
+- shared LowIR cleanup continuations for equal lexical destructor suffixes;
+  return paths may converge on a continuation only after preserving the return
+  value and only when the destructor sequence and enclosing control context are
+  identical
+- one `zeroinit` operation for value-initialization that already identifies an
+  exact contiguous nonvolatile, non-union object or subobject span; explicit
+  initializer actions and union, volatile, lifetime, or side-effect boundaries
+  remain separate
 - recursive member/base construction and destruction for supported class-type subobjects
 - anonymous struct/union members, including injected member lookup and layout in
   the supported class subset
@@ -350,5 +388,11 @@ Useful intermediate representations include:
   PA12/PA15
 - explicit constructor/destructor actions attached to declarations or generated function bodies
   so lifetime can be lowered incrementally instead of requiring a separate runtime model
+- compact cleanup-state identities formed from an action, its tail, its terminal
+  continuation, and its control context; interning those identities while
+  lowering avoids copying or repeatedly comparing complete destructor sequences
+- exact typed size/alignment and volatile/union-containment layout facts can
+  select a contiguous `zeroinit` at the initialization site without rescanning
+  emitted instructions
 - demand-driven helper emission keyed by semantic entities rather than source
   spelling, so unused constructors/destructors do not perturb earlier outputs

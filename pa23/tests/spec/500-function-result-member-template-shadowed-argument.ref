@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $f
     %t5 = addr $value
     %t6 = call obj<1x1> @functor_int___operator___ov2(%t4, %t5)
-    copyobj 1x1 %t6, %t3
     return i32 0
 }
 function @functor_int___operator___ov2(%this : ptr, %value : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZNK7functorIiEaSI6actualEE5pair2IS0_N13copy_argumentIKT_E4typeEERS6_] {

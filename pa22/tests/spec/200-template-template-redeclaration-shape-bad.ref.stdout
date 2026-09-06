@@ -1,0 +1,17 @@
+ERROR: conflicting class template redeclaration at tests/spec/200-template-template-redeclaration-shape-bad.t:8:1 [previous declaration at tests/spec/200-template-template-redeclaration-shape-bad.t:5:1] [top-level declaration 1 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        template-template-parameter
+        template-parameter-clause
+          template-parameter-list
+            non-type-template-parameter
+              decl-specifier-seq
+                decl-specifier KW_INT:int
+        parameter-key KW_CLASS:class
+        identifier F
+  class-specifier holder
+    class-key KW_STRUCT:struct
+}]
+Diagnostic context:
+collect_template_declaration [template<template<int>class F>struct holder{};] at tests/spec/200-template-template-redeclaration-shape-bad.t:7:1

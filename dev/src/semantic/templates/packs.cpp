@@ -1,0 +1,665 @@
+#include "semantic/analysis/analyzer.h"
+#include "support/exceptions.h"
+
+#include <algorithm>
+#include <limits>
+#include <vector>
+
+namespace cppgm
+{
+namespace semantic
+{
+
+namespace
+{
+
+bool HasFunctionParameterPack(const SyntaxArena& arena, NodeId node)
+{
+	if (node == kNoNode) return false;
+	if (arena.IsTag(node, ::cppgm::syntax::STAG_PARAMETER_DECLARATION))
+	{
+		for (std::uint32_t edge = arena.FirstEdge(node); edge != kNoEdge;
+			edge = arena.NextEdge(edge))
+		{
+			const NodeId child = arena.EdgeChild(edge);
+			if (!arena.IsTag(child, ::cppgm::syntax::STAG_DECLARATOR)) continue;
+			for (std::uint32_t declarator_edge = arena.FirstEdge(child);
+				declarator_edge != kNoEdge;
+				declarator_edge = arena.NextEdge(declarator_edge))
+				if (arena.IsTag(arena.EdgeChild(declarator_edge),
+					::cppgm::syntax::STAG_PARAMETER_PACK)) return true;
+		}
+	}
+	for (std::uint32_t edge = arena.FirstEdge(node); edge != kNoEdge;
+		edge = arena.NextEdge(edge))
+		if (HasFunctionParameterPack(arena, arena.EdgeChild(edge))) return true;
+	return false;
+}
+
+}
+
+ExpressionInfo Analyzer::AnalyzeSizeofPackExpression(
+	NodeId node, ScopeId scope)
+{
+	const NameId name = program_->names.UseInterned(arena_->PayloadId(node));
+	std::vector<TemplateArgument> template_arguments;
+	std::vector<BindingId> function_arguments;
+	std::vector<std::size_t> constexpr_arguments;
+	std::size_t count = 0;
+	if (LookupTemplateArgumentPack(scope, name, &template_arguments))
+		count = template_arguments.size();
+	else if (FindConstexprPack(name, &constexpr_arguments))
+		count = constexpr_arguments.size();
+	else if (LookupFunctionParameterPack(scope, name, &function_arguments))
+		count = function_arguments.size();
+	else if (NamesTemplateParameterShape(scope, name))
+	{
+		// A partial specialization's own pack is bound to a shape placeholder
+		// while its canonical arguments are materialized, so it has no
+		// elements to count yet.  sizeof... over it is value-dependent there,
+		// not an error; libc++'s tuple constrains one pack against another
+		// with __enable_if_t<sizeof...(_Up) == sizeof...(_Tp)> in exactly this
+		// position.
+		ExpressionInfo dependent;
+		dependent.type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+		dependent.node = MakeDump(DUMP_SIZEOF_EXPRESSION, dependent.type,
+			VALUE_PRVALUE);
+		dependent.dependent_value = true;
+		return dependent;
+	}
+	else ThrowSemanticError("sizeof names no parameter pack");
+	ExpressionInfo result;
+	result.type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+	result.node = MakeDump(DUMP_SIZEOF_EXPRESSION, result.type, VALUE_PRVALUE);
+	result.constant = true;
+	result.value = static_cast<std::int64_t>(count);
+	RecordExpressionFacts(result);
+	++expression_count_;
+	return result;
+}
+
+ExpressionInfo Analyzer::AnalyzeFoldExpression(NodeId node, ScopeId scope)
+{
+	const bool unary_left = FindChild(node, ::cppgm::syntax::STAG_FOLD_LEFT) != kNoNode;
+	const bool unary_right = FindChild(node, ::cppgm::syntax::STAG_FOLD_RIGHT) != kNoNode;
+	const bool binary = FindChild(node, ::cppgm::syntax::STAG_FOLD_BINARY) != kNoNode;
+	if ((!unary_left && !unary_right && !binary) ||
+		(unary_left && unary_right))
+		ThrowInternalCompilerError("fold expression has invalid direction");
+	std::vector<NodeId> operands;
+	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		const NodeId child = arena_->EdgeChild(edge);
+		if (!arena_->IsTag(child, ::cppgm::syntax::STAG_FOLD_LEFT) &&
+			!arena_->IsTag(child, ::cppgm::syntax::STAG_FOLD_RIGHT) &&
+			!arena_->IsTag(child, ::cppgm::syntax::STAG_FOLD_BINARY)) operands.push_back(child);
+	}
+	if (operands.size() != (binary ? 2U : 1U))
+		ThrowInternalCompilerError("fold expression has invalid operands");
+	NodeId pattern = operands[0];
+	NodeId initializer = kNoNode;
+	bool left_fold = unary_left;
+	if (binary)
+	{
+		std::vector<NameId> left_packs, right_packs;
+		CollectPackExpansionNames(operands[0], scope, &left_packs);
+		CollectPackExpansionNames(operands[1], scope, &right_packs);
+		if (left_packs.empty() == right_packs.empty())
+			ThrowSemanticError(
+				"binary fold must contain one unexpanded parameter pack");
+		left_fold = left_packs.empty();
+		pattern = left_fold ? operands[1] : operands[0];
+		initializer = left_fold ? operands[0] : operands[1];
+	}
+	std::vector<ScopeId> element_scopes;
+	if (!ExpandPackElementScopes(pattern, scope, &element_scopes))
+	{
+		if (CandidateSubstitutionActive())
+		{
+			RecordCandidateSubstitutionFailure();
+			return CandidateSubstitutionFailure();
+		}
+		ThrowSemanticError("fold expression contains no parameter pack");
+	}
+	std::vector<ExpressionInfo> elements;
+	elements.reserve(element_scopes.size());
+	for (std::size_t i = 0; i < element_scopes.size(); ++i)
+	{
+		elements.push_back(AnalyzeExpression(pattern, element_scopes[i]));
+		if (CandidateSubstitutionFailed()) return elements.back();
+	}
+	const std::string operation = PayloadSource(node);
+	if (elements.empty() && initializer == kNoNode)
+	{
+		if (operation != "&&" && operation != "||")
+			ThrowSemanticError("empty unary fold has no identity");
+		ExpressionInfo identity = MakeLiteral(
+			program_->types.Fundamental(FUND_BOOL),
+			program_->names.Intern(operation == "&&" ? "true" : "false"));
+		identity.constant = true;
+		identity.value = operation == "&&";
+		RecordExpressionFacts(identity);
+		return identity;
+	}
+	ExpressionInfo result;
+	NodeId result_syntax = kNoNode;
+	if (left_fold)
+	{
+		std::size_t first = 0;
+		if (initializer != kNoNode)
+		{
+			result = AnalyzeExpression(initializer, scope);
+			result_syntax = initializer;
+		}
+		else
+		{
+			result = elements[0]; result_syntax = pattern; first = 1;
+		}
+		for (std::size_t i = first; i < elements.size(); ++i)
+		{
+			result = BuildBinaryExpression(operation, arena_->Payload(node),
+				result_syntax, pattern, result, elements[i], scope);
+			result_syntax = node;
+		}
+	}
+	else
+	{
+		std::size_t remaining = elements.size();
+		if (initializer != kNoNode)
+		{
+			result = AnalyzeExpression(initializer, scope);
+			result_syntax = initializer;
+		}
+		else
+		{
+			result = elements[--remaining]; result_syntax = pattern;
+		}
+		while (remaining != 0)
+		{
+			--remaining;
+			result = BuildBinaryExpression(operation, arena_->Payload(node),
+				pattern, result_syntax, elements[remaining], result, scope);
+			result_syntax = node;
+		}
+	}
+	return result;
+}
+
+void Analyzer::InitializeFunctionTemplatePackShape(
+	FunctionTemplatePattern* pattern, const DeclaratorInfo& shape)
+{
+	pattern->function_parameter_pack =
+		HasFunctionParameterPack(*arena_, pattern->declarator) &&
+		program_->types.Get(pattern->shape_type).variadic;
+	pattern->required_parameter_count =
+		RequiredFunctionParameterCount(shape.parameters);
+	if (pattern->function_parameter_pack &&
+		pattern->required_parameter_count != 0)
+		--pattern->required_parameter_count;
+}
+
+void Analyzer::BindFunctionParameterPackElement(
+	ScopeId scope, NameId pack, BindingId binding)
+{
+	if (pack == 0) return;
+	const std::uint64_t key =
+		(static_cast<std::uint64_t>(scope) << 32) | pack;
+	CompactIndexSequence& elements =
+		function_parameter_pack_bindings_.Ensure(key);
+	if (binding != kNoBinding) elements.Push(binding);
+}
+
+NameId Analyzer::FunctionParameterPackName(NodeId declarator)
+{
+	if (declarator == kNoNode) return 0;
+	if (arena_->IsTag(declarator, ::cppgm::syntax::STAG_PARAMETER_DECLARATION))
+	{
+		const NodeId parameter = FindChild(declarator, ::cppgm::syntax::STAG_DECLARATOR);
+		if (parameter != kNoNode &&
+			FindChild(parameter, ::cppgm::syntax::STAG_PARAMETER_PACK) != kNoNode)
+			return DeclaratorName(parameter);
+	}
+	for (std::uint32_t edge = arena_->FirstEdge(declarator); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		const NameId name = FunctionParameterPackName(arena_->EdgeChild(edge));
+		if (name != 0) return name;
+	}
+	return 0;
+}
+
+void Analyzer::CollectPackExpansionNames(NodeId node, ScopeId scope,
+	std::vector<NameId>* names) const
+{
+	CollectPackExpansionNamesImpl(node, scope, names, true);
+}
+
+void Analyzer::CollectPackExpansionNamesImpl(NodeId node, ScopeId scope,
+	std::vector<NameId>* names, bool root) const
+{
+	if (node == kNoNode ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_SIZEOF_PACK_EXPRESSION)) return;
+	if (!root && arena_->IsTag(node, ::cppgm::syntax::STAG_TYPE_ID))
+	{
+		NodeId declarator = FindChild(node, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR);
+		if (declarator == kNoNode)
+			declarator = FindChild(node, ::cppgm::syntax::STAG_DECLARATOR);
+		if (declarator != kNoNode &&
+			FindChild(declarator, ::cppgm::syntax::STAG_PARAMETER_PACK) != kNoNode) return;
+	}
+	const bool can_name_pack =
+		arena_->IsTag(node, ::cppgm::syntax::STAG_ID_EXPRESSION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_TYPE_NAME) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_DECL_SPECIFIER) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_NAME_COMPONENT);
+	if (can_name_pack)
+	{
+		const std::string spelling = PayloadSource(node);
+		if (!spelling.empty())
+		{
+			const NameId name = program_->names.Intern(spelling);
+			std::vector<TemplateArgument> template_pack;
+			std::vector<BindingId> function_pack;
+			std::vector<std::size_t> constexpr_pack;
+			if ((LookupTemplateArgumentPack(scope, name, &template_pack) ||
+				 FindConstexprPack(name, &constexpr_pack) ||
+				 LookupFunctionParameterPack(scope, name, &function_pack)) &&
+				std::find(names->begin(), names->end(), name) == names->end())
+				names->push_back(name);
+		}
+	}
+	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+		CollectPackExpansionNamesImpl(
+			arena_->EdgeChild(edge), scope, names, false);
+}
+
+bool Analyzer::ExpandPackElementScopes(NodeId pattern, ScopeId scope,
+	std::vector<ScopeId>* element_scopes)
+{
+	std::vector<NameId> names;
+	CollectPackExpansionNames(pattern, scope, &names);
+	if (names.empty()) return false;
+	std::vector<std::vector<TemplateArgument> > template_packs(names.size());
+	std::vector<std::vector<BindingId> > function_packs(names.size());
+	std::vector<std::uint8_t> pack_kind(names.size(), 0);
+	std::size_t length = std::numeric_limits<std::size_t>::max();
+	for (std::size_t source = 0; source < names.size(); ++source)
+	{
+		if (LookupTemplateArgumentPack(
+			scope, names[source], &template_packs[source]))
+			pack_kind[source] = 1;
+		else if (LookupFunctionParameterPack(
+			scope, names[source], &function_packs[source]))
+			pack_kind[source] = 2;
+		else
+		{
+			if (CandidateSubstitutionActive())
+			{
+				RecordCandidateSubstitutionFailure();
+				return false;
+			}
+			ThrowSemanticError(
+				"declaration pack expansion requires a template parameter pack");
+		}
+		const std::size_t source_length = pack_kind[source] == 1 ?
+			template_packs[source].size() : function_packs[source].size();
+		if (length == std::numeric_limits<std::size_t>::max())
+			length = source_length;
+		else if (length != source_length)
+		{
+			if (CandidateSubstitutionActive())
+			{
+				RecordCandidateSubstitutionFailure();
+				return false;
+			}
+			ThrowSemanticError(
+				"pack expansion operands have different lengths at " +
+				program_->names.Get(names[source]) + ": " +
+				std::to_string(length) + " versus " +
+				std::to_string(source_length));
+		}
+	}
+	element_scopes->reserve(element_scopes->size() + length);
+	for (std::size_t element = 0; element < length; ++element)
+	{
+		const ScopeId element_scope = NewScope(scope,
+			SCOPE_TEMPLATE_PARAMETERS, 0, ScopePrefixId(scope));
+		for (std::size_t source = 0; source < names.size(); ++source)
+		{
+			if (pack_kind[source] == 1)
+			{
+				TemplateParameter parameter;
+				parameter.name = names[source];
+				parameter.kind = template_packs[source][element].kind;
+				BindTemplateArgument(element_scope, parameter,
+					template_packs[source][element]);
+			}
+			else
+			{
+				const BindingId binding = function_packs[source][element];
+				if (binding >= program_->bindings.size())
+					ThrowInternalCompilerError(
+						"function parameter pack binding is invalid");
+				const BindingRecord& record = program_->bindings[binding];
+				program_->AddBinding(element_scope, BIND_PARAMETER,
+					names[source], record.type, record.constant, record.value,
+					NAMED_NONE, 0, binding, false);
+			}
+		}
+		element_scopes->push_back(element_scope);
+	}
+	return true;
+}
+
+void Analyzer::BindLexicalTypeNames(NodeId pattern,
+	ScopeId lexical_owner, ScopeId target_scope)
+{
+	if (pattern == kNoNode) return;
+	if (arena_->IsTag(pattern, ::cppgm::syntax::STAG_NAME_COMPONENT))
+	{
+		const NameId name = program_->names.UseInterned(
+			arena_->SemanticPayloadId(pattern));
+		if (name != 0 && program_->LookupDirect(
+			target_scope, name, LOOKUP_TYPE).type == kNoType)
+		{
+			const LookupResult lexical = program_->LookupDirect(
+				lexical_owner, name, LOOKUP_TYPE);
+			if (lexical.type != kNoType)
+				program_->AddBinding(target_scope,
+					BIND_TYPE_ALIAS, name, lexical.type);
+		}
+	}
+	for (std::uint32_t edge = arena_->FirstEdge(pattern); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+		BindLexicalTypeNames(arena_->EdgeChild(edge),
+			lexical_owner, target_scope);
+}
+
+void Analyzer::ExpandExpressionPack(NodeId expansion, ScopeId scope,
+	std::vector<NodeId>* syntax,
+	std::vector<ExpressionInfo>* expressions)
+{
+	if (!arena_->IsTag(expansion, ::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION))
+		ThrowInternalCompilerError("expression pack expansion node is invalid");
+	const NodeId operand = FirstSemanticChild(expansion);
+	if (operand == kNoNode)
+		ThrowSemanticError("empty pack expansion expression");
+	std::vector<NameId> names;
+	CollectPackExpansionNames(operand, scope, &names);
+	if (names.empty())
+	{
+		if (CandidateSubstitutionActive())
+		{
+			RecordCandidateSubstitutionFailure();
+			return;
+		}
+		ThrowSemanticError("pack expansion contains no unexpanded pack");
+	}
+	std::vector<std::vector<TemplateArgument> > template_packs(names.size());
+	std::vector<std::vector<BindingId> > function_packs(names.size());
+	std::vector<std::vector<std::size_t> > constexpr_packs(names.size());
+	// 1=template argument pack, 2=invocation-local function pack.
+	std::vector<std::uint8_t> pack_kind(names.size(), 0);
+	std::size_t length = std::numeric_limits<std::size_t>::max();
+	for (std::size_t source = 0; source < names.size(); ++source)
+	{
+		if (LookupTemplateArgumentPack(
+			scope, names[source], &template_packs[source]))
+			pack_kind[source] = 1;
+		else if (FindConstexprPack(
+			names[source], &constexpr_packs[source]))
+			pack_kind[source] = 2;
+		else if (!LookupFunctionParameterPack(
+			scope, names[source], &function_packs[source]))
+			ThrowInternalCompilerError("collected pack binding disappeared");
+		const std::size_t source_length = pack_kind[source] == 1 ?
+			template_packs[source].size() : pack_kind[source] == 2 ?
+			constexpr_packs[source].size() : function_packs[source].size();
+		if (length == std::numeric_limits<std::size_t>::max())
+			length = source_length;
+		else if (length != source_length)
+		{
+			if (CandidateSubstitutionActive())
+			{
+				RecordCandidateSubstitutionFailure();
+				return;
+			}
+			ThrowSemanticError(
+				"pack expansion operands have different lengths");
+		}
+	}
+	for (std::size_t element = 0; element < length; ++element)
+	{
+		bool needs_semantic_scope = false;
+		bool needs_constexpr_block = false;
+		for (std::size_t source = 0; source < names.size(); ++source)
+		{
+			needs_semantic_scope |= pack_kind[source] != 2;
+			needs_constexpr_block |= pack_kind[source] == 2;
+		}
+		const ScopeId element_scope = needs_semantic_scope ? NewScope(scope,
+			SCOPE_TEMPLATE_PARAMETERS, 0, ScopePrefixId(scope)) : scope;
+		if (needs_constexpr_block) PushConstexprBlock();
+		for (std::size_t source = 0; source < names.size(); ++source)
+		{
+			if (pack_kind[source] == 1)
+			{
+				TemplateParameter parameter;
+				parameter.name = names[source];
+				parameter.kind = template_packs[source][element].kind;
+				BindTemplateArgument(element_scope, parameter,
+					template_packs[source][element]);
+			}
+			else if (pack_kind[source] == 2)
+			{
+				const ConstexprLocalValue& local = constexpr_locals_[
+					constexpr_packs[source][element]];
+				if (!AddConstexprLocal(names[source], 0,
+					local.type, local.value))
+					ThrowInternalCompilerError(
+						"constexpr pack element alias conflicts");
+			}
+			else
+			{
+				const BindingId binding = function_packs[source][element];
+				if (binding >= program_->bindings.size())
+					ThrowInternalCompilerError(
+						"function parameter pack binding is invalid");
+				const BindingRecord& record = program_->bindings[binding];
+				program_->AddBinding(element_scope, BIND_PARAMETER, names[source],
+					record.type, record.constant, record.value, NAMED_NONE, 0,
+					binding, false);
+			}
+		}
+		syntax->push_back(kNoNode);
+		expressions->push_back(AnalyzeExpression(operand, element_scope));
+		if (needs_constexpr_block) PopConstexprBlock();
+		if (CandidateSubstitutionFailed()) return;
+	}
+}
+
+bool Analyzer::TryAnalyzeExpandedBracedInit(
+	NodeId node, ScopeId scope, TypeId target, ExpressionInfo* result)
+{
+	bool has_expansion = false;
+	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+		if (arena_->IsTag(
+			arena_->EdgeChild(edge), "pack-expansion-expression"))
+			has_expansion = true;
+	if (!has_expansion) return false;
+	std::vector<NodeId> syntax;
+	std::vector<ExpressionInfo> values;
+	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		const NodeId child = arena_->EdgeChild(edge);
+		if (arena_->IsTag(child, ::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION))
+			ExpandExpressionPack(child, scope, &syntax, &values);
+		else
+		{
+			syntax.push_back(child);
+			values.push_back(AnalyzeExpression(child, scope));
+		}
+		if (CandidateSubstitutionFailed())
+		{
+			*result = ExpressionInfo();
+			return true;
+		}
+	}
+	TypeId object = program_->types.RemoveTopCv(target);
+	const TypeRecord record = program_->types.Get(object);
+	const EntityId entity = EntityOf(object);
+	const bool class_aggregate = record.kind == TYPE_NAMED &&
+		IsClassObjectType(object) && program_->entities[entity].is_aggregate;
+	if (class_aggregate)
+	{
+		if (entity >= entity_data_members_.size())
+			ThrowInternalCompilerError("aggregate is missing its member index");
+		const std::vector<BindingId>& members = entity_data_members_[entity];
+		const std::size_t member_count =
+			program_->entities[entity].flavor == NAMED_UNION ?
+				(members.empty() ? 0 : 1) : members.size();
+		if (values.size() > member_count)
+			ThrowSemanticError("excess aggregate initializer elements");
+		const std::uint32_t list = MakeDump(
+			DUMP_BRACED_INIT_LIST, target, VALUE_LVALUE);
+		std::vector<ConstexprObjectElement> constant_elements;
+		constant_elements.reserve(member_count);
+		bool constant_object = true;
+		for (std::size_t i = 0; i < member_count; ++i)
+		{
+			const BindingRecord& member = program_->bindings[members[i]];
+			const std::uint32_t action = MakeDump(DUMP_INITIALIZER_ACTION,
+				member.type, VALUE_NONE, member.name, members[i]);
+			ExpressionInfo value;
+			if (i < values.size())
+			{
+				if (IsBracedNarrowing(values[i], member.type))
+					ThrowSemanticError(
+						"narrowing aggregate initialization conversion");
+				value = ApplyTarget(values[i], member.type);
+			}
+			else
+			{
+				std::uint32_t omitted = kNoEdge;
+				value = AnalyzeAggregateElement(
+					member.type, scope, &omitted);
+			}
+			if (value.node != kNoDumpEdge) dump_.Add(action, value.node);
+			ConstexprObjectElement element(members[i],
+				ConstexprScalarValue(static_cast<std::int64_t>(0)));
+			if (constant_object && BuildConstexprObjectElement(
+				member.type, members[i], value, &element))
+				constant_elements.push_back(element);
+			else constant_object = false;
+			dump_.Add(list, action);
+			++expression_count_;
+		}
+		result->node = list;
+		result->type = target;
+		result->category = VALUE_LVALUE;
+		if (constant_object && constant_elements.size() == member_count)
+			SetExpressionObject(result,
+				InternConstexprObject(target, constant_elements));
+		++expression_count_;
+		return true;
+	}
+	if (record.kind == TYPE_ARRAY)
+	{
+		if (record.bound != 0 && values.size() > record.bound)
+			ThrowSemanticError("excess array initializer elements");
+		const std::size_t count = record.bound == 0 ?
+			values.size() : record.bound;
+		const TypeId initialized = record.bound == 0 ?
+			program_->types.Array(record.child, count) : target;
+		const std::uint32_t list = MakeDump(
+			DUMP_BRACED_INIT_LIST, initialized, VALUE_LVALUE);
+		if (record.bound == 0 && count == 0)
+		{
+			// A zero-cardinality expansion has no element object.  Keep its
+			// compact storage contract on the typed semantic result so lowering
+			// does not have to rediscover it from initializer syntax.
+			const std::size_t alignment = program_->AlignOf(record.child);
+			if (alignment > std::numeric_limits<std::uint32_t>::max())
+				ThrowSemanticResourceLimit(
+					"zero-cardinality array alignment is too large");
+			dump_.nodes[list].storage_size = 1;
+			dump_.nodes[list].storage_alignment =
+				static_cast<std::uint32_t>(alignment);
+		}
+		std::vector<ConstexprObjectElement> constant_elements;
+		constant_elements.reserve(count);
+		bool constant_object = true;
+		for (std::size_t i = 0; i < count; ++i)
+		{
+			ExpressionInfo value;
+			if (i < values.size())
+			{
+				if (IsBracedNarrowing(values[i], record.child))
+					ThrowSemanticError(
+						"narrowing array initialization conversion");
+				value = ApplyTarget(values[i], record.child);
+			}
+			else
+			{
+				std::uint32_t omitted = kNoEdge;
+				value = AnalyzeAggregateElement(
+					record.child, scope, &omitted);
+			}
+			if (value.node != kNoDumpEdge) dump_.Add(list, value.node);
+			ConstexprObjectElement element(kNoBinding,
+				ConstexprScalarValue(static_cast<std::int64_t>(0)));
+			if (constant_object && BuildConstexprObjectElement(
+				record.child, kNoBinding, value, &element))
+				constant_elements.push_back(element);
+			else constant_object = false;
+		}
+		result->node = list;
+		result->type = initialized;
+		result->category = VALUE_LVALUE;
+		if (constant_object && constant_elements.size() == count)
+			SetExpressionObject(result,
+				InternConstexprObject(initialized, constant_elements));
+		RecordExpressionFacts(*result);
+		++expression_count_;
+		return true;
+	}
+	if (values.size() != 1)
+		ThrowSemanticError("scalar pack initialization has invalid arity");
+	*result = ApplyTarget(values[0], target);
+	return true;
+}
+
+bool Analyzer::ExpandCallArgumentPacks(
+	const std::vector<NodeId>& original, ScopeId scope,
+	std::vector<NodeId>* syntax, std::vector<ExpressionInfo>* arguments)
+{
+	bool has_expansion = false;
+	for (std::size_t i = 0; i < original.size(); ++i)
+		if (arena_->IsTag(original[i], ::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION))
+			has_expansion = true;
+	if (!has_expansion) return false;
+	const std::vector<NodeId> input = original;
+	syntax->clear();
+	arguments->clear();
+	for (std::size_t i = 0; i < input.size(); ++i)
+	{
+		if (!arena_->IsTag(input[i], ::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION))
+		{
+			syntax->push_back(input[i]);
+			arguments->push_back(AnalyzeUntypedCallArgument(input[i], scope));
+			if (CandidateSubstitutionFailed()) return true;
+			continue;
+		}
+		ExpandExpressionPack(input[i], scope, syntax, arguments);
+		if (CandidateSubstitutionFailed()) return true;
+	}
+	return true;
+}
+
+}
+}

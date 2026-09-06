@@ -1,7 +1,7 @@
 machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -13,12 +13,12 @@ function @copy_ref
   frame
     stack_size 0
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
 
   block ^entry
-    mov r8, rdi
-    mov r9, rsi
-    load.i64 rax, [r9]
-    store.i64 [r8], rax
+    load.i64 rax, [rsi]
+    store.i64 [rdi], rax
     ret
 
 function @main
@@ -27,25 +27,23 @@ function @main
   frame
     stack_size 16
     scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
     slot $src -> [rbp-8] : i64
     slot $dst -> [rbp-16] : i64
 
   block ^entry
-    mov rax, 7
-    store.i64 [rbp-8], rax
-    mov rax, 0
-    store.i64 [rbp-16], rax
+    store.i64 [rbp-8], 7
+    store.i64 [rbp-16], 0
     lea rdi, [rbp-16]
     lea rsi, [rbp-8]
-    call @copy_ref
+    call @copy_ref [args=(rsi,rdi)]
     load.i64 r8, [rbp-16]
     mov rdx, 7
     cmp.i64 r8, rdx
     sete r8
     movzx r8, r8
-    mov rdx, 0
-    cmp.i64 r8, rdx
-    sete r8
-    movzx r8, r8
-    mov rax, r8
+    cmp.i64 r8, 0
+    sete rax
+    movzx rax, rax
     ret rax

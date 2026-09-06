@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $a
     %t3 = addr $b
     %t4 = call obj<1x1> @arg_list_factory_arg_list__int____int_____reverse(%t2, %t3)
-    copyobj 1x1 %t4, %t1
     return i32 0
 }
 function @arg_list_factory_arg_list__int____int_____reverse(%a0 : ptr [pass=reference], %args : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJRiS1_EE7reverseES1_S1_] {
@@ -27,7 +26,6 @@ function @arg_list_factory_arg_list__int____int_____reverse(%a0 : ptr [pass=refe
     %t4 = load ptr $a0
     %t5 = call ptr @forward(%t4)
     %t6 = call obj<1x1> @arg_list_factory_arg_list__int_____reverse(%t3, %t5)
-    copyobj 1x1 %t6, %t1
     return obj<1x1> $retobj__1
 }
 function @forward(%value : ptr [pass=reference]) -> ptr [binding=weak, object=_Z7forwardIRiEOT_RS1_] {
@@ -52,7 +50,6 @@ function @arg_list_factory_arg_list__int_____reverse(%a0 : ptr [pass=reference],
     %t4 = load ptr $reversed_args
     %t5 = call ptr @forward(%t4)
     %t6 = call obj<1x1> @arg_list_factory_arg_list___reverse(%t3, %t5)
-    copyobj 1x1 %t6, %t1
     return obj<1x1> $retobj__1
 }
 function @arg_list_factory_arg_list___reverse(%reversed_args : ptr [pass=reference], %reversed_args__pack2 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJEE7reverseIJRiS3_EEES0_DpOT_] {

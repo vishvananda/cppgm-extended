@@ -1,0 +1,243 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @values
+  storage data
+  item i64 17
+  item i64 19
+  item i64 23
+  item i64 29
+  item i64 31
+  item i64 37
+  item i64 41
+
+global @observed_two
+  storage scalar i64
+  init i64 0
+
+global @observed_five
+  storage scalar i64
+  init i64 0
+
+global @observed_six
+  storage scalar i64
+  init i64 0
+
+global @observed_barrier
+  storage scalar i64
+  init i64 0
+
+function @distance_two
+  abi
+    param %base -> rdi : ptr
+    param %a -> rsi : i64
+    param %b -> rdx : i64
+    param %c -> rcx : i64
+    param %d -> r8 : i64
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14 r15
+
+  block ^entry
+    store.i64 @observed_two, 11
+    load.i64 rbx, [rdi+16]
+    mov r12, rsi
+    add r12, rdx
+    mov r13, rcx
+    add r13, r8
+    mov r14, rsi
+    add r14, rcx
+    mov r15, rdx
+    add r15, r8
+    add r12, r13
+    add r14, r15
+    add r12, r14
+    load.i64 r13, @observed_two
+    mov r14, 100
+    add r14, 200
+    add rbx, r13
+    add r14, rbx
+    add r14, r12
+    ret r14
+
+function @distance_five
+  abi
+    param %base -> rdi : ptr
+    param %a -> rsi : i64
+    param %b -> rdx : i64
+    param %c -> rcx : i64
+    param %d -> r8 : i64
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14 r15
+
+  block ^entry
+    store.i64 @observed_five, 11
+    load.i64 rbx, [rdi+40]
+    mov r12, rsi
+    add r12, rdx
+    mov r13, rcx
+    add r13, r8
+    mov r14, rsi
+    add r14, rcx
+    mov r15, rdx
+    add r15, r8
+    add r12, r13
+    add r14, r15
+    add r12, r14
+    load.i64 r13, @observed_five
+    mov r14, 100
+    add r14, 200
+    add rbx, r13
+    add r14, rbx
+    add r14, r12
+    ret r14
+
+function @distance_six
+  abi
+    param %base -> rdi : ptr
+    param %a -> rsi : i64
+    param %b -> rdx : i64
+    param %c -> rcx : i64
+    param %d -> r8 : i64
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14 r15
+
+  block ^entry
+    store.i64 @observed_six, 11
+    load.i64 rbx, [rdi+48]
+    mov r12, rsi
+    add r12, rdx
+    mov r13, rcx
+    add r13, r8
+    mov r14, rsi
+    add r14, rcx
+    mov r15, rdx
+    add r15, r8
+    add r12, r13
+    add r14, r15
+    add r12, r14
+    load.i64 r13, @observed_six
+    mov r14, 100
+    add r14, 200
+    add rbx, r13
+    add r14, rbx
+    add r14, r12
+    ret r14
+
+function @source_redefinition_barrier
+  abi
+    param %base -> rdi : ptr
+    param %a -> rsi : i64
+    param %b -> rdx : i64
+    param %c -> rcx : i64
+    param %d -> r8 : i64
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14 r15
+
+  block ^entry
+    store.i64 @observed_barrier, 11
+    load.i64 rbx, [rdi]
+    mov r12, rsi
+    add r12, rdx
+    mov r13, rcx
+    add r13, r8
+    mov r14, rsi
+    add r14, rcx
+    mov r15, rdx
+    add r15, r8
+    add r12, r13
+    add r14, r15
+    add r12, r14
+    load.i64 r13, @observed_barrier
+    mov r14, 100
+    add r14, 200
+    add rbx, r13
+    add r14, rbx
+    add r14, r12
+    ret r14
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 80
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14
+
+  block ^entry
+    mov rbx, @values
+    mov rdi, rbx
+    mov rsi, 1
+    mov rdx, 2
+    mov rcx, 3
+    mov r8, 4
+    call @distance_two [args=(rcx,rdx,rsi,rdi,r8)]
+    mov r12, rax
+    mov rdi, rbx
+    mov rsi, 1
+    mov rdx, 2
+    mov rcx, 3
+    mov r8, 4
+    call @distance_five [args=(rcx,rdx,rsi,rdi,r8)]
+    mov r13, rax
+    mov rdi, rbx
+    mov rsi, 1
+    mov rdx, 2
+    mov rcx, 3
+    mov r8, 4
+    call @distance_six [args=(rcx,rdx,rsi,rdi,r8)]
+    mov r14, rax
+    mov rdi, rbx
+    mov rsi, 1
+    mov rdx, 2
+    mov rcx, 3
+    mov r8, 4
+    call @source_redefinition_barrier [args=(rcx,rdx,rsi,rdi,r8)]
+    mov r8, rax
+    mov rdx, 354
+    cmp.i64 r12, rdx
+    setne r12
+    movzx r12, r12
+    mov rdx, 368
+    cmp.i64 r13, rdx
+    setne r13
+    movzx r13, r13
+    mov rdx, 372
+    cmp.i64 r14, rdx
+    setne r14
+    movzx r14, r14
+    mov rdx, 348
+    cmp.i64 r8, rdx
+    setne r8
+    movzx r8, r8
+    or r12, r13
+    or r14, r8
+    or r12, r14
+    mov rax, r12
+    sext.i32 rax
+    ret rax

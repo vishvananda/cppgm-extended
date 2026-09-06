@@ -1,0 +1,81 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @bytes
+  storage data
+  item zero 512
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14
+
+  block ^entry
+    mov r8, @bytes
+    lea r8, [r8+256]
+    lea r9, [r8-129]
+    store.i8 [r9], 11
+    lea rdi, [r8-128]
+    store.i8 [rdi], 22
+    lea rsi, [r8-1]
+    store.i8 [rsi], 33
+    store.i8 [r8], 44
+    lea rbx, [r8+1]
+    store.i8 [rbx], 55
+    lea r12, [r8+127]
+    store.i8 [r12], 66
+    lea r13, [r8+128]
+    store.i8 [r13], 77
+    load.i8 r14, [r9]
+    mov rdx, 11
+    cmp.i8 r14, rdx
+    setne r14
+    movzx r14, r14
+    load.i8 r9, [rdi]
+    mov rdx, 22
+    cmp.i8 r9, rdx
+    setne r9
+    movzx r9, r9
+    or r14, r9
+    load.i8 r9, [rsi]
+    mov rdx, 33
+    cmp.i8 r9, rdx
+    setne r9
+    movzx r9, r9
+    load.i8 rdi, [r8]
+    mov rdx, 44
+    cmp.i8 rdi, rdx
+    setne rdi
+    movzx rdi, rdi
+    or r9, rdi
+    load.i8 r8, [rbx]
+    mov rdx, 55
+    cmp.i8 r8, rdx
+    setne r8
+    movzx r8, r8
+    load.i8 rdi, [r12]
+    mov rdx, 66
+    cmp.i8 rdi, rdx
+    setne rdi
+    movzx rdi, rdi
+    or r8, rdi
+    load.i8 rdi, [r13]
+    mov rdx, 77
+    cmp.i8 rdi, rdx
+    setne rdi
+    movzx rdi, rdi
+    or r14, r9
+    or r8, rdi
+    or r14, r8
+    mov rax, r14
+    sext.i32 rax
+    ret rax

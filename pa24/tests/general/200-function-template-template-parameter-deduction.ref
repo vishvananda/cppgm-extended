@@ -11,7 +11,6 @@ function @ttp_deduce__test() -> i32 [binding=strong, object=_ZN10ttp_deduce4test
     %t4 = addr $argobj__2
     %t5 = addr $a
     %t6 = call obj<1x1> @ttp_deduce__pass($argobj__2)
-    copyobj 1x1 %t6, %t3
     %t7 = call ptr @ttp_deduce__box_double___operator_(%t2, %t3)
     return i32 0
 }

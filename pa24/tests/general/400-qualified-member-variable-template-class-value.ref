@@ -8,7 +8,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $p
     %t2 = call obj<1x1> @static_query_trait_ex__prop_0___void___value()
-    copyobj 1x1 %t2, %t1
     %t3 = addr $p
     return i32 0
 }

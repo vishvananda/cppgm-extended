@@ -85,7 +85,6 @@ function @iterlib__range_sink__assign(%this : ptr, %first : obj<4x4>, %last : ob
     %t8 = addr $argobj__3
     %t9 = addr $first
     %t10 = call obj<1x1> @iterlib__iterator_category(%t9)
-    copyobj 1x1 %t10, %t8
     call void @iterlib__range_sink__construct(%t3, $argobj__1, $argobj__2, $argobj__3)
     return void
 }

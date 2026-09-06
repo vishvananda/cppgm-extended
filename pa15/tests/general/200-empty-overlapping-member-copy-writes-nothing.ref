@@ -1,0 +1,46 @@
+function @make_empty() -> obj<1x1> [binding=strong, object=_Z10make_emptyv] {
+  slot $retobj__1 : obj<1x1>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    return obj<1x1> $retobj__1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $table : obj<8x8>
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = addr $table
+    call void @Table__Table(%t1)
+    %t2 = addr $table
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr %t3
+    %t5 = cmp eq ptr %t4, 0
+    branch %t5, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t6 = load i32 $cond__1
+    return i32 %t6
+}
+function @Table__Table(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5TableC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    store ptr 0, %t2
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = call obj<1x1> @make_empty()
+    return void
+}
+alias object _ZN5TableC2Ev = @Table__Table

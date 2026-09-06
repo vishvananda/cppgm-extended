@@ -28,7 +28,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $scope
     %t6 = addr @__strlit__1
     %t7 = call obj<1x1> @Analyzer__lookup_functions(%t4, %t5, %t6)
-    copyobj 1x1 %t7, %t3
     return i32 0
 }
 function @Box_int_____Box(%this : ptr) -> void [binding=weak, object=_ZN3BoxIPiEC1Ev] {
@@ -59,7 +58,6 @@ function @Analyzer__lookup_functions(%this : ptr, %scope : ptr [pass=reference],
     %t5 = load ptr $qualified
     %t6 = addr $arg__2
     %t7 = call obj<1x1> @Analyzer__lookup_qualified_class_or_namespace_generic(%t3, %t4, %t5, %t6)
-    copyobj 1x1 %t7, %t2
     return obj<1x1> $retobj__1
 
   block ^if_else_2:
@@ -87,7 +85,6 @@ function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr, %sc
     %t3 = load ptr $scope
     %t4 = load ptr $qualified
     %t5 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%t2, %t3, %t4)
-    copyobj 1x1 %t5, %t1
     return obj<1x1> $retobj__1
 }
 function @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%this : ptr, %target : ptr [pass=reference], %lookup_name : ptr) -> obj<1x1> [binding=weak, object=_ZZN8Analyzer16lookup_functionsER5ScopePKcENKUlS1_S3_E_clES1_S3_] {
@@ -104,7 +101,6 @@ function @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%th
     %t2 = load ptr $target
     %t3 = load ptr $lookup_name
     %t4 = call obj<1x1> @semantic_lookup__lookup_direct_function_templates(%t2, %t3)
-    copyobj 1x1 %t4, %t1
     return obj<1x1> $retobj__1
 }
 alias object _ZN3BoxIPiEC2Ev = @Box_int_____Box

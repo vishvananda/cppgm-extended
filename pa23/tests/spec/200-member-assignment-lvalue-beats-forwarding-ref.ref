@@ -22,7 +22,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @keyword__keyword(%t2)
     %t3 = addr $value
     %t4 = call obj<1x1> @keyword__operator___ov2(%t2, %t3)
-    copyobj 1x1 %t4, %t1
     %t5 = call i32 @selected($argobj__1)
     return i32 %t5
 }

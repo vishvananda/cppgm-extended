@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $argobj__1
     call void @second__second(%t4)
     %t5 = call obj<1x1> @flip(%t3, $argobj__1)
-    copyobj 1x1 %t5, %t2
     %t6 = addr $q
     return i32 0
 }

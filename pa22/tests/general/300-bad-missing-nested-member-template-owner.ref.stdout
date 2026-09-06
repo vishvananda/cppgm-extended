@@ -1,0 +1,18 @@
+ERROR: unknown qualified class partial specialization scope [top-level declaration 1 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier U
+    class-specifier outer<T>::missing::inner<U,U*>
+      class-key KW_STRUCT:struct
+}]
+Diagnostic context:
+collect_template_declaration [template<class T>template<class U>struct outer<T>::missing::inner<U,U*>{};] at tests/general/300-bad-missing-nested-member-template-owner.t:12:1
+  collect_template_declaration [template<class U>struct outer<T>::missing::inner<U,U*>{};] at tests/general/300-bad-missing-nested-member-template-owner.t:13:1

@@ -1,0 +1,3 @@
+ERROR: cannot override final virtual member [top-level declaration 2 kind=class-specifier value=YE text=YE]
+Diagnostic context:
+collect_class_declaration [YE] at tests/spec/300-bad-final-override.t:7:1

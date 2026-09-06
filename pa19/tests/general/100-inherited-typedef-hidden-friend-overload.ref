@@ -48,12 +48,10 @@ function @ns__Vec__size(%this : ptr) -> i64 [binding=weak, object=_ZNK2ns3Vec4si
     %t1 = addr $tmpobj__1
     %t2 = load ptr $this
     %t3 = call obj<1x1> @ns__Vec__end(%t2)
-    copyobj 1x1 %t3, %t1
     %t4 = index i8 [projection=base_subobject] %t1, 0
     %t5 = addr $tmpobj__2
     %t6 = load ptr $this
     %t7 = call obj<1x1> @ns__Vec__begin(%t6)
-    copyobj 1x1 %t7, %t5
     %t8 = index i8 [projection=base_subobject] %t5, 0
     %t9 = call i64 @ns__operator_(%t4, %t8)
     %t10 = copy i64 %t9

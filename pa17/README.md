@@ -107,10 +107,38 @@ For supported class value types, PA17 extends the PA16 lowering convention by in
 - indirect LowIR return destinations for return-by-value class objects
 - explicit LowIR-level materialization of supported copy/move/value transfers
 
+Every pointer boundary that denotes a complete object also carries the PA13
+`object_bytes=N` extent in emitted O0 LowIR. This includes the implicit object
+parameter of supported member functions, class references and indirect class
+arguments, and indirect result storage. An ordinary source pointer does not
+gain an extent merely from its pointee type. The extent is semantic LowIR
+metadata and must survive text and compiler-object replay; it is not a native
+calling-convention annotation.
+
 Synthesized copy/move constructors, assignment helpers, and related
 temporary-materialization support are part of the PA17 semantic model, but `cppgm++` only
 needs to emit the helper definitions that the lowered program actually requires. Unused
 copy/move/value helpers do not need to appear just because they are synthesizable.
+
+The indirect destination and source parameters of a same-class copy or move
+constructor denote distinct live objects during construction. Their emitted
+LowIR boundary metadata may therefore mark both parameters `alias=noalias`.
+Assignment operators do not have that property and must remain conservative.
+
+Focused course controls validate these boundary facts and temporary-lifetime
+relationships without comparing a complete LowIR module. They inspect only
+the two constructor parameters versus the assignment-operator control, or the
+ordering and identity of construction, selected use, and destruction within
+one full expression. The lifetime reducer is also compiled and executed.
+
+When a same-type conditional class prvalue is materialized in a private
+temporary and then selected for copy or move construction into its final
+complete-object destination, PA17 records the standard source-language
+permission on that outer direct call as `[elision=copy]`.  This is serialized
+optimization information, not an O0 elision: the emitted O0 LowIR retains the
+distinct temporary, transfer call, and normal/exceptional destruction.  The
+focused control checks those relationships and executes the O0 behavior
+without prescribing complete generated LowIR text.
 
 For supported indirect return-by-value cases, PA17 may also lower an eligible top-level
 named local directly in `%ret` instead of building a separate local object and then
@@ -121,10 +149,26 @@ Ref-qualified member functions extend the PA16 member-call model: overload resol
 uses the implicit object argument, and the object expression's value category participates in
 viability and ranking for supported `&` and `&&` qualified members.
 
+The ABI identity of a member function is built from its declared source parameters; the
+implicit object used by LowIR lowering is not part of that declared parameter list. In
+particular, an out-of-class move-assignment definition retains its rvalue-reference parameter
+in the ABI identity.
+
+Nested operand and overload analysis must preserve the identity of the
+enclosing binary operator and the lifetime of its full expression. Interning
+additional candidate or conversion spellings while resolving an overloaded
+operator must not change the enclosing operator or its result.
+
 For supported synthesized copy/move special members, PA17 may lower a leading trivially
 copyable storage prefix directly as `copyobj <span> <src>, <dst>` instead of spelling that
 prefix as separate field operations or a `__builtin_memcpy` helper call in the emitted
 LowIR. That direct storage-copy form is also part of the accepted PA17 output contract.
+
+When a synthesized copy/move constructor or assignment body handles adjacent
+nonvolatile bit-fields in one supported 8-, 16-, 32-, or 64-bit allocation
+unit, it shall transfer that allocation unit once.  A zero-width bit-field or
+a change of storage offset or width starts a new unit.  Fields whose layout
+cannot be transferred safely shall retain field-wise value semantics.
 
 For supported trivially copy-constructible class value transfers, PA17 may also lower the
 copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of
@@ -135,6 +179,15 @@ Supported synthesized constructors, destructors, and copy/move assignment operat
 also carry LowIR boundary metadata such as `[unwind=no]` when the compiler can determine
 that the synthesized body is semantically non-throwing. That metadata is part of the
 accepted PA17 output contract when it appears in the checked-in `.ref` files.
+
+PA17 also recognizes the argument-free GNU function attribute
+`cppgm_stable_prefix` (and its double-underscore spelling). It is valid on a
+fixed-arity function with a supported scalar result and a final integer
+parameter. The frontend emits the PA13 `[query=stable_prefix]` boundary fact;
+`-O0` preserves the call and program behavior. The attribute is a semantic
+promise that a normally returning query at a higher or equal final index
+preserves the observable result at an already queried lower index for the same
+earlier arguments. It does not request an optimization by itself.
 
 For supported synthesized destructors, trivial union subobject destructor steps may be
 omitted from enclosing synthesized destructors.
@@ -247,10 +300,17 @@ PA17 supports the following in addition to the PA16 subset:
   site instead of forcing a separate synthesized trivial constructor call
 - empty class objects and subobjects use the same address-based class copy paths as
   other class objects; lowering must not invent a scalar payload for an empty class
+- an xvalue class glvalue bound to a reference through a derived-to-base
+  conversion designates the existing base subobject; it is not materialized as
+  a new complete object
 - temporary class-object materialization in the common cases required by:
   - copy initialization from function results
   - pass-by-value call arguments
   - return forwarding through the supported value paths
+- when a direct-register class call initializes a temporary whose destination
+  is already known, its result is copied directly into that temporary; a
+  conditional or full-expression cleanup boundary must not introduce a second
+  call-result object
 - direct reuse of the indirect return destination for supported `return local;` cases when
   the named local is the returned complete object
 - ref-qualified member functions and out-of-class definitions of ref-qualified
@@ -278,6 +338,12 @@ PA17 supports the following in addition to the PA16 subset:
   cv-combined glvalue operands, lvalue/prvalue conversion, and destruction of a
   containing branch temporary only after its selected member result has been
   materialized
+- serialized `[elision=copy]` permission on the outer copy/move construction
+  from a private same-type conditional prvalue, while retaining its ordinary
+  O0 transfer and cleanup
+- equal temporary-destruction suffixes in the same full-expression and unwind
+  context use shared LowIR cleanup continuations, including conditional
+  lifetime guards where the guarded object identity is the same
 - class temporaries created earlier in an enclosing full expression remain
   alive across nested conditional and short-circuit branch edges, and are
   destroyed at the end of that full expression
@@ -357,7 +423,20 @@ Useful intermediate representations include:
   source-level semantic types
 - a stable way to identify the supported temporary-materialization points without requiring
   a fully general temporary lifetime model yet
+- a value-category check that distinguishes prvalues needing storage from
+  xvalue glvalues that already designate storage before applying a base
+  projection for reference binding
+- a destination-aware class-call lowering path that accepts the already
+  planned temporary address for both direct-register and indirect-result ABI
+  classes, then marks the temporary live only after the call and required
+  direct-result copy complete
+- extension of PA16 cleanup-state identities with temporary object and
+  conditional-lifetime facts, built from the terminal backward so equal
+  suffixes can be reused in expected constant time per action
 - allocation expressions lowered as ordinary construction/destruction actions
   over explicit storage, rather than as a separate object model
 - conversion operators represented through the same typed overload-resolution
   and conversion machinery used for ordinary calls
+- a single linear classifier over completed member-layout facts that marks the
+  first transferable bit-field in an allocation unit and suppresses later
+  fields covered by that transfer

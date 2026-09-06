@@ -1,0 +1,4 @@
+ERROR: invalid initializer [target pointer to pointer to const int] [source pointer to pointer to int] [init pp] [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:cpp=pointer to pointer to const int,p=pointer to int,pp=pointer to pointer to int,value=int}]
+Diagnostic context:
+analyze_function_binding_output [main]
+  analyze_statement [simple-declaration] at tests/general/200-multilevel-qualification-conversion-bad.t:6:3

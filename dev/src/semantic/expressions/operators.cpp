@@ -1,0 +1,988 @@
+#include "semantic/analysis/analyzer.h"
+#include "support/exceptions.h"
+#include "support/scoped_state.h"
+
+#include <climits>
+#include <limits>
+#include <string>
+#include <vector>
+
+namespace cppgm
+{
+namespace semantic
+{
+
+static LogicalOperation ClassifyBuiltinLogicalOperation(
+	const std::string& operation)
+{
+	SimpleTokenKind kind = OP_PLUS;
+	if (!ClassifySimpleSpelling(operation, &kind)) return LOGICAL_OPERATION_NONE;
+	return kind == OP_LAND ? LOGICAL_OPERATION_AND :
+		kind == OP_LOR ? LOGICAL_OPERATION_OR : LOGICAL_OPERATION_NONE;
+}
+
+bool Analyzer::IsMeasurableObjectType(
+	TypeId type, bool alignment_query)
+{
+	std::size_t multiplier = 1;
+	while (true)
+	{
+		type = program_->types.RemoveTopCv(EffectiveType(type));
+		const TypeRecord record = program_->types.Get(type);
+		if (record.kind == TYPE_ARRAY)
+		{
+			if (!alignment_query)
+			{
+				if (record.dependent_bound_parameter != kNoTemplateParameter ||
+					record.IsIncompleteArray() ||
+					record.bound > std::numeric_limits<std::size_t>::max())
+					return false;
+				if (record.zero_length_array) multiplier = 0;
+				else
+				{
+					if (multiplier > std::numeric_limits<std::size_t>::max() /
+						static_cast<std::size_t>(record.bound)) return false;
+					multiplier *= static_cast<std::size_t>(record.bound);
+				}
+			}
+			type = record.child;
+			continue;
+		}
+		if (record.kind == TYPE_FUNDAMENTAL)
+			return record.fundamental != FUND_VOID;
+		if (record.kind == TYPE_POINTER || record.kind == TYPE_BLOCK_POINTER ||
+			record.kind == TYPE_LVALUE_REFERENCE ||
+			record.kind == TYPE_RVALUE_REFERENCE ||
+			record.kind == TYPE_MEMBER_POINTER || record.kind == TYPE_VECTOR ||
+			record.kind == TYPE_COMPLEX)
+			return true;
+		if (record.kind != TYPE_NAMED) return false;
+		EnsureClassDefinition(type);
+		const EntityRecord& entity = program_->entities[record.entity];
+		if (!entity.complete) return false;
+		if (IsEnumNamedFlavor(entity.flavor))
+		{
+			type = entity.underlying;
+			continue;
+		}
+		const std::uint64_t extent = alignment_query ?
+			entity.object_alignment : entity.object_size;
+		if (!entity.layout_complete || extent == 0) return false;
+		return alignment_query ||
+			multiplier <= std::numeric_limits<std::size_t>::max() /
+				static_cast<std::size_t>(extent);
+	}
+}
+
+bool Analyzer::IsPointerToCompleteObject(TypeId type)
+{
+	type = program_->types.RemoveTopCv(EffectiveType(type));
+	const TypeRecord pointer = program_->types.Get(type);
+	if (pointer.kind != TYPE_POINTER) return false;
+	type = pointer.child;
+	while (true)
+	{
+		type = program_->types.RemoveTopCv(type);
+		const TypeRecord record = program_->types.Get(type);
+		if (record.kind != TYPE_ARRAY)
+		{
+			if (record.kind == TYPE_FUNDAMENTAL)
+				return record.fundamental != FUND_VOID;
+			if (record.kind == TYPE_POINTER ||
+				record.kind == TYPE_MEMBER_POINTER) return true;
+			if (record.kind != TYPE_NAMED) return false;
+			EnsureClassDefinition(type);
+			return program_->entities[record.entity].complete;
+		}
+		if (record.IsIncompleteArray() ||
+			record.dependent_bound_parameter != kNoTemplateParameter)
+			return false;
+		type = record.child;
+	}
+}
+
+ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
+{
+	const NodeId operand = FirstSemanticChild(node);
+	if (operand == kNoNode) ThrowSemanticError("empty sizeof");
+	TypeId measured = kNoType;
+	if (arena_->IsTag(operand, ::cppgm::syntax::STAG_TYPE_ID))
+	{
+		const NodeId specifiers = FindChild(operand, ::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ);
+		const NodeId name = specifiers == kNoNode ? kNoNode :
+			FirstSemanticChild(specifiers);
+		const NodeId declarator = FindChild(operand, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR);
+		const NodeId clause = declarator == kNoNode ? kNoNode :
+			FindChild(declarator, ::cppgm::syntax::STAG_PARAMETER_CLAUSE);
+		NamePath base;
+		std::vector<TypeId> explicit_arguments;
+		const bool ambiguous_function_call = name != kNoNode &&
+			arena_->IsTag(name, ::cppgm::syntax::STAG_TYPE_NAME) && clause != kNoNode &&
+			FirstSemanticChild(clause) == kNoNode &&
+			ParseExplicitTemplateArguments(
+				name, scope, &base, &explicit_arguments);
+		if (ambiguous_function_call)
+		{
+			const std::vector<std::size_t> patterns =
+				FindFunctionTemplates(scope, base);
+			std::vector<BindingId> candidates;
+			const std::vector<ExpressionInfo> no_arguments;
+			DeduceFunctionTemplatePatterns(patterns, no_arguments,
+				&candidates, &explicit_arguments);
+			if (candidates.size() == 1)
+				measured = program_->types.Get(
+					GetFunction(candidates[0]).type).child;
+			else if (!candidates.empty())
+				ThrowSemanticError(
+					"ambiguous function template in sizeof expression");
+		}
+		if (measured == kNoType && name != kNoNode &&
+			arena_->IsTag(name, ::cppgm::syntax::STAG_TYPE_NAME))
+		{
+			const LookupResult value =
+				LookupSyntaxName(name, scope, LOOKUP_ORDINARY);
+			if (value.ordinary != kNoBinding)
+			{
+				measured = EffectiveType(
+					program_->bindings[value.ordinary].type);
+				for (std::uint32_t edge = declarator == kNoNode ? kNoEdge :
+					arena_->FirstEdge(declarator); edge != kNoEdge;
+					edge = arena_->NextEdge(edge))
+					if (arena_->IsTag(arena_->EdgeChild(edge), ::cppgm::syntax::STAG_ARRAY_SUFFIX))
+					{
+						const TypeRecord array = program_->types.Get(
+							program_->types.RemoveTopCv(measured));
+						if (array.kind != TYPE_ARRAY)
+							ThrowSemanticError(
+								"sizeof subscript recovery requires an array");
+						measured = array.child;
+					}
+			}
+		}
+		if (measured == kNoType) measured = BuildTypeId(operand, scope);
+	}
+	else if (arena_->IsTag(operand, ::cppgm::syntax::STAG_ID_EXPRESSION))
+	{
+		const std::string spelling = arena_->Payload(operand);
+		const LookupResult ordinary =
+			LookupSyntaxName(operand, scope, LOOKUP_ORDINARY);
+		if (ordinary.ordinary == kNoBinding)
+		{
+			const LookupResult type =
+				LookupSyntaxName(operand, scope, LOOKUP_TYPE);
+			if (type.type != kNoType) measured = type.type;
+		}
+		else measured = EffectiveType(
+			program_->bindings[ordinary.ordinary].type);
+	}
+	if (measured == kNoType)
+	{
+		{
+			ScopedCounterIncrement unevaluated(&unevaluated_depth_);
+			measured = EffectiveType(AnalyzeExpression(operand, scope).type);
+		}
+	}
+	const bool alignment_query = arena_->IsTag(node, ::cppgm::syntax::STAG_TYPE_TRAIT_EXPRESSION);
+	if (CandidateSubstitutionFailed() || measured == kNoType)
+		return ExpressionInfo();
+	measured = EffectiveType(measured);
+	if (!IsMeasurableObjectType(measured, alignment_query) &&
+		FunctionTemplateTypeIsDependent(measured) &&
+		!CandidateSubstitutionActive())
+	{
+		ExpressionInfo result;
+		result.type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+		result.node = MakeDump(DUMP_SIZEOF_EXPRESSION,
+			result.type, VALUE_PRVALUE);
+		result.constant = true;
+		result.value = 0;
+		dump_.nodes[result.node].template_parameter_constant = true;
+		dump_.nodes[result.node].template_layout_constant = true;
+		RecordExpressionFacts(result);
+		++expression_count_;
+		return result;
+	}
+	if (!IsMeasurableObjectType(measured, alignment_query))
+		return CandidateExpressionFailure(
+			alignment_query ? "invalid alignof operand type" :
+			"invalid sizeof operand type");
+	const std::size_t value = alignment_query ? program_->AlignOf(measured) :
+		program_->SizeOf(measured);
+	ExpressionInfo result;
+	result.type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+	result.node = MakeDump(DUMP_SIZEOF_EXPRESSION, result.type, VALUE_PRVALUE);
+	dump_.nodes[result.node].template_layout_constant =
+		IsClassTemplateSpecializationContext(EntityOf(measured));
+	result.constant = true;
+	result.value = static_cast<std::int64_t>(value);
+	RecordExpressionFacts(result);
+	++expression_count_;
+	return result;
+}
+
+ExpressionInfo Analyzer::AnalyzeUnary(NodeId node, ScopeId scope, TypeId target) {
+	const bool postfix = arena_->IsTag(node, ::cppgm::syntax::STAG_POSTFIX_EXPRESSION); const std::string operation = PayloadSource(node);
+	const int op = PayloadTokenKind(node);
+	const NodeId operand_syntax = FirstSemanticChild(node); const TypeId address_context_target = UnaryAddressContextTarget(operation, target, operand_syntax, scope);
+	const TypeId operand_target =
+		UnaryAddressOperandTarget(operation, address_context_target);
+	ExpressionInfo operand = AnalyzeExpression(operand_syntax, scope, operand_target);
+	if (CandidateSubstitutionFailed()) return operand;
+	if (operand.type == kNoType)
+	{
+		if (op == OP_AMP && target == kNoType) return operand;
+		ThrowSemanticError("unresolved unary operand");
+	}
+	if (operation == "__real__" || operation == "__imag__") return AnalyzeComplexComponent(operation, operand, target);
+	std::vector<NodeId> overloaded_syntax(1, operand_syntax);
+	std::vector<ExpressionInfo> overloaded_operands(1, operand);
+	if (postfix && (op == OP_INC || op == OP_DEC))
+	{
+		ExpressionInfo dummy = MakeLiteral(
+			program_->types.Fundamental(FUND_INT), program_->names.Intern("0"));
+		dummy.constant = true;
+		dummy.value = 0;
+		dummy.integer_literal_zero = true;
+		overloaded_syntax.push_back(kNoNode);
+		overloaded_operands.push_back(dummy);
+	}
+	ExpressionInfo overloaded;
+	if (TryAnalyzeOverloadedOperator(operation, scope, overloaded_syntax,
+		overloaded_operands, false, target, &overloaded)) return overloaded;
+	const std::uint32_t operand_object = ExpressionObject(operand),
+		operand_complete_object = ExpressionCompleteObject(operand);
+	(void)ApplyBuiltinUnaryConversion(operation, &operand);
+	const TypeId address_target = MemberPointerAddressTarget(
+		operand, operand_syntax, address_context_target);
+	const bool member_pointer_address =
+		address_target != kNoType && IsMemberPointer(address_target);
+	if (op == OP_AMP && operand.binding != kNoBinding &&
+		!member_pointer_address)
+		EnsureStaticMemberStorage(operand.binding, true);
+	if (op == OP_AMP && operand.binding != kNoBinding &&
+		program_->bindings[operand.binding].bit_field)
+		ThrowSemanticError("address-of bit-field unsupported");
+	TypeId result_type = EffectiveType(operand.type);
+	ValueCategory category = VALUE_PRVALUE;
+	bool constant = operand.constant;
+	ConstexprScalarValue scalar;
+	std::uint32_t address = ExpressionAddress(operand);
+	if (address == kNoConstexprAddress &&
+		(op == OP_STAR || op == OP_PLUS) &&
+		IsPointer(Decay(operand.type)))
+		address = LvalueAddress(&operand);
+	std::uint32_t lvalue_address = kNoConstexprAddress;
+	BindingId selected_member = kNoBinding;
+	if (constant && address == kNoConstexprAddress)
+		scalar = ExpressionScalar(operand);
+	if (op == OP_AMP)
+	{
+		if (operand.category != VALUE_LVALUE)
+			ThrowSemanticError("address-of requires lvalue");
+		if (member_pointer_address)
+		{
+			if (!FormMemberPointerAddress(operand, address_target, &result_type,
+				&constant, &scalar, &selected_member))
+				return CandidateExpressionFailure(
+					"invalid member pointer address conversion");
+		}
+		else
+		{
+			result_type = program_->types.Pointer(result_type);
+			address = LvalueAddress(&operand);
+			constant = address != kNoConstexprAddress;
+		}
+	}
+	else if (op == OP_STAR)
+	{
+		TypeId decayed = Decay(result_type);
+		const TypeRecord pointer = program_->types.Get(decayed);
+		if (pointer.kind != TYPE_POINTER)
+		{
+			if (!FunctionTemplateTypeIsDependent(operand.type))
+				ThrowSemanticError("dereference requires pointer");
+			result_type = DependentFunctionTemplateResultShape();
+		}
+		else result_type = pointer.child;
+		category = VALUE_LVALUE;
+		lvalue_address = address;
+		constant = false;
+	}
+	else if (op == OP_INC || op == OP_DEC)
+	{
+		if (!IsModifiableLvalue(operand) ||
+			(!IsArithmetic(result_type) && !IsPointer(result_type)) ||
+			(IsPointer(result_type) &&
+			 !IsPointerToCompleteObject(result_type)))
+		{
+			if (CandidateSubstitutionActive())
+				return CandidateSubstitutionFailure();
+			ThrowSemanticError("invalid increment operand");
+		}
+		category = postfix ? VALUE_PRVALUE : VALUE_LVALUE;
+		constant = false;
+		if (constexpr_evaluation_depth_ != 0 &&
+			constant_evaluation_suppressed_depth_ == 0 &&
+			operand.constexpr_local < constexpr_locals_.size() &&
+			operand.constant)
+		{
+			ConstexprLocalValue& local =
+				constexpr_locals_[operand.constexpr_local];
+			if (IsPointer(result_type) &&
+				local.address != kNoConstexprAddress)
+			{
+				const TypeRecord pointer = program_->types.Get(
+					program_->types.RemoveTopCv(result_type));
+				const std::int64_t step = static_cast<std::int64_t>(
+					program_->SizeOf(pointer.child));
+				const std::uint32_t previous = local.address;
+				const std::uint32_t updated = OffsetConstexprAddress(previous,
+					op == OP_INC ? step : -step, false);
+				if (updated != kNoConstexprAddress)
+				{
+					local.address = updated;
+					address = postfix ? previous : updated;
+					constant = true;
+				}
+			}
+			else if (IsIntegral(result_type, true) || IsFloating(result_type))
+			{
+				const ConstexprScalarValue previous = local.value;
+				const ConstexprScalarValue one = IsFloating(result_type) ?
+					ConstexprScalarValue(1.0L) :
+					ConstexprScalarValue(static_cast<std::int64_t>(1));
+				const ConstexprScalarValue updated = ApplyConstantScalarBinary(
+					op == OP_INC ? "+" : "-", previous, one, result_type);
+				local.value = updated;
+				constant = true;
+				scalar = postfix ? previous : updated;
+			}
+		}
+	}
+	else if (op == OP_LNOT)
+	{
+		const TypeRecord operand_shape = program_->types.Get(
+			program_->types.RemoveTopCv(EffectiveType(result_type)));
+		if (!IsArithmetic(result_type) && !IsPointer(Decay(result_type)) &&
+			!IsNullptr(result_type) &&
+			operand_shape.kind != TYPE_MEMBER_POINTER)
+			ThrowSemanticError("invalid logical-not operand");
+		result_type = program_->types.Fundamental(FUND_BOOL);
+		if (constant) scalar = ConstexprScalarValue(
+			static_cast<std::int64_t>(!ExpressionTruth(operand)));
+		address = kNoConstexprAddress;
+	}
+	else if (op == OP_PLUS || op == OP_MINUS || op == OP_COMPL)
+	{
+		if (op == OP_PLUS && IsPointer(Decay(result_type)))
+		{
+			result_type = Decay(result_type);
+			constant = address != kNoConstexprAddress;
+		}
+		else if ((op == OP_COMPL && !IsIntegral(result_type)) ||
+			(op != OP_COMPL && !IsArithmetic(result_type)))
+			ThrowSemanticError("invalid unary arithmetic operand");
+		else if (IsIntegral(result_type) &&
+			(IntegralRank(result_type) < 3 ||
+			 program_->types.Get(program_->types.RemoveTopCv(result_type)).kind ==
+				TYPE_NAMED))
+			result_type = program_->types.Fundamental(FUND_INT);
+		if (constant)
+		{
+			if (IsFloating(result_type))
+			{
+				if (op == OP_MINUS) scalar.floating = -scalar.floating;
+				scalar = NormalizeScalarConstant(result_type, scalar);
+			}
+			else if (op == OP_MINUS)
+				scalar = ApplyConstantIntegralUnary(
+					operation, scalar, result_type);
+			else if (op == OP_COMPL)
+				scalar = ApplyConstantIntegralUnary(
+					operation, scalar, result_type);
+			else if (IsIntegral(result_type, true))
+				scalar = NormalizeScalarConstant(result_type, scalar);
+		}
+	}
+	else ThrowSemanticError("unsupported unary operator");
+	const std::uint32_t expression = MakeDump(postfix ?
+		DUMP_POSTFIX_EXPRESSION : DUMP_UNARY_EXPRESSION,
+		result_type, category,
+		program_->names.UseInterned(arena_->PayloadId(node)));
+	if (member_pointer_address)
+		RecordMemberPointerAddressFacts(expression, selected_member);
+	dump_.Add(expression, operand.node);
+	ExpressionInfo result;
+	result.node = expression;
+	result.type = result_type;
+	result.category = category;
+	if (member_pointer_address) result.binding = selected_member;
+	if (constant && address != kNoConstexprAddress)
+		SetExpressionAddress(&result, address);
+	else if (constant) SetExpressionScalar(&result, scalar);
+	if (lvalue_address != kNoConstexprAddress)
+		SetExpressionLvalueAddress(&result, lvalue_address);
+	if (op == OP_AMP && operand_object != kNoConstexprObject)
+		SetExpressionSubobject(
+			&result, operand_object, operand_complete_object);
+	if (op == OP_STAR && operand_object != kNoConstexprObject)
+		SetExpressionSubobject(
+			&result, operand_object, operand_complete_object);
+	RecordUnaryDereferenceConstant(
+		operation, lvalue_address, result_type, &result);
+	++expression_count_;
+	return result;
+}
+
+void Analyzer::RecordUnaryDereferenceConstant(
+	const std::string& operation, std::uint32_t lvalue_address,
+	TypeId result_type, ExpressionInfo* result)
+{
+	if (operation != "*" || lvalue_address == kNoConstexprAddress) return;
+	const ConstexprAddressValue* pointed = ConstexprAddressAt(lvalue_address);
+	if (pointed && pointed->kind == CONSTEXPR_ADDRESS_BINDING &&
+		pointed->identity < program_->bindings.size() &&
+		program_->bindings[static_cast<BindingId>(pointed->identity)].constant &&
+		program_->types.Get(program_->types.RemoveTopCv(EffectiveType(
+			program_->bindings[static_cast<BindingId>(
+				pointed->identity)].type))).kind == TYPE_ARRAY &&
+		pointed->offset >= 0)
+	{
+		const std::uint32_t object = BindingObject(
+			static_cast<BindingId>(pointed->identity));
+		const std::int64_t step = static_cast<std::int64_t>(
+			program_->SizeOf(result_type));
+		if (object != kNoConstexprObject && step > 0 &&
+			pointed->offset < pointed->upper_bound &&
+			pointed->offset % step == 0)
+		{
+			const ConstexprObjectElement* element = ConstexprObjectElementAt(
+				object, static_cast<std::size_t>(pointed->offset / step));
+			if (element) SetExpressionObjectElement(result, *element);
+		}
+	}
+	ConstexprScalarValue loaded;
+	if (TryLoadConstexprIntegralAddress(lvalue_address, result_type, &loaded))
+		SetExpressionScalar(result, loaded);
+}
+
+ExpressionInfo Analyzer::AnalyzeBinary(NodeId node, ScopeId scope)
+{
+	const std::uint32_t first_edge = arena_->FirstEdge(node);
+	if (first_edge == kNoEdge) ThrowSemanticError("empty binary expression");
+	const std::uint32_t second_edge = arena_->NextEdge(first_edge);
+	if (second_edge == kNoEdge) ThrowSemanticError("unary binary expression");
+	const NodeId left_syntax = arena_->EdgeChild(first_edge);
+	const NodeId right_syntax = arena_->EdgeChild(second_edge);
+	ExpressionInfo left = AnalyzeExpression(left_syntax, scope);
+	if (CandidateSubstitutionFailed()) return left;
+	const std::string operation = PayloadSource(node);
+	const int op = PayloadTokenKind(node);
+	const bool short_circuit = left.constant &&
+		((op == OP_LAND && !ExpressionTruth(left)) ||
+		 (op == OP_LOR && ExpressionTruth(left)));
+	ExpressionInfo right;
+	{
+		ScopedCounterIncrement suppressed(
+			&constant_evaluation_suppressed_depth_, short_circuit);
+		right = AnalyzeExpression(right_syntax, scope);
+	}
+	if (CandidateSubstitutionFailed()) return right;
+	return BuildBinaryExpression(operation, arena_->Payload(node),
+		left_syntax, right_syntax, left, right, scope);
+}
+
+bool Analyzer::PrepareBuiltinComparison(const std::string& operation,
+	ExpressionInfo* left, ExpressionInfo* right, TypeId* operand_type)
+{
+	const int op = ClassifyOperationSpelling(operation);
+	const bool equality = op == OP_EQ || op == OP_NE;
+	const TypeId left_unqualified = program_->types.RemoveTopCv(
+		EffectiveType(left->type));
+	const TypeId right_unqualified = program_->types.RemoveTopCv(
+		EffectiveType(right->type));
+	const EntityId comparison_enum = left_unqualified == right_unqualified ?
+		EntityOf(left_unqualified) : kNoEntity;
+	const TypeRecord& left_record = program_->types.Get(left_unqualified);
+	const TypeRecord& right_record = program_->types.Get(right_unqualified);
+	if (left_record.kind == TYPE_VECTOR && right_record.kind == TYPE_VECTOR &&
+		left_unqualified == right_unqualified)
+		*operand_type = left_unqualified;
+	else if (comparison_enum != kNoEntity &&
+		(program_->entities[comparison_enum].flavor == NAMED_ENUM ||
+		 program_->entities[comparison_enum].flavor == NAMED_ENUM_CLASS))
+		*operand_type = left_unqualified;
+	else if (IsArithmetic(left->type) && IsArithmetic(right->type))
+		*operand_type = CommonArithmeticType(left->type, right->type);
+	else if (IsNullptr(left->type) && IsNullptr(right->type) && equality)
+		*operand_type = left_unqualified;
+	else if (equality &&
+		program_->types.Get(left_unqualified).kind == TYPE_MEMBER_POINTER &&
+		left_unqualified == right_unqualified)
+		*operand_type = left_unqualified;
+	else if (equality &&
+		program_->types.Get(left_unqualified).kind == TYPE_MEMBER_POINTER &&
+		(IsNullptr(right->type) || right->integer_literal_zero))
+	{
+		*operand_type = left_unqualified;
+		*right = ApplyTarget(*right, left_unqualified);
+	}
+	else if (equality &&
+		program_->types.Get(right_unqualified).kind == TYPE_MEMBER_POINTER &&
+		(IsNullptr(left->type) || left->integer_literal_zero))
+	{
+		*operand_type = right_unqualified;
+		*left = ApplyTarget(*left, right_unqualified);
+	}
+	else if (IsPointer(Decay(left->type)) && IsPointer(Decay(right->type)))
+	{
+		const TypeId left_pointer = Decay(left->type);
+		const TypeId right_pointer = Decay(right->type);
+		const ConversionRank right_to_left = Conversion(*right, left_pointer);
+		const ConversionRank left_to_right = Conversion(*left, right_pointer);
+		if (right_to_left != CONVERSION_INVALID &&
+			(left_to_right == CONVERSION_INVALID ||
+			 right_to_left <= left_to_right))
+		{
+			*operand_type = left_pointer;
+			*right = ApplyTarget(*right, left_pointer);
+		}
+		else if (left_to_right != CONVERSION_INVALID)
+		{
+			*operand_type = right_pointer;
+			*left = ApplyTarget(*left, right_pointer);
+		}
+		else
+		{
+			const TypeRecord& left_shape = program_->types.Get(left_pointer);
+			const TypeRecord& right_shape = program_->types.Get(right_pointer);
+			TypeId left_object = program_->types.RemoveTopCv(left_shape.child);
+			TypeId right_object = program_->types.RemoveTopCv(right_shape.child);
+			const EntityId left_entity = EntityOf(left_object);
+			const EntityId right_entity = EntityOf(right_object);
+			TypeId composite_object = kNoType;
+			if (left_object == right_object)
+				composite_object = left_object;
+			else if (left_entity != kNoEntity && right_entity != kNoEntity &&
+				BaseConversionAllowed(left_entity, right_entity))
+				composite_object = right_object;
+			else if (left_entity != kNoEntity && right_entity != kNoEntity &&
+				BaseConversionAllowed(right_entity, left_entity))
+				composite_object = left_object;
+			if (composite_object == kNoType)
+			{
+				(void)CandidateExpressionFailure(
+					"invalid pointer comparison operands");
+				return false;
+			}
+			const TypeRecord& left_cv = program_->types.Get(left_shape.child);
+			const TypeRecord& right_cv = program_->types.Get(right_shape.child);
+			const std::uint8_t cv =
+				(left_cv.kind == TYPE_QUALIFIED ? left_cv.cv : CV_NONE) |
+				(right_cv.kind == TYPE_QUALIFIED ? right_cv.cv : CV_NONE);
+			if (cv != CV_NONE)
+				composite_object = program_->types.Qualify(composite_object, cv);
+			*operand_type = program_->types.Pointer(composite_object);
+			*left = ApplyTarget(*left, *operand_type);
+			*right = ApplyTarget(*right, *operand_type);
+		}
+	}
+	else if (IsPointer(Decay(left->type)) &&
+		((right->integer_literal_zero && equality) || IsNullptr(right->type)))
+		SetExpressionAddress(right, NullConstexprAddress());
+	else if (IsPointer(Decay(right->type)) &&
+		((left->integer_literal_zero && equality) || IsNullptr(left->type)))
+		SetExpressionAddress(left, NullConstexprAddress());
+	else
+	{
+		(void)CandidateExpressionFailure("invalid comparison operands");
+		return false;
+	}
+	return true;
+}
+
+TypeId Analyzer::PrepareBuiltinArithmetic(
+	const std::string& operation, const ExpressionInfo& left,
+	const ExpressionInfo& right)
+{
+	const int op = ClassifyOperationSpelling(operation);
+	const bool integral_only = op == OP_MOD || op == OP_LSHIFT ||
+		op == OP_RSHIFT || op == OP_AMP || op == OP_BOR ||
+		op == OP_XOR;
+	if ((integral_only &&
+		(!IsIntegral(left.type) || !IsIntegral(right.type))) ||
+		(!integral_only &&
+		 (!IsArithmetic(left.type) || !IsArithmetic(right.type))))
+	{
+		(void)CandidateExpressionFailure("invalid binary arithmetic operands");
+		return kNoType;
+	}
+	return op == OP_LSHIFT || op == OP_RSHIFT ?
+		IntegralPromotionType(left.type) :
+		CommonArithmeticType(left.type, right.type);
+}
+
+// The built-in additive operators: pointer arithmetic against an integer,
+// pointer difference, or the usual arithmetic conversions.  Returns the
+// result type and, for arithmetic, the operand type.  A pointer to an
+// incomplete object under candidate substitution is a substitution
+// failure rather than an error, reported through the flag.
+TypeId Analyzer::BuiltinAdditiveResultType(int op,
+	const ExpressionInfo& left, const ExpressionInfo& right,
+	TypeId* operand_type, bool* substitution_failed)
+{
+	TypeId result_type = kNoType;
+	if (IsPointer(Decay(left.type)) && IsIntegral(right.type))
+	{
+		if (!IsPointerToCompleteObject(Decay(left.type)))
+		{
+			if (CandidateSubstitutionActive())
+			{
+				*substitution_failed = true;
+				return kNoType;
+			}
+			ThrowSemanticError(
+				"arithmetic on pointer to incomplete or non-object type");
+		}
+		result_type = Decay(left.type);
+	}
+	else if (op == OP_PLUS && IsIntegral(left.type) &&
+		IsPointer(Decay(right.type)))
+	{
+		if (!IsPointerToCompleteObject(Decay(right.type)))
+		{
+			if (CandidateSubstitutionActive())
+			{
+				*substitution_failed = true;
+				return kNoType;
+			}
+			ThrowSemanticError(
+				"arithmetic on pointer to incomplete or non-object type");
+		}
+		result_type = Decay(right.type);
+	}
+	else if (op == OP_MINUS && IsPointer(Decay(left.type)) &&
+		IsPointer(Decay(right.type)))
+	{
+		if (!IsPointerToCompleteObject(Decay(left.type)) ||
+			!IsPointerToCompleteObject(Decay(right.type)))
+		{
+			if (CandidateSubstitutionActive())
+			{
+				*substitution_failed = true;
+				return kNoType;
+			}
+			ThrowSemanticError(
+				"subtraction on pointer to incomplete or non-object type");
+		}
+		result_type = program_->types.Fundamental(FUND_LONG_INT);
+	}
+	else if (IsArithmetic(left.type) && IsArithmetic(right.type))
+		result_type = *operand_type = CommonArithmeticType(left.type, right.type);
+	else ThrowSemanticError("invalid additive operands");
+	return result_type;
+}
+
+ExpressionInfo Analyzer::BuildBinaryExpression(
+	const std::string& operation, std::string display_operation,
+	NodeId left_syntax, NodeId right_syntax, ExpressionInfo left,
+	ExpressionInfo right, ScopeId scope)
+{
+	const int op = ClassifyOperationSpelling(operation);
+	ExpressionInfo typeid_comparison; if (TryAnalyzeTypeidComparison(operation, display_operation, left_syntax, right_syntax, left, right, scope, &typeid_comparison)) return typeid_comparison;
+	std::vector<NodeId> overloaded_syntax;
+	overloaded_syntax.push_back(left_syntax);
+	overloaded_syntax.push_back(right_syntax);
+	std::vector<ExpressionInfo> overloaded_operands;
+	overloaded_operands.push_back(left);
+	overloaded_operands.push_back(right);
+	std::vector<ConversionRank> builtin_ranks;
+	const bool builtin_viable = ApplyBuiltinBinaryConversions(operation,
+		&left, &right, &builtin_ranks, false);
+	const bool builtin_competes = builtin_viable && op != OP_COMMA;
+	ExpressionInfo overloaded;
+	if (TryAnalyzeOverloadedOperator(operation, scope, overloaded_syntax,
+		overloaded_operands, false, kNoType, &overloaded,
+		builtin_competes ? &builtin_ranks : 0)) return overloaded;
+	ExpressionInfo member_pointer;
+	if (TryAnalyzeMemberPointerApplication(operation, display_operation,
+		left, right, &member_pointer)) return member_pointer;
+	(void)ApplyBuiltinBinaryConversions(operation, &left, &right);
+	TypeId result_type = kNoType;
+	TypeId operand_type = kNoType;
+	ValueCategory result_category = VALUE_PRVALUE;
+	if (op == OP_LAND || op == OP_LOR)
+	{
+		if (!IsBuiltinLogicalOperand(left) || !IsBuiltinLogicalOperand(right))
+			ThrowSemanticError("invalid logical operands");
+		result_type = program_->types.Fundamental(FUND_BOOL);
+	}
+	else if (op == OP_EQ || op == OP_NE || op == OP_LT ||
+		op == OP_GT || op == OP_LE || op == OP_GE)
+	{
+		if (!PrepareBuiltinComparison(
+			operation, &left, &right, &operand_type)) return ExpressionInfo();
+		result_type = operand_type != kNoType && program_->types.Get(operand_type).kind == TYPE_VECTOR ? operand_type : program_->types.Fundamental(FUND_BOOL);
+	}
+	else if (op == OP_COMMA)
+	{
+		left = MaterializeDiscardedClassResult(left);
+		result_type = EffectiveType(right.type);
+		result_category = right.category;
+	}
+	else if (op == OP_PLUS || op == OP_MINUS)
+	{
+		bool substitution_failed = false;
+		result_type = BuiltinAdditiveResultType(op, left, right,
+			&operand_type, &substitution_failed);
+		if (substitution_failed) return CandidateSubstitutionFailure();
+	}
+	else
+	{
+		result_type = operand_type =
+			PrepareBuiltinArithmetic(operation, left, right);
+		if (result_type == kNoType) return ExpressionInfo();
+	}
+	const std::uint32_t expression = MakeDump(DUMP_BINARY_EXPRESSION, result_type,
+		result_category, program_->names.Intern(display_operation));
+	dump_.nodes[expression].operand_type = operand_type;
+	dump_.nodes[expression].logical_operation = ClassifyBuiltinLogicalOperation(operation);
+	dump_.Add(expression, left.node);
+	dump_.Add(expression, right.node);
+	ExpressionInfo result;
+	result.node = expression;
+	result.type = result_type;
+	result.category = result_category;
+	const bool short_circuit = left.constant &&
+		((op == OP_LAND && !ExpressionTruth(left)) ||
+		 (op == OP_LOR && ExpressionTruth(left)));
+	result.constant = constant_evaluation_suppressed_depth_ == 0 && (short_circuit || (left.constant && right.constant));
+	// An operand still waiting on template arguments makes the whole
+	// expression wait too; without this the operator reports it as merely
+	// non-constant and the enclosing template-id stops being dependent.
+	result.dependent_value = IsDependentValueExpression(left) ||
+		IsDependentValueExpression(right);
+	if (result.constant)
+	{
+		if (op == OP_COMMA)
+		{
+			result = right;
+			result.node = expression;
+			result.type = result_type;
+			result.category = result_category;
+			RecordExpressionFacts(result);
+			++expression_count_;
+			return result;
+		}
+		std::uint32_t left_address = ExpressionAddress(left);
+		std::uint32_t right_address = ExpressionAddress(right);
+		if (left_address == kNoConstexprAddress &&
+			IsPointer(Decay(left.type)))
+			left_address = LvalueAddress(&left);
+		if (right_address == kNoConstexprAddress &&
+			IsPointer(Decay(right.type)))
+			right_address = LvalueAddress(&right);
+		if (op == OP_LAND || op == OP_LOR)
+		{
+			SetExpressionScalar(&result, ConstexprScalarValue(
+				static_cast<std::int64_t>(short_circuit ?
+					ExpressionTruth(left) :
+					(op == OP_LAND ?
+					 ExpressionTruth(left) && ExpressionTruth(right) :
+					 ExpressionTruth(left) || ExpressionTruth(right)))));
+			++expression_count_;
+			return result;
+		}
+		if ((op == OP_EQ || op == OP_NE || op == OP_LT ||
+			op == OP_GT || op == OP_LE || op == OP_GE) &&
+			(left_address != kNoConstexprAddress ||
+			 right_address != kNoConstexprAddress))
+		{
+			const ConstexprAddressValue* a = ConstexprAddressAt(left_address);
+			const ConstexprAddressValue* b = ConstexprAddressAt(right_address);
+			if (!a || !b)
+				result.constant = false;
+			else
+			{
+				const bool same_base = a->kind == b->kind &&
+					a->identity == b->identity;
+				bool compared = false;
+				if (op == OP_EQ)
+					compared = same_base && a->offset == b->offset;
+				else if (op == OP_NE)
+					compared = !(same_base && a->offset == b->offset);
+				else if (!same_base) result.constant = false;
+				else if (op == OP_LT) compared = a->offset < b->offset;
+				else if (op == OP_GT) compared = a->offset > b->offset;
+				else if (op == OP_LE) compared = a->offset <= b->offset;
+				else compared = a->offset >= b->offset;
+				if (result.constant) SetExpressionScalar(&result,
+					ConstexprScalarValue(static_cast<std::int64_t>(compared)));
+			}
+			++expression_count_;
+			return result;
+		}
+		if ((op == OP_PLUS || op == OP_MINUS) &&
+			(left_address != kNoConstexprAddress ||
+			 right_address != kNoConstexprAddress))
+		{
+			if (left_address != kNoConstexprAddress &&
+				right_address != kNoConstexprAddress)
+			{
+				const ConstexprAddressValue* a =
+					ConstexprAddressAt(left_address);
+				const ConstexprAddressValue* b =
+					ConstexprAddressAt(right_address);
+				if (op != OP_MINUS || !a || !b || a->kind != b->kind ||
+					a->identity != b->identity)
+					result.constant = false;
+				else
+				{
+					const TypeRecord pointer = program_->types.Get(
+						program_->types.RemoveTopCv(Decay(left.type)));
+					const std::int64_t step = static_cast<std::int64_t>(
+						program_->SizeOf(pointer.child));
+					if (step == 0 || (a->offset - b->offset) % step != 0)
+						result.constant = false;
+					else SetExpressionScalar(&result, ConstexprScalarValue(
+						(a->offset - b->offset) / step));
+				}
+			}
+			else
+			{
+				const bool pointer_left = left_address != kNoConstexprAddress;
+				const ExpressionInfo& index = pointer_left ? right : left;
+				const TypeId pointer_type = Decay(
+					(pointer_left ? left : right).type);
+				const TypeRecord pointer = program_->types.Get(
+					program_->types.RemoveTopCv(pointer_type));
+				const std::int64_t count = ExpressionScalar(index).integral;
+				const std::int64_t step = static_cast<std::int64_t>(
+					program_->SizeOf(pointer.child));
+				if (step != 0 && (count >
+					std::numeric_limits<std::int64_t>::max() / step ||
+					count < std::numeric_limits<std::int64_t>::min() / step))
+					result.constant = false;
+				else
+				{
+					std::int64_t delta = count * step;
+					if (op == OP_MINUS && pointer_left) delta = -delta;
+					const std::uint32_t advanced = OffsetConstexprAddress(
+						pointer_left ? left_address : right_address,
+						delta, false);
+					if (advanced == kNoConstexprAddress)
+						result.constant = false;
+					else SetExpressionAddress(&result, advanced);
+				}
+			}
+			++expression_count_;
+			return result;
+		}
+		ConstexprScalarValue left_value = ExpressionScalar(left);
+		ConstexprScalarValue right_value = ExpressionScalar(right);
+		if (operand_type != kNoType &&
+			(IsIntegral(operand_type, true) || IsFloating(operand_type)))
+		{
+			left_value = ConvertScalarConstant(
+				left.type, operand_type, left_value);
+			right_value = ConvertScalarConstant(
+				right.type, operand_type, right_value);
+		}
+		SetExpressionScalar(&result, short_circuit ?
+			ConstexprScalarValue(static_cast<std::int64_t>(
+				ScalarTruth(left_value))) :
+			ApplyConstantScalarBinary(operation, left_value, right_value,
+				operand_type != kNoType ? operand_type : result_type));
+	}
+	++expression_count_;
+	return result;
+}
+
+
+ExpressionInfo Analyzer::AnalyzeSubscript(NodeId node, ScopeId scope)
+{
+	const std::uint32_t first = arena_->FirstEdge(node);
+	const std::uint32_t second = first == kNoEdge ? kNoEdge :
+		arena_->NextEdge(first);
+	if (second == kNoEdge) ThrowSemanticError("invalid subscript");
+	const NodeId left_syntax = arena_->EdgeChild(first);
+	const NodeId right_syntax = arena_->EdgeChild(second);
+	ExpressionInfo left = AnalyzeExpression(left_syntax, scope);
+	ExpressionInfo right = AnalyzeExpression(right_syntax, scope);
+	std::vector<NodeId> overloaded_syntax;
+	overloaded_syntax.push_back(left_syntax);
+	overloaded_syntax.push_back(right_syntax);
+	std::vector<ExpressionInfo> overloaded_operands;
+	overloaded_operands.push_back(left);
+	overloaded_operands.push_back(right);
+	ExpressionInfo overloaded;
+	if (TryAnalyzeOverloadedOperator("[]", scope, overloaded_syntax,
+		overloaded_operands, true, kNoType, &overloaded)) return overloaded;
+	(void)ApplyBuiltinBinaryConversions("[]", &left, &right);
+	if (!IsPointer(Decay(left.type)) && IsPointer(Decay(right.type)))
+		std::swap(left, right);
+	const TypeId pointer_type = Decay(left.type);
+	const TypeRecord pointer = program_->types.Get(pointer_type);
+	if (pointer.kind != TYPE_POINTER || !IsIntegral(right.type) ||
+		!IsPointerToCompleteObject(pointer_type))
+		return CandidateExpressionFailure("invalid subscript operands");
+	const std::uint32_t expression = MakeDump(DUMP_SUBSCRIPT_EXPRESSION,
+		pointer.child, VALUE_LVALUE);
+	dump_.Add(expression, left.node);
+	dump_.Add(expression, right.node);
+	ExpressionInfo result;
+	result.node = expression;
+	result.type = pointer.child;
+	result.category = VALUE_LVALUE;
+	std::uint32_t base_address = ExpressionAddress(left);
+	if (base_address == kNoConstexprAddress &&
+		program_->types.Get(program_->types.RemoveTopCv(
+			EffectiveType(left.type))).kind == TYPE_ARRAY)
+		base_address = LvalueAddress(&left);
+	if (base_address != kNoConstexprAddress && right.constant &&
+		right.constexpr_address == kNoConstexprAddress)
+	{
+		const std::int64_t step = static_cast<std::int64_t>(
+			program_->SizeOf(pointer.child));
+		const std::int64_t index = ExpressionScalar(right).integral;
+		if (step == 0 || (index <=
+			std::numeric_limits<std::int64_t>::max() / step &&
+			index >= std::numeric_limits<std::int64_t>::min() / step))
+		{
+			const std::uint32_t address = OffsetConstexprAddress(base_address,
+				index * step, true, step);
+			if (address != kNoConstexprAddress)
+				SetExpressionLvalueAddress(&result, address);
+		}
+	}
+	if (left.string_unit_begin != kNoDumpEdge && right.constant &&
+		right.value >= 0 &&
+		static_cast<std::uint64_t>(right.value) < left.string_unit_count)
+	{
+		const std::size_t index = left.string_unit_begin +
+			static_cast<std::size_t>(right.value);
+		if (index >= string_literal_units_.size())
+			ThrowInternalCompilerError("string literal code-unit range is invalid");
+		result.constant = true;
+		result.value = NormalizeIntegralConstant(
+			pointer.child, string_literal_units_[index]);
+		RecordExpressionFacts(result);
+	}
+	else if ((constant_expression_required_depth_ != 0 ||
+		constexpr_evaluation_depth_ != 0) &&
+		left.constexpr_object != kNoConstexprObject && right.constant &&
+		right.constexpr_object == kNoConstexprObject && right.value >= 0)
+	{
+		const ConstexprObjectElement* element = ConstexprObjectElementAt(
+			left.constexpr_object, static_cast<std::size_t>(right.value));
+		if (element)
+		{
+			SetExpressionObjectElement(&result, *element);
+			RecordExpressionFacts(result);
+		}
+	}
+	++expression_count_;
+	return result;
+}
+}
+}

@@ -1,0 +1,4 @@
+ERROR: invalid initializer [target member-pointer of struct Base to int] [source member-pointer of struct Derived to int] [init derived_ptr] [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:base_ptr=member-pointer of struct Base to int,derived_ptr=member-pointer of struct Derived to int}]
+Diagnostic context:
+analyze_function_binding_output [main]
+  analyze_statement [simple-declaration] at tests/spec/300-member-pointer-invalid-reverse-bad.t:17:3

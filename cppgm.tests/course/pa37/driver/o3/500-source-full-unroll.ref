@@ -1,0 +1,23 @@
+global @observed : i32 [binding=strong, object=_Z8observed] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    store volatile i32 0, @observed
+    store volatile i32 1, @observed
+    store volatile i32 3, @observed
+    store volatile i32 6, @observed
+    %t11 = load volatile i32 @observed
+    %t12 = cmp eq i32 %t11, 6
+    %t18 = copy i64 %t12
+    branch %t18, ^cond_then_5, ^cond_else_6
+
+  block ^cond_then_5:
+    jump ^cond_end_7
+
+  block ^cond_else_6:
+    jump ^cond_end_7
+
+  block ^cond_end_7:
+    %t17 = phi i32 [^cond_then_5: 0, ^cond_else_6: 1]
+    return i32 %t17
+}

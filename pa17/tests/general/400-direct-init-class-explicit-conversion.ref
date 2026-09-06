@@ -10,7 +10,6 @@ function @convert(%value : obj<1x1>) -> obj<1x1> [binding=strong, object=_Z7conv
     %t2 = addr $arg__2
     %t3 = addr $value
     %t4 = call obj<1x1> @source__operatortarget(%t3)
-    copyobj 1x1 %t4, %t2
     call void @target__target__ov3(%t1, %t2)
     return obj<1x1> $retobj__1
 }

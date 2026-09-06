@@ -5,11 +5,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $discard__1
     %t2 = call obj<1x1> @make_guard(1)
-    copyobj 1x1 %t2, %t1
     call void @guard_int____guard(%t1)
     %t3 = addr $discard__2
     %t4 = call obj<1x1> @guard_factory_int___make(1)
-    copyobj 1x1 %t4, %t3
     call void @guard_int____guard(%t3)
     return i32 0
 }

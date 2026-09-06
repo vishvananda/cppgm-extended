@@ -1,11 +1,15 @@
-#include "cli_batch_frontend.h"
-#include "lowir_optimizer.h"
-#include "optimization_level.h"
-#include "tool_help_text.h"
+// Student-facing scaffold for the PA37 `lowiropt` binary.
 
-#include <fstream>
+#include "support/exception_types.h"
+#include "lowir/driver/stats_report.h"
+#include "lowir/model/program.h"
+#include "lowir/optimize/pipeline.h"
+#include "lowir/optimize/errors.h"
+#include "backend_variant.h"
+#include "support/tool_help_text.h"
+
+#include <cstdlib>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -15,59 +19,162 @@ namespace {
 
 struct LowIROptInvocation
 {
-  bool explicit_optimization_level = false;
+  bool has_optimization_level = false;
+  bool report_stats = false;
   int optimization_level = 0;
   string outfile;
   vector<string> inputs;
+  lowir_opt::InlinePolicyOverrides inline_limits;
 };
 
-bool has_help_arg(int argc, char ** argv)
+vector<string> collect_args(int argc, char ** argv)
 {
+  vector<string> args;
   for(int i = 1; i < argc; ++i) {
-    const string arg = argv[i];
-    if(arg == "--help" || arg == "-h") {
+    args.push_back(argv[i]);
+  }
+  return args;
+}
+
+bool has_help_arg(const vector<string> & args)
+{
+  for(size_t i = 0; i < args.size(); ++i) {
+    if(args[i] == "--help" || args[i] == "-h") {
       return true;
     }
   }
   return false;
 }
 
+bool has_batch_stdin_arg(const vector<string> & args)
+{
+  for(size_t i = 0; i < args.size(); ++i) {
+    if(args[i] == "--batch-stdin") {
+      return true;
+    }
+  }
+  return false;
+}
+
+int run_not_implemented_batch_mode()
+{
+  string line;
+  while(getline(cin, line)) {
+    (void)line;
+    cout << "EXIT_NOT_IMPLEMENTED" << endl;
+  }
+  return EXIT_SUCCESS;
+}
+
+bool is_optimization_level(const string & arg, int & level)
+{
+  if(arg == "-O0") {
+    level = 0;
+    return true;
+  }
+  if(arg == "-O1") {
+    level = 1;
+    return true;
+  }
+  if(arg == "-O2") {
+    level = 2;
+    return true;
+  }
+  if(arg == "-O3") {
+    level = 3;
+    return true;
+  }
+  return false;
+}
+
+bool starts_with_dash(const string & arg)
+{
+  return !arg.empty() && arg[0] == '-';
+}
+
 LowIROptInvocation parse_lowiropt_invocation(const vector<string> & args)
 {
   LowIROptInvocation invocation;
+  cppgm_variant::select(string());
+
   for(size_t i = 0; i < args.size(); ++i) {
-    int optimization_level = invocation.optimization_level;
-    if(parse_optimization_level_arg(args[i], optimization_level)) {
-      invocation.explicit_optimization_level = true;
+    int optimization_level = 0;
+    if(args[i] == "--stats") {
+      invocation.report_stats = true;
+      continue;
+    }
+    if(args[i] == "--backend-variant") {
+      if(i + 1 >= args.size())
+        lowir_opt::ThrowOptimizerInvocationError(
+          "missing value after --backend-variant");
+      cppgm_variant::select(args[++i]);
+      continue;
+    }
+    if(args[i] == "--inline-limit") {
+      if(i + 1 >= args.size())
+        lowir_opt::ThrowOptimizerInvocationError(
+          "missing value after --inline-limit");
+      lowir_opt::apply_inline_limit_option(
+        &invocation.inline_limits, args[++i]);
+      continue;
+    }
+    if(is_optimization_level(args[i], optimization_level)) {
+      if(invocation.has_optimization_level) {
+        lowir_opt::ThrowOptimizerInvocationError(
+          "multiple optimization levels provided");
+      }
+      invocation.has_optimization_level = true;
       invocation.optimization_level = optimization_level;
       continue;
     }
     if(args[i] == "-o") {
       if(i + 1 >= args.size()) {
-        throw logic_error("missing output file after -o");
+        lowir_opt::ThrowOptimizerInvocationError(
+          "missing output file after -o");
+      }
+      if(!invocation.outfile.empty()) {
+        lowir_opt::ThrowOptimizerInvocationError(
+          "multiple output files provided");
       }
       invocation.outfile = args[++i];
       continue;
     }
+    if(starts_with_dash(args[i])) {
+      lowir_opt::ThrowOptimizerInvocationError("unknown option: " + args[i]);
+    }
     invocation.inputs.push_back(args[i]);
   }
 
-  if(!invocation.explicit_optimization_level ||
+  if(!invocation.has_optimization_level ||
      invocation.outfile.empty() ||
      invocation.inputs.empty()) {
-    throw logic_error("invalid usage");
+    lowir_opt::ThrowOptimizerInvocationError("invalid usage");
   }
+
   return invocation;
 }
 
-int run_lowiropt_impl(const vector<string> & args)
+int run_lowiropt_mode(const vector<string> & args)
 {
-  const LowIROptInvocation invocation = parse_lowiropt_invocation(args);
-  ofstream out(invocation.outfile.c_str());
-  if(!out) {
-    throw logic_error("unable to open output file");
+  if(has_batch_stdin_arg(args)) {
+    return run_not_implemented_batch_mode();
   }
-  out << optimize_lowir_text(invocation.inputs, invocation.optimization_level);
+
+  if(has_help_arg(args)) {
+    cout << lowiropt_help_text();
+    return EXIT_SUCCESS;
+  }
+
+  const LowIROptInvocation invocation = parse_lowiropt_invocation(args);
+  lowir_model::LowirProgram program = lowir_model::parse_lowir_program_files(
+      invocation.inputs, lowir_model::LEP_ALLOW_HELPERS_ONLY);
+  lowir_opt::Stats stats;
+  lowir_opt::optimize(program, invocation.optimization_level,
+                      invocation.report_stats ? &stats : 0,
+                      &invocation.inline_limits);
+  lowir_model::write_lowir_program_file(invocation.outfile, program);
+  if(invocation.report_stats)
+    lowir_driver_stats_report::ReportOptimizer(cerr, string(), stats);
   return EXIT_SUCCESS;
 }
 
@@ -75,9 +182,18 @@ int run_lowiropt_impl(const vector<string> & args)
 
 int main(int argc, char ** argv)
 {
-  if(has_help_arg(argc, argv)) {
-    cout << lowiropt_help_text();
-    return EXIT_SUCCESS;
+  try
+  {
+    return run_lowiropt_mode(collect_args(argc, argv));
   }
-  return run_cli_frontend(argc, argv, run_lowiropt_impl);
+  catch(const CompilerError & e)
+  {
+    cerr << "ERROR: " << e.what() << endl;
+    return EXIT_FAILURE;
+  }
+  catch(const exception & e)
+  {
+    cerr << "ERROR: " << e.what() << endl;
+    return EXIT_FAILURE;
+  }
 }

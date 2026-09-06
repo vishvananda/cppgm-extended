@@ -1,0 +1,11 @@
+ERROR: unsupported constexpr variable initializer at tests/general/500-bad-constexpr-scalar-missing-initializer.t:4:15 [top-level declaration 0 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_CONSTEXPR:constexpr
+    decl-specifier KW_INT:int
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier value
+}]
+Diagnostic context:
+collect_simple_declaration [constexpr int value;] at tests/general/500-bad-constexpr-scalar-missing-initializer.t:4:1

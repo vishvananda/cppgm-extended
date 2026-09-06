@@ -1,0 +1,14 @@
+ERROR: conflicting function return type conflict [top-level declaration 1 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_LONG:long
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier conflict
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              decl-specifier KW_INT:int
+}]
+Diagnostic context:
+collect_simple_declaration [long conflict(int);] at tests/general/300-conflicting-function-return-bad.t:2:1

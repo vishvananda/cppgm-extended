@@ -1,0 +1,36 @@
+ERROR: unknown non-dependent name in function template body later at tests/general/100-template-definition-nested-condition-scope-bad.t:5:12 [top-level declaration 0 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier invalid_nested_condition_scope
+      parameter-clause
+    compound-statement
+      if-statement
+        condition
+          keyword-literal KW_TRUE:true
+        then
+          compound-statement
+            return-statement
+              id-expression later
+            if-statement
+              condition
+                condition-declaration
+                  decl-specifier-seq
+                    decl-specifier KW_INT:int
+                  declarator
+                    identifier later
+                  initializer
+                    literal 0
+              then
+                compound-statement
+      return-statement
+        literal 0
+}]
+Diagnostic context:
+collect_template_declaration [template<class T>int invalid_nested_condition_scope(){if(true){return later;if(int later=0){}}return 0;}] at tests/general/100-template-definition-nested-condition-scope-bad.t:1:1

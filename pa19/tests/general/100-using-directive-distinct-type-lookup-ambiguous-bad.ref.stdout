@@ -1,0 +1,4 @@
+ERROR: ambiguous type template argument: token [phase template-resolution] [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings ]
+Diagnostic context:
+analyze_function_binding_output [main]
+  analyze_statement [simple-declaration] at tests/general/100-using-directive-distinct-type-lookup-ambiguous-bad.t:18:3

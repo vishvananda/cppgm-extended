@@ -1,0 +1,16 @@
+ERROR: template parameter redeclared at tests/general/100-using-declaration-redeclares-template-parameter-bad.t:7:3 [top-level declaration 1 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+  class-specifier Derived
+    class-key KW_STRUCT:struct
+    base-clause
+      base-specifier
+        base-name Base
+    using-declaration
+      target Base::T
+}]
+Diagnostic context:
+collect_template_declaration [template<class T>struct Derived:Base{using Base::T;};] at tests/general/100-using-declaration-redeclares-template-parameter-bad.t:5:1

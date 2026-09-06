@@ -1,0 +1,15 @@
+function @choose(%buffer : ptr, %new_last : ptr, %take : i64) -> ptr {
+  block ^entry:
+    %end = load ptr %buffer
+    branch %take, ^pre, ^other
+
+  block ^pre:
+    jump ^done
+
+  block ^other:
+    jump ^done
+
+  block ^done:
+    %result = phi ptr [^pre: %new_last, ^other: %end]
+    return ptr %result
+}

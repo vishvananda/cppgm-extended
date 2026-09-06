@@ -7,7 +7,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $argobj__2
     call void @sink__sink(%t2)
     %t3 = call obj<1x1> @run_pack($argobj__2)
-    copyobj 1x1 %t3, %t1
     return i32 0
 }
 function @run_pack(%f : obj<1x1>) -> obj<1x1> [binding=weak, object=_Z8run_packIJcsiE4sinkET0_S1_] {

@@ -1,0 +1,74 @@
+#include "semantic/analysis/analyzer.h"
+#include "support/exceptions.h"
+#include "semantic/extensions/function_control_attributes.h"
+
+namespace cppgm
+{
+namespace semantic
+{
+
+void Analyzer::AnalyzeSimpleFunctionDeclaration(NodeId source_declaration,
+	NodeId item, NodeId declarator, ScopeId syntax_scope,
+	ScopeId declaration_scope,
+	std::uint32_t output_parent, const NamePath& declared_path,
+	const SpecInfo& spec, DeclaratorInfo parsed)
+{
+	if (FindChild(declarator, ::cppgm::syntax::STAG_VIRT_SPECIFIER) != kNoNode)
+		ThrowSemanticError(
+			"virt-specifier is only allowed in a class definition");
+	if (spec.thread_local_storage)
+		ThrowSemanticError("thread_local function");
+	const EntityId function_owner =
+		program_->EntityForScope(declaration_scope);
+	if (spec.is_constexpr)
+		parsed.type = ApplyConstexprDeclaredFunctionType(parsed.type,
+			declaration_scope, parsed.name, function_owner);
+	if (spec.is_constexpr && parsed.placeholder_return_kind ==
+		PLACEHOLDER_DECLARATOR_NONE)
+		ValidateConstexprCallableType(parsed.type, false);
+	const BindingId function = DeclareFunction(declaration_scope, parsed.name,
+		parsed.type, parsed.parameters, false, false, spec.storage_class,
+		current_language_linkage_,
+		IsNonthrowing(declarator, parsed.parameter_scope));
+	ConfigureFunctionExceptionSpecification(
+		function, declarator, parsed.parameter_scope);
+	ConfigurePlaceholderFunctionReturn(function, parsed, spec.placeholder_cv);
+	ApplyFunctionAsmLabel(declarator, function);
+	ApplyFunctionControlAttributes(program_, function,
+		FunctionControlAttributeMask(*arena_, source_declaration));
+	ApplyFunctionAbiTagAttributes(item, function);
+	PublishInlineFunctionFacts(
+		function, spec.inline_specifier || spec.is_constexpr);
+	if (spec.inline_specifier)
+		GetMutableFunction(function).inline_specified = true;
+	GetMutableFunction(function).constexpr_function =
+		GetFunction(function).constexpr_function || spec.is_constexpr;
+	ValidateFunctionRefQualifier(function);
+	ValidateNonmemberOperator(function);
+	const NodeId function_initializer = FindChild(item, ::cppgm::syntax::STAG_INITIALIZER);
+	ConfigureAssignmentSpecialMember(function, function_initializer,
+		!declared_path.global && declared_path.Size() <= 1);
+	const NodeId special = function_initializer == kNoNode ? kNoNode :
+		FindChild(function_initializer, ::cppgm::syntax::STAG_SPECIAL_INITIALIZER);
+	if (special != kNoNode && arena_->Payload(special) == "delete")
+	{
+		GetMutableFunction(function).deleted_function = true;
+		return;
+	}
+	const std::uint32_t declaration = MakeDump(DUMP_FUNCTION_DECLARATION,
+		parsed.type, VALUE_NONE, 0, function);
+	dump_.Add(output_parent, declaration);
+}
+
+void Analyzer::QueueFunctionDefinitionValidation(BindingId binding)
+{
+	if (binding == kNoBinding) return;
+	binding = program_->bindings[binding].canonical;
+	EnsureFunctionExceptionSpecification(binding);
+	DemandClassTemplateMemberDefinitions(
+		program_->bindings[binding].member_owner);
+	QueueDeferredFunctionDefinition(binding);
+}
+
+}
+}

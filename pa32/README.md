@@ -161,6 +161,8 @@ The checked-in PA32 tests cover:
 - host linking against host-built objects
 - host linking against static archives and shared libraries
 - import/export of host-built `thread_local` variables in the tested subset
+- GNU `section` attributes on global objects whose nonempty ELF section name
+  contains only ASCII letters, digits, `_`, and `.`
 - duplicate-definition/coalescing behavior for inline and template output
 - host symbol spelling for user-defined entities and selected template cases
 
@@ -212,6 +214,19 @@ object files within the supported subset:
 6. Preserve the earlier class-value semantics in host-object mode. Compiler-object
    metadata must not append a whole-object representation copy after a nontrivial
    memberwise copy or move body.
+7. Omit an unreferenced translation-unit-local function definition from the
+   native object while retaining local functions whose addresses or bodies are
+   required by emitted runtime code.
+8. Retain a reachable constructor or destructor base-entry definition needed
+   at the object boundary even when optimization removes its last direct call.
+   Retention does not by itself prohibit inlining that entry at other call
+   sites.
+9. For the supported GNU `section` attribute on a global object, require one
+   string-literal name, reject conflicting redeclarations and names outside the
+   token-safe Linux subset above, carry the name as global LowIR
+   `section=<name>` metadata, and place the symbol and its relocations in that
+   ELF section. Function sections, segment syntax, and quoted LowIR metadata
+   are not part of PA32.
 
 If the host linker rejects generated objects as ordinary objects, fix the
 host-compatible object-emission path.

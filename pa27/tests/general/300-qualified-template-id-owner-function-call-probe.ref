@@ -16,7 +16,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $ptr
     %t8 = addr $member
     %t9 = call obj<1x1> @other_action_member_pointer_action___apply(%t7, %t8)
-    copyobj 1x1 %t9, %t6
     return i32 0
 }
 function @other_action_member_pointer_action___apply(%a : ptr [pass=reference], %b : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN12other_actionI21member_pointer_actionE5applyI6resultP6targetKMS4_FivEEET_RT0_RT1_] {
@@ -31,7 +30,6 @@ function @other_action_member_pointer_action___apply(%a : ptr [pass=reference], 
     %t2 = load ptr $a
     %t3 = load ptr $b
     %t4 = call obj<1x1> @action_helper_false__true___apply(%t2, %t3)
-    copyobj 1x1 %t4, %t1
     return obj<1x1> $retobj__1
 }
 function @action_helper_false__true___apply(%__param0 : ptr [pass=reference], %__param1 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_ZN13action_helperILb0ELb1EE5applyI6resultP6targetKMS3_FivEEET_RT0_RT1_] {

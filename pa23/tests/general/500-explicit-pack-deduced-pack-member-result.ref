@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i8 120, $refarg__3
     %t3 = addr $refarg__3
     %t4 = call obj<1x1> @boost__fusion__make_map(%t2, %t3)
-    copyobj 1x1 %t4, %t1
     call void @test_map(%t1)
     return i32 0
 }

@@ -10,7 +10,6 @@ function @test(%value : ptr [pass=reference]) -> void [binding=strong, object=_Z
     %t1 = addr $argobj__1
     %t2 = load ptr $value
     %t3 = call obj<1x1> @S__operatorD(%t2)
-    copyobj 1x1 %t3, %t1
     call void @use($argobj__1)
     return void
 }
