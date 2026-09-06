@@ -1,0 +1,1 @@
+ERROR: invalid integer intrinsic arity at tests/compile/200-builtin-integer-intrinsic-arity-bad.t:3:9

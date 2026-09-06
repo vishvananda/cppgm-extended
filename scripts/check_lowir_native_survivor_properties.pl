@@ -83,7 +83,7 @@ if(scalar(@ARGV) != 2)
 
 my ($app, $root) = @ARGV;
 my @tests = collect_tests($root,
-	qr/(?:400-loop-invariant-call-crossing-placement|405-deferred-compare-across-call|406-volatile-access-emission|410-eh-edge-placement-barrier|420-loop-and-eh-placement|425-native-layout-policy-guards|426-staged-home-selection|427-rematerialized-storage-addresses|428-dominated-post-call-use-tails)\.t$/);
+	qr/(?:\d{3}-loop-invariant-call-crossing-placement|\d{3}-deferred-compare-across-call|\d{3}-volatile-access-emission|\d{3}-eh-edge-placement-barrier|\d{3}-loop-and-eh-placement|\d{3}-native-layout-policy-guards|\d{3}-staged-home-selection|\d{3}-rematerialized-storage-addresses|\d{3}-dominated-post-call-use-tails)\.t$/);
 die "No native survivor-property tests found under $root\n" if !@tests;
 
 for my $test (@tests)
@@ -93,10 +93,10 @@ for my $test (@tests)
 	my $o0 = compile_level($app, $test, $directory, 'O0');
 	my $o1 = compile_level($app, $test, $directory, 'O1');
 	my $optimized = $test =~
-		/(?:400-loop-invariant-call-crossing-placement|410-eh-edge-placement-barrier)/
+		/(?:\d{3}-loop-invariant-call-crossing-placement|\d{3}-eh-edge-placement-barrier)/
 		? compile_level($app, $test, $directory, 'O2') : $o1;
 
-	if($test =~ /400-loop-invariant-call-crossing-placement/) {
+	if($test =~ /\d{3}-loop-invariant-call-crossing-placement/) {
 		my $baseline = function_body($test, $o0, 'main');
 		my $positive = function_body($test, $optimized, 'main');
 		die "$test: O0 lost the call-crossing stable-value home\n"
@@ -110,7 +110,7 @@ for my $test (@tests)
 			if preserve_count($floating) != 0;
 		next;
 	}
-	if($test =~ /405-deferred-compare-across-call/) {
+	if($test =~ /\d{3}-deferred-compare-across-call/) {
 		my $probe = function_body($test, $o1, 'probe');
 		my $call = index($probe, 'call @sink');
 		my $compare = index($probe, 'cmp.i64');
@@ -123,7 +123,7 @@ for my $test (@tests)
 			if preserve_count($probe) < 2;
 		next;
 	}
-	if($test =~ /406-volatile-access-emission/) {
+	if($test =~ /\d{3}-volatile-access-emission/) {
 		for my $mir ($o0, $o1) {
 			my $body = function_body($test, $mir, 'spin_flag');
 			die "$test: native lowering removed or merged volatile traffic\n"
@@ -132,7 +132,7 @@ for my $test (@tests)
 		}
 		next;
 	}
-	if($test =~ /410-eh-edge-placement-barrier/) {
+	if($test =~ /\d{3}-eh-edge-placement-barrier/) {
 		my $baseline = function_body($test, $o0, 'main');
 		my $positive = function_body($test, $optimized, 'main');
 		die "$test: O0 lost the EH-crossing stable-value home\n"
@@ -146,7 +146,7 @@ for my $test (@tests)
 		next;
 	}
 
-	if($test =~ /420-loop-and-eh-placement/) {
+	if($test =~ /\d{3}-loop-and-eh-placement/) {
 		my $baseline = function_body($test, $o0, 'walk_unavoidable');
 		my $positive = function_body($test, $o1, 'walk_unavoidable');
 		for my $name ('cursor', 'count', 'limit') {
@@ -173,7 +173,7 @@ for my $test (@tests)
 			if preserve_count($crossing) == 0;
 		next;
 	}
-	if($test =~ /425-native-layout-policy-guards/) {
+	if($test =~ /\d{3}-native-layout-policy-guards/) {
 		for my $name ('identity', 'frameless_leaf', 'frameless_call',
 			'direct_returns') {
 			my $baseline = function_body($test, $o0, $name);
@@ -195,7 +195,7 @@ for my $test (@tests)
 		}
 		next;
 	}
-	if($test =~ /426-staged-home-selection/) {
+	if($test =~ /\d{3}-staged-home-selection/) {
 		my $baseline = function_body($test, $o0, 'copy_to_edge_home');
 		my $positive = function_body($test, $o1, 'copy_to_edge_home');
 		my ($value_register) = $positive =~
@@ -239,7 +239,7 @@ for my $test (@tests)
 			if $left !~ /^\s+lea [a-z0-9]+, \[[a-z0-9]+\+[a-z0-9]+\]$/m;
 		next;
 	}
-	if($test =~ /427-rematerialized-storage-addresses/) {
+	if($test =~ /\d{3}-rematerialized-storage-addresses/) {
 		my $frame = function_body($test, $o1, 'frame_storage_after_call');
 		die "$test: frame storage was materialized into an address register\n"
 			if $frame =~ /^\s+lea [^,]+, \[rbp/m;
@@ -267,7 +267,7 @@ for my $test (@tests)
 			   $variable !~ /^\s+load\.i64 [a-z0-9]+, \[\Q$carrier\E\]$/m;
 		next;
 	}
-	if($test =~ /428-dominated-post-call-use-tails/) {
+	if($test =~ /\d{3}-dominated-post-call-use-tails/) {
 		my $baseline = function_body($test, $o0, 'post_call_tails');
 		my $positive = function_body($test, $o1, 'post_call_tails');
 		die "$test: O0 lost the crossing-value frame baseline\n"

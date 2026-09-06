@@ -25,7 +25,7 @@ from typing import Iterable
 
 DEFAULT_TRACKER = Path("docs/pa15-pa23-contract-test-audit-tracker.md")
 DEFAULT_PAS = tuple(f"pa{i}" for i in range(15, 29))
-LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(10, 40))
+LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(1, 40))
 STRICT_TEMPLATE_PAS = ("pa19", "pa20", "pa22", "pa23", "pa24")
 SEMANTIC_ONLY_PA_MAX = 12
 PRE_LOWIR_SEMANTIC_PA_MIN = 10
@@ -34,6 +34,9 @@ SOURCE_EH_LOWIR_OWNER_PA = 26
 BACKEND_ONLY_PAS = {29}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
 VALID_TEST_CLUSTERS = frozenset(range(100, 1000, 100))
+# The assignments whose harness (run_cpphostinterop_tests_worker.pl) compiles
+# a fixture's numbered companion units with the host C++ compiler.
+HOST_COMPILED_COMPANION_PAS = frozenset({"pa31", "pa32", "pa33", "pa34", "pa36"})
 HOSTED_STL_OWNER_PA = "pa35"
 HOSTED_STL_EARLY_PA_MAX = 34
 HOSTED_STL_INTERNAL_INCLUDE_PREFIXES = ("__", "bits/", "ext/")
@@ -1262,24 +1265,35 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
     return hits
 
 
-def iter_test_files(root: Path, pas: Iterable[str], include_course: bool) -> list[Path]:
+UNJUDGED_LANE_DIRS = frozenset({"regression", "controls"})
+
+
+def in_unjudged_lane(path: Path) -> bool:
+    """The regression lane pins the course solution's own outputs and the
+    controls are judged by their checker scripts; neither is a placed suite."""
+    return any(part in UNJUDGED_LANE_DIRS for part in path.parts)
+
+
+def suite_test_files(test_root: Path) -> list[Path]:
+    return [
+        path for path in sorted(test_root.rglob("*.t"))
+        if not in_unjudged_lane(path.relative_to(test_root))
+    ]
+
+
+def iter_test_files(root: Path, pas: Iterable[str]) -> list[Path]:
     files: list[Path] = []
     for pa in pas:
         test_root = root / pa / "tests"
         if test_root.exists():
-            files.extend(sorted(test_root.rglob("*.t")))
-        if include_course:
-            course_root = root / "cppgm.tests" / "course" / pa
-            if course_root.exists():
-                files.extend(sorted(course_root.rglob("*.t")))
+            files.extend(suite_test_files(test_root))
     return files
 
 
 def iter_local_hygiene_pas(pas: Iterable[str]) -> list[str]:
     selected: list[str] = []
     for pa in pas:
-        number = pa_number(pa)
-        if number is not None and number >= 10:
+        if pa_number(pa) is not None:
             selected.append(pa)
     return selected
 
@@ -1289,7 +1303,7 @@ def iter_local_test_files(root: Path, pas: Iterable[str]) -> list[Path]:
     for pa in iter_local_hygiene_pas(pas):
         test_root = root / pa / "tests"
         if test_root.exists():
-            files.extend(sorted(test_root.rglob("*.t")))
+            files.extend(suite_test_files(test_root))
     return files
 
 
@@ -1622,12 +1636,19 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
     for path in iter_local_test_files(root, selected_pas):
         relative = path.relative_to(root).as_posix()
         cluster = cluster_for(path)
+        pa_index = pa_number(current_pa_for(path.relative_to(root)))
         if cluster is None:
             findings.append(HygieneFinding(
                 path=relative,
                 kind="test-number",
-                message="local PA10+ tests must start with a three-digit cluster prefix",
+                message=(
+                    "tests must start with a three-digit prefix"
+                    if pa_index is not None and pa_index < 10 else
+                    "local PA10+ tests must start with a three-digit cluster prefix"
+                ),
             ))
+        elif pa_index is not None and pa_index < 10:
+            pass
         elif cluster not in VALID_TEST_CLUSTERS:
             nearest = (cluster // 100) * 100
             findings.append(HygieneFinding(
@@ -1664,6 +1685,11 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
         current_pa = current_pa_for(path.relative_to(root))
         number = pa_number(current_pa)
         if number is None:
+            continue
+        if (current_pa in HOST_COMPILED_COMPANION_PAS
+                and re.search(r"\.t\.\d+$", path.name)):
+            # The host interop harness hands a numbered companion unit to the
+            # host compiler; what it includes is the host's business.
             continue
         relative = path.relative_to(root).as_posix()
         source = read_text(path)
@@ -1737,10 +1763,6 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
 
 def current_pa_for(path: Path) -> str:
     parts = path.parts
-    if "cppgm.tests" in parts and "course" in parts:
-        idx = parts.index("course")
-        if idx + 1 < len(parts):
-            return parts[idx + 1]
     for part in parts:
         if re.fullmatch(r"pa\d+", part):
             return part
@@ -1749,8 +1771,6 @@ def current_pa_for(path: Path) -> str:
 
 def test_role_for(path: Path) -> str:
     parts = path.parts
-    if "cppgm.tests" in parts and "course" in parts:
-        return "course-current"
     if "general" in parts:
         return "general"
     if "spec" in parts:
@@ -2457,7 +2477,7 @@ def template_tracker_report(rows: list[dict[str, object]], missing_rules: list[s
         "Seed command:",
         "",
         "```sh",
-        f"python3 scripts/audit_pa_feature_placement.py {pa_args} --no-course --template-placement \\",
+        f"python3 scripts/audit_pa_feature_placement.py {pa_args} --template-placement \\",
         f"  --markdown-out {output_path} \\",
         "  --csv-out /tmp/template-placement.csv \\",
         "  --json-out /tmp/template-placement.json",
@@ -2728,8 +2748,6 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--tracker", type=Path, default=DEFAULT_TRACKER)
     parser.add_argument("--pa", action="append", choices=[f"pa{i}" for i in range(1, 40)])
     parser.add_argument("--feature", action="append", help="only report tests matching this feature id")
-    parser.add_argument("--include-course", action="store_true", default=True)
-    parser.add_argument("--no-course", action="store_false", dest="include_course")
     parser.add_argument(
         "--include-ok",
         action="store_true",
@@ -2776,7 +2794,7 @@ def main(argv: list[str]) -> int:
 
     pas = tuple(args.pa) if args.pa else DEFAULT_PAS
     hygiene_pas = tuple(args.pa) if args.pa else LOCAL_TEST_HYGIENE_PAS
-    tests = iter_test_files(root, pas, args.include_course)
+    tests = iter_test_files(root, pas)
     rows = [row_for(path, root, features) for path in tests]
     hygiene_findings = scan_test_hygiene(root, hygiene_pas)
     lowir_eh_findings = scan_lowir_eh_review(root, hygiene_pas)

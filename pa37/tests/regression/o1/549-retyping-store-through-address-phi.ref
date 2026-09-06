@@ -1,0 +1,59 @@
+declare function @exit(%status : i32) -> void [unwind=no]
+
+function @main() -> i32 [unwind=no, role=entry] {
+  slot $buffer : obj<16x1>
+  slot $__o1inl0__size : i64
+  slot $__o1inl0__n : i64
+  slot $__o1inl1__size : i64
+  slot $__o1inl1__n : i64
+
+  block ^entry:
+    %p = addr $buffer
+    %q = index i8 %p, 5
+    %__o1inl0__size = binary sub ptr %q, %p
+    store i64 %__o1inl0__size, $__o1inl0__size
+    store i64 3, $__o1inl0__n
+    %__o1inl0__a = addr $__o1inl0__size
+    %__o1inl0__b = addr $__o1inl0__n
+    %__o1inl0____o1inl0__x = copy i64 %__o1inl0__size
+    %__o1inl0____o1inl0__less = cmp ult i64 %__o1inl0____o1inl0__x, 3
+    branch %__o1inl0____o1inl0__less, ^__o1inl0____o1inl0__then, ^__o1inl0____o1inl0__else
+
+  block ^__o1inl0____o1inl0__then:
+    jump ^__o1inl0____o1inl0__cont
+
+  block ^__o1inl0____o1inl0__else:
+    jump ^__o1inl0____o1inl0__cont
+
+  block ^__o1inl0____o1inl0__cont:
+    %t0 = phi ptr [^__o1inl0____o1inl0__then: %__o1inl0__b, ^__o1inl0____o1inl0__else: %__o1inl0__a]
+    %__o1inl0__m = copy ptr %t0
+    %__o1inl0__v = load i64 %__o1inl0__m
+    %__o1inl0__r = binary add i64 %__o1inl0__size, %__o1inl0__v
+    store i64 %__o1inl0__size, $__o1inl1__size
+    store i64 9, $__o1inl1__n
+    %__o1inl1__a = addr $__o1inl1__size
+    %__o1inl1__b = addr $__o1inl1__n
+    %__o1inl1____o1inl0__x = copy i64 %__o1inl0__size
+    %__o1inl1____o1inl0__less = cmp ult i64 %__o1inl1____o1inl0__x, 9
+    branch %__o1inl1____o1inl0__less, ^__o1inl1____o1inl0__then, ^__o1inl1____o1inl0__else
+
+  block ^__o1inl1____o1inl0__then:
+    jump ^__o1inl1____o1inl0__cont
+
+  block ^__o1inl1____o1inl0__else:
+    jump ^__o1inl1____o1inl0__cont
+
+  block ^__o1inl1____o1inl0__cont:
+    %t1 = phi ptr [^__o1inl1____o1inl0__then: %__o1inl1__b, ^__o1inl1____o1inl0__else: %__o1inl1__a]
+    %__o1inl1__m = copy ptr %t1
+    %__o1inl1__v = load i64 %__o1inl1__m
+    %__o1inl1__r = binary add i64 %__o1inl0__size, %__o1inl1__v
+    %bad_first = cmp ne i64 %__o1inl0__r, 10
+    %bad_second = cmp ne i64 %__o1inl1__r, 14
+    %first_bad = convert zext i64 i1 %bad_first
+    %second_bad = convert zext i64 i1 %bad_second
+    %bad = binary or i64 %first_bad, %second_bad
+    %status = convert trunc i32 i64 %bad
+    return i32 %status
+}

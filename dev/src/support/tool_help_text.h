@@ -6,11 +6,17 @@ inline const char * cppgm_help_text()
       "usage: cppgm++ --emit-ast -o <outfile> <srcfile>...\n"
       "   or: cppgm++ --emit-types -o <outfile> <srcfile>...\n"
       "   or: cppgm++ --emit-semantics -o <outfile> <srcfile>...\n"
-      "   or: cppgm++ --emit-lowir -o <outfile> [--witness <logfile>] [--witness-debug <logfile>] <srcfile>...\n"
+      "   or: cppgm++ --emit-lowir -o <outfile> <srcfile>...\n"
       "   or: cppgm++ --emit-abi-facts -o <outfile> <srcfile>...\n"
       "   or: cppgm++ -c [options] <srcfile-or-lowirfile>...\n"
       "   or: cppgm++ -E [options] <srcfile>...\n"
       "   or: cppgm++ [options] <input>...\n"
+      "\n"
+      "emit-mode flags (every --emit-* mode):\n"
+      "  -I <dir> / -I<dir>  user include search path\n"
+      "  -D <macro> / -D<macro>\n"
+      "  -U <macro> / -U<macro>\n"
+      "  --hosted            the host compiler's include paths and predefined macros, as -c uses\n"
       "\n"
       "query flags:\n"
       "  --help, -h\n"
@@ -36,8 +42,6 @@ inline const char * cppgm_help_text()
       "  --backend-variant <name>  a design variant of the backend\n"
       "  --stats-functions  compile-only per-function native census\n"
       "  -stdlib <name> / -stdlib=<name>\n"
-      "  --witness <logfile>\n"
-      "  --witness-debug <logfile>\n"
       "  --target <target>\n";
 }
 

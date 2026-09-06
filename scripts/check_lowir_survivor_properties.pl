@@ -98,7 +98,7 @@ if(scalar(@ARGV) != 2)
 
 my ($app, $root) = @ARGV;
 my @tests = collect_tests($root,
-	qr/(?:385-branch-boolean-conversion|386-negated-boolean-compare|387-duplicate-block-loads|388-staged-copy-forwarding|389-aggregate-slot-scalar-replacement|390-sink-cold-blocks|391-inline-growth-budget-boundary|392-inline-trivial-leaf-budget-exempt|392-sink-cold-only-definitions|395-truncate-noreturn-continuation|475-inline-discardable-size-cap|476-inline-single-call-caller-budget|490-inline-hint-late-nonleaf|506-nonzero-underflow-predicate|507-adjacent-noalias-scalar-copy|508-fully-overwritten-zero-init|509-shared-loop-inline-policy|510-cold-path-discounted-inlining|511-phi-integrity-survivors|528-nonzero-underflow-value-proof|529-loop-carried-store-forwarding|540-volatile-access-preservation)\.t$/);
+	qr/(?:\d{3}-branch-boolean-conversion|\d{3}-negated-boolean-compare|\d{3}-duplicate-block-loads|\d{3}-staged-copy-forwarding|\d{3}-aggregate-slot-scalar-replacement|\d{3}-sink-cold-blocks|\d{3}-inline-growth-budget-boundary|\d{3}-inline-trivial-leaf-budget-exempt|\d{3}-sink-cold-only-definitions|\d{3}-truncate-noreturn-continuation|\d{3}-inline-discardable-size-cap|\d{3}-inline-single-call-caller-budget|\d{3}-inline-hint-late-nonleaf|\d{3}-nonzero-underflow-predicate|\d{3}-adjacent-noalias-scalar-copy|\d{3}-fully-overwritten-zero-init|\d{3}-shared-loop-inline-policy|\d{3}-cold-path-discounted-inlining|\d{3}-phi-integrity-survivors|\d{3}-nonzero-underflow-value-proof|\d{3}-loop-carried-store-forwarding|\d{3}-volatile-access-preservation)\.t$/);
 die "No LowIR survivor-property tests found under $root\n" if !@tests;
 
 for my $test (@tests)
@@ -107,10 +107,10 @@ for my $test (@tests)
 		TMPDIR => 1, CLEANUP => 1);
 	my $o0 = run_optimizer($app, $test, $directory, 'O0');
 	my $o1 = run_optimizer($app, $test, $directory, 'O1');
-	my $optimized = $test =~ /540-volatile-access-preservation/
+	my $optimized = $test =~ /\d{3}-volatile-access-preservation/
 		? run_optimizer($app, $test, $directory, 'O2') : $o1;
 
-	if($test =~ /540-volatile-access-preservation/) {
+	if($test =~ /\d{3}-volatile-access-preservation/) {
 		my $baseline = function_body(
 			$test, $o0, 'keeps_volatile_slot_accesses');
 		my $positive = function_body(
@@ -132,7 +132,7 @@ for my $test (@tests)
 		next;
 	}
 
-	if($test =~ /385-branch-boolean-conversion/) {
+	if($test =~ /\d{3}-branch-boolean-conversion/) {
 		my $baseline = function_body($test, $o0, 'truth_trunc');
 		my $positive = function_body($test, $o1, 'truth_trunc');
 		die "$test: O0 lost the compare-result truncation baseline\n"
@@ -147,7 +147,7 @@ for my $test (@tests)
 			if $guard !~ /^\s+%\w+ = convert trunc u8 i64 /m;
 		next;
 	}
-	if($test =~ /386-negated-boolean-compare/) {
+	if($test =~ /\d{3}-negated-boolean-compare/) {
 		my $baseline = function_body($test, $o0, 'negated_direct');
 		my $positive = function_body($test, $o1, 'negated_direct');
 		my @baseline_cmps = $baseline =~ /^\s+%\w+ = cmp /mg;
@@ -163,7 +163,7 @@ for my $test (@tests)
 			if scalar(@float_cmps) != 2;
 		next;
 	}
-	if($test =~ /387-duplicate-block-loads/) {
+	if($test =~ /\d{3}-duplicate-block-loads/) {
 		my $baseline = function_body($test, $o0, 'repeated');
 		my $positive = function_body($test, $o1, 'repeated');
 		my @baseline_loads = $baseline =~ /^\s+%\w+ = load i64 \@cell$/mg;
@@ -183,7 +183,7 @@ for my $test (@tests)
 			    $guard !~ /^\s+%\w+ = binary add i64 %\w+, 9$/m);
 		next;
 	}
-	if($test =~ /388-staged-copy-forwarding/) {
+	if($test =~ /\d{3}-staged-copy-forwarding/) {
 		my $baseline = function_body($test, $o0, 'forwards');
 		my $positive = function_body($test, $o1, 'forwards');
 		die "$test: O0 lost the staged-object baseline\n"
@@ -199,7 +199,7 @@ for my $test (@tests)
 			   $conditional !~ /^\s+%\w+ = load i64 \$\w+$/m;
 		next;
 	}
-	if($test =~ /389-aggregate-slot-scalar-replacement/) {
+	if($test =~ /\d{3}-aggregate-slot-scalar-replacement/) {
 		my $baseline = function_body($test, $o0, 'decomposes');
 		my $positive = function_body($test, $o1, 'decomposes');
 		die "$test: O0 lost the aggregate-slot baseline\n"
@@ -216,7 +216,7 @@ for my $test (@tests)
 			   $escape !~ /\bcall void \@escape\(/;
 		next;
 	}
-	if($test =~ /390-sink-cold-blocks/) {
+	if($test =~ /\d{3}-sink-cold-blocks/) {
 		my $baseline = function_body($test, $o0, 'guarded');
 		my $positive = function_body($test, $o1, 'guarded');
 		die "$test: O0 no longer has the raising block before hot fallthrough\n"
@@ -231,7 +231,7 @@ for my $test (@tests)
 			   index($chained, 'block ^prepare:');
 		next;
 	}
-	if($test =~ /391-inline-growth-budget-boundary/) {
+	if($test =~ /\d{3}-inline-growth-budget-boundary/) {
 		my $baseline = function_body($test, $o0, 'driver');
 		my $positive = function_body($test, $o1, 'driver');
 		my @before = $baseline =~ /^\s+call void \@piece\b/mg;
@@ -242,7 +242,7 @@ for my $test (@tests)
 			if !@after || scalar(@after) >= scalar(@before);
 		next;
 	}
-	if($test =~ /392-inline-trivial-leaf-budget-exempt/) {
+	if($test =~ /\d{3}-inline-trivial-leaf-budget-exempt/) {
 		my $baseline = function_body($test, $o0, 'driver');
 		my $positive = function_body($test, $o1, 'driver');
 		die "$test: O0 lost the tiny/small call baseline\n"
@@ -254,7 +254,7 @@ for my $test (@tests)
 			if $positive !~ /^\s+call void \@small\b/m;
 		next;
 	}
-	if($test =~ /392-sink-cold-only-definitions/) {
+	if($test =~ /\d{3}-sink-cold-only-definitions/) {
 		my $baseline = function_body($test, $o0, 'single_cold_use');
 		my $positive = function_body($test, $o1, 'single_cold_use');
 		die "$test: O0 lost the entry definition baseline\n"
@@ -278,7 +278,7 @@ for my $test (@tests)
 			   /^\s+%\w+ = addr \@message$/m;
 		next;
 	}
-	if($test =~ /395-truncate-noreturn-continuation/) {
+	if($test =~ /\d{3}-truncate-noreturn-continuation/) {
 		my $baseline = function_body($test, $o0, 'select');
 		my $positive = function_body($test, $o1, 'select');
 		die "$test: O0 lost the post-noreturn continuation baseline\n"
@@ -291,7 +291,7 @@ for my $test (@tests)
 		check_phi_predecessors($test, 'keeps_reachable_tail', $guard);
 		next;
 	}
-	if($test =~ /475-inline-discardable-size-cap/) {
+	if($test =~ /\d{3}-inline-discardable-size-cap/) {
 		my $main = function_body($test, $o1, 'main');
 		die "$test: at-limit discardable body was not transferred\n"
 			if $main =~ /\bcall i64 \@at_limit\b/ ||
@@ -301,7 +301,7 @@ for my $test (@tests)
 			   $o1 !~ /^function \@too_large\b/m;
 		next;
 	}
-	if($test =~ /476-inline-single-call-caller-budget/) {
+	if($test =~ /\d{3}-inline-single-call-caller-budget/) {
 		my $baseline = function_body($test, $o0, 'main');
 		my $positive = function_body($test, $o1, 'main');
 		my @before = $baseline =~ /^\s+call void \@(first|second|third|fourth|fifth)\b/mg;
@@ -312,7 +312,7 @@ for my $test (@tests)
 			if !@after || scalar(@after) >= scalar(@before);
 		next;
 	}
-	if($test =~ /490-inline-hint-late-nonleaf/) {
+	if($test =~ /\d{3}-inline-hint-late-nonleaf/) {
 		my $main = function_body($test, $o1, 'main');
 		die "$test: eligible hinted nonleaf was not inlined\n"
 			if $main =~ /^\s+call void \@preferred\b/m;
@@ -323,7 +323,7 @@ for my $test (@tests)
 		next;
 	}
 
-	if($test =~ /506-nonzero-underflow-predicate/) {
+	if($test =~ /\d{3}-nonzero-underflow-predicate/) {
 		my $baseline = function_body(
 			$test, $o0, 'fold_after_nonzero_edge');
 		my $positive = function_body(
@@ -339,7 +339,7 @@ for my $test (@tests)
 		}
 		next;
 	}
-	if($test =~ /528-nonzero-underflow-value-proof/) {
+	if($test =~ /\d{3}-nonzero-underflow-value-proof/) {
 		my $baseline = function_body(
 			$test, $o0, 'fold_dominating_same_value');
 		my $positive = function_body(
@@ -354,7 +354,7 @@ for my $test (@tests)
 			if $guard !~ /^\s+%\w+ = cmp uge u32 /m;
 		next;
 	}
-	if($test =~ /529-loop-carried-store-forwarding/) {
+	if($test =~ /\d{3}-loop-carried-store-forwarding/) {
 		my $baseline = function_body(
 			$test, $o0, 'forward_exact_store');
 		my $positive = function_body(
@@ -372,7 +372,7 @@ for my $test (@tests)
 		}
 		next;
 	}
-	if($test =~ /507-adjacent-noalias-scalar-copy/) {
+	if($test =~ /\d{3}-adjacent-noalias-scalar-copy/) {
 		my $baseline = function_body($test, $o0, 'coalesce_noalias');
 		my $positive = function_body($test, $o1, 'coalesce_noalias');
 		die "$test: O0 unexpectedly coalesced the scalar-copy baseline\n"
@@ -389,7 +389,7 @@ for my $test (@tests)
 		}
 		next;
 	}
-	if($test =~ /508-fully-overwritten-zero-init/) {
+	if($test =~ /\d{3}-fully-overwritten-zero-init/) {
 		my $baseline = function_body(
 			$test, $o0, 'remove_fully_overwritten');
 		my $positive = function_body(
@@ -406,7 +406,7 @@ for my $test (@tests)
 		}
 		next;
 	}
-	if($test =~ /509-shared-loop-inline-policy/) {
+	if($test =~ /\d{3}-shared-loop-inline-policy/) {
 		for my $name ('shared_a', 'shared_b') {
 			my $shared = function_body($test, $o1, $name);
 			die "$test: O1 cloned the shared ordinary loop into $name\n"
@@ -422,7 +422,7 @@ for my $test (@tests)
 		}
 		next;
 	}
-	if($test =~ /510-cold-path-discounted-inlining/) {
+	if($test =~ /\d{3}-cold-path-discounted-inlining/) {
 		for my $name ('cold_a', 'cold_b') {
 			my $cold = function_body($test, $o1, $name);
 			die "$test: cold nonreturning-side work blocked $name inlining\n"
@@ -435,7 +435,7 @@ for my $test (@tests)
 		}
 		next;
 	}
-	if($test =~ /511-phi-integrity-survivors/) {
+	if($test =~ /\d{3}-phi-integrity-survivors/) {
 		for my $name ('repair_fold_target_phi',
 			'inline_after_dead_predecessor', 'cross_slot_needed_phi') {
 			check_phi_predecessors(

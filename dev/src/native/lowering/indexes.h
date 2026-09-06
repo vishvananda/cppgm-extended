@@ -19,6 +19,18 @@ template <class Derived>
 class IndexLowering
 {
 protected:
+  // A local's frame operand lies below the saved registers, and the encoder
+  // moves it past them; a nonnegative frame offset names the caller's frame
+  // and is never moved (mir/optimize.cpp keeps the same rule).  An index that
+  // carries a local's address to zero or above, one past its last byte, must
+  // therefore not fold into a frame operand.
+  static bool frame_fold_stays_local(const mir_model::MirOperand & base,
+                                     long long combined)
+  {
+    return base.kind != mir_model::MirOperand::OP_FRAME ||
+      base.offset >= 0 || combined < 0;
+  }
+
   bool add_address_offset(long long left, long long right,
                           long long * result) const
   {
@@ -122,7 +134,8 @@ protected:
                 (base.kind == mir_model::MirOperand::OP_DEREF ||
                  base.kind == mir_model::MirOperand::OP_FRAME)) {
         long long combined = 0;
-        encodable = add_address_offset(base.offset, offset, &combined);
+        encodable = add_address_offset(base.offset, offset, &combined) &&
+          frame_fold_stays_local(base, combined);
         if(encodable && base.kind == mir_model::MirOperand::OP_DEREF) {
           encodable = storage_only_uses &&
             !lowerer.crosses_register_clobber(
@@ -182,7 +195,8 @@ protected:
        (base.kind == mir_model::MirOperand::OP_REG ||
         (constant_index &&
          base.kind == mir_model::MirOperand::OP_FRAME &&
-         lowerer.is_frame_address(instruction.first)))) {
+         lowerer.is_frame_address(instruction.first) &&
+         frame_fold_stays_local(base, base.offset + offset)))) {
       mir_model::MirOperand address;
       if(constant_index) {
         if(base.kind == mir_model::MirOperand::OP_FRAME) {
@@ -281,12 +295,27 @@ materialize_index:
     if(constant_index) {
       if(base.kind == mir_model::MirOperand::OP_FRAME &&
          lowerer.is_frame_address(instruction.first)) {
-        base.offset += offset;
-        mir_model::MirInstruction lea =
-          machine_instruction(mir_model::MirInstruction::MI_LEA);
-        append_operand(lea, destination);
-        append_operand(lea, base);
-        out.push_back(lea);
+        if(frame_fold_stays_local(base, base.offset + offset)) {
+          base.offset += offset;
+          mir_model::MirInstruction lea =
+            machine_instruction(mir_model::MirInstruction::MI_LEA);
+          append_operand(lea, destination);
+          append_operand(lea, base);
+          out.push_back(lea);
+        } else {
+          // One past the local: take the local's address, then step past it
+          // in the register, so the frame operand keeps its provenance.
+          mir_model::MirInstruction lea =
+            machine_instruction(mir_model::MirInstruction::MI_LEA);
+          append_operand(lea, destination);
+          append_operand(lea, base);
+          out.push_back(lea);
+          mir_model::MirInstruction step =
+            machine_instruction(mir_model::MirInstruction::MI_LEA);
+          append_operand(step, destination);
+          append_operand(step, dereference(destination.reg, offset));
+          out.push_back(step);
+        }
         address_emitted = true;
       } else if(deferred_base &&
                 base.kind == mir_model::MirOperand::OP_DEREF) {

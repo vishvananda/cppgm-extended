@@ -1024,6 +1024,13 @@ bool value_at_block_end(const Function & function,
        optimizer_support::same_storage_location(
          address_root(function, values, ins.second), root)) {
       if(!lowir_model::same_lowir_type(ins.type, type)) return false;
+      // A store retypes its operand (`store i64 %difference` of a pointer
+      // difference); the bytes are the value, but the temporary is not a
+      // `type` and cannot stand in for the load without a retype.
+      if(ins.first.kind == Operand::OP_TEMP &&
+         !lowir_model::same_lowir_type(
+           lowir_model::lowir_value_type(function, ins.first.value), type))
+        return false;
       *value = ins.first;
       return true;
     }

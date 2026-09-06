@@ -41,7 +41,7 @@ lines, of which roughly 200 are the allocator.
    original blocks.  Their jumps back into the body are layout backedges,
    so `layout.phi_loop_carried` is set for phis that are not loop phis in
    the source (`%result` in `@walk_guarded` of
-   `tests/o1/420-loop-and-eh-placement`).  I found this from the
+   `tests/o1/400-loop-and-eh-placement`).  I found this from the
    MIR dump and my own debug print, not from any allowed file.  The header
    should say the layout is the post-split layout and that "loop-carried"
    means "has a layout-backedge predecessor", nothing more.
@@ -93,7 +93,7 @@ lines, of which roughly 200 are the allocator.
 
 - **"A course fixture never compares your placement decisions with the
   course solution's."**  The contract lines of
-  `420-loop-and-eh-placement.ref.expect` include `count(load) >= 5 in
+  `400-loop-and-eh-placement.ref.expect` include `count(load) >= 5 in
   @walk_guarded` and `count(store) >= 6 in @walk_guarded`: floors generated
   from the reference's dump, in which that loop's phis live in frame homes.
   My first version kept `%cursor`, `%count` and `%result` in registers
@@ -159,7 +159,7 @@ begin, and the excluded types.
 What changed in the allocator: I removed the one rule that existed only to
 reproduce the reference's placement (skipping a loop-carried phi whose
 every incoming transfer is a layout backedge).  `@walk_guarded` in
-`420-loop-and-eh-placement` now keeps `%cursor`, `%count` and `%result` in
+`400-loop-and-eh-placement` now keeps `%cursor`, `%count` and `%result` in
 rbx, r12 and r13: 15 instructions, one load, no stores, against the
 reference's 22 instructions with five loads and six stores.  The
 implementation is 297 lines.  After `make -C dev -j32`, the four commands

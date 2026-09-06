@@ -116,3 +116,85 @@ not track (73 of them) are tracked now, as the local suites always were.
   call, O3 adds no homes or frame) and the PA38 handout paragraph says the
   same.
 - `make -C pa16 test-seams` passes (18 rewrites classified).
+
+## Phase 5: placement and numbering
+
+The placement auditor (`scripts/audit_pa_feature_placement.py`) is now the
+only judge of where a fixture sits, and it judges the whole tree:
+
+- The course lane is gone from it (`--include-course`/`--no-course`
+  removed); every `paN/tests/**/*.t` outside `regression/` and
+  `controls/` is a placed fixture.  The regression lane pins the course
+  solution's own outputs and the controls are judged by their checkers,
+  so neither is a placed suite.
+- PA1 to PA9 must carry a three-digit prefix; from PA10 on the prefix is a
+  cluster, a multiple of one hundred (the rule that already existed).
+- A numbered companion unit (`x.t.1`) of a host-interop lane (PA31 to
+  PA34, PA36) is compiled by the host compiler, so its hosted includes are
+  not early.
+
+After the move the auditor reported 740 findings (93 fixtures using a
+feature before its owning assignment or cluster, 647 hygiene findings).
+`scripts/v4_renumber.py` (a scratch tool, not kept) turned the findings
+into 620 renames, applied with `git mv` together with every sidecar:
+
+| reason | fixtures |
+| --- | ---: |
+| individual number to its cluster (`320-x` to `300-x`) | 253 |
+| flat course fixture into the suite's `general/` bucket | 297 (overlapping the rows above and below) |
+| unprefixed LowIR-input fixture, cluster by the words its numbered siblings use | 120 |
+| unprefixed source fixture, cluster of the latest feature its assignment owns | 43 |
+| same assignment, later owning cluster | 29 |
+| feature owned by a later assignment: moved there | 24 |
+| PA25 fixture whose reference carries unwind lowering: moved to PA26 | 1 |
+
+Two PA17 fixtures used `__attribute__((noinline))` only decoratively; the
+attribute went instead of the fixtures.  The ledgers
+(`doc/lowir-contract-ledger.tsv`, `doc/compiler-refactor-output-cases.tsv`),
+the survivor-property checkers, the PA29 and PA31 Makefiles, the PA13
+handout and the backend review records name the fixtures by their new
+paths.  `make ref-test` and `make ref-test-debuginfo` regenerated the
+references that embed a path.
+
+After the renames and three further moves the auditor found nothing
+(`--fail-on-early` exits 0), and the byte-exact `make test-report` passes
+with the regenerated references.
+
+## The selfhost lane
+
+`make -C pa39 test-through-pa10 CXX=../dev/cppgm++` (a CI gate) failed at
+PA9: every test of the self-compiled `cy86` assembler died with "invalid
+ELF header size".  Two compiler defects, both older than the move, both
+fixed in the source tree and synced here:
+
+- The optimizer forwarded a load through a phi of addresses to the value a
+  retyping store had stored (`store i64 %n` with `%n` a pointer
+  difference, as `vector::size()` inlined into `_M_check_len` leaves it),
+  so its own -O1 output carried an `i64` phi with a `ptr` incoming and the
+  LowIR reader rejected it.  `pa37/tests/regression/o1/549-retyping-store-through-address-phi`
+  and `pa38/tests/behavior/o1/500-retyping-store-through-address-phi` hold
+  the shape.  `make -C pa38 ref-test` now regenerates the behaviour buckets
+  it had skipped, and the behaviour lane's `.ref.mir`/`.ref.cmir` dumps are
+  ignored like its `.ref.program`.
+- The native backend folded a constant index into a local's frame operand
+  even when the result reached one past the local's last byte, abstract
+  offset zero, which the encoder reads as the caller's frame and does not
+  move past the saved registers: the `last` pointer of a local array passed
+  to a range insert arrived 8 bytes too high whenever the function preserved
+  a register.  `pa29/tests/behavior/200-one-past-local-array-call-argument`
+  holds the shape (it fails before the fix at `-O0`).
+
+To reach the defects, `cppgm++ --emit-*` now accepts `-I`, `-D`, `-U` and
+`--hosted`, so one translation unit of the compiler itself can be emitted
+as LowIR and optimized or lowered on its own; the reader's phi mismatch
+error names the value, both types and the function.
+
+One frontend defect the lane exposed is recorded rather than fixed: our
+compiler cannot resolve `std::pair::swap` for a pair whose first member is
+itself a pair (`std::sort` over
+`std::vector<std::pair<std::pair<int, std::size_t>, std::size_t>>` fails
+with "no viable overload for swap"; the inner pair's specialization
+receives two class-template identities).  The ordering pass was rewritten
+around it; the eight-line reducer is
+`docs/v4/reducers/nested-pair-sort.cpp`, to become a PA35 compile fixture
+once the frontend resolves it.

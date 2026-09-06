@@ -1,63 +1,64 @@
 # Plan Implementation Tracker
 
-This tracker is only for active or intentionally deferred planning documents in
-`docs/`. Completed plans belong in `docs/implemented/`; stale investigations,
-old frontier process notes, and historical debug trackers belong in `legacy/`.
-
-Operational reference docs such as performance validation and source coverage
-remain in `docs/`, but they are not ordered implementation plans.
+This tracker lists the active and deferred plans in `docs/`.  Finished plans
+move to `docs/implemented/` (the plans that shaped the implementation in the
+source tree before it became this repository's reference are under
+`docs/implemented/v3/`).  Placement decisions and audit records that are
+consulted but not executed stay in `docs/` as reference documents.
 
 ## Status Key
 
-- `pending`: not started yet
-- `in_progress`: active implementation work is underway
-- `ongoing`: recurring review or triage process
-- `blocked`: waiting on an earlier dependency or boundary decision
-
-## Status Review Notes
-
-- The PA34 `540` compile-performance plan reached its stated performance target
-  and is archived in `docs/implemented/`.
-- The imported-symbol-kind follow-up is not complete. The immediate PA33
-  object-vs-function import bug was fixed by splitting function and object maps,
-  but the planned typed import registry has not replaced
-  `external_function_symbols_` / `external_object_symbols_` in
-  `dev/src/lowirgensemantic.cpp`.
-- The template/LowIR log convergence plan is not implemented yet. The driver
-  still exposes the current witness output paths, and there is no
-  `--template-log` option.
-- The template-argument text-shape removal plan is implemented and archived in
-  `docs/implemented/`.
-- `in_progress` is reserved for work currently being implemented in this
-  branch. Deferred cleanup lanes are `pending` unless active work resumes.
+- `in_progress`: implementation work is underway in this branch
+- `pending`: not started, or paused at a recorded point
+- `deferred`: intentionally after another plan
+- `ongoing`: a recurring review loop
 
 ## Active Plan Order
 
 | Order | Status | Plan | Purpose | Notes |
 | --- | --- | --- | --- | --- |
-| 1 | in_progress | [witness-semantic-path-consolidation-experiment-plan.md](witness-semantic-path-consolidation-experiment-plan.md) | Use duplicate witness producers to find and remove duplicate semantic analysis routes. | Experimental branch. Class use is the first target; every removal has strict, full-report, and monotonic single-run performance gates. |
-| 2 | pending | [pa34-pa35-convergence-plan.md](pa34-pa35-convergence-plan.md) | Drive hosted-source and hosted-link compatibility failures to their earliest owning PA. | Historical frontier ledger. Revalidate current `main` before resuming or archiving. |
-| 3 | pending | [machine-backend-o0-quality-plan.md](machine-backend-o0-quality-plan.md) | Improve baseline PA28 `-O0` machine-code quality before later backend optimization work. | Partway landed; remaining work is a deferred PA28 quality lane, not active PA37 `-O1`/`-O2` work. |
-| 4 | pending | [semantic-fallback-removal-plan.md](semantic-fallback-removal-plan.md) | Replace remaining semantic fallback control flow with explicit structured decisions. | Several hard-fail categories and text-reparse removals landed; deferred rewrite-removal inventory remains. |
-| 5 | pending | [template-lowir-log-convergence-plan.md](template-lowir-log-convergence-plan.md) | Move template logging onto the real LowIR closure path. | Not started; depends on the structured witness/source-use boundary staying stable. |
-| 6 | pending | [imported-symbol-kind-followup-plan.md](imported-symbol-kind-followup-plan.md) | Carry function-vs-object import kind explicitly through LowIR/object emission. | Immediate PA33 import-kind bug is fixed, but the first-class typed import registry is still future work. |
-| 7 | ongoing | [spec-conformance-audit.md](spec-conformance-audit.md) | Spec-first review loop for placing real language gaps in the earliest owner. | Runs alongside other work rather than after it. |
-| 8 | blocked | [pa10-34-assignment-cleanup-process.md](pa10-34-assignment-cleanup-process.md) | Assignment boundary, test placement, README, and implementability cleanup. | Passes A-C and the test-grouping cleanup are complete. Only deferred Pass D buildout remains; working tracker: [pa10-34-assignment-cleanup-tracker.md](pa10-34-assignment-cleanup-tracker.md). |
-| 9 | ongoing | [deferred-issues-tracker.md](deferred-issues-tracker.md) | Revalidate and close known deferred bugs, workarounds, and transitional gaps. | Only keep items here when they are not already owned by a dedicated plan above. |
-| 10 | in_progress | [student-assignment-export-process.md](student-assignment-export-process.md) | Export the cleaned assignments into the student-facing repository format. | README/scaffold inventory prep has started; final generated export remains gated on Pass D and export validation. Working docs: [student-export-readme-scaffold-subagent-plan.md](student-export-readme-scaffold-subagent-plan.md), [student-export-inventory.md](student-export-inventory.md). |
+| 1 | in_progress | [PLAN-CPPGM-EXTENDED-V4.md](PLAN-CPPGM-EXTENDED-V4.md) | Make the current implementation this repository's reference: one source tree, one suite per assignment, the export from it. | Phases 0 to 5 have landed on `v4`; the trackers are in [v4/](v4/README.md).  Phase 6 (handout review) and Phase 7 (export and CI) follow; Phase 8 is the plan below. |
+| 2 | deferred | [assignment-restructure-plan.md](assignment-restructure-plan.md) | Combine and rebalance the assignments once every suite and the export are green. | Waits for the v4 plan's exit criteria. |
+| 3 | pending | [PLAN-CODEGEN-AND-SELFHOST-OPTIMIZATION.md](PLAN-CODEGEN-AND-SELFHOST-OPTIMIZATION.md) | Bring the self-compiled compiler's speed toward the host build's. | Carried from the source tree with its measured dispositions; resume from the status line at its top. |
+| 4 | pending | [PLAN-O1-PARITY.md](PLAN-O1-PARITY.md) | Close the -O1 gap against the host compiler on the self-host lanes. | Carried from the source tree; the slice space it explored is recorded in the plan. |
+| 5 | pending | [PLAN-CLANG-LIBCXX-SUPPORT.md](PLAN-CLANG-LIBCXX-SUPPORT.md) | Host the compiler on clang and libc++ as well as gcc and libstdc++. | Proposed; the probe findings are in the plan. |
+| 6 | pending | [PLAN-EARLY-SEMANTIC-CORE-UNIFICATION.md](PLAN-EARLY-SEMANTIC-CORE-UNIFICATION.md) | Unify the early semantic surfaces (PA7 to PA12) on the one analyzer. | Planned; no implementation work has started. |
+| 7 | pending | [semantic-fallback-removal-plan.md](semantic-fallback-removal-plan.md) | Replace the remaining semantic fallback control flow with explicit decisions. | Several hard-fail categories landed earlier; the deferred inventory remains. |
+| 8 | pending | [resolve-type-lookup-text-removal-plan.md](resolve-type-lookup-text-removal-plan.md), [template-type-argument-reparse-removal-plan.md](template-type-argument-reparse-removal-plan.md), [type-text-fallback-removal-tracker.md](type-text-fallback-removal-tracker.md) | Remove the last text-shaped type and lookup paths. | Revalidate against the current tree before resuming. |
+| 9 | pending | [pa34-pa35-convergence-plan.md](pa34-pa35-convergence-plan.md) | Drive hosted-source and hosted-link failures to their earliest owning assignment. | Historical frontier ledger; revalidate before resuming or archiving. |
+| 10 | ongoing | [spec-conformance-audit.md](spec-conformance-audit.md) | Spec-first review for placing real language gaps in their earliest owner. | Runs alongside other work. |
 
-## Active Reference Docs
+## Reference Documents
 
-- [performance-regression-validation.md](performance-regression-validation.md):
-  standard perf gate based on instructions and memory rather than noisy wall time.
-- [source-coverage-analysis-strategy.md](source-coverage-analysis-strategy.md):
-  source coverage workflow and `make source-coverage-report` notes.
+- Placement: [pa15-pa23-contract-test-audit-plan.md](pa15-pa23-contract-test-audit-plan.md)
+  and its tracker, the feature allocation audit, the placement decision
+  records for PA14 to PA22, [template-strict-placement-tracker.md](template-strict-placement-tracker.md),
+  [pa10-37-readme-handout-audit.md](pa10-37-readme-handout-audit.md),
+  [pa10-34-assignment-cleanup-process.md](pa10-34-assignment-cleanup-process.md)
+  and its tracker (the passes it describes are complete; its Pass D buildout
+  is superseded by the v4 plan).
+- Export: [student-assignment-export-process.md](student-assignment-export-process.md),
+  [student-export-inventory.md](student-export-inventory.md) and the scaffold
+  plans describe the export the v4 plan's Phase 7 revises;
+  `scripts/export_student_repo.sh` is the executable form.
+- Operations: [performance-regression-validation.md](performance-regression-validation.md)
+  (the instruction-count and memory gate) and
+  [source-coverage-analysis-strategy.md](source-coverage-analysis-strategy.md).
+- History: [assignment-numbering-migration-2026-08.md](assignment-numbering-migration-2026-08.md),
+  [pa34-35-test-disposition.md](pa34-35-test-disposition.md).
+
+## Retired With The Witness Lane
+
+The witness output and its strict suite were removed with the v4 move; the
+witness convergence plans and ledgers (alias, class use, lifecycle, class
+materialization, semantic-path consolidation) and the template LowIR log
+convergence plan went with them.  The semantic routes they were written to
+find are the subject of the early semantic core unification plan.
 
 ## Archive Policy
 
 When finishing a plan:
 
-1. Update this tracker if the plan is listed above.
+1. Update this tracker.
 2. Move the plan to `docs/implemented/`.
-3. Move obsolete trackers, prototype notes, and old process docs to `legacy/`.
-4. Update links from active docs so `docs/` remains the live working surface.
+3. Update links from active documents so `docs/` stays the live surface.

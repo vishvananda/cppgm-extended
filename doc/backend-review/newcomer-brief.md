@@ -64,9 +64,9 @@ CPPGM_BACKEND_VARIANT=linear-scan make -C pa29 test-course
 ```
 
 All four must pass.  With the stub that plans nothing, the first fails two
-budgets (`tests/o1/420-loop-and-eh-placement`: 35 memory operands
+budgets (`tests/o1/400-loop-and-eh-placement`: 35 memory operands
 against 31, and 19 instructions in `@walk_unavoidable` against 17;
-`tests/o2/410-eh-edge-placement-barrier`: 4 memory operands against 3)
+`tests/o2/400-eh-edge-placement-barrier`: 4 memory operands against 3)
 and the second fails two behaviour programs (the fill loops in
 `tests/behavior/o1/520-*`, which need their loop-carried values in
 registers to stay within 10% of the reference count).  Those are the bar.

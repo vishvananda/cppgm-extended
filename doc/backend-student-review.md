@@ -328,7 +328,7 @@ the planner's seam (`plan_value_locations`), taking the same candidates,
 pools and clobber facts as the course solution's claim-driven linear scan.
 It passes the PA29, PA37 and PA38 course suites, stays within the
 performance envelope on all 15 behaviour programs, and fails ten of our
-pinned regression dumps.  One budget (`426-staged-home-selection`) was
+pinned regression dumps.  One budget (`400-staged-home-selection`) was
 widened to 25% under the rule that the envelope is the loosest limit
 admitting the accepted variants.  Its value was to make the seam explicit:
 `dev/src/native/allocation/planning_seam.h` now states the facts an
@@ -344,7 +344,7 @@ forbidden the course solution's allocator and lowering.  It wrote
 297 lines, selected by `CPPGM_BACKEND_VARIANT=linear-scan`.  It passes
 the PA38 course suite, the performance envelope (15 of 15 within 10%),
 and the PA37 and PA29 course suites; on the guarded loop of
-`420-loop-and-eh-placement` it keeps three phis in registers where the
+`400-loop-and-eh-placement` it keeps three phis in registers where the
 course solution keeps them in the frame (15 instructions, one load, no
 stores, against 22 with five loads and six stores).  Its notes are
 `doc/backend-review/newcomer-notes.md`.
