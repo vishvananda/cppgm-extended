@@ -2309,6 +2309,24 @@ void Analyzer::CompleteFunctionCallTemplateCandidates(NodeId callee,
 		if (retained_specialization)
 		{
 			ResolveCallFunctionTemplatePatterns(callee, scope, &patterns);
+			// The retained naming class was recorded by whichever sibling
+			// specialization published this shared callee node last, and a
+			// dependent qualifier names a different class in each replay.  The
+			// patterns just resolved from the active scope carry the class the
+			// call actually names here, so adopt their owner as the naming
+			// class; otherwise the access check tests the member against the
+			// sibling's class and rejects it (a public static member read as
+			// inaccessible).
+			if (!patterns.empty())
+			{
+				const EntityId active_owner = program_->EntityForScope(
+					function_templates_[patterns[0]].owner);
+				bool single_owner = active_owner != kNoEntity;
+				for (std::size_t i = 1; single_owner && i < patterns.size(); ++i)
+					single_owner = program_->EntityForScope(
+						function_templates_[patterns[i]].owner) == active_owner;
+				if (single_owner) *naming_class = active_owner;
+			}
 			// Publish what the resolution found so the next replay of this
 			// node reads it instead of repeating the lookup.  A pattern whose
 			// owner does not match the recorded naming class is rejected on
