@@ -507,6 +507,9 @@ test-report-nobuild: audit-compiler-exceptions
 			cat "$$tmpdir/$$dir.out"; \
 		fi; \
 	done; \
+	if [ -d pa16/tests/general ]; then \
+		$(MAKE) -s -C pa16 test-seams || touch pa16/.test_failed; \
+	fi; \
 	passed=$$(awk '{s+=$$1} END {print s}' .test_counts 2>/dev/null || echo 0); \
 	total=$$(awk '{s+=$$2} END {print s}' .test_counts 2>/dev/null || echo 0); \
 	if ls pa*/.test_failed 1>/dev/null 2>&1; then \
