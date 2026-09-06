@@ -33,6 +33,8 @@ files in `dev/src`.
 | PA8 | `nsinit` | 67 | 3,587 | **none** |
 | PA9 | `cy86` | 20 | 2,176 | **none** |
 
+Each assignment is also one self-host ladder checkpoint, in the same order.
+
 Two facts stand out.
 
 **PA1–PA4 are the load-bearing quarter.**  Every line a student writes for
@@ -93,19 +95,36 @@ Nine early assignments become five.
   directives, linkage, initialization order).  They move to PA11 and must
   pass against the production model before PA7 and PA8 are deleted, not
   after.
-- **The self-host ladder — and this is the cost of the proposal.**  `pa39`
-  stages through `pptoken posttoken ctrlexpr macro preproc recog nsdecl
-  nsinit cy86 cppgm++ abimangle lowiropt lowir2cy86 lowir2native`, so
-  `nsdecl` and `nsinit` are two of its fourteen checkpoints.  Merging PA4–PA6
-  keeps every binary it stages through, but dropping PA7 and PA8 removes two
-  real programs the compiler currently proves it can compile.  The ladder
-  still runs (`recog` → `cy86` → `cppgm++`), and neither stage feeds a later
-  one, so nothing downstream breaks; what is lost is two self-compilation
-  data points of moderate size (2,500 and 3,587 lines).  Either accept that,
-  or keep the two programs in the tree as ladder fixtures with no assignment
-  attached to them — the second option keeps the coverage and still removes
-  the student work, at the cost of maintaining code no lesson owns.
 - **PA9's oracle role.**  PA13 compares LowIR execution against `cy86`.
+
+## The ladder mirrors the assignments
+
+`pa39` maps checkpoints to assignments one to one
+(`INCEPTION_PRIMARY_STAGE_*`) and chains them linearly
+(`INCEPTION_PREV_*`), so the ladder already is a mirror of the assignment
+list.  It follows the structure rather than constraining it: when an
+assignment goes, its checkpoint goes with it, and the chain closes over the
+gap.  That settles what to do with `nsdecl` and `nsinit` — they are dropped
+with PA7 and PA8, not kept as orphan fixtures, and `recog` chains straight
+to `cy86`.
+
+The same rule applies to the merge: one assignment, one checkpoint.  Whether
+`macro` and `preproc` survive as intermediate binaries inside the merged
+assignment is a sub-decision of the merge, but the ladder carries one
+checkpoint for it either way.
+
+After consolidation the chain is `pptoken → posttoken → ctrlexpr →
+(merged preprocessing and recognition) → cy86 → cppgm++ → …`, which in the
+new numbering makes **`test-through-pa6` the gold standard**: it is the
+target that proves `cppgm++` itself compiles, the property CI actually
+cares about, and it is today's `test-through-pa10` under a different name.
+Extending to **`test-through-pa9`** — today's `test-through-pa13` — is
+optional but generally worth having, because it additionally proves
+`lowir2cy86`, the tool PA13 checks LowIR execution against.
+
+What the drop costs, stated plainly: two self-compilation data points of
+2,500 and 3,587 lines.  Neither feeds a later stage, and the gold-standard
+gate is unaffected.
 
 ## Strategy: content first, numbering last
 
@@ -125,8 +144,14 @@ review in a tree whose paths are moving.
   The merged contract is written here.
 
 **Stage B, one mechanical pass.**  Renumber, move the directories, rewrite
-cross-references, handouts and `ROADMAP.md`, and re-run the export.  A test
-that moves during Stage B is a Stage A escape and is fixed in Stage A.
+cross-references, handouts and `ROADMAP.md`, retarget the ladder's
+checkpoint-to-assignment map and CI's `test-through-*` target, and re-run the
+export.  A test that moves during Stage B is a Stage A escape and is fixed in
+Stage A.
+
+Stage A already removes the two dropped checkpoints from `CHECKPOINTS` and
+closes the chain (`INCEPTION_PREV_cy86 = recog`), because that has to happen
+when the tools are deleted; Stage B only renames what is left.
 
 ## Gates
 
@@ -138,9 +163,10 @@ flavors, every `make audit-*`, the file audit, `make test-harness`,
 `python3 scripts/audit_pa_feature_placement.py --fail-on-early`, and
 `scripts/export_student_repo.sh`.
 
-The ladder gate is the one to watch: it is what proves a merged PA4–PA6 still
-produces the `recog` stage, and what would catch a dropped tool the ladder
-still needs.
+The ladder gate is the one to watch, and it moves with the structure: the
+gold standard stays "the compiler compiles itself" (`test-through-pa10`
+today, `test-through-pa6` after renumbering), with the optional extension
+through `lowir2cy86`.
 
 ## Open questions
 
@@ -152,6 +178,5 @@ still needs.
 - Is any part of `nsdecl`/`nsinit` worth keeping as a reference
   implementation for the PA11 handout, or does deleting it entirely leave
   the right amount of room for the student?
-- If the two programs stay as ladder fixtures rather than assignments, who
-  owns them, and does the ladder gate justify carrying code no lesson
-  teaches?
+- Does the merged assignment still deliver `macro` and `preproc` as
+  intermediate binaries, or only the recognizer?
