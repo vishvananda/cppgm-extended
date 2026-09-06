@@ -466,8 +466,8 @@ ExpressionInfo Analyzer::ApplyTarget(ExpressionInfo value,
 		if (implicit.rank != CONVERSION_INVALID)
 			return ApplyCallArgument(value, target, &implicit);
 		ThrowSemanticError("invalid implicit conversion from " +
-			program_->RenderType(value.type) + " to " +
-			program_->RenderType(target));
+			DescribeType(value.type) + " to " +
+			DescribeType(target));
 	}
 	const TypeRecord target_record = program_->types.Get(target);
 	const TypeId nonreference = target_record.kind == TYPE_LVALUE_REFERENCE ||
@@ -650,6 +650,7 @@ void Analyzer::InstallSemanticErrorLocationHook()
 
 const syntax::SyntaxArena* diagnostic_location_arena = 0;
 syntax::NodeId diagnostic_location_node = kNoNode;
+std::string diagnostic_instantiation;
 
 std::string DescribeDiagnosticLocation()
 {
@@ -660,10 +661,12 @@ std::string DescribeDiagnosticLocation()
 	const std::string& file =
 		diagnostic_location_arena->SourceFile(diagnostic_location_node);
 	if (file.empty()) return std::string();
-	return " at " + file + ":" + std::to_string(
+	const std::string where = " at " + file + ":" + std::to_string(
 		diagnostic_location_arena->SourceLine(diagnostic_location_node)) +
 		":" + std::to_string(
 		diagnostic_location_arena->SourceColumn(diagnostic_location_node));
+	return diagnostic_instantiation.empty() ? where :
+		where + " while instantiating " + diagnostic_instantiation;
 }
 
 ExpressionInfo Analyzer::AnalyzeExpression(NodeId node, ScopeId scope,
@@ -989,11 +992,11 @@ BindingId Analyzer::SelectOverload(ScopeId scope,
 				" in " + (current_function_context_ == kNoBinding ?
 				std::string("<namespace>") : program_->names.Get(
 					program_->bindings[current_function_context_].name)) +
-				" candidate=" + program_->RenderType(
+				" candidate=" + DescribeType(
 					GetFunction(candidates[0]).type) + " object=" +
-				(object ? program_->RenderType(object->type) : "<none>");
+				(object ? DescribeType(object->type) : "<none>");
 			for (std::size_t i = 0; i < arguments.size(); ++i)
-				diagnostic += " argument=" + program_->RenderType(arguments[i].type);
+				diagnostic += " argument=" + DescribeType(arguments[i].type);
 			ThrowSemanticError(diagnostic);
 		}
 		return CandidateOverloadFailure("no viable overload");
@@ -2914,5 +2917,5 @@ void Analyzer::Consume(const SyntaxArena& arena, NodeId root)
 #endif
 	arena_ = 0;
 }
-}
-}
+
+} }

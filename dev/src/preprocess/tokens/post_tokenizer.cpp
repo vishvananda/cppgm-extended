@@ -1786,6 +1786,18 @@ const char* SimpleTokenKindName(SimpleTokenKind kind)
 	return names[kind];
 }
 
+const char* SimpleTokenKindSpelling(SimpleTokenKind kind)
+{
+	// The table lists alternative spellings before the primary one (`<%`
+	// before `{`, `__alignof` before `alignof`), so the last match wins.
+	const char* spelling = 0;
+	const std::size_t count = sizeof(kSimpleEntries) / sizeof(kSimpleEntries[0]);
+	for (std::size_t i = 0; i < count; ++i)
+		if (kSimpleEntries[i].kind == kind)
+			spelling = kSimpleEntries[i].spelling;
+	return spelling ? spelling : SimpleTokenKindName(kind);
+}
+
 PostTokenizationStats::PostTokenizationStats()
 	: preprocessing_tokens(0), emitted_tokens(0), decoded_literal_units(0),
 	  string_sequences(0), max_pending_string_tokens(0),

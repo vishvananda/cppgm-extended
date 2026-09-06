@@ -45,7 +45,8 @@ root) together
 with the controls that name its placement decisions.  That lane runs with
 `make test` and is not part of the assignment's contract.  `make
 test-variants` runs the course suite under other designs of the same
-backend (`../dev/src/backend_variant.h`): reversed register pools, a
+backend (`backend_variant.h` in the course solution's `dev/src`, not part of
+the starter kit): reversed register pools, a
 padded frame, reverse-postorder layout, a graph-colouring allocator in
 place of the course solution's planner, and a linear-scan allocator written
 by a newcomer from this README and the seam header alone
@@ -72,7 +73,7 @@ The starter kit supplies:
 - a `dev/lowir2native.cpp` scaffold based on `dev/lowir2native-scaffold.cpp`
 - shared machine-IR and native backend support under `dev/src/`
 - optional typed machine-IR model scaffolding in
-  `dev/src/native/mir/model.h`, with shared register support in
+  `dev/src/mir_model.h`, with shared register support in
   `dev/src/native/mir/registers.h`
 - test directories under `pa38/tests/`
 - harness scripts under `pa38/scripts/`
@@ -233,13 +234,14 @@ compiler team.
 
 Where a different allocator plugs in.  The course solution separates
 what may live in a planned register from where it lives.  The first is a
-candidate list built from the function's facts (`FunctionFacts` in
-`../dev/src/native/analysis/function.h`: each value's definition and
+candidate list built from the function's facts (`FunctionFacts` in the
+course solution's `native/analysis/function.h`, not part of the starter kit:
+each value's definition and
 last-use positions, the spans that extend an interval over layout
 backedges and exception regions, the positions at which each register is
 clobbered, and the flags that say whether a value is live across a call
-or across a block edge); the second is `plan_value_locations` in
-`../dev/src/native/allocation/location_planning.cpp`, which returns a
+or across a block edge); the second is `plan_value_locations` in the course solution's
+`native/allocation/location_planning.cpp`, which returns a
 per-value timeline of planned locations that the reactive walk then
 honours.  The colouring allocator is a second assignment at that seam,
 taking the same candidates and facts.  An allocator that takes the same

@@ -575,8 +575,5 @@ std::string mir_presentation_name(
   const MirProgram & program, lowir_model::PresentationName name);
 const std::string & mir_literal_spelling(const MirProgram & program,
                                          lowir_model::StringId literal);
-std::string serialize_mir_program(const MirProgram & program);
-void write_mir_program_file(const std::string & path,
-                            const MirProgram & program);
 
 }  // namespace mir_model

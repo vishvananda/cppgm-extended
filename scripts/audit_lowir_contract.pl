@@ -24,9 +24,15 @@ sub sorted_keys
 	return sort keys %$values;
 }
 
-my $model = read_file("$root/dev/src/lowir/model/program.h");
-my $parser = read_file("$root/dev/src/lowir/io/parse.cpp");
-my $serializer = read_file("$root/dev/src/lowir/io/serialize.cpp");
+# The metadata vocabulary is the student-facing contract surface shared with
+# the model scaffolds; the model header adds this implementation's containers.
+my $model = read_file("$root/dev/src/ir_symbol_model.h") .
+	read_file("$root/dev/src/lowir/model/program.h");
+# The operation and type spellings are the model's own helpers
+# (lowir/model/program.cpp); the reader and the writer both consume them.
+my $model_helpers = read_file("$root/dev/src/lowir/model/program.cpp");
+my $parser = read_file("$root/dev/src/lowir/io/parse.cpp") . $model_helpers;
+my $serializer = read_file("$root/dev/src/lowir/io/serialize.cpp") . $model_helpers;
 my $documentation = read_file("$root/pa13/lowir.md");
 my $ledger_path = "$root/doc/lowir-contract-ledger.tsv";
 my $ledger = read_file($ledger_path);

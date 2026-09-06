@@ -2,6 +2,8 @@
 
 #include "syntax/model/arena.h"
 
+#include <string>
+
 namespace cppgm
 {
 namespace semantic
@@ -13,6 +15,11 @@ namespace semantic
 // costs two stores and two restores.
 extern const syntax::SyntaxArena* diagnostic_location_arena;
 extern syntax::NodeId diagnostic_location_node;
+
+// The specialization whose body the analyzer entered, if any.  An error
+// inside a template body points at the pattern's source, which is rarely
+// where the mistake is; naming the instantiation that reached it is.
+extern std::string diagnostic_instantiation;
 
 std::string DescribeDiagnosticLocation();
 
@@ -42,6 +49,24 @@ private:
 	ScopedDiagnosticLocation& operator=(const ScopedDiagnosticLocation&);
 	const syntax::SyntaxArena* arena_;
 	syntax::NodeId node_;
+};
+
+// Publishes the specialization being instantiated for the duration of the
+// instantiation; the innermost one is the one a diagnostic names.
+class ScopedInstantiation
+{
+public:
+	explicit ScopedInstantiation(const std::string& specialization)
+		: saved_(diagnostic_instantiation)
+	{
+		if (!specialization.empty()) diagnostic_instantiation = specialization;
+	}
+	~ScopedInstantiation() { diagnostic_instantiation = saved_; }
+
+private:
+	ScopedInstantiation(const ScopedInstantiation&);
+	ScopedInstantiation& operator=(const ScopedInstantiation&);
+	std::string saved_;
 };
 
 }

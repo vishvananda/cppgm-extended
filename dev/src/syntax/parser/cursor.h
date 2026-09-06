@@ -126,7 +126,7 @@ protected:
 	void Expect(SimpleTokenKind kind)
 	{
 		if (!Match(kind))
-			throw Error(std::string("expected ") + SimpleTokenKindName(kind));
+			throw Error(std::string("expected `") + SimpleTokenKindSpelling(kind) + "`");
 	}
 
 	void ExpectCloseAngle()

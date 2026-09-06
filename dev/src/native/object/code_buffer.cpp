@@ -825,6 +825,28 @@ void CodeBuffer::resolve_local_fixups(std::size_t begin)
 	local_fixups_.resize(first);
 }
 
+// The definition a fixup sits inside: the materialized label with the
+// greatest offset at or before it.  An undefined symbol is far easier to
+// chase when the diagnostic says who referenced it.
+std::string enclosing_definition(
+	const std::unordered_map<std::string, std::size_t>& labels,
+	std::size_t offset)
+{
+	std::string best;
+	std::size_t best_offset = 0;
+	bool found = false;
+	for (std::unordered_map<std::string, std::size_t>::const_iterator label =
+		labels.begin(); label != labels.end(); ++label)
+	{
+		if (label->second > offset) continue;
+		if (found && label->second <= best_offset) continue;
+		best = label->first;
+		best_offset = label->second;
+		found = true;
+	}
+	return best;
+}
+
 void CodeBuffer::resolve()
 {
 	resolve_short_relatives(0);
@@ -837,7 +859,13 @@ void CodeBuffer::resolve()
 		const std::unordered_map<std::string, std::size_t>::const_iterator target =
 			labels.find(fixup.target);
 		if (target == labels.end())
-			native_errors::ThrowSource("undefined native symbol: " + fixup.target);
+		{
+			const std::string referrer =
+				enclosing_definition(labels, fixup.offset);
+			native_errors::ThrowSource("undefined native symbol: " +
+				fixup.target + (referrer.empty() ? std::string() :
+					" referenced by " + referrer));
+		}
 		if (fixup.kind == Fixup::RELATIVE32 ||
 			fixup.kind == Fixup::ADDRESS32 ||
 			fixup.kind == Fixup::TLS_OFFSET32)
@@ -868,7 +896,13 @@ void CodeBuffer::resolve()
 			const std::unordered_map<std::string, std::size_t>::const_iterator found =
 				labels.find(name);
 			if (found == labels.end())
-				native_errors::ThrowSource("undefined native symbol: " + name);
+			{
+				const std::string referrer =
+					enclosing_definition(labels, fixup.offset);
+				native_errors::ThrowSource("undefined native symbol: " + name +
+					(referrer.empty() ? std::string() :
+						" referenced by " + referrer));
+			}
 			target = found->second;
 		}
 		if (fixup.kind == Fixup::RELATIVE32 ||

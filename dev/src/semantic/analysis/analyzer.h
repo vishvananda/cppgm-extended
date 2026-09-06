@@ -87,6 +87,13 @@ public:
 	// Lets the semantic throw helpers name the syntax the analyzer was working
 	// on; see semantic/analysis/diagnostic_location.h.
 	static void InstallSemanticErrorLocationHook();
+	std::string DescribeType(TypeId type) const;
+	std::string DescribeFunctionSpecialization(BindingId binding) const;
+	std::string DescribeTemplateSpecialization(NameId name,
+		const std::vector<TemplateArgument>& arguments) const;
+	std::string DescribeTypeAt(TypeId type, std::size_t depth) const;
+	std::string DescribeTemplateArgument(const TemplateArgument& argument,
+		std::size_t depth) const;
 	InternedStringTable& SharedStrings() { return strings_; }
 
 private:

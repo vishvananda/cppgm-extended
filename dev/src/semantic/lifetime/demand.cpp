@@ -1,3 +1,4 @@
+#include "semantic/analysis/diagnostic_location.h"
 #include "semantic/analysis/analyzer.h"
 
 namespace cppgm
@@ -202,6 +203,11 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 	FunctionInfo& state = GetMutableFunction(binding);
 	if (state.definition_state >= FUNCTION_DEFINITION_IN_PROGRESS) return;
 	state.definition_state = FUNCTION_DEFINITION_IN_PROGRESS;
+	// A specialization's body is analysed here, long after the instantiation
+	// that demanded it; an error inside points at the pattern's source, so
+	// the diagnostic names the specialization that reached it.
+	const ScopedInstantiation instantiation_note(
+		DescribeFunctionSpecialization(binding));
 	const FunctionInfo& initial = GetFunction(binding);
 	if (!program_->bindings[binding].explicit_instantiation_suppressed &&
 		EnclosingExplicitInstantiationSuppressed(binding) &&

@@ -16,9 +16,32 @@
 
 namespace lowir_model {
 
+namespace
+{
+std::string lowir_input_source_name;
+std::size_t lowir_input_line = 0;
+}
+
+void PublishLowirInputPosition(const std::string& source_name,
+                               std::size_t line)
+{
+  lowir_input_source_name = source_name;
+  lowir_input_line = line;
+}
+
+void ClearLowirInputPosition()
+{
+  lowir_input_source_name.clear();
+  lowir_input_line = 0;
+}
+
 void ThrowLowirInputError(const std::string& message)
 {
-  throw SerializedInputError(SerializedInputFormat::LOWIR, message);
+  if (lowir_input_source_name.empty())
+    throw SerializedInputError(SerializedInputFormat::LOWIR, message);
+  throw SerializedInputError(SerializedInputFormat::LOWIR,
+    message + " at " + lowir_input_source_name + ":" +
+      std::to_string(lowir_input_line));
 }
 
 void ThrowLowirInternalError(const char* message)
