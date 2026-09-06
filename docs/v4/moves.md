@@ -329,10 +329,18 @@ Two items remain on the self-host lanes after that fix:
   `lowering/core/driver.o` hold a `.data` vtable slot with an undefined
   reference to `std::__1::basic_streambuf<char>::seekpos`, a virtual the
   driver's stream type inherits from libc++ but that no object defines.  The
-  emitted symbol is in cppgm++'s own name form, so the compiler expects to
-  define it (a weak inherited-virtual thunk or the base's inline) and does
-  not.  A vtable/inherited-virtual emission bug specific to a libc++ library
-  base, not yet fixed.
+  emitted symbol is in cppgm++'s own name form.  Reduced to eight lines
+  (`docs/v4/reducers/streambuf-vtable-seekpos.cpp`: a class deriving from
+  `std::streambuf` whose `seekpos` is only reached through the vtable, never
+  called) and localized: `MangleFunction` (`dev/src/lowering/abi/mangling.cpp`)
+  returns the empty string for such a virtual, so `program_lowerer.cpp` falls
+  back to the presentation name (`std____1__basic_streambuf...seekpos`)
+  instead of the Itanium mangling `_ZNSt3__1...7seekpos...` that libc++.so
+  exports, and ld cannot resolve the slot.  A direct call (`pubseekpos`)
+  mangles correctly, so the ABI recipe is computed only when the function is
+  called, not when it is merely a vtable slot; the fix must compute it for a
+  vtable-referenced inherited virtual.  Left for a dedicated pass:
+  `MangleFunction` is byte-exact-critical.
 
 - **A flaky build/test race in the self-host chain.**  `make -C pa39
   test-pa6 CXX=../dev/cppgm++` under `-j` intermittently reports the pa6
