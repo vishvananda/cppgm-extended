@@ -353,11 +353,25 @@ Two items remain on the self-host lanes after that fix:
   24.04 clang self-host now links the PA10 stage and passes pa1-pa9.
 
 - **AST-writer self-host miscompile (clang cells, PA10, exposed by the
-  seekpos fix).**  With linking fixed, the clang self-host builds and runs
-  `cppgm++-self` through pa1-pa9 green, then every valid PA10 input
-  (`--emit-ast`, e.g. `int main(){}`) segfaults; only a syntax-error input
-  "passes" (rejected before any AST is written).  Root-caused, not yet
-  fixed.  The crash is a SIGSEGV in libc++'s `__pad_and_output` reached from
+  seekpos fix).  RESOLVED** (commit "Reach a reference or pointer parameter's
+  virtual bases through the vtable").  Root cause: cppgm++ carried a hidden
+  companion pointer ("__pvbptr") for a virtual base of every parameter,
+  including references and pointers.  How many it carried was derived from the
+  parameter's virtual-base count, which requires the complete class type; a
+  caller seeing only a forward declaration (a unit passing `std::ostream&`
+  through) computed zero while the definition, compiled with the complete
+  type, expected the carry-all set, and the two disagreed across the
+  translation-unit boundary, so the callee read a companion pointer the caller
+  never passed.  Fix: restrict the companion pointer to by-value class
+  parameters (whose complete type both sides must see) and reach a reference or
+  pointer parameter's virtual bases through the object's vtable at each use
+  (`VirtualBoundaryEntity` returns no entity for reference/pointer types, so the
+  access site falls through to the existing `RuntimeVirtualBaseAddress` /
+  vtable path).  The clang self-host now passes PA1-PA10 (158/158), `make
+  inception` still matches byte for byte, and the byte-exact report is green
+  (5951/5951) after regenerating the 18 PA28 references that carried the old
+  companion arguments; the PA28 handout documents the two shapes.  Original
+  investigation notes retained below.  The crash is a SIGSEGV in libc++'s `__pad_and_output` reached from
   `SyntaxArena::Write`'s `output << strings_.Get(node.tag)`; `--emit-types`,
   `--emit-semantics` and `--emit-lowir` all work, so it is specific to the
   AST text dump.  It is not the seekpos fix: the self-compiled `arena.o` is
