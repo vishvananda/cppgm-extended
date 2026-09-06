@@ -86,7 +86,7 @@ copy_tracked_paths() {
       perl -0ne '
         chomp;
         next if m{(^|/)[^/]+-ref$};
-        next if m{\.py$};
+        next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite)\.py$};
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         next if m{^pa9/extras/};
@@ -132,9 +132,6 @@ reference_outputs_match() {
         <(perl "$repo_root/scripts/compare_results_common.pl" canonicalize-machine-ir "$export_path") \
         >/dev/null
       return
-      ;;
-    *.ref.witness)
-      return 1
       ;;
   esac
 
@@ -240,11 +237,9 @@ verify_regenerated_reference_outputs() {
 
   local ref_count
   local exit_status_count
-  local witness_count
   local exported_diagnostic_count=0
   ref_count=$(wc -l < "$source_list")
   exit_status_count=$(grep -c '\.exit_status$' "$source_list" || true)
-  witness_count=$(grep -c '\.ref\.witness$' "$source_list" || true)
   if [ -f "$exported_diagnostic_list" ]; then
     exported_diagnostic_count=$(wc -l < "$exported_diagnostic_list")
   fi
@@ -255,7 +250,7 @@ verify_regenerated_reference_outputs() {
     exit 1
   fi
   rm -rf "$tmp_dir"
-  echo "==> Verified $ref_count portable reference output files ($exit_status_count exit status files, $witness_count witness files)"
+  echo "==> Verified $ref_count portable reference output files ($exit_status_count exit status files)"
   echo "==> Retained $exported_diagnostic_count Linux-generated failed-case stdout examples"
 }
 
@@ -314,7 +309,7 @@ shared_scripts=(
   scripts/check_object_expectations.pl
   scripts/canonicalize_lowir_native_refs.pl
   scripts/compare_results_common.pl
-  scripts/compare_witness_results.pl
+  scripts/check_lowir_seams.py
   scripts/cppgm-cmake-wrapper.sh
   scripts/dump_host_eh_object_facts.pl
   scripts/ensure_reference_binaries.pl
@@ -329,7 +324,7 @@ shared_scripts=(
   scripts/run_routed_test_spec.pl
   scripts/run_reference_binary.sh
   scripts/run_with_timeout.pl
-  scripts/run_witness_tests.pl
+  scripts/lowir_seam_rewrite.py
   scripts/write_unresolved_symbol_report.pl
 )
 
@@ -339,16 +334,19 @@ dev_public=(
 )
 
 dev_support_files=(
-  dev/src/DebugPPTokenStream.h
-  dev/src/IPPTokenStream.h
-  dev/src/abi_mangle.h
-  dev/src/exceptions.h
+  dev/src/abi/itanium/abi_mangle.h
+  dev/src/abi/itanium/abi_mangle_expression.h
+  dev/src/abi/itanium/abi_mangle_facts.h
+  dev/src/abi/itanium/abi_mangle_reference.h
+  dev/src/abi/itanium/abi_mangle_stats.h
+  dev/src/abi/itanium/abi_mangle_terminal.h
+  dev/src/abi/itanium/abi_mangle_type_vocabulary.h
   dev/src/ir_symbol_model.h
-  dev/src/lowir_model.h
-  dev/src/mir_model.h
-  dev/src/test_runner.cpp
-  dev/src/tool_help_text.h
-  dev/src/x86_register_model.h
+  dev/src/preprocess/tokens/DebugPPTokenStream.h
+  dev/src/preprocess/tokens/IPPTokenStream.h
+  dev/src/support/not_implemented.h
+  dev/src/support/testing/test_runner.cpp
+  dev/src/support/tool_help_text.h
 )
 
 copy_tracked_paths \
@@ -399,6 +397,7 @@ cat > "$dest/dev/frontend_source_sets.mk" <<'EOF'
 # subdirectories, use the path without `.cpp`, such as `parser/foo`.
 
 FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native
+FRONTEND_TEST_RUNNER_SOURCE_ID := support/testing/test_runner
 
 FRONTEND_OBJ_BASENAMES_abimangle :=
 FRONTEND_OBJ_BASENAMES_pptoken :=
@@ -510,7 +509,7 @@ $(RUNNER_STATE_STAMP): FORCE | $(OBJDIR)
 		printf '%s\n' '$(CPPGM_TEST_RUNNER)' > $@; \
 	fi
 
-$(OBJDIR)/test_runner_enabled.o: $(SRC)/test_runner.cpp $(COMPILE_CONFIG_STAMP)
+$(OBJDIR)/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp $(COMPILE_CONFIG_STAMP)
 	@mkdir -p $(@D) $(DEPDIR)
 	$(call quiet,CXX,$@)
 	$(Q)$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DEPDIR)/test_runner_enabled.Td -o $@ $<
@@ -711,12 +710,6 @@ done
 
 echo "==> Regenerating reference outputs"
 CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1 make -s -C "$dest" ref-test \
-  CXX="${CXX:-g++}" \
-  CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
-  CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
-  CPPGM_TEST_RUNNER=1
-echo "==> Validating reference binary against patched-Clang witness refs"
-CPPGM_TEST_APP="$dest/reference-binaries/cppgm++" make -s -C "$dest" test-strict-nobuild \
   CXX="${CXX:-g++}" \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \

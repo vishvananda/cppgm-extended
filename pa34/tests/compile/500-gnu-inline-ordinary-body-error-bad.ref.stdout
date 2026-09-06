@@ -1,1 +1,0 @@
-ERROR: unknown expression name: nonexistent_identifier at tests/compile/500-gnu-inline-ordinary-body-error-bad.t:5:10

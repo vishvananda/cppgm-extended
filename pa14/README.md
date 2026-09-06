@@ -44,7 +44,7 @@ The starter kit provides:
 - `pa14/scripts/`, the ABI fact test harness
 - `pa14/tests/abi/`, the checked-in ABI fact tests and reference files
 - shared support sources and headers under `dev/src/`
-- an optional ABI fact scaffold in `dev/src/abi_mangle.h`
+- an optional ABI fact scaffold in `dev/src/abi/itanium/abi_mangle.h`
 
 Put code changes in `dev/`, especially `dev/abimangle.cpp` and reusable
 helpers under `dev/src/`. Do not edit generated `.my` files. Test inputs and
@@ -52,7 +52,7 @@ references are part of the handout unless your instructor asks you to add or
 update tests.
 
 The assignment-facing scaffold is the typed fact data model and the declared
-parse/serialize/mangle API in `dev/src/abi_mangle.h`. Keep the reusable typed
+parse/serialize/mangle API in `dev/src/abi/itanium/abi_mangle.h`. Keep the reusable typed
 ABI model and encoder under `dev/src/`; keep the line-oriented fact reader at
 the `abimangle` tool boundary. Later compiler stages must construct typed ABI
 targets and call the same encoder directly. They must not serialize semantic

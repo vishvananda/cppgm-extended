@@ -152,18 +152,15 @@ class ExportedDevMakefileTests(unittest.TestCase):
         self.assertEqual(actual, ASSIGNMENT_REFERENCE_TARGETS)
         self.assertEqual(len(pairs), 38)
 
-    def test_export_owns_failed_stdout_diagnostics_and_preserves_witness_refs(self):
+    def test_export_owns_failed_stdout_diagnostics(self):
         script = EXPORT_SCRIPT.read_text()
         self.assertIn(
             'CPPGM_KEEP_FAILED_REFERENCE_STDOUT=1 make -s -C "$dest" ref-test',
             script,
         )
         self.assertIn('is_failed_stdout_diagnostic "$dest" "$path"', script)
-        self.assertNotIn('make -s -C "$dest" ref-test-strict', script)
-        self.assertIn(
-            'CPPGM_TEST_APP="$dest/reference-binaries/cppgm++" make -s -C "$dest" test-strict-nobuild',
-            script,
-        )
+        self.assertNotIn("strict", script)
+        self.assertNotIn("witness", script)
 
         tracked_stdout = subprocess.run(
             [
@@ -171,7 +168,6 @@ class ExportedDevMakefileTests(unittest.TestCase):
                 "ls-files",
                 "--",
                 "pa[0-9]*/**/*.ref.stdout",
-                "cppgm.tests/**/*.ref.stdout",
             ],
             cwd=REPO_ROOT,
             check=True,

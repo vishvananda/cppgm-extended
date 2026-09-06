@@ -16,7 +16,7 @@
 
 using namespace std;
 
-#include "exceptions.h"
+#include "support/not_implemented.h"
 
 // See 3.9.1: Fundamental Types
 enum EFundamentalType
