@@ -83,11 +83,29 @@ would make it the kitchen sink the merge is supposed to avoid.
 PA6 has a better home, and its own handout names it.  PA10 says: "PA10 is a
 syntax assignment.  It replaces the PA6 recognizer boundary with" a
 structured AST, "PA10 is not a new recognizer", and it lists "the PA6 grammar
-and parsing approach as a starting point".  PA6 is a warm-up whose output
-PA10 discards and whose grammar PA10 reuses — which is exactly why the
-compiler links PA10's parser and never PA6's recognizer.  Recognition and
-tree-building are the same activity with different artifacts, so they are one
-lesson taught twice.
+and parsing approach as a starting point".
+
+That last phrase is pedagogy, not a dependency.  PA6 is the most isolated
+assignment in the early course, on three counts:
+
+- `cppgm++` links `syntax/parser/parser` (2,952 lines) and never
+  `recognition/recognizer` (1,122);
+- `recognition/recognizer.h` is included by exactly two files, its own `.cpp`
+  and `dev/recog.cpp`, the tool entry point — nothing else in the tree sees
+  it;
+- `pa6.gram` is a standalone 19KB grammar, while PA10 through PA28 are all
+  symlinks to one `shared/source.gram`.
+
+So a student writes a recognizer against one grammar, and then writes a
+parser against a different grammar, and the course keeps only the second.
+Recognition and tree-building are the same activity with different artifacts:
+one lesson taught twice, with no code, grammar or interface shared between
+the two tellings.
+
+This also means "fold PA6 into PA10" is not a code merge — there is nothing
+to merge.  It is retiring an isolated assignment and rehoming what it
+teaches: the ambiguity material and the 48 tests move into PA10's contract,
+now stated against the shared grammar PA10 already uses.
 
 ## Proposal
 
@@ -125,8 +143,8 @@ it is small but that PA10 teaches it again.
   from the tree — which also removes the duplication
   `docs/PLAN-EARLY-SEMANTIC-CORE-UNIFICATION.md` was written to unify, so
   that plan can be closed rather than implemented.
-- The `recog` binary and `dev/src/recognition/`, which the compiler never
-  linked; PA10's parser is the one it keeps.
+- The `recog` binary, `dev/src/recognition/`, and `pa6.gram` — a grammar no
+  other assignment uses, since PA10 onward share one `shared/source.gram`.
 
 ## What it must not remove
 
@@ -276,6 +294,9 @@ through `lowir2cy86`.
   tree-building are one activity, but solving the parse ambiguities and
   designing an AST in a single lesson is a lot to ask at once; the
   alternative is keeping recognition as its own lesson and accepting that
-  its code is thrown away.
+  nothing it produces is ever used again.
+- PA6 recognizes against its own smaller grammar; PA10 works against the
+  shared one.  Does the recognition milestone survive the move to the larger
+  grammar, or was the smaller grammar the point of having it early?
 - Is `ppexpr` the right name, and are there other early tools whose names
   should be revisited while Stage B is rewriting them anyway?
