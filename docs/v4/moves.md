@@ -568,4 +568,11 @@ Two items remain on the self-host lanes after that fix:
   compare one flavor per run (the `workflow_dispatch` input, defaulting to
   `ubuntu-24.04-gcc` for the `workflow_run` trigger).  A `plan` job now emits
   the flavor list -- the named flavor for a manual run, all four after a
-  completed Tests run -- and the compare job is a matrix over it.
+  completed Tests run -- and the compare job is a matrix over it.  A
+  `workflow_run` trigger executes the workflow file from the default branch,
+  so the four-flavor fan-out becomes active when `v4` merges to `main`; the
+  run that fired for the green Tests run (34041491490) still used the old
+  single-flavor file.  The rewritten file was exercised on `v4` by a manual
+  dispatch (`gh workflow run inception.yml --ref v4 -f selfhost_run_id=...
+  -f flavor=ubuntu-26.04-clang-libcxx`, run 34041930622): the `plan` job and
+  the matrix wiring work.
