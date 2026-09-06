@@ -313,6 +313,17 @@ Two items remain on the self-host lanes after that fix:
   direct-init-nullary-member-call.t`.  This unblocked the clang and libc++
   self-host lanes at `post_tokenizer.cpp`.
 
+- **libc++ `basic_streambuf::seekpos` vtable reference (clang cells, PA10).**
+  With `__alloc` fixed the clang/libc++ self-host reaches PA10 (compiling
+  `cppgm++` with itself), which fails at link: `driver.o` and
+  `lowering/core/driver.o` hold a `.data` vtable slot with an undefined
+  reference to `std::__1::basic_streambuf<char>::seekpos`, a virtual the
+  driver's stream type inherits from libc++ but that no object defines.  The
+  emitted symbol is in cppgm++'s own name form, so the compiler expects to
+  define it (a weak inherited-virtual thunk or the base's inline) and does
+  not.  A vtable/inherited-virtual emission bug specific to a libc++ library
+  base, not yet fixed.
+
 - **A flaky build/test race in the self-host chain.**  `make -C pa39
   test-pa6 CXX=../dev/cppgm++` under `-j` intermittently reports the pa6
   suite failing (0/N) while the freshly built `recog-self` is byte-correct
