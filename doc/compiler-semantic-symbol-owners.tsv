@@ -701,6 +701,7 @@ dev/src/semantic/templates/aliases_and_lambdas.cpp	TemplateTemplateParameterMatc
 dev/src/semantic/templates/aliases_and_lambdas.cpp	TemplateTemplateParameterMatchesAtScope	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	TemplateTemplateParameterMatchesAtScope	2	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	TryBuildElidedClassValueTransfer	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
+dev/src/semantic/templates/ambiguities.cpp	NamesCallableNonType	1	dev/src/semantic/templates/ambiguities.cpp	keep
 dev/src/semantic/templates/ambiguities.cpp	AnalyzeAmbiguousCallArgument	1	dev/src/semantic/templates/ambiguities.cpp	keep
 dev/src/semantic/templates/ambiguities.cpp	AnalyzeAmbiguousCallStatement	1	dev/src/semantic/templates/ambiguities.cpp	keep
 dev/src/semantic/templates/ambiguities.cpp	AnalyzeAmbiguousDirectInitializer	1	dev/src/semantic/templates/ambiguities.cpp	keep
