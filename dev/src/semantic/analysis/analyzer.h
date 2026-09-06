@@ -318,6 +318,7 @@ private:
 		std::uint32_t output_parent);
 	bool AnalyzeAmbiguousDirectInitializer(NodeId node, ScopeId scope,
 		std::uint32_t output_parent);
+	bool NamesCallableNonType(NodeId name_node, ScopeId scope);
 	bool AnalyzeAmbiguousCallArgument(NodeId name_node, NodeId clause,
 		ScopeId scope, ExpressionInfo* result);
 	bool AnalyzeAmbiguousMultiDirectInitializer(NodeId node, ScopeId scope,

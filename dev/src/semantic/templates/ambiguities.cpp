@@ -314,6 +314,20 @@ bool Analyzer::AnalyzeAmbiguousRelationalDeclaration(
 // N3485 8.2/1 says the enclosing statement cannot be a declaration, so this
 // argument is a call: libc++ writes
 // `basic_string __temp(tag(), std::move(a), std::move(b), alloc)`.
+// Whether `name` names something callable (an ordinary function or a
+// function template) and is not a type: then `name(...)` is a call.
+bool Analyzer::NamesCallableNonType(NodeId name_node, ScopeId scope)
+{
+	if (LookupSyntaxName(name_node, scope, LOOKUP_TYPE).type != kNoType)
+		return false;
+	const std::string spelling = PayloadSource(name_node);
+	const NamePath structured = StructuredNamePath(name_node);
+	return !FunctionCallCandidates(scope, spelling, 0, name_node).empty() ||
+		!(structured.Empty() ?
+			FindFunctionTemplates(scope, SyntaxNamePath(name_node)) :
+			FindFunctionTemplates(scope, structured)).empty();
+}
+
 bool Analyzer::AnalyzeAmbiguousCallArgument(NodeId name_node, NodeId clause,
 	ScopeId scope, ExpressionInfo* result)
 {
@@ -383,6 +397,12 @@ bool Analyzer::AnalyzeAmbiguousMultiDirectInitializer(NodeId,
 			if (inner_clause != kNoNode &&
 				FirstSemanticChild(inner_clause) != kNoNode)
 				has_value_argument = true;
+			else if (inner_clause != kNoNode &&
+				NamesCallableNonType(argument, scope))
+				// `name()` where `name` is a callable, not a type, is a
+				// nullary call (libc++'s `__alloc()`), so the statement is
+				// not a declaration.
+				has_value_argument = true;
 			continue;
 		}
 		const LookupResult value =
@@ -418,6 +438,19 @@ bool Analyzer::AnalyzeAmbiguousMultiDirectInitializer(NodeId,
 			ExpressionInfo call;
 			if (!AnalyzeAmbiguousCallArgument(argument, empty_clause, scope,
 				&call)) return false;
+			arguments.push_back(call);
+			continue;
+		}
+		if (NamesCallableNonType(argument, scope))
+		{
+			// `name()` where `name` is callable and not a type is a nullary
+			// call, not a value-initialized temporary of type `name`.
+			const std::vector<NodeId> no_argument_syntax;
+			const std::vector<ExpressionInfo> no_arguments;
+			ExpressionInfo call;
+			if (!AnalyzeRetainedNamedCall(argument, PayloadSource(argument),
+				scope, no_argument_syntax, no_arguments, kNoType, &call))
+				return false;
 			arguments.push_back(call);
 			continue;
 		}
