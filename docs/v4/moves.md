@@ -410,15 +410,33 @@ Two items remain on the self-host lanes after that fix:
      and `SyntaxArena::Write` have more than six parameters, so their appended
      `__pvbptr` lands in a stack argument slot; by `__put_character_sequence`
      it has become a code address (a return address, `Stats::Stats`), and the
-     backtrace is stack-smashed.  The companion pointer's stack-argument
-     placement/offset for many-parameter functions is wrong.
+     backtrace is stack-smashed.  Traced to the origin: `WriteTranslationUnit`
+     receives the correct `__pvbptr` in `r9`, then calls `RunTranslationUnit`
+     (declared in `driver_detail.h`, defined in another TU) and stores nothing
+     into that call's `__pvbptr` stack slot -- it clobbers `r9` with `stats`
+     and passes no companion pointer at all.
 
-  Both live in the `__pvbptr` companion-pointer scheme, a cppgm++ invention in
+  The two defects share one cause: the contract is computed from two sources
+  that disagree.  A definition's contract is built by scanning the body
+  (`CacheVirtualBaseBoundary` -> forwarded/demanded -> a possibly reduced
+  carry set); a caller that sees only the declaration counts hidden pointers
+  from the parameter *types* instead (`CountVirtualBaseParameters` /
+  `VirtualBaseParameterCount`, effectively carry-all).  Body-derived and
+  type-derived counts need not match, and neither is visible to the other
+  side of a translation-unit boundary, so caller and definition pass and read
+  different numbers of `__pvbptr` arguments.  Restricting the reduction to
+  TU-local functions (defect 1) was necessary but not sufficient, because the
+  caller-side count for a declaration-only external callee is computed by a
+  different routine that still diverged; it was reverted.
+
+  This is the `__pvbptr` companion-pointer scheme, a cppgm++ invention in
   place of the Itanium vtable vbase-offset.  Same class as the gcc-cell
-  KW_TRUE self-host miscompile.  The robust fix is to read virtual-base offsets
-  from the vtable when the most-derived type is not statically known and retire
-  the companion pointer; that is a large, high-risk change needing a dedicated
-  pass and full byte-exact + audit validation.
+  KW_TRUE self-host miscompile.  The robust fix makes the contract a pure
+  function of the signature (so declaration and definition agree without
+  seeing each other's body), or -- better -- reads virtual-base offsets from
+  the vtable when the most-derived type is not statically known and retires
+  the companion pointer.  Either is a large, high-risk change to a core ABI
+  subsystem needing a dedicated pass and full byte-exact + audit validation.
 
 - **A flaky build/test race in the self-host chain.**  `make -C pa39
   test-pa6 CXX=../dev/cppgm++` under `-j` intermittently reports the pa6
