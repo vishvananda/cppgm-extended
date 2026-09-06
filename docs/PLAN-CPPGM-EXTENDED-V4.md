@@ -375,6 +375,15 @@ Four audits that must close before the assignments are combined (added
 
 ### Phase 8 (deferred): assignment combination
 
+Two plans, both deferred until Phases 0 to 7b are closed and `main` carries
+the new reference.  `docs/early-assignment-consolidation-plan.md` covers
+PA1-PA9 and is measured on how much of what an assignment makes a student
+build the production compiler actually links;
+`docs/assignment-restructure-plan.md` is the historical decision record for
+the middle and late assignments.  Both run content first and renumber last.
+
+#### The middle and late assignments
+
 `docs/assignment-restructure-plan.md` combines the 38 accreted lessons into
 a 39-lesson arc: fold `cpplink`, refocus the exceptions-metadata lesson onto
 `.gcc_except_table` emission, make the LowIR band contiguous, split
