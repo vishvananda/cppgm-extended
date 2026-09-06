@@ -1219,7 +1219,7 @@ Only here:
 - `docs/pa34-35-test-move-tracker.md`
 - `docs/implemented/v3/pa34-pa35-convergence-plan.md`
 - `docs/performance-regression-validation.md`
-- `docs/implemented/v3/plan-implementation-tracker.md`
+- `docs/plan-implementation-tracker.md`
 - `docs/implemented/v3/resolve-type-lookup-text-removal-plan.md`
 - `docs/implemented/v3/semantic-fallback-removal-plan.md`
 - `docs/semantic-template-boundary-audit-baseline.json`
