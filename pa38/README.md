@@ -508,15 +508,17 @@ lowering at `-O0` through `-O3` and the combined `cppgm++ -O3` replay path.
 PA38 must likewise preserve the benefit of PA37's O3 parameter-address
 rematerialization. When several positive constant-offset field addresses from
 one bounded pointer parameter are used only after a call, PA37 may move those
-address definitions below the call. Given that optimized LowIR, native
-selection should preserve the common base across the call once and use direct
-base-plus-displacement memory operands afterward. It must not recreate every
-derived address before the call and consume separate call-preserved homes for
-them. The staged O2 form remains the comparison baseline; an equivalent
-register assignment is allowed, but the rematerialized O3 form must reduce
-call-preserved address pressure without increasing frame size. The focused
-control runs `lowiropt` before `lowir2native` because direct `lowir2native`
-does not itself perform PA37 optimization, and it also checks the combined
+address definitions below the call. Given either form of that LowIR, native
+selection preserves the common base across the call once and uses direct
+base-plus-displacement memory operands afterward: from `-O1` a
+base-plus-constant index address is replayed from its base at each consumer
+rather than held in a second register, so the staged O2 form already keeps
+only the base in a call-preserved home. It must not recreate derived
+addresses before the call and consume separate call-preserved homes for
+them, at either level, and the rematerialized O3 form must not add
+call-preserved homes or frame size over the O2 baseline. The focused control
+runs `lowiropt` before `lowir2native` because direct `lowir2native` does not
+itself perform PA37 optimization, and it also checks the combined
 `cppgm++ -O3` path and generated behavior.
 
 After each eliminated color, recompute complete MIR liveness. An eliminated

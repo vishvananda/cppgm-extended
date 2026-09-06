@@ -400,16 +400,16 @@ function @YB__YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, b
     store ptr %t3, %t1
     return void
 }
-function @_YC___YC__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn8_N2YCD1Ev] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    call void @YC___YC(%t1)
-    return void
-}
 function @_YC___YC__deleting_entry__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn8_N2YCD0Ev] {
   block ^entry:
     %t1 = index i8 %arg0, -8
     call void @YC___YC__deleting_entry(%t1)
+    return void
+}
+function @_YC___YC__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn8_N2YCD1Ev] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @YC___YC(%t1)
     return void
 }
 alias object _ZN2YCC2Ev = @YC__YC

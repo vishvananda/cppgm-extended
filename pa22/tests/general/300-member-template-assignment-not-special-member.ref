@@ -68,7 +68,7 @@ function @make_copy(%source : obj<4x4>) -> obj<4x4> [binding=weak, object=_Z9mak
     copyobj 4x4 %t3, %t2
     return obj<4x4> $retobj__1
 }
-function @box__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN3boxaSEOS_, inline_hint=yes] {
+function @box__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN3boxaSERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -81,7 +81,7 @@ function @box__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=b
     %t3 = load ptr $this
     return ptr %t3
 }
-function @box__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN3boxaSERKS_, inline_hint=yes] {
+function @box__operator___ov2(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN3boxaSEOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
