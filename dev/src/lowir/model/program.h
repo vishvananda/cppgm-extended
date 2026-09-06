@@ -20,6 +20,11 @@
 
 namespace lowir_model {
 
+// The LowIR metadata vocabulary is the student-facing contract surface in
+// ir_symbol_model.h; the model below adds only the interned containers this
+// implementation needs, so the two cannot drift.
+using namespace ir_model;
+
 struct ExportedSymbol
 {
   SymbolId internal_symbol;
@@ -29,6 +34,12 @@ struct ExportedSymbol
   bool prefer_local_object_binding = false;
   ir_model::SymbolLinkage linkage = ir_model::SL_EXTERNAL;
 };
+
+// The LowIR source name and line the reader is on, published so that every
+// input-error site names a place without carrying one.  Empty name = unset.
+void PublishLowirInputPosition(const std::string & source_name,
+                               std::size_t line);
+void ClearLowirInputPosition();
 
 __attribute__((cold, noinline, noreturn))
 void ThrowLowirInputError(const std::string & message);
@@ -194,104 +205,6 @@ struct Operand
       literal_high(0) {}
 };
 
-enum SymbolRole
-{
-  SR_NONE,
-  SR_ENTRY,
-  SR_INIT,
-  SR_FINI,
-  SR_EH_ALLOCATE_EXCEPTION,
-  SR_EH_BEGIN_CATCH,
-  SR_EH_END_CATCH,
-  SR_EH_RETHROW,
-  SR_EH_THROW,
-  SR_EH_PERSONALITY,
-  SR_EH_RESUME,
-  SR_ALLOCATE_MEMORY,
-  SR_FREE_MEMORY,
-  SR_TERMINATE,
-  SR_PURE_VIRTUAL,
-  SR_DYNAMIC_CAST,
-  SR_BAD_CAST,
-  SR_BAD_TYPEID,
-  SR_RTTI_CLASS,
-  SR_RTTI_SI,
-  SR_RTTI_VMI,
-  SR_RTTI_DATA
-};
-
-enum LanguageLinkageMode
-{
-  LLM_DEFAULT,
-  LLM_C
-};
-
-enum SymbolBindingMode
-{
-  SBM_DEFAULT,
-  SBM_INTERNAL,
-  SBM_STRONG,
-  SBM_WEAK
-};
-
-enum ParamPassingMode
-{
-  PPM_DIRECT,
-  PPM_INDIRECT_RESULT,
-  PPM_BY_ADDRESS
-};
-
-enum ParamAliasMode
-{
-  PALM_DEFAULT,
-  PALM_NOALIAS
-};
-
-enum CallArityMode
-{
-  CAM_FIXED,
-  CAM_VARIADIC
-};
-
-enum CallEffectsMode
-{
-  CFXM_DEFAULT,
-  CFXM_READNONE,
-  CFXM_READONLY
-};
-
-enum CallUnwindMode
-{
-  CUM_DEFAULT,
-  CUM_NO
-};
-
-enum CallReturnMode
-{
-  CRM_DEFAULT,
-  CRM_NORETURN
-};
-
-enum CallQueryMode
-{
-  CQM_DEFAULT,
-  CQM_STABLE_PREFIX
-};
-
-enum GlobalStorageMode
-{
-  GSM_DEFAULT,
-  GSM_READONLY,
-  GSM_THREAD_LOCAL
-};
-
-enum IndexProjectionKind
-{
-  IPK_NONE,
-  IPK_ARRAY_ELEMENT,
-  IPK_FIELD
-};
-
 struct SymbolMetadata
 {
   SymbolRole role = SR_NONE;
@@ -310,15 +223,6 @@ struct SymbolMetadata
   bool inline_hint = false;
   bool no_inline = false;
   bool inferred_legacy_role = false;
-};
-
-struct FunctionBoundaryMetadata
-{
-  CallArityMode arity = CAM_FIXED;
-  CallEffectsMode effects = CFXM_DEFAULT;
-  CallUnwindMode unwind = CUM_DEFAULT;
-  CallReturnMode returns = CRM_DEFAULT;
-  CallQueryMode query = CQM_DEFAULT;
 };
 
 struct ParameterMetadata

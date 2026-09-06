@@ -169,6 +169,9 @@ enum SimpleTokenKind
 
 const char* FundamentalTypeName(FundamentalType type);
 const char* SimpleTokenKindName(SimpleTokenKind kind);
+// The source spelling of a keyword or operator token kind (`;` for
+// OP_SEMICOLON), for diagnostics; the name above is the internal identifier.
+const char* SimpleTokenKindSpelling(SimpleTokenKind kind);
 // Classifies one fixed operator/keyword spelling into its simple-token kind.
 bool ClassifySimpleSpelling(const std::string& spelling,
 	SimpleTokenKind* kind);

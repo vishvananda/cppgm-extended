@@ -171,7 +171,12 @@ for my $path (@files)
 	my $relative = relative_path($path);
 	my $text = read_text($path);
 	my $code = mask_comments_and_literals($text);
-	if ($text =~ /^\s*#\s*include\s*[<"]support\/exception_types\.h[>"]/m)
+	# The taxonomy's own implementation includes its header by definition, as
+	# does the native throw helpers' implementation, which ships with the
+	# scaffold model rather than living in support/exceptions.cpp.
+	if ($text =~ /^\s*#\s*include\s*[<"]support\/exception_types\.h[>"]/m &&
+		$relative ne 'dev/src/support/exception_types.cpp' &&
+		$relative ne 'dev/src/native/errors.cpp')
 	{
 		push @taxonomy_include, $relative;
 	}

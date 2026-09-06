@@ -7,6 +7,7 @@
 #include "native/driver/stats.h"
 #include "native/driver/stats_report.h"
 #include "native/mir/model.h"
+#include "native/mir/serialize.h"
 #include "native/object/elf_writer.h"
 #include "support/tool_help_text.h"
 #include "backend_variant.h"

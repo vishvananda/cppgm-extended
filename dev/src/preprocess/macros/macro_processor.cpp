@@ -35,6 +35,8 @@ namespace
 __attribute__((cold, noinline, noreturn))
 void ThrowPreprocessingSourceError(const char* message) { throw SourceError(message, CompilerErrorDomain::PREPROCESSING); }
 __attribute__((cold, noinline, noreturn))
+void ThrowPreprocessingSourceError(const std::string& message) { throw SourceError(message, CompilerErrorDomain::PREPROCESSING); }
+__attribute__((cold, noinline, noreturn))
 void ThrowPreprocessingResourceLimit(const char* message) { throw ResourceLimitError(message, CompilerErrorDomain::PREPROCESSING); }
 __attribute__((cold, noinline, noreturn))
 void ThrowPreprocessingInternalError(const char* message) { throw InternalCompilerError(message, CompilerErrorDomain::PREPROCESSING); }
@@ -511,7 +513,7 @@ public:
 		{
 			if (sources_.empty() ||
 				conditionals_.size() != sources_.back().conditional_base)
-				ThrowPreprocessingSourceError("unterminated conditional inclusion");
+				ThrowPreprocessingSourceError(std::string("unterminated conditional inclusion") + CurrentSourceSuffix());
 			line_.clear();
 			line_spelling_bytes_ = 0;
 			return;
@@ -741,7 +743,20 @@ private:
 		const bool saved_space = pending_space_;
 		pending_space_ = false;
 		PPTokenizationStats tokenization;
-		TokenizePreprocessingFile(source, *this, stats_ ? &tokenization : 0);
+		try
+		{
+			TokenizePreprocessingFile(source, *this, stats_ ? &tokenization : 0);
+		}
+		catch (const SourceError& error)
+		{
+			// A diagnostic raised through the sink already names its own
+			// position; a lexical one names none, so add the file and the
+			// position the tokenizer last reported.
+			const std::string message = error.what();
+			if (message.find(" at ") != std::string::npos)
+				throw;
+			throw SourceError(message + CurrentSourceSuffix(), error.Domain());
+		}
 		AccumulateTokenization(tokenization);
 		pending_space_ = saved_space;
 		if (!line_.empty())
@@ -807,6 +822,33 @@ private:
 				stats_->peak_line_storage_bytes,
 				line_.capacity() * sizeof(Token) + line_spelling_bytes_);
 		}
+	}
+
+	// " at file:line:column" for a diagnostic about this token; empty when the
+	// token carries no source position (a command-line or generated token).
+	std::string LocationSuffix(const Token& token) const
+	{
+		if (token.source_file == 0 || token.source_line == 0)
+			return std::string();
+		return " at " + spellings_.Get(token.source_file) + ":" +
+			std::to_string(token.source_line) + ":" +
+			std::to_string(token.source_column);
+	}
+
+	std::string DirectiveLocation(const std::vector<Token>& directive) const
+	{
+		if (directive.empty()) return CurrentSourceSuffix();
+		return LocationSuffix(directive.size() > 1 ? directive[1] : directive[0]);
+	}
+
+	// The position the tokenizer last reported for the source being read.
+	std::string CurrentSourceSuffix() const
+	{
+		if (sources_.empty() || sources_.back().current_physical_line == 0)
+			return std::string();
+		return " at " + spellings_.Get(sources_.back().physical_file) + ":" +
+			std::to_string(sources_.back().current_physical_line) + ":" +
+			std::to_string(sources_.back().current_physical_column);
 	}
 
 	const std::string& Spell(const Token& token) const
@@ -918,7 +960,7 @@ private:
 
 		for (std::size_t i = 0; i < line_.size(); ++i)
 			if (IsIdentifier(line_[i], id_va_args_))
-				ThrowPreprocessingSourceError("__VA_ARGS__ outside a variadic replacement list");
+				ThrowPreprocessingSourceError(std::string("__VA_ARGS__ outside a variadic replacement list") + CurrentSourceSuffix());
 		if (!line_.empty() && boundary_space_)
 			line_[0].leading_space = true;
 		for (std::size_t i = 0; i < line_.size(); ++i)
@@ -1008,7 +1050,8 @@ private:
 		if (directive[1].kind != TK_IDENTIFIER)
 		{
 			if (IsActive())
-				ThrowPreprocessingSourceError("invalid preprocessing directive");
+				ThrowPreprocessingSourceError(
+					"invalid preprocessing directive" + LocationSuffix(directive[1]));
 			return;
 		}
 		const SpellingId name = directive[1].spelling;
@@ -1043,13 +1086,19 @@ private:
 		else if (name == id_line_)
 			ParseLineDirective(directive);
 		else if (name == id_error_)
-			ThrowPreprocessingSourceError("#error directive");
+		{
+			std::string message = "#error";
+			for (std::size_t i = 2; i < directive.size(); ++i)
+				message += (directive[i].leading_space || i == 2 ? " " : "") +
+					Spell(directive[i]);
+			ThrowPreprocessingSourceError(message + LocationSuffix(directive[1]));
+		}
 		else if (name == id_warning_)
 			ParseWarningDirective(directive);
 		else if (name == id_pragma_)
 			ParsePragmaDirective(directive);
 		else
-			ThrowPreprocessingSourceError("invalid preprocessing directive");
+			ThrowPreprocessingSourceError(std::string("invalid preprocessing directive") + DirectiveLocation(directive));
 	}
 
 	bool IsIdentifierLike(const Token& token) const
@@ -1146,7 +1195,7 @@ private:
 			std::string header;
 			bool quoted = false;
 			if (!ParseHeaderOperand(directive, begin, end, &header, &quoted))
-				ThrowPreprocessingSourceError("invalid include probe operand");
+				ThrowPreprocessingSourceError(std::string("invalid include probe operand") + DirectiveLocation(directive));
 			if (preprocessing_stats_) ++preprocessing_stats_->include_probes;
 			return FindInclude(header, quoted, name == "__has_include_next", 0);
 		}
@@ -1226,12 +1275,12 @@ private:
 				if (open >= directive.size() ||
 					!IsOperator(directive[open], "(") ||
 					directive[open].matching_distance == 0)
-					ThrowPreprocessingSourceError("invalid builtin probe invocation");
+					ThrowPreprocessingSourceError(std::string("invalid builtin probe invocation") + DirectiveLocation(directive));
 				const std::size_t close = open +
 					directive[open].matching_distance;
 				if (close >= directive.size() ||
 					!IsOperator(directive[close], ")"))
-					ThrowPreprocessingSourceError("invalid builtin probe invocation");
+					ThrowPreprocessingSourceError(std::string("invalid builtin probe invocation") + DirectiveLocation(directive));
 				expression->push_back(ProbeValueToken(token,
 					EvaluateBuiltinProbe(token, directive, open + 1, close)));
 				i = close;
@@ -1252,14 +1301,14 @@ private:
 			}
 			if (operand >= directive.size() ||
 				!IsIdentifierLike(directive[operand]))
-				ThrowPreprocessingSourceError("invalid defined operator");
+				ThrowPreprocessingSourceError(std::string("invalid defined operator") + DirectiveLocation(directive));
 			const SpellingId queried = IdentifierLikeSpelling(directive[operand]);
 			std::size_t next = operand + 1;
 			if (parenthesized)
 			{
 				if (next >= directive.size() ||
 					!IsOperator(directive[next], ")"))
-					ThrowPreprocessingSourceError("invalid defined operator");
+					ThrowPreprocessingSourceError(std::string("invalid defined operator") + DirectiveLocation(directive));
 				++next;
 			}
 			Token value(TK_PP_NUMBER, IsMacroDefined(queried) ? "1" : "0",
@@ -1322,7 +1371,7 @@ private:
 						std::chrono::steady_clock::now() - start).count());
 		}
 		if (!valid)
-			ThrowPreprocessingSourceError("invalid controlling expression");
+			ThrowPreprocessingSourceError(std::string("invalid controlling expression") + DirectiveLocation(directive));
 		return value;
 	}
 
@@ -1339,7 +1388,7 @@ private:
 			{
 				if (directive.size() != 3 ||
 					directive[2].kind != TK_IDENTIFIER)
-					ThrowPreprocessingSourceError("invalid conditional directive");
+					ThrowPreprocessingSourceError(std::string("invalid conditional directive") + DirectiveLocation(directive));
 				condition = IsMacroDefined(directive[2].spelling);
 				if (directive_name == id_ifndef_)
 					condition = !condition;
@@ -1360,7 +1409,7 @@ private:
 	{
 		if (sources_.empty() || conditionals_.size() <=
 			sources_.back().conditional_base)
-			ThrowPreprocessingSourceError("unmatched conditional directive");
+			ThrowPreprocessingSourceError(std::string("unmatched conditional directive") + CurrentSourceSuffix());
 		return conditionals_.back();
 	}
 
@@ -1368,7 +1417,7 @@ private:
 	{
 		ConditionalFrame& frame = CurrentConditional();
 		if (frame.saw_else)
-			ThrowPreprocessingSourceError("#elif after #else");
+			ThrowPreprocessingSourceError(std::string("#elif after #else") + DirectiveLocation(directive));
 		bool condition = false;
 		if (frame.parent_active && !frame.branch_taken)
 			condition = EvaluateCondition(directive, 2);
@@ -1382,9 +1431,9 @@ private:
 	{
 		ConditionalFrame& frame = CurrentConditional();
 		if (frame.saw_else)
-			ThrowPreprocessingSourceError("duplicate #else");
+			ThrowPreprocessingSourceError(std::string("duplicate #else") + DirectiveLocation(directive));
 		if (frame.parent_active && directive.size() != 2)
-			ThrowPreprocessingSourceError("tokens after #else");
+			ThrowPreprocessingSourceError(std::string("tokens after #else") + DirectiveLocation(directive));
 		frame.saw_else = true;
 		frame.active = frame.parent_active && !frame.branch_taken;
 		frame.branch_taken = frame.branch_taken || frame.active;
@@ -1396,7 +1445,7 @@ private:
 	{
 		ConditionalFrame& frame = CurrentConditional();
 		if (frame.parent_active && directive.size() != 2)
-			ThrowPreprocessingSourceError("tokens after #endif");
+			ThrowPreprocessingSourceError(std::string("tokens after #endif") + DirectiveLocation(directive));
 		conditionals_.pop_back();
 		if (preprocessing_stats_)
 			++preprocessing_stats_->conditional_directives;
@@ -1529,10 +1578,10 @@ private:
 		std::string name;
 		bool quoted = false;
 		if (!ParseHeaderOperand(expanded, 0, expanded.size(), &name, &quoted))
-			ThrowPreprocessingSourceError("invalid #include operand");
+			ThrowPreprocessingSourceError(std::string("invalid #include operand") + DirectiveLocation(directive));
 		ResolvedInclude resolved;
 		if (!FindInclude(name, quoted, include_next, &resolved))
-			ThrowPreprocessingInputOutputError("included file not found: " + name);
+			ThrowPreprocessingInputOutputError("included file not found: " + name + LocationSuffix(directive[1]));
 		ProcessResolvedInclude(resolved);
 	}
 
@@ -1560,14 +1609,14 @@ private:
 		if (expanded.empty() || expanded.size() > 2 ||
 			expanded[0].kind != TK_PP_NUMBER ||
 			(expanded.size() == 2 && expanded[1].kind != TK_STRING))
-			ThrowPreprocessingSourceError("invalid #line directive");
+			ThrowPreprocessingSourceError(std::string("invalid #line directive") + DirectiveLocation(directive));
 		const std::string& spelling = Spell(expanded[0]);
 		char* end = 0;
 		const unsigned long long parsed = std::strtoull(spelling.c_str(),
 			&end, 10);
 		if (!end || *end != '\0' || parsed == 0 ||
 			parsed > std::numeric_limits<std::size_t>::max())
-			ThrowPreprocessingSourceError("invalid #line number");
+			ThrowPreprocessingSourceError(std::string("invalid #line number") + DirectiveLocation(directive));
 		SourceFrame& source = sources_.back();
 		source.line_override = true;
 		source.override_line = static_cast<std::size_t>(parsed);
@@ -1601,7 +1650,7 @@ private:
 			if (!end || *end != '\0' || parsed == 0 ||
 				parsed > std::numeric_limits<std::size_t>::max() ||
 				(parsed & (parsed - 1)) != 0)
-				ThrowPreprocessingSourceError("invalid #pragma pack alignment");
+				ThrowPreprocessingSourceError(std::string("invalid #pragma pack alignment") + DirectiveLocation(directive));
 			post_tokens_.EmitPragmaPackPush(static_cast<std::size_t>(parsed));
 		}
 	}
@@ -1609,20 +1658,20 @@ private:
 	void ParseDirective(const std::vector<Token>& directive)
 	{
 		if (directive.size() < 2 || directive[1].kind != TK_IDENTIFIER)
-			ThrowPreprocessingSourceError("invalid preprocessing directive");
+			ThrowPreprocessingSourceError(std::string("invalid preprocessing directive") + DirectiveLocation(directive));
 		if (directive[1].spelling == id_define_)
 			ParseDefine(directive);
 		else if (directive[1].spelling == id_undef_)
 			ParseUndef(directive);
 		else
-			ThrowPreprocessingSourceError("unsupported preprocessing directive");
+			ThrowPreprocessingSourceError(std::string("unsupported preprocessing directive") + DirectiveLocation(directive));
 	}
 
 	void ParseUndef(const std::vector<Token>& directive)
 	{
 		if (directive.size() != 3 || directive[2].kind != TK_IDENTIFIER ||
 			directive[2].spelling == id_va_args_)
-			ThrowPreprocessingSourceError("invalid #undef directive");
+			ThrowPreprocessingSourceError(std::string("invalid #undef directive") + DirectiveLocation(directive));
 		Macro* found = macros_.Find(directive[2].spelling);
 		if (found)
 		{
@@ -1639,7 +1688,7 @@ private:
 	{
 		if (directive.size() < 3 || directive[2].kind != TK_IDENTIFIER ||
 			directive[2].spelling == id_va_args_)
-			ThrowPreprocessingSourceError("missing or invalid macro name");
+			ThrowPreprocessingSourceError(std::string("missing or invalid macro name") + DirectiveLocation(directive));
 		Macro macro;
 		macro.name = directive[2].spelling;
 		builtin_probe_markers_.Erase(macro.name);
@@ -1651,7 +1700,7 @@ private:
 			replacement_begin = ParseParameters(directive, 4, &macro);
 		}
 		else if (directive.size() > 3 && !directive[3].leading_space)
-			ThrowPreprocessingSourceError("object-like macro replacement requires whitespace");
+			ThrowPreprocessingSourceError(std::string("object-like macro replacement requires whitespace") + DirectiveLocation(directive));
 
 		BuildReplacement(directive, replacement_begin, &macro);
 		Macro* old = macros_.Find(macro.name);
@@ -1660,7 +1709,7 @@ private:
 			if (!Equivalent(*old, macro))
 			{
 				if (!replaceable_command_line_macros_.Find(macro.name))
-					ThrowPreprocessingSourceError("incompatible macro redefinition");
+					ThrowPreprocessingSourceError(std::string("incompatible macro redefinition") + DirectiveLocation(directive));
 				retained_replacement_tokens_ -= old->replacement.size();
 				macros_.Erase(macro.name);
 				retained_replacement_tokens_ += macro.replacement.size();
@@ -1688,7 +1737,7 @@ private:
 	{
 		FlatHashMap<SpellingId, unsigned char> seen;
 		if (position >= directive.size())
-			ThrowPreprocessingSourceError("unterminated macro parameter list");
+			ThrowPreprocessingSourceError(std::string("unterminated macro parameter list") + DirectiveLocation(directive));
 		if (IsOperator(directive[position], ")"))
 			return position + 1;
 		if (IsOperator(directive[position], "..."))
@@ -1700,12 +1749,12 @@ private:
 				directive[position].kind != TK_IDENTIFIER ||
 				directive[position].spelling == id_va_args_ ||
 				seen.Find(directive[position].spelling))
-				ThrowPreprocessingSourceError("invalid macro parameter");
+				ThrowPreprocessingSourceError(std::string("invalid macro parameter") + DirectiveLocation(directive));
 			seen.Insert(directive[position].spelling, 1);
 			macro->parameters.push_back(directive[position].spelling);
 			++position;
 			if (position >= directive.size())
-				ThrowPreprocessingSourceError("unterminated macro parameter list");
+				ThrowPreprocessingSourceError(std::string("unterminated macro parameter list") + DirectiveLocation(directive));
 			// GNU `name...` denotes the final variadic slot; hosted Linux headers
 			// use this spelling and expansion still uses the contiguous tail.
 			if (IsOperator(directive[position], "..."))
@@ -1716,16 +1765,16 @@ private:
 				++position;
 				if (position >= directive.size() || !IsOperator(
 					directive[position], ")"))
-					ThrowPreprocessingSourceError("invalid variadic parameter list");
+					ThrowPreprocessingSourceError(std::string("invalid variadic parameter list") + DirectiveLocation(directive));
 				return position + 1;
 			}
 			if (IsOperator(directive[position], ")"))
 				return position + 1;
 			if (!IsOperator(directive[position], ","))
-				ThrowPreprocessingSourceError("invalid macro parameter separator");
+				ThrowPreprocessingSourceError(std::string("invalid macro parameter separator") + DirectiveLocation(directive));
 			++position;
 			if (position >= directive.size())
-				ThrowPreprocessingSourceError("unterminated macro parameter list");
+				ThrowPreprocessingSourceError(std::string("unterminated macro parameter list") + DirectiveLocation(directive));
 			if (IsOperator(directive[position], "..."))
 				return ParseVariadicClose(directive, position, macro);
 		}
@@ -1738,7 +1787,7 @@ private:
 		++position;
 		if (position >= directive.size() ||
 			!IsOperator(directive[position], ")"))
-			ThrowPreprocessingSourceError("invalid variadic parameter list");
+			ThrowPreprocessingSourceError(std::string("invalid variadic parameter list") + DirectiveLocation(directive));
 		return position + 1;
 	}
 
@@ -1769,7 +1818,7 @@ private:
 				if (found)
 					replacement.parameter = *found;
 				else if (replacement.token.spelling == id_va_args_)
-					ThrowPreprocessingSourceError("__VA_ARGS__ in a non-variadic replacement list");
+					ThrowPreprocessingSourceError(std::string("__VA_ARGS__ in a non-variadic replacement list") + DirectiveLocation(directive));
 			}
 			macro->replacement.push_back(replacement);
 		}
@@ -1777,19 +1826,19 @@ private:
 		if (!macro->replacement.empty() &&
 			(IsOperator(macro->replacement.front().token, "##") ||
 			 IsOperator(macro->replacement.back().token, "##")))
-			ThrowPreprocessingSourceError("## at replacement-list boundary");
+			ThrowPreprocessingSourceError(std::string("## at replacement-list boundary") + DirectiveLocation(directive));
 		for (std::size_t i = 0; i < macro->replacement.size(); ++i)
 		{
 			if (IsOperator(macro->replacement[i].token, "##") &&
 				i + 1 < macro->replacement.size() &&
 				IsOperator(macro->replacement[i + 1].token, "##"))
-				ThrowPreprocessingSourceError("adjacent ## operators");
+				ThrowPreprocessingSourceError(std::string("adjacent ## operators") + DirectiveLocation(directive));
 			if (!macro->function_like ||
 				!IsOperator(macro->replacement[i].token, "#"))
 				continue;
 			if (i + 1 >= macro->replacement.size() ||
 				macro->replacement[i + 1].parameter == kNoParameter)
-				ThrowPreprocessingSourceError("# must precede a macro parameter");
+				ThrowPreprocessingSourceError(std::string("# must precede a macro parameter") + DirectiveLocation(directive));
 		}
 	}
 
@@ -1936,7 +1985,7 @@ private:
 			 parsed->arguments.size() != macro.parameters.size()) ||
 			(macro.variadic &&
 				 parsed->arguments.size() < macro.parameters.size()))
-				ThrowPreprocessingSourceError("wrong number of macro arguments");
+				ThrowPreprocessingSourceError(std::string("wrong number of macro arguments") + LocationSuffix(head));
 		const std::size_t binding_count = macro.parameters.size() +
 			(macro.variadic ? 1 : 0);
 		pending->raw_tokens.swap(parsed->tokens);
@@ -2509,7 +2558,7 @@ private:
 			if (head.kind == TK_IDENTIFIER)
 			{
 				if (head.spelling == id_va_args_)
-					ThrowPreprocessingSourceError("__VA_ARGS__ outside a variadic replacement list");
+					ThrowPreprocessingSourceError(std::string("__VA_ARGS__ outside a variadic replacement list") + CurrentSourceSuffix());
 				if (stats_)
 					++stats_->macro_lookups;
 				if (TryExpandDynamicMacro(&frame))
@@ -2539,7 +2588,7 @@ private:
 							}
 							if (frame.input.size() == 1)
 								goto emit_head;
-							ThrowPreprocessingSourceError("unterminated macro invocation");
+							ThrowPreprocessingSourceError(std::string("unterminated macro invocation") + CurrentSourceSuffix());
 						}
 						if (state == NOT_AN_INVOCATION)
 							goto emit_head;
@@ -2649,7 +2698,7 @@ private:
 				if ((count == 2 && !IsOperator(token, "(")) ||
 					(count == 3 && token.kind != TK_STRING) ||
 					(count == 4 && !IsOperator(token, ")")) || count > 4)
-					ThrowPreprocessingSourceError("invalid _Pragma operator");
+					ThrowPreprocessingSourceError(std::string("invalid _Pragma operator") + LocationSuffix(token));
 				if (count == 4)
 				{
 					ExecutePragmaLiteral(pragma_operator_[2],
@@ -2744,7 +2793,7 @@ private:
 	void RequireCompletePragmaOperator() const
 	{
 		if (!pragma_operator_.empty())
-			ThrowPreprocessingSourceError("incomplete _Pragma operator");
+			ThrowPreprocessingSourceError(std::string("incomplete _Pragma operator") + CurrentSourceSuffix());
 	}
 
 	void UpdatePeakRescan(std::size_t size)
