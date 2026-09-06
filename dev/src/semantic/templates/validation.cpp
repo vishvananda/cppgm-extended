@@ -2255,6 +2255,63 @@ void Analyzer::ResolveCallFunctionTemplatePatterns(
 	if (patterns->empty()) *patterns = FindFunctionTemplates(scope, structured);
 }
 
+void Analyzer::ResolveRetainedDependentCallPatterns(NodeId callee,
+	ScopeId scope, std::vector<BindingId>* candidates,
+	std::vector<std::size_t>* patterns, EntityId* naming_class)
+{
+	// A call whose qualifier was dependent when the fact was recorded resolved
+	// to no patterns then, so the fact carries only the specializations each
+	// instantiation deduced and appended.  Replaying those offers a later
+	// instantiation the earlier one's argument types and nothing to deduce
+	// from.  Resolve the patterns now, from the scope that can see the
+	// qualifier, whenever a retained fact holds a specialization without one.
+	if (!patterns->empty()) return;
+	bool retained_specialization = false;
+	for (std::size_t i = 0; i < candidates->size(); ++i)
+		if (GetFunction((*candidates)[i]).template_specialization)
+			retained_specialization = true;
+	if (!retained_specialization) return;
+	ResolveCallFunctionTemplatePatterns(callee, scope, patterns);
+	if (patterns->empty()) return;
+	// The retained naming class was recorded by whichever sibling
+	// specialization published this shared callee node last, and a dependent
+	// qualifier names a different class in each replay.  The patterns just
+	// resolved from the active scope carry the class the call actually names
+	// here, so adopt their owner as the naming class; otherwise the access
+	// check tests the member against the sibling's class and rejects it (a
+	// public static member read as inaccessible).
+	const EntityId active_owner = program_->EntityForScope(
+		function_templates_[(*patterns)[0]].owner);
+	bool single_owner = active_owner != kNoEntity;
+	for (std::size_t i = 1; single_owner && i < patterns->size(); ++i)
+		single_owner = program_->EntityForScope(
+			function_templates_[(*patterns)[i]].owner) == active_owner;
+	if (single_owner)
+	{
+		*naming_class = active_owner;
+		// The specializations the fact carried were deduced by sibling
+		// replays.  One whose owner the active class cannot reach names a
+		// sibling's member, and left beside the active owner's own deduction
+		// it ties with it, so every such call reads as ambiguous.
+		candidates->erase(std::remove_if(candidates->begin(), candidates->end(),
+			[this, active_owner](BindingId candidate) {
+				const EntityId owner = program_->bindings[candidate].member_owner;
+				return owner != kNoEntity && owner != active_owner &&
+					!program_->QueryBasePath(active_owner, owner, 0, 0, 0, 0);
+			}), candidates->end());
+	}
+	// Publish what the resolution found so the next replay of this node reads
+	// it instead of repeating the lookup.  A pattern whose owner does not
+	// match the recorded naming class is rejected on read by the guard in
+	// RetainedFunctionCallCandidates, which rebuilds that call from the
+	// active scope, so caching here cannot pin the wrong owner.
+	CompactIndexSequence& published =
+		retained_call_template_sets_.Ensure(callee);
+	for (std::size_t i = 0; i < patterns->size(); ++i)
+		if (!published.Contains((*patterns)[i]))
+			published.Push((*patterns)[i]);
+}
+
 void Analyzer::CompleteFunctionCallTemplateCandidates(NodeId callee,
 	ScopeId scope, const std::string& spelling,
 	const std::vector<NodeId>& argument_syntax,
@@ -2294,54 +2351,8 @@ void Analyzer::CompleteFunctionCallTemplateCandidates(NodeId callee,
 		retained_call_template_sets_.Find(callee);
 	std::vector<std::size_t> patterns = retained_templates ?
 		retained_templates->Copy() : std::vector<std::size_t>();
-	// A call whose qualifier was dependent when the fact was recorded resolved
-	// to no patterns then, so the fact carries only the specializations each
-	// instantiation deduced and appended.  Replaying those offers a later
-	// instantiation the earlier one's argument types and nothing to deduce
-	// from.  Resolve the patterns now, from the scope that can see the
-	// qualifier, whenever a retained fact holds a specialization without one.
-	if (patterns.empty())
-	{
-		bool retained_specialization = false;
-		for (std::size_t i = 0; i < candidates->size(); ++i)
-			if (GetFunction((*candidates)[i]).template_specialization)
-				retained_specialization = true;
-		if (retained_specialization)
-		{
-			ResolveCallFunctionTemplatePatterns(callee, scope, &patterns);
-			// The retained naming class was recorded by whichever sibling
-			// specialization published this shared callee node last, and a
-			// dependent qualifier names a different class in each replay.  The
-			// patterns just resolved from the active scope carry the class the
-			// call actually names here, so adopt their owner as the naming
-			// class; otherwise the access check tests the member against the
-			// sibling's class and rejects it (a public static member read as
-			// inaccessible).
-			if (!patterns.empty())
-			{
-				const EntityId active_owner = program_->EntityForScope(
-					function_templates_[patterns[0]].owner);
-				bool single_owner = active_owner != kNoEntity;
-				for (std::size_t i = 1; single_owner && i < patterns.size(); ++i)
-					single_owner = program_->EntityForScope(
-						function_templates_[patterns[i]].owner) == active_owner;
-				if (single_owner) *naming_class = active_owner;
-			}
-			// Publish what the resolution found so the next replay of this
-			// node reads it instead of repeating the lookup.  A pattern whose
-			// owner does not match the recorded naming class is rejected on
-			// read by the guard above, which rebuilds that call from the
-			// active scope, so caching here cannot pin the wrong owner.
-			if (!patterns.empty())
-			{
-				CompactIndexSequence& published =
-					retained_call_template_sets_.Ensure(callee);
-				for (std::size_t i = 0; i < patterns.size(); ++i)
-					if (!published.Contains(patterns[i]))
-						published.Push(patterns[i]);
-			}
-		}
-	}
+	ResolveRetainedDependentCallPatterns(callee, scope, candidates,
+		&patterns, naming_class);
 	NamePath syntax_base;
 	std::vector<NodeId> explicit_syntax;
 	const bool has_explicit_syntax = CollectExplicitTemplateArguments(

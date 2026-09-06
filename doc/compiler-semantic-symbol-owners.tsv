@@ -893,6 +893,7 @@ dev/src/semantic/templates/validation.cpp	CopyRetainedCallLookup	1	dev/src/seman
 dev/src/semantic/templates/validation.cpp	PublishRetainedCallLookup	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/templates/validation.cpp	RecordRetainedCallLookup	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/templates/validation.cpp	ResolveCallFunctionTemplatePatterns	1	dev/src/semantic/templates/validation.cpp	keep
+dev/src/semantic/templates/validation.cpp	ResolveRetainedDependentCallPatterns	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/templates/validation.cpp	RetainedCallAllowsArgumentDependentLookup	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/templates/validation.cpp	RetainedFunctionCallCandidates	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/templates/validation.cpp	ValidateRetainedTemplateDefinition	1	dev/src/semantic/templates/validation.cpp	keep
