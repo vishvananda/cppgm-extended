@@ -265,6 +265,18 @@ dependent qualifier in the active specialization's scope rather than reuse
 the recorded set; it touches the same retained-replay logic that a broad
 first attempt regressed by ~350 tests, so it needs its own validated pass.
 
+**RESOLVED** 2026-09-06 ("Re-resolve a replayed dependent call's naming class
+per specialization").  The narrow fix: when
+`CompleteFunctionCallTemplateCandidates` re-resolves a dependent qualifier's
+patterns from the active scope (the branch that already handles a retained
+specialization without patterns), adopt the freshly-resolved patterns' owner
+as the naming class, but only when they share one owner.  The access check then
+tests the member against the class the call names in this specialization, not
+the sibling's, so the public static `__assign_one` is accessible.  Verified:
+the libstdc++ 13 regex fixture compiles and the full byte-exact report is
+5951/5951 in the 24.04 gcc cell, no regressions.  Clears the 24.04 gcc
+test-report check.
+
 **Host-config self-host codegen (test-through-pa10, 24.04 gcc + clang, 26.04
 clang).**  A `cppgm++` built by gcc 13 or clang miscompiles the recognizer
 so its grammar-terminal map drops `KW_TRUE`, and PA6's empty test fails at
@@ -295,17 +307,31 @@ fix the CI 24.04 gcc cell, which builds with the real g++-13.
 
 Building with the real g++-13.4 (in the Ubuntu 24.04 container, and locally
 with `CXX=g++-13`) reproduces the actual 24.04 failure: the compiler builds
-cleanly but the `recog` it produces cannot map the grammar terminal
-`KW_TRUE`, so pa6 reports every test failing with byte-identical-looking
-`BAD` output.  It is deterministic (`recog` fails 48/48; `-j1` and `-j4`
-alike), and the compiler itself is deterministic across repeated runs, so it
-is not the flaky race and not host non-determinism.  Isolated reductions of
-the token table (the static `const char*` array, the enum-derived count, and
-the `unordered_map` fill) all compile correctly under the g++-13-built
-compiler, so it is a heap-state-dependent codegen defect in cppgm++ specific
-to the g++-13 host configuration, exercised only by the full recognizer and
-not yet isolated to a construct.  It is the real remaining 24.04 gcc
-self-host blocker.
+cleanly but the self-compiled `recog` cannot map the grammar terminal
+`KW_TRUE`, so pa6 reports every test failing with `BAD` output.
+
+Refined 2026-09-06.  It is **config-sensitive, not host-sensitive**: a cppgm++
+built by g++-15 (`CXX=g++`) but targeting the libstdc++ 13 config
+(`CPPGM_HOST_CXX=g++-13`) miscompiles `recog` too, so it is a cppgm++ codegen
+defect triggered by libstdc++ 13 headers, not g++-13 miscompiling cppgm++.
+Object-swap bisection pins the miscompiled object to `recognition/recognizer.o`
+(swapping a g++-13-built `recognizer.o` into the self-linked `recog` makes pa6
+pass).  Instrumenting `BuildSimpleTokenNames` (`recognizer.cpp:694`, which fills
+the `std::unordered_map<std::string,uint32_t> simple_tokens_` by
+`simple_tokens_[SimpleTokenKindName(i)] = i` over the 122 kinds) shows the exact
+mechanism: after the loop the map holds 122 entries and the `"KW_TRUE"` node IS
+present -- a manual iteration finds key `"KW_TRUE"`, length 7, value 60 -- but
+`count("KW_TRUE")` and even `count(nm)` with the same pointer return 0.  The
+entry is in the **wrong bucket after a rehash** (bucket_count 127 at that
+point): the node's stored/cached hash disagrees with the hash `count`
+recomputes, so the lookup probes a different bucket and misses.  Every reduction
+-- the standalone 122-name fill, the member-map-in-constructor with the exact
+`uint16_t` loop and `static_cast` -- compiles correctly, so this is a
+context-sensitive backend codegen defect (register allocation / optimization in
+the large `recognizer.cpp`), corrupting one `unordered_map` node's cached hash
+on rehash; it does not reduce out of the full unit.  Same class as the prior
+"not isolated to a construct" finding, now localized to the rehash/cached-hash
+path.  The real remaining 24.04 gcc self-host blocker; needs a backend session.
 
 Two items remain on the self-host lanes after that fix:
 
