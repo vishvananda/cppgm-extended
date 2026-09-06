@@ -1,0 +1,15 @@
+ERROR: member overloads must either all have ref-qualifiers or none [top-level declaration 0 kind=class-specifier value=X text=X]
+Diagnostic context:
+collect_class_declaration [X] at tests/spec/200-ref-qualified-mixed-overload-bad.t:1:1
+  ensure_class_reference_members [X]
+    populate_class_reference_members [X]
+      reference_class_member [simple-declaration] text=[] ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_VOID:void
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier f
+        parameter-clause
+        ref-qualifier OP_AMP:&
+}

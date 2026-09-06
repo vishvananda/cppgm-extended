@@ -1,0 +1,27 @@
+declare function @__builtin_fill_units(%arg0 : ptr, %arg1 : i64, %arg2 : i64, %arg3 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_fill_units]
+
+function @pattern_words(%first : ptr, %n : i64) -> void {
+  block ^entry:
+    %bytes = binary shl i64 %n, 2
+    %last = index i8 %first, %bytes
+    %t1 = binary ushr i64 %bytes, 2
+    %t2 = cmp uge i64 %t1, 16
+    branch %t2, ^__fill_fast_4, ^cond
+
+  block ^cond:
+    %p = phi ptr [^entry: %first, ^body: %next]
+    %more = cmp ne ptr %p, %last
+    branch %more, ^body, ^done
+
+  block ^body:
+    store u32 258, %p
+    %next = index i8 %p, 4
+    jump ^cond
+
+  block ^done:
+    return void
+
+  block ^__fill_fast_4:
+    %t0 = call ptr @__builtin_fill_units(%first, 258, %t1, 4)
+    jump ^done
+}

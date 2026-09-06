@@ -1,0 +1,11 @@
+ERROR: unsupported namespace-scope decl-specifier-seq: typedef owner::hidden<int>::nested<long>::type rejected; [top-level declaration 1 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_TYPEDEF:typedef
+    decl-specifier owner::hidden<int>::nested<long>::type
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier rejected
+}]
+Diagnostic context:
+collect_simple_declaration [typedef owner::hidden<int>::nested<long>::type rejected;] at tests/spec/300-private-leading-template-id-path-rejected.t:21:1

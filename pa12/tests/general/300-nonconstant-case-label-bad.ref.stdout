@@ -1,0 +1,5 @@
+ERROR: case label is not an integral constant expression [function invalid] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:value=int}]
+Diagnostic context:
+analyze_function_binding_output [invalid]
+  analyze_statement [switch-statement] at tests/general/300-nonconstant-case-label-bad.t:3:3
+    analyze_switch_statement at tests/general/300-nonconstant-case-label-bad.t:3:3

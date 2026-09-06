@@ -9,9 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 2, $refarg__3
     %t3 = addr $refarg__3
     %t4 = call obj<1x1> @constant(%t3)
-    copyobj 1x1 %t4, %t2
     %t5 = call obj<1x1> @protect(%t2)
-    copyobj 1x1 %t5, %t1
     return i32 0
 }
 function @constant(%t : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_Z8constantIiE14lambda_functorI8identityIKT_EERS3_] {

@@ -1,0 +1,8 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = const ptr 0
+    store i32 1, %t1
+    %t2 = const ptr 0
+    %t3 = load i32 %t2
+    return i32 %t3
+}

@@ -1,0 +1,35 @@
+function @pick(%ret : ptr [pass=indirect_result], %cond : i64, %lhs : ptr, %rhs : ptr) -> void {
+  block ^entry:
+    branch %cond, ^left, ^right
+
+  block ^left:
+    %a = load i64 %lhs
+    store i64 %a, %ret
+    return void
+
+  block ^right:
+    %b = load i64 %rhs
+    store i64 %b, %ret
+    return void
+}
+function @main(%cond : i64, %lhs : ptr, %rhs : ptr) -> i64 {
+  slot $value : i64
+
+  block ^entry:
+    %p = addr $value
+    branch %cond, ^__o1inl0__left, ^__o1inl0__right
+
+  block ^__o1inl0__left:
+    %__o1inl0__a = load i64 %lhs
+    store i64 %__o1inl0__a, %p
+    jump ^__o1inl0__cont
+
+  block ^__o1inl0__right:
+    %__o1inl0__b = load i64 %rhs
+    store i64 %__o1inl0__b, %p
+    jump ^__o1inl0__cont
+
+  block ^__o1inl0__cont:
+    %r = load i64 $value
+    return i64 %r
+}

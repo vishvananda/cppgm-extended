@@ -1,0 +1,4 @@
+ERROR: invalid initializer [target char] [source struct X] [init x] [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:c=char,x=struct X}]
+Diagnostic context:
+analyze_function_binding_output [main]
+  analyze_statement [simple-declaration] at tests/general/400-direct-init-explicit-conversion-followed-by-standard-bad.t:4:3

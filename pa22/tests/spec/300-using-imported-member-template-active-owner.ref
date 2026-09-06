@@ -32,7 +32,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = addr $args
     %t16 = addr $g
     %t17 = call obj<1x1> @override_const_property(%t15, %t16)
-    copyobj 1x1 %t17, %t14
     return i32 0
 }
 function @tagged_argument_IndexTag__Map___tagged_argument(%this : ptr, %v : ptr [pass=reference]) -> void [binding=weak, object=_ZN15tagged_argumentI8IndexTag3MapEC1ERKS1_] {
@@ -120,7 +119,6 @@ function @override_const_property(%ap : ptr [pass=reference], %g : ptr [pass=ref
     call void @default__IndexTag__int___default_(%t6, %t7)
     %t8 = call ptr @arg_list_tagged_argument_IndexTag__Map___empty_arg_list___operator__(%t5, %t6)
     %t9 = call obj<1x1> @override_const_property_t_Map__true___operator__(%t2, %t3, %t8)
-    copyobj 1x1 %t9, %t1
     return obj<1x1> $retobj__1
 }
 function @arg_list_tagged_argument_IndexTag__Map___empty_arg_list___operator__(%this : ptr, %__param1 : ptr [pass=reference]) -> ptr [binding=weak, object=_ZNK8arg_listI15tagged_argumentI8IndexTag3MapE14empty_arg_listEixIiEERKS2_RK8default_IS1_T_E] {

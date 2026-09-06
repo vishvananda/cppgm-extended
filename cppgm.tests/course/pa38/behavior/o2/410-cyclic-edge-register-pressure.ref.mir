@@ -1,0 +1,105 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @data
+  storage data
+  item i64 0
+  item i64 0
+
+global @a
+  storage scalar i64
+  init i64 1
+
+global @b
+  storage scalar i64
+  init i64 2
+
+global @c
+  storage scalar i64
+  init i64 3
+
+global @d
+  storage scalar i64
+  init i64 4
+
+function @noop
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    mov rax, 0
+    ret rax
+
+function @probe
+  abi
+    return i64 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues direct
+    preserve r14 rbx r12 r13 r15
+    slot $counter -> [rbp-8] : i64
+
+  block ^entry
+    load.i64 r14, @a
+    load.i64 rbx, @b
+    load.i64 r12, @c
+    load.i64 r13, @d
+    store.i64 [rbp-8], 0
+
+  block ^condition
+    load.i64 r15, [rbp-8]
+    cmp.i64 r15, 2
+    jae ^done
+
+  block ^body
+    mov r8, @data
+    mov rdx, r15
+    imul rdx, 8
+    add r8, rdx
+    store.i64 [r8], r15
+    call @noop [args=(), unwind=no]
+    lea r9, [r14+rbx]
+    lea r8, [r12+r13]
+    add r9, r8
+    add r9, 7
+    lea r8, [r15+1]
+    store.i64 [rbp-8], r8
+    cmp.i64 r9, 17
+    je ^condition
+    jmp ^failure
+
+  block ^done
+    mov rcx, @data
+    load.i64 r9, [rcx+8]
+    cmp.i64 r9, 1
+    setne rax
+    movzx rax, rax
+    ret rax
+
+  block ^failure
+    mov rax, 1
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    call @probe [args=(), unwind=no]
+    ret rax

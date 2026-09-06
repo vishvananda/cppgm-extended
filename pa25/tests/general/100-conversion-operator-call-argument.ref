@@ -14,7 +14,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $arg__1
     %t3 = addr $s
     %t4 = call obj<1x1> @Source__operatorTarget(%t3)
-    copyobj 1x1 %t4, %t2
     call void @sink(%t2)
     return i32 0
 }

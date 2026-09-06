@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = copy i64 %t4
     %t6 = convert zext i128 i64 %t5
     %t7 = call obj<1x1> @example__make(%t6)
-    copyobj 1x1 %t7, %t3
     %t8 = call i32 @wrapper(%t2, $argobj__1)
     return i32 %t8
 }

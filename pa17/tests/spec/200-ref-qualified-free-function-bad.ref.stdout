@@ -1,0 +1,12 @@
+ERROR: ref-qualifier requires a non-static member function [top-level declaration 0 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_VOID:void
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier f
+        parameter-clause
+        ref-qualifier OP_AMP:&
+}]
+Diagnostic context:
+collect_simple_declaration [void f()&;] at tests/spec/200-ref-qualified-free-function-bad.t:1:1

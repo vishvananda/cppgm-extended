@@ -1,0 +1,4 @@
+ERROR: invalid return expression [target void] [expr 1] [expr_type int] [expr_category prvalue] [function invalid] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings ]
+Diagnostic context:
+analyze_function_binding_output [invalid]
+  analyze_statement [return-statement] at tests/general/300-bad-void-return-expression.t:3:3

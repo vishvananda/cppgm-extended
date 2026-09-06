@@ -1,0 +1,18 @@
+ERROR: unknown non-dependent name in function template body holder at tests/general/100-template-definition-class-template-as-value-bad.t:7:10 [top-level declaration 1 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier invalid_template_value
+      parameter-clause
+    compound-statement
+      return-statement
+        id-expression holder
+}]
+Diagnostic context:
+collect_template_declaration [template<class T>int invalid_template_value(){return holder;}] at tests/general/100-template-definition-class-template-as-value-bad.t:4:1

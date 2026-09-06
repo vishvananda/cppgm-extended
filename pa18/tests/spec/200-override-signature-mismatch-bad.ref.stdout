@@ -1,0 +1,3 @@
+ERROR: override requires virtual base member [top-level declaration 1 kind=class-specifier value=Derived text=Derived]
+Diagnostic context:
+collect_class_declaration [Derived] at tests/spec/200-override-signature-mismatch-bad.t:13:1

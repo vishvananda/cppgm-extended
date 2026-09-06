@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $arg__1
     %t5 = addr $s
     %t6 = call obj<1x1> @fusion__clear(%t5)
-    copyobj 1x1 %t6, %t4
     %t7 = call ptr @fusion__operators__operator__(%t3, %t4)
     return i32 0
 }

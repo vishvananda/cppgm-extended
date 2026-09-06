@@ -1,0 +1,41 @@
+declare function @observe(%value : i64) -> void [unwind=no]
+
+function @minimum_with_npos(%n : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 %n
+}
+function @maximum_with_zero(%n : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 %n
+}
+function @equal_choice(%n : i64) -> i64 [binding=strong] {
+  block ^entry:
+    return i64 %n
+}
+function @minimum_stays(%n : i64, %limit : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %below = cmp ult i64 %n, %limit
+    branch %below, ^take_n, ^take_limit
+
+  block ^take_n:
+    jump ^merge
+
+  block ^take_limit:
+    jump ^merge
+
+  block ^merge:
+    %least = phi i64 [^take_n: %n, ^take_limit: %limit]
+    return i64 %least
+}
+function @length_compare(%size : i64) -> i64 [binding=strong] {
+  block ^entry:
+    %same = cmp ne i64 3, %size
+    branch %same, ^differ, ^count
+
+  block ^differ:
+    return i64 0
+
+  block ^count:
+    call void @observe(3)
+    return i64 3
+}

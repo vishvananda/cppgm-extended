@@ -9,7 +9,6 @@ function @S__g(%this : ptr) -> void [binding=strong, object=_ZN1S1gEv] {
     %t2 = addr $arg__2
     call void @S__G__local_12742608339964491276__G(%t2)
     %t3 = call obj<1x1> @decay_copy(%t2)
-    copyobj 1x1 %t3, %t1
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

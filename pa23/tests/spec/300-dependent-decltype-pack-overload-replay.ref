@@ -16,7 +16,6 @@ function @g(%x : ptr [pass=reference], %y : ptr [pass=reference]) -> void [bindi
     %t3 = load ptr $x
     %t4 = load ptr $y
     %t5 = call obj<1x1> @f__ov2(%t3, %t4)
-    copyobj 1x1 %t5, %t2
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -39,13 +38,10 @@ function @f__ov2(%x : ptr [pass=reference], %x__pack2 : ptr [pass=reference]) ->
     %t3 = addr $arg__3
     %t4 = load ptr $x
     %t5 = call obj<1x1> @N__B__pick__ov2(%t4)
-    copyobj 1x1 %t5, %t3
     %t6 = addr $arg__4
     %t7 = load ptr $x__pack2
     %t8 = call obj<1x1> @N__B__pick__ov3(%t7)
-    copyobj 1x1 %t8, %t6
     %t9 = call obj<1x1> @N__pair__ov2(%t3, %t6)
-    copyobj 1x1 %t9, %t2
     call void @Wrap_Pair_C__M____Wrap(%t1, $argobj__2)
     return obj<1x1> $retobj__1
 }

@@ -1,3 +1,17 @@
 # Other files and folders
 .settings/
 *.my*
+*.check*
+
+# PA29 executes generated native programs but checks in only the reference
+# statuses, stdout, and informational/structural MIR artifacts.
+course/pa29/**/*.ref.program
+course/pa29/**/*.ref.impl.stdout
+course/pa29/**/*.ref.impl.stderr
+course/pa29/**/*.ref.program.stderr
+
+# The regression lane mirrors the PA29 rule for generated programs.
+regression/pa29/**/*.ref.program
+regression/pa29/**/*.ref.impl.stdout
+regression/pa29/**/*.ref.impl.stderr
+regression/pa29/**/*.ref.program.stderr

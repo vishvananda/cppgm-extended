@@ -1,0 +1,1 @@
+ERROR: static_assert unevaluated: box(runtime_value()).constant_member() == 7

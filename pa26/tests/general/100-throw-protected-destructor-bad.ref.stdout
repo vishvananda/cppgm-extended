@@ -1,0 +1,4 @@
+ERROR: invalid throw expression [inaccessible destructor blocked::~blocked] [expr x] [function test] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:x=lvalue-reference to struct blocked}]
+Diagnostic context:
+analyze_function_binding_output [test]
+  analyze_statement [throw-statement] at tests/general/100-throw-protected-destructor-bad.t:13:3

@@ -1,0 +1,3 @@
+ERROR: namespace name is already declared conflict [top-level declaration 1 kind=namespace-definition value=conflict text=conflict]
+Diagnostic context:
+semantic_declaration::collect_namespace_definition [conflict] at tests/general/300-binding-before-namespace-bad.t:3:1

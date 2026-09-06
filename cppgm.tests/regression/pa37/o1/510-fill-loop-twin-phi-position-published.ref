@@ -1,0 +1,13 @@
+declare function @__builtin_fill_bytes(%arg0 : ptr, %arg1 : i32, %arg2 : i64) -> ptr [unwind=no, binding=strong, object=cppgm_builtin_fill_bytes]
+
+function @construct_at_end(%vector : ptr, %n : i64, %value : ptr) -> void {
+  block ^entry:
+    %end_field = index i8 [projection=field] %vector, 8
+    %end = load ptr %end_field
+    %new_end = index i8 %end, %n
+    %t0 = load u8 %value
+    %t1 = convert zext i32 u8 %t0
+    %t2 = call ptr @__builtin_fill_bytes(%end, %t1, %n)
+    store ptr %new_end, %end_field
+    return void
+}

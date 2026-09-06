@@ -9,7 +9,6 @@ function @f(%ns : ptr [pass=reference]) -> obj<1x1> [binding=strong, object=_Z1f
     %t1 = addr $retobj__1
     %t2 = load ptr $ns
     %t3 = call obj<1x1> @chrono__duration_cast(%t2)
-    copyobj 1x1 %t3, %t1
     return obj<1x1> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

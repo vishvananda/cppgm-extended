@@ -119,6 +119,14 @@ Externally meaningful C++ symbols must be produced through PA14's shared typed
 ABI encoder. Build the encoder target from resolved declarations and types;
 the ABI fact-file parser is a standalone-tool adapter and is not part of the
 source-to-LowIR path.
+
+The in-memory LowIR program uses compact semantic identity. Assign each
+top-level symbol one `SymbolId`, store its presentation spelling once through a
+program `StringId`, and use that `SymbolId` in declarations, definitions,
+operands, structured-global addresses, and alias targets. Render the spelling
+only when writing LowIR text or a diagnostic; do not copy an owning symbol name
+into each record or reference.
+
 Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
 blocks, item order inside structured globals, vtable slot order, and action
 order inside generated initialization, finalization, constructor, destructor,
@@ -132,7 +140,29 @@ or later.
 The checked-in `.ref` files define the required LowIR facts for the tests. The
 test harness checks exit status, LowIR well-formedness, and the
 course-defined normalized LowIR output rather than requiring students to match every
-non-semantic helper spelling or presentation choice.
+non-semantic helper spelling or presentation choice. What that normalization
+absorbs, and what it does not, is one list in `../pa13/lowir.md` ("What The
+Comparison Absorbs And What It Enforces"). Read it before the first failing
+fixture. In short, the comparison ignores names, order and layout, reads a
+literal by its value, and lets the operands of a commutative operation
+appear in either order; and it enforces three conventions the course fixes
+in words rather than absorbing:
+
+- Branch sense follows the source: a conditional branch tests the value the
+  source wrote, in the source's sense (`!=` is `cmp ne`, `!x` is
+  `cmp eq x, 0`, a bare scalar is branched on directly), and the first
+  target is the source's true path.
+- A retype is a `copy`: a conversion that keeps the bits and only changes
+  the LowIR type is written `copy <type> <value>`, not omitted and not
+  written as `convert`.
+- Instructions follow the source's evaluation order: the right operand of an
+  assignment before the address of its left, and where the language leaves
+  the order open, left to right (operands, call arguments, and the loads
+  each needs).
+
+A fixture that fails on one of those three is telling you which convention
+your output departs from; the canonical diff the harness writes beside the
+output shows where.
 
 For supported scalar conversions, PA15 may canonicalize widened integral immediates directly
 to their final LowIR literal value instead of spelling those same conversions through
@@ -178,7 +208,9 @@ For each test case `x`:
 - `cppgm++` is executed to produce `x.my`
 - the exit status is recorded in `x.my.exit_status`
 - `x.my` is validated as LowIR and compared against `x.ref` using the normalized
-  LowIR comparison
+  LowIR comparison (`../pa13/lowir.md`, "What The Comparison Absorbs And What
+  It Enforces", lists exactly what that comparison ignores and what it holds
+  you to)
 - `x.my.exit_status` is compared against `x.ref.exit_status`
 
 `make test` runs the checked-in local suite under `tests/` and supplies
@@ -237,6 +269,18 @@ This PA15 milestone supports the following:
 - up to four parameters in the supported PA12 procedural type subset
 - global integral/pointer/function-pointer objects with constant initializers or zero-init,
   including object addresses and constant array-element addresses
+- internal namespace-scope `const` scalar objects represented as
+  `storage=readonly` in LowIR when they are neither volatile nor
+  `thread_local`; volatile scalars, class objects, and thread-local objects
+  retain their respective conservative storage contracts
+- volatile scalar lvalue-to-rvalue conversions and stores represented by
+  `load volatile` and `store volatile` at the LowIR boundary, including local,
+  pointer-indirect, and class-member access; the marker belongs to the access,
+  while an adjacent nonvolatile member access remains ordinary
+- recognized memory builtins use ordinary pointer parameters and preserve the
+  function-level runtime identity and effects needed by later stages;
+  non-overlapping `memcpy` boundaries carry `alias=noalias`, while potentially
+  overlapping `memmove` boundaries do not
 - local scalar objects, scalar/function references, function pointers/references, and bounded
   arrays in the supported PA12 procedural type subset; an omitted array bound is inferred
   from its initializer, missing elements are zero-initialized, and excess elements are
@@ -257,8 +301,18 @@ This PA15 milestone supports the following:
 - calls through function pointers and function references in the PA12 subset
 - lvalue references, including reference parameters, reference locals, reference
   returns, and aliasing through supported calls
+- reference parameters use LowIR's shared `ptr [pass=by_address]` boundary:
+  callers preserve the required addressable-storage behavior without retaining
+  a separate source-reference passing label
 - array-to-pointer decay, subscript expressions, pointer arithmetic, one-past
-  pointer values, and pointer compound assignment with element-size scaling
+  pointer values, pointer compound assignment with element-size scaling, and
+  pointer differences measured in elements; because the byte difference of
+  two pointers into the same array is exactly divisible by the element size,
+  a positive power-of-two size may be lowered as an arithmetic right shift,
+  while other element sizes retain signed division
+- array-to-pointer and function-to-pointer decay produce an ordinary LowIR
+  `ptr` using the existing address, index, parameter, or `copy ptr` operations;
+  do not add a decay-specific unary operation or parameter-passing annotation
 - scoped and unscoped enums, enum constants, enum promotion/comparison, and
   enum lowering
 - built-in casts over the supported scalar, function, reference, and pointer
@@ -278,8 +332,19 @@ This PA15 milestone supports the following:
   - built-in arithmetic, bitwise, shift, logical, comparison, conditional, comma, and
     subscript forms from the PA12 procedural subset
 
+As required by PA13, every LowIR `cmp` instruction produces an `i64` truth
+value. When a comparison or logical expression must be materialized as the
+course `bool` representation (`u8`) for storage, an argument, or a return,
+emit an explicit conversion from that `i64` result. A branch may consume the
+canonical comparison result directly.
+
 Compiler-generated slots and helper names must remain distinct from source
 identifiers so a source declaration cannot redirect an internal temporary.
+The source lowering path should carry compact value, slot, block, and symbol
+identities into the shared typed LowIR model. Store required display spellings
+once in the program string pool, and retain a numeric ordinal for generated
+temporaries; do not construct or hash a presentation string for every operand
+reference.
 
 The generated LowIR for this supported subset is intended to be accepted by the
 later PA29 `lowir2native` backend. PA13 `lowir2cy86` remains a useful optional
@@ -334,3 +399,8 @@ Useful intermediate representations include:
 - explicit local slot/layout information
 - a centralized type-to-LowIR lowering and conversion layer
 - a stable mapping from resolved expressions to LowIR values and stack locations
+
+It is useful for the lowering layer to derive result types from the LowIR
+operation as it creates a temporary. In particular, keeping the canonical
+`i64` comparison result there avoids duplicating result-type decisions at
+each later use.

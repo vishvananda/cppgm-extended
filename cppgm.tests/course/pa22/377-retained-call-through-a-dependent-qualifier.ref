@@ -1,0 +1,171 @@
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : obj<16x8>
+  slot $b : obj<8x4>
+  slot $c : obj<16x8>
+  slot $run : obj<1x1>
+  slot $ea : ptr
+  slot $eb : ptr
+  slot $ec : ptr
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+
+  block ^entry:
+    %t1 = addr $run
+    %t2 = addr $run
+    %t3 = addr $a
+    %t4 = unary decay ptr %t3
+    %t5 = addr $a
+    %t6 = unary decay ptr %t5
+    %t7 = binary mul i64 2, 8
+    %t8 = index i8 %t6, %t7
+    %t9 = call ptr @algorithm_classic_policy___operator__(%t2, %t4, %t8)
+    store ptr %t9, $ea
+    %t10 = addr $run
+    %t11 = addr $b
+    %t12 = unary decay ptr %t11
+    %t13 = addr $b
+    %t14 = unary decay ptr %t13
+    %t15 = binary mul i64 2, 4
+    %t16 = index i8 %t14, %t15
+    %t17 = call ptr @algorithm_classic_policy___operator____ov2(%t10, %t12, %t16)
+    store ptr %t17, $eb
+    %t18 = addr $run
+    %t19 = addr $c
+    %t20 = unary decay ptr %t19
+    %t21 = addr $c
+    %t22 = unary decay ptr %t21
+    %t23 = binary mul i64 2, 8
+    %t24 = index i8 %t22, %t23
+    %t25 = call ptr @algorithm_classic_policy___operator____ov3(%t18, %t20, %t24)
+    store ptr %t25, $ec
+    %t26 = load ptr $ea
+    %t27 = addr $a
+    %t28 = unary decay ptr %t27
+    %t29 = binary mul i64 2, 8
+    %t30 = index i8 %t28, %t29
+    %t31 = cmp eq ptr %t26, %t30
+    branch %t31, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t32 = load ptr $eb
+    %t33 = addr $b
+    %t34 = unary decay ptr %t33
+    %t35 = binary mul i64 2, 4
+    %t36 = index i8 %t34, %t35
+    %t37 = cmp eq ptr %t32, %t36
+    %t38 = cmp ne i64 %t37, 0
+    store i64 %t38, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t39 = load i64 $land__3
+    branch %t39, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t40 = load ptr $ec
+    %t41 = addr $c
+    %t42 = unary decay ptr %t41
+    %t43 = binary mul i64 2, 8
+    %t44 = index i8 %t42, %t43
+    %t45 = cmp eq ptr %t40, %t44
+    %t46 = cmp ne i64 %t45, 0
+    store i64 %t46, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t47 = load i64 $land__2
+    branch %t47, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t48 = load i32 $cond__1
+    return i32 %t48
+}
+function @algorithm_classic_policy___operator__(%this : ptr, %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIPmEET_S4_S4_] {
+  slot $this : ptr
+  slot $first : ptr
+  slot $last : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %first, $first
+    store ptr %last, $last
+    %t1 = load ptr $first
+    %t2 = load ptr $last
+    %t3 = call ptr @ops_classic_policy___last_of(%t1, %t2)
+    return ptr %t3
+}
+function @algorithm_classic_policy___operator____ov2(%this : ptr, %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIP5tag_aEET_S5_S5_] {
+  slot $this : ptr
+  slot $first : ptr
+  slot $last : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %first, $first
+    store ptr %last, $last
+    %t1 = load ptr $first
+    %t2 = load ptr $last
+    %t3 = call ptr @ops_classic_policy___last_of__ov2(%t1, %t2)
+    return ptr %t3
+}
+function @algorithm_classic_policy___operator____ov3(%this : ptr, %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIP5tag_bEET_S5_S5_] {
+  slot $this : ptr
+  slot $first : ptr
+  slot $last : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %first, $first
+    store ptr %last, $last
+    %t1 = load ptr $first
+    %t2 = load ptr $last
+    %t3 = call ptr @ops_classic_policy___last_of__ov3(%t1, %t2)
+    return ptr %t3
+}
+function @ops_classic_policy___last_of(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIPmEET_S4_S4_] {
+  slot $__param0 : ptr
+  slot $last : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %last, $last
+    %t1 = load ptr $last
+    return ptr %t1
+}
+function @ops_classic_policy___last_of__ov2(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIP5tag_aEET_S5_S5_] {
+  slot $__param0 : ptr
+  slot $last : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %last, $last
+    %t1 = load ptr $last
+    return ptr %t1
+}
+function @ops_classic_policy___last_of__ov3(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIP5tag_bEET_S5_S5_] {
+  slot $__param0 : ptr
+  slot $last : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    store ptr %last, $last
+    %t1 = load ptr $last
+    return ptr %t1
+}

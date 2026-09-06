@@ -29,10 +29,8 @@ function @expand(%__param0 : obj<1x1>) -> void [binding=weak, object=_Z6expandIJ
   block ^entry:
     %t1 = addr $argobj__1
     %t2 = call obj<1x1> @make_tag()
-    copyobj 1x1 %t2, %t1
     %t3 = addr $argobj__2
     %t4 = call obj<1x1> @make_tag__ov2()
-    copyobj 1x1 %t4, %t3
     call void @consume($argobj__1, $argobj__2)
     return void
 }

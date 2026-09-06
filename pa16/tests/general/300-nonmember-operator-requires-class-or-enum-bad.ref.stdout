@@ -1,0 +1,24 @@
+ERROR: non-member overloaded operator requires a class or enum operand at tests/general/300-nonmember-operator-requires-class-or-enum-bad.t:1:1 [top-level declaration 0 kind=function-definition ast={function-definition
+  decl-specifier-seq
+    decl-specifier KW_INT:int
+  declarator
+    identifier operator+
+    parameter-clause
+      parameter-declaration
+        decl-specifier-seq
+          decl-specifier KW_INT:int
+        declarator
+          identifier left
+      parameter-declaration
+        decl-specifier-seq
+          decl-specifier KW_INT:int
+        declarator
+          identifier right
+  compound-statement
+    return-statement
+      binary-expression OP_PLUS:+
+        id-expression left
+        id-expression right
+}]
+Diagnostic context:
+collect_function_definition [int operator+(int left,int right){return left+right;}] at tests/general/300-nonmember-operator-requires-class-or-enum-bad.t:1:1

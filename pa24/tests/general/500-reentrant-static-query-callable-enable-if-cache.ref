@@ -14,7 +14,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $arg__2
     call void @api__execution__detail__relationship__fork_t_0___fork_t(%t5)
     %t6 = call obj<1x1> @api__query_fn__impl__operator__(%t3, %t4, %t5)
-    copyobj 1x1 %t6, %t2
     branch 1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -52,7 +51,6 @@ function @api__query_fn__impl__operator__(%this : ptr, %t : ptr [pass=reference]
     %t3 = addr $argobj__2
     %t4 = load ptr $p
     %t5 = call obj<1x1> @api__executor__query(%t2, $argobj__2)
-    copyobj 1x1 %t5, %t1
     return obj<1x1> $retobj__1
 }
 function @api__executor__executor(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN3api8executorC1Ev, trivial_lifecycle=yes] {

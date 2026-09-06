@@ -1,0 +1,50 @@
+compiler: dev/cppgm++
+standard: gnu++11
+headers:  17/38 accepted
+
+algorithm        ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+array            ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+cctype           OK
+cerrno           OK
+chrono           ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+climits          OK
+cmath            OK
+cstddef          OK
+cstdint          OK
+cstdlib          OK
+cstring          OK
+ctime            OK
+deque            ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+exception        OK
+fstream          ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+functional       ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+iomanip          ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+iosfwd           OK
+iostream         ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+iterator         OK
+limits           OK
+locale           ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+map              ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+memory           ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+new              OK
+numeric          ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+ostream          ERROR: unknown expression name: __uint128_t
+queue            ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+set              ERROR: constexpr constructor has non-literal subobjects
+sstream          ERROR: unknown expression name: __uint128_t
+stdexcept        OK
+streambuf        ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+string           ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+type_traits      OK
+unordered_map    ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+unordered_set    ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+utility          OK
+vector           ERROR: non-type template argument is not an integral constant: && at /usr/lib/llvm-21/bin/../include/c++/v1/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+
+distinct causes: 3
+  18  non-type template argument is not an integral constant: && at libc++/__memory/unique_ptr.h:149:51 in <namespace> [parameter=bool expression=bool constant=no binding=4294967295]
+      algorithm array chrono deque fstream functional iomanip iostream locale map memory numeric queue streambuf string unordered_map unordered_set vector
+   2  unknown expression name: __uint128_t
+      ostream sstream
+   1  constexpr constructor has non-literal subobjects
+      set

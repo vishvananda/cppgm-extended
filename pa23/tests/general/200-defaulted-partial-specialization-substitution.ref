@@ -7,7 +7,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $discard__1
     %t2 = call ptr @value()
     %t3 = call obj<1x1> @f(%t2)
-    copyobj 1x1 %t3, %t1
     return i32 0
 }
 function @f(%__param0 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_Z1fI5proxyIfEEN6deduceIT_Xsr10vec_traitsIS3_EE3dimEN10vec_traitsIS3_E11scalar_typeEE4typeERKS3_] {

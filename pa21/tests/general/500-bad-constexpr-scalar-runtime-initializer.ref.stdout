@@ -1,0 +1,15 @@
+ERROR: unsupported constexpr variable initializer at tests/general/500-bad-constexpr-scalar-runtime-initializer.t:6:15 [top-level declaration 1 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_CONSTEXPR:constexpr
+    decl-specifier KW_INT:int
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier value
+      initializer
+        call-expression
+          id-expression runtime_value
+          argument-list
+}]
+Diagnostic context:
+collect_simple_declaration [constexpr int value=runtime_value();] at tests/general/500-bad-constexpr-scalar-runtime-initializer.t:6:1

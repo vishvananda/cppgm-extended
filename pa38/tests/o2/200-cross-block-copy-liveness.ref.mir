@@ -1,7 +1,7 @@
-machine_ir x86_64 macos
+machine_ir x86_64 linux
 
 startup
-    call @main
+    call @main [args=()]
     mov rdi, rax
     exit
 
@@ -19,11 +19,12 @@ function @main
   frame
     stack_size 0
     scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
 
   block ^entry
-    load.ptr r8, @value_ptr
-    mov r9, r8
-    cmp.ptr r8, r8
+    load.ptr r9, @value_ptr
+    cmp.ptr r9, r9
     je ^check
 
   block ^bad
@@ -32,8 +33,7 @@ function @main
 
   block ^check
     load.i64 r8, [r9]
-    mov rdx, 77
-    cmp.i64 r8, rdx
-    setne r8
-    movzx r8, r8
-    ret r8
+    cmp.i64 r8, 77
+    setne rax
+    movzx rax, rax
+    ret rax

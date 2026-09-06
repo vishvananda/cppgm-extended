@@ -1,0 +1,33 @@
+ERROR: unknown non-dependent template name in function template signature missing_template at tests/general/300-bad-mixed-dependent-template-id-trailing-return.t:5:27 [top-level declaration 0 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+      type-parameter
+        parameter-key KW_CLASS:class
+        parameter-pack ...
+        identifier Ts
+  simple-declaration
+    decl-specifier-seq
+      decl-specifier KW_AUTO:auto
+    init-declarator-list
+      init-declarator
+        declarator
+          identifier skipped
+          parameter-clause
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:T
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:Ts
+              declarator
+                parameter-pack ...
+          trailing-return-type missing_template<T>
+            type-id
+              type-specifier-seq
+                type-name missing_template<T>
+}]
+Diagnostic context:
+collect_template_declaration [template<class T,class...Ts>auto skipped(T,Ts...)->missing_template<T>;] at tests/general/300-bad-mixed-dependent-template-id-trailing-return.t:4:1

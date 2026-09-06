@@ -217,10 +217,24 @@ sub read_env_file
 	return \%env;
 }
 
-sub open_wrapped_worker
+# The course harness selects a backend design variant (`make test-variants`)
+# through CPPGM_BACKEND_VARIANT; the compiler itself takes it only as an
+# option, so the tools that have a backend get it appended here.
+sub app_args_for
 {
 	my ($app) = @_;
 	my @app_args = shellwords($ENV{CPPGM_APP_ARGS} || '');
+	my $variant = $ENV{CPPGM_BACKEND_VARIANT};
+	push @app_args, '--backend-variant', $variant
+		if defined($variant) && $variant ne '' &&
+		   $app =~ m{(?:^|/)(?:cppgm\+\+|lowiropt|lowir2native)(?:-ref)?$};
+	return @app_args;
+}
+
+sub open_wrapped_worker
+{
+	my ($app) = @_;
+	my @app_args = app_args_for($app);
 	$app = local_exec_path($app);
 	my ($worker_out, $worker_in);
 	my $pid = open2($worker_out,
@@ -407,7 +421,7 @@ sub run_single_wrapped_text
 		build_wrapped_text_request($mode, $suffix, $test, $assignment);
 	$stdin_path = undef if defined($stdin_path) && $stdin_path eq '-';
 
-	my @app_args = shellwords($ENV{CPPGM_APP_ARGS} || '');
+	my @app_args = app_args_for($app);
 	my $status = run_command_capture(
 		cmd => [local_exec_path($app), @app_args, @args],
 		stdout => $stdout_path,
@@ -477,30 +491,23 @@ sub build_wrapped_text_request
 		my @mode_args = ($suffix eq 'pp') ? ('-E') : ();
 		my $test_base = $test;
 		$test_base =~ s/\.t$//;
+		my $env = read_env_file("$test_base.env");
+		my @include_args;
+		if (exists($env->{CPPGM_STDINC_PATHS}))
+		{
+			my $paths = delete($env->{CPPGM_STDINC_PATHS});
+			@include_args = ('-nostdinc', map { ('-isystem', $_) }
+				grep { $_ ne '' } split(/:/, $paths));
+		}
 		return ("$test_out.stdout",
 		        "$test_out.stdout",
 		        "-",
-		        read_env_file("$test_base.env"),
+		        $env,
 		        @mode_args,
+		        @include_args,
 		        "-o",
 		        $test_out,
 		        $test);
-	}
-
-	if ($mode eq "witness_t")
-	{
-		my $test_out = $test;
-		$test_out =~ s/\.t$/\.$suffix/;
-		my $test_input = abs_path($test) || $test;
-		return ("$test_out.witness.stdout",
-		        "$test_out.witness.stderr",
-		        "-",
-		        {},
-		        "-o",
-		        "$test_out.witness.lowir",
-		        "--witness",
-		        "$test_out.witness",
-		        $test_input);
 	}
 
 	if ($mode eq "text_t1")
@@ -738,7 +745,7 @@ sub run_batch_sharded
 sub run_batch
 {
 	my ($mode, $app, $suffix, $tests, $jobs, $verbose, $assignment) = @_;
-	if ($mode eq "text_t" || $mode eq "text_t1" || $mode eq "witness_t")
+	if ($mode eq "text_t" || $mode eq "text_t1")
 	{
 		run_batch_sharded(sub {
 			my ($shard) = @_;
@@ -757,36 +764,12 @@ sub run_batch
 	die "Unsupported wrapped batch mode $mode";
 }
 
-sub witness_test_has_successful_reference
-{
-	my ($test) = @_;
-	my $test_out = $test;
-	$test_out =~ s/\.t$/.ref/;
-	my $status = read_status_file("$test_out.exit_status");
-	return 1 if !defined($status);
-	return $status eq "EXIT_SUCCESS";
-}
-
-sub witness_test_has_reference
-{
-	my ($test) = @_;
-	my $reference = $test;
-	$reference =~ s/\.t$/.ref.witness/;
-	return -f $reference;
-}
-
-sub filter_witness_tests
-{
-	my ($tests) = @_;
-	return [grep { witness_test_has_successful_reference($_) } @{$tests}];
-}
-
 sub run_single
 {
 	my ($mode, $app, $suffix, $tests, $jobs, $verbose, $assignment) = @_;
 	run_tests($tests, $jobs, sub {
 		my ($test) = @_;
-		if ($mode eq "text_t" || $mode eq "text_t1" || $mode eq "witness_t")
+		if ($mode eq "text_t" || $mode eq "text_t1")
 		{
 			run_single_wrapped_text($mode, $app, $suffix, $test, $assignment);
 			return;
@@ -817,7 +800,6 @@ my $assignment = basename(getcwd());
 
 my %patterns = (
 	text_t => qr/\.t$/,
-	witness_t => qr/\.t$/,
 	text_t1 => qr/\.t\.1$/,
 	driver_t1 => qr/\.t\.1$/,
 );
@@ -826,14 +808,6 @@ die "Unsupported run_all_tests mode $mode" if !exists($patterns{$mode});
 ensure_test_app_available($app, $suffix, $tests);
 
 my @tests = collect_tests($tests, $patterns{$mode});
-if ($mode eq 'witness_t' && $suffix eq 'ref')
-{
-	@tests = @{filter_witness_tests(\@tests)};
-}
-elsif ($mode eq 'witness_t')
-{
-	@tests = grep { witness_test_has_reference($_) } @tests;
-}
 my $ntests = scalar(@tests);
 if (!$verbose && !$keep_going)
 {

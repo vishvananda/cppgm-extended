@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @vertex_all_t__vertex_all_t(%t3)
     %t4 = addr $g
     %t5 = call obj<1x1> @get__ov2($argobj__1, %t4)
-    copyobj 1x1 %t5, %t2
     %t6 = addr $m
     return i32 0
 }
@@ -31,9 +30,7 @@ function @get__ov2(%__param0 : obj<1x1>, %g : ptr [pass=reference]) -> obj<1x1> 
     call void @vertex_index_t__vertex_index_t(%t5)
     %t6 = load ptr $g
     %t7 = call obj<1x1> @get($argobj__3, %t6)
-    copyobj 1x1 %t7, %t4
     %t8 = call obj<1x1> @indexed_vertex_properties_graph_directedS__Vertex__Edge__no_property__unsigned_long_int__unsigned_long_int___Vertex__unsigned_long_int__identity_map_unsigned_long_int____get_vertex_bundle(%t3, %t4)
-    copyobj 1x1 %t8, %t1
     return obj<1x1> $retobj__1
 }
 function @get(%__param0 : obj<1x1>, %__param1 : ptr [pass=reference]) -> obj<1x1> [binding=weak, object=_Z3getI9directedS6Vertex4Edge11no_propertymmE12identity_mapIT3_E14vertex_index_tR5graphIT_T0_T1_T2_S5_T4_E] {

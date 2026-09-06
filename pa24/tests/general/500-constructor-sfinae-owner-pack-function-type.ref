@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $argobj__1
     %t4 = addr $p
     %t5 = call obj<1x1> @pool__get_executor(%t4)
-    copyobj 1x1 %t5, %t3
     call void @any_executor_prefer_only_tracked___prefer_only_untracked____any_executor__ov3(%t2, $argobj__1, 0)
     %t6 = addr $ex
     %t7 = index i8 [projection=field] %t6, 0

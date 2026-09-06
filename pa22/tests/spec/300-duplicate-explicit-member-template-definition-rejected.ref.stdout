@@ -1,0 +1,22 @@
+ERROR: duplicate templated class member definition at tests/spec/300-duplicate-explicit-member-template-definition-rejected.t:4:1 [previous definition at tests/spec/300-duplicate-explicit-member-template-definition-rejected.t:4:1] [top-level declaration 2 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+  template-declaration
+    template-parameter-clause
+      template-parameter-list
+        type-parameter
+          parameter-key KW_CLASS:class
+          identifier U
+    function-definition
+      decl-specifier-seq
+        decl-specifier KW_VOID:void
+      declarator
+        identifier Owner<int>::member
+        parameter-clause
+          parameter-declaration
+            decl-specifier-seq
+              decl-specifier TT_IDENTIFIER:U
+      compound-statement
+}]
+Diagnostic context:
+collect_template_declaration [template<>template<class U>void Owner<int>::member(U){}] at tests/spec/300-duplicate-explicit-member-template-definition-rejected.t:10:1
+  collect_template_declaration [template<class U>void Owner<int>::member(U){}] at tests/spec/300-duplicate-explicit-member-template-definition-rejected.t:10:12

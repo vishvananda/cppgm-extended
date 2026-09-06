@@ -1,0 +1,1 @@
+abimangle: tests/abi/100-duplicate-definition-id-bad.t:2: duplicate ABI definition 'T'

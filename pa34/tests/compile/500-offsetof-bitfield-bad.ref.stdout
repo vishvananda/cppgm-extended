@@ -1,0 +1,7 @@
+ERROR: __builtin_offsetof on bit-field unsupported
+Diagnostic context:
+analyze_expression_for_target [ -> const unsigned long int] at tests/compile/500-offsetof-bitfield-bad.t:1:1
+  semantic_expression::analyze_expression_for_target [ -> const unsigned long int] at tests/compile/500-offsetof-bitfield-bad.t:1:1
+    analyze_expression [] at tests/compile/500-offsetof-bitfield-bad.t:1:1
+      semantic_expression::analyze_expression [] at tests/compile/500-offsetof-bitfield-bad.t:1:1
+        analyze_call_expression [] at tests/compile/500-offsetof-bitfield-bad.t:1:1

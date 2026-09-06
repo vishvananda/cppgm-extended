@@ -1,0 +1,22 @@
+ERROR: unknown non-dependent name in function template body value at tests/general/100-template-definition-ambiguous-using-value-bad.t:14:10 [top-level declaration 2 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier invalid_ambiguous_value
+      parameter-clause
+    compound-statement
+      using-directive
+        target left
+      using-directive
+        target right
+      return-statement
+        id-expression value
+}]
+Diagnostic context:
+collect_template_declaration [template<class T>int invalid_ambiguous_value(){using namespace left;using namespace right;return value;}] at tests/general/100-template-definition-ambiguous-using-value-bad.t:9:1

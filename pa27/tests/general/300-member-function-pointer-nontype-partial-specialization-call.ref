@@ -12,7 +12,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $argobj__3
     %t5 = addr $maker
     %t6 = call obj<1x1> @example__fast_mem_fn_maker_int__target_______const___make_fast_mem_fn(%t5)
-    copyobj 1x1 %t6, %t4
     %t7 = call obj<1x1> @make_holder($argobj__3)
     copyobj 1x1 %t7, %t3
     %t8 = addr $value

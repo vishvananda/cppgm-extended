@@ -1,0 +1,2904 @@
+#include "semantic/analysis/analyzer.h"
+#include "semantic/presentation/templates.h"
+#include "support/exceptions.h"
+#include "support/scoped_state.h"
+
+#include <algorithm>
+#include <cctype>
+#include <limits>
+#include <sstream>
+#include <string>
+#include <vector>
+
+namespace cppgm
+{
+namespace semantic
+{
+namespace
+{
+
+std::size_t NoTemplatePattern()
+{
+	return std::numeric_limits<std::size_t>::max();
+}
+const std::uint8_t kClassTemplateCompletionPendingDefinition = 4;
+
+class ScopedTemplateRequest
+{
+public:
+	ScopedTemplateRequest() : table_(0), key_(), active_(false) {}
+	~ScopedTemplateRequest()
+	{
+		if (active_) table_->ResetInProgressRequest(key_);
+	}
+	void Begin(TemplateSpecializationTable* table,
+		const TemplateSpecializationKey& key)
+	{
+		if (active_ || table == 0)
+			ThrowInternalCompilerError("invalid scoped template request");
+		table_ = table;
+		key_ = key;
+		table_->SetRequest(key_, TEMPLATE_REQUEST_IN_PROGRESS);
+		active_ = true;
+	}
+	void Complete(BindingId binding)
+	{
+		if (!active_)
+			ThrowInternalCompilerError("inactive template request completion");
+		table_->SetRequest(key_, TEMPLATE_REQUEST_SUCCEEDED, binding);
+		active_ = false;
+	}
+
+private:
+	ScopedTemplateRequest(const ScopedTemplateRequest&);
+	ScopedTemplateRequest& operator=(const ScopedTemplateRequest&);
+	TemplateSpecializationTable* table_;
+	TemplateSpecializationKey key_;
+	bool active_;
+};
+
+class ScopedEntitySlot
+{
+public:
+	ScopedEntitySlot(EntityId* slot, EntityId value)
+		: slot_(slot), previous_(*slot)
+	{
+		*slot_ = value;
+	}
+	~ScopedEntitySlot() { *slot_ = previous_; }
+
+private:
+	ScopedEntitySlot(const ScopedEntitySlot&);
+	ScopedEntitySlot& operator=(const ScopedEntitySlot&);
+	EntityId* slot_;
+	EntityId previous_;
+};
+
+bool ClassTemplateArgumentsAreLayoutReady(const Program& program,
+	const std::vector<TemplateArgument>& arguments)
+{
+	if (ClassTemplateArgumentsHaveDependentShape(program, arguments))
+		return false;
+	for (std::size_t i = 0; i < arguments.size(); ++i)
+	{
+		if (arguments[i].kind != TEMPLATE_ARGUMENT_TYPE) continue;
+		const TypeId argument = program.types.RemoveTopCv(arguments[i].type);
+		const TypeRecord& record = program.types.Get(argument);
+		if (record.kind == TYPE_NAMED &&
+			!program.entities[record.entity].complete)
+			return false;
+	}
+	return true;
+}
+
+bool HasClassTemplateSpecializationArgument(const Program& program,
+	const std::vector<TemplateArgument>& arguments)
+{
+	for (std::size_t i = 0; i < arguments.size(); ++i)
+	{
+		if (arguments[i].kind != TEMPLATE_ARGUMENT_TYPE) continue;
+		const TypeRecord& record = program.types.Get(
+			program.types.RemoveTopCv(arguments[i].type));
+		if (record.kind == TYPE_NAMED &&
+			program.entities[record.entity].template_argument_begin != kNoBinding)
+			return true;
+	}
+	return false;
+}
+
+bool ClassTemplateArgumentsAllowPartialSelection(const Program& program,
+	const std::vector<TemplateArgument>& arguments)
+{
+	for (std::size_t i = 0; i < arguments.size(); ++i)
+	{
+		if (arguments[i].IsDependent()) return false;
+		if (arguments[i].kind != TEMPLATE_ARGUMENT_TYPE) continue;
+		const TypeId argument = program.types.RemoveTopCv(arguments[i].type);
+		const TypeRecord& record = program.types.Get(argument);
+		if (record.kind != TYPE_NAMED) continue;
+		const EntityRecord& entity = program.entities[record.entity];
+		if (entity.complete) continue;
+		// Shape parameters and specializations whose stored arguments are still
+		// dependent are not complete keys.  Completion itself is not required:
+		// a concrete specialization preserves a stable head and argument list.
+		if (entity.flavor == NAMED_TYPENAME_PARAMETER ||
+			entity.flavor == NAMED_TEMPLATE_PARAMETER ||
+			(entity.deferred_template_completion &&
+			 TypeContainsDependentTemplateShape(program, argument, 0)))
+			return false;
+	}
+	return true;
+}
+
+std::string ClassTemplateSpecializationScopeName(std::size_t pattern,
+	std::size_t ordinal, semantic::Stats* stats)
+{
+	std::ostringstream result;
+	result << "__cppgm_class_template_" << pattern << '_' << ordinal;
+	const std::string rendered = result.str();
+	if (stats)
+	{
+		++stats->presentation_renders[SEMANTIC_PRESENTATION_CLASS_SCOPE_SLOT];
+		stats->presentation_render_components[
+			SEMANTIC_PRESENTATION_CLASS_SCOPE_SLOT] += 2;
+		stats->presentation_render_bytes[
+			SEMANTIC_PRESENTATION_CLASS_SCOPE_SLOT] += rendered.size();
+	}
+	return rendered;
+}
+
+std::string ClassTemplateSpecializationStorageName(std::size_t pattern,
+	TemplateArgumentListId arguments, TemplateArgumentPartitionId partition,
+	semantic::Stats* stats)
+{
+	std::ostringstream result;
+	result << "__cppgm_class_template_identity_" << pattern << '_'
+		<< arguments << '_' << partition;
+	const std::string rendered = result.str();
+	if (stats)
+	{
+		++stats->presentation_renders[SEMANTIC_PRESENTATION_CLASS_STORAGE];
+		stats->presentation_render_components[
+			SEMANTIC_PRESENTATION_CLASS_STORAGE] += 3;
+		stats->presentation_render_bytes[
+			SEMANTIC_PRESENTATION_CLASS_STORAGE] += rendered.size();
+	}
+	return rendered;
+}
+
+}
+
+bool Analyzer::IsDeclaration(NodeId node) const
+{
+	return arena_->IsTag(node, ::cppgm::syntax::STAG_SIMPLE_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_FUNCTION_DEFINITION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_ALIAS_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_USING_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_USING_DIRECTIVE) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_NAMESPACE_DEFINITION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_NAMESPACE_ALIAS_DEFINITION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_EXPLICIT_INSTANTIATION_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_EXPLICIT_INSTANTIATION_DEFINITION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DEFINITION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_CLASS_SPECIFIER) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_ENUM_SPECIFIER) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_STATIC_ASSERT_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_EMPTY_DECLARATION) || arena_->IsTag(node, ::cppgm::syntax::STAG_DEDUCTION_GUIDE_DECLARATION) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_LAYOUT_PACK_PUSH) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_LAYOUT_PACK_POP) ||
+		arena_->IsTag(node, ::cppgm::syntax::STAG_LINKAGE_SPECIFICATION);
+}
+
+void Analyzer::RegisterClassMemberFunction(EntityId entity,
+	BindingId function)
+{
+	if (entity == kNoEntity || function == kNoBinding) return;
+	FunctionInfo& info = GetMutableFunction(function);
+	if (info.lexical_access_function == kNoBinding) info.lexical_access_function = program_->entities[entity].local_context;
+	if (entity_member_functions_.size() <= entity)
+		entity_member_functions_.resize(static_cast<std::size_t>(entity) + 1);
+	function = program_->bindings[function].canonical;
+	std::vector<BindingId>& functions = entity_member_functions_[entity];
+	if (std::find(functions.begin(), functions.end(), function) ==
+		functions.end())
+		functions.push_back(function);
+}
+LookupResult Analyzer::LookupName(ScopeId scope, NameId name,
+	LookupKind kind)
+{
+	if (kind == LOOKUP_TYPE || kind == LOOKUP_SCOPE_CARRIER)
+	{
+		TypeId alias = kNoType;
+		if (FindConstexprTypeAlias(name, &alias))
+		{
+			LookupResult result;
+			result.type = alias;
+			return result;
+		}
+	}
+	LookupResult result = program_->LookupName(scope, name, kind);
+	std::vector<ScopeId> using_scopes;
+	FindConstexprUsingNamespaces(&using_scopes);
+	for (std::size_t i = 0; i < using_scopes.size(); ++i)
+	{
+		const LookupResult candidate = program_->LookupQualifiedName(
+			using_scopes[i], name, kind);
+		if (result.Empty()) result = candidate;
+		else
+		{
+			for (std::size_t ordinary = 0;
+				ordinary < candidate.OrdinaryCount(); ++ordinary)
+				result.AddOrdinary(candidate.OrdinaryAt(ordinary));
+			if (candidate.HasFunctionTemplateLookup())
+			{
+				if (!result.HasFunctionTemplateLookup())
+					result.BeginFunctionTemplateLookup();
+				for (std::size_t owner = 0;
+					owner < candidate.FunctionTemplateOwnerCount(); ++owner)
+					result.AddFunctionTemplateOwner(
+						candidate.FunctionTemplateOwnerAt(owner));
+			}
+			if (result.type == kNoType) result.type = candidate.type;
+			if (result.name_space == kNoScope)
+				result.name_space = candidate.name_space;
+		}
+	}
+	return result;
+}
+
+LookupResult Analyzer::LookupPath(ScopeId scope,
+	const NamePath& path, LookupKind kind)
+{
+	if (path.Size() <= 1)
+	{
+		if (path.Size() == 0) return program_->Lookup(scope, path, kind);
+		return path.global ? program_->LookupQualifiedName(
+			program_->GlobalScope(), path[0], kind) :
+			LookupName(scope, path[0], kind);
+	}
+	ScopeId carrier = path.global ? program_->GlobalScope() : kNoScope;
+	std::size_t component = 0;
+	if (!path.global)
+	{
+		TypeId alias = kNoType;
+		if (FindConstexprTypeAlias(path[0], &alias))
+		{
+			EnsureClassDefinition(alias);
+			carrier = program_->ScopeForType(alias);
+		}
+		else
+		{
+			const LookupResult first = program_->LookupName(
+				scope, path[0], LOOKUP_SCOPE_CARRIER);
+			if (first.type != kNoType) EnsureClassDefinition(first.type);
+			carrier = first.name_space != kNoScope ? first.name_space :
+				first.type != kNoType ? program_->ScopeForType(first.type) :
+				kNoScope;
+		}
+		component = 1;
+	}
+	for (; carrier != kNoScope && component + 1 < path.Size(); ++component)
+	{
+		const LookupResult next = program_->LookupQualifiedName(
+			carrier, path[component], LOOKUP_SCOPE_CARRIER);
+		if (next.type != kNoType) EnsureClassDefinition(next.type);
+		carrier = next.name_space != kNoScope ? next.name_space :
+			next.type != kNoType ? program_->ScopeForType(next.type) :
+			kNoScope;
+	}
+	if (carrier == kNoScope) return LookupResult();
+	return program_->LookupQualifiedName(carrier, path.Last(), kind);
+}
+
+LookupResult Analyzer::LookupStructuredName(NodeId syntax,
+	ScopeId scope, LookupKind kind, ScopeId* terminal_owner,
+	bool defer_dependent_type, bool defer_dependent_specialization)
+{
+	TypeId builtin_pack_type = kNoType; if (kind == LOOKUP_TYPE && (TryResolveBuiltinTypePackElement(syntax, scope, &builtin_pack_type) || TryResolveBuiltinMakeIntegerSequence(syntax, scope, &builtin_pack_type))) { LookupResult result; result.type = builtin_pack_type; return result; }
+	if (terminal_owner) *terminal_owner = kNoScope;
+	const NodeId structure = syntax != kNoNode &&
+		arena_->IsTag(syntax, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME) ? syntax :
+		syntax == kNoNode ? kNoNode :
+		FindChild(syntax, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+	if (structure == kNoNode) return LookupResult();
+	std::uint32_t component_edge = arena_->FirstEdge(structure);
+	while (component_edge != kNoEdge && !arena_->IsTag(
+		arena_->EdgeChild(component_edge), "name-component"))
+		component_edge = arena_->NextEdge(component_edge);
+	if (component_edge == kNoEdge) return LookupResult();
+	ScopeId carrier = FindChild(structure, ::cppgm::syntax::STAG_GLOBAL_QUALIFIER) != kNoNode ?
+		program_->GlobalScope() : kNoScope;
+	while (component_edge != kNoEdge)
+	{
+		const NodeId component_node = arena_->EdgeChild(component_edge);
+		std::uint32_t next_component_edge = arena_->NextEdge(component_edge);
+		while (next_component_edge != kNoEdge && !arena_->IsTag(
+			arena_->EdgeChild(next_component_edge), "name-component"))
+			next_component_edge = arena_->NextEdge(next_component_edge);
+		const bool terminal = next_component_edge == kNoEdge;
+		if (terminal && terminal_owner && carrier != kNoScope)
+			*terminal_owner = carrier;
+		const NameId component = program_->names.UseInterned(
+			arena_->SemanticPayloadId(component_node));
+		const NodeId argument_list = FindChild(
+			component_node, ::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST);
+		const bool terminal_template = terminal &&
+			(kind == LOOKUP_FUNCTION_TEMPLATE ||
+			 kind == LOOKUP_VARIABLE_TEMPLATE);
+		const LookupKind component_kind = terminal_template ? kind :
+			argument_list != kNoNode ? LOOKUP_TYPE :
+			terminal ? kind : LOOKUP_SCOPE_CARRIER;
+		LookupResult found;
+		if (FindFunctionTemplateResultLookup(component_node, &found))
+		{
+			// Non-dependent result names retain the declaration-time lookup.
+		}
+		else if (carrier == kNoScope)
+		{
+			if (argument_list != kNoNode)
+				found = LookupExplicitUnqualifiedTemplateName(
+					scope, component, component_kind);
+			else
+			{
+				NamePath unqualified;
+				unqualified.Push(component);
+				found = LookupPath(scope, unqualified, component_kind);
+			}
+		}
+		else
+		{
+			NamePath direct;
+			direct.Push(component);
+			if (CandidateSubstitutionActive())
+			{
+				bool ambiguous = false;
+				found = program_->LookupQualifiedCandidate(
+					carrier, direct, component_kind, &ambiguous);
+				if (ambiguous)
+				{
+					RecordCandidateSubstitutionFailure();
+					return LookupResult();
+				}
+			}
+			else found = program_->LookupQualified(
+				carrier, direct, component_kind);
+		}
+		if (argument_list == kNoNode &&
+			found.type_declaration != kNoBinding &&
+			!CanAccessMember(found.type_declaration, found.naming_class))
+			ThrowSemanticError("inaccessible qualified type: " +
+				program_->names.Get(component));
+
+		if (argument_list != kNoNode && !terminal_template)
+		{
+			std::vector<NodeId> argument_syntax;
+			for (std::uint32_t edge = arena_->FirstEdge(argument_list);
+				edge != kNoEdge; edge = arena_->NextEdge(edge))
+				argument_syntax.push_back(arena_->EdgeChild(edge));
+			if (found.type_declaration != kNoBinding &&
+				!CanAccessMember(found.type_declaration, found.naming_class))
+				ThrowSemanticError("inaccessible template type");
+			const std::size_t alias =
+				FindAliasTemplateIndex(found, component);
+			if (alias != NoTemplatePattern())
+			{
+				const AliasTemplatePattern& alias_pattern =
+					alias_templates_[alias];
+				std::vector<TemplateArgument> arguments;
+				if (!BuildTemplateArguments(alias_pattern.parameters,
+					argument_syntax, scope, alias_pattern.lexical_scope,
+					&arguments)) return LookupResult();
+				const TypeId type = InstantiateAliasTemplate(alias, arguments);
+				if (type == kNoType) return LookupResult();
+				found = LookupResult();
+				found.type = type;
+			}
+			else
+			{
+				const std::size_t pattern =
+					FindClassTemplateIndex(found, component);
+				if (pattern == NoTemplatePattern()) return LookupResult();
+				std::vector<TemplateArgument> arguments;
+				const ClassTemplatePattern& class_pattern = class_templates_[pattern];
+				if (!BuildTemplateArguments(class_pattern.parameters,
+					argument_syntax, scope, class_pattern.lexical_scope,
+					&arguments)) return LookupResult();
+				BindingId specialization = MatchingInjectedClassTemplateSpecialization(
+					found, pattern, arguments);
+				if (specialization == kNoBinding)
+					specialization = InstantiateClassTemplate(pattern, arguments);
+				if (specialization == kNoBinding) return LookupResult();
+				found = LookupResult();
+				found.type = program_->bindings[specialization].type;
+				found.type_declaration = specialization;
+				found.type_declaration_canonical =
+					program_->bindings[specialization].canonical;
+			}
+		}
+		if (terminal) return found;
+		if (found.type != kNoType)
+		{
+			const TypeRecord& carrier_type = program_->types.Get(found.type);
+			if (defer_dependent_type && kind == LOOKUP_TYPE &&
+				carrier_type.kind == TYPE_NAMED &&
+				(program_->entities[carrier_type.entity].flavor ==
+					NAMED_TYPENAME_PARAMETER ||
+				 (defer_dependent_specialization &&
+				  FunctionTemplateTypeIsDependent(found.type))))
+			{
+				found.type = DependentQualifiedTypeShape(structure);
+				return found;
+			}
+			EnsureClassDefinition(found.type);
+			carrier = program_->ScopeForType(found.type);
+		}
+		else carrier = found.name_space;
+		if (carrier == kNoScope) return LookupResult();
+		component_edge = next_component_edge;
+	}
+	return LookupResult();
+}
+
+std::vector<BindingId> Analyzer::UsingFunctionCandidates(
+	ScopeId scope, const NamePath& path, const std::string& spelling,
+	ScopeId* target_owner, bool* names_owner_alias, NodeId syntax)
+{
+	const NodeId conversion_type = syntax == kNoNode ? kNoNode :
+		FindChild(syntax, ::cppgm::syntax::STAG_CONVERSION_TYPE_ID);
+	if (conversion_type != kNoNode)
+	{
+		*target_owner = ResolveOwner(scope, path);
+		*names_owner_alias = false;
+		const TypeId target = BuildTypeId(conversion_type, scope);
+		const EntityId entity = *target_owner == kNoScope ? kNoEntity :
+			program_->EntityForScope(*target_owner);
+		std::vector<BindingId> candidates;
+		if (entity != kNoEntity)
+		{
+			EnsureClassDefinition(program_->entities[entity].type);
+			AppendConversionFunctions(entity, &candidates);
+		}
+		std::vector<BindingId> functions;
+		for (std::size_t i = 0; i < candidates.size(); ++i)
+		{
+			const FunctionInfo& function = GetFunction(candidates[i]);
+			if (function.conversion_function && target != kNoType &&
+				function.conversion_target == target)
+				functions.push_back(candidates[i]);
+		}
+		return functions;
+	}
+	std::vector<BindingId> functions =
+		FunctionCandidates(scope, spelling, 0, syntax);
+	const NodeId structure = syntax == kNoNode ? kNoNode :
+		FindChild(syntax, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+	if (structure != kNoNode)
+	{
+		ScopeId structured_owner = kNoScope;
+		(void)LookupStructuredName(
+			syntax, scope, LOOKUP_ORDINARY, &structured_owner);
+		*target_owner = structured_owner;
+		std::vector<NameId> names;
+		for (std::uint32_t edge = arena_->FirstEdge(structure);
+			edge != kNoEdge; edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (arena_->IsTag(child, ::cppgm::syntax::STAG_NAME_COMPONENT))
+				names.push_back(program_->names.UseInterned(
+					arena_->SemanticPayloadId(child)));
+		}
+		*names_owner_alias = names.size() > 1 &&
+			names[names.size() - 1] == names[names.size() - 2];
+	}
+	else
+	{
+		*target_owner = path.Size() > 1 ? ResolveOwner(scope, path) : kNoScope;
+		*names_owner_alias = path.Size() > 1 &&
+			path.Last() == path[path.Size() - 2];
+	}
+	const EntityId target_entity = *target_owner == kNoScope ? kNoEntity :
+		program_->EntityForScope(*target_owner);
+	if (!functions.empty() || !*names_owner_alias || target_entity == kNoEntity)
+		return functions;
+	const NameId identity = program_->entities[target_entity].identity_name;
+	return FunctionCandidates(*target_owner, program_->names.Get(identity));
+}
+
+bool Analyzer::ParseExplicitTemplateArguments(NodeId syntax,
+	ScopeId scope, NamePath* base, std::vector<TypeId>* arguments)
+{
+	std::vector<NodeId> syntax_arguments;
+	if (!CollectExplicitTemplateArguments(syntax, base, &syntax_arguments))
+		return false;
+	arguments->clear();
+	for (std::size_t i = 0; i < syntax_arguments.size(); ++i)
+	{
+		const NodeId argument = syntax_arguments[i];
+		const NodeId declarator = arena_->IsTag(argument, ::cppgm::syntax::STAG_TYPE_ID) ?
+			FindChild(argument, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR) : kNoNode;
+		if (!arena_->IsTag(argument, ::cppgm::syntax::STAG_TYPE_ID))
+		{
+			arguments->clear();
+			return false;
+		}
+		if (declarator != kNoNode &&
+			FindChild(declarator, ::cppgm::syntax::STAG_PARAMETER_PACK) != kNoNode)
+		{
+			std::vector<ScopeId> element_scopes;
+			if (!ExpandPackElementScopes(
+				argument, scope, &element_scopes))
+			{
+				arguments->clear();
+				return false;
+			}
+			for (std::size_t element = 0;
+				element < element_scopes.size(); ++element)
+			{
+				const TypeId type = BuildTypeId(
+					argument, element_scopes[element]);
+				if (type == kNoType)
+				{
+					arguments->clear();
+					return false;
+				}
+				arguments->push_back(type);
+			}
+			continue;
+		}
+		// The parser reads a template-id argument as a type-id, which is the
+		// right guess for most of them but wrong for a variable template:
+		// libc++ writes `__is_invocable_r_impl<_Ret, __is_invocable_v<_Args...>, _Args...>`,
+		// whose middle argument is a bool.  Failing to build it as a type is
+		// how that is discovered, so report it the way this function already
+		// reports a non-type argument -- by returning false and letting the
+		// caller take the value path -- rather than throwing.
+		TypeId type;
+		{
+			ScopedContainerPush<std::vector<std::uint8_t> > substitution(
+				&candidate_substitution_failures_, 0);
+			type = BuildTypeId(argument, scope);
+			if (CandidateSubstitutionFailed()) type = kNoType;
+		}
+		if (type == kNoType)
+		{
+			arguments->clear();
+			return false;
+		}
+		arguments->push_back(type);
+	}
+	return true;
+}
+
+bool Analyzer::ClassTemplateMemberNamesPrimaryParameters(
+	const std::vector<TemplateParameter>& parameters,
+	const std::vector<TemplateArgument>& arguments) const
+{
+	if (parameters.size() != arguments.size()) return false;
+	for (std::size_t i = 0; i < parameters.size(); ++i)
+	{
+		const TemplateParameter& parameter = parameters[i];
+		const TemplateArgument& argument = arguments[i];
+		if (argument.kind != parameter.kind ||
+			argument.pack_expansion != parameter.pack) return false;
+		if (argument.kind == TEMPLATE_ARGUMENT_TYPE)
+		{
+			if (i >= function_template_shape_parameters_.size() ||
+				argument.type != function_template_shape_parameters_[i])
+				return false;
+		}
+		else if (argument.kind == TEMPLATE_ARGUMENT_INTEGRAL)
+		{
+			if (!argument.IsDependent() || argument.dependent_parameter != i)
+				return false;
+		}
+		else
+		{
+			const TypeRecord marker = program_->types.Get(
+				program_->types.RemoveTopCv(argument.type));
+			if (marker.kind != TYPE_NAMED ||
+				marker.entity >= class_template_pattern_by_entity_.size())
+				return false;
+			const std::uint32_t pattern =
+				class_template_pattern_by_entity_[marker.entity];
+			if (pattern == kNoDumpEdge || pattern >= class_templates_.size() ||
+				!class_templates_[pattern].template_parameter_proxy ||
+				class_templates_[pattern].template_parameter_ordinal != i)
+				return false;
+		}
+	}
+	return true;
+}
+
+bool Analyzer::AnalyzeClassTemplateMember(NodeId declaration,
+	ScopeId scope, const std::vector<TemplateParameter>& parameters)
+{
+	// Out-of-class member templates have one template head for the class and
+	// another for the member.  The outer head owns attachment to each concrete
+	// class specialization; retain the inner declaration intact so its own head
+	// is analyzed exactly once when that attachment is replayed.
+	NodeId described_declaration = declaration;
+	while (arena_->IsTag(described_declaration, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION))
+	{
+		const NodeId clause = FindChild(
+			described_declaration, ::cppgm::syntax::STAG_TEMPLATE_PARAMETER_CLAUSE);
+		NodeId target = kNoNode;
+		for (std::uint32_t edge = arena_->FirstEdge(described_declaration);
+			edge != kNoEdge; edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (child != clause) target = child;
+		}
+		if (target == kNoNode) return false;
+		described_declaration = target;
+	}
+	NodeId declarator = FindChild(described_declaration, ::cppgm::syntax::STAG_DECLARATOR);
+	if (arena_->IsTag(described_declaration, ::cppgm::syntax::STAG_SIMPLE_DECLARATION))
+	{
+		const NodeId list = FindChild(
+			described_declaration, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
+		const NodeId item = list == kNoNode ? kNoNode :
+			FirstSemanticChild(list);
+		declarator = item == kNoNode ? kNoNode :
+			FindChild(item, ::cppgm::syntax::STAG_DECLARATOR);
+	}
+	NodeId structure = kNoNode;
+	if (arena_->IsTag(described_declaration, ::cppgm::syntax::STAG_CLASS_SPECIFIER) ||
+		arena_->IsTag(described_declaration, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION))
+		structure = FindChild(
+			described_declaration, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+	else if (declarator != kNoNode)
+		structure = DeclaratorNameStructure(declarator);
+	else return false;
+	if (structure == kNoNode) return false;
+	std::vector<NodeId> components;
+	NamePath path;
+	path.global = FindChild(structure, ::cppgm::syntax::STAG_GLOBAL_QUALIFIER) != kNoNode;
+	for (std::uint32_t edge = arena_->FirstEdge(structure); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		const NodeId child = arena_->EdgeChild(edge);
+		if (!arena_->IsTag(child, ::cppgm::syntax::STAG_NAME_COMPONENT)) continue;
+		components.push_back(child);
+		path.Push(program_->names.UseInterned(
+			arena_->SemanticPayloadId(child)));
+	}
+	if (path.Size() <= 1) return false;
+
+	std::size_t owner_component = path.Size();
+	NodeId owner_argument_list = kNoNode;
+	for (std::size_t i = 0; i + 1 < path.Size(); ++i)
+	{
+		const NodeId arguments = FindChild(
+			components[i], ::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST);
+		if (arguments != kNoNode)
+		{
+			owner_component = i;
+			owner_argument_list = arguments;
+			break;
+		}
+	}
+	if (owner_component == path.Size()) return false;
+
+	NamePath primary;
+	primary.global = path.global;
+	for (std::size_t i = 0; i <= owner_component; ++i)
+		primary.Push(path[i]);
+	const std::size_t pattern_index = FindClassTemplate(scope, primary);
+	if (pattern_index == NoTemplatePattern())
+		ThrowSemanticError("class template member owner was not found");
+	const ClassTemplatePattern& owner_pattern =
+		class_templates_[pattern_index];
+	std::vector<NodeId> owner_arguments;
+	for (std::uint32_t edge = arena_->FirstEdge(owner_argument_list);
+		edge != kNoEdge; edge = arena_->NextEdge(edge))
+		owner_arguments.push_back(arena_->EdgeChild(edge));
+	if ((!HasTrailingTemplateParameterPack(owner_pattern.parameters) &&
+		 owner_arguments.size() != owner_pattern.parameters.size()) ||
+		(HasTrailingTemplateParameterPack(owner_pattern.parameters) &&
+		 owner_arguments.size() <
+			FixedTemplateParameterCount(owner_pattern.parameters)))
+		ThrowSemanticError("invalid class template member owner shape");
+
+	ClassTemplateMemberPattern member;
+	member.lexical_scope = scope;
+	member.declaration = declaration;
+	member.parameters = parameters;
+	for (std::size_t component = owner_component + 1;
+		component + 1 < path.Size(); ++component)
+		if (path[component] != path[owner_component])
+		{
+			member.nested_owner_path.push_back(path[component]);
+			member.nested_owner_argument_lists.push_back(FindChild(
+				components[component], ::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST));
+		}
+	std::vector<NameId> declared_owner_path = member.nested_owner_path;
+	for (std::size_t component = 0;
+		component < member.nested_owner_argument_lists.size(); ++component)
+		if (member.nested_owner_argument_lists[component] != kNoNode)
+		{
+			declared_owner_path.resize(component + 1);
+			break;
+		}
+	if (owner_pattern.defined && !declared_owner_path.empty() &&
+		FindChild(owner_pattern.declaration, ::cppgm::syntax::STAG_BASE_CLAUSE) == kNoNode &&
+		!RetainedClassDeclaresNestedPath(
+			owner_pattern.declaration, declared_owner_path))
+		ThrowSemanticError(
+			"class template member has a missing nested owner");
+	std::uint8_t owner_shape_state = 0;
+	if (!MaterializeTemplatePartialArguments(owner_pattern.parameters,
+		parameters, owner_arguments, scope, &member.canonical_owner_arguments,
+		&owner_shape_state) || owner_shape_state != 1)
+		ThrowSemanticError(
+			"class template member owner pattern is not deducible");
+	bool concrete_owner = true;
+	for (std::size_t i = 0;
+		i < member.canonical_owner_arguments.size(); ++i)
+		if (member.canonical_owner_arguments[i].IsDependent() ||
+			(member.canonical_owner_arguments[i].kind == TEMPLATE_ARGUMENT_TYPE &&
+			 FunctionTemplateTypeIsDependent(
+				member.canonical_owner_arguments[i].type)))
+			concrete_owner = false;
+	if (concrete_owner && !parameters.empty())
+	{
+		const BindingId binding = InstantiateClassTemplate(
+			pattern_index, member.canonical_owner_arguments);
+		if (binding != kNoBinding && binding <
+			class_template_explicit_specialization_states_.size() &&
+			class_template_explicit_specialization_states_[binding] != 0)
+			return false;
+	}
+	SelectClassTemplateMemberOwner(pattern_index, &member);
+	if (!arena_->IsTag(declaration, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION))
+	{
+		// Owner selection can instantiate nested templates and grow the pattern
+		// table, so reacquire the record instead of retaining a vector reference
+		// across that boundary.
+		const ClassTemplatePattern& selected_owner_pattern =
+			class_templates_[pattern_index];
+		NodeId class_declaration = selected_owner_pattern.declaration;
+		if (member.owner_partial_pattern != kNoDumpEdge)
+		{
+			if (member.owner_partial_pattern >=
+				selected_owner_pattern.partial_specializations.size())
+				ThrowInternalCompilerError(
+					"class template member partial owner is invalid");
+			class_declaration = selected_owner_pattern.partial_specializations[
+				member.owner_partial_pattern].declaration;
+		}
+		// Declaration-time validation borrows the selected pattern's member
+		// names. Concrete replay still resolves those names in the canonical
+		// specialization scope and publishes the substituted type identities.
+		ValidateRetainedTemplateDefinition(
+			declaration, scope, parameters, class_declaration);
+	}
+
+	const bool demand_definition =
+		arena_->IsTag(described_declaration, ::cppgm::syntax::STAG_SIMPLE_DECLARATION);
+	member.value_use_requires_storage = demand_definition &&
+		!HasDeclSpecifier(FindChild(
+			described_declaration, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ), "constexpr");
+	if (demand_definition)
+	{
+		if (pattern_index > std::numeric_limits<std::uint32_t>::max())
+			ThrowSemanticResourceLimit("too many class template patterns");
+		const std::uint64_t key =
+			(static_cast<std::uint64_t>(pattern_index) << 32) | path.Last();
+		demanded_static_member_definitions_.Ensure(key).Push(
+			class_templates_[pattern_index].demanded_member_definitions.size());
+		class_templates_[pattern_index].demanded_member_definitions.push_back(
+			member);
+	}
+	else class_templates_[pattern_index].member_definitions.push_back(member);
+	const std::vector<BindingId> specializations =
+		member.concrete_owner == kNoBinding ?
+		class_templates_[pattern_index].specialization_bindings :
+		std::vector<BindingId>(1, member.concrete_owner);
+	for (std::size_t i = 0; i < specializations.size(); ++i)
+	{
+		const EntityId entity = EntityOf(
+			program_->bindings[specializations[i]].type);
+		if (entity == kNoEntity)
+			ThrowInternalCompilerError("class specialization has no entity");
+		const EntityRecord& record = program_->entities[entity];
+		// An explicit specialization declares its own members; the
+		// template's out-of-class definitions are not theirs.  libstdc++'s
+		// `ctype<char>` declares `static locale::id id` and defines it in
+		// the library, while the primary template's `ctype<_CharT>::id`
+		// definition sits in the same header.
+		if (record.explicit_template_specialization) continue;
+		const std::size_t first = record.template_argument_begin;
+		const std::size_t count = record.template_argument_count;
+		if (first > program_->template_arguments.size() || count >
+				program_->template_arguments.size() - first)
+			ThrowInternalCompilerError("class specialization arguments are invalid");
+		const std::vector<TemplateArgument> arguments =
+			StoredTemplateArguments(first, count);
+		if (demand_definition)
+			QueueClassTemplateMemberDefinitions(
+				pattern_index, specializations[i]);
+		else ApplyClassTemplateMemberDefinitions(
+			pattern_index, specializations[i], arguments);
+	}
+	return true;
+}
+
+bool Analyzer::RetainedClassDeclaresNestedPath(NodeId declaration,
+	const std::vector<NameId>& path)
+{
+	NodeId owner = declaration;
+	for (std::size_t part = 0; part < path.size(); ++part)
+	{
+		NodeId selected = kNoNode;
+		for (std::uint32_t edge = arena_->FirstEdge(owner);
+			edge != kNoEdge; edge = arena_->NextEdge(edge))
+		{
+			NodeId candidate = arena_->EdgeChild(edge);
+			while (arena_->IsTag(candidate, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION))
+			{
+				const NodeId clause = FindChild(
+					candidate, ::cppgm::syntax::STAG_TEMPLATE_PARAMETER_CLAUSE);
+				NodeId target = kNoNode;
+				for (std::uint32_t nested = arena_->FirstEdge(candidate);
+					nested != kNoEdge; nested = arena_->NextEdge(nested))
+				{
+					const NodeId child = arena_->EdgeChild(nested);
+					if (child != clause) target = child;
+				}
+				candidate = target;
+			}
+			if (candidate == kNoNode ||
+				(!arena_->IsTag(candidate, ::cppgm::syntax::STAG_CLASS_SPECIFIER) &&
+				 !arena_->IsTag(candidate, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION)))
+				continue;
+			const NodeId structure = FindChild(
+				candidate, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+			const NameId name = structure == kNoNode ?
+				program_->names.UseInterned(arena_->PayloadId(candidate)) :
+				StructuredNamePath(structure).Last();
+			if (name == path[part])
+			{
+				selected = candidate;
+				break;
+			}
+		}
+		if (selected == kNoNode) return false;
+		owner = selected;
+	}
+	return true;
+}
+
+bool Analyzer::RetainVariableTemplate(NodeId declaration,
+	ScopeId scope, const std::vector<TemplateParameter>& parameters)
+{
+	if (!arena_->IsTag(declaration, ::cppgm::syntax::STAG_SIMPLE_DECLARATION)) return false;
+	const NodeId list = FindChild(declaration, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
+	if (list == kNoNode) return false;
+	NodeId item = kNoNode;
+	for (std::uint32_t edge = arena_->FirstEdge(list); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		if (item != kNoNode)
+			ThrowSemanticError(
+				"variable template must declare one variable");
+		item = arena_->EdgeChild(edge);
+	}
+	const NodeId declarator = item == kNoNode ? kNoNode :
+		FindChild(item, ::cppgm::syntax::STAG_DECLARATOR);
+	if (declarator == kNoNode) return false;
+	NodeId named_declarator = declarator;
+	while (FindChild(named_declarator, ::cppgm::syntax::STAG_IDENTIFIER) == kNoNode)
+	{
+		const NodeId nested = FindChild(named_declarator, ::cppgm::syntax::STAG_NESTED_DECLARATOR);
+		named_declarator = nested == kNoNode ? kNoNode :
+			FindChild(nested, ::cppgm::syntax::STAG_DECLARATOR);
+		if (named_declarator == kNoNode) break;
+	}
+	if (named_declarator != kNoNode &&
+		FindChild(named_declarator, ::cppgm::syntax::STAG_PARAMETER_CLAUSE) != kNoNode) return false;
+	const NamePath path = DeclaratorNamePath(declarator);
+	if (path.Empty()) ThrowSemanticError("unnamed variable template");
+	const ScopeId owner = ResolveOwner(scope, path);
+	if (owner == kNoScope)
+		ThrowSemanticError("variable template owner not found");
+	std::string terminal = program_->names.Get(path.Last());
+	const NodeId structure = DeclaratorNameStructure(declarator);
+	NodeId terminal_component = kNoNode;
+	if (structure != kNoNode)
+		for (std::uint32_t edge = arena_->FirstEdge(structure);
+			edge != kNoEdge; edge = arena_->NextEdge(edge))
+		{
+			const NodeId child = arena_->EdgeChild(edge);
+			if (arena_->IsTag(child, ::cppgm::syntax::STAG_NAME_COMPONENT))
+				terminal_component = child;
+		}
+	const bool partial = terminal_component != kNoNode && FindChild(
+		terminal_component, ::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST) != kNoNode;
+	if (terminal.empty())
+		ThrowSemanticError("invalid variable template name");
+	const NameId name = program_->names.Intern(terminal);
+	const std::uint64_t key =
+		(static_cast<std::uint64_t>(owner) << 32) | name;
+	const CompactIndexSequence* related = variable_template_sets_.Find(key);
+	bool has_primary = false;
+	if (related)
+		for (std::size_t i = 0; i < related->Size(); ++i)
+			if (!variable_templates_[(*related)[i]].partial_specialization)
+				has_primary = true;
+	if (partial && !has_primary)
+		ThrowSemanticError(
+			"variable template partial specialization has no primary");
+	VariableTemplatePattern pattern;
+	pattern.owner = owner;
+	pattern.lexical_scope = scope;
+	pattern.name = name;
+	pattern.declaration = declaration;
+	pattern.specifiers = FindChild(declaration, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ);
+	pattern.declarator = declarator;
+	pattern.initializer = FindChild(item, ::cppgm::syntax::STAG_INITIALIZER);
+	pattern.parameters = parameters;
+	if (terminal_component != kNoNode)
+	{
+		const NodeId arguments = FindChild(
+			terminal_component, ::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST);
+		if (arguments != kNoNode)
+			for (std::uint32_t edge = arena_->FirstEdge(arguments);
+				edge != kNoEdge; edge = arena_->NextEdge(edge))
+				pattern.specialization_arguments.push_back(
+					arena_->EdgeChild(edge));
+	}
+	pattern.partial_specialization = partial;
+	const std::size_t index = variable_templates_.size();
+	if (index > std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many variable templates");
+	variable_templates_.push_back(pattern);
+	variable_template_sets_.Ensure(key).Push(index);
+	program_->PublishVariableTemplateName(owner, name);
+	return true;
+}
+
+void Analyzer::PublishClassTemplateFriendGrants(
+	const ClassTemplatePattern& pattern, EntityId specialization)
+{
+	if (specialization == kNoEntity) return;
+	for (std::size_t i = 0; i < pattern.friend_owners.size(); ++i)
+	{
+		const std::uint64_t key =
+			(static_cast<std::uint64_t>(pattern.friend_owners[i]) << 32) |
+			specialization;
+		CompactIndexSequence& grants = friend_class_grants_.Ensure(key);
+		if (grants.Size() == 0) grants.Push(0);
+	}
+}
+
+void Analyzer::RegisterClassTemplateFriend(
+	std::size_t pattern_index, EntityId owner)
+{
+	if (pattern_index >= class_templates_.size() || owner == kNoEntity)
+		ThrowInternalCompilerError("invalid class template friend owner");
+	ClassTemplatePattern& pattern = class_templates_[pattern_index];
+	if (std::find(pattern.friend_owners.begin(), pattern.friend_owners.end(),
+		owner) == pattern.friend_owners.end())
+		pattern.friend_owners.push_back(owner);
+	const std::uint64_t marker_key =
+		(static_cast<std::uint64_t>(owner) << 32) | pattern.marker_entity;
+	CompactIndexSequence& marker_grants =
+		friend_class_grants_.Ensure(marker_key);
+	if (marker_grants.Size() == 0) marker_grants.Push(0);
+	for (std::size_t i = 0; i < pattern.specialization_bindings.size(); ++i)
+	{
+		const EntityId specialization = EntityOf(
+			program_->bindings[pattern.specialization_bindings[i]].type);
+		PublishClassTemplateFriendGrants(pattern, specialization);
+	}
+}
+
+bool Analyzer::AnalyzeFriendClassTemplate(NodeId target,
+	ScopeId scope, const std::vector<TemplateParameter>& parameters)
+{
+	if (!arena_->IsTag(target, ::cppgm::syntax::STAG_SIMPLE_DECLARATION)) return false;
+	const NodeId specifiers = FindChild(target, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ);
+	const NodeId declaration = specifiers == kNoNode ? kNoNode :
+		FindChild(specifiers, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION);
+	if (declaration == kNoNode) return false;
+	bool friend_specifier = false;
+	for (std::uint32_t edge = arena_->FirstEdge(specifiers); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+		if (PayloadSource(arena_->EdgeChild(edge)) == "friend")
+			friend_specifier = true;
+	if (!friend_specifier) return false;
+	const NodeId declarators = FindChild(target, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
+	if (declarators != kNoNode && FirstSemanticChild(declarators) != kNoNode)
+		ThrowSemanticError(
+			"friend class template has an unexpected declarator");
+	ScopeId class_scope = scope;
+	while (class_scope != kNoScope &&
+		program_->KindOfScope(class_scope) != SCOPE_CLASS)
+		class_scope = program_->ParentScope(class_scope);
+	const EntityId friend_owner = class_scope == kNoScope ? kNoEntity :
+		program_->EntityForScope(class_scope);
+	if (friend_owner == kNoEntity)
+		ThrowSemanticError("friend class template has no class owner");
+
+	NamePath path;
+	const NodeId structure = FindChild(declaration, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+	if (structure != kNoNode) path = StructuredNamePath(structure);
+	else path.Push(program_->names.UseInterned(arena_->PayloadId(declaration)));
+	if (path.Empty())
+		ThrowSemanticError("friend class template has no name");
+	ScopeId declaration_scope = scope;
+	if (!path.global && path.Size() == 1)
+	{
+		declaration_scope = program_->entities[friend_owner].owner;
+		while (declaration_scope != kNoScope &&
+			program_->KindOfScope(declaration_scope) != SCOPE_NAMESPACE)
+			declaration_scope = program_->ParentScope(declaration_scope);
+	}
+	if (declaration_scope == kNoScope)
+		ThrowSemanticError("friend class template has no namespace owner");
+	AnalyzeClassTemplate(declaration, declaration_scope, parameters);
+	const std::size_t pattern = FindClassTemplate(declaration_scope, path);
+	if (pattern == NoTemplatePattern())
+		ThrowInternalCompilerError("friend class template was not registered");
+	RegisterClassTemplateFriend(pattern, friend_owner);
+	return true;
+}
+
+bool Analyzer::EquivalentNondeducedTypeArgumentShape(NodeId left,
+	const std::vector<TemplateParameter>& left_parameters, NodeId right,
+	const std::vector<TemplateParameter>& right_parameters)
+{
+	const NodeId left_type = arena_->IsTag(left, ::cppgm::syntax::STAG_TYPE_ID) ? left :
+		FindChild(left, ::cppgm::syntax::STAG_TYPE_ID);
+	const NodeId right_type = arena_->IsTag(right, ::cppgm::syntax::STAG_TYPE_ID) ? right :
+		FindChild(right, ::cppgm::syntax::STAG_TYPE_ID);
+	return EquivalentNormalizedTemplateSyntax(*arena_, left_type, right_type,
+		left_parameters, right_parameters);
+}
+
+void Analyzer::AnalyzeClassTemplate(NodeId declaration, ScopeId scope,
+	const std::vector<TemplateParameter>& parameters,
+	AccessKind member_access)
+{
+	NamePath partial_primary;
+	std::vector<NodeId> partial_arguments;
+	if (CollectExplicitTemplateArguments(
+		declaration, &partial_primary, &partial_arguments))
+	{
+		const std::size_t primary = FindClassTemplate(scope, partial_primary);
+		if (primary == NoTemplatePattern())
+			ThrowSemanticError(
+				"class partial specialization has no primary");
+		ClassTemplatePartialPattern partial;
+		partial.declaration = declaration;
+		partial.parameters = parameters;
+		partial.arguments = partial_arguments;
+		ClassTemplatePattern& owner = class_templates_[primary];
+		partial.lexical_scope = TemplateLexicalScope(scope, owner.owner);
+		(void)MaterializeTemplatePartialArguments(owner.parameters,
+			partial.parameters, partial.arguments, partial.lexical_scope,
+			&partial.canonical_arguments, &partial.canonical_argument_state);
+		std::unordered_set<NameId> dependent_names;
+		for (std::size_t parameter = 0;
+			parameter < partial.parameters.size(); ++parameter)
+			if (partial.parameters[parameter].name != 0)
+				dependent_names.insert(partial.parameters[parameter].name);
+		const std::size_t paired_arguments = std::min(
+			partial.arguments.size(), partial.canonical_arguments.size());
+		for (std::size_t argument = 0; argument < paired_arguments; ++argument)
+		{
+			const TemplateArgument& shape = partial.canonical_arguments[argument];
+			const bool shape_dependent = shape.IsDependent() ||
+				(shape.kind == TEMPLATE_ARGUMENT_TYPE &&
+				 FunctionTemplateTypeIsDependent(shape.type));
+			if (SyntaxUsesAnyTemplateParameter(
+					partial.arguments[argument], dependent_names) &&
+				(!shape_dependent ||
+				 shape.IsNondeduced() ||
+				 shape.type == class_template_nondeduced_type_shape_))
+			{
+				partial.concrete_replay_required = true;
+				break;
+			}
+		}
+		for (std::size_t i = 0; i < owner.partial_specializations.size(); ++i)
+		{
+			ClassTemplatePartialPattern& prior = owner.partial_specializations[i];
+			if (!MaterializeTemplatePartialArguments(owner.parameters,
+				prior.parameters, prior.arguments, prior.lexical_scope,
+				&prior.canonical_arguments, &prior.canonical_argument_state) ||
+				partial.canonical_argument_state != 1) continue;
+			if (prior.canonical_arguments.size() !=
+				partial.canonical_arguments.size()) continue;
+			bool same_canonical_shape = true;
+			for (std::size_t argument = 0;
+				argument < partial.canonical_arguments.size(); ++argument)
+			{
+				if (prior.canonical_arguments[argument] !=
+					partial.canonical_arguments[argument])
+				{
+					same_canonical_shape = false;
+					break;
+				}
+				if (partial.canonical_arguments[argument].kind ==
+						TEMPLATE_ARGUMENT_TYPE &&
+					(partial.canonical_arguments[argument].type ==
+						class_template_nondeduced_type_shape_ ||
+					 FunctionTemplateTypeIsDependent(
+						partial.canonical_arguments[argument].type)) &&
+					!EquivalentNondeducedTypeArgumentShape(
+						prior.arguments[argument], prior.parameters,
+						partial.arguments[argument], partial.parameters))
+				{
+					same_canonical_shape = false;
+					break;
+				}
+			}
+			if (!same_canonical_shape) continue;
+			const bool prior_definition =
+				(arena_->Flags(prior.declaration) & SYNTAX_FLAG_DEFINITION) != 0;
+			const bool definition =
+				(arena_->Flags(declaration) & SYNTAX_FLAG_DEFINITION) != 0;
+			if (prior_definition && definition)
+				ThrowSemanticError(
+					"duplicate class template partial definition");
+			if (definition)
+			{
+				if (prior.revision ==
+					std::numeric_limits<std::uint32_t>::max())
+					ThrowSemanticResourceLimit(
+						"too many class partial redeclarations");
+				partial.revision = prior.revision + 1;
+				prior = partial;
+			}
+			UpgradeClassTemplateSpecializations(primary);
+			return;
+		}
+		owner.partial_specializations.push_back(partial);
+		UpgradeClassTemplateSpecializations(primary);
+		return;
+	}
+	NamePath path;
+	const NodeId name_structure = FindChild(
+		declaration, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+	if (name_structure != kNoNode)
+		path = StructuredNamePath(name_structure);
+	else path.Push(program_->names.UseInterned(arena_->PayloadId(declaration)));
+	const NameId name = path.Last();
+	const ScopeId owner = ResolveOwner(scope, path);
+	if (name == 0 || owner == kNoScope)
+		ThrowSemanticError("invalid class template owner or name");
+	const LookupResult prior_name =
+		program_->LookupDirect(owner, name, LOOKUP_TYPE);
+	std::size_t prior_index = NoTemplatePattern();
+	if (prior_name.type != kNoType)
+	{
+		const TypeRecord& prior_type = program_->types.Get(
+			program_->types.RemoveTopCv(prior_name.type));
+		if (prior_type.kind != TYPE_NAMED ||
+			prior_type.entity >= class_template_pattern_by_entity_.size() ||
+			class_template_pattern_by_entity_[prior_type.entity] == kNoDumpEdge)
+			ThrowSemanticError(
+				"class template conflicts with an existing type");
+		prior_index = class_template_pattern_by_entity_[prior_type.entity];
+	}
+	const bool definition =
+		(arena_->Flags(declaration) & SYNTAX_FLAG_DEFINITION) != 0;
+	if (prior_index != NoTemplatePattern())
+	{
+		ClassTemplatePattern& prior = class_templates_[prior_index];
+		if (prior.parameters.size() != parameters.size())
+			ThrowSemanticError(
+				"class template parameter count mismatch");
+		std::vector<TemplateParameter> merged = parameters;
+		bool contributes_default = false;
+		for (std::size_t i = 0; i < parameters.size(); ++i)
+		{
+			if (prior.parameters[i].kind != parameters[i].kind)
+				ThrowSemanticError(
+					"class template parameter kind mismatch");
+			if (parameters[i].kind == TEMPLATE_ARGUMENT_TEMPLATE &&
+				(!TemplateTemplateParameterMatches(
+					prior.parameters[i].template_parameters,
+					parameters[i].template_parameters) ||
+				 !TemplateTemplateParameterMatches(
+					parameters[i].template_parameters,
+					prior.parameters[i].template_parameters)))
+				ThrowSemanticError(
+					"class template template-parameter shape mismatch");
+			if (merged[i].default_argument == kNoNode)
+				merged[i].default_argument =
+					prior.parameters[i].default_argument;
+			else if (prior.parameters[i].default_argument == kNoNode)
+				contributes_default = true;
+		}
+		// Parameter names are local to a redeclaration.  A friend declaration
+		// with no new defaults must not replace the definition-owned parameter
+		// environment used to replay that definition.
+		if (!definition && !contributes_default) return;
+		prior.parameters.swap(merged);
+		if (!definition) return;
+		if (prior.defined)
+			ThrowSemanticError("duplicate class template definition");
+		prior.lexical_scope = TemplateLexicalScope(scope, prior.owner);
+		prior.declaration = declaration;
+		prior.defined = true;
+		UpgradeClassTemplateSpecializations(prior_index);
+		return;
+	}
+
+	ClassTemplatePattern pattern;
+	pattern.owner = owner;
+	pattern.lexical_scope = TemplateLexicalScope(scope, owner);
+	pattern.name = name;
+	pattern.declaration = declaration;
+	pattern.parameters = parameters;
+	pattern.defined = definition;
+	pattern.hosted_trait_template = ClassifyHostedTraitTemplate(owner, name, parameters);
+	pattern.initializer_list_template = IsStandardInitializerListTemplate(name, owner, parameters);
+	pattern.marker_entity = program_->NewEntity(name,
+		NAMED_TEMPLATE_PARAMETER, false, kNoType, owner, name,
+		ENTITY_EMISSION_OWNER_QUALIFIED);
+	const TypeId marker_type =
+		program_->entities[pattern.marker_entity].type;
+	program_->SetTypeName(owner, name, marker_type);
+	const BindingId marker_binding = program_->AddBinding(owner, BIND_TYPE,
+		name, marker_type, false, 0, NAMED_TEMPLATE_PARAMETER);
+	const EntityId class_owner = program_->EntityForScope(owner);
+	if (class_owner != kNoEntity)
+	{
+		program_->bindings[marker_binding].member_owner = class_owner;
+		program_->bindings[marker_binding].access = member_access;
+	}
+	const std::size_t index = class_templates_.size();
+	if (index > std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many class templates");
+	class_templates_.push_back(pattern);
+	if (class_template_pattern_by_entity_.size() <= pattern.marker_entity)
+		class_template_pattern_by_entity_.resize(
+			static_cast<std::size_t>(pattern.marker_entity) + 1, kNoDumpEdge);
+	class_template_pattern_by_entity_[pattern.marker_entity] =
+		static_cast<std::uint32_t>(index);
+}
+
+std::size_t Analyzer::FindClassTemplateIndex(
+	const LookupResult& found, NameId requested) const
+{
+	if (found.type == kNoType) return NoTemplatePattern();
+	const TypeRecord& type = program_->types.Get(
+		program_->types.RemoveTopCv(found.type));
+	if (type.kind != TYPE_NAMED ||
+		type.entity >= class_template_pattern_by_entity_.size() ||
+		class_template_pattern_by_entity_[type.entity] == kNoDumpEdge)
+		return NoTemplatePattern();
+	const std::size_t index =
+		class_template_pattern_by_entity_[type.entity];
+	if (index >= class_templates_.size())
+		ThrowInternalCompilerError("invalid class template entity index");
+	const ClassTemplatePattern& pattern = class_templates_[index];
+	if (type.entity == pattern.marker_entity) return index;
+	// A specialization's injected primary name denotes the current template,
+	// but an arbitrary alias to that specialization is not itself a template.
+	if (requested != pattern.name || found.type_declaration == kNoBinding)
+		return NoTemplatePattern();
+	const BindingRecord& declaration =
+		program_->bindings[found.type_declaration];
+	return declaration.owner == program_->entities[type.entity].member_scope &&
+		declaration.member_owner == type.entity &&
+		declaration.name == pattern.name ? index : NoTemplatePattern();
+}
+
+std::size_t Analyzer::FindClassTemplate(ScopeId scope,
+	const std::string& spelling)
+{
+	const NamePath path = ParseNamePath(spelling, NAME_PATH_PARSE_TEMPLATE);
+	return FindClassTemplate(scope, path);
+}
+
+TypeId Analyzer::ResolveStructuredTypeName(NodeId name,
+	ScopeId argument_scope)
+{
+	return LookupStructuredName(
+		name, argument_scope, LOOKUP_TYPE).type;
+}
+
+ScopeId Analyzer::BindClassTemplateArguments(
+	const ClassTemplatePattern& pattern,
+	const std::vector<TemplateArgument>& arguments)
+{
+	const ScopeId template_scope = NewScope(pattern.lexical_scope,
+		SCOPE_TEMPLATE_PARAMETERS, 0, ScopePrefixId(pattern.lexical_scope));
+	const std::size_t fixed =
+		FixedTemplateParameterCount(pattern.parameters);
+	for (std::size_t i = 0; i < arguments.size() && i < fixed; ++i)
+		BindTemplateArgument(template_scope, pattern.parameters[i], arguments[i]);
+	if (HasTrailingTemplateParameterPack(pattern.parameters))
+		BindTemplateArgumentPack(template_scope, pattern.parameters.back(),
+			arguments, fixed, arguments.size());
+	return template_scope;
+}
+
+void Analyzer::ApplyClassTemplateMemberDefinitions(
+	std::size_t index, BindingId specialization,
+	const std::vector<TemplateArgument>& arguments, bool demanded)
+{
+	if (index >= class_templates_.size() || specialization == kNoBinding)
+		ThrowInternalCompilerError("invalid class template member application");
+	const EntityId entity = EntityOf(program_->bindings[specialization].type);
+	if (entity == kNoEntity || !program_->entities[entity].complete) return;
+	// Retained out-of-class definitions are analyzed on behalf of their
+	// canonical specialization, not whichever caller happened to demand it.
+	// Access and inherited-member lookup therefore consume the specialization's
+	// class identity while replay is active.
+	ScopedEntitySlot class_context(&current_class_context_, entity);
+	std::vector<std::uint32_t>& counts = demanded ?
+		class_template_demanded_member_definition_counts_ :
+		class_template_member_definition_counts_;
+	const std::deque<ClassTemplateMemberPattern>& definitions = demanded ?
+		class_templates_[index].demanded_member_definitions :
+		class_templates_[index].member_definitions;
+	if (counts.size() <= specialization)
+		counts.resize(
+			static_cast<std::size_t>(specialization) + 1, 0);
+	while (counts[specialization] < definitions.size())
+	{
+		const std::size_t definition_index =
+			counts[specialization]++;
+		const ClassTemplateMemberPattern& definition =
+			definitions[definition_index];
+		if (definition.concrete_owner != kNoBinding &&
+			definition.concrete_owner != specialization) continue;
+		const ClassTemplatePartialSelection* selection =
+			FindClassTemplatePartialSelection(specialization);
+		const std::uint32_t selected_partial = selection ?
+			selection->pattern : kNoDumpEdge;
+		if (definition.owner_partial_pattern != selected_partial) continue;
+		FunctionTemplateDeduction owner_bindings(definition.parameters);
+		if (!MatchTemplatePartialArguments(definition.parameters,
+			definition.canonical_owner_arguments, arguments, &owner_bindings))
+			continue;
+		const ScopeId member_scope = program_->entities[entity].member_scope;
+		if (member_scope == kNoScope)
+			ThrowInternalCompilerError(
+				"class template member definition has no class scope");
+		const ClassTemplateMemberPattern* definition_pointer = &definition;
+		const FunctionTemplateDeduction* binding_pointer = &owner_bindings;
+		const auto make_definition_scope = [this, definition_pointer,
+			binding_pointer](ScopeId parent) {
+			const ScopeId result = NewScope(parent, SCOPE_TEMPLATE_PARAMETERS,
+				0, ScopePrefixId(parent));
+			for (std::size_t parameter = 0;
+				parameter < definition_pointer->parameters.size(); ++parameter)
+				if (definition_pointer->parameters[parameter].pack)
+					BindTemplateArgumentPack(result,
+						definition_pointer->parameters[parameter],
+						binding_pointer->pack_arguments[parameter], 0,
+						binding_pointer->pack_arguments[parameter].size());
+				else BindTemplateArgument(result,
+					definition_pointer->parameters[parameter],
+					binding_pointer->fixed_arguments[parameter]);
+			return result;
+		};
+		ScopeId actual_owner = member_scope;
+		bool routed_owner = false;
+		for (std::size_t part = 0;
+			part < definition.nested_owner_path.size(); ++part)
+		{
+			if (part >= definition.nested_owner_argument_lists.size())
+				ThrowInternalCompilerError(
+					"class template member owner path shape is invalid");
+			if (definition.nested_owner_argument_lists[part] != kNoNode)
+			{
+				const ScopeId routing_scope =
+					make_definition_scope(actual_owner);
+				if (RouteClassTemplateMemberDefinition(definition, part,
+					actual_owner, routing_scope, demanded))
+				{
+					routed_owner = true;
+					break;
+				}
+			}
+			const LookupResult nested = program_->LookupDirect(actual_owner,
+				definition.nested_owner_path[part], LOOKUP_SCOPE_CARRIER);
+			if (nested.type != kNoType) EnsureClassDefinition(nested.type);
+			actual_owner = nested.name_space != kNoScope ? nested.name_space :
+				program_->ScopeForType(nested.type);
+			if (actual_owner == kNoScope) break;
+		}
+		if (routed_owner) continue;
+		if (actual_owner == kNoScope)
+			ThrowSemanticError(
+				"class template member definition owner was not found while resolving " +
+				program_->names.Get(definition.nested_owner_path.empty() ? 0 :
+					definition.nested_owner_path.back()));
+		ScopeId definition_scope = make_definition_scope(actual_owner);
+		const NodeId node = definition.declaration;
+
+		if (arena_->IsTag(node, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION))
+		{
+			const bool explicit_member =
+				definition.concrete_owner != kNoBinding;
+			ScopedCounterIncrement member_replay(
+				&class_template_member_replay_depth_);
+			ScopedCounterIncrement explicit_replay(
+				&explicit_member_template_replay_depth_, explicit_member);
+			AnalyzeTemplate(node, definition_scope, ACCESS_PUBLIC);
+		}
+		else if (arena_->IsTag(node, ::cppgm::syntax::STAG_FUNCTION_DEFINITION))
+			AnalyzeFunction(node, definition_scope, root_, true);
+		else if (arena_->IsTag(node, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DEFINITION) ||
+			arena_->IsTag(node, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DECLARATION))
+			AnalyzeOutOfClassSpecialMember(node, definition_scope,
+				definition_scope, true);
+		else if (arena_->IsTag(node, ::cppgm::syntax::STAG_SIMPLE_DECLARATION))
+			AnalyzeSimple(node, definition_scope, root_, false, true, demanded);
+		else if (arena_->IsTag(node, ::cppgm::syntax::STAG_CLASS_SPECIFIER) ||
+			arena_->IsTag(node, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION))
+		{
+			const NodeId structure = FindChild(node, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+			const NameId terminal_name = structure == kNoNode ?
+				program_->names.UseInterned(arena_->PayloadId(node)) :
+				StructuredNamePath(structure).Last();
+			const std::string terminal = program_->names.Get(terminal_name);
+			(void)AnalyzeClass(node, definition_scope, std::string(), false,
+				terminal, actual_owner, 0, true);
+		}
+		else ThrowSemanticError(
+			"unsupported class template member definition");
+	}
+}
+
+void Analyzer::QueueClassTemplateMemberDefinitions(
+	std::size_t pattern, BindingId specialization)
+{
+	if (pattern >= class_templates_.size() || specialization == kNoBinding)
+		ThrowInternalCompilerError("invalid class template member demand");
+	if (class_template_member_definition_demand_states_.size() <= specialization)
+		class_template_member_definition_demand_states_.resize(
+			static_cast<std::size_t>(specialization) + 1, 0);
+	std::uint8_t& state =
+		class_template_member_definition_demand_states_[specialization];
+	if ((state & 1U) == 0 || (state & 2U) != 0) return;
+	const std::size_t applied =
+		specialization <
+			class_template_demanded_member_definition_counts_.size() ?
+		class_template_demanded_member_definition_counts_[specialization] : 0;
+	if (applied >=
+		class_templates_[pattern].demanded_member_definitions.size()) return;
+	state |= 2U;
+	demanded_class_template_member_definitions_.push_back(specialization);
+	++demand_worklist_pushes_;
+}
+
+void Analyzer::DemandClassTemplateMemberDefinitions(EntityId entity)
+{
+	for (std::size_t depth = 0; entity != kNoEntity &&
+		depth <= program_->entities.size(); ++depth)
+	{
+		if (entity >= program_->entities.size())
+			ThrowInternalCompilerError("invalid class template member demand entity");
+		if (entity >= class_template_pattern_by_entity_.size() ||
+			class_template_pattern_by_entity_[entity] == kNoDumpEdge)
+		{
+			entity = program_->entities[entity].enclosing_class;
+			continue;
+		}
+		const std::size_t pattern = class_template_pattern_by_entity_[entity];
+		if (pattern >= class_templates_.size())
+			ThrowInternalCompilerError("invalid class template member demand owner");
+		const BindingId specialization = program_->entities[entity].declaration;
+		if (specialization == kNoBinding) return;
+		if (class_template_member_definition_demand_states_.size() <= specialization)
+			class_template_member_definition_demand_states_.resize(
+				static_cast<std::size_t>(specialization) + 1, 0);
+		class_template_member_definition_demand_states_[specialization] |= 1U;
+		QueueClassTemplateMemberDefinitions(pattern, specialization);
+		return;
+	}
+}
+
+void Analyzer::MarkClassTemplateSpecializationUse(EntityId entity)
+{
+	for (std::size_t depth = 0; entity != kNoEntity &&
+		depth <= program_->entities.size(); ++depth)
+	{
+		if (entity >= program_->entities.size())
+			ThrowInternalCompilerError("invalid class template use entity");
+		if (entity < class_template_pattern_by_entity_.size() &&
+			class_template_pattern_by_entity_[entity] != kNoDumpEdge)
+		{
+			const BindingId specialization =
+				program_->entities[entity].declaration;
+			if (specialization == kNoBinding) return;
+			if (class_template_specialization_use_states_.size() <= specialization)
+				class_template_specialization_use_states_.resize(
+					static_cast<std::size_t>(specialization) + 1, 0);
+			class_template_specialization_use_states_[specialization] = 1;
+			return;
+		}
+		entity = program_->entities[entity].enclosing_class;
+	}
+}
+
+void Analyzer::ApplyDemandedClassTemplateMemberDefinitions(
+	BindingId specialization)
+{
+	if (specialization == kNoBinding ||
+		specialization >= program_->bindings.size())
+		ThrowInternalCompilerError("invalid demanded class template member owner");
+	const EntityId entity = EntityOf(program_->bindings[specialization].type);
+	if (entity == kNoEntity || entity >= class_template_pattern_by_entity_.size())
+		ThrowInternalCompilerError("demanded class template member has no entity");
+	const std::size_t pattern = class_template_pattern_by_entity_[entity];
+	if (pattern == kNoDumpEdge || pattern >= class_templates_.size())
+		ThrowInternalCompilerError("demanded class template member has no pattern");
+	if (class_template_member_definition_demand_states_.size() <= specialization)
+		ThrowInternalCompilerError("class template member demand state is missing");
+	class_template_member_definition_demand_states_[specialization] &= 1U;
+	const EntityRecord& record = program_->entities[entity];
+	// See the replay loop: an explicit specialization owns its members.
+	if (record.explicit_template_specialization) return;
+	if (record.template_argument_begin == kNoBinding)
+		ThrowInternalCompilerError("demanded class template member has no arguments");
+	const std::vector<TemplateArgument> arguments = StoredTemplateArguments(
+		record.template_argument_begin, record.template_argument_count);
+	ApplyClassTemplateMemberDefinitions(
+		pattern, specialization, arguments, true);
+	QueueClassTemplateMemberDefinitions(pattern, specialization);
+}
+
+void Analyzer::MarkClassTemplatePresentation(EntityId entity)
+{
+	if (entity != kNoEntity && host_object_emission_)
+		program_->entities[entity].class_template_presentation = true;
+}
+
+void Analyzer::CompleteClassTemplateSpecialization(std::size_t index,
+	BindingId binding, const std::vector<TemplateArgument>& arguments)
+{
+	// Completing a specialization whose arguments are still dependent is a
+	// shape completion, not a layout.  The partial specialization machinery
+	// needs the members resolvable so a pattern such as
+	// `typename unique_ptr<_Tp, _Dp>::pointer` can be recorded, but a member
+	// whose type cannot be computed with the parameters standing in for types
+	// is not an error here -- libc++'s compressed-pair padding sizes its array
+	// as `sizeof(_ToPad) - __datasizeof_v<_ToPad>`.  Mark the completion so
+	// such a member can stand in too; every concrete specialization is
+	// completed separately and computes its own.
+	ScopedCounterIncrement dependent_shape(
+		&dependent_shape_completion_depth_,
+		ClassTemplateArgumentsHaveDependentShape(*program_, arguments));
+	if (index >= class_templates_.size())
+		ThrowInternalCompilerError("invalid class template completion pattern");
+	if (class_template_specialization_states_.size() <= binding)
+		class_template_specialization_states_.resize(
+			static_cast<std::size_t>(binding) + 1, 0);
+	if (class_template_specialization_states_[binding] != 0 &&
+		class_template_specialization_states_[binding] !=
+			kClassTemplateCompletionPendingDefinition) return;
+
+	// Pattern storage is stable across re-entrant publication of nested
+	// templates, so replay borrows the one published pattern rather than copying
+	// its growing specialization and member-definition sequences.
+	ClassTemplatePattern& pattern = class_templates_[index];
+	if ((!HasTrailingTemplateParameterPack(pattern.parameters) &&
+		 arguments.size() != pattern.parameters.size()) ||
+		(HasTrailingTemplateParameterPack(pattern.parameters) &&
+		 arguments.size() < FixedTemplateParameterCount(pattern.parameters)))
+		ThrowInternalCompilerError("class template completion argument mismatch");
+	if (CompleteHostedTraitTemplateSpecialization(index, binding, arguments)) return;
+	FunctionTemplateDeduction refreshed(pattern.parameters);
+	const std::size_t selected_partial = SelectClassTemplatePartial(
+		pattern, arguments, &refreshed);
+	ClassTemplatePartialSelection& selection =
+		EnsureClassTemplatePartialSelection(binding);
+	selection.pattern = selected_partial == NoTemplatePattern() ?
+		kNoDumpEdge : static_cast<std::uint32_t>(selected_partial);
+	selection.revision = selected_partial == NoTemplatePattern() ? 0 :
+		pattern.partial_specializations[selected_partial].revision;
+	selection.bindings.fixed_arguments.swap(refreshed.fixed_arguments);
+	selection.bindings.pack_arguments.swap(refreshed.pack_arguments);
+	selection.bindings.pack_deduction_positions.swap(
+		refreshed.pack_deduction_positions);
+	selection.bindings.pack_deduction_started.swap(
+		refreshed.pack_deduction_started);
+	NodeId declaration = pattern.declaration;
+	ScopeId template_scope = kNoScope;
+	if (selected_partial != NoTemplatePattern())
+	{
+		if (selected_partial >= pattern.partial_specializations.size())
+			ThrowInternalCompilerError(
+				"selected class partial completion owner is invalid");
+		ClassTemplatePartialPattern& selected =
+			pattern.partial_specializations[selected_partial];
+		if ((arena_->Flags(selected.declaration) &
+			SYNTAX_FLAG_DEFINITION) == 0)
+		{
+			class_template_specialization_states_[binding] =
+				kClassTemplateCompletionPendingDefinition;
+			return;
+		}
+		const FunctionTemplateDeduction& bindings = selection.bindings;
+		if (bindings.fixed_arguments.size() != selected.parameters.size() ||
+			bindings.pack_arguments.size() != selected.parameters.size())
+			ThrowInternalCompilerError(
+				"selected class partial substitution shape is invalid");
+		template_scope = NewScope(selected.lexical_scope,
+			SCOPE_TEMPLATE_PARAMETERS, 0,
+			ScopePrefixId(selected.lexical_scope));
+		for (std::size_t parameter = 0;
+			parameter < selected.parameters.size(); ++parameter)
+			if (selected.parameters[parameter].pack)
+				BindTemplateArgumentPack(template_scope,
+					selected.parameters[parameter],
+					bindings.pack_arguments[parameter], 0,
+					bindings.pack_arguments[parameter].size());
+			else BindTemplateArgument(template_scope,
+				selected.parameters[parameter],
+				bindings.fixed_arguments[parameter]);
+		declaration = selected.declaration;
+	}
+	else
+	{
+		if (!pattern.defined)
+		{
+			class_template_specialization_states_[binding] =
+				kClassTemplateCompletionPendingDefinition;
+			return;
+		}
+		template_scope = BindClassTemplateArguments(pattern, arguments);
+	}
+	class_template_specialization_states_[binding] = 1;
+	const EntityId specialization_entity =
+		EntityOf(program_->bindings[binding].type);
+	if (specialization_entity == kNoEntity || specialization_entity >=
+		program_->entities.size())
+		ThrowInternalCompilerError("class specialization has no canonical entity");
+	// initializer_list shells have their ABI size installed before the standard
+	// header's definition is available.  Reopen that provisional layout for the
+	// single definition replay so its data-member offsets come from the ordinary
+	// class layout pass rather than retaining their zero-initialized shell values.
+	if (pattern.initializer_list_template)
+		program_->entities[specialization_entity].layout_complete = false;
+	const TemplateArgumentListId specialization_arguments =
+		program_->entities[specialization_entity].template_argument_list;
+	MarkClassTemplatePresentation(specialization_entity);
+	const std::string specialization_name = host_object_emission_ ?
+		ClassTemplateSpecializationStorageName(
+			index, specialization_arguments,
+			kEmptyTemplateArgumentPartition, stats_) :
+		semantic::presentation::RenderClassTemplateSpecializationName(
+			*program_, pattern.name, arguments.data(), arguments.size(), stats_);
+	const NameId specialization_emission_name =
+		TemplateArgumentsNeedInternalEmission(*program_, arguments) ?
+			program_->bindings[binding].name :
+			program_->names.Intern(specialization_name);
+	TypeId completed = kNoType;
+	{
+		ScopedEntitySlot access_principal(
+			&current_class_template_access_principal_, pattern.marker_entity);
+		completed = AnalyzeClass(declaration, template_scope,
+			std::string(), false, specialization_name, pattern.owner,
+			pattern.name, true, program_->bindings[binding].name,
+			specialization_emission_name);
+	}
+	const EntityId entity = EntityOf(completed);
+	MarkClassTemplatePresentation(entity);
+	if (entity != kNoEntity)
+		program_->entities[entity].template_argument_pack_begin =
+			HasTrailingTemplateParameterPack(pattern.parameters) ?
+				static_cast<std::uint32_t>(
+					FixedTemplateParameterCount(pattern.parameters)) :
+				kNoTemplateParameter;
+	if (entity == kNoEntity || !program_->entities[entity].complete)
+	{
+		if (entity != kNoEntity &&
+			program_->entities[entity].deferred_template_completion)
+		{
+			// This shell is keyed by immutable dependent shape arguments.  A
+			// concrete substitution receives a different specialization key, so
+			// repeated lookup must not retry this incomplete base completion.
+			class_template_specialization_states_[binding] = 3;
+			return;
+		}
+		ThrowInternalCompilerError("class template completion remained incomplete");
+	}
+	// A shell deferred by another specialization becomes an ordinary completed
+	// identity; preserve provenance for ordinary forward-declared arguments.
+	if (HasClassTemplateSpecializationArgument(*program_, arguments))
+		program_->entities[entity].deferred_template_completion = false;
+	class_template_specialization_states_[binding] = 2;
+	ApplyClassTemplateMemberDefinitions(index, binding, arguments);
+	bool retained_value_storage = false;
+	for (std::size_t member = 0;
+		member < pattern.demanded_member_definitions.size(); ++member)
+		if (pattern.demanded_member_definitions[member].value_use_requires_storage)
+		{
+			retained_value_storage = true;
+			break;
+		}
+	if (!CandidateSubstitutionActive() && retained_value_storage &&
+		entity < entity_conversion_functions_.size() &&
+		!entity_conversion_functions_[entity].empty())
+		DemandClassTemplateMemberDefinitions(entity);
+	QueueClassTemplateMemberDefinitions(index, binding);
+}
+void Analyzer::EnsureClassDefinition(TypeId type)
+{
+	if (type == kNoType) return;
+	const TypeRecord* record = &program_->types.Get(type);
+	while (record->kind == TYPE_QUALIFIED || record->kind == TYPE_ARRAY) {
+		type = record->child;
+		record = &program_->types.Get(type);
+	}
+	if (record->kind != TYPE_NAMED) return;
+	const EntityId entity = record->entity;
+	const BindingId declaration = program_->entities[entity].declaration;
+	const bool initializer_list_replay = IsInitializerListType(type) && (
+		declaration >= class_template_specialization_states_.size() ||
+		 class_template_specialization_states_[declaration] == 0 ||
+		 class_template_specialization_states_[declaration] ==
+		 kClassTemplateCompletionPendingDefinition);
+	if (program_->entities[entity].complete && !initializer_list_replay) return;
+	if (entity < class_template_pattern_by_entity_.size() &&
+		class_template_pattern_by_entity_[entity] != kNoDumpEdge)
+	{
+		const std::size_t index = class_template_pattern_by_entity_[entity];
+		if (index >= class_templates_.size()) ThrowInternalCompilerError(
+			"invalid class specialization owner index");
+		const ClassTemplatePattern& pattern = class_templates_[index];
+		if (entity == pattern.marker_entity) return;
+		const EntityRecord& specialization = program_->entities[entity];
+		if (specialization.template_argument_begin == kNoBinding)
+			ThrowInternalCompilerError("class specialization has no arguments");
+		const std::size_t first = specialization.template_argument_begin;
+		const std::size_t count = specialization.template_argument_count;
+		if ((!HasTrailingTemplateParameterPack(pattern.parameters) &&
+			 count != pattern.parameters.size()) ||
+			(HasTrailingTemplateParameterPack(pattern.parameters) &&
+			 count < FixedTemplateParameterCount(pattern.parameters)) ||
+			first > program_->template_arguments.size() ||
+			count > program_->template_arguments.size() - first)
+			ThrowInternalCompilerError("class specialization arguments are truncated");
+		const std::vector<TemplateArgument> arguments = StoredTemplateArguments(first, count);
+		// N3485 14.8.2/8: instantiating a class template specialization is not
+		// in the immediate context of a deduction, so a candidate substitution
+		// in progress neither excuses an error here nor gets to poison this
+		// analysis with a failure it has already recorded.  Suspend it for the
+		// duration; without this every consumer of the resulting empty type
+		// has to guard against a failure that was never about it.
+		// An explicit specialization owns its member declarations, and defining
+		// it already ran them.  Completing it again from the template machinery
+		// adds every member a second time -- libc++'s `__bitset<0, 0>` declares
+		// `__bits_per_word`, and the second pass finds the name occupied by the
+		// first.  The other two completion sites already refuse this.
+		if (!program_->entities[entity].explicit_template_specialization)
+		{
+			ScopedValueRestore<std::vector<std::uint8_t> > suspended(
+				&candidate_substitution_failures_,
+				std::vector<std::uint8_t>());
+			CompleteClassTemplateSpecialization(index, declaration, arguments);
+		}
+		return;
+	}
+	if (entity < deferred_class_definition_by_entity_.size() &&
+		deferred_class_definition_by_entity_[entity] != kNoNode)
+	{
+		const NodeId definition = deferred_class_definition_by_entity_[entity];
+		const ScopeId scope = deferred_class_scope_by_entity_[entity];
+		deferred_class_definition_by_entity_[entity] = kNoNode;
+		(void)AnalyzeClass(definition, scope, std::string(), false);
+	}
+}
+
+bool Analyzer::IsClassTemplateSpecializationEntity(
+	EntityId entity) const
+{
+	return entity != kNoEntity &&
+		program_->entities[entity].template_argument_begin != kNoBinding;
+}
+
+bool Analyzer::IsClassTemplateSpecializationContext(
+	EntityId entity) const
+{
+	for (std::size_t depth = 0;
+		entity != kNoEntity && depth < program_->entities.size(); ++depth)
+	{
+		if (IsClassTemplateSpecializationEntity(entity)) return true;
+		entity = program_->entities[entity].enclosing_class;
+	}
+	return false;
+}
+
+BindingId Analyzer::InstantiateClassTemplate(std::size_t index,
+	const std::vector<TypeId>& supplied_arguments)
+{
+	if (index >= class_templates_.size())
+		ThrowInternalCompilerError("invalid class template pattern");
+	const ClassTemplatePattern& pattern = class_templates_[index];
+	const bool has_pack = HasTrailingTemplateParameterPack(pattern.parameters);
+	if (!has_pack && supplied_arguments.size() > pattern.parameters.size())
+		return kNoBinding;
+	std::vector<TemplateArgument> canonical;
+	canonical.reserve(supplied_arguments.size());
+	for (std::size_t i = 0; i < supplied_arguments.size(); ++i)
+	{
+		if (TemplateParameterForArgument(pattern.parameters, i).kind !=
+			TEMPLATE_ARGUMENT_TYPE)
+			return kNoBinding;
+		canonical.push_back(TemplateArgument(
+			TEMPLATE_ARGUMENT_TYPE, supplied_arguments[i]));
+	}
+	return InstantiateClassTemplate(index, canonical);
+}
+
+bool Analyzer::MaterializeTemplatePartialArguments(
+	const std::vector<TemplateParameter>& primary_parameters,
+	const std::vector<TemplateParameter>& partial_parameters,
+	const std::vector<NodeId>& syntax, ScopeId lexical_scope,
+	std::vector<TemplateArgument>* arguments, std::uint8_t* state)
+{
+	if (*state == 1 || *state == 3)
+	{
+		++template_partial_shape_cache_hits_;
+		return *state == 1;
+	}
+	if (*state == 2) return false;
+	++template_partial_shape_materializations_;
+	while (function_template_shape_parameters_.size() <
+		partial_parameters.size())
+	{
+		std::ostringstream generated;
+		generated << "__function_template_parameter_shape_"
+			<< function_template_shape_parameters_.size();
+		const std::string spelling = generated.str();
+		if (stats_)
+			RecordGeneratedIdentityRender(
+				SEMANTIC_GENERATED_FUNCTION_TEMPLATE_PARAMETER_SHAPE,
+				spelling, 1);
+		const NameId name = program_->names.Intern(spelling);
+		const EntityId entity = program_->NewEntity(name,
+			NAMED_TYPENAME_PARAMETER, false, kNoType,
+			program_->GlobalScope(), name);
+		function_template_shape_parameters_.push_back(
+			program_->types.Named(entity));
+	}
+	const ScopeId shape_scope = NewScope(lexical_scope,
+		SCOPE_TEMPLATE_PARAMETERS, 0, ScopePrefixId(lexical_scope));
+	std::unordered_set<NameId> dependent_names;
+	for (std::size_t parameter = 0;
+		parameter < partial_parameters.size(); ++parameter)
+	{
+		const TemplateParameter& record = partial_parameters[parameter];
+		if (record.name == 0) continue;
+		dependent_names.insert(record.name);
+		if (record.kind == TEMPLATE_ARGUMENT_TYPE)
+			program_->AddBinding(shape_scope, BIND_TYPE_ALIAS, record.name,
+				function_template_shape_parameters_[parameter]);
+		else if (record.kind == TEMPLATE_ARGUMENT_TEMPLATE)
+			CreateTemplateTemplateParameterProxy(
+				shape_scope, record, parameter);
+		else program_->AddBinding(shape_scope, BIND_PARAMETER, record.name,
+			record.dependent_type ? program_->types.Fundamental(FUND_INT) :
+				record.value_type, false, static_cast<std::int64_t>(parameter));
+	}
+	*state = 2;
+	const auto reset_shape = [state]() { *state = 0; };
+	ScopedCleanup<decltype(reset_shape)> shape_failure(reset_shape);
+	const bool built = BuildTemplateArguments(primary_parameters, syntax,
+		shape_scope, lexical_scope, arguments, true, &dependent_names);
+	shape_failure.Release();
+	if (!built || arguments->empty())
+	{
+		arguments->clear();
+		// Pattern lookup is fixed at the partial declaration's lexical point;
+		// a failed typed shape is therefore a complete negative cache key.
+		*state = 3;
+		return false;
+	}
+	*state = 1;
+	return true;
+}
+
+// A name bound in a partial specialization's shape scope resolves to one of
+// the generated shape placeholders rather than to a real argument.  Callers
+// that need a value from it -- sizeof... over a pack, above all -- have to
+// treat it as dependent instead of as missing.
+bool Analyzer::NamesTemplateParameterShape(ScopeId scope, NameId name)
+{
+	if (function_template_shape_parameters_.empty()) return false;
+	const LookupResult found = LookupName(scope, name, LOOKUP_TYPE);
+	if (found.type == kNoType) return false;
+	for (std::size_t i = 0;
+		i < function_template_shape_parameters_.size(); ++i)
+		if (function_template_shape_parameters_[i] == found.type) return true;
+	return false;
+}
+
+bool Analyzer::DeduceTemplatePartialArgument(
+	const TemplateArgument& pattern, const TemplateArgument& argument,
+	const std::vector<TemplateParameter>& parameters,
+	FunctionTemplateDeduction* deduced) const
+{
+	++template_partial_deduction_visits_;
+	if (pattern.kind != argument.kind) return false;
+	if (pattern.IsNondeduced()) return true;
+	std::size_t dependent = parameters.size();
+	if (pattern.kind == TEMPLATE_ARGUMENT_TYPE)
+	{
+		for (std::size_t i = 0;
+			i < function_template_shape_parameters_.size() &&
+			i < parameters.size(); ++i)
+			if (pattern.type == function_template_shape_parameters_[i])
+			{
+				dependent = i;
+				break;
+			}
+	}
+	else if (pattern.IsDependent()) dependent = pattern.dependent_parameter;
+	if (dependent < parameters.size())
+	{
+		if (parameters[dependent].kind != argument.kind) return false;
+		if (parameters[dependent].pack)
+		{
+			std::size_t& position =
+				deduced->pack_deduction_positions[dependent];
+			if (position < deduced->pack_arguments[dependent].size())
+			{
+				if (deduced->pack_arguments[dependent][position] != argument)
+					return false;
+			}
+			else deduced->pack_arguments[dependent].push_back(argument);
+			++position;
+			return true;
+		}
+		TemplateArgument& prior = deduced->fixed_arguments[dependent];
+		if (prior.type != kNoType && prior != argument) return false;
+		prior = argument;
+		return true;
+	}
+	if (pattern.kind == TEMPLATE_ARGUMENT_TYPE)
+		return DeduceTemplatePartialType(
+			pattern.type, argument.type, parameters, deduced);
+	if (pattern.value == argument.value &&
+		pattern.value_binding == argument.value_binding &&
+		FunctionTemplateTypeIsDependent(pattern.type))
+		return DeduceTemplatePartialType(
+			pattern.type, argument.type, parameters, deduced);
+	return pattern == argument;
+}
+
+std::size_t Analyzer::TemplatePartialPackParameter(TypeId type,
+	const std::vector<TemplateParameter>& parameters, std::size_t depth) const
+{
+	if (depth > program_->types.Size()) return parameters.size();
+	for (std::size_t i = 0;
+		i < function_template_shape_parameters_.size() &&
+		i < parameters.size(); ++i)
+		if (parameters[i].pack &&
+			type == function_template_shape_parameters_[i]) return i;
+	const TypeRecord& record = program_->types.Get(type);
+	switch (record.kind)
+	{
+	case TYPE_QUALIFIED:
+	case TYPE_POINTER:
+	case TYPE_BLOCK_POINTER:
+	case TYPE_LVALUE_REFERENCE:
+	case TYPE_RVALUE_REFERENCE:
+	case TYPE_ARRAY:
+	case TYPE_VECTOR: case TYPE_COMPLEX:
+		return TemplatePartialPackParameter(record.child, parameters, depth + 1);
+	case TYPE_BITINT: return TemplatePartialBitIntPackParameter(record, parameters);
+	case TYPE_MEMBER_POINTER:
+		return TemplatePartialMemberPointerPackParameter(
+			record, parameters, depth);
+	case TYPE_NAMED:
+	{
+		const EntityRecord& entity = program_->entities[record.entity];
+		if (entity.template_argument_begin == kNoBinding) break;
+		std::size_t found = parameters.size();
+		for (std::size_t i = 0; i < entity.template_argument_count; ++i)
+		{
+			const TemplateArgument argument = StoredTemplateArgument(
+				entity.template_argument_begin + i);
+			std::size_t candidate = parameters.size();
+			if (argument.kind == TEMPLATE_ARGUMENT_TYPE)
+				candidate = TemplatePartialPackParameter(
+					argument.type, parameters, depth + 1);
+			else if (argument.IsDependent() &&
+				argument.dependent_parameter < parameters.size() &&
+				parameters[argument.dependent_parameter].pack)
+				candidate = argument.dependent_parameter;
+			if (candidate == parameters.size()) continue;
+			if (found != parameters.size() && found != candidate)
+				return parameters.size();
+			found = candidate;
+		}
+		return found;
+	}
+	case TYPE_FUNCTION:
+	case TYPE_FUNDAMENTAL:
+	case TYPE_INVALID:
+		break;
+	}
+	return parameters.size();
+}
+
+bool Analyzer::DeduceTemplatePartialType(TypeId pattern,
+	TypeId argument, const std::vector<TemplateParameter>& parameters,
+	FunctionTemplateDeduction* deduced) const
+{
+	++template_partial_deduction_visits_;
+	if (pattern == class_template_nondeduced_type_shape_ &&
+		pattern != kNoType) return true;
+	for (std::size_t i = 0;
+		i < function_template_shape_parameters_.size() &&
+		i < parameters.size(); ++i)
+		if (pattern == function_template_shape_parameters_[i])
+			return DeduceTemplatePartialArgument(
+				TemplateArgument(TEMPLATE_ARGUMENT_TYPE, pattern),
+				TemplateArgument(TEMPLATE_ARGUMENT_TYPE, argument),
+				parameters, deduced);
+	if (!FunctionTemplateTypeIsDependent(pattern)) return pattern == argument;
+	const TypeRecord& pattern_record = program_->types.Get(pattern);
+	const TypeRecord& argument_record = program_->types.Get(argument);
+	if (pattern_record.kind == TYPE_QUALIFIED)
+	{
+		if (argument_record.kind != TYPE_QUALIFIED ||
+			(argument_record.cv & pattern_record.cv) != pattern_record.cv)
+			return false;
+		const std::uint8_t extra_cv = static_cast<std::uint8_t>(
+			argument_record.cv & ~pattern_record.cv);
+		TypeId adjusted = argument_record.child;
+		if (extra_cv != CV_NONE)
+			adjusted = program_->types.Qualify(adjusted, extra_cv);
+		return DeduceTemplatePartialType(pattern_record.child,
+			adjusted, parameters, deduced);
+	}
+	if (pattern_record.kind != argument_record.kind) return false;
+	switch (pattern_record.kind)
+	{
+	case TYPE_POINTER:
+	case TYPE_BLOCK_POINTER:
+	case TYPE_LVALUE_REFERENCE:
+	case TYPE_RVALUE_REFERENCE: case TYPE_COMPLEX:
+		return DeduceTemplatePartialType(pattern_record.child,
+			argument_record.child, parameters, deduced);
+	case TYPE_ARRAY:
+	{
+		if (pattern_record.dependent_bound_parameter != kNoTemplateParameter)
+		{
+			const std::size_t dependent =
+				pattern_record.dependent_bound_parameter;
+			if (dependent >= parameters.size() ||
+				parameters[dependent].kind != TEMPLATE_ARGUMENT_INTEGRAL ||
+				(argument_record.bound == 0 &&
+				 argument_record.dependent_bound_parameter ==
+					kNoTemplateParameter))
+				return false;
+			const TemplateArgument pattern_bound(TEMPLATE_ARGUMENT_INTEGRAL,
+				pattern_record.dependent_bound_type, 0,
+				static_cast<std::uint32_t>(dependent));
+			const TemplateArgument argument_bound(TEMPLATE_ARGUMENT_INTEGRAL,
+				argument_record.dependent_bound_parameter == kNoTemplateParameter ?
+					pattern_record.dependent_bound_type :
+					argument_record.dependent_bound_type,
+				static_cast<std::int64_t>(argument_record.bound),
+				argument_record.dependent_bound_parameter);
+			if (!DeduceTemplatePartialArgument(pattern_bound, argument_bound,
+				parameters, deduced)) return false;
+		}
+		else if (argument_record.dependent_bound_parameter !=
+			kNoTemplateParameter ||
+			pattern_record.bound != argument_record.bound) return false;
+		return DeduceTemplatePartialType(pattern_record.child,
+			argument_record.child, parameters, deduced);
+	}
+	case TYPE_VECTOR:
+		return DeduceTemplatePartialVectorType(
+			pattern_record, argument_record, parameters, deduced);
+	case TYPE_BITINT:
+		return DeduceTemplatePartialBitIntType(
+			pattern_record, argument_record, parameters, deduced);
+	case TYPE_FUNCTION:
+	{
+		const TypeId* pattern_types = program_->types.Parameters(pattern);
+		const TypeId* argument_types = program_->types.Parameters(argument);
+		const std::size_t pack_parameter = pattern_record.parameter_count == 0 ?
+			parameters.size() : TemplatePartialPackParameter(
+				pattern_types[pattern_record.parameter_count - 1], parameters);
+		const bool has_pack = pack_parameter < parameters.size();
+		const std::size_t fixed_parameters = pattern_record.parameter_count -
+			(has_pack ? 1 : 0);
+		if ((!has_pack && pattern_record.parameter_count !=
+			 argument_record.parameter_count) ||
+			(has_pack && argument_record.parameter_count < fixed_parameters) ||
+			(!has_pack &&
+			 pattern_record.variadic != argument_record.variadic) ||
+			pattern_record.cv != argument_record.cv ||
+			pattern_record.ref_qualifier != argument_record.ref_qualifier ||
+			!DeduceTemplatePartialType(pattern_record.child,
+				argument_record.child, parameters, deduced)) return false;
+		for (std::size_t i = 0; i < fixed_parameters; ++i)
+			if (!DeduceTemplatePartialType(pattern_types[i], argument_types[i],
+				parameters, deduced)) return false;
+		if (has_pack)
+		{
+			const std::size_t prior_size =
+				deduced->pack_arguments[pack_parameter].size();
+			const bool prior_started =
+				deduced->pack_deduction_started[pack_parameter] != 0;
+			deduced->pack_deduction_positions[pack_parameter] = 0;
+			for (std::size_t i = fixed_parameters;
+				i < argument_record.parameter_count; ++i)
+				if (!DeduceTemplatePartialType(
+					pattern_types[pattern_record.parameter_count - 1],
+					argument_types[i], parameters, deduced)) return false;
+			if ((prior_started &&
+				 deduced->pack_arguments[pack_parameter].size() != prior_size) ||
+				deduced->pack_deduction_positions[pack_parameter] !=
+					deduced->pack_arguments[pack_parameter].size()) return false;
+			deduced->pack_deduction_started[pack_parameter] = 1;
+		}
+		return true;
+	}
+	case TYPE_MEMBER_POINTER:
+		return DeduceTemplatePartialMemberPointerType(
+			pattern_record, argument_record, parameters, deduced);
+	case TYPE_NAMED:
+	{
+		const EntityId pattern_entity = pattern_record.entity;
+		const EntityId argument_entity = argument_record.entity;
+		if (pattern_entity >= class_template_pattern_by_entity_.size() ||
+			argument_entity >= class_template_pattern_by_entity_.size())
+			return false;
+		const std::uint32_t class_pattern =
+			class_template_pattern_by_entity_[pattern_entity];
+		const std::uint32_t argument_pattern =
+			class_template_pattern_by_entity_[argument_entity];
+		if (class_pattern == kNoDumpEdge || argument_pattern == kNoDumpEdge ||
+			class_pattern >= class_templates_.size() ||
+			argument_pattern >= class_templates_.size()) return false;
+		const ClassTemplatePattern& pattern_template =
+			class_templates_[class_pattern];
+		if (pattern_template.template_parameter_proxy)
+		{
+			const std::size_t ordinal =
+				pattern_template.template_parameter_ordinal;
+			if (ordinal >= parameters.size() ||
+				parameters[ordinal].kind != TEMPLATE_ARGUMENT_TEMPLATE)
+				return false;
+			const ClassTemplatePattern& argument_template =
+				class_templates_[argument_pattern];
+			if (!TemplateTemplateParameterMatches(
+				parameters[ordinal].template_parameters,
+				argument_template.parameters)) return false;
+			const TypeId argument_marker = program_->entities[
+				argument_template.marker_entity].type;
+			if (!DeduceTemplatePartialArgument(
+				TemplateArgument(TEMPLATE_ARGUMENT_TEMPLATE,
+					program_->entities[pattern_template.marker_entity].type,
+					0, static_cast<std::uint32_t>(ordinal)),
+				TemplateArgument(TEMPLATE_ARGUMENT_TEMPLATE, argument_marker),
+				parameters, deduced)) return false;
+		}
+		else if (class_pattern != argument_pattern) return false;
+		const EntityRecord& pattern_owner = program_->entities[pattern_entity];
+		const EntityRecord& argument_owner = program_->entities[argument_entity];
+		if (pattern_owner.template_argument_begin == kNoBinding ||
+			argument_owner.template_argument_begin == kNoBinding) return false;
+		const std::vector<TemplateParameter>& class_parameters =
+			pattern_template.parameters;
+		std::size_t pattern_index = 0, argument_index = 0;
+		while (pattern_index < pattern_owner.template_argument_count)
+		{
+			const TemplateArgument item = StoredTemplateArgument(
+				pattern_owner.template_argument_begin + pattern_index);
+			std::size_t dependent = parameters.size();
+			if (item.kind == TEMPLATE_ARGUMENT_TYPE)
+			{
+				for (std::size_t i = 0;
+					i < function_template_shape_parameters_.size() &&
+					i < parameters.size(); ++i)
+					if (item.type == function_template_shape_parameters_[i])
+					{
+						dependent = i;
+						break;
+					}
+				if (dependent == parameters.size())
+					dependent = TemplatePartialPackParameter(
+						item.type, parameters);
+			}
+			else if (item.IsDependent()) dependent = item.dependent_parameter;
+			const bool expansion = item.pack_expansion &&
+				dependent < parameters.size() &&
+				parameters[dependent].pack && !class_parameters.empty() &&
+				TemplateParameterForArgument(
+					class_parameters, pattern_index).pack;
+			if (expansion)
+			{
+				const std::size_t remaining =
+					pattern_owner.template_argument_count - pattern_index - 1;
+				if (argument_index + remaining >
+					argument_owner.template_argument_count)
+					return false;
+				const std::size_t last =
+					argument_owner.template_argument_count - remaining;
+				const std::size_t prior_size =
+					deduced->pack_arguments[dependent].size();
+				const bool prior_started =
+					deduced->pack_deduction_started[dependent] != 0;
+				deduced->pack_deduction_positions[dependent] = 0;
+				while (argument_index < last)
+					if (!DeduceTemplatePartialArgument(item,
+						StoredTemplateArgument(
+							argument_owner.template_argument_begin +
+							argument_index++), parameters,
+						deduced)) return false;
+				if ((prior_started &&
+					 deduced->pack_arguments[dependent].size() != prior_size) ||
+					deduced->pack_deduction_positions[dependent] !=
+						deduced->pack_arguments[dependent].size()) return false;
+				deduced->pack_deduction_started[dependent] = 1;
+				++pattern_index;
+				continue;
+			}
+			if (argument_index >= argument_owner.template_argument_count)
+				return false;
+			const TemplateArgument argument_item = StoredTemplateArgument(
+				argument_owner.template_argument_begin + argument_index);
+			if (argument_item.pack_expansion ||
+				!DeduceTemplatePartialArgument(
+					item, argument_item, parameters, deduced)) return false;
+			++pattern_index;
+			++argument_index;
+		}
+		return argument_index == argument_owner.template_argument_count;
+	}
+	case TYPE_FUNDAMENTAL:
+	case TYPE_INVALID:
+	case TYPE_QUALIFIED:
+		return pattern == argument;
+	}
+	return false;
+}
+
+bool Analyzer::MatchTemplatePartialArguments(
+	const std::vector<TemplateParameter>& parameters,
+	const std::vector<TemplateArgument>& pattern_arguments,
+	const std::vector<TemplateArgument>& arguments,
+	FunctionTemplateDeduction* bindings) const
+{
+	*bindings = FunctionTemplateDeduction(parameters);
+	std::size_t pattern_index = 0, argument_index = 0;
+	while (pattern_index < pattern_arguments.size())
+	{
+		const TemplateArgument& item = pattern_arguments[pattern_index];
+		std::size_t dependent = parameters.size();
+		if (item.kind == TEMPLATE_ARGUMENT_TYPE)
+		{
+			for (std::size_t i = 0;
+				i < function_template_shape_parameters_.size() &&
+				i < parameters.size(); ++i)
+				if (item.type == function_template_shape_parameters_[i])
+				{
+					dependent = i;
+					break;
+				}
+			if (dependent == parameters.size())
+				dependent = TemplatePartialPackParameter(item.type, parameters);
+		}
+		else if (item.IsDependent()) dependent = item.dependent_parameter;
+		const bool expansion = item.pack_expansion &&
+			dependent < parameters.size() &&
+			parameters[dependent].pack;
+		if (expansion)
+		{
+			const std::size_t remaining =
+				pattern_arguments.size() - pattern_index - 1;
+			if (argument_index + remaining > arguments.size()) return false;
+			const std::size_t last = arguments.size() - remaining;
+			const std::size_t prior_size =
+				bindings->pack_arguments[dependent].size();
+			const bool prior_started =
+				bindings->pack_deduction_started[dependent] != 0;
+			bindings->pack_deduction_positions[dependent] = 0;
+			while (argument_index < last)
+				if (!DeduceTemplatePartialArgument(item,
+					arguments[argument_index++], parameters, bindings))
+					return false;
+			if ((prior_started &&
+				 bindings->pack_arguments[dependent].size() != prior_size) ||
+				bindings->pack_deduction_positions[dependent] !=
+					bindings->pack_arguments[dependent].size()) return false;
+			bindings->pack_deduction_started[dependent] = 1;
+			++pattern_index;
+			continue;
+		}
+		if (argument_index >= arguments.size() ||
+			arguments[argument_index].pack_expansion ||
+			!DeduceTemplatePartialArgument(item, arguments[argument_index],
+				parameters, bindings)) return false;
+		++pattern_index;
+		++argument_index;
+	}
+	if (argument_index != arguments.size()) return false;
+	for (std::size_t parameter = 0; parameter < parameters.size(); ++parameter)
+		if (!parameters[parameter].pack &&
+			bindings->fixed_arguments[parameter].type == kNoType)
+			return false;
+	return true;
+}
+
+int Analyzer::CompareTemplatePartialPatterns(
+	const std::vector<TemplateParameter>& left_parameters,
+	const std::vector<TemplateArgument>& left_arguments,
+	const std::vector<TemplateParameter>& right_parameters,
+	const std::vector<TemplateArgument>& right_arguments) const
+{
+	++template_partial_order_comparisons_;
+	FunctionTemplateDeduction left_from_right(left_parameters);
+	FunctionTemplateDeduction right_from_left(right_parameters);
+	const bool left_accepts_right = MatchTemplatePartialArguments(
+		left_parameters, left_arguments, right_arguments, &left_from_right);
+	const bool right_accepts_left = MatchTemplatePartialArguments(
+		right_parameters, right_arguments, left_arguments, &right_from_left);
+	if (left_accepts_right == right_accepts_left) return 0;
+	return right_accepts_left ? 1 : -1;
+}
+
+std::size_t Analyzer::SelectClassTemplatePartial(
+	ClassTemplatePattern& pattern,
+	const std::vector<TemplateArgument>& arguments,
+	FunctionTemplateDeduction* selected_bindings)
+{
+	if (!ClassTemplateArgumentsAllowPartialSelection(*program_, arguments))
+		return NoTemplatePattern();
+	std::vector<std::size_t> matches;
+	for (std::size_t candidate_index = 0;
+		candidate_index < pattern.partial_specializations.size();
+		++candidate_index)
+	{
+		++template_partial_candidates_;
+		ClassTemplatePartialPattern& candidate =
+			pattern.partial_specializations[candidate_index];
+		if (!MaterializeTemplatePartialArguments(pattern.parameters,
+			candidate.parameters, candidate.arguments, candidate.lexical_scope,
+			&candidate.canonical_arguments,
+			&candidate.canonical_argument_state))
+			continue;
+		FunctionTemplateDeduction bindings(candidate.parameters);
+		if (!MatchTemplatePartialArguments(candidate.parameters,
+			candidate.canonical_arguments, arguments, &bindings)) continue;
+		bool replay_nondeduced = candidate.concrete_replay_required;
+		for (std::size_t argument = 0;
+			argument < candidate.canonical_arguments.size(); ++argument)
+			if (candidate.canonical_arguments[argument].kind ==
+					TEMPLATE_ARGUMENT_TYPE &&
+				candidate.canonical_arguments[argument].type ==
+					class_template_nondeduced_type_shape_)
+				replay_nondeduced = true;
+		if (replay_nondeduced)
+		{
+			const ScopeId substitution_scope = NewScope(
+				candidate.lexical_scope, SCOPE_TEMPLATE_PARAMETERS, 0,
+				ScopePrefixId(candidate.lexical_scope));
+			for (std::size_t parameter = 0;
+				parameter < candidate.parameters.size(); ++parameter)
+				if (candidate.parameters[parameter].pack)
+					BindTemplateArgumentPack(substitution_scope,
+						candidate.parameters[parameter],
+						bindings.pack_arguments[parameter], 0,
+						bindings.pack_arguments[parameter].size());
+				else BindTemplateArgument(substitution_scope,
+					candidate.parameters[parameter],
+					bindings.fixed_arguments[parameter]);
+			std::vector<TemplateArgument> replayed;
+			bool valid = false;
+			{
+				ScopedContainerPush<std::vector<std::uint8_t> > substitution(
+					&candidate_substitution_failures_, 0);
+				valid = BuildTemplateArguments(pattern.parameters,
+					candidate.arguments, substitution_scope,
+					candidate.lexical_scope, &replayed);
+				const bool substitution_failed = CandidateSubstitutionFailed();
+				if (substitution_failed) valid = false;
+			}
+			if (!valid || replayed != arguments) continue;
+		}
+		matches.push_back(candidate_index);
+	}
+	if (matches.empty()) return NoTemplatePattern();
+	std::size_t selected = matches.size();
+	for (std::size_t i = 0; i < matches.size(); ++i)
+	{
+		bool best = true;
+		for (std::size_t j = 0; j < matches.size(); ++j)
+		{
+			if (i == j) continue;
+			const ClassTemplatePartialPattern& left =
+				pattern.partial_specializations[matches[i]];
+			const ClassTemplatePartialPattern& right =
+				pattern.partial_specializations[matches[j]];
+			if (CompareTemplatePartialPatterns(left.parameters,
+				left.canonical_arguments, right.parameters,
+				right.canonical_arguments) <= 0)
+			{
+				best = false;
+				break;
+			}
+		}
+		if (!best) continue;
+		if (selected != matches.size())
+			ThrowSemanticError(
+				"ambiguous class template partial specialization");
+		selected = i;
+	}
+	if (matches.size() != 1 && selected == matches.size())
+		ThrowSemanticError(
+			"ambiguous class template partial specialization");
+	const std::size_t result = matches[
+		matches.size() == 1 ? 0 : selected];
+	const ClassTemplatePartialPattern& winner =
+		pattern.partial_specializations[result];
+	if (!MatchTemplatePartialArguments(winner.parameters,
+		winner.canonical_arguments, arguments, selected_bindings))
+		ThrowInternalCompilerError("selected class partial no longer matches");
+	return result;
+}
+
+BindingId Analyzer::ReuseClassTemplateSpecialization(
+	std::size_t index, BindingId binding)
+{
+	if (index >= class_templates_.size() || binding == kNoBinding)
+		ThrowInternalCompilerError("invalid cached class specialization");
+	const ClassTemplatePattern& pattern = class_templates_[index];
+	const bool has_pack = HasTrailingTemplateParameterPack(pattern.parameters);
+	const std::size_t fixed = FixedTemplateParameterCount(pattern.parameters);
+	const EntityId entity = EntityOf(program_->bindings[binding].type);
+	if (entity == kNoEntity)
+		ThrowInternalCompilerError("cached class specialization has no entity");
+	const EntityRecord& record = program_->entities[entity];
+	const std::size_t first = record.template_argument_begin;
+	const std::size_t count = record.template_argument_count;
+	if ((!has_pack && count != pattern.parameters.size()) ||
+		(has_pack && count < fixed) ||
+		first > program_->template_arguments.size() || count >
+			program_->template_arguments.size() - first)
+		ThrowInternalCompilerError(
+			"cached class specialization arguments are invalid");
+	const std::vector<TemplateArgument> arguments =
+		StoredTemplateArguments(first, count);
+	// An explicit specialization owns its member declarations and definitions.
+	// A lookup cache hit must not attach retained out-of-class definitions from
+	// the primary template to that independently defined class.
+	const bool explicit_specialization =
+		binding < class_template_explicit_specialization_states_.size() &&
+		class_template_explicit_specialization_states_[binding] != 0;
+	if (class_template_completion_suppressed_depth_ == 0 &&
+		!explicit_specialization &&
+		(binding >= class_template_specialization_states_.size() ||
+		 class_template_specialization_states_[binding] == 0) &&
+		ClassTemplateArgumentsAreLayoutReady(*program_, arguments))
+		CompleteClassTemplateSpecialization(index, binding, arguments);
+	if (!explicit_specialization &&
+		binding < class_template_specialization_states_.size() &&
+		class_template_specialization_states_[binding] == 2)
+		ApplyClassTemplateMemberDefinitions(index, binding, arguments);
+	if (pattern.initializer_list_template)
+		ConfigureInitializerListSpecialization(
+			program_->bindings[binding].type);
+	return binding;
+}
+
+BindingId Analyzer::InstantiateClassTemplate(std::size_t index,
+	const std::vector<TemplateArgument>& supplied_arguments)
+{
+	if (index >= class_templates_.size())
+		ThrowInternalCompilerError("invalid class template pattern");
+	ClassTemplatePattern& pattern = class_templates_[index];
+	const bool has_pack = HasTrailingTemplateParameterPack(pattern.parameters);
+	const std::size_t fixed = FixedTemplateParameterCount(pattern.parameters);
+	if (!has_pack && supplied_arguments.size() > pattern.parameters.size())
+		return kNoBinding;
+	++template_specialization_requests_;
+	const TemplateSpecializationKey request_key = CanonicalTemplateSpecializationKey(
+		index, supplied_arguments);
+	BindingId old = kNoBinding;
+	const TemplateRequestState request_state =
+		class_template_instantiations_.FindRequest(request_key, &old);
+	if (request_state == TEMPLATE_REQUEST_SUCCEEDED)
+	{
+		++template_specialization_cache_hits_;
+		return ReuseClassTemplateSpecialization(index, old);
+	}
+	if (request_state != TEMPLATE_REQUEST_NOT_STARTED)
+	{
+		++template_specialization_cache_hits_;
+		return kNoBinding;
+	}
+	ScopedTemplateRequest request_guard;
+	request_guard.Begin(&class_template_instantiations_, request_key);
+	std::vector<TemplateArgument> arguments = supplied_arguments;
+	for (std::size_t i = 0; i < arguments.size(); ++i)
+		if (arguments[i].kind !=
+			TemplateParameterForArgument(pattern.parameters, i).kind)
+			return kNoBinding;
+	ScopeId argument_scope = kNoScope;
+	if (arguments.size() < fixed)
+		argument_scope = BindClassTemplateArguments(pattern, arguments);
+	for (std::size_t i = arguments.size(); i < fixed; ++i)
+	{
+		const TemplateParameter& parameter = pattern.parameters[i];
+		if (parameter.default_argument == kNoNode) return kNoBinding;
+		NodeId source = FirstSemanticChild(parameter.default_argument);
+		if (source == kNoNode)
+			ThrowSemanticError("empty default template argument");
+		TemplateArgument argument;
+		argument.kind = parameter.kind;
+		if (parameter.kind == TEMPLATE_ARGUMENT_TYPE)
+		{
+			NodeId type_id = arena_->IsTag(source, ::cppgm::syntax::STAG_TYPE_ID) ? source :
+				FindChild(source, ::cppgm::syntax::STAG_TYPE_ID);
+			if (type_id == kNoNode) return kNoBinding;
+			argument.type = BuildTypeId(type_id, argument_scope);
+		}
+		else if (parameter.kind == TEMPLATE_ARGUMENT_TEMPLATE)
+		{
+			if (!BuildTemplateTemplateArgument(
+				source, argument_scope, parameter, &argument))
+				return kNoBinding;
+		}
+		else
+		{
+			argument.type = ResolveTemplateParameterType(
+				parameter, argument_scope);
+			ExpressionInfo expression;
+			{
+				ScopedCounterIncrement required(
+					&constant_expression_required_depth_);
+				expression = AnalyzeExpression(
+					source, argument_scope, argument.type);
+			}
+			if (!FormNonTypeTemplateArgumentValue(expression, &argument))
+				ThrowSemanticError(
+					"default non-type template argument is not constant");
+		}
+		arguments.push_back(argument);
+		BindTemplateArgument(argument_scope, parameter, argument);
+	}
+	const TemplateSpecializationKey key = CanonicalTemplateSpecializationKey(
+		index, arguments);
+	ScopedTemplateRequest specialization_guard;
+	TemplateRequestState specialization_state = TEMPLATE_REQUEST_IN_PROGRESS;
+	if (!(key == request_key))
+		specialization_state =
+			class_template_instantiations_.FindRequest(key, &old);
+	if (specialization_state == TEMPLATE_REQUEST_SUCCEEDED)
+	{
+		++template_specialization_cache_hits_;
+		request_guard.Complete(old);
+		return ReuseClassTemplateSpecialization(index, old);
+	}
+	if (!(key == request_key))
+	{
+		if (specialization_state != TEMPLATE_REQUEST_NOT_STARTED)
+		{
+			++template_specialization_cache_hits_;
+			return kNoBinding;
+		}
+		specialization_guard.Begin(&class_template_instantiations_, key);
+	}
+	if (pattern.template_parameter_proxy)
+	{
+		const std::string specialization_name = host_object_emission_ ?
+			ClassTemplateSpecializationStorageName(
+				index, key.arguments, key.partition, stats_) :
+			semantic::presentation::RenderClassTemplateSpecializationName(
+				*program_, pattern.name, arguments.data(), arguments.size(), stats_);
+		const NameId name = program_->names.Intern(specialization_name);
+		const EntityId entity = program_->NewEntity(name,
+			NAMED_TYPENAME_PARAMETER, false, kNoType, pattern.owner,
+			pattern.name);
+		program_->entities[entity].template_parameter_ordinal = pattern.template_parameter_ordinal;
+		const TypeId type = program_->entities[entity].type;
+		const BindingId binding = program_->AddBinding(pattern.owner,
+			BIND_TYPE, name, type, false, 0, NAMED_TYPENAME_PARAMETER);
+		StoreTemplateArguments(arguments,
+			&program_->entities[entity].template_argument_list,
+			&program_->entities[entity].template_argument_begin,
+			&program_->entities[entity].template_argument_count);
+		program_->entities[entity].template_argument_pack_begin =
+			HasTrailingTemplateParameterPack(pattern.parameters) ?
+				static_cast<std::uint32_t>(
+					FixedTemplateParameterCount(pattern.parameters)) :
+				kNoTemplateParameter;
+		if (class_template_pattern_by_entity_.size() <= entity)
+			class_template_pattern_by_entity_.resize(
+				static_cast<std::size_t>(entity) + 1, kNoDumpEdge);
+		class_template_pattern_by_entity_[entity] =
+			static_cast<std::uint32_t>(index);
+		if (key == request_key) request_guard.Complete(binding);
+		else
+		{
+			specialization_guard.Complete(binding);
+			request_guard.Complete(binding);
+		}
+		pattern.specialization_bindings.push_back(binding);
+		PublishClassTemplateFriendGrants(pattern, entity);
+		return binding;
+	}
+	FunctionTemplateDeduction partial_bindings(pattern.parameters);
+	const std::size_t selected_partial = SelectClassTemplatePartial(
+		pattern, arguments, &partial_bindings);
+
+	const std::string specialization_name = host_object_emission_ ?
+		ClassTemplateSpecializationStorageName(
+			index, key.arguments, key.partition, stats_) :
+		semantic::presentation::RenderClassTemplateSpecializationName(
+			*program_, pattern.name, arguments.data(), arguments.size(), stats_);
+	ScopeId template_scope = BindClassTemplateArguments(pattern, arguments);
+	NodeId selected_declaration = pattern.declaration;
+	if (selected_partial != NoTemplatePattern())
+	{
+		const ClassTemplatePartialPattern& selected =
+			pattern.partial_specializations[selected_partial];
+		template_scope = NewScope(selected.lexical_scope,
+			SCOPE_TEMPLATE_PARAMETERS, 0, ScopePrefixId(selected.lexical_scope));
+		for (std::size_t parameter = 0;
+			parameter < selected.parameters.size(); ++parameter)
+			if (selected.parameters[parameter].pack)
+				BindTemplateArgumentPack(template_scope,
+					selected.parameters[parameter],
+					partial_bindings.pack_arguments[parameter], 0,
+					partial_bindings.pack_arguments[parameter].size());
+			else BindTemplateArgument(template_scope,
+				selected.parameters[parameter],
+				partial_bindings.fixed_arguments[parameter]);
+		selected_declaration = selected.declaration;
+	}
+	const NameId specialization_lookup_name = program_->names.Intern(
+		ClassTemplateSpecializationScopeName(
+			index, pattern.specialization_bindings.size(), stats_));
+	TypeId shell = kNoType;
+	{
+		ScopedEntitySlot access_principal(
+			&current_class_template_access_principal_, pattern.marker_entity);
+		shell = AnalyzeClass(selected_declaration, template_scope,
+			std::string(), false, specialization_name, pattern.owner,
+			pattern.name, false,
+			specialization_lookup_name);
+	}
+	const EntityId entity = EntityOf(shell);
+	MarkClassTemplatePresentation(entity);
+	if (entity == kNoEntity || program_->entities[entity].declaration == kNoBinding)
+		ThrowInternalCompilerError("class template shell has no declaration");
+	if (class_template_pattern_by_entity_.size() <= entity)
+		class_template_pattern_by_entity_.resize(
+			static_cast<std::size_t>(entity) + 1, kNoDumpEdge);
+	class_template_pattern_by_entity_[entity] =
+		static_cast<std::uint32_t>(index);
+	EntityRecord& specialization = program_->entities[entity];
+	specialization.template_argument_pack_begin =
+		HasTrailingTemplateParameterPack(pattern.parameters) ?
+			static_cast<std::uint32_t>(
+				FixedTemplateParameterCount(pattern.parameters)) :
+			kNoTemplateParameter;
+	specialization.deferred_template_completion =
+		!specialization.complete &&
+		!ClassTemplateArgumentsAreLayoutReady(*program_, arguments);
+	if (specialization.template_argument_begin == kNoBinding)
+		StoreTemplateArguments(arguments,
+			&specialization.template_argument_list,
+			&specialization.template_argument_begin,
+			&specialization.template_argument_count);
+	const BindingId binding = program_->entities[entity].declaration;
+	if (key == request_key) request_guard.Complete(binding);
+	else
+	{
+		specialization_guard.Complete(binding);
+		request_guard.Complete(binding);
+	}
+	pattern.specialization_bindings.push_back(binding);
+	PublishClassTemplateFriendGrants(pattern, entity);
+	if (class_template_specialization_states_.size() <= binding)
+		class_template_specialization_states_.resize(
+			static_cast<std::size_t>(binding) + 1, 0);
+	if (selected_partial != NoTemplatePattern() && selected_partial >
+		std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many class template partial patterns");
+	ClassTemplatePartialSelection& selection =
+		EnsureClassTemplatePartialSelection(binding);
+	selection.pattern = selected_partial == NoTemplatePattern() ?
+		kNoDumpEdge : static_cast<std::uint32_t>(selected_partial);
+	selection.revision = selected_partial == NoTemplatePattern() ? 0 :
+		pattern.partial_specializations[selected_partial].revision;
+	if (selected_partial != NoTemplatePattern())
+	{
+		selection.bindings.fixed_arguments.swap(
+			partial_bindings.fixed_arguments);
+		selection.bindings.pack_arguments.swap(
+			partial_bindings.pack_arguments);
+		selection.bindings.pack_deduction_positions.swap(
+			partial_bindings.pack_deduction_positions);
+		selection.bindings.pack_deduction_started.swap(
+			partial_bindings.pack_deduction_started);
+	}
+	if (class_template_completion_suppressed_depth_ == 0 &&
+		ClassTemplateArgumentsAreLayoutReady(*program_, arguments))
+		CompleteClassTemplateSpecialization(index, binding, arguments);
+	if (pattern.initializer_list_template)
+		ConfigureInitializerListSpecialization(shell);
+	return binding;
+}
+
+void Analyzer::UpgradeClassTemplateSpecializations(std::size_t index)
+{
+	if (index >= class_templates_.size())
+		ThrowInternalCompilerError("invalid class template upgrade");
+	// A forward-declaration upgrade is one bounded pass over the shells that
+	// existed when the definition arrived. Pattern ownership itself is stable;
+	// only the mutable shell sequence needs a work snapshot.
+	const std::vector<BindingId> specializations =
+		class_templates_[index].specialization_bindings;
+	for (std::size_t i = 0; i < specializations.size(); ++i)
+	{
+		const BindingId binding = specializations[i];
+		if (binding >= class_template_specialization_states_.size() ||
+			class_template_specialization_states_[binding] !=
+				kClassTemplateCompletionPendingDefinition)
+			continue;
+		std::vector<TemplateArgument> arguments;
+		const EntityId entity = EntityOf(program_->bindings[binding].type);
+		if (entity == kNoEntity)
+			ThrowInternalCompilerError("class specialization has no entity");
+		const EntityRecord& record = program_->entities[entity];
+		const std::size_t first = record.template_argument_begin;
+		const std::size_t count = record.template_argument_count;
+		const ClassTemplatePattern& pattern = class_templates_[index];
+		if ((!HasTrailingTemplateParameterPack(pattern.parameters) &&
+			 count != pattern.parameters.size()) ||
+			(HasTrailingTemplateParameterPack(pattern.parameters) && count <
+			 FixedTemplateParameterCount(pattern.parameters)) ||
+			first > program_->template_arguments.size() || count >
+				program_->template_arguments.size() - first)
+			ThrowInternalCompilerError("class specialization arguments are invalid");
+		arguments = StoredTemplateArguments(first, count);
+		if (ClassTemplateArgumentsAreLayoutReady(*program_, arguments))
+			CompleteClassTemplateSpecialization(index, binding, arguments);
+	}
+}
+void Analyzer::AnalyzeExplicitInstantiation(NodeId node,
+	ScopeId scope, bool definition)
+{
+	const NodeId target = FirstSemanticChild(node);
+	if (target == kNoNode)
+		ThrowSemanticError("explicit instantiation has no target");
+	if (!arena_->IsTag(target, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION) &&
+		!arena_->IsTag(target, ::cppgm::syntax::STAG_CLASS_SPECIFIER))
+	{
+		if (AnalyzeExplicitFunctionInstantiation(target, scope, definition))
+			return;
+		if (AnalyzeExplicitVariableInstantiation(target, scope, definition))
+			return;
+		ThrowSemanticError(
+			"explicit instantiation target is not a supported template");
+	}
+	NamePath base; std::vector<NodeId> argument_syntax;
+	if (!CollectExplicitTemplateArguments(target, &base, &argument_syntax))
+		ThrowSemanticError("explicit class instantiation requires a simple-template-id");
+	const std::size_t pattern_index = FindClassTemplate(scope, base);
+	if (pattern_index == NoTemplatePattern())
+		ThrowSemanticError("explicit class instantiation target was not found");
+	const ClassTemplatePattern& pattern = class_templates_[pattern_index];
+	std::vector<TemplateArgument> arguments;
+	if (!BuildTemplateArguments(pattern.parameters, argument_syntax, scope,
+		pattern.lexical_scope, &arguments))
+		ThrowSemanticError("invalid explicit class template arguments");
+	const ScopeKind scope_kind = program_->KindOfScope(scope);
+	if (scope_kind != SCOPE_NAMESPACE)
+		ThrowSemanticError(
+			"explicit class instantiation must appear at namespace scope");
+	const NamePath& target_path = base;
+	if (!target_path.global && target_path.Size() == 1)
+	{
+		ScopeId permitted = pattern.owner;
+		while (permitted != scope && program_->IsInlineNamespace(permitted))
+			permitted = program_->ParentScope(permitted);
+		if (permitted != scope)
+			ThrowSemanticError(
+				"unqualified explicit instantiation is in the wrong namespace");
+	}
+	else
+	{
+		bool enclosing = false;
+		for (ScopeId owner = pattern.owner; owner != kNoScope;
+			owner = program_->ParentScope(owner))
+			if (owner == scope)
+			{
+				enclosing = true;
+				break;
+			}
+		if (!enclosing)
+			ThrowSemanticError(
+				"qualified explicit instantiation is outside its namespace");
+	}
+	const NodeId target_key = FindChild(target, ::cppgm::syntax::STAG_CLASS_KEY);
+	const NodeId pattern_key = FindChild(pattern.declaration, ::cppgm::syntax::STAG_CLASS_KEY);
+	if (target_key == kNoNode || pattern_key == kNoNode ||
+		(PayloadSource(target_key) == "union") !=
+			(PayloadSource(pattern_key) == "union"))
+		ThrowSemanticError("explicit instantiation class-key mismatch");
+	const BindingId instantiated = InstantiateClassTemplate(pattern_index, arguments);
+	const TypeId type = instantiated == kNoBinding ? kNoType :
+		program_->bindings[instantiated].type;
+	if (type == kNoType)
+		ThrowSemanticError("invalid explicit class template arguments");
+	EnsureClassDefinition(type);
+	const EntityId entity = EntityOf(type);
+	if (entity == kNoEntity || !program_->entities[entity].complete)
+		ThrowSemanticError(
+			"explicit class instantiation target is incomplete");
+	const BindingId specialization = program_->entities[entity].declaration;
+	if (class_template_explicit_instantiation_states_.size() <= specialization)
+		class_template_explicit_instantiation_states_.resize(
+			static_cast<std::size_t>(specialization) + 1, 0);
+	std::uint8_t& state = class_template_explicit_instantiation_states_[specialization];
+	if (!definition)
+	{
+		if ((state & 2) != 0)
+			ThrowSemanticError(
+				"explicit instantiation declaration follows its definition");
+		state |= 1;
+		SetClassExplicitInstantiationSuppression(entity, true);
+		return;
+	}
+	if ((state & 2) != 0)
+		ThrowSemanticError(
+			"duplicate explicit class instantiation definition");
+	const bool object_output_root = (state & 1) == 0;
+	state |= 2;
+	SetClassExplicitInstantiationSuppression(entity, false);
+	const auto demand_member = [this, object_output_root](BindingId binding) {
+		if (binding == kNoBinding) return;
+		binding = program_->bindings[binding].canonical;
+		// A member excluded from explicit instantiation is not one of the
+		// members this definition produces; whoever calls it instantiates it.
+		if (program_->bindings[binding].excluded_from_explicit_instantiation)
+			return;
+		const FunctionInfo& function = GetFunction(binding);
+		const EntityId owner = program_->bindings[binding].member_owner;
+		const bool implicit_default_constructor =
+			function.implicit_constructor &&
+			function.special_member == SPECIAL_MEMBER_NONE &&
+			owner != kNoEntity &&
+			program_->entities[owner].polymorphic_class;
+		if ((!function.defined && !implicit_default_constructor) ||
+			(function.implicit_constructor && !implicit_default_constructor) ||
+			function.implicit_destructor || function.implicit_special_member ||
+			function.deleted_constructor || function.deleted_destructor ||
+			function.deleted_special_member)
+			return;
+		program_->bindings[binding].weak_odr = true;
+		if (host_object_emission_ || object_output_root)
+			MarkFunctionObjectOutputRoot(binding);
+		DemandFunction(binding);
+	};
+	if (entity < entity_member_functions_.size())
+		for (std::size_t i = 0; i < entity_member_functions_[entity].size(); ++i)
+			demand_member(entity_member_functions_[entity][i]);
+	if (entity < entity_conversion_functions_.size())
+		for (std::size_t i = 0;
+			i < entity_conversion_functions_[entity].size(); ++i)
+			demand_member(entity_conversion_functions_[entity][i]);
+	if (entity < entity_constructors_.size())
+		for (std::size_t i = 0; i < entity_constructors_[entity].size(); ++i)
+			demand_member(entity_constructors_[entity][i]);
+	if (entity < entity_destructor_by_entity_.size())
+		demand_member(entity_destructor_by_entity_[entity]);
+}
+}
+}

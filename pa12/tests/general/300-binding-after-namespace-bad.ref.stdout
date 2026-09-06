@@ -1,0 +1,10 @@
+ERROR: declaration conflicts with namespace name conflict [top-level declaration 1 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_INT:int
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier conflict
+}]
+Diagnostic context:
+collect_simple_declaration [int conflict;] at tests/general/300-binding-after-namespace-bad.t:3:1

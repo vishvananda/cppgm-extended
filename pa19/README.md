@@ -73,6 +73,19 @@ Behaviour is undefined unless the command-line arguments match that shape, with
 the same source-file ordering and `-o` relaxations as PA18. Other `--emit-*`
 modes, driver mode, and optimized LowIR output are not part of PA19.
 
+### Nondependent template bases
+
+A base class that does not depend on a template parameter is resolved and
+validated when the class template is defined, even if no specialization of the
+derived template is ever used.  It must already name a complete, non-union,
+non-final class that is accessible from the class-template definition.  A
+friend class-template declaration grants that access before any concrete
+specialization exists.  Selecting a class-template specialization as a fixed
+base also instantiates and validates that specialization's definition; an
+error in its body cannot be hidden merely because no derived specialization is
+used.  A genuinely dependent base remains deferred until a concrete
+specialization is formed.
+
 ### Output Format
 
 On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
@@ -223,6 +236,9 @@ PA19 supports the following in addition to the PA18 subset:
   including deferring unused conversion-function bodies and dependent defaulted
   special-member dependencies, and waiting until an out-of-line owning destructor
   is defined before demanding a completeness-dependent member destructor
+- a static data member named only in an unevaluated operand, such as the operand
+  of `sizeof`, does not demand storage or instantiate its out-of-class definition;
+  an evaluated value use or address use continues to demand the required definition
 - instantiated specializations reuse supported PA17 rvalue-reference return
   paths and PA18 virtual-destructor lifetime without changing their value
   category or object-lifetime behavior

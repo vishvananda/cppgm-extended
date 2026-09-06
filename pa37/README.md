@@ -4,11 +4,36 @@
 
 PA37 adds the first explicit optimization stage to the compiler. The new tool,
 `lowiropt`, reads PA13 LowIR text, applies a deterministic optimization
-pipeline selected by `-O0`, `-O1`, or `-O2`, and writes LowIR text.
+pipeline selected by `-O0`, `-O1`, `-O2`, or `-O3`, and writes LowIR text.
 
 The same LowIR optimizer is also reached from `cppgm++` when source programs
-are compiled with `--emit-lowir -O1`, `--emit-lowir -O2`, or through the
-ordinary compile/link driver at an optimization level.
+are compiled with `--emit-lowir -O1`, `--emit-lowir -O2`,
+`--emit-lowir -O3`, or through the ordinary compile/link driver at an
+optimization level.
+
+### How PA37 Is Specified
+
+This README separates three kinds of statement, and the course suite is
+built the same way.
+
+- The **contract** is what every implementation must do: the command line,
+  the LowIR it reads and writes, the behaviour it must preserve, and the
+  object path that must accept its output.  Command Line, Output Format,
+  Error Handling and Validation Modes are the contract.
+- The **quality bar** is what the output must reach on the course fixtures:
+  the outcome and the size envelope each fixture states in its
+  `x.ref.expect` sidecar, and the lowering floor.  The Quality Bar section
+  is normative.
+- **One design** is how the course solution meets that bar, pass by pass,
+  with the budgets and caps it chose.  The One Design section is a worked
+  example.  A different optimizer that meets the bar is a correct PA37; a
+  course fixture never compares the shape of your output with the course
+  solution's.
+
+The course solution's own outputs are pinned exactly in the regression lane
+(`regression/pa37/`, see `../cppgm.tests/regression/README.md`).  That lane
+is the compiler team's memory of its decisions; it runs with `make test`
+but it is not part of the assignment's contract.
 
 ### Prerequisites
 
@@ -51,7 +76,34 @@ more LowIR input files:
 lowiropt -O0 -o <outfile> <lowirfile>...
 lowiropt -O1 -o <outfile> <lowirfile>...
 lowiropt -O2 -o <outfile> <lowirfile>...
+lowiropt -O3 -o <outfile> <lowirfile>...
 ```
+
+For controlled inliner experiments, `lowiropt` and the source driver also
+accept repeatable `--inline-limit <name>=<positive-integer>` options at O1+.
+The supported names are `caller-budget`, `once-cap`, `once-caller-budget`, and
+`hint-late-cap`; an omitted name keeps the documented default policy, while a
+zero, malformed, or unknown value is rejected.  These controls change only
+the corresponding eligibility limit and do not bypass recursion, EH,
+signature, `no_inline`, or growth-safety checks.
+
+`lowiropt --stats` writes one `pa37_opt_stats` diagnostic record to standard
+error.  In addition to the ordinary optimizer work counts, the record reports
+construction cost for any immutable value definition/use index: index builds,
+reuses, explicit invalidations, scanned instructions and value-operand
+positions, storage allocations, and peak transient bytes.  Parameters and
+missing definitions are distinct index states, and phi predecessor labels are
+not value uses.  The record also
+includes an entry-prefix census for direct calls whose callee has a
+side-effect-free path to an early return and at least one bailout edge.  These
+statistics are observational only: they do not enable partial inlining or
+otherwise change the optimized LowIR.  Tests may require documented fields and
+exercise a positive shape, but must not require exact counter or timing values.
+The record also reports the number of parameter object extents, inferred
+exclusive parameters, capture intervals, and parameter memory classes used by
+the O3 bounded-memory analysis. Edge equalities, constant loop-phi edges, and
+late parameter-address rematerializations have separate counters. A
+rematerialization-budget-skip counter makes that transform's limit observable.
 
 `--help` and `-h` print usage information and exit successfully.
 
@@ -61,18 +113,23 @@ optimizer:
 ```sh
 cppgm++ --emit-lowir -g0 -O1 -o <outfile> <srcfile>...
 cppgm++ --emit-lowir -g0 -O2 -o <outfile> <srcfile>...
+cppgm++ --emit-lowir -g0 -O3 -o <outfile> <srcfile>...
 cppgm++ --emit-lowir -gline-tables-only -O1 -o <outfile> <srcfile>...
 cppgm++ --emit-lowir -gline-tables-only -O2 -o <outfile> <srcfile>...
+cppgm++ --emit-lowir -gline-tables-only -O3 -o <outfile> <srcfile>...
 ```
 
 The ordinary `cppgm++ -c` and link-driver paths must also accept `-O0`, `-O1`,
-and `-O2` and use the same LowIR optimization level before object generation.
+`-O2`, and `-O3` and use the same LowIR optimization level before object
+generation. As with GCC and Clang, omitting `-O` selects `-O0`; optimization
+must be requested explicitly.
 Compile mode must also accept serialized LowIR text as an input:
 
 ```sh
 cppgm++ -c -O0 -o <objfile> <lowirfile>
 cppgm++ -c -O1 -o <objfile> <lowirfile>
 cppgm++ -c -O2 -o <objfile> <lowirfile>
+cppgm++ -c -O3 -o <objfile> <lowirfile>
 ```
 
 This LowIR object input mode parses LowIR text, runs the same object-prep and
@@ -99,6 +156,13 @@ in LowIR or derived again by the object-lowering layer from LowIR. The direct
 followed by `cppgm++ -c -O<level>` on that LowIR file should therefore match
 for the same source, flags, and optimization level.
 
+This durability rule includes PA32 global section placement. A token-safe GNU
+section attribute is serialized as global `section=<name>` metadata and must
+survive `-O0` through `-O3`. The replayed object must keep the global in the
+same named ELF section and keep relocations originating in that section aimed
+at the same symbols; direct/replayed byte equality alone is not the feature
+definition.
+
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
 in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
@@ -114,13 +178,26 @@ and cleanup bodies.
 For successful runs:
 
 - `-O0` performs a deterministic parse/dump round trip.
-- `-O1` applies local and control-flow-aware LowIR simplifications.
-- `-O2` applies all `-O1` work and additional conservative slot-promotion
-  optimizations.
+- `-O1` applies local and control-flow-aware LowIR simplifications, including
+  conservative scalar-slot promotion, then one bounded late inlining wave for
+  small acyclic functions made compact by those transforms.
+- `-O2` applies all `-O1` work and additional memory, loop, and
+  interprocedural optimizations, with its late inlining wave following that
+  additional work.
+- `-O3` applies all `-O2` work and bounded full unrolling of eligible small
+  constant-trip loops before its bounded late inlining wave.
 
 The assignment grades the optimized LowIR shape as well as behavior
 preservation. The goal is a deterministic optimization stage, not elapsed-time
 benchmark wins.
+
+Focused course property checks compile small reducers at both the applicable
+optimizing level and, where useful, at `-O0`.  They inspect only the documented
+relationship inside the named reducer function: for example whether an
+eligible slot or call disappears, whether a guarded twin remains, or whether
+every `phi` input still names an actual predecessor.  Complete checked-in
+LowIR outputs remain compatibility fixtures, but are not the definition of an
+optimization feature and are not used by these property checks.
 
 ### Error Handling
 
@@ -137,12 +214,76 @@ For failure cases, diagnostics only need to be useful to a developer; exact
 diagnostic text is not part of the grading contract. The contents of the
 output file after a failed run are undefined.
 
-### Optimization Levels
+### Quality Bar
 
-To complete PA37, implement these optimization levels:
+The levels have this contract.  `-O0` parses the input program, preserves all
+semantic content, and writes the canonical LowIR dump without running
+optimizing transforms.  `-O1`, `-O2` and `-O3` each write valid LowIR that
+preserves the behaviour of every defined input program; each higher level
+may do everything the lower one does and more.  What the levels do is
+your design.
 
-`-O0` is the baseline canonicalization mode. It should parse the input program,
-preserve all semantic content, and write the canonical LowIR dump without
+What the course fixtures then check, for each `x.t`:
+
+- the tool's exit status agrees with `x.ref.exit_status`;
+- a successful output passes the LowIR structural validator;
+- when `x.ref.expect` is present, the output meets every predicate in it
+  (`../scripts/expect_ir.pl`); when it is absent, the output is compared
+  with `x.ref` after presentation canonicalization (Validation Modes);
+- the output lowers through the object path at `-O0`
+  (`cppgm++ -c -O0 x.lowir`) whenever the input does.  `make test` sets
+  `CPPGM_LOWER_CHECK_APP` so the harness runs that floor; an optimizer's
+  output is not correct until the backend accepts it.
+
+An `x.ref.expect` sidecar has two kinds of line.  Outcome lines state what
+the fixture is about in terms of the LowIR it reads and writes:
+`none(call @callee) in @caller` for a call that must be inlined,
+`count(load) <= 1 in ^body` for a load that must be hoisted,
+`none(phi) in ^merge` for a choice that must collapse.  Budget lines bound
+the output's size: `instructions <= N`, `blocks <= N`, `count(call)`,
+`count(load)`, `count(store)`, `count(phi)`, and `instructions <= N in
+@function`.  The budgets were generated from the course solution's output
+at 10% tolerance plus one (`../scripts/make_ir_expect.pl`); an output as
+compact as the course solution's, or slightly larger, passes, and one that
+is materially larger does not.  Budgets tighten only at a course edition
+boundary.  Every course fixture carries its budget; most also carry
+outcome lines derived from what the course solution did to the fixture
+(`../scripts/make_ir_outcome.pl`: the calls, loads, stores, phis and
+definitions it removed must stay removed), and a few carry hand-written
+ones.  The `x.ref` file beside each fixture shows the course solution's
+output as an informational example.
+
+A source fixture in a driver lane is also run: the emitted LowIR is built
+into a program through the object path and compared with the source built
+at the lane's level (`CPPGM_BEHAVIOR_CHECK_APP`, set by `make test`); both
+must print the same output and exit the same way.  A source that does not
+build at that level is skipped.
+
+To evaluate one sidecar by hand:
+
+```sh
+$ perl ../scripts/expect_ir.pl tests/o1/x.my tests/o1/x.ref.expect
+```
+
+The rule for a new course fixture: it states the contract or the outcome it
+tests.  A fixture whose only justification is the shape one of the course
+solution's passes produces belongs in the regression lane.
+
+### One Design: The Course Solution's Optimization Levels
+
+Everything in this section describes the course solution.  It is one way to
+meet the quality bar, and the numbers in it (the 768-instruction caller
+budget, the 40- and 48-instruction size caps, the four-instruction trivial
+leaf, the 512-instruction single-call body, and the rest) are its choices,
+recorded so that its outputs are explainable and so that a reader can see a
+complete design that reaches the bar.  None of them is a requirement; the
+course fixtures do not compare your output's shape with the course
+solution's.  The regression lane pins these outputs for the compiler team.
+
+The course solution implements these optimization levels:
+
+`-O0` is the baseline canonicalization mode. It parses the input program,
+preserves all semantic content, and writes the canonical LowIR dump without
 running optimizing transforms.
 
 `-O1` must include these semantic-preserving pass families where safe:
@@ -150,8 +291,10 @@ running optimizing transforms.
 - constant folding for scalar `copy`, `unary`, `binary`, `cmp`, and `convert`
   instructions with known constant operands
 - algebraic identities such as `x + 0`, `x - 0`, `x * 1`, `x & -1`, redundant
-  `unary decay`, identity `convert`, and compares whose operands are known to
-  be identical
+  scalar `copy`, identity `convert`, a zero-element `index` through a pointer
+  temporary, compares whose operands are known to be identical, and unsigned
+  compares against the constant `0` whose result is fixed (`cmp ugt 0, x` and
+  `cmp ult x, 0` are `0`; `cmp ule 0, x` and `cmp uge x, 0` are `1`)
 - local and executable-edge-aware copy and constant propagation
 - local and executable-edge-aware pure-expression reuse for eligible `addr`,
   `index`, `unary`, `binary`, `cmp`, and `convert` instructions
@@ -161,48 +304,740 @@ running optimizing transforms.
   compared value is already known to be an `i64` boolean
 - local reassociation of repeated integer `add`, `mul`, `and`, `or`, and `xor`
   chains with constants
+- factoring a positive single-use integer multiplier between its arithmetic
+  value and an `index` element stride when this preserves the exact byte
+  displacement and exposes a two-, four-, or eight-byte address scale;
+  multi-use and unfactorable multipliers keep their original representation
 - control-flow cleanup, including folding known `branch` and `switch`
   selectors, removing unreachable blocks, bypassing trivial jump-only blocks,
   merging safe straight-line block pairs, and collapsing empty branch diamonds
   when both arms resolve through non-EH jump-only blocks to the same
-  continuation
+  continuation; a diamond that materializes two integer constants in a `phi`,
+  immediately compares that result, and branches may instead retarget the
+  original branch when both arms are otherwise empty and the intermediate
+  values have no other uses; a block with one ordinary predecessor may also
+  replace a branch on the predecessor's unchanged selector with the edge-known
+  successor, provided the removed edge does not require `phi` repair;
+  inside a natural loop without exceptional control, a non-loop-carried
+  integer `phi` used only by its block's terminating `branch` may instead
+  place that decision on each unconditional incoming edge; a constant incoming
+  choice becomes a direct edge, while an incoming predicate becomes the edge's
+  branch selector; retain the merge when its value is shared, when the `phi`
+  carries state around the loop, or when successor `phi` inputs or exceptional
+  control would need repair;
+  at `-O2` and `-O3`, an acyclic two-arm branch whose otherwise empty arms
+  select the opposite `u8` Boolean constants for a single-use `phi`
+  immediately consumed by a branch may bypass those arms and the Boolean
+  merge; preserve the diamond at `-O0` and `-O1`, and do not apply this bypass
+  when an arm
+  performs work, the selected values are not exactly Boolean opposites, the
+  merged value is shared, or exceptional edges and successor `phi` inputs
+  cannot be repaired safely; other independently safe CFG simplifications may
+  still reshape such a graph while preserving its work and value semantics;
+  at `-O3`, a private two-step signed range check that rejects both `x < 0`
+  and `x > C`, where `C` is nonnegative, may replace those tests with the
+  equivalent unsigned `x > C` decision; preserve the two tests at lower
+  optimization levels, and retain them when the upper-bound block has another
+  predecessor, the rejection destinations differ, the compared SSA values or
+  integer types differ, either comparison result is shared, exceptional
+  control targets the private upper block, or a rejection `phi` distinguishes
+  the original edges;
+  at `-O3`, an `i64` `phi` whose inputs are comparison results or the literal
+  Boolean values zero and one, followed only by a truncation to `u8`, a
+  forwarding edge, and a branch on that truncated value, may put the decision
+  directly on each incoming edge; preserve the forwarding form at lower
+  levels and retain it when either forwarding result is shared, an input is
+  not proven Boolean, exceptional control enters the forwarding region, the
+  region is cyclic, or moving the branch would require changing successor
+  `phi` inputs;
+  calls and other work already performed on an incoming edge must remain in
+  place before its new decision;
+  successor `phi` inputs on an otherwise safe moved edge must continue to name
+  the actual predecessor;
+  straight-line merging must preserve the
+  serialized LowIR rule that every temporary definition precedes every use
+- removal of a conditional edge whose target ends in the PA13 `unreachable`
+  terminator, when the other edge remains a normal successor
 - preservation of exceptional handler targets and exception-structure blocks
   while doing CFG cleanup
 - conservative inlining of small direct calls, including `unwind=no` callees
-  inside EH regions only when the caller EH shape can be preserved; a callee
-  containing its own EH instructions must remain a call even at caller EH depth zero
+  inside EH regions only when the caller EH shape can be preserved; serialized
+  `object` identity does not make a callee ineligible when either its public
+  boundary or typed body analysis proves that it cannot unwind; a callee
+  containing its own EH instructions must remain a call even at caller EH
+  depth zero
+- a folded copy for a call to such an EH-bearing callee when the call passes
+  a constant: an integer literal, or a temporary that is the `addr` of an
+  internal readonly byte string of the unit.  The callee must otherwise be an
+  ordinary candidate (nonrecursive, not `no_inline=yes`, matching fixed
+  arity, a loop-bearing body only with `inline_hint=yes` or
+  `force_inline=yes`) and have at most 256 instructions.  A private copy of
+  the callee receives the constants in place of its parameters (a literal
+  becomes an `addr` defined at the copy's entry), then `strlen` of a known
+  readonly byte string, ordinary value simplification, and CFG cleanup fold
+  it, up to four rounds.  A direct call inside the copy that still can
+  unwind, meets the same structural conditions, and receives a constant is
+  folded the same way and spliced into the copy first when its own copy
+  contains no EH instruction and cannot unwind; this nesting stops at two
+  levels.  Unreachable blocks are removed and the copy's dead exception
+  regions are stripped by the region rule below.  The copy replaces the
+  call only when no EH instruction remains in it, a call from a landing
+  block additionally requires a copy that cannot unwind, and its size after
+  the wave's cleanup (or, without one, after removing values nothing uses)
+  is at most 40 instructions, or 80 for an `inline_hint=yes` callee; the
+  late wave applies the same 80-instruction limit to a hinted copy and its
+  ordinary non-leaf limit to any other.  Copies are charged to a separate
+  deterministic 2,048-instruction whole-caller budget rather than the
+  ordinary 768-instruction one, with the same trivial-leaf exemption, so a
+  string switch that compares one name against dozens of literals keeps
+  each failing size check inline.  A copy that keeps an EH
+  instruction is the ordinary rejection; it is remembered for the callee and
+  the call's first constant, and a callee whose copies failed sixteen times
+  in one wave is not copied again in that wave.  Neither the loop-priority
+  wave nor the definition-removing waves make copies.  This is what lets
+  libc++'s string equality against a literal, whose out-of-range throw is
+  reachable only when the literal's length equals `npos`, be inlined once
+  the length is known
+- preservation of calls to functions marked `no_inline=yes`; source-level GNU
+  `noinline` attributes on named functions and lambda call operators must reach
+  that LowIR metadata on the driver path
+- independent treatment of object retention and inlining policy: a reachable
+  constructor or destructor base entry may remain an `object_root=yes`
+  definition while its eligible direct calls are inlined
+- preservation of the source `inline` preference as `inline_hint=yes`, distinct
+  from mandatory `force_inline=yes`, prohibitive `no_inline=yes`, linkage, and
+  object-retention metadata
+- bottom-up processing of the direct-call graph so an eligible callee is
+  simplified before callers decide whether to inline it
+- immediate local simplification, dead-code elimination, and control-flow
+  cleanup after a late inlining batch, so the callee's compact shape is
+  visible to every later caller in the same bottom-up traversal
+- a deterministic 768-instruction whole-caller inlining budget, charged by
+  the greater of a callee's original and simplified instruction counts, so
+  repeated individually eligible calls cannot cause unbounded growth
+- a trivial-leaf exemption from that budget: a leaf body of at most four
+  instructions is substituted even when the caller's growth budget is
+  exhausted, because the call sequence it replaces is at least as large;
+  the definition-removing waves keep their own accounting and do not use
+  the exemption
+- retaining an ordinary loop-bearing callee when it still has more than one
+  direct caller, so one shared loop is not cloned into several callers merely
+  because each call is individually small; an eligible single-use callee and
+  an explicitly `inline_hint=yes` callee retain their documented preference
+- pricing a block that is reachable only through the non-returning side of a
+  conditional as cold when deciding whether an otherwise eligible callee fits
+  the inline limits; the cold instructions and their effects are still cloned
+  when the call is inlined, and equivalent work on a returning path is charged
+  normally
+- a separate definition-removing path for a weak or internal function that
+  has exactly one direct call and no address, relocation, structured-data,
+  alias, lifecycle, object-root, or other non-call use; this path may admit a
+  body of at most 512 instructions, uses a 1,024-instruction budget per
+  caller,
+  and removes the transferred definition after substitution; its
+  translation-unit budget is the greater of 10,240 and the original input
+  instruction count
+- one post-reachability graph rebuild followed by the definition-removing path
+  alone, so removing dead callers may expose a new single-call definition;
+  this wave uses the optimized body count with the same 512-instruction body,
+  1,024-instruction caller, and proportional translation-unit limits, then
+  prunes transferred definitions
+- inlining a callee with no EH control instructions from an active caller EH
+  region even when the callee may unwind; potentially throwing calls cloned
+  from that callee remain inside the caller's active region and therefore use
+  its landing destination
+- inlining from an exceptional landing block only when the callee has no EH
+  control instructions and its explicit or inferred boundary proves that it
+  cannot unwind; potentially throwing, EH-bearing, indirect, and explicitly
+  `no_inline` calls remain intact while an exception is already in flight
+- treating `throw`, `exception`, `exception_selector`, and `resume` as
+  EH-bearing instructions, just like the `eh_*` markers; a function containing
+  any of them is not an ordinary inlining candidate
+- preservation of the ordinary 768-instruction policy when a definition is
+  in the single-call class but a separate single-call budget is exhausted;
+  calls that meet the ordinary size and growth rules remain ordinary inline
+  candidates
 - preservation of object-parameter copies and isolated return-merge slots and
   continuations when direct calls with object or nested multi-block callees are
   inlined
-- removal of no-op EH markers in functions known not to unwind when the
-  protected region contains no operation that can transfer to the handler
+- retargeting of successor `phi` inputs when inlining moves a caller block's
+  terminating edge into a new continuation block
+- removal of a matched protected region when its direct calls are already
+  known not to unwind and it contains no indirect call, throw, resume, or
+  other operation that can transfer to the handler; safe regions may be
+  removed independently while unsafe sibling regions remain
+- publication of an EH-free function as inferred nonthrowing after its last
+  protected region is removed and every remaining direct call is nonthrowing,
+  so later callers in the same callee-first traversal can use that fact
+- discovery of natural loops from dominators and backedges, including loop
+  headers, latches, exits, nesting, and existing canonical preheaders
+- loop-invariant motion of nontrapping pure scalar and address calculations
+  whose operands are defined outside the loop; explicitly located debug
+  instructions, trapping division or remainder, EH regions, and operations
+  with observable effects must stay in place
+- creation of a loop preheader by splitting a single critical entry edge only
+  when a small explicit block budget and sufficient invariant work justify it
 - dead-code elimination for unused pure temp-producing instructions
-- removal of unused calls only when the callee is explicitly `readnone`, cannot
-  unwind, and is not `noreturn`
+- preservation of every volatile load and store, including an unused volatile
+  load; ordinary nonvolatile slot traffic remains eligible for propagation,
+  dead-store removal, duplicate-load reuse, and promotion
+- folding an unsigned `x - 1 >= x` underflow test to false on a path already
+  proving the same unchanged scalar value is nonzero, including when that SSA
+  value was defined in an earlier block; a second load may use the proof only
+  while the loaded location remains stable, so a volatile reload, an
+  intervening memory-writing call, or any other loss of value identity keeps
+  the comparison and both edges
+- replacing adjacent same-width scalar load/store copy groups with one
+  `copyobj` only when they cover a contiguous constant byte range, are
+  nonvolatile, and their source and destination bases are identical or carry
+  a mechanical no-alias proof; potentially overlapping or volatile groups
+  remain scalar operations
+- removing a bounded nonvolatile `zeroinit` when scalar stores overwrite its
+  complete byte range before any read, call, escape, or other observation;
+  partial, observed, volatile, and oversized initializations remain
+- removal of unused calls only when the callee is explicitly `readnone` or
+  `readonly`, cannot unwind, and is not `noreturn`; source GNU `const` and
+  `pure` attributes supply those respective effect facts
+- folding a direct load from an initialized internal `storage=readonly`
+  scalar global to its typed initializer; mutable, volatile, thread-local,
+  externally replaceable, aggregate, and indirectly addressed storage keeps
+  the ordinary memory operation
+- folding a direct call to the ABI-designated `strlen` operation when its
+  argument is the direct address of `storage=readonly` structured byte data
+  with a compiler-known first NUL byte; writable or unterminated data and a
+  dynamically supplied pointer keep the call
+- publishing a readonly aggregate of pointer-and-length records for a local
+  pointer table, redirecting its variable-indexed pointer load through the
+  selected readonly record, and replacing the corresponding `strlen` with a
+  length load through that same record address
+  when every local-table element is initialized exactly once with the direct
+  address of compiler-known NUL-terminated readonly byte data, every
+  initialization dominates the indexed load, and the local table does not
+  escape; partial initialization, writable or unterminated elements,
+  mutation, volatile access, and escaping or otherwise unmodelled table
+  addresses keep the call
 - removal of dead local-slot traffic for unused direct slot loads and for
   stores to direct local slots that have no remaining loads, escaping uses, or
   other non-store uses
 - removal of slot declarations that become unused after simplification
+- conservative promotion of eligible non-escaping scalar slots, including
+  eligible `ptr` slots, when every access is a direct typed `store` or `load`
+  and the current value is defined on every executable path; differing
+  predecessor values use a typed PA13 `phi` at an ordinary join, never at an
+  exceptional-handler target, and any required type-changing predecessor
+  `copy` remains explicit
+- scalar replacement of a local `obj<1>`, `obj<2>`, `obj<4>`, or `obj<8>`
+  slot whose complete storage is consistently accessed as one same-sized
+  scalar value; escaping, partial, nonzero-projection, type-disagreeing,
+  atomic, and otherwise observable objects remain unchanged; a `copyobj`
+  whose opposite operand is an object value rather than a pointer also keeps
+  the object slot, because scalar load/store rewriting requires an address
+- removal of dead stores to promoted slots when no observable load can see
+  the stored value
+- removal, after inlining, of unreachable weak or internal function
+  definitions, while retaining externally visible strong definitions,
+  `object_root=yes` definitions, lifecycle roots, and definitions referenced
+  by calls, addresses, relocations, or structured object data
+- after all O1 inlining and pruning decisions are complete, reuse of a
+  dominating nonvolatile scalar load in an explicitly `inline_hint=yes`
+  definition when it reads the same typed location and no intervening store,
+  writing call, atomic operation, exceptional transfer, or other memory
+  barrier can change it; an ordinary definition may reuse the same load only
+  when the dominating value's final original presentation-order use is no
+  earlier than the redundant load's final use, so the rewrite does not extend
+  the value's layout lifetime; `readnone` and `readonly` nonthrowing calls
+  preserve valid load facts
+- in an explicitly `inline_hint=yes` definition, forwarding a nonvolatile
+  scalar load at a natural-loop header through a typed `phi` when the loop has
+  one ordinary preheader and every backedge ends by storing a locally computed
+  value or an integer literal to that exact location; the initial load moves
+  to the preheader and
+  each stored value becomes its backedge input, so the header does not reload
+  a value that was just stored. An ordinary definition, a missing or
+  conditional store, a volatile access, an exceptional loop, a different
+  address or type, or any operation after the store that could change memory
+  keeps the original header load
 
-`-O2` must include all `-O1` work and then conservatively promote eligible
-non-escaping scalar slots, including eligible `ptr` slots. Promotion must be
-limited to slots accessed through direct `store` and `load` operations whose
-current value can be tracked without introducing phi nodes. Beyond the direct
-slot cleanup already allowed at `-O1`, `-O2` also removes dead stores to
-promoted slots when no observable load can see the stored value.
+`-O2` must include all `-O1` scalar cleanup and additionally support these
+conservative memory, loop, and interprocedural transforms:
 
-Slot-value forwarding and promotion remain an `-O2` responsibility. At `-O1`,
-a live load whose value is consumed along multiple successor paths must remain
-unless an ordinary non-slot propagation rule independently proves each use.
+- consuming a PA13 `[elision=copy]` direct-call permission only when every
+  ordinary predecessor of the transfer merge contains exactly one complete
+  producer for the same private source slot, the source address has no other
+  use except the marked transfer and its matched normal/exceptional cleanup,
+  and both source and destination definitions dominate every redirected
+  producer, with no destination observation before the transfer; redirect
+  those producer destinations, remove the transfer and
+  source cleanup, and remove an exact transfer-only EH region when present;
+  preserve the call and permission at `-O0`/`-O1`, when the marker is absent,
+  when the source escapes, or when any CFG, dominance, use, or EH condition is
+  not proved
+- hoisting a direct global or nonescaping direct-slot load only when no store,
+  call, atomic operation, or other memory effect in the loop can change the
+  loaded object
+- eliminating a redundant scalar load when a dominating load reads the same
+  typed location and no store, call, atomic operation, or other memory effect
+  can change that location on any intervening path; direct locations,
+  nonescaping slot addresses, pointer copies and phis whose inputs are all the
+  same pointer value, and proven disjoint constant projections must use the
+  same conservative alias rules; perform this whole-program O2 load reuse only
+  after the inlining and pruning waves, so shrinking an initially oversized
+  shared callee cannot make it appear cheap enough to duplicate into each
+  caller, then apply the ordinary O2 reuse rule to the retained body
+- preserving load invalidation across control-flow joins, unknown pointers,
+  ordinary read/write calls, atomic operations, exceptional-handler entries,
+  EH region transitions, and calls that may unwind; within one equal,
+  unambiguous EH state, redundant loads may still be eliminated, and
+  explicitly `readnone` and `readonly` calls plus immutable globals retain the
+  facts their metadata permits
+- eliminating a fully redundant pure expression at an ordinary join by
+  replacing the join computation with a `phi` of the available predecessor
+  values; the phi and any inserted predecessor computation use the original
+  expression's result type, including `ptr` for an `addr` result
+- eliminating a partially redundant expression only when the missing
+  predecessor has a single successor, every operand is available there, and
+  moving the operation cannot introduce a trap or other observable behavior;
+  insertion is limited to 64 expressions and 64 phis per function
+- recognizing simple `i64` induction variables with one latch and constant
+  initial value, step, and bound
+- canonicalizing an inverted counted-loop exit and replacing multiplication
+  of the induction value by a positive power of two with a left shift
+- removing a loop only when its body has no observable or trapping operation,
+  its values are unused outside the loop, and its finite termination can be
+  proved without integer overflow
+- propagating an integer, floating, or global-address argument into an
+  internal direct-call target when every remaining direct call supplies the
+  same value and the target is not observable through an address, lifecycle
+  role, object root, alias, or variadic signature
+- removing an unused directly passed scalar parameter from such an internal
+  target and all of its direct calls; computations that produced a removed
+  argument remain subject to ordinary effect-aware dead-code elimination
+- specializing a discardable weak target through one internal clone instead
+  of changing the weak target's externally observable ABI, but only when a
+  uniform scalar parameter directly controls a branch or switch so that
+  specialization can discard a control-flow region; a uniform parameter used
+  only as data does not justify a private clone that could survive weak-symbol
+  coalescing and be duplicated across translation units; rooted,
+  address-observable, recursive, `no_inline`, and mismatched-signature weak
+  targets must remain unchanged
+
+Interprocedural specialization is bounded to 256 clones and 8,192 cloned
+LowIR instructions per translation unit. Budget exhaustion skips later
+candidates in deterministic function order. `-O1` does not perform argument
+specialization.
+
+`-O3` must include all `-O2` work. It additionally fully unrolls a canonical
+constant-trip loop when all of these conditions hold:
+
+- the loop has one preheader, one latch, one exit, no exceptional region, and
+  one straight-line body path back to its header
+- header phis describe the loop-carried values, and an integral induction phi
+  has a constant initial value, nonzero constant step, and constant signed or
+  unsigned bound
+- the exact trip count is at most four and can be proved without overflowing
+  the induction value
+- every loop value used after the exit has a value after the final iteration
+
+The transform must preserve the order and count of calls, stores, atomics,
+traps, and other observable body operations. It may unroll at most one loop
+per function, clone at most 64 body instructions for that loop, and clone at
+most 4,096 loop-body instructions per translation unit. If any proof or budget
+is unavailable, the loop remains unchanged. `-O2` does not perform this full
+unrolling.
+
+After the level's scalar and control-flow transforms, every optimizing level
+rebuilds the typed direct-call graph once and may inline an additional
+nonrecursive function whose optimized body contains no exception-handling
+instructions. A single-block, single-return body with no calls may have at
+most 40 instructions. A body that contains a call or has multiple blocks may
+have at most six instructions, or at most forty-eight instructions when its
+definition has `inline_hint=yes`. This late wave has a fresh 768-instruction
+budget for each caller, charged by the optimized instruction count of every
+inlined body. The hint does not override that budget or `no_inline=yes`. The
+wave must continue to preserve variadic,
+exception-region, unwind, and externally visible call-site restrictions from
+ordinary inlining.
+
+When either the late wave or the post-reachability definition-removing wave
+rewrites a caller, repeat the ordinary local scalar-slot promotion on that
+changed caller. This includes a slot whose last address use was a call operand
+and becomes direct typed load/store traffic after the callee is inlined. The
+ordinary escape, type, definition, exceptional-handler, and phi-budget guards
+still apply; this cleanup does not make an otherwise ineligible slot
+promotable, and `-O0` performs neither the inlining nor the promotion.
+
+After reachability pruning, `-O3` may give one natural-loop call priority over
+one non-loop call to the same inline-preferred body.  The body must be an
+internal or weak, fixed-arity, nonrecursive definition with `inline_hint=yes`,
+without `no_inline=yes` or exception-handling instructions, and its optimized
+size must be from 256 through 512 LowIR instructions.  An eligible caller has
+no exception region and contains exactly two direct calls to that body:
+exactly one call is in a natural loop and exactly one is outside every natural
+loop.  Argument counts must match the definition at both sites.
+
+At most one such caller/body pair is selected per translation unit.  Prefer
+the largest eligible body and use function order to break ties.  Inline the
+loop call completely, then apply the ordinary typed inlining cleanup and slot
+promotion.  Leave the non-loop call and the shared callable definition in
+place.  This bounds growth to one clone of at most 512 instructions and avoids
+duplicating the body when both calls are loop-local.  `-O1` and `-O2` do not
+perform this loop-priority inlining.
+
+Immediately after that clone is installed, restore the ordinary non-returning
+control-flow invariant before promoting slots or simplifying the caller.  A
+cloned arm ending in a call proven `noreturn` has no normal successor, even
+when the inliner created a continuation for another return in the same
+callee.  Remove the dead edge and its corresponding merge-phi input while
+retaining normally returning arms.  This cleanup is structural: it follows
+the typed call boundary and control-flow graph, not a callee name or source
+spelling.
+
+After the post-reachability inlining wave, `-O3` may split one repeated
+integer-constant call group from an otherwise mixed internal target.  The
+target must be fixed-arity, nonrecursive, `no_inline`-free, no larger than 128
+LowIR instructions, and unobservable through an address, lifecycle role,
+object root, or alias.  At least eight direct calls must pass the same integer
+constant to the same removable scalar parameter, while at least one other
+direct call remains unlike.  Compare an ordinarily cleaned copy of the target
+with a copy cleaned after substituting the constant; accept the clone only
+when its per-call removed work, multiplied by the matching call count, pays
+for the complete clone.  Redirect only the matching calls and remove scalar
+parameters made dead by substitution.  The unlike calls and original target
+remain unchanged.
+
+In its closing pass, after the last load reuse, `-O3` collapses the
+conditional values that every choice in LowIR spells as a diamond: a block
+branching to two arms that each have that one predecessor, hold only pure
+values and nonvolatile loads, and jump to one merge whose only predecessors
+they are.  Three collapses run together, each followed by value
+simplification, dead-code elimination and CFG cleanup, until nothing folds
+(at most four rounds); dead slots are removed first so a store into a slot
+nothing loads does not read as a change of memory.
+
+- Value numbering across diamonds: a diamond whose condition is the same
+  computation as that of a diamond whose merge dominates its parent (the
+  same value, or a pure computation of the same shape over agreeing
+  operands, looking through `copy`, a load agreeing with a load of an
+  agreeing address only when no instruction that may write memory lies on
+  any path from the earlier load's block to the later parent) branches on
+  the earlier condition, and each of its phis whose two arm inputs are the
+  same computations as an earlier phi's, under the same memory condition,
+  becomes that earlier phi.  Its own arms then die.  libc++ recomputes a
+  string's long/short choice for `size()` and `data()` in every function
+  that touches the string.
+- Select identities: a phi in a merge of two jump-only arms that chooses
+  between the operands of the parent's comparison is one of them when the
+  comparison fixes the other -- the unsigned minimum with the type's
+  largest value and the unsigned maximum with zero are the other operand
+  (`std::min(n, npos)`), and a choice between the operands of an
+  equality or inequality that names one operand on the edge where the
+  two are equal is the other operand.
+- The equality established by a branch's edge substitutes the literal for
+  the compared value throughout the region that edge dominates, the O3
+  edge-equality rule above, now also run here so a length fixed by a size
+  check reaches the minimum and compare it feeds.
+
+After all inlining waves have exposed their final object traffic, `-O3` may
+also lower a terminal, complete object swap through scalar exchanges.  The
+ordinary form saves every byte of the first object in a private object slot,
+copies the non-overlapping second object over the first, copies the saved bytes
+over the second, and then returns.  The saved value may have been assembled by
+one complete `copyobj` or by nonvolatile field copies that cover every byte;
+write-only construction of another private value which is overwritten by the
+second-object copy may disappear with the swap staging.
+
+This rewrite must preserve every byte, including padding, and use only the
+serialized PA13 object-copy and scalar-memory semantics.  Retain the staged
+form when coverage is partial, an access is volatile, staging storage escapes,
+observable work intervenes, the copies are not one terminal straight-line
+exchange, or byte count and alignment do not agree.  `-O0` through `-O2`
+retain the staged form.  The focused control checks these relationships and
+generated behavior, including PA13's permitted identical-address case; it does
+not require generated value names, a particular register choice, or complete
+LowIR text.
+
+This grouped specialization considers at most one integer or table group per
+target, tracks at most 64 distinct parameter/value groups for that target,
+and creates at most 24 clones and 1,536 cloned LowIR instructions per
+translation unit.  The readonly-string extension below is the only form that
+may select additional groups for one target.  Budget exhaustion skips later
+candidates in deterministic function order.  `-O1` and `-O2` do not perform
+mixed-group cloning.
+
+As an O3-only extension of that same bounded transformation, four or more
+calls may form a group around the direct address of one initialized internal
+structured integer table.  Collect every other argument that is uniform
+within that table group, specialize those correlated arguments together, and
+remove the parameters made dead by the substitutions.  The lower four-call
+threshold is permitted only when the resulting clone also admits a proven
+table-bound prefilter; otherwise the ordinary eight-call profitability rule
+still applies.
+
+The table address must be private to the selected parameter at direct calls to
+that target.  An object alias, relocation, store, conversion, indirect use, or
+call to another target makes it ineligible.  Every table item must be a
+positive literal of one common signed scalar type.  The specialized clone
+must contain only nonvolatile loads, scalar calculations, phis, branches, and
+returns, and every load used by the proof must have an address aligned to an
+actual table item.  If abstractly taking `key < minimum table item` through
+that CFG can reach only a standalone literal-zero return, the clone entry may
+branch directly to that return before entering the search.  Unknown branches
+must be explored on both sides; a possible nonzero return or observable
+operation rejects the prefilter.  Calls using another table remain on the
+original target.  This extension shares the existing one-group-per-target,
+24-clone, and 1,536-cloned-instruction limits, and `-O0` through `-O2` retain
+the original call population.
+
+As a second O3-only extension, a call group may use the direct address of an
+internal `storage=readonly` structured byte string whose first NUL is present
+in its serialized initializer.  An eligible EH-free target may contain at
+most 192 LowIR instructions.  After substituting that address into a clone,
+fold a nonvolatile `i8` or `u8` load only when copies and constant `index`
+operations identify its exact serialized byte.  Signed `i8` loads preserve
+their sign.  Literal branches and switches exposed by those loads may be
+folded, but every surviving phi must retain exactly its surviving predecessor
+inputs.  Mutable, thread-local, externally replaceable, unterminated, volatile,
+non-byte, dynamically indexed, and dynamically supplied storage keeps its
+ordinary load and call path.  Targets containing exception-handling
+instructions are not eligible for this extension.
+
+Each readonly-string clone must fold at least one such byte load.  Even a
+single matching call may be selected, but only when the instructions removed
+from the ordinarily cleaned target pay for the complete specialized clone at
+that call count.  At least one unlike direct call must remain on the original
+target.  Select at most twelve readonly-string groups per target, in addition
+to the existing translation-unit limits of 24 clones and 1,536 cloned
+instructions.  `-O0` through `-O2` retain the original call population and do
+not perform this extension.
+
+After the final `-O3` scalar and control-flow cleanup, an internal scalar
+query may also be proven repeat-stable.  Its entry must reach a two-way guard
+through only acyclic, nonvolatile scalar work.  One guard successor must be an
+acyclic region containing only nonvolatile scalar calculations and loads and
+ending at the query's sole normal return.  The other successor may do work,
+but every normally returning path from it must revisit the guard before it can
+reach that return.  A synthetic return following a call already proven
+`noreturn` is not a normal return.  Object, `i128`, and `f80` results are not
+eligible.
+
+When one direct call to such a query returns normally, a later call to the
+same symbol with the same typed SSA argument tuple must take the read-only
+side and produce the same result unless memory could have changed.  `-O3` may
+therefore replace that later call with the earlier result.  Availability is
+intersected at control-flow joins.  A store, object copy or zeroing operation,
+atomic or volatile access, any other call, exceptional instruction, or
+different argument tuple prevents reuse.  Callers containing exception
+regions are skipped.  A first call with no available result also clears other
+query facts because its slow path may mutate memory.
+
+A function carrying the PA13 `[query=stable_prefix]` boundary fact supplies a
+second, explicit repeatability proof. For calls with equal earlier typed SSA
+arguments and known nonnegative integer final arguments, a normally returned
+call at index `m` preserves available results at every index `n <= m` in the
+same query family. `-O3` may consequently replace a later call at `n` with its
+available result. The ordinary memory and exception barriers above still
+apply. A lower, unknown, or negative index, different earlier argument, or
+unclassified call clears the affected availability rather than relying on the
+promise.
+
+Constant-group specialization may remove the final index parameter from an
+internal clone. When it does, the same `-O3` invocation must retain the clone's
+origin family and nonnegative index as transformation-derived state so the
+clone and unspecialized calls participate in the same prefix relationship.
+The reduced clone must not retain metadata whose required final parameter was
+removed. `-O0` through `-O2` neither consume the explicit query promise nor
+perform this composition.
+
+The analysis tracks at most 128 query-and-argument signatures per caller.  Its
+forward worklist is limited to eight times
+`(block count + 1) * (signature count + 1)` state updates; exhausting that
+budget leaves the caller unchanged.  `-O1` and `-O2` do not reuse
+repeat-stable query results.
+
+PA13 pointer parameters may carry a positive `object_bytes=N` boundary fact.
+It promises that the pointer denotes the beginning of an N-byte complete
+semantic object region and that memory reached through that parameter or a
+derived pointer retained or returned by the function remains within that
+region. Omission makes no size promise. This is a source-language boundary
+fact, not an O3 optimizer annotation: the O0 source lowering described by
+PA17 must produce it for complete member-object, reference/by-address, and
+indirect-result boundaries, and compiler-object and textual LowIR replay must
+preserve it.
+
+At `-O3`, a bounded whole-program memory analysis may use this fact for
+internal functions. It summarizes the byte intervals read, written, or
+retained through each pointer parameter, and may infer exclusive ownership
+when every whole-program call supplies a distinct private object or an
+equivalent exclusive parameter. A load may cross a call or store only when
+the accessed byte interval is proven disjoint from every possible write or
+retained interval. Capture information is a set of intervals: a gap between
+two captured ranges remains a gap rather than becoming part of a single
+bounding range. A dynamically indexed access may be bounded by a proven
+finite integer range, including an appropriate bit mask, provided the scaled
+offset cannot wrap the LowIR integer type or exceed the complete object.
+
+Overlap, an unbounded dynamic offset, an ordinary pointer with no extent,
+external or indirect effects, address observability, volatile or atomic
+operations, object copy/zeroing, varargs state changes, and exception regions
+must remain conservative barriers unless an independent rule proves them
+safe. Direct writes still invalidate the bytes they change. The analysis is
+not run at `-O0`, `-O1`, or `-O2`.
+
+After the final O3 scalar cleanup, one repeatedly called internal integer or
+pointer query may move its effectful slow suffix out of line. The query must
+have exactly three blocks: an entry guard, one straight-line slow block, and a
+pure terminal block reached both directly and from the slow block. It must
+have fixed arity, at most six direct scalar parameters, no slots or exception
+operations, no recursive or address-observable use, and at least eight direct
+call sites. The query itself must remain eligible for ordinary inlining; this
+late transform is for a call population that survived that earlier choice.
+
+The terminal block may contain only nonvolatile scalar address calculations
+and loads followed by one scalar load/return. The slow block may contain
+nonvolatile scalar work, direct calls, and stores before its jump to that
+terminal block. One slow-path direct call result must be stored to the same
+bounded address that the terminal block would load. Any loads used to
+reconstruct that address must remain valid through the rest of the slow block.
+The PA13 `object_bytes` fact, a finite nonnegative index range such as a mask,
+and disjoint byte intervals must prove both the complete access and every
+intervening store harmless. A later call, overlapping store, unbounded index,
+ordinary pointer without a complete-object extent, volatile access, or a
+different value/address relationship rejects the split.
+
+When proven, retain the guard and pure terminal arm under the original query
+identity. Replace its slow block by an exact call/return to a private,
+non-inline helper taking the original parameter tuple. The helper contains the
+old slow block and returns the call value that it stored, so the common path
+does not repeat the terminal address calculation and load. Select at most one
+such query per translation unit, preferring the largest surviving direct-call
+population. `-O0` through `-O2` do not perform the split. With `--stats`, report
+`o3_terminal_query_splits`, `o3_terminal_query_call_sites`, and
+`o3_terminal_query_extracted_instructions`; all three remain zero below O3.
+The focused control discovers the wrapper/helper relationship from their
+loads, stores, calls, and returns, checks unbounded and overlapping-store
+guards, replays the serialized result, and executes every level without
+requiring a helper name or exact LowIR text.
+
+After all ordinary O3 rewrites, the optimizer may version one internal void
+function around a short call-free path. The original function must have fixed
+arity, at most six direct scalar parameters, no recursive or address-observable
+use, from 128 through 768 LowIR instructions, and at least four call
+instructions in its body. A candidate fast region must contain at most 128
+instructions and reach a normal
+void return using only nonvolatile scalar operations, loads, direct private-slot
+traffic, phis, and control flow. It must expose at least three edges to the
+remaining body.
+
+Every edge leaving that region must occur before an externally observable
+store. A private-slot store may precede an exit only when no instruction takes
+the slot's address. Calls, volatile or atomic operations, object operations,
+exception operations, and other effects are not admitted to the retained fast
+region. A nonvolatile external store is permitted only on retained paths after
+their last possible bailout. If the proof succeeds, keep the region under the
+original function identity and route every leaving edge to one fallback block.
+That block calls a
+private, non-inline complete clone with the original scalar parameter tuple and
+then returns. Thus the fast path avoids the full body's frame and call-bearing
+control flow, while every slow path restarts before any visible effect. Select
+at most one candidate per translation unit, preferring the largest amount of
+body kept only in the slow clone and using function order to break ties. `-O0`
+through `-O2` do not perform this versioning.
+
+Versioning must preserve ordinary SSA edge rules. In particular, if a retained
+two-input scalar phi has one use in a comparison and reaches that comparison
+through a private jump-only continuation, O3 may copy the comparison and branch
+onto the two direct incoming edges. Both branch destinations must be phi-free,
+and the join and continuation disappear only after both incoming values and
+edges have been validated. This cleanup is a structural consequence of the
+versioned fast region, not a source-name or complete-program special case.
+
+The final O3 cleanup may use a single-predecessor equality edge exposed by a
+bounded-memory rewrite to replace dominated uses with the established integer
+constant. If that exposes a loop-header load whose latch stores the next
+scalar value, loop-carried forwarding may create a phi even when the stored
+value is a literal. An exactly known phi input may then thread that
+predecessor directly to the selected successor when successor phis do not
+need repair. Finally, a bounded number of positive constant-offset field
+addresses rooted in object-extent parameters may be recomputed near their
+post-call uses instead of remaining live across the call. These cleanups are
+O3-only and must retain conservative behavior for exceptional, volatile,
+ambiguous, or over-budget cases.
+
+During its final control-flow cleanup, `-O3` may also consume an equality
+established by the sole ordinary predecessor edge.  A true `x == c` edge or
+false `x != c` edge establishes `x == c`.  For an unsigned value, true
+`x <= 0`, false `x > 0`, true `x < 1`, and false `x >= 1` edges establish
+`x == 0` as well.  A downstream `x == c` or `x != c` branch may then become
+an unconditional edge.  Keep the branch when the block has another
+predecessor, is an exceptional-handler target, compares a different typed
+value, or removing the untaken edge would require phi repair.  `-O1` and
+`-O2` retain these downstream comparisons.
+
+An equality proves the stored value, not the identity of storage required by
+a by-address call. Keep call operands addressable even when the incoming edge
+establishes that their current scalar value equals a literal.
+
+At the end of `-O2` and `-O3`, a two-input scalar phi used only to produce a
+return may be moved back onto its two incoming edges.  Each predecessor must
+jump directly to the phi block, and the value between the phi and return may
+pass through no more than three `convert`, `cmp`, or `unary` instructions.
+Those small, side-effect-free calculations are copied onto the incoming edges
+so the join and its return can disappear.  A two-input `u8` or `i64` phi used
+only as a branch condition may be moved in the same way when at least one
+branch destination is a direct return.
+
+Keep the join when the phi value is shared, the terminal scalar chain is
+longer than three instructions, control is loop-carried, an exceptional
+region is present, either incoming edge is not a direct jump, or moving a
+branch would require successor-phi repair.  The final cleanup performs no
+more than four successful terminal-phi cleanup rounds per function.  `-O0`
+and `-O1` do not perform this terminal return threading.
+
+General slot-value forwarding beyond complete eligible-slot promotion remains
+an `-O2` responsibility. At `-O1`, a live load whose value is consumed along
+multiple successor paths must remain unless the slot is fully promotable or an
+ordinary non-slot propagation rule independently proves each use.
 
 ### Validation Modes
 
-LowIR output has presentation details, such as internal helper names and
-metadata ordering, that are not semantic requirements. The PA37 harness checks
-exit status, LowIR well-formedness, required IR facts, and behavior
-preservation without requiring every non-semantic presentation choice to match
-the course solution exactly. Exact textual LowIR matching is not a PA37 grading
-requirement unless a test explicitly says so.
+For every `.t` fixture the harness records the tool's exit status and
+compares it with `x.ref.exit_status`.  A successful output is then validated
+structurally, and:
+
+- when `x.ref.expect` exists, the expectation is evaluated in place of any
+  comparison with a reference (Quality Bar); this is how every course
+  fixture is judged;
+- otherwise the output is compared with `x.ref` after presentation
+  canonicalization, and everything else, the instruction sequence, the
+  block structure and every optimization decision, must match.  This is the
+  regression lane's mode.  A reference may also be a projection of the
+  output (a function body that the output contains in full).
+
+The canonicalization is the one `../pa13/lowir.md` defines ("What The
+Comparison Absorbs And What It Enforces"); that section is the complete
+list, repeated here in short.  The comparison absorbs:
+
+- names of temporaries, slots, blocks and parameters; the order of slot
+  declarations; the order of top-level entries; a declaration nothing uses;
+- internal symbol names, paired by `role` and `object` metadata, then by
+  shape, then by position;
+- the order of items inside a metadata group and the metadata keys that
+  belong to later stages; indentation and blank lines;
+- a literal's spelling: a literal is its value (`16` and `0x10`, `-1` and
+  `4294967295` as an `i32`, `1.5` and `15e-1`, `nullptr` and `0` as a
+  `ptr`);
+- the operand order of `binary add`, `mul`, `and`, `or`, `xor` and of
+  `cmp eq`, `ne`.
+
+It enforces, as written conventions rather than normalizations: branch
+sense follows the source; a retype is a `copy`; instructions follow the
+source's evaluation order.  In the regression lane those three mean "what
+the course solution's optimizer decided", which is exactly what that lane
+pins.
+
+Exact textual LowIR matching is therefore not part of the course contract.
+The canonical comparison exists for the regression lane and for the
+`CPPGM_LOWIR_DIRECT_TEXT_COMPARE` debugging switch.
 
 ### Testing
 
@@ -217,9 +1052,15 @@ make test
 - `tests/o0`
 - `tests/o1`
 - `tests/o2`
+- `tests/o3`
 - `tests/driver/o1`
 - `tests/driver/o2`
+- `tests/driver/o3`
 - `tests/object-roundtrip`
+- the course roots under `course/pa37/`
+- the regression roots under `regression/pa37/`, the course solution's
+  pinned outputs and the pass-specific controls (`regression/pa37/controls`),
+  which are not part of the assignment's contract
 
 These directories are organized by tool mode and validation mode, not by N3485
 source-language clauses.
@@ -227,8 +1068,10 @@ source-language clauses.
 - `tests/o0` runs `lowiropt -O0` on handwritten LowIR.
 - `tests/o1` runs `lowiropt -O1` on handwritten LowIR.
 - `tests/o2` runs `lowiropt -O2` on handwritten LowIR.
+- `tests/o3` runs `lowiropt -O3` on handwritten LowIR.
 - `tests/driver/o1` runs `cppgm++ --emit-lowir -g0 -O1` on source programs.
 - `tests/driver/o2` runs `cppgm++ --emit-lowir -g0 -O2` on source programs.
+- `tests/driver/o3` runs `cppgm++ --emit-lowir -g0 -O3` on source programs.
 - `tests/object-roundtrip` compares direct `cppgm++ -c` output against an
   object produced by `cppgm++ --emit-lowir -O0` followed by `cppgm++ -c` on
   the generated LowIR file. This checks that object emission can be
@@ -236,7 +1079,13 @@ source-language clauses.
   data. These tests may be standalone `.cpp` files or symlinks to existing
   `.t` harness cases; a selected `.t` test expands to its numbered `.t.1`,
   `.t.2`, ... source files when those sidecars exist. The harness checks
-  no-debug objects at `-O0`, `-O1`, and `-O2`.
+  no-debug objects at `-O0`, `-O1`, `-O2`, and `-O3`. A
+  GNU-section reducer additionally checks the global-section and relocation
+  relationships in both objects rather than relying only on byte equality. A
+  `default-no-optimization` case also checks that omitting `-O` matches
+  explicit `-O0`. A parameter-object-extent case additionally makes O3 object
+  shape depend on a source-produced member-object boundary, so byte equality
+  checks compiler-object and textual LowIR transport of that fact.
 
 Run the debug metadata preservation lanes with:
 
@@ -246,14 +1095,16 @@ make test-debuginfo
 
 This also runs `tests/object-roundtrip` in debuginfo mode, comparing direct
 `cppgm++ -c` output against LowIR-input `cppgm++ -c` output with
-`-gline-tables-only` at `-O0` and `-O1`.
+`-gline-tables-only` at `-O0`, `-O1`, `-O2`, and `-O3`.
 
 `make test-debuginfo` runs:
 
 - `tests/debuginfo/o1`
 - `tests/debuginfo/o2`
+- `tests/debuginfo/o3`
 - `tests/debuginfo/driver/o1`
 - `tests/debuginfo/driver/o2`
+- `tests/debuginfo/driver/o3`
 
 The direct debug-info tests run `lowiropt -O*` over LowIR containing
 `!dbg(...)` metadata. The driver debug-info tests run
@@ -269,14 +1120,165 @@ directory's LowIR validation mode.
 
 PA37 does not require:
 
-- SSA construction as an IR requirement
-- global value numbering or partial redundancy elimination
+- input programs to arrive in SSA form
+- PRE that requires critical-edge splitting, speculative trapping operations,
+  or an unbounded insertion/fixed-point schedule
 - alias-driven aggressive dead-store elimination
-- loop optimizations, vectorization, or general-purpose inlining beyond the
-  small direct-call inlining described for `-O1`
+- partial unrolling, peeling, vectorization, or loop transformations beyond
+  the conservative motion and full-unrolling rules described above
 - machine-IR scheduling or register-allocation optimization
-- interprocedural optimization
+- unbounded interprocedural cloning, externally observable ABI changes,
+  semantic body merging, or indirect-call specialization
 - size-specific `-Os` or `-Oz` behavior
+
+### Design Notes
+
+A compact implementation can assign dense indices to function definitions and
+store direct-call edges in adjacency arrays. Computing strongly connected
+components once identifies recursive callees and provides a stable callee-first
+order without repeated symbol-name lookup. Use the typed symbol operands and
+metadata already present in LowIR when building the graph and its reachability
+roots; string rendering is only needed when serializing the final program.
+Represent an ordinary call to an internal function with its typed call edge,
+not with a permanent object root.  Reserve object roots for independent
+address, lifecycle, ABI, or explicit-publication requirements so a definition
+can disappear when inlining removes its last call.
+
+Publish a changed nonrecursive callee's cleaned instruction, block, call, and
+EH shape before advancing through that stable order. Direct calls cloned from
+the callee can only target descendants that have already been visited, so the
+ordinary acyclic case converges in one traversal. This avoids whole-program
+fixed-point retries; only a later policy that changes incoming-use eligibility
+needs a deduplicated reverse-caller worklist.
+
+Before constructing CFG and use-count state for Boolean-diamond cleanup, scan
+for either the three-instruction `phi`/`cmp`/`branch` merge or the loop-local
+`phi`/`branch` shape. Dense use counts prove that intermediate values are
+private to the shape. The loop forest distinguishes an iteration-local choice
+from a loop-carried state value, and typed block IDs and predecessor arrays are
+sufficient to retarget branches without rendered labels or repeated graph
+searches.
+
+The direct-call graph can record non-call observation in one byte per function
+while it scans instruction operands and structured global data. Reverse-edge
+counts then identify the single-direct-call case without another symbol lookup
+or program pass. When that definition is discardable, move the instruction
+payloads into their renamed caller form and release the old body immediately.
+Keep the ordinary and definition-removing budgets independent so exhausting
+the latter does not suppress an otherwise ordinary inline. Charging at most
+one original translation unit of definition-removing work keeps the policy
+linear while allowing a large input proportionally more useful transfers than
+a small one. After pruning dead callers, rebuild the compact graph once and
+run only this definition-removing policy in callee-first order. A transferred
+callee can then become part of a later transferred caller in the same wave;
+do not implement the cascade as repeated whole-program fixed-point scans.
+
+Track the caller's active EH state as one dense fact per block. A callee that
+contains no EH control instruction can inherit that state without rewriting
+exception metadata: its cloned ordinary calls remain between the caller's
+existing `eh_try`/`eh_cleanup` and `eh_end`. Keep landing blocks themselves and
+callees with their own EH control out of the ordinary inlining path.
+
+For dead protected-region removal, assign compact region IDs to `eh_try` and
+`eh_cleanup` instructions and propagate the active region stack over ordinary
+CFG edges. Mark a region unsafe from typed call/unwind facts, then propagate
+that state to its parent once. Conflicting stacks at a merge reject the
+function conservatively. This keeps the proof proportional to instructions,
+CFG edges, and EH nesting rather than retrying the translation unit.
+
+Interprocedural argument agreement can reuse that same direct-call graph and
+its dense symbol-to-function table. Store parameter facts in one packed array
+with per-function offsets, and scan typed call operands once; do not build a
+second graph or use rendered symbol names as keys. A weak target keeps its
+original body while direct calls are redirected to a bounded internal clone,
+so pruning the now-undemanded weak body remains an ordinary reachability
+decision. Run local simplification and effect-aware dead-code elimination only
+for changed callees and callers.
+
+For slot promotion, collect definition blocks by typed slot identity and place
+phis with an iterated dominance-frontier worklist. Dense block epochs let one
+set of scratch vectors serve every slot. Keep the work proportional to direct
+slot accesses, relevant control-flow edges, and inserted phis, and apply an
+explicit growth bound before adding merge instructions.
+
+Small-object scalar replacement can reuse dense value-indexed address facts
+and slot-indexed candidate facts. Trace only typed `addr`, pointer `copy`, and
+`index` operations, reject a candidate as soon as an unsupported use is seen,
+and hand the resulting scalar slot to the ordinary promotion pass. A
+union/find over complete `copyobj` edges lets connected temporary objects share
+one observed scalar type without string keys or repeated instruction scans.
+
+At `-O2` and `-O3`, extend that complete-use proof to ordinary scalar slots
+whose address was materialized. Follow only typed `addr`, pointer `copy`, and
+zero-offset `index` chains. Canonicalize complete, type-compatible,
+nonvolatile loads, stores, exact whole-slot copies, and exact whole-slot zero
+initialization back to direct slot operations, then let ordinary slot
+promotion construct SSA. This includes a supported pointer store exposed by
+inlining a helper before the recovery pass. Keep the slot when its pointer
+escapes, an address step is nonzero or variable, an access is volatile, an
+access covers only part of the slot, or observed scalar types disagree. `-O0`
+and `-O1` retain the addressed scalar form. Candidate, promoted-slot,
+memory-rewrite, and copy-rewrite accounting remains bounded by dense slot and
+instruction scans.
+
+For redundant-load elimination, derive compact location identities from the
+typed `addr` and `index` operations. Sparse memory versions placed through the
+same dominance frontiers can represent stores and conservative unknown-memory
+barriers without copying a dense location table into every block. Hash keys
+should contain typed IDs, offsets, types, and version numbers rather than
+rendered LowIR text.
+Exact pointer copies and phis whose incoming address facts are identical keep
+the original unknown-pointer identity; only an operation that may form a
+different address needs a new identity.
+
+EH-aware value passes can propagate a compact region-stack identity over
+ordinary CFG edges. Give handler entries and region-changing or may-unwind
+instructions a shared sparse barrier version, and reject a function when two
+different stacks reach an ordinary merge. Including that one version in each
+typed memory key avoids clearing every location at every boundary.
+
+For expression PRE, index occurrences by the same typed expression key used
+for ordinary value reuse. Dominator queries can find values available on each
+incoming edge without copying expression maps into every block. Keep
+availability probes and inserted instructions explicitly bounded, and skip a
+candidate when a safe insertion would require splitting a critical edge.
+
+CFG, dominator, and natural-loop facts can share one per-function analysis
+owner with an explicit invalidation epoch. Dense block IDs, compact successor
+lists, and epoch-marked membership vectors keep loop discovery proportional to
+CFG edges and reported loop memberships. For invariant motion, build a packed
+producer-to-user worklist and use typed value, slot, and global IDs for memory
+checks; render names only while writing LowIR text.
+
+Straight-line CFG cleanup can preserve definition-before-use presentation with
+an O(1) block-order check: merge a sole-successor target into its predecessor
+only when the target is later in the serialized block sequence. More general
+block motion requires tracking all affected definitions and uses.
+
+Full unrolling can reuse those loop facts and a dense value-ID replacement
+table. Plan the trip count and growth before cloning, use generated value IDs
+for each iteration, and invalidate the shared CFG facts once after a retained
+rewrite. A single function scan and a translation-unit instruction counter are
+sufficient; no loop-level fixed point or rendered-name map is needed.
+
+The late optimized inlining wave may rebuild the typed direct-call graph once
+after the selected level's local transforms. Cache compact per-function
+instruction counts and shape facts while building that graph. Admit only
+nonrecursive bodies within the explicit size limits, charge each optimized
+body against a fresh bounded caller budget, and revisit only callers that
+changed. Multi-block substitution can reuse the ordinary typed block, value,
+slot, return-merge, and phi-edge machinery. This permits scalar replacement
+and CFG cleanup to expose small accessors and wrappers without an unbounded
+optimizer fixed point or repeated body scans at call sites.
+
+Carry the inline preference as one Boolean in typed symbol metadata and test it
+beside the cached body-shape summary. It should not require source-name lookup,
+rendered metadata parsing, a separate call graph, or an additional function
+scan.
+
+For unreachable-edge cleanup, mark blocks by `BlockId` when their terminator is
+`unreachable`, then inspect conditional successor edges. This keeps the scan
+linear in blocks and instructions without symbol-name or metadata-text lookups.
 
 ### After PA37
 

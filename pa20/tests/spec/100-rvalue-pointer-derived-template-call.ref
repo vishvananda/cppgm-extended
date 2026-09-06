@@ -22,7 +22,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = load ptr %t5
     %t7 = index i8 [projection=base_subobject] %t6, 0
     %t8 = call obj<1x1> @boost__fusion__vector_detail__value_at_impl(%t7)
-    copyobj 1x1 %t8, %t3
     %t9 = const i64 1
     %t10 = const i64 1
     %t11 = cmp eq i64 %t9, %t10

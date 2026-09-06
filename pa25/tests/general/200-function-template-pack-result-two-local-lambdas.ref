@@ -19,7 +19,6 @@ function @holder_int___run(%this : ptr) -> void [binding=weak, object=_ZN6holder
     %t2 = addr $arg__2
     %t3 = addr $arg__3
     %t4 = call obj<1x1> @make_pack(%t2, %t3)
-    copyobj 1x1 %t4, %t1
     return void
 }
 function @holder_int___holder(%this : ptr) -> void [unwind=no, binding=weak, object=_ZN6holderIiEC1Ev, trivial_lifecycle=yes] {

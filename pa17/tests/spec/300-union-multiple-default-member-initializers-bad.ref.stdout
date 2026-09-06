@@ -1,0 +1,6 @@
+ERROR: union cannot have multiple default member initializers at tests/spec/300-union-multiple-default-member-initializers-bad.t:4:7 [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings ]
+Diagnostic context:
+analyze_function_binding_output [main]
+  analyze_statement [simple-declaration] at tests/spec/300-union-multiple-default-member-initializers-bad.t:9:3
+    complete_class_type [union Invalid]
+      populate_class_info [Invalid] at tests/spec/300-union-multiple-default-member-initializers-bad.t:1:1

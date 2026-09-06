@@ -1,0 +1,1 @@
+ERROR: tests/spec/200-bad-function-debug-zero-line.t:1: debug line must be positive

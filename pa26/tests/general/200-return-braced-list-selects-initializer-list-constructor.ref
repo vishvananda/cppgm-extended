@@ -22,7 +22,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $discard__1
     %t2 = call obj<1x1> @make_values()
-    copyobj 1x1 %t2, %t1
     return i32 0
 }
 function @values__values(%this : ptr, %__param1 : obj<16x8>) -> void [binding=weak, object=_ZN6valuesC1ESt16initializer_listI4itemE] {

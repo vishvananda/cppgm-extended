@@ -1,0 +1,11 @@
+ERROR: failed class template instantiation: use<owner::hidden> [scope <here>] [arg_texts owner::hidden] [bindings ] [phase callsemantic] [top-level declaration 2 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier use<owner::hidden>
+  init-declarator-list
+    init-declarator
+      declarator
+        identifier rejected
+}]
+Diagnostic context:
+collect_simple_declaration [use<owner::hidden>rejected;] at tests/spec/300-private-member-alias-template-argument-rejected.t:15:1
+  lookup_type [use<owner::hidden>]

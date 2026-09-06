@@ -1,0 +1,105 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @observed
+  storage scalar u32
+  init u32 0
+
+function @sink
+  abi
+    param %ret -> rdi : ptr
+    param %this -> rsi : ptr
+    param %initializer -> rdx : u32
+    param %scope -> rcx : u32
+    param %type -> r8 : u32
+    param %local -> r9 : u8
+    return void -> void
+  frame
+    stack_size 48
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    store.u32 @observed, r8
+    ret
+
+function @wide
+  abi
+    param %ret -> rdi : ptr
+    param %this -> rsi : ptr
+    param %initializer -> rdx : u32
+    param %scope -> rcx : u32
+    param %type -> r8 : u32
+    param %local -> r9 : u8
+    param %require -> [rbp+16] : u8
+    param %preserve -> [rbp+24] : u8
+    return void -> void
+  frame
+    stack_size 80
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+    param-slot %scope -> [rbp-4] : u32
+    param-slot %require -> [rbp-5] : u8
+    param-slot %preserve -> [rbp-6] : u8
+
+  block ^entry
+    store.u32 [rbp-4], rcx
+    load.u8 rax, [rbp+16]
+    store.u8 [rbp-5], rax
+    load.u8 rax, [rbp+24]
+    store.u8 [rbp-6], rax
+    load.i64 rbx, [rsi+8]
+    add rbx, 1
+    store.i64 [rsi+8], rbx
+    call @sink [args=(rcx,rdx,rsi,rdi,r8,r9)]
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 80
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+    slot $object -> [rbp-16] : obj<16x8>
+
+  block ^entry
+    lea r8, [rbp-16]
+    lea rbx, [r8+8]
+    store.i64 [rbx], 0
+    sub rsp, 16
+    mov rdi, r8
+    mov rsi, r8
+    mov rdx, 1
+    mov rcx, 2
+    mov r8, 77
+    mov r9, 0
+    mov r11, 1
+    store.i64 [rsp], r11
+    mov r11, 1
+    store.i64 [rsp+8], r11
+    call @wide [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
+    add rsp, 16
+    load.u32 r8, @observed
+    mov rdx, 77
+    cmp.u32 r8, rdx
+    setne r8
+    movzx r8, r8
+    load.i64 r9, [rbx]
+    mov rdx, 1
+    cmp.i64 r9, rdx
+    setne r9
+    movzx r9, r9
+    or r8, r9
+    mov rax, r8
+    sext.i32 rax
+    ret rax

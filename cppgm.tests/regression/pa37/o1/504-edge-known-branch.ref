@@ -1,0 +1,21 @@
+function @fold_false_edge(%condition : i64) -> i64 {
+  block ^entry:
+    branch %condition, ^entry, ^merge
+
+  block ^merge:
+    return i64 7
+}
+function @retain_removed_phi_edge(%condition : i64) -> i64 {
+  block ^entry:
+    branch %condition, ^phi_target, ^known_false
+
+  block ^known_false:
+    branch %condition, ^phi_target, ^selected
+
+  block ^phi_target:
+    %value = phi i64 [^entry: 11, ^known_false: 12]
+    return i64 %value
+
+  block ^selected:
+    return i64 3
+}

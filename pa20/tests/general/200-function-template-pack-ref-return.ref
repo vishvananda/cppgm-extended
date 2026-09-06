@@ -7,7 +7,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $t
     %t2 = addr $x
     %t3 = call obj<1x1> @N__forward_as_tuple(%t2)
-    copyobj 1x1 %t3, %t1
     %t4 = addr $t
     return i32 0
 }

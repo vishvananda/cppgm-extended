@@ -1,0 +1,18 @@
+ERROR: unsupported constexpr variable initializer at tests/spec/400-constexpr-pointer-beyond-one-past-bad.t:4:21 [top-level declaration 1 kind=simple-declaration ast={simple-declaration
+  decl-specifier-seq
+    decl-specifier KW_CONSTEXPR:constexpr
+    decl-specifier KW_CONST:const
+    decl-specifier KW_INT:int
+  init-declarator-list
+    init-declarator
+      declarator
+        ptr-operator OP_STAR:*
+        identifier invalid
+      initializer
+        binary-expression OP_PLUS:+
+          id-expression values
+          literal 3
+}]
+Diagnostic context:
+collect_simple_declaration [constexpr const int*invalid=values+3;] at tests/spec/400-constexpr-pointer-beyond-one-past-bad.t:4:1
+  analyze_call_expression [] at tests/spec/400-constexpr-pointer-beyond-one-past-bad.t:3:1

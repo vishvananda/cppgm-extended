@@ -1,0 +1,111 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @first_value
+  storage scalar i64
+  init i64 11
+
+global @second_value
+  storage scalar i64
+  init i64 13
+
+global @third_value
+  storage scalar i64
+  init i64 17
+
+global @observed
+  storage scalar i64
+  init i64 0
+
+function @touch
+  abi
+    return void -> void
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    ret
+
+function @finish
+  abi
+    param %first -> rdi : ptr
+    param %second -> rsi : ptr
+    param %third -> rdx : ptr
+    param %fourth -> rcx : i32
+    return void -> void
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12
+
+  block ^entry
+    load.i64 r9, [rdi]
+    load.i64 rbx, [rsi]
+    load.i64 r12, [rdx]
+    add r9, rbx
+    add r9, r12
+    mov rbx, rcx
+    sext.i32 rbx
+    add r9, rbx
+    store.i64 @observed, r9
+    ret
+
+function @reduced
+  abi
+    param %first -> rdi : ptr
+    param %second -> rsi : ptr
+    param %third -> rdx : ptr
+    param %fourth -> rcx : i32
+    return void -> void
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14
+
+  block ^entry
+    mov r14, rdi
+    mov r13, rsi
+    mov r12, rdx
+    mov rbx, rcx
+    call @touch [args=()]
+    mov rdi, r14
+    mov rsi, r13
+    mov rdx, r12
+    mov rcx, rbx
+    call @finish [args=(rcx,rdx,rsi,rdi)]
+    ret
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 48
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rdi, @first_value
+    mov rsi, @second_value
+    mov rdx, @third_value
+    mov rcx, 19
+    call @reduced [args=(rcx,rdx,rsi,rdi)]
+    load.i64 r8, @observed
+    mov rdx, 60
+    cmp.i64 r8, rdx
+    setne r8
+    movzx r8, r8
+    mov rax, r8
+    sext.i32 rax
+    ret rax

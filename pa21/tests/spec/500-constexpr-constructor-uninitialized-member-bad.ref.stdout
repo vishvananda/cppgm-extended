@@ -1,0 +1,3 @@
+ERROR: constexpr constructor must initialize every scalar data member at tests/spec/500-constexpr-constructor-uninitialized-member-bad.t:7:3 [top-level declaration 0 kind=class-specifier value=invalid_object text=invalid_object]
+Diagnostic context:
+collect_class_declaration [invalid_object] at tests/spec/500-constexpr-constructor-uninitialized-member-bad.t:3:1

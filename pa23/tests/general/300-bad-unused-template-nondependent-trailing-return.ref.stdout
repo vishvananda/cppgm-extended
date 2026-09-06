@@ -1,0 +1,27 @@
+ERROR: unsupported template declarator [decl-specifier-seq] [top-level declaration 0 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        parameter-pack ...
+        identifier T
+  simple-declaration
+    decl-specifier-seq
+      decl-specifier KW_AUTO:auto
+    init-declarator-list
+      init-declarator
+        declarator
+          identifier skipped
+          parameter-clause
+            parameter-declaration
+              decl-specifier-seq
+                decl-specifier TT_IDENTIFIER:T
+              declarator
+                parameter-pack ...
+          trailing-return-type missing_type
+            type-id
+              type-specifier-seq
+                type-name missing_type
+}]
+Diagnostic context:
+collect_template_declaration [template<class...T>auto skipped(T...)->missing_type;] at tests/general/300-bad-unused-template-nondependent-trailing-return.t:5:1

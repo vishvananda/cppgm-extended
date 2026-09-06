@@ -1,0 +1,39 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    slot $source -> [rbp-8] : obj<8x8>
+    slot $destination -> [rbp-16] : obj<8x8>
+
+  block ^entry
+    store.i64 [rbp-8], 7
+    mov r8, 96
+    mov rcx, 32
+    mov rax, r8
+    cqo
+    idiv rcx
+    mov r8, rax
+    copy_bytes 8x8, [rbp-16], [rbp-8]
+    load.i64 r9, [rbp-16]
+    mov rdi, 10
+    add rdi, 20
+    add rdi, r8
+    add rdi, r9
+    mov rdx, 40
+    cmp.i64 rdi, rdx
+    setne rdi
+    movzx rdi, rdi
+    mov rax, rdi
+    sext.i32 rax
+    ret rax

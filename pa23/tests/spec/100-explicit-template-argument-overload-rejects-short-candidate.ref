@@ -20,7 +20,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $argobj__2
     %t3 = addr $h
     %t4 = call obj<1x1> @holder_int___pick(%t3, 0)
-    copyobj 1x1 %t4, %t2
     %t5 = call i32 @score__ov2($argobj__2)
     %t6 = cmp eq i32 %t5, 3
     branch %t6, ^cond_then_1, ^cond_else_2

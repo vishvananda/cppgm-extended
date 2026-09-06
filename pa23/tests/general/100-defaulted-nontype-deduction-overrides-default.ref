@@ -13,7 +13,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $argobj__3
     call void @X_4___X(%t3)
     %t4 = call obj<1x1> @f($argobj__2, $argobj__3)
-    copyobj 1x1 %t4, %t1
     call void @check($argobj__1)
     return i32 0
 }

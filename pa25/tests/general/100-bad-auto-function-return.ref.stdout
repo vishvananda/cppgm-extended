@@ -1,0 +1,23 @@
+ERROR: unsupported function decl-specifier-seq [specifiers auto] [declarator ] [top-level declaration 0 kind=function-definition ast={function-definition
+  decl-specifier-seq
+    decl-specifier KW_AUTO:auto
+  declarator
+    identifier f
+    parameter-clause
+      parameter-declaration
+        decl-specifier-seq
+          decl-specifier KW_INT:int
+        declarator
+          identifier x
+  compound-statement
+    if-statement
+      condition
+        id-expression x
+      then
+        return-statement
+          literal 1
+    return-statement
+      literal 2.0
+}]
+Diagnostic context:
+collect_function_definition [auto f(int x){if(x)return 1;return 2.0;}] at tests/general/100-bad-auto-function-return.t:1:1

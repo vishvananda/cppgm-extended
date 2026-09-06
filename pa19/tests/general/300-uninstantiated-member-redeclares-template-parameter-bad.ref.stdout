@@ -1,0 +1,20 @@
+ERROR: template parameter redeclared at tests/general/300-uninstantiated-member-redeclares-template-parameter-bad.t:13:3 [top-level declaration 1 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_VOID:void
+    declarator
+      identifier box<T>::touch
+      parameter-clause
+    compound-statement
+      alias-declaration T
+        type-id
+          type-specifier-seq
+            type-specifier KW_INT:int
+}]
+Diagnostic context:
+collect_template_declaration [template<class T>void box<T>::touch(){using T=int;}] at tests/general/300-uninstantiated-member-redeclares-template-parameter-bad.t:10:1

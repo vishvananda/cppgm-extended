@@ -11,7 +11,6 @@ make test
 make test-paN
 make test-report-through-paN
 make test-report
-make test-strict
 make inception
 ```
 
@@ -20,7 +19,6 @@ make inception
 - `make test-paN` runs one assignment.
 - `make test-report-through-paN` runs the report suite through PA N.
 - `make test-report` runs the broad keep-going report.
-- `make test-strict` runs stricter suites used by selected later assignments.
 - `make inception` runs the final PA39 self-host comparison.
 
 The exit criterion for PA N is a clean root `make test-report-through-paN`.
@@ -67,10 +65,26 @@ Add focused regression tests for new bugs. Put shared student tests under
 `cppgm.tests/course/paN/` when they should travel with the course-wide harness;
 put PA-local tests under `paN/tests/` when they are specific to one assignment.
 
+Do not create a dormant proposed or candidate test tree. When a new course
+requirement intentionally changes a checked-in semantic, LowIR, MIR, or object
+contract, update the authoritative reference and put the reducer directly in
+the earliest owning course suite. Correct an existing assignment fixture and
+regenerate its reference in place when that fixture already owns the behavior.
+
+Deliberately ill-formed inputs belong in the active owning suite when rejection
+is required; name them as negative tests and compare failure status. Source
+that relies on implementation-reserved identifiers is not a portable course
+requirement and should be rewritten or removed.
+
 ## References
 
 Reference outputs, stdout refs, exit-status refs, and inspect refs are the test
 oracle. Do not edit them to hide an incomplete implementation.
+
+Some assignment handouts retain informational output that is not a grading
+oracle. In particular, PA29 behavior tests include the reference MIR so
+students can inspect it, but grade only compiler and generated-program
+outcomes. The owning README identifies which sidecars are informational.
 
 Reference binaries such as `pptoken-ref` or `cppgm++-ref` are provided for
 observing expected behavior and regenerating reference fixtures. They must not
@@ -106,24 +120,16 @@ make -C paN ref-test
 These targets intentionally fail if the needed reference binary cannot be
 downloaded or verified. There is no fallback to the implementation under test.
 
-## Strict And Debug Fixtures
+## Debug Fixtures
 
-Some later assignments include optional stricter comparisons, witness fixtures,
-debug-info fixtures, or object/link inspection checks. Run the targets named in
-the PA handout when you touch that surface. The broad root commands are:
+Some later assignments include optional debug-info fixtures or object/link
+inspection checks. Run the targets named in the PA handout when you touch that
+surface. The broad root commands are:
 
 ```sh
-make test-strict
-make ref-test-strict
+make test-debuginfo
 make ref-test-debuginfo
 ```
 
-Strict/reference regeneration is for maintaining fixtures from the provided
-reference tools, not for making current incorrect output pass.
-
-Strict witness comparison is byte-exact. The compact public witness format
-canonicalizes both internal `ensure-definition` and `require-definition`
-lifecycle events as `require-definition`, because they are the same observable
-definition demand and their distinction depends on compiler scheduling. Raw
-patched-Clang JSON and debug witness output retain the original event kinds and
-provenance for investigation.
+Reference regeneration is for maintaining fixtures from the provided reference
+tools, not for making current incorrect output pass.

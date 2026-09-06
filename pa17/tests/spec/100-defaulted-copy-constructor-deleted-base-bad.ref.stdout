@@ -1,0 +1,4 @@
+ERROR: use of deleted Derived::Derived [function main] [is_method no] [body_parent_scope <here>] [body_parent_bindings ] [body_function_scope <here>] [body_function_bindings {values:destination=struct Derived,source=struct Derived}]
+Diagnostic context:
+analyze_function_binding_output [main]
+  analyze_statement [simple-declaration] at tests/spec/100-defaulted-copy-constructor-deleted-base-bad.t:4:30

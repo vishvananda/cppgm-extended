@@ -1,0 +1,11 @@
+ERROR: constexpr function requires a literal return type at tests/spec/500-constexpr-void-function-bad.t:3:1 [top-level declaration 0 kind=function-definition ast={function-definition
+  decl-specifier-seq
+    decl-specifier KW_CONSTEXPR:constexpr
+    decl-specifier KW_VOID:void
+  declarator
+    identifier invalid_function
+    parameter-clause
+  compound-statement
+}]
+Diagnostic context:
+collect_function_definition [constexpr void invalid_function(){}] at tests/spec/500-constexpr-void-function-bad.t:3:1

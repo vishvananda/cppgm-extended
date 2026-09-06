@@ -150,6 +150,8 @@ surface:
   facts used by typed catches
 - reuse of host EH runtime declarations emitted by the frontend
 - source-driven host-EH object smoke tests used to guard the backend path
+- call-site coalescing safety across unprotected unwind barriers and distinct
+  cleanup or catch continuations
 
 For each test anchor `x.t`, companion C++ sources are named:
 
@@ -199,6 +201,22 @@ runtime-helper object surface for `cppgm++ -c` within the supported subset:
 8. Preserve translation-unit-local object binding for generated functions in a
    non-ODR-mergeable local context; do not export a local lambda call operator
    as a weak or global host symbol.
+9. If adjacent LSDA call-site ranges are coalesced, keep an unprotected
+   potentially-throwing range as a barrier and never combine ranges with
+   different landing pads or action continuations.
+10. Share one translation-unit-local terminate action across function exception
+    boundaries. It receives the active exception object, calls
+    `__cxa_begin_catch`, and then calls `std::terminate`; individual landings
+    shall not repeat the begin-catch call.
+11. Within one function, route semantic resume operations through one physical
+    `_Unwind_Resume` terminal that reloads the active exception from the
+    function's host-EH slot. Keep the source cleanup paths distinct in LowIR
+    and MIR.
+12. Keep the LSDA call-site table sparse. In an LSDA-bearing function, a
+    potentially throwing call outside a protected region still needs an
+    explicit null-landing entry so unwinding continues through the function,
+    but ordinary instruction gaps need no entry. Adjacent unprotected calls
+    between the same protected regions may share one null-landing range.
 
 If object inspection shows missing or malformed host EH metadata for a basic
 throw/catch/cleanup case, fix the host-EH lowering or object-emission path.
@@ -233,3 +251,18 @@ host ABI symbols and platform EH metadata:
 
 Do not construct host EH facts from source text. The object backend should work
 from typed semantic/runtime-role information and final machine layout.
+
+A compact terminate boundary can pass the typed exception value to a single
+internal helper. This keeps the handler-entry ABI sequence in one place while
+leaving ordinary source catch handlers independent.
+
+The host-object layout walk can count MIR resume operations once, allocate a
+terminal only for a function that needs one, and branch each resume to it. A
+single typed frame-slot identity is sufficient; rendered slot or label names
+are not needed.
+
+The same layout walk can retain exact unprotected potentially-throwing call
+ranges. Merge those ranges with protected call sites in address order when
+writing the LSDA, coalescing unprotected calls only within one interval between
+protected sites. This avoids reconstructing call-site coverage from the full
+function byte range.

@@ -1,0 +1,2410 @@
+#include "lowering/objects/polymorphism.h"
+
+#include "lowering/abi/mangling.h"
+#include "lowering/presentation/local_names.h"
+#include "lowering/abi/symbol_names.h"
+#include "lowering/core/source_types.h"
+#include "lowering/support/errors.h"
+
+#include <limits>
+#include <string>
+#include <utility>
+
+namespace cppgm
+{
+namespace lowering
+{
+
+using namespace semantic;
+using namespace semantic;
+using namespace lowering::ir;
+
+PolymorphismLoweringState::PolymorphismLoweringState()
+	: pure_virtual_symbol(kNoLowId), rtti_class_symbol(kNoLowId),
+	  rtti_si_symbol(kNoLowId), rtti_vmi_symbol(kNoLowId),
+	  rtti_fundamental_symbol(kNoLowId), rtti_pointer_symbol(kNoLowId),
+	  rtti_enum_symbol(kNoLowId), rtti_array_symbol(kNoLowId),
+	  rtti_function_symbol(kNoLowId), rtti_member_pointer_symbol(kNoLowId),
+	  dynamic_cast_symbol(kNoLowId),
+	  bad_cast_symbol(kNoLowId), bad_typeid_symbol(kNoLowId),
+	  eh_resume_symbol(kNoLowId), eh_allocate_exception_symbol(kNoLowId),
+	  eh_begin_catch_symbol(kNoLowId), eh_end_catch_symbol(kNoLowId),
+	  eh_rethrow_symbol(kNoLowId), eh_throw_symbol(kNoLowId),
+	  eh_personality_symbol(kNoLowId),
+	  need_dynamic_cast(false), need_bad_cast(false), need_bad_typeid(false),
+	  need_exceptions(false), need_throw(false),
+	  need_exception_handlers(false), need_rethrow(false),
+	  source_function_first(0)
+{
+}
+
+bool IsFunctionLocalEntity(const semantic::Program& program, EntityId entity)
+{
+	if (entity == kNoEntity || entity >= program.entities.size()) return false;
+	for (ScopeId scope = program.entities[entity].owner;
+		scope != kNoScope; scope = program.ParentScope(scope))
+	{
+		if (program.KindOfScope(scope) == SCOPE_FUNCTION) return true;
+		if (program.KindOfScope(scope) == SCOPE_NAMESPACE) return false;
+	}
+	return false;
+}
+
+bool PreferLocalObjectBinding(const semantic::Program& program, EntityId entity)
+{
+	if (entity == kNoEntity || entity >= program.entities.size()) return false;
+	EntityId owner = entity;
+	for (std::size_t depth = 0; depth < program.entities.size(); ++depth)
+	{
+		const BindingId context = program.entities[owner].local_context;
+		if (context == kNoBinding || context >= program.bindings.size())
+			return false;
+		const BindingRecord& function = program.bindings[context];
+		if (function.member_owner == kNoEntity)
+			return !function.weak_odr &&
+				function.template_argument_count == 0;
+		if (function.member_owner >= program.entities.size() ||
+			!program.entities[function.member_owner].lambda_closure)
+			return false;
+		owner = function.member_owner;
+	}
+	return false;
+}
+
+std::uint32_t ResolveHostVirtualSlot(const semantic::Program& program,
+	bool host_object_emission, const PolymorphismLoweringState& state,
+	const DumpNode& record, EntityId object_entity)
+{
+	if (!host_object_emission || record.binding == kNoBinding ||
+		record.binding >= program.bindings.size())
+		return record.virtual_slot;
+	const BindingId function = program.bindings[record.binding].canonical;
+	if (function >= state.host_primary_slot_by_binding.size() ||
+		program.bindings[function].member_owner != object_entity)
+		return record.virtual_slot;
+	const std::uint32_t slot = state.host_primary_slot_by_binding[function];
+	return slot == kNoDumpEdge ? record.virtual_slot : slot;
+}
+
+namespace
+{
+
+class GlobalEmitter
+{
+public:
+	GlobalEmitter(const SemanticGraphView& graph, lowering::ir::Program& output,
+		lowering::Stats* stats, std::size_t source_ordinal,
+		const std::vector<SymbolId>& function_symbols,
+		PolymorphismLoweringState* state)
+		: graph_(graph), program_(graph.program), output_(output), stats_(stats),
+		  source_ordinal_(source_ordinal), function_symbols_(function_symbols),
+		  state_(*state), source_types_(program_), adjusted_slot_slots_(32, 0)
+	{
+	}
+
+	void Prepare()
+	{
+		InitializeState();
+		CollectRttiDemands();
+		RegisterSymbols();
+		EmitGlobals();
+	}
+
+private:
+	void BuildHostPrimarySlots()
+	{
+		std::vector<std::uint8_t> represented(program_.bindings.size(), 0);
+		for (EntityId entity = 0;
+			entity < graph_.class_polymorphism.size(); ++entity)
+		{
+			const std::vector<VirtualSlotFact>& slots =
+				graph_.class_polymorphism[entity].slots;
+			state_.class_host_primary_slots[entity] = slots;
+			for (std::size_t slot = 0; slot < slots.size(); ++slot)
+			{
+				const BindingId function =
+					program_.bindings[slots[slot].function].canonical;
+				if (program_.bindings[function].member_owner == entity)
+					represented[function] = 1;
+			}
+		}
+		if (output_.host_object_emission)
+		{
+			std::vector<VirtualSlotFact> candidates(program_.bindings.size());
+			for (EntityId entity = 0;
+				entity < graph_.class_polymorphism.size(); ++entity)
+			{
+				const ClassPolymorphismFacts& facts =
+					graph_.class_polymorphism[entity];
+				for (std::size_t view = 0; view < facts.views.size(); ++view)
+					for (std::size_t slot = 0;
+						slot < facts.views[view].slots.size(); ++slot)
+					{
+						const VirtualSlotFact& source = facts.views[view].slots[slot];
+						const BindingId function =
+							program_.bindings[source.function].canonical;
+						if (program_.bindings[function].member_owner == entity &&
+							!represented[function] &&
+							candidates[function].root == kNoBinding)
+						{
+							candidates[function] = source;
+							candidates[function].this_adjustment = 0;
+						}
+					}
+			}
+			for (BindingId function = 0;
+				function < candidates.size(); ++function)
+				if (candidates[function].root != kNoBinding)
+				{
+					const EntityId entity =
+						program_.bindings[function].member_owner;
+					state_.class_host_primary_slots[entity].push_back(
+						candidates[function]);
+				}
+		}
+
+		for (EntityId entity = 0;
+			entity < graph_.class_polymorphism.size(); ++entity)
+		{
+			const std::vector<VirtualSlotFact>& primary =
+				state_.class_host_primary_slots[entity];
+			std::uint64_t physical = 0;
+			for (std::size_t slot = 0; slot < primary.size(); ++slot)
+			{
+				const BindingId function =
+					program_.bindings[primary[slot].function].canonical;
+				if (program_.bindings[function].member_owner == entity)
+				{
+					if (physical >= std::numeric_limits<std::uint32_t>::max())
+						ThrowLoweringResourceLimit("host primary vtable is too large");
+					state_.host_primary_slot_by_binding[function] =
+						static_cast<std::uint32_t>(physical);
+				}
+				physical += program_.bindings[function].destructor ? 2 : 1;
+			}
+		}
+	}
+
+	const std::vector<VirtualSlotFact>& PrimarySlots(EntityId entity) const
+	{
+		return state_.class_host_primary_slots[entity];
+	}
+
+	std::uint64_t PrimaryAddressPoint(
+		const ClassPolymorphismFacts& facts) const
+	{
+		if (!output_.host_object_emission) return facts.address_point;
+		const std::uint64_t secondary_vcall_bytes =
+			static_cast<std::uint64_t>(facts.virtual_call_offsets.size()) * 8;
+		if (secondary_vcall_bytes > facts.address_point)
+			ThrowLoweringInternal("primary vtable address point is invalid");
+		return facts.address_point - secondary_vcall_bytes;
+	}
+
+	void InitializeState()
+	{
+		state_.source_function_first = output_.functions.size();
+		const std::size_t count = program_.entities.size();
+		state_.class_vtable_symbols.assign(count, kNoLowId);
+		state_.class_vtable_external.assign(count, 0);
+		state_.class_vtt_symbols.assign(count, kNoLowId);
+		state_.class_vtable_address_points.assign(count, 16);
+		state_.class_view_vtable_symbols.clear();
+		state_.class_view_vtable_symbols.resize(count);
+		state_.class_view_address_points.clear();
+		state_.class_view_address_points.resize(count);
+		state_.class_construction_vtable_symbols.clear();
+		state_.class_construction_vtable_symbols.resize(count);
+		state_.class_construction_vtt_offsets.clear();
+		state_.class_construction_vtt_offsets.resize(count);
+		state_.class_view_slot_symbols.clear();
+		state_.class_view_slot_symbols.resize(count);
+		state_.class_view_deleting_slot_symbols.clear();
+		state_.class_view_deleting_slot_symbols.resize(count);
+		state_.class_host_primary_slots.clear();
+		state_.class_host_primary_slots.resize(count);
+		state_.host_primary_slot_by_binding.assign(
+			program_.bindings.size(), kNoDumpEdge);
+		BuildHostPrimarySlots();
+		state_.vtable_thunks.clear();
+		for (EntityId entity = 0;
+			entity < graph_.class_polymorphism.size(); ++entity)
+		{
+			const ClassPolymorphismFacts& facts =
+				graph_.class_polymorphism[entity];
+			state_.class_view_vtable_symbols[entity].assign(
+				facts.views.size(), kNoLowId);
+			state_.class_vtable_address_points[entity] =
+				PrimaryAddressPoint(facts);
+			state_.class_view_address_points[entity].assign(
+				facts.views.size(), 16);
+			state_.class_construction_vtable_symbols[entity].resize(
+				program_.entities[entity].direct_base_count);
+			state_.class_construction_vtt_offsets[entity].assign(
+				program_.entities[entity].direct_base_count,
+				std::numeric_limits<std::uint64_t>::max());
+			for (std::size_t view = 0; view < facts.views.size(); ++view)
+				state_.class_view_address_points[entity][view] =
+					facts.views[view].address_point;
+			state_.class_view_slot_symbols[entity].resize(
+				facts.views.size() + 1);
+			state_.class_view_deleting_slot_symbols[entity].resize(
+				facts.views.size() + 1);
+			state_.class_view_slot_symbols[entity][0].assign(
+				PrimarySlots(entity).size(), kNoLowId);
+			state_.class_view_deleting_slot_symbols[entity][0].assign(
+				PrimarySlots(entity).size(), kNoLowId);
+			for (std::size_t view = 0; view < facts.views.size(); ++view)
+			{
+				state_.class_view_slot_symbols[entity][view + 1].assign(
+					facts.views[view].slots.size(), kNoLowId);
+				state_.class_view_deleting_slot_symbols[entity][view + 1].assign(
+					facts.views[view].slots.size(), kNoLowId);
+			}
+		}
+		state_.class_rtti_symbols.assign(count, kNoLowId);
+		state_.class_type_name_symbols.assign(count, kNoLowId);
+		state_.class_rtti_demanded.assign(count, 0);
+		const std::size_t type_count = program_.types.Size() + 1;
+		state_.type_rtti_symbols.assign(type_count, kNoLowId);
+		state_.type_name_symbols.assign(type_count, kNoLowId);
+		state_.type_rtti_demanded.assign(type_count, 0);
+		state_.exception_type_demanded.assign(type_count, 0);
+		state_.thrown_type_demanded.assign(type_count, 0);
+		state_.exception_rtti_symbols.assign(type_count, kNoLowId);
+		state_.exception_object_symbols.assign(type_count, kNoLowId);
+		state_.deleting_destructor_symbols.assign(count, kNoLowId);
+		state_.deleting_destructor_external.assign(count, 0);
+		state_.deallocation_bindings.assign(count, kNoBinding);
+		state_.complete_destructor_bindings.assign(count, kNoBinding);
+		state_.base_destructor_bindings.assign(count, kNoBinding);
+		state_.deleting_destructor_calls_complete.assign(count, 0);
+		local_function_definitions_.assign(program_.bindings.size(), 0);
+		state_.need_dynamic_cast = false;
+		state_.need_bad_cast = false;
+		state_.need_bad_typeid = false;
+		state_.need_exceptions = false;
+		state_.need_throw = false;
+		state_.need_exception_handlers = false;
+		state_.need_rethrow = false;
+		for (BindingId binding = 0; binding < program_.bindings.size(); ++binding)
+		{
+			const BindingRecord& candidate = program_.bindings[binding];
+			if (candidate.member_owner == kNoEntity ||
+				candidate.member_owner >= count) continue;
+			if (candidate.destructor)
+			{
+				if (candidate.destructor_base_entry)
+					state_.base_destructor_bindings[candidate.member_owner] = binding;
+				else if (binding == candidate.canonical)
+					state_.complete_destructor_bindings[candidate.member_owner] =
+						binding;
+			}
+			if (candidate.operator_kind != OPERATOR_DELETE) continue;
+			const TypeRecord& type = program_.types.Get(candidate.type);
+			if (type.kind != TYPE_FUNCTION ||
+				(type.parameter_count != 1 && type.parameter_count != 2)) continue;
+			BindingId& selected =
+				state_.deallocation_bindings[candidate.member_owner];
+			if (selected == kNoBinding || type.parameter_count == 1)
+				selected = candidate.canonical;
+		}
+		for (std::uint32_t node = 0; node < graph_.arena.nodes.size(); ++node)
+		{
+			const DumpNode& function = graph_.arena.nodes[node];
+			if (function.kind != DUMP_FUNCTION_DEFINITION ||
+				function.binding == kNoBinding ||
+				function.binding >= program_.bindings.size()) continue;
+			local_function_definitions_[
+				program_.bindings[function.binding].canonical] = 1;
+			const BindingRecord& binding =
+				program_.bindings[function.binding];
+			const EntityId entity = binding.member_owner;
+			if (!binding.destructor || binding.destructor_base_entry ||
+				entity == kNoEntity || entity >= count ||
+				state_.complete_destructor_bindings[entity] !=
+					binding.canonical) continue;
+			// The compact deleting-destructor builder only has the complete
+			// object's address.  A virtual-base destructor entry also needs its
+			// construction VTT and forwarded virtual-base addresses, so reusing
+			// the complete destructor is the only valid ABI boundary for these
+			// classes.  The older one-argument shortcut happened to work only
+			// while the missing argument registers retained convenient values.
+			if (program_.entities[entity].virtual_base_count != 0)
+				state_.deleting_destructor_calls_complete[entity] = 1;
+			for (std::uint32_t edge = function.first_edge;
+				edge != kNoDumpEdge; edge = graph_.arena.edges[edge].next)
+			{
+				const std::uint32_t child = graph_.arena.edges[edge].child;
+				if (graph_.arena.nodes[child].kind == DUMP_COMPOUND_STATEMENT &&
+					HasUninlinedDestructorWork(child))
+					state_.deleting_destructor_calls_complete[entity] = 1;
+			}
+		}
+	}
+
+	TypeId RttiType(TypeId type) const
+	{
+		const TypeRecord* record = &program_.types.Get(type);
+		if (record->kind == TYPE_LVALUE_REFERENCE ||
+			record->kind == TYPE_RVALUE_REFERENCE)
+		{
+			type = record->child;
+			record = &program_.types.Get(type);
+		}
+		while (record->kind == TYPE_QUALIFIED)
+		{
+			type = record->child;
+			record = &program_.types.Get(type);
+		}
+		return type;
+	}
+
+	void DemandRtti(TypeId requested)
+	{
+		if (stats_) ++stats_->rtti_demand_requests;
+		std::vector<TypeId> pending(1, RttiType(requested));
+		while (!pending.empty())
+		{
+			const TypeId type = pending.back();
+			pending.pop_back();
+			if (type >= state_.type_rtti_demanded.size())
+			{
+				const std::size_t count = program_.types.Size() + 1;
+				if (type >= count)
+					ThrowLoweringInternal("RTTI demand type is out of range");
+				state_.type_rtti_symbols.resize(count, kNoLowId);
+				state_.type_name_symbols.resize(count, kNoLowId);
+				state_.type_rtti_demanded.resize(count, 0);
+				state_.exception_type_demanded.resize(count, 0);
+				state_.thrown_type_demanded.resize(count, 0);
+				state_.exception_rtti_symbols.resize(count, kNoLowId);
+				state_.exception_object_symbols.resize(count, kNoLowId);
+			}
+			if (state_.type_rtti_demanded[type]) continue;
+			state_.type_rtti_demanded[type] = 1;
+			if (stats_) ++stats_->rtti_types_demanded;
+			const TypeRecord& record = program_.types.Get(type);
+			if (record.kind == TYPE_POINTER)
+				pending.push_back(RttiType(record.child));
+			else if (record.kind == TYPE_MEMBER_POINTER)
+			{
+				pending.push_back(RttiType(record.child));
+				pending.push_back(RttiType(record.bound));
+			}
+			else if (record.kind == TYPE_NAMED)
+			{
+				const EntityRecord& entity = program_.entities[record.entity];
+				if (entity.flavor == NAMED_STRUCT ||
+					entity.flavor == NAMED_CLASS ||
+					entity.flavor == NAMED_UNION)
+				{
+					state_.class_rtti_demanded[record.entity] = 1;
+					for (std::size_t base = 0;
+						base < entity.direct_base_count; ++base)
+					{
+						if (stats_) ++stats_->rtti_base_dependency_visits;
+						pending.push_back(program_.entities[
+							program_.DirectBase(record.entity, base).entity].type);
+					}
+				}
+			}
+		}
+	}
+
+	TypeId DynamicCastTarget(const DumpNode& record) const
+	{
+		TypeId type = RttiType(record.type);
+		const TypeRecord& shape = program_.types.Get(type);
+		return RttiType(shape.kind == TYPE_POINTER ? shape.child : type);
+	}
+
+	void CollectRttiDemands()
+	{
+		if (graph_.root >= graph_.arena.nodes.size())
+			ThrowLoweringInternal("RTTI demand graph has no root");
+		std::vector<std::uint8_t> visited(graph_.arena.nodes.size(), 0);
+		std::vector<std::uint32_t> pending(1, graph_.root);
+		while (!pending.empty())
+		{
+			const std::uint32_t node = pending.back();
+			pending.pop_back();
+			if (node >= graph_.arena.nodes.size())
+				ThrowLoweringInternal("RTTI demand graph edge is out of range");
+			if (visited[node]) continue;
+			visited[node] = 1;
+			if (stats_) ++stats_->rtti_graph_nodes_visited;
+			const DumpNode& record = graph_.arena.nodes[node];
+			if (record.kind == DUMP_TYPEID_EXPRESSION)
+			{
+				DemandRtti(record.operand_type);
+				state_.need_bad_typeid = state_.need_bad_typeid ||
+					record.dynamic_type_query;
+			}
+			else if (record.kind == DUMP_DYNAMIC_CAST_EXPRESSION)
+			{
+				DemandRtti(record.operand_type);
+				DemandRtti(DynamicCastTarget(record));
+				state_.need_dynamic_cast = true;
+				state_.need_bad_cast = state_.need_bad_cast ||
+					record.dynamic_cast_reference;
+			}
+			else if (record.kind == DUMP_THROW_EXPRESSION)
+			{
+				state_.need_exceptions = true;
+				state_.need_throw = state_.need_throw ||
+					record.operand_type != kNoType;
+				state_.need_rethrow = state_.need_rethrow ||
+					record.operand_type == kNoType;
+				if (record.operand_type != kNoType)
+				{
+					const TypeId type = RttiType(record.operand_type);
+					DemandRtti(type);
+					state_.exception_type_demanded[type] = 1;
+					state_.thrown_type_demanded[type] = 1;
+				}
+			}
+			else if (record.kind == DUMP_HANDLER)
+			{
+				state_.need_exceptions = true;
+				state_.need_exception_handlers = true;
+				if (record.operand_type != kNoType)
+				{
+					const TypeId type = RttiType(record.operand_type);
+					DemandRtti(type);
+					state_.exception_type_demanded[type] = 1;
+				}
+			}
+			else if (record.kind == DUMP_TRY_STATEMENT &&
+				(record.function_try_body == FUNCTION_TRY_BODY_CONSTRUCTOR ||
+				 record.function_try_body == FUNCTION_TRY_BODY_DESTRUCTOR))
+			{
+				state_.need_exceptions = true;
+				state_.need_rethrow = true;
+			}
+			for (std::uint32_t edge = record.first_edge;
+				edge != kNoDumpEdge; edge = graph_.arena.edges[edge].next)
+				pending.push_back(graph_.arena.edges[edge].child);
+		}
+		if (!output_.host_object_emission) return;
+		for (BindingId binding = 0; binding < program_.bindings.size(); ++binding)
+		{
+			if (binding >= function_symbols_.size() ||
+				function_symbols_[binding] == kNoLowId ||
+				binding >= local_function_definitions_.size() ||
+				local_function_definitions_[binding] == 0 ||
+				program_.bindings[binding].canonical != binding) continue;
+			const BindingRecord& function = program_.bindings[binding];
+			const FunctionExceptionBoundaryKind boundary =
+				function.exception_boundary;
+			if (boundary == FUNCTION_EXCEPTION_BOUNDARY_NONE) continue;
+			state_.need_exceptions = true;
+			state_.need_exception_handlers =
+				state_.need_exception_handlers ||
+				boundary == FUNCTION_EXCEPTION_BOUNDARY_TERMINATE;
+			if (boundary != FUNCTION_EXCEPTION_BOUNDARY_UNEXPECTED) continue;
+			if (function.exception_type_begin >
+				program_.function_exception_types.size() ||
+				function.exception_type_count >
+				program_.function_exception_types.size() -
+					function.exception_type_begin)
+				ThrowLoweringInternal(
+					"function exception type slice is invalid");
+			for (std::size_t i = 0; i < function.exception_type_count; ++i)
+			{
+				const TypeId type = RttiType(program_.function_exception_types[
+					function.exception_type_begin + i]);
+				DemandRtti(type);
+				state_.exception_type_demanded[type] = 1;
+			}
+		}
+	}
+
+	bool HasUninlinedDestructorWork(std::uint32_t root) const
+	{
+		std::vector<std::uint32_t> pending(1, root);
+		while (!pending.empty())
+		{
+			const std::uint32_t node = pending.back();
+			pending.pop_back();
+			const DumpNode& record = graph_.arena.nodes[node];
+			if (record.kind == DUMP_VPTR_INITIALIZATION_ACTION) continue;
+			if (record.kind == DUMP_DESTRUCTOR_ACTION &&
+				record.base_projection_count == 1 &&
+				record.object_binding == kNoBinding &&
+				record.lifetime_object == kNoDumpEdge &&
+				!record.array_action) continue;
+			if (record.kind != DUMP_COMPOUND_STATEMENT) return true;
+			for (std::uint32_t edge = record.first_edge;
+				edge != kNoDumpEdge; edge = graph_.arena.edges[edge].next)
+				pending.push_back(graph_.arena.edges[edge].child);
+		}
+		return false;
+	}
+
+	SymbolId AddSyntheticSymbol(Symbol::Kind kind, const std::string& proposed,
+		const std::string& object_name, bool internal)
+	{
+		const SymbolId symbol = static_cast<SymbolId>(output_.symbols.size());
+		output_.symbols.push_back(Symbol(kind,
+			output_.InternUniqueSymbolName(proposed),
+			object_name.empty() ? lowir_model::StringId() :
+				output_.strings.intern(object_name),
+			false, internal, false));
+		return symbol;
+	}
+
+	std::string ClassStem(EntityId entity) const
+	{
+		std::string spelling =
+			program_.RenderEntityEmissionName(entity);
+		const char* dependent_prefixes[] = {
+			"template parameter ", "template_parameter_"
+		};
+		for (std::size_t prefix = 0;
+			prefix != sizeof dependent_prefixes / sizeof *dependent_prefixes;
+			++prefix) {
+			const std::string marker(dependent_prefixes[prefix]);
+			for (std::size_t position = spelling.find(marker);
+				position != std::string::npos;
+				position = spelling.find(marker, position))
+				spelling.erase(position, marker.size());
+		}
+		return abi::NormalizeSymbolName(spelling);
+	}
+
+	std::string LocalTypeEncoding(EntityId entity) const
+	{
+		if (!IsFunctionLocalEntity(program_, entity)) return std::string();
+		ScopeId scope = program_.entities[entity].owner;
+		while (scope != kNoScope &&
+			program_.KindOfScope(scope) != SCOPE_FUNCTION)
+			scope = program_.ParentScope(scope);
+		if (scope == kNoScope) return std::string();
+		const std::string function =
+			program_.names.Get(program_.NameOfScope(scope));
+		const std::string leaf =
+			program_.names.Get(program_.entities[entity].identity_name);
+		return "Z" + std::to_string(function.size()) + function + "vE" +
+			std::to_string(leaf.size()) + leaf;
+	}
+
+	std::string VtableName(EntityId entity) const
+	{
+		const std::string local = LocalTypeEncoding(entity);
+		if (!local.empty()) return "__vtable_type_" + local;
+		if (UsesGenericTemplatePresentation(entity))
+			return "__vtable_type_" + TypeInfoEncoding(entity);
+		return ClassStem(entity) + "__vtable";
+	}
+
+	bool UsesGenericTemplatePresentation(EntityId entity) const
+	{
+		const EntityRecord& record = program_.entities[entity];
+		if (record.template_argument_count == 0) return false;
+		const std::size_t first = record.template_argument_begin;
+		if (first > program_.template_arguments.size() ||
+			record.template_argument_count >
+				program_.template_arguments.size() - first)
+			ThrowLoweringInternal(
+				"RTTI template argument range is invalid");
+		for (std::size_t i = 0; i < record.template_argument_count; ++i)
+		{
+			const std::size_t argument = first + i;
+			if (argument < program_.canonical_template_arguments.size() &&
+				program_.canonical_template_arguments[argument].kind !=
+					TEMPLATE_ARGUMENT_TYPE)
+				continue;
+			TypeId type = program_.template_arguments[argument];
+			TypeRecord value = program_.types.Get(type);
+			while (value.kind == TYPE_QUALIFIED)
+			{
+				type = value.child;
+				value = program_.types.Get(type);
+			}
+			if (value.kind == TYPE_ARRAY ||
+				value.kind == TYPE_LVALUE_REFERENCE ||
+				value.kind == TYPE_RVALUE_REFERENCE)
+				return true;
+		}
+		return false;
+	}
+
+	std::string ClassFlavor(EntityId entity) const
+	{
+		return program_.entities[entity].flavor == NAMED_CLASS ?
+			"class" : "struct";
+	}
+
+	std::string TypeInfoEncoding(EntityId entity) const
+	{
+		return lowering::abi::MangleType(
+			program_, program_.entities[entity].type);
+	}
+
+	BindingId VtableKeyFunction(EntityId entity) const
+	{
+		const ClassPolymorphismFacts& facts =
+			graph_.class_polymorphism[entity];
+		for (std::size_t slot = 0; slot < facts.slots.size(); ++slot)
+		{
+			const BindingRecord& function = program_.bindings[
+				facts.slots[slot].function];
+			if (!function.pure_virtual && !function.inline_function &&
+				function.member_owner == entity) return function.canonical;
+		}
+		for (std::size_t view = 0; view < facts.views.size(); ++view)
+			for (std::size_t slot = 0;
+				slot < facts.views[view].slots.size(); ++slot)
+			{
+				const BindingRecord& function = program_.bindings[
+					facts.views[view].slots[slot].function];
+				if (!function.pure_virtual && !function.inline_function &&
+					function.member_owner == entity) return function.canonical;
+			}
+		return kNoBinding;
+	}
+
+	bool VtableHasWeakLinkage(EntityId entity) const
+	{
+		const EntityRecord& owner = program_.entities[entity];
+		if (owner.template_argument_count != 0 ||
+			IsFunctionLocalEntity(program_, entity)) return true;
+		const BindingId key = VtableKeyFunction(entity);
+		return key == kNoBinding || program_.bindings[key].weak_odr;
+	}
+
+	bool VtableIsExternal(EntityId entity) const
+	{
+		const EntityRecord& owner = program_.entities[entity];
+		if (IsFunctionLocalEntity(program_, entity)) return false;
+		if (owner.explicit_instantiation_suppressed) return true;
+		if (owner.template_argument_count != 0) return false;
+		const BindingId key = VtableKeyFunction(entity);
+		return key != kNoBinding &&
+			(key >= local_function_definitions_.size() ||
+			 local_function_definitions_[key] == 0);
+	}
+
+	SymbolId AddPolymorphicGlobal(const std::string& name,
+		const std::string& object_name, bool weak)
+	{
+		const bool compiler_internal =
+			!object_name.empty() && object_name[0] == '@';
+		const SymbolId symbol = AddSyntheticSymbol(
+			Symbol::GLOBAL_SYMBOL, name, object_name, compiler_internal);
+		output_.symbols[symbol].weak_linkage = weak && !compiler_internal;
+		output_.symbols[symbol].definition_emitted = true;
+		output_.symbols[symbol].referenced = true;
+		return symbol;
+	}
+
+	SymbolId AddExternalRtti(const std::string& name,
+		const std::string& object_name,
+		Symbol::RuntimeRole role = Symbol::RUNTIME_ROLE_RTTI_DATA)
+	{
+		const SymbolId symbol = AddSyntheticSymbol(
+			Symbol::GLOBAL_SYMBOL, name, object_name, false);
+		output_.symbols[symbol].runtime_role = role;
+		output_.symbols[symbol].declaration_emitted = true;
+		output_.symbols[symbol].referenced = true;
+		GlobalDeclaration declaration;
+		declaration.symbol = symbol;
+		declaration.typed = false;
+		output_.global_declarations.push_back(declaration);
+		return symbol;
+	}
+
+	SymbolId AddExternalVtable(EntityId entity)
+	{
+		const SymbolId symbol = AddSyntheticSymbol(Symbol::GLOBAL_SYMBOL,
+			"__external_vtable__" + ClassStem(entity),
+			"_ZTV" + TypeInfoEncoding(entity), false);
+		Symbol& record = output_.symbols[symbol];
+		record.declaration_emitted = true;
+		record.referenced = true;
+		GlobalDeclaration declaration;
+		declaration.symbol = symbol;
+		declaration.typed = false;
+		output_.global_declarations.push_back(declaration);
+		return symbol;
+	}
+
+	SymbolId AddExternalVtt(EntityId entity)
+	{
+		const SymbolId symbol = AddSyntheticSymbol(Symbol::GLOBAL_SYMBOL,
+			"__external_vtt__" + ClassStem(entity),
+			"_ZTT" + TypeInfoEncoding(entity), false);
+		Symbol& record = output_.symbols[symbol];
+		record.declaration_emitted = true;
+		record.referenced = true;
+		GlobalDeclaration declaration;
+		declaration.symbol = symbol;
+		declaration.typed = false;
+		output_.global_declarations.push_back(declaration);
+		return symbol;
+	}
+
+	SymbolId AddExternalRuntime(const std::string& name,
+		const std::string& object_name, const LowType& result,
+		const std::vector<LowType>& parameters, bool noreturn,
+		Symbol::RuntimeRole role = Symbol::RUNTIME_ROLE_NONE)
+	{
+		const SymbolId symbol = AddSyntheticSymbol(
+			Symbol::FUNCTION_SYMBOL, name, object_name, false);
+		Symbol& record = output_.symbols[symbol];
+		record.c_linkage = true;
+		record.declaration_emitted = true;
+		record.referenced = true;
+		record.noreturn = noreturn;
+		record.runtime_role = role;
+		if (noreturn && role == Symbol::RUNTIME_ROLE_NONE)
+			record.effects = Symbol::EFFECTS_READNONE;
+		FunctionDeclaration declaration;
+		declaration.symbol = symbol;
+		declaration.result = result;
+		for (std::size_t i = 0; i < parameters.size(); ++i)
+		{
+			Parameter parameter;
+			parameter.name = lowering::presentation::InternOrdinalName(
+				output_, "arg", 3, static_cast<std::uint32_t>(i));
+			parameter.type = parameters[i];
+			declaration.parameters.push_back(parameter);
+		}
+		output_.declarations.push_back(declaration);
+		return symbol;
+	}
+
+	bool IsClassRttiType(TypeId type, EntityId* entity = 0) const
+	{
+		const TypeRecord& record = program_.types.Get(type);
+		if (record.kind != TYPE_NAMED) return false;
+		const NamedFlavor flavor = program_.entities[record.entity].flavor;
+			if (!IsClassNamedFlavor(flavor)) return false;
+		if (entity) *entity = record.entity;
+		return true;
+	}
+
+	std::string RttiPresentationStem(TypeId type) const
+	{
+		const TypeRecord& record = program_.types.Get(type);
+		if (record.kind == TYPE_FUNDAMENTAL)
+			return abi::NormalizeSymbolName(program_.RenderType(type));
+		return "type_" + lowering::abi::MangleType(program_, type);
+	}
+
+	std::string ExceptionObjectPresentationStem(TypeId type) const
+	{
+		EntityId entity = kNoEntity;
+		if (!IsClassRttiType(type, &entity))
+			return RttiPresentationStem(type);
+		const EntityRecord& record = program_.entities[entity];
+		const std::string encoding = TypeInfoEncoding(entity);
+		const std::string local = LocalTypeEncoding(entity);
+		const bool generic_type = !local.empty() || !record.layout_complete ||
+			UsesGenericTemplatePresentation(entity);
+		const std::string stem = !local.empty() ? local :
+			generic_type ? encoding : ClassStem(entity);
+		return (generic_type ? "type" : ClassFlavor(entity)) + "_" + stem;
+	}
+
+	bool UsesExternalExceptionRtti(TypeId type) const
+	{
+		const TypeRecord& record = program_.types.Get(type);
+		if (record.kind == TYPE_FUNDAMENTAL) return true;
+		if (record.kind != TYPE_POINTER) return false;
+		const TypeId pointee = program_.types.RemoveTopCv(record.child);
+		return program_.types.Get(pointee).kind == TYPE_FUNDAMENTAL;
+	}
+
+	void RegisterPureVirtual(BindingId prototype)
+	{
+		if (state_.pure_virtual_symbol != kNoLowId) return;
+		state_.pure_virtual_symbol = AddSyntheticSymbol(Symbol::FUNCTION_SYMBOL,
+			"__cxa_pure_virtual", std::string(), false);
+		Symbol& symbol = output_.symbols[state_.pure_virtual_symbol];
+		symbol.runtime_role = Symbol::RUNTIME_ROLE_PURE_VIRTUAL;
+		symbol.declaration_emitted = true;
+		symbol.referenced = true;
+		symbol.nonthrowing = true;
+		symbol.noreturn = true;
+		FunctionDeclaration declaration;
+		declaration.symbol = state_.pure_virtual_symbol;
+		const BindingRecord& binding = program_.bindings[prototype];
+		const TypeRecord& type = program_.types.Get(binding.type);
+		declaration.result = source_types_.Lower(type.child);
+		Parameter object;
+		object.name = InternLocalName(output_, "arg0");
+		object.type = LowPtr();
+		declaration.parameters.push_back(object);
+		const TypeId* parameters = program_.types.Parameters(binding.type);
+		for (std::size_t i = 0; i < type.parameter_count; ++i)
+		{
+			Parameter parameter;
+			parameter.name = lowering::presentation::InternOrdinalName(
+				output_, "arg", 3, static_cast<std::uint32_t>(i + 1));
+			parameter.type = source_types_.Lower(parameters[i]);
+			parameter.reference = source_types_.IsReference(parameters[i]);
+			declaration.parameters.push_back(parameter);
+		}
+		declaration.variadic = type.variadic;
+		output_.declarations.push_back(declaration);
+	}
+
+	std::string ThunkObjectName(SymbolId target,
+		std::int64_t adjustment) const
+	{
+		const std::string& target_name = output_.strings.get(
+			output_.symbols[target].object_name);
+		if (target_name.size() < 2 || target_name[0] != '_' ||
+			target_name[1] != 'Z') return std::string();
+		return "_ZTh" + std::string(adjustment < 0 ? "n" : "") +
+			std::to_string(adjustment < 0 ? -adjustment : adjustment) + "_" +
+			target_name.substr(2);
+	}
+
+	static bool HasReturnAdjustment(const VirtualSlotFact& slot)
+	{
+		return slot.return_adjustment_virtual || slot.return_adjustment != 0;
+	}
+
+	static std::string SignedOffset(std::int64_t value)
+	{
+		if (value >= 0) return std::to_string(value);
+		const std::uint64_t magnitude =
+			static_cast<std::uint64_t>(-(value + 1)) + 1;
+		return "n" + std::to_string(magnitude);
+	}
+
+	static std::string NonvirtualCallOffset(std::int64_t value)
+	{
+		return "h" + SignedOffset(value) + "_";
+	}
+
+	std::string CovariantThunkObjectName(SymbolId target,
+		const VirtualSlotFact& slot) const
+	{
+		const std::string& target_name = output_.strings.get(
+			output_.symbols[target].object_name);
+		if (target_name.size() < 2 || target_name[0] != '_' ||
+			target_name[1] != 'Z') return std::string();
+		const std::string result = slot.return_adjustment_virtual ?
+			"v" + SignedOffset(slot.return_adjustment) + "_" +
+				SignedOffset(slot.return_vtable_offset) + "_" :
+			NonvirtualCallOffset(slot.return_adjustment);
+		return "_ZTc" + NonvirtualCallOffset(slot.this_adjustment) +
+			result + target_name.substr(2);
+	}
+
+	std::int64_t ReturnRuntimeVtableOffset(
+		const VirtualSlotFact& slot) const
+	{
+		if (!slot.return_adjustment_virtual || !output_.host_object_emission)
+			return slot.return_vtable_offset;
+		const BindingRecord& binding = program_.bindings[slot.function];
+		const TypeRecord& function = program_.types.Get(binding.type);
+		if (function.kind != TYPE_FUNCTION)
+			ThrowLoweringInternal("covariant thunk has no function type");
+		const TypeRecord& result = program_.types.Get(function.child);
+		if (result.kind != TYPE_POINTER &&
+			result.kind != TYPE_LVALUE_REFERENCE &&
+			result.kind != TYPE_RVALUE_REFERENCE)
+			ThrowLoweringInternal("covariant thunk has no class result");
+		const TypeId target = program_.types.RemoveTopCv(result.child);
+		const TypeRecord& named = program_.types.Get(target);
+		if (named.kind != TYPE_NAMED ||
+			named.entity >= graph_.class_polymorphism.size())
+			ThrowLoweringInternal("covariant thunk result has no vtable facts");
+		return slot.return_vtable_offset + static_cast<std::int64_t>(
+			graph_.class_polymorphism[named.entity].virtual_call_offsets.size()) * 8;
+	}
+
+	struct AdjustedSlotEntry
+	{
+		SymbolId target, symbol;
+		std::int64_t this_adjustment, return_adjustment,
+			return_vtable_offset;
+		bool return_adjustment_virtual;
+
+		AdjustedSlotEntry(SymbolId target_value, const VirtualSlotFact& slot,
+			SymbolId symbol_value)
+			: target(target_value), symbol(symbol_value),
+			  this_adjustment(slot.this_adjustment),
+			  return_adjustment(slot.return_adjustment),
+			  return_vtable_offset(slot.return_vtable_offset),
+			  return_adjustment_virtual(slot.return_adjustment_virtual) {}
+	};
+
+	static std::size_t AdjustedSlotHash(SymbolId target,
+		std::int64_t this_adjustment, std::int64_t return_adjustment,
+		std::int64_t return_vtable_offset, bool return_adjustment_virtual)
+	{
+		std::size_t hash = MixHash(target,
+			static_cast<std::uint64_t>(this_adjustment));
+		hash = MixHash(hash, static_cast<std::uint64_t>(return_adjustment));
+		hash = MixHash(hash,
+			static_cast<std::uint64_t>(return_vtable_offset));
+		return MixHash(hash, return_adjustment_virtual ? 1 : 0);
+	}
+
+	void RehashAdjustedSlots(std::size_t capacity)
+	{
+		std::vector<std::uint32_t> replacement(capacity, 0);
+		const std::size_t mask = capacity - 1;
+		for (std::size_t i = 0; i < adjusted_slot_entries_.size(); ++i)
+		{
+			const AdjustedSlotEntry& entry = adjusted_slot_entries_[i];
+			std::size_t slot = AdjustedSlotHash(entry.target,
+				entry.this_adjustment, entry.return_adjustment,
+				entry.return_vtable_offset,
+				entry.return_adjustment_virtual) & mask;
+			while (replacement[slot] != 0) slot = (slot + 1) & mask;
+			replacement[slot] = static_cast<std::uint32_t>(i + 1);
+		}
+		adjusted_slot_slots_.swap(replacement);
+	}
+
+	SymbolId RegisterAdjustedSlot(const VirtualSlotFact& slot,
+		SymbolId target, BindingId function)
+	{
+		if (slot.this_adjustment == 0 && !HasReturnAdjustment(slot)) return target;
+		if (stats_) ++stats_->vtable_thunk_requests;
+		if ((adjusted_slot_entries_.size() + 1) * 10 >
+			adjusted_slot_slots_.size() * 7)
+			RehashAdjustedSlots(adjusted_slot_slots_.size() * 2);
+		const std::size_t mask = adjusted_slot_slots_.size() - 1;
+		std::size_t index = AdjustedSlotHash(target, slot.this_adjustment,
+			slot.return_adjustment, slot.return_vtable_offset,
+			slot.return_adjustment_virtual) & mask;
+		while (adjusted_slot_slots_[index] != 0)
+		{
+			if (stats_) ++stats_->vtable_thunk_index_probes;
+			const AdjustedSlotEntry& entry = adjusted_slot_entries_[
+				adjusted_slot_slots_[index] - 1];
+			if (entry.target == target &&
+				entry.this_adjustment == slot.this_adjustment &&
+				entry.return_adjustment == slot.return_adjustment &&
+				entry.return_vtable_offset == slot.return_vtable_offset &&
+				entry.return_adjustment_virtual ==
+					slot.return_adjustment_virtual)
+			{
+				if (stats_) ++stats_->vtable_thunk_cache_hits;
+				return entry.symbol;
+			}
+			index = (index + 1) & mask;
+		}
+		if (adjusted_slot_entries_.size() >=
+			std::numeric_limits<std::uint32_t>::max())
+			ThrowLoweringResourceLimit("too many adjusted vtable slots");
+		const std::string direction = slot.this_adjustment < 0 ? "neg" : "pos";
+		const std::uint64_t magnitude = slot.this_adjustment < 0 ?
+			static_cast<std::uint64_t>(-(slot.this_adjustment + 1)) + 1 :
+			static_cast<std::uint64_t>(slot.this_adjustment);
+		const std::string return_direction =
+			slot.return_adjustment < 0 ? "neg" : "pos";
+		const std::uint64_t return_magnitude = slot.return_adjustment < 0 ?
+			static_cast<std::uint64_t>(-(slot.return_adjustment + 1)) + 1 :
+			static_cast<std::uint64_t>(slot.return_adjustment);
+		const std::string name = "_" + output_.strings.get(
+			output_.symbols[target].name) +
+			"__vtable_return_adjust__this_" + direction +
+			std::to_string(magnitude) + "__return_" + return_direction +
+			std::to_string(return_magnitude) +
+			(slot.return_adjustment_virtual ? "__virtual_" +
+				SignedOffset(slot.return_vtable_offset) : std::string());
+		const SymbolId thunk = AddSyntheticSymbol(Symbol::FUNCTION_SYMBOL, name,
+			HasReturnAdjustment(slot) ? CovariantThunkObjectName(target, slot) :
+				ThunkObjectName(target, slot.this_adjustment),
+			output_.symbols[target].internal_linkage);
+		Symbol& record = output_.symbols[thunk];
+		record.weak_linkage = output_.symbols[target].weak_linkage;
+		record.nonthrowing = output_.symbols[target].nonthrowing;
+		record.definition_emitted = true;
+		record.referenced = true;
+		state_.vtable_thunks.push_back(VtableThunkLoweringFact(
+			thunk, target, function, slot.this_adjustment,
+			slot.return_adjustment, slot.return_vtable_offset,
+			ReturnRuntimeVtableOffset(slot),
+			slot.return_adjustment_virtual));
+		adjusted_slot_entries_.push_back(AdjustedSlotEntry(
+			target, slot, thunk));
+		adjusted_slot_slots_[index] =
+			static_cast<std::uint32_t>(adjusted_slot_entries_.size());
+		return thunk;
+	}
+
+	SymbolId RegisterViewSlot(const VirtualSlotFact& slot)
+	{
+		const BindingId function = program_.bindings[slot.function].canonical;
+		if (program_.bindings[function].pure_virtual)
+		{
+			RegisterPureVirtual(slot.root);
+			return state_.pure_virtual_symbol;
+		}
+		if (function >= function_symbols_.size() ||
+			function_symbols_[function] == kNoLowId)
+			ThrowLoweringInternal("virtual slot has no lowered function symbol");
+		return RegisterAdjustedSlot(slot, function_symbols_[function], function);
+	}
+
+	void RegisterDeletingViewSlot(EntityId entity, std::size_t view,
+		std::size_t slot, const VirtualSlotFact& source)
+	{
+		const BindingId function = program_.bindings[source.function].canonical;
+		if (!program_.bindings[function].destructor) return;
+		if (program_.bindings[function].pure_virtual)
+		{
+			RegisterPureVirtual(source.root);
+			state_.class_view_deleting_slot_symbols[entity][view][slot] =
+				state_.pure_virtual_symbol;
+			return;
+		}
+		const SymbolId deleting = state_.deleting_destructor_symbols[entity];
+		if (deleting == kNoLowId)
+			ThrowLoweringInternal("destructor slot has no deleting entry");
+		state_.class_view_deleting_slot_symbols[entity][view][slot] =
+			RegisterAdjustedSlot(source, deleting, function);
+	}
+
+	void RegisterDeletingDestructor(EntityId entity,
+		const VirtualSlotFact& slot, bool external)
+	{
+		if (state_.deleting_destructor_symbols[entity] != kNoLowId) return;
+		const BindingRecord& candidate = program_.bindings[slot.function];
+		if (!candidate.destructor || candidate.pure_virtual) return;
+		const BindingId destructor = candidate.canonical;
+		std::string object_name;
+		if (destructor < function_symbols_.size() &&
+			function_symbols_[destructor] != kNoLowId)
+		{
+			object_name = output_.strings.get(output_.symbols[
+				function_symbols_[destructor]].object_name);
+			// The destructor terminal is `D1` followed by the parameter
+			// list's `E`, or by an ABI tag (`B<n>...`) when the class has
+			// one, as every _LIBCPP_HIDE_FROM_ABI member does.
+			std::size_t marker = object_name.rfind("D1E");
+			if (marker == std::string::npos) marker = object_name.rfind("D1B");
+			if (marker != std::string::npos)
+				object_name.replace(marker, 2, "D0");
+		}
+		const std::string leaf =
+			program_.names.Get(program_.entities[entity].identity_name);
+		const SymbolId symbol = AddSyntheticSymbol(Symbol::FUNCTION_SYMBOL,
+			ClassStem(entity) + "___" + leaf + "__deleting_entry",
+			object_name, false);
+		state_.deleting_destructor_symbols[entity] = symbol;
+		state_.deleting_destructor_external[entity] = external ? 1 : 0;
+		if (destructor < function_symbols_.size() &&
+			function_symbols_[destructor] != kNoLowId)
+			output_.symbols[symbol].weak_linkage = output_.symbols[
+				function_symbols_[destructor]].weak_linkage;
+		// A locally synthesized deleting entry is part of the vtable's ODR
+		// ownership even when its complete entry resolves to an external strong
+		// declaration (as with an extern-instantiated hosted class template).
+		if (!IsFunctionLocalEntity(program_, entity) &&
+			VtableHasWeakLinkage(entity))
+			output_.symbols[symbol].weak_linkage = true;
+		if (external)
+		{
+			output_.symbols[symbol].declaration_emitted = true;
+			output_.symbols[symbol].referenced = true;
+			FunctionDeclaration declaration;
+			declaration.symbol = symbol;
+			declaration.result = LowVoid();
+			Parameter object;
+			object.name = InternLocalName(output_, "this");
+			object.type = LowPtr();
+			declaration.parameters.push_back(object);
+			output_.declarations.push_back(declaration);
+		}
+	}
+
+	void RegisterEntitySlots(EntityId entity,
+		const ClassPolymorphismFacts& facts, bool external)
+	{
+		for (std::size_t view = 0; view <= facts.views.size(); ++view)
+		{
+			const std::vector<VirtualSlotFact>& slots = view == 0 ?
+				PrimarySlots(entity) : facts.views[view - 1].slots;
+			for (std::size_t slot = 0; slot < slots.size(); ++slot)
+			{
+				const VirtualSlotFact& candidate = slots[slot];
+				if (program_.bindings[candidate.function].pure_virtual)
+					RegisterPureVirtual(candidate.root);
+				RegisterDeletingDestructor(entity, candidate, external);
+				if (state_.class_view_slot_symbols[entity][view][slot] == kNoLowId)
+				{
+					const SymbolId target = RegisterViewSlot(candidate);
+					state_.class_view_slot_symbols[entity][view][slot] = target;
+					if (external && (candidate.this_adjustment != 0 ||
+						HasReturnAdjustment(candidate)))
+						output_.symbols[target].weak_linkage = true;
+				}
+				if (state_.class_view_deleting_slot_symbols[
+					entity][view][slot] == kNoLowId)
+				{
+					RegisterDeletingViewSlot(entity, view, slot, candidate);
+					const SymbolId deleting =
+						state_.class_view_deleting_slot_symbols[entity][view][slot];
+					if (external && (candidate.this_adjustment != 0 ||
+						HasReturnAdjustment(candidate)) &&
+						deleting != kNoLowId)
+						output_.symbols[deleting].weak_linkage = true;
+				}
+			}
+		}
+	}
+
+	bool ConstructionBaseEligible(const DirectBaseEdge& edge) const
+	{
+		if (edge.entity >= graph_.class_polymorphism.size() ||
+			program_.entities[edge.entity].virtual_base_count == 0) return false;
+		const ClassPolymorphismFacts& facts =
+			graph_.class_polymorphism[edge.entity];
+		return !facts.slots.empty() || !facts.views.empty();
+	}
+
+	SymbolId RegisterConstructionVtable(EntityId complete, EntityId base,
+		std::uint64_t offset, std::size_t physical)
+	{
+		const std::string name = ClassStem(complete) +
+			"____construction__" + ClassStem(base) + "__" +
+			std::to_string(offset) + "__s" +
+			std::to_string(physical) + "__vtable";
+		return AddPolymorphicGlobal(name, "@" + name,
+			VtableHasWeakLinkage(complete));
+	}
+
+	void RegisterConstructionSubtree(EntityId complete, EntityId base,
+		std::uint64_t offset, std::vector<SymbolId>* symbols,
+		std::uint64_t* vtt_offset)
+	{
+		const ClassPolymorphismFacts& facts = graph_.class_polymorphism[base];
+		RegisterEntitySlots(base, facts, VtableIsExternal(base));
+		symbols->push_back(RegisterConstructionVtable(complete, base, offset, 0));
+		*vtt_offset += 8;
+		const EntityRecord& owner = program_.entities[base];
+		for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
+		{
+			const DirectBaseEdge& edge = program_.DirectBase(base, ordinal);
+			if (!ConstructionBaseEligible(edge)) continue;
+			RegisterConstructionSubtree(complete, edge.entity,
+				offset + edge.offset, symbols, vtt_offset);
+		}
+		std::size_t physical = 1;
+		for (std::size_t view = 0; view < facts.views.size(); ++view)
+			if (facts.views[view].stores_vptr)
+			{
+				symbols->push_back(RegisterConstructionVtable(
+					complete, base, offset, physical++));
+				*vtt_offset += 8;
+			}
+	}
+
+	void RegisterConstructionVtables(EntityId entity)
+	{
+		std::uint64_t vtt_offset = 8;
+		const EntityRecord& complete = program_.entities[entity];
+		for (std::size_t ordinal = 0;
+			ordinal < complete.direct_base_count; ++ordinal)
+		{
+			const DirectBaseEdge& edge = program_.DirectBase(entity, ordinal);
+			if (!ConstructionBaseEligible(edge)) continue;
+			std::vector<SymbolId>& symbols =
+				state_.class_construction_vtable_symbols[entity][ordinal];
+			state_.class_construction_vtt_offsets[entity][ordinal] = vtt_offset;
+			RegisterConstructionSubtree(
+				entity, edge.entity, edge.offset, &symbols, &vtt_offset);
+			DemandRtti(program_.entities[edge.entity].type);
+		}
+	}
+
+	void AdvanceExternalConstructionVtt(EntityId base,
+		std::uint64_t* vtt_offset) const
+	{
+		*vtt_offset += 8;
+		const EntityRecord& owner = program_.entities[base];
+		for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
+		{
+			const DirectBaseEdge& edge = program_.DirectBase(base, ordinal);
+			if (ConstructionBaseEligible(edge))
+				AdvanceExternalConstructionVtt(edge.entity, vtt_offset);
+		}
+		const ClassPolymorphismFacts& facts = graph_.class_polymorphism[base];
+		for (std::size_t view = 0; view < facts.views.size(); ++view)
+			if (facts.views[view].stores_vptr) *vtt_offset += 8;
+	}
+
+	void RegisterExternalConstructionVttOffsets(EntityId entity)
+	{
+		std::uint64_t vtt_offset = 8;
+		const EntityRecord& owner = program_.entities[entity];
+		for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
+		{
+			const DirectBaseEdge& edge = program_.DirectBase(entity, ordinal);
+			if (!ConstructionBaseEligible(edge)) continue;
+			state_.class_construction_vtt_offsets[entity][ordinal] = vtt_offset;
+			AdvanceExternalConstructionVtt(edge.entity, &vtt_offset);
+		}
+	}
+
+	void RegisterViewSymbols(EntityId entity,
+		const ClassPolymorphismFacts& facts)
+	{
+		if (VtableIsExternal(entity))
+		{
+			state_.class_vtable_external[entity] = 1;
+			const SymbolId symbol = AddExternalVtable(entity);
+			state_.class_vtable_symbols[entity] = symbol;
+			const std::uint64_t primary_address_point =
+				PrimaryAddressPoint(facts);
+			state_.class_vtable_address_points[entity] = primary_address_point;
+			if (program_.entities[entity].virtual_base_count != 0)
+			{
+				state_.class_vtt_symbols[entity] = AddExternalVtt(entity);
+				RegisterExternalConstructionVttOffsets(entity);
+			}
+			std::uint64_t offset = primary_address_point;
+			const std::vector<VirtualSlotFact>& primary = PrimarySlots(entity);
+			for (std::size_t slot = 0; slot < primary.size(); ++slot)
+				offset += program_.bindings[primary[slot].function].destructor ?
+					16 : 8;
+			for (std::size_t view = 0; view < facts.views.size(); ++view)
+			{
+				state_.class_view_vtable_symbols[entity][view] = symbol;
+				if (!facts.views[view].stores_vptr) continue;
+				state_.class_view_address_points[entity][view] =
+					offset + facts.views[view].address_point;
+				offset += facts.views[view].address_point;
+				for (std::size_t slot = 0;
+					slot < facts.views[view].slots.size(); ++slot)
+					offset += program_.bindings[
+						facts.views[view].slots[slot].function].destructor ? 16 : 8;
+			}
+			return;
+		}
+		state_.class_vtable_symbols[entity] = AddPolymorphicGlobal(
+			VtableName(entity), "_ZTV" + TypeInfoEncoding(entity),
+			VtableHasWeakLinkage(entity));
+		if (program_.entities[entity].virtual_base_count != 0)
+		{
+			state_.class_vtt_symbols[entity] = AddPolymorphicGlobal(
+				ClassStem(entity) + "____vtt",
+				"_ZTT" + TypeInfoEncoding(entity), true);
+			output_.symbols[state_.class_vtt_symbols[entity]].object_output_root = true;
+		}
+		for (std::size_t slot = 0; slot < PrimarySlots(entity).size(); ++slot)
+			if (state_.class_view_slot_symbols[entity][0][slot] == kNoLowId)
+				ThrowLoweringInternal("primary vtable slots are not registered");
+		for (std::size_t view = 0; view < facts.views.size(); ++view)
+		{
+			const PolymorphicViewFact& source = facts.views[view];
+			const std::string name = ClassStem(entity) + "____view__" +
+				ClassStem(source.entity) + "__" +
+				std::to_string(source.offset) + "__vtable";
+			state_.class_view_vtable_symbols[entity][view] =
+				AddPolymorphicGlobal(name, "@" + name,
+					VtableHasWeakLinkage(entity));
+			for (std::size_t slot = 0; slot < source.slots.size(); ++slot)
+				if (state_.class_view_slot_symbols[
+					entity][view + 1][slot] == kNoLowId)
+					ThrowLoweringInternal("secondary vtable slots are not registered");
+		}
+		RegisterConstructionVtables(entity);
+	}
+
+	void RegisterSymbols()
+	{
+		bool need_root_rtti = false;
+		bool need_si_rtti = false;
+		bool need_vmi_rtti = false;
+		for (EntityId entity = 0;
+			entity < graph_.class_polymorphism.size(); ++entity)
+		{
+			const ClassPolymorphismFacts& facts =
+				graph_.class_polymorphism[entity];
+			if (!facts.vtable_demanded ||
+				(facts.slots.empty() && facts.views.empty())) continue;
+			const bool external = VtableIsExternal(entity);
+			if (!external)
+				DemandRtti(program_.entities[entity].type);
+			if (!external) RegisterEntitySlots(entity, facts, false);
+			RegisterViewSymbols(entity, facts);
+		}
+		for (EntityId entity = 0;
+			entity < state_.class_rtti_demanded.size(); ++entity)
+		{
+			if (!state_.class_rtti_demanded[entity]) continue;
+			const EntityRecord& record = program_.entities[entity];
+			const bool single = record.direct_base_count == 1 &&
+				!program_.DirectBase(entity, 0).virtual_base &&
+				program_.DirectBase(entity, 0).offset == 0;
+			need_root_rtti = need_root_rtti || record.direct_base_count == 0;
+			need_si_rtti = need_si_rtti || single;
+			need_vmi_rtti = need_vmi_rtti ||
+				(record.direct_base_count != 0 && !single);
+			const std::string encoding = TypeInfoEncoding(entity);
+			const std::string local = LocalTypeEncoding(entity);
+			const bool generic_type = !local.empty() || !record.layout_complete ||
+				UsesGenericTemplatePresentation(entity);
+			const std::string stem = !local.empty() ? local :
+				generic_type ? encoding : ClassStem(entity);
+			const std::string flavor = generic_type ?
+				"type" : ClassFlavor(entity);
+			state_.class_type_name_symbols[entity] = AddPolymorphicGlobal(
+				(generic_type ? "__typeinfo_name_" : "__typeinfo_name__") +
+				flavor + "_" + stem, "_ZTS" + encoding, true);
+			state_.class_rtti_symbols[entity] = AddPolymorphicGlobal(
+				"__rtti_" + flavor + "_" + stem, "_ZTI" + encoding, true);
+			const TypeId type = record.type;
+			if (type < state_.type_rtti_symbols.size())
+			{
+				state_.type_name_symbols[type] =
+					state_.class_type_name_symbols[entity];
+				state_.type_rtti_symbols[type] =
+					state_.class_rtti_symbols[entity];
+			}
+		}
+		bool need_fundamental_rtti = false;
+		bool need_pointer_rtti = false;
+		bool need_enum_rtti = false;
+		bool need_array_rtti = false;
+		bool need_function_rtti = false;
+		bool need_member_pointer_rtti = false;
+		for (TypeId type = 0; type < state_.type_rtti_demanded.size(); ++type)
+		{
+			if (!state_.type_rtti_demanded[type] ||
+				state_.type_rtti_symbols[type] != kNoLowId) continue;
+			const TypeRecord& record = program_.types.Get(type);
+			if (record.kind == TYPE_FUNDAMENTAL &&
+				record.fundamental == FUND_VOID)
+			{
+				state_.type_rtti_symbols[type] = AddExternalRtti(
+					"__external_rtti__void", "_ZTIv");
+				continue;
+			}
+			need_fundamental_rtti = need_fundamental_rtti ||
+				record.kind == TYPE_FUNDAMENTAL;
+			need_pointer_rtti = need_pointer_rtti ||
+				record.kind == TYPE_POINTER;
+			need_enum_rtti = need_enum_rtti ||
+				(record.kind == TYPE_NAMED && !IsClassRttiType(type));
+			need_array_rtti = need_array_rtti || record.kind == TYPE_ARRAY;
+			need_function_rtti = need_function_rtti ||
+				record.kind == TYPE_FUNCTION;
+			need_member_pointer_rtti = need_member_pointer_rtti ||
+				record.kind == TYPE_MEMBER_POINTER;
+			if (record.kind != TYPE_FUNDAMENTAL &&
+				record.kind != TYPE_POINTER && record.kind != TYPE_ARRAY &&
+				record.kind != TYPE_FUNCTION &&
+				record.kind != TYPE_MEMBER_POINTER &&
+				!(record.kind == TYPE_NAMED && !IsClassRttiType(type)))
+				ThrowLoweringInternal("demanded RTTI type has no ABI category");
+			const std::string encoding =
+				lowering::abi::MangleType(program_, type);
+			const std::string stem = RttiPresentationStem(type);
+			state_.type_name_symbols[type] = AddPolymorphicGlobal(
+				std::string("__typeinfo_name_") +
+				(record.kind == TYPE_FUNDAMENTAL ? "_" : "") + stem,
+				"_ZTS" + encoding, true);
+			state_.type_rtti_symbols[type] = AddPolymorphicGlobal(
+				"__rtti_" + stem, "_ZTI" + encoding, true);
+		}
+		if (need_root_rtti)
+			state_.rtti_class_symbol = AddExternalRtti(
+				"__external_rtti_vtable____class_type_info",
+				"_ZTVN10__cxxabiv117__class_type_infoE",
+				Symbol::RUNTIME_ROLE_RTTI_CLASS);
+		if (need_si_rtti)
+			state_.rtti_si_symbol = AddExternalRtti(
+				"__external_rtti_vtable____si_class_type_info",
+				"_ZTVN10__cxxabiv120__si_class_type_infoE",
+				Symbol::RUNTIME_ROLE_RTTI_SI);
+		if (need_vmi_rtti)
+			state_.rtti_vmi_symbol = AddExternalRtti(
+				"__external_rtti_vtable____vmi_class_type_info",
+				"_ZTVN10__cxxabiv121__vmi_class_type_infoE",
+				Symbol::RUNTIME_ROLE_RTTI_VMI);
+		if (need_fundamental_rtti)
+			state_.rtti_fundamental_symbol = AddExternalRtti(
+				"__external_rtti_vtable____fundamental_type_info",
+				"_ZTVN10__cxxabiv123__fundamental_type_infoE");
+		if (need_pointer_rtti)
+			state_.rtti_pointer_symbol = AddExternalRtti(
+				"__external_rtti_vtable____pointer_type_info",
+				"_ZTVN10__cxxabiv119__pointer_type_infoE");
+		if (need_enum_rtti)
+			state_.rtti_enum_symbol = AddExternalRtti(
+				"__external_rtti_vtable____enum_type_info",
+				"_ZTVN10__cxxabiv116__enum_type_infoE");
+		if (need_array_rtti)
+			state_.rtti_array_symbol = AddExternalRtti(
+				"__external_rtti_vtable____array_type_info",
+				"_ZTVN10__cxxabiv117__array_type_infoE");
+		if (need_function_rtti)
+			state_.rtti_function_symbol = AddExternalRtti(
+				"__external_rtti_vtable____function_type_info",
+				"_ZTVN10__cxxabiv120__function_type_infoE");
+		if (need_member_pointer_rtti)
+			state_.rtti_member_pointer_symbol = AddExternalRtti(
+				"__external_rtti_vtable____pointer_to_member_type_info",
+				"_ZTVN10__cxxabiv129__pointer_to_member_type_infoE");
+		for (TypeId type = 0;
+			type < state_.exception_type_demanded.size(); ++type)
+		{
+			if (!state_.exception_type_demanded[type]) continue;
+			if (UsesExternalExceptionRtti(type))
+				state_.exception_rtti_symbols[type] = AddExternalRtti(
+					"__external_rtti__" +
+						abi::NormalizeSymbolName(program_.RenderType(type)),
+					"_ZTI" + lowering::abi::MangleType(program_, type));
+			if (!state_.thrown_type_demanded[type]) continue;
+			const std::string name =
+				"__ehobj_" + ExceptionObjectPresentationStem(type);
+			state_.exception_object_symbols[type] = AddPolymorphicGlobal(
+				name, "@" + name, true);
+		}
+		if (state_.need_exceptions)
+		{
+			state_.eh_resume_symbol = AddExternalRuntime(
+				"__external_runtime___Unwind_Resume", "_Unwind_Resume",
+				LowVoid(), std::vector<LowType>(), true,
+				Symbol::RUNTIME_ROLE_EH_RESUME);
+			output_.symbols[state_.eh_resume_symbol].referenced =
+				state_.need_exception_handlers;
+			if (state_.need_throw)
+				state_.eh_allocate_exception_symbol = AddExternalRuntime(
+					"__external_runtime____cxa_allocate_exception",
+					"__cxa_allocate_exception", LowPtr(),
+					std::vector<LowType>{LowI64()}, false,
+					Symbol::RUNTIME_ROLE_EH_ALLOCATE_EXCEPTION);
+			state_.eh_begin_catch_symbol = AddExternalRuntime(
+				"__external_runtime____cxa_begin_catch", "__cxa_begin_catch",
+				LowPtr(), std::vector<LowType>{LowPtr()}, false,
+				Symbol::RUNTIME_ROLE_EH_BEGIN_CATCH);
+			output_.symbols[state_.eh_begin_catch_symbol].referenced =
+				state_.need_exception_handlers;
+			state_.eh_end_catch_symbol = AddExternalRuntime(
+				"__external_runtime____cxa_end_catch", "__cxa_end_catch",
+				LowVoid(), std::vector<LowType>(), false,
+				Symbol::RUNTIME_ROLE_EH_END_CATCH);
+			output_.symbols[state_.eh_end_catch_symbol].referenced =
+				state_.need_exception_handlers;
+			if (state_.need_rethrow)
+				state_.eh_rethrow_symbol = AddExternalRuntime(
+					"__external_runtime____cxa_rethrow", "__cxa_rethrow",
+					LowVoid(), std::vector<LowType>(), true,
+					Symbol::RUNTIME_ROLE_EH_RETHROW);
+			if (state_.need_throw)
+				state_.eh_throw_symbol = AddExternalRuntime(
+					"__external_runtime____cxa_throw", "__cxa_throw", LowVoid(),
+					std::vector<LowType>{LowPtr(), LowPtr(), LowPtr()}, true,
+					Symbol::RUNTIME_ROLE_EH_THROW);
+			state_.eh_personality_symbol = AddExternalRuntime(
+				"__external_runtime____gxx_personality_v0",
+				"__gxx_personality_v0", LowVoid(), std::vector<LowType>(),
+				false, Symbol::RUNTIME_ROLE_EH_PERSONALITY);
+		}
+		if (state_.need_dynamic_cast)
+			state_.dynamic_cast_symbol = AddExternalRuntime(
+				"__external_runtime____dynamic_cast", "__dynamic_cast",
+				LowPtr(), std::vector<LowType>{
+					LowPtr(), LowPtr(), LowPtr(), LowI64()}, false,
+				Symbol::RUNTIME_ROLE_DYNAMIC_CAST);
+		if (state_.need_bad_cast)
+			state_.bad_cast_symbol = AddExternalRuntime(
+				"__external_runtime____cxa_bad_cast", "__cxa_bad_cast",
+				LowVoid(), std::vector<LowType>(), true,
+				Symbol::RUNTIME_ROLE_BAD_CAST);
+		if (state_.need_bad_typeid)
+			state_.bad_typeid_symbol = AddExternalRuntime(
+				"__external_runtime____cxa_bad_typeid", "__cxa_bad_typeid",
+				LowVoid(), std::vector<LowType>(), true,
+				Symbol::RUNTIME_ROLE_BAD_TYPEID);
+	}
+
+	void AddAddressItem(Global* global, SymbolId symbol, std::int64_t offset = 0)
+	{
+		Global::DataItem item;
+		item.kind = Global::DataItem::ADDRESS_ITEM;
+		item.type = LowPtr();
+		item.symbol = symbol;
+		item.offset = offset;
+		global->items.push_back(item);
+		output_.symbols[symbol].referenced = true;
+	}
+
+	void AddIntegerItem(Global* global, const LowType& type, std::int64_t value)
+	{
+		Global::DataItem item;
+		item.kind = Global::DataItem::INTEGER_ITEM;
+		item.type = type;
+		item.integer_value = value;
+		global->items.push_back(item);
+	}
+
+	void EmitVtableView(EntityId entity, EntityId rtti_entity, SymbolId symbol,
+		std::uint64_t offset, const std::vector<VirtualSlotFact>& slots,
+		const std::vector<std::int64_t>& virtual_base_offsets,
+		const std::vector<std::int64_t>& virtual_call_offsets,
+		const std::vector<SymbolId>& targets,
+		const std::vector<SymbolId>& deleting_targets)
+	{
+		if (symbol == kNoLowId || slots.size() != targets.size() ||
+			slots.size() != deleting_targets.size())
+			ThrowLoweringInternal("polymorphic view lowering facts are incomplete");
+		Global vtable;
+		vtable.symbol = symbol;
+		vtable.initializer_kind = Global::STRUCTURED_VALUE;
+		for (std::size_t row = 0; row < virtual_call_offsets.size(); ++row)
+			AddIntegerItem(&vtable, LowI64(), virtual_call_offsets[row]);
+		for (std::size_t row = 0; row < virtual_base_offsets.size(); ++row)
+			AddIntegerItem(&vtable, LowI64(), virtual_base_offsets[row]);
+		if (stats_) stats_->vtable_offset_rows +=
+			virtual_base_offsets.size() + virtual_call_offsets.size();
+		AddIntegerItem(&vtable, LowI64(),
+			-static_cast<std::int64_t>(offset));
+		AddAddressItem(&vtable, state_.class_rtti_symbols[rtti_entity]);
+		for (std::size_t slot = 0; slot < slots.size(); ++slot)
+		{
+			AddAddressItem(&vtable, targets[slot]);
+			const BindingId function = program_.bindings[
+				slots[slot].function].canonical;
+			if (program_.bindings[function].destructor)
+				AddAddressItem(&vtable, deleting_targets[slot]);
+			if (stats_) stats_->vtable_slots +=
+				program_.bindings[function].destructor ? 2 : 1;
+		}
+		output_.globals.push_back(vtable);
+		if (stats_) ++stats_->globals;
+	}
+
+	void EmitConstructionSubtree(EntityId complete, EntityId base_entity,
+		std::uint64_t base_offset, const std::vector<SymbolId>& symbols,
+		std::size_t* cursor)
+	{
+		const EntityRecord& base_owner = program_.entities[base_entity];
+		const ClassPolymorphismFacts& base =
+			graph_.class_polymorphism[base_entity];
+		if (*cursor >= symbols.size())
+			ThrowLoweringInternal("construction vtable subtree is truncated");
+		std::vector<std::int64_t> offsets;
+		for (std::size_t virtual_base = 0;
+			virtual_base < base_owner.virtual_base_count; ++virtual_base)
+		{
+			std::uint64_t complete_offset = 0;
+			if (!program_.FindVirtualBase(complete, program_.VirtualBase(
+				base_entity, virtual_base).entity, &complete_offset))
+				ThrowLoweringInternal(
+					"construction vtable has no complete virtual base");
+			offsets.push_back(static_cast<std::int64_t>(complete_offset) -
+				static_cast<std::int64_t>(base_offset));
+		}
+		const std::vector<std::int64_t> no_virtual_call_offsets;
+		EmitVtableView(base_entity, base_entity, symbols[(*cursor)++],
+			base_offset, PrimarySlots(base_entity), offsets,
+			!output_.host_object_emission && base_offset == 0 ?
+				base.virtual_call_offsets : no_virtual_call_offsets,
+			state_.class_view_slot_symbols[base_entity][0],
+			state_.class_view_deleting_slot_symbols[base_entity][0]);
+		for (std::size_t ordinal = 0;
+			ordinal < base_owner.direct_base_count; ++ordinal)
+		{
+			const DirectBaseEdge& edge = program_.DirectBase(base_entity, ordinal);
+			if (!ConstructionBaseEligible(edge)) continue;
+			EmitConstructionSubtree(complete, edge.entity,
+				base_offset + edge.offset, symbols, cursor);
+		}
+		for (std::size_t view = 0; view < base.views.size(); ++view)
+		{
+			if (!base.views[view].stores_vptr) continue;
+			if (*cursor >= symbols.size())
+				ThrowLoweringInternal("construction view subtree is truncated");
+			std::uint64_t complete_view_offset =
+				base_offset + base.views[view].offset;
+			if (base.views[view].virtual_base && !program_.FindVirtualBase(
+				complete, base.views[view].entity, &complete_view_offset))
+				ThrowLoweringInternal(
+					"construction view has no complete virtual base");
+			std::vector<std::int64_t> view_offsets;
+			const EntityRecord& view_owner =
+				program_.entities[base.views[view].entity];
+			for (std::size_t virtual_base = 0;
+				virtual_base < view_owner.virtual_base_count; ++virtual_base)
+			{
+				std::uint64_t complete_offset = 0;
+				if (!program_.FindVirtualBase(complete, program_.VirtualBase(
+					base.views[view].entity, virtual_base).entity,
+					&complete_offset))
+					ThrowLoweringInternal(
+						"construction view has no nested virtual base");
+				view_offsets.push_back(
+					static_cast<std::int64_t>(complete_offset) -
+					static_cast<std::int64_t>(complete_view_offset));
+			}
+			EmitVtableView(base_entity, base.views[view].entity,
+				symbols[(*cursor)++], complete_view_offset,
+				base.views[view].slots, view_offsets,
+				base.views[view].virtual_call_offsets,
+				state_.class_view_slot_symbols[base_entity][view + 1],
+				state_.class_view_deleting_slot_symbols[base_entity][view + 1]);
+		}
+	}
+
+	void EmitConstructionVtables(EntityId entity)
+	{
+		const EntityRecord& complete = program_.entities[entity];
+		for (std::size_t ordinal = 0;
+			ordinal < complete.direct_base_count; ++ordinal)
+		{
+			const std::vector<SymbolId>& symbols =
+				state_.class_construction_vtable_symbols[entity][ordinal];
+			if (symbols.empty()) continue;
+			const DirectBaseEdge& edge = program_.DirectBase(entity, ordinal);
+			std::size_t cursor = 0;
+			EmitConstructionSubtree(
+				entity, edge.entity, edge.offset, symbols, &cursor);
+			if (cursor != symbols.size())
+				ThrowLoweringInternal("construction vtable subtree is oversized");
+		}
+	}
+
+	void AddConstructionVttSubtree(Global* vtt, EntityId base_entity,
+		std::uint64_t base_offset, const std::vector<SymbolId>& symbols,
+		std::size_t* cursor)
+	{
+		const ClassPolymorphismFacts& base =
+			graph_.class_polymorphism[base_entity];
+		if (*cursor >= symbols.size())
+			ThrowLoweringInternal("construction VTT subtree is truncated");
+		const std::uint64_t address_point = output_.host_object_emission ?
+			PrimaryAddressPoint(base) :
+			(base_offset == 0 ? base.address_point : base.address_point -
+				base.virtual_call_offsets.size() * 8);
+		AddAddressItem(vtt, symbols[(*cursor)++],
+			static_cast<std::int64_t>(address_point));
+		const EntityRecord& owner = program_.entities[base_entity];
+		for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
+		{
+			const DirectBaseEdge& edge = program_.DirectBase(base_entity, ordinal);
+			if (ConstructionBaseEligible(edge))
+				AddConstructionVttSubtree(vtt, edge.entity,
+					base_offset + edge.offset, symbols, cursor);
+		}
+		for (std::size_t view = 0; view < base.views.size(); ++view)
+			if (base.views[view].stores_vptr)
+			{
+				if (*cursor >= symbols.size())
+					ThrowLoweringInternal(
+						"construction VTT view subtree is truncated");
+				AddAddressItem(vtt, symbols[(*cursor)++],
+					static_cast<std::int64_t>(base.views[view].address_point));
+			}
+	}
+
+	void EmitVtt(EntityId entity, const ClassPolymorphismFacts& facts)
+	{
+		const SymbolId symbol = state_.class_vtt_symbols[entity];
+		if (symbol == kNoLowId) return;
+		Global vtt;
+		vtt.symbol = symbol;
+		vtt.initializer_kind = Global::STRUCTURED_VALUE;
+		AddAddressItem(&vtt, state_.class_vtable_symbols[entity],
+			static_cast<std::int64_t>(PrimaryAddressPoint(facts)));
+		for (std::size_t ordinal = 0;
+			ordinal < state_.class_construction_vtable_symbols[entity].size();
+			++ordinal)
+		{
+			const std::vector<SymbolId>& construction =
+				state_.class_construction_vtable_symbols[entity][ordinal];
+			if (construction.empty()) continue;
+			const EntityId base = program_.DirectBase(entity, ordinal).entity;
+			std::size_t cursor = 0;
+			AddConstructionVttSubtree(&vtt, base,
+				program_.DirectBase(entity, ordinal).offset,
+				construction, &cursor);
+			if (cursor != construction.size())
+				ThrowLoweringInternal("construction VTT subtree is oversized");
+		}
+		for (std::size_t view = 0; view < facts.views.size(); ++view)
+		{
+			if (!facts.views[view].stores_vptr) continue;
+			AddAddressItem(&vtt,
+				state_.class_view_vtable_symbols[entity][view],
+				static_cast<std::int64_t>(facts.views[view].address_point));
+		}
+		output_.globals.push_back(vtt);
+		if (stats_) ++stats_->globals;
+	}
+
+	std::int64_t VirtualBaseRttiRow(EntityId entity, EntityId target) const
+	{
+		if (entity >= graph_.class_polymorphism.size()) return -24;
+		const EntityRecord& owner = program_.entities[entity];
+		for (std::size_t ordinal = 0;
+			ordinal < owner.virtual_base_count; ++ordinal)
+			if (program_.VirtualBase(entity, ordinal).entity == target)
+				return -static_cast<std::int64_t>(
+					graph_.class_polymorphism[entity].address_point) +
+					(output_.host_object_emission ? static_cast<std::int64_t>(
+						graph_.class_polymorphism[entity].virtual_call_offsets.size()) * 8 : 0) +
+					static_cast<std::int64_t>(ordinal) * 8;
+		return -24;
+	}
+
+	void EmitGlobals()
+	{
+		for (EntityId entity = 0;
+			entity < state_.class_rtti_demanded.size(); ++entity)
+		{
+			if (!state_.class_rtti_demanded[entity]) continue;
+			const EntityRecord& record = program_.entities[entity];
+			Global name;
+			name.symbol = state_.class_type_name_symbols[entity];
+			name.initializer_kind = Global::STRUCTURED_VALUE;
+			const std::string encoding = TypeInfoEncoding(entity);
+			for (std::size_t i = 0; i < encoding.size(); ++i)
+				AddIntegerItem(&name, LowI8(),
+					static_cast<unsigned char>(encoding[i]));
+			AddIntegerItem(&name, LowI8(), 0);
+			output_.globals.push_back(name);
+
+			Global rtti;
+			rtti.symbol = state_.class_rtti_symbols[entity];
+			rtti.initializer_kind = Global::STRUCTURED_VALUE;
+			const bool single = record.direct_base_count == 1 &&
+				!program_.DirectBase(entity, 0).virtual_base &&
+				program_.DirectBase(entity, 0).offset == 0;
+			if (record.direct_base_count == 0)
+				AddAddressItem(&rtti, state_.rtti_class_symbol, 16);
+			else if (single)
+				AddAddressItem(&rtti, state_.rtti_si_symbol, 16);
+			else AddAddressItem(&rtti, state_.rtti_vmi_symbol, 16);
+			AddAddressItem(&rtti, state_.class_type_name_symbols[entity]);
+			if (single)
+				AddAddressItem(&rtti,
+					state_.class_rtti_symbols[
+						program_.DirectBase(entity, 0).entity]);
+			else if (record.direct_base_count != 0)
+			{
+				AddIntegerItem(&rtti, LowI32(), 0);
+				AddIntegerItem(&rtti, LowI32(), record.direct_base_count);
+				for (std::size_t base = 0; base < record.direct_base_count; ++base)
+				{
+					const DirectBaseEdge& edge = program_.DirectBase(entity, base);
+					AddAddressItem(&rtti,
+						state_.class_rtti_symbols[edge.entity]);
+					const std::int64_t public_flag =
+						edge.access == ACCESS_PUBLIC ? 2 : 0;
+					const std::int64_t flags = edge.virtual_base ?
+						VirtualBaseRttiRow(entity, edge.entity) * 256 +
+							1 + public_flag :
+						static_cast<std::int64_t>(edge.offset * 256 + public_flag);
+					AddIntegerItem(&rtti, LowI64(), flags);
+				}
+			}
+			output_.globals.push_back(rtti);
+			if (stats_) stats_->globals += 2;
+		}
+
+		for (TypeId type = 0; type < state_.type_rtti_demanded.size(); ++type)
+		{
+			if (!state_.type_rtti_demanded[type] || IsClassRttiType(type))
+				continue;
+			const TypeRecord& record = program_.types.Get(type);
+			if (record.kind == TYPE_FUNDAMENTAL &&
+				record.fundamental == FUND_VOID)
+				continue;
+			Global name;
+			name.symbol = state_.type_name_symbols[type];
+			name.initializer_kind = Global::STRUCTURED_VALUE;
+			const std::string encoding =
+				lowering::abi::MangleType(program_, type);
+			for (std::size_t i = 0; i < encoding.size(); ++i)
+				AddIntegerItem(&name, LowI8(),
+					static_cast<unsigned char>(encoding[i]));
+			AddIntegerItem(&name, LowI8(), 0);
+			output_.globals.push_back(name);
+
+			Global rtti;
+			rtti.symbol = state_.type_rtti_symbols[type];
+			rtti.initializer_kind = Global::STRUCTURED_VALUE;
+			const SymbolId runtime = record.kind == TYPE_FUNDAMENTAL ?
+				state_.rtti_fundamental_symbol : record.kind == TYPE_POINTER ?
+				state_.rtti_pointer_symbol : record.kind == TYPE_ARRAY ?
+				state_.rtti_array_symbol : record.kind == TYPE_FUNCTION ?
+				state_.rtti_function_symbol : record.kind == TYPE_MEMBER_POINTER ?
+				state_.rtti_member_pointer_symbol : state_.rtti_enum_symbol;
+			if (runtime == kNoLowId)
+				ThrowLoweringInternal("demanded RTTI kind has no ABI runtime");
+			AddAddressItem(&rtti, runtime, 16);
+			AddAddressItem(&rtti, state_.type_name_symbols[type]);
+			if (record.kind == TYPE_POINTER ||
+				record.kind == TYPE_MEMBER_POINTER)
+			{
+				std::uint32_t flags = 0;
+				const TypeRecord& pointee = program_.types.Get(record.child);
+				if (pointee.kind == TYPE_QUALIFIED)
+				{
+					if ((pointee.cv & CV_CONST) != 0) flags |= 1;
+					if ((pointee.cv & CV_VOLATILE) != 0) flags |= 2;
+				}
+				const TypeId child = RttiType(record.child);
+				EntityId child_entity = kNoEntity;
+				if (IsClassRttiType(child, &child_entity) &&
+					!program_.entities[child_entity].layout_complete)
+					flags |= 8;
+				TypeId context = kNoType;
+				if (record.kind == TYPE_MEMBER_POINTER)
+				{
+					context = RttiType(record.bound);
+					EntityId context_entity = kNoEntity;
+					if (IsClassRttiType(context, &context_entity) &&
+						!program_.entities[context_entity].layout_complete)
+						flags |= 16;
+				}
+				AddIntegerItem(&rtti, LowI32(), flags);
+				if (child >= state_.type_rtti_symbols.size() ||
+					state_.type_rtti_symbols[child] == kNoLowId)
+					ThrowLoweringInternal(
+						"pointer RTTI pointee was not demanded");
+				AddAddressItem(&rtti, state_.type_rtti_symbols[child]);
+				if (record.kind == TYPE_MEMBER_POINTER)
+				{
+					if (context >= state_.type_rtti_symbols.size() ||
+						state_.type_rtti_symbols[context] == kNoLowId)
+						ThrowLoweringInternal(
+							"member-pointer RTTI context was not demanded");
+					AddAddressItem(&rtti,
+						state_.type_rtti_symbols[context]);
+				}
+			}
+			output_.globals.push_back(rtti);
+			if (stats_) stats_->globals += 2;
+		}
+
+		const std::vector<std::int64_t> no_virtual_call_offsets;
+		for (EntityId entity = 0;
+			entity < graph_.class_polymorphism.size(); ++entity)
+		{
+			const ClassPolymorphismFacts& facts =
+				graph_.class_polymorphism[entity];
+			if (!facts.vtable_demanded ||
+				(facts.slots.empty() && facts.views.empty())) continue;
+			if (entity < state_.class_vtable_external.size() &&
+				state_.class_vtable_external[entity]) continue;
+			EmitVtableView(entity, entity,
+				state_.class_vtable_symbols[entity], 0,
+				PrimarySlots(entity), facts.virtual_base_offsets,
+				output_.host_object_emission ?
+					no_virtual_call_offsets : facts.virtual_call_offsets,
+				state_.class_view_slot_symbols[entity][0],
+				state_.class_view_deleting_slot_symbols[entity][0]);
+			for (std::size_t view = 0; view < facts.views.size(); ++view)
+			{
+				EmitVtableView(entity, entity,
+					state_.class_view_vtable_symbols[entity][view],
+					facts.views[view].offset, facts.views[view].slots,
+					facts.views[view].virtual_base_offsets,
+					facts.views[view].virtual_call_offsets,
+					state_.class_view_slot_symbols[entity][view + 1],
+					state_.class_view_deleting_slot_symbols[entity][view + 1]);
+			}
+			EmitConstructionVtables(entity);
+			EmitVtt(entity, facts);
+		}
+		for (TypeId type = 0; type < state_.thrown_type_demanded.size(); ++type)
+		{
+			if (!state_.thrown_type_demanded[type]) continue;
+			Global object;
+			object.symbol = state_.exception_object_symbols[type];
+			object.initializer_kind = Global::STRUCTURED_VALUE;
+			Global::DataItem zero;
+			zero.kind = Global::DataItem::ZERO_ITEM;
+			zero.zero_bytes = program_.SizeOf(type);
+			object.items.push_back(zero);
+			output_.globals.push_back(object);
+			if (stats_) ++stats_->globals;
+		}
+	}
+
+	const SemanticGraphView& graph_;
+	const semantic::Program& program_;
+	lowering::ir::Program& output_;
+	lowering::Stats* stats_;
+	std::size_t source_ordinal_;
+	const std::vector<SymbolId>& function_symbols_;
+	PolymorphismLoweringState& state_;
+	lowering::SourceTypeLowering source_types_;
+	std::vector<std::uint8_t> local_function_definitions_;
+	std::vector<AdjustedSlotEntry> adjusted_slot_entries_;
+	std::vector<std::uint32_t> adjusted_slot_slots_;
+};
+
+class DeletingDestructorBuilder
+{
+public:
+	DeletingDestructorBuilder(const SemanticGraphView& graph,
+		lowering::ir::Program& output, lowering::Stats* stats,
+		const std::vector<SymbolId>& function_symbols,
+		PolymorphismLoweringState* state)
+		: graph_(graph), program_(graph.program), output_(output), stats_(stats),
+		  function_symbols_(function_symbols), state_(*state), function_(0),
+		  current_block_(0), temp_counter_(0), block_counter_(0),
+		  source_types_(program_)
+	{
+	}
+
+	void EmitAll()
+	{
+		const SymbolId global_deallocation = OperatorDeleteSymbol();
+		for (EntityId entity = 0;
+			entity < state_.deleting_destructor_symbols.size(); ++entity)
+		{
+			const SymbolId symbol = state_.deleting_destructor_symbols[entity];
+			if (symbol == kNoLowId ||
+				state_.deleting_destructor_external[entity] != 0) continue;
+			const BindingId deallocation_binding =
+				state_.deallocation_bindings[entity];
+			SymbolId deallocation = global_deallocation;
+			if (deallocation_binding != kNoBinding &&
+				deallocation_binding < function_symbols_.size())
+				deallocation = function_symbols_[deallocation_binding];
+			if (deallocation == kNoLowId)
+				ThrowLoweringInternal(
+					"deleting destructor dependencies are not emitted");
+			EmitOne(entity, symbol, deallocation_binding, deallocation);
+		}
+		MergeDeletingDestructors();
+	}
+
+private:
+	BlockId AddBlock(const std::string& label)
+	{
+		return AddBlock(lowering::presentation::ExactBlockPresentation(
+			output_, label));
+	}
+
+	BlockId AddBlock(const BlockPresentationName& presentation)
+	{
+		const BlockId block =
+			static_cast<BlockId>(function_->blocks.size());
+		function_->blocks.push_back(
+			lowering::presentation::MakePresentedBlock(
+				output_, function_, presentation));
+		return block;
+	}
+
+	void SelectBlock(BlockId block)
+	{
+		current_block_ = block;
+		Block& selected = function_->blocks[block];
+		if (!selected.selected)
+		{
+			selected.selected = true;
+			function_->block_order.push_back(block);
+		}
+	}
+
+	BlockPresentationName NewLabel(const std::string& prefix)
+	{
+		return lowering::presentation::GeneratedBlockPresentation(
+			output_, prefix, static_cast<std::uint32_t>(++block_counter_));
+	}
+
+	Operand Temp(const LowType& type)
+	{
+		const TempId result = static_cast<TempId>(++temp_counter_);
+		function_->temporary_limit = static_cast<std::uint32_t>(result) + 1;
+		return Operand(result, type);
+	}
+
+	void Emit(const Instruction& instruction)
+	{
+		function_->blocks[current_block_].instructions.push_back(instruction);
+		if (IsTerminator(instruction))
+			function_->blocks[current_block_].terminated = true;
+		if (stats_) ++stats_->instructions;
+	}
+
+	void EmitJump(BlockId target)
+	{
+		Instruction jump(Instruction::JUMP);
+		jump.target = target;
+		Emit(jump);
+	}
+
+	void EmitEhTarget(Instruction::Kind kind, BlockId target)
+	{
+		Instruction instruction(kind);
+		instruction.target = target;
+		Emit(instruction);
+	}
+
+	Operand Load(const Operand& storage)
+	{
+		const Operand result = Temp(LowPtr());
+		Instruction load(Instruction::LOAD);
+		load.dest = result.id;
+		load.type = LowPtr();
+		load.first = storage;
+		Emit(load);
+		return result;
+	}
+
+	void AttachCallArguments(Instruction* call,
+		const std::vector<Operand>& arguments)
+	{
+		call->extra_first =
+			static_cast<std::uint32_t>(output_.call_arguments.size());
+		call->extra_count = static_cast<std::uint32_t>(arguments.size());
+		for (std::size_t i = 0; i < arguments.size(); ++i)
+		{
+			output_.call_arguments.push_back(arguments[i]);
+			output_.call_argument_references.push_back(0);
+			output_.call_argument_object_bytes.push_back(0);
+		}
+	}
+
+	void EmitVoidCall(SymbolId symbol, const Operand& object)
+	{
+		Instruction call(Instruction::CALL);
+		call.type = LowVoid();
+		call.first = Operand(Operand::FUNCTION, symbol, LowPtr());
+		std::vector<Operand> arguments(1, object);
+		AttachCallArguments(&call, arguments);
+		output_.symbols[symbol].referenced = true;
+		Emit(call);
+	}
+
+	void EmitDeallocation(SymbolId symbol, BindingId binding,
+		EntityId entity, const Operand& object)
+	{
+		Instruction call(Instruction::CALL);
+		call.type = LowVoid();
+		call.first = Operand(Operand::FUNCTION, symbol, LowPtr());
+		std::vector<Operand> arguments(1, object);
+		if (binding != kNoBinding)
+		{
+			const TypeRecord& type = program_.types.Get(
+				program_.bindings[binding].type);
+			if (type.parameter_count == 2)
+			{
+				const TypeId* parameters = program_.types.Parameters(
+					program_.bindings[binding].type);
+				arguments.push_back(Operand(static_cast<std::int64_t>(
+					program_.entities[entity].object_size),
+					source_types_.Lower(parameters[1])));
+			}
+		}
+		AttachCallArguments(&call, arguments);
+		output_.symbols[symbol].referenced = true;
+		Emit(call);
+	}
+
+	void EmitVptrStore(SymbolId symbol, std::uint64_t offset,
+		const Operand& object)
+	{
+		if (stats_) ++stats_->vptr_stores;
+		output_.symbols[symbol].referenced = true;
+		const Operand table = Temp(LowPtr());
+		Instruction address(Instruction::ADDR);
+		address.dest = table.id;
+		address.first = Operand(Operand::GLOBAL, symbol, LowPtr());
+		Emit(address);
+		const Operand address_point = Temp(LowPtr());
+		Instruction index(Instruction::INDEX);
+		index.dest = address_point.id;
+		index.type = LowI8();
+		index.first = table;
+		index.second = Operand(static_cast<std::int64_t>(offset), LowI64());
+		Emit(index);
+		Instruction store(Instruction::STORE);
+		store.type = LowPtr();
+		store.first = address_point;
+		store.second = object;
+		Emit(store);
+	}
+
+	void EmitVptrStores(EntityId entity, const Operand& this_slot)
+	{
+		EmitVptrStore(state_.class_vtable_symbols[entity],
+			entity < state_.class_vtable_address_points.size() ?
+				state_.class_vtable_address_points[entity] : 16, Load(this_slot));
+		if (entity >= graph_.class_polymorphism.size()) return;
+		const ClassPolymorphismFacts& facts =
+			graph_.class_polymorphism[entity];
+		for (std::size_t view = 0; view < facts.views.size(); ++view)
+		{
+			if (!facts.views[view].stores_vptr ||
+				view >= state_.class_view_vtable_symbols[entity].size()) continue;
+			std::uint64_t view_offset = facts.views[view].offset;
+			if (facts.views[view].virtual_base && !program_.FindVirtualBase(
+				entity, facts.views[view].entity, &view_offset))
+				ThrowLoweringInternal(
+					"deleting destructor has no virtual-base view");
+			EmitVptrStore(state_.class_view_vtable_symbols[entity][view],
+				state_.class_view_address_points[entity][view],
+				ProjectBase(Load(this_slot), view_offset));
+		}
+	}
+
+	Operand ProjectBase(const Operand& object, std::uint64_t offset)
+	{
+		const Operand projected = Temp(LowPtr());
+		Instruction index(Instruction::INDEX);
+		index.dest = projected.id;
+		index.type = LowI8();
+		index.first = object;
+		index.second = Operand(static_cast<std::int64_t>(offset), LowI64());
+		Emit(index);
+		return projected;
+	}
+
+	struct BaseDestructorAction
+	{
+		SymbolId symbol;
+		std::uint64_t offset;
+
+		BaseDestructorAction(SymbolId symbol_value, std::uint64_t offset_value)
+			: symbol(symbol_value), offset(offset_value) {}
+	};
+
+	std::vector<BaseDestructorAction> BaseDestructorActions(EntityId entity)
+	{
+		std::vector<BaseDestructorAction> result;
+		const EntityRecord& owner = program_.entities[entity];
+		for (std::size_t ordinal = owner.direct_base_count;
+			ordinal != 0; --ordinal)
+		{
+			const DirectBaseEdge& edge = program_.DirectBase(entity, ordinal - 1);
+			if (program_.entities[edge.entity].trivial_destructor) continue;
+			BindingId binding = state_.base_destructor_bindings[edge.entity];
+			if (binding == kNoBinding)
+				binding = state_.complete_destructor_bindings[edge.entity];
+			if (binding == kNoBinding || binding >= function_symbols_.size() ||
+				function_symbols_[binding] == kNoLowId) continue;
+			result.push_back(BaseDestructorAction(
+				function_symbols_[binding], edge.offset));
+		}
+		return result;
+	}
+
+	void EmitBaseDestructorActions(
+		const std::vector<BaseDestructorAction>& actions, std::size_t begin,
+		const Operand& this_slot)
+	{
+		for (std::size_t i = begin; i < actions.size(); ++i)
+			EmitVoidCall(actions[i].symbol,
+				ProjectBase(Load(this_slot), actions[i].offset));
+	}
+
+	SymbolId OperatorDeleteSymbol() const
+	{
+		for (BindingId binding = 0; binding < program_.bindings.size(); ++binding)
+			if (program_.bindings[binding].builtin_function ==
+				BUILTIN_FUNCTION_OPERATOR_DELETE &&
+				binding < function_symbols_.size() &&
+				function_symbols_[binding] != kNoLowId)
+				return function_symbols_[binding];
+		return kNoLowId;
+	}
+
+	void EmitOne(EntityId entity, SymbolId symbol,
+		BindingId deallocation_binding, SymbolId deallocation)
+	{
+		Function result;
+		result.symbol = symbol;
+		result.result = LowVoid();
+		Parameter parameter;
+		parameter.name = InternLocalName(output_, "this");
+		parameter.type = LowPtr();
+		result.parameters.push_back(parameter);
+		Slot this_record;
+		this_record.name = InternLocalName(output_, "this");
+		this_record.type = LowPtr();
+		this_record.parameter_origin = ParameterId(0);
+		result.slots.push_back(this_record);
+		function_ = &result;
+		temp_counter_ = 0;
+		block_counter_ = 0;
+		SelectBlock(AddBlock("entry"));
+		const Operand this_slot(SlotId(0), LowPtr());
+		Instruction save(Instruction::STORE);
+		save.type = LowPtr();
+		save.first = Operand(ParameterId(0), LowPtr());
+		save.second = this_slot;
+		Emit(save);
+		const BlockId cleanup = AddBlock(NewLabel("destructor_cleanup"));
+		const BlockId end = AddBlock(NewLabel("destructor_end"));
+		const bool call_complete =
+			entity < state_.deleting_destructor_calls_complete.size() &&
+			state_.deleting_destructor_calls_complete[entity] != 0;
+		SymbolId complete_destructor = kNoLowId;
+		if (call_complete)
+		{
+			const BindingId complete =
+				state_.complete_destructor_bindings[entity];
+			if (complete != kNoBinding && complete < function_symbols_.size())
+				complete_destructor = function_symbols_[complete];
+			if (complete_destructor == kNoLowId)
+				ThrowLoweringInternal(
+					"deleting destructor has no complete entry");
+		}
+		EmitEhTarget(Instruction::EH_CLEANUP, cleanup);
+		if (call_complete)
+			EmitVoidCall(complete_destructor, Load(this_slot));
+		else EmitVptrStores(entity, this_slot);
+		Emit(Instruction(Instruction::EH_END));
+
+		const std::vector<BaseDestructorAction> base_actions =
+			call_complete ? std::vector<BaseDestructorAction>() :
+				BaseDestructorActions(entity);
+		for (std::size_t i = 0; i < base_actions.size(); ++i)
+		{
+			const BlockId suffix_cleanup = AddBlock(
+				NewLabel("destructor_suffix_cleanup"));
+			const BlockId suffix_next = AddBlock(
+				NewLabel("destructor_suffix_next"));
+			EmitEhTarget(Instruction::EH_CLEANUP, suffix_cleanup);
+			EmitVoidCall(base_actions[i].symbol,
+				ProjectBase(Load(this_slot), base_actions[i].offset));
+			Emit(Instruction(Instruction::EH_END));
+			EmitJump(suffix_next);
+			SelectBlock(suffix_cleanup);
+			EmitBaseDestructorActions(base_actions, i + 1, this_slot);
+			EmitDeallocation(deallocation, deallocation_binding,
+				entity, Load(this_slot));
+			Emit(Instruction(Instruction::EH_END));
+			Emit(Instruction(Instruction::RESUME));
+			SelectBlock(suffix_next);
+		}
+		EmitDeallocation(deallocation, deallocation_binding,
+			entity, Load(this_slot));
+		EmitJump(end);
+		SelectBlock(cleanup);
+		EmitBaseDestructorActions(base_actions, 0, this_slot);
+		EmitDeallocation(deallocation, deallocation_binding,
+			entity, Load(this_slot));
+		Emit(Instruction(Instruction::EH_END));
+		Emit(Instruction(Instruction::RESUME));
+		SelectBlock(end);
+		Emit(Instruction(Instruction::RETURN_VOID));
+		if (stats_)
+		{
+			++stats_->functions;
+			++stats_->deleting_destructors;
+			stats_->blocks += result.block_order.size();
+		}
+		function_ = 0;
+		output_.symbols[symbol].definition_emitted = true;
+		deleting_functions_.push_back(std::move(result));
+		const BindingId complete =
+			state_.complete_destructor_bindings[entity];
+		SymbolId complete_symbol = kNoLowId;
+		if (complete != kNoBinding && complete < function_symbols_.size())
+			complete_symbol = function_symbols_[complete];
+		deleting_complete_symbols_.push_back(complete_symbol);
+		const BindingId base = state_.base_destructor_bindings[entity];
+		SymbolId base_symbol = kNoLowId;
+		if (base != kNoBinding && base < function_symbols_.size())
+			base_symbol = function_symbols_[base];
+		deleting_base_symbols_.push_back(base_symbol);
+	}
+
+	void MergeDeletingDestructors()
+	{
+		if (deleting_functions_.empty()) return;
+		const std::size_t first = state_.source_function_first;
+		if (first > output_.functions.size())
+			ThrowLoweringInternal("invalid PA18 function ordering boundary");
+		const std::size_t missing =
+			std::numeric_limits<std::size_t>::max();
+		std::vector<std::size_t> pending_by_symbol(
+			output_.symbols.size(), missing);
+		for (std::size_t i = 0; i < deleting_complete_symbols_.size(); ++i)
+		{
+			const SymbolId symbol = deleting_complete_symbols_[i];
+			if (symbol != kNoLowId && symbol < pending_by_symbol.size())
+				pending_by_symbol[symbol] = i;
+		}
+		std::vector<std::uint8_t> emitted(deleting_functions_.size(), 0);
+		std::vector<std::size_t> source_by_symbol(
+			output_.symbols.size(), missing);
+		for (std::size_t i = first; i < output_.functions.size(); ++i)
+		{
+			const SymbolId symbol = output_.functions[i].symbol;
+			if (symbol < source_by_symbol.size()) source_by_symbol[symbol] = i;
+		}
+		std::vector<std::uint8_t> moved(output_.functions.size(), 0);
+		std::vector<Function> ordered;
+		ordered.reserve(output_.functions.size() - first +
+			deleting_functions_.size());
+		for (std::size_t i = first; i < output_.functions.size(); ++i)
+		{
+			if (moved[i]) continue;
+			const SymbolId symbol = output_.functions[i].symbol;
+			const std::size_t pending = symbol < pending_by_symbol.size() ?
+				pending_by_symbol[symbol] : missing;
+			if (pending != missing)
+			{
+				const SymbolId base = deleting_base_symbols_[pending];
+				const std::size_t base_source =
+					base < source_by_symbol.size() ? source_by_symbol[base] : missing;
+				if (base_source != missing && base_source > i &&
+					!moved[base_source])
+				{
+					ordered.push_back(std::move(output_.functions[base_source]));
+					moved[base_source] = 1;
+				}
+				ordered.push_back(std::move(deleting_functions_[pending]));
+				emitted[pending] = 1;
+			}
+			ordered.push_back(std::move(output_.functions[i]));
+		}
+		for (std::size_t i = 0; i < deleting_functions_.size(); ++i)
+			if (!emitted[i])
+				ordered.push_back(std::move(deleting_functions_[i]));
+		output_.functions.resize(first + ordered.size());
+		for (std::size_t i = 0; i < ordered.size(); ++i)
+			output_.functions[first + i] = std::move(ordered[i]);
+	}
+
+	const SemanticGraphView& graph_;
+	const semantic::Program& program_;
+	lowering::ir::Program& output_;
+	lowering::Stats* stats_;
+	const std::vector<SymbolId>& function_symbols_;
+	PolymorphismLoweringState& state_;
+	Function* function_;
+	BlockId current_block_;
+	std::size_t temp_counter_;
+	std::size_t block_counter_;
+	lowering::SourceTypeLowering source_types_;
+	std::vector<Function> deleting_functions_;
+	std::vector<SymbolId> deleting_complete_symbols_;
+	std::vector<SymbolId> deleting_base_symbols_;
+};
+
+}
+
+void PreparePolymorphism(const SemanticGraphView& graph,
+	lowering::ir::Program& output, lowering::Stats* stats,
+	std::size_t source_ordinal, const std::vector<SymbolId>& function_symbols,
+	PolymorphismLoweringState* state)
+{
+	GlobalEmitter(graph, output, stats, source_ordinal,
+		function_symbols, state).Prepare();
+}
+
+void EmitDeletingDestructors(const SemanticGraphView& graph,
+	lowering::ir::Program& output, lowering::Stats* stats,
+	const std::vector<SymbolId>& function_symbols,
+	PolymorphismLoweringState* state)
+{
+	DeletingDestructorBuilder(graph, output, stats,
+		function_symbols, state).EmitAll();
+}
+
+}
+}

@@ -10,7 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $value
     %t5 = addr $p
     %t6 = call obj<1x1> @executor__require(%t4, %t5, 0)
-    copyobj 1x1 %t6, %t3
     return i32 0
 }
 function @executor__require(%this : ptr, %__param1 : ptr [pass=reference], %__param2 : i32) -> obj<1x1> [binding=strong, object=_ZNK8executor7requireI8propertyEES_RKT_N16conditional_typeIXsr6traits14require_memberIRK4baseS4_EE8is_validEiE4typeE] {

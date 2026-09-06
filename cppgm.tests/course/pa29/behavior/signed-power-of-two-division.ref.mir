@@ -1,0 +1,256 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @div2
+  abi
+    param %value -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rcx, 2
+    mov rax, rdi
+    cqo
+    idiv rcx
+    ret rax
+
+function @mod8
+  abi
+    param %value -> rdi : i64
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rcx, 8
+    mov rax, rdi
+    cqo
+    idiv rcx
+    ret rdx
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size 144
+    scratch_bytes 48
+    frame_pointer keep
+    epilogues shared
+    preserve rbx r12 r13 r14 r15
+    temp %bad_r8_narrow -> [rbp-8] : i64
+    temp %bad_q16 -> [rbp-16] : i64
+    temp %bad_q4_positive -> [rbp-24] : i64
+    temp %bad_r4_positive -> [rbp-32] : i64
+    temp %bad_q4_zero -> [rbp-40] : i64
+    temp %bad_q7 -> [rbp-48] : i64
+    temp %bad_r7 -> [rbp-56] : i64
+
+  block ^entry
+    mov r8, -9223372036854775807
+    mov rcx, 1
+    mov rax, r8
+    cqo
+    idiv rcx
+    mov r8, rax
+    mov rbx, r8
+    mov rdx, -9223372036854775807
+    cmp.i64 rbx, rdx
+    setne rbx
+    movzx rbx, rbx
+    mov r8, -9223372036854775807
+    mov rcx, 1
+    mov rax, r8
+    cqo
+    idiv rcx
+    mov r8, rdx
+    mov r12, r8
+    mov rdx, 0
+    cmp.i64 r12, rdx
+    setne r12
+    movzx r12, r12
+    mov rdi, -9223372036854775807
+    call @div2 [args=(rdi)]
+    mov r13, rax
+    mov rdx, -4611686018427387903
+    cmp.i64 r13, rdx
+    setne r13
+    movzx r13, r13
+    mov rdi, -9223372036854775807
+    call @mod8 [args=(rdi)]
+    mov r8, rax
+    mov rdx, -7
+    cmp.i64 r8, rdx
+    setne r8
+    movzx r8, r8
+    mov r9, -9223372036854775808
+    mov rcx, 4611686018427387904
+    mov rax, r9
+    cqo
+    idiv rcx
+    mov r9, rax
+    mov rdx, -2
+    cmp.i64 r9, rdx
+    setne r9
+    movzx r9, r9
+    mov rdi, 9223372036854775807
+    mov rcx, 4611686018427387904
+    mov rax, rdi
+    cqo
+    idiv rcx
+    mov rdi, rdx
+    mov rdx, 4611686018427387903
+    cmp.i64 rdi, rdx
+    setne rdi
+    movzx rdi, rdi
+    mov rsi, -7
+    mov rcx, 4
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rax
+    sext.i8 rsi
+    mov r14, rsi
+    zext.i8 r14
+    mov rdx, 255
+    cmp.i64 r14, rdx
+    setne r14
+    movzx r14, r14
+    mov rsi, -7
+    mov rcx, 4
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rdx
+    sext.i8 rsi
+    mov r15, rsi
+    zext.i8 r15
+    mov rdx, 253
+    cmp.i64 r15, rdx
+    setne r15
+    movzx r15, r15
+    mov rsi, -32768
+    mov rcx, 256
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rax
+    sext.i16 rsi
+    store.i64 [rbp-8], r15
+    mov r15, rsi
+    zext.i16 r15
+    mov rdx, 65408
+    cmp.i64 r15, rdx
+    setne r15
+    movzx r15, r15
+    mov rsi, -2147483647
+    mov rcx, 65536
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rdx
+    sext.i32 rsi
+    store.i64 [rbp-16], r15
+    mov r15, rsi
+    zext.i32 r15
+    mov rdx, 4294901761
+    cmp.i64 r15, rdx
+    setne r15
+    movzx r15, r15
+    mov rsi, 7
+    mov rcx, 4
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rax
+    mov rdx, 1
+    cmp.i64 rsi, rdx
+    setne rsi
+    movzx rsi, rsi
+    store.i64 [rbp-24], rsi
+    mov rsi, 7
+    mov rcx, 4
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rdx
+    mov rdx, 3
+    cmp.i64 rsi, rdx
+    setne rsi
+    movzx rsi, rsi
+    store.i64 [rbp-32], rsi
+    mov rsi, 0
+    mov rcx, 4
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rax
+    mov rdx, 0
+    cmp.i64 rsi, rdx
+    setne rsi
+    movzx rsi, rsi
+    store.i64 [rbp-40], rsi
+    mov rsi, -100
+    mov rcx, 7
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rax
+    mov rdx, -14
+    cmp.i64 rsi, rdx
+    setne rsi
+    movzx rsi, rsi
+    store.i64 [rbp-48], rsi
+    mov rsi, -100
+    mov rcx, 7
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rdx
+    mov rdx, -2
+    cmp.i64 rsi, rdx
+    setne rsi
+    movzx rsi, rsi
+    store.i64 [rbp-56], rsi
+    mov rsi, -100
+    mov rcx, -4
+    mov rax, rsi
+    cqo
+    idiv rcx
+    mov rsi, rax
+    mov rdx, 25
+    cmp.i64 rsi, rdx
+    setne rsi
+    movzx rsi, rsi
+    or rbx, r12
+    or r13, r8
+    or r9, rdi
+    or r14, [rbp-8]
+    load.i64 r8, [rbp-16]
+    or r8, r15
+    load.i64 rdi, [rbp-24]
+    or rdi, [rbp-32]
+    load.i64 r12, [rbp-40]
+    or r12, [rbp-48]
+    load.i64 r15, [rbp-56]
+    or r15, rsi
+    or rbx, r13
+    or r9, r14
+    or r8, rdi
+    or r12, r15
+    or rbx, r9
+    or r8, r12
+    or rbx, r8
+    mov rax, rbx
+    sext.i32 rax
+    ret rax

@@ -1,0 +1,268 @@
+#include "syntax/extensions/object_attributes.h"
+
+#include "support/exceptions.h"
+
+#include "hosted_extension_registry.h"
+
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace cppgm
+{
+namespace syntax
+{
+namespace
+{
+
+
+struct GnuObjectAttributeSyntaxFact
+{
+	TextId name;
+	std::vector<std::vector<TextId> > arguments;
+	TextId identifier_argument;
+	bool literal_argument_list;
+	// [begin, end) token range of each top-level argument, kept whether or not
+	// the argument was a literal, so a caller with the real grammar can parse
+	// it.
+	std::vector<std::pair<std::size_t, std::size_t> > argument_ranges;
+
+	GnuObjectAttributeSyntaxFact()
+		: name(0), identifier_argument(0), literal_argument_list(true) {}
+};
+
+bool At(const std::vector<SyntaxToken>& tokens, std::size_t position,
+	SimpleTokenKind kind)
+{
+	return position < tokens.size() && tokens[position].Kind() ==
+		static_cast<std::uint16_t>(kind);
+}
+
+void Expect(const std::vector<SyntaxToken>& tokens, std::size_t* position,
+	SimpleTokenKind kind)
+{
+	if (!At(tokens, *position, kind))
+		ThrowSyntaxError("malformed GNU attribute token sequence");
+	++*position;
+}
+
+bool ConsumeGnuObjectAttributeFacts(
+	const std::vector<SyntaxToken>& tokens, const StringTable& strings,
+	std::size_t* position, std::vector<GnuObjectAttributeSyntaxFact>* facts)
+{
+	if (!position || !facts)
+		ThrowSyntaxInternal("missing GNU attribute parser destination");
+	if (*position >= tokens.size() ||
+		tokens[*position].Kind() != kIdentifierToken ||
+		!hosted_extension::IsGnuAttributeIntroducer(
+			strings.Get(tokens[*position].spelling)))
+		return false;
+	++*position;
+	Expect(tokens, position, OP_LPAREN);
+	Expect(tokens, position, OP_LPAREN);
+	while (!At(tokens, *position, OP_RPAREN))
+	{
+		if (*position >= tokens.size() || tokens[*position].Kind() == kEofToken)
+			ThrowSyntaxError("unterminated GNU attribute");
+		if (tokens[*position].Kind() != kIdentifierToken &&
+			tokens[*position].Kind() != KW_CONST)
+		{
+			++*position;
+			continue;
+		}
+		GnuObjectAttributeSyntaxFact fact;
+		fact.name = tokens[(*position)++].spelling;
+		if (At(tokens, *position, OP_LPAREN))
+		{
+			++*position;
+			std::size_t depth = 1;
+			std::size_t argument_begin = *position;
+			std::vector<TextId> argument;
+			TextId direct_identifier = 0;
+			std::size_t direct_tokens = 0;
+			bool direct_comma = false;
+			bool saw_argument_token = false;
+			while (depth != 0)
+			{
+				if (*position >= tokens.size() ||
+					tokens[*position].Kind() == kEofToken)
+					ThrowSyntaxError("unterminated GNU attribute argument");
+				if (At(tokens, *position, OP_LPAREN))
+				{
+					if (depth == 1) fact.literal_argument_list = false;
+					++depth;
+				}
+				else if (At(tokens, *position, OP_RPAREN))
+				{
+					if (depth == 1)
+					{
+						if (!argument.empty()) fact.arguments.push_back(argument);
+						else if (saw_argument_token)
+							fact.literal_argument_list = false;
+						if (*position > argument_begin)
+							fact.argument_ranges.push_back(
+								std::make_pair(argument_begin, *position));
+					}
+					--depth;
+				}
+				else if (depth == 1 && At(tokens, *position, OP_COMMA))
+				{
+					direct_comma = true;
+					saw_argument_token = true;
+					if (argument.empty()) fact.literal_argument_list = false;
+					else
+					{
+						fact.arguments.push_back(argument);
+						argument.clear();
+					}
+					if (*position > argument_begin)
+						fact.argument_ranges.push_back(
+							std::make_pair(argument_begin, *position));
+					argument_begin = *position + 1;
+				}
+				else if (depth == 1 &&
+					tokens[*position].Kind() == kLiteralToken)
+				{
+					++direct_tokens;
+					saw_argument_token = true;
+					argument.push_back(tokens[*position].spelling);
+				}
+				else if (depth == 1)
+				{
+					++direct_tokens;
+					if (tokens[*position].Kind() == kIdentifierToken)
+						direct_identifier = tokens[*position].spelling;
+					saw_argument_token = true;
+					fact.literal_argument_list = false;
+				}
+				++*position;
+			}
+			if (!direct_comma && direct_tokens == 1)
+				fact.identifier_argument = direct_identifier;
+		}
+		facts->push_back(fact);
+		if (At(tokens, *position, OP_COMMA)) ++*position;
+	}
+	Expect(tokens, position, OP_RPAREN);
+	Expect(tokens, position, OP_RPAREN);
+	return true;
+}
+
+}
+
+bool ConsumeLeadingGnuObjectAttribute(
+	const std::vector<SyntaxToken>& tokens, const StringTable& strings,
+	SyntaxArena& arena, std::size_t* position,
+	std::vector<NodeId>* attributes,
+	std::vector<GnuAttributeExpressionArgument>* expression_arguments)
+{
+	std::vector<GnuObjectAttributeSyntaxFact> facts;
+	if (!ConsumeGnuObjectAttributeFacts(tokens, strings, position, &facts))
+		return false;
+	for (std::size_t i = 0; i < facts.size(); ++i)
+	{
+		const NodeId attribute = arena.Make(
+			"gnu-attribute", strings.Get(facts[i].name));
+		arena.AddFlags(attribute, SYNTAX_FLAG_SEMANTIC_ONLY);
+		if (facts[i].identifier_argument != 0)
+		{
+			const NodeId identifier = arena.Make(
+				"gnu-attribute-identifier-argument",
+				strings.Get(facts[i].identifier_argument));
+			arena.AddFlags(identifier, SYNTAX_FLAG_SEMANTIC_ONLY);
+			arena.Add(attribute, identifier);
+		}
+		if (!facts[i].literal_argument_list)
+		{
+			const NodeId invalid = arena.Make(
+				"gnu-attribute-nonliteral-argument", std::string());
+			arena.AddFlags(invalid, SYNTAX_FLAG_SEMANTIC_ONLY);
+			arena.Add(attribute, invalid);
+			const std::string name = strings.Get(facts[i].name);
+			if (expression_arguments &&
+				(name == "aligned" || name == "__aligned__"))
+				for (std::size_t range = 0;
+					range < facts[i].argument_ranges.size(); ++range)
+				{
+					GnuAttributeExpressionArgument pending;
+					pending.attribute = attribute;
+					pending.begin = facts[i].argument_ranges[range].first;
+					pending.end = facts[i].argument_ranges[range].second;
+					expression_arguments->push_back(pending);
+				}
+		}
+		for (std::size_t argument_index = 0;
+			argument_index < facts[i].arguments.size(); ++argument_index)
+		{
+			std::string spelling;
+			for (std::size_t part = 0;
+				part < facts[i].arguments[argument_index].size(); ++part)
+			{
+				if (!spelling.empty()) spelling += ' ';
+				spelling += strings.Get(facts[i].arguments[argument_index][part]);
+			}
+			const NodeId argument = arena.Make(
+				"gnu-attribute-argument", spelling);
+			arena.AddFlags(argument, SYNTAX_FLAG_SEMANTIC_ONLY);
+			arena.Add(attribute, argument);
+		}
+		attributes->push_back(attribute);
+	}
+	return true;
+}
+
+bool ConsumeLeadingStandardObjectAttribute(
+	const std::vector<SyntaxToken>& tokens, const StringTable& strings,
+	SyntaxArena& arena, std::size_t* position,
+	std::vector<NodeId>* attributes)
+{
+	if (!position || !attributes)
+		ThrowSyntaxInternal("missing standard attribute parser destination");
+	if (!At(tokens, *position, OP_LSQUARE) ||
+		!At(tokens, *position + 1, OP_LSQUARE)) return false;
+	*position += 2;
+	bool no_unique_address = false;
+	bool always_inline = false;
+	bool noreturn = false;
+	while (!At(tokens, *position, OP_RSQUARE) ||
+		!At(tokens, *position + 1, OP_RSQUARE))
+	{
+		if (*position >= tokens.size() || tokens[*position].Kind() == kEofToken)
+			ThrowSyntaxError("unterminated standard attribute");
+		if (tokens[*position].Kind() == kIdentifierToken)
+		{
+			const std::string& name = strings.Get(tokens[*position].spelling);
+			no_unique_address = no_unique_address ||
+				name == "no_unique_address" || name == "__no_unique_address__";
+			always_inline = always_inline ||
+				name == "always_inline" || name == "__always_inline__";
+			noreturn = noreturn ||
+				name == "noreturn" || name == "__noreturn__";
+		}
+		++*position;
+	}
+	*position += 2;
+	if (no_unique_address)
+	{
+		const NodeId attribute =
+			arena.Make("standard-attribute", "no_unique_address");
+		arena.AddFlags(attribute, SYNTAX_FLAG_SEMANTIC_ONLY);
+		attributes->push_back(attribute);
+	}
+	if (always_inline)
+	{
+		const NodeId attribute = arena.Make("standard-attribute", "always_inline");
+		arena.AddFlags(attribute, SYNTAX_FLAG_SEMANTIC_ONLY);
+		attributes->push_back(attribute);
+	}
+	if (noreturn)
+	{
+		const NodeId attribute = arena.Make("standard-attribute", "noreturn");
+		arena.AddFlags(attribute, SYNTAX_FLAG_SEMANTIC_ONLY);
+		attributes->push_back(attribute);
+	}
+	return true;
+}
+
+}
+}

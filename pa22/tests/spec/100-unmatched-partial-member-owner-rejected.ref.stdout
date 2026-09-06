@@ -1,0 +1,18 @@
+ERROR: class template member owner does not match the primary or an existing partial specialization at tests/spec/100-unmatched-partial-member-owner-rejected.t:14:5 [top-level declaration 1 kind=template-declaration ast={template-declaration
+  template-parameter-clause
+    template-parameter-list
+      type-parameter
+        parameter-key KW_CLASS:class
+        identifier T
+  function-definition
+    decl-specifier-seq
+      decl-specifier KW_INT:int
+    declarator
+      identifier owner<T*>::value
+      parameter-clause
+    compound-statement
+      return-statement
+        literal 1
+}]
+Diagnostic context:
+collect_template_declaration [template<class T>int owner<T*>::value(){return 1;}] at tests/spec/100-unmatched-partial-member-owner-rejected.t:13:1

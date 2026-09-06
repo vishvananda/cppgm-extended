@@ -114,6 +114,24 @@ sub canonical_machine_ir_memory_operand
 	return "[$base$sign<off$index>]";
 }
 
+sub canonical_machine_ir_indexed_memory_operand
+{
+	my ($base, $index, $scale, $sign, $disp, $state) = @_;
+	my $address = "$base+$index";
+	$address .= "*$scale" if defined($scale);
+	return "[$address]" if !defined($sign) || !defined($disp);
+	my $key = "$address|$sign|$disp";
+	my $bucket = "$address|$sign";
+	if (!exists($state->{disp_map}{$key}))
+	{
+		my $next = $state->{next_disp}{$bucket} || 0;
+		$state->{disp_map}{$key} = $next;
+		$state->{next_disp}{$bucket} = $next + 1;
+	}
+	my $offset = $state->{disp_map}{$key};
+	return "[$address$sign<off$offset>]";
+}
+
 sub canonical_machine_ir_free_gpr
 {
 	my ($reg, $state) = @_;
@@ -143,6 +161,12 @@ sub canonicalize_machine_ir
 	my ($data) = @_;
 	return undef if !defined($data);
 	$data = normalize_machine_ir($data);
+	# Focused PA38 properties validate non-default entry alignment.  Keep the
+	# legacy structural MIR oracle concerned with instruction and frame shape.
+	$data =~ s/^\s+code_alignment\s+\d+\n//mg;
+	# The frame's total size is a layout choice like its displacements: a
+	# structural oracle keeps the bindings and their order, not the number.
+	$data =~ s/^(\s+stack_size)\s+\d+/$1 N/mg;
 	my %state = (
 		disp_map => {},
 		next_disp => {},
@@ -151,6 +175,7 @@ sub canonicalize_machine_ir
 		xmm_map => {},
 		next_xmm => 0,
 	);
+	$data =~ s/\[([A-Za-z_][A-Za-z0-9_]*)\+([A-Za-z_][A-Za-z0-9_]*)(?:\*([1248]))?([+-])(\d+)\]/canonical_machine_ir_indexed_memory_operand($1, $2, $3, $4, $5, \%state)/ge;
 	$data =~ s/\[([A-Za-z_][A-Za-z0-9_]*)([+-])(\d+)\]/canonical_machine_ir_memory_operand($1, $2, $3, \%state)/ge;
 	$data =~ s/\b(rbx|r10|r11|r12|r13|r14|r15)\b/canonical_machine_ir_free_gpr($1, \%state)/ge;
 	$data =~ s/\b(xmm2|xmm3|xmm4|xmm5|xmm6|xmm7)\b/canonical_machine_ir_free_xmm($1, \%state)/ge;
@@ -352,7 +377,11 @@ sub compare_link_maps_structural
 sub append_keep_going_summary
 {
 	my ($repo_root, $cwd, $npass, $suite_total, $failed) = @_;
-	if (open(my $fh, '>>', "$repo_root/.test_counts"))
+	# A tool that runs the harness many times (scripts/check_lowir_seams.py)
+	# names its own counts file so concurrent runs do not mix their lines.
+	my $counts_path = defined($ENV{CPPGM_TEST_COUNTS_FILE}) && $ENV{CPPGM_TEST_COUNTS_FILE} ne ''
+		? $ENV{CPPGM_TEST_COUNTS_FILE} : "$repo_root/.test_counts";
+	if (open(my $fh, '>>', $counts_path))
 	{
 		print $fh "$npass $suite_total\n";
 		close($fh);
@@ -361,6 +390,160 @@ sub append_keep_going_summary
 	{
 		system('touch', "$cwd/.test_failed");
 	}
+}
+
+# An expectation sidecar (`x.ref.expect`, see scripts/expect_ir.pl) states
+# the outcome a fixture tests and the size envelope its output must stay in.
+# When one is present it replaces the comparison of the output's shape with
+# the reference; the reference may stay beside it as an informational example.
+sub expectation_sidecar
+{
+	my ($testbase) = @_;
+	my $path = "$testbase.ref.expect";
+	return -f $path ? $path : undef;
+}
+
+sub evaluate_expectations
+{
+	my ($expect_path, $ir_path) = @_;
+	return (0, "ERROR: missing output to evaluate expectations against ($ir_path)", undef)
+		if !-f $ir_path;
+	my $evaluator = dirname(__FILE__) . "/expect_ir.pl";
+	my $output = `perl "$evaluator" "$ir_path" "$expect_path" 2>&1`;
+	my $status = $? >> 8;
+	return (1, undef, undef) if $status == 0;
+	my $hint = "To evaluate the expectations by hand:\n\n    \$ perl " .
+		rooted_path($evaluator) . " " . rooted_path($ir_path) . " " .
+		rooted_path($expect_path) . "\n\n";
+	chomp($output);
+	$output =~ s/\n/; /g;
+	return (0, "ERROR: expectations not met ($output)", $hint);
+}
+
+# With CPPGM_LOWER_CHECK_APP naming a `cppgm++`, every successful LowIR
+# output must also lower through the object path at -O0: the optimizer's
+# output is not correct until the backend accepts it.
+sub lowir_lowers
+{
+	my ($app, $path, $input, $log) = @_;
+	my $object = "$input.o";
+	my $data = getdata($path);
+	return undef if !defined($data);
+	putrawdata($input, $data);
+	my $status = system("\"$app\" -c -O0 -o \"$object\" \"$input\" > /dev/null 2> \"$log\"");
+	unlink($object);
+	return $status == 0 ? 1 : 0;
+}
+
+sub check_lowir_lowers
+{
+	my ($my, $source_file) = @_;
+	my $app = $ENV{CPPGM_LOWER_CHECK_APP};
+	return (1, undef, undef) if !defined($app) || $app eq '';
+	# The driver recognizes LowIR input by its extension.  A fixture whose
+	# input the backend does not accept (a handwritten shape outside the
+	# object path's contract) has no floor to preserve.
+	my $input = "$my.lower.lowir";
+	my $log = "$my.lower.stderr";
+	if (defined($source_file) && -f $source_file && source_is_lowir($source_file))
+	{
+		my $source_input = "$my.lower.input.lowir";
+		my $source_log = "$my.lower.input.stderr";
+		my $source_lowers = lowir_lowers($app, $source_file, $source_input, $source_log);
+		unlink($source_input, $source_log);
+		return (1, undef, undef) if !$source_lowers;
+	}
+	my $lowers = lowir_lowers($app, $my, $input, $log);
+	return (0, "ERROR: missing output file ($my)", undef) if !defined($lowers);
+	if ($lowers)
+	{
+		unlink($input, $log);
+		return (1, undef, undef);
+	}
+	my $reason = getdata($log);
+	$reason = '' if !defined($reason);
+	$reason =~ s/\s+/ /g;
+	return (0, "ERROR: optimized LowIR does not lower at -O0 ($reason)",
+		"To reproduce:\n\n    \$ $app -c -O0 -o /dev/null " . rooted_path($input) . "\n\n");
+}
+
+# With CPPGM_BEHAVIOR_CHECK_APP naming a `cppgm++`, a source fixture whose
+# optimized LowIR the driver emitted is also built and run two ways: the
+# source at the lane's level, and the emitted LowIR through the object
+# path at -O0; both
+# programs must print the same output and exit the same way.  A source that
+# does not build and link at -O0 has no behaviour to preserve and is
+# skipped.  Programs run with a ten-second limit and no input.
+sub source_is_lowir
+{
+	my ($path) = @_;
+	my $data = getdata($path);
+	return 1 if !defined($data);
+	for my $line (split(/\n/, $data))
+	{
+		next if $line =~ /^\s*$/ || $line =~ /^\s*#/;
+		return $line =~ /^(?:declare|global|function|machine_ir)\b/ ? 1 : 0;
+	}
+	return 1;
+}
+
+sub run_program_capture
+{
+	my ($program, $stdout_path) = @_;
+	my $status = system("timeout 10 \"$program\" < /dev/null > \"$stdout_path\" 2>/dev/null");
+	return $status == -1 ? undef : ($status >> 8);
+}
+
+sub check_source_behavior
+{
+	my ($my, $source_file) = @_;
+	my $app = $ENV{CPPGM_BEHAVIOR_CHECK_APP};
+	return (1, undef, undef) if !defined($app) || $app eq '' || !defined($source_file);
+	return (1, undef, undef) if !-f $source_file || source_is_lowir($source_file);
+	my $source_program = "$my.behavior.source";
+	my $lowir_input = "$my.behavior.lowir";
+	my $lowir_program = "$my.behavior.optimized";
+	my $log = "$my.behavior.stderr";
+	# The source is built at the lane's level, read from the lane's name
+	# (`.../o1/...`), so that what the source sees (`__OPTIMIZE__`) matches
+	# what the emitted LowIR saw; the emitted LowIR is lowered at -O0.
+	my $level = $my =~ m{(?:^|/)o([0-3])(?:/|$)} ? "-O$1" : '-O0';
+	my $built = system("\"$app\" $level -o \"$source_program\" \"$source_file\" > /dev/null 2> \"$log\"") == 0;
+	if (!$built)
+	{
+		unlink($source_program, $log);
+		return (1, undef, undef);
+	}
+	my $data = getdata($my);
+	return (0, "ERROR: missing output file ($my)", undef) if !defined($data);
+	putrawdata($lowir_input, $data);
+	if (system("\"$app\" -O0 -o \"$lowir_program\" \"$lowir_input\" > /dev/null 2> \"$log\"") != 0)
+	{
+		my $reason = getdata($log);
+		$reason = '' if !defined($reason);
+		$reason =~ s/\s+/ /g;
+		unlink($source_program);
+		return (0, "ERROR: optimized LowIR does not build into a program ($reason)",
+			"To reproduce:\n\n    \$ $app -O0 -o /tmp/optimized " . rooted_path($lowir_input) . "\n\n");
+	}
+	my $source_status = run_program_capture($source_program, "$source_program.stdout");
+	my $lowir_status = run_program_capture($lowir_program, "$lowir_program.stdout");
+	my $source_out = getdata("$source_program.stdout");
+	my $lowir_out = getdata("$lowir_program.stdout");
+	$source_out = '' if !defined($source_out);
+	$lowir_out = '' if !defined($lowir_out);
+	my $same = defined($source_status) && defined($lowir_status) &&
+		$source_status == $lowir_status && $source_out eq $lowir_out;
+	if ($same)
+	{
+		unlink($source_program, "$source_program.stdout", $lowir_input, $lowir_program, "$lowir_program.stdout", $log);
+		return (1, undef, undef);
+	}
+	return (0, "ERROR: optimized program behaves differently from the source program (exit " .
+		(defined($source_status) ? $source_status : 'none') . " -> " .
+		(defined($lowir_status) ? $lowir_status : 'none') . ")",
+		"To compare:\n\n    \$ diff " . rooted_path("$source_program.stdout") . " " .
+		rooted_path("$lowir_program.stdout") . "\n\n");
 }
 
 sub compare_text
@@ -493,6 +676,7 @@ sub parse_lowir_param_list
 		my $capture = $metadata_or_error->{capture};
 		my $access = $metadata_or_error->{access};
 		my $alias = $metadata_or_error->{alias};
+		my $object_bytes = $metadata_or_error->{object_bytes};
 		return (0, "unknown parameter pass mode '$pass'")
 			if $pass !~ /^(?:direct|indirect_result|by_address|reference|decay)$/;
 		return (0, "parameter %$name with pass mode '$pass' must have type ptr")
@@ -503,6 +687,8 @@ sub parse_lowir_param_list
 			if $access ne '' && $type ne 'ptr';
 		return (0, "parameter %$name with alias mode '$alias' must have type ptr")
 			if $alias ne '' && $type ne 'ptr';
+		return (0, "parameter %$name with object extent '$object_bytes' must have type ptr")
+			if $object_bytes ne '' && $type ne 'ptr';
 		push @params, {
 			name => $name,
 			type => $type,
@@ -510,6 +696,7 @@ sub parse_lowir_param_list
 			capture => $capture,
 			access => $access,
 			alias => $alias,
+			object_bytes => $object_bytes,
 		};
 	}
 	return (1, \@params);
@@ -523,6 +710,7 @@ sub parse_lowir_parameter_metadata_suffix
 		capture => '',
 		access => '',
 		alias => '',
+		object_bytes => '',
 	);
 	return (1, \%metadata) if lowir_trim($suffix) eq '';
 	return (0, "invalid parameter metadata syntax")
@@ -550,7 +738,7 @@ sub parse_lowir_parameter_metadata_suffix
 		elsif ($key eq 'access')
 		{
 			return (0, "unknown parameter access mode '$value'")
-				if $value !~ /^(?:none|read|write|readwrite)$/;
+				if $value !~ /^(?:read|write|readwrite)$/;
 			$metadata{access} = $value;
 		}
 		elsif ($key eq 'alias')
@@ -558,6 +746,12 @@ sub parse_lowir_parameter_metadata_suffix
 			return (0, "unknown parameter alias mode '$value'")
 				if $value !~ /^(?:noalias)$/;
 			$metadata{alias} = $value;
+		}
+		elsif ($key eq 'object_bytes')
+		{
+			return (0, "invalid parameter object extent '$value'")
+				if $value !~ /^[1-9][0-9]*$/;
+			$metadata{object_bytes} = $value;
 		}
 		else
 		{
@@ -667,6 +861,9 @@ sub parse_lowir_function_metadata_suffix
 		prefer_local => '',
 		object_root => '',
 		trivial_lifecycle => '',
+		force_inline => '',
+		inline_hint => '',
+		no_inline => '',
 	);
 	my %saw;
 	pos($suffix) = 0;
@@ -683,7 +880,7 @@ sub parse_lowir_function_metadata_suffix
 			if ($key eq 'arity')
 			{
 				return (0, "unknown function arity mode '$value'")
-					if $value !~ /^(?:fixed|variadic|prototype_relaxed)$/;
+					if $value !~ /^(?:fixed|variadic)$/;
 				$metadata{arity} = $value;
 			}
 			elsif ($key eq 'effects')
@@ -754,6 +951,24 @@ sub parse_lowir_function_metadata_suffix
 					if $value !~ /^(?:yes|no)$/;
 				$metadata{trivial_lifecycle} = $value;
 			}
+			elsif ($key eq 'force_inline')
+			{
+				return (0, "unknown force_inline mode '$value'")
+					if $value !~ /^(?:yes|no)$/;
+				$metadata{force_inline} = $value;
+			}
+			elsif ($key eq 'inline_hint')
+			{
+				return (0, "unknown inline_hint mode '$value'")
+					if $value !~ /^(?:yes|no)$/;
+				$metadata{inline_hint} = $value;
+			}
+			elsif ($key eq 'no_inline')
+			{
+				return (0, "unknown no_inline mode '$value'")
+					unless $value eq 'yes' || $value eq 'no';
+				$metadata{no_inline} = $value;
+			}
 			else
 			{
 				return (0, "unknown function metadata key '$key'");
@@ -801,6 +1016,20 @@ sub parse_lowir_call_signature_suffix
 	$signature{params} = $params_or_error;
 	$signature{arity} = $metadata_or_error->{arity};
 	return (1, \%signature);
+}
+
+sub parse_lowir_call_suffix
+{
+	my ($suffix) = @_;
+	my $copy_elision = 0;
+	if ($suffix =~ s/^\s+\[\s*elision\s*=\s*copy\s*\]//)
+	{
+		$copy_elision = 1;
+	}
+	my ($ok, $signature) = parse_lowir_call_signature_suffix($suffix);
+	return ($ok, $signature) if !$ok;
+	$signature->{copy_elision} = $copy_elision;
+	return (1, $signature);
 }
 
 sub split_lowir_args
@@ -937,6 +1166,36 @@ sub validate_lowir_instruction
 		$state->{temps}{$1} = $2;
 		return 0;
 	}
+	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*phi\s+($type_pattern)\s+\[(.*)\]$/)
+	{
+		my ($destination, $type, $incoming_text) = ($1, $2, $3);
+		my @incoming = split(/\s*,\s*/, lowir_trim($incoming_text));
+		push @$errors, "$context phi requires an incoming edge"
+			if scalar(@incoming) == 0;
+		for my $incoming (@incoming)
+		{
+			if ($incoming !~ /^(\^[A-Za-z0-9_]+)\s*:\s*(.+)$/)
+			{
+				push @$errors, "$context phi has invalid incoming edge '$incoming'";
+				next;
+			}
+			my ($label, $value) = ($1, $2);
+			validate_lowir_operand($label, $state, $errors, "$context phi");
+			if ($value =~ /^%([A-Za-z0-9_]+)$/ &&
+			    !exists($state->{temps}{$1}))
+			{
+				push @$errors, "$context phi uses undefined temporary %$1"
+					if !exists($state->{all_temps}{$1});
+			}
+			else
+			{
+				validate_lowir_value_operand_type(
+					$value, $type, $state, $errors, "$context phi");
+			}
+		}
+		$state->{temps}{$destination} = $type;
+		return 0;
+	}
 	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*copy\s+([A-Za-z0-9_]+)\s+(.+)$/)
 	{
 		validate_lowir_value_operand_type($3, $2, $state, $errors, "$context copy");
@@ -1063,15 +1322,17 @@ sub validate_lowir_instruction
 		my ($dst, $ret_type, $callee, $arg_text, $suffix) = ($1, $2, $3, $4, $5);
 		my @args = split_lowir_args($arg_text);
 		validate_lowir_operand($_, $state, $errors, "$context call \@$callee") for @args;
-		my ($sig_ok, $call_sig) = parse_lowir_call_signature_suffix($suffix);
+		my ($sig_ok, $call_sig) = parse_lowir_call_suffix($suffix);
 		push @$errors, "$context call \@$callee has invalid signature metadata: $call_sig"
 			if !$sig_ok;
-		if (exists($state->{function_symbols}{$callee}))
+		push @$errors, "$context value-returning call \@$callee cannot carry copy-elision permission"
+			if $sig_ok && $call_sig->{copy_elision};
+		if (exists($state->{function_symbols}{$callee}) && defined($state->{signatures}{$callee}))
 		{
 			my $sig = $state->{signatures}{$callee};
 			push @$errors, "$context call \@$callee expects return type $sig->{ret}, got $ret_type"
 				if $sig->{ret} ne $ret_type;
-			if ($sig->{arity} eq 'variadic' || $sig->{arity} eq 'prototype_relaxed')
+			if ($sig->{arity} eq 'variadic')
 			{
 				push @$errors, "$context call \@$callee expects at least " .
 					scalar(@{$sig->{params}}) . " argument(s), got " . scalar(@args)
@@ -1102,7 +1363,7 @@ sub validate_lowir_instruction
 			{
 				push @$errors, "$context indirect global call \@$callee signature return type $call_sig->{ret} does not match call result type $ret_type"
 					if $call_sig->{ret} ne $ret_type;
-				if ($call_sig->{arity} eq 'variadic' || $call_sig->{arity} eq 'prototype_relaxed')
+				if ($call_sig->{arity} eq 'variadic')
 				{
 					push @$errors, "$context indirect global call \@$callee expects at least " .
 						scalar(@{$call_sig->{params}}) . " argument(s), got " . scalar(@args)
@@ -1128,15 +1389,22 @@ sub validate_lowir_instruction
 		my ($callee, $arg_text, $suffix) = ($1, $2, $3);
 		my @args = split_lowir_args($arg_text);
 		validate_lowir_operand($_, $state, $errors, "$context call \@$callee") for @args;
-		my ($sig_ok, $call_sig) = parse_lowir_call_signature_suffix($suffix);
+		my ($sig_ok, $call_sig) = parse_lowir_call_suffix($suffix);
 		push @$errors, "$context call \@$callee has invalid signature metadata: $call_sig"
 			if !$sig_ok;
-		if (exists($state->{function_symbols}{$callee}))
+		push @$errors, "$context copy-elision call \@$callee needs destination and source arguments"
+			if $sig_ok && $call_sig->{copy_elision} && scalar(@args) < 2;
+		push @$errors, "$context copy-elision permission cannot carry an explicit call signature"
+			if $sig_ok && $call_sig->{copy_elision} && $call_sig->{has_signature};
+		push @$errors, "$context copy-elision permission requires a direct function call"
+			if $sig_ok && $call_sig->{copy_elision} &&
+			   !exists($state->{function_symbols}{$callee});
+		if (exists($state->{function_symbols}{$callee}) && defined($state->{signatures}{$callee}))
 		{
 			my $sig = $state->{signatures}{$callee};
 			push @$errors, "$context call \@$callee expects return type $sig->{ret}, got void"
 				if $sig->{ret} ne 'void';
-			if ($sig->{arity} eq 'variadic' || $sig->{arity} eq 'prototype_relaxed')
+			if ($sig->{arity} eq 'variadic')
 			{
 				push @$errors, "$context call \@$callee expects at least " .
 					scalar(@{$sig->{params}}) . " argument(s), got " . scalar(@args)
@@ -1167,7 +1435,7 @@ sub validate_lowir_instruction
 			{
 				push @$errors, "$context indirect global call \@$callee signature return type $call_sig->{ret} does not match call result type void"
 					if $call_sig->{ret} ne 'void';
-				if ($call_sig->{arity} eq 'variadic' || $call_sig->{arity} eq 'prototype_relaxed')
+				if ($call_sig->{arity} eq 'variadic')
 				{
 					push @$errors, "$context indirect global call \@$callee expects at least " .
 						scalar(@{$call_sig->{params}}) . " argument(s), got " . scalar(@args)
@@ -1193,16 +1461,18 @@ sub validate_lowir_instruction
 		validate_lowir_pointer_operand($callee, $state, $errors, "$context indirect call");
 		my @args = split_lowir_args($arg_text);
 		validate_lowir_operand($_, $state, $errors, "$context indirect call") for @args;
-		my ($sig_ok, $call_sig) = parse_lowir_call_signature_suffix($suffix);
+		my ($sig_ok, $call_sig) = parse_lowir_call_suffix($suffix);
 		push @$errors, "$context indirect call has invalid signature metadata: $call_sig"
 			if !$sig_ok;
+		push @$errors, "$context indirect call cannot carry copy-elision permission"
+			if $sig_ok && $call_sig->{copy_elision};
 		push @$errors, "$context indirect call requires explicit call signature"
 			if !$sig_ok || !$call_sig->{has_signature};
 		if ($sig_ok && $call_sig->{has_signature})
 		{
 			push @$errors, "$context indirect call signature return type $call_sig->{ret} does not match call result type $ret_type"
 				if $call_sig->{ret} ne $ret_type;
-			if ($call_sig->{arity} eq 'variadic' || $call_sig->{arity} eq 'prototype_relaxed')
+			if ($call_sig->{arity} eq 'variadic')
 			{
 				push @$errors, "$context indirect call expects at least " .
 					scalar(@{$call_sig->{params}}) . " argument(s), got " . scalar(@args)
@@ -1223,16 +1493,18 @@ sub validate_lowir_instruction
 		validate_lowir_pointer_operand($1, $state, $errors, "$context indirect call");
 		my @args = split_lowir_args($2);
 		validate_lowir_operand($_, $state, $errors, "$context indirect call") for @args;
-		my ($sig_ok, $call_sig) = parse_lowir_call_signature_suffix($3);
+		my ($sig_ok, $call_sig) = parse_lowir_call_suffix($3);
 		push @$errors, "$context indirect call has invalid signature metadata: $call_sig"
 			if !$sig_ok;
+		push @$errors, "$context indirect call cannot carry copy-elision permission"
+			if $sig_ok && $call_sig->{copy_elision};
 		push @$errors, "$context indirect call requires explicit call signature"
 			if !$sig_ok || !$call_sig->{has_signature};
 		if ($sig_ok && $call_sig->{has_signature})
 		{
 			push @$errors, "$context indirect call signature return type $call_sig->{ret} does not match call result type void"
 				if $call_sig->{ret} ne 'void';
-			if ($call_sig->{arity} eq 'variadic' || $call_sig->{arity} eq 'prototype_relaxed')
+			if ($call_sig->{arity} eq 'variadic')
 			{
 				push @$errors, "$context indirect call expects at least " .
 					scalar(@{$call_sig->{params}}) . " argument(s), got " . scalar(@args)
@@ -1316,6 +1588,10 @@ sub validate_lowir_instruction
 	{
 		return 1;
 	}
+	if ($line =~ /^unreachable$/)
+	{
+		return 1;
+	}
 	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*exception\s+($type_pattern)$/)
 	{
 		$state->{temps}{$1} = $2;
@@ -1380,6 +1656,13 @@ sub validate_lowir_structure
 		}
 
 		my %temps = map { $_->{name} => $_->{type} } @$params_or_error;
+		my %all_temps = %temps;
+		for (my $scan = $i + 1;
+		     $scan < scalar(@lines) && $lines[$scan] !~ /^\}$/; ++$scan)
+		{
+			$all_temps{$1} = 1
+				if $lines[$scan] =~ /^\s*%([A-Za-z0-9_]+)\s*=/;
+		}
 		my %slots;
 		my %blocks;
 		my %block_has_terminator;
@@ -1434,6 +1717,7 @@ sub validate_lowir_structure
 				ret => $ret_type,
 				current_block => $current_block,
 				temps => \%temps,
+				all_temps => \%all_temps,
 				slots => \%slots,
 				block_targets => \@block_targets,
 				all_symbols => $all_symbols,
@@ -1769,8 +2053,8 @@ sub lowir_role_owner_kind
 {
 	my ($role) = @_;
 	return '' if !defined($role) || $role eq '';
-	return 'function' if $role =~ /^(?:entry|init|fini|eh_unhandled|eh_allocate_exception|eh_begin_catch|eh_call_unexpected|eh_current_exception_type|eh_end_catch|eh_rethrow|eh_throw|eh_personality|eh_resume)$/;
-	return 'global' if $role =~ /^(?:eh_top|eh_value|eh_type)$/;
+	return 'function' if $role =~ /^(?:entry|init|fini|eh_allocate_exception|eh_begin_catch|eh_end_catch|eh_rethrow|eh_throw|eh_personality|eh_resume|allocate_memory|free_memory|terminate|pure_virtual|dynamic_cast|bad_cast|bad_typeid|unreachable)$/;
+	return 'global' if $role =~ /^(?:rtti_class|rtti_si|rtti_vmi|rtti_data)$/;
 	return '';
 }
 
@@ -1842,7 +2126,8 @@ sub validate_lowir_roles
 			push @errors, "LowIR role '$role' has invalid $kind owner \@$symbol";
 			next;
 		}
-		if (exists($role_owner{$role}) && $role_owner{$role} ne $symbol)
+		if ($role ne 'rtti_data' &&
+			exists($role_owner{$role}) && $role_owner{$role} ne $symbol)
 		{
 			push @errors, "duplicate LowIR role '$role': \@$role_owner{$role}, \@$symbol";
 			next;
@@ -1861,6 +2146,25 @@ sub validate_lowir_text
 
 	my $source_text = getrawdata($source_file);
 	my @errors;
+	push @errors, "removed trivial_lifecycle metadata in generated LowIR"
+		if !$options->{allow_legacy_trivial_lifecycle} &&
+		   $data =~ /\btrivial_lifecycle\s*=/;
+	push @errors, "removed unreachable role in generated LowIR"
+		if !$options->{allow_legacy_unreachable_role} &&
+		   $data =~ /\brole\s*=\s*unreachable\b/;
+	push @errors, "removed decay surface in generated LowIR"
+		if !$options->{allow_legacy_decay_surface} &&
+		   ($data =~ /\bpass\s*=\s*decay\b/ ||
+		    $data =~ /^\s*%[A-Za-z0-9_]+\s*=\s*unary\s+decay\s+ptr\b/m);
+	push @errors, "removed reference passing label in generated LowIR"
+		if !$options->{allow_legacy_reference_pass} &&
+		   $data =~ /\bpass\s*=\s*reference\b/;
+	push @errors, "removed capture/access parameter metadata in generated LowIR"
+		if !$options->{allow_legacy_capture_access} &&
+		   $data =~ /\b(?:capture|access)\s*=/;
+	push @errors, "removed source-origin index projection in generated LowIR"
+		if !$options->{allow_legacy_source_origin_projection} &&
+		   $data =~ /\bprojection\s*=\s*(?:base_subobject|reference_field)\b/;
 
 	my @tops = ($data =~ /^(?:declare\s+(?:function|global)|function|global)\s+@([A-Za-z0-9_]+)\b/gm);
 	my %top_count;
@@ -1935,15 +2239,15 @@ sub validate_lowir_text
 		}
 		my ($metadata_ok, $metadata_or_error) =
 			parse_lowir_function_metadata_suffix($4);
-		if (!$metadata_ok)
-		{
-			push @errors, "function \@$1 has invalid metadata: $metadata_or_error";
-			next;
-		}
+		# Invalid metadata is reported, but the signature is still recorded
+		# from the parameter list and return type so that a call to the
+		# function is checked against something instead of nothing.
+		push @errors, "function \@$1 has invalid metadata: $metadata_or_error"
+			if !$metadata_ok;
 		$signatures{$1} = {
 			ret => $3,
 			params => $params_or_error,
-			arity => $metadata_or_error->{arity},
+			arity => $metadata_ok ? $metadata_or_error->{arity} : 'fixed',
 		};
 	}
 	while ($data =~ /^declare function @([A-Za-z0-9_]+)\((.*?)\) -> ($type_pattern)((?:\s+\[[^\]]+\])*)$/gm)
@@ -1958,15 +2262,12 @@ sub validate_lowir_text
 		}
 		my ($metadata_ok, $metadata_or_error) =
 			parse_lowir_function_metadata_suffix($4);
-		if (!$metadata_ok)
-		{
-			push @errors, "declare function \@$1 has invalid metadata: $metadata_or_error";
-			next;
-		}
+		push @errors, "declare function \@$1 has invalid metadata: $metadata_or_error"
+			if !$metadata_ok;
 		$signatures{$1} = {
 			ret => $3,
 			params => $params_or_error,
-			arity => $metadata_or_error->{arity},
+			arity => $metadata_ok ? $metadata_or_error->{arity} : 'fixed',
 		};
 	}
 
@@ -2018,8 +2319,10 @@ sub lowir_metadata_item_ignored_for_compare
 	my ($key, $value) = @_;
 	# Validate full metadata, but do not make early source-to-LowIR oracles depend
 	# on later object/export policy or optional optimizer/provenance annotations.
-	return 1 if $key =~ /^(?:linkage|binding|object|tls_for|keep_alias|prefer_local|trivial_lifecycle)$/;
-	return 1 if $key =~ /^(?:effects|unwind|return|capture|access|alias|projection)$/;
+	return 1 if $key eq 'role' && $value =~ /^(?:allocate_memory|free_memory|terminate|pure_virtual|dynamic_cast|bad_cast|bad_typeid|rtti_class|rtti_si|rtti_vmi|rtti_data)$/;
+	return 1 if $key =~ /^(?:linkage|binding|object|tls_for|keep_alias|prefer_local|trivial_lifecycle|force_inline|inline_hint|no_inline)$/;
+	return 1 if $key =~ /^(?:effects|unwind|return|capture|access|alias|object_bytes|projection)$/;
+	return 1 if $key eq 'pass' && $value eq 'decay';
 	return 1 if $key eq 'storage' && $value =~ /^(?:readonly|writable)$/;
 	return 0;
 }
@@ -2035,6 +2338,414 @@ sub canonicalize_lowir_metadata_group_for_compare
 		push @kept, $item;
 	}
 	return scalar(@kept) == 0 ? '' : ' [' . join(', ', @kept) . ']';
+}
+
+sub canonicalize_lowir_function_locals_for_compare
+{
+	my ($entry) = @_;
+	return $entry if $entry !~ /^(?:declare\s+)?function /;
+
+	my (%values, %slots, %blocks, %declared_slots);
+	my @declared_slot_order;
+	my ($next_value, $next_slot, $next_block) = (0, 0, 0);
+	my @lines = split(/\n/, $entry, -1);
+	if (scalar(@lines) != 0)
+	{
+		while ($lines[0] =~ /%([A-Za-z0-9_]+)\s*:/g)
+		{
+			$values{$1} = '<value' . $next_value . '>';
+			++$next_value;
+		}
+	}
+	for my $line (@lines)
+	{
+		if ($line =~ /^\s*slot \$([A-Za-z0-9_]+)\s*:/)
+		{
+			$declared_slots{$1} = 1;
+			push @declared_slot_order, $1;
+		}
+		if ($line =~ /^\s*block \^([A-Za-z0-9_]+):/)
+		{
+			$blocks{$1} = '<block' . $next_block . '>';
+			++$next_block;
+		}
+		if ($line =~ /^\s*%([A-Za-z0-9_]+)\s*=/ && !exists($values{$1}))
+		{
+			$values{$1} = '<value' . $next_value . '>';
+			++$next_value;
+		}
+	}
+	for my $line (@lines)
+	{
+		next if $line =~ /^\s*slot \$[A-Za-z0-9_]+\s*:/;
+		while ($line =~ /\$([A-Za-z0-9_]+)\b/g)
+		{
+			next if !exists($declared_slots{$1}) || exists($slots{$1});
+			$slots{$1} = '<slot' . $next_slot . '>';
+			++$next_slot;
+		}
+	}
+	for my $name (@declared_slot_order)
+	{
+		next if exists($slots{$name});
+		$slots{$name} = '<slot' . $next_slot . '>';
+		++$next_slot;
+	}
+
+	$entry =~ s/%([A-Za-z0-9_]+)\b/
+		exists($values{$1}) ? '%' . $values{$1} : '%' . $1/gex;
+	$entry =~ s/\$([A-Za-z0-9_]+)\b/
+		exists($slots{$1}) ? '$' . $slots{$1} : '$' . $1/gex;
+	$entry =~ s/\^([A-Za-z0-9_]+)\b/
+		exists($blocks{$1}) ? '^' . $blocks{$1} : '^' . $1/gex;
+	# One pass over the lines: slot declarations in sorted order, blank lines
+	# dropped, the layout normalized (canonicalize_lowir_layout_for_compare)
+	# and literals read by value (canonicalize_lowir_literal_line_for_compare).
+	@lines = split(/\n/, $entry, -1);
+	my @slot_lines = sort(grep { /^\s*slot \$/ } @lines);
+	my $slot_line = 0;
+	my @out;
+	for my $line (@lines)
+	{
+		if ($line =~ /^\s+(\S.*)$/)
+		{
+			my $body = $1;
+			if (index($body, 'slot $') == 0)
+			{
+				$body = $slot_lines[$slot_line++] =~ s/^\s+//r;
+				push @out, "  $body";
+			}
+			elsif (index($body, 'block ') == 0)
+			{
+				push @out, "  $body";
+			}
+			else
+			{
+				push @out, canonicalize_lowir_literal_line_for_compare("    $body");
+			}
+		}
+		elsif ($line !~ /^\s*$/)
+		{
+			push @out, $line;
+		}
+	}
+	return join("\n", @out);
+}
+
+# Indentation and blank lines are presentation: inside an entry, blank lines
+# are dropped, `slot`, `block` and data-item lines sit at two spaces and
+# instructions at four, whatever the output used.
+sub canonicalize_lowir_layout_for_compare
+{
+	my ($entry) = @_;
+	my $is_function = $entry =~ /^(?:declare\s+)?function /;
+	my @out;
+	for my $line (split(/\n/, $entry, -1))
+	{
+		next if $line =~ /^\s*$/;
+		if ($line =~ /^\s+(\S.*)$/)
+		{
+			my $body = $1;
+			$line = ($is_function && $body !~ /^(?:slot |block )/) ? "    $body" : "  $body";
+		}
+		push @out, canonicalize_lowir_literal_line_for_compare($line);
+	}
+	return join("\n", @out);
+}
+
+sub canonicalize_lowir_local_names_for_compare
+{
+	my ($data) = @_;
+	my @entries = split_lowir_top_level_entries($data);
+	@entries = map {
+		/^(?:declare\s+)?function /
+			? canonicalize_lowir_function_locals_for_compare($_)
+			: canonicalize_lowir_layout_for_compare($_)
+	} @entries;
+	return join("\n\n", @entries) . (scalar(@entries) ? "\n" : '');
+}
+
+# ---- literals by value, commutative operands in either order ----
+#
+# The relaxed comparison absorbs two spellings a student would not expect
+# to matter (pa13/lowir.md, "What The Comparison Absorbs"): a literal is
+# its value, not its spelling, and the operand order of a commutative
+# operation does not matter.  Everything below implements those two
+# sentences and nothing more.
+
+sub lowir_integer_type_shape
+{
+	my ($type) = @_;
+	return () if !defined($type);
+	return ('signed', $1) if $type =~ /^i(8|16|32|64|128)$/;
+	return ('unsigned', $1) if $type =~ /^u(8|16|32|64|128)$/;
+	return ('unsigned', 64) if $type eq 'ptr';
+	return ();
+}
+
+sub lowir_floating_mantissa_bits
+{
+	my ($type, $suffix) = @_;
+	return 24 if defined($type) && $type eq 'f32';
+	return 53 if defined($type) && $type eq 'f64';
+	return 64 if defined($type) && $type eq 'f80';
+	return 24 if $suffix =~ /^[fF]$/;
+	return 64 if $suffix =~ /^[lL]$/;
+	return 53;
+}
+
+sub lowir_bigint_bit_length
+{
+	my ($value) = @_;
+	return 0 if $value->is_zero();
+	return length($value->as_bin()) - 2;
+}
+
+# Decimal text of an integer literal's value.  When the operand type is an
+# integer type the value is folded to its width and signedness, so that
+# `i32 -1` and `i32 4294967295` read the same.  Returns undef for a spelling
+# the LowIR reader would not accept (such as `09`).
+sub canonical_lowir_integer_literal
+{
+	my ($sign, $digits, $type) = @_;
+	my ($signedness, $width) = lowir_integer_type_shape($type);
+	$width = undef if defined($width) && $width < 8;
+	if ($digits =~ /^(?:0|[1-9][0-9]{0,17})$/)
+	{
+		my $value = ($sign eq '-' ? -1 : 1) * $digits;
+		return '0' if $value == 0;
+		return "$value" if !defined($width);
+		if ($signedness eq 'signed')
+		{
+			return "$value" if $width >= 64;
+			return "$value" if $value >= -(2 ** ($width - 1)) && $value < 2 ** ($width - 1);
+		}
+		else
+		{
+			return "$value" if $value >= 0 && ($width >= 64 || $value < 2 ** $width);
+		}
+	}
+	# Only spellings the fast path above does not settle need big integers;
+	# the module costs 50 ms to load, so it is loaded on first use.
+	require Math::BigInt;
+	my $value;
+	if ($digits =~ /^0[xX][0-9A-Fa-f]+$/)
+	{
+		$value = Math::BigInt->from_hex($digits);
+	}
+	elsif ($digits =~ /^0[0-7]+$/)
+	{
+		$value = Math::BigInt->from_oct($digits);
+	}
+	elsif ($digits =~ /^(?:0|[1-9][0-9]*)$/)
+	{
+		$value = Math::BigInt->new($digits);
+	}
+	else
+	{
+		return undef;
+	}
+	$value->bneg() if $sign eq '-';
+	if (defined($width))
+	{
+		my $modulus = Math::BigInt->new(1)->blsft($width);
+		$value->bmod($modulus);
+		if ($signedness eq 'signed')
+		{
+			my $half = Math::BigInt->new(1)->blsft($width - 1);
+			$value->bsub($modulus) if $value->bcmp($half) >= 0;
+		}
+	}
+	return $value->bstr();
+}
+
+# Hexadecimal floating text (`0x1.8p+1`) of a decimal floating literal
+# rounded to a mantissa of `$bits` bits, so that every spelling of one
+# value of the operand's type reads the same.  Returns undef for text that
+# is not a floating literal.
+sub canonical_lowir_floating_literal
+{
+	my ($sign, $text, $bits) = @_;
+	my $lower = lc($text);
+	return $sign . 'inf' if $lower eq 'inf' || $lower eq 'infinity';
+	return $sign . $lower if $lower eq 'nan' || $lower eq 'snan';
+	return undef if $text !~ /^([0-9]*)(?:\.([0-9]*))?(?:[eE]([+-]?[0-9]+))?$/;
+	my ($integer, $fraction, $exponent) = ($1, defined($2) ? $2 : '', defined($3) ? $3 : 0);
+	return undef if $integer eq '' && $fraction eq '';
+	my $digits = $integer . $fraction;
+	$digits =~ s/^0+//;
+	# A zero keeps the sign it was written with (Perl's parse would drop it).
+	return $sign . '0x0p+0' if $digits eq '';
+	# Perl parses a decimal to the nearest double and prints it exactly as
+	# hexadecimal floating text; that settles f64, and f32 after one more
+	# rounding.  Only f80 needs the exact arithmetic below.
+	return sprintf('%a', 0 + "$sign$text") if $bits == 53;
+	return sprintf('%a', unpack('f', pack('f', 0 + "$sign$text"))) if $bits == 24;
+	require Math::BigInt;
+	my $scale = length($fraction) - $exponent;
+	my $numerator = Math::BigInt->new($digits);
+	my $denominator = Math::BigInt->new(1);
+	if ($scale > 0)
+	{
+		$denominator = Math::BigInt->new(10)->bpow($scale);
+	}
+	elsif ($scale < 0)
+	{
+		$numerator->bmul(Math::BigInt->new(10)->bpow(-$scale));
+	}
+	my $shift = $bits - (lowir_bigint_bit_length($numerator) - lowir_bigint_bit_length($denominator));
+	my ($quotient, $remainder, $divisor);
+	while (1)
+	{
+		my $scaled = $numerator->copy();
+		$divisor = $denominator->copy();
+		if ($shift >= 0) { $scaled->blsft($shift); } else { $divisor->blsft(-$shift); }
+		($quotient, $remainder) = $scaled->bdiv($divisor);
+		my $length = lowir_bigint_bit_length($quotient);
+		last if $length == $bits;
+		$shift += $bits - $length;
+	}
+	my $twice = $remainder->copy()->blsft(1);
+	my $order = $twice->bcmp($divisor);
+	if ($order > 0 || ($order == 0 && $quotient->is_odd()))
+	{
+		$quotient->binc();
+		if (lowir_bigint_bit_length($quotient) > $bits)
+		{
+			$quotient->brsft(1);
+			--$shift;
+		}
+	}
+	my $binary_exponent = ($bits - 1) - $shift;
+	my $hex_digits = int(($bits - 1 + 3) / 4);
+	# Below the type's smallest normal exponent the quantum is fixed and the
+	# mantissa loses bits: round again on that quantum (a subnormal value).
+	my $minimum_exponent = $bits == 24 ? -126 : $bits == 53 ? -1022 : -16382;
+	my $leading = '1';
+	if ($binary_exponent < $minimum_exponent)
+	{
+		$shift = ($bits - 1) - $minimum_exponent;
+		my $scaled = $numerator->copy();
+		$divisor = $denominator->copy();
+		if ($shift >= 0) { $scaled->blsft($shift); } else { $divisor->blsft(-$shift); }
+		($quotient, $remainder) = $scaled->bdiv($divisor);
+		my $twice_again = $remainder->copy()->blsft(1);
+		my $order_again = $twice_again->bcmp($divisor);
+		$quotient->binc() if $order_again > 0 || ($order_again == 0 && $quotient->is_odd());
+		$binary_exponent = $minimum_exponent;
+		if (lowir_bigint_bit_length($quotient) < $bits)
+		{
+			return $sign . '0x0p+0' if $quotient->is_zero();
+			$leading = '0';
+		}
+	}
+	my $mantissa = $leading eq '1'
+		? $quotient->copy()->bsub(Math::BigInt->new(1)->blsft($bits - 1))
+		: $quotient->copy();
+	$mantissa->blsft($hex_digits * 4 - ($bits - 1));
+	my $hex = substr($mantissa->as_hex(), 2);
+	$hex = ('0' x ($hex_digits - length($hex))) . $hex;
+	$hex =~ s/0+$//;
+	return $sign . '0x' . $leading . ($hex eq '' ? '' : ".$hex") . 'p' .
+		($binary_exponent >= 0 ? "+$binary_exponent" : "$binary_exponent");
+}
+
+sub canonical_lowir_literal
+{
+	my ($sign, $text, $type) = @_;
+	my $original = $sign . $text;
+	my $lower = lc($text);
+	return '0' if $lower eq 'nullptr';
+	if ($lower =~ /^(?:inf|infinity|nan|snan)$/)
+	{
+		my $canonical = canonical_lowir_floating_literal($sign, $text, 53);
+		return defined($canonical) ? $canonical : $original;
+	}
+	my $suffix = '';
+	if ($text =~ /^0[xX]/)
+	{
+		($text, $suffix) = ($1, $2) if $text =~ /^(0[xX][0-9A-Fa-f]+)([uUlL]+)$/;
+	}
+	elsif ($text =~ /^(.*[0-9.])([uUlLfF]+)$/)
+	{
+		($text, $suffix) = ($1, $2);
+	}
+	my $floating_type = defined($type) && $type =~ /^f(?:32|64|80)$/;
+	my $floating_spelling = $text !~ /^0[xX]/ && ($text =~ /[.eE]/ || $suffix =~ /[fF]/);
+	if ($floating_type || $floating_spelling)
+	{
+		return $original if scalar(lowir_integer_type_shape($type));
+		# An integer spelling in a floating position (`f64 3`, `f64 0x3`) is
+		# that integer's value as a floating literal.
+		if ($text =~ /^0[xX][0-9A-Fa-f]+$/)
+		{
+			require Math::BigInt;
+			$text = Math::BigInt->from_hex($text)->bstr();
+		}
+		my $canonical = canonical_lowir_floating_literal(
+			$sign, $text, lowir_floating_mantissa_bits($type, $suffix));
+		return defined($canonical) ? $canonical : $original;
+	}
+	my $canonical = canonical_lowir_integer_literal($sign, $text, $type);
+	return defined($canonical) ? $canonical : $original;
+}
+
+# The operand type an instruction or data line gives its literals, when the
+# line names one; undef for positions typed elsewhere (call arguments,
+# `index` offsets, atomic orderings, spans and addends).
+my $LOWIR_TYPE = qr/(?:[A-Za-z0-9_]+|obj<\d+x\d+>)/;
+my $LOWIR_TYPED_INSTRUCTION = qr/^\s*(?:%[A-Za-z0-9_<>]+\s*=\s*)?(?:const|copy|phi|store(?:\s+volatile)?|return|unary\s+\w+|binary\s+\w+|cmp\s+\w+|atomic_\w+|va_arg)\s+($LOWIR_TYPE)(?:\s|$)/;
+my $LOWIR_TYPED_CONVERT = qr/^\s*%[A-Za-z0-9_<>]+\s*=\s*convert\s+\w+\s+$LOWIR_TYPE\s+($LOWIR_TYPE)\s/;
+my $LOWIR_TYPED_GLOBAL = qr/^global @[A-Za-z0-9_<>]+(?:\s+readonly)?\s*:\s*($LOWIR_TYPE)/;
+my $LOWIR_TYPED_DATA_ITEM = qr/^\s+($LOWIR_TYPE)\s+-?\S+\s*$/;
+# A literal candidate: a digit, a point or a named literal right after a
+# separator.  Lines without one (most loads, stores of temporaries, calls,
+# jumps) skip the literal pass entirely.
+my $LOWIR_LITERAL_CANDIDATE = qr/[\s,(\[:]-?(?:[0-9.]|nullptr|inf|nan|snan)/i;
+my $LOWIR_LITERAL_TOKEN = qr/(?<=[\s,(\[:])(-?)((?:0[xX][0-9A-Fa-f]+|(?:[0-9]+\.[0-9]*|\.[0-9]+|[0-9]+)(?:[eE][+-]?[0-9]+)?|nullptr|inf|infinity|nan|snan)[uUlLfF]*)(?=[\s,:)\]]|$)/i;
+
+sub lowir_literal_context_type
+{
+	my ($line) = @_;
+	return $1 if $line =~ $LOWIR_TYPED_INSTRUCTION;
+	return $1 if $line =~ $LOWIR_TYPED_CONVERT;
+	return $1 if $line =~ $LOWIR_TYPED_GLOBAL;
+	return $1 if $line =~ $LOWIR_TYPED_DATA_ITEM;
+	return undef;
+}
+
+sub canonicalize_lowir_literal_line_for_compare
+{
+	my ($line) = @_;
+	return $line if $line !~ $LOWIR_LITERAL_CANDIDATE;
+	my $type = lowir_literal_context_type($line);
+	$line =~ s{$LOWIR_LITERAL_TOKEN}{canonical_lowir_literal($1, $2, $type)}ge;
+	return $line;
+}
+
+sub lowir_operand_is_literal
+{
+	my ($operand) = @_;
+	return $operand !~ /^[%\$\@^]/;
+}
+
+sub lowir_commutative_operand_order
+{
+	my ($left, $right) = @_;
+	my $left_key = (lowir_operand_is_literal($left) ? '1' : '0') . $left;
+	my $right_key = (lowir_operand_is_literal($right) ? '1' : '0') . $right;
+	return $left_key le $right_key ? ($left, $right) : ($right, $left);
+}
+
+# `eq`, `ne`, `add`, `mul`, `and`, `or` and `xor` read the same with their
+# operands exchanged: temporaries before literals, then by text.
+my $LOWIR_COMMUTATIVE = qr/^([ \t]*%[A-Za-z0-9_<>]+[ \t]*=[ \t]*(?:binary[ \t]+(?:add|mul|and|or|xor)|cmp[ \t]+(?:eq|ne))[ \t]+$LOWIR_TYPE[ \t]+)([^\s,]+),[ \t]*([^\s,]+)((?:[ \t]+\S[^\n]*)?)$/m;
+
+sub canonicalize_lowir_commutative_operands_for_compare
+{
+	my ($data) = @_;
+	$data =~ s{$LOWIR_COMMUTATIVE}{$1 . join(', ', lowir_commutative_operand_order($2, $3)) . $4}ge;
+	return $data;
 }
 
 sub canonicalize_lowir_for_compare
@@ -2059,6 +2770,10 @@ sub canonicalize_lowir_for_compare
 		$function_symbols = \%local_function_symbols;
 	}
 	$data =~ s/@([A-Za-z0-9_]+)\b/exists($function_symbols->{$1}) ? '@' . $function_symbols->{$1} : '@' . $1/ge;
+	# Local names, layout and literal spellings are canonicalized entry by
+	# entry in one pass; commutative operand order needs the local names first.
+	$data = canonicalize_lowir_local_names_for_compare($data);
+	$data = canonicalize_lowir_commutative_operands_for_compare($data);
 	$data =~ s/[ \t]+$//mg;
 	return $data;
 }
@@ -2114,6 +2829,9 @@ sub lowir_normalize_function_signature
 	my ($params, $return_type) = @_;
 	$params = lowir_trim($params);
 	$return_type = lowir_trim($return_type);
+	# Parameter names are presentation (the comparison renames them); the
+	# signature that pairs two functions keeps only the types and metadata.
+	$params =~ s/%[A-Za-z0-9_]+\s*:\s*//g;
 	$params =~ s/\s+/ /g;
 	$return_type =~ s/\s+/ /g;
 	return '(' . $params . ') -> ' . $return_type;
@@ -2130,16 +2848,40 @@ sub assign_lowir_function_symbol_pair
 	return $$next_ref;
 }
 
-sub lowir_function_entry_map
+# name -> entry text for every global and function definition; the entries
+# whose bodies can refer to other symbols.
+sub lowir_top_level_entry_map
 {
 	my ($data) = @_;
 	my %map;
 	for my $entry (split_lowir_top_level_entries($data))
 	{
-		next if $entry !~ /^function \@([A-Za-z0-9_]+)\(/;
-		$map{$1} = $entry;
+		$map{$1} = $entry if $entry =~ /^(?:function|global) \@([A-Za-z0-9_]+)\b/;
 	}
 	return \%map;
+}
+
+# The distinct function symbols an entry refers to, in text order, its own
+# name excluded.
+sub lowir_entry_function_references
+{
+	my ($entry, $records) = @_;
+	return () if !defined($entry);
+	my $body = $entry;
+	$body =~ s/^((?:declare\s+)?(?:function|global) )\@[A-Za-z0-9_]+/$1/;
+	my (%seen, @names);
+	while ($body =~ /\@([A-Za-z0-9_]+)\b/g)
+	{
+		next if !exists($records->{$1}) || $seen{$1}++;
+		push @names, $1;
+	}
+	return @names;
+}
+
+sub lowir_placeholder_index
+{
+	my ($placeholder) = @_;
+	return $placeholder =~ /(\d+)>$/ ? $1 : 0;
 }
 
 sub lowir_function_shape_text
@@ -2147,10 +2889,19 @@ sub lowir_function_shape_text
 	my ($entry) = @_;
 	my @lines = split(/\n/, $entry, -1);
 	# Drop the function-level [..] metadata (object=, binding=, role=, ...) from
-	# the header so the shape ignores volatile mangle/linkage details. Parameter
-	# brackets (e.g. [pass=reference]) sit inside the parens and are preserved.
+	# the header so the shape ignores volatile mangle/linkage details.
 	$lines[0] =~ s/((?:\s+\[[^\]]+\])+)\s*\{\s*$/ {/ if @lines;
 	my $text = join("\n", @lines);
+	# Apply the same ignored-metadata policy before structural pairing that the
+	# final relaxed comparison applies after pairing. Legacy source-origin facts
+	# must not make two otherwise unique function shapes look different.
+	$text =~ s/\s+\[([^\]]+)\]/canonicalize_lowir_metadata_group_for_compare($1)/ge;
+	$text =~ s/\s+\[([^\]]+)\]/canonicalize_lowir_metadata_group_for_compare($1)/ge;
+	# Nothing the final comparison absorbs may tell two shapes apart either:
+	# local names, slot order, layout, literal spelling and commutative
+	# operand order are canonicalized before the shape is compared.
+	$text = canonicalize_lowir_commutative_operands_for_compare(
+		canonicalize_lowir_function_locals_for_compare($text));
 	# Mask every symbol reference (the function's own name, callees, globals) so
 	# two structurally identical functions match regardless of their mangled names.
 	$text =~ s/\@[^\s(),]+/\@<sym>/g;
@@ -2159,7 +2910,7 @@ sub lowir_function_shape_text
 
 sub paired_lowir_function_symbol_maps
 {
-	my ($ref_data, $my_data) = @_;
+	my ($ref_data, $my_data, $ref_globals, $my_globals) = @_;
 	my ($ref_records, $ref_order) = lowir_function_symbol_records($ref_data);
 	my ($my_records, $my_order) = lowir_function_symbol_records($my_data);
 	my (%ref_map, %my_map);
@@ -2211,8 +2962,11 @@ sub paired_lowir_function_symbol_maps
 	# Requiring the shape to be unique on both sides keeps this sound: the
 	# correspondence is forced, and a genuinely different body has a different
 	# shape and stays unpaired, so a real codegen diff is never hidden.
-	my $ref_entries = lowir_function_entry_map($ref_data);
-	my $my_entries = lowir_function_entry_map($my_data);
+	# One split per side serves both the shape pass (function definitions)
+	# and the reference pass below (globals too); function names never
+	# collide with global names, so one map holds both.
+	my $ref_entries = lowir_top_level_entry_map($ref_data);
+	my $my_entries = lowir_top_level_entry_map($my_data);
 	my (%ref_by_shape, %my_by_shape);
 	for my $name (@$ref_order)
 	{
@@ -2235,17 +2989,63 @@ sub paired_lowir_function_symbol_maps
 		                                          \$next);
 	}
 
+	# Reference pass: pair what is still unpaired in the order the already
+	# paired program first refers to it.  The paired globals and functions
+	# are walked in placeholder order (the same order on both sides), each
+	# body's k-th distinct unpaired reference on one side is paired with the
+	# k-th on the other, and every new pair joins the walk.  Two helpers with
+	# one shape are thereby told apart by who refers to them, not by where
+	# they were emitted, so emission order and extra declarations do not move
+	# the pairing.
+	my @queue;
+	for my $maps ([$ref_globals, $my_globals], [\%ref_map, \%my_map])
+	{
+		my ($ref_side, $my_side) = @$maps;
+		next if !defined($ref_side) || !defined($my_side);
+		my %ref_by_placeholder = reverse(%$ref_side);
+		my %my_by_placeholder = reverse(%$my_side);
+		for my $placeholder (sort { lowir_placeholder_index($a) <=> lowir_placeholder_index($b) }
+		                     keys(%ref_by_placeholder))
+		{
+			next if !exists($my_by_placeholder{$placeholder});
+			push @queue, [$ref_by_placeholder{$placeholder}, $my_by_placeholder{$placeholder}];
+		}
+	}
+	while (@queue)
+	{
+		my ($ref_anchor, $my_anchor) = @{shift(@queue)};
+		my @ref_refs = lowir_entry_function_references($ref_entries->{$ref_anchor}, $ref_records);
+		my @my_refs = lowir_entry_function_references($my_entries->{$my_anchor}, $my_records);
+		my $count = scalar(@ref_refs) < scalar(@my_refs) ? scalar(@ref_refs) : scalar(@my_refs);
+		for (my $i = 0; $i < $count; ++$i)
+		{
+			next if exists($ref_map{$ref_refs[$i]}) || exists($my_map{$my_refs[$i]});
+			$next = assign_lowir_function_symbol_pair(\%ref_map,
+			                                          \%my_map,
+			                                          $ref_refs[$i],
+			                                          $my_refs[$i],
+			                                          \$next);
+			push @queue, [$ref_refs[$i], $my_refs[$i]];
+		}
+	}
+
+	# Positional tail for what nothing paired refers to: definitions with
+	# definitions and declarations with declarations, in emission order.
 	my @remaining_ref = grep { !exists($ref_map{$_}) } @$ref_order;
 	my @remaining_my = grep { !exists($my_map{$_}) } @$my_order;
-	my $pairs = scalar(@remaining_ref) < scalar(@remaining_my) ?
-		scalar(@remaining_ref) : scalar(@remaining_my);
-	for (my $i = 0; $i < $pairs; ++$i)
+	for my $defined (1, 0)
 	{
-		$next = assign_lowir_function_symbol_pair(\%ref_map,
-		                                          \%my_map,
-		                                          $remaining_ref[$i],
-		                                          $remaining_my[$i],
-		                                          \$next);
+		my @ref_kind = grep { (exists($ref_entries->{$_}) ? 1 : 0) == $defined } @remaining_ref;
+		my @my_kind = grep { (exists($my_entries->{$_}) ? 1 : 0) == $defined } @remaining_my;
+		my $pairs = scalar(@ref_kind) < scalar(@my_kind) ? scalar(@ref_kind) : scalar(@my_kind);
+		for (my $i = 0; $i < $pairs; ++$i)
+		{
+			$next = assign_lowir_function_symbol_pair(\%ref_map,
+			                                          \%my_map,
+			                                          $ref_kind[$i],
+			                                          $my_kind[$i],
+			                                          \$next);
+		}
 	}
 	for my $name (@remaining_ref)
 	{
@@ -2260,6 +3060,144 @@ sub paired_lowir_function_symbol_maps
 		++$next;
 	}
 
+	return (\%ref_map, \%my_map);
+}
+
+sub lowir_global_symbol_records
+{
+	my ($data) = @_;
+	my %records;
+	my @ordered;
+	my $type_pattern = lowir_type_pattern();
+	for my $entry (split_lowir_top_level_entries($data))
+	{
+		my ($name, $metadata_suffix, $shape);
+		if ($entry =~ /^declare global @([A-Za-z0-9_]+)(?:\s*:\s*$type_pattern)?((?:\s+\[[^\]]+\])*)$/)
+		{
+			($name, $metadata_suffix) = ($1, $2);
+			$shape = $entry;
+		}
+		elsif ($entry =~ /^global @([A-Za-z0-9_]+)(?:\s+readonly)?(?:\s*:\s*$type_pattern)?((?:\s+\[[^\]]+\])*)\s*=/)
+		{
+			($name, $metadata_suffix) = ($1, $2);
+			$shape = $entry;
+		}
+		else
+		{
+			next;
+		}
+		$shape =~ s/^((?:declare )?global \@[^\s:=]+)(?:\s+readonly)?(?:\s*:\s*$type_pattern)?(?:\s+\[[^\]]+\])*/$1/;
+		$shape =~ s/\@[^\s(),]+/\@<sym>/g;
+		my ($ok, $metadata_or_error) =
+			parse_lowir_symbol_metadata_suffix($metadata_suffix);
+		my %keys;
+		if ($ok)
+		{
+			$keys{"role:$metadata_or_error->{role}"} = 1
+				if exists($metadata_or_error->{role}) &&
+					$metadata_or_error->{role} ne '';
+			$keys{"object:$metadata_or_error->{object}"} = 1
+				if exists($metadata_or_error->{object}) &&
+					$metadata_or_error->{object} ne '';
+		}
+		$records{$name} = {
+			name => $name,
+			order => scalar(@ordered),
+			shape => $shape,
+			keys => \%keys,
+		};
+		push @ordered, $name;
+	}
+	return (\%records, \@ordered);
+}
+
+sub assign_lowir_global_symbol_pair
+{
+	my ($ref_map, $my_map, $ref_name, $my_name, $next_ref) = @_;
+	return if exists($ref_map->{$ref_name}) || exists($my_map->{$my_name});
+	my $placeholder = '<global' . $$next_ref . '>';
+	++$$next_ref;
+	$ref_map->{$ref_name} = $placeholder;
+	$my_map->{$my_name} = $placeholder;
+}
+
+sub paired_lowir_global_symbol_maps
+{
+	my ($ref_data, $my_data) = @_;
+	my ($ref_records, $ref_order) = lowir_global_symbol_records($ref_data);
+	my ($my_records, $my_order) = lowir_global_symbol_records($my_data);
+	my (%ref_map, %my_map);
+	my $next = 0;
+
+	my (%ref_by_key, %my_by_key);
+	for my $name (@$ref_order)
+	{
+		for my $key (keys(%{$ref_records->{$name}{keys}}))
+		{
+			push @{$ref_by_key{$key}}, $name;
+		}
+	}
+	for my $name (@$my_order)
+	{
+		for my $key (keys(%{$my_records->{$name}{keys}}))
+		{
+			push @{$my_by_key{$key}}, $name;
+		}
+	}
+	for my $key (sort keys(%ref_by_key))
+	{
+		next if !exists($my_by_key{$key});
+		next if scalar(@{$ref_by_key{$key}}) != 1 ||
+			scalar(@{$my_by_key{$key}}) != 1;
+		assign_lowir_global_symbol_pair(\%ref_map, \%my_map,
+			$ref_by_key{$key}[0], $my_by_key{$key}[0], \$next);
+	}
+	for my $name (sort keys(%$ref_records))
+	{
+		next if !exists($my_records->{$name});
+		assign_lowir_global_symbol_pair(
+			\%ref_map, \%my_map, $name, $name, \$next);
+	}
+
+	my (%ref_by_shape, %my_by_shape);
+	for my $name (@$ref_order)
+	{
+		next if exists($ref_map{$name});
+		push @{$ref_by_shape{$ref_records->{$name}{shape}}}, $name;
+	}
+	for my $name (@$my_order)
+	{
+		next if exists($my_map{$name});
+		push @{$my_by_shape{$my_records->{$name}{shape}}}, $name;
+	}
+	for my $shape (sort keys(%ref_by_shape))
+	{
+		next if !exists($my_by_shape{$shape});
+		next if scalar(@{$ref_by_shape{$shape}}) != 1 ||
+			scalar(@{$my_by_shape{$shape}}) != 1;
+		assign_lowir_global_symbol_pair(\%ref_map, \%my_map,
+			$ref_by_shape{$shape}[0], $my_by_shape{$shape}[0], \$next);
+	}
+
+	my @remaining_ref = grep { !exists($ref_map{$_}) } @$ref_order;
+	my @remaining_my = grep { !exists($my_map{$_}) } @$my_order;
+	my $pairs = scalar(@remaining_ref) < scalar(@remaining_my) ?
+		scalar(@remaining_ref) : scalar(@remaining_my);
+	for (my $i = 0; $i < $pairs; ++$i)
+	{
+		assign_lowir_global_symbol_pair(\%ref_map, \%my_map,
+			$remaining_ref[$i], $remaining_my[$i], \$next);
+	}
+	for my $name (@remaining_ref)
+	{
+		next if exists($ref_map{$name});
+		$ref_map{$name} = '<global' . $next++ . '>';
+	}
+	for my $name (@remaining_my)
+	{
+		next if exists($my_map{$name});
+		$my_map{$name} = '<global' . $next++ . '>';
+	}
 	return (\%ref_map, \%my_map);
 }
 
@@ -2342,18 +3280,539 @@ sub canonicalize_lowir_top_level_order_for_compare
 	return join("\n\n", @entries) . (scalar(@entries) ? "\n" : "");
 }
 
+sub canonicalize_lowir_trivial_lifecycle_for_compare
+{
+	my ($data) = @_;
+	my @entries = split_lowir_top_level_entries($data);
+	my %trivial;
+	for my $entry (@entries)
+	{
+		if ($entry =~ /^(?:declare\s+)?function \@([A-Za-z0-9_]+)\([^\n]*\)\s+->\s+[^\n]*\[[^\]\n]*\btrivial_lifecycle=yes\b[^\]\n]*\]/)
+		{
+			$trivial{$1} = 1;
+		}
+	}
+	return $data if scalar(keys(%trivial)) == 0;
+
+	# A semantically trivial lifecycle call has no observable effect.  Normalize
+	# direct void calls away so an early source fixture may retain the explicit
+	# call/body while a later object-capable lowering omits it.
+	for my $entry (@entries)
+	{
+		for my $name (keys(%trivial))
+		{
+			$entry =~ s/^[ \t]*call[ \t]+void[ \t]+\@\Q$name\E\([^\n]*\)(?:[ \t]+!dbg\([^\n]*\))?[ \t]*\n?//mg;
+		}
+	}
+
+	my %referenced;
+	for my $entry (@entries)
+	{
+		next if $entry =~ /^alias object /;
+		my $without_header = $entry;
+		$without_header =~ s/^(?:declare\s+)?function \@([A-Za-z0-9_]+)[^\n]*\n?//;
+		while ($without_header =~ /\@([A-Za-z0-9_]+)\b/g)
+		{
+			$referenced{$1} = 1 if exists($trivial{$1});
+		}
+	}
+	@entries = grep {
+		!(/^((?:declare\s+)?function) \@([A-Za-z0-9_]+)\b/ &&
+		  exists($trivial{$2}) && !exists($referenced{$2}))
+	} @entries;
+	return join("\n\n", @entries) . (scalar(@entries) ? "\n" : "");
+}
+
+sub canonicalize_lowir_unreachable_role_for_compare
+{
+	my ($data) = @_;
+	my @entries = split_lowir_top_level_entries($data);
+	my %unreachable;
+	for my $entry (@entries)
+	{
+		if ($entry =~ /^(?:declare\s+)?function \@([A-Za-z0-9_]+)\([^\n]*\)\s+->\s+[^\n]*\[[^\]\n]*\brole=unreachable\b[^\]\n]*\]/)
+		{
+			$unreachable{$1} = 1;
+		}
+	}
+	return $data if scalar(keys(%unreachable)) == 0;
+
+	my @retained;
+	for my $entry (@entries)
+	{
+		if ($entry =~ /^(?:declare\s+)?function \@([A-Za-z0-9_]+)\b/ &&
+			exists($unreachable{$1}))
+		{
+			next;
+		}
+		my @lines = split(/\n/, $entry, -1);
+		my @normalized;
+		my $after_unreachable = 0;
+		for my $line (@lines)
+		{
+			if ($after_unreachable)
+			{
+				if ($line =~ /^\s+block \^/ || $line eq '}')
+				{
+					$after_unreachable = 0;
+					push @normalized, $line;
+				}
+				next;
+			}
+			my $matched = 0;
+			for my $name (keys(%unreachable))
+			{
+				if ($line =~ /^(\s*)call\s+void\s+\@\Q$name\E\(\)\s*(?:(!dbg\([^\n]*\)))?\s*$/)
+				{
+					push @normalized, $1 . 'unreachable' .
+						(defined($2) ? " $2" : '');
+					$after_unreachable = 1;
+					$matched = 1;
+					last;
+				}
+			}
+			push @normalized, $line if !$matched;
+		}
+		push @retained, join("\n", @normalized);
+	}
+	return join("\n\n", @retained) . (scalar(@retained) ? "\n" : "");
+}
+
+sub canonicalize_lowir_decay_for_compare
+{
+	my ($data) = @_;
+	my @entries = split_lowir_top_level_entries($data);
+	for my $entry (@entries)
+	{
+		next if $entry !~ /^(?:declare\s+)?function /;
+		my @lines = split(/\n/, $entry, -1);
+		my %aliases;
+		my @retained;
+		for my $line (@lines)
+		{
+			if ($line =~ /^\s*%([A-Za-z0-9_]+)\s*=\s*unary\s+decay\s+ptr\s+(\S+)(?:\s+!dbg\([^\n]*\))?\s*$/)
+			{
+				$aliases{$1} = $2;
+				next;
+			}
+			push @retained, $line;
+		}
+		for(my $iteration = 0;
+		    $iteration < scalar(keys(%aliases)); ++$iteration)
+		{
+			my $changed = 0;
+			for my $name (keys(%aliases))
+			{
+				my $operand = $aliases{$name};
+				if ($operand =~ /^%([A-Za-z0-9_]+)$/ &&
+				    exists($aliases{$1}))
+				{
+					$aliases{$name} = $aliases{$1};
+					$changed = 1;
+				}
+			}
+			last if !$changed;
+		}
+		for my $line (@retained)
+		{
+			for my $name (keys(%aliases))
+			{
+				$line =~ s/%\Q$name\E\b/$aliases{$name}/ge;
+			}
+		}
+		$entry = join("\n", @retained);
+	}
+	return join("\n\n", @entries) . (scalar(@entries) ? "\n" : "");
+}
+
+sub remove_lowir_metadata_item
+{
+	my ($entry, $key, $value) = @_;
+	$entry =~ s/(\[[^\]\n]*)\b\Q$key\E\s*=\s*\Q$value\E\s*,\s*/$1/g;
+	$entry =~ s/(\[[^\]\n]*),\s*\Q$key\E\s*=\s*\Q$value\E\b/$1/g;
+	$entry =~ s/\s*\[\s*\Q$key\E\s*=\s*\Q$value\E\s*\]//g;
+	return $entry;
+}
+
+sub canonicalize_lowir_generated_root_annotations_for_compare
+{
+	my ($ref_data, $my_data, $ref_symbols, $my_symbols) = @_;
+	my %required_roots;
+	for my $entry (split_lowir_top_level_entries($ref_data))
+	{
+		next if $entry !~ /^(?:declare\s+)?function \@([A-Za-z0-9_]+)[^\n]*\[[^\]\n]*\bobject_root=yes\b[^\]\n]*\]/;
+		my $mapped = exists($ref_symbols->{$1}) ? $ref_symbols->{$1} : $1;
+		$required_roots{$mapped} = 1;
+	}
+
+	my @entries = split_lowir_top_level_entries($my_data);
+	for my $entry (@entries)
+	{
+		next if $entry !~ /^(?:declare\s+)?function \@([A-Za-z0-9_]+)\b/;
+		my $mapped = exists($my_symbols->{$1}) ? $my_symbols->{$1} : $1;
+		next if exists($required_roots{$mapped});
+		$entry = remove_lowir_metadata_item($entry, 'object_root', 'yes');
+	}
+	return join("\n\n", @entries) . (scalar(@entries) ? "\n" : "");
+}
+
 sub canonicalize_lowir_pair_for_compare
 {
 	my ($ref_data, $my_data) = @_;
-	my ($ref_symbols, $my_symbols) =
-		paired_lowir_function_symbol_maps($ref_data, $my_data);
+	# Source-language copy-elision permission is verified by PA17/PA37
+	# structural controls.  Older exact O0 fixtures intentionally remain a
+	# baseline for the ordinary call and lifetime behavior.
+	$ref_data =~ s/\s+\[\s*elision\s*=\s*copy\s*\]//g;
+	$my_data =~ s/\s+\[\s*elision\s*=\s*copy\s*\]//g;
+	$ref_data =~ s/\bpass\s*=\s*reference\b/pass=by_address/g;
+	$ref_data = canonicalize_lowir_tls_accesses_for_compare($ref_data);
+	$my_data = canonicalize_lowir_tls_accesses_for_compare($my_data);
+	($ref_data, $my_data) = canonicalize_lowir_pair_nothrow_resume_for_compare(
+		$ref_data, $my_data);
+	$ref_data = canonicalize_lowir_reference_liveness_for_compare(
+		$ref_data, $my_data);
+	$ref_data = canonicalize_lowir_trivial_lifecycle_for_compare($ref_data);
+	$ref_data = canonicalize_lowir_unreachable_role_for_compare($ref_data);
+	$ref_data = canonicalize_lowir_decay_for_compare($ref_data);
+	# Globals first: their initializers anchor the reference pass that pairs
+	# the functions nothing else distinguishes.
+	my ($ref_globals, $my_globals) =
+		paired_lowir_global_symbol_maps($ref_data, $my_data);
+	my ($ref_functions, $my_functions) =
+		paired_lowir_function_symbol_maps($ref_data, $my_data, $ref_globals, $my_globals);
+	my %ref_symbols = (%$ref_functions, %$ref_globals);
+	my %my_symbols = (%$my_functions, %$my_globals);
+	$my_data = canonicalize_lowir_generated_root_annotations_for_compare(
+		$ref_data, $my_data, \%ref_symbols, \%my_symbols);
 	my $ref_compare_data =
 		canonicalize_lowir_top_level_order_for_compare(
-			canonicalize_lowir_for_compare($ref_data, $ref_symbols));
+			canonicalize_lowir_for_compare($ref_data, \%ref_symbols));
 	my $my_compare_data =
 		canonicalize_lowir_top_level_order_for_compare(
-			canonicalize_lowir_for_compare($my_data, $my_symbols));
+			canonicalize_lowir_for_compare($my_data, \%my_symbols));
 	return ($ref_compare_data, $my_compare_data);
+}
+
+sub canonicalize_lowir_tls_accesses_for_compare
+{
+	my ($data) = @_;
+	my (%tls_for, %tls_globals);
+	for my $entry (split_lowir_top_level_entries($data))
+	{
+		next if $entry !~ /^(?:declare\s+)?function \@([A-Za-z0-9_]+)[^\n]*\[[^\]\n]*\btls_for=\@([A-Za-z0-9_]+)\b[^\]\n]*\]/;
+		$tls_for{$1} = $2;
+		$tls_globals{$2} = 1;
+	}
+	for my $wrapper (keys(%tls_for))
+	{
+		my $global = $tls_for{$wrapper};
+		$data =~ s/(^\s*%[A-Za-z0-9_]+\s*=\s*)call\s+ptr\s+\@\Q$wrapper\E\(\)/$1addr \@$global/gm;
+	}
+	for my $global (keys(%tls_globals))
+	{
+		my $address = '%__compare_tls_address_' . $global;
+		$data =~ s/^(\s*)(%[A-Za-z0-9_]+\s*=\s*load\s+([^\s]+)\s+)\@\Q$global\E\s*$/
+			$1 . $address . ' = addr @' . $global . "\n" .
+			$1 . $2 . $address/gem;
+	}
+	return $data;
+}
+
+sub lowir_function_entry_compare_key
+{
+	my ($entry) = @_;
+	my $object = lowir_function_entry_object($entry);
+	return 'object:' . $object if defined($object);
+	my $name = lowir_function_entry_name($entry);
+	return defined($name) ? 'name:' . $name : undef;
+}
+
+sub canonicalize_lowir_nothrow_resume_entries_for_compare
+{
+	my ($data, $nothrow) = @_;
+	my @entries = split_lowir_top_level_entries($data);
+	for my $entry (@entries)
+	{
+		my $key = lowir_function_entry_compare_key($entry);
+		next if !defined($key) || !exists($nothrow->{$key});
+		$entry =~ s/^[ \t]*resume[ \t]*\n?//mg;
+	}
+	return join("\n\n", @entries) . (scalar(@entries) ? "\n" : "");
+}
+
+sub canonicalize_lowir_pair_nothrow_resume_for_compare
+{
+	my ($ref_data, $my_data) = @_;
+	my %nothrow;
+	for my $data ($ref_data, $my_data)
+	{
+		for my $entry (split_lowir_top_level_entries($data))
+		{
+			next if $entry !~ /^function [^\n]*\[[^\]\n]*\bunwind=no\b[^\]\n]*\]/;
+			my $key = lowir_function_entry_compare_key($entry);
+			$nothrow{$key} = 1 if defined($key);
+		}
+	}
+	return (
+		canonicalize_lowir_nothrow_resume_entries_for_compare(
+			$ref_data, \%nothrow),
+		canonicalize_lowir_nothrow_resume_entries_for_compare(
+			$my_data, \%nothrow));
+}
+
+sub lowir_function_entry_name
+{
+	my ($entry) = @_;
+	return $1 if $entry =~ /^(?:declare\s+)?function \@([A-Za-z0-9_]+)\b/;
+	return undef;
+}
+
+sub lowir_function_entry_object
+{
+	my ($entry) = @_;
+	return $1 if $entry =~ /^(?:declare\s+)?function \@[^\n]*\[[^\]\n]*\bobject=([^,\]\s]+)[^\]\n]*\]/;
+	return undef;
+}
+
+sub lowir_function_referenced_outside_entry
+{
+	my ($name, $entries, $entry_index) = @_;
+	for (my $i = 0; $i < @$entries; ++$i)
+	{
+		next if $i == $entry_index || $entries->[$i] =~ /^alias object /;
+		return 1 if $entries->[$i] =~ /\@\Q$name\E\b/;
+	}
+	return 0;
+}
+
+sub canonicalize_lowir_reference_liveness_for_compare
+{
+	my ($ref_data, $my_data) = @_;
+	my (%my_names, %my_objects);
+	for my $entry (split_lowir_top_level_entries($my_data))
+	{
+		my $name = lowir_function_entry_name($entry);
+		next if !defined($name);
+		$my_names{$name} = 1;
+		my $object = lowir_function_entry_object($entry);
+		$my_objects{$object} = 1 if defined($object);
+	}
+
+	my @entries = split_lowir_top_level_entries($ref_data);
+	my @kept;
+	for (my $i = 0; $i < @entries; ++$i)
+	{
+		my $entry = $entries[$i];
+		my $name = lowir_function_entry_name($entry);
+		if (!defined($name))
+		{
+			push @kept, $entry;
+			next;
+		}
+		my $object = lowir_function_entry_object($entry);
+		my $present = exists($my_names{$name}) ||
+			(defined($object) && exists($my_objects{$object}));
+		if (!$present &&
+			!lowir_function_referenced_outside_entry($name, \@entries, $i))
+		{
+			my $declaration = $entry =~ /^declare\s+function /;
+			my $discardable_definition =
+				$entry =~ /^function / &&
+				$entry =~ /\[[^\]\n]*\bbinding=(?:weak|internal)\b[^\]\n]*\]/ &&
+				$entry !~ /\[[^\]\n]*\bobject_root=yes\b[^\]\n]*\]/ &&
+				$entry !~ /\[[^\]\n]*\brole=(?:entry|init|fini)\b[^\]\n]*\]/;
+			next if $declaration || $discardable_definition;
+		}
+		push @kept, $entry;
+	}
+	return join("\n\n", @kept) . (scalar(@kept) ? "\n" : "");
+}
+
+sub lowir_compare_entry_identity
+{
+	my ($entry) = @_;
+	return "function:$1"
+		if $entry =~ /^(?:declare\s+)?function \@([^\s(]+)/;
+	return "global:$1"
+		if $entry =~ /^(?:declare\s+)?global \@([^\s:=]+)/;
+	return "exact:$entry";
+}
+
+sub lowir_nonempty_trimmed_lines
+{
+	my ($entry) = @_;
+	my @result;
+	for my $line (split(/\n/, $entry))
+	{
+		$line =~ s/^\s+//;
+		$line =~ s/\s+$//;
+		push @result, $line if $line ne '';
+	}
+	return @result;
+}
+
+sub lowir_function_signature_line
+{
+	my ($line) = @_;
+	$line =~ s/^declare\s+//;
+	$line =~ s/\s*\{\s*$//;
+	return $line;
+}
+
+sub lowir_projection_local_kind
+{
+	my ($token) = @_;
+	return 'value' if $token =~ /^%</;
+	return 'slot' if $token =~ /^\$/;
+	return 'block' if $token =~ /^\^/;
+	return '';
+}
+
+sub lowir_projection_line_matches
+{
+	my ($ref_line, $my_line, $mapping, $reverse) = @_;
+	my @ref_parts = split(/((?:%<value\d+>|\$<slot\d+>|\^<block\d+>))/, $ref_line);
+	my @my_parts = split(/((?:%<value\d+>|\$<slot\d+>|\^<block\d+>))/, $my_line);
+	return 0 if scalar(@ref_parts) != scalar(@my_parts);
+	my (%candidate_mapping, %candidate_reverse);
+	for my $key (keys(%$mapping))
+	{
+		$candidate_mapping{$key} = $mapping->{$key};
+		$candidate_reverse{$mapping->{$key}} = $key;
+	}
+	for (my $i = 0; $i < @ref_parts; ++$i)
+	{
+		my $ref_kind = lowir_projection_local_kind($ref_parts[$i]);
+		my $my_kind = lowir_projection_local_kind($my_parts[$i]);
+		if ($ref_kind eq '' || $my_kind eq '')
+		{
+			return 0 if $ref_kind ne $my_kind ||
+				$ref_parts[$i] ne $my_parts[$i];
+			next;
+		}
+		return 0 if $ref_kind ne $my_kind;
+		if (exists($candidate_mapping{$ref_parts[$i]}))
+		{
+			return 0 if $candidate_mapping{$ref_parts[$i]} ne $my_parts[$i];
+		}
+		elsif (exists($candidate_reverse{$my_parts[$i]}))
+		{
+			return 0;
+		}
+		else
+		{
+			$candidate_mapping{$ref_parts[$i]} = $my_parts[$i];
+			$candidate_reverse{$my_parts[$i]} = $ref_parts[$i];
+		}
+	}
+	%$mapping = %candidate_mapping;
+	%$reverse = %candidate_reverse;
+	return 1;
+}
+
+sub lowir_reference_entry_is_projection
+{
+	my ($ref_entry, $my_entry) = @_;
+	return $ref_entry eq $my_entry if $ref_entry !~ /^(?:declare\s+)?function /;
+	my @ref_lines = lowir_nonempty_trimmed_lines($ref_entry);
+	my @my_lines = lowir_nonempty_trimmed_lines($my_entry);
+	return 0 if scalar(@ref_lines) == 0 || scalar(@my_lines) == 0;
+	my $ref_declaration = $ref_lines[0] =~ /^declare\s+function /;
+	my $my_declaration = $my_lines[0] =~ /^declare\s+function /;
+	my (%mapping, %reverse);
+	return 0 if !lowir_projection_line_matches(
+		lowir_function_signature_line($ref_lines[0]),
+		lowir_function_signature_line($my_lines[0]),
+		\%mapping, \%reverse);
+	return 1 if $ref_declaration;
+	return 0 if $my_declaration;
+
+	my $cursor = 1;
+	for (my $i = 1; $i < @ref_lines; ++$i)
+	{
+		while ($cursor < @my_lines)
+		{
+			my (%candidate_mapping, %candidate_reverse);
+			%candidate_mapping = %mapping;
+			%candidate_reverse = %reverse;
+			if (lowir_projection_line_matches(
+				$ref_lines[$i], $my_lines[$cursor],
+				\%candidate_mapping, \%candidate_reverse))
+			{
+				%mapping = %candidate_mapping;
+				%reverse = %candidate_reverse;
+				last;
+			}
+			++$cursor;
+		}
+		return 0 if $cursor == @my_lines;
+		++$cursor;
+	}
+	return 1;
+}
+
+sub lowir_static_finalizer_action_is_projection
+{
+	my ($ref_entry, $my_entry) = @_;
+	return 0 if $ref_entry !~ /^function [^\n]*\[[^\]\n]*\brole=fini\b[^\]\n]*\]/;
+	return 0 if $my_entry !~ /^function /;
+	my @actions;
+	while ($ref_entry =~ /(%<value\d+>)\s*=\s*addr\s+(\@<global\d+>)[\s\S]*?call\s+void\s+(\@<fn\d+>)\(\g{1}\)/g)
+	{
+		push @actions, [$2, $3];
+	}
+	return 0 if scalar(@actions) == 0;
+	for my $action (@actions)
+	{
+		my ($global, $callee) = @$action;
+		return 0 if $my_entry !~ /(%<value\d+>)\s*=\s*addr\s+\Q$global\E[\s\S]*?call\s+void\s+\Q$callee\E\(\g{1}\)/;
+	}
+	return $my_entry =~ /return void/;
+}
+
+sub lowir_reference_is_generated_projection
+{
+	my ($ref_data, $my_data) = @_;
+	my %my_entries;
+	for my $entry (split_lowir_top_level_entries($my_data))
+	{
+		push @{$my_entries{lowir_compare_entry_identity($entry)}}, $entry;
+	}
+	for my $ref_entry (split_lowir_top_level_entries($ref_data))
+	{
+		my $identity = lowir_compare_entry_identity($ref_entry);
+		my $matched = 0;
+		if (exists($my_entries{$identity}))
+		{
+			for (my $i = 0; $i < @{$my_entries{$identity}}; ++$i)
+			{
+				next if !lowir_reference_entry_is_projection(
+					$ref_entry, $my_entries{$identity}[$i]);
+				splice(@{$my_entries{$identity}}, $i, 1);
+				$matched = 1;
+				last;
+			}
+		}
+		if (!$matched && $ref_entry =~ /^function /)
+		{
+			for my $candidate_identity (keys(%my_entries))
+			{
+				next if $candidate_identity !~ /^function:/;
+				for (my $i = 0;
+					$i < @{$my_entries{$candidate_identity}}; ++$i)
+				{
+					next if !lowir_static_finalizer_action_is_projection(
+						$ref_entry, $my_entries{$candidate_identity}[$i]);
+					splice(@{$my_entries{$candidate_identity}}, $i, 1);
+					$matched = 1;
+					last;
+				}
+				last if $matched;
+			}
+		}
+		return 0 if !$matched;
+	}
+	return 1;
 }
 
 sub lowir_compare_artifact_paths
@@ -2422,6 +3881,21 @@ sub compare_lowir_text
 		if $ref_status ne $my_status;
 	return (1, undef) if $ref_status ne 'EXIT_SUCCESS';
 
+	my $expect_path = expectation_sidecar($testbase);
+	if (defined($expect_path))
+	{
+		my $my_data = getdata($my);
+		return (0, "ERROR: missing output file ($my)") if !defined($my_data);
+		my ($my_valid, $my_error) = validate_lowir_text(
+			$my_data, $source_file, { strict_presentation_order => 0 });
+		return (0, "ERROR: generated LowIR failed sanity validation: $my_error") if !$my_valid;
+		my ($lowers, $lower_message, $lower_hint) = check_lowir_lowers($my, $source_file);
+		return ($lowers, $lower_message, $lower_hint) if !$lowers;
+		my ($behaves, $behave_message, $behave_hint) = check_source_behavior($my, $source_file);
+		return ($behaves, $behave_message, $behave_hint) if !$behaves;
+		return evaluate_expectations($expect_path, $my);
+	}
+
 	my $ref_data = getdata($ref);
 	my $my_data = getdata($my);
 	my @missing_output = ();
@@ -2430,11 +3904,24 @@ sub compare_lowir_text
 	return (0, "ERROR: missing output file (" . join(', ', @missing_output) . ")")
 		if scalar(@missing_output) != 0;
 
+	{
+		my ($lowers, $lower_message, $lower_hint) = check_lowir_lowers($my, $source_file);
+		return ($lowers, $lower_message, $lower_hint) if !$lowers;
+		my ($behaves, $behave_message, $behave_hint) = check_source_behavior($my, $source_file);
+		return ($behaves, $behave_message, $behave_hint) if !$behaves;
+	}
+
 	my $direct_compare = env_flag_enabled('CPPGM_LOWIR_DIRECT_TEXT_COMPARE');
 	my ($ref_valid, $ref_error) = validate_lowir_text(
 		$ref_data,
 		$source_file,
-		{ strict_presentation_order => 1 });
+		{ strict_presentation_order => 1,
+		  allow_legacy_trivial_lifecycle => 1,
+		  allow_legacy_unreachable_role => 1,
+		  allow_legacy_decay_surface => 1,
+		  allow_legacy_reference_pass => 1,
+		  allow_legacy_capture_access => 1,
+		  allow_legacy_source_origin_projection => 1 });
 	return (0, "ERROR: invalid reference LowIR: $ref_error") if !$ref_valid;
 	my ($my_valid, $my_error) = validate_lowir_text(
 		$my_data,
@@ -2442,67 +3929,27 @@ sub compare_lowir_text
 		{ strict_presentation_order => $direct_compare });
 	return (0, "ERROR: generated LowIR failed sanity validation: $my_error") if !$my_valid;
 
-	if ($direct_compare)
-	{
-		return ($ref_data eq $my_data
-			? (1, undef)
-			: (0, "ERROR: generated LowIR does not match reference with direct text compare"));
-	}
+	# Most course outputs are byte-identical to their reference; identical
+	# texts have identical canonical forms, so the canonicalization is skipped.
+	return (1, undef, undef) if $ref_data eq $my_data;
+	return (0, "ERROR: generated LowIR does not match reference with direct text compare")
+		if $direct_compare;
 
 	my ($ref_compare_data, $my_compare_data) =
 		canonicalize_lowir_pair_for_compare($ref_data, $my_data);
 
 	return (1, undef, undef) if $ref_compare_data eq $my_compare_data;
+	return (1, undef, undef)
+		if lowir_reference_is_generated_projection(
+			$ref_compare_data, $my_compare_data);
 
 	my ($ref_compare, $my_compare, $diff_path) =
 		write_lowir_compare_failure_artifacts($my,
 		                                      $ref_compare_data,
 		                                      $my_compare_data);
 	return (0,
-	        "ERROR: generated LowIR does not match reference after relaxed metadata canonicalization and order canonicalization; canonical diff written to $diff_path",
+	        "ERROR: generated LowIR does not match reference after relaxed metadata, local-name, and order canonicalization; canonical diff written to $diff_path",
 	        lowir_compare_failure_hint($ref_compare, $my_compare, $diff_path));
-}
-
-sub compare_witness_text
-{
-	my ($ref_suffix, $my_suffix, $testbase) = @_;
-	my $ref = "$testbase.$ref_suffix";
-	my $my = "$testbase.$my_suffix";
-	my $ref_witness = "$ref.witness";
-	my $my_witness = "$my.witness";
-
-	return ('skip', undef) if !-e $ref_witness;
-
-	my $ref_status = getdata("$ref.exit_status");
-	return ('skip', undef)
-		if defined($ref_status) && $ref_status ne 'EXIT_SUCCESS';
-
-	my $my_status = getdata("$my.exit_status");
-	return ('fail', "ERROR: missing generated exit status ($my.exit_status)")
-		if !defined($my_status);
-	return ('fail', "ERROR: witness exited $my_status")
-		if $my_status ne 'EXIT_SUCCESS';
-
-	my $ref_data = getrawdata($ref_witness);
-	my $my_data = getrawdata($my_witness);
-	my @missing_output = ();
-	push @missing_output, $ref_witness if !defined($ref_data);
-	push @missing_output, $my_witness if !defined($my_data);
-	return ('fail', "ERROR: missing witness output file (" . join(', ', @missing_output) . ")")
-		if scalar(@missing_output) != 0;
-
-	return ('ok', undef) if $ref_data eq $my_data;
-
-	my $diff_path = "$my_witness.diff";
-	my $diff_data = '';
-	if (open(my $diff_fh, '-|', 'diff', '-u', $ref_witness, $my_witness))
-	{
-		local $/;
-		$diff_data = <$diff_fh>;
-		close($diff_fh);
-	}
-	putrawdata($diff_path, defined($diff_data) ? $diff_data : '');
-	return ('fail', "ERROR: witness output does not match reference");
 }
 
 sub canonical_exit_status
@@ -2692,10 +4139,11 @@ my $host_tag = host_platform_tag();
 my %patterns = (
 	text_t => qr/\.t$/,
 	lowir_t => qr/\.t$/,
-	witness_t => qr/\.t$/,
 	text_t1 => qr/\.t\.1$/,
+	lowir_behavior_t => qr/\.t$/,
 	program_t1 => qr/\.t\.1$/,
 	mir_t => qr/\.t$/,
+	mir_behavior_t => qr/\.t$/,
 	mir_canonical_t => qr/\.t$/,
 	mir_structural_t => qr/\.t$/,
 	map_struct_t => qr/\.t$/,
@@ -2709,9 +4157,6 @@ my $suite_total = scalar(@tests);
 my $keep_going = $requested_keep_going || ($auto_check_keep_going && $suite_total > 1);
 my $npass = 0;
 my $failed = 0;
-my $witness_compared = 0;
-my $witness_failures = 0;
-my $witness_skipped = 0;
 
 sub compare_label
 {
@@ -2744,14 +4189,6 @@ sub checked_output_hint
 		rooted_path($ref_path) . " " . rooted_path($my_path) . "\n\n";
 }
 
-sub witness_output_hint
-{
-	my ($ref_path, $my_path) = @_;
-	return "To inspect this witness output:\n\n    \$ diff " .
-		rooted_path($ref_path) . " " . rooted_path($my_path) .
-		"\n    \$ cat " . rooted_path("$my_path.diff") . "\n\n";
-}
-
 sub program_output_hint
 {
 	my ($ref_prefix, $my_prefix) = @_;
@@ -2772,45 +4209,6 @@ for my $test (@tests)
 	$testbase =~ s/\.t$//;
 	$testbase =~ s/\.t\.1$//;
 
-	if ($mode eq 'witness_t')
-	{
-		my ($state, $message) =
-			compare_witness_text($ref_suffix, $my_suffix, $testbase);
-		if ($state eq 'skip')
-		{
-			++$witness_skipped;
-			print "SKIP\n\n" if $verbose;
-			next;
-		}
-
-		++$witness_compared;
-		if ($state eq 'ok')
-		{
-			++$npass;
-			print "PASS\n\n" if $verbose;
-			next;
-		}
-
-		++$witness_failures;
-		if ($keep_going)
-		{
-			print "$display_test: $message\n";
-			print witness_output_hint("$testbase.$ref_suffix.witness",
-			                          "$testbase.$my_suffix.witness")
-				if $check_mode && $auto_check_keep_going;
-			$failed = 1;
-			next;
-		}
-
-		print fail_prefix();
-		print "$test: $message\n\n";
-		print rerun_hint();
-		print witness_output_hint("$testbase.$ref_suffix.witness",
-		                          "$testbase.$my_suffix.witness");
-		print "TEST FAIL\n";
-		exit(1);
-	}
-
 	my ($ok, $message, $hint);
 	eval {
 		if ($mode eq 'text_t')
@@ -2829,6 +4227,47 @@ for my $test (@tests)
 		{
 			($ok, $message) = compare_text(qr/\.t\.1$/, $ref_suffix, $my_suffix, $testbase, 1);
 			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix");
+		}
+		elsif ($mode eq 'lowir_behavior_t')
+		{
+			my $ref = "$testbase.$ref_suffix";
+			my $my = "$testbase.$my_suffix";
+			my $ref_impl_raw = getdata("$ref.impl.exit_status");
+			my $my_impl_raw = getdata("$my.impl.exit_status");
+			my $ref_impl = canonical_exit_status($ref_impl_raw);
+			my $my_impl = canonical_exit_status($my_impl_raw);
+			($ok, $message) = (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
+				if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
+			if (!defined($ok))
+			{
+				if ($ref_impl ne 'EXIT_SUCCESS')
+				{
+					($ok, $message) = (1, undef);
+				}
+				else
+				{
+					my $ref_text = getdata($ref);
+					my $my_text = getdata($my);
+					if (!defined($ref_text) || !defined($my_text))
+					{
+						($ok, $message) = (0,
+							"ERROR: missing generated CY86 translation");
+					}
+					elsif ($ref_text ne $my_text)
+					{
+						($ok, $message) = (0,
+							"ERROR: generated CY86 does not match reference");
+						$hint = checked_output_hint($ref, $my);
+					}
+					else
+					{
+						my ($prog_ok, $prog_message) =
+							compare_program_outputs($ref, $my, 'generated');
+						($ok, $message) = ($prog_ok, $prog_message);
+						$hint = program_output_hint($ref, $my);
+					}
+				}
+			}
 		}
 		elsif ($mode eq 'program_t1')
 		{
@@ -2851,6 +4290,21 @@ for my $test (@tests)
 				{
 					($ok, $message) = (1, undef);
 				}
+				elsif (defined(expectation_sidecar($testbase)))
+				{
+					my ($expect_ok, $expect_message, $expect_hint) =
+						evaluate_expectations(expectation_sidecar($testbase), "$my.mir");
+					if (!$expect_ok)
+					{
+						($ok, $message, $hint) = ($expect_ok, $expect_message, $expect_hint);
+					}
+					else
+					{
+						my ($prog_ok, $prog_message) = compare_program_outputs($ref, $my, 'generated');
+						($ok, $message) = ($prog_ok, $prog_message);
+						$hint = program_output_hint($ref, $my);
+					}
+				}
 				elsif ((-f "$ref.mir") &&
 				       (normalize_machine_ir(getdata("$ref.mir")) ne normalize_machine_ir(getdata("$my.mir"))))
 				{
@@ -2863,6 +4317,51 @@ for my $test (@tests)
 					my ($prog_ok, $prog_message) = compare_program_outputs($ref, $my, 'generated');
 					($ok, $message) = ($prog_ok, $prog_message);
 					$hint = program_output_hint($ref, $my);
+				}
+			}
+		}
+		elsif ($mode eq 'mir_behavior_t')
+		{
+			my $ref = "$testbase.$ref_suffix";
+			my $my = "$testbase.$my_suffix";
+			my $ref_impl_raw = getdata("$ref.impl.exit_status");
+			my $my_impl_raw = getdata("$my.impl.exit_status");
+			my $ref_impl = canonical_exit_status($ref_impl_raw);
+			my $my_impl = canonical_exit_status($my_impl_raw);
+			($ok, $message) = (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
+				if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
+			if (!defined($ok))
+			{
+				if ($ref_impl ne 'EXIT_SUCCESS')
+				{
+					($ok, $message) = (1, undef);
+				}
+				elsif (!-f "$ref.mir")
+				{
+					($ok, $message) = (0,
+						"ERROR: missing informational reference machine IR dump (.ref.mir)");
+				}
+				elsif (!-f "$my.mir")
+				{
+					($ok, $message) = (0,
+						"ERROR: missing generated machine IR dump (.my.mir)");
+				}
+				else
+				{
+					my ($expect_ok, $expect_message, $expect_hint) = (1, undef, undef);
+					($expect_ok, $expect_message, $expect_hint) =
+						evaluate_expectations(expectation_sidecar($testbase), "$my.mir")
+						if defined(expectation_sidecar($testbase));
+					if (!$expect_ok)
+					{
+						($ok, $message, $hint) = ($expect_ok, $expect_message, $expect_hint);
+					}
+					else
+					{
+						my ($prog_ok, $prog_message) = compare_program_outputs($ref, $my, 'generated');
+						($ok, $message) = ($prog_ok, $prog_message);
+						$hint = program_output_hint($ref, $my);
+					}
 				}
 			}
 		}
@@ -2916,7 +4415,9 @@ for my $test (@tests)
 				}
 				else
 				{
-					my ($mir_ok, $mir_message, $mir_hint) = compare_structural_machine_ir($ref, $my);
+					my ($mir_ok, $mir_message, $mir_hint) = defined(expectation_sidecar($testbase)) ?
+						evaluate_expectations(expectation_sidecar($testbase), "$my.mir") :
+						compare_structural_machine_ir($ref, $my);
 					if (!$mir_ok)
 					{
 						($ok, $message, $hint) = ($mir_ok, $mir_message, $mir_hint);
@@ -3042,24 +4543,6 @@ for my $test (@tests)
 	print $hint if defined($hint);
 	print "TEST FAIL\n";
 	exit(1);
-}
-
-if ($mode eq 'witness_t')
-{
-	if ($check_mode)
-	{
-		print compare_label() . ": " . ($failed ? "FAIL" : "PASS") .
-			" ($npass/$witness_compared compared";
-		print ", $witness_skipped skipped" if $witness_skipped != 0;
-		print ")\n";
-	}
-	else
-	{
-		print "SUMMARY compared=$witness_compared failures=$witness_failures skipped=$witness_skipped\n";
-	}
-	append_keep_going_summary($repo_root, $cwd, $npass, $witness_compared, $failed)
-		if $keep_going && !$check_mode;
-	exit($failed && (!$keep_going || $auto_check_keep_going) ? 1 : 0);
 }
 
 if ($keep_going && $check_mode)

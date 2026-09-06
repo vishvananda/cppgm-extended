@@ -1,158 +1,76 @@
+// (C) 2013 CPPGM Foundation www.cppgm.org.  All rights reserved.
+
+#include <cstdlib>
+#include <exception>
 #include <iostream>
-#include <stdexcept>
+#include <iterator>
 #include <string>
 
 using namespace std;
 
-#include "calculator.h"
-#include "pptokenizer.h"
-#include "tool_stdin.h"
+#include "preprocess/expressions/control_expression.h"
+#include "support/driver_errors.h"
+#include "support/exception_types.h"
 
-struct DebugRunner : IPPTokenStream
+// Mock identifier-definition policy for the standalone expression adapter.
+// return true iff first code point is odd
+bool MockIsDefinedIdentifier(const string& identifier)
 {
-  DebugRunner() : empty(true), defined_state(DefinedState::None) {}
-
-  void emit_stdout(const string& data)
-  {
-    stdout_buffer += data;
-    stdout_buffer.push_back('\n');
-  }
-
-  void emit_stderr(const string& data)
-  {
-    stderr_buffer += "ERROR:";
-    stderr_buffer += data;
-    stderr_buffer.push_back('\n');
-  }
-
-  virtual void emit(const EPPTokenType type,
-                    const string & data = string())
-  {
-    try {
-      switch(defined_state) {
-      case DefinedState::None:
-        switch(type) {
-        case PP_NEW_LINE:
-          if(error.size()) {
-            emit_stderr(error);
-            emit_stdout("error");
-            calculator.reset();
-            defined_state = DefinedState::None;
-            error = string();
-            empty = true;
-            break;
-          }
-          if(empty)
-            break;
-          {
-            string error_out;
-            calculator.try_calculate(error_out);
-            if(!error_out.empty()) {
-              emit_stderr(error_out);
-              emit_stdout("error");
-            } else if(calculator.issigned) {
-              emit_stdout(to_string((long long)calculator.value));
-            } else {
-              emit_stdout(to_string(calculator.value) + "u");
-            }
-          }
-          empty = true;
-          break;
-        case PP_WHITESPACE:
-          break;
-        case PP_EOF:
-          emit_stdout("eof");
-          break;
-        default:
-          empty = false;
-          if(type == PP_IDENTIFIER && data == "defined") {
-            defined_state = DefinedState::Start;
-          } else {
-            calculator.accumulate(type, data);
-          }
-          break;
-        }
-        break;
-      case DefinedState::Start:
-        if(type == PP_PREPROCESSING_OP && data == "(") {
-          defined_state = DefinedState::Paren;
-        } else if(type == PP_IDENTIFIER) {
-          if(data[0] % 2)
-            calculator.accumulate(PP_INT_LITERAL, "1");
-          else
-            calculator.accumulate(PP_INT_LITERAL, "0");
-          defined_state = DefinedState::None;
-        } else if(type != PP_WHITESPACE) {
-          throw logic_error("Expected whitespace or paren after defined.");
-        }
-        break;
-      case DefinedState::Paren:
-        if(type == PP_IDENTIFIER) {
-          if(data[0] % 2)
-            calculator.accumulate(PP_INT_LITERAL, "1");
-          else
-            calculator.accumulate(PP_INT_LITERAL, "0");
-          defined_state = DefinedState::End;
-        } else if(type != PP_WHITESPACE) {
-          throw logic_error("Expected identifier in defined expression.");
-        }
-        break;
-      case DefinedState::End:
-        if(type == PP_PREPROCESSING_OP && data == ")") {
-          defined_state = DefinedState::None;
-        } else if(type != PP_WHITESPACE) {
-          throw logic_error("Expected end paren in defined expression.");
-        }
-        break;
-      }
-    } catch (logic_error & e) {
-      if(type == PP_NEW_LINE) {
-        emit_stderr(e.what());
-        emit_stdout("error");
-        calculator.reset();
-        defined_state = DefinedState::None;
-        error = string();
-        empty = true;
-      } else {
-        error = e.what();
-      }
-    }
-  }
-
-  string error;
-  string stdout_buffer;
-  string stderr_buffer;
-  bool empty;
-  enum struct DefinedState {None, Start, Paren, End};
-  DefinedState defined_state;
-  Calculator calculator;
-};
+	if (identifier.empty())
+		return false;
+	else
+		return identifier[0] % 2;
+}
 
 int main(int argc, char** argv)
 {
-  (void)argc;
-  (void)argv;
-  cerr << nounitbuf;
-  const string input = read_all_stdin();
-  MemoryInputBuffer input_buffer(input);
-  DebugRunner runner;
-  runner.stdout_buffer.reserve(input.size() / 4);
-  PPTokenizer tokenizer(&input_buffer);
-  try {
-    stream_pp_tokens(tokenizer, runner);
-  } catch (exception& e) {
-    if(!runner.stdout_buffer.empty())
-      cout << runner.stdout_buffer;
-    if(!runner.stderr_buffer.empty())
-      cerr << runner.stderr_buffer;
-    cerr << "ERROR:" << tokenizer.get_ln() << ":"
-         << tokenizer.get_ch() << ":" << e.what() << '\n';
-
-    return EXIT_FAILURE;
-  }
-  if(!runner.stdout_buffer.empty())
-    cout << runner.stdout_buffer;
-  if(!runner.stderr_buffer.empty())
-    cerr << runner.stderr_buffer;
-  return EXIT_SUCCESS;
+	try
+	{
+		if (argc > 2 || (argc == 2 && std::string(argv[1]) != "--stats"))
+			cppgm::driver_errors::ThrowInvocation("invalid usage");
+		ios_base::sync_with_stdio(false);
+		cin.tie(0);
+		const string source((istreambuf_iterator<char>(cin)),
+			istreambuf_iterator<char>());
+		const bool report_stats = argc == 2;
+		cppgm::ControlExpressionStats stats;
+		cppgm::EvaluateControllingExpressions(source, cout,
+			MockIsDefinedIdentifier, report_stats ? &stats : 0);
+		if (report_stats)
+		{
+			cerr << "ctrlexpr_stats"
+				 << " source_bytes=" << source.size()
+				 << " pp_tokens="
+				 << stats.tokenization.preprocessing.emitted_tokens
+				 << " post_tokens=" << stats.tokenization.emitted_tokens
+				 << " lines=" << stats.logical_lines
+				 << " nonempty_lines=" << stats.nonempty_lines
+				 << " errors=" << stats.error_lines
+				 << " nodes=" << stats.syntax_nodes
+				 << " evaluation_visits=" << stats.evaluation_visits
+				 << " skipped=" << stats.skipped_subexpressions
+				 << " peak_line_tokens=" << stats.peak_line_tokens
+				 << " peak_line_nodes=" << stats.peak_line_nodes
+				 << " peak_parser_operators="
+				 << stats.peak_parser_operators
+				 << " peak_parser_operands="
+				 << stats.peak_parser_operands
+				 << " peak_evaluation_frames="
+				 << stats.peak_evaluation_frames
+				 << " peak_line_storage_bytes="
+				 << stats.peak_line_storage_bytes
+				 << " elapsed_ns=" << stats.elapsed_nanoseconds << '\n';
+		}
+		return EXIT_SUCCESS;
+	}
+	catch (const CompilerError& e)
+	{
+		cerr << "ERROR: " << e.what() << endl;
+		return EXIT_FAILURE;
+	}
+	catch (const exception& e)
+	{
+		cerr << "ERROR: " << e.what() << endl;
+		return EXIT_FAILURE;
+	}
 }
