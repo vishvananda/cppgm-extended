@@ -32,7 +32,7 @@ function @sift(%p : ptr) -> void [binding=internal, object=_Z4siftIZ1fvE5LocalEv
     call void @Local__Local__ov3(%t1, %t3)
     return void
 }
-function @Ops_Policy___iter_move(%i : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=internal, object=_ZN3OpsI6PolicyE9iter_moveIZ1fvE5LocalEEOT_RS3_, inline_hint=yes] {
+function @Ops_Policy___iter_move(%i : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=internal, object=_ZN3OpsI6PolicyE9iter_moveIZ1fvE5LocalEEOT_RS4_, inline_hint=yes] {
   slot $i : ptr
 
   block ^entry:

@@ -1155,6 +1155,17 @@ private:
 			if (!IsAttributeTokenOperand(directive, begin, end))
 				ThrowProbeOperandError(probe, "invalid attribute probe operand");
 			if (preprocessing_stats_) ++preprocessing_stats_->builtin_probes;
+			// The standard attributes the compiler implements with an effect
+			// the host can observe; the rest read as absent so a header takes
+			// its portable path.
+			if (begin + 1 == end && IsIdentifierLike(directive[begin]))
+			{
+				std::string attribute = Spell(directive[begin]);
+				if (attribute.size() > 4 && attribute.compare(0, 2, "__") == 0 &&
+					attribute.compare(attribute.size() - 2, 2, "__") == 0)
+					attribute = attribute.substr(2, attribute.size() - 4);
+				if (attribute == "no_unique_address") return true;
+			}
 			return false;
 		}
 		// __has_warning names a diagnostic option, spelled as a string literal.

@@ -1244,6 +1244,9 @@ struct FunctionTemplatePattern
 	// so the pattern keeps the specifier syntax and the instantiation answers
 	// it; a bare `explicit` still sets the bool above.
 	NodeId explicit_specifier_syntax;
+	// abi_tag attributes on the template declaration; every specialization
+	// carries them into its mangled name.
+	std::vector<NameId> abi_tags;
 	bool inline_specifier;
 	bool explicit_member_definition;
 	bool deferred_result_formation;

@@ -1,8 +1,10 @@
 # Plan: make this implementation the reference in cppgm-extended (v4)
 
 Status: in progress on branch `v4` (2026-09-06).  Phases 0 to 6 have landed;
-Phase 7 is under way (export script and CI updated, the local export run and
-the CI drive remain); Phase 8 is deferred.  The trackers are in `docs/v4/`
+Phase 7 is under way: the export script and CI are updated, and the CI drive
+across the four host cells surfaced the compiler defects recorded in
+`docs/v4/moves.md` ("Phase 7: the host cells"), all fixed in the source tree
+and synced here.  Phase 8 is deferred.  The trackers are in `docs/v4/`
 (`README.md` indexes them): `ref-deltas.md` (Phase 3), `moves.md` (Phases 4
 and 5 and the selfhost fixes), `readme-review.md` (Phase 6).
 

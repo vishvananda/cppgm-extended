@@ -212,3 +212,39 @@ paths.  A local run exported 18,651 verified reference files (7,059 exit
 statuses, 411 retained failed-case diagnostics), packaged the reference
 bundle, and the exported `dev/` builds its scaffolds.  CI gained an
 `audits` job (the architecture audits, the file audit, `make test-harness`).
+
+## Phase 7: the host cells
+
+The first CI runs of `v4` were green only on the cell the local machine
+matches (Ubuntu 26.04, gcc 15, libstdc++ 15).  The other three cells build
+the compiler with a different host compiler and compile the hosted lanes
+(PA35, PA36) against a different standard library, and each exposed defects
+the local run could not.  Every fix landed in `~/work/v3codex` first and was
+synced here; every language defect has a fixture in its owning assignment.
+
+| cell | symptom | cause | fix | fixture |
+| --- | --- | --- | --- | --- |
+| all but 26.04 gcc | garbage field offsets, `invalid PA11 type identity`, a selfhost segfault | three references held across table growth (`PublishUsingAccess`, `TryAnalyzeFloatingIntrinsicCall`, `PublishFunctionTemplateSpecialMemberRole`) | copy the record, or evaluate before taking the reference | existing PA16 and PA30 fixtures; the selfhost lane |
+| 24.04 gcc (libstdc++ 13) | `expression kind 31 does not designate scalar storage` in `_Hashtable::_M_insert_unique_node` | `const T& r = call();` never materialized storage for a scalar prvalue | the reference-initialization path materializes any non-class prvalue | `pa17/tests/general/200-scalar-prvalue-reference-binding.t` |
+| 24.04 gcc | `ambiguous overload` in `_Rb_tree::_M_erase` | `f(B*)` and `f(const B*)` ranked equal for a `D*` argument | derived-to-base conversions of equal depth prefer the less qualified target | `pa12/tests/general/200-derived-to-base-pointer-prefers-less-qualified-overload.t` |
+| 24.04 gcc | `no viable overload for _S_right` | a pointer to a class template specialization the program had only named was never completed for the derived-to-base check | call conversions complete the pointee on demand | covered by the PA35 map and set fixtures on that cell |
+| 24.04 clang (libc++ 18) | `expected binary operand` at `pair.h:125` (86 fixtures) | `name<>()` read as less-than when another class had declared a non-template member of that name | an empty angle pair after a name is a template-id | `pa22/tests/general/300-member-template-empty-argument-list-after-same-named-member.t` |
+| 24.04 clang | `duplicate default template argument` on `__invoke` | two function templates differing only in their decltype result matched as one declaration | the whole decltype result takes part in redeclaration identity; roots still decide leading-versus-trailing spellings | `pa23/tests/general/300-decltype-result-distinguishes-function-template-overloads.t`, `300-friend-function-template-alias-result-definition.t` |
+| 24.04 clang | `expected OP_RPAREN` at `__math/traits.h:50` | `(typename T::type)x` not parsed as a cast | `typename` starts a cast type-id | `pa22/tests/general/300-dependent-typename-cast-expression.t` |
+| 24.04 clang | `invalid universal character name` in `<sstream>` | `\u{` inside a comment | a backslash without a hex quad stays a backslash | `pa1/tests/200-malformed-universal-name-in-comment.t` |
+| 24.04 clang | `expected parameter declaration` at `vector:2601` | `vector(*this, …).swap(*this);` read as a declaration in a template member | `T(*this, …)` and `T(this, …)` are expressions | `pa17/tests/general/100-injected-class-name-functional-cast-this-statement.t` |
+| 24.04 clang | `structured template type was not found`, `invalid signedness transform operand`, `unknown expression name` while registering `__allocate_at_least` | a shape-only completion (parameters standing in for arguments) treated members the stand-ins cannot reach as errors | such members stay dependent shapes or keep no constant until a concrete specialization is completed | the libc++ cell (no reduction reproduces it outside the header chain) |
+| 24.04 clang | `unknown expression name: __libcpp_compute_min<type,digits,is_signed>::value` | a non-type argument spelled as a bare name rejected because a namespace-scope class template shared the name of the class's own static constant | a value in a nearer scope hides the type | `pa22/tests/general/100-nontype-argument-member-hides-namespace-template.t` |
+| 24.04 clang | `direct base must name a complete non-union class` in `constexpr_c_functions.h` | libc++'s `__libcpp_datasizeof` takes its `template <> struct _FirstPaddingByte<true>` branch when `__has_cpp_attribute(no_unique_address)` reads as absent | the probe answers true for the attribute the compiler implements | `pa5/tests/500-attribute-probe.t` |
+| 24.04 clang (PA36) | `multiple definition of __do_deallocate_handle_size` | a function template specialization whose only arguments sit in an empty pack was emitted as a plain strong function with a non-template mangling and without its abi tag | the specialization keeps its template identity (`IJEE`, weak) and the pattern's abi tags | `pa32/tests/general/100-empty-pack-function-template-duplicate.t` |
+| every cell (latent) | member function template symbols one substitution short of the host's (`S2_` where clang writes `S3_`) | the `<template-prefix>` of a member template never took a substitution number | the encoder numbers it before the template arguments | `pa32/tests/general/100-member-template-prefix-substitution.t`; every LowIR reference naming such a symbol changed |
+| 24.04 clang | `ambiguous overload` in `__tuple_leaf`'s reference-binding assertion (`tuple:346`, six fixtures) | retained call facts are replayed for every specialization of a class template, and an unqualified call recorded no naming class to check the facts against, so a sibling specialization's member stayed a candidate | the enclosing class stands in for the naming class | `pa24/tests/general/200-member-template-call-per-specialization.t` |
+| 24.04 clang | `base polymorphism facts are incomplete` in `std::function` | a lambda closure made an empty base of libc++'s compressed pair never had its facts computed | a complete base's facts are computed on demand; the diagnostic names both classes | `700-hosted-function-nullary-base-reentry-compile` on that cell |
+| 24.04 gcc | `no viable overload for _S_right` in `_Rb_tree::_M_erase` | a derived-to-base pointer conversion on a class template specialization the program had only named | call conversions complete the pointee on demand | the PA35 map fixtures on that cell |
+
+With these fixes the Ubuntu 24.04 clang cell (clang 18, libc++ 18) is
+green.  Still open: libstdc++ 13's `__copy_move_backward` names the wrong
+explicit specialization's `__assign_one` (`700-libstdcxx-regex-compiler-
+member-alias-call`, the one failure left on the 24.04 gcc cell), and
+conversion function templates still mangle their conversion type from the
+deduced argument (`cvi` where the host writes `cvT_`).

@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 %t4
     return i32 %t5
 }
-function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=4], %r : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IiTnN9enable_ifIXsr7is_sameIT_iEE5valueEiE4typeELi0EEERKS2_, inline_hint=yes] {
+function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=4], %r : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IiTnN9enable_ifIXsr7is_sameIT_iEE5valueEiE4typeELi0EEERKS3_, inline_hint=yes] {
   slot $this : ptr
   slot $r : ptr
 
@@ -26,4 +26,4 @@ function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=
     store i32 %t2, %t4
     return void
 }
-alias object _ZN13duration_likeIiEC2IiTnN9enable_ifIXsr7is_sameIT_iEE5valueEiE4typeELi0EEERKS2_ = @duration_like_int___duration_like_int___ov3
+alias object _ZN13duration_likeIiEC2IiTnN9enable_ifIXsr7is_sameIT_iEE5valueEiE4typeELi0EEERKS3_ = @duration_like_int___duration_like_int___ov3

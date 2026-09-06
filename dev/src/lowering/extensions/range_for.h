@@ -25,11 +25,18 @@ protected:
 		Derived& derived = static_cast<Derived&>(*this);
 		if (!derived.IsReferenceType(record.type) || children.size() != 1)
 			return false;
+		// A reference bound to a scalar prvalue needs storage of its own: a
+		// call marked for materialization, or any other non-class prvalue (a
+		// literal, an arithmetic result, a conversion).
 		const DumpNode& source = derived.arena_.nodes[children[0]];
-		if (source.kind != DUMP_CALL_EXPRESSION ||
-			!source.reference_call_materialization ||
-			source.category != VALUE_PRVALUE ||
-			derived.IsClassObjectType(source.type))
+		if (source.category != VALUE_PRVALUE ||
+			derived.IsClassObjectType(source.type) ||
+			derived.IsArrayType(source.type) ||
+			derived.IsReferenceType(source.type))
+			return false;
+		if (source.kind == DUMP_CALL_EXPRESSION &&
+			!source.reference_call_materialization &&
+			derived.UsesIndirectClassResult(source.type, source.binding))
 			return false;
 		const LowType value_type = derived.LowerStorageType(source.type);
 		const Operand temporary(derived.EnsureGeneratedSlot(

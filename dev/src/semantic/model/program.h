@@ -732,6 +732,10 @@ struct BindingRecord
 	// the same class entity.
 	bool force_indirect_class_result_abi : 1;
 	bool closure_template_specialization : 1;
+	// A function template specialization keeps this even when every template
+	// argument sits in an empty pack, so it stays a weak, template-mangled
+	// definition rather than a plain function.
+	bool function_template_specialization : 1;
 	bool lambda_invocation : 1;
 	bool compiler_generated : 1;
 	bool source_view_suppressed : 1;

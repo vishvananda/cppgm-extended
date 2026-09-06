@@ -2186,11 +2186,17 @@ std::vector<BindingId> Analyzer::RetainedFunctionCallCandidates(
 	// while its nondependent alias lookup belongs to the concrete class owner.
 	// Reject a fact whose member owner is unreachable from its recorded naming
 	// class and rebuild that one call from the active specialization scope.
-	for (std::size_t i = 0; *naming_class != kNoEntity && i < result.size(); ++i)
+	// An unqualified call records no naming class; a fact naming a sibling
+	// specialization's member (the one another replay published) is rebuilt
+	// from the active scope, while a member of an unrelated class the call
+	// reaches through an object stays.
+	for (std::size_t i = 0; i < result.size(); ++i)
 	{
 		const EntityId owner = program_->bindings[result[i]].member_owner;
-		if (owner == kNoEntity || program_->QueryBasePath(
-			*naming_class, owner, 0, 0, 0, 0)) continue;
+		if (owner == kNoEntity) continue;
+		if (*naming_class != kNoEntity ? program_->QueryBasePath(
+				*naming_class, owner, 0, 0, 0, 0) :
+			!HidesSiblingSpecializationMember(owner)) continue;
 		*retained_lookup = false;
 		return FunctionCallCandidates(
 			scope, spelling, naming_class, callee, true);
@@ -2201,7 +2207,6 @@ std::vector<BindingId> Analyzer::RetainedFunctionCallCandidates(
 	// is unreachable from the recorded naming class belongs to another
 	// specialization, so rebuild that call from the active scope as well.
 	const CompactIndexSequence* retained_templates =
-		*naming_class == kNoEntity ? 0 :
 		retained_call_template_sets_.Find(callee);
 	for (std::size_t i = 0; retained_templates &&
 		i < retained_templates->Size(); ++i)
@@ -2209,8 +2214,10 @@ std::vector<BindingId> Analyzer::RetainedFunctionCallCandidates(
 		const FunctionTemplatePattern& pattern =
 			function_templates_[(*retained_templates)[i]];
 		const EntityId owner = program_->EntityForScope(pattern.owner);
-		if (owner == kNoEntity || program_->QueryBasePath(
-			*naming_class, owner, 0, 0, 0, 0)) continue;
+		if (owner == kNoEntity) continue;
+		if (*naming_class != kNoEntity ? program_->QueryBasePath(
+				*naming_class, owner, 0, 0, 0, 0) :
+			!HidesSiblingSpecializationMember(owner)) continue;
 		*retained_lookup = false;
 		return FunctionCallCandidates(
 			scope, spelling, naming_class, callee, true);

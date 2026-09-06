@@ -39,7 +39,7 @@ function @factor_unique_tag___factor_unique_tag_(%this : ptr [object_bytes=1]) -
     store ptr %this, $this
     return void
 }
-function @factor_unique_tag___operator___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK6factorI10unique_tagEaSI12callable_tagEERK7wrapperIT_ERKS4_, inline_hint=yes] {
+function @factor_unique_tag___operator___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK6factorI10unique_tagEaSI12callable_tagEERK7wrapperIT_ERKS5_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

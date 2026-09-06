@@ -88,7 +88,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t39 = load i32 $cond__1
     return i32 %t39
 }
-function @algorithm_classic_policy___operator__(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIPmEET_S3_S3_, inline_hint=yes] {
+function @algorithm_classic_policy___operator__(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIPmEET_S4_S4_, inline_hint=yes] {
   slot $this : ptr
   slot $first : ptr
   slot $last : ptr
@@ -102,7 +102,7 @@ function @algorithm_classic_policy___operator__(%this : ptr [object_bytes=1], %f
     %t3 = call ptr @ops_classic_policy___last_of(%t1, %t2)
     return ptr %t3
 }
-function @algorithm_classic_policy___operator____ov2(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIP5tag_aEET_S4_S4_, inline_hint=yes] {
+function @algorithm_classic_policy___operator____ov2(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIP5tag_aEET_S5_S5_, inline_hint=yes] {
   slot $this : ptr
   slot $first : ptr
   slot $last : ptr
@@ -116,7 +116,7 @@ function @algorithm_classic_policy___operator____ov2(%this : ptr [object_bytes=1
     %t3 = call ptr @ops_classic_policy___last_of__ov2(%t1, %t2)
     return ptr %t3
 }
-function @algorithm_classic_policy___operator____ov3(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIP5tag_bEET_S4_S4_, inline_hint=yes] {
+function @algorithm_classic_policy___operator____ov3(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIP5tag_bEET_S5_S5_, inline_hint=yes] {
   slot $this : ptr
   slot $first : ptr
   slot $last : ptr
@@ -130,7 +130,7 @@ function @algorithm_classic_policy___operator____ov3(%this : ptr [object_bytes=1
     %t3 = call ptr @ops_classic_policy___last_of__ov3(%t1, %t2)
     return ptr %t3
 }
-function @ops_classic_policy___last_of(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIPmEET_S3_S3_, inline_hint=yes] {
+function @ops_classic_policy___last_of(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIPmEET_S4_S4_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $last : ptr
 
@@ -140,7 +140,7 @@ function @ops_classic_policy___last_of(%__param0 : ptr, %last : ptr) -> ptr [bin
     %t1 = load ptr $last
     return ptr %t1
 }
-function @ops_classic_policy___last_of__ov2(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIP5tag_aEET_S4_S4_, inline_hint=yes] {
+function @ops_classic_policy___last_of__ov2(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIP5tag_aEET_S5_S5_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $last : ptr
 
@@ -150,7 +150,7 @@ function @ops_classic_policy___last_of__ov2(%__param0 : ptr, %last : ptr) -> ptr
     %t1 = load ptr $last
     return ptr %t1
 }
-function @ops_classic_policy___last_of__ov3(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIP5tag_bEET_S4_S4_, inline_hint=yes] {
+function @ops_classic_policy___last_of__ov3(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIP5tag_bEET_S5_S5_, inline_hint=yes] {
   slot $__param0 : ptr
   slot $last : ptr
 

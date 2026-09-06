@@ -620,10 +620,15 @@ bool Analyzer::TryAnalyzeFloatingIntrinsicCall(
 	if (argument_syntax.size() != intrinsic->arity)
 		ThrowSemanticError("invalid floating intrinsic arity");
 	const BindingId binding = EnsureFloatingIntrinsicFunction(intrinsic->kind);
-	const TypeRecord& function_type =
-		program_->types.Get(GetFunction(binding).type);
-	const TypeId* parameter_types =
-		program_->types.Parameters(GetFunction(binding).type);
+	// Copy the signature out of the type table: analyzing an argument can
+	// intern types (a nested intrinsic call declares its own function) and
+	// move the table's storage.
+	const TypeId function_type_id = GetFunction(binding).type;
+	const TypeId result_type = program_->types.Get(function_type_id).child;
+	const TypeId* parameter_begin =
+		program_->types.Parameters(function_type_id);
+	const std::vector<TypeId> parameter_types(parameter_begin,
+		parameter_begin + program_->types.Get(function_type_id).parameter_count);
 	std::vector<ExpressionInfo> arguments;
 	arguments.reserve(argument_syntax.size());
 	for (std::size_t i = 0; i < argument_syntax.size(); ++i)
@@ -660,7 +665,7 @@ bool Analyzer::TryAnalyzeFloatingIntrinsicCall(
 		arguments.push_back(ApplyCallArgument(argument, parameter_types[i]));
 	}
 	*result = BuildFloatingIntrinsicCall(intrinsic->kind, arguments,
-		function_type.child, target);
+		result_type, target);
 	return true;
 }
 
@@ -1247,6 +1252,143 @@ bool Analyzer::RefQualifierViable(const ExpressionInfo& object,
 	if (object.category == VALUE_LVALUE) return true;
 	return (function_type.cv & CV_CONST) != 0 &&
 		(function_type.cv & CV_VOLATILE) == 0;
+}
+
+// Whether a member's owning class is the class enclosing the current
+// context, one of its enclosing classes, or a base of one of them; a member
+// with no owner is always reachable.
+bool Analyzer::MemberOwnerReachableFromContext(EntityId owner) const
+{
+	EntityId start = current_class_context_;
+	if (start == kNoEntity && current_function_context_ != kNoBinding)
+		start = program_->bindings[current_function_context_].member_owner;
+	if (owner == kNoEntity || start == kNoEntity) return true;
+	for (EntityId context = start; context != kNoEntity;
+		context = program_->entities[context].enclosing_class)
+		if (context == owner || AccessIsBaseOf(owner, context)) return true;
+	return false;
+}
+
+// Whether a member's owner is a specialization of the same class template
+// as a class the current context can reach, without being reachable itself:
+// the member of a sibling specialization, which a replayed retained fact can
+// name but the call cannot.
+bool Analyzer::HidesSiblingSpecializationMember(EntityId owner) const
+{
+	if (owner == kNoEntity || MemberOwnerReachableFromContext(owner))
+		return false;
+	if (owner >= class_template_pattern_by_entity_.size() ||
+		class_template_pattern_by_entity_[owner] == kNoDumpEdge ||
+		class_template_pattern_by_entity_[owner] >= class_templates_.size())
+		return false;
+	const ClassTemplatePattern& pattern =
+		class_templates_[class_template_pattern_by_entity_[owner]];
+	for (std::size_t i = 0; i < pattern.specialization_bindings.size(); ++i)
+	{
+		const EntityId sibling = EntityOf(
+			program_->bindings[pattern.specialization_bindings[i]].type);
+		if (sibling != kNoEntity && sibling != owner &&
+			MemberOwnerReachableFromContext(sibling)) return true;
+	}
+	return false;
+}
+
+// How two candidates compare on one argument: 1 when the left candidate's
+// conversion is better, -1 when worse, 0 when neither.  Rank decides first;
+// among derived-to-base conversions the shorter path, then the user-defined
+// conversion facts, then the less qualified target.
+int Analyzer::CompareCandidateArgument(
+	const std::vector<ConversionRank>& ranks,
+	const std::vector<std::size_t>& base_distances,
+	const std::vector<CallConversionFact>& conversions,
+	const std::vector<BindingId>& candidates, std::size_t left,
+	std::size_t right, std::size_t a, std::size_t arity,
+	std::size_t explicit_arity, bool object) const
+{
+	const ConversionRank left_rank = ranks[left * arity + a];
+	const ConversionRank right_rank = ranks[right * arity + a];
+	if (left_rank != right_rank) return left_rank < right_rank ? 1 : -1;
+	const std::size_t left_distance = base_distances[left * arity + a];
+	const std::size_t right_distance = base_distances[right * arity + a];
+	if (left_rank == CONVERSION_DERIVED_TO_BASE &&
+		left_distance != right_distance)
+		return left_distance < right_distance ? 1 : -1;
+	if (a < (object ? 1u : 0u)) return 0;
+	const std::size_t argument = a - (object ? 1u : 0u);
+	const int preference = CompareCallConversions(
+		conversions[left * explicit_arity + argument],
+		conversions[right * explicit_arity + argument]);
+	if (preference != 0 || left_rank != CONVERSION_DERIVED_TO_BASE)
+		return preference;
+	return CompareDerivedToBaseQualification(
+		CandidateParameterType(candidates[left], argument),
+		CandidateParameterType(candidates[right], argument));
+}
+
+// The text of an ambiguity diagnostic: the function and how many candidates
+// tied.
+std::string Analyzer::AmbiguousOverloadDetail(
+	const std::vector<BindingId>& candidates) const
+{
+	std::string detail = "ambiguous overload";
+	if (!candidates.empty())
+		detail += " for " + program_->names.Get(
+			program_->bindings[candidates[0]].name) + " among " +
+			std::to_string(candidates.size()) + " candidates";
+	return detail;
+}
+
+// The owner and naming classes of an access diagnostic, rendered as types.
+std::string Analyzer::OwnerAndNamingTypes(BindingId selected,
+	EntityId naming_class) const
+{
+	const EntityId owner = program_->bindings[selected].member_owner;
+	return " owner-type=" + (owner == kNoEntity ? std::string("-") :
+			program_->RenderType(program_->entities[owner].type)) +
+		" naming-type=" + (naming_class == kNoEntity ? std::string("-") :
+			program_->RenderType(program_->entities[naming_class].type));
+}
+
+// The declared type of a candidate's explicit parameter, or no type past
+// its declared parameters.
+TypeId Analyzer::CandidateParameterType(BindingId candidate,
+	std::size_t argument) const
+{
+	const TypeId type = GetFunction(candidate).type;
+	if (argument >= program_->types.Get(type).parameter_count) return kNoType;
+	return program_->types.Parameters(type)[argument];
+}
+
+// Two derived-to-base conversions of equal depth that differ only in the
+// qualification of the pointee or referent: the less qualified target is
+// the better sequence ([over.ics.rank]), so `f(B*)` beats `f(const B*)` for
+// a `D*` argument.  1 prefers the left parameter, -1 the right, 0 neither.
+int Analyzer::CompareDerivedToBaseQualification(TypeId left,
+	TypeId right) const
+{
+	if (left == kNoType || right == kNoType) return 0;
+	const TypeRecord& left_outer = program_->types.Get(
+		program_->types.RemoveTopCv(left));
+	const TypeRecord& right_outer = program_->types.Get(
+		program_->types.RemoveTopCv(right));
+	if (left_outer.kind != right_outer.kind ||
+		(left_outer.kind != TYPE_POINTER &&
+		 left_outer.kind != TYPE_LVALUE_REFERENCE &&
+		 left_outer.kind != TYPE_RVALUE_REFERENCE)) return 0;
+	const TypeId left_target = left_outer.child;
+	const TypeId right_target = right_outer.child;
+	if (program_->types.RemoveTopCv(left_target) !=
+		program_->types.RemoveTopCv(right_target)) return 0;
+	const TypeRecord& left_record = program_->types.Get(left_target);
+	const TypeRecord& right_record = program_->types.Get(right_target);
+	const std::uint8_t left_cv =
+		left_record.kind == TYPE_QUALIFIED ? left_record.cv : CV_NONE;
+	const std::uint8_t right_cv =
+		right_record.kind == TYPE_QUALIFIED ? right_record.cv : CV_NONE;
+	if (left_cv == right_cv) return 0;
+	if ((left_cv & ~right_cv) == 0) return 1;
+	if ((right_cv & ~left_cv) == 0) return -1;
+	return 0;
 }
 
 int Analyzer::CompareImplicitObjectBindings(ValueCategory category,

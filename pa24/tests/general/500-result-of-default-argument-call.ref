@@ -1,4 +1,4 @@
-declare function @B_H___operator__(%arg0 : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1BI1HEclEDpOT_, inline_hint=yes]
+declare function @B_H___operator__(%arg0 : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1BI1HEclIJEEEvDpOT_, inline_hint=yes]
 
 function @use(%value : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong, object=_Z3useR1BI1HE] {
   slot $value : ptr

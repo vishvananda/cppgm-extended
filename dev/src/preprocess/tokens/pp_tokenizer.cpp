@@ -501,6 +501,18 @@ private:
 		return phase1_pending_.front();
 	}
 
+	const LocatedCodePoint& PeekPhase1(std::size_t offset)
+	{
+		while (phase1_pending_.size() <= offset)
+		{
+			if (!phase1_pending_.empty() &&
+				phase1_pending_.back().value == kEndOfFile)
+				return phase1_pending_.back();
+			phase1_pending_.push_back(PullPhase1());
+		}
+		return phase1_pending_[offset];
+	}
+
 	LocatedCodePoint PullUCN()
 	{
 		const LocatedCodePoint current = TakePhase1();
@@ -517,16 +529,17 @@ private:
 			suppress_ucn_once_ = next == '\\';
 			return current;
 		}
-		const int marker = TakePhase1().value;
-		const int digits = marker == 'u' ? 4 : 8;
+		const int digits = next == 'u' ? 4 : 8;
+		// A backslash whose hex digits do not follow is not a universal
+		// character name; it stays a backslash (a comment may spell "\u{...}",
+		// a literal is diagnosed when its escapes are read).
+		for (int i = 0; i < digits; ++i)
+			if (!IsHexDigit(PeekPhase1(static_cast<std::size_t>(i) + 1).value))
+				return current;
+		TakePhase1();
 		std::uint32_t value = 0;
 		for (int i = 0; i < digits; ++i)
-		{
-			const int digit = TakePhase1().value;
-			if (!IsHexDigit(digit))
-				ThrowLexicalSourceError("invalid universal character name");
-			value = (value << 4) | HexValue(digit);
-		}
+			value = (value << 4) | HexValue(TakePhase1().value);
 		if (value > 0x10FFFF || (value >= 0xD800 && value <= 0xDFFF) ||
 			(value < 0xA0 && value != '$' && value != '@' && value != '`'))
 			ThrowLexicalSourceError("invalid universal character value");
@@ -552,7 +565,9 @@ private:
 
 	PhysicalCursor physical_;
 	FixedQueue<LocatedCodePoint, 2> physical_pending_;
-	FixedQueue<LocatedCodePoint, 1> phase1_pending_;
+	// A universal character name is recognised by lookahead: the marker and
+	// up to eight digits.
+	FixedQueue<LocatedCodePoint, 9> phase1_pending_;
 	FixedQueue<LocatedCodePoint, 1> ucn_pending_;
 	bool suppress_ucn_once_;
 	PPTokenizationStats* stats_;

@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = call obj<1x1> @functor_int___operator___ov3(%t4, %t5)
     return i32 0
 }
-function @functor_int___operator___ov3(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK7functorIiEaSI6actualEE5pair2IS0_KT_ERS4_, inline_hint=yes] {
+function @functor_int___operator___ov3(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK7functorIiEaSI6actualEE5pair2IS0_KT_ERS5_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $retobj__1 : obj<1x1>

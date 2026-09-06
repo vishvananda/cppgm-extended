@@ -77,7 +77,7 @@ function @async_result_initiate__ov2(%initiation : ptr [pass=by_address, object_
     %t4 = call i32 @initiate_executor___operator__(%t1, %t2, %t3, 0, 0)
     return i32 %t4
 }
-function @initiate_executor___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : ptr, %__param4 : ptr) -> i32 [binding=weak, object=_ZNK8initiateI8executorEclI7handler19empty_work_functionEEiOT_OT0_P41__function_template_nondeduced_type_shapeS9_, inline_hint=yes] {
+function @initiate_executor___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : ptr, %__param4 : ptr) -> i32 [binding=weak, object=_ZNK8initiateI8executorEclI7handler19empty_work_functionEEiOT_OT0_P41__function_template_nondeduced_type_shapeSA_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

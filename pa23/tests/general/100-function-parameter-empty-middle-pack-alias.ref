@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call obj<1x1> @arg_list_factory_arg_list__lvalue_reference_to_int__lvalue_reference_to_int___reverse(%t2, %t3)
     return i32 0
 }
-function @arg_list_factory_arg_list__lvalue_reference_to_int__lvalue_reference_to_int___reverse(%a0 : ptr [pass=by_address, object_bytes=4], %args : ptr [pass=by_address, object_bytes=4]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJRiS1_EE7reverseES1_S1_DpOT_, inline_hint=yes] {
+function @arg_list_factory_arg_list__lvalue_reference_to_int__lvalue_reference_to_int___reverse(%a0 : ptr [pass=by_address, object_bytes=4], %args : ptr [pass=by_address, object_bytes=4]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJRiS1_EE7reverseIJEEES0_S1_S1_DpOT_, inline_hint=yes] {
   slot $a0 : ptr
   slot $args : ptr
   slot $retobj__1 : obj<1x1>
@@ -52,7 +52,7 @@ function @arg_list_factory_arg_list__lvalue_reference_to_int___reverse(%a0 : ptr
     %t6 = call obj<1x1> @arg_list_factory_arg_list___reverse(%t3, %t5)
     return obj<1x1> $retobj__1
 }
-function @arg_list_factory_arg_list___reverse(%reversed_args : ptr [pass=by_address, object_bytes=4], %reversed_args__pack2 : ptr [pass=by_address, object_bytes=4]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJEE7reverseIJRiS2_EEES0_DpOT_, inline_hint=yes] {
+function @arg_list_factory_arg_list___reverse(%reversed_args : ptr [pass=by_address, object_bytes=4], %reversed_args__pack2 : ptr [pass=by_address, object_bytes=4]) -> obj<1x1> [binding=weak, object=_ZN16arg_list_factoryI8arg_listJEE7reverseIJRiS3_EEES0_DpOT_, inline_hint=yes] {
   slot $reversed_args : ptr
   slot $reversed_args__pack2 : ptr
   slot $retobj__1 : obj<1x1>

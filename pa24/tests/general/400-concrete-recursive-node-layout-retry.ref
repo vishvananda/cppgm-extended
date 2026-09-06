@@ -24,7 +24,7 @@ function @boost__container__c_recursive_slist___m_fn2(%this : ptr [object_bytes=
     call void @boost__container__de_boost__container____cppgm_class_template_identity_3_8_0__boost____cppgm_class_template_identity_36_78_0___m_fn5(%t2)
     return void
 }
-function @boost__container__de_boost__container____cppgm_class_template_identity_3_8_0__boost____cppgm_class_template_identity_36_78_0___m_fn5(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5boost9container2deINS0_1kI15recursive_slistEENS_2cyINS_8bhtraitsINS0_9base_nodeIS3_EENS_2asIPvEEEEEEE5m_fn5EDpOT_, inline_hint=yes] {
+function @boost__container__de_boost__container____cppgm_class_template_identity_3_8_0__boost____cppgm_class_template_identity_36_78_0___m_fn5(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5boost9container2deINS0_1kI15recursive_slistEENS_2cyINS_8bhtraitsINS0_9base_nodeIS3_EENS_2asIPvEEEEEEE5m_fn5IJEEEvDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $dh : ptr
 

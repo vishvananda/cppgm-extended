@@ -416,6 +416,25 @@ std::uint32_t NextDependentResultEdge(
 	return edge;
 }
 
+bool SpellsDecltypeResult(const SyntaxArena& arena,
+	const FunctionTemplatePattern& pattern)
+{
+	if (pattern.specifiers == kNoNode) return false;
+	for (std::uint32_t edge = arena.FirstEdge(pattern.specifiers);
+		edge != kNoEdge; edge = arena.NextEdge(edge))
+	{
+		// The parser keeps a decltype result either as its own specifier or
+		// as a decl-specifier that carries the expression.
+		const NodeId child = arena.EdgeChild(edge);
+		if (arena.IsTag(child, ::cppgm::syntax::STAG_DECLTYPE_SPECIFIER) ||
+			(arena.IsTag(child, ::cppgm::syntax::STAG_DECL_SPECIFIER) &&
+			 arena.FirstEdge(child) != kNoEdge &&
+			 !arena.HasDirectChildTag(child,
+				::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME))) return true;
+	}
+	return false;
+}
+
 bool EquivalentDependentFunctionTemplateResults(const SyntaxArena& arena,
 	const FunctionTemplatePattern& left,
 	const FunctionTemplatePattern& right)
@@ -424,12 +443,25 @@ bool EquivalentDependentFunctionTemplateResults(const SyntaxArena& arena,
 	NodeId right_global_owner = kNoNode;
 	(void)EquivalentResultRootLookup(left, right,
 		&left_global_owner, &right_global_owner);
+	// Equivalent result roots are necessary, not sufficient: two decltype
+	// results can share a root and differ in what they wrap around it.  When
+	// one side spells the result before the declarator and the other after
+	// it, the roots are the only comparable spelling.
+	const bool left_trailing = left.trailing_return_syntax != kNoNode;
+	const bool right_trailing = right.trailing_return_syntax != kNoNode;
 	if (left.result_root_structure != kNoNode &&
 		right.result_root_structure != kNoNode)
-		return EquivalentNormalizedTemplateSyntax(arena,
+	{
+		if (!EquivalentNormalizedTemplateSyntax(arena,
 			left.result_root_structure, right.result_root_structure,
 			left.parameters, right.parameters,
-			left_global_owner, right_global_owner);
+			left_global_owner, right_global_owner)) return false;
+		if (left_trailing != right_trailing) return true;
+		// Only a decltype result can differ from its root: a named result
+		// with the same root names the same type.
+		if (!SpellsDecltypeResult(arena, left) ||
+			!SpellsDecltypeResult(arena, right)) return true;
+	}
 	std::uint32_t left_edge = NextDependentResultEdge(arena,
 		left.specifiers == kNoNode ? kNoEdge : arena.FirstEdge(left.specifiers));
 	std::uint32_t right_edge = NextDependentResultEdge(arena,
@@ -520,7 +552,8 @@ void CaptureFunctionTemplateDefaultContexts(FunctionTemplatePattern* pattern)
 }
 
 void MergeFunctionTemplateDefaults(FunctionTemplatePattern* retained,
-	const FunctionTemplatePattern& incoming, bool incoming_is_definition)
+	const FunctionTemplatePattern& incoming, bool incoming_is_definition,
+	const std::string& spelling)
 {
 	if (retained->parameters.size() != incoming.parameters.size() ||
 		retained->default_context_by_parameter.size() !=
@@ -531,7 +564,8 @@ void MergeFunctionTemplateDefaults(FunctionTemplatePattern* retained,
 	for (std::size_t i = 0; i < retained->parameters.size(); ++i)
 		if (retained->parameters[i].default_argument != kNoNode &&
 			incoming.parameters[i].default_argument != kNoNode)
-			ThrowSemanticError("duplicate default template argument");
+			ThrowSemanticError("duplicate default template argument on " +
+				spelling);
 
 	std::vector<std::uint32_t> remapped(
 		incoming.default_contexts.size(), kNoDumpEdge);
@@ -977,9 +1011,14 @@ std::size_t Analyzer::FindPriorFunctionTemplatePattern(
 			std::find(prior.friend_owners.begin(), prior.friend_owners.end(),
 				friend_owner) == prior.friend_owners.end();
 		if (distinct_hidden_owner) continue;
+		// A result the declaration spells with decltype or a trailing return
+		// is part of the template's identity even when the shape type
+		// carries no dependent result placeholder.
 		const bool dependent_result = TypeContainsDependentResultShape(
 			program_->types, program_->types.Get(prior.shape_type).child,
-			function_template_dependent_result_shape_);
+			function_template_dependent_result_shape_) ||
+			(prior.deferred_result_formation &&
+			 pattern.deferred_result_formation);
 		if (EquivalentFunctionTemplateParameterLists(*arena_, prior.parameters,
 				pattern.parameters, program_, prior.lexical_scope,
 				pattern.lexical_scope) &&
@@ -1069,8 +1108,10 @@ void Analyzer::MergeFunctionTemplatePatternIntoPrior(std::size_t prior_index,
 		prior.trailing_return_syntax != kNoNode))
 		InheritFunctionTemplateResultLookups(prior, pattern);
 	MergeFunctionTemplateSpecifierFacts(&prior, *pattern);
+	if (prior.abi_tags.empty()) prior.abi_tags = pattern->abi_tags;
 	InheritFunctionParameterMetadata(&prior, pattern, definition);
-	MergeFunctionTemplateDefaults(&prior, *pattern, definition);
+	MergeFunctionTemplateDefaults(&prior, *pattern, definition,
+		program_->names.Get(prior.name));
 	prior.required_parameter_count = std::min(
 		prior.required_parameter_count, pattern->required_parameter_count);
 	if (prior.nonthrowing != pattern->nonthrowing ||
@@ -1104,6 +1145,7 @@ void Analyzer::RegisterFunctionTemplatePattern(NodeId declaration, NodeId target
 	pattern.name = path.Last();
 	pattern.specifiers = specifiers;
 	pattern.declarator = declarator;
+	CollectFunctionAbiTagNames(target, &pattern.abi_tags);
 	pattern.definition_body = definition ?
 		FindChild(target, ::cppgm::syntax::STAG_COMPOUND_STATEMENT) : kNoNode;
 	pattern.constructor_initializer = definition ? FindChild(
@@ -1156,7 +1198,7 @@ void Analyzer::RegisterFunctionTemplatePattern(NodeId declaration, NodeId target
 				ResolveOwner(scope, path);
 		}
 		if (pattern.owner == kNoScope)
-			ThrowSemanticError("function template owner not found");
+			ThrowSemanticError("function template owner not found for " + program_->names.Get(pattern.name));
 		if (program_->EntityForScope(pattern.owner) != kNoEntity)
 			pattern.lexical_scope =
 				TemplateLexicalScope(scope, pattern.owner);
@@ -1229,7 +1271,7 @@ void Analyzer::RegisterFunctionTemplatePattern(NodeId declaration, NodeId target
 	else if (pattern.owner == kNoScope)
 		pattern.owner = ResolveOwner(scope, path);
 	if (pattern.owner == kNoScope)
-		ThrowSemanticError("function template owner not found");
+		ThrowSemanticError("function template owner not found for " + program_->names.Get(pattern.name));
 	pattern.trailing_return_syntax = FindChild(declarator, ::cppgm::syntax::STAG_TRAILING_RETURN_TYPE);
 	const bool defer_trailing_return = dependent_trailing_return;
 	const EntityId member_owner = program_->EntityForScope(pattern.owner);
@@ -1765,6 +1807,13 @@ void Analyzer::PublishFunctionTemplateSpecialMemberRole(
 		ThrowInternalCompilerError(pattern.constructor_template ?
 			"constructor template has no class owner" :
 			"conversion function template has no class owner");
+	// Evaluate the explicit specifier before taking references into the
+	// binding and function tables: the evaluation can add records to both.
+	const bool explicit_by_specifier = pattern.constructor_template &&
+		!pattern.explicit_specifier &&
+		pattern.explicit_specifier_syntax != kNoNode &&
+		EvaluateExplicitSpecifier(
+			pattern.explicit_specifier_syntax, template_scope);
 	BindingRecord& record = program_->bindings[binding];
 	FunctionInfo& function = GetMutableFunction(binding);
 	function.member_owner = program_->entities[member_owner].type;
@@ -1774,9 +1823,7 @@ void Analyzer::PublishFunctionTemplateSpecialMemberRole(
 		function.constructor = true;
 		function.explicit_constructor =
 			function.explicit_constructor || pattern.explicit_specifier ||
-			(pattern.explicit_specifier_syntax != kNoNode &&
-			 EvaluateExplicitSpecifier(
-				pattern.explicit_specifier_syntax, template_scope));
+			explicit_by_specifier;
 		function.complete_constructor = binding;
 		function.constructor_initializer = pattern.constructor_initializer;
 		if (entity_constructors_.size() <= member_owner)
@@ -2142,6 +2189,11 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 	binding_record.function_template_abi_recipe = pattern.abi_recipe;
 	program_->bindings[canonical_binding].function_template_abi_recipe =
 		pattern.abi_recipe;
+	binding_record.function_template_specialization = true;
+	program_->bindings[canonical_binding].function_template_specialization =
+		true;
+	if (!pattern.abi_tags.empty())
+		PublishFunctionAbiTags(binding, pattern.abi_tags);
 	for (std::size_t i = 0;
 		i < completed.size() && !binding_record.closure_template_specialization;
 		++i)

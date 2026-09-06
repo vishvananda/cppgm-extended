@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @add_each() -> i32 [binding=strong, object=_Z8add_eachv] {
+function @add_each() -> i32 [binding=weak, object=_Z8add_eachIJEEiv] {
   slot $st : i32
   slot $discardarr__1 : obj<4x4>
 

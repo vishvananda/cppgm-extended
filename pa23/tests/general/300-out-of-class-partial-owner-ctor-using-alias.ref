@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @shell_bool__int___shell_bool__int___ov3(%t1, 1, 2, %t2)
     return i32 0
 }
-function @shell_bool__int___shell_bool__int___ov3(%this : ptr [object_bytes=1], %first : i32, %last : i32, %alloc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5shellIbiEC1IiTnN9enable_ifIXsr7acceptsIT_EE5valueEiE4typeELi0EEES2_S2_RKi] {
+function @shell_bool__int___shell_bool__int___ov3(%this : ptr [object_bytes=1], %first : i32, %last : i32, %alloc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5shellIbiEC1IiTnN9enable_ifIXsr7acceptsIT_EE5valueEiE4typeELi0EEES3_S3_RKi] {
   slot $this : ptr
   slot $first : i32
   slot $last : i32
@@ -26,4 +26,4 @@ function @shell_bool__int___shell_bool__int___ov3(%this : ptr [object_bytes=1], 
     %t4 = load i32 %t3
     return void
 }
-alias object _ZN5shellIbiEC2IiTnN9enable_ifIXsr7acceptsIT_EE5valueEiE4typeELi0EEES2_S2_RKi = @shell_bool__int___shell_bool__int___ov3
+alias object _ZN5shellIbiEC2IiTnN9enable_ifIXsr7acceptsIT_EE5valueEiE4typeELi0EEES3_S3_RKi = @shell_bool__int___shell_bool__int___ov3

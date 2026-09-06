@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @factory___cppgm_class_template_identity_0_0_0___make(%input : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> obj<4x4> [binding=weak, object=_ZN7factoryIJ10definitionIilEEE4makeIJS1_EEE5tupleIJiEER8providerPS3_IJT_EE, inline_hint=yes] {
+function @factory___cppgm_class_template_identity_0_0_0___make(%input : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> obj<4x4> [binding=weak, object=_ZN7factoryIJ10definitionIilEEE4makeIJS1_EEE5tupleIJiEER8providerPS4_IJT_EE, inline_hint=yes] {
   slot $input : ptr
   slot $__param1 : ptr
   slot $retobj__1 : obj<4x4>

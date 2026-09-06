@@ -329,6 +329,10 @@ private:
 	void ApplyVariableObjectAttributes(NodeId declaration, BindingId binding);
 	void ApplyClassAbiTagAttributes(NodeId declaration, EntityId entity);
 	void ApplyFunctionAbiTagAttributes(NodeId declaration, BindingId binding);
+	void CollectFunctionAbiTagNames(NodeId declaration,
+		std::vector<NameId>* tags);
+	void PublishFunctionAbiTags(BindingId binding,
+		const std::vector<NameId>& tags);
 	void ApplyFunctionAsmLabel(NodeId declarator, BindingId binding);
 	std::uint32_t MakeVariableDeclarationDump(TypeId type, NameId name,
 		BindingId binding, bool local, bool has_initializer,
@@ -560,6 +564,22 @@ private:
 	void ValidateFunctionRefQualifier(BindingId binding);
 	bool RefQualifierViable(const ExpressionInfo& object,
 		const TypeRecord& function_type) const;
+	bool CompletePointeeClass(TypeId type);
+	int CompareCandidateArgument(const std::vector<ConversionRank>& ranks,
+		const std::vector<std::size_t>& base_distances,
+		const std::vector<CallConversionFact>& conversions,
+		const std::vector<BindingId>& candidates, std::size_t left,
+		std::size_t right, std::size_t a, std::size_t arity,
+		std::size_t explicit_arity, bool object) const;
+	std::string AmbiguousOverloadDetail(
+		const std::vector<BindingId>& candidates) const;
+	std::string OwnerAndNamingTypes(BindingId selected,
+		EntityId naming_class) const;
+	bool MemberOwnerReachableFromContext(EntityId owner) const;
+	bool HidesSiblingSpecializationMember(EntityId owner) const;
+	TypeId CandidateParameterType(BindingId candidate,
+		std::size_t argument) const;
+	int CompareDerivedToBaseQualification(TypeId left, TypeId right) const;
 	int CompareImplicitObjectBindings(ValueCategory category,
 		const TypeRecord& left, const TypeRecord& right) const;
 	ConversionRank MemberCandidateSelectionRank(
@@ -1087,6 +1107,10 @@ private:
 		const SpecInfo& spec, const ExpressionInfo& initializer,
 		bool preserve_runtime_recipe);
 	bool HasConstantInitializerFact(const ExpressionInfo& initializer) const;
+	TypeId StructuredSpecifierType(NodeId child, NodeId structured_name,
+		ScopeId scope, TypeId deferred_type, bool* substitution_failed);
+	bool TryAnalyzeInClassStaticInitializer(NodeId initializer, ScopeId scope,
+		TypeId type, ExpressionInfo* value);
 	ExpressionInfo AnalyzeInClassStaticInitializer(NodeId initializer,
 		ScopeId scope, TypeId type);
 	ExpressionInfo FinalizeVariableInitializer(ExpressionInfo initializer,

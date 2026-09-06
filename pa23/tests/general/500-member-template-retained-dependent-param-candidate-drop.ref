@@ -43,7 +43,7 @@ function @run_insert(%s : ptr [pass=by_address, object_bytes=1]) -> i32 [binding
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @string_like_char___insert(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertI14input_iteratorEEPcPKcT_S5_P41__function_template_nondeduced_type_shape] {
+function @string_like_char___insert(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertI14input_iteratorEEPcPKcT_S6_P41__function_template_nondeduced_type_shape] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : obj<1x1>

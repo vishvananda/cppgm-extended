@@ -17,7 +17,7 @@ function @str_char__int___str_char__int___ov3(%this : ptr [object_bytes=1], %__p
     store ptr %__param1, $__param1
     return void
 }
-function @str_char__int___take(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN3strIciE4takeIiTnN9enable_ifIXsr8is_allocIT_EE5valueEiE4typeELi0EEEvS2_, inline_hint=yes] {
+function @str_char__int___take(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN3strIciE4takeIiTnN9enable_ifIXsr8is_allocIT_EE5valueEiE4typeELi0EEEvS3_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 

@@ -3,7 +3,7 @@ function @g() -> i32 [binding=strong, object=_Z1gv] {
     %t1 = call i32 @f(1)
     return i32 %t1
 }
-function @f(%x : i32) -> i32 [binding=strong, object=_Z1fi] {
+function @f(%x : i32) -> i32 [binding=weak, object=_Z1fIJEEii] {
   slot $x : i32
 
   block ^entry:
