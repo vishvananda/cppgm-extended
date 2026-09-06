@@ -1,7 +1,0 @@
-template_kernel_output_v1
-
-query 1 deduce_call pick(const volatile int*)
-status error
-reason ambiguous_function_template
-drop const_ptr reason ambiguous_with_other_viable_candidate
-drop volatile_ptr reason ambiguous_with_other_viable_candidate

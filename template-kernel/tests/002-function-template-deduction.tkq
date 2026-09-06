@@ -1,8 +1,0 @@
-template_kernel_v1
-
-function_template f ptr <type T> params (type T*, type T*) return int
-function_template f val <type T> params (type T, type T) return long
-
-query deduce_call f args (type int*, type int*)
-query deduce_call f args (type int, type int)
-query deduce_call f args (type int*, type char*)

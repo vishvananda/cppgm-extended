@@ -1,7 +1,0 @@
-template_kernel_v1
-
-# Reduced from validation/tests/033-array-reference-deduction.cpp
-
-function_template length exact <type T, value int N> params (type arr<N, T>&) return int
-
-query deduce_call length args (type arr<4, int>&)

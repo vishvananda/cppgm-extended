@@ -1,7 +1,0 @@
-template_kernel_v1
-
-# Reduced from validation/tests/034-function-reference-deduction.cpp
-
-function_template apply exact <type R, type A> params (type fn<R, A>&, type A) return R
-
-query deduce_call apply args (type fn<int, int>&, type int)

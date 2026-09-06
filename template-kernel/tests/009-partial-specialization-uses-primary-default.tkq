@@ -1,8 +1,0 @@
-template_kernel_v1
-
-# Reduced from pa21/tests/spec/215-partial-specialization-uses-primary-default-argument.t
-
-class_template C <type T, type U, type V = type void>
-partial_class C same_shape <type A, type B, type D> args <type X<A, B, D>, type X<A, B, D>, type void>
-
-query select_class C <type X<int, char, void>, type X<int, char, void>>

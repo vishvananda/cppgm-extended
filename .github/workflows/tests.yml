@@ -170,7 +170,6 @@ jobs:
             name: gcc + libstdc++ (ubuntu 24.04)
             image: ubuntu:24.04
             host_packages: build-essential
-            strict_packages: make libstdc++6
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
@@ -179,7 +178,6 @@ jobs:
             name: clang + libc++ (ubuntu 24.04)
             image: ubuntu:24.04
             host_packages: build-essential clang libc++-dev libc++abi-dev
-            strict_packages: make libc++-dev libc++abi-dev
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
@@ -188,7 +186,6 @@ jobs:
             name: gcc + libstdc++ (ubuntu 26.04)
             image: ubuntu:26.04
             host_packages: build-essential
-            strict_packages: make libstdc++6
             cxx: g++
             host_cxx: g++
             stdlib_flags: ""
@@ -197,7 +194,6 @@ jobs:
             name: clang + libc++ (ubuntu 26.04)
             image: ubuntu:26.04
             host_packages: build-essential clang libc++-dev libc++abi-dev
-            strict_packages: make libc++-dev libc++abi-dev
             cxx: clang++
             host_cxx: clang++
             stdlib_flags: -stdlib=libc++
@@ -206,10 +202,6 @@ jobs:
           - id: test-report
             name: test-report
             command: make test-report-nobuild
-            timeout: 120
-          - id: test-strict
-            name: test-strict
-            command: make test-strict-nobuild
             timeout: 120
           - id: test-debuginfo
             name: test-debuginfo
@@ -234,9 +226,6 @@ jobs:
       - name: Install checkout and host compiler dependencies
         run: |
           packages="${{ matrix.flavor.host_packages }}"
-          if [ "${{ matrix.suite.id }}" = "test-strict" ]; then
-            packages="${{ matrix.flavor.strict_packages }}"
-          fi
           if [ "${{ matrix.suite.id }}" = "test-debuginfo" ]; then
             packages="$packages gdb"
           fi

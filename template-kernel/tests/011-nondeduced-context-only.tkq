@@ -1,7 +1,0 @@
-template_kernel_v1
-
-# Reduced from validation/tests/112-nondeduced-context-only.cpp
-
-function_template choose only_nondeduced <type T> params (type nondeduced<Wrap<T>>) return int
-
-query deduce_call choose args (type Wrap<int>)

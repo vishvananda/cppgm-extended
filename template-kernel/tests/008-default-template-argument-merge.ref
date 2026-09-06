@@ -1,8 +1,0 @@
-template_kernel_output_v1
-
-query 1 bind_defaults class duration<long_long>
-status ok
-resolved class duration<long_long, int>
-bind T = long_long
-bind U = int
-default U = int

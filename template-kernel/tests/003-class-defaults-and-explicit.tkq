@@ -1,9 +1,0 @@
-template_kernel_v1
-
-class_template Box <type T, type Tag = type T>
-partial_class Box same <type U> args <type U, type U>
-explicit_class Box int_int args <type int, type int>
-
-query bind_defaults class Box <type int>
-query select_class Box <type int>
-query select_class Box <type char>

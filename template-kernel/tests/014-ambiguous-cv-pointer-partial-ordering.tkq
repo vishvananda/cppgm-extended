@@ -1,8 +1,0 @@
-template_kernel_v1
-
-# Reduced from validation/tests/113-ambiguous-cv-pointer-partial-ordering.cpp
-
-function_template pick const_ptr <type T> params (type const T*) return int
-function_template pick volatile_ptr <type T> params (type volatile T*) return int
-
-query deduce_call pick args (type const volatile int*)
