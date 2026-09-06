@@ -198,3 +198,17 @@ receives two class-template identities).  The ordering pass was rewritten
 around it; the eight-line reducer is
 `docs/v4/reducers/nested-pair-sort.cpp`, to become a PA35 compile fixture
 once the frontend resolves it.
+
+## Phase 7: the export
+
+`scripts/export_student_repo.sh` copies the student support files at their
+paths in this tree (`dev/src/abi/itanium/abi_mangle*.h`,
+`dev/src/preprocess/tokens/*PPTokenStream.h`, `dev/src/support/not_implemented.h`,
+`dev/src/support/tool_help_text.h`, `dev/src/support/testing/test_runner.cpp`,
+`dev/src/ir_symbol_model.h`), writes the student `frontend_source_sets.mk`
+with the test runner's source id, ships the two seams scripts PA16's lane
+runs, and no longer validates a witness lane.  The scaffolds include those
+paths.  A local run exported 18,651 verified reference files (7,059 exit
+statuses, 411 retained failed-case diagnostics), packaged the reference
+bundle, and the exported `dev/` builds its scaffolds.  CI gained an
+`audits` job (the architecture audits, the file audit, `make test-harness`).
