@@ -277,6 +277,7 @@ sanitize_student_root_makefile() {
     s/^test-telemetry-off: build build-telemetry-off\n(?:\t[^\n]*\n)+\n?//m;
     s/(?:^#[^\n]*\n)*^HARNESS_TESTS = \\\n(?:\t[^\n]*\n)+\n?^test-harness:\n(?:\t[^\n]*\n)+\n?//m;
     s/\b(?:audit-[a-z-]+|build-telemetry-off|test-telemetry-off|test-harness) //g;
+    s/^\tif \[ -d pa16\/tests\/general \]; then \\\n\t\t\$\(MAKE\) -s -C pa16 test-seams \|\| touch pa16\/\.test_failed; \\\n\tfi; \\\n//m;
   ' "$@"
 }
 
@@ -765,6 +766,11 @@ finalize_reference_binaries
 # `make test` runs from a script the export forgot fails for every student.
 check_exported_script_references() {
   local missing=0 makefile dir ref path
+  # A target the export strips must leave no caller behind.
+  if grep -q 'test-seams' "$dest/Makefile" 2>/dev/null; then
+    echo "export: the root Makefile still calls test-seams" >&2
+    exit 1
+  fi
   for makefile in "$dest/Makefile" "$dest"/pa*/Makefile; do
     [ -f "$makefile" ] || continue
     dir=$(dirname "$makefile")
