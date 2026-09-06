@@ -1,7 +1,7 @@
 # PA15-PA23 Contract And Test Audit Tracker
 
 This tracker implements
-[pa15-pa23-contract-test-audit-plan.md](/home/vishvananda/cppgm/docs/pa15-pa23-contract-test-audit-plan.md).
+[pa15-pa23-contract-test-audit-plan.md](/home/vishvananda/cppgm/docs/implemented/v3/pa15-pa23-contract-test-audit-plan.md).
 
 ## Status Key
 
@@ -16,7 +16,7 @@ This tracker implements
 
 | Area | Status | Notes |
 | --- | --- | --- |
-| Feature allocation audit | drafted | See `docs/pa15-pa23-feature-allocation-audit.md`; draft canonical owners/clusters are filled and should drive the per-test audit. |
+| Feature allocation audit | drafted | See `docs/implemented/v3/pa15-pa23-feature-allocation-audit.md`; draft canonical owners/clusters are filled and should drive the per-test audit. |
 | Feature taxonomy | drafted | Draft owners, first clusters, and N3485 references are filled. Needs acceptance after scanner/test validation. |
 | Test manifest | drafted | Post-move inventory refreshed below. Needs final per-test decisions after the remaining split/reduce pass. |
 | Feature auditors | drafted | `scripts/audit_pa_feature_placement.py` scans source plus adjacent `.ref` output. It is a triage tool; human placement decisions still need per-test review. |

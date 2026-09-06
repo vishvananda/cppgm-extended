@@ -169,7 +169,7 @@ against reference-generated refs, regenerated in Phase 3).
    symlinks and the `COURSE_TEST_ROOT` Makefile logic go away.
 4. **The student handout wins.**  A README change made here is kept only
    if it makes the assignment clearer for the person implementing it, by
-   the rules in extended's `docs/pa10-37-readme-handout-audit.md`; the
+   the rules in extended's `docs/implemented/v3/pa10-37-readme-handout-audit.md`; the
    contract-and-envelope material (Quality Bar, One Design, Validation
    Modes, the LowIR absorbs/enforces lists) stays because it is exactly
    that, but each rewritten README is read once more as a handout.
@@ -209,8 +209,8 @@ against reference-generated refs, regenerated in Phase 3).
   process that survive: `ROADMAP.md`, `docs/student-export-root/`,
   `docs/assignment-numbering-migration-2026-08.md`,
   `docs/assignment-restructure-plan.md` (the deferred last step),
-  `docs/pa10-37-readme-handout-audit.md`,
-  `docs/pa10-34-assignment-cleanup-process.md`, the placement decision
+  `docs/implemented/v3/pa10-37-readme-handout-audit.md`,
+  `docs/implemented/v3/pa10-34-assignment-cleanup-process.md`, the placement decision
   records (`pa14-pa16`, `pa17-pa19`, `pa20-pa22`), the PA15-PA23
   contract-test audit plan and tracker, `performance-regression-validation.md`.
   Each kept file gets one pass to remove references to the old layout.
@@ -375,10 +375,16 @@ Four audits that must close before the assignments are combined (added
 
 ### Phase 8 (deferred): assignment combination
 
-`docs/assignment-restructure-plan.md` (fold `cpplink`, refocus the EH
-lesson, five templating lessons with an integration lesson, re-axis the
-hosted area) is not started until Phases 0 to 7b are closed and `main`
-carries the new reference.
+`docs/assignment-restructure-plan.md` combines the 38 accreted lessons into
+a 39-lesson arc: fold `cpplink`, refocus the exceptions-metadata lesson onto
+`.gcc_except_table` emission, make the LowIR band contiguous, split
+templating into five lessons with an integration lesson, and re-axis the
+hosted area onto what a test can actually verify.  It runs in two stages --
+**Stage A rewrites content in place at today's numbers, Stage B renumbers
+once when the content is settled** -- so every content review happens in a
+tree whose paths are still, and the rename is a single mechanical diff.  Not
+started until Phases 0 to 7b are closed and `main` carries the new
+reference.
 
 ## Decisions
 
