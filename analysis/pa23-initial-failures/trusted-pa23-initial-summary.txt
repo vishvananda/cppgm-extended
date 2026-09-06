@@ -1,1 +1,0 @@
-===== TEST SUMMARY: 242 / 519 TESTS PASSED =====

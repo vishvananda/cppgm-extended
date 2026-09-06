@@ -1,7 +1,0 @@
-template_kernel_v1
-
-# Reduced from pa34/tests/compile/656-forward-array-string-pair.t
-
-function_template sink forwarder <type T> params (type T&&) return int
-
-query deduce_call sink args (type arr<2, const char>&)

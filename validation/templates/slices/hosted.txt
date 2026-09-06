@@ -1,6 +1,0 @@
-tests/090-std-function-lambda-assignment.cpp
-tests/091-std-map-subscript-piecewise.cpp
-tests/092-iterator-traits-alias-chain.cpp
-tests/093-std-getline-hosted-sentinel.cpp
-tests/094-istream-string-extraction-hosted-sentinel.cpp
-tests/095-inline-lambda-export-closure-hosted-sentinel.cpp

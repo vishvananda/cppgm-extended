@@ -1,6 +1,0 @@
-template_kernel_output_v1
-
-query 1 deduce_call choose(Wrap<int>)
-status error
-reason no_viable_function_template
-drop only_nondeduced reason missing_deduced_template_argument T
