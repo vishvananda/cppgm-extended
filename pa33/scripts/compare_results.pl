@@ -11,7 +11,11 @@ if (scalar(@ARGV) != 3)
 }
 
 my $tests_root = $ARGV[2];
-my $mode = $tests_root =~ m{(?:^|/)behavior(?:/|$)} ? "mir_t" : "mir_structural_t";
+my $mode = "mir_course_t";
+if ($tests_root =~ m{(?:^|/)regression(?:/|$)})
+{
+	$mode = $tests_root =~ m{(?:^|/)behavior(?:/|$)} ? "mir_t" : "mir_structural_t";
+}
 
 exec("perl", "$repo_root/scripts/compare_results_common.pl", $mode, @ARGV)
 	or die "exec failed: $!";

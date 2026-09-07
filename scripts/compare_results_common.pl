@@ -4176,6 +4176,7 @@ my %patterns = (
 	text_t1 => qr/\.t\.1$/,
 	program_t => qr/\.t$/,
 	mir_t => qr/\.t$/,
+	mir_course_t => qr/\.t$/,
 	mir_behavior_t => qr/\.t$/,
 	mir_canonical_t => qr/\.t$/,
 	mir_structural_t => qr/\.t$/,
@@ -4273,7 +4274,7 @@ for my $test (@tests)
 			$hint = program_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix");
 		}
 
-		elsif ($mode eq 'mir_t')
+		elsif ($mode eq 'mir_t' || $mode eq 'mir_course_t')
 		{
 			my $ref = "$testbase.$ref_suffix";
 			my $my = "$testbase.$my_suffix";
@@ -4304,7 +4305,11 @@ for my $test (@tests)
 						$hint = program_output_hint($ref, $my);
 					}
 				}
-				elsif ((-f "$ref.mir") &&
+				elsif ($mode eq 'mir_course_t' && !-f "$my.mir")
+				{
+					($ok, $message) = (0, "ERROR: missing machine IR dump (.mir)");
+				}
+				elsif ($mode eq 'mir_t' && (-f "$ref.mir") &&
 				       (normalize_machine_ir(getdata("$ref.mir")) ne normalize_machine_ir(getdata("$my.mir"))))
 				{
 					($ok, $message) = (0, "ERROR: machine IR dumps do not match (.mir)");

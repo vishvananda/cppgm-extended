@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -51,6 +52,41 @@ def shell_array(script: str, name: str) -> list[str]:
 
 
 class ExportedDevMakefileTests(unittest.TestCase):
+    def test_pa33_export_keeps_course_without_maintainer_dependencies(self):
+        script = EXPORT_SCRIPT.read_text()
+        start = script.index('prune_student_pa33() {')
+        end = script.index('\n}\n', start) + len('\n}\n')
+        with tempfile.TemporaryDirectory(prefix='exported-pa33.') as temp:
+            root = Path(temp)
+            shutil.copytree(REPO_ROOT / 'pa33', root / 'pa33', symlinks=True,
+                            ignore=shutil.ignore_patterns('*.my*', '*.check*', '*.ref.program'))
+            shutil.copytree(REPO_ROOT / 'scripts', root / 'scripts', symlinks=True)
+            shutil.copy(REPO_ROOT / 'Makefile', root / 'Makefile')
+            subprocess.run(['bash', '-c', script[start:end] + '\ndest="$1"\nprune_student_pa33',
+                            'bash', str(root)], check=True)
+            pa = root / 'pa33'
+            self.assertFalse((pa / 'maintainer').exists())
+            self.assertFalse((pa / 'tests/regression').exists())
+            self.assertEqual(list(pa.rglob('*.ref.ir')), [])
+            for path in (pa / 'tests').rglob('*'):
+                if path.is_symlink():
+                    self.assertTrue(path.exists(), str(path))
+            makefile = (pa / 'Makefile').read_text()
+            for script_name in re.findall(r'\.\./scripts/[\w.-]+', makefile):
+                self.assertTrue((pa / script_name).is_file(), script_name)
+            result = subprocess.run(['make', '-n', '-C', str(pa), 'test', 'test-debuginfo',
+                                     'CPPGM_SKIP_DEV_REBUILD=1'],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn('check_cppgm_native_programs.pl', result.stdout)
+            self.assertIn('tests/debuginfo/o3', result.stdout)
+            self.assertNotIn('census', result.stdout)
+            self.assertNotIn('check_ir_envelope', result.stdout)
+            for target in ('test-regression', 'test-perf', 'test-perf-refs', 'test-variants'):
+                result = subprocess.run(['make', '-n', '-C', str(pa), target],
+                                        capture_output=True, text=True)
+                self.assertNotEqual(result.returncode, 0, target)
+
     def test_student_default_excludes_solution_regressions(self):
         script = EXPORT_SCRIPT.read_text()
         start = script.index("sanitize_student_makefile_defaults() {")

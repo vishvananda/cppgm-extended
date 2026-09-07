@@ -294,6 +294,22 @@ sanitize_student_seams_makefile() {
   fi
 }
 
+# Regenerate and verify the solution references first, then remove PA33's
+# private allocator regressions and profiling material from the student tree.
+prune_student_pa33() {
+  rm -rf "$dest/pa33/maintainer" "$dest/pa33/tests/regression"
+  find "$dest/pa33/tests" -type f -name '*.ref.ir' -delete
+  perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/pa33/Makefile"
+  perl -pi -e 's/for pa in pa24 pa32 pa33;/for pa in pa24 pa32;/' "$dest/Makefile"
+  local script
+  for script in check_cppgm_function_census \
+    check_lowir_native_structural_controls check_lowir_native_parameter_rematerialization \
+    check_lowir_native_sibling_tail check_lowir_native_scalar_query \
+    check_lowir_native_survivor_properties; do
+    rm -f "$dest/scripts/$script.pl"
+  done
+}
+
 sanitize_linux_student_scripts() {
   local run_script
   run_script="$dest/scripts/run_cpphostinterop_tests_worker.pl"
@@ -356,8 +372,8 @@ shared_scripts=(
   scripts/write_unresolved_symbol_report.pl
   scripts/expect_ir.pl
 )
-# The control lanes the assignment Makefiles run with `make test` are Perl
-# scripts named scripts/check_*.pl; every one ships.
+# Copy control checkers for reference regeneration. PA33's private checkers
+# are removed with its maintainer lanes after reference verification.
 for check_script in "$repo_root"/scripts/check_*.pl; do
   shared_scripts+=("scripts/$(basename "$check_script")")
 done
@@ -723,6 +739,8 @@ make -s -C "$dest" ref-test-debuginfo \
   CPPGM_TEST_RUNNER=1
 
 verify_regenerated_reference_outputs
+
+prune_student_pa33
 
 finalize_reference_binaries
 

@@ -29,8 +29,10 @@ Replace N with the assignment number. For PA1–PA33, pass the root through
 report before advancing. PA34 ends with `make inception`. Use the debug and
 inspection targets required by the owning handout when changing those surfaces.
 
-Default tests run the course contract. Files under `tests/regression/` describe
-the course solution's particular design and are outside your exit criteria.
+Default tests run the course contract. PA24 and PA32's `tests/regression/`
+describe the course solution's design and are outside your exit criteria.
+PA33 requires behavior, MIR bounds and debug checks, with no profiler or
+allocator-specific diagnostics.
 
 ## References
 

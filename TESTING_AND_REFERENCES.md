@@ -48,6 +48,9 @@ harnesses belong in `student.tests/` and are run explicitly.
 PA24, PA32 and PA33 also have `tests/regression/`, which pins this solution's
 particular output shapes. Maintainer `make test` runs both `test-course` and
 `test-regression`; student-export `make test` runs the course contract only.
+PA33's export omits its regression fixtures and `maintainer/` tooling entirely.
+The source-only `pa33/maintainer/Makefile` retains census, backend variants and
+Cachegrind targets; these are not PA33 student requirements.
 Keep solution-specific expectations out of graded course fixtures.
 
 ## Reference policy

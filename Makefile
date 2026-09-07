@@ -277,6 +277,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_compiler_rename_manifest.py \
 	scripts/tests/test_machine_object_host_eh_roundtrip.py \
 	scripts/tests/test_pa24_mir_modes.py \
+	scripts/tests/test_pa33_course.py \
 	scripts/tests/test_report_elf_code_shape.py \
 	scripts/tests/test_run_ab_compile_benchmark.py \
 	scripts/tests/test_validate_perf_regression.py

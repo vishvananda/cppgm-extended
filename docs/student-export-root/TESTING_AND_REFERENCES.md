@@ -35,9 +35,12 @@ Keep a real host compiler in `CPPGM_HOST_CXX` when PA34 uses
   `controls/` holds focused property checks with no complete-output oracle.
 - Personal inputs and harnesses live in `student.tests/`; run them explicitly.
   Default assignment targets do not discover that directory.
-- PA24, PA32 and PA33 also ship `tests/regression/`, which pins the course
+- PA24 and PA32 also ship `tests/regression/`, which pins the course
   solution's particular design. Those fixtures are outside your exit criteria;
   default `make test` and the through reports run the course contract.
+
+PA33 checks executable behavior, declared MIR bounds and debug locations.
+It requires no profiler, allocator statistics or exact optimized MIR match.
 
 From PA5 onward, filenames use a three-digit feature-cluster prefix
 (`100-`, `200-`, ...); PA1–PA4 use finer subgroups. Controls and solution
