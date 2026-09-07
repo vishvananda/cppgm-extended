@@ -10,7 +10,7 @@ namespace cppgm
 namespace syntax
 {
 
-std::vector<std::uint32_t> BuildBraceMatches(
+std::vector<std::uint32_t> BuildDelimiterMatches(
 	const std::vector<SyntaxToken>& tokens);
 
 }

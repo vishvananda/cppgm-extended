@@ -50,7 +50,7 @@ friend class syntax::SpecialMemberSyntax<SyntaxParser>; public:
 			: tokens_(tokens), strings_(strings), arena_(arena), stats_(stats), mock_name_convention_(mock_name_convention),
 			  position_(0), angle_stop_depth_(0), compound_depth_(0), retained_template_argument_depth_(0), template_declaration_depth_(0),
 		  name_fact_revision_(1), angle_matches_(tokens.size()),
-		  brace_matches_(BuildBraceMatches(tokens))
+		  delimiter_matches_(BuildDelimiterMatches(tokens))
 	{
 		SetNameFact("nullptr_t", kKnownType);
 	}
@@ -75,7 +75,7 @@ friend class syntax::SpecialMemberSyntax<SyntaxParser>; public:
 			name_facts_.capacity() * sizeof(std::uint8_t) +
 			name_fact_changes_.capacity() * sizeof(NameFactChange) +
 			angle_matches_.capacity() * sizeof(AngleMatch) +
-			brace_matches_.capacity() * sizeof(std::uint32_t) +
+			delimiter_matches_.capacity() * sizeof(std::uint32_t) +
 			(last_declared_names_.capacity() + parameter_names_.capacity() +
 			 active_non_type_parameter_names_.capacity() +
 			 current_classes_.capacity()) * sizeof(TextId);
@@ -715,7 +715,7 @@ private:
 	std::vector<std::uint8_t> name_facts_;
 	std::vector<NameFactChange> name_fact_changes_;
 	std::vector<AngleMatch> angle_matches_;
-	std::vector<std::uint32_t> brace_matches_;
+	std::vector<std::uint32_t> delimiter_matches_;
 		std::vector<TextId> last_declared_names_, parameter_names_, active_non_type_parameter_names_, current_classes_;
 };
 NodeId SyntaxParser::ParseDeclSpecifierSeq(bool for_type_id, std::string* first_type)
@@ -928,13 +928,6 @@ ParserAttempt SyntaxParser::TryParseParameterClause(bool speculative) {
 	}
 	while (true)
 	{
-		// A known value followed by parentheses is a call, not a parameter
-		// type. Let the enclosing declarator retry as direct initialization.
-		if (AtIdentifier() && AtOffset(1, OP_LPAREN) &&
-			!HasNameFact(tokens_[position_].spelling, kKnownType) &&
-			(HasNameFact(tokens_[position_].spelling, kKnownNonTemplate) ||
-			 HasNameFact(tokens_[position_].spelling, kKnownTemplate)))
-			return ParserAttempt(PARSER_EXPECTED_PARAMETER);
 		const NodeId parameter = arena_.Make("parameter-declaration");
 		const NodeId specifiers = ParseDeclSpecifierSeq(false);
 		if (specifiers == kNoNode)
@@ -1122,14 +1115,15 @@ NodeId SyntaxParser::ParseDeclarator(bool abstract, TextId* name, bool speculati
 		}
 		if (At(OP_LPAREN))
 		{
+			if (ParameterClauseHasValueArgument()) break;
 			const bool parameter_like = AtOffset(1, OP_RPAREN) ||
 				AtOffset(1, OP_DOTS) ||
 				(position_ + 1 < tokens_.size() &&
 					 (IsTypeSpecifierStartKind(
 						tokens_[position_ + 1].Kind()) ||
 					  StartsHostedType(position_ + 1) ||
-					  (!StartsQualifiedCallArgument() && (IsLikelyTypeIdentifier(position_ + 1) ||
-					   QualifiedStartsTypeAt(position_ + 1)))));
+					  IsLikelyTypeIdentifier(position_ + 1) ||
+					  QualifiedStartsTypeAt(position_ + 1)));
 			if (!parameter_like) break;
 			const Mark parameter_mark = Checkpoint();
 			const ParserAttempt parameters =
