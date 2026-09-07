@@ -75,3 +75,6 @@ Failed-case stdout is an informational diagnostic example, generated on Linux
 by the export and untracked here. Successful stdout and required exit-status
 sidecars remain tracked. Export validation regenerates and verifies every
 portable reference before packaging the student repository.
+CI also installs the bundle in a fresh client and exercises every exported
+reference wrapper. Publication repeats this check against the uploaded release
+URL before pushing the student repository.

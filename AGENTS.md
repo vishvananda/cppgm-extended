@@ -70,12 +70,10 @@ Validate a student export after changing shipped files or their discovery.
 ## Performance
 
 Measure changes that can affect compile time, allocation, memory or self-host
-throughput. [The performance guide](docs/performance-regression-validation.md)
-documents the macOS hardware-counter gate. When wall-time ABBA is requested,
-use immutable A/B binaries, identical frozen inputs, A/A calibration and paired
-blocks; retain every observation and verify output equality. The
-[consolidation measurement record](docs/early-assignment-consolidation-abba-validation.md)
-shows the native Linux protocol and its accepted evidence.
+throughput. `scripts/validate_perf_regression.py` provides the macOS
+hardware-counter gate. For wall-time ABBA, use immutable A/B binaries, identical
+frozen inputs, A/A calibration and paired blocks; retain every observation and
+verify output equality.
 
 ## Layout
 
