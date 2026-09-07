@@ -28,11 +28,3 @@ emits symbols in PA10. The standalone `abimangle` tool adapts normalized fact
 files into that model. Compiler stages construct typed targets and call the
 same encoder directly; the fact text format is not an internal compiler
 transport.
-
-## Numbering history
-
-The September 2026 consolidation produces the current PA1–PA34 sequence.
-[Its migration map](docs/assignment-numbering-migration-2026-09.md) links the
-previous numbering, including the retained LowIR introduction, to this course.
-The [August map](docs/assignment-numbering-migration-2026-08.md) documents an
-earlier ABI-assignment move. Historical plans retain their original numbers.

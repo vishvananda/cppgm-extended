@@ -1,8 +1,8 @@
 # Assignment feature owners
 
 This is the live feature table read by `scripts/audit_pa_feature_placement.py`.
-Owners and clusters use the current 34-assignment sequence. The [original tracker](../docs/pa15-pa23-contract-test-audit-tracker.md)
-preserves the earlier audit history in its original numbering. N3485 references refer to `n3485.txt`.
+Owners and clusters use the current 34-assignment sequence. N3485 references
+refer to `n3485.txt`.
 
 | Feature Family | Canonical Owner PA | Owner Cluster | N3485 Reference | Auditor Status | Required Detections |
 | --- | --- | ---: | --- | --- | --- |

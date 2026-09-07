@@ -2468,10 +2468,10 @@ def template_tracker_title(pas: list[str]) -> str:
 
 def template_tracker_output_path(pas: list[str]) -> str:
     if pas == ["pa18"]:
-        return "docs/pa18-template-placement-tracker.md"
+        return "obj/pa18-template-placement-tracker.md"
     if tuple(pas) == STRICT_TEMPLATE_PAS:
-        return "docs/implemented/v3/template-strict-placement-tracker.md"
-    return "docs/template-placement-tracker.md"
+        return "obj/template-strict-placement-tracker.md"
+    return "obj/template-placement-tracker.md"
 
 
 def template_tracker_scope_label(pas: list[str]) -> str:
