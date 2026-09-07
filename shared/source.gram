@@ -7,7 +7,7 @@
 #   foo+       means 1 or more foo
 #   (foo)      groups symbols together for application of the above operators
 #
-# PA10 and later cppgm++ frontend assignments use this same source grammar. The
+# PA5 and later cppgm++ frontend assignments use this same source grammar. The
 # grammar defines accepted source syntax only; each assignment README defines the
 # semantic and lowering subset required at that stage.
 #
@@ -616,7 +616,7 @@ id-expression:
 
 unqualified-id:
 	TT_IDENTIFIER
-	simple-template-id
+	template-id
 	operator-function-id
 	conversion-function-id
 	literal-operator-id
@@ -641,6 +641,11 @@ nested-name-specifier-suffix:
 
 simple-template-id:
 	template-name OP_LT template-argument-list? close-angle-bracket
+
+template-id:
+	simple-template-id
+	operator-function-id OP_LT template-argument-list? close-angle-bracket
+	literal-operator-id OP_LT template-argument-list? close-angle-bracket
 
 template-argument-list:
 	template-argument (OP_COMMA template-argument)*

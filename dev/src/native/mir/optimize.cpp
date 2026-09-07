@@ -2301,11 +2301,11 @@ void optimize_function(MirFunction & function, int level, Stats * stats)
     ++stats->functions;
     stats->input_instructions += instruction_count(function);
   }
-  // PA29 MIR encoded scalar floating returns only through the ABI metadata and
-  // an implicit xmm0 convention.  Make that dependency explicit at the PA38
+  // PA24 MIR encoded scalar floating returns only through the ABI metadata and
+  // an implicit xmm0 convention.  Make that dependency explicit at the PA33
   // optimization boundary so liveness, copy propagation, MIR serialization,
   // and native encoding all consume the same return fact.  O0 remains the
-  // preserved PA29 representation.
+  // preserved PA24 representation.
   make_scalar_float_returns_explicit(function, stats);
   if(level >= 2) {
     select_medium_copy_chunks(function, stats);

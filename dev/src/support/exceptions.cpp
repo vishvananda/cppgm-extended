@@ -1,6 +1,5 @@
 #include "abi/itanium/abi_mangle_errors.h"
 #include "compiler_object/errors.h"
-#include "cy86/errors.h"
 #include "lowering/support/errors.h"
 #include "lowir/optimize/errors.h"
 #include "native/errors.h"
@@ -269,37 +268,6 @@ void ThrowCompilerObjectResourceLimit(const char* message)
 void ThrowCompilerObjectInternalError(const char* message)
 {
 	throw InternalCompilerError(message, CompilerErrorDomain::COMPILER_OBJECT);
-}
-
-}
-}
-
-namespace cppgm {
-namespace cy86_errors {
-
-void ThrowSource(const char* message)
-{
-	throw SourceError(message, CompilerErrorDomain::CY86);
-}
-
-void ThrowSource(const std::string& message)
-{
-	throw SourceError(message, CompilerErrorDomain::CY86);
-}
-
-void ThrowInputOutput(const std::string& message)
-{
-	throw InputOutputError(message, CompilerErrorDomain::CY86);
-}
-
-void ThrowResourceLimit(const char* message)
-{
-	throw ResourceLimitError(message, CompilerErrorDomain::CY86);
-}
-
-void ThrowInternal(const char* message)
-{
-	throw InternalCompilerError(message, CompilerErrorDomain::CY86);
 }
 
 }

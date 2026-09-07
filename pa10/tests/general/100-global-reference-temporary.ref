@@ -1,0 +1,7 @@
+global @__ref_tmp__i : i32 [binding=internal] = 3
+global @i : ptr [binding=strong, object=_Z1i] = addr @__ref_tmp__i
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

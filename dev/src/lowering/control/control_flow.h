@@ -34,7 +34,7 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (derived.function_->blocks.size() >= kNoLowId)
-			ThrowLoweringResourceLimit("too many PA15 LowIR blocks");
+			ThrowLoweringResourceLimit("too many PA10 LowIR blocks");
 		const BlockId block = static_cast<BlockId>(
 			derived.function_->blocks.size());
 		derived.function_->blocks.push_back(

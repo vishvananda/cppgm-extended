@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA29 `lowir2native` binary.
+// Student-facing scaffold for the PA24 `lowir2native` binary.
 
 #include "support/exception_types.h"
 #include "native/errors.h"

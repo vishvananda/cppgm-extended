@@ -10,7 +10,7 @@ CPPGM_MAKE_LOW_JOB_LIMIT = $(shell \
 	limit='$(CPPGM_MAKE_JOB_LIMIT)'; cpus='$(DEFAULT_BUILD_JOBS)'; \
 	if [ "$$limit" -gt 0 ] 2>/dev/null && [ "$$cpus" -gt "$$limit" ] 2>/dev/null; then echo 1; else echo 0; fi)
 ifeq ($(CPPGM_MAKE_LOW_JOB_LIMIT),1)
-$(warning make is limited to -j$(CPPGM_MAKE_JOB_LIMIT) on a $(DEFAULT_BUILD_JOBS)-core machine; large compiler builds, especially self-host and PA39/inception builds, will be very slow. Omit -j or use -j$(DEFAULT_BUILD_JOBS).)
+$(warning make is limited to -j$(CPPGM_MAKE_JOB_LIMIT) on a $(DEFAULT_BUILD_JOBS)-core machine; large compiler builds, especially self-host and PA34/inception builds, will be very slow. Omit -j or use -j$(DEFAULT_BUILD_JOBS).)
 endif
 endif
 endif
@@ -19,17 +19,12 @@ TARGETS = \
 	abimangle \
 	pptoken \
 	posttoken \
-	ctrlexpr \
-	macro \
+	ppexpr \
 	preproc \
-	recog \
-	lowir2cy86 \
+	lowir \
 	lowiropt \
 	lowir2native \
-	cppgm++ \
-	nsdecl \
-	nsinit \
-	cy86
+	cppgm++
 
 CXX ?= g++
 CPPGM_HOST_CXX ?= $(CXX)
@@ -59,7 +54,7 @@ GENERATED ?= $(OBJ)/generated
 BUILTIN_HOST_CONFIG = $(GENERATED)/cppgm_builtin_host_config.h
 OBJDIR = $(OBJ)/dev
 # The shared object root holds host-compiler objects only; a self-host or
-# other non-host build takes its own root (pa39 passes OBJ=../obj/pa39/...),
+# other non-host build takes its own root (pa34 passes OBJ=../obj/pa34/...),
 # so the two never mix in one tree.
 SHARED_OBJ_ROOT = $(abspath ../obj)
 CURRENT_OBJ_ROOT = $(abspath $(OBJ))

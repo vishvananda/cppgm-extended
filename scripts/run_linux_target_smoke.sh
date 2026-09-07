@@ -6,21 +6,21 @@ tool_dir="${1:-${repo_root}/dev}"
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/cppgm-linux-target-smoke.XXXXXX")"
 trap 'rm -rf "${tmpdir}"' EXIT
 
-out="${tmpdir}/ret42-linux"
+out="${tmpdir}/ret0-linux"
 
-if ! "${tool_dir}/cy86" --target linux -o "${out}" "${repo_root}/pa9/tests/100-ret42.t.1"; then
-  echo "cy86 linux target smoke failed" >&2
+if ! "${tool_dir}/lowir2native" --target linux -o "${out}" "${repo_root}/pa24/tests/strict/100-ret0.t"; then
+  echo "lowir2native linux target smoke failed" >&2
   exit 1
 fi
 
 magic="$(od -An -tx1 -N4 "${out}" | tr -d ' \n')"
 if [ "${magic}" != "7f454c46" ]; then
-  echo "cy86 linux target smoke did not produce an ELF executable" >&2
+  echo "lowir2native linux target smoke did not produce an ELF executable" >&2
   exit 1
 fi
 
 if [ ! -x "${out}" ]; then
-  echo "cy86 linux target smoke output is not executable" >&2
+  echo "lowir2native linux target smoke output is not executable" >&2
   exit 1
 fi
 

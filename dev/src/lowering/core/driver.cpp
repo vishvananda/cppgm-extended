@@ -411,7 +411,7 @@ lowering::ir::Program lowering::BuildProgram(const std::vector<lowering::Source>
 	bool complete_constructor_unwind, bool host_object_emission,
 	bool prune_unreachable_weak_functions, bool retain_local_names)
 {
-	if (sources.empty()) ThrowLoweringInvocation("no PA15 source inputs");
+	if (sources.empty()) ThrowLoweringInvocation("no PA10 source inputs");
 	if (stats) *stats = lowering::Stats();
 	lowering::ir::Program program;
 	program.host_object_emission = host_object_emission;

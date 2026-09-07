@@ -57,9 +57,9 @@ for my $test (@tests)
 	);
 	die "$test: lowiropt --stats failed\n" . read_file($stderr)
 		if $status != 0;
-	my @records = grep { /^pa37_opt_stats(?:\s|$)/ }
+	my @records = grep { /^pa32_opt_stats(?:\s|$)/ }
 		split(/\n/, read_file($stderr));
-	die "$test: expected one pa37_opt_stats record, found " .
+	die "$test: expected one pa32_opt_stats record, found " .
 		scalar(@records) . "\n" if scalar(@records) != 1;
 	my $record = $records[0];
 	my %values;

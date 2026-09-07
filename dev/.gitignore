@@ -4,11 +4,11 @@
 /abimangle
 /pptoken
 /posttoken
-/ctrlexpr
+/ppexpr
 /macro
 /preproc
 /recog
-/lowir2cy86
+/lowir
 /lowiropt
 /lowir2native
 /cppeh
@@ -42,7 +42,6 @@
 /mobjroundtrip
 /nsdecl
 /nsinit
-/cy86
 clang-template-student-metrics-plugin.dylib
 clang-template-student-metrics-plugin.so
 clang-sema-interpose-probe.dylib

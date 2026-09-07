@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA10+ `cppgm++` binary.
+// Student-facing scaffold for the PA5+ `cppgm++` binary.
 
 #include "support/exception_types.h"
 #include "support/driver_errors.h"
@@ -736,7 +736,7 @@ private:
 void report_preprocessor_stats(const string & path,
 	const cppgm::PreprocessingStats & stats)
 {
-	cerr << "pa34_preproc_stats"
+	cerr << "pa29_preproc_stats"
 		<< " file=" << path
 		<< " source_files=" << stats.source_files
 		<< " source_bytes=" << stats.source_bytes
@@ -1036,7 +1036,7 @@ void report_source_compile_stats(
 	const SourceCompileTimings & timings)
 {
 		const cppgm::semantic::Stats & semantic = stats.semantic;
-		cerr << "pa30_compile_stats"
+		cerr << "pa25_compile_stats"
 				 << " file=" << path
 				 << " source_bytes=" << stats.source_bytes
 			 << " tokens=" << semantic.tokens
@@ -1500,7 +1500,7 @@ int run_compile_driver(const DriverInvocation & invocation,
       invocation.collect_stats ? &native_stats : 0);
   }
   if(invocation.collect_stats) {
-    cerr << "pa31_object_stats"
+    cerr << "pa26_object_stats"
          << " private_object=" << (private_object ? 1 : 0)
 		 << " presentation_map_calls=" << native_stats.presentation_map_calls
 		 << " presentation_map_hits=" << native_stats.presentation_map_hits
@@ -1737,7 +1737,7 @@ int run_link_driver(const DriverInvocation & invocation,
       foreign_objects, invocation.optimization_level,
       collect_stats ? &native_stats : 0);
   if(collect_stats) {
-    cerr << "pa30_driver_stats"
+    cerr << "pa25_driver_stats"
          << " objects=" << link_stats.objects
          << " symbols=" << link_stats.symbols
          << " symbol_probes=" << link_stats.symbol_probes
@@ -1833,7 +1833,7 @@ int run_emit_ast_mode(const vector<string> & args)
     cppgm::syntax::WriteTranslationUnit(path, source, options, output,
         invocation.collect_stats ? &stats : 0);
     if(invocation.collect_stats) {
-      cerr << "pa10_stats file=" << path
+      cerr << "pa5_stats file=" << path
            << " tokens=" << stats.tokens
            << " syntax_nodes=" << stats.syntax_nodes
            << " syntax_edges=" << stats.syntax_edges
@@ -1894,7 +1894,7 @@ int run_emit_types_mode(const vector<string> & args)
     cppgm::semantic::WriteTypeView(path, source, options, output,
         invocation.collect_stats ? &stats : 0);
     if(invocation.collect_stats) {
-      cerr << "pa11_stats file=" << path
+      cerr << "pa6_stats file=" << path
            << " tokens=" << stats.tokens
            << " syntax_nodes=" << stats.syntax_nodes
            << " names=" << stats.interned_names
@@ -2052,7 +2052,7 @@ int run_emit_semantics_mode(const vector<string> & args)
     cppgm::semantic::WriteTranslationUnit(path, source, options, output,
         invocation.collect_stats ? &stats : 0);
     if(invocation.collect_stats) {
-      cerr << "pa12_stats file=" << path
+      cerr << "pa7_stats file=" << path
            << " tokens=" << stats.tokens
            << " syntax_nodes=" << stats.syntax_nodes
            << " semantic_nodes=" << stats.semantic_nodes
@@ -2279,7 +2279,7 @@ int run_emit_lowir_mode(const vector<string> & args)
 void report_lowir_semantic_stats(const cppgm::lowering::Stats & stats)
 {
 	const cppgm::semantic::Stats & semantic = stats.semantic;
-	cerr << "pa15_stats"
+	cerr << "pa10_stats"
 			 << " source_bytes=" << stats.source_bytes
 			 << " tokens=" << semantic.tokens
 			 << " scopes=" << semantic.scopes

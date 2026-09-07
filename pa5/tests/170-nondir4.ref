@@ -1,4 +1,0 @@
-preproc 1
-sof tests/170-nondir4.t
-identifier ok
-eof

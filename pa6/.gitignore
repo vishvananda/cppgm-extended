@@ -1,10 +1,8 @@
 .cproject
 .project
-tests/*.my*
-recog
-recog-fast
-recog-self-fast
-recog-debug
+tests/**/*.my*
+cppgm++
+cppgm++-debug
 *.dSYM
 tests/testin
 testout

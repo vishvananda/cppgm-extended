@@ -1,270 +1,400 @@
-## CPPGM Programming Assignment 10 (`cppgm++ --emit-ast`)
+## CPPGM Programming Assignment 10 (`cppgm++ --emit-lowir`)
 
 ### Overview
 
-Write the first `cppgm++` source-compiler mode:
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
+executes translation phases 1 through 7, parses them as PA5 translation units, applies the
+PA7 procedural semantic layer, and writes LowIR text.
 
-```sh
-cppgm++ --emit-ast -o <outfile> <srcfile1> [<srcfile2> ...]
-```
+PA10 is the point where `cppgm++` gains its first LowIR output mode. The earlier
+`--emit-ast`, `--emit-types`, and `--emit-semantics` modes remain required.
 
-The program reads one or more C++ source files, runs translation phases 1
-through 7 for each file, parses each translation unit using the PA10 syntax
-subset, and writes a deterministic text dump of the parsed syntax tree.
-
-PA10 is a syntax assignment. It replaces the PA6 recognizer boundary with a
-real tree-building parser that later assignments can consume directly. It does
-not perform type checking, overload resolution, or semantic classification.
+The goal of this assignment is to establish the compiler's real backend boundary before the
+later object-model and template milestones extend lowering further. PA10 completes the
+non-class procedural lowering stage over the current PA7 semantic boundary: it lowers
+namespace-scope functions, procedural expressions, control flow, and the supported
+scalar/pointer global state into the PA8 LowIR subset.
 
 ### Prerequisites
 
-Complete PA9 before starting PA10. You should expect to reuse:
+You should complete Programming Assignment 9 before starting this assignment.
 
-- the PA1-PA5 preprocessing and tokenization pipeline
-- the PA6 grammar and parsing approach as a starting point
-- the PA9 compiler-style `-o <outfile> <srcfile...>` command shape
+You will want to reuse:
 
-PA10 is not a new recognizer. The required deliverable is a structured AST and
-a stable text dump of that AST.
+- the preprocessing and tokenization pipeline from PA1-PA4
+- the PA5 AST as the syntax boundary
+- the PA6 declarator/type model
+- the PA7 procedural semantic analysis as the source of truth for resolved functions,
+  locals, and expressions
+- the PA8 LowIR contract
+- the PA9 typed ABI-name model and encoder
+
+The intended direction is:
+
+- PA5 provides syntax
+- PA6 provides scopes and types
+- PA7 resolves procedural expressions and calls
+- PA8 defines the backend boundary and runnable validation scaffold
+- PA9 provides ABI names from typed semantic facts
+- PA10 lowers the resolved procedural subset into LowIR
 
 ### Starter Kit
 
-The PA10 starter kit contains:
+The starter kit contains:
 
-- `README.md`, this assignment handout
-- `Makefile`, which builds `cppgm++` and runs the PA10 tests
-- `cppgm++.cpp`, a link to the editable `dev/cppgm++.cpp` entry point
+- the student-editable `../dev/cppgm++.cpp` entry point, initially seeded from the course
+  `cppgm++` scaffold and reached from this directory through the `cppgm++.cpp` symlink
+- shared `../dev/` and `../dev/src/` support code from the earlier compiler pipeline
+- a local test suite
 - the grammar for this assignment called `pa10.gram`
 - an HTML grammar explorer of `pa10.gram` in the sub-directory `grammar/`
-- `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
-- `tests/spec/`, clause-anchored syntax tests
-- `tests/general/`, broader parser tests
-- checked-in `.ref` and `.ref.exit_status` files used as the oracle
+- checked-in golden output files under `tests/`
+- a checked-in local test suite under `tests/`
 
-Your main editable file is `dev/cppgm++.cpp`. You may add or change other
-implementation files under `dev/` as needed. Do not edit the test inputs,
-reference outputs, harness scripts, or grammar files unless course staff
-explicitly asks for that.
+The provided scaffold and shared support files establish the driver shape and previous
+frontend modes. They do not implement the PA10 source-to-LowIR lowering work.
 
-The starter `dev/cppgm++.cpp` is a command-line scaffold for the long-lived
-`cppgm++` binary. It establishes the expected mode flags and help path; the AST
-parser, AST data model, and AST output behavior are your assignment work.
+The supplied reference tools are available for inspection and reference
+regeneration. The checked-in `.ref` files are the default grading oracle.
 
-There is no required `cppgm++-ref` binary for PA10. The checked-in
-reference files under `tests/` are the grading oracle.
+### Driver Surface For This Assignment
 
-### Build And Test Commands
-
-From the `pa10/` directory:
-
-```sh
-make
-make test
-```
-
-`make` builds `cppgm++`. `make test` runs the local PA10 suite.
-
-### Required Driver Surface
-
-PA10 requires:
+Previously required:
 
 - `--emit-ast`
-- `-o <outfile>`
-- one or more source-file operands
-
-The following modes and driver features are not part of PA10:
-
 - `--emit-types`
 - `--emit-semantics`
+- `-o <outfile>`
+
+New in PA10:
+
 - `--emit-lowir`
-- native compile or link driver behavior such as `-c`, `-E`, `-I`, `-L`, or
-  `-l`
-- hosted-toolchain query flags such as `--version`, `-v`, `-dumpmachine`, or
-  `-print-search-dirs`
+- `-O0` as the unoptimized LowIR test mode
 
-Behavior is undefined unless the command line has this form:
+No practical compile/link driver flags are introduced here yet. That later
+surface starts in PA9.
 
-```sh
-cppgm++ --emit-ast -o <outfile> <srcfile1> [<srcfile2> ...]
-```
+### Input / Command-Line Arguments
 
-### Input Contract
+The same as PA7 `cppgm++ --emit-semantics`, with the new LowIR emit mode. The PA10 test mode is unoptimized LowIR generation. `make test` passes `--emit-lowir -O0`
+through the harness, so individual test files do not spell those flags themselves.
 
-The authoritative source syntax is the shared `cppgm++` source grammar, exposed
-for this assignment as `pa10.gram`. The grammar defines accepted syntax only;
-the PA10 AST-output requirements are defined by the Required Features and Out Of
-Scope sections below.
+Behaviour is undefined unless the command-line arguments match:
 
-The grammar uses the same token vocabulary and extended BNF operators as the
-PA6 grammar. Where the grammar still needs a syntactic name category before
-full semantic lookup exists, the PA6 mock-name convention remains course-defined
-scaffolding for this assignment. PA10 should preserve those names in structured
-syntax nodes instead of treating the original source text as an opaque span.
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-The shared grammar intentionally includes syntax whose semantic meaning is added
-by later assignments. PA10 is responsible for structured syntax preservation,
-not for deciding whether a later semantic or lowering stage would accept the
-program.
+with the same relaxations as PA7.
 
-Behavior is undefined for input that:
-
-- does not match `pa10.gram`
-- requires semantic disambiguation beyond the PA10 requirements
-- depends on ill-formed-program diagnostics that PA10 is not required to issue
-
-If this README and `pa10.gram` disagree about accepted source syntax, use
-`pa10.gram`.
+Accepting `--emit-lowir` without an explicit `-O0` as the same unoptimized mode is fine,
+but optimized LowIR output is not part of PA10.
 
 ### Output Format
 
-On success, `cppgm++` writes the AST dump to `<outfile>`.
+`cppgm++` shall write LowIR text to `<outfile>`.
 
-The first line is:
+The authoritative LowIR definition is `../pa8/lowir.md`. PA10 only needs the procedural
+subset of that IR, but it must emit valid PA8 LowIR.
 
-```text
-<n> translation units
-```
+Example:
 
-where `<n>` is the number of source files on the command line.
+    function @main() -> i64 {
+      block ^entry:
+        return i64 0
+    }
 
-For each translation unit, in command-line order, the output contains:
+PA10 writes a single concatenated LowIR program consisting of:
 
-```text
-start translation unit <k>
-...
-end translation unit
-```
+- zero or more `global` definitions
+- zero or more `function` definitions
 
-where `<k>` is the 1-based translation-unit index.
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
+in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa8/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Externally meaningful C++ symbols must be produced through PA9's shared typed
+ABI encoder. Build the encoder target from resolved declarations and types;
+the ABI fact-file parser is a standalone-tool adapter and is not part of the
+source-to-LowIR path.
 
-Between those wrapper lines, write a deterministic line-oriented tree dump
-rooted at:
+The in-memory LowIR program uses compact semantic identity. Assign each
+top-level symbol one `SymbolId`, store its presentation spelling once through a
+program `StringId`, and use that `SymbolId` in declarations, definitions,
+operands, structured-global addresses, and alias targets. Render the spelling
+only when writing LowIR text or a diagnostic; do not copy an owning symbol name
+into each record or reference.
 
-```text
-translation-unit
-```
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
 
-The dump must use explicit syntax nodes for supported constructs. The checked-in
-`.ref` files define the exact indentation, ordering, spelling, and leaf-token
-format expected by the tests. Common node families include:
+PA10 is still a purely procedural lowering stage. Its LowIR output should not include
+class/object-model helper definitions such as synthesized constructors, destructors, copy
+helpers, or class-lifetime startup/shutdown hooks. Tests that require those belong in PA11
+or later.
 
-- declarations such as `empty-declaration`, `simple-declaration`,
-  `function-definition`, `class-specifier`, `enum-specifier`,
-  `template-declaration`, and `static-assert-declaration`
-- declarator and type-id syntax
-- statement nodes such as `compound-statement`, `if-statement`,
-  `return-statement`, and `expression-statement`
-- expression nodes such as `id-expression`, `literal`, `call-expression`,
-  `new-expression`, `cast-expression`, and `lambda-expression`
-- unresolved syntax nodes that later semantic assignments will classify
+The checked-in `.ref` files define the required LowIR facts for the tests. The
+test harness checks exit status, LowIR well-formedness, and the
+course-defined normalized LowIR output rather than requiring students to match every
+non-semantic helper spelling or presentation choice. What that normalization
+absorbs, and what it does not, is one list in `../pa8/lowir.md` ("What The
+Comparison Absorbs And What It Enforces"). Read it before the first failing
+fixture. In short, the comparison ignores names, order and layout, reads a
+literal by its value, and lets the operands of a commutative operation
+appear in either order; and it enforces three conventions the course fixes
+in words rather than absorbing:
 
-PA10 output is a syntax tree, not a semantic dump. For example, base specifiers
-and constructor mem-initializers should preserve the unresolved names and
-argument syntax, but PA10 does not decide whether a name denotes a base, member,
-or delegating constructor target.
+- Branch sense follows the source: a conditional branch tests the value the
+  source wrote, in the source's sense (`!=` is `cmp ne`, `!x` is
+  `cmp eq x, 0`, a bare scalar is branched on directly), and the first
+  target is the source's true path.
+- A retype is a `copy`: a conversion that keeps the bits and only changes
+  the LowIR type is written `copy <type> <value>`, not omitted and not
+  written as `convert`.
+- Instructions follow the source's evaluation order: the right operand of an
+  assignment before the address of its left, and where the language leaves
+  the order open, left to right (operands, call arguments, and the loads
+  each needs).
 
-Standard output and standard error are ignored by the automated PA10 tests.
-They may contain diagnostics or tracing text, but they are not part of the
-grading contract.
+A fixture that fails on one of those three is telling you which convention
+your output departs from; the canonical diff the harness writes beside the
+output shows where.
+
+For supported scalar conversions, PA10 may canonicalize widened integral immediates directly
+to their final LowIR literal value instead of spelling those same conversions through
+intermediate `binary shl` / `binary shr` sign-extension shells.
+
+For built-in `&&` / `||` used directly as statement conditions (`if`, `while`, `do`, `for`),
+the expected LowIR shape is direct short-circuit control flow. In that condition context,
+the compiler should branch through the operand blocks rather than first materializing a
+separate `land__*` / `lor__*` boolean slot.
+
+The generated LowIR is intended to become input for the later PA24
+`lowir2native` backend. That future native path is not the PA10 grading
+contract, but PA10 should avoid emitting LowIR that only works for this one
+text comparison.
+
+For execution feedback while implementing lowering, feed the generated
+LowIR to the supplied `lowir2native-ref -O0`. This uses the same native
+reference introduced in PA8, before your own backend is implemented.
+The output contract for this assignment remains the required LowIR facts.
 
 ### Error Handling
 
-If preprocessing, tokenization, or parsing fails, `cppgm++` must exit with
-`EXIT_FAILURE`.
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
 
-The contents of `<outfile>` are unspecified on failure. For failing tests, the
-harness compares only the named exit status, not diagnostic text and not the
-output file.
+The output file is not required to be meaningful on failure.
 
-### Required Features
+### Standard Output / Error
 
-PA10 must build structured AST nodes for the source subset that later PA11 and
-PA12 passes consume, including:
+Standard output and standard error are ignored for automated testing of `cppgm++`.
 
-- translation units in command-line order
-- namespace definitions and aliases
-- using directives and using declarations
-- alias declarations and `typedef`
-- simple declarations and function definitions
-- class, struct, union, enum, and scoped enum declarations
-- class members, access labels, bit-fields, base clauses, and constructor
-  initializer syntax
-- template declarations with type, non-type, and template-template parameters.
-  A parameter's kind belongs to that declaration: reusing a name that an
-  earlier declaration gave a different kind must not carry the earlier one
-  over, or the later parameter stops disambiguating the same way
-- dependent template arguments whose qualified operands participate in
-  parenthesized logical expressions, even when the prefix could also begin a
-  type-id
-- common template-id, explicit-instantiation, and explicit-specialization syntax
-- `static_assert`
-- declarator-derived syntax, including pointers, references, arrays, function
-  parameter clauses, exception specifications, cv/ref qualifiers, default
-  arguments, and trailing return types
-- structured `type-id` syntax in casts, `new`, `typeid`, `alignof`,
-  `sizeof(type)`, and `noexcept`
-- compound statements, selection statements, iteration statements, labels,
-  `break`, `continue`, `goto`, `return`, `throw`, and `try` / `catch`
-- literals, identifiers, parenthesized expressions, calls, subscripts, member
-  access, unary and binary operators, conditional expressions, assignments,
-  comma expressions, keyword casts, `new` / `delete`, lambdas, `typeid`,
-  `alignof`, `sizeof`, `noexcept`, and braced init lists
+You are free to use them for debugging, tracing, or diagnostic messages.
 
-Unsupported statement or expression forms inside the PA10 boundary should fail
-during parsing rather than being preserved as opaque placeholder nodes.
+### Testing
 
+Testing uses checked-in golden outputs, not a reference binary.
+
+For each test case `x`:
+
+- `cppgm++` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is validated as LowIR and compared against `x.ref` using the normalized
+  LowIR comparison (`../pa8/lowir.md`, "What The Comparison Absorbs And What
+  It Enforces", lists exactly what that comparison ignores and what it holds
+  you to)
+- `x.my.exit_status` is compared against `x.ref.exit_status`
+
+`make test` runs the checked-in local suite under `tests/` and supplies
+`--emit-lowir -O0` through the harness.
+
+The PA10 test suite uses:
+
+- `tests/general/`: the default PA10 LowIR oracle suite. These tests cover the procedural
+  lowering contract and integration cases that are validated by generated LowIR
+  text and exit status. The covered source features are namespace functions and
+  globals, procedural statements, condition declarations, scalar expressions,
+  references, arrays, pointer operations, enums, built-in casts, and resolved
+  calls over the PA7 semantic subset.
+
+PA10 is tested against the generated LowIR text.
+
+### PA10 Syntax Spec
+
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa10.gram`. The grammar defines accepted syntax only;
+the PA10 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
+
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checked-in
+`.ref` files.
+
+Because PA10 is a code-generation assignment layered directly on PA5-PA7, the
+grammar keeps parser/AST behavior stable while the `Assignment Boundary` below
+defines which already-parsed constructs PA10 must analyze and lower.
+
+Passing PA7 is necessary but not sufficient for passing PA10: an input may be syntactically
+valid for PA5 and semantically valid for PA7 and still be outside the PA10 code-generation
+subset described below.
+
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa10.gram` as the source of truth.
+
+`pa10.gram` uses the same token vocabulary and the same extended BNF operators as
+`../shared/source.gram`.
+
+If this README and `pa10.gram` appear to disagree about source syntax, treat `pa10.gram`
+as authoritative. If this README and PA8 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the required PA10 lowering slice,
+treat the `Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+
+### Assignment Boundary
+
+This PA10 milestone supports the following:
+
+- namespace-scope function definitions and declarations in a single generated program,
+  including named namespaces, C language linkage, and deduplication of repeated
+  compatible declarations
+- a required `main` definition
+- functions returning integral, pointer, or `bool` results from the supported PA7 subset
+- up to four parameters in the supported PA7 procedural type subset
+- global integral/pointer/function-pointer objects with constant initializers or zero-init,
+  including object addresses and constant array-element addresses
+- internal namespace-scope `const` scalar objects represented as
+  `storage=readonly` in LowIR when they are neither volatile nor
+  `thread_local`; volatile scalars, class objects, and thread-local objects
+  retain their respective conservative storage contracts
+- volatile scalar lvalue-to-rvalue conversions and stores represented by
+  `load volatile` and `store volatile` at the LowIR boundary, including local,
+  pointer-indirect, and class-member access; the marker belongs to the access,
+  while an adjacent nonvolatile member access remains ordinary
+- recognized memory builtins use ordinary pointer parameters and preserve the
+  function-level runtime identity and effects needed by later stages;
+  non-overlapping `memcpy` boundaries carry `alias=noalias`, while potentially
+  overlapping `memmove` boundaries do not
+- local scalar objects, scalar/function references, function pointers/references, and bounded
+  arrays in the supported PA7 procedural type subset; an omitted array bound is inferred
+  from its initializer, missing elements are zero-initialized, and excess elements are
+  rejected; an `extern` array of unknown bound may be referenced without requiring its
+  layout in the current translation unit
+- expression statements
+- `return`
+- `if` / `else`
+- condition declarations in `if` and `switch`, including the lifetime of the
+  condition-scope binding
+- `switch`
+- `while`
+- `do`
+- `for`
+- `break` / `continue`
+- direct calls to resolved non-template namespace-scope functions, including supported
+  default arguments resolved in the declaration context where the default was introduced
+- calls through function pointers and function references in the PA7 subset
+- lvalue references, including reference parameters, reference locals, reference
+  returns, and aliasing through supported calls
+- reference parameters use LowIR's shared `ptr [pass=by_address]` boundary:
+  callers preserve the required addressable-storage behavior without retaining
+  a separate source-reference passing label
+- array-to-pointer decay, subscript expressions, pointer arithmetic, one-past
+  pointer values, pointer compound assignment with element-size scaling, and
+  pointer differences measured in elements; because the byte difference of
+  two pointers into the same array is exactly divisible by the element size,
+  a positive power-of-two size may be lowered as an arithmetic right shift,
+  while other element sizes retain signed division
+- array-to-pointer and function-to-pointer decay produce an ordinary LowIR
+  `ptr` using the existing address, index, parameter, or `copy ptr` operations;
+  do not add a decay-specific unary operation or parameter-passing annotation
+- scoped and unscoped enums, enum constants, enum promotion/comparison, and
+  enum lowering
+- built-in casts over the supported scalar, function, reference, and pointer
+  types, including C-style casts, `static_cast`, and `const_cast`
+- source-to-LowIR floating scalar literals and conversions among supported
+  scalar types, including float/integer conversions needed for calls, returns,
+  comparisons, and branch conditions
+- C-style variadic function calls over supported scalar arguments, including
+  source-to-LowIR default argument promotion before the call
+- expressions:
+  - integer literals, floating literals, and `true` / `false`
+  - id-expressions naming supported locals, globals, and resolved functions
+  - `sizeof(expr)` and `sizeof(type-id)` when PA7 has resolved them
+  - unary `+`, `-`, `!`, `~`, `&`, `*`, prefix `++`, and prefix `--`
+  - postfix `++` and postfix `--`
+  - simple assignment to supported lvalues
+  - built-in arithmetic, bitwise, shift, logical, comparison, conditional, comma, and
+    subscript forms from the PA7 procedural subset
+
+As required by PA8, every LowIR `cmp` instruction produces an `i64` truth
+value. When a comparison or logical expression must be materialized as the
+course `bool` representation (`u8`) for storage, an argument, or a return,
+emit an explicit conversion from that `i64` result. A branch may consume the
+canonical comparison result directly.
+
+Compiler-generated slots and helper names must remain distinct from source
+identifiers so a source declaration cannot redirect an internal temporary.
+The source lowering path should carry compact value, slot, block, and symbol
+identities into the shared typed LowIR model. Store required display spellings
+once in the program string pool, and retain a numeric ordinal for generated
+temporaries; do not construct or hash a presentation string for every operand
+reference.
+
+The generated LowIR for this supported subset is intended to be accepted by the
+later PA24 `lowir2native` backend.
 ### Out Of Scope
 
-PA10 does not require:
+The following are explicitly out of scope for this PA10 milestone:
 
-- name lookup
-- type checking
-- overload resolution
-- conversion ranking
-- template argument deduction
-- semantic validation or constant evaluation of non-type template parameters
-  and arguments
-- complete parsing of every C++11 corner case
-- semantic resolution of `template-id` versus `<`
-- semantic resolution of ambiguous template arguments such as `foo<T*p>`
+- string literals and string-literal-backed object initialization
+- global or local initialization forms that require a richer constant-evaluation or aggregate
+  initialization layer than PA7 currently provides
+- function-local static objects and guard variables
+- class/object semantics
+- synthesized class helper output of any kind
+- template code generation
+- exception-aware control flow
+- fully general shadowing-sensitive lowering of same-name local bindings
+- native backend/runtime parity for floating-point conversions and variadic promotions
+- hosted or vendor integer extensions such as 128-bit integer types
 
-Those topics belong to later semantic and template assignments.
+Inputs that rely on those features have undefined behaviour for this milestone.
 
-### Testing And Grading Contract
+### Stage Handoff
 
-The PA10 harness discovers every `.t` file under the requested test root.
-For each test case `x.t`, it runs:
+The intended next stages are:
 
-```sh
-cppgm++ --emit-ast -o x.my x.t
-```
+- PA11: extend this procedural lowering path into the basic non-virtual object model:
+  object layout, methods, constructors/destructors, lifetime, and single inheritance
+- PA12: build on that PA11 object model with non-polymorphic value semantics:
+  copy construction/assignment, pass-by-value, return-by-value, and the common
+  user-defined operator paths needed by value types
+- PA13: add the polymorphic machinery on top of the PA11/PA12 class model:
+  virtual dispatch, vtables, and virtual destructors
+- later template-aware assignments: reuse the same procedural lowering path for instantiated
+  template code once template semantics exist
 
-and records `x.my.exit_status`.
-
-Comparison rules:
-
-- `x.my.exit_status` must match `x.ref.exit_status`.
-- If the reference status is `EXIT_FAILURE`, the test passes after the exit
-  status comparison.
-- If the reference status is `EXIT_SUCCESS`, `x.my` must match `x.ref` exactly.
-- Standard output and standard error are not compared.
-
-The local suite is split by role:
-
-- `tests/spec/` contains small tests tied to specific C++11 syntax clauses.
-  These files begin with an `N3485 focus` comment.
-- `tests/general/` contains broader parser tests, cross-feature syntax
-  combinations, and useful intake cases that are not a single-clause oracle.
+So PA10 should leave behind a reusable procedural `C++ -> LowIR` lowering path rather than
+trying to absorb class or template semantics early.
 
 ### Design Notes (Non-Normative)
 
-The simplest successful design keeps these concerns separate:
+The cleanest reuse path is to keep PA7 as the semantic source of truth and lower from that
+resolved procedural representation rather than rebuilding expression semantics again inside
+PA10.
 
-- preprocessing and token preparation
-- recursive-descent or table-driven parsing
-- AST node ownership
-- deterministic AST printing
+Useful intermediate representations include:
 
-Plan for ambiguity. Some C++ syntax cannot be classified fully until later
-semantic passes exist. PA10 should still preserve the required structure in the
-tree so later assignments can classify it without reparsing source text.
+- a resolved procedural tree shared with PA7
+- explicit object identities for globals, locals, references, arrays, and
+  function objects
+- explicit local slot/layout information
+- a centralized type-to-LowIR lowering and conversion layer
+- a stable mapping from resolved expressions to LowIR values and stack locations
+
+It is useful for the lowering layer to derive result types from the LowIR
+operation as it creates a temporary. In particular, keeping the canonical
+`i64` comparison result there avoids duplicating result-type decisions at
+each later use.

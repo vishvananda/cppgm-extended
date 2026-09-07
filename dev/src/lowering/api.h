@@ -137,8 +137,8 @@ ir::Program BuildProgram(
 	bool prune_unreachable_weak_functions = false,
 	bool retain_local_names = true);
 
-// Analyze all inputs through PA12, lower directly from the borrowed canonical
-// graph into one typed LowIR program, and serialize the PA15 assignment view.
+// Analyze all inputs through PA7, lower directly from the borrowed canonical
+// graph into one typed LowIR program, and serialize the PA10 assignment view.
 void WriteLowIR(const std::vector<Source>& sources,
 	const PreprocessingOptions& options, std::ostream& output,
 	Stats* stats = 0);

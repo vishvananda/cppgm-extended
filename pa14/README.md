@@ -1,417 +1,345 @@
-## CPPGM Programming Assignment 14 (`abimangle`)
+## CPPGM Programming Assignment 14 (`cppgm++ --emit-lowir`)
 
 ### Overview
 
-Write one C++ application called `abimangle`.
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
+executes translation phases 1 through 7, parses them as PA5/PA14 translation units,
+reuses the PA6-PA7 semantic foundation, builds on the PA10-PA13 LowIR lowering path,
+adds the first template-instantiation layer, and writes LowIR text.
 
-`abimangle` takes normalized ABI fact files as input and writes Itanium C++
-ABI mangled names. Each input case describes the semantic facts for one ABI
-name: the entity being named, owner scopes, type structure, template
-parameters, template arguments, dependent expressions, local contexts, ABI
-tags, and special ABI-name forms.
+PA14 adds the first usable template tier on top of the completed PA13 procedural/object/
+polymorphic compiler. It extends PA13 with:
 
-The input is not C++ source. This assignment is about ABI name construction
-only. It does not require C++ parsing, semantic analysis, LowIR generation,
-object emission, linking, or runtime behavior.
+- function templates
+- class templates
+- type template parameters
+- default type template arguments
+- dependent names and current-instantiation lookup in supported template bodies
+- basic function-template argument deduction for direct calls
+- on-demand template instantiation for the supported class/function cases
+- template-backed operator overloads where the non-template PA7-PA13 machinery
+  already exists
 
 ### Prerequisites
 
-Complete PA13 before starting this assignment.
+You should complete Programming Assignment 13 before starting this assignment.
 
 You will want to reuse:
 
-- the shared tool and batch-driver structure from the earlier assignments
-- the PA11-PA12 typed scope, declaration, and semantic models
-- the PA13 compiler/backend boundary
-- the Itanium C++ ABI mangling rules in `../doc/itanium-mangling.txt`
+- the preprocessing and tokenization pipeline from PA1-PA4
+- the PA5 AST as the syntax boundary
+- the PA6 declarator/type model
+- the PA7 call-resolution layer
+- the PA10-PA13 LowIR lowering path
+- the PA8 LowIR contract
+- the PA11-PA13 class metadata, constructor/destructor machinery, and polymorphic lowering
 
-The normalized facts intentionally describe language features that later
-assignments have not implemented yet. Those facts are the design vocabulary
-for the encoder; the corresponding source-language milestones are not
-prerequisites.
+The intended direction is:
 
-The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`,
-and a working host C++ compiler for building the test executable.
+- PA5 provides syntax
+- PA6 provides scope/type lookup
+- PA7 provides the procedural expression/call core
+- PA10 lowers the procedural subset
+- PA11 adds the basic non-virtual object model
+- PA12 adds the non-polymorphic value-semantics layer
+- PA13 extends that object model with scoped polymorphism
+- PA14 adds first-tier templates on top of that existing semantic/codegen stack
 
 ### Starter Kit
 
-The starter kit provides:
+The starter kit contains:
 
-- `dev/abimangle.cpp`, populated with command-line handling for `abimangle`
-- `pa14/abimangle.cpp`, a wrapper that builds the editable tool source from
-  `../dev/abimangle.cpp`
-- `pa14/Makefile`
-- `pa14/scripts/`, the ABI fact test harness
-- `pa14/tests/abi/`, the checked-in ABI fact tests and reference files
-- shared support sources and headers under `dev/src/`
-- an optional ABI fact scaffold in `dev/src/abi/itanium/abi_mangle.h`
+- a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
+  in `../dev/cppgm++.cpp`
+- the standard assignment `Makefile` and harness scripts
+- the grammar for this assignment called `pa14.gram`
+- an HTML grammar explorer of `pa14.gram` in the sub-directory `grammar/`
+- a checked-in local test suite under `tests/`
 
-Put code changes in `dev/`, especially `dev/abimangle.cpp` and reusable
-helpers under `dev/src/`. Do not edit generated `.my` files. Test inputs and
-references are part of the handout unless your instructor asks you to add or
-update tests.
+In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from the
+`cppgm++` scaffold and is the file you extend for this assignment.
 
-The assignment-facing scaffold is the typed fact data model and the declared
-parse/serialize/mangle API in `dev/src/abi/itanium/abi_mangle.h`. Keep the reusable typed
-ABI model and encoder under `dev/src/`; keep the line-oriented fact reader at
-the `abimangle` tool boundary. Later compiler stages must construct typed ABI
-targets and call the same encoder directly. They must not serialize semantic
-state to fact text and parse it back.
+The supplied reference tools are available for inspection and reference
+regeneration. The checked-in `.ref` files are the default grading oracle.
 
-Encoding tables, Itanium terminal spelling, compiler semantic lowering, and
-other implementation logic are intentionally outside the PA14 wrapper and
-test harness.
+### Input / Command-Line Arguments
 
-There is no separate reference binary in the starter kit. The checked-in
-`.ref.*` files are the oracle.
+The PA14 invocation is the unoptimized LowIR mode:
 
-### Command-Line Contract
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-Required form:
+Behaviour is undefined unless the command-line arguments match that shape, with
+the same source-file ordering and `-o` relaxations as PA13. Other `--emit-*`
+modes, driver mode, and optimized LowIR output are not part of PA14.
 
-```sh
-abimangle -o <outfile> <abi-facts-file>...
-```
+### Nondependent template bases
 
-`abimangle` shall read all input fact files in command-line order and write one
-mangled name for each input case to `<outfile>`.
-
-Each output name is written on its own line:
-
-```text
-_ZN2ns1fEiPc
-```
-
-If an input file contains multiple cases, the output preserves the case order
-from that file before moving to the next input file.
-
-### ABI Fact Files
-
-ABI fact files are line-oriented. The checked-in tests use normalized facts of
-the forms described here.
-
-Simple cases can be one line:
-
-```text
-function f
-function path ns::f
-variable ns::g
-type ptr:const:int
-typeinfo ns::C
-vtable ns::C
-```
-
-A named or class-template type with one or more ABI tags uses a typed wrapper:
-
-```text
-let-type Tagged tagged named:C tag
-typeinfo Tagged
-```
-
-The tags belong to the type's unqualified ABI name component and therefore
-also appear in its typeinfo, typeinfo-name, vtable, and VTT special symbols.
-
-The normalized builtin word `float128` denotes GNU `__float128` and uses the
-Itanium builtin type code `g`. This is an ABI fact spelling, not a requirement
-to parse `__float128` as C++ source in PA14.
-
-The normalized builtin words `complex-float`, `complex-double`, and
-`complex-longdouble` denote GNU complex floating types and use the Itanium type
-encodings `Cf`, `Cd`, and `Ce`. These are typed ABI facts; consumers must not
-construct them by appending raw mangled fragments.
-
-Integral `value` facts are interpreted according to their typed value. Signed
-negative values use the Itanium `n`-plus-magnitude spelling, including the
-minimum value of a signed type. A negative stored value for an unsigned builtin
-type denotes that type's modulo bit pattern, so `value uint -1` and
-`value ulong -1` are emitted as the maximum values for their respective target
-widths rather than as negative ABI literals.
-
-Compact member-pointer types use
-`memberptr:<owner>:<member-type>`, where the compact owner is a bare qualified
-name or type-definition identifier. Scope separators do not delimit the two
-operands, so both `memberptr:ns::C:int` and `memberptr:C:ptr:int` are valid.
-Use the multiword `member-pointer <owner> <member-type>` form when the owner
-itself needs a constructor prefix such as `named:`; the canonical fact
-serializer uses this unambiguous form. A `function-type` fact contains a result
-type followed by zero or more parameter types; an empty parameter list is
-encoded with the Itanium `v` marker.
-
-Adjacent `const` and `volatile` type wrappers describe one canonical
-cv-qualified type. Their source order does not create distinct types or
-substitution keys, and the encoder emits the canonical Itanium qualifier order.
-
-Structured cases introduce reusable facts before the final target:
-
-```text
-let-type Char template-param 0
-let-arg Char_arg type Char
-let-type Traits template std::char_traits Char_arg
-let-arg Traits_arg type Traits
-let-type Alloc template std::allocator Char_arg
-let-arg Alloc_arg type Alloc
-let-type String template std::__cxx11::basic_string Char_arg Traits_arg Alloc_arg
-function path std::getline Char_arg
-param ref String
-```
-
-Definition forms:
-
-- `let-type <id> ...`: a type fact
-- `let-arg <id> ...`: a template-argument fact
-- `let-expr <id> ...`: a dependent-expression fact
-- `let-context <id> function ...`: a local or lambda context named by a
-  function target
-- `let-context <id> raw <context-fragment>`: a local or lambda context already
-  normalized as an Itanium local-name context fragment
-- `let-entity <id> ...`: an entity fact used by entity-valued template
-  arguments and dependent expressions
-
-Definition identifiers are file-local binders. Their spelling does not
-participate in the ABI name; use a short descriptive identifier and refer to it
-consistently. Whether two uses refer to one definition or to separately
-defined structural facts can still matter to the case being described. One
-identifier may be defined only once in a case, across all `let-*` forms;
-redefining it is an invalid fact file rather than an overwrite.
-
-Template-parameter and other ABI indices are nonnegative decimal integers.
-Negative or otherwise malformed index spellings are invalid facts and must be
-rejected.
-
-Target forms:
-
-- `type ...`
-- `function ...` with optional following terminal and `param ...` lines
-- `variable ...`
-- `typeinfo ...`
-- `vtable ...`
-- `vtt ...`
-- `construction-vtable ...`
-- `tls-wrapper variable ...`
-- `thunk ... function ...`
-- `virtual-base-thunk ... function ...`
-
-The thunk target uses `thunk <this-adjust> function ...` when only `this`
-needs adjustment and `thunk <this-adjust> <result-adjust> function ...` for a
-fixed covariant-result adjustment.  A covariant result reached through a
-virtual base uses the typed form
-`thunk <this-adjust> virtual-result <fixed-adjust> <vcall-offset> function ...`.
-The fixed component is applied after loading the dynamic adjustment from the
-returned object's vtable at the supplied vcall-offset slot.  Production ABI
-symbol construction and fact-file mangling must use the same typed thunk
-target; the text form is its public scaffold serialization.
-
-Function operator terminals use semantic names, not raw Itanium terminal
-fragments:
-
-```text
-function path C::operator
-operator-terminal plus
-param int
-
-function path operator
-operator-terminal literal _digits
-param ulonglong
-
-function path C::operator
-conversion-terminal int
-```
-
-Complex function encodings may also be written as a `function encoding` target
-followed by normalized component lines. Template-id components use
-`name-template ... <arg-ref>...`; function-template arguments use
-`function-template-arg <arg-ref>`, with `function-template-prefix <key>` when
-the function-template prefix is substitutable; local entities use
-`local-context ...` or `lambda-context ...` followed by the same terminal,
-qualifier, result, and parameter lines as ordinary functions.
-
-Namespace-scope lambda closure types use
-`type namespace-lambda <source-name> [namespace-qualifier...]`. Their call
-operators may be written either as
-`function namespace-lambda <source-name> <terminal> [namespace-qualifier...]`
-or, in a `function encoding` case, as
-`namespace-lambda-context <source-name> [namespace-qualifier...]` followed by
-ordinary terminal, qualifier, result, and parameter lines. The source name is
-the ABI source-name component, such as `$_0`.
-
-`operator-terminal <name>` names the C++ operator semantically. Supported names
-include `plus`, `minus`, `address-of`, `deref`, `new`, `new-array`,
-`delete`, `delete-array`, `multiply`, `divide`, `remainder`, `bit-or`,
-`bit-xor`, assignment operators, shifts, comparisons, logical operators,
-`increment`, `decrement`, `comma`, `member-pointer`, `arrow`, `call`, and
-`index`. For operators whose Itanium terminal depends on unary versus binary
-use, the encoder chooses from the parameter count and member/non-member shape;
-explicit names such as `unary-plus`, `binary-plus`, `unary-minus`,
-`binary-minus`, `bit-and`, and `multiply` may be used when the shape should be
-unambiguous.
-
-Literal operators are written as `operator-terminal literal <suffix>`, where
-`<suffix>` is the unencoded suffix source name such as `_digits`. Conversion
-operators remain separate `conversion-terminal <type>` facts. The conversion
-type participates in ordinary substitution ordering and is also the function's
-encoded result; a separate `result` record is not emitted for a conversion
-function. Local and lambda call-operator contexts continue to use
-`operator-call` as a semantic terminal marker, not as an Itanium code.
-
-Thunks, wrappers, typeinfo, and vtable names are described as ABI facts instead
-of already-mangled names.
-
-Raw external symbols may be carried with `let-entity <id> symbol <mangled-name>`
-when a template argument or dependent expression names an entity that is already
-known by ABI symbol rather than by a source-level qualified name.
-Namespace-scope variables with internal linkage use
-`let-entity <id> internal-variable <qualified-name>`; this keeps the qualified
-entity and linkage typed until the encoder inserts the Itanium local-name marker.
-
-Template-template arguments may name either a namespace-scope template with
-`let-arg <id> template-entity <qualified-name>` or a member template of an
-already-structured owner type with
-`let-arg <id> member-template-entity <owner-type> <member-name> <substitution>`.
-Type facts may also spell a class-template specialization whose template name
-is a template-template parameter using `type template-param-template <index> <arg-ref>...`.
-Member type facts use the same structured owner rule, so `type member <owner>
-<name>` may be rooted in a dependent template specialization or builtin
-transform type such as `__remove_const<T>`.
-
-The fact format is deliberately small, but it is still an ABI entity graph. It
-should not become a second C++ parser.
-
-### Required ABI Coverage
-
-The checked-in tests are numbered from simpler names toward more complete ABI
-situations:
-
-- `100-*`: basic functions, variables, named types, builtin types, pointers,
-  arrays, member pointers, typeinfo, vtables, VTTs, and variadic forms
-- `200-*`: ABI tags, local entities, local and namespace-scope lambdas,
-  ABI-tagged special type names, operators, conversion terminals, TLS wrappers,
-  and thunks
-- `300-*`: entity-valued template arguments, template-template arguments,
-  standard substitutions, construction vtables, and dependent integral values
-- `400-*`: dependent aliases and dependent member/owner types
-- `500-*`: dependent expressions, casts, calls, type traits, `sizeof(type)`,
-  packs, and substitution of equivalent dependent expressions
-- `600-*`: nested owner contexts and standard-library-adjacent inline namespace
-  cases
-
-An implementation should handle Itanium substitution ordering, nested names,
-local-name contexts, template parameter references, template arguments,
-dependent expressions, ABI tags, special names, and every target form covered
-by the tests. Ordering remains deterministic when substitutions arise inside
-dependent expressions, qualified member-template owners, and local-name
-contexts. Multiple ABI tags use canonical order, and local entities support the
-same special-member terminals as their nonlocal counterparts. A local lambda
-used as a function-template argument retains the enclosing function as its
-local-name context; it is not represented as a named class under its call
-operator.
-
-Reference:
-
-- Local copy of Itanium C++ ABI, Chapter 5.1 "External Names (a.k.a.
-  Mangling)": [`../doc/itanium-mangling.txt`](../doc/itanium-mangling.txt)
+A base class that does not depend on a template parameter is resolved and
+validated when the class template is defined, even if no specialization of the
+derived template is ever used.  It must already name a complete, non-union,
+non-final class that is accessible from the class-template definition.  A
+friend class-template declaration grants that access before any concrete
+specialization exists.  Selecting a class-template specialization as a fixed
+base also instantiates and validates that specialization's definition; an
+error in its body cannot be hidden merely because no derived specialization is
+used.  A genuinely dependent base remains deferred until a concrete
+specialization is formed.
 
 ### Output Format
 
-The output file contains one mangled name per target, followed by a newline.
+On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
+`EXIT_SUCCESS`.
 
-For successful test cases, standard output and standard error are ignored. You
-may use them for diagnostics.
+The authoritative LowIR definition is `../pa8/lowir.md`. PA14 extends the PA13
+template-free object/polymorphism subset of that IR with the instantiated lowering needed by
+this milestone.
+
+PA14 writes a single concatenated LowIR program consisting of:
+
+- zero or more `global` definitions
+- zero or more `function` definitions
+
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
+in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa8/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
+
+Template instantiation in PA14 should produce ordinary instantiated declarations which then
+lower through the existing PA10-PA13 LowIR conventions.
+
+The test harness checks that the generated LowIR is well formed and matches the
+checked-in `.ref` files after canonicalizing presentation details that are not
+part of the assignment contract. Exact textual LowIR matching is not a PA14
+grading requirement.
 
 ### Error Handling
 
-If command-line parsing, input reading, fact parsing, or name construction
-fails, `abimangle` shall exit with failure.
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
 
-For negative tests, exact diagnostics are not the grading contract. The harness
-compares exit status first. If the reference path fails, stdout and stderr are
-diagnostic side effects rather than required output.
+The output file is not required to be meaningful on failure.
+Diagnostics are not part of the grading contract.
+
+### Standard Output / Error
+
+Standard output and standard error are ignored for automated testing of `cppgm++`.
+
+You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Run the ABI naming suite with:
+Testing uses checked-in golden outputs, not a reference binary.
 
-```sh
-make test
-```
+For each test case `x`:
 
-To run one test through the shared check target:
-
-```sh
-make check TEST=tests/abi/100-global-function.t
-```
-
-For each test case `x.t`:
-
-- `abimangle` is executed to produce `x.my`
+- `cppgm++` is executed to produce `x.my`
 - the exit status is recorded in `x.my.exit_status`
 - `x.my` is compared against `x.ref`
 - `x.my.exit_status` is compared against `x.ref.exit_status`
 
-The checked-in references are the oracle. Your tests should not invoke the host
-compiler, `nm`, `readelf`, `objdump`, or a demangler as a live ABI-name oracle,
-because host compiler and standard-library version differences can create
-noise around ABI tags, inline namespaces, and local entity numbering.
+`make test` runs the checked-in local suite under `tests/`. The suite is split
+by test role:
+
+- `tests/spec/` contains N3485/spec-anchored first-tier template tests. Each
+  provided C++ language test in this directory starts with a leading comment of the
+  form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
+  governing text in `../doc/n3485.txt`.
+- `tests/general/` contains broader first-tier generic-program tests that are
+  useful for PA14 but are not one-rule spec probes.
+
+The `make test` target runs both directories through the LowIR validator. For
+successful tests, the validator checks the reference LowIR and your generated
+LowIR for basic structural correctness, then compares the canonicalized LowIR
+against the checked-in reference. For rejected tests, the exit status is the
+checked result; exact diagnostic text is not checked.
+
+PA14 is tested against the generated LowIR text. That LowIR is intended to
+become input for the later PA24 `lowir2native` backend, but that future native
+path is not the PA14 grading contract.
+
+### Optional Student Test Ideas
+
+When adding your own tests, useful PA14 themes include class/function template
+instantiation, default type template arguments, dependent versus non-dependent
+lookup, current-instantiation names, and direct function-template calls. Keep
+any such tests within the PA14 boundary below; parameter packs,
+template-template parameters, member/friend templates, non-type template
+arguments, partial specialization, full deduction, and SFINAE behavior belong
+to later assignments.
+
+### PA14 Syntax Spec
+
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa14.gram`. The grammar defines accepted syntax only;
+the PA14 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
+
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checked-in
+`.ref` files.
+
+Template declarations, template-parameter clauses, common template-id syntax,
+and later-template syntax such as non-type template parameters were already
+preserved by PA5; PA14 is the first milestone that gives a supported
+type-parameter subset of template syntax semantic/code-generation meaning.
+
+Passing PA13 is necessary but not sufficient for passing PA14: an input may be syntactically
+valid for PA5-PA13 and code-generation-valid for PA13 and still be outside the PA14
+template slice described below.
+
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa14.gram` as the source of truth.
+
+`pa14.gram` uses the same token vocabulary and the same extended BNF operators as
+`../shared/source.gram`.
+
+If this README and `pa14.gram` appear to disagree about source syntax, treat `pa14.gram`
+as authoritative. If this README and PA8 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA14 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
 
 ### Assignment Boundary
 
-This assignment owns standalone ABI name construction from normalized ABI fact
-files.
+PA14 supports the following in addition to the PA13 subset:
 
-To complete this assignment, implement this behavior:
+- class templates whose parameters are:
+  - type parameters
+- function templates whose parameters are:
+  - type parameters
+- default template arguments for the supported type-parameter forms, including
+  defaults that refer to earlier parameters in the same template head
+- dependent type/value names in the supported declaration and expression forms
+- current-instantiation lookup in the supported class-template cases
+- `typename` and `template` disambiguators where they are needed by the PA14
+  dependent-name subset
+- explicit template-id use for supported class templates and function templates
+- explicit type arguments using the ordinary PA6 declarator/type forms,
+  including function types
+- ordinary lookup and using-declaration behavior for supported templates,
+  including repeated using-declarations of the same template and preservation
+  of an ordinarily visible function template when hidden non-template friends
+  share its name, and replay of a dependent-base using-declaration that names an
+  enumerator used by another enumerator; ordinary lookup must retain ambiguity
+  when distinct declarations are introduced by using-directives
+- basic template argument deduction for direct supported function-template calls
+  from ordinary argument types, without function-template partial ordering or
+  SFINAE
+- on-demand instantiation of the supported class-template and function-template cases,
+  including deferring unused conversion-function bodies and dependent defaulted
+  special-member dependencies, and waiting until an out-of-line owning destructor
+  is defined before demanding a completeness-dependent member destructor
+- a static data member named only in an unevaluated operand, such as the operand
+  of `sizeof`, does not demand storage or instantiate its out-of-class definition;
+  an evaluated value use or address use continues to demand the required definition
+- instantiated specializations reuse supported PA12 rvalue-reference return
+  paths and PA13 virtual-destructor lifetime without changing their value
+  category or object-lifetime behavior
+- distinct local-class identities for separate function-template
+  specializations
+- declaration-owned template-parameter scopes across nested instantiations and
+  out-of-class member-definition bodies, including definition-time rejection
+  of a declaration that redeclares an active template parameter even when the
+  member is never instantiated
+- definition-time semantic checking of unused supported function-template and
+  qualified inline member bodies, including ordinary block and condition
+  scopes and the distinction between type names and value names; class bit-field
+  members remain valid value expressions in those bodies
+- qualified class-template-ids in function declarators are parsed in their own
+  declaration context rather than being captured by an unrelated function
+  template with the same unqualified name
+- class-template instantiation preserves the class-scope rule that a name which
+  has become a typedef-name cannot be redefined by another typedef declaration
+- compatible function-template declarations and definitions in either order
+- dependent-base lookup provenance attached to the particular base-specifier,
+  so a nested class with a fixed base keeps ordinary base lookup and a local
+  class in a function template independently classifies its own dependent base
+- out-of-class definitions of nested classes declared inside the supported class templates,
+  when those nested classes stay within the already supported PA11-PA13 class/value/
+  polymorphic machinery
+- distinct nested types from different class-template specializations remain distinct in
+  overload resolution, and a dependent local type alias used by `new` resolves to the
+  concrete specialization before constructor selection
+- ordinary PA5 function declarator forms, including trailing return types, on the supported
+  function-template cases
+- instantiated specialization names that then participate in the ordinary PA11-PA13
+  class/method/codegen machinery
+- template-backed overload participation where the non-template PA7-PA13 machinery already
+  exists, including function-template operator overloads
+- ordinary member typedef hiding and injected-name lookup during re-entrant
+  class-template instantiation
 
-1. Parse normalized ABI fact files.
-2. Represent the ABI facts with enough typed structure to apply the Itanium C++
-   ABI mangling grammar.
-3. Encode the supported fact records into deterministic mangled names.
-4. Implement substitution-table behavior in host-compatible order for the
-   tested cases.
-
-If `abimangle` accepts a fact file and writes a different ABI name from the
-checked-in reference, the issue belongs in this assignment.
+Within this milestone, PA14 should produce valid LowIR for ordinary generic code over the
+supported PA13 subset. That LowIR is intended to be accepted by the later PA24
+`lowir2native` backend for the supported cases.
 
 ### Out Of Scope
 
-The following are out of scope for this assignment:
+The following are explicitly out of scope for PA14:
 
-- C++ source input
-- C++ source parsing or semantic analysis
-- LowIR generation
-- relocatable object generation or host linking
-- ELF, Mach-O, COFF, archives, shared libraries, or relocation records
-- vtable layout, RTTI object layout, exception handling, unwind metadata, or
-  host runtime behavior beyond naming the corresponding ABI entities
-- demangling
-- using host object tools or host compiler output as compiler input
+- template-template parameters
+- template parameter packs and pack expansions
+- member templates and friend templates
+- semantic support for non-type template parameters and non-type template
+  arguments
+- partial specialization
+- explicit specialization
+- full standard two-phase lookup
+- function-template partial ordering
+- substitution-failure candidate dropping and SFINAE
+- full `constexpr` evaluation
+- alias templates and variable templates
+- hosted/vendor-only template traits and intrinsics
+- template-aware virtual dispatch beyond ordinary instantiated class reuse
+- templates whose definitions rely on unsupported PA11-PA13 class/value/polymorphic features
 
-### Design Notes (Non-Normative)
-
-A simple implementation strategy is to keep three concerns separate:
-
-- fact-file parsing into typed records
-- ABI name encoding from those typed records
-- substitution-table state for one mangled name
-
-The `abi_mangle.h` scaffold follows that shape. You may extend its typed model
-and APIs as the tested ABI vocabulary grows, but the standalone tool and later
-compiler stages should share one structured encoder implementation.
-
-Substitution is part of the ABI grammar, not just text de-duplication. The
-encoder should record substitutions in the order required by the Itanium ABI
-and should compare structured facts when deciding whether a component can reuse
-an existing slot. Structural comparison must retain encoding-significant facts
-such as array bounds, integral-expression values, and type-trait operands while
-still recognizing equivalent value arguments and canonical spellings of the
-same named type.
-
-Avoid building names by assembling large ad hoc strings that are later
-reparsed. Some ABI facts contain source spellings, but type structure,
-template arguments, dependent expressions, and local contexts should remain
-structured until the encoder emits the final mangled name.
+Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The next stage is PA15, where `cppgm++ --emit-lowir` first emits compiler-owned
-symbols. PA15 must lower resolved semantic entities into the typed ABI targets
-introduced here and call the shared encoder directly. Later class, template,
-native-object, exception, and hosted-runtime assignments extend those typed
-targets rather than introducing a second mangling path.
+The intended next stage is PA15, which adds the first practical metaprogramming layer on top
+of the basic PA14 template machinery:
+
+- integral non-type template parameters and arguments
+- explicit specialization of supported class/function templates
+- integral constant-expression template arguments
+- `static_assert`-style metaprogramming support
+
+So PA14 should leave behind a clean first-tier instantiation layer rather than trying to
+solve the full template language at once. Partial specialization, SFINAE
+metaprogramming, and full `constexpr` evaluation remain later work.
+
+### Design Notes (Non-Normative)
+
+The important point is to add templates as an extension of the existing PA11-PA13 language
+behavior rather than building a separate generic-only compiler with different rules. Whether
+that reuse happens through shared code, shared data structures, or a careful
+reimplementation is up to you.
+
+The same monotonic-extension rule applies here:
+
+- PA14 should add template behavior only when the source actually uses the supported
+  template feature set
+- it should not perturb PA13 outputs for programs that remain entirely within the PA13
+  subset
+- in practice, template lookup and instantiation should stay on-demand rather than eagerly
+  changing the behavior of ordinary earlier-milestone programs that do not use the PA14
+  template subset
+
+Useful intermediate representations include:
+
+- explicit template declarations stored separately from ordinary instantiated declarations
+- template-parameter scopes that can be rebound during instantiation
+- instantiated class/function records that reuse the ordinary PA11-PA13 metadata/lowering
+- typed template arguments and bindings rather than source-text template replay
+- a clear separation between:
+  - parsing template syntax
+  - collecting template declarations
+  - deducing or resolving template arguments
+  - instantiating ordinary specialized declarations

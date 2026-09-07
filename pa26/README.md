@@ -1,273 +1,268 @@
-## CPPGM Programming Assignment 26 (`cppgm++ --emit-lowir`)
+## CPPGM Programming Assignment 26 (`cppgm++ -c` Host EH Facts)
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source
-Files, executes translation phases 1 through 7, parses them as PA10/PA26 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA15-PA25 LowIR lowering path,
-adds the PA26 advanced-language slice, and writes LowIR text.
+Write one C++ application called `cppgm++`.
 
-PA26 finishes the deferred first-tier language features that sit on top of the existing
-single-inheritance object model:
+PA26 is the host exception-handling metadata assignment. Earlier assignments
+lower C++ source to LowIR and native code; PA26 makes EH-bearing `cppgm++ -c`
+objects participate in the host C++ unwinder.
 
-- capturing lambdas
-- `std::initializer_list` semantic interoperation
-- RTTI and `typeid`
-- pointer-form `dynamic_cast`
+The main PA26 question is: does a generated relocatable object contain the host
+EH facts needed by the platform unwinder?
 
-PA26 still produces LowIR. It does not introduce a new output format.
+The required surface is the basic Itanium C++ ABI exception subset used by the
+course:
+
+- calls to host EH runtime helpers such as `__cxa_allocate_exception`,
+  `__cxa_throw`, `__cxa_begin_catch`, `__cxa_end_catch`, and
+  `_Unwind_Resume`
+- a personality reference to `__gxx_personality_v0` when a function has landing
+  pads
+- host unwind metadata and LSDA/call-site information, such as
+  `.gcc_except_table`, `.eh_frame`, and the Mach-O compact-unwind equivalent
+- type-info references needed for typed catches
+- no private course-only `cppgm_eh_*` runtime symbols in host-EH objects
+- local object binding for compiler-generated functions whose enclosing source
+  context is not ODR-mergeable, including a lambda call operator inside an
+  ordinary non-inline function
+
+PA26 is intentionally a host-object facts assignment, not a hosted standard
+library assignment and not a private linker/runtime pipeline.
 
 ### Prerequisites
 
-You should complete Programming Assignment 25 before starting this assignment.
+Complete PA25 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST as the syntax boundary
-- the PA11-PA12 semantic foundation
-- the PA15-PA25 LowIR lowering path
-- the PA13 LowIR contract
-- the PA29 native validation path
-- the PA13 LowIR -> CY86 path as an optional secondary scaffold
+- the PA8 LowIR parser and EH instruction model
+- the PA24 native backend and object-emission infrastructure
+- the PA19-PA23 source-to-LowIR surface
+- the PA25 compile-mode driver path used by `cppgm++ -c`
+- the PA9 ABI naming layer and runtime-role classification used by host object
+  emission
+
+The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`, and
+a working host C/C++ toolchain. The harness selects host tools from:
+
+- `CPPGM_HOST_CXX` or `CXX` for the host C++ compiler/link driver
+- `CPPGM_HOST_CC` or `CC` for host C helper objects
+
+If those are not set, the harness searches for common compilers such as
+`clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Object-inspection tests also
+require host symbol/object tools such as `nm`, `readelf`, and `otool` where
+available.
 
 ### Starter Kit
 
-The starter kit contains:
+The starter kit provides:
 
-- `pa26/README.md`, `pa26/Makefile`, and the test scripts in `pa26/scripts/`
-- a student-editable `dev/cppgm++.cpp` starter scaffold
-- the `pa26/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
-- shared support sources and headers under `dev/src/`
-- a local test suite under `pa26/tests/`
-- the grammar for this assignment called `pa26.gram`
-- an HTML grammar explorer of `pa26.gram` in the sub-directory `grammar/`
-- a checked-in local test suite under `tests/`
+- `dev/cppgm++.cpp`, populated from the cumulative `cppgm++` scaffold
+- the shared `dev/` sources needed by the scaffold
+- `pa26/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
+- `pa26/Makefile`
+- `pa26/scripts/`, the host-interoperability test harness
+- `pa26/tests/general/`, the PA26 tests and checked-in reference files
 
-Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
-student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
-test fixtures, comparison scripts, and checked-in reference outputs are support
-files, not implementation files to edit for normal solutions. The shared support files
-provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA26 source-to-LowIR language slice for you.
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
+shared implementation files it calls. Do not edit generated `.my` files. Test
+inputs and references are part of the handout unless your instructor asks you to
+add or update tests.
 
-Unlike PA1-PA9, there is no external reference binary for PA26. The checked-in `.ref`
-files are the default oracle.
+There is no separate PA26 reference binary in the starter kit. The checked-in
+`.ref.*` files are the oracle.
 
-### Input / Command-Line Arguments
+### Command-Line Contract
 
-Behaviour is undefined unless the command-line arguments match:
+PA26 uses compile mode:
 
-    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+```sh
+cppgm++ -c -o <objfile> <srcfile>
+cppgm++ -c --target <target> -o <objfile> <srcfile>
+cppgm++ -c -I <dir> -o <objfile> <srcfile>
+cppgm++ -c -I<dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
+```
 
-`-O0` is the PA26 test mode. Other optimization levels are later optimizer work and
-are not required for this milestone.
+`<srcfile>` is a C++ source file in the supported course language subset.
+`<target>` may be `linux` or the corresponding x86_64 Linux host triple form
+accepted by your implementation. PA26 only requires compile mode. The final link
+in the tests is performed outside `cppgm++` by the host C++ compiler driver.
 
 ### Output Format
 
-`cppgm++` shall write LowIR text to `<outfile>`.
+`cppgm++ -c` shall write one host-linker-compatible relocatable object file to
+`<objfile>`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA26 extends the PA25 lowering
-surface only by making more of the C++ source language lower into the already-defined LowIR
-family.
+The PA26 tests do not compare object bytes directly. They observe:
 
-LowIR top-level declaration/definition order is a presentation convention, not
-a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
-`function`, but the relaxed LowIR comparison canonicalizes top-level entries
-before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
-notes where internal LowIR symbol names are only a presentation tie-breaker.
-Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
-blocks, item order inside structured globals, vtable slot order, and action
-order inside generated initialization, finalization, constructor, destructor,
-and cleanup bodies.
+- `cppgm++ -c` exit status
+- host final-link exit status
+- final program exit status
+- final program standard output
+- normalized object-facts output for tests that include `.inspect.facts`
+  sidecars
 
-The generated LowIR must be well-formed and must match the checked-in `.ref` files under
-the relaxed LowIR comparison used by the harness. That comparison still checks the
-semantic LowIR shape and required IR facts, but it does not make helper metadata
-presentation or other non-semantic text details part of the student contract.
+The object-facts sidecars are part of the PA26 test surface. The shared Perl
+harness dumps platform-normalized facts such as required EH runtime imports,
+unwind/LSDA section presence, relocation classes, decoded basic LSDA facts, and
+absence of private `cppgm_eh_*` symbols.
 
 ### Error Handling
 
-If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
-generation, `cppgm++` shall `EXIT_FAILURE`.
+If preprocessing, parsing, semantic analysis, lowering, object emission, or
+output writing fails, `cppgm++` shall exit with failure.
 
-The output file is not required to be meaningful on failure.
+For negative tests, exact diagnostics are not the grading contract. The harness
+compares exit status first. If the reference compile/link path fails, stdout and
+stderr are diagnostic side effects rather than required output.
 
 ### Standard Output / Error
 
-Standard output and standard error are ignored for automated testing of `cppgm++`.
-
-You are free to use them for debugging, tracing, or diagnostic messages.
+Standard output and standard error from `cppgm++ -c` are ignored for successful
+tests. They may be used for diagnostics.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
-`cppgm++` with `--emit-lowir -O0`.
+Run the PA26 suite with:
 
-The local checked-in tests live in `tests/general/`. That directory contains
-PA26 source-to-LowIR tests for capturing lambdas, initializer-list
-interoperation, RTTI, `typeid`, `dynamic_cast`, and exception-source lowering
-interactions. PA26 has no `tests/spec/` directory because these tests focus on
-the combined language-to-LowIR contract.
+```sh
+make test
+```
 
-For each test case `x`:
+To run one test through the shared check target:
 
-- `cppgm++` is executed to produce `x.my`
-- the exit status is recorded in `x.my.exit_status`
-- `x.my` is compared against `x.ref`
-- `x.my.exit_status` is compared against `x.ref.exit_status`
+```sh
+make check TEST=tests/general/100-host-eh-same-tu-throw-catch.t
+```
 
-PA26 is tested against generated LowIR text using the relaxed LowIR comparator described
-above. A useful manual validation path is:
+The local tests live in `tests/general/`. They cover the basic host-EH fact
+surface:
 
-- feed that LowIR into PA29 `lowir2native`
-- optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+- same-translation-unit throw/catch
+- cross-translation-unit throw/catch
+- unhandled throw helper usage
+- cleanup during unwind and `_Unwind_Resume`
+- cleanup-only landing pads that resume without owning a throw helper
+- LSDA/unwind sections, runtime-helper relocation classes, and class typeinfo
+  facts used by typed catches
+- reuse of host EH runtime declarations emitted by the frontend
+- source-driven host-EH object smoke tests used to guard the backend path
+- call-site coalescing safety across unprotected unwind barriers and distinct
+  cleanup or catch continuations
 
-The shipped PA26 tests are the contract for this milestone.
+For each test anchor `x.t`, companion C++ sources are named:
 
-### PA26 Syntax Spec
+```text
+x.t.1
+x.t.2
+...
+```
 
-The authoritative source syntax is the shared `cppgm++` source grammar, exposed
-for this assignment as `pa26.gram`. The grammar defines accepted syntax only;
-the PA26 semantic and lowering requirements are defined by the Assignment
-Boundary and Out Of Scope sections below.
+Optional sidecars control or check the host flow:
 
-As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the
-checked-in `.ref` files.
+- `x.link.flags`: extra flags passed to the host link driver
+- `x.lib.*`: host-built C or C++ helper sources
+- `x.inspect.facts`: normalized host-EH object facts to dump and compare
+- `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: specialized
+  object-inspection checks that use host symbol/object tools
 
-PA26 does not add a new source-language grammar format. It instead enables more
-of the already-accepted C++11 syntax to participate in semantic analysis and
-lowering.
+For each test case:
 
-A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
-`pa26.gram` as the source of truth.
+1. `cppgm++ -c` is executed once for each companion C++ source file.
+2. The host C++ compiler driver links the generated objects.
+3. Any inspect sidecar is run against the generated objects. For
+   `.inspect.facts`, the harness records normalized text facts in
+   `x.my.inspect`.
+4. If linking and inspection succeed, the generated program is executed.
+5. The recorded `.my.*` outputs are compared with the checked-in `.ref.*`
+   oracle files.
 
-`pa26.gram` uses the same token vocabulary and the same extended BNF operators as
-`../pa6/pa6.gram`.
+### Required Implementation Surface
 
-If this README and `pa26.gram` appear to disagree about source syntax, treat `pa26.gram`
-as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
-treat `lowir.md` as authoritative. If they disagree about the PA26 lowering slice, treat the
-`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+To complete PA26, implement the basic host-compatible EH metadata and
+runtime-helper object surface for `cppgm++ -c` within the supported subset:
 
-### Assignment Boundary
+1. Lower `throw` expressions to host ABI throw helper calls.
+2. Lower typed catches to host landing-pad selector dispatch and
+   `__cxa_begin_catch` / `__cxa_end_catch` calls.
+3. Emit host personality and unwind metadata for EH-bearing functions.
+4. Emit LSDA/call-site/action/type-info facts sufficient for basic catch and
+   cleanup paths.
+5. Preserve cleanup/resume paths using `_Unwind_Resume`.
+6. Keep private course-only exception runtime symbols out of host-EH objects,
+   and encode the host personality without a direct PC-relative data relocation
+   that would make a default-PIE host link unsafe.
+7. Close full-expression EH regions before control-flow joins and require
+   matching protected-call state at statement, conditional, short-circuit, and
+   loop merges.
+8. Preserve translation-unit-local object binding for generated functions in a
+   non-ODR-mergeable local context; do not export a local lambda call operator
+   as a weak or global host symbol.
+9. If adjacent LSDA call-site ranges are coalesced, keep an unprotected
+   potentially-throwing range as a barrier and never combine ranges with
+   different landing pads or action continuations.
+10. Share one translation-unit-local terminate action across function exception
+    boundaries. It receives the active exception object, calls
+    `__cxa_begin_catch`, and then calls `std::terminate`; individual landings
+    shall not repeat the begin-catch call.
+11. Within one function, route semantic resume operations through one physical
+    `_Unwind_Resume` terminal that reloads the active exception from the
+    function's host-EH slot. Keep the source cleanup paths distinct in LowIR
+    and MIR.
+12. Keep the LSDA call-site table sparse. In an LSDA-bearing function, a
+    potentially throwing call outside a protected region still needs an
+    explicit null-landing entry so unwinding continues through the function,
+    but ordinary instruction gaps need no entry. Adjacent unprotected calls
+    between the same protected regions may share one null-landing range.
 
-PA26 supports the following in addition to the PA25 subset:
-
-- capturing lambdas with supported explicit by-copy and by-reference captures of local
-  values, including class objects whose existing copy-construction path is supported
-- default `[=]` and `[&]` captures over the same supported local-value and `this` subset
-- explicit `this` capture for supported member-function cases
-- `std::initializer_list<T>` interoperation for supported scalar elements and
-  class elements whose construction, copy, and destruction stay within the
-  PA16/PA17/PA24 object and template subset
-- `typeid(type-id)`
-- `typeid(expr)` for supported polymorphic lvalue expressions
-- `dynamic_cast<T*>(expr)` for supported polymorphic single-inheritance pointer conversions
-
-Within this milestone, PA26 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA29 `lowir2native` for the supported cases.
-PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
-
-To complete PA26, implement these goals:
-
-1. Capturing lambda lowering.
-   Explicit by-copy captures should materialize deterministic closure-object LowIR and the
-   resulting closure object should be callable through the existing class/method lowering
-   path. A catch parameter declared inside a lambda body is local to that body and is not an
-   implicit capture.
-
-2. `std::initializer_list` interoperation.
-   Supported braced-list calls should materialize deterministic lowered storage and expose
-   the expected `__begin` / `__size` semantics to range-for lowering.
-
-3. RTTI and `typeid`.
-   The compiler should emit deterministic RTTI globals and lower both static and dynamic
-   `typeid` queries into ordinary LowIR address/load/branch operations.
-
-4. Pointer-form `dynamic_cast`.
-   The compiler should lower supported polymorphic single-inheritance pointer casts into
-   ordinary LowIR control flow without introducing new IR operations.
-
-5. Full-expression cleanup through condition control flow.
-   Temporary-owning call arguments inside nested `&&` and `||` expressions
-   should be destroyed exactly on evaluated paths, and every nested logical
-   result used by an outer condition should retain a valid LowIR result slot.
-   Guarded local-static initialization should destroy initializer temporaries
-   on the initialization edge before that edge joins the already-initialized path.
-   EH-bearing aggregate construction should invoke nontrivial member constructors
-   instead of representation-copying those members, so cleanup state describes
-   the subobjects that were constructed.
-   Construction and destruction cleanup dependencies on class-template
-   destructors should be demanded only after a recursively containing type is
-   complete, and should retain that concrete owner in emitted cleanup calls.
-   A caller-created copy for a destructible class value parameter transfers to
-   the callee. The callee destroys that parameter, while the caller keeps only
-   the unwind cleanup needed for objects it still owns.
-   Once an exception object has been initialized, destroy the throw operand's
-   temporaries and remove them from later unwind snapshots. A temporary from an
-   untaken throw branch must not appear in a sibling call's cleanup path.
-   If a conditional initializer arm throws before the destination object is
-   constructed, do not schedule destruction of that destination on the unwind path.
-   When a potentially throwing call is reached through a branch in an active
-   handler, its unwind path must finish the handler and destroy objects that
-   remain live from scopes outside the corresponding `try` statement.
-   If construction of a class subobject throws, destroy exactly the already
-   constructed bases and members in reverse construction order.
-   Equal unwind cleanup suffixes may share LowIR blocks only when their complete
-   active try/handler context, handler-exit operations, cleanup-region exits,
-   and terminal continuation are identical.
+If object inspection shows missing or malformed host EH metadata for a basic
+throw/catch/cleanup case, fix the host-EH lowering or object-emission path.
 
 ### Out Of Scope
 
-The following are explicitly out of scope for PA26:
+The following are out of scope for PA26:
 
-- init-captures
-- class captures that require unsupported copy construction, destruction, or object-model
-  features
-- `std::initializer_list` class elements that require unsupported construction,
-  copy, destruction, or later object-model behavior
-- `typeid` cases that require `bad_typeid`
-- `dynamic_cast` reference forms
-- `dynamic_cast<void*>`
-- multiple inheritance and virtual inheritance
-- any PA26 feature path that depends on unsupported later object-model or ABI work
+- a private object/link/runtime pipeline
+- general host object interoperability unrelated to EH metadata
+- richer host ABI/runtime behavior after the basic EH facts exist
+- complex RTTI/vtable/virtual-base catch interactions
+- multi-frame or nested rethrow/cleanup behavior
+- rethrow behavior and `__cxa_rethrow`
+- hosted standard-library header/source compatibility
+- bootstrap or self-host builds
 
-Inputs that rely on those features have undefined behaviour for this milestone.
-
-### Stage Handoff
-
-The intended next stage is PA27, which completes the remaining non-virtual object-model work
-that PA26 still deliberately avoids, especially non-virtual multiple inheritance and the
-remaining single-vptr RTTI case `dynamic_cast<void*>`.
-
-So PA26 should leave behind:
-
-- a stable advanced-language semantic layer over the existing single-inheritance model
-- LowIR lowering for the supported RTTI, lambda-capture, and initializer-list subset
-- explicit remaining deferrals only where PA27 really needs to take over
-
-Virtual inheritance and polymorphic multiple inheritance remain intentionally deferred beyond
-PA27.
+Later host-EH tests keep the same host-link path while exercising richer
+host ABI/runtime interactions such as foreign catch-all, virtual-base catches,
+nested cleanup chains, and hosted library EH behavior.
 
 ### Design Notes (Non-Normative)
 
-PA26 should extend the existing semantic and lowering path, not replace it.
+A useful implementation shape is to keep frontend LowIR EH operations stable and
+classify runtime roles below LowIR. Object emission can then map those roles to
+host ABI symbols and platform EH metadata:
 
-Cleanup continuation keys can use dense identities for the complete active
-exception-region stack. This permits expected constant-time state interning
-without comparing rendered LowIR or rescanning the region stack at each call.
+- Mach-O uses compact-unwind rows plus `__gcc_except_tab` and EH-frame data as
+  required by the host linker/unwinder.
+- ELF uses `.eh_frame`, `.gcc_except_table`, and the corresponding relocation
+  records.
 
-The same monotonic-extension rule applies here:
+Do not construct host EH facts from source text. The object backend should work
+from typed semantic/runtime-role information and final machine layout.
 
-- PA26 should add its new behavior only when the source actually uses the supported PA26
-  feature set
-- it should not perturb PA25 outputs for programs that remain entirely within the PA25
-  subset
-- in practice, RTTI globals, closure helpers, and dynamic-cast support should stay
-  on-demand rather than eagerly changing the behavior of ordinary earlier programs that do
-  not use those features
+A compact terminate boundary can pass the typed exception value to a single
+internal helper. This keeps the handler-entry ABI sequence in one place while
+leaving ordinary source catch handlers independent.
+
+The host-object layout walk can count MIR resume operations once, allocate a
+terminal only for a function that needs one, and branch each resume to it. A
+single typed frame-slot identity is sufficient; rendered slot or label names
+are not needed.
+
+The same layout walk can retain exact unprotected potentially-throwing call
+ranges. Merge those ranges with protected call sites in address order when
+writing the LSDA, coalescing unprotected calls only within one interval between
+protected sites. This avoids reconstructing call-site coverage from the full
+function byte range.

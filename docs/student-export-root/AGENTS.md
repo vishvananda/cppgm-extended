@@ -1,7 +1,7 @@
 # Agent Instructions
 
 This repository is a staged C++11 compiler project for Linux x86_64. Work
-assignment by assignment, PA1 through PA39.
+assignment by assignment, PA1 through PA34.
 
 Before changing code, read:
 
@@ -42,18 +42,23 @@ make test-paN
 make test-report-through-paN
 ```
 
-For PA1 through PA38, the exit criterion for each assignment is a clean root
+For PA1 through PA33, the exit criterion for each assignment is a clean root
 `make test-report-through-paN`. Do not move on after only running
 `make test-paN`.
 
-PA39 uses inception instead: run root `make inception`, which is wired to the
-PA39 `compare-cppgm++-inception` path.
+PA34 uses inception instead: run root `make inception`, which is wired to the
+PA34 `compare-cppgm++-inception` path.
 
 ## References
 
 Reference outputs and exit-status sidecars are the oracle. Reference binaries
 such as `pptoken-ref` or `cppgm++-ref` are for observation and fixture
 regeneration only.
+
+PA8's grading harness uses `lowir-ref` to compare LowIR roundtrips and
+`lowir2native-ref` to execute the student's constructed LowIR. These are
+provided grading tools. Implement the required LowIR machinery and later C++
+lowering yourself; the student compiler must not delegate that work to them.
 
 The reference binaries are not perfect. Only checked-in fixtures gate an
 assignment; prefer the handout and the standard over exact reference parity on

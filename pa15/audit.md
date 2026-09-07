@@ -2,64 +2,82 @@
 
 ## Findings
 
-All findings are closed:
+The audit started from clean commit `40fc166d`, the reported 2,177/2,177 and
+20/20 baseline, and a passing reused file audit. The complete specification,
+assignment contract, twelve stage commits, cumulative source delta, tests,
+current plan, and primary log were reviewed independently. Four findings were
+hidden by the clean functional baseline:
 
-1. Hot instructions embedded presentation strings and four vector owners, inflating
-   every scalar instruction to 448 bytes.
-2. Every function zero-filled three whole-translation-unit ID maps, producing a
-   quadratic many-function curve.
-3. Recursive PA15 top-level, statement/control, and switch walks overflowed on valid
-   deep inputs.
-4. PA15 retained `Symbol&` across nested lowering that could append string-literal
-   symbols; ASan proved a heap use-after-free.
-5. PA12 retained type-table references and parameter spans across recursive type
-   interning; ASan proved two independent heap use-after-frees.
-6. Repeated inherited name lookup across nested control scopes was quadratic; `perf`
-   attributed 97.5% of samples to `LookupName`/`FindEntry`.
-7. PA12 eagerly interned a full qualified prefix for every nested namespace, retaining
-   quadratic presentation data.
-8. Lowering, model implementation, and text rendering exceeded their appropriate file
-   ownership boundaries.
+1. PA5 discarded the phase-7 type and decoded value of scalar literals. PA7
+   reparsed presentation spelling and treated unsuffixed integers as suffix-only
+   types. This miscompiled `0xffffffff`, `2147483648`, and translated wide
+   character values.
+2. Integral constant evaluation used an incomplete mixed signed/unsigned
+   conversion rule, eagerly folded unselected logical/conditional operands, and
+   accepted signed add/subtract/multiply/divide/modulo/unary/shift overflow.
+3. Five dependent qualified class/value paths reparsed rendered payload text
+   even though PA14 had introduced structured name identities.
+4. The fixes pushed `pa5_syntax.cpp` and `pa7_semantic.cpp` over the
+   required 3,000-line ownership limit.
+
+All findings are closed. Fresh scale counters found no performance blocker.
 
 ## Changes
 
-- Compact LowIR records now store typed POD fields; floating/null literals are
-  interned, while call arguments and switch cases live in flat program-owned tables.
-- Function-wide ID maps are graph-owned and initialized once. Top-level emission,
-  control lowering, statement sequencing, and switch discovery use explicit worklists.
-- Symbol mutation is performed by stable ID after nested lowering. PA12 snapshots
-  compact type records and copies function parameter IDs before recursive analysis.
-- PA11 owns a revisioned derived lookup cache invalidated by bindings, namespaces,
-  aliases, using edges, and type-name mutations.
-- Namespace prefixes retain structural parent/segment facts and materialize a full
-  presentation spelling only when an emitted name requests it.
-- PA15 is divided into typed records, model/index implementation, graph lowering, and
-  text rendering, with each new source listed in `frontend_source_sets.mk`.
+- `SyntaxToken` remains 8 bytes and now packs a 24-bit scalar-fact index beside
+  its token kind. A dense 16-byte `SyntaxLiteralFact` retains the phase-7
+  `FundamentalType`, decoded value, and validity; PA5 literal nodes borrow
+  that fact by compact ID. PA7 maps it directly to the canonical semantic type
+  and value. String and user-defined literal paths retain their existing syntax
+  behavior.
+- Usual arithmetic conversions now follow rank, signedness, representability,
+  and unsigned-counterpart rules. Constant folding rejects signed overflow and
+  invalid shifts at the operand width while preserving unsigned wrap.
+  Logical/conditional analysis still type-checks both operands but suppresses
+  constant evaluation and constexpr-call interpretation in the unselected arm.
+- Decltype-qualified value/type syntax now retains structured interned name
+  components. Class-template declaration/member replay and PA15 argument lookup
+  consume those IDs instead of reparsing payload text.
+- Unary/binary operator analysis moved to
+  `pa7_semantic_operators.cpp`, registered in the compiler source set.
+  `pa5_syntax.cpp` is 2,991 lines and `pa7_semantic.cpp` is 2,750 lines.
+- Eight course regressions cover retained literal typing/value, mixed
+  conversions, short-circuit selection, and every repaired signed-overflow
+  family.
 
 ## Performance Evidence
 
-- Assignments, 5k -> 10k: instructions 15,003 -> 30,003; lowering 7.31 ->
-  15.58 ms; typed storage 1.97 -> 3.93 MB. Pre-audit storage was 7.79 -> 15.58 MB.
-- Functions, 4k -> 8k -> 16k: lowering 12.27 -> 24.84 -> 50.48 ms. The former
-  2k/4k/8k curve was approximately 11/34/103 ms and profiled in repeated zero-fill.
-- Nested `if`, 8k -> 16k: 0.07 -> 0.16 s total. Before lookup caching, the 16k
-  semantic phase alone took 6.27 s.
-- Nested namespaces, 4k/8k/12k: 0.02/0.05/0.07 s total after lazy prefixes. The
-  former semantic-only runs took 0.29/1.12/2.64 s.
-- 32k compound nesting and 32k pointer modifiers complete in 0.09 and 0.05 s.
+| Probe | Fresh seven-run evidence |
+|---|---|
+| 128/256/512 integral assertions | nodes 1,669/3,333/6,661; peak 551,252/1,088,724/2,165,716 bytes; semantic 2.561/5.072/10.145 ms |
+| 16/32/64 specialization keys called twice | requests 128/256/512; hits 96/192/384; demands 16/32/64; peak 379,669/753,245/1,500,397 bytes; semantic 2.006/3.693/7.273 ms |
+| 16/32/64 type-pack relay | nodes 79/143/271; lookups 67/115/211; output 3,921/7,609/14,985 bytes; semantic 0.544/0.781/1.198 ms |
+
+Every measured counter is fixed or proportional to input/output. No unexplained
+superlinear path remained, so no sampling profile was required.
 
 ## Validation
 
-- `perl scripts/cppgm_file_audit.pl --stage pa15 --paths dev/src`:
-  pass, 66 files, zero findings.
-- Combined ASan+UBSan fixture runs: PA11 68+2, PA12 166+8, PA15 108; all pass.
-- Process-only `strace`: initial compiler `execve`, `exit_group(0)`, no child process.
-- `make test-report-through-pa15`: pass, 1,145/1,145 tests and 15/15 stages.
+- `make test-pa15`: pass, 164/164 handout and 8/8 course audit tests.
+- `perl scripts/cppgm_file_audit.pl --stage pa15 --paths dev/src`: pass; no
+  fatal findings (advisories are recorded in the plan).
+- `make test-report-through-pa15`: pass, 2,185/2,185 tests and 20/20 stages.
+- Focused host comparison confirmed the two literal-selection failures before
+  repair; all eight accept/reject regressions pass after repair.
+- Source scan: no compiler host/reference invocation, cached answer,
+  test/ref-name branch, textual LowIR transport, or whole-program retry.
 
 ## Checkpoint Audit Ledger
 
-| Checkpoint | Audit result | Closure evidence |
+| Checkpoint group | Audit disposition | Evidence |
 |---|---|---|
-| Scalar semantic handoff | Pass after audit fixes | Typed identity, correct linkage/truth handling, no text identity, linear scalar/declarator probes |
-| Procedural lowering | Pass after audit fixes | Complete PA15 contract, explicit CFG worklist, flat side tables, no recursive PA15 depth failure |
-| Full-stage final audit | Pass | UAFs removed across PA12/PA15 ownership boundaries; semantic quadratics removed; file audit, sanitizers, self-containment trace, and 1,145-test report clean |
+| `c74ce9d5` constant assertions | Pass after repair | retained typed literals, complete conversion/selection/overflow checks |
+| `c7783d8d` integral NTTPs | Pass after repair | canonical typed value arguments and width normalization |
+| `6d3d2a75`-`80cef651` packs | Pass | canonical offsets, overlay element scopes, linear relay evidence |
+| `e744d35c` base packs | Pass | ordered identities and typed base layout/lowering |
+| `d8e5ca44`-`dee259a3` dependent facts | Pass after repair | structured decltype-qualified identity, no PA15 payload reparse |
+| `c8745d36` specialized demand | Pass | stable retained ownership and monotonic deduplicated worklists |
+| `10b67478` literals | Pass after repair | phase-7 scalar fact ownership joins retained literal dispatch |
+| `7f74da10` target conversion | Pass | selected callable identity reaches typed LowIR |
+| `40fc166d` closure | Pass after repair | explicit/late specialization retained; file ownership restored |
+| Final PA-wide audit | Pass | focused tests, file audit, and 2,185-test through-stage report pass |

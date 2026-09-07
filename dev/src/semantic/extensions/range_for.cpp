@@ -460,7 +460,7 @@ void Analyzer::AnalyzeRangeFor(NodeId node, ScopeId scope,
 
 		ExpressionInfo size;
 		// The retained count is lowered as the ABI's signed machine-width index;
-		// this keeps the established PA25 range comparison conversion path.
+		// this keeps the established PA20 range comparison conversion path.
 		size.type = program_->types.Fundamental(FUND_LONG_INT);
 		size.category = VALUE_PRVALUE;
 		size.node = MakeDump(DUMP_INITIALIZER_LIST_SIZE,

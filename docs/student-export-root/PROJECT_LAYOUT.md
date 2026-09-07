@@ -12,7 +12,7 @@ assignment harnesses.
   link into each compiler binary
 - `paN/`: assignment handouts, Makefiles, tests, scripts, and reference
   fixtures for the active milestones
-- `cppgm.tests/`: shared course tests used by assignment harnesses
+- `cppgm.tests/undefined/`: inputs whose outcome is unspecified; no test lane runs them
 - `doc/`: public reference material, including `doc/n3485.txt`
 - `obj/`: generated build artifacts
 - `reference-binaries/`: reference-binary manifest; the large binary payloads
@@ -29,19 +29,18 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 
 ## Assignment Arc
 
-- PA1-PA5: preprocessing
-- PA6-PA9: grammar recognition, namespace semantics, and CY86 output
-- PA10-PA12: AST, types, lookup, conversions, calls, and overload resolution
-- PA13: LowIR parsing and execution scaffold
-- PA14: typed Itanium ABI naming
-- PA15-PA18: procedural lowering, classes, value semantics, and virtual dispatch
-- PA19-PA24: templates, constant evaluation, and template integration
-- PA25-PA28: remaining source-to-LowIR language and object-model closure
-- PA29: native backend from LowIR
-- PA30-PA31: compile/link driver integration and host exception metadata
-- PA32-PA36: host ABI and hosted compatibility
-- PA37-PA38: LowIR and machine-backend optimization
-- PA39: inception, rebuilding `cppgm++` with `cppgm++`
+- PA1-PA4: tokens, literals, preprocessing expressions, and full preprocessing
+- PA5-PA7: AST, types, lookup, conversions, calls, and overload resolution
+- PA8: LowIR model, reader/writer, and required construction exercises
+- PA9: typed Itanium ABI naming
+- PA10-PA13: procedural lowering, classes, value semantics, and virtual dispatch
+- PA14-PA19: templates, constant evaluation, and template integration
+- PA20-PA23: remaining source-to-LowIR language and object-model closure
+- PA24: native backend from LowIR
+- PA25-PA26: compile/link driver integration and host exception metadata
+- PA27-PA31: host ABI and hosted compatibility
+- PA32-PA33: LowIR and machine-backend optimization
+- PA34: inception, rebuilding `cppgm++` with `cppgm++`
 
 ## Assignment Map
 
@@ -49,47 +48,42 @@ path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
 | --- | --- | --- |
 | PA1 | `pptoken` | preprocessing tokens and translation phases 1-3 |
 | PA2 | `posttoken` | post-token conversion and literals |
-| PA3 | `ctrlexpr` | controlling-expression evaluation |
-| PA4 | `macro` | macro definition and expansion |
-| PA5 | `preproc` | full preprocessing translation units |
-| PA6 | `recog` | C++ grammar recognition |
-| PA7 | `nsdecl` | namespace declarations and semantic output |
-| PA8 | `nsinit` | namespace initialization and mock program images |
-| PA9 | `cy86` | executable output through the CY86 model |
-| PA10 | `cppgm++ --emit-ast` | AST construction |
-| PA11 | `cppgm++ --emit-types` | types, scopes, and lookup |
-| PA12 | `cppgm++ --emit-semantics` | conversions, initialization, and overload resolution |
-| PA13 | `lowir2cy86` | LowIR parsing and execution scaffold |
-| PA14 | `abimangle` | typed standalone ABI name construction |
-| PA15 | `cppgm++ --emit-lowir` | procedural C++ lowering to LowIR |
-| PA16 | `cppgm++ --emit-lowir` | basic classes and object layout |
-| PA17 | `cppgm++ --emit-lowir` | value semantics and assignment |
-| PA18 | `cppgm++ --emit-lowir` | virtual dispatch |
-| PA19 | `cppgm++ --emit-lowir` | basic templates |
-| PA20 | `cppgm++ --emit-lowir` | specialization and compile-time evaluation |
-| PA21 | `cppgm++ --emit-lowir` | constant evaluation |
-| PA22 | `cppgm++ --emit-lowir` | template entities and specialization model |
-| PA23 | `cppgm++ --emit-lowir` | deduction, substitution, and SFINAE completion |
-| PA24 | `cppgm++ --emit-lowir` | template integration across PA19-PA23 features |
-| PA25 | `cppgm++ --emit-lowir` | core language closure |
-| PA26 | `cppgm++ --emit-lowir` | advanced language closure |
-| PA27 | `cppgm++ --emit-lowir` | non-virtual multi-base object model |
-| PA28 | `cppgm++ --emit-lowir` | virtual/RTTI object-model completion |
-| PA29 | `lowir2native` | native backend from LowIR |
-| PA30 | `cppgm++` | separate compilation and compile/link driver integration |
-| PA31 | `cppgm++ -c` | host exception metadata and runtime-helper facts |
-| PA32 | `cppgm++ -c` | host-linkable object interoperability |
-| PA33 | `cppgm++ -c` | host C++ ABI and runtime behavior |
-| PA34 | `cppgm++ -E`, `cppgm++ -c` | hosted header/source compatibility |
-| PA35 | `cppgm++ -c` | heavy hosted-header compile compatibility |
-| PA36 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
-| PA37 | `lowiropt` | LowIR optimization |
-| PA38 | `lowir2native -O1/-O2` | machine/backend optimization |
-| PA39 | inception targets | rebuild `cppgm++` with `cppgm++` |
+| PA3 | `ppexpr` | controlling-expression evaluation |
+| PA4 | `preproc` | full preprocessing, including macros and directives |
+| PA5 | `cppgm++ --emit-ast` | AST construction |
+| PA6 | `cppgm++ --emit-types` | types, scopes, and lookup |
+| PA7 | `cppgm++ --emit-semantics` | conversions, initialization, and overload resolution |
+| PA8 | `lowir` | LowIR model, reader/writer, and required construction exercises |
+| PA9 | `abimangle` | typed standalone ABI name construction |
+| PA10 | `cppgm++ --emit-lowir` | procedural C++ lowering to LowIR |
+| PA11 | `cppgm++ --emit-lowir` | basic classes and object layout |
+| PA12 | `cppgm++ --emit-lowir` | value semantics and assignment |
+| PA13 | `cppgm++ --emit-lowir` | virtual dispatch |
+| PA14 | `cppgm++ --emit-lowir` | basic templates |
+| PA15 | `cppgm++ --emit-lowir` | specialization and compile-time evaluation |
+| PA16 | `cppgm++ --emit-lowir` | constant evaluation |
+| PA17 | `cppgm++ --emit-lowir` | template entities and specialization model |
+| PA18 | `cppgm++ --emit-lowir` | deduction, substitution, and SFINAE completion |
+| PA19 | `cppgm++ --emit-lowir` | template integration across PA14-PA18 features |
+| PA20 | `cppgm++ --emit-lowir` | core language closure |
+| PA21 | `cppgm++ --emit-lowir` | advanced language closure |
+| PA22 | `cppgm++ --emit-lowir` | non-virtual multi-base object model |
+| PA23 | `cppgm++ --emit-lowir` | virtual/RTTI object-model completion |
+| PA24 | `lowir2native` | native backend from LowIR |
+| PA25 | `cppgm++` | separate compilation and compile/link driver integration |
+| PA26 | `cppgm++ -c` | host exception metadata and runtime-helper facts |
+| PA27 | `cppgm++ -c` | host-linkable object interoperability |
+| PA28 | `cppgm++ -c` | host C++ ABI and runtime behavior |
+| PA29 | `cppgm++ -E`, `cppgm++ -c` | hosted header/source compatibility |
+| PA30 | `cppgm++ -c` | heavy hosted-header compile compatibility |
+| PA31 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
+| PA32 | `lowiropt` | LowIR optimization |
+| PA33 | `lowir2native -O1/-O2` | machine/backend optimization |
+| PA34 | inception targets | rebuild `cppgm++` with `cppgm++` |
 
-## PA39
+## PA34
 
-PA39 is different from the earlier one-binary assignments. Its goal is
+PA34 is different from the earlier one-binary assignments. Its goal is
 inception: build `cppgm++` with `cppgm++` and match the host build. The
 `test-through` ladder gives intermediate checkpoints, but the final target is a
 matching self-built compiler.

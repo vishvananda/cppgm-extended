@@ -1,6 +1,7 @@
 // (C) 2013 CPPGM Foundation www.cppgm.org.  All rights reserved.
 
 #include <utility>
+#include <sys/stat.h>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -11,43 +12,19 @@ using namespace std;
 
 #include "support/not_implemented.h"
 
-// For pragma once implementation:
-// system-wide unique file id type `PA5FileId`
-typedef pair<unsigned long int, unsigned long int> PA5FileId;
+// Supplied host helper for pragma-once identity; no syscall implementation
+// is required in this assignment.
+typedef pair<unsigned long long, unsigned long long> PreprocessorFileId;
 
-// bootstrap system call interface, used by PA5GetFileId
-extern "C" long int syscall(long int n, ...) throw ();
-
-// PA5GetFileId returns true iff file found at path `path`.
-// out parameter `out_fileid` is set to file id
-bool PA5GetFileId(const string& path, PA5FileId& out_fileid)
+bool GetPreprocessorFileId(const string& path, PreprocessorFileId& fileid)
 {
-	struct
-	{
-			unsigned long int dev;
-			unsigned long int ino;
-			long int unused[16];
-	} data;
-
-	int res = syscall(4, path.c_str(), &data);
-
-	out_fileid = make_pair(data.dev, data.ino);
-
-	return res == 0;
+    struct stat info;
+    if (stat(path.c_str(), &info) != 0)
+        return false;
+    fileid = make_pair(static_cast<unsigned long long>(info.st_dev),
+                      static_cast<unsigned long long>(info.st_ino));
+    return true;
 }
-
-// OPTIONAL: Also search `PA5StdIncPaths` on `--stdinc` command-line switch (not by default)
-vector<string> PA5StdIncPaths =
-{
-    "/usr/include/c++/4.7/",
-    "/usr/include/c++/4.7/x86_64-linux-gnu/",
-    "/usr/include/c++/4.7/backward/",
-    "/usr/lib/gcc/x86_64-linux-gnu/4.7/include/",
-    "/usr/local/include/",
-    "/usr/lib/gcc/x86_64-linux-gnu/4.7/include-fixed/",
-    "/usr/include/x86_64-linux-gnu/",
-    "/usr/include/"
-};
 
 bool HasBatchStdinArg(int argc, char** argv)
 {
@@ -102,7 +79,7 @@ int main(int argc, char** argv)
 
 			ifstream in(srcfile);
 
-			// TODO: implement `preproc` as per PA5 description
+			// TODO: implement `preproc` as described in the complete preprocessor assignment
 			out << "not yet implemented" << endl;
 	
 			out << "eof" << endl;

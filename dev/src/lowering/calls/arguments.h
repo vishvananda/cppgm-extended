@@ -1004,7 +1004,7 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (arguments.size() != references.size())
-			ThrowLoweringInternal("PA15 call argument fact mismatch");
+			ThrowLoweringInternal("PA10 call argument fact mismatch");
 		if (arguments.empty()) return;
 		if (arguments.size() >= kNoLowId ||
 			derived.output_.call_arguments.size() >
@@ -1014,7 +1014,7 @@ protected:
 			derived.output_.call_arguments.size() !=
 				derived.output_.call_argument_object_bytes.size() ||
 			(object_bytes && object_bytes->size() != arguments.size()))
-			ThrowLoweringResourceLimit("too many PA15 call arguments");
+			ThrowLoweringResourceLimit("too many PA10 call arguments");
 		call->extra_first = static_cast<std::uint32_t>(
 			derived.output_.call_arguments.size());
 		call->extra_count = static_cast<std::uint32_t>(arguments.size());

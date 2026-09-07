@@ -470,13 +470,18 @@ sub build_wrapped_text_request
 		my $test_out = $test;
 		$test_out =~ s/\.t$/\.$suffix/;
 
-		if ($assignment =~ m/^pa[1-4]$/)
+		# The assignment wrapper declares its CLI contract. Directory numbers
+		# must not decide whether a tool reads stdin or grouped source files.
+		my $input_profile = $ENV{CPPGM_TEXT_INPUT_PROFILE} // 'source';
+		die "Unknown text input profile: $input_profile"
+			unless $input_profile =~ /^(source|sources|stdin|stdin-combined)$/;
+		if ($input_profile eq 'stdin' || $input_profile eq 'stdin-combined')
 		{
-			my $stderr_file = ($assignment eq 'pa1') ? $test_out : "$test_out.stderr";
+			my $stderr_file = ($input_profile eq 'stdin-combined') ? $test_out : "$test_out.stderr";
 			return ($test_out, $stderr_file, $test, {});
 		}
 
-		if ($assignment eq 'pa5')
+		if ($input_profile eq 'sources')
 		{
 			my $test_base = $test;
 			$test_base =~ s/\.t$//;
@@ -490,7 +495,7 @@ sub build_wrapped_text_request
 			        @inputs);
 		}
 
-		# Hosted-compat preprocessor tests (suffix "pp", e.g. pa34) must run with
+		# Hosted-compat preprocessor tests (suffix "pp", e.g. pa29) must run with
 		# -E so the tool preprocesses instead of compiling+linking the directive-
 		# only source (which has no main). Mirrors the batch worker
 		# (run_cpphostcompat_preproc_worker.pl) so the bucket behaves identically
@@ -603,103 +608,6 @@ sub run_batch_wrapped_text
 	close_wrapped_worker($worker_pid, $worker_out, $worker_in);
 }
 
-sub run_batch_wrapped_pa9
-{
-	my ($app, $suffix, $tests, $verbose) = @_;
-	my ($worker_pid, $worker_out, $worker_in) = open_wrapped_worker($app);
-	my $build_timeout = get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 30);
-
-	for my $test (@{$tests})
-	{
-		print "Running $test...\n" if $verbose;
-		my $test_base = $test;
-		$test_base =~ s/\.t\.1$//;
-
-		unlink(glob("$test_base.$suffix.program"));
-		unlink(glob("$test_base.$suffix.program.exit_status"));
-		unlink(glob("$test_base.$suffix.program.stdout"));
-		unlink(glob("$test_base.$suffix.program.stderr"));
-		unlink(glob("$test_base.$suffix.impl.stdout"));
-		unlink(glob("$test_base.$suffix.impl.stderr"));
-		unlink(glob("$test_base.$suffix.impl.exit_status"));
-
-		my @srcfiles = sorted_glob("$test_base.t.*");
-		my @args;
-		if (defined($ENV{CY86_TARGET}) && $ENV{CY86_TARGET} ne '')
-		{
-			push @args, '--target', $ENV{CY86_TARGET};
-		}
-		push @args, '-o', "$test_base.$suffix.program", @srcfiles;
-
-		my $impl_status = submit_wrapped_request(
-			$worker_in,
-			$worker_out,
-			"$test_base.$suffix.impl.stdout",
-			"$test_base.$suffix.impl.stderr",
-			"-",
-			{ CPPGM_BATCH_TIMEOUT_SEC => $build_timeout },
-			@args);
-		write_numeric_status("$test_base.$suffix.impl.exit_status", $impl_status);
-
-		if ($impl_status == 0)
-		{
-				my $program_status = run_command_capture(
-					cmd => [local_exec_path("$test_base.$suffix.program")],
-					stdout => "$test_base.$suffix.program.stdout",
-					stderr => "$test_base.$suffix.program.stderr",
-					stdin => "$test_base.stdin",
-					timeout => get_timeout_from_env("CPPGM_PROGRAM_TEST_TIMEOUT_SEC", 10),
-				);
-			write_numeric_status("$test_base.$suffix.program.exit_status", $program_status);
-		}
-	}
-
-	close_wrapped_worker($worker_pid, $worker_out, $worker_in);
-}
-
-sub run_single_pa9_driver
-{
-	my ($app, $suffix, $test) = @_;
-	my $test_base = $test;
-	$test_base =~ s/\.t\.1$//;
-
-	unlink(glob("$test_base.$suffix.program"));
-	unlink(glob("$test_base.$suffix.program.exit_status"));
-	unlink(glob("$test_base.$suffix.program.stdout"));
-	unlink(glob("$test_base.$suffix.program.stderr"));
-	unlink(glob("$test_base.$suffix.impl.stdout"));
-	unlink(glob("$test_base.$suffix.impl.stderr"));
-	unlink(glob("$test_base.$suffix.impl.exit_status"));
-
-	my @srcfiles = sorted_glob("$test_base.t.*");
-	my @args;
-	if (defined($ENV{CY86_TARGET}) && $ENV{CY86_TARGET} ne '')
-	{
-		push @args, '--target', $ENV{CY86_TARGET};
-	}
-	push @args, '-o', "$test_base.$suffix.program", @srcfiles;
-
-	my $impl_status = run_command_capture(
-		cmd => [local_exec_path($app), @args],
-		stdout => "$test_base.$suffix.impl.stdout",
-		stderr => "$test_base.$suffix.impl.stderr",
-		timeout => get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 30),
-	);
-	write_numeric_status("$test_base.$suffix.impl.exit_status", $impl_status);
-
-	if ($impl_status == 0)
-	{
-		my $program_status = run_command_capture(
-			cmd => [local_exec_path("$test_base.$suffix.program")],
-			stdout => "$test_base.$suffix.program.stdout",
-			stderr => "$test_base.$suffix.program.stderr",
-			stdin => "$test_base.stdin",
-			timeout => get_timeout_from_env("CPPGM_PROGRAM_TEST_TIMEOUT_SEC", 10),
-		);
-		write_numeric_status("$test_base.$suffix.program.exit_status", $program_status);
-	}
-}
-
 sub shard_tests
 {
 	my ($tests, $jobs) = @_;
@@ -760,14 +668,6 @@ sub run_batch
 		}, $tests, $jobs);
 		return;
 	}
-	if ($mode eq "driver_t1")
-	{
-		run_batch_sharded(sub {
-			my ($shard) = @_;
-			run_batch_wrapped_pa9($app, $suffix, $shard, $verbose);
-		}, $tests, $jobs);
-		return;
-	}
 	die "Unsupported wrapped batch mode $mode";
 }
 
@@ -779,11 +679,6 @@ sub run_single
 		if ($mode eq "text_t" || $mode eq "text_t1")
 		{
 			run_single_wrapped_text($mode, $app, $suffix, $test, $assignment);
-			return;
-		}
-		if ($mode eq "driver_t1")
-		{
-			run_single_pa9_driver($app, $suffix, $test);
 			return;
 		}
 		die "Unsupported run_all_tests mode $mode";
@@ -808,7 +703,6 @@ my $assignment = basename(getcwd());
 my %patterns = (
 	text_t => qr/\.t$/,
 	text_t1 => qr/\.t\.1$/,
-	driver_t1 => qr/\.t\.1$/,
 );
 die "Unsupported run_all_tests mode $mode" if !exists($patterns{$mode});
 

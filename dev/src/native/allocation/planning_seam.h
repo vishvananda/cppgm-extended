@@ -107,7 +107,7 @@ struct LayoutScan
   std::vector<std::pair<std::size_t, std::size_t> > forward_edges;
 };
 
-// A second allocator at the seam, written from this header and the PA38
+// A second allocator at the seam, written from this header and the PA33
 // README alone (dev/src/native/allocation/linear_scan.cpp); selected by
 // CPPGM_BACKEND_VARIANT=linear-scan.  `register_spans` has sixteen entries,
 // indexed by X64Register, cleared on entry.

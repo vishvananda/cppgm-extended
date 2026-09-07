@@ -58,7 +58,7 @@ sub phi_count
 sub stats_record
 {
 	my ($test, $stderr, $level) = @_;
-	my @records = grep { /^pa37_opt_stats(?:\s|$)/ } split(/\n/, $stderr);
+	my @records = grep { /^pa32_opt_stats(?:\s|$)/ } split(/\n/, $stderr);
 	die "$test: $level expected one optimizer stats record, found " .
 		scalar(@records) . "\n" if scalar(@records) != 1;
 	return $records[0];

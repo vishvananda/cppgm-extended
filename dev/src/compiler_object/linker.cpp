@@ -43,14 +43,31 @@ void RenameOperand(lowir_model::LowirProgram* program,
 		value->literal = program->strings.intern(found->second);
 }
 
-void RenameProgram(lowir_model::LowirProgram* program,
+void RenameObjectSymbol(lowir_model::LowirProgram* program,
+	lowir_model::SymbolId symbol, lowir_model::SymbolMetadata* metadata,
 	const RenameMap& names, LinkStats* stats)
+{
+	RenameStringId(program, &metadata->object_symbol, names, stats);
+	// Some synthetic objects use the same spelling at both boundaries.
+	// After the TU suffix is applied, they need only the symbol's own label.
+	if (!metadata->object_symbol.valid()) return;
+	const std::string& object_name = program->strings.get(metadata->object_symbol);
+	const std::string& internal_name = lowir_model::lowir_symbol_name(*program, symbol);
+	if (object_name == internal_name ||
+		(!object_name.empty() && object_name[0] == '@' &&
+		 object_name.compare(1, std::string::npos, internal_name) == 0))
+		metadata->object_symbol = lowir_model::StringId();
+}
+
+void RenameProgram(lowir_model::LowirProgram* program,
+	const RenameMap& names, const RenameMap& object_names, LinkStats* stats)
 {
 	for (std::size_t i = 0; i < program->symbol_names.size(); ++i)
 		RenameStringId(program, &program->symbol_names[i], names, stats);
 	for (std::size_t i = 0; i < program->globals.size(); ++i)
 	{
 		lowir_model::GlobalDefinition& item = program->globals[i];
+		RenameObjectSymbol(program, item.symbol, &item.metadata, object_names, stats);
 		RenameOperand(program, &item.init_operand, names, stats);
 		for (std::size_t j = 0; j < item.data_items.size(); ++j)
 		{
@@ -61,6 +78,7 @@ void RenameProgram(lowir_model::LowirProgram* program,
 	for (std::size_t i = 0; i < program->functions.size(); ++i)
 	{
 		lowir_model::Function& item = program->functions[i];
+		RenameObjectSymbol(program, item.symbol, &item.metadata, object_names, stats);
 		for (std::size_t j = 0; j < item.blocks.size(); ++j)
 			for (std::size_t k = 0; k < item.blocks[j].instructions.size(); ++k)
 			{
@@ -73,6 +91,17 @@ void RenameProgram(lowir_model::LowirProgram* program,
 					RenameOperand(program, &instruction.args[a], names, stats);
 			}
 	}
+	for (std::size_t i = 0; i < program->global_declarations.size(); ++i)
+		RenameObjectSymbol(program, program->global_declarations[i].symbol,
+			&program->global_declarations[i].metadata,
+			object_names, stats);
+	for (std::size_t i = 0; i < program->function_declarations.size(); ++i)
+		RenameObjectSymbol(program, program->function_declarations[i].symbol,
+			&program->function_declarations[i].metadata,
+			object_names, stats);
+	for (std::size_t i = 0; i < program->object_aliases.size(); ++i)
+		RenameStringId(program, &program->object_aliases[i].object_symbol,
+			object_names, stats);
 }
 
 lowir_model::Function MakeLifecycleAggregate(lowir_model::LowirProgram& program,
@@ -139,6 +168,7 @@ lowir_model::LowirProgram Link(
 		if (objects[i].target != target)
 			throw InvocationError("link input target mismatch");
 		RenameMap names;
+		RenameMap object_names;
 		for (std::size_t j = 0; j < objects[i].lowir.exported_symbols.size(); ++j)
 		{
 			const lowir_model::ExportedSymbol& symbol =
@@ -150,8 +180,15 @@ lowir_model::LowirProgram Link(
 			if (stats) { ++stats->symbols; ++stats->symbol_probes; }
 			if (symbol.linkage == ir_model::SL_INTERNAL ||
 				symbol.prefer_local_object_binding)
+			{
 				names[internal_symbol] = internal_symbol +
 					".__u" + std::to_string(i);
+				// The final native image has one object-symbol namespace too.
+				// Preserve TU-local identity at both symbol boundaries.
+				if (!object_symbol.empty())
+					object_names[object_symbol] = object_symbol +
+						".__u" + std::to_string(i);
+			}
 			else
 			{
 				const std::string key = object_symbol.empty() ?
@@ -162,7 +199,7 @@ lowir_model::LowirProgram Link(
 				names[internal_symbol] = inserted.first->second;
 			}
 		}
-		RenameProgram(&objects[i].lowir, names, stats);
+		RenameProgram(&objects[i].lowir, names, object_names, stats);
 		std::vector<lowir_model::SymbolId> symbol_remap(
 			objects[i].lowir.symbol_names.size());
 		for (std::size_t j = 0; j < symbol_remap.size(); ++j)

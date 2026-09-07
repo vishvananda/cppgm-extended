@@ -166,7 +166,7 @@ bool Analyzer::AnalyzeAmbiguousRelationalDeclaration(
 	//
 	// is a declaration while `value` names a member template.  If lookup at a
 	// later occurrence finds an integral member instead, the same tokens are
-	// parsed as `outer<(value < 0)>::member > x`.  PA10 deliberately retains
+	// parsed as `outer<(value < 0)>::member > x`.  PA5 deliberately retains
 	// the declaration parse, so resolve this declaration/expression ambiguity
 	// here, after ordinary point-of-declaration lookup is available.
 	const NodeId specifiers = FindChild(node, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ);

@@ -1,6 +1,6 @@
 #pragma once
 
-// Typed ABI records and public PA14 mangling API.
+// Typed ABI records and public PA9 mangling API.
 
 #include "abi/itanium/abi_mangle_facts.h"
 #include "abi/itanium/abi_mangle_stats.h"

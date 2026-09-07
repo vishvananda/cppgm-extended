@@ -1,6 +1,7 @@
-TARGET = nsdecl
+TARGET = cppgm++
+TARGET_ARGS = --emit-semantics
+export CPPGM_APP_ARGS := $(TARGET_ARGS)
 CXX = g++
-CPPGM_HOST_CXX ?= $(CXX)
 CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
 CPPGM_TEST_APP ?= ../dev/$(TARGET)
@@ -64,17 +65,17 @@ test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
 
-../dev/$(TARGET):
-	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX)
-
-dev-shared-target:
-	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ]; then true; else $(MAKE) -C ../dev $(TARGET) CXX=$(CXX) CPPGM_HOST_CXX=$(CPPGM_HOST_CXX); fi
-
 ref-test:
 	@$(REF_TEST_RUN)
 
-RUN_CHECK_DEPS = $(TEST_DEPS)
 include ../scripts/pa_run_check_targets.mk
+
+.PHONY: dev-shared-target ref-test
+../dev/$(TARGET):
+	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX)
+
+dev-shared-target:
+	@if [ "$(CPPGM_SKIP_DEV_REBUILD)" = "1" ]; then true; else $(MAKE) -C ../dev $(TARGET) CXX=$(CXX); fi
 
 clean:
 	-rm -f $(TARGET) $(TARGET)-debug $(OBJ)/release/*.o $(OBJ)/debug/*.o
@@ -87,3 +88,5 @@ $(DDEPDIR)/%.d: ;
 
 -include $(addprefix $(RDEPDIR)/,$(addsuffix .d,$(common_obj_basenames)))
 -include $(addprefix $(DDEPDIR)/,$(addsuffix .d,$(common_obj_basenames)))
+-include $(RDEPDIR)/test_runner_enabled.d
+-include $(DDEPDIR)/test_runner_enabled.d

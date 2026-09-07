@@ -10,16 +10,29 @@
 # Usage:
 #   scripts/run_frozen_compile_benchmark.sh <compiler-a> <compiler-b> [blocks] [-O level]
 #
-# The corpus lives outside the repository; override with CPPGM_FROZEN_ROOT.
+# The checked-in corpus includes its pinned headers. CPPGM_FROZEN_ROOT can
+# select another checkout holding the same benchmarks/self_compile/stable tree.
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-frozen=${CPPGM_FROZEN_ROOT:-$HOME/cppgm-extended-pa39-source-layout}
+frozen=${CPPGM_FROZEN_ROOT:-$root}
+if [ ! -d "$frozen" ]; then
+  echo "frozen corpus directory not found: $frozen" >&2
+  exit 2
+fi
+frozen=$(cd "$frozen" && pwd -P)
 source_file=${CPPGM_FROZEN_SOURCE:-$frozen/benchmarks/self_compile/stable/semantic_overload.cpp}
+include_root=$frozen/benchmarks/self_compile/stable/include
 
 if [ ! -f "$source_file" ]; then
   echo "frozen corpus not found: $source_file" >&2
   echo "set CPPGM_FROZEN_ROOT to the directory holding benchmarks/self_compile" >&2
+  exit 2
+fi
+source_file=$(cd "$(dirname "$source_file")" && pwd -P)/$(basename "$source_file")
+
+if [ ! -d "$include_root" ]; then
+  echo "frozen headers not found: $include_root" >&2
   exit 2
 fi
 
@@ -34,10 +47,10 @@ blocks=${3:-6}
 level=${4:--O1}
 
 exec python3 "$root/scripts/run_ab_compile_benchmark.py" \
+  --repo-root "$frozen" \
   --compiler-a "$a" \
   --compiler-b "$b" \
   --source "$source_file" \
-  --include "$frozen/dev/src" \
-  --include "$frozen/obj/generated" \
+  --include "$include_root" \
   --compiler-arg="$level" \
   --abba-blocks "$blocks"

@@ -8,7 +8,7 @@
 #include <vector>
 
 // A linear-scan allocator at the planning seam.  Implemented against
-// planning_seam.h and the PA38 README; see doc/backend-review/newcomer-notes.md.
+// planning_seam.h and the PA33 README; see doc/backend-review/newcomer-notes.md.
 //
 // Every plannable value becomes one interval [begin, end] over the
 // function's instruction positions (a loop-carried phi begins at 0, any

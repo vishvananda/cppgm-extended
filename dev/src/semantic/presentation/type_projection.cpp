@@ -1,4 +1,4 @@
-// Source-facing PA11 projections over the canonical semantic graph.
+// Source-facing PA6 projections over the canonical semantic graph.
 #include "semantic/analysis/analyzer.h"
 #include "support/exceptions.h"
 
@@ -39,7 +39,7 @@ void Analyzer::ProjectSourceClassTemplate(
 		if (parameter.kind != TEMPLATE_ARGUMENT_TYPE &&
 			parameter.kind != TEMPLATE_ARGUMENT_TEMPLATE)
 			ThrowSemanticError(
-				"non-type template parameter is outside PA11");
+				"non-type template parameter is outside PA6");
 		if (parameter.name == 0) continue;
 		const NamedFlavor flavor = parameter.kind == TEMPLATE_ARGUMENT_TEMPLATE ?
 			NAMED_TEMPLATE_PARAMETER : NAMED_TYPENAME_PARAMETER;

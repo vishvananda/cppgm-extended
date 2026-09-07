@@ -158,7 +158,7 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 		if (bytes > static_cast<std::uint64_t>(
 			std::numeric_limits<std::int64_t>::max()) ||
 			count > std::numeric_limits<std::uint64_t>::max() / inner_count)
-			ThrowSemanticResourceLimit("array allocation exceeds PA17 limits");
+			ThrowSemanticResourceLimit("array allocation exceeds PA12 limits");
 		flat_count = count * inner_count;
 		allocation_size = MakeLiteral(extent.type,
 			InternNumber(static_cast<std::int64_t>(bytes)));
@@ -302,10 +302,10 @@ ExpressionInfo Analyzer::AnalyzeNewExpression(NodeId node,
 	}
 	if (program_->types.Get(program_->types.RemoveTopCv(object_type)).kind ==
 		TYPE_ARRAY)
-		ThrowSemanticError("array new is outside PA16");
+		ThrowSemanticError("array new is outside PA11");
 	// A synthetic template-parameter shape is not a complete object type, and
 	// its allocation validity cannot be decided while materializing a partial
-	// specialization.  Let the candidate become a non-deduced shape so PA23's
+	// specialization.  Let the candidate become a non-deduced shape so PA18's
 	// concrete replay can check the retained new-expression after deduction.
 	if (CandidateSubstitutionActive() &&
 		FunctionTemplateTypeIsDependent(object_type))

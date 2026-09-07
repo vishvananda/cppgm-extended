@@ -42,6 +42,9 @@ public:
 		const std::string& spelling);
 
 private:
+	bool LowerScalarReferenceTemporary(
+		const semantic::NamespaceObjectAction& action,
+		lowering::ir::Global* global);
 	lowering::support::NodeChildren Children(std::uint32_t node) const;
 	bool IsTrivialConstructorAction(semantic::TypeId type,
 		const lowering::support::NodeChildren& children) const;

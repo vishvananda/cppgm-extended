@@ -116,7 +116,7 @@ void FinalizeOptimizer(const lowir_model::Program& program,
 void ReportOptimizer(std::ostream& output, const std::string& input,
 	const lowir_opt::Stats& stats)
 {
-	output << "pa37_opt_stats"
+	output << "pa32_opt_stats"
 		 << (input.empty() ? "" : " input=") << input
 		 << " functions=" << stats.functions
 		 << " input_instructions=" << stats.input_instructions
@@ -640,14 +640,14 @@ void ReportPreparation(std::ostream& output, const std::string& path,
 	for (std::size_t fallback = 0;
 		fallback < stats.post_inline_retained_conservative_fallback_names.size();
 		++fallback)
-		output << "pa15_retained_fallback file=" << path << " symbol="
+		output << "pa10_retained_fallback file=" << path << " symbol="
 			<< stats.post_inline_retained_conservative_fallback_names[fallback]
 			<< '\n';
 	for (std::size_t internal = 0;
 		internal < stats.post_inline_unreachable_internal_names.size(); ++internal)
-		output << "pa15_unreachable_internal file=" << path << " symbol="
+		output << "pa10_unreachable_internal file=" << path << " symbol="
 			<< stats.post_inline_unreachable_internal_names[internal] << '\n';
-	output << "pa37_prepare_stats"
+	output << "pa32_prepare_stats"
 		 << " file=" << path
 		 << " typed_name_entries=" << preparation_stats.typed_name_entries
 		 << " typed_name_bytes=" << preparation_stats.typed_name_bytes

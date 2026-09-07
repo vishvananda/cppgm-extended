@@ -65,13 +65,13 @@ struct Stats
 	Stats();
 };
 
-// Parse one translation unit through phase 7 and write the PA10 syntax-tree
+// Parse one translation unit through phase 7 and write the PA5 syntax-tree
 // view. All retained token and syntax storage is owned by this call.
 void WriteTranslationUnit(const std::string& path,
 	const std::string& source, const PreprocessingOptions& options,
 	std::ostream& output, Stats* stats = 0);
 
-// Parse one translation unit through the shared PA10 syntax boundary and give
+// Parse one translation unit through the shared PA5 syntax boundary and give
 // a phase-local, read-only arena view to a semantic consumer. The arena and
 // retained tokens are released when this call returns.
 void ConsumeTranslationUnit(const std::string& path,

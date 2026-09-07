@@ -62,8 +62,6 @@ CompilerErrorDomain SerializedInputError::DomainFor(
 		return CompilerErrorDomain::LOWIR;
 	case SerializedInputFormat::COMPILER_OBJECT:
 		return CompilerErrorDomain::COMPILER_OBJECT;
-	case SerializedInputFormat::CY86:
-		return CompilerErrorDomain::CY86;
 	case SerializedInputFormat::MIR:
 		return CompilerErrorDomain::NATIVE;
 	}

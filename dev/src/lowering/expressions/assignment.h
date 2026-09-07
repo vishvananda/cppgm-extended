@@ -386,7 +386,7 @@ public:
 			derived.Emit(load);
 			if (record.operand_type == kNoType)
 				ThrowLoweringInternal(
-					"compound assignment is missing its PA12 operand type");
+					"compound assignment is missing its PA7 operand type");
 			const LowType operation_type = derived.LowerType(record.operand_type);
 			const Operand right = derived.LowerConvertedValue(
 				children[1], operation_type, false);
@@ -406,7 +406,7 @@ public:
 				op == OP_XORASS ? LOW_OP_XOR : op == OP_LSHIFTASS ? LOW_OP_SHL : op == OP_RSHIFTASS ?
 					(operation_type.is_signed ? LOW_OP_SHR : LOW_OP_USHR) : LOW_OP_NONE;
 			if (binary.op == LOW_OP_NONE)
-				ThrowLoweringSource("unsupported PA15 compound assignment");
+				ThrowLoweringSource("unsupported PA10 compound assignment");
 			derived.Emit(binary);
 			value = derived.Convert(value, type, false);
 		}

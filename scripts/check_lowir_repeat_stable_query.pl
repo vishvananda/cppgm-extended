@@ -130,8 +130,8 @@ for my $test (@tests)
 	require_calls($test, $o3, 'keep_volatile_query', 'volatile_query', 2,
 		'O3 treated a volatile fast path as repeat-stable');
 
-	my @records = grep { /^pa37_opt_stats(?:\s|$)/ } split(/\n/, $stats);
-	die "$test: expected one pa37_opt_stats record, found " .
+	my @records = grep { /^pa32_opt_stats(?:\s|$)/ } split(/\n/, $stats);
+	die "$test: expected one pa32_opt_stats record, found " .
 		scalar(@records) . "\n" if scalar(@records) != 1;
 	my %minimum = (
 		repeat_stable_function_visits => 1,

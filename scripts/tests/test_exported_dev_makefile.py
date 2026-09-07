@@ -14,29 +14,24 @@ EXPORT_SCRIPT = REPO_ROOT / "scripts" / "export_student_repo.sh"
 TESTS_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "tests.yml"
 
 REFERENCE_TARGETS = [
-    "abimangle", "pptoken", "posttoken", "ctrlexpr", "macro", "preproc",
-    "recog", "nsdecl", "nsinit", "cy86", "cppgm++", "lowir2cy86",
+    "abimangle", "pptoken", "posttoken", "ppexpr", "preproc",
+    "cppgm++", "lowir",
     "lowir2native", "lowiropt",
 ]
 
 ASSIGNMENT_REFERENCE_TARGETS = {
-    **{f"pa{i}": "cppgm++" for i in range(10, 13)},
-    **{f"pa{i}": "cppgm++" for i in range(15, 29)},
-    **{f"pa{i}": "cppgm++" for i in range(30, 37)},
+    **{f"pa{i}": "cppgm++" for i in range(5, 8)},
+    **{f"pa{i}": "cppgm++" for i in range(10, 24)},
+    **{f"pa{i}": "cppgm++" for i in range(25, 32)},
     "pa1": "pptoken",
     "pa2": "posttoken",
-    "pa3": "ctrlexpr",
-    "pa4": "macro",
-    "pa5": "preproc",
-    "pa6": "recog",
-    "pa7": "nsdecl",
-    "pa8": "nsinit",
-    "pa9": "cy86",
-    "pa13": "lowir2cy86",
-    "pa14": "abimangle",
-    "pa29": "lowir2native",
-    "pa37": "lowiropt",
-    "pa38": "lowir2native",
+    "pa3": "ppexpr",
+    "pa4": "preproc",
+    "pa8": "lowir",
+    "pa9": "abimangle",
+    "pa24": "lowir2native",
+    "pa32": "lowiropt",
+    "pa33": "lowir2native",
 }
 
 
@@ -65,9 +60,9 @@ class ExportedDevMakefileTests(unittest.TestCase):
             (dev / "Makefile").write_text(exported_dev_makefile())
 
             targets = [
-                "abimangle", "pptoken", "posttoken", "ctrlexpr", "macro",
-                "preproc", "recog", "lowir2cy86", "lowiropt", "lowir2native",
-                "cppgm++", "nsdecl", "nsinit", "cy86",
+                "abimangle", "pptoken", "posttoken", "ppexpr",
+                "preproc", "lowir", "lowiropt", "lowir2native",
+                "cppgm++",
             ]
             source_sets = []
             for target in targets:
@@ -150,7 +145,7 @@ class ExportedDevMakefileTests(unittest.TestCase):
         pairs = shell_array(EXPORT_SCRIPT.read_text(), "pa_ref_pairs")
         actual = dict(pair.split(":", 1) for pair in pairs)
         self.assertEqual(actual, ASSIGNMENT_REFERENCE_TARGETS)
-        self.assertEqual(len(pairs), 38)
+        self.assertEqual(len(pairs), len(ASSIGNMENT_REFERENCE_TARGETS))
 
     def test_export_owns_failed_stdout_diagnostics(self):
         script = EXPORT_SCRIPT.read_text()

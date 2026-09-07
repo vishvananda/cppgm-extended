@@ -7,7 +7,7 @@ compiler implementation, assignment directories, shared tests, validation
 scripts, and documentation used to maintain the self-hosting toolchain.
 
 Implementation work lives in `dev/`. Assignment directories `pa1` through
-`pa39` contain handouts, tests, references, and milestone wrappers.
+`pa34` contain handouts, tests, references, and milestone wrappers.
 
 This repository can also produce the student-facing assignment export. The
 published assignment repository is
@@ -17,7 +17,7 @@ published assignment repository is
 
 This project grew out of the C++ Grandmaster Certification, a staged compiler
 course that originally walked through PA1-PA9: preprocessing, parsing, and a
-small backend path. The current repository continues that shape through PA39,
+small backend path. The current repository continues that shape through PA34,
 adding the missing compiler layers: AST construction, semantic analysis,
 templates, typed IR, native object generation, linking, runtime support, and a
 self-hosting ladder.
@@ -40,7 +40,7 @@ See [NOTICE](NOTICE) for third-party and archival attribution.
 
 ## Archival Note
 
-PA1 through PA9 include assignment material from the CPP Grandmasters challenge.
+Original PA1 through PA9 contributed assignment material from the CPP Grandmasters challenge.
 The original site appears to be defunct, so these materials are preserved here
 for archival and continuity purposes. See [NOTICE](NOTICE) for the PA1-PA9
 copyright attribution and removal contact note.

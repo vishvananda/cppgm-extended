@@ -1,10 +1,10 @@
 .cproject
 .project
 tests/*.my*
-ctrlexpr
-ctrlexpr-fast
-ctrlexpr-self-fast
-ctrlexpr-debug
+ppexpr
+ppexpr-fast
+ppexpr-self-fast
+ppexpr-debug
 *.dSYM
 testin
 testout

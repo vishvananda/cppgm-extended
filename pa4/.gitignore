@@ -1,10 +1,10 @@
 .cproject
 .project
 tests/*.my*
-macro
-macro-fast
-macro-self-fast
-macro-debug
+preproc
+preproc-fast
+preproc-self-fast
+preproc-debug
 *.dSYM
 testin
 testout

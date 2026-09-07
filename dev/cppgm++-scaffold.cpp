@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA10+ `cppgm++` binary.
+// Student-facing scaffold for the PA5+ `cppgm++` binary.
 
 #include "support/not_implemented.h"
 #include "support/tool_help_text.h"
@@ -382,25 +382,25 @@ int run_unimplemented_mode(const char * feature,
 int run_emit_ast_mode(const vector<string> & args)
 {
   parse_source_output_invocation(args, false);
-  return run_unimplemented_mode("--emit-ast", "PA10");
+  return run_unimplemented_mode("--emit-ast", "PA5");
 }
 
 int run_emit_types_mode(const vector<string> & args)
 {
   parse_source_output_invocation(args, false);
-  return run_unimplemented_mode("--emit-types", "PA11");
+  return run_unimplemented_mode("--emit-types", "PA6");
 }
 
 int run_emit_semantics_mode(const vector<string> & args)
 {
   parse_source_output_invocation(args, false);
-  return run_unimplemented_mode("--emit-semantics", "PA12");
+  return run_unimplemented_mode("--emit-semantics", "PA7");
 }
 
 int run_emit_lowir_mode(const vector<string> & args)
 {
   parse_source_output_invocation(args, true);
-  return run_unimplemented_mode("--emit-lowir", "PA14");
+  return run_unimplemented_mode("--emit-lowir", "PA9");
 }
 
 int run_driver_mode(const vector<string> & args)
@@ -408,13 +408,13 @@ int run_driver_mode(const vector<string> & args)
   const DriverInvocation invocation = parse_driver_invocation(args);
   switch(invocation.mode) {
   case DriverMode::Query:
-    return run_unimplemented_mode("driver query mode", "PA34");
+    return run_unimplemented_mode("driver query mode", "PA29");
   case DriverMode::Preprocess:
-    return run_unimplemented_mode("hosted preprocess driver mode (-E)", "PA34");
+    return run_unimplemented_mode("hosted preprocess driver mode (-E)", "PA29");
   case DriverMode::Compile:
-    return run_unimplemented_mode("compile driver mode (-c)", "PA29");
+    return run_unimplemented_mode("compile driver mode (-c)", "PA24");
   case DriverMode::Link:
-    return run_unimplemented_mode("link driver mode", "PA29");
+    return run_unimplemented_mode("link driver mode", "PA24");
   }
   throw logic_error("unreachable driver mode");
 }

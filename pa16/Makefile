@@ -18,7 +18,6 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
-CONTROL_TEST_ROOT ?= tests/controls
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 
@@ -65,51 +64,13 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
-	@if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
-		perl ../scripts/check_pa16_string_literal_storage.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
-		perl ../scripts/check_pa16_lifecycle_policy.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
-		perl ../scripts/check_pa16_goto_lifetime_cleanup.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
-		perl ../scripts/check_pa16_unreachable_terminator.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
-	fi
-
-# The LowIR comparison seams: the harness's own unit tests, then every
-# rewrite of this lane's outputs that ../pa13/lowir.md says the comparison
-# absorbs must pass, and every rewrite it says the course enforces as a
-# convention must fail.  Needs the `.my` outputs `test` produces.
-# Maintainer lane: the invariant is about the comparison harness and the
-# contract text in ../pa13/lowir.md, not about an implementation, so the
-# repository-root report runs it rather than `make test`.
-test-seams:
-	@python3 ../scripts/tests/test_compare_lowir_results.py 2>&1 | tail -1
-	@python3 ../scripts/check_lowir_seams.py . tests/general
 
 ref-test:
 	@$(REF_TEST_RUN)
 
-REF_TEST_RUN = case "$(TEST)" in \
-	$(CONTROL_TEST_ROOT)/*) echo "$(TEST): focused LowIR property has no reference sidecar" ;; \
-	*) scripts/run_all_tests.pl $(REF_TEST_APP) ref "$(if $(strip $(TEST)),$(TEST),tests)" ;; \
-esac
-
-CHECK_RUN = case "$(TEST)" in \
-	$(CONTROL_TEST_ROOT)/*string-literal-readonly*) perl ../scripts/check_pa16_string_literal_storage.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
-	$(CONTROL_TEST_ROOT)/*lifecycle-inline-policy*) perl ../scripts/check_pa16_lifecycle_policy.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
-	$(CONTROL_TEST_ROOT)/*goto-lifetime-cleanup*) perl ../scripts/check_pa16_goto_lifetime_cleanup.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
-	$(CONTROL_TEST_ROOT)/*unreachable-terminator*) perl ../scripts/check_pa16_unreachable_terminator.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
-	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
-esac
-CHECK_COMPARE = case "$(TEST)" in \
-	$(CONTROL_TEST_ROOT)/*) true ;; \
-	*) scripts/compare_results.pl ref check "$(TEST)" ;; \
-esac
-
 include ../scripts/pa_run_check_targets.mk
 
-.PHONY: dev-shared-target ref-test test-seams
+.PHONY: dev-shared-target ref-test
 ../dev/$(TARGET):
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX)
 

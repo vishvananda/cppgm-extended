@@ -89,7 +89,6 @@ copy_tracked_paths() {
         next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite)\.py$};
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
-        next if m{^pa9/extras/};
         print "$_\0";
       '
   ) | rsync -a --from0 --files-from=- "$repo_root/" "$dest/"
@@ -277,11 +276,11 @@ sanitize_student_root_makefile() {
     s/^test-telemetry-off: build build-telemetry-off\n(?:\t[^\n]*\n)+\n?//m;
     s/(?:^#[^\n]*\n)*^HARNESS_TESTS = \\\n(?:\t[^\n]*\n)+\n?^test-harness:\n(?:\t[^\n]*\n)+\n?//m;
     s/\b(?:audit-[a-z-]+|build-telemetry-off|test-telemetry-off|test-harness) //g;
-    s/^\tif \[ -d pa16\/tests\/general \]; then \\\n\t\t\$\(MAKE\) -s -C pa16 test-seams \|\| touch pa16\/\.test_failed; \\\n\tfi; \\\n//m;
+    s/^\tif \[ -d pa11\/tests\/general \]; then \\\n\t\t\$\(MAKE\) -s -C pa11 test-seams \|\| touch pa11\/\.test_failed; \\\n\tfi; \\\n//m;
   ' "$@"
 }
 
-# The PA16 seams lane checks the comparison harness against the contract text,
+# The PA11 seams lane checks the comparison harness against the contract text,
 # which is maintainer work: drop the target and its scripts from the export.
 sanitize_student_seams_makefile() {
   if [ -f "$1" ]; then
@@ -318,7 +317,7 @@ sanitize_linux_student_scripts() {
     ' "$run_script"
   fi
 
-  run_script="$dest/pa13/scripts/cppgm-debugger-common.sh"
+  run_script="$dest/pa8/scripts/cppgm-debugger-common.sh"
   if [ -f "$run_script" ]; then
     perl -0pi -e '
       s/cppgm_sys=\$\(uname -s 2>\/dev\/null \|\| echo unknown\)\n      case "\$cppgm_sys" in\n        Darwin\)\n          cppgm_try_lldb \|\| cppgm_try_gdb \|\| \{\n            echo "missing debugger backend" >&2\n            return 1\n          \}\n          ;;\n        \*\)\n          cppgm_try_gdb \|\| cppgm_try_lldb \|\| \{\n            echo "missing debugger backend" >&2\n            return 1\n          \}\n          ;;\n      esac/cppgm_try_gdb || cppgm_try_lldb || {\n        echo "missing debugger backend" >&2\n        return 1\n      }/g;
@@ -327,8 +326,8 @@ sanitize_linux_student_scripts() {
 }
 
 pa_dirs=()
-for n in $(seq 1 39); do
-  pa_dirs+=("pa$n")
+for makefile in "$repo_root"/pa[0-9]*/Makefile; do
+  pa_dirs+=("$(basename "$(dirname "$makefile")")")
 done
 
 shared_scripts=(
@@ -347,6 +346,7 @@ shared_scripts=(
   scripts/run_cpptoolchain_tests_worker.pl
   scripts/run_lowir_link_tests_worker.pl
   scripts/run_lowir_native_tests_worker.pl
+  scripts/run_lowir_program_tests_worker.pl
   scripts/run_routed_test_spec.pl
   scripts/run_reference_binary.sh
   scripts/run_with_timeout.pl
@@ -405,15 +405,10 @@ scaffold_pairs=(
   abimangle:abimangle-scaffold.cpp
   pptoken:pptoken-scaffold.cpp
   posttoken:posttoken-scaffold.cpp
-  ctrlexpr:ctrlexpr-scaffold.cpp
-  macro:macro-scaffold.cpp
+  ppexpr:ppexpr-scaffold.cpp
   preproc:preproc-scaffold.cpp
-  recog:recog-scaffold.cpp
-  nsdecl:nsdecl-scaffold.cpp
-  nsinit:nsinit-scaffold.cpp
-  cy86:cy86-scaffold.cpp
   cppgm++:cppgm++-scaffold.cpp
-  lowir2cy86:lowir2cy86-scaffold.cpp
+  lowir:lowir-scaffold.cpp
   lowir2native:lowir2native-scaffold.cpp
   lowiropt:lowiropt-scaffold.cpp
 )
@@ -430,22 +425,17 @@ cat > "$dest/dev/frontend_source_sets.mk" <<'EOF'
 # Add dev/src/foo.cpp to the tools that use it by adding `foo` below. For
 # subdirectories, use the path without `.cpp`, such as `parser/foo`.
 
-FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 cppgm++ lowiropt lowir2cy86 lowir2native
+FRONTEND_SOURCE_SET_TARGETS := abimangle pptoken posttoken ppexpr preproc cppgm++ lowiropt lowir lowir2native
 FRONTEND_TEST_RUNNER_SOURCE_ID := support/testing/test_runner
 
 FRONTEND_OBJ_BASENAMES_abimangle :=
 FRONTEND_OBJ_BASENAMES_pptoken :=
 FRONTEND_OBJ_BASENAMES_posttoken :=
-FRONTEND_OBJ_BASENAMES_ctrlexpr :=
-FRONTEND_OBJ_BASENAMES_macro :=
+FRONTEND_OBJ_BASENAMES_ppexpr :=
 FRONTEND_OBJ_BASENAMES_preproc :=
-FRONTEND_OBJ_BASENAMES_recog :=
-FRONTEND_OBJ_BASENAMES_nsdecl :=
-FRONTEND_OBJ_BASENAMES_nsinit :=
-FRONTEND_OBJ_BASENAMES_cy86 :=
 FRONTEND_OBJ_BASENAMES_cppgm++ :=
 FRONTEND_OBJ_BASENAMES_lowiropt :=
-FRONTEND_OBJ_BASENAMES_lowir2cy86 :=
+FRONTEND_OBJ_BASENAMES_lowir :=
 FRONTEND_OBJ_BASENAMES_lowir2native :=
 EOF
 
@@ -462,7 +452,7 @@ CPPGM_MAKE_LOW_JOB_LIMIT = $(shell \
 	limit='$(CPPGM_MAKE_JOB_LIMIT)'; cpus='$(DEFAULT_BUILD_JOBS)'; \
 	if [ "$$limit" -gt 0 ] 2>/dev/null && [ "$$cpus" -gt "$$limit" ] 2>/dev/null; then echo 1; else echo 0; fi)
 ifeq ($(CPPGM_MAKE_LOW_JOB_LIMIT),1)
-$(warning make is limited to -j$(CPPGM_MAKE_JOB_LIMIT) on a $(DEFAULT_BUILD_JOBS)-core machine; large compiler builds, especially self-host and PA39/inception builds, will be very slow. Omit -j or use -j$(DEFAULT_BUILD_JOBS).)
+$(warning make is limited to -j$(CPPGM_MAKE_JOB_LIMIT) on a $(DEFAULT_BUILD_JOBS)-core machine; large compiler builds, especially self-host and PA34/inception builds, will be very slow. Omit -j or use -j$(DEFAULT_BUILD_JOBS).)
 endif
 endif
 endif
@@ -471,17 +461,12 @@ TARGETS = \
 	abimangle \
 	pptoken \
 	posttoken \
-	ctrlexpr \
-	macro \
+	ppexpr \
 	preproc \
-	recog \
-	lowir2cy86 \
+	lowir \
 	lowiropt \
 	lowir2native \
-	cppgm++ \
-	nsdecl \
-	nsinit \
-	cy86
+	cppgm++
 
 CXX ?= g++
 V ?= 0
@@ -571,12 +556,12 @@ EOF
 
 student_makefiles=(
   "$dest/Makefile"
+  "$dest"/pa29/Makefile
+  "$dest"/pa30/Makefile
+  "$dest"/pa31/Makefile
+  "$dest"/pa32/Makefile
+  "$dest"/pa33/Makefile
   "$dest"/pa34/Makefile
-  "$dest"/pa35/Makefile
-  "$dest"/pa36/Makefile
-  "$dest"/pa37/Makefile
-  "$dest"/pa38/Makefile
-  "$dest"/pa39/Makefile
 )
 existing_student_makefiles=()
 for makefile in "${student_makefiles[@]}"; do
@@ -586,13 +571,13 @@ for makefile in "${student_makefiles[@]}"; do
 done
 sanitize_student_makefile_defaults "${existing_student_makefiles[@]}"
 sanitize_student_root_makefile "$dest/Makefile"
-sanitize_student_seams_makefile "$dest/pa16/Makefile"
+sanitize_student_seams_makefile "$dest/pa11/Makefile"
 sanitize_linux_student_scripts
 
-if [ -f "$dest/pa39/Makefile" ]; then
+if [ -f "$dest/pa34/Makefile" ]; then
   perl -0pi -e '
     s/\$\(foreach checkpoint,\$\(CHECKPOINTS\),\$\(if \$\(strip \$\(FRONTEND_OBJ_BASENAMES_\$\(checkpoint\)\)\),,\$\(error missing FRONTEND_OBJ_BASENAMES_\$\(checkpoint\) in \.\.\/dev\/frontend_source_sets\.mk\)\)\)/\$(foreach checkpoint,\$(CHECKPOINTS),\$(if \$(filter undefined,\$(origin FRONTEND_OBJ_BASENAMES_\$(checkpoint))),\$(error missing FRONTEND_OBJ_BASENAMES_\$(checkpoint) in ..\/dev\/frontend_source_sets.mk),))/g;
-  ' "$dest/pa39/Makefile"
+  ' "$dest/pa34/Makefile"
 fi
 
 
@@ -600,15 +585,10 @@ reference_targets=(
   abimangle
   pptoken
   posttoken
-  ctrlexpr
-  macro
+  ppexpr
   preproc
-  recog
-  nsdecl
-  nsinit
-  cy86
   cppgm++
-  lowir2cy86
+  lowir
   lowir2native
   lowiropt
 )
@@ -635,18 +615,18 @@ done
 pa_ref_pairs=(
   pa1:pptoken
   pa2:posttoken
-  pa3:ctrlexpr
-  pa4:macro
-  pa5:preproc
-  pa6:recog
-  pa7:nsdecl
-  pa8:nsinit
-  pa9:cy86
+  pa3:ppexpr
+  pa4:preproc
+  pa5:cppgm++
+  pa6:cppgm++
+  pa7:cppgm++
+  pa8:lowir
+  pa9:abimangle
   pa10:cppgm++
   pa11:cppgm++
   pa12:cppgm++
-  pa13:lowir2cy86
-  pa14:abimangle
+  pa13:cppgm++
+  pa14:cppgm++
   pa15:cppgm++
   pa16:cppgm++
   pa17:cppgm++
@@ -656,21 +636,16 @@ pa_ref_pairs=(
   pa21:cppgm++
   pa22:cppgm++
   pa23:cppgm++
-  pa24:cppgm++
+  pa24:lowir2native
   pa25:cppgm++
   pa26:cppgm++
   pa27:cppgm++
   pa28:cppgm++
-  pa29:lowir2native
+  pa29:cppgm++
   pa30:cppgm++
   pa31:cppgm++
-  pa32:cppgm++
-  pa33:cppgm++
-  pa34:cppgm++
-  pa35:cppgm++
-  pa36:cppgm++
-  pa37:lowiropt
-  pa38:lowir2native
+  pa32:lowiropt
+  pa33:lowir2native
 )
 
 source_sha=$(git -C "$repo_root" rev-parse HEAD 2>/dev/null || echo unknown)

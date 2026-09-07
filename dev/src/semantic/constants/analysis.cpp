@@ -173,10 +173,10 @@ void Analyzer::RecordExpressionFacts(const ExpressionInfo& value)
 		ConstexprAddressAt(value.constexpr_address);
 	const bool null_address = address &&
 		address->kind == CONSTEXPR_ADDRESS_NULL;
-	// Floating literal identity is retained for lowering, but PA15's runtime
-	// control-flow lowering must not reinterpret a PA21 semantic float fact as
+	// Floating literal identity is retained for lowering, but PA10's runtime
+	// control-flow lowering must not reinterpret a PA16 semantic float fact as
 	// an optimization request.  An integral source that was converted to a
-	// floating target still needs its original integer fact for PA15 to lower
+	// floating target still needs its original integer fact for PA10 to lower
 	// the source side of that conversion.
 	const bool retain_integral_source =
 		value.floating_constant && IsIntegral(node.type, true);

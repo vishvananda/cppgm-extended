@@ -17,7 +17,7 @@ CPPGM_MAKE_LOW_JOB_LIMIT = $(shell \
 	limit='$(CPPGM_MAKE_JOB_LIMIT)'; cpus='$(DEFAULT_BUILD_JOBS)'; \
 	if [ "$$limit" -gt 0 ] 2>/dev/null && [ "$$cpus" -gt "$$limit" ] 2>/dev/null; then echo 1; else echo 0; fi)
 ifeq ($(CPPGM_MAKE_LOW_JOB_LIMIT),1)
-$(warning make is limited to -j$(CPPGM_MAKE_JOB_LIMIT) on a $(DEFAULT_BUILD_JOBS)-core machine; large compiler builds, especially self-host and PA39/inception builds, will be very slow. Omit -j or use -j$(DEFAULT_BUILD_JOBS).)
+$(warning make is limited to -j$(CPPGM_MAKE_JOB_LIMIT) on a $(DEFAULT_BUILD_JOBS)-core machine; large compiler builds, especially self-host and PA34/inception builds, will be very slow. Omit -j or use -j$(DEFAULT_BUILD_JOBS).)
 endif
 endif
 endif
@@ -55,10 +55,10 @@ export CPPGM_TEST_RUNNER ?= 1
 export CPPGM_TEXT_TEST_TIMEOUT_SEC ?= 10
 export CPPGM_BUILD_TEST_TIMEOUT_SEC ?= 30
 export CPPGM_PROGRAM_TEST_TIMEOUT_SEC ?= 10
-DEBUGINFO_TEST_PAS ?= pa13 pa37 pa38
+DEBUGINFO_TEST_PAS ?= pa8 pa32 pa33
 
 ALL_PAS = $(patsubst %/Makefile,%,$(wildcard pa*/Makefile))
-EXPERIMENTAL_PAS ?= pa39
+EXPERIMENTAL_PAS ?= pa34
 PAS = $(filter-out $(EXPERIMENTAL_PAS),$(ALL_PAS))
 SORTED_PAS = $(shell printf '%s\n' $(PAS) | sort -t a -k 2,2n)
 TEST_REPORT_PAS ?= $(SORTED_PAS)
@@ -219,7 +219,7 @@ test-debuginfo-nobuild:
 	echo "===== DEBUG-INFO TESTS PASSED SUCCESSFULLY! ====="
 
 inception: build
-	@$(MAKE) -C pa39 \
+	@$(MAKE) -C pa34 \
 		CXX=../dev/cppgm++ \
 		CPPGM_HOST_CXX="$(CPPGM_HOST_CXX)" \
 		CPPGM_STDLIB_FLAGS="$(CPPGM_STDLIB_FLAGS)" \
@@ -228,7 +228,7 @@ inception: build
 # Toolchain cells.  Each supported (host compiler, standard library) pair keeps
 # its own object roots, so switching cells relinks the tools in dev/ but does
 # not throw away the objects the other cell compiled.  Prefix any target to run
-# it in a cell, for example `make with-clang-test-report-through-pa38` or
+# it in a cell, for example `make with-clang-test-report-through-pa33` or
 # `make with-clang-libcxx-inception`.  The supported cells are the default
 # g++/libstdc++, clang/libstdc++, and clang/libc++; g++ with libc++ is not
 # supported and has no cell.
@@ -246,8 +246,8 @@ test-cells:
 	for cell in default clang clang-libcxx; do \
 		echo "===== cell: $$cell ====="; \
 		case $$cell in \
-			default) target=test-report-through-pa38 ;; \
-			*) target=with-$$cell-test-report-through-pa38 ;; \
+			default) target=test-report-through-pa33 ;; \
+			*) target=with-$$cell-test-report-through-pa33 ;; \
 		esac; \
 		$(MAKE) $$target || { status=1; failed="$$failed $$cell"; }; \
 	done; \
@@ -273,8 +273,10 @@ HARNESS_TESTS = \
 	scripts/tests/test_dev_makefile_obj_isolation.py \
 	scripts/tests/test_dump_host_eh_object_facts_pl.py \
 	scripts/tests/test_exported_dev_makefile.py \
+	scripts/tests/test_lowir_program_harness.py \
+	scripts/tests/test_compiler_rename_manifest.py \
 	scripts/tests/test_machine_object_host_eh_roundtrip.py \
-	scripts/tests/test_pa29_mir_modes.py \
+	scripts/tests/test_pa24_mir_modes.py \
 	scripts/tests/test_report_elf_code_shape.py \
 	scripts/tests/test_run_ab_compile_benchmark.py \
 	scripts/tests/test_validate_perf_regression.py
@@ -283,7 +285,7 @@ test-harness:
 	@set -e; for test in $(HARNESS_TESTS); do echo "== $$test"; python3 $$test; done
 
 test-variants:
-	@for pa in pa29 pa37 pa38; do $(MAKE) -C $$pa test-variants || exit 1; done
+	@for pa in pa24 pa32 pa33; do $(MAKE) -C $$pa test-variants || exit 1; done
 
 # GNU make prefers the pattern rule that yields the shortest stem, so
 # `with-clang-libcxx-<target>` selects the libc++ cell rather than the
@@ -293,7 +295,7 @@ with-clang-%: require-clang
 		CXX=$(CLANG_CXX) \
 		CPPGM_HOST_CXX=$(CLANG_CXX) \
 		OBJ=$(CLANG_CELL_OBJ) \
-		INCEPTION_OBJ_ROOT_BASE=../$(CLANG_CELL_OBJ)/pa39
+		INCEPTION_OBJ_ROOT_BASE=../$(CLANG_CELL_OBJ)/pa34
 
 with-clang-libcxx-%: require-clang-libcxx
 	@$(MAKE) $* \
@@ -301,7 +303,7 @@ with-clang-libcxx-%: require-clang-libcxx
 		CPPGM_HOST_CXX=$(CLANG_CXX) \
 		CPPGM_STDLIB_FLAGS=-stdlib=libc++ \
 		OBJ=$(CLANG_LIBCXX_CELL_OBJ) \
-		INCEPTION_OBJ_ROOT_BASE=../$(CLANG_LIBCXX_CELL_OBJ)/pa39
+		INCEPTION_OBJ_ROOT_BASE=../$(CLANG_LIBCXX_CELL_OBJ)/pa34
 
 # A sanitizer build of the compiler itself.  The bug class this catches -- a
 # reference into a container that a nested analysis then grows -- is invisible
@@ -507,8 +509,8 @@ test-report-nobuild: audit-compiler-exceptions
 			cat "$$tmpdir/$$dir.out"; \
 		fi; \
 	done; \
-	if [ -d pa16/tests/general ]; then \
-		$(MAKE) -s -C pa16 test-seams || touch pa16/.test_failed; \
+	if [ -d pa11/tests/general ]; then \
+		$(MAKE) -s -C pa11 test-seams || touch pa11/.test_failed; \
 	fi; \
 	passed=$$(awk '{s+=$$1} END {print s}' .test_counts 2>/dev/null || echo 0); \
 	total=$$(awk '{s+=$$2} END {print s}' .test_counts 2>/dev/null || echo 0); \

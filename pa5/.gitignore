@@ -1,10 +1,8 @@
 .cproject
 .project
-tests/*.my*
-preproc
-preproc-fast
-preproc-self-fast
-preproc-debug
+tests/**/*.my*
+cppgm++
+cppgm++-debug
 *.dSYM
 tests/testin
 testout

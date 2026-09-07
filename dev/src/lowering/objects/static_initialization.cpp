@@ -128,7 +128,7 @@ bool StaticInitializerLowering::SymbolForBinding(BindingId binding,
 SymbolId StaticInitializerLowering::EnsureStringLiteral(std::uint32_t node)
 {
 	if (node >= literal_symbols_.size())
-		ThrowLoweringInternal("invalid PA15 literal node");
+		ThrowLoweringInternal("invalid PA10 literal node");
 	if (literal_symbols_[node] != kNoLowId) return literal_symbols_[node];
 	const std::string spelling = program_.names.Get(arena_.nodes[node].text);
 	literal_symbols_[node] = EnsureStringLiteralSpelling(spelling);
@@ -157,7 +157,7 @@ SymbolId StaticInitializerLowering::EnsureStringLiteralSpelling(
 	std::vector<std::uint32_t> units;
 	if (!DecodeStringLiteralCodeUnits(spelling, &decoded_type, &units) ||
 		units.empty())
-		ThrowLoweringSource("invalid PA16 string literal spelling");
+		ThrowLoweringSource("invalid PA11 string literal spelling");
 	LowType element;
 	std::size_t alignment = 1;
 	if (decoded_type == FT_CHAR) element = LowI8();
@@ -613,12 +613,48 @@ bool StaticInitializerLowering::LowerConstantObject(TypeId type,
 	return false;
 }
 
+bool StaticInitializerLowering::LowerScalarReferenceTemporary(
+	const NamespaceObjectAction& action, Global* global)
+{
+	if (action.initializer == kNoDumpEdge) return false;
+	const DumpNode& initializer = arena_.nodes[action.initializer];
+	const TypeId value_type = types_.RemoveReference(action.type);
+	if (initializer.category != VALUE_PRVALUE || !initializer.constant ||
+		types_.IsClassObject(value_type) || types_.IsArray(value_type))
+		return false;
+	// A temporary bound by a namespace-scope reference has static lifetime.
+	// Keeping it in the initializer function's stack frame leaves a dangling
+	// reference as soon as that function returns.
+	NamespaceObjectAction value_action = action;
+	value_action.type = value_type;
+	Global backing;
+	backing.type = types_.LowerStorage(value_type);
+	bool needs_initializer = false;
+	if (!Lower(value_action, false, &backing, &needs_initializer)) return false;
+	const std::string name = "__ref_tmp__" +
+		output_.strings.get(output_.symbols[global->symbol].name);
+	const SymbolId symbol = static_cast<SymbolId>(output_.symbols.size());
+	output_.symbols.push_back(Symbol(Symbol::GLOBAL_SYMBOL,
+		output_.strings.intern(name), lowir_model::StringId(),
+		false, true, false));
+	output_.symbols.back().definition_emitted = true;
+	output_.symbols.back().referenced = true;
+	backing.symbol = symbol;
+	output_.globals.push_back(backing);
+	if (stats_) ++stats_->globals;
+	global->initializer_kind = Global::ADDRESS_VALUE;
+	global->address_symbol = symbol;
+	global->address_offset = 0;
+	return true;
+}
+
 bool StaticInitializerLowering::Lower(const NamespaceObjectAction& action,
 	bool thread_local_object, Global* global,
 	bool* needs_global_class_initializer, bool* keep_global_class_address)
 {
 	if (keep_global_class_address) *keep_global_class_address = false;
-	if (types_.IsReference(action.type)) return false;
+	if (types_.IsReference(action.type))
+		return !thread_local_object && LowerScalarReferenceTemporary(action, global);
 	if (action.initializer == kNoDumpEdge)
 	{
 		SetZero(action.type, global);

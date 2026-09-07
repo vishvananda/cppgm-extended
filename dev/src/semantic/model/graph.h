@@ -325,7 +325,7 @@ public:
 	std::uint32_t Make(DumpKind kind)
 	{
 		if (nodes.size() >= kNoDumpEdge)
-			ThrowSemanticResourceLimit("too many PA12 semantic nodes");
+			ThrowSemanticResourceLimit("too many PA7 semantic nodes");
 		nodes.push_back(DumpNode(kind));
 		return static_cast<std::uint32_t>(nodes.size() - 1);
 	}
@@ -333,7 +333,7 @@ public:
 	void Add(std::uint32_t parent, std::uint32_t child)
 	{
 		if (edges.size() >= kNoDumpEdge)
-			ThrowSemanticResourceLimit("too many PA12 semantic edges");
+			ThrowSemanticResourceLimit("too many PA7 semantic edges");
 		const std::uint32_t edge = static_cast<std::uint32_t>(edges.size());
 		edges.push_back(DumpEdge(child));
 		DumpNode& owner = nodes[parent];
@@ -847,7 +847,7 @@ struct CallConversionFact
 	BindingId constructor;
 	BindingId conversion_function;
 	// A converting constructor normally owns a standard first-argument
-	// conversion.  The captureless-lambda conversion is the one PA25 path
+	// conversion.  The captureless-lambda conversion is the one PA20 path
 	// where that selected argument conversion is itself represented by a
 	// callable semantic fact; retain it instead of repeating class lookup
 	// while constructing the argument.
@@ -1573,7 +1573,7 @@ struct AggregateHelperInfo
 		  trivial_member_constructors(trivial_member_constructors_value) {}
 };
 
-// Borrowed, translation-unit-local view of the canonical PA12 graph.  The
+// Borrowed, translation-unit-local view of the canonical PA7 graph.  The
 // owner invokes consumers synchronously before releasing Program and DumpArena;
 // consumers must copy only the typed facts needed by their next phase.
 struct SemanticGraphView

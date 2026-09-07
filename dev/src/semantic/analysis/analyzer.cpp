@@ -796,7 +796,7 @@ ExpressionInfo Analyzer::AnalyzeExpression(NodeId node, ScopeId scope,
 	if (arena_->IsTag(node, ::cppgm::syntax::STAG_MEMBER_EXPRESSION))
 		return ApplyTarget(AnalyzeMember(node, scope), target);
 	const NodeId first_child = FirstSemanticChild(node);
-	ThrowSemanticError("unsupported PA12 expression " + arena_->Tag(node) +
+	ThrowSemanticError("unsupported PA7 expression " + arena_->Tag(node) +
 		" at " + arena_->SourceFile(node) + ":" +
 		std::to_string(arena_->SourceLine(node)) + ":" +
 		std::to_string(arena_->SourceColumn(node)) + " in " +
@@ -1383,7 +1383,7 @@ ExpressionInfo Analyzer::AnalyzeCall(NodeId node, ScopeId scope, TypeId target)
 			callee_path.global && callee_path.Size() == 1 ?
 				program_->names.Get(callee_path.Last()) : spelling;
 		// Closed intrinsic handlers own builtin identity.  Only after all of them
-		// decline may the PA34 compatibility fallback resolve __builtin_x as x.
+		// decline may the PA29 compatibility fallback resolve __builtin_x as x.
 		if (TryAnalyzeImmediateBuiltinCall(
 			builtin_spelling, scope, argument_syntax, target, &builtin))
 			return builtin;
@@ -1743,23 +1743,23 @@ void Analyzer::AnalyzeTemplate(NodeId node, ScopeId scope,
 		(!arena_->IsTag(target, ::cppgm::syntax::STAG_SIMPLE_DECLARATION) &&
 		 !arena_->IsTag(target, ::cppgm::syntax::STAG_FUNCTION_DEFINITION) &&
 		 !special_member_template))
-		ThrowSemanticError("unsupported PA12 templated declaration");
+		ThrowSemanticError("unsupported PA7 templated declaration");
 	const NodeId specifiers = FindChild(target, special_member_template ?
 		"member-specifiers" : "decl-specifier-seq");
 	if (specifiers == kNoNode && !special_member_template)
-		ThrowSemanticError("invalid PA12 function template");
+		ThrowSemanticError("invalid PA7 function template");
 	const bool definition = arena_->IsTag(target, ::cppgm::syntax::STAG_FUNCTION_DEFINITION) ||
 		arena_->IsTag(target, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DEFINITION);
 	const NodeId declarators = definition ? kNoNode :
 		FindChild(target, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
 	if (!definition && declarators == kNoNode && !special_member_template)
-		ThrowSemanticError("invalid PA12 function template");
+		ThrowSemanticError("invalid PA7 function template");
 	std::vector<NodeId> pattern_declarators;
 	if (definition || special_member_template)
 	{
 		const NodeId declarator = FindChild(target, ::cppgm::syntax::STAG_DECLARATOR);
 		if (declarator == kNoNode)
-			ThrowSemanticError("invalid PA12 function template definition");
+			ThrowSemanticError("invalid PA7 function template definition");
 		pattern_declarators.push_back(declarator);
 	}
 	else
@@ -1971,7 +1971,7 @@ void Analyzer::AnalyzeDeclaration(NodeId node, ScopeId scope,
 		current_language_linkage_ = previous_linkage;
 		return;
 	}
-	ThrowSemanticError("unsupported PA12 declaration: " + arena_->Tag(node));
+	ThrowSemanticError("unsupported PA7 declaration: " + arena_->Tag(node));
 }
 
 // The class a qualified declarator names as its owner (`int C::x = 1;`),
@@ -2677,7 +2677,7 @@ void Analyzer::AnalyzeStatement(NodeId node, ScopeId scope,
 		AnalyzeDeclaration(node, scope, output_parent, true);
 		return;
 	}
-	ThrowSemanticError("unsupported PA12 statement: " + arena_->Tag(node));
+	ThrowSemanticError("unsupported PA7 statement: " + arena_->Tag(node));
 }
 
 void Analyzer::RenderNode(std::uint32_t node, std::size_t depth)

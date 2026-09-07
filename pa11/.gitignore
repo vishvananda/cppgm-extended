@@ -1,9 +1,6 @@
-.cproject
-.project
-tests/**/*.my*
 cppgm++
 cppgm++-debug
-*.dSYM
-tests/testin
+tests/**/*.my*
 testout
 .test_failed
+*.dSYM

@@ -1,2 +1,0 @@
-#define test(a) # b
-

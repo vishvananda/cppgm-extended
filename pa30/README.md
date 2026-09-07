@@ -1,37 +1,30 @@
-## CPPGM Programming Assignment 30 (`cppgm++ -c` and link mode)
+## CPPGM Programming Assignment 30 (`cppgm++ -c`)
 
 ### Overview
 
-Write one C++ application called `cppgm++`.
+PA30 is the hosted header-compile assignment. It is split out of PA29: where
+PA29 establishes that hosted source/header inputs preprocess and compile at all
+(intrinsics, parser concessions, builtin traits, header-free conformance
+anchors, and lightweight C-wrapper header smokes). PA30 raises the bar to
+**compiling the heaviest real C++ standard-library headers** end to end with
+`cppgm++ -c`, within a workable time and memory budget.
 
-PA30 does not introduce a new executable. It extends the same `cppgm++` binary
-used since PA10 with practical compiler-driver behavior.
+By PA29, hosted headers and source should preprocess and compile for the
+lighter hosted workload. PA30 raises the bar to large, template- and trait-heavy
+STL headers (`<vector>`, `<unordered_map>`, `<tuple>`, `<random>`,
+`<functional>`, and the iostream/string/exception machinery).
 
-`cppgm++` has two required PA30 modes:
+This is the perf-gated tier of hosted compatibility. It is not a link or runtime
+test. The PA30 tests require clean object emission from heavy hosted headers;
+later hosted tests exercise whether emitted header code also links and runs.
 
-- compile mode, `-c`, which takes one C++ source file and writes one
-  implementation-defined compiler object file
-- default link mode, which takes one or more inputs and writes one native
-  executable program
+To complete PA30, implement these goals:
 
-In link mode, each input may be either:
-
-- a C++ source file, which `cppgm++` compiles as its own translation unit before
-  linking
-- a compiler object file previously produced by `cppgm++ -c`
-
-The contract is source-driven. The PA30 tests start from C++ source
-files, validate explicit separate compilation with `cppgm++ -c`, and then link
-the resulting objects with `cppgm++`. The harness also checks two practical
-driver consistency properties:
-
-- linking the same source files directly through `cppgm++` must match explicit
-  compile-then-link behavior
-- linking a mixture of precompiled objects and remaining source files must also
-  match explicit compile-then-link behavior
-
-PA30 does not introduce a new language subset. It turns the C++ feature set
-implemented through PA28 into a practical compile-and-link toolchain entrypoint.
+- compile the heaviest hosted standard-library headers cleanly with `cppgm++ -c`
+- carry the template instantiation, trait evaluation, and overload-resolution
+  depth those headers exercise without exponential blow-up
+- stay within a workable compile time and memory budget on the heavy-header
+  workload (the perf gate that distinguishes PA30 from the lighter PA29 surface)
 
 ### Prerequisites
 
@@ -39,299 +32,125 @@ Complete PA29 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST and PA11/PA12 semantic foundation
-- the PA15-PA28 LowIR lowering path
-- the PA29 native backend
-- the object emission, linking, and runtime support path used by `cppgm++`
+- the full earlier language, template, semantic, and lowering stack
+- the PA29 hosted preprocess/compile compatibility surface (intrinsics, parser
+  concessions, builtin traits/types, header-free conformance anchors, and
+  lightweight C-wrapper header smokes)
+- the PA27/PA28 `cppgm++ -c` host-object path
 
-The tests assume a POSIX-like shell environment with `make`, `bash`,
-`perl`, and a working host C/C++ compiler for test helper objects. The harness
-selects helper compilers from:
-
-- `CPPGM_HOST_CC` or `CC` for C helper sources
-- `CPPGM_HOST_CXX` or `CXX` for C++ helper sources
-
-If those are not set, the harness searches for common compilers such as
-`clang`, `gcc`, `cc`, `clang++`, `g++`, and `c++`. Some tests substitute the
-Linux target name or the corresponding x86_64 Linux triple,
-`x86_64-unknown-linux-gnu`, into driver flags.
+The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
+working host C++ compiler with hosted C++ headers installed. You may override the
+compiler with `CXX=...`. `CPPGM_HOST_CXX` selects the host compiler used for
+builtin macro/include probing; if unset it defaults to `CXX`. When you use a
+non-default standard library, pass the same choice through `CPPGM_STDLIB_FLAGS`
+so the course compiler and host compiler agree.
 
 ### Starter Kit
 
 The starter kit provides:
 
 - `dev/cppgm++.cpp`, populated from the `cppgm++` scaffold for the cumulative
-  PA10+ compiler driver
+  PA5+ compiler driver
 - the shared `dev/` sources needed by the scaffold
 - `pa30/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
 - `pa30/Makefile`
-- `pa30/scripts/`, the compiler-driver test harness
-- `pa30/tests/general/`, the PA30 tests and checked-in reference files
-- the shared `cppgm++` source grammar, exposed for this assignment as
-  `pa30.gram`
-- an HTML grammar explorer of `pa30.gram` in the sub-directory `grammar/`
+- `pa30/scripts/`, the hosted `-c` compile test harness (shared with PA29)
+- `pa30/tests/compile/`, the heavy-STL header-compile tests and checked-in
+  reference files
 
-Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
-inputs and references are part of the handout unless your instructor asks you
-to add or update tests.
+inputs and references are part of the handout unless your instructor asks you to
+add or update tests.
 
 There is no separate PA30 reference binary in the starter kit. The checked-in
 `.ref.*` files are the oracle.
 
-### Driver Surface
-
-Previously required:
-
-- `--emit-ast`
-- `--emit-types`
-- `--emit-semantics`
-- `--emit-lowir`
-- `-o <outfile>`
-
-New in PA30:
-
-- compile mode: `-c`
-- default link mode with source and object inputs
-- include search: `-I <dir>` and `-I<dir>`
-- library search: `-L <dir>`, `-L<dir>`, `-l <name>`, and `-l<name>`
-- target selection: `--target <target>` or `--target=<target>`
-
-Not yet required here:
-
-- hosted preprocess mode `-E`
-- hosted preprocessor-control flags such as `-D`, `-U`, `-include`, and
-  `-isystem`
-- driver query flags such as `--version`, `-v`, `-dumpmachine`,
-  `-dumpversion`, and `-print-search-dirs`
-- static archives and shared libraries as link inputs
-
 ### Command-Line Contract
 
-Required compile forms:
+PA30 introduces no new `cppgm++` flags. It reuses the compile-mode surface
+already required by PA29:
 
 ```sh
 cppgm++ -c -o <objfile> <srcfile>
-cppgm++ -c --target <target> -o <objfile> <srcfile>
-cppgm++ -c -I <dir> -o <objfile> <srcfile>
-cppgm++ -c -I<dir> -o <objfile> <srcfile>
-cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
-cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
+cppgm++ -c -isystem <dir> -o <objfile> <srcfile>
+cppgm++ -c -D <macro> -U <macro> -include <file> -o <objfile> <srcfile>
 ```
-
-Required link forms:
-
-```sh
-cppgm++ -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ --target <target> -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ -I <dir> -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ -I<dir> -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ -L <dir> -l<name> -o <outfile> <input1> <input2> ... <inputN>
-cppgm++ -L<dir> -l <name> -o <outfile> <input1> <input2> ... <inputN>
-```
-
-Options may be combined when their meanings are compatible, for example
-`--target <target>` with `-I` or `-L`/`-l`.
-
-In link mode, each `<inputK>` may be:
-
-- a C++ source file
-- an object-like file produced by `cppgm++ -c`
-
-For PA30, object files are identified by implementation-supported object-like
-filenames such as `.o` or `.obj`. The checked-in tests use `.obj`.
-
-`-I` adds user include search paths for any C++ source files compiled in that
-invocation. These paths apply to quoted and angle-bracket includes and are
-searched before compiler-provided shim include paths.
-
-`-L` and `-l` search implementation-supported object-like libraries. The tests use simple helper objects named like `lib<name>.o` in a harness-created
-library directory.
-
-All linked inputs in one invocation must target the same native backend target.
 
 ### Output Format
 
-In compile mode, `cppgm++` shall write one compiler object file to `<objfile>`.
+`cppgm++ -c` shall write a host-linker-compatible relocatable object as in
+PA27/PA28/PA29. For PA30 the emitted object is discarded — the requirement is
+simply that the heavy hosted header compiles cleanly to an object without error.
 
-In link mode, `cppgm++` shall write one native executable program to
-`<outfile>`.
-
-The PA30 object-file encoding is intentionally an internal `cppgm++` contract:
-the file must be consumable by `cppgm++` link mode, but it does not need to be
-accepted by the host linker. The exact object-file encoding is not directly
-compared by the PA30 tests. The exact final binary encoding is also not
-directly compared. Instead, the tests compare:
-
-- compile/link exit status
-- generated program exit status
-- generated program standard output
+The hosted header path should still lower through the same LowIR representation
+used by `cppgm++ --emit-lowir`. Performance work may avoid unnecessary file
+I/O, but it must not create a separate hosted-only backend route that depends
+on facts unavailable in serialized LowIR.
 
 ### Error Handling
 
-If an error occurs during preprocessing, parsing, semantic analysis, lowering,
-object-file emission, linking, or native output writing, `cppgm++` shall exit
-with failure.
-
-Important PA30 error cases include:
-
-- duplicate global symbol definitions, including definitions imported from
-  separate helper objects or libraries
-- unresolved external symbols
-- missing `main`
-
-For negative tests, exact diagnostics are not the grading contract. The harness
-compares exit status first. If the reference compile/link path fails, stdout and
-stderr are diagnostic side effects rather than required output.
-
-### Standard Output And Error
-
-Standard output and standard error are ignored for successful automated testing
-of `cppgm++` in PA30. You may use them for diagnostics.
+If preprocessing, parsing, semantic analysis, lowering, object emission, or
+output writing fails, `cppgm++` shall exit with failure. Exact diagnostics are
+not the grading contract; the harness compares exit status and checked output
+sidecars.
 
 ### Testing
 
 Run the PA30 suite with:
 
 ```sh
-make test
+make test                       # non-batch
+make test CPPGM_BATCH_TESTS=1   # batch worker
 ```
 
 To run one test through the shared check target:
 
 ```sh
-make check TEST=tests/general/100-two-source-call.t
+make check TEST=tests/compile/600-const-unordered-map-find.t
 ```
 
-The local tests live in `tests/general/`. They exercise practical
-compiler-driver, separate-compilation, link, runtime, and consistency behavior.
-They are not direct N3485 clause tests.
+The local tests live in `tests/compile/`. Each test is `.t` (source) plus an
+empty `.ref` base, a `.ref.exit_status` of `EXIT_SUCCESS`, and a `.ref.stdout`;
+it passes iff `cppgm++ -c` compiles it cleanly. Each test includes a real heavy
+header together with a cheat-proof anchor — a trait, `decltype`, `sizeof`, or
+`static_assert` that cannot be satisfied without genuinely compiling the header,
+so a test cannot pass by skipping or stubbing the include.
 
-For each test anchor `x.t`, companion C++ sources are named:
+Optional `x.no-exceptions` and `x.cxx-standard` sidecars disable exceptions or
+select the language mode for a compile test. The standard sidecar currently
+accepts `c++11` and `c++14`.
 
-```text
-x.t.1
-x.t.2
-...
-```
+### Required Implementation Surface
 
-Optional sidecars include:
+To complete PA30, support:
 
-- `x.flags`: extra flags passed to `cppgm++`
-- `x.lib.*`: host-built helper C or C++ sources that become object-like
-  libraries for `-L`/`-l` tests
-- `x.stdin`: standard input for the generated program
+- compiling the heaviest hosted standard-library headers within the perf budget
+- the template, trait, and overload-resolution depth those headers exercise
+  during `-c` compilation
 
-For each test case, the harness checks:
+The PA30 tests do not require:
 
-1. Explicit separate compilation:
-   `cppgm++ -c` is executed once for each companion source file, and then
-   `cppgm++` links the generated objects.
-2. Direct source linking:
-   `cppgm++` is executed directly on the same source files.
-3. Mixed source/object linking for multi-source tests:
-   one generated object and the remaining source files are linked together.
+- new intrinsics, parser concessions, header-free conformance anchors, or
+  lightweight hosted C-wrapper behavior beyond the hosted compatibility already
+  needed before PA30
+- hosted header-emitted link/runtime behavior
+- bootstrap or self-host builds
 
-The checked-in `.ref.*` files are compared against the explicit compile/link
-path. The direct and mixed paths are consistency checks: they must match the
-explicit path.
-
-This validates:
-
-- compile mode
-- link mode
-- source-to-object lowering through the full language pipeline
-- consistency between direct source linking and explicit separate compilation
-- consistency between mixed source/object linking and explicit separate
-  compilation
-- cross-translation-unit data relocations that feed indirect calls
-- namespace-scope startup hooks across translation units
-- coalescible ODR emission when an out-of-class class-template member
-  definition from a shared header is instantiated in multiple translation
-  units
-
-### Assignment Boundary
-
-PA30 must support the C++ feature set already implemented through PA28, but
-through a practical driver interface rather than one stage-specific binary per
-milestone.
-
-Within that supported subset, PA30 should:
-
-- compile one C++ source file to one compiler object file with `-c`
-- link compiler object files into a native executable
-- accept C++ source files directly in link mode by compiling each source as its
-  own translation unit before linking
-- support user include search paths through `-I`
-- support source-level external declarations needed for ordinary separate
-  compilation, such as `extern int g;`
-- support ordinary external C function declarations and definitions through
-  `extern "C"` in the practical subset needed for object-style library
-  interoperability
-- support object-like library search through `-L` and `-l`
-- support simple complete-program runtime tests written in C++ and linked
-  against harness-provided object-style support libraries, without requiring
-  host libc or hosted headers
-- allow an implementation-defined compiler object format with your own linker
-  for PA30, as long as the `cppgm++` behavior matches the contract
-
-To complete PA30, implement these goals:
-
-1. Separate compilation from C++ source.
-2. Direct source-link parity.
-3. Mixed source/object parity.
-4. Cross-translation-unit source semantics.
-5. Toolchain-style include handling.
-6. External object-library interoperability through the tested `extern "C"`
-   and `-L`/`-l` subset.
-7. Full-language-through-toolchain validation for previously implemented
-   language features.
-   The supported wide-integer extension is included in that runtime surface:
-   truth conversion of `__int128` values must inspect the complete value, and
-   mixed signed/unsigned 128-bit comparisons must follow the usual arithmetic
-   conversions independently of operand order. Bitwise complement and left,
-   logical-right, and arithmetic-right shifts must also work for runtime counts,
-   including counts on either side of the 64-bit half boundary.
-8. Source-driven runtime-program validation without host-library dependence.
-
-### Out Of Scope
-
-The following are out of scope for PA30:
-
-- full system-compiler flag compatibility beyond the documented PA30 options
-- static archives such as `.a`
-- shared libraries such as `.so` or `.dylib`
-- arbitrary foreign non-object library formats
-- full `extern "C"` linkage-specification coverage beyond the practical
-  function-oriented subset needed for PA30 interop
-- dependence on host libc or hosted headers for the basic PA30 runtime-program
-  coverage
-- dependency generation flags
-- precompiled headers
-- build-system conveniences such as depfiles or compilation databases
-- hosted preprocessor and hosted-header compatibility, which belong in PA34
-  and PA36
-- standalone ABI name construction, which belongs in PA14
-- host-linker-compatible object output, which belongs in PA31/PA32
+If a failing PA30 test exposes a bug in syntax, semantic analysis, template
+handling, lowering, or object emission that is shared with earlier language
+features, fix the shared compiler behavior rather than adding a PA30-only path.
 
 ### Design Notes (Non-Normative)
 
-PA30 should wrap the existing implemented pipeline, not replace it.
+The heavy headers stress the same machinery PA29 enables, just far harder:
+deeply nested template instantiation, trait and `decltype` evaluation, partial
+specialization selection, and large overload sets. The productive failures here
+are usually performance cliffs (re-resolving the same bound template pack,
+re-instantiating the same specialization) rather than missing features. Prefer
+memoizing repeated resolution over deepening recursion guards.
 
-In particular:
+### After PA30
 
-- C++ source inputs should still flow through the existing semantic and LowIR
-  lowering path.
-- The object and link stages should still reuse the object/runtime machinery
-  from earlier assignments.
-- The direct source-link path should behave like repeated separate compilation
-  followed by linking, not like a special one-off shortcut.
-- Do not carry a private PA30 object encoding forward as the host-object
-  solution. PA31/PA32 replace the internal compiler-object contract with a
-  host-linker-compatible object contract.
-
-### Stage Handoff
-
-The next stage is PA14, which isolates Itanium C++ ABI name construction before
-the later host-object assignments require host-compatible C++ symbol names.
+Later hosted tests keep the same hosted header environment and then check that
+the emitted code from those headers also links and runs.

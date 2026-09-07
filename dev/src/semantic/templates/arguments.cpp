@@ -1340,7 +1340,7 @@ void Analyzer::ParseTemplateParametersWithDependentNames(
 			}
 		}
 		else ThrowSemanticError(
-			"template-template parameters are outside PA20");
+			"template-template parameters are outside PA15");
 		parameters->push_back(record);
 		names->push_back(record.name);
 		defaults->push_back(record.default_argument);

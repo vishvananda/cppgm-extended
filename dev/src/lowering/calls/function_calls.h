@@ -77,7 +77,7 @@ protected:
 		const TypeRecord& function_type =
 			derived.program_.types.Get(function_type_id);
 		if (function_type.kind != TYPE_FUNCTION)
-			ThrowLoweringInternal("invalid PA15 indirect callee type");
+			ThrowLoweringInternal("invalid PA10 indirect callee type");
 		const TypeId* parameters =
 			derived.program_.types.Parameters(function_type_id);
 		CallArguments arguments;

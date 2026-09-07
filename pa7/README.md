@@ -1,207 +1,348 @@
-## CPPGM Programming Assignment 7 (nsdecl)
+## CPPGM Programming Assignment 7 (`cppgm++ --emit-semantics`)
 
 ### Overview
 
-Write a C++ application called `nsdecl` that takes as input a set of C++ Source Files, executes translation phases 1 through 7, and describes the semantically analyzed translation units in the specified format.
+Extend `cppgm++` with the PA7 call-semantics dump mode:
 
-The behaviour of `nsdecl` is undefined if ANY of the following are true:
+```sh
+cppgm++ --emit-semantics -o <outfile> <srcfile1> [<srcfile2> ...]
+```
 
-- A translation unit does not match pa7.gram
+The program reads one or more C++ source files, runs translation phases 1
+through 7, parses them using the PA5 syntax boundary, applies the PA6
+scope/type model, and writes a deterministic semantic dump for the procedural
+expression, statement, conversion, and non-template call subset.
 
-- The program is ill-formed, whether the standard requires a diagnostic or not.
-
-- If a function has more than one entry in its overload set.
-
-- If a name lookup occurs in a declaration after a qualified declarator-id (3.4.3p3 not required).
+PA7 builds on PA5 and PA6. The earlier `--emit-ast` and `--emit-types` modes
+remain required, and PA7 adds `--emit-semantics`.
 
 ### Prerequisites
 
-You should complete Reading Assignment A before starting this assignment.
+Complete PA6 before starting PA7. You should expect to reuse:
+
+- the PA1-PA4 preprocessing and tokenization pipeline
+- the PA5 AST
+- PA6 scope formation and lookup
+- PA6 declarator-derived type construction
+- the canonical type spelling used by the earlier semantic assignments
+
+PA7 is the first call-semantics milestone. It is deliberately limited to the
+procedural, non-template, non-class-aware subset. Class-aware calls,
+constructors, user-defined conversions, overloaded operators, and template
+functions are assigned later.
 
 ### Starter Kit
 
-The starter kit can be obtained from:
+The PA7 starter kit contains:
 
-    $ git clone git://git.cppgm.org/pa7.git
-
-It contains:
-
-- a stub implementation of `nsdecl`
-- a compiled reference implementation `nsdecl-ref`
-- a test suite.
-- a stdin/stdout wrapper for `nsdecl-ref` called `nsdecl-ref-stdin`.
+- `README.md`, this assignment handout
+- `Makefile`, which builds `cppgm++` and runs the PA7 tests
+- `cppgm++.cpp`, a link to the editable `dev/cppgm++.cpp` entry point
 - the grammar for this assignment called `pa7.gram`
-- a html grammar explorer of `pa7.gram` in the sub-directory `grammar/`
+- an HTML grammar explorer of `pa7.gram` in the sub-directory `grammar/`
+- `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
+- `tests/spec/`, clause-anchored call/conversion/control-flow tests
+- `tests/general/`, broader call-semantics tests
+- checked-in `.ref` and `.ref.exit_status` files used as the oracle
 
-You will also want to reuse some of your PA6 solution.
+Your main editable file is `dev/cppgm++.cpp`. You may add or change other
+implementation files under `dev/` as needed. Do not edit the test inputs,
+reference outputs, harness scripts, or grammar files unless course staff
+explicitly asks for that.
 
-### Input / Command-Line Arguments
+The starter `dev/cppgm++.cpp` is the same long-lived `cppgm++` dispatcher used
+from PA5 onward. For PA7, extend it so `--emit-semantics` runs your resolved
+semantic-analysis and dump path.
 
-The same as PA6 `recog`.  Behaviour is undefined unless the command-line arguments match:
+There is no required `cppgm++-ref` binary for PA7. The checked-in
+reference files under `tests/` are the grading oracle.
 
-    $ nsdecl -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+### Build And Test Commands
 
-with the same relaxations as PA6
+From the `pa7/` directory:
+
+```sh
+make
+make test
+```
+
+`make` builds `cppgm++`. `make test` runs the local PA7 suite.
+
+### Required Driver Surface
+
+Previously required:
+
+- `--emit-ast`
+- `--emit-types`
+- `-o <outfile>`
+
+New in PA7:
+
+- `--emit-semantics`
+
+No new compile or link driver flags are introduced in PA7. Behavior is
+undefined unless the command line has this form:
+
+```sh
+cppgm++ --emit-semantics -o <outfile> <srcfile1> [<srcfile2> ...]
+```
+
+### Input Contract
+
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa7.gram`. The grammar defines accepted syntax only;
+the PA7 procedural semantic requirements are defined by the Required Features
+and Out Of Scope sections below.
+
+Passing PA5 and PA6 is necessary but not sufficient for PA7: a program may
+parse and form declarations successfully while still relying on call or
+expression semantics outside this assignment.
+
+Behavior is undefined for input that:
+
+- does not match the PA7 grammar
+- requires PA7 semantic features outside the assignment boundary below
+- is ill formed in a way PA7 is not required to diagnose
+
+If this README and `pa7.gram` disagree about accepted source syntax, use
+`pa7.gram`. If they disagree about the PA7 semantic slice, use this README.
 
 ### Output Format
 
-`nsdecl` shall write the following to `<outfile>`:
+On success, `cppgm++` writes the PA7 semantic dump to `<outfile>`.
 
-The first line shall be:
+The first line is:
 
-    <n> translation units
-    
-where `<n>` is the number of translation units.
+```text
+<n> translation units
+```
 
-Following that, each translation unit shall be described in the order specified on the command-line.
+where `<n>` is the number of source files on the command line.
 
-#### Translation Unit Description
+For each translation unit, in command-line order, the output contains:
 
-Each translation unit shall start with:
+```text
+start translation unit <k>
+...
+end translation unit
+```
 
-    start translation unit <srcfile>
-    
-Where `<srcfile>` is the same as the command-line argument.
+where `<k>` is the 1-based translation-unit index.
 
-The global namespace shall then be described.
+Between those wrapper lines, write a deterministic semantic dump rooted at:
 
-Each translation unit shall end with:
+```text
+translation-unit
+```
 
-    end translation unit
-    
-#### Namespace Description
+Top-level nodes include:
 
-Each named namespace description shall start with:
+```text
+type-alias <name> <type>
+variable <name> <type>
+function-declaration <name> <type>
+function-definition <name> <type>
+namespace-definition <name>
+```
 
-    start namespace <name>
+Function definitions contain resolved statement and expression nodes such as:
 
-Each unnamed namespace, and the global namespace, shall start with:
+```text
+parameter <name> <type>
+compound-statement
+simple-declaration
+return-statement
+if-statement
+while-statement
+for-statement
+break-statement
+continue-statement
+condition
+condition-declaration
+call-expression <value-category> <type>
+callee <name> <type>
+id-expression <value-category> <type> <name>
+literal <value-category> <type> <token>
+unary-expression <value-category> <type> <operator>
+binary-expression <value-category> <type> <operator>
+subscript-expression <value-category> <type>
+conditional-expression <value-category> <type>
+sizeof-expression <value-category> <type>
+assignment-expression <value-category> <type> OP_ASS:=
+constructor-action <name>
+destructor-action <name>
+```
 
-    start unnamed namespace
+`<type>` uses the canonical type spelling from PA6. `<value-category>` is one
+of:
 
-If a namespace is inline the following line shall be:
+```text
+lvalue
+prvalue
+xvalue
+```
 
-    inline namespace
-    
-Following shall be descriptions of member variables, functions and namespaces - in that order.
+The PA7 tests primarily exercise `lvalue` and `prvalue`.
 
-Each of the three lists of entities shall be ordered in order of first declaration within the translation unit.
+Namespace aliases, using directives, and using declarations affect lookup, but
+they do not necessarily have dedicated output lines. Their effect is visible in
+the resolved declarations and expression subtrees.
 
-Finally, each namespace description shall be terminated with:
-
-    end namespace
-
-#### Variable Description
-
-Each declared variable (whether or not defined) shall be described on one line as follows:
-
-    variable <name> <type>
-
-Where `<name>` is the unqualified variable name, and `<type>` is the description of the variables type.
-
-#### Function Description
-
-Each declared function (whether or not defined) shall be described on one line as follows:
-
-    function <name> <type>
-    
-Where `<name>` is the unqualified function name, and `<type>` is the description of the variables type.
-
-#### Type Description
-
-Fundamental Types shall be described in the canonical form given in PA2.  Specifically one of:
-
-	signed char
-	short int
-	int
-	long int
-	long long int
-	unsigned char
-	unsigned short int
-	unsigned int
-	unsigned long int
-	unsigned long long int
-	wchar_t
-	char
-	char16_t
-	char32_t
-	bool
-	float
-	double
-	long double
-	void
-	nullptr_t
-
-Compound types shall be described recursively as follows:
-
-    const T
-    volatile T
-    const volatile T
-    pointer to T
-    lvalue-reference to T
-    rvalue-reference to T
-    array of unknown bound of T
-    array of N T
-    function of (P1, P2, P3) returning R
-	function of (P1, P2, P3, ...) returning R
-
-Where T, P1, P2, ..., Pn and R are types and N is a positive integer
+Standard output and standard error are ignored by the automated PA7 tests.
 
 ### Error Handling
 
-Behaviour of `nsdecl` is undefined if an error occurs.
+If preprocessing, tokenization, parsing, or PA7 semantic analysis fails,
+`cppgm++` must exit with `EXIT_FAILURE`.
 
-### Standard Output / Error
+The contents of `<outfile>` are unspecified on failure. For failing tests, the
+harness compares only the named exit status, not diagnostic text and not the
+output file.
 
-Standard output and standard error are ignored for `nsdecl`.
+### Required Features
 
-### Features
+PA7 must support:
 
-You will need to implement the following features:
+- namespace-scope simple declarations, alias declarations, function
+  declarations, and function definitions
+- named, inline, and unnamed namespace definitions, namespace aliases, using
+  directives, and using declarations, with same-scope namespace/ordinary-name
+  conflicts rejected
+- type aliases used by the PA7 slice
+- fundamental, pointer, reference, array, and function types
+- function parameter scopes, nested block scopes, and the separate scopes of
+  unbraced selection/iteration substatements
+- local simple declarations
+- block-scope using declarations and using directives
+- supported ordinary anonymous-union local declarations
+- unqualified and qualified lookup of namespace-scope non-template functions
+- unqualified lookup extended by using directives, using declarations, namespace
+  aliases, and unnamed-namespace visibility
+- calls through function names, function references, and function pointers
+- target-directed resolution of overloaded function names in contexts such as
+  function-pointer initialization and function-pointer arguments
+- overload resolution using the assignment's limited standard-conversion subset:
+  identity, lvalue-to-rvalue, top-level cv stripping for by-value arguments,
+  array-to-pointer, function-to-pointer, common integral promotions and
+  conversions, pointer-to-bool, `nullptr_t` to pointer, pointer qualification,
+  object pointer to cv-qualified `void*`, and the supported lvalue-reference
+  bindings
+- function redeclaration matching after top-level parameter cv normalization,
+  with conflicting return types and duplicate definitions rejected
+- recursive pointer-qualification conversion checks, including rejection when
+  the intermediate const qualification required by a deep conversion is absent
+- copy-initialization for local variables, condition declarations, and returns
+  using that same conversion subset
+- integer literals, `true`, `false`, and `nullptr`
+- id-expressions for parameters, locals, and supported globals
+- parenthesized expressions
+- unary `+`, `-`, `!`, `~`, `&`, `*`, prefix `++`, and prefix `--`
+- postfix `++` and postfix `--`
+- built-in arithmetic, bitwise, shift, logical, comparison, equality,
+  conditional, comma, assignment, and compound-assignment expressions over the
+  supported operand categories
+- conditional-expression typing and value-category selection for the supported
+  scalar cases, including mixed `bool` lvalue/prvalue operands
+- pointer arithmetic and pointer comparisons in the ordinary object-pointer
+  cases required by the tests
+- built-in subscript expressions on arrays and pointers
+- explicit casts over the supported integral, enum, pointer, and `nullptr`
+  subset
+- `sizeof(expr)` and `sizeof(type-id)`
+- compound statements, `if` / `else`, `switch`, `while`, `do`, `for`, `break`,
+  and `continue`
+- expression conditions and declaration conditions of the form `T x = expr`
+- supported integral `constexpr` complete objects, enumerator constants, the
+  course-supported `__builtin_constant_p` query over propagated integral
+  expressions, and semantic recognition of a zero-argument `__builtin_abort`
+  call (without requiring its later control-flow lowering); passing arguments
+  to `__builtin_abort` is rejected
+- rejection of type, call-arity, and control-flow violations within this
+  supported slice, including mismatched indirect-call arity, nonconstant case
+  labels, `break` or `continue` outside a permitted statement, `default`
+  outside a switch, a value returned from a `void` function, invalid
+  scoped-enum conditions, and invalid pointer/integer equality or pointer
+  multiplication
+- deterministic resolved-expression output
 
-- typedef, variable and function declarations
+The PA7 output should preserve enough information for later assignments to add
+class-aware conversion ranking and richer overload resolution without reparsing
+the source.
 
-- namespaces, both named and unnamed, and both noninline and inline.
+### Out Of Scope
 
-- namespace aliases (`namespace foo = bar`), using declarations (`using a::b::c`), using directives (`using namespace foo`) and alias declarations (`using foo = bar`).
+PA7 does not require:
 
-- unqualified and qualified name lookup in order to support typedef use, and qualified declaration matching.
+- class-aware call resolution
+- member function calls or implicit object parameters
+- overloaded operators
+- constructor selection
+- user-defined conversions
+- reference binding beyond the basic cases listed above
+- full standard conversion ranking
+- template functions or template-aware overload resolution
+- floating-point, string, or user-defined literals
+- general callable-object semantics beyond plain functions and function
+  pointers
+- statement forms beyond the supported control-flow subset, including `goto`,
+  `throw`, and `try`
+- semantic support for classes, enums, templates, or `decltype` beyond what is
+  needed by this assignment
 
-In this assignment `constant-expression` is used by array bound, but a pa7.gram `constant-expression` can only be a `TT_LITERAL` (a non-user-defined literal).  Which literals are semantically well-formed are described in 8.3.4:
+Inputs that rely on those features have undefined behavior for PA7.
 
-> [the literal bound shall be a] converted constant expression of type std::size_t and its value shall be greater than zero.
+### Testing And Grading Contract
 
-As per the PA7 requirements only literals that satisfy this condition have defined behaviour for PA7.
+The PA7 harness discovers every `.t` file under the requested test root.
+For each test case `x.t`, it runs:
 
-### Standard Revision
+```sh
+cppgm++ --emit-semantics -o x.my x.t
+```
 
-You will want to carefully review:
+and records `x.my.exit_status`.
 
-- _3.4.1 Unqualified Name Lookup_
-- _3.4.3 Qualified Name Lookup_
-- _7.1.6.1 The Cv-Qualfiers_
-- _7.1.6.2 Simple Type Specifiers_
-- _7.3 Namespaces_
-- _8.3 Meaning Of Declarators_
+Comparison rules:
 
-However other parts of the standard will come into play as well.  Reading these sections alone is not a substitute for completing RAA.
+- `x.my.exit_status` must match `x.ref.exit_status`.
+- If the reference status is `EXIT_FAILURE`, the test passes after the exit
+  status comparison.
+- If the reference status is `EXIT_SUCCESS`, `x.my` must match `x.ref` exactly.
+- Standard output and standard error are not compared.
 
-### Design Notes (Optional)
+The local suite is split by role:
 
-There are several building blocks you will need to implement.
+- `tests/spec/` contains small tests tied to specific C++11 calls,
+  conversions, initialization, overload-resolution, or control-flow clauses.
+  These files begin with an `N3485 focus` comment.
+- `tests/general/` contains broader PA7 call-semantics tests,
+  cross-feature semantic combinations, and useful intake cases that are not a
+  single-clause oracle.
 
-Firstly you will need to model and pass around type information within the compiler.  One way is to create a base class `Type` to represent the different possible types, then derive each type category from that.
+### Design Notes (Non-Normative)
 
-Thereafter you may want to similarly model entities (objects, references, functions, namespaces, etc), with a base class `Entity`.
+A good PA7 design keeps these pieces separate:
 
-For this assignment there is only one type of scope, that being namespace scope.  Recall that the global namespace is itself a namespace.  Other types of scopes (including function prototype scope), can be disregarded for PA7.
+- PA6 scope/type analysis
+- expression analysis
+- conversion classification
+- overload candidate collection
+- overload ranking for the limited PA7 subset
+- statement-scope construction
+- deterministic semantic printing
 
-A scope contains a map from names to entities.  For this assignment you can just store this map in your Namespace object.
+Treat the PA7 call layer as a base that later class and template assignments
+will extend. Avoid hard-coding assumptions that only work before member
+functions, constructors, user-defined conversions, or templates are introduced.
 
-Thereafter you will want to go through PA7.gram and either using your PA6 parser as a prototype or an abstract base, create semantic actions in the parser that will construct and modify appropriate model objects.  For example, if you encounter a simple declaration of a new variable, you may construct a Variable object and add it to the current Namespace object.
+Keep compiler-generated identities separate from ordinary source lookup.
+Anonymous entities should receive stable typed identities rather than names
+that are re-parsed or inserted into the source identifier namespace.
 
-When you encounter a name in a declaration you will need to implement name lookup.  The Namespaces that need to be searched for a name, and in what order, are described in 3.4.  Inline namespaces and using directives have different rules depending on whether you are doing an unqualified lookup (a name `A`, or the `B` in `B::C::D`), or doing qualified lookup (the `C` in `B::C::D`).  Also different name lookup contexts may only find certain types of names (for example only namespaces, or only types), so you may want to parameterize your name lookup code with a filter parameter.
+### Multi-file test groups
 
-Linking is not required for this assignment.  Each translation unit can be semantically analyzed separately with no interaction between them.  In a later assignment you will need to analyze linkage and determine when two names from two different translation units should name the same entity.
-
-The recommended overall structure of your `nsdecl` application is to parse each translation unit into an object model, and then walk the object model in the given order to create the output format.
+For a root `name.t`, companions such as `name.t2` are additional primary
+source files in the same invocation, in lexical order. They remain separate
+translation units; the harness counts the group once. Both batch and ordinary
+execution use this file interface. Headers and other support files stay with
+the owning case and are not concatenated into one source file.

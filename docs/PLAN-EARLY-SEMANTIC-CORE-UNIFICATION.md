@@ -1,6 +1,15 @@
 # Early Semantic Core Unification Plan
 
-Status: planned; no implementation work has started.
+Status: superseded by the [early assignment consolidation
+plan](early-assignment-consolidation-plan.md). The separate `nsdecl` and
+`nsinit` clients have been retired; extracting a shared core for those clients
+is no longer a project requirement.
+
+This document preserves the original proposal and assignment numbering. Its
+independent mainline ideas—typed identity, operation-based APIs, explicit
+lookup invalidation, and measured performance—remain useful design guidance.
+Their presence here does not mean they are implemented or required by the
+consolidation.
 
 Date: 2026-08-20
 

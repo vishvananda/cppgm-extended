@@ -97,7 +97,7 @@ DeclaratorInfo Analyzer::BuildVariableDeclarator(
 	}
 	if (expression == kNoNode)
 		ThrowSemanticError(
-			"placeholder list deduction is outside the PA23 boundary");
+			"placeholder list deduction is outside the PA18 boundary");
 	const bool require_constant = spec.is_constexpr || !local ||
 		spec.storage_class == STORAGE_CLASS_STATIC ||
 		(spec.placeholder_cv & CV_CONST) != 0;
@@ -122,7 +122,7 @@ DeclaratorInfo Analyzer::BuildVariableDeclarator(
 		if (!arena_->IsTag(child, ::cppgm::syntax::STAG_PTR_OPERATOR)) continue;
 		if (!pointer_operator.empty())
 			ThrowSemanticError(
-				"compound placeholder declarator is outside the PA23 boundary");
+				"compound placeholder declarator is outside the PA18 boundary");
 		pointer_operator = PayloadSource(child);
 	}
 	TypeId base = EffectiveType(value.type);
@@ -146,7 +146,7 @@ DeclaratorInfo Analyzer::BuildVariableDeclarator(
 		base = pointer.child;
 	}
 	else ThrowSemanticError(
-		"unsupported placeholder pointer operator in PA23");
+		"unsupported placeholder pointer operator in PA18");
 	base = program_->types.Qualify(base, spec.placeholder_cv);
 	parsed = BuildDeclarator(declarator, base, scope);
 	if (spec.is_constexpr)

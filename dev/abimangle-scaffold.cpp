@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA14 `abimangle` binary.
+// Student-facing scaffold for the PA9 `abimangle` binary.
 
 #include "abi/itanium/abi_mangle.h"
 #include "support/not_implemented.h"

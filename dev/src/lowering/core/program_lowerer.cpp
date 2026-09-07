@@ -476,13 +476,13 @@ private:
 			Symbol& symbol = output_.symbols[found];
 			if (symbol.source_type != source_type)
 				ThrowLoweringSource(
-					"conflicting cross-source PA15 symbol type for " +
+					"conflicting cross-source PA10 symbol type for " +
 					proposed_name + " (existing symbol " +
 					output_.strings.get(symbol.name) + ")");
 			if (symbol.object_name.valid() && object_name_id.valid() &&
 				symbol.object_name != object_name_id)
 				ThrowLoweringInternal(
-					"conflicting PA15 ABI object identity for " +
+					"conflicting PA10 ABI object identity for " +
 					proposed_name + ": " +
 					output_.strings.get(symbol.object_name) + " versus " +
 					object_name);
@@ -520,7 +520,7 @@ private:
 			return found;
 		}
 		if (output_.symbols.size() >= kNoLowId)
-			ThrowLoweringResourceLimit("too many PA15 emission symbols");
+			ThrowLoweringResourceLimit("too many PA10 emission symbols");
 		const SymbolId symbol = static_cast<SymbolId>(output_.symbols.size());
 		output_.symbols.push_back(Symbol(kind,
 			output_.InternUniqueSymbolName(proposed_name),
@@ -876,7 +876,7 @@ private:
 	SlotId CreateGeneratedSlot(const std::string& prefix, const LowType& type)
 	{
 		if (function_->slots.size() >= kNoLowId)
-			ThrowLoweringResourceLimit("too many PA15 LowIR slots");
+			ThrowLoweringResourceLimit("too many PA10 LowIR slots");
 		const SlotId result = static_cast<SlotId>(function_->slots.size());
 		Slot slot;
 		slot.name = InternLocalName(output_, GeneratedSlotName(prefix));
@@ -996,7 +996,7 @@ private:
 		while (true)
 		{
 			if (temp_counter_ + 1 >= kNoLowId)
-				ThrowLoweringResourceLimit("too many PA15 LowIR temporaries");
+				ThrowLoweringResourceLimit("too many PA10 LowIR temporaries");
 			const TempId candidate = static_cast<TempId>(++temp_counter_);
 			if (!local_presentation_.ReservesTemporary(candidate))
 			{
@@ -1015,7 +1015,7 @@ private:
 	void Emit(const Instruction& instruction)
 	{
 		if (CurrentBlock().terminated)
-			ThrowLoweringInternal("PA15 attempted to emit after a terminator");
+			ThrowLoweringInternal("PA10 attempted to emit after a terminator");
 		CurrentBlock().instructions.push_back(instruction);
 		if (IsTerminator(instruction)) CurrentBlock().terminated = true;
 		if (stats_) ++stats_->instructions;

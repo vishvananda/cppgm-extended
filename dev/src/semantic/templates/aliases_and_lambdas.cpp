@@ -164,7 +164,7 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 			{
 				if (FirstSemanticChild(exception) != kNoNode)
 					ThrowSemanticError(
-						"dependent lambda noexcept is outside the PA22 subset");
+						"dependent lambda noexcept is outside the PA17 subset");
 				nonthrowing = true;
 			}
 		}
@@ -659,7 +659,7 @@ Analyzer::LambdaConstructorDeductionArguments(
 	if (result.size() != 1 || result[0].type == kNoType ||
 		!IsCapturelessLambdaType(result[0].type))
 		return result;
-	// PA25 copy-initialization exposes the invocation-pointer conversion before
+	// PA20 copy-initialization exposes the invocation-pointer conversion before
 	// constructor-template deduction; overload ranking still uses the closure.
 	std::vector<TypeId> targets;
 	AppendBuiltinConversionTargets(result[0], &targets);

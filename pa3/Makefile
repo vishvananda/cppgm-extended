@@ -1,4 +1,4 @@
-TARGET = ctrlexpr
+TARGET = ppexpr
 CXX = g++
 CPPGM_HOST_CXX ?= $(CXX)
 CPPGM_STDLIB_FLAGS ?=

@@ -244,7 +244,7 @@ std::int64_t Analyzer::ParseInteger(const std::string& spelling) const
 			++count;
 		}
 		if (count == 0 || value > static_cast<unsigned long long>(INT64_MAX))
-			ThrowSemanticError("character literal outside PA12 range");
+			ThrowSemanticError("character literal outside PA7 range");
 		return static_cast<std::int64_t>(value);
 	}
 	std::size_t last = spelling.size();
@@ -256,7 +256,7 @@ std::int64_t Analyzer::ParseInteger(const std::string& spelling) const
 	char* end = 0;
 	const unsigned long long value = std::strtoull(digits.c_str(), &end, 0);
 	if (errno == ERANGE || end == digits.c_str() || *end != '\0')
-		ThrowSemanticError("integer literal outside PA12 range");
+		ThrowSemanticError("integer literal outside PA7 range");
 	return static_cast<std::int64_t>(value);
 }
 

@@ -137,7 +137,7 @@ LowType SourceTypeLowering::Lower(TypeId type) const
 		return LowObject(program_.SizeOf(type), program_.AlignOf(type));
 	}
 	if (record->kind != TYPE_FUNDAMENTAL)
-		ThrowLoweringInternal("invalid PA15 scalar type");
+		ThrowLoweringInternal("invalid PA10 scalar type");
 	switch (record->fundamental)
 	{
 	case FUND_BOOL: return LowU8();
@@ -165,7 +165,7 @@ LowType SourceTypeLowering::Lower(TypeId type) const
 	case FUND_VOID: return LowVoid();
 	case FUND_NULLPTR_T: return LowI64();
 	}
-	ThrowLoweringInternal("unsupported PA15 fundamental type");
+	ThrowLoweringInternal("unsupported PA10 fundamental type");
 }
 
 bool SourceTypeLowering::IsReference(TypeId type) const
@@ -235,7 +235,7 @@ TypeId SourceTypeLowering::ArrayElement(TypeId type) const
 {
 	const TypeRecord& record = program_.types.Get(ExpressionObject(type));
 	if (record.kind != TYPE_ARRAY)
-		ThrowLoweringInternal("PA15 expected array type");
+		ThrowLoweringInternal("PA10 expected array type");
 	return record.child;
 }
 
@@ -256,7 +256,7 @@ TypeId SourceTypeLowering::Pointee(TypeId type) const
 {
 	const TypeRecord& record = program_.types.Get(ExpressionObject(type));
 	if (record.kind != TYPE_POINTER && record.kind != TYPE_ARRAY)
-		ThrowLoweringInternal("PA15 expected pointer-like type");
+		ThrowLoweringInternal("PA10 expected pointer-like type");
 	return record.child;
 }
 

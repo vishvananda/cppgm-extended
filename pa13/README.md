@@ -1,426 +1,285 @@
-## CPPGM Programming Assignment 13 (`lowir2cy86`)
+## CPPGM Programming Assignment 13 (`cppgm++ --emit-lowir`)
 
 ### Overview
 
-Write a C++ application called `lowir2cy86`:
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
+executes translation phases 1 through 7, parses them as PA5/PA13 translation units,
+reuses the PA6-PA7 semantic foundation, builds on the PA10-PA12 LowIR lowering path, and
+writes LowIR text.
 
-```sh
-lowir2cy86 -o <outfile> <srcfile1> [<srcfile2> ...]
-```
+PA13 adds the first polymorphic object-model layer on top of the completed PA12
+non-polymorphic value-semantics compiler. It extends PA12 with:
 
-The program reads one or more LowIR source files, validates the PA13 LowIR
-subset, and writes equivalent PA9 CY86 source text to `<outfile>`.
-
-PA13 does not lower C++ source. Its job is to establish a runnable backend
-adapter for the LowIR text format. Later assignments lower C++ into LowIR and
-can use this adapter for execution checks without making CY86 the compiler's
-main intermediate language.
+- virtual functions
+- vpointers and vtables
+- dynamic dispatch through ordinary member calls
+- virtual destructors
+- `override` / `final` checking for the supported virtual subset
 
 ### Prerequisites
 
-Complete PA9 before starting PA13. You should expect to reuse:
+You should complete Programming Assignment 12 before starting this assignment.
 
-- the PA9 CY86 source language and execution model
-- the PA9 code-generation and runtime-testing model
-- any parser infrastructure from earlier assignments that is useful for a
-  line-oriented IR format
+You will want to reuse:
 
-PA10-PA12 are not required for the core PA13 implementation. PA13 is a backend
-adapter over LowIR text.
+- the preprocessing and tokenization pipeline from PA1-PA4
+- the PA5 AST as the syntax boundary
+- the PA6 declarator/type model
+- the PA7 call-resolution layer
+- the PA10-PA12 LowIR lowering path
+- the PA8 LowIR contract
+- the PA11-PA12 class metadata, constructor/destructor machinery, and lifetime lowering
+
+The intended direction is:
+
+- PA5 provides syntax
+- PA6 provides scope/type lookup
+- PA7 provides the procedural expression/call core
+- PA10 lowers the procedural subset
+- PA11 adds the basic non-virtual object model
+- PA12 adds the non-polymorphic value-semantics layer
+- PA13 extends that same object model with scoped polymorphism
 
 ### Starter Kit
 
-The PA13 starter kit contains:
+The starter kit contains:
 
-- `README.md`, this assignment handout
-- `Makefile`, which builds `lowir2cy86` and runs the PA13 tests
-- `lowir2cy86.cpp`, a link to the editable `dev/lowir2cy86.cpp` entry point
+- the student-editable `../dev/cppgm++.cpp` entry point, initially seeded from the course
+  `cppgm++` scaffold and reached from this directory through the `cppgm++.cpp` symlink
+- shared `../dev/` and `../dev/src/` support code from the earlier compiler pipeline
+- a local test suite
 - the grammar for this assignment called `pa13.gram`
-- `lowir.md`, the LowIR format reference for this assignment family
-- optional typed LowIR model scaffolding in `dev/src/lowir_model.h` with
-  shared exported-symbol support in `dev/src/ir_symbol_model.h`
 - an HTML grammar explorer of `pa13.gram` in the sub-directory `grammar/`
-- `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
-- `tests/spec/`, the LowIR-to-CY86 tests
-- checked-in `.ref` and `.ref.exit_status` files used as the oracle
+- a checked-in local test suite under `tests/`
 
-Your main editable file is `dev/lowir2cy86.cpp`. You may add or change other
-implementation files under `dev/` as needed. Do not edit the test inputs,
-reference outputs, harness scripts, grammar file, or LowIR specification unless
-course staff explicitly asks for that.
+The provided scaffold and shared support files establish the driver shape and previous
+frontend modes. They do not implement the PA13 polymorphic LowIR lowering work.
 
-The starter `dev/lowir2cy86.cpp` is a command-line scaffold. It parses
-`-o <outfile> <srcfile...>` and leaves LowIR parsing, validation, and CY86
-translation as the assignment work.
+The supplied reference tools are available for inspection and reference
+regeneration. The checked-in `.ref` files are the default grading oracle.
 
-There is no required `lowir2cy86-ref` binary for PA13. The checked-in
-reference files under `tests/spec/` are the grading oracle.
+### Input / Command-Line Arguments
 
-### Build And Test Commands
+The same as PA12 `cppgm++ --emit-lowir`. The PA13 test mode is unoptimized LowIR
+generation. `make test` passes `--emit-lowir -O0` through the harness, so individual test
+files do not spell those flags themselves.
 
-From the `pa13/` directory:
+Behaviour is undefined unless the command-line arguments match:
 
-```sh
-make
-make test
-```
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-`make` builds `lowir2cy86`. `make test` runs the LowIR-to-CY86 suite
-under `tests/spec/`, then the behavior suite under `tests/behavior/`, which
-assembles and runs each translation.
+with the same relaxations as PA12.
 
-### Required Driver Surface
-
-PA13 requires:
-
-- `-o <outfile>`
-- one or more LowIR source-file operands
-
-Behavior is undefined unless the command line has this form:
-
-```sh
-lowir2cy86 -o <outfile> <srcfile1> [<srcfile2> ...]
-```
-
-The following are not part of the PA13 `lowir2cy86` driver contract:
-
-- native object or executable emission
-- `lowir2native`
-- `lowiropt`
-- `--dump-machine-ir`
-- `--target <target>`
-- link-map dumping
-- object-file debug-info or debugger integration
-
-### Input Contract
-
-Each input file is a LowIR source file. Multiple files are processed in
-command-line order as one LowIR program.
-
-The authoritative input syntax is `pa13.gram`. The format reference is
-`lowir.md`. If this README and `pa13.gram` disagree about input syntax, use
-`pa13.gram`. If this README and `lowir.md` disagree about the LowIR text
-format, use `lowir.md`. If they disagree about what PA13 must implement, use
-the "PA13 LowIR Contract" and "Out Of Scope" sections below.
-
-Behavior is undefined for input that:
-
-- is not syntactically valid LowIR
-- is structurally malformed in a way this assignment requires you to reject
-- uses LowIR features outside the PA13 implementation contract
+Accepting `--emit-lowir` without an explicit `-O0` as the same unoptimized mode is fine,
+but optimized LowIR output is not part of PA13.
 
 ### Output Format
 
-On success, `lowir2cy86` writes CY86 source text to `<outfile>`.
+`cppgm++` shall write LowIR text to `<outfile>`.
 
-The generated CY86 must follow the PA9 source-language contract. The exact text
-is deterministic and is compared against the checked-in `.ref` files for
-successful tests.
+The authoritative LowIR definition is `../pa8/lowir.md`. PA13 extends the PA12
+object/value-semantics subset of that IR with the polymorphic lowering needed by this
+milestone.
 
-The PA13 oracle is the generated CY86 text and exit status. Running the CY86
-through the PA9 `cy86` tool is useful manual validation, but the committed PA13
-tests compare the CY86 text directly.
+PA13 writes a single concatenated LowIR program consisting of:
 
-Standard output and standard error are ignored by the automated PA13 tests.
+- zero or more `global` definitions
+- zero or more `function` definitions
+
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
+in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa8/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
+
+For supported polymorphic classes, PA13 extends the PA12 lowering convention by introducing:
+
+- emitted LowIR global entries that represent vtable slots
+- explicit vpointer stores in constructors and destructors
+- indirect LowIR calls for supported virtual dispatch sites
+
+The contents of each vtable global are order-sensitive. Vtable slots, including
+the complete-then-deleting virtual destructor slot pair, are part of the LowIR
+contract in `../pa8/lowir.md` even though the top-level position of the vtable
+global itself is presentation.
+
+The checked-in `.ref` files define the required LowIR facts for the tests. The
+test harness checks exit status, LowIR well-formedness, and the
+course-defined normalized LowIR output rather than requiring students to match every
+non-semantic helper spelling or presentation choice.
 
 ### Error Handling
 
-If LowIR parsing, validation, or translation fails, `lowir2cy86` must exit with
-`EXIT_FAILURE`.
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
 
-The contents of `<outfile>` are unspecified on failure. For failing tests, the
-harness compares only the named exit status, not diagnostic text and not the
-output file.
+The output file is not required to be meaningful on failure.
 
-### PA13 LowIR Contract
+### Standard Output / Error
 
-PA13 must parse, validate, and translate the LowIR features needed by the `tests/spec/` suite and described in `lowir.md`.
+Standard output and standard error are ignored for automated testing of `cppgm++`.
 
-Required program structure:
+You are free to use them for debugging, tracing, or diagnostic messages.
 
-- top-level `declare global`, `declare function`, `global`, `function`, and
-  `alias object` forms
-- scalar and structured global definitions
-- function definitions with parameters, stack slots, blocks, and instructions
-- one entry function, identified by `[role=entry]` or the legacy `@main`
-  spelling
-- optional init and fini hooks, identified by `[role=init]` / `[role=fini]` or
-  the legacy `@__cppgm_init` / `@__cppgm_fini` spellings
+### Testing
 
-Required types:
+Testing uses checked-in golden outputs, not a reference binary.
 
-- `void`
-- `i1`, `i8`, `u8`, `i16`, `u16`, `i32`, `u32`, `i64`
-- `f32`, `f64`, and `f80`
-- `ptr`
-- restricted direct object boundary types such as `obj<8x4>`
+For each test case `x`:
 
-Required metadata families:
+- `cppgm++` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is validated as LowIR and compared against `x.ref` using the normalized
+  LowIR comparison
+- `x.my.exit_status` is compared against `x.ref.exit_status`
 
-- top-level `role`, `linkage`, `binding`, `object`, function `tls_for`,
-  `keep_alias`, `prefer_local`, and global `storage`
-- function `object_root`, `force_inline`, `inline_hint`, and `no_inline`
-- function `arity`, `effects`, `unwind`, `return`, and `query`
-- direct void-call `elision=copy` permission
-- parameter `pass`, `alias`, and positive pointer-only `object_bytes`
-- index `projection`
-- function and instruction `!dbg(file, line, column)` locations with positive
-  source line and column numbers
+`make test` runs the checked-in local suite under `tests/` and supplies
+`--emit-lowir -O0` through the harness.
 
-The metadata is part of the textual LowIR contract because later compiler
-stages must be able to preserve semantic call-boundary and symbol-boundary
-facts in LowIR text. PA13 translates those facts only to the extent needed for
-the CY86 adapter. It does not implement native object symbol binding, host ABI
-register assignment, or debugger behavior.
+The PA13 suite is split by test role:
 
-Conservative/default states use omission rather than a second explicit
-spelling. For example, omitted function arity is fixed; `arity=variadic`
-records the non-default behavior that a later call validator must preserve.
-Boolean metadata is likewise a presence flag: `key=yes` records the feature
-and omission means false; `key=no` is not a second spelling.
+- `tests/general/`: the default PA13 LowIR oracle suite. These tests cover polymorphic
+  lowering, vtable/vpointer emission, multi-feature cases, and support-fixture
+  cases whose primary contract is generated LowIR plus exit status.
+- `tests/spec/`: focused C++ language-contract cases that cite a specific N3485 clause.
+  Each source test in this directory starts with a comment of the form:
 
-The `role` family includes the entry/init/fini and exception roles as well as
-the allocation, deallocation, termination, pure-virtual, dynamic-cast,
-bad-cast, bad-typeid, and RTTI runtime roles listed in
-`lowir.md`. Accept and validate those roles even when the CY86 adapter does not
-otherwise act on them.
+    // N3485 focus: <clause> [<stable-name>] <short topic>
 
-Undefined continuation is represented directly by the operand-free
-`unreachable` block terminator. It is not a callable runtime role. Like every
-terminator, it must be the final instruction in its block.
+`tests/spec/` covers virtual dispatch, virtual destructor overriding,
+`override` / `final`, pure virtual declarations, covariant returns, and
+explicit qualification suppressing virtual dispatch. `tests/general/` covers
+polymorphic and LowIR-shape cases that are not tied to one specific C++11
+clause.
 
-You may keep a typed LowIR model internally, and the optional
-`dev/src/lowir_model.h` scaffold names the common program, symbol, type,
-operand, block, and instruction pieces. The typed model is support for the
-text format, not a replacement for it: if a later backend or object writer
-needs a fact, that fact must be representable in serialized LowIR text and
-recoverable by parsing that text back in.
+PA13 is tested against the generated LowIR text.
 
-In the typed scaffold, operands use compact IDs for values, slots, blocks, and
-program symbols. Integer literals must preserve their complete decoded value,
-including the high half of an `i128`. Floating literals must be interpreted as
-their stated f32, f64, or f80 type. Serializing the typed program must reproduce
-an equivalent LowIR literal even when the program created that value rather
-than reading its spelling from an input file.
+### PA13 Syntax Spec
 
-An explicit LowIR parser may use a pooled spelling ID while resolving a name,
-but must replace it with the corresponding semantic ID before returning the
-typed program. Debug locations use a `StringId` from the same pool for their
-source file spelling. Do not store a separate owning `std::string` in every
-operand or debug-location record.
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa13.gram`. The grammar defines accepted syntax only;
+the PA13 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
 
-Top-level declarations and definitions carry `SymbolId`; the program symbol
-table maps each `SymbolId` to one pooled `StringId` for serialization and
-diagnostics. Global address data and object-alias targets likewise resolve to
-`SymbolId` before the typed program is returned. The explicit-text parser may
-hold a pooled spelling while it validates and resolves a forward reference,
-but declarations, definitions, and references must not retain duplicate
-owning symbol-name strings.
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checked-in
+`.ref` files.
 
-Function-local presentation spellings use the same ownership rule. Slot and
-block tables carry pooled `StringId` values, and explicitly named values carry
-a pooled spelling ID. A compiler-generated temporary may instead retain its
-numeric ordinal and render `%tN` only when LowIR text is written. Validation,
-optimization, and lowering use `ValueId`, `SlotId`, and `BlockId`; behavior
-that must distinguish a special value is an explicit typed flag rather than a
-test of its rendered name.
+The virtual syntax used here was already preserved by PA5; PA13 is the first
+milestone that gives it code-generation meaning.
 
-Required instructions:
+Passing PA12 is necessary but not sufficient for passing PA13: an input may be syntactically
+valid for PA5-PA12 and code-generation-valid for PA12 and still be outside the PA13
+polymorphism slice described below.
 
-- `const`, `copy`, `phi`, `addr`, `load`, and `store`, including the
-  `load volatile`/`store volatile` forms that pin an observable access
-- `atomic_load`, `atomic_store`, `atomic_exchange`,
-  `atomic_compare_exchange`, `atomic_add_fetch`, `atomic_thread_fence`, and
-  `atomic_signal_fence`
-- `index`
-- `copyobj` and `zeroinit`
-- `unary`, `binary`, `cmp`, and `convert`
-- direct and indirect `call`, including explicit `as (...) -> ...` signatures
-  for indirect calls
-- `jump`, `branch`, `switch`, and `return`
-- the exception/runtime LowIR forms listed in `lowir.md` when they appear in
-  the PA13 tests: `eh_try`, `eh_cleanup`, `eh_end`, `throw`,
-  `exception`, and `resume`
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa13.gram` as the source of truth.
 
-For `cmp`, the type written in the instruction is the operand comparison type,
-not the result type. For example, `%ok = cmp eq f80 %a, %b` compares two `f80`
-operands, but `%ok` is an integer truth value. PA13 adapters should materialize
-all `cmp` results as canonical `i64` values, `0` for false and `1` for true,
-including `f32`, `f64`, `f80`, pointer, and narrow integer comparisons. A later
-`branch %ok` or `return i64 %ok` should be able to consume that result directly.
+`pa13.gram` uses the same token vocabulary and the same extended BNF operators as
+`../shared/source.gram`.
 
-For the PA13 CY86 adapter, atomic operations may use a course-defined
-single-threaded interpretation:
+If this README and `pa13.gram` appear to disagree about source syntax, treat `pa13.gram`
+as authoritative. If this README and PA8 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA13 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
 
-- atomic loads and stores behave like ordinary loads and stores
-- atomic exchange returns the previous value and stores the new value
-- atomic compare-exchange returns `1` on success, returns `0` on failure, and
-  updates the expected-value storage on failure
-- atomic add-fetch returns the updated value
-- fences are accepted and may lower to no code
+### Assignment Boundary
 
-For `f80`, preserve the LowIR-facing storage size and alignment described in
-`lowir.md`. If your adapter does not have a native 80-bit calling convention,
-you may use an implementation strategy that still preserves the LowIR
-source contract and produces the expected CY86 behavior.
+PA13 supports the following in addition to the PA12 subset:
 
-### Structural Validation
+- polymorphic root classes with one vpointer at offset `0`
+- derived classes whose direct base is already polymorphic and therefore already carries the
+  shared vpointer at offset `0`
+- derived classes with non-polymorphic direct bases that introduce the first supported
+  vpointer at offset `0`; ordinary pointer/reference conversion to such a base uses the
+  resulting nonzero base-subobject offset and preserves its data members
+- virtual member functions in the ordinary non-template class cases
+- overriding of inherited virtual members by exact signature match in the current class model
+- covariant pointer/reference return overrides when the class hierarchy is in
+  the supported single-inheritance subset
+- `override` checking for the supported virtual subset
+- method-level `final` checking for the supported virtual subset
+- pure virtual declarations and pure-virtual vtable entries
+- dynamic dispatch for ordinary member calls through:
+  - object expressions of polymorphic class type
+  - pointers to polymorphic class type
+  - references to polymorphic class type
+- explicit base qualification suppressing virtual dispatch for supported calls
+- virtual destructors as part of the supported virtual set
+- virtual `delete` over that supported set, including the deleting-destructor
+  entry and selection of a PA12-supported class-specific deallocation function
+- emitted vtable data for supported polymorphic classes
+- constructor/destructor vpointer writes for supported polymorphic classes
+- deterministic vtable slot order, including declaration order for ordinary virtual
+  functions and the destructor slot order used by the checked references
+- deterministic emitted destructor-entry order for each class: base entry,
+  deleting entry, then complete entry, even when later cleanup sharing changes
+  which entry is demanded first
 
-Reject structurally malformed LowIR, including:
-
-- duplicate top-level symbol names
-- duplicate object alias spellings
-- an object alias whose target is not a top-level declaration or definition
-- a `tls_for` wrapper whose target is not a thread-local global
-- duplicate parameter, slot, or block names inside one function
-- a function with no blocks
-- a block with no terminator
-- instructions after a terminator in the same block
-- branch, jump, or switch targets that do not name a block in the same function
-- undefined temporaries, slots, globals, functions, or blocks where PA13
-  requires a definition
-- invalid metadata values
-- `query=stable_prefix` on a variadic function, a function without a final
-  integer parameter, a function without a supported scalar result, or an
-  indirect call signature
-- symbol-boundary metadata attached to an instruction or call site; the
-  direct-call `elision=copy` permission is the sole call-site metadata family
-- zero line or column values in function or instruction debug locations
-- more than one `tls_for` wrapper for the same thread-local global
-- parameter metadata that is not legal for the parameter type
-- `indirect_result` parameters that are not first or are used on non-`void`
-  functions
-- indirect calls that omit the required explicit signature
-- a `phi` that is not at the start of its block, omits or duplicates an
-  ordinary predecessor, names a non-predecessor, merges mismatched types, or
-  appears in an exception-handler target block
-
-Diagnostics are not graded, but the exit status is.
-
-### LowIR Family Context
-
-`lowir.md` also describes LowIR facts that become important for later
-assignments, including object ABI metadata, exception/runtime roles, optional
-debug-location text, and future reserved extensions. This material gives the
-LowIR family a stable direction, but PA13 remains the `lowir2cy86` adapter.
-
-For PA13:
-
-- Accept and translate later-facing LowIR forms only when this README,
-  `lowir.md`, and the `tests/spec/` suite make them part of the PA13
-  adapter contract.
-- Treat `!dbg(...)` as LowIR text metadata. Generating native object-file debug
-  information, validating DWARF dump output, and running debugger checks are
-  outside PA13.
-- Do not implement native code generation, linking, hosted runtime behavior,
-  LowIR optimization, or C++ source-to-LowIR lowering as part of PA13.
+Within this milestone, PA13 should produce valid LowIR for ordinary single-inheritance
+polymorphic code over the supported PA12 subset. That LowIR is intended to be
+accepted by the later PA24 `lowir2native` backend for the supported cases.
 
 ### Out Of Scope
 
-PA13 does not require:
+The following are explicitly out of scope for PA13:
 
-- lowering C++ source into LowIR
-- LowIR optimization passes
-- direct native code generation
-- object-file emission
-- linking
-- host ABI register assignment
-- object-file debug-info emission
-- source-language object construction or destruction semantics
-- member/field access operations as a distinct LowIR instruction family
-- virtual-call or vtable-specific operations
+- multiple inheritance
+- virtual inheritance
+- RTTI and `dynamic_cast`
+- pointer-adjusting thunks or any ABI that requires base-subobject pointer adjustment
+- class-level `final`
+- full abstract-class enforcement beyond the pure-declaration/vtable cases above
+- generalized exception-aware virtual cleanup beyond the deleting-destructor
+  and deallocation path pinned by the checked references
+- generalized operator overloading beyond the supported PA12 value-semantics paths
+- template-aware virtual dispatch
 
-Inputs that rely on unassigned features have undefined behavior for PA13 unless
-they are explicitly covered by the PA13 LowIR contract above.
+Inputs that rely on those features have undefined behaviour for this milestone.
 
-### Testing And Grading Contract
+### Stage Handoff
 
-The PA13 harness discovers every `.t` file under `tests/spec/`.
-For each test case `x.t`, it runs:
+The intended next stage is PA14, which adds the first usable template layer on top of the
+completed procedural/object/polymorphic compiler:
 
-```sh
-lowir2cy86 -o x.my x.t
-```
+- function templates
+- class templates
+- template argument deduction
+- basic instantiation
 
-and records `x.my.exit_status`.
-
-Comparison rules:
-
-- `x.my.exit_status` must match `x.ref.exit_status`.
-- If the reference status is `EXIT_FAILURE`, the test passes after the exit
-  status comparison.
-- If the reference status is `EXIT_SUCCESS`, `x.my` must match `x.ref` exactly.
-- Standard output and standard error are not compared.
-
-PA13 does not use the relaxed source-to-LowIR matcher used by later
-`cppgm++ --emit-lowir` assignments. PA13 compares generated CY86 text directly.
-
-The harness also discovers every `.t` file under `tests/behavior/`. Those cases
-translate, assemble, and run, so they check that a retained LowIR form still
-produces a working program and not only well-formed CY86 text. For each test
-case `x.t`, it runs:
-
-```sh
-lowir2cy86 -o x.my x.t
-cy86 -o x.my.program x.my
-x.my.program
-```
-
-and records `x.my.impl.exit_status` for the translate-and-assemble step and
-`x.my.program.exit_status` for the program itself.
-
-Comparison rules:
-
-- `x.my.impl.exit_status` must match `x.ref.impl.exit_status`.
-- If the reference implementation status is `EXIT_FAILURE`, the test passes
-  after that comparison.
-- Otherwise `x.my` must match `x.ref` exactly, and both
-  `x.my.program.exit_status` and `x.my.program.stdout` must match their
-  references.
-- A behavior case may supply `x.stdin`, which is fed to the program.
-
-Assembling with `cy86` is the only part of this path that is not PA13 work. It
-supplies the execution that CY86 text alone cannot, which is why a behavior
-case can state an expected exit status: `100-default-eh-unhandled` exits 23 through
-the default unhandled-exception path, while the remaining cases exit 0.
-
-Behavior cases cover the LowIR forms whose meaning is a runtime result rather
-than a spelling:
-
-- control flow that merges values, in `100-phi-control-flow` and
-  `200-switch-terminator`, where the returned value is only correct if the edge
-  transfers and the multi-way dispatch are
-- the default exception path, in `100-default-eh-caught` and
-  `100-default-eh-unhandled`
-- `unreachable` as a terminator on a branch that is never taken
-- an atomic read-modify-write and the value it leaves behind, in
-  `200-atomic-add-fetch`
-- the call-boundary, copy-elision, index-projection, object-extent,
-  stable-prefix-query, and global-section metadata, each of which must survive
-  translation and still produce a working program
-
-Each case returns a value that is wrong unless the mechanism under test worked,
-so the recorded exit status is the assertion.
+So PA13 should leave behind a clean single-inheritance polymorphic LowIR lowering path
+rather than mixing templates into the same milestone.
 
 ### Design Notes (Non-Normative)
 
-A robust `lowir2cy86` design usually has three layers:
+The important point is to extend the existing PA11/PA12 object-model behavior rather than
+inventing a second, incompatible model just for polymorphism. Whether that reuse happens
+through shared code, shared data structures, or a careful reimplementation is up to you.
 
-- parse LowIR into a structured program representation
-- validate symbols, types, blocks, metadata, and instruction constraints
-- translate the validated representation mechanically into CY86
+The same monotonic-extension rule applies here:
 
-Keep the translation monotonic. Adding a new LowIR instruction later should add
-a translation case without changing the CY86 output for existing PA13 programs.
+- PA13 should add polymorphic behavior only for programs that actually use the supported
+  virtual feature set
+- it should not change PA12 outputs for programs that remain entirely within the PA12 subset
+- in practice, vtables, vpointer writes, and virtual-call lowering should be driven by the
+  presence of supported virtual members and polymorphic classes, not enabled eagerly for all
+  class code
 
-For `phi`, compact block and value identities make predecessor checks and edge
-transfer planning independent of label spelling. Emit the incoming assignments
-as parallel transfers on predecessor edges; a conditional or multi-way edge may
-need a small adapter label so transfers for an untaken edge do not execute.
+Useful intermediate representations include:
 
-Represent `role` values with a compact enum after parsing. Later passes should
-compare the enum and `SymbolId`, not rendered role or symbol spellings.
-
-Represent `force_inline`, `inline_hint`, and `no_inline` as independent Boolean
-facts. This keeps a source inlining preference separate from a required or
-prohibited transform without adding string comparisons to optimizer paths.
+- class metadata that distinguishes ordinary methods, constructors, destructors, and
+  virtual slots
+- explicit vtable/vpointer metadata separate from the source syntax tree
+- vtable layout derived deterministically from semantic class metadata rather
+  than source-text scans
+- explicit constructor/destructor/vpointer actions attached to the lowered function bodies
+- lifecycle-entry grouping by semantic class and entry kind so final function
+  order does not depend on the order in which call sites demand those entries
+- a direct-call vs. virtual-call distinction in the semantic IR so codegen does not have to
+  rediscover polymorphism from source syntax

@@ -1,0 +1,5 @@
+declare function @__cppgm_tls_wrapper__x() -> ptr [binding=weak, object=_ZTW1x, tls_for=@x]
+declare function @__cppgm_tls_wrapper__y() -> ptr [binding=weak, object=_ZTW1y, tls_for=@y]
+
+global @x : i32 [storage=thread_local, binding=strong] = zero
+global @y : i32 [storage=thread_local, binding=strong] = 7

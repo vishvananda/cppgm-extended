@@ -1,6 +1,6 @@
 #pragma once
 
-// Compact storage for either textual PA14 references or resolved production
+// Compact storage for either textual PA9 references or resolved production
 // graph handles.
 
 #include <cstddef>
