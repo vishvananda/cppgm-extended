@@ -36,15 +36,13 @@ Keep a real host compiler in `CPPGM_HOST_CXX` when PA34 uses
 - Personal inputs and harnesses live in `student.tests/`; run them explicitly.
   Default assignment targets do not discover that directory.
 - PA24, PA32 and PA33 also ship `tests/regression/`, which pins the course
-  solution's particular design. Run it explicitly with `make -C paN
-  test-regression` if useful for that design. It is outside the student exit
-  criterion; default `make test` and the through reports run the course contract.
+  solution's particular design. Those fixtures are outside your exit criteria;
+  default `make test` and the through reports run the course contract.
 
-Permanent fixtures belong in the earliest assignment owning every feature
-used. From PA5 onward, filenames use a three-digit feature-cluster prefix
+From PA5 onward, filenames use a three-digit feature-cluster prefix
 (`100-`, `200-`, ...); PA1–PA4 use finer subgroups. Controls and solution
-regressions follow their own local naming. Keep required rejection tests in the
-owning suite; omit inputs whose outcome the assignment leaves unspecified.
+regressions follow their own local naming. Required rejection cases are in the
+owning suite; unspecified inputs do not add requirements.
 
 ## References
 
@@ -58,29 +56,32 @@ to execute the student's constructed LowIR. Behavior checks accept alternative
 valid LowIR and grade program outcomes. The student compiler must implement
 LowIR construction and later C++ lowering itself.
 
+PA12’s behavioral controls also execute your source-generated LowIR through
+the supplied native backend. Your own native backend is introduced in PA24.
+
 Reference wrappers download and verify a pinned bundle built from the current
-cppgm-extended solution. They provide examples and regenerate fixtures; they
-are not the original CPPGM binaries. Fetch them eagerly or regenerate with:
+cppgm-extended solution. They provide examples of the required behavior and
+are not the original CPPGM binaries. Fetch them ahead of time with:
 
 ```sh
 make reference-binaries
-make ref-test-paN
-make -C paN ref-test TEST='tests/path/to/case.t'
 ```
 
-These targets fail if the reference tool cannot be downloaded or verified;
-they never fall back to the student's implementation. References can have bugs
+Reference wrappers fail if a tool cannot be downloaded or verified; they
+never fall back to your implementation. References can have bugs
 on untested inputs: prefer the handout and the C++11 standard over exact parity
 there. Do not edit existing fixtures or references to hide incomplete behavior.
 
-Failed-case stdout is an informational example regenerated on the Linux
-export host. Successful stdout and required exit-status sidecars remain
+Failed-case stdout is an informational example. Successful stdout and
+required exit-status sidecars remain
 oracles. [The LowIR specification](pa8/lowir.md) explains normal comparison's
-presentation tolerance; byte-exact LowIR comparison is a maintainer CI check.
+presentation tolerance.
+
+Keep the supplied fixtures and reference outputs unchanged. If a reference
+appears wrong, report a reduced input and the reference bundle revision.
 
 ## Debug and inspection checks
 
-Run the targets required by the handout when changing debug, object or link
-behavior. The broad debug targets are `make test-debuginfo` and
-`make ref-test-debuginfo`. Reference regeneration maintains fixtures from the
-supplied reference tools; it is not a way to make an incorrect implementation pass.
+Run the debug, object and link checks required by the current handout.
+`make test-debuginfo` collects the later debug suites; it is not an extra
+prerequisite for early assignments.

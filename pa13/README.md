@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA5/PA13 translation units,
-reuses the PA6-PA7 semantic foundation, builds on the PA10-PA12 LowIR lowering path, and
-writes LowIR text.
-
 PA13 adds the first polymorphic object-model layer on top of the completed PA12
 non-polymorphic value-semantics compiler. It extends PA12 with:
 
@@ -54,8 +49,8 @@ The starter kit contains:
 Extend the driver and frontend you implemented in earlier assignments with
 the PA13 lowering behavior.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -128,7 +123,8 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary.
+Tests compare your output with the checked-in references using the LowIR
+comparison described in [the format guide](../pa8/lowir.md).
 
 For each test case `x`:
 

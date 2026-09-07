@@ -41,6 +41,7 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
+NATIVE_CONTROL_TEST_ROOT ?= tests/controls/native
 O1_TEST_ROOT ?= tests/o1
 O2_TEST_ROOT ?= tests/o2
 O3_TEST_ROOT ?= tests/o3
@@ -161,6 +162,9 @@ test-course: $(TEST_DEPS)
 	$(call run_native_bucket,$(BEHAVIOR_O2_TEST_ROOT),-O2)
 	$(call run_native_bucket,$(BEHAVIOR_O3_TEST_ROOT),-O3)
 	$(call run_driver_census_bucket,$(DRIVER_CENSUS_TEST_ROOT))
+	@if [ -d "$(NATIVE_CONTROL_TEST_ROOT)" ]; then \
+		perl ../scripts/check_pa24_native_contracts.pl $(LOWIR2NATIVE_APP) "$(NATIVE_CONTROL_TEST_ROOT)"; \
+	fi
 
 test-regression: $(TEST_DEPS)
 	$(call run_native_bucket,$(REGRESSION_O1_TEST_ROOT),-O1)
@@ -210,6 +214,10 @@ ref-test-debuginfo:
 	$(call run_native_bucket_ref,$(DEBUGINFO_O3_TEST_ROOT),-O3)
 
 REF_TEST_RUN = case "$(TEST)" in \
+	$(BEHAVIOR_O1_TEST_ROOT)/*) CPPGM_NATIVE_BEHAVIOR_ONLY=1 CPPGM_APP_ARGS='-O1' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" ;; \
+	$(BEHAVIOR_O2_TEST_ROOT)/*) CPPGM_NATIVE_BEHAVIOR_ONLY=1 CPPGM_APP_ARGS='-O2' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" ;; \
+	$(BEHAVIOR_O3_TEST_ROOT)/*) CPPGM_NATIVE_BEHAVIOR_ONLY=1 CPPGM_APP_ARGS='-O3' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" ;; \
+	$(NATIVE_CONTROL_TEST_ROOT)/*) echo "$(TEST): native property check has no reference sidecar" ;; \
 	$(DRIVER_CENSUS_TEST_ROOT)/*) echo "$(TEST): structural function-census predicate has no reference sidecar" ;; \
 	$(STRUCTURAL_CONTROL_TEST_ROOT)/*) echo "$(TEST): structural native predicate has no reference sidecar" ;; \
 	$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(BEHAVIOR_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' perl ../scripts/run_lowir_native_tests_worker.pl $(LOWIR2NATIVE_REF_APP) ref "$(TEST)" && perl ../scripts/canonicalize_lowir_native_refs.pl "$(TEST)" ;; \
@@ -220,6 +228,7 @@ esac
 
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
+	'$(NATIVE_CONTROL_TEST_ROOT)/*::perl ../scripts/check_pa24_native_contracts.pl $(LOWIR2NATIVE_APP) {tests}' \
 	'$(STRUCTURAL_CONTROL_TEST_ROOT)/*o3-scalar-sibling-query*.t::perl ../scripts/check_lowir_native_scalar_query.pl $(LOWIR2NATIVE_APP) $(CPPGM_DRIVER_APP) {tests}' \
 	'$(STRUCTURAL_CONTROL_TEST_ROOT)/*o3-sibling-tail-transfer*.t::perl ../scripts/check_lowir_native_sibling_tail.pl $(LOWIR2NATIVE_APP) $(CPPGM_DRIVER_APP) {tests}' \
 	'$(DRIVER_CENSUS_TEST_ROOT)/*::perl ../scripts/check_cppgm_function_census.pl $(CPPGM_DRIVER_APP) {tests}' \
@@ -229,6 +238,7 @@ CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 	'$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(BEHAVIOR_O2_TEST_ROOT)/*::CPPGM_APP_ARGS=-O2 scripts/run_all_tests.pl $(LOWIR2NATIVE_APP) check {tests}' \
 	'$(O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*|$(BEHAVIOR_O3_TEST_ROOT)/*::CPPGM_APP_ARGS=-O3 scripts/run_all_tests.pl $(LOWIR2NATIVE_APP) check {tests}'
 CHECK_COMPARE = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
+	'$(NATIVE_CONTROL_TEST_ROOT)/*::true' \
 	'$(DRIVER_CENSUS_TEST_ROOT)/*::true' \
 	'$(STRUCTURAL_CONTROL_TEST_ROOT)/*::true' \
 	'$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(BEHAVIOR_O1_TEST_ROOT)/*|$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(BEHAVIOR_O2_TEST_ROOT)/*|$(O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*|$(BEHAVIOR_O3_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}'

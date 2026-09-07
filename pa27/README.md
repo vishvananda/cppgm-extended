@@ -2,8 +2,6 @@
 
 ### Overview
 
-Write one C++ application called `cppgm++`.
-
 PA27 is the host object/toolchain interoperability assignment. It does not add
 new language features. Instead, it combines the PA25 compile-mode driver with
 the PA9 ABI naming layer. PA9 built ABI names from normalized fact files;
@@ -70,14 +68,17 @@ shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
 
-The `cppgm++-ref` wrapper supports investigation and reference regeneration.
+Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
 ### Command-Line Contract
 
-PA27 does not introduce new command-line flags. It strengthens the PA25
-compile-mode surface on the host-compatible path and uses the PA9 ABI naming
-layer for C++ object symbols.
+PA27 strengthens the PA25 compile-mode surface on the host-compatible path
+and uses PA9 ABI names for C++ object symbols. It also adds `-isystem <dir>`
+and `-isystem<dir>` for explicit system-header search directories. Preserve
+function bodies from those headers, including move constructors; system-header
+origin does not make a body ignorable. PA29 adds automatic hosted include
+discovery and the remaining hosted preprocessor controls.
 
 Required forms:
 

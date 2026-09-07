@@ -17,7 +17,7 @@ and writes it through the same serializer. Both parts are required.
 This assignment introduces LowIR before C++ lowering. PA10 will generate it
 from C++, and PA24 will compile it to native code. Keep the model, reader,
 validator and writer in reusable modules under `dev/src/` so those assignments
-extend your work. PA8 requires no CY86 assembler or translator.
+extend your work.
 
 ### Prerequisites and starter kit
 
@@ -97,8 +97,7 @@ instruction order, control-flow edges and metadata. Do not optimize away unused
 declarations or instructions during a roundtrip. Whitespace and metadata-field
 ordering do not have to match the reference writer. Normal grading reads the
 two outputs with the supplied reference reader before comparing their canonical
-forms when their text differs. Maintainer CI additionally checks exact reference
-regeneration with `CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1`.
+forms when their text differs.
 
 Use the same writer for values created in memory: constructing the exercise
 programs cannot depend on having an original LowIR spelling for every node.
@@ -189,13 +188,6 @@ the unfinished student native backend. The downloaded wrapper fetches the
 reference bundle when needed. At PA24 the native assignment will instead test
 your implementation of `lowir2native`.
 
-For reference regeneration, use `make ref-test` or `make ref-test TEST=...`.
-Those targets select `lowir-ref` for both roundtrip output and reference
-exercise construction, then use the supplied native backend for execution.
-Do not regenerate references to conceal an incomplete implementation.
-
 Finish the assignment with the root cumulative `make test-report-through-pa8`.
-The separately named `test-debuginfo` and `ref-test-debuginfo` targets preserve
-existing source/native/optimizer debug checks for maintainers. Implementing
-DWARF, debugger integration, optimization, object linking or native code emission
-is not part of this introductory assignment.
+DWARF, debugger integration, optimization, object linking and native code
+emission belong to later assignments.

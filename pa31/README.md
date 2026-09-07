@@ -22,7 +22,6 @@ You will want to reuse:
 - the PA29 hosted preprocess/compile compatibility surface
 - the PA30 heavy hosted-header compile surface
 - the PA27/PA28 host object and ABI/runtime path
-- the PA31 demand-driven emitted-symbol model described below
 
 The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
 working host C/C++ toolchain with hosted C++ headers and libraries installed.
@@ -58,7 +57,7 @@ shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
 
-The `cppgm++-ref` wrapper supports investigation and reference regeneration.
+Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
 ### Command-Line Contract
@@ -197,11 +196,8 @@ Optional sidecars include:
 - `x.inspect.cmd` or `x.inspect.expect`: object/symbol checks
 
 Some PA31 tests inspect intermediate object files with `nm`-style expectations.
-These checks verify positive ownership — a needed inline/template definition is
-present and correctly ABI-spelled. (Earlier negative-ownership / elision checks,
-which asserted that unused hosted helpers stay absent from the defined-symbol
-table, have been dropped: which internal symbols an object omits is an
-implementation detail, not a conformance requirement.)
+These checks verify that needed inline and template definitions are present
+and use the correct ABI names.
 
 The checked-in tests are hosted link/runtime smokes, ABI spelling checks, and
 object-inspection checks rather than direct N3485 clause tests.

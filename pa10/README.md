@@ -2,10 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA5 translation units, applies the
-PA7 procedural semantic layer, and writes LowIR text.
-
 PA10 is the point where `cppgm++` gains its first LowIR output mode. The earlier
 `--emit-ast`, `--emit-types`, and `--emit-semantics` modes remain required.
 
@@ -53,8 +49,8 @@ The starter kit contains:
 Extend the driver and frontend you implemented in earlier assignments with
 the PA10 lowering behavior.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Driver Surface For This Assignment
 
@@ -71,7 +67,7 @@ New in PA10:
 - `-O0` as the unoptimized LowIR test mode
 
 No practical compile/link driver flags are introduced here yet. That later
-surface starts in PA9.
+surface starts in PA25.
 
 ### Input / Command-Line Arguments
 
@@ -196,7 +192,8 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary.
+Tests compare your output with the checked-in references using the LowIR
+comparison described in [the format guide](../pa8/lowir.md).
 
 For each test case `x`:
 

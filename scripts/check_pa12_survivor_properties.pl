@@ -64,13 +64,13 @@ sub compile_and_run
 		if $status != 0;
 }
 
-if(scalar(@ARGV) != 2)
+if(scalar(@ARGV) != 3)
 {
 	die "Usage: check_pa12_survivor_properties.pl " .
-		"<cppgm++> <test-or-directory>\n";
+		"<cppgm++> <native-reference> <test-or-directory>\n";
 }
 
-my ($app, $root) = @ARGV;
+my ($app, $native_reference, $root) = @ARGV;
 my @tests = collect_tests($root,
 	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|stable-prefix-query-boundary|parameter-object-extent-boundary|rejected-stable-prefix-query-[^.]+)\.cpp$/);
 die "No PA12 survivor-property tests found under $root\n" if !@tests;
@@ -109,7 +109,7 @@ for my $test (@tests)
 			if !defined($assignment);
 		die "$test: assignment operator incorrectly received constructor noalias facts\n"
 			if $assignment =~ /\balias=noalias\b/;
-		compile_and_run($app, $test, $directory, $path);
+		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	if($test =~ /enclosing-temporary-lifetime/) {
@@ -128,7 +128,7 @@ for my $test (@tests)
 			/^\s+block \^\w+:\n(?:\s+.*\n)*?\s+call void \@\Q$destructor\E\(\Q$outer\E\)\n\s+jump \^/m;
 		die "$test: inner-construction failure does not clean the enclosing temporary\n"
 			if !$cleanup;
-		compile_and_run($app, $test, $directory, $path);
+		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	if($test =~ /out-of-class-move-assignment-boundary/) {
@@ -137,7 +137,7 @@ for my $test (@tests)
 		die "$test: out-of-class move assignment did not retain its " .
 			"declared rvalue-reference ABI identity\n"
 			if !defined($assignment);
-		compile_and_run($app, $test, $directory, $path);
+		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	if($test =~ /conditional-copy-elision-permission/) {
@@ -159,7 +159,7 @@ for my $test (@tests)
 			if $incoming < 2 || $producers < 2;
 		die "$test: O0 permission removed the ordinary source cleanup\n"
 			if $after !~ /^\s+call void \@\w+\(\Q$source\E\)$/m;
-		compile_and_run($app, $test, $directory, $path);
+		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	if($test =~ /stable-prefix-query-boundary/) {
@@ -171,7 +171,7 @@ for my $test (@tests)
 			if $header !~ /\bquery=stable_prefix\b/;
 		die "$test: query boundary lacks its final integer index or scalar result\n"
 			if $header !~ /%\w+\s*:\s*(?:i|u)(?:8|16|32|64)\)\s*->\s*(?:i|u)(?:8|16|32|64)\b/;
-		compile_and_run($app, $test, $directory, $path);
+		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	if($test =~ /parameter-object-extent-boundary/) {
@@ -206,7 +206,7 @@ for my $test (@tests)
 			if !$ordinary_pointer;
 		die "$test: source lowering attached object_bytes to a non-pointer\n"
 			if $lowir =~ /\b(?:i1|i8|u8|i16|u16|i32|u32|i64|f32|f64|f80)\s+\[[^\]]*object_bytes=/;
-		compile_and_run($app, $test, $directory, $path);
+		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}
 	die "$test: no PA12 survivor predicate selected\n";

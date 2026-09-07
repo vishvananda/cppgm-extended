@@ -201,8 +201,7 @@ make test-report-through-pa1
 Inputs are `tests/NNN-name.t`. Their `.ref` and `.ref.exit_status` sidecars
 record expected output and status; generated `.my*` files show your result.
 The prefix groups the feature being tested. Use the `pptoken-ref` wrapper to
-investigate behavior and the documented `ref-test` target to regenerate
-fixtures. A clean root through report completes this assignment.
+investigate behavior. A clean root through report completes this assignment.
 
 See [Testing and references](../TESTING_AND_REFERENCES.md) for comparison and
 reference policy. Report suspected reference bugs to this project's maintainers
@@ -485,7 +484,10 @@ To emit a token there is an interface provided in the skeleton code called `IPPT
 
 To get into the self-hosting spirit of things, once you have completed this assignment run your `pptoken` application using your `pptoken.cpp` source file as input:
 
-    $ .pptoken < pptoken.cpp > pptoken.my
+From this assignment directory:
 
-And compare by hand some of the `pptoken.cpp` file to the output in `pptoken.my` to check it tokenized correctly.
+```sh
+../dev/pptoken < ../dev/pptoken.cpp > /tmp/pptoken.my
+```
 
+Compare a few source lines with `/tmp/pptoken.my` to check the tokens.

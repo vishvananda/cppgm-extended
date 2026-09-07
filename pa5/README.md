@@ -21,8 +21,7 @@ instantiation come later.
 
 Complete the PA4 preprocessor. Reuse the PA1–PA4 token pipeline and source
 locations. This is the first C++ parser you build in the course. Its structured
-AST and deterministic dump are the deliverable; there is no preliminary
-recognizer, namespace-dump program, or assembler prerequisite.
+AST and deterministic dump are the deliverable.
 
 Read [parsing.md](parsing.md) for the implementation order, grammar notation,
 name-category boundary, and ambiguity examples. Parsing template syntax here

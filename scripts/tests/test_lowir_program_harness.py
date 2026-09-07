@@ -162,6 +162,27 @@ class LowirProgramHarnessTests(unittest.TestCase):
         self.assertIn("/missing/lowir2native-ref", result.stdout + result.stderr)
         self.assertFalse(self.backend_called.exists())
 
+    def test_pa12_controls_need_only_a_source_to_lowir_compiler(self):
+        self.pa = self.root / "pa12"
+        self.pa.mkdir()
+        shutil.copy(REPO_ROOT / "pa12/Makefile", self.pa / "Makefile")
+        control = "tests/controls/535-stable-prefix-query-boundary.cpp"
+        (self.pa / control).parent.mkdir(parents=True)
+        shutil.copy(REPO_ROOT / "pa12" / control, self.pa / control)
+        compiler = REPO_ROOT / "dev/cppgm++"
+        self.producer.write_text(
+            "#!/usr/bin/env python3\nimport os, sys\n"
+            "assert '--emit-lowir' in sys.argv, 'native driver is not implemented'\n"
+            f"os.execv({str(compiler)!r}, [{str(compiler)!r}, *sys.argv[1:]])\n"
+        )
+        self.assertPassed(self.make("check", "RUN_CHECK_DEPS=", f"TEST={control}"))
+        self.assertTrue(self.backend_called.exists())
+        self.backend_called.unlink()
+        missing = self.make("check", "RUN_CHECK_DEPS=", f"TEST={control}",
+                            "NATIVE_REFERENCE_APP=/missing/lowir2native-ref")
+        self.assertNotEqual(missing.returncode, 0, missing.stdout + missing.stderr)
+        self.assertFalse(self.backend_called.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

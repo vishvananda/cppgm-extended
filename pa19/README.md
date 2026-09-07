@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++
-source files, executes translation phases 1 through 7, parses them as PA5/PA19
-translation units, reuses the PA6-PA18 semantic foundation, builds on the
-PA10-PA18 LowIR lowering path, and writes LowIR text.
-
 PA19 is the template integration assignment. Now that you have implemented the
 individual template features in PA14, PA15, PA17, and PA18, this PA checks that
 they work together in realistic combinations. These tests are intentionally
@@ -45,8 +40,8 @@ The starter kit contains:
 Extend the `cppgm++` implementation you built in earlier assignments; the
 initial scaffold is not reinstalled at this milestone.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -56,8 +51,8 @@ The PA19 invocation is the unoptimized LowIR mode:
 
 Behaviour is undefined unless the command-line arguments match that shape, with
 the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
-milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
-not part of PA19.
+milestones. Preserve the earlier dump modes. Native driver behavior and optimized
+LowIR output are not required in PA19.
 
 ### Output Format
 

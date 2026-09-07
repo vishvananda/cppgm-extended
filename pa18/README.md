@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++
-source files, executes translation phases 1 through 7, parses them as PA5/PA18
-translation units, reuses the PA6-PA17 semantic foundation, builds on the
-PA10-PA17 LowIR lowering path, and writes LowIR text.
-
 PA18 is the second half of template completion. Its job is to finish the
 remaining single-feature deduction/substitution behavior so ordinary generic
 C++11 code stops depending on a pragmatic template subset.
@@ -39,8 +34,8 @@ The starter kit contains:
 Extend the `cppgm++` implementation you built in earlier assignments; the
 initial scaffold is not reinstalled at this milestone.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -50,8 +45,8 @@ The PA18 invocation is the unoptimized LowIR mode:
 
 Behaviour is undefined unless the command-line arguments match that shape, with
 the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
-milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
-not part of PA18.
+milestones. Preserve the earlier dump modes. Native driver behavior and optimized
+LowIR output are not required in PA18.
 
 ### Output Format
 
@@ -179,7 +174,7 @@ Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended template follow-up is PA20, which checks that the PA14-PA18
+The intended template follow-up is PA19, which checks that the PA14-PA18
 template features compose in realistic programs. The later backend stage
 implements native code generation from the LowIR produced by the frontend.
 

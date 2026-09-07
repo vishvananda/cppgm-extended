@@ -58,12 +58,6 @@ library include paths, and standard-library selection flags. When you use a
 non-default standard library, pass the same choice through `CPPGM_STDLIB_FLAGS`
 so the course compiler and host compiler agree.
 
-The three supported pairs are lanes: prefix any target to run it in one, as in
-`make with-clang-test-report-through-pa33`, and `make test-cells` walks all
-three in one command and names the ones that failed.  The supported pairs are
-the default g++/libstdc++, clang/libstdc++, and clang/libc++; g++ with libc++
-is not supported and has no cell.
-
 Those answers are discovered **once, when `cppgm++` is built**, and baked into
 it. The compiler does not probe the host toolchain at run time to find its
 include paths: a compiler that decided where the standard library lives each
@@ -94,7 +88,7 @@ shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
 
-The `cppgm++-ref` wrapper supports investigation and reference regeneration.
+Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
 ### Driver Surface
@@ -234,7 +228,7 @@ still expose symbol-spelling problems through emitted objects and unresolved
 references. The `cppgm++ -c` path should continue producing host ABI names that
 PA27 and PA28 already made observable.
 
-A recommended implementation style is to keep the PA26 mangler in the
+A recommended implementation style is to keep the PA9 mangler in the
 compile-mode path while adding hosted parser, semantic, builtin, and lowering
 support. That style works best when hosted standard-library entities, inline
 namespaces, ABI-tagged declarations, dependent template names, local entities,

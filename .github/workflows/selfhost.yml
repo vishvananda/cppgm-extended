@@ -1,5 +1,7 @@
 name: Selfhost
 
+# PA34 owns the ladder; test-through-pa5 is the consolidated parser checkpoint.
+
 on:
   workflow_dispatch:
     inputs:

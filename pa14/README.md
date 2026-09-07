@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA5/PA14 translation units,
-reuses the PA6-PA7 semantic foundation, builds on the PA10-PA13 LowIR lowering path,
-adds the first template-instantiation layer, and writes LowIR text.
-
 PA14 adds the first usable template tier on top of the completed PA13 procedural/object/
 polymorphic compiler. It extends PA13 with:
 
@@ -59,8 +54,8 @@ The starter kit contains:
 Extend the `cppgm++` implementation you built in earlier assignments; the
 initial scaffold is not reinstalled at this milestone.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -69,8 +64,8 @@ The PA14 invocation is the unoptimized LowIR mode:
     $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
 Behaviour is undefined unless the command-line arguments match that shape, with
-the same source-file ordering and `-o` relaxations as PA13. Other `--emit-*`
-modes, driver mode, and optimized LowIR output are not part of PA14.
+the same source-file ordering and `-o` relaxations as PA13. Preserve the earlier dump modes;
+native driver behavior and optimized LowIR output are not required in PA14.
 
 ### Nondependent template bases
 
@@ -135,7 +130,8 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary.
+Tests compare your output with the checked-in references using the LowIR
+comparison described in [the format guide](../pa8/lowir.md).
 
 For each test case `x`:
 

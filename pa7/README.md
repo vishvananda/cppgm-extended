@@ -53,8 +53,7 @@ The starter `dev/cppgm++.cpp` is the same long-lived `cppgm++` dispatcher used
 from PA5 onward. For PA7, extend it so `--emit-semantics` runs your resolved
 semantic-analysis and dump path.
 
-The `cppgm++-ref` wrapper is available for investigation and reference
-regeneration. Tests run your compiler against the checked-in contract fixtures.
+Use `cppgm++-ref` to inspect example output. Tests run your compiler against the checked-in contract fixtures.
 
 ### Build And Test Commands
 

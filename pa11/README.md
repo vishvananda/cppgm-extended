@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA5 translation units, reuses the
-PA6-PA7 semantic foundation, extends the PA10 LowIR lowering path with the basic
-object-model slice, and writes LowIR text.
-
 PA11 is the first object-model milestone. It extends the PA10 procedural compiler with the
 basic non-polymorphic class machinery needed by ordinary C++ code:
 
@@ -39,10 +34,8 @@ The intended direction is:
 - PA10 lowers that resolved procedural subset into LowIR
 - PA11 extends that lowering path into a usable basic object model
 
-Because this milestone still consumes the PA5 syntax subset, the same PA5 mock-name
-conventions still matter in ambiguous type positions. In particular, class names used as
-types in ordinary declarations should follow the same `Y...` style used by PA6 unless the
-syntax is otherwise unambiguous.
+Use PA5's recorded name categories and PA6's actual declarations to resolve
+type names. Class names do not require a special spelling prefix.
 
 ### Starter Kit
 
@@ -58,8 +51,8 @@ The starter kit contains:
 Extend the driver and frontend you implemented in earlier assignments with
 the PA11 lowering behavior.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -160,7 +153,8 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary.
+Tests compare your output with the checked-in references using the LowIR
+comparison described in [the format guide](../pa8/lowir.md).
 
 For each test case `x`:
 
@@ -329,7 +323,7 @@ The following are explicitly out of scope for PA11:
 - multiple inheritance
 - member pointers
 - out-of-class constructor and destructor definitions
-  - the PA11 syntax contract does not include those forms
+  - PA5 preserves their syntax; PA12 adds their semantics and lowering
 - conversion operators
 - static assertions and constexpr metaprogramming
 - hosted/vendor-only attributes such as `[[no_unique_address]]`

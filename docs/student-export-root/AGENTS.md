@@ -14,8 +14,7 @@ before changing code. [Project layout](PROJECT_LAYOUT.md) gives the assignment m
 - Implement required output yourself. Do not delegate it to reference binaries,
   another solution or a host compiler unless the handout requires that host
   interaction. PA8's supplied native backend is called by the grading harness.
-- Keep personal tests in `student.tests/` and run them explicitly. Permanent
-  course fixtures belong in the earliest owning `paN/tests/` feature cluster.
+- Keep personal tests in `student.tests/` and run them explicitly.
 - Do not change tests or references to hide missing or incorrect behavior.
   Do not commit generated objects, logs or `.my*` outputs.
 
@@ -30,20 +29,22 @@ Replace N with the assignment number. For PA1–PA33, pass the root through
 report before advancing. PA34 ends with `make inception`. Use the debug and
 inspection targets required by the owning handout when changing those surfaces.
 
-In this student export, default tests run the course contract. PA24, PA32 and
-PA33 retain explicit `test-regression` targets for the course solution's exact
-design; those tests do not gate a different valid implementation.
+Default tests run the course contract. Files under `tests/regression/` describe
+the course solution's particular design and are outside your exit criteria.
 
 ## References
 
 Checked-in contract fixtures and the handout define the assignment. Reference
-tools are provided for observation and fixture regeneration; behavior outside
+tools are provided for observation; behavior outside
 the fixtures can contain bugs. Prefer the handout and C++11 standard to copying
 an erroneous reference result. Diagnostic text is not graded.
 
-Use documented `ref-test` targets with the supplied `*-ref` tools. PA8 uses
-`lowir-ref` for roundtrips and `lowir2native-ref` to execute student-constructed
-LowIR; implement the LowIR machinery and later C++ lowering yourself.
+PA8's harness uses `lowir-ref` to compare roundtrips and `lowir2native-ref` to
+execute student-constructed LowIR. Implement the LowIR machinery and later
+C++ lowering yourself.
+
+PA12’s behavioral controls also execute your source-generated LowIR through
+the supplied native backend. Your own native backend is introduced in PA24.
 
 Preserve inherited attribution. [NOTICE](NOTICE) explains how this extensively
 revised course derives from the original CPPGM material.

@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA5/PA15 translation units,
-reuses the PA6-PA7 semantic foundation, builds on the PA10-PA14 LowIR lowering path,
-adds the PA15 metaprogramming slice, and writes LowIR text.
-
 PA15 extends PA14’s first-tier templates with the first practical compile-time
 metaprogramming layer:
 
@@ -54,8 +49,8 @@ The starter kit contains:
 Extend the `cppgm++` implementation you built in earlier assignments; the
 initial scaffold is not reinstalled at this milestone.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -64,8 +59,8 @@ The PA15 invocation is the unoptimized LowIR mode:
     $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
 Behaviour is undefined unless the command-line arguments match that shape, with
-the same source-file ordering and `-o` relaxations as PA14. Other `--emit-*`
-modes, driver mode, and optimized LowIR output are not part of PA15.
+the same source-file ordering and `-o` relaxations as PA14. Preserve the earlier dump modes;
+native driver behavior and optimized LowIR output are not required in PA15.
 
 ### Output Format
 
@@ -109,7 +104,8 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary.
+Tests compare your output with the checked-in references using the LowIR
+comparison described in [the format guide](../pa8/lowir.md).
 
 For each test case `x`:
 

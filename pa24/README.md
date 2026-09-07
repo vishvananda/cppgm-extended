@@ -30,14 +30,12 @@ built the same way.
   shape is the contract, matches the canonical dump.  The Testing section
   states it.
 - **One design** is how the course solution lowers LowIR: the five-stage
-  structure and the compact shapes in Design Notes.  A different lowering
+  structure and compact shapes in the linked design notes.  A different lowering
   that meets the bar is a correct PA24; only the contract-shape fixtures
   compare your instruction selection with the course solution's.
 
-Use `make test-course` for the assignment contract and `make test-regression`
-for the course solution's exact design. The compiler solution checkout's
-`make test` runs both; the student export runs only the course contract by
-default. See [Testing and references](../TESTING_AND_REFERENCES.md).
+Run `make test` from this assignment directory to check the course contract.
+See [Testing and references](../TESTING_AND_REFERENCES.md) for selecting tests.
 
 ### Prerequisites
 
@@ -89,8 +87,7 @@ student-owned helpers they add under `dev/src/`. The assignment directory, gramm
 test fixtures, comparison scripts, and checked-in reference outputs are support
 files, not implementation files to edit for normal solutions. Reuse your earlier compiler infrastructure when implementing this milestone.
 
-The supplied `lowir2native-ref` is available for inspection and reference
-regeneration. Normal tests invoke the student's `lowir2native` and compare
+Use `lowir2native-ref` to inspect example output. Normal tests invoke the student's `lowir2native` and compare
 with the checked-in `.ref` results; they never substitute the supplied backend.
 
 ### Driver Surface For This Assignment
@@ -99,6 +96,8 @@ Required in PA24:
 
 - `--help` / `-h`
 - `-o <outfile>`
+- `-O0` (also the default)
+- `--stats`
 - `--dump-machine-ir <mirfile>`
 - `--target <target>`
 
@@ -176,7 +175,7 @@ The exact binary encoding is not directly compared by the PA24 tests. Instead, t
 compare:
 
 - the compiler exit status
-- the canonical machine-IR oracle for successful compilations
+- the fixture’s machine-IR expectations for successful compilations
 - the generated program exit status
 - the generated program standard output
 
@@ -195,26 +194,31 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing is based on execution of the generated native program.
+From this assignment directory, run `make test`. From the repository root,
+run `make test-report-through-pa24` before moving on.
 
-For each test case `x`:
+The suite compiles each LowIR input, records the compiler exit status, and
+runs successful programs to compare their standard output and exit status.
+It also checks the machine-IR dump:
 
-- `lowir2native` is executed to produce `x.my.program`
-- `lowir2native` is also executed with `--dump-machine-ir` to produce `x.my.mir`
-- the compiler exit status is recorded in `x.my.impl.exit_status`
-- if compilation succeeded, `x.my.program` is executed
-- its standard output is recorded in `x.my.program.stdout`
-- its numeric exit status is recorded in `x.my.program.exit_status`
+- With `x.ref.expect`, every stated outcome and size bound must pass. The
+  adjacent `.ref.mir` is an example; your instruction sequence may differ.
+- Without an expectation, `tests/strict/` compares `.ref.mir` after target
+  header normalization, and `tests/structural/` compares `.ref.cmir` after
+  canonicalization. These cases check ABI and other required relationships.
+- `tests/behavior/` checks program results. Its reference MIR is informational.
+- `tests/controls/` checks focused MIR, ABI and native execution properties.
 
-The checked-in `.ref` files are compared the same way for the outputs that are
-part of that test's oracle:
+Canonicalization absorbs interchangeable free registers and frame offsets;
+it preserves instruction families, widths, ordering and operand classes.
+The harness writes `.my.cmir` for diagnosis. Your backend emits only raw MIR.
+Failed compilations are judged by exit status, not diagnostic wording.
 
-- `x.ref.impl.exit_status`
-- `x.ref.mir` for tests with a raw MIR dump oracle
-- `x.ref.program.stdout`
-- `x.ref.program.exit_status`
+A `.ref.expect` bounds quantities such as instructions, blocks, calls, memory
+operands, pushes and frame size. Read the sidecar to see the bound for a
+failing case; `scripts/expect_ir.pl` reports which predicate failed.
 
-The `--dump-machine-ir` output remains the raw debugging dump.
+### Machine-IR text
 
 For a successful compilation, the tested raw MIR dump is a plain-text file with this overall
 shape:
@@ -274,126 +278,6 @@ non-unwinding call, and `returns=noreturn` records a call that does not return.
 These facts are part of MIR because register liveness, stack cleanup, exception
 handling, and native emission all depend on them.
 
-For strict and structural MIR tests, the raw `.ref.mir` file is still checked in because it
-is the debugging-oriented dump students see directly from `--dump-machine-ir`.
-Structural tests also keep `x.ref.cmir`, the canonical oracle used for grading.
-
-A fixture with an `x.ref.expect` sidecar is judged by that expectation in
-every lane (`../scripts/expect_ir.pl`): the program's behaviour as above,
-plus a size envelope over the machine-IR dump (instructions, blocks, calls,
-memory operands, pushes, per-function sizes with a 32-byte frame
-allowance) generated from the course solution's dump at 10% tolerance plus
-one (`../scripts/make_ir_expect.pl`), and outcome lines where the fixture
-states one.  Every course fixture in `tests/strict/` and `tests/structural/`
-carries one except the contract-shape cases: the object ABI, stack
-arguments beyond six, the mixed GPR and XMM call ABIs, call setup without
-preserve, pointer alignment, and callee-saved retention, whose shape is
-what the ABI and the caller depend on.  Their `x.ref.mir` files stay as
-informational examples.  `make test-perf` runs the behaviour programs
-under Cachegrind against `x.ref.ir` at `PERF_TOLERANCE_PERCENT` (10).
-
-For a fixture without an expectation, PA24 uses three explicit comparison
-modes, split by directory:
-
-1. `tests/strict/` compares the raw checked-in `.ref.mir` against the generated `.my.mir`,
-   after only normalizing the host-target tag in the `machine_ir x86_64 <target>` header.
-2. `tests/structural/` compares the checked-in `.ref.cmir` against a canonicalized form of
-   the generated `.my.mir`.
-3. `tests/behavior/` checks compilation and generated-program behavior only.
-   It retains the reference machine-IR dump as an informational example for
-   students, but does not compare generated MIR with it.
-
-The structural canonicalization pass is intentionally conservative. It hides:
-
-- the host-target tag in the MIR header
-- exact stack/frame displacement numbers in memory operands, and the
-  frame's total `stack_size`
-- interchangeable free GPR choices where the structural MIR shape is otherwise the same
-- interchangeable free XMM choices where the structural MIR shape is otherwise the same
-
-It still preserves:
-
-- opcode family and width
-- direct vs indirect call shape
-- direct compare-to-branch vs materialized-bool shape
-- register vs stack vs immediate location class
-- floating operation family and explicit conversion family
-
-So the assignment keeps a structural backend oracle without freezing exact
-frame-layout details into every checked-in reference.
-
-That means a successful `PA24` test anchor now validates exactly these output files:
-
-- `x.ref.impl.exit_status`: exact compiler success/failure result
-- `x.ref.program.exit_status`: exact generated-program exit status
-- `x.ref.program.stdout`: exact generated-program standard output
-- plus either:
-  - `x.ref.mir` with strict raw-MIR comparison and header normalization only
-  - `x.ref.mir` plus `x.ref.cmir`, with structural canonical-MIR comparison using
-    checked-in `x.ref.cmir`
-  - an informational `x.ref.mir` that is present but not compared for
-    `tests/behavior/`
-
-In other words, `PA24` is not just "program behavior matches." The tests also validate the
-shape of the lowered backend output through one of those two explicit MIR oracles.
-
-For structural failures, the harness leaves behind:
-
-- `x.my.cmir`
-
-Those are debugging artifacts only. Students are not expected to emit `.cmir` files. They
-only need to implement `--dump-machine-ir` and produce raw `.mir`.
-
-The `tests/behavior/` directory is for correctness cases where several reasonable
-register-allocation or spill strategies are acceptable. Those tests still require
-successful compilation and matching generated-program behavior, but they intentionally do
-not compare machine IR. The checked-in reference MIR remains useful for inspection
-and manual comparison.
-
-Successful cases in all three lanes retain raw reference MIR. Only strict and structural tests use
-it as a grading oracle.
-
-`make test` recursively runs the checked-in local suites:
-
-- `tests/strict/`
-- `tests/structural/`
-- `tests/behavior/`
-- `tests/controls/`, through `scripts/check_pa24_native_contracts.pl`
-- `tests/regression/{strict,structural,behavior}`, the regression lane
-
-These directories contain PA24-specific backend oracle tests, not source-standard tests.
-PA24 has no `tests/spec/` directory because the tested contract is the
-compiler-owned LowIR-to-native backend surface rather than an N3485 C++ source-language
-clause.
-
-The PA24 suite is intentionally mixed:
-
-- hand-written PA8-style LowIR tests
-- selected LowIR programs copied from the outputs of PA11-PA23
-
-That ensures PA24 is tested both on the core LowIR forms and on the richer LowIR that later
-lowering assignments now produce.
-
-The PA24 test suite exercises:
-
-- startup/lowering correctness for simple programs, globals, direct calls, and indirect calls
-- register and stack calling-convention handling for:
-  - integer-only calls
-  - mixed GPR/XMM direct calls
-  - mixed GPR/XMM indirect calls
-- short-circuit-style branch diamonds expressed directly in LowIR control flow
-- unary logical-not lowering when the result feeds control flow
-- direct compare-fed branches over integer, pointer, and floating inputs
-- compare-as-value materialization for integer, pointer, and floating cases
-- trivial integer and floating leaf chains that should stay register-resident
-- mixed integer/float conversion chains
-- signed and unsigned narrow integer reload/widen paths from both frame and global storage
-- conservative `f80` arithmetic, comparison, and call/data lowering
-- atomic load/store, exchange, compare-exchange, fetch-add, and fence operations across
-  multiple scalar widths
-
-The shipped PA24 tests are the contract for this milestone.
-
 ### PA24 Syntax Spec
 
 The authoritative input-language syntax for PA24 is `pa24.gram`.
@@ -411,7 +295,8 @@ pre-metadata subset. In particular, handwritten PA24 inputs may now use:
 - explicit function role metadata such as `[role=entry]`, `[role=init]`, and `[role=fini]`
 - top-level declaration forms such as `declare function` and `declare global`
 - structured global data plus explicit global storage metadata where relevant
-- optional call-boundary, parameter, and instruction-debug metadata accepted by
+- call-boundary, parameter, and instruction-debug metadata described in
+  [the LowIR format](../pa8/lowir.md)
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
 `pa24.gram` as the source of truth.
@@ -647,7 +532,7 @@ To complete PA24, implement these goals:
    When both bulk-copy addresses need setup, forming one address must not
    overwrite a parameter or deferred carrier still needed to form the other.
    The lowering may reverse the setup order or stage one address in reserved
-   scratch; generated behavior must remain correct at both O0 and O1.
+   scratch; generated behavior must remain correct.
 
    A direct three-argument call to the canonical builtin `memcpy` may become
    a dynamic `copy_bytes` machine operation when its returned pointer is
@@ -675,20 +560,6 @@ To complete PA24, implement these goals:
    compact string-operation form.  Both forms must preserve the source bytes,
    destination bytes, and declared scratch effects; vector chunks may not
    consume an XMM register available to ordinary value placement.
-
-   At `-O1` or higher, a direct one-pointer call returning `i64` whose LowIR
-   declaration or definition carries `object=cppgm_builtin_strlen` may select
-   a bounded native prefix operation. MIR records that selected machine fact
-   on the call as `strlen_prefix=16`; `-O0`, ordinary functions, indirect
-   calls, and incompatible signatures retain the ordinary call form.
-
-   The x86-64 encoding may inspect one 16-byte SSE2 word only when that load
-   remains within the current 4 KiB page. If the word contains a zero byte, it
-   returns the first zero's byte offset. A page-edge address or a prefix
-   without a zero retains the original direct call as its fallback. The MIR
-   operation keeps the conservative call argument, clobber, unwind, and result
-   facts because the fallback is still a real call; its vector temporaries are
-   caller-saved encoding scratch rather than allocator-visible values.
 
    Native emission may carry a compiler-created scalar temporary from its one
    defining frame store to later typed reloads in the same block when the
@@ -843,10 +714,9 @@ Inputs that rely on those features have undefined behaviour for this milestone.
 
 The intended next stages are:
 
-- PA26 host EH facts, which validates the host-EH metadata emitted in
-  `cppgm++ -c` objects
-- PA25 `cppgm++` compile/link mode, which adds source-driven separate
-  compilation and linking on top of the native backend path
+- PA25 `cppgm++` compile/link mode adds source-driven separate compilation
+  and linking on top of the native backend.
+- PA26 adds host-compatible exception metadata in relocatable objects.
 
 So PA24 should leave behind:
 
@@ -856,129 +726,7 @@ So PA24 should leave behind:
 - a backend test corpus that already catches the basic execution-level
   arithmetic and conversion bugs before the source-driven toolchain stages
 
-### Design Notes (Non-Normative)
+### Design example
 
-The cleanest PA24 structure is:
-
-- parse LowIR into a structured internal representation
-- lower that representation into a structured machine-IR program
-- dump that machine-IR program deterministically for testing
-- lower that machine-IR program into target-specific code/data
-- write the final executable image from that lowered form
-
-Reuse PA8's LowIR machinery and build the encoding, layout, and fixup
-components introduced in [the native encoding lesson](native-encoding.md).
-
-For the compact MIR shapes used by the checked fixtures, useful implementation
-strategies include:
-
-- keep incoming parameters and call results in their ABI registers until an
-  emitted instruction invalidates that location
-- reserve every allocator-managed incoming register that still carries a live
-  parameter, including on a wide scalar boundary, and release it through the
-  ordinary typed use count after its final selected consumer
-- represent each instruction's fixed-register writes as a compact register
-  mask and keep a scalar in an incoming register only when its live interval
-  crosses none of those writes
-- when a full-width scalar call result also needs a stable later home, let an
-  earlier GPR call-argument use read its intact `rax` carrier directly
-- omit parameter homes and setup transfers when slot selection removes every
-  use that would have consumed them
-- omit a transfer to a stable parameter home when every selected consumer can
-  read the still-intact incoming ABI register
-- let a promoted or forwarded parameter-slot load continue to name the
-  parameter's stable selected home; its consumer can apply any required
-  register constraint directly, after accounting for clobbers between the
-  eliminated store and load
-- use the same selected parameter home when constructing ordinary and extended
-  call-argument move sets
-- let a representation-preserving scalar copy or decay share an intact parameter
-  location when the copied result's interval crosses no clobber
-- record each block's sole predecessor and successor in dense CFG facts so a
-  compiler-created scalar can retain its selected register across one exact
-  adjacent edge without constructing per-block live-value sets
-- lower `phi` values to parallel edge transfers; split a critical edge before
-  MIR selection so copies for an untaken successor never execute
-- retain a compact address-value bit on a parallel phi source so location
-  equality and cycle scheduling do not confuse a frame address with a scalar
-  stored at the same frame location; rematerialize that source with `lea`
-- select the signed or unsigned extending memory form directly for a typed
-  narrow integer load instead of emitting a partial load followed by a
-  register-only normalization
-- route address-setup/load folding through the same typed-load encoder so the
-  compact address form cannot discard narrow-value normalization
-- use the sole-use next instruction to recognize a narrow call result consumed
-  by a same-width store, return, or explicit integer conversion, while
-  retaining explicit normalization for wider consumers
-- carry a typed immediate's signed range and the result fact of Boolean or
-  integer-extension instructions into the adjacent normalization decision
-- retain integer constants as typed MIR immediates, letting native emission
-  materialize a scratch only when the concrete x86 encoding requires it, and
-  place division or variable-shift operands directly in their required
-  registers while keeping a fixed shift count on the shift instruction
-- when an `i64` bitwise AND has a constant mask that clears every upper
-  32-bit result bit, select the equivalent 32-bit x86 operation so the
-  architectural zero extension supplies the complete `i64` value; retain the
-  64-bit operation when any upper result bit may survive
-- admit direct division-to-return setup only when its dividend is already a
-  register or immediate; otherwise reuse the ordinary typed materialization
-  path before assigning `rax` and `rdx`
-- encode immediate memory stores directly at 8, 16, and 32 bits and for
-  sign-extended 32-bit values at 64 bits; choose an encoder scratch that does
-  not overlap a dereference base or index for other 64-bit values
-- compare the exact target-byte cost of a fixed small `zero_bytes` with its
-  `rep stosb` setup and use direct zero stores only when they are smaller;
-  encode the 16-byte case with a cleared reserved vector scratch and one
-  unaligned store, without consuming allocatable floating-point capacity
-- encode a 1-, 2-, 4-, or 8-byte `copy_bytes` as one complete scalar load and
-  store when that is cheaper than string-instruction setup; choose the scratch
-  from the MIR instruction's declared clobber set and keep both logical
-  address registers intact until their last use
-- encode a fixed `copy_bytes` through 32 bytes with reserved-scratch vector
-  chunks and a scalar tail, extending that direct form through 64 bytes for
-  operations with at least eight-byte declared alignment; keep larger or more
-  weakly aligned copies on the compact string-operation path
-- lower a direct canonical three-argument builtin `memcpy` with an unused
-  returned pointer to a dynamic `copy_bytes` operation after normal ABI
-  argument staging, while retaining calls for used results and unmarked or
-  incompatible callees
-- carry a sole-use load's typed frame, global, dereference, or indexed address
-  into an immediately following legal integer right operand, keeping its
-  address inputs live until the consuming instruction
-- keep an immediately returned quotient in `rax` and an immediately returned
-  remainder in `rdx`; the return instruction may name that selected result
-  carrier directly
-- lower a sole-use `i128` comparison and branch as high-word decisions plus an
-  unsigned low-word tie-break, and give a comparison used as a value a frame
-  fallback instead of requiring a free GPR
-- give an atomic load result a typed temporary frame home when its live range
-  requires a register class with no free member
-- prefer an available caller-saved register to adding a callee-saved register
-  to the frame's `preserve` list
-- reuse compatible compiler-created temporary frame locations when their value
-  lifetimes do not overlap, while keeping source slots and parameter slots
-  distinct
-- fold a one-use `index` into the following memory operand, omit work for an
-  unused or zero-displacement index, and use one `lea` when an indexed address
-  must remain as a value
-- retain a one-use frame address through a scalar memory consumer so the
-  selected memory operand names the frame location directly
-- classify address-only pointer results once in dense per-value facts and
-  retain a typed base/index/displacement value while its carriers are stable,
-  instead of repeatedly rescanning uses or keying hot-path state by text
-- load frame-resident object chunks directly into their ABI argument registers
-  instead of materializing a temporary object address
-- transfer direct-object return chunks between their frame locations and ABI
-  result registers without materializing a temporary object address
-- keep an indirect-call target in its selected register when argument setup
-  does not overwrite that register
-- use the address result's recorded final consumer to keep a nonadjacent
-  direct-object call-result destination frame-shaped without rescanning the
-  intervening instructions
-- count returns once during final native layout and share a restore/teardown
-  sequence only when its encoded bytes exceed the added branch bytes; keep
-  every semantic return and its result carrier in MIR
-
-These are suggestions, not required internal data structures or algorithms.
-Any implementation is acceptable if it preserves program behavior and produces
-the checked strict or structural MIR output.
+[Design notes](design-notes.md) work through a possible lowering pipeline.
+The assignment contract and fixture expectations remain the requirements.

@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++
-source files, executes translation phases 1 through 7, parses them as PA5/PA17
-translation units, reuses the PA6-PA16 semantic foundation, builds on the
-PA10-PA16 LowIR lowering path, and writes LowIR text.
-
 PA17 is the first half of template completion. Its job is to finish the
 template declaration and specialization model so the compiler knows:
 
@@ -45,8 +40,8 @@ The starter kit contains:
 Extend the `cppgm++` implementation you built in earlier assignments; the
 initial scaffold is not reinstalled at this milestone.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -56,8 +51,8 @@ The PA17 invocation is the unoptimized LowIR mode:
 
 Behaviour is undefined unless the command-line arguments match that shape, with
 the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
-milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
-not part of PA17.
+milestones. Preserve the earlier dump modes. Native driver behavior and optimized
+LowIR output are not required in PA17.
 
 ### Dependent qualified types
 
@@ -178,7 +173,7 @@ PA17 owns the template declaration graph and specialization model over the
 implemented language surface, including:
 
 - alias templates
-- variable templates
+- variable templates (a course extension beyond C++11)
 - template-template parameters and template-template argument matching
 - member templates, including templated member operators and templated call
   operators
@@ -217,7 +212,7 @@ The following are explicitly out of scope for PA17:
   better framed as substitution behavior
 - initializer-list template behavior
 - hosted/vendor-only extensions that happen to use templates
-- post-C++11 template-language features
+- post-C++11 template-language features other than the variable templates above
 - broad multi-feature integration cases whose main assertion is that several
   completed template features compose
 

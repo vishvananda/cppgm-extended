@@ -6,6 +6,7 @@ CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
 CPPGM_TEST_APP ?= ../dev/$(TARGET)
 REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
+NATIVE_REFERENCE_APP ?= ../dev/lowir2native-ref
 TEST_DEPS ?= dev-shared-target
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(TEST_RUNNER_SHARED_FLAGS) $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
@@ -67,7 +68,7 @@ test: $(TEST_DEPS)
 	@scripts/compare_results.pl ref my tests
 	@if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
 		perl ../scripts/check_pa12_survivor_properties.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
+			$(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(CONTROL_TEST_ROOT)"; \
 	fi
 
 ref-test:
@@ -79,7 +80,7 @@ REF_TEST_RUN = case "$(TEST)" in \
 esac
 
 CHECK_RUN = case "$(TEST)" in \
-	$(CONTROL_TEST_ROOT)/*) perl ../scripts/check_pa12_survivor_properties.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	$(CONTROL_TEST_ROOT)/*) perl ../scripts/check_pa12_survivor_properties.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)" ;; \
 	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
 esac
 CHECK_COMPARE = case "$(TEST)" in \

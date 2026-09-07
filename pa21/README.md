@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source
-Files, executes translation phases 1 through 7, parses them as PA5/PA21 translation units,
-reuses the PA6-PA7 semantic foundation, builds on the PA10-PA20 LowIR lowering path,
-adds the PA21 advanced-language slice, and writes LowIR text.
-
 PA21 finishes the deferred first-tier language features that sit on top of the existing
 single-inheritance object model:
 
@@ -14,6 +9,7 @@ single-inheritance object model:
 - `std::initializer_list` semantic interoperation
 - RTTI and `typeid`
 - pointer-form `dynamic_cast`
+- exception-aware construction and full-expression cleanup
 
 PA21 still produces LowIR. It does not introduce a new output format.
 
@@ -28,7 +24,6 @@ You will want to reuse:
 - the PA6-PA7 semantic foundation
 - the PA10-PA20 LowIR lowering path
 - the PA8 LowIR contract
-- the PA24 native validation path
 
 ### Starter Kit
 
@@ -38,7 +33,6 @@ The starter kit contains:
 - your cumulative `dev/cppgm++.cpp` compiler entry point
 - the `pa21/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
 - shared support sources and headers under `dev/src/`
-- a local test suite under `pa21/tests/`
 - the grammar for this assignment called `pa21.gram`
 - an HTML grammar explorer of `pa21.gram` in the sub-directory `grammar/`
 - a checked-in local test suite under `tests/`
@@ -48,8 +42,8 @@ student-owned helpers they add under `dev/src/`. The assignment directory, gramm
 test fixtures, comparison scripts, and checked-in reference outputs are support
 files, not implementation files to edit for normal solutions. Reuse your earlier compiler infrastructure when implementing this milestone.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -100,7 +94,8 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
+Tests compare your output with the checked-in references using the LowIR
+comparison described in [the format guide](../pa8/lowir.md). The `Makefile` invokes
 `cppgm++` with `--emit-lowir -O0`.
 
 The local checked-in tests live in `tests/general/`. That directory contains
@@ -117,9 +112,8 @@ For each test case `x`:
 - `x.my.exit_status` is compared against `x.ref.exit_status`
 
 PA21 is tested against generated LowIR text using the relaxed LowIR comparator described
-above. A useful manual validation path is:
-
-- feed that LowIR into PA24 `lowir2native`
+above. For execution feedback, use the supplied `lowir2native-ref -O0`
+backend introduced in PA8. Your own native backend is implemented in PA24.
 
 The shipped PA21 tests are the contract for this milestone.
 

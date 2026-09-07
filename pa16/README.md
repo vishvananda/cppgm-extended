@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source
-Files, executes translation phases 1 through 7, parses them as PA5/PA16 translation
-units, reuses the PA6-PA15 semantic foundation, builds on the PA10-PA15 LowIR lowering
-path, adds the full `constexpr` / constant-evaluation layer, and writes LowIR text.
-
 PA16 extends PA15's first practical metaprogramming slice into a full language-level
 constant-evaluation milestone. Its job is to make `constexpr` semantics a first-class part
 of the compiler rather than leaving constant evaluation as only the small pragmatic subset
@@ -47,8 +42,8 @@ The starter kit contains:
 Extend the `cppgm++` implementation you built in earlier assignments; the
 initial scaffold is not reinstalled at this milestone.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -58,8 +53,8 @@ The PA16 invocation is the unoptimized LowIR mode:
 
 Behaviour is undefined unless the command-line arguments match that shape, with
 the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
-milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
-not part of PA16.
+milestones. Preserve the earlier dump modes. Native driver behavior and optimized
+LowIR output are not required in PA16.
 
 ### Output Format
 
