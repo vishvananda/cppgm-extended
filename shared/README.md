@@ -1,9 +1,9 @@
 # Shared Source Grammar
 
 `source.gram` is the canonical source-language grammar for `cppgm++` frontend
-assignments starting at PA10.
+assignments starting at PA5.
 
-The local `paN/paN.gram` files for PA10-PA12, PA14-PA27, and PA29 expose
+The local `paN/paN.gram` files for PA5-PA7, PA10-PA15, PA20-PA23, and PA25 expose
 this shared grammar under each assignment's filename. README files
 should use this standard wording:
 

@@ -50,7 +50,7 @@ const char* LowOperationText(LowOperation operation)
 	case LOW_OP_FPEXT: return "fpext";
 	case LOW_OP_NONE: break;
 	}
-	ThrowLoweringInternal("missing PA15 LowIR operation");
+	ThrowLoweringInternal("missing PA10 LowIR operation");
 }
 
 EmissionIdentityTable::EmissionIdentityTable()
@@ -178,7 +178,7 @@ IdentityTypeId EmissionIdentityTable::InternFunctionSignature(
 {
 	const TypeRecord& source = program.types.Get(type);
 	if (source.kind != TYPE_FUNCTION)
-		ThrowLoweringInternal("PA15 function identity has non-function type");
+		ThrowLoweringInternal("PA10 function identity has non-function type");
 	IdentityTypeKey key;
 	key.kind = TYPE_FUNCTION;
 	key.variadic = source.variadic;
@@ -498,7 +498,7 @@ IdentityPathId EmissionIdentityTable::InternPathKey(const IdentityPathKey& key)
 		slot = (slot + 1) & (path_slots_.size() - 1);
 	}
 	if (path_records_.size() >= kNoLowId)
-		ThrowLoweringResourceLimit("too many PA15 identity paths");
+		ThrowLoweringResourceLimit("too many PA10 identity paths");
 	const IdentityPathId id = static_cast<IdentityPathId>(path_records_.size());
 	path_records_.push_back(key);
 	path_slots_[slot] = id;
@@ -530,7 +530,7 @@ IdentityTypeId EmissionIdentityTable::InternTypeKey(const IdentityTypeKey& key)
 		slot = (slot + 1) & (type_slots_.size() - 1);
 	}
 	if (type_records_.size() >= kNoLowId)
-		ThrowLoweringResourceLimit("too many PA15 identity types");
+		ThrowLoweringResourceLimit("too many PA10 identity types");
 	const IdentityTypeId id = static_cast<IdentityTypeId>(type_records_.size());
 	type_records_.push_back(key);
 	type_slots_[slot] = id;

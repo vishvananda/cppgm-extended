@@ -50,7 +50,7 @@ check_help() {
 
 check_help 'cppgm++' '--help' 'usage: cppgm++' '-dumpmachine'
 check_help 'cppgm++' '-h' 'usage: cppgm++' '-print-search-dirs'
-check_help 'lowir2cy86' '--help' 'usage: lowir2cy86' '-o <outfile>'
+check_help 'lowir' '--help' 'usage: lowir' '-o <outfile>'
 check_help 'lowir2native' '-h' 'usage: lowir2native' '--dump-machine-ir'
 check_help 'lowiropt' '--help' 'usage: lowiropt' '-O0 / -O1 / -O2'
 

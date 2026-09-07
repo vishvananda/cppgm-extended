@@ -2,14 +2,18 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++
-source files, executes translation phases 1 through 7, parses them as PA10/PA23
-translation units, reuses the PA11-PA22 semantic foundation, builds on the
-PA15-PA22 LowIR lowering path, and writes LowIR text.
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source
+Files, executes translation phases 1 through 7, parses them as PA5/PA23 translation units,
+reuses the PA6-PA7 semantic foundation, builds on the PA10-PA22 LowIR lowering path,
+adds the PA23 multi-vtable / virtual-base ABI slice, and writes LowIR text.
 
-PA23 is the second half of template completion. Its job is to finish the
-remaining single-feature deduction/substitution behavior so ordinary generic
-C++11 code stops depending on a pragmatic template subset.
+PA23 extends PA22 with the first supported object layouts that require more than the
+earlier single-vptr, non-virtual-base ABI:
+
+- virtual inheritance for shared base-subobject layout and access
+- polymorphic multiple inheritance with more than one active vtable view
+- pointer-form `dynamic_cast` across sibling polymorphic bases
+- RTTI / `typeid` through non-primary polymorphic base views
 
 PA23 still produces LowIR. It does not introduce a new output format.
 
@@ -19,193 +23,242 @@ You should complete Programming Assignment 22 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST as the syntax boundary
-- the PA11-PA12 semantic foundation
-- the PA15-PA22 LowIR lowering path
-- the PA13 LowIR contract
-- the PA19-PA22 template machinery
-- the PA21 full constant-evaluation layer
+- the preprocessing and tokenization pipeline from PA1-PA4
+- the PA5 AST as the syntax boundary
+- the PA6-PA7 semantic foundation
+- the PA10-PA22 LowIR lowering path
+- the PA8 LowIR contract
+- the PA24 native validation path
 
 ### Starter Kit
 
 The starter kit contains:
 
-- a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
-  in `../dev/cppgm++.cpp`
-- the standard assignment `Makefile` and harness scripts
-- the PA23 deduction/substitution test suite under `tests/`
+- `pa23/README.md`, `pa23/Makefile`, and the test scripts in `pa23/scripts/`
+- a student-editable `dev/cppgm++.cpp` starter scaffold
+- the `pa23/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
+- shared support sources and headers under `dev/src/`
+- a local test suite under `pa23/tests/`
+- the grammar for this assignment called `pa23.gram`
+- an HTML grammar explorer of `pa23.gram` in the sub-directory `grammar/`
+- a checked-in local test suite under `tests/`
 
-In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
-the `cppgm++` scaffold and is the file you extend for this assignment.
+Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
+student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
+test fixtures, comparison scripts, and checked-in reference outputs are support
+files, not implementation files to edit for normal solutions. The shared support files
+provide reusable infrastructure and earlier assignment machinery; they do not implement the
+new PA23 source-to-LowIR ABI slice for you.
 
-Unlike PA1-PA9, there is no external reference binary for PA23. The checked-in
-`.ref` files are the default oracle.
+The supplied reference tools are available for inspection and reference
+regeneration. The checked-in `.ref` files are the default grading oracle.
 
 ### Input / Command-Line Arguments
 
-The PA23 invocation is the unoptimized LowIR mode:
+Behaviour is undefined unless the command-line arguments match:
 
     $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-Behaviour is undefined unless the command-line arguments match that shape, with
-the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
-milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
-not part of PA23.
+`-O0` is the PA23 test mode. Other optimization levels are later optimizer work and
+are not required for this milestone.
 
 ### Output Format
 
-On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
-`EXIT_SUCCESS`.
+`cppgm++` shall write LowIR text to `<outfile>`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA23 extends the
-PA22 lowering surface only by making more of the C++ source language lower into
-the already-defined LowIR family.
+The authoritative LowIR definition is `../pa8/lowir.md`. PA23 extends the PA22 lowering
+surface only by making more of the C++ source language lower into the already-defined LowIR
+family.
 
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
 `function`, but the relaxed LowIR comparison canonicalizes top-level entries
 before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
+inputs; `../pa8/lowir.md` defines the canonical reference presentation and
 notes where internal LowIR symbol names are only a presentation tie-breaker.
 Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
 blocks, item order inside structured globals, vtable slot order, and action
 order inside generated initialization, finalization, constructor, destructor,
 and cleanup bodies.
 
-The test harness checks that the generated LowIR is well formed and matches the
-checked-in `.ref` files after canonicalizing presentation details that are not
-part of the assignment contract. Exact textual LowIR matching is not a PA23
-grading requirement.
+The generated LowIR must be well-formed and must match the checked-in `.ref` files under
+the relaxed LowIR comparison used by the harness. That comparison still checks the
+semantic LowIR shape and required IR facts, but it does not make helper metadata
+presentation or other non-semantic text details part of the student contract.
 
 ### Error Handling
 
-If an error occurs during preprocessing, tokenization, parsing, semantic
-analysis, or LowIR generation, `cppgm++` shall `EXIT_FAILURE`.
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
 
 The output file is not required to be meaningful on failure.
-Diagnostics are not part of the grading contract.
 
 ### Standard Output / Error
 
-Standard output and standard error are ignored for automated testing of
-`cppgm++`.
+Standard output and standard error are ignored for automated testing of `cppgm++`.
 
 You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-PA23 tests live under `tests/`. The suite is split by test role:
+Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
+`cppgm++` with `--emit-lowir -O0`.
 
-- `tests/spec/` contains N3485/spec-anchored deduction, substitution, and
-  SFINAE tests. Each provided C++ language test in this directory starts with a
-  leading comment of the form `// N3485 focus: 14.x.y [clause.name] ...` so a
-  reviewer can find the governing text in `../doc/n3485.txt`.
-- `tests/general/` contains broader generic-program examples that are useful
-  for PA23 but are not one-rule spec probes.
+The local checked-in tests live in `tests/general/`. They exercise PA23
+source-to-LowIR behavior over virtual inheritance, non-primary polymorphic
+views, sibling `dynamic_cast`, and RTTI through adjusted base views.
 
-The `make test` target runs both directories through the LowIR validator. For
-successful tests, the validator checks the reference LowIR and your generated
-LowIR for basic structural correctness, then compares the canonicalized LowIR
-against the checked-in reference. For rejected tests, the exit status is the
-checked result; exact diagnostic text is not checked.
+For each test case `x`:
 
-This split assignment intentionally focuses on the deduction/substitution half
-of template completion:
+- `cppgm++` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is compared against `x.ref`
+- `x.my.exit_status` is compared against `x.ref.exit_status`
 
-- full function-template deduction
-- function-template partial ordering
-- non-deduced contexts and braced-init, array-bound, and conversion deduction
-  corners
-- SFINAE and substitution failure
-- no-eager-instantiation timing and dependent-call behavior
+PA23 is tested against generated LowIR text using the relaxed LowIR comparator described
+above. The generated LowIR is also intended to remain acceptable to the native
+backend path introduced in PA24:
 
-### PA23 Syntax Boundary
+- feed that LowIR into PA24 `lowir2native`
+
+The shipped PA23 tests are the contract for this milestone.
+
+### PA23 Syntax Spec
 
 The authoritative source syntax is the shared `cppgm++` source grammar, exposed
 for this assignment as `pa23.gram`. The grammar defines accepted syntax only;
 the PA23 semantic and lowering requirements are defined by the Assignment
 Boundary and Out Of Scope sections below.
 
-### Optional Student Test Ideas
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checked-in
+`.ref` files.
 
-When adding your own tests, useful PA23 themes include explicit template
-arguments mixed with deduced ones, function-address deduction, conversion
-function template deduction, constructor-template participation, richer
-non-deduced contexts, and compact `enable_if` / `void_t` / detector patterns.
+PA23 does not add a new source-language grammar format. It instead enables more
+of the already-accepted C++11 syntax to participate in semantic analysis and
+lowering.
+
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa23.gram` as the source of truth.
+
+`pa23.gram` uses the same token vocabulary and the same extended BNF operators as
+`../shared/source.gram`.
+
+If this README and `pa23.gram` appear to disagree about source syntax, treat `pa23.gram`
+as authoritative. If this README and PA8 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA23 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
 
 ### Assignment Boundary
 
-PA23 owns the remaining advanced single-feature standard template behavior over
-the implemented surface, including:
+PA23 supports the following in addition to the PA22 subset:
 
-- full function-template deduction over the intended C++11 subset
-- function-template partial ordering
-- substitution behavior and candidate dropping
-- `enable_if`, `void_t`, and detected-idiom style SFINAE behavior
-- conversion function template deduction
-- constructor template deduction and overload participation
-- non-deduced contexts and explicit template-id deduction edge cases
-- braced-init deduction in the supported template-call subset
-- pointer, reference, enum, and static-member non-type template argument values
-  over the supported constant-expression subset
-- template deduction from arguments whose types come from already-resolved
-  member-function calls, including the implicit-object overload selection from
-  PA16/PA17
-- an argument that names a set of overloaded functions participates in
-  deduction the same way whether the called template was found by ordinary
-  lookup or only by argument-dependent lookup
-- dependent-call, dependent-alias, and no-eager-instantiation behavior when the
-  primary assertion is a single PA23-owned feature rather than a broad
-  multi-feature composition
-- dozens of distinct dependent function-template result types may coexist in
-  one translation unit, and equivalent redeclarations retain the same result
-  meaning after all of those declarations have been processed
+- virtual inheritance for shared base-subobject layout in complete objects
+- field access through shared virtual bases
+- supported constructor and hidden-argument forwarding cases: a by-value parameter of a
+  class with virtual bases carries each virtual base's subobject address as a hidden
+  pointer argument after the visible parameters, since the complete type is visible to
+  both caller and callee; a reference or pointer parameter carries no such hidden argument
+  and instead reaches its virtual bases through the object's own vtable at each use
+- polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
+  bases
+- virtual dispatch through primary views whose virtual-base ABI carries
+  function/adjustment rows, and through non-primary polymorphic base pointers
+  and references
+- pointer-form `dynamic_cast<T*>` across sibling polymorphic bases in the supported object
+  model
+- `typeid(expr)` through supported non-primary polymorphic base lvalue views
+
+Within this milestone, PA23 should produce valid LowIR for ordinary source programs over
+that subset. That LowIR should be accepted by PA24 `lowir2native` for the supported cases.
+
+To complete PA23, implement these goals:
+
+1. Shared virtual-base layout.
+   Complete objects with a virtual diamond should expose one shared base-subobject at a
+   deterministic offset.
+
+2. Polymorphic dispatch over adjusted vtable views.
+   Calling a virtual through a class with virtual-base adjustment rows must select the
+   requested logical slot. Calling through a later polymorphic base must lower through the
+   correct vtable view and apply the required `this` adjustment. A final overrider inherited
+   from a non-primary or virtual base must also occupy its required slot in the derived
+   class's primary vtable group, in addition to any adjusted secondary-view entry. Each
+   vtable segment must contain only the vcall-offset and virtual-base-offset rows owned by
+   that segment; in particular, vcall rows belonging to a secondary virtual-base view must
+   not enlarge the primary segment or its address point.
+
+3. Sibling cross-cast support.
+   Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the
+   supported RTTI / vtable-view scan.
+
+4. RTTI through non-primary views.
+   `typeid(expr)` should observe the dynamic type through a supported non-primary
+   polymorphic base reference.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA23:
 
-- `std::initializer_list` library semantics and initializer-list overload
-  machinery
-- member-pointer template behavior that depends on later member-pointer support
-- hosted/vendor-only extensions that happen to use templates
-- post-C++11 template-language features
-- backend/toolchain ownership that belongs to the later native and toolchain
-  milestones
+- virtual-base constructor, copy, assignment, and destructor sequencing beyond the already
+  supported simple generated cases
+- polymorphic multiple inheritance with virtual destructors
+- reference-form `dynamic_cast`
+- `dynamic_cast` and RTTI cases that require `bad_cast` / `bad_typeid`
+- virtual inheritance combined with the unsupported special-member or exception cases
+- toolchain-driver and host-linker integration
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended template follow-up is PA25, which checks that the PA19-PA23
-template features compose in realistic programs. The later backend stage retargets
-the language-complete front-end from the CY86 scaffold path to the real native
-backend.
+The intended next stage is PA24, which lowers the completed LowIR family to
+native code before PA25 turns the source pipeline into a practical `cppgm++`
+toolchain driver and standard object-output flow.
 
 So PA23 should leave behind:
 
-- a complete standard template semantic layer
-- instantiated declarations that lower through the ordinary LowIR path without
-  template subset special-casing
-- a clean handoff to PA24 for multi-feature template integration before
-  backend/toolchain work
+- a stable multi-vtable / virtual-base LowIR lowering path
+- deterministic lowering for the supported sibling-cast and RTTI-view cases
+- explicit remaining deferrals only where the practical toolchain and remaining ABI/runtime
+  work need to take over
+- enough stable source behavior that PA25 can start carrying complete
+  programs as C++ end-to-end tests through the practical driver/link path
 
 ### Design Notes (Non-Normative)
 
-The useful shape for PA23 is a typed substitution and deduction engine that
-works on semantic declarations, types, expressions, and template arguments. A
-substitution failure should be represented as candidate state during overload
-resolution rather than as a diagnostic unless no viable candidate remains.
+PA23 should extend the existing object-model and RTTI lowering path, not replace it.
 
-Useful intermediate representations include:
+The same monotonic-extension rule applies here:
 
-- deduction bindings that record which template parameter each typed argument
-  constrained
-- explicit non-deduced-context markers in the type/expression forms that need
-  them
-- a substitution result type that can carry success, SFINAE discard, or hard
-  error
-- deferred instantiation records for dependent calls and bodies that must not be
-  forced before their template arguments are known
+- PA23 should add its new behavior only when the source actually uses the supported PA23
+  feature set
+- it should not perturb PA22 outputs for programs that remain entirely within the PA22
+  subset
+- in practice, the richer vtable / RTTI layout should stay source-driven rather than
+  changing earlier single-vptr cases unnecessarily
+
+For Itanium-layout vtable segments, emit any vcall-offset rows before the
+virtual-base-offset rows, followed by offset-to-top, RTTI, and the function
+slots. Track each segment's address point from the rows actually emitted for
+that segment instead of using one class-wide negative-row count.
+
+Keep a synthesized constructor or destructor base entry's ABI identity
+separate from inlining policy. The entry may need its own object symbol or
+retained definition, but it gains `no_inline=yes` only when the source-level
+function has the corresponding prohibition.
+
+Choose where a virtual base's address comes from by how the parameter is
+passed, not by whether the function happens to see the complete type. A
+by-value parameter forces its complete type on every caller, so the caller
+can compute each virtual base's address and pass it as a hidden pointer
+argument. A reference or pointer parameter does not: a caller may hold only a
+forward declaration, in which case it cannot compute a hidden virtual-base
+argument, while the definition, compiled where the type is complete, would
+expect one -- the two disagree across a translation unit. Give a reference or
+pointer parameter no hidden virtual-base argument and recover each virtual
+base's address from the object's vtable at the point of use, the way the same
+access on any other reference or pointer already does. Restricting the hidden
+argument to by-value parameters keeps the calling convention identical whether
+or not a translation unit has the complete type in view.

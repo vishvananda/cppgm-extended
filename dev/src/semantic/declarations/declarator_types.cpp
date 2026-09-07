@@ -95,7 +95,7 @@ TypeId Analyzer::BuildArrayDeclaratorType(NodeId suffix,
 		if (expression.value == 0)
 		{
 			if (source_type_view_)
-				ThrowSemanticError("zero-length array is outside PA11");
+				ThrowSemanticError("zero-length array is outside PA6");
 			return CandidateTypeFormation(
 				program_->types.TryZeroLengthArray(element),
 				"invalid zero-length array element type");

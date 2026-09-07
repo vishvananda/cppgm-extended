@@ -33,7 +33,6 @@ enum class CompilerErrorDomain : std::uint8_t
 	COMPILER_OBJECT,
 	LOWERING,
 	OPTIMIZER,
-	CY86,
 	NATIVE
 };
 
@@ -42,7 +41,6 @@ enum class SerializedInputFormat : std::uint8_t
 	ABI_FACT,
 	LOWIR,
 	COMPILER_OBJECT,
-	CY86,
 	MIR
 };
 

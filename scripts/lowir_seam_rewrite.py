@@ -7,7 +7,7 @@ usage: lowir_seam_rewrite.py <mode> <in.lowir> <out.lowir>
 Each mode changes something a frontend might reasonably spell differently
 from the course solution while meaning the same thing.  MODES classifies
 every mode by what the course says about that difference
-(../pa13/lowir.md, "What The Comparison Absorbs And What It Enforces"):
+(../pa8/lowir.md, "What The Comparison Absorbs And What It Enforces"):
 
   presentation   names, order and layout the comparison has always ignored;
                  the rewritten output must still pass
@@ -17,7 +17,7 @@ every mode by what the course says about that difference
                  the rewritten output must fail wherever the rewrite
                  changed something
 
-`rule` is a phrase from the sentence in pa13/lowir.md that states the
+`rule` is a phrase from the sentence in pa8/lowir.md that states the
 normalization or convention.  check_lowir_seams.py verifies the phrase is
 still there, so that everything the comparison rejects is a written
 convention and everything it absorbs is a written normalization.
@@ -26,7 +26,7 @@ import re
 import sys
 
 MODES = [
-    # (mode, kind, rule phrase in pa13/lowir.md)
+    # (mode, kind, rule phrase in pa8/lowir.md)
     ('R1-temps', 'presentation', 'Names of temporaries, slots, blocks and parameters'),
     ('R2-labels', 'presentation', 'Names of temporaries, slots, blocks and parameters'),
     ('R3-slots', 'presentation', 'Names of temporaries, slots, blocks and parameters'),

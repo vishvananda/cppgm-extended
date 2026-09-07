@@ -5,7 +5,7 @@
 // This header is a teaching shape, not the course solution's own model: it
 // is deliberately simple (names are plain strings) so it can be read whole.
 //
-// LowIR text is the durable compiler boundary introduced in PA13. This header
+// LowIR text is the durable compiler boundary introduced in PA8. This header
 // gives one possible in-memory shape for that text. You may use it directly,
 // adapt it, or replace it with your own equivalent model, but backend-visible
 // facts must still serialize to and parse back from LowIR text.

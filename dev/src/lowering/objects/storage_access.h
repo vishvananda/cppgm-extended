@@ -64,7 +64,7 @@ protected:
 			}
 			return Operand(Operand::GLOBAL, global, type);
 		}
-		ThrowLoweringInternal("PA15 binding has no lowered storage: " +
+		ThrowLoweringInternal("PA10 binding has no lowered storage: " +
 			MissingStorageBindingDetail(derived.program_, binding));
 	}
 
@@ -112,7 +112,7 @@ protected:
 		{
 			if (storage.type.kind != LOW_PTR)
 				ThrowLoweringInternal(
-					"PA15 indirect storage is not a pointer");
+					"PA10 indirect storage is not a pointer");
 			return storage;
 		}
 		if (storage.kind == Operand::GLOBAL ||

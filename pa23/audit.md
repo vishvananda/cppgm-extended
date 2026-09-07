@@ -1,83 +1,93 @@
 # PA23 Final Audit
 
+## Checkpoint Ledger
+
+| Area | Independent conclusion | Status |
+|---|---|---|
+| Requirements | PA23 requires shared virtual-base layout/access, adjusted primary and secondary dispatch, sibling pointer casts, non-primary RTTI, and the supported simple lifecycle boundary. | closed |
+| Representation | PA23 facts extend the canonical semantic graph and flow directly into typed LowIR; textual LowIR is terminal output only. | pass |
+| Shared layout | Complete objects own one ordered virtual-base layout; direct edges and complete-object offsets now have a canonical flat index. | fixed |
+| Final overriders | Two incomparable overrides of one shared virtual slot were previously order-selected instead of rejected. | fixed |
+| Boundary ABI | Hidden virtual-base contracts are cached per binding, but nested member chains repeatedly rediscovered their root binding. | fixed |
+| Multi-view ABI | Physical views, aliases, address points, VTT subtrees, RTTI rows, receiver adjustments, and distinct destructor entries are explicit facts. | pass |
+| Identity | Adjusted thunks were cached by rendered `symbol:offset` strings in a node-based map. | fixed |
+| Performance | Virtual-base/view lookup and direct-base duplicate checks contained avoidable repeated scans. | fixed |
+| Self-containment | No host/reference compiler call, fixture lookup, filename/source dispatch, cached answer, or LowIR text round trip was found. | pass |
+| File ownership | Audit additions initially crossed two source limits and one function limit; stats publication and virtual-base model ownership were separated. | fixed |
+
 ## Final Findings
 
-1. Fixed: alias-expanded function-result redeclaration equality rendered both
-   results into strings and compared those strings. This violated canonical
-   identity and repeated the expansion for every comparison.
-2. Fixed: out-of-class template owner matching rescanned source payload text to
-   substitute parameter ordinals and owner types. Structured parsed nodes and
-   canonical type identities now own that comparison.
-3. Fixed: immutable alias environments still performed a parent-chain scan for
-   every ordinary name. Nested depth measurements exposed quadratic probes;
-   a request-local sparse name index bounds misses before overlay traversal.
-4. Fixed: several expected substitution failures were classified by broad
-   `runtime_error` catches. Candidate-local lookup ambiguity, target-directed
-   function designators, named values, call conversions, casts, member calls,
-   `sizeof`/layout, partial replay, defaults, and pack expansion now propagate
-   compact typed failure through their complete ownership paths.
-5. No open PA23 correctness, architecture, performance, self-containment, or
-   file-audit finding remains.
+No open PA23 correctness, architecture, performance, self-containment,
+timeout, or fatal file-audit finding remains. The new compile-fail witness
+proves that a virtual diamond with two incomparable final overriders is
+rejected, while focused probes prove that a most-derived override and a single
+dominant branch override remain valid.
+
+The actual staged ownership is explicit. The assignment-required PA5 token
+and `SyntaxArena` owners live through semantic construction, then are released.
+`SemanticGraphStorage` owns canonical identities and facts through lowering.
+`TypedProgram` owns LowIR after the graph consumer returns. The renderer is an
+output adapter and no structured form is reconstructed from text. PA23 has no
+machine-IR/ELF responsibility; its native handoff is tested through the PA24
+consumer rather than an external compiler.
 
 ## Changes
 
-- Added compact syntax tag/payload ID access and a canonical
-  `FunctionTemplateResultIdentityId` on each retained function pattern.
-- Added a flat open-addressed result-identity interner storing typed structural
-  atoms for node kinds, interned names, parameter ordinals, canonical
-  declarations/entities, substitutions, qualified components, and arguments.
-  Equality after construction is one integer comparison.
-- Replaced copied alias binding vectors with immutable parent-linked overlays,
-  indexed possible names, and preserved borrowed syntax ownership.
-- Removed source-text owner normalization; normalized syntax comparison uses
-  interned IDs and canonical `TypeId` equality.
-- Added nonthrowing qualified candidate lookup and repaired typed failure
-  propagation through expression, call, pack, default, partial-selection, and
-  completeness/layout paths. Exception catches left in candidate code only
-  restore local state and rethrow hard failures.
-- Added release counters for identity requests, cache hits, index probes, atom
-  visits, syntax visits, environment probes, alias expansions, and storage;
-  semantic and LowIR statistics aggregate and print them.
-- Moved `sizeof` semantic ownership beside other operators to preserve the
-  source/file-audit boundaries.
-
-The representative path is source bytes -> shared preprocessing/token cursor
--> one parsed syntax arena -> function-template pattern and declaration-time
-lookup facts -> canonical specialization/candidate selection -> monotonic body
-demand -> typed semantic call/body graph -> borrowed `SemanticGraphView` ->
-direct `TypedProgram` LowIR -> one textual PA23 view. Parser, syntax, lookup,
-substitution, and demand scratch are destroyed before lowering. PA23 has no
-machine-IR/ELF surface; those later checklist items are therefore not part of
-this stage's exit criterion.
+- Added a flat canonical virtual-base index keyed by derived/base `EntityId`,
+  with lookup/probe telemetry and storage accounting; moved that ownership to
+  `pa23_virtual_base_model.cpp`.
+- Replaced quadratic direct-base duplicate validation with a reusable epoch
+  table and exposed exact validation visits.
+- Replaced shared-virtual-view rescans with dense entity/epoch indexing. Slot
+  merge now selects a uniquely more-derived canonical binding, preserves a
+  dominant override, and rejects unresolved incomparable final overriders.
+- Replaced repeated boundary-expression walks with a lazy node-indexed result
+  cache. It is allocated only when PA23 behavior requests it and records steps,
+  hits, and one-time table growth.
+- Replaced rendered adjusted-thunk keys and `unordered_map` nodes with a typed
+  flat `(SymbolId, adjustment)` index and request/hit/probe counters.
+- Indexed direct virtual-base initializer matching and final polymorphic-view
+  classification through the same canonical layout owner.
+- Added the ambiguous virtual-diamond compile-fail regression and centralized
+  telemetry publication/aggregation to keep file and function limits clean.
 
 ## Performance Evidence
 
-| Workload | Evidence | Conclusion |
-| --- | --- | --- |
-| Alias/direct pairs, 1-64 | Requests 2-128; probes 2-128; hits 1-127; atom visits 24-2,040; semantic time about 0.30-4.21 ms. | Linear in declarations and produced atoms; repeated identities hit the flat table. |
-| Nested aliases, depth 1-32 | Before: probes 12/27/75/243/867/3,267. After: 6/9/15/27/51/99; final depth-32 run has 232 syntax visits, 96 probes, and 32 expansions. | The unexplained quadratic miss path was removed; work follows syntax and expansion depth. |
-| Checked representative | 326 tokens, 51 semantic nodes, 21 instructions, two identity requests/one hit, one demand push/emission, 868 bytes; 1.68/0.18/0.04 ms semantic/lowering/rendering. | One canonical result identity and one demanded specialization flow directly to LowIR. |
+Measurements use five-run medians from the untouched pre-audit PA23 binary and
+the audited binary. Generated source and output mode are identical; LowIR is
+byte-identical at the largest compared scale in each family.
+
+| Family | Scale | Pre-audit | Audited | Improvement / bound |
+|---|---:|---:|---:|---|
+| nested boundary chain | 512 | 4.527 ms lowering | 1.729 ms | 61.8%; 514 binding steps |
+| nested boundary chain | 1,024 | 15.124 ms | 3.662 ms | 75.8%; 1,026 steps |
+| nested boundary chain | 2,048 | 55.043 ms | 6.596 ms | 88.0%; 2,050 steps |
+| wide virtual-base list | 1,024 | 43.043 ms semantic | 38.657 ms | 1,024 validation visits |
+| wide virtual-base list | 2,048 | 99.173 ms | 78.277 ms | 2,048 visits |
+| wide virtual-base list | 4,096 | 253.663 ms | 166.780 ms | 34.2%; 4,096 visits |
+
+At boundary depths 512/1,024/2,048, cache hits are
+1,027/2,051/4,099 and lazy table growth is 520/1,032/2,056. At virtual-base
+widths 1,024/2,048/4,096, canonical layout lookups are exactly
+9,216/18,432/36,864 with 4,545/8,907/18,156 probes. These slopes are linear in
+semantic nodes or queried base facts. The 2,048-depth boundary output remains
+162,051 bytes in both binaries.
+
+Representative required work remains small and explained: the forwarded
+template has 7 specialization requests/4 hits and 9 carried boundary facts;
+the multi-level lifecycle has 11 layout-edge visits, 4 unique facts, one shared
+view merge, 24 vptr stores, and 28 offset rows; the destructor-view witness has
+4 typed thunk requests, 2 hits, and 2 probes. No unexplained residual hot path
+appeared in the PA23 ownership surface.
 
 ## Validation
 
-- `make test-pa23`: pass, 400/400 assignment tests and 10/10 course tests.
-- `perl scripts/cppgm_file_audit.pl --stage pa23 --paths dev/src`: pass with
-  13 inherited header-division advisories and zero fatal findings.
-- Baseline primary log: 3,049/3,049 through PA23, all 23 tracked stages pass.
-- `make test-report-through-pa23`: pass, 3,049/3,049 tests and all 23 tracked
-  stages.
-- `git diff --check`: pass.
-
-## Checkpoint Ledger
-
-| Checkpoint | Audit disposition |
-| --- | --- |
-| Array-bound/default/expression substitution (`b6d38290`-`d2b7ff91`) | Preserved; typed candidate and complete request ownership verified. |
-| Partial replay, packs, and lazy class demand (`0b81ecbc`-`c0704231`) | Preserved; dependent work is replayed only for complete keys. |
-| Ordering, calls, initialization, explicit specialization (`a69c8d5d`-`624c9995`) | Preserved; selected facts cross directly to lowering. |
-| Result lookup, alias replay, expression validity (`b71f3a5d`-`84a3f7c5`) | Strengthened by canonical result interning and typed candidate ambiguity. |
-| Callable/constructor/conversion/NTTP flow (`36219639`-`9057c4c5`) | Preserved; target selection and demand remain owner-local. |
-| Pack partitions, class shells, expanded results (`24e637ef`-`d68594ae`) | Strengthened by indexed immutable environments and O(1) completed identity comparison. |
-| Calls, exception/storage demand, enclosing replay (`40f206cf`-`63c7288e`) | Preserved; no global retry or lowering reconstruction found. |
-| Final conversion/materialization and fixture (`8da6b98e`-`eba6ec3`) | Preserved at 410/410 PA23 tests. |
-| Final architecture audit | All four findings fixed across their ownership paths; file audit and 3,049-test through-stage report pass. |
+| Gate | Result |
+|---|---|
+| Focused PA23 suite | 43/43 passing, including the new regression |
+| Required through report | 3,857/3,857 tests; 28/28 stages passing |
+| `perl scripts/cppgm_file_audit.pl --stage pa23 --paths dev/src` | pass; no fatal issues (21 advisory warnings) |
+| `git diff --check` | pass |
+| Generated output comparison | byte-identical LowIR for largest cases in both scaling families |
+| Source audit | no shell-out, fixture access, source-name shortcut, or typed/text round trip |
+| Worktree handoff | cohesive final-audit commit and clean `git status --short` |

@@ -161,7 +161,7 @@ protected:
 		const NodeChildren children = derived.Children(node);
 		if (action.kind != DUMP_CLASS_VALUE_TRANSFER || children.size() != 1 ||
 			!derived.IsClassObjectType(action.type))
-			ThrowLoweringInternal("invalid PA17 class-value transfer action");
+			ThrowLoweringInternal("invalid PA12 class-value transfer action");
 		if (action.selected_binding == kNoBinding ||
 			action.selected_binding >= derived.program_.bindings.size() ||
 			!derived.program_.bindings[action.selected_binding].constructor)
@@ -889,7 +889,7 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (variable_children.size() != 1)
-			ThrowLoweringInternal("invalid PA15 array initializer");
+			ThrowLoweringInternal("invalid PA10 array initializer");
 		const NodeChildren values = derived.Children(variable_children[0]);
 		const TypeRecord& array = derived.program_.types.Get(
 			derived.ExpressionObjectType(record.type));
@@ -897,7 +897,7 @@ protected:
 			(array.IsIncompleteArray() &&
 			 (record.storage_size == 0 || !values.empty())) ||
 			values.size() > array.bound)
-			ThrowLoweringSource("invalid PA15 bounded array initializer");
+			ThrowLoweringSource("invalid PA10 bounded array initializer");
 		if (array.IsIncompleteArray())
 		{
 			(void)derived.AddressOfStorage(derived.StorageFor(

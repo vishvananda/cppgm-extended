@@ -2317,7 +2317,7 @@ private:
 		if (deleting_functions_.empty()) return;
 		const std::size_t first = state_.source_function_first;
 		if (first > output_.functions.size())
-			ThrowLoweringInternal("invalid PA18 function ordering boundary");
+			ThrowLoweringInternal("invalid PA13 function ordering boundary");
 		const std::size_t missing =
 			std::numeric_limits<std::size_t>::max();
 		std::vector<std::size_t> pending_by_symbol(

@@ -84,7 +84,7 @@ void emit_symbol_move(
 void emit_tls_address(CodeBuffer & out, X64Register destination,
                       const std::string & symbol)
 {
-  // PA32's non-PIE host link permits one local-exec TPOFF32 displacement.
+  // PA27's non-PIE host link permits one local-exec TPOFF32 displacement.
   out.byte(0x64);
   emit_rex(out, true, destination, XR_RSP);
   out.byte(0x8b);

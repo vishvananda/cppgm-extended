@@ -1,3 +1,7 @@
+> Historical tracker in the original assignment numbering. The live
+> feature-owner table is now [doc/pa-feature-placement.md](../doc/pa-feature-placement.md).
+> Paths and counts in this record describe the earlier audit.
+
 # PA15-PA23 Contract And Test Audit Tracker
 
 This tracker implements
@@ -349,6 +353,7 @@ implementation extensions, or cases without a clear single C++11 clause.
 | `host.eh_object` | `pa31` | 100 | N/A: host object and Itanium C++ ABI EH contract | pending | PA31 `cppgm++ -c` object/runtime coverage: EH runtime imports, personality references, unwind and LSDA facts, typed-catch references, or final host-unwinder behavior. Distinguish this layer from PA26 source-to-LowIR exception lowering. |
 | `host.object_interop` | `pa32` | 100 | N/A: host object/toolchain interoperability contract | pending | PA32 `cppgm++ -c` coverage with an object-inspection sidecar or an anchor contract that names host/compiler-object behavior. Do not infer this feature from every PA32 path; runtime-only language regressions still need ownership review. |
 | `host.object_attribute` | `pa32` | 200 | N/A: host object linkage and section contract | pending | GNU `weak`, `section`, `noinline`, and `visibility` attributes when they control host-object symbol binding, section placement, or inspected symbol visibility. Broader hosted attribute parsing remains PA34-owned. |
+| `host.function_effect_attribute` | `pa33` | 200 | N/A: GNU callable effect contract | covered | GNU `pure` and `const` function/template attributes retain read-only-memory and no-memory-access effects on the canonical callable, as specified by PA33. Other hosted attribute parsing remains PA34-owned. |
 | `host.abi_name_attribute` | `pa33` | 200 | N/A: Itanium host ABI name contract | pending | ABI-tag attributes on constructors, destructors, and other object-inspected host symbols. General attribute parsing and hosted-header compatibility remain PA34-owned. |
 | `host.abi_builtin_type` | `pa33` | 200 | N/A: Itanium host ABI name contract | pending | A compiler builtin transform type that appears in an object-inspected host symbol. General builtin-trait and transform source compatibility remains PA34-owned. |
 | `hosted.runtime_compat` | `pa34` | 800 | N/A: hosted link/run compatibility contract | pending | PA34 `tests/run` smokes that compile hosted or vendor source forms and then link and execute them. Their underlying syntax may first appear in an earlier PA34 compile cluster. |

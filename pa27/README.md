@@ -1,244 +1,262 @@
-## CPPGM Programming Assignment 27 (`cppgm++ --emit-lowir`)
+## CPPGM Programming Assignment 27 (`cppgm++ -c`)
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source
-Files, executes translation phases 1 through 7, parses them as PA10/PA27 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA15-PA26 LowIR lowering path,
-adds the PA27 multi-base object-model slice, and writes LowIR text.
+Write one C++ application called `cppgm++`.
 
-PA27 completes the remaining non-virtual object-model work that still fits the current
-single-vptr ABI:
+PA27 is the host object/toolchain interoperability assignment. It does not add
+new language features. Instead, it combines the PA25 compile-mode driver with
+the PA9 ABI naming layer. PA9 built ABI names from normalized fact files;
+PA27 connects that same naming work to the compiler's semantic/linkage facts
+and writes the resulting names into real object files:
 
-- non-virtual multiple inheritance
-- member lookup and access across multiple base subobjects
-- constructor, copy, and destructor generation across multiple non-virtual bases
-- member pointer type formation, null/conversion handling, and `.*` / `->*`
-  application over the completed non-virtual object model
-- `dynamic_cast<void*>` for the current polymorphic single-inheritance ABI
+- `cppgm++ -c` must emit ordinary relocatable object files for the current host
+  object format.
+- Those objects must be accepted by the host C++ compiler driver when it performs
+  the final link.
+- Objects produced by `cppgm++` must interoperate with host-built C and C++
+  objects, static archives, and shared libraries in the practical subset tested
+  here.
+- Header-emitted inline/template definitions must use host-correct symbol
+  spelling and duplicate-definition/coalescing rules.
 
-PA27 still produces LowIR. It does not introduce a new output format.
+The PA27 harness does not normally use `cppgm++` as the final linker. It runs:
+
+1. `cppgm++ -c` once for each C++ translation unit.
+2. The host C++ compiler driver on the generated objects and any helper objects
+   supplied by the test.
+3. The linked program, when the link succeeds.
+
+The main PA27 question is: can `cppgm++` produce ordinary host-linkable object
+files?
 
 ### Prerequisites
 
-You should complete Programming Assignment 26 before starting this assignment.
+Complete PA26 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST as the syntax boundary
-- the PA11-PA12 semantic foundation
-- the PA15-PA26 LowIR lowering path
-- the PA13 LowIR contract
-- the PA29 native validation path
-- the PA13 LowIR -> CY86 path as an optional secondary scaffold
+- the full C++ language pipeline through PA25
+- the PA25 `cppgm++ -c` driver path
+- the PA9 ABI naming layer
+- the PA24 native backend and PA25 object-emission path
+- the PA25 cross-translation-unit compile/link model
+
+The tests assume a POSIX-like shell environment with `make`, `bash`,
+`perl`, and a working host C/C++ toolchain. The harness selects host tools from
+environment variables first:
+
+- `CPPGM_HOST_CXX` or `CXX` for the host C++ compiler/link driver
+- `CPPGM_HOST_CC` or `CC` for host C helper objects
+
+If those are not set, the harness searches for common compilers such as
+`clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Archive and inspection tests
+also require `ar`, `nm`, and `readelf`. The checked-in tests assume the normal
+x86_64 Linux host object ABI.
 
 ### Starter Kit
 
-The starter kit contains:
+The starter kit provides:
 
-- `pa27/README.md`, `pa27/Makefile`, and the test scripts in `pa27/scripts/`
-- a student-editable `dev/cppgm++.cpp` starter scaffold
-- the `pa27/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
-- shared support sources and headers under `dev/src/`
-- a local test suite under `pa27/tests/`
-- the grammar for this assignment called `pa27.gram`
-- an HTML grammar explorer of `pa27.gram` in the sub-directory `grammar/`
-- a checked-in local test suite under `tests/`
+- `dev/cppgm++.cpp`, populated from the `cppgm++` scaffold for the cumulative
+  PA5+ compiler driver
+- the shared `dev/` sources needed by the scaffold
+- `pa27/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
+- `pa27/Makefile`
+- `pa27/scripts/`, the host-interoperability test harness
+- `pa27/tests/general/`, the PA27 tests and checked-in reference files
 
-Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
-student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
-test fixtures, comparison scripts, and checked-in reference outputs are support
-files, not implementation files to edit for normal solutions. The shared support files
-provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA27 source-to-LowIR object-model slice for you.
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
+shared implementation files it calls. Do not edit generated `.my` files. Test
+inputs and references are part of the handout unless your instructor asks you
+to add or update tests.
 
-Unlike PA1-PA9, there is no external reference binary for PA27. The checked-in `.ref`
-files are the default oracle.
+There is no separate PA27 reference binary in the starter kit. The checked-in
+`.ref.*` files are the oracle.
 
-### Input / Command-Line Arguments
+### Command-Line Contract
 
-Behaviour is undefined unless the command-line arguments match:
+PA27 does not introduce new command-line flags. It strengthens the PA25
+compile-mode surface on the host-compatible path and uses the PA9 ABI naming
+layer for C++ object symbols.
 
-    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+Required forms:
 
-`-O0` is the PA27 test mode. Other optimization levels are later optimizer work and
-are not required for this milestone.
+```sh
+cppgm++ -c -o <objfile> <srcfile>
+cppgm++ -c --target <target> -o <objfile> <srcfile>
+cppgm++ -c -I <dir> -o <objfile> <srcfile>
+cppgm++ -c -I<dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
+```
+
+`<target>` may be `linux` or the corresponding x86_64 Linux host triple form
+accepted by your implementation. PA27 only requires compile mode. The normal
+PA27 final link is performed outside `cppgm++` by the host C++ compiler driver.
 
 ### Output Format
 
-`cppgm++` shall write LowIR text to `<outfile>`.
+`cppgm++ -c` shall write one host-linker-compatible relocatable object file to
+`<objfile>`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA27 extends the PA26 lowering
-surface only by making more of the C++ source language lower into the already-defined LowIR
-family.
+The PA27 tests do not compare object bytes directly. They observe:
 
-LowIR top-level declaration/definition order is a presentation convention, not
-a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
-`function`, but the relaxed LowIR comparison canonicalizes top-level entries
-before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
-notes where internal LowIR symbol names are only a presentation tie-breaker.
-Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
-blocks, item order inside structured globals, vtable slot order, and action
-order inside generated initialization, finalization, constructor, destructor,
-and cleanup bodies.
-
-The generated LowIR must be well-formed and must match the checked-in `.ref` files under
-the relaxed LowIR comparison used by the harness. That comparison still checks the
-semantic LowIR shape and required IR facts, but it does not make helper metadata
-presentation or other non-semantic text details part of the student contract.
+- `cppgm++ -c` exit status
+- host final-link exit status
+- final program exit status
+- final program standard output
+- optional object-inspection output for tests that include `.inspect.*` sidecars
 
 ### Error Handling
 
-If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
-generation, `cppgm++` shall `EXIT_FAILURE`.
+If preprocessing, parsing, semantic analysis, lowering, object emission, or
+output writing fails, `cppgm++` shall exit with failure.
 
-The output file is not required to be meaningful on failure.
-
-### Standard Output / Error
-
-Standard output and standard error are ignored for automated testing of
-`cppgm++`.
-
-You are free to use them for debugging, tracing, or diagnostic messages.
+For negative tests, exact diagnostics are not the grading contract. The harness
+compares exit status first. If the reference compile/link path fails, stdout and
+stderr are diagnostic side effects rather than required output.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
-`cppgm++` with `--emit-lowir -O0`.
+Run the PA27 suite with:
 
-The local checked-in tests live in `tests/general/`. That directory contains
-PA27 source-to-LowIR tests over non-virtual multiple inheritance, multi-base
-generated members, member pointers, `dynamic_cast<void*>`, and ambiguity
-rejection. PA27 has no `tests/spec/` directory because these tests focus on the
-combined language-to-LowIR contract.
+```sh
+make test
+```
 
-For each test case `x`:
+To run one test through the shared check target:
 
-- `cppgm++` is executed to produce `x.my`
-- the exit status is recorded in `x.my.exit_status`
-- `x.my` is compared against `x.ref`
-- `x.my.exit_status` is compared against `x.ref.exit_status`
+```sh
+make check TEST=tests/general/100-host-main-argv.t
+```
 
-PA27 is tested against generated LowIR text using the relaxed LowIR comparator described
-above. A useful manual validation path is:
+The local tests live in `tests/general/`. They cover host object
+interoperability, host final-link behavior, symbol spelling/coalescing, and
+object inspection where the object surface is directly checked. They are
+not direct N3485 clause tests.
 
-- feed that LowIR into PA29 `lowir2native`
-- optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+For each test anchor `x.t`, companion C++ sources are named:
 
-The shipped PA27 tests are the contract for this milestone.
+```text
+x.t.1
+x.t.2
+...
+```
 
-### PA27 Syntax Spec
+Optional sidecars control or check the host flow:
 
-The authoritative source syntax is the shared `cppgm++` source grammar, exposed
-for this assignment as `pa27.gram`. The grammar defines accepted syntax only;
-the PA27 semantic and lowering requirements are defined by the Assignment
-Boundary and Out Of Scope sections below.
+- `x.system-includes`: system include search directories passed to `cppgm++`
+  as `-isystem <dir>`
+- `x.link.flags`: extra flags passed to the host link driver
+- `x.lib.*`: host-built C or C++ helper sources
+- `x.argv`: program arguments for the runtime check
+- `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: object-inspection
+  checks that use the host symbol tools
 
-As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the
-checked-in `.ref` files.
+The checked-in PA27 tests cover:
 
-PA27 does not add a new source-language grammar format. It instead enables more
-of the already-accepted C++11 syntax to participate in semantic analysis and
-lowering.
+- hosted `main(argc, argv)` behavior through the host CRT
+- host linking across multiple `cppgm++`-generated objects
+- host linking against host-built objects
+- host linking against static archives and shared libraries
+- import/export of host-built `thread_local` variables in the tested subset
+- GNU `section` attributes on global objects whose nonempty ELF section name
+  contains only ASCII letters, digits, `_`, and `.`
+- duplicate-definition/coalescing behavior for inline and template output
+- host symbol spelling for user-defined entities and selected template cases
 
-A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
-`pa27.gram` as the source of truth.
+PA27 does not require hosted standard-library header support. Your compiler does
+not need hosted include search, hosted preprocessor compatibility, or semantic
+support for hosted headers such as `<exception>` or `<typeinfo>` yet. The PA27
+tests cover object emission, host linking, symbol spelling, and cross-object
+interoperability through declarations and helper objects that expose the object
+boundary directly. Hosted header compatibility begins in a later assignment, and
+hosted exception-library runtime behavior is introduced after hosted headers
+compile.
 
-`pa27.gram` uses the same token vocabulary and the same extended BNF operators as
-`../pa6/pa6.gram`.
+### Using PA9 ABI Names
 
-If this README and `pa27.gram` appear to disagree about source syntax, treat `pa27.gram`
-as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
-treat `lowir.md` as authoritative. If they disagree about the PA27 lowering slice, treat the
-`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+PA27 does not require the broader host C++ ABI/runtime behavior exercised later,
+but ordinary host object interoperability already requires correct raw symbol
+spelling for user-defined entities.
 
-### Assignment Boundary
+The object-file requirement is that visible symbol names match the configured host
+ABI. The PA9 ABI naming layer is the recommended path for producing those
+names:
 
-PA27 supports the following in addition to the PA26 subset:
+- the host linker sees raw symbol names, not demangled intent
+- function templates must encode template-parameter references with the same
+  `T_`, `T0_`, and related forms the host compiler uses
+- repeated components inside one mangled name must reuse Itanium substitution
+  slots in host-compatible order
+- canonical qualified names matter, including inline namespaces when they are
+  part of the ABI name
 
-- non-virtual multiple inheritance
-- inherited field lookup and access across multiple non-virtual base subobjects
-- inherited non-virtual method lookup and `this` adjustment across multiple non-virtual bases
-- constructor, copy-constructor, copy-assignment, and destructor generation across multiple
-  non-virtual bases
-- member pointer type formation, null values, base-to-derived member-pointer
-  conversions, and `.*` / `->*` application for non-virtual class layouts
-- `dynamic_cast<void*>` for the existing polymorphic single-inheritance ABI
+Reference:
 
-Within this milestone, PA27 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA29 `lowir2native` for the supported cases.
-PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
+- Local copy of Itanium C++ ABI, Chapter 5.1 "External Names (a.k.a.
+  Mangling)": [`../doc/itanium-mangling.txt`](../doc/itanium-mangling.txt)
 
-To complete PA27, implement these goals:
+### Required Implementation Surface
 
-1. Multiple-base layout and field access.
-   Distinct base subobjects should have deterministic offsets, and member access should lower
-   through those offsets correctly.
+To complete PA27, implement ordinary host-toolchain interoperability of emitted
+object files within the supported subset:
 
-2. Base-method lookup and `this` adjustment.
-   Calling a method inherited from a later base must lower the implicit object argument to the
-   correct base-subobject address.
+1. Emit host-linker-compatible relocatable objects, including PIE-safe GOT
+   materialization for the addresses of imported data and functions.
+2. Expose a hosted entrypoint through the host CRT.
+3. Preserve cross-translation-unit behavior under host link.
+4. Emit target-correct duplicate-definition semantics for header and template
+   code.
+5. Interoperate with host-built objects, archives, shared libraries, and tested
+   `thread_local` variables through practical function/global boundaries.
+6. Preserve the earlier class-value semantics in host-object mode. Compiler-object
+   metadata must not append a whole-object representation copy after a nontrivial
+   memberwise copy or move body.
+7. Omit an unreferenced translation-unit-local function definition from the
+   native object while retaining local functions whose addresses or bodies are
+   required by emitted runtime code.
+8. Retain a reachable constructor or destructor base-entry definition needed
+   at the object boundary even when optimization removes its last direct call.
+   Retention does not by itself prohibit inlining that entry at other call
+   sites.
+9. For the supported GNU `section` attribute on a global object, require one
+   string-literal name, reject conflicting redeclarations and names outside the
+   token-safe Linux subset above, carry the name as global LowIR
+   `section=<name>` metadata, and place the symbol and its relocations in that
+   ELF section. Function sections, segment syntax, and quoted LowIR metadata
+   are not part of PA27.
 
-3. Generated special members across multiple bases.
-   Synthesized construction, copy, assignment, and destruction should sequence the supported
-   non-virtual bases correctly.
-
-4. Member pointer lowering over non-virtual layouts.
-   Member pointer values should preserve the selected member target and supported base
-   adjustment so `.*` and `->*` lower through the correct object address.
-   Their contextual conversion to `bool` must distinguish a non-null target from a null
-   member pointer without treating the adjustment word as an independent truth value.
-
-5. Remaining single-vptr RTTI case.
-   `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI
-   without introducing new LowIR operations.
-
-6. Ambiguity handling.
-   Ambiguous inherited member names must not silently resolve.
+If the host linker rejects generated objects as ordinary objects, fix the
+host-compatible object-emission path.
 
 ### Out Of Scope
 
-The following are explicitly out of scope for PA27:
+The PA27 tests do not require:
 
-- virtual inheritance
-- polymorphic multiple inheritance
-- member-pointer behavior that depends on virtual-base or polymorphic
-  multiple-inheritance adjustment
-- `dynamic_cast` reference forms
-- `dynamic_cast` cases that depend on multiple or virtual polymorphic base layouts
-- the remaining RTTI cases that require a broader multi-vptr or virtual-base ABI
-
-Inputs that rely on those features have undefined behaviour for this milestone.
-
-### Stage Handoff
-
-The intended next stage is PA28, which completes the broader virtual / RTTI ABI that PA27
-still deliberately avoids.
-
-So PA27 should leave behind:
-
-- a stable non-virtual multi-base object model over the existing LowIR family
-- deterministic lowering for multiple-base field access, method calls, and generated special
-  members
-- explicit remaining deferrals only where PA28 needs to take over:
-  - virtual inheritance
-  - polymorphic multiple inheritance
-  - the remaining `dynamic_cast` / RTTI cases that depend on that ABI
+- host C++ ABI/runtime behavior after link
+- hosted standard-library header/source compatibility
+- hosted header-emitted link/runtime behavior
+- bootstrap or self-host builds
 
 ### Design Notes (Non-Normative)
 
-PA27 should extend the existing semantic and lowering path, not replace it.
+A simple implementation strategy is to keep PA25's source-to-LowIR path, use
+PA9 to derive concrete C++ object symbols, and retarget only the object
+emission details needed by the host object format. The observable result is
+whether the host toolchain can consume and link the result, not whether your
+internal object pipeline has the same structure as the course implementation.
 
-The same monotonic-extension rule applies here:
+One practical integration point is the compiler semantic/linkage layer: after
+semantic analysis determines the entity, owner scopes, function type, template
+arguments, local context, ABI tags, and special-name kind, that layer can feed
+those facts to the PA9 mangler and store the resulting raw symbol on the
+LowIR/object symbol. This keeps lower object-format and toolchain-driver code
+focused on preserving the spelling it was given instead of reconstructing C++
+ABI names from text fragments.
 
-- PA27 should add its new behavior only when the source actually uses the supported PA27
-  feature set
-- it should not perturb PA26 outputs for programs that remain entirely within the PA26
-  subset
-- in practice, multiple-base offsets and lowered base-adjustment paths should stay on-demand
-  rather than changing earlier single-base outputs unnecessarily
+### After PA27
+
+Later host-link tests keep the same object path and then exercise richer host
+C++ ABI/runtime behavior.

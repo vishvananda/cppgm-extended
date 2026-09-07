@@ -410,7 +410,7 @@ bool Analyzer::CompleteClassDefinition(NodeId node, ScopeId scope,
 			type, entity, flavor, owner, scope, name, lookup_name,
 			specialization_owner, specialization_identity, emission_name);
 		// The stable class scope owns indexed field/function identities even
-		// though class declarations are not part of the PA12 output view.
+		// though class declarations are not part of the PA7 output view.
 		const EntityId previous_class_context = current_class_context_;
 		current_class_context_ = entity;
 		AccessKind member_access = flavor == NAMED_CLASS ?
@@ -1366,7 +1366,10 @@ void Analyzer::PublishVariableDeclarationFacts(BindingId binding,
 		canonical.language_linkage == LANGUAGE_LINKAGE_C)
 		record.language_linkage = LANGUAGE_LINKAGE_C;
 	canonical.language_linkage = record.language_linkage;
-	if (canonical.storage_class == STORAGE_CLASS_NONE ||
+	// A later extern declaration must not turn the first zero-initialized
+	// definition into a declaration-only node when lowering revisits it.
+	if ((canonical.storage_class == STORAGE_CLASS_NONE &&
+		 record.storage_class != STORAGE_CLASS_EXTERN) ||
 		record.storage_class == STORAGE_CLASS_STATIC)
 		canonical.storage_class = record.storage_class;
 	if (record.canonical != binding && canonical.thread_local_storage !=
@@ -1954,7 +1957,9 @@ std::vector<ParameterInfo> Analyzer::BuildParameters(NodeId node,
 		}
 		if (!arena_->IsTag(child, ::cppgm::syntax::STAG_PARAMETER_DECLARATION)) continue;
 		const NodeId specifiers = FindChild(child, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ);
-		const NodeId declarator = FindChild(child, ::cppgm::syntax::STAG_DECLARATOR);
+		NodeId declarator = FindChild(child, ::cppgm::syntax::STAG_DECLARATOR);
+		if (declarator == kNoNode)
+			declarator = FindChild(child, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR);
 		const bool nondeduced_type = template_parameter_names != 0 &&
 			HasDependentQualifiedType(specifiers, dependent_parameter_names, parameter_scope);
 		const TypeId deferred_type = nondeduced_type ? FunctionTemplateNondeducedTypeShape() : kNoType;
@@ -2432,7 +2437,7 @@ BindingId Analyzer::DeclareFunction(ScopeId owner, NameId name,
 		MergeFunctionRedeclarationParameters(
 			&merged, parameters, definition);
 		if (merged.parameters.size() != parameters.size())
-			ThrowInternalCompilerError("PA12 function parameter fact mismatch");
+			ThrowInternalCompilerError("PA7 function parameter fact mismatch");
 		for (std::size_t i = 0; i < parameters.size(); ++i)
 			if (parameters[i].default_argument != kNoNode)
 			{
@@ -2842,7 +2847,7 @@ const FunctionInfo& Analyzer::GetFunction(BindingId binding) const
 	const BindingId canonical = program_->bindings[binding].canonical;
 	if (canonical >= function_fact_by_binding_.size() ||
 		function_fact_by_binding_[canonical] == kNoDumpEdge)
-		ThrowInternalCompilerError("missing PA12 function fact");
+		ThrowInternalCompilerError("missing PA7 function fact");
 	return functions_[function_fact_by_binding_[canonical]];
 }
 
@@ -2851,7 +2856,7 @@ FunctionInfo& Analyzer::GetMutableFunction(BindingId binding)
 	const BindingId canonical = program_->bindings[binding].canonical;
 	if (canonical >= function_fact_by_binding_.size() ||
 		function_fact_by_binding_[canonical] == kNoDumpEdge)
-		ThrowInternalCompilerError("missing PA12 function fact");
+		ThrowInternalCompilerError("missing PA7 function fact");
 	return functions_[function_fact_by_binding_[canonical]];
 }
 void Analyzer::DemandFunction(BindingId binding,

@@ -149,8 +149,8 @@ jobs:
       - name: Compare cppgm++ inception
         id: compare
         run: |
-          CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa39/restored-self-driver" \
-            make -C pa39 compare-cppgm++-inception-from-restored-self \
+          CPPGM_OBJECT_ROOT="$GITHUB_WORKSPACE/obj/pa34/restored-self-driver" \
+            make -C pa34 compare-cppgm++-inception-from-restored-self \
             INCEPTION_RESTORED_CPPGM_SELF="$RUNNER_TEMP/restored-self/bin/cppgm++-self" \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"

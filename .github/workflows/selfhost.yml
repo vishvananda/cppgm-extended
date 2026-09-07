@@ -18,8 +18,8 @@ permissions:
   contents: read
 
 jobs:
-  test-through-pa10:
-    name: test-through-pa10 (gcc + libstdc++, ubuntu 24.04)
+  test-through-pa5:
+    name: test-through-pa5 (gcc + libstdc++, ubuntu 24.04)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     if: >-
@@ -54,9 +54,9 @@ jobs:
       - name: Build host compiler
         run: make -C dev cppgm++
 
-      - name: Run selfhost through PA10
+      - name: Run selfhost through PA5
         run: |
-          make -C pa39 test-through-pa10 \
+          make -C pa34 test-through-pa5 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -68,7 +68,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -110,8 +110,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  test-through-pa10-ubuntu-24-clang:
-    name: test-through-pa10 (clang + libc++, ubuntu 24.04)
+  test-through-pa5-ubuntu-24-clang:
+    name: test-through-pa5 (clang + libc++, ubuntu 24.04)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     if: >-
@@ -150,9 +150,9 @@ jobs:
       - name: Build host compiler
         run: make -C dev cppgm++
 
-      - name: Run selfhost through PA10
+      - name: Run selfhost through PA5
         run: |
-          make -C pa39 test-through-pa10 \
+          make -C pa34 test-through-pa5 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -164,7 +164,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -206,8 +206,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  test-through-pa10-ubuntu-26-gcc:
-    name: test-through-pa10 (gcc + libstdc++, ubuntu 26.04)
+  test-through-pa5-ubuntu-26-gcc:
+    name: test-through-pa5 (gcc + libstdc++, ubuntu 26.04)
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:26.04
@@ -254,9 +254,9 @@ jobs:
       - name: Build host compiler
         run: make -C dev cppgm++
 
-      - name: Run selfhost through PA10
+      - name: Run selfhost through PA5
         run: |
-          make -C pa39 test-through-pa10 \
+          make -C pa34 test-through-pa5 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -268,7 +268,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -310,8 +310,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  test-through-pa10-ubuntu-26-clang:
-    name: test-through-pa10 (clang + libc++, ubuntu 26.04)
+  test-through-pa5-ubuntu-26-clang:
+    name: test-through-pa5 (clang + libc++, ubuntu 26.04)
     runs-on: ubuntu-24.04
     container:
       image: ubuntu:26.04
@@ -361,9 +361,9 @@ jobs:
       - name: Build host compiler
         run: make -C dev cppgm++
 
-      - name: Run selfhost through PA10
+      - name: Run selfhost through PA5
         run: |
-          make -C pa39 test-through-pa10 \
+          make -C pa34 test-through-pa5 \
             CXX=../dev/cppgm++ \
             CPPGM_HOST_CXX="$CPPGM_HOST_CXX" \
             CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
@@ -375,7 +375,7 @@ jobs:
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"

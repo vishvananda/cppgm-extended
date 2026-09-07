@@ -977,7 +977,7 @@ private:
       if(record_stats && stats_) ++stats_->inline_reject_loop_body;
       return false;
     }
-    // Some pre-PA37 virtual-base ABI wrappers intentionally leave hidden
+    // Some pre-PA32 virtual-base ABI wrappers intentionally leave hidden
     // boundary operands to native lowering.  They are valid backend calls but
     // are not structurally safe to substitute as ordinary LowIR parameters.
     if(callee_function.params.size() != call.args.size()) {

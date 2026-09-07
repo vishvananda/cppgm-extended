@@ -928,6 +928,13 @@ ParserAttempt SyntaxParser::TryParseParameterClause(bool speculative) {
 	}
 	while (true)
 	{
+		// A known value followed by parentheses is a call, not a parameter
+		// type. Let the enclosing declarator retry as direct initialization.
+		if (AtIdentifier() && AtOffset(1, OP_LPAREN) &&
+			!HasNameFact(tokens_[position_].spelling, kKnownType) &&
+			(HasNameFact(tokens_[position_].spelling, kKnownNonTemplate) ||
+			 HasNameFact(tokens_[position_].spelling, kKnownTemplate)))
+			return ParserAttempt(PARSER_EXPECTED_PARAMETER);
 		const NodeId parameter = arena_.Make("parameter-declaration");
 		const NodeId specifiers = ParseDeclSpecifierSeq(false);
 		if (specifiers == kNoNode)
@@ -937,8 +944,11 @@ ParserAttempt SyntaxParser::TryParseParameterClause(bool speculative) {
 		const Mark declarator_mark = Checkpoint();
 		TextId name = 0;
 		NodeId declarator = kNoNode;
+		// int(T) is an unnamed function parameter only when T names a type.
+		// Otherwise int(a) declares the parameter a through parentheses.
 		if (At(OP_LPAREN) && position_ + 2 < tokens_.size() &&
 			tokens_[position_ + 1].Kind() == kIdentifierToken &&
+			IsLikelyTypeIdentifier(position_ + 1) &&
 			tokens_[position_ + 2].Kind() ==
 				static_cast<std::uint16_t>(OP_RPAREN))
 		{
@@ -958,7 +968,9 @@ ParserAttempt SyntaxParser::TryParseParameterClause(bool speculative) {
 			arena_.Add(inner_clause, inner_parameter);
 			arena_.Add(declarator, inner_clause);
 		}
-		else declarator = ParseDeclarator(false, &name, speculative);
+		else declarator = ParseDeclarator(
+			At(OP_LPAREN) && AtOffset(1, OP_DOTS) && AtOffset(2, OP_RPAREN),
+			&name, speculative);
 		if (declarator == kNoNode)
 		{
 			Rollback(declarator_mark);

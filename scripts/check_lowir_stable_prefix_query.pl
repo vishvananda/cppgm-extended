@@ -140,8 +140,8 @@ for my $test (@tests)
 	require_call_count($test, $o3, 'call_barrier', 2,
 		'O3 reused a query across an ordinary call');
 
-	my @records = grep { /^pa37_opt_stats(?:\s|$)/ } split(/\n/, $stats);
-	die "$test: expected one pa37_opt_stats record, found " .
+	my @records = grep { /^pa32_opt_stats(?:\s|$)/ } split(/\n/, $stats);
+	die "$test: expected one pa32_opt_stats record, found " .
 		scalar(@records) . "\n" if scalar(@records) != 1;
 	die "$test: optimizer stats lack stable-prefix reuses\n"
 		if $records[0] !~ /(?:^|\s)repeat_stable_reuses=(\d+)(?:\s|$)/ ||

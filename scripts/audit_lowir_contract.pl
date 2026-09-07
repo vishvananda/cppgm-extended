@@ -33,7 +33,7 @@ my $model = read_file("$root/dev/src/ir_symbol_model.h") .
 my $model_helpers = read_file("$root/dev/src/lowir/model/program.cpp");
 my $parser = read_file("$root/dev/src/lowir/io/parse.cpp") . $model_helpers;
 my $serializer = read_file("$root/dev/src/lowir/io/serialize.cpp") . $model_helpers;
-my $documentation = read_file("$root/pa13/lowir.md");
+my $documentation = read_file("$root/pa8/lowir.md");
 my $ledger_path = "$root/doc/lowir-contract-ledger.tsv";
 my $ledger = read_file($ledger_path);
 
@@ -168,7 +168,7 @@ for my $key (sorted_keys(\%parser_key))
 {
 	push @errors, "parser metadata key '$key' is absent from the serializer"
 		if !$serializer_key{$key};
-	push @errors, "parser metadata key '$key' is absent from pa13/lowir.md"
+	push @errors, "parser metadata key '$key' is absent from pa8/lowir.md"
 		if $documentation !~ /\b\Q$key\E\b/;
 	my @owners = grep {
 		$_->{disposition} eq 'keep' && $_->{category} eq 'metadata' &&
@@ -196,7 +196,7 @@ for my $role (sorted_keys(\%parsed_role))
 {
 	push @errors, "parsed role '$role' is absent from the serializer"
 		if !$serialized_role{$role};
-	push @errors, "parsed role '$role' is absent from pa13/lowir.md"
+	push @errors, "parsed role '$role' is absent from pa8/lowir.md"
 		if $documentation !~ /\b\Q$role\E\b/;
 	my @owners = grep {
 		$_->{disposition} eq 'keep' && $_->{category} eq 'role' &&

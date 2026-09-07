@@ -1,268 +1,244 @@
-## CPPGM Programming Assignment 28 (`cppgm++ --emit-lowir`)
+## CPPGM Programming Assignment 28 (`cppgm++ -c`)
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source
-Files, executes translation phases 1 through 7, parses them as PA10/PA28 translation units,
-reuses the PA11-PA12 semantic foundation, builds on the PA15-PA27 LowIR lowering path,
-adds the PA28 multi-vtable / virtual-base ABI slice, and writes LowIR text.
+Write one C++ application called `cppgm++`.
 
-PA28 extends PA27 with the first supported object layouts that require more than the
-earlier single-vptr, non-virtual-base ABI:
+PA28 is the host C++ ABI/runtime interoperability assignment. It builds on the
+ordinary host-linkable object requirements from PA27 and makes the behavior of
+the host-linked program observable.
 
-- virtual inheritance for shared base-subobject layout and access
-- polymorphic multiple inheritance with more than one active vtable view
-- pointer-form `dynamic_cast` across sibling polymorphic bases
-- RTTI / `typeid` through non-primary polymorphic base views
+The main PA28 question is: once host link succeeds, does the resulting program
+behave correctly under the ordinary host C++ ABI/runtime?
 
-PA28 still produces LowIR. It does not introduce a new output format.
+The tested ABI/runtime surface includes:
+
+- virtual dispatch, vtable ownership, and imported/exported vtables
+- RTTI object ownership and `dynamic_cast` / `typeid`
+- covariant return adjustment, including layout-finalized fixed adjustments and
+  virtual-base result projection through the returned object's vtable
+- richer host exception handling in the exercised
+  rethrow/cleanup/noexcept/RTTI subset
+- host-compatible unwind and relocation facts where the tests inspect objects
 
 ### Prerequisites
 
-You should complete Programming Assignment 27 before starting this assignment.
+Complete PA27 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST as the syntax boundary
-- the PA11-PA12 semantic foundation
-- the PA15-PA27 LowIR lowering path
-- the PA13 LowIR contract
-- the PA29 native validation path
-- the PA13 LowIR -> CY86 path as an optional secondary scaffold
+- the full C++ language pipeline through PA27
+- the PA27 host-compatible `cppgm++ -c` path
+- the PA24 native backend and PA25 object-emission path
+- the PA26 exception/runtime lowering concepts
+
+The tests assume a POSIX-like shell environment with `make`, `bash`,
+`perl`, and a working host C/C++ toolchain. The harness selects host tools from:
+
+- `CPPGM_HOST_CXX` or `CXX` for the host C++ compiler/link driver
+- `CPPGM_HOST_CC` or `CC` for host C helper objects
+
+If those are not set, the harness searches for common compilers such as
+`clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Archive and inspection tests
+also require `ar`, `nm`, and `readelf`. The checked-in tests assume the normal
+x86_64 Linux host C++ ABI.
+
+PA26 introduced the basic host-EH object-facts surface. PA28 keeps the same
+host-link path while exercising richer host ABI/runtime interactions.
 
 ### Starter Kit
 
-The starter kit contains:
+The starter kit provides:
 
-- `pa28/README.md`, `pa28/Makefile`, and the test scripts in `pa28/scripts/`
-- a student-editable `dev/cppgm++.cpp` starter scaffold
-- the `pa28/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
-- shared support sources and headers under `dev/src/`
-- a local test suite under `pa28/tests/`
-- the grammar for this assignment called `pa28.gram`
-- an HTML grammar explorer of `pa28.gram` in the sub-directory `grammar/`
-- a checked-in local test suite under `tests/`
+- `dev/cppgm++.cpp`, populated from the `cppgm++` scaffold for the cumulative
+  PA5+ compiler driver
+- the shared `dev/` sources needed by the scaffold
+- `pa28/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
+- `pa28/Makefile`
+- `pa28/scripts/`, the host-ABI test harness
+- `pa28/tests/general/`, the PA28 tests and checked-in reference files
 
-Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
-student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
-test fixtures, comparison scripts, and checked-in reference outputs are support
-files, not implementation files to edit for normal solutions. The shared support files
-provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA28 source-to-LowIR ABI slice for you.
+Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
+shared implementation files it calls. Do not edit generated `.my` files. Test
+inputs and references are part of the handout unless your instructor asks you
+to add or update tests.
 
-Unlike PA1-PA9, there is no external reference binary for PA28. The checked-in `.ref`
-files are the default oracle.
+There is no separate PA28 reference binary in the starter kit. The checked-in
+`.ref.*` files are the oracle.
 
-### Input / Command-Line Arguments
+### Command-Line Contract
 
-Behaviour is undefined unless the command-line arguments match:
+PA28 does not introduce new command-line flags. It reuses the PA27 compile-mode
+surface:
 
-    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
+```sh
+cppgm++ -c -o <objfile> <srcfile>
+cppgm++ -c --target <target> -o <objfile> <srcfile>
+cppgm++ -c -I <dir> -o <objfile> <srcfile>
+cppgm++ -c -I<dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
+cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
+```
 
-`-O0` is the PA28 test mode. Other optimization levels are later optimizer work and
-are not required for this milestone.
+`<target>` may be `linux` or the corresponding x86_64 Linux host triple form
+accepted by your implementation. PA28 only requires compile mode. The normal
+PA28 final link is performed outside `cppgm++` by the host C++ compiler driver.
 
 ### Output Format
 
-`cppgm++` shall write LowIR text to `<outfile>`.
+`cppgm++ -c` shall continue to write one host-linker-compatible relocatable
+object file to `<objfile>`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA28 extends the PA27 lowering
-surface only by making more of the C++ source language lower into the already-defined LowIR
-family.
+The PA28 tests do not compare object bytes directly. They observe:
 
-LowIR top-level declaration/definition order is a presentation convention, not
-a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
-`function`, but the relaxed LowIR comparison canonicalizes top-level entries
-before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
-notes where internal LowIR symbol names are only a presentation tie-breaker.
-Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
-blocks, item order inside structured globals, vtable slot order, and action
-order inside generated initialization, finalization, constructor, destructor,
-and cleanup bodies.
-
-The generated LowIR must be well-formed and must match the checked-in `.ref` files under
-the relaxed LowIR comparison used by the harness. That comparison still checks the
-semantic LowIR shape and required IR facts, but it does not make helper metadata
-presentation or other non-semantic text details part of the student contract.
+- `cppgm++ -c` exit status
+- host final-link exit status
+- final program exit status
+- final program standard output
+- optional object-inspection output for ABI, unwind, relocation, RTTI, vtable,
+  thunk, and symbol-ownership checks
 
 ### Error Handling
 
-If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
-generation, `cppgm++` shall `EXIT_FAILURE`.
+If preprocessing, parsing, semantic analysis, lowering, object emission, or
+output writing fails, `cppgm++` shall exit with failure.
 
-The output file is not required to be meaningful on failure.
-
-### Standard Output / Error
-
-Standard output and standard error are ignored for automated testing of `cppgm++`.
-
-You are free to use them for debugging, tracing, or diagnostic messages.
+For negative tests, exact diagnostics are not the grading contract. The harness
+compares exit status first. If the reference compile/link path fails, stdout and
+stderr are diagnostic side effects rather than required output.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
-`cppgm++` with `--emit-lowir -O0`.
+Run the PA28 suite with:
 
-The local checked-in tests live in `tests/general/`. They exercise PA28
-source-to-LowIR behavior over virtual inheritance, non-primary polymorphic
-views, sibling `dynamic_cast`, and RTTI through adjusted base views.
+```sh
+make test
+```
 
-For each test case `x`:
+To run one test through the shared check target:
 
-- `cppgm++` is executed to produce `x.my`
-- the exit status is recorded in `x.my.exit_status`
-- `x.my` is compared against `x.ref`
-- `x.my.exit_status` is compared against `x.ref.exit_status`
+```sh
+make check TEST=tests/general/200-host-eh-rethrow.t
+```
 
-PA28 is tested against generated LowIR text using the relaxed LowIR comparator described
-above. The generated LowIR is also intended to remain acceptable to the native
-backend path introduced in PA29:
+The local tests live in `tests/general/`. They cover host C++ ABI/runtime
+behavior, host-linked exception handling, RTTI, vtables, thunks, and object
+inspection around those host-runtime surfaces. They are not direct N3485 clause
+tests.
 
-- feed that LowIR into PA29 `lowir2native`
-- optionally cross-check by feeding that same LowIR into PA13 `lowir2cy86`
-- then feed the generated CY86 into PA9 `cy86 --target linux`
+For each test anchor `x.t`, companion C++ sources are named:
 
-The shipped PA28 tests are the contract for this milestone.
+```text
+x.t.1
+x.t.2
+...
+```
 
-### PA28 Syntax Spec
+Optional sidecars control or check the host flow:
 
-The authoritative source syntax is the shared `cppgm++` source grammar, exposed
-for this assignment as `pa28.gram`. The grammar defines accepted syntax only;
-the PA28 semantic and lowering requirements are defined by the Assignment
-Boundary and Out Of Scope sections below.
+- `x.link.flags`: extra flags passed to the host link driver
+- `x.lib.*`: host-built C or C++ helper sources
+- `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: object-inspection
+  checks that use the host symbol and object tools
 
-As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
-`.ref` files.
+The checked-in PA28 tests cover:
 
-PA28 does not add a new source-language grammar format. It instead enables more
-of the already-accepted C++11 syntax to participate in semantic analysis and
-lowering.
+- cleanup, rethrow, noexcept termination, and foreign catch-all behavior beyond
+  the basic PA26 host-EH facts surface, including exactly-once same-frame local
+  cleanup around class-exception allocation and payload construction
+- class, base, transitive-base, and virtual-base host exception catches
+- host EH interaction with RTTI, `typeid`, lambdas, templates, and control flow
+- virtual dispatch, imported/exported vtable ownership, and polymorphic header
+  duplication
+- RTTI-driven `dynamic_cast` and `typeid`
+- covariant return adjustment
+- host ABI mangling for dependent/template/lambda/standard-library-adjacent
+  names needed by this milestone
+- object facts such as unwind sections, relocation classes, weak/undefined
+  symbols, and vtable/RTTI ownership when a test includes an inspect sidecar
 
-A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
-`pa28.gram` as the source of truth.
+PA28 does not require general hosted-header support. Your compiler must support
+the host ABI behavior for user-defined RTTI and exception cases: emitted RTTI
+objects, `dynamic_cast`, `typeid`, vtables, catches, cleanup, and unwind
+interoperability. The PA28 tests exercise that behavior without including hosted
+headers. For `typeid`, it is enough in this assignment to support the language
+operation with a narrow declaration of `std::type_info`; the tests do not depend
+on the hosted `<typeinfo>` header or on `std::type_info` member APIs.
 
-`pa28.gram` uses the same token vocabulary and the same extended BNF operators as
-`../pa6/pa6.gram`.
+Parsing hosted `<exception>` and `<typeinfo>` headers, implementing APIs such
+as `std::type_info::name()` or `hash_code()`, compiling hosted exception
+classes, and supporting `std::exception_ptr` are later hosted-header/runtime
+work.
 
-If this README and `pa28.gram` appear to disagree about source syntax, treat `pa28.gram`
-as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
-treat `lowir.md` as authoritative. If they disagree about the PA28 lowering slice, treat the
-`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+### Host ABI Symbol Names
 
-### Assignment Boundary
+PA28 extends the PA27 object requirements into host C++ ABI/runtime behavior. The
+same ABI naming behavior from PA9 and PA27 is still observable for every C++
+symbol that the host linker, unwinder, RTTI system, or virtual-dispatch
+machinery can observe.
 
-PA28 supports the following in addition to the PA27 subset:
+The important observable result is that these entities have host ABI names that
+match the configured toolchain:
 
-- virtual inheritance for shared base-subobject layout in complete objects
-- field access through shared virtual bases
-- supported constructor and hidden-argument forwarding cases: a by-value parameter of a
-  class with virtual bases carries each virtual base's subobject address as a hidden
-  pointer argument after the visible parameters, since the complete type is visible to
-  both caller and callee; a reference or pointer parameter carries no such hidden argument
-  and instead reaches its virtual bases through the object's own vtable at each use
-- polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
-  bases
-- virtual dispatch through primary views whose virtual-base ABI carries
-  function/adjustment rows, and through non-primary polymorphic base pointers
-  and references
-- pointer-form `dynamic_cast<T*>` across sibling polymorphic bases in the supported object
-  model
-- `typeid(expr)` through supported non-primary polymorphic base lvalue views
+- ordinary functions, methods, constructors, destructors, and function
+  templates
+- vtables, VTTs, RTTI objects, covariant thunks, non-virtual thunks, and
+  virtual-base thunks
+- exception, cleanup, and helper symbols that must interoperate with host-built
+  code
+- local classes, lambdas, dependent/template names, ABI tags, and inline
+  namespaces when they affect the host name
+- ABI tags carried by class typeinfo names, typeinfo objects, and vtables
 
-Within this milestone, PA28 should produce valid LowIR for ordinary source programs over
-that subset. That LowIR should be accepted by PA29 `lowir2native` for the supported cases.
-PA13 `lowir2cy86` remains a secondary scaffold backend for cross-checking.
+### Required Implementation Surface
 
-To complete PA28, implement these goals:
+To complete PA28, preserve practical host-linked C++ ABI/runtime behavior within
+the supported subset:
 
-1. Shared virtual-base layout.
-   Complete objects with a virtual diamond should expose one shared base-subobject at a
-   deterministic offset.
+- virtual dispatch and imported/exported vtable ownership
+- RTTI-driven `dynamic_cast` / `typeid`
+- covariant return adjustment
+- ordinary host-linked rethrow and advanced catch behavior
+- cleanup and unwind interactions beyond the basic PA26 fact owners
+- foreign catch-all interaction in the tested subset
+- GNU `pure` and `const` attributes on ordinary functions and function
+  templates, preserved on the canonical callable as read-only-memory and
+  no-memory-access effects, respectively
 
-2. Polymorphic dispatch over adjusted vtable views.
-   Calling a virtual through a class with virtual-base adjustment rows must select the
-   requested logical slot. Calling through a later polymorphic base must lower through the
-   correct vtable view and apply the required `this` adjustment. A final overrider inherited
-   from a non-primary or virtual base must also occupy its required slot in the derived
-   class's primary vtable group, in addition to any adjusted secondary-view entry. Each
-   vtable segment must contain only the vcall-offset and virtual-base-offset rows owned by
-   that segment; in particular, vcall rows belonging to a secondary virtual-base view must
-   not enlarge the primary segment or its address point.
-
-3. Sibling cross-cast support.
-   Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the
-   supported RTTI / vtable-view scan.
-
-4. RTTI through non-primary views.
-   `typeid(expr)` should observe the dynamic type through a supported non-primary
-   polymorphic base reference.
+If host link succeeds but the host C++ ABI/runtime behavior is wrong, fix the
+host ABI/runtime lowering, metadata, or object-emission path.
 
 ### Out Of Scope
 
-The following are explicitly out of scope for PA28:
+The PA28 tests do not require:
 
-- virtual-base constructor, copy, assignment, and destructor sequencing beyond the already
-  supported simple generated cases
-- polymorphic multiple inheritance with virtual destructors
-- reference-form `dynamic_cast`
-- `dynamic_cast` and RTTI cases that require `bad_cast` / `bad_typeid`
-- virtual inheritance combined with the unsupported special-member or exception cases
-- toolchain-driver and host-linker integration
-
-Inputs that rely on those features have undefined behaviour for this milestone.
-
-### Stage Handoff
-
-The intended next stage is PA29, which lowers the completed LowIR family to
-native code before PA30 turns the source pipeline into a practical `cppgm++`
-toolchain driver and standard object-output flow.
-
-So PA28 should leave behind:
-
-- a stable multi-vtable / virtual-base LowIR lowering path
-- deterministic lowering for the supported sibling-cast and RTTI-view cases
-- explicit remaining deferrals only where the practical toolchain and remaining ABI/runtime
-  work need to take over
-- enough stable source behavior that PA30 can start carrying simple PA9-style complete
-  programs as C++ end-to-end tests through the practical driver/link path
+- basic host-EH metadata/object facts beyond the PA26 surface
+- private course-only exception/runtime ABI details that are not visible through
+  the host-linked program or object checks
+- hosted standard-library header/source compatibility
+- hosted header-emitted link/runtime behavior
+- bootstrap or self-host builds
 
 ### Design Notes (Non-Normative)
 
-PA28 should extend the existing object-model and RTTI lowering path, not replace it.
+PA28 is not just a runtime-output assignment. Runtime behavior is the primary
+oracle, but some tests inspect object facts because host C++ ABI correctness is
+often decided before the program starts: symbol names, weak ownership, unwind
+sections, RTTI/vtable objects, and relocation classes must match the host
+toolchain's expectations closely enough for ordinary linking and unwinding.
 
-The same monotonic-extension rule applies here:
+A recommended implementation style is to continue using the PA9 ABI naming
+layer before object emission. Feed semantic facts for the entity into the
+mangler, then let the object writer preserve the final raw symbol name. That
+keeps ABI spelling decisions close to semantic information and avoids a second
+name-construction path in object-format code.
 
-- PA28 should add its new behavior only when the source actually uses the supported PA28
-  feature set
-- it should not perturb PA27 outputs for programs that remain entirely within the PA27
-  subset
-- in practice, the richer vtable / RTTI layout should stay source-driven rather than
-  changing earlier single-vptr cases unnecessarily
+Function effects can be represented as a small ordered enum on the canonical
+semantic binding and copied to the existing LowIR call-boundary metadata. This
+lets redeclarations and template instantiations merge the strongest declared
+effect without a string-keyed side table.
 
-For Itanium-layout vtable segments, emit any vcall-offset rows before the
-virtual-base-offset rows, followed by offset-to-top, RTTI, and the function
-slots. Track each segment's address point from the rows actually emitted for
-that segment instead of using one class-wide negative-row count.
+### After PA28
 
-Keep a synthesized constructor or destructor base entry's ABI identity
-separate from inlining policy. The entry may need its own object symbol or
-retained definition, but it gains `no_inline=yes` only when the source-level
-function has the corresponding prohibition.
-
-Choose where a virtual base's address comes from by how the parameter is
-passed, not by whether the function happens to see the complete type. A
-by-value parameter forces its complete type on every caller, so the caller
-can compute each virtual base's address and pass it as a hidden pointer
-argument. A reference or pointer parameter does not: a caller may hold only a
-forward declaration, in which case it cannot compute a hidden virtual-base
-argument, while the definition, compiled where the type is complete, would
-expect one -- the two disagree across a translation unit. Give a reference or
-pointer parameter no hidden virtual-base argument and recover each virtual
-base's address from the object's vtable at the point of use, the way the same
-access on any other reference or pointer already does. Restricting the hidden
-argument to by-value parameters keeps the calling convention identical whether
-or not a translation unit has the complete type in view.
+Later hosted tests keep the same host object and ABI/runtime path while adding
+hosted source/header compatibility.

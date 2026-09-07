@@ -1,34 +1,16 @@
-## CPPGM Programming Assignment 31 (`cppgm++ -c` Host EH Facts)
+## CPPGM Programming Assignment 31 (`cppgm++ -c`)
 
 ### Overview
 
-Write one C++ application called `cppgm++`.
+PA31 is the hosted header-emission and link/runtime compatibility assignment.
 
-PA31 is the host exception-handling metadata assignment. Earlier assignments
-lower C++ source to LowIR and native code; PA31 makes EH-bearing `cppgm++ -c`
-objects participate in the host C++ unwinder.
+By PA29 and PA30, hosted source and heavy hosted headers should preprocess and
+compile. PA31 asks whether the emitted inline, template, and header-generated
+definitions also link and run correctly through the host toolchain.
 
-The main PA31 question is: does a generated relocatable object contain the host
-EH facts needed by the platform unwinder?
-
-The required surface is the basic Itanium C++ ABI exception subset used by the
-course:
-
-- calls to host EH runtime helpers such as `__cxa_allocate_exception`,
-  `__cxa_throw`, `__cxa_begin_catch`, `__cxa_end_catch`, and
-  `_Unwind_Resume`
-- a personality reference to `__gxx_personality_v0` when a function has landing
-  pads
-- host unwind metadata and LSDA/call-site information, such as
-  `.gcc_except_table`, `.eh_frame`, and the Mach-O compact-unwind equivalent
-- type-info references needed for typed catches
-- no private course-only `cppgm_eh_*` runtime symbols in host-EH objects
-- local object binding for compiler-generated functions whose enclosing source
-  context is not ODR-mergeable, including a lambda call operator inside an
-  ordinary non-inline function
-
-PA31 is intentionally a host-object facts assignment, not a hosted standard
-library assignment and not a private linker/runtime pipeline.
+This milestone is narrower than a second general host ABI assignment. It is
+specifically about hosted header-emitted code on top of the ordinary host object
+and ABI/runtime path established by PA27 and PA28.
 
 ### Prerequisites
 
@@ -36,93 +18,151 @@ Complete PA30 before starting this assignment.
 
 You will want to reuse:
 
-- the PA13 LowIR parser and EH instruction model
-- the PA29 native backend and object-emission infrastructure
-- the PA24-PA28 source-to-LowIR surface
-- the PA30 compile-mode driver path used by `cppgm++ -c`
-- the PA14 ABI naming layer and runtime-role classification used by host object
-  emission
+- the full earlier language, template, and lowering stack
+- the PA29 hosted preprocess/compile compatibility surface
+- the PA30 heavy hosted-header compile surface
+- the PA27/PA28 host object and ABI/runtime path
+- the PA31 demand-driven emitted-symbol model described below
 
-The tests assume a POSIX-like shell environment with `make`, `bash`, `perl`, and
-a working host C/C++ toolchain. The harness selects host tools from:
+The tests assume a Linux shell environment with `make`, `bash`, `perl`, and a
+working host C/C++ toolchain with hosted C++ headers and libraries installed.
+You may override the compiler with `CXX=...`.
+`CPPGM_HOST_CXX` selects the host compiler/link driver used by the harness. If
+it is not set, it defaults to `CXX`.
 
-- `CPPGM_HOST_CXX` or `CXX` for the host C++ compiler/link driver
-- `CPPGM_HOST_CC` or `CC` for host C helper objects
+PA31 tests also use host object tools:
 
-If those are not set, the harness searches for common compilers such as
-`clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Object-inspection tests also
-require host symbol/object tools such as `nm`, `readelf`, and `otool` where
-available.
+- `nm` for symbol inspection
+- `c++filt` for demangling in optional object-inspection checks
+- `readelf` for selected object/relocation checks
+- `ar` and the host C/C++ compilers for helper libraries when a test provides
+  `x.lib.*` sidecars
+
+The checked-in tests assume the normal x86_64 Linux host C++ ABI. When you use
+a non-default standard library, pass the same choice through
+`CPPGM_STDLIB_FLAGS` so the course compiler and host compiler agree.
 
 ### Starter Kit
 
 The starter kit provides:
 
-- `dev/cppgm++.cpp`, populated from the cumulative `cppgm++` scaffold
+- `dev/cppgm++.cpp`, populated from the `cppgm++` scaffold for the cumulative
+  PA5+ compiler driver
 - the shared `dev/` sources needed by the scaffold
 - `pa31/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
 - `pa31/Makefile`
-- `pa31/scripts/`, the host-interoperability test harness
-- `pa31/tests/general/`, the PA31 tests and checked-in reference files
+- `pa31/scripts/`, the hosted link/runtime test harness
+- `pa31/tests/link/`, the PA31 tests and checked-in reference files
 
 Put your code changes in `dev/`, especially `dev/cppgm++.cpp` and the
 shared implementation files it calls. Do not edit generated `.my` files. Test
-inputs and references are part of the handout unless your instructor asks you to
-add or update tests.
+inputs and references are part of the handout unless your instructor asks you
+to add or update tests.
 
 There is no separate PA31 reference binary in the starter kit. The checked-in
 `.ref.*` files are the oracle.
 
 ### Command-Line Contract
 
-PA31 uses compile mode:
+PA31 does not introduce new `cppgm++` flags. It reuses the compile-mode surface
+already required by PA29:
 
 ```sh
 cppgm++ -c -o <objfile> <srcfile>
 cppgm++ -c --target <target> -o <objfile> <srcfile>
 cppgm++ -c -I <dir> -o <objfile> <srcfile>
 cppgm++ -c -I<dir> -o <objfile> <srcfile>
-cppgm++ -c --target <target> -I <dir> -o <objfile> <srcfile>
-cppgm++ -c --target <target> -I<dir> -o <objfile> <srcfile>
+cppgm++ -c -isystem <dir> -o <objfile> <srcfile>
+cppgm++ -c -D <macro> -U <macro> -include <file> -o <objfile> <srcfile>
 ```
 
-`<srcfile>` is a C++ source file in the supported course language subset.
-`<target>` may be `linux` or the corresponding x86_64 Linux host triple form
-accepted by your implementation. PA31 only requires compile mode. The final link
-in the tests is performed outside `cppgm++` by the host C++ compiler driver.
+The normal PA31 final link is performed outside `cppgm++` by the host C++
+compiler driver.
 
 ### Output Format
 
-`cppgm++ -c` shall write one host-linker-compatible relocatable object file to
-`<objfile>`.
+`cppgm++ -c` shall continue to write host-linker-compatible relocatable object
+files.
 
-The PA31 tests do not compare object bytes directly. They observe:
+The PA31 requirement is not a new file format. It is correct symbol ownership,
+ABI spelling, and runtime behavior for hosted header-generated code once those
+objects are host-linked.
+
+Hosted objects should still be generated from the same LowIR facts exposed by
+`cppgm++ --emit-lowir`. If hosted header emission needs symbol ownership,
+object symbol spellings, TLS wrapper facts, or runtime hooks, those facts
+should be represented in LowIR metadata, declarations, definitions, or object
+aliases rather than in a hosted-only side channel.
+
+The PA31 tests observe:
 
 - `cppgm++ -c` exit status
 - host final-link exit status
 - final program exit status
 - final program standard output
-- normalized object-facts output for tests that include `.inspect.facts`
-  sidecars
-
-The object-facts sidecars are part of the PA31 test surface. The shared Perl
-harness dumps platform-normalized facts such as required EH runtime imports,
-unwind/LSDA section presence, relocation classes, decoded basic LSDA facts, and
-absence of private `cppgm_eh_*` symbols.
+- optional object-inspection output for needed symbol ownership, unresolved
+  references, relocation, and ABI checks
 
 ### Error Handling
 
-If preprocessing, parsing, semantic analysis, lowering, object emission, or
-output writing fails, `cppgm++` shall exit with failure.
+If preprocessing, parsing, semantic analysis, lowering, object emission, host
+linking, or output writing fails, the relevant tool invocation shall report
+failure. For `cppgm++`, that means exiting with failure.
 
 For negative tests, exact diagnostics are not the grading contract. The harness
 compares exit status first. If the reference compile/link path fails, stdout and
 stderr are diagnostic side effects rather than required output.
 
-### Standard Output / Error
+### Hosted Symbol Emission Surface
 
-Standard output and standard error from `cppgm++ -c` are ignored for successful
-tests. They may be used for diagnostics.
+Hosted headers expose many inline functions, function templates, constants,
+helpers, and implementation-detail declarations. PA31 does not require
+`cppgm++ -c` to emit every hosted entity that was parsed, referenced during
+semantic analysis, or made visible by an include.
+
+The emitted object should be demand-driven:
+
+- emit the definitions needed by the current translation unit's generated code
+  and by the required-definition closure of those definitions
+- keep ordinary declarations, overload candidates, template patterns, and
+  unused inline/header helpers available for semantic analysis without turning
+  them into defined object symbols
+- allow unresolved references for externally owned hosted library symbols, using
+  the host ABI spelling expected by the configured toolchain
+
+This keeps hosted object files small and avoids exporting implementation-detail
+symbols just because a broad standard-library header was included. For example,
+including `<functional>`, using `std::forward`, using placement `new`, or
+instantiating an `unordered_set` should not by itself cause unrelated libc++ or
+libstdc++ helper definitions to appear as defined symbols in the output object.
+
+### Hosted ABI Names
+
+PA31 uses the ordinary host C++ ABI spelling for every hosted symbol that is
+defined or referenced by an emitted object. The implementation should continue
+to derive those spellings from semantic facts and the PA9 ABI naming layer
+rather than from hard-coded library-private names.
+
+The hosted emission policy decides which entities are defined or left
+unresolved. Those decisions still need to preserve ordinary host ABI spelling
+for every emitted or referenced hosted symbol.
+
+For Itanium-style mangling on GNU/libstdc++ and Clang/libc++ style hosts:
+
+- direct standard-library substitutions such as `St`, `So`, `Si`, `Sd`, `Ss`,
+  and `Sa` must use the host ABI spellings
+- numbered substitutions must continue across the whole mangled entity, not
+  restart between the function-name template-argument list and the bare function
+  type
+- direct standard substitutions do not themselves become numbered substitution
+  entries
+- hosted weak/header-emitted definitions must still use the same symbol names
+  that the host library expects for the corresponding inline/template bodies
+
+When hosted library implementation details affect ABI names, preserve the
+source semantic facts that imply the name: inline namespaces, ABI tags,
+template arguments, local contexts, and owner scopes. Avoid constructing
+already-mangled strings in the hosted emission path.
 
 ### Testing
 
@@ -135,23 +175,12 @@ make test
 To run one test through the shared check target:
 
 ```sh
-make check TEST=tests/general/100-host-eh-same-tu-throw-catch.t
+make check TEST=tests/link/600-hosted-std-function-call-link-smoke.t
 ```
 
-The local tests live in `tests/general/`. They cover the basic host-EH fact
-surface:
-
-- same-translation-unit throw/catch
-- cross-translation-unit throw/catch
-- unhandled throw helper usage
-- cleanup during unwind and `_Unwind_Resume`
-- cleanup-only landing pads that resume without owning a throw helper
-- LSDA/unwind sections, runtime-helper relocation classes, and class typeinfo
-  facts used by typed catches
-- reuse of host EH runtime declarations emitted by the frontend
-- source-driven host-EH object smoke tests used to guard the backend path
-- call-site coalescing safety across unprotected unwind barriers and distinct
-  cleanup or catch continuations
+The local tests live in `tests/link/`. The directory name reflects the oracle:
+hosted compile plus host final link/run, with optional object inspection for
+symbol ownership and unresolved-symbol checks.
 
 For each test anchor `x.t`, companion C++ sources are named:
 
@@ -161,108 +190,66 @@ x.t.2
 ...
 ```
 
-Optional sidecars control or check the host flow:
+Optional sidecars include:
 
 - `x.link.flags`: extra flags passed to the host link driver
+- `x.env`: environment variables for one test
 - `x.lib.*`: host-built C or C++ helper sources
-- `x.inspect.facts`: normalized host-EH object facts to dump and compare
-- `x.inspect.cmd`, `x.inspect.expect`, or `x.inspect.plan`: specialized
-  object-inspection checks that use host symbol/object tools
+- `x.inspect.cmd` or `x.inspect.expect`: object/symbol checks
 
-For each test case:
+Some PA31 tests inspect intermediate object files with `nm`-style expectations.
+These checks verify positive ownership — a needed inline/template definition is
+present and correctly ABI-spelled. (Earlier negative-ownership / elision checks,
+which asserted that unused hosted helpers stay absent from the defined-symbol
+table, have been dropped: which internal symbols an object omits is an
+implementation detail, not a conformance requirement.)
 
-1. `cppgm++ -c` is executed once for each companion C++ source file.
-2. The host C++ compiler driver links the generated objects.
-3. Any inspect sidecar is run against the generated objects. For
-   `.inspect.facts`, the harness records normalized text facts in
-   `x.my.inspect`.
-4. If linking and inspection succeed, the generated program is executed.
-5. The recorded `.my.*` outputs are compared with the checked-in `.ref.*`
-   oracle files.
+The checked-in tests are hosted link/runtime smokes, ABI spelling checks, and
+object-inspection checks rather than direct N3485 clause tests.
 
 ### Required Implementation Surface
 
-To complete PA31, implement the basic host-compatible EH metadata and
-runtime-helper object surface for `cppgm++ -c` within the supported subset:
+To complete PA31, implement hosted link/runtime behavior for:
 
-1. Lower `throw` expressions to host ABI throw helper calls.
-2. Lower typed catches to host landing-pad selector dispatch and
-   `__cxa_begin_catch` / `__cxa_end_catch` calls.
-3. Emit host personality and unwind metadata for EH-bearing functions.
-4. Emit LSDA/call-site/action/type-info facts sufficient for basic catch and
-   cleanup paths.
-5. Preserve cleanup/resume paths using `_Unwind_Resume`.
-6. Keep private course-only exception runtime symbols out of host-EH objects,
-   and encode the host personality without a direct PC-relative data relocation
-   that would make a default-PIE host link unsafe.
-7. Close full-expression EH regions before control-flow joins and require
-   matching protected-call state at statement, conditional, short-circuit, and
-   loop merges.
-8. Preserve translation-unit-local object binding for generated functions in a
-   non-ODR-mergeable local context; do not export a local lambda call operator
-   as a weak or global host symbol.
-9. If adjacent LSDA call-site ranges are coalesced, keep an unprotected
-   potentially-throwing range as a barrier and never combine ranges with
-   different landing pads or action continuations.
-10. Share one translation-unit-local terminate action across function exception
-    boundaries. It receives the active exception object, calls
-    `__cxa_begin_catch`, and then calls `std::terminate`; individual landings
-    shall not repeat the begin-catch call.
-11. Within one function, route semantic resume operations through one physical
-    `_Unwind_Resume` terminal that reloads the active exception from the
-    function's host-EH slot. Keep the source cleanup paths distinct in LowIR
-    and MIR.
-12. Keep the LSDA call-site table sparse. In an LSDA-bearing function, a
-    potentially throwing call outside a protected region still needs an
-    explicit null-landing entry so unwinding continues through the function,
-    but ordinary instruction gaps need no entry. Adjacent unprotected calls
-    between the same protected regions may share one null-landing range.
+- emitted inline/template/header definitions from hosted headers needed by the
+  current object
+- hosted standard-library code that compiles in PA29 or PA30 but still has to
+  link and run through the plain host toolchain
+- hosted link smokes where the main question is emitted symbol ownership, ABI
+  spelling, or runtime behavior of hosted header-generated code
 
-If object inspection shows missing or malformed host EH metadata for a basic
-throw/catch/cleanup case, fix the host-EH lowering or object-emission path.
+If hosted header code compiles but the emitted objects do not link or run
+correctly, fix the hosted symbol emission, ABI spelling, object ownership, or
+runtime lowering path.
 
 ### Out Of Scope
 
-The following are out of scope for PA31:
+The PA31 tests do not require:
 
-- a private object/link/runtime pipeline
-- general host object interoperability unrelated to EH metadata
-- richer host ABI/runtime behavior after the basic EH facts exist
-- complex RTTI/vtable/virtual-base catch interactions
-- multi-frame or nested rethrow/cleanup behavior
-- rethrow behavior and `__cxa_rethrow`
-- hosted standard-library header/source compatibility
+- new hosted preprocess/compile compatibility beyond the PA29/PA30 surface
+- general host object or host ABI behavior outside the hosted-header-triggered
+  surface already required before PA31
+- build-system wrapper emulation
+- recursive hosted-header coverage reporting
 - bootstrap or self-host builds
-
-Later host-EH tests keep the same host-link path while exercising richer
-host ABI/runtime interactions such as foreign catch-all, virtual-base catches,
-nested cleanup chains, and hosted library EH behavior.
 
 ### Design Notes (Non-Normative)
 
-A useful implementation shape is to keep frontend LowIR EH operations stable and
-classify runtime roles below LowIR. Object emission can then map those roles to
-host ABI symbols and platform EH metadata:
+Treat header-emitted code as ordinary code with an ABI-sensitive ownership
+policy. The implementation should preserve enough semantic information to know
+which inline/template definitions are required, which declarations remain
+external, and which unused hosted helpers should stay un-emitted.
 
-- Mach-O uses compact-unwind rows plus `__gcc_except_tab` and EH-frame data as
-  required by the host linker/unwinder.
-- ELF uses `.eh_frame`, `.gcc_except_table`, and the corresponding relocation
-  records.
+A recommended integration style is to use the PA9 ABI naming layer for hosted
+symbols in the same way PA27 and PA28 use it for ordinary host objects. Semantic
+analysis can produce the facts for the entity being emitted or referenced, then
+the mangler can produce the final raw symbol name before object emission. When a
+hosted symbol case is missing information, prefer threading that semantic fact
+forward instead of building already-mangled or partly-mangled strings in later
+object/link stages.
 
-Do not construct host EH facts from source text. The object backend should work
-from typed semantic/runtime-role information and final machine layout.
+### After PA31
 
-A compact terminate boundary can pass the typed exception value to a single
-internal helper. This keeps the handler-entry ABI sequence in one place while
-leaving ordinary source catch handlers independent.
-
-The host-object layout walk can count MIR resume operations once, allocate a
-terminal only for a function that needs one, and branch each resume to it. A
-single typed frame-slot identity is sufficient; rendered slot or label names
-are not needed.
-
-The same layout walk can retain exact unprotected potentially-throwing call
-ranges. Merge those ranges with protected call sites in address order when
-writing the LSDA, coalescing unprotected calls only within one interval between
-protected sites. This avoids reconstructing call-site coverage from the full
-function byte range.
+After PA31, the compiler can preprocess, compile, link, and run hosted-header
+programs through the host toolchain. Later tests use that foundation while
+adding optimization and self-host workloads.

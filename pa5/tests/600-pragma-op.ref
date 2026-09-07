@@ -1,5 +1,0 @@
-preproc 1
-sof tests/600-pragma-op.t
-identifier foo
-identifier bar
-eof

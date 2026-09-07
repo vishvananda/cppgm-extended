@@ -3,17 +3,20 @@
 ### Overview
 
 Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA10 translation units, applies the
-PA12 procedural semantic layer, and writes LowIR text.
+executes translation phases 1 through 7, parses them as PA5/PA15 translation units,
+reuses the PA6-PA7 semantic foundation, builds on the PA10-PA14 LowIR lowering path,
+adds the PA15 metaprogramming slice, and writes LowIR text.
 
-PA15 is the point where `cppgm++` gains its first LowIR output mode. The earlier
-`--emit-ast`, `--emit-types`, and `--emit-semantics` modes remain required.
+PA15 extends PA14’s first-tier templates with the first practical compile-time
+metaprogramming layer:
 
-The goal of this assignment is to establish the compiler's real backend boundary before the
-later object-model and template milestones extend lowering further. PA15 completes the
-non-class procedural lowering stage over the current PA12 semantic boundary: it lowers
-namespace-scope functions, procedural expressions, control flow, and the supported
-scalar/pointer global state into the PA13 LowIR subset.
+- integral non-type template parameters
+- integral non-type template arguments
+- type and non-type template parameter packs
+- pack expansions in supported declaration, call, and instantiated body shapes
+- explicit specialization of supported class templates and function templates
+- integral constant-expression evaluation for template arguments
+- `static_assert` over the supported integral constant-expression subset
 
 ### Prerequisites
 
@@ -21,170 +24,74 @@ You should complete Programming Assignment 14 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST as the syntax boundary
-- the PA11 declarator/type model
-- the PA12 procedural semantic analysis as the source of truth for resolved functions,
-  locals, and expressions
-- the PA13 LowIR contract
-- the PA13 LowIR -> CY86 path as an optional secondary scaffold
-- the PA14 typed ABI-name model and encoder
+- the preprocessing and tokenization pipeline from PA1-PA4
+- the PA5 AST as the syntax boundary
+- the PA6 declarator/type model
+- the PA7 call-resolution layer
+- the PA10-PA14 LowIR lowering path
+- the PA8 LowIR contract
+- the PA14 template declaration, lookup, deduction, and instantiation machinery
 
 The intended direction is:
 
-- PA10 provides syntax
-- PA11 provides scopes and types
-- PA12 resolves procedural expressions and calls
-- PA13 defines the backend boundary and runnable validation scaffold
-- PA14 provides ABI names from typed semantic facts
-- PA15 lowers the resolved procedural subset into LowIR
+- PA5 provides syntax
+- PA6 provides scope/type lookup
+- PA7 provides the procedural expression/call core
+- PA10-PA14 lower the supported language subsets to LowIR
+- PA15 extends the template layer with compile-time value arguments and explicit specialization
 
 ### Starter Kit
 
 The starter kit contains:
 
-- the student-editable `../dev/cppgm++.cpp` entry point, initially seeded from the course
-  `cppgm++` scaffold and reached from this directory through the `cppgm++.cpp` symlink
-- shared `../dev/` and `../dev/src/` support code from the earlier compiler pipeline
-- a local test suite
+- a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
+  in `../dev/cppgm++.cpp`
+- the standard assignment `Makefile` and harness scripts
 - the grammar for this assignment called `pa15.gram`
 - an HTML grammar explorer of `pa15.gram` in the sub-directory `grammar/`
-- checked-in golden output files under `tests/`
 - a checked-in local test suite under `tests/`
 
-The provided scaffold and shared support files establish the driver shape and previous
-frontend modes. They do not implement the PA15 source-to-LowIR lowering work.
+In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from the
+`cppgm++` scaffold and is the file you extend for this assignment.
 
-Unlike PA1-PA9, there is no external reference binary for PA15. The checked-in `.ref`
-files are the default oracle.
-
-### Driver Surface For This Assignment
-
-Previously required:
-
-- `--emit-ast`
-- `--emit-types`
-- `--emit-semantics`
-- `-o <outfile>`
-
-New in PA15:
-
-- `--emit-lowir`
-- `-O0` as the unoptimized LowIR test mode
-
-No practical compile/link driver flags are introduced here yet. That later
-surface starts in PA14.
+The supplied reference tools are available for inspection and reference
+regeneration. The checked-in `.ref` files are the default grading oracle.
 
 ### Input / Command-Line Arguments
 
-The same as PA12 `cppgm++ --emit-semantics`, with the new LowIR emit mode. The PA15 test mode is unoptimized LowIR generation. `make test` passes `--emit-lowir -O0`
-through the harness, so individual test files do not spell those flags themselves.
-
-Behaviour is undefined unless the command-line arguments match:
+The PA15 invocation is the unoptimized LowIR mode:
 
     $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-with the same relaxations as PA12.
-
-Accepting `--emit-lowir` without an explicit `-O0` as the same unoptimized mode is fine,
-but optimized LowIR output is not part of PA15.
+Behaviour is undefined unless the command-line arguments match that shape, with
+the same source-file ordering and `-o` relaxations as PA14. Other `--emit-*`
+modes, driver mode, and optimized LowIR output are not part of PA15.
 
 ### Output Format
 
-`cppgm++` shall write LowIR text to `<outfile>`.
+On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
+`EXIT_SUCCESS`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA15 only needs the procedural
-subset of that IR, but it must emit valid PA13 LowIR.
-
-Example:
-
-    function @main() -> i64 {
-      block ^entry:
-        return i64 0
-    }
-
-PA15 writes a single concatenated LowIR program consisting of:
-
-- zero or more `global` definitions
-- zero or more `function` definitions
+The authoritative LowIR definition is `../pa8/lowir.md`. PA15 extends the PA14 LowIR
+subset only by making more of the source language lower into the already-defined LowIR
+family. PA15 does not introduce a new output format.
 
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
 `function`, but the relaxed LowIR comparison canonicalizes top-level entries
 before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
+inputs; `../pa8/lowir.md` defines the canonical reference presentation and
 notes where internal LowIR symbol names are only a presentation tie-breaker.
-Externally meaningful C++ symbols must be produced through PA14's shared typed
-ABI encoder. Build the encoder target from resolved declarations and types;
-the ABI fact-file parser is a standalone-tool adapter and is not part of the
-source-to-LowIR path.
-
-The in-memory LowIR program uses compact semantic identity. Assign each
-top-level symbol one `SymbolId`, store its presentation spelling once through a
-program `StringId`, and use that `SymbolId` in declarations, definitions,
-operands, structured-global addresses, and alias targets. Render the spelling
-only when writing LowIR text or a diagnostic; do not copy an owning symbol name
-into each record or reference.
-
 Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
 blocks, item order inside structured globals, vtable slot order, and action
 order inside generated initialization, finalization, constructor, destructor,
 and cleanup bodies.
 
-PA15 is still a purely procedural lowering stage. Its LowIR output should not include
-class/object-model helper definitions such as synthesized constructors, destructors, copy
-helpers, or class-lifetime startup/shutdown hooks. Tests that require those belong in PA16
-or later.
-
-The checked-in `.ref` files define the required LowIR facts for the tests. The
-test harness checks exit status, LowIR well-formedness, and the
-course-defined normalized LowIR output rather than requiring students to match every
-non-semantic helper spelling or presentation choice. What that normalization
-absorbs, and what it does not, is one list in `../pa13/lowir.md` ("What The
-Comparison Absorbs And What It Enforces"). Read it before the first failing
-fixture. In short, the comparison ignores names, order and layout, reads a
-literal by its value, and lets the operands of a commutative operation
-appear in either order; and it enforces three conventions the course fixes
-in words rather than absorbing:
-
-- Branch sense follows the source: a conditional branch tests the value the
-  source wrote, in the source's sense (`!=` is `cmp ne`, `!x` is
-  `cmp eq x, 0`, a bare scalar is branched on directly), and the first
-  target is the source's true path.
-- A retype is a `copy`: a conversion that keeps the bits and only changes
-  the LowIR type is written `copy <type> <value>`, not omitted and not
-  written as `convert`.
-- Instructions follow the source's evaluation order: the right operand of an
-  assignment before the address of its left, and where the language leaves
-  the order open, left to right (operands, call arguments, and the loads
-  each needs).
-
-A fixture that fails on one of those three is telling you which convention
-your output departs from; the canonical diff the harness writes beside the
-output shows where.
-
-For supported scalar conversions, PA15 may canonicalize widened integral immediates directly
-to their final LowIR literal value instead of spelling those same conversions through
-intermediate `binary shl` / `binary shr` sign-extension shells.
-
-For built-in `&&` / `||` used directly as statement conditions (`if`, `while`, `do`, `for`),
-the expected LowIR shape is direct short-circuit control flow. In that condition context,
-the compiler should branch through the operand blocks rather than first materializing a
-separate `land__*` / `lor__*` boolean slot.
-
-The generated LowIR is intended to become input for the later PA29
-`lowir2native` backend. That future native path is not the PA15 grading
-contract, but PA15 should avoid emitting LowIR that only works for this one
-text comparison.
-
-The PA13 scaffold path is useful as an optional manual execution check:
-
-    cppgm++ --emit-lowir -> LowIR
-    lowir2cy86 -> CY86
-    cy86 -> executable
-
-That runnable path is a debugging aid, not the primary PA15 output contract.
+The test harness checks that the generated LowIR is well formed and matches the
+checked-in `.ref` files after canonicalizing presentation details that are not
+part of the assignment contract. Exact textual LowIR matching is not a PA15
+grading requirement.
 
 ### Error Handling
 
@@ -192,6 +99,7 @@ If an error occurs during preprocessing, tokenization, parsing, semantic analysi
 generation, `cppgm++` shall `EXIT_FAILURE`.
 
 The output file is not required to be meaningful on failure.
+Diagnostics are not part of the grading contract.
 
 ### Standard Output / Error
 
@@ -207,25 +115,35 @@ For each test case `x`:
 
 - `cppgm++` is executed to produce `x.my`
 - the exit status is recorded in `x.my.exit_status`
-- `x.my` is validated as LowIR and compared against `x.ref` using the normalized
-  LowIR comparison (`../pa13/lowir.md`, "What The Comparison Absorbs And What
-  It Enforces", lists exactly what that comparison ignores and what it holds
-  you to)
+- `x.my` is compared against `x.ref`
 - `x.my.exit_status` is compared against `x.ref.exit_status`
 
-`make test` runs the checked-in local suite under `tests/` and supplies
-`--emit-lowir -O0` through the harness.
+`make test` runs the checked-in local suite under `tests/`. The suite is split
+by test role:
 
-The PA15 test suite uses:
+- `tests/spec/` contains N3485/spec-anchored PA15 metaprogramming tests. Each
+  provided C++ language test in this directory starts with a leading comment of the
+  form `// N3485 focus: 14.x.y [clause.name] ...` so a reviewer can find the
+  governing text in `../doc/n3485.txt`.
+- `tests/general/` contains broader metaprogramming tests that are useful for
+  PA15 but are not one-rule spec probes.
 
-- `tests/general/`: the default PA15 LowIR oracle suite. These tests cover the procedural
-  lowering contract and integration cases that are validated by generated LowIR
-  text and exit status. The covered source features are namespace functions and
-  globals, procedural statements, condition declarations, scalar expressions,
-  references, arrays, pointer operations, enums, built-in casts, and resolved
-  calls over the PA12 semantic subset.
+The `make test` target runs both directories through the LowIR validator. For
+successful tests, the validator checks the reference LowIR and your generated
+LowIR for basic structural correctness, then compares the canonicalized LowIR
+against the checked-in reference. For rejected tests, the exit status is the
+checked result; exact diagnostic text is not checked.
 
-PA15 is tested against the generated LowIR text.
+PA15 is tested against generated LowIR text. That LowIR is intended to become
+input for the later PA24 `lowir2native` backend, but that future native path is
+not the PA15 grading contract.
+
+### Optional Student Test Ideas
+
+When adding your own tests, useful PA15 themes include explicit specialization
+ordering and visibility, integral non-type argument equivalence, type and
+non-type parameter packs, `sizeof...`, pack expansions, dependent non-type
+parameter types, and static data member specialization.
 
 ### PA15 Syntax Spec
 
@@ -235,136 +153,92 @@ the PA15 semantic and lowering requirements are defined by the Assignment
 Boundary and Out Of Scope sections below.
 
 As in the earlier assignments, that grammar defines accepted input syntax only. The output
-format for `cppgm++` is specified by this README, PA13 `lowir.md`, and the checked-in
+format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checked-in
 `.ref` files.
 
-Because PA15 is a code-generation assignment layered directly on PA10-PA12, the
-grammar keeps parser/AST behavior stable while the `Assignment Boundary` below
-defines which already-parsed constructs PA15 must analyze and lower.
+PA15 gives the following previously parsed forms semantic/code-generation
+meaning:
 
-Passing PA12 is necessary but not sufficient for passing PA15: an input may be syntactically
-valid for PA10 and semantically valid for PA12 and still be outside the PA15 code-generation
-subset described below.
+- integral non-type template parameters such as `template<int N>`
+- template parameter packs and pack expansions such as `template<class... Ts>`
+  and `f(args...)`
+- explicit specialization syntax such as `template<> int f<int>(int)` and
+  `template<> struct Box<int> { ... }`
+
+Passing PA14 is necessary but not sufficient for passing PA15: an input may be syntactically
+valid for PA5-PA15 and still be outside the supported PA15 metaprogramming slice described
+below.
 
 A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
 `pa15.gram` as the source of truth.
 
 `pa15.gram` uses the same token vocabulary and the same extended BNF operators as
-`../pa6/pa6.gram`.
+`../shared/source.gram`.
 
 If this README and `pa15.gram` appear to disagree about source syntax, treat `pa15.gram`
-as authoritative. If this README and PA13 `lowir.md` appear to disagree about LowIR syntax,
-treat `lowir.md` as authoritative. If they disagree about the required PA15 lowering slice,
-treat the `Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+as authoritative. If this README and PA8 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA15 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
 
 ### Assignment Boundary
 
-This PA15 milestone supports the following:
+PA15 supports the following in addition to the PA14 subset:
 
-- namespace-scope function definitions and declarations in a single generated program,
-  including named namespaces, C language linkage, and deduplication of repeated
-  compatible declarations
-- a required `main` definition
-- functions returning integral, pointer, or `bool` results from the supported PA12 subset
-- up to four parameters in the supported PA12 procedural type subset
-- global integral/pointer/function-pointer objects with constant initializers or zero-init,
-  including object addresses and constant array-element addresses
-- internal namespace-scope `const` scalar objects represented as
-  `storage=readonly` in LowIR when they are neither volatile nor
-  `thread_local`; volatile scalars, class objects, and thread-local objects
-  retain their respective conservative storage contracts
-- volatile scalar lvalue-to-rvalue conversions and stores represented by
-  `load volatile` and `store volatile` at the LowIR boundary, including local,
-  pointer-indirect, and class-member access; the marker belongs to the access,
-  while an adjacent nonvolatile member access remains ordinary
-- recognized memory builtins use ordinary pointer parameters and preserve the
-  function-level runtime identity and effects needed by later stages;
-  non-overlapping `memcpy` boundaries carry `alias=noalias`, while potentially
-  overlapping `memmove` boundaries do not
-- local scalar objects, scalar/function references, function pointers/references, and bounded
-  arrays in the supported PA12 procedural type subset; an omitted array bound is inferred
-  from its initializer, missing elements are zero-initialized, and excess elements are
-  rejected; an `extern` array of unknown bound may be referenced without requiring its
-  layout in the current translation unit
-- expression statements
-- `return`
-- `if` / `else`
-- condition declarations in `if` and `switch`, including the lifetime of the
-  condition-scope binding
-- `switch`
-- `while`
-- `do`
-- `for`
-- `break` / `continue`
-- direct calls to resolved non-template namespace-scope functions, including supported
-  default arguments resolved in the declaration context where the default was introduced
-- calls through function pointers and function references in the PA12 subset
-- lvalue references, including reference parameters, reference locals, reference
-  returns, and aliasing through supported calls
-- reference parameters use LowIR's shared `ptr [pass=by_address]` boundary:
-  callers preserve the required addressable-storage behavior without retaining
-  a separate source-reference passing label
-- array-to-pointer decay, subscript expressions, pointer arithmetic, one-past
-  pointer values, pointer compound assignment with element-size scaling, and
-  pointer differences measured in elements; because the byte difference of
-  two pointers into the same array is exactly divisible by the element size,
-  a positive power-of-two size may be lowered as an arithmetic right shift,
-  while other element sizes retain signed division
-- array-to-pointer and function-to-pointer decay produce an ordinary LowIR
-  `ptr` using the existing address, index, parameter, or `copy ptr` operations;
-  do not add a decay-specific unary operation or parameter-passing annotation
-- scoped and unscoped enums, enum constants, enum promotion/comparison, and
-  enum lowering
-- built-in casts over the supported scalar, function, reference, and pointer
-  types, including C-style casts, `static_cast`, and `const_cast`
-- source-to-LowIR floating scalar literals and conversions among supported
-  scalar types, including float/integer conversions needed for calls, returns,
-  comparisons, and branch conditions
-- C-style variadic function calls over supported scalar arguments, including
-  source-to-LowIR default argument promotion before the call
-- expressions:
-  - integer literals, floating literals, and `true` / `false`
-  - id-expressions naming supported locals, globals, and resolved functions
-  - `sizeof(expr)` and `sizeof(type-id)` when PA12 has resolved them
-  - unary `+`, `-`, `!`, `~`, `&`, `*`, prefix `++`, and prefix `--`
-  - postfix `++` and postfix `--`
-  - simple assignment to supported lvalues
-  - built-in arithmetic, bitwise, shift, logical, comparison, conditional, comma, and
-    subscript forms from the PA12 procedural subset
+- class templates whose parameters may now include type parameter packs,
+  integral non-type parameters, and integral non-type parameter packs
+- function templates whose parameters may now include type parameter packs,
+  integral non-type parameters, and integral non-type parameter packs when the
+  arguments are supplied explicitly
+- a translation unit may instantiate dozens of distinct argument partitions
+  for a function template with multiple parameter packs; every partition keeps
+  its own argument-to-pack boundaries when specializations are reused
+- pack expansions in supported declarations, direct calls, and instantiated
+  body shapes
+- integral constant-expression template arguments over the supported subset:
+  - literals, including ordinary character literals
+  - keyword literals `true` / `false`
+  - id-expressions naming supported constant bindings
+  - parenthesized expressions
+  - unary `+`, unary `-`, `!`, `~`
+  - binary arithmetic, shifts, comparisons, equality, bitwise, and logical operators
+  - conditional `?:`
+  - `sizeof...(parameter-pack)`
+  - `sizeof(type-id)` and `alignof(type-id)`
+  - supported cast expressions that fold to integral constant values
+- explicit specialization of supported class templates
+- explicit specialization of supported function templates
+- late explicit-specialization visibility and stale-primary refresh in the
+  supported class/function template cases
+- constant-valued template bindings over the supported subset, including class-scope
+  `static const` / `static constexpr` members and other ordinary metaprogramming helper
+  bindings that feed lookup, template arguments, or `static_assert`
+- dependent qualified type/value lookups at the practical level needed by the supported
+  metaprogramming subset
+- `static_assert` declarations whose condition is in the supported integral constant subset,
+  including conditions that remain template-dependent until instantiation
+- inline virtual members required by a concrete class-template vtable are
+  instantiated even without a direct source call; unrelated non-virtual member
+  bodies remain demand-driven
 
-As required by PA13, every LowIR `cmp` instruction produces an `i64` truth
-value. When a comparison or logical expression must be materialized as the
-course `bool` representation (`u8`) for storage, an argument, or a return,
-emit an explicit conversion from that `i64` result. A branch may consume the
-canonical comparison result directly.
-
-Compiler-generated slots and helper names must remain distinct from source
-identifiers so a source declaration cannot redirect an internal temporary.
-The source lowering path should carry compact value, slot, block, and symbol
-identities into the shared typed LowIR model. Store required display spellings
-once in the program string pool, and retain a numeric ordinal for generated
-temporaries; do not construct or hash a presentation string for every operand
-reference.
-
-The generated LowIR for this supported subset is intended to be accepted by the
-later PA29 `lowir2native` backend. PA13 `lowir2cy86` remains a useful optional
-execution scaffold, not the primary validation path.
+Within this milestone, PA15 should produce valid LowIR for ordinary metaprogramming code
+over the supported PA14 language subset. That LowIR is intended to be accepted
+by the later PA24 `lowir2native` backend for the supported cases.
 
 ### Out Of Scope
 
-The following are explicitly out of scope for this PA15 milestone:
+The following are explicitly out of scope for PA15:
 
-- string literals and string-literal-backed object initialization
-- global or local initialization forms that require a richer constant-evaluation or aggregate
-  initialization layer than PA12 currently provides
-- function-local static objects and guard variables
-- class/object semantics
-- synthesized class helper output of any kind
-- template code generation
-- exception-aware control flow
-- fully general shadowing-sensitive lowering of same-name local bindings
-- native backend/runtime parity for floating-point conversions and variadic promotions
-- hosted or vendor integer extensions such as 128-bit integer types
+- partial specialization
+- pointer, reference, member-pointer, class-type, and other non-integral
+  non-type template parameters
+- SFINAE and substitution-failure candidate dropping
+- full standard-conforming two-phase lookup
+- constexpr function evaluation
+- function-template deduction of non-type arguments
+- full function-template deduction and partial ordering
+- alias templates and variable templates
+- hosted/vendor-only template traits and intrinsics
+- template metaprogramming that depends on unsupported PA10-PA14 language features
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
@@ -372,35 +246,40 @@ Inputs that rely on those features have undefined behaviour for this milestone.
 
 The intended next stages are:
 
-- PA16: extend this procedural lowering path into the basic non-virtual object model:
-  object layout, methods, constructors/destructors, lifetime, and single inheritance
-- PA17: build on that PA16 object model with non-polymorphic value semantics:
-  copy construction/assignment, pass-by-value, return-by-value, and the common
-  user-defined operator paths needed by value types
-- PA18: add the polymorphic machinery on top of the PA16/PA17 class model:
-  virtual dispatch, vtables, and virtual destructors
-- later template-aware assignments: reuse the same procedural lowering path for instantiated
-  template code once template semantics exist
+- PA16: complete the language-level constant-evaluation model over the existing LowIR path
+- PA17 and PA18: finish the remaining template specialization, deduction, substitution, and
+  SFINAE work on top of that constant-evaluation engine
+- PA19: check that the individual template features from PA14, PA15, PA17, and
+  PA18 compose without breaking their basic behavior
+- PA24: retarget the settled LowIR language surface to the real native backend
 
-So PA15 should leave behind a reusable procedural `C++ -> LowIR` lowering path rather than
-trying to absorb class or template semantics early.
+So PA15 should leave behind:
+
+- a stable template/metaprogramming semantic layer
+- ordinary instantiated declarations ready for LowIR lowering
+- no PA15-specific output representation beyond LowIR itself
 
 ### Design Notes (Non-Normative)
 
-The cleanest reuse path is to keep PA12 as the semantic source of truth and lower from that
-resolved procedural representation rather than rebuilding expression semantics again inside
-PA15.
+PA15 should extend the existing template machinery, not replace it.
+
+The same monotonic-extension rule applies here:
+
+- PA15 should add metaprogramming behavior only when the source actually uses the supported
+  PA15 feature set
+- it should not perturb PA14 outputs for programs that remain entirely within the PA14
+  subset
+- in practice, packs, non-type template arguments, explicit specialization, and
+  `static_assert` should stay on-demand rather than eagerly changing the
+  behavior of ordinary earlier programs that do not use those features
 
 Useful intermediate representations include:
 
-- a resolved procedural tree shared with PA12
-- explicit object identities for globals, locals, references, arrays, and
-  function objects
-- explicit local slot/layout information
-- a centralized type-to-LowIR lowering and conversion layer
-- a stable mapping from resolved expressions to LowIR values and stack locations
-
-It is useful for the lowering layer to derive result types from the LowIR
-operation as it creates a temporary. In particular, keeping the canonical
-`i64` comparison result there avoids duplicating result-type decisions at
-each later use.
+- template parameters that distinguish type, pack, and integral value slots
+- template arguments that carry canonical constant values rather than only source text
+- explicit-specialization tables that plug into the existing instantiation machinery
+- a specialization lookup step that runs before instantiation so late visible
+  specializations replace stale primary-template instantiations in the supported
+  cases
+- compile-time constant bindings that can be reused by both `static_assert` and template
+  argument resolution

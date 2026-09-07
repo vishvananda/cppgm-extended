@@ -46,9 +46,15 @@ ExpressionInfo Analyzer::AnalyzeStringArrayInitializer(
 {
 	const TypeRecord declared = program_->types.Get(type);
 	const TypeRecord source_array = program_->types.Get(source.type);
+	const TypeId element = program_->types.RemoveTopCv(declared.child);
+	const bool narrow_character = source_array.kind == TYPE_ARRAY &&
+		program_->types.RemoveTopCv(source_array.child) ==
+			program_->types.Fundamental(FUND_CHAR) &&
+		(element == program_->types.Fundamental(FUND_SIGNED_CHAR) ||
+		 element == program_->types.Fundamental(FUND_UNSIGNED_CHAR));
 	if (source_array.kind != TYPE_ARRAY ||
-		program_->types.RemoveTopCv(source_array.child) !=
-			program_->types.RemoveTopCv(declared.child) ||
+		(!narrow_character &&
+		 program_->types.RemoveTopCv(source_array.child) != element) ||
 		source.string_unit_begin == kNoDumpEdge ||
 		source.string_unit_count == 0)
 		ThrowSemanticError(

@@ -1,340 +1,439 @@
-## CPPGM Programming Assignment 12 (`cppgm++ --emit-semantics`)
+## CPPGM Programming Assignment 12 (`cppgm++ --emit-lowir`)
 
 ### Overview
 
-Extend `cppgm++` with the PA12 call-semantics dump mode:
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
+executes translation phases 1 through 7, parses them as PA5/PA12 translation units,
+reuses the PA6-PA7 semantic foundation, builds on the PA10-PA11 LowIR lowering path, and
+writes LowIR text.
 
-```sh
-cppgm++ --emit-semantics -o <outfile> <srcfile1> [<srcfile2> ...]
-```
+PA12 finishes the non-polymorphic class model so ordinary user-defined value types work
+cleanly before virtual dispatch is added. It extends PA11 with the common value-semantics
+paths:
 
-The program reads one or more C++ source files, runs translation phases 1
-through 7, parses them using the PA10 syntax boundary, applies the PA11
-scope/type model, and writes a deterministic semantic dump for the procedural
-expression, statement, conversion, and non-template call subset.
-
-PA12 builds on PA10 and PA11. The earlier `--emit-ast` and `--emit-types` modes
-remain required, and PA12 adds `--emit-semantics`.
+- copy construction/assignment and the common move-construction/move-assignment cases
+  needed by those same value paths
+- pass-by-value and return-by-value of class objects
+- temporary materialization in the common call/return/initialization paths
+- delegating constructors
+- out-of-class constructor and destructor definitions
+- the ordinary user-defined copy/move constructors and assignment operators directly
+  needed by that value-semantics work
 
 ### Prerequisites
 
-Complete PA11 before starting PA12. You should expect to reuse:
+You should complete Programming Assignment 11 before starting this assignment.
 
-- the PA1-PA5 preprocessing and tokenization pipeline
-- the PA10 AST
-- PA11 scope formation and lookup
-- PA11 declarator-derived type construction
-- the canonical type spelling used by the earlier semantic assignments
+You will want to reuse:
 
-PA12 is the first call-semantics milestone. It is deliberately limited to the
-procedural, non-template, non-class-aware subset. Class-aware calls,
-constructors, user-defined conversions, overloaded operators, and template
-functions are assigned later.
+- the preprocessing and tokenization pipeline from PA1-PA4
+- the PA5 AST as the syntax boundary
+- the PA6 declarator/type model
+- the PA7 call-resolution layer
+- the PA10/PA11 LowIR lowering path
+- the PA8 LowIR contract
+- the PA11 class metadata, constructor/destructor machinery, and lifetime lowering
+
+The intended direction is:
+
+- PA5 provides syntax
+- PA6 provides scope/type lookup
+- PA7 provides the procedural expression/call core
+- PA10 lowers the procedural subset
+- PA11 adds the basic non-virtual object model
+- PA12 extends that same object model into usable value semantics
 
 ### Starter Kit
 
-The PA12 starter kit contains:
+The starter kit contains:
 
-- `README.md`, this assignment handout
-- `Makefile`, which builds `cppgm++` and runs the PA12 tests
-- `cppgm++.cpp`, a link to the editable `dev/cppgm++.cpp` entry point
+- the student-editable `../dev/cppgm++.cpp` entry point, initially seeded from the course
+  `cppgm++` scaffold and reached from this directory through the `cppgm++.cpp` symlink
+- shared `../dev/` and `../dev/src/` support code from the earlier compiler pipeline
+- a local test suite
 - the grammar for this assignment called `pa12.gram`
 - an HTML grammar explorer of `pa12.gram` in the sub-directory `grammar/`
-- `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
-- `tests/spec/`, clause-anchored call/conversion/control-flow tests
-- `tests/general/`, broader call-semantics tests
-- checked-in `.ref` and `.ref.exit_status` files used as the oracle
+- a checked-in local test suite under `tests/`
 
-Your main editable file is `dev/cppgm++.cpp`. You may add or change other
-implementation files under `dev/` as needed. Do not edit the test inputs,
-reference outputs, harness scripts, or grammar files unless course staff
-explicitly asks for that.
+The provided scaffold and shared support files establish the driver shape and previous
+frontend modes. They do not implement the PA12 value-semantics LowIR lowering work.
 
-The starter `dev/cppgm++.cpp` is the same long-lived `cppgm++` dispatcher used
-from PA10 onward. For PA12, extend it so `--emit-semantics` runs your resolved
-semantic-analysis and dump path.
+The supplied reference tools are available for inspection and reference
+regeneration. The checked-in `.ref` files are the default grading oracle.
 
-There is no required `cppgm++-ref` binary for PA12. The checked-in
-reference files under `tests/` are the grading oracle.
+### Input / Command-Line Arguments
 
-### Build And Test Commands
+The same as PA11 `cppgm++ --emit-lowir`. The PA12 test mode is unoptimized LowIR
+generation. `make test` passes `--emit-lowir -O0` through the harness, so individual test
+files do not spell those flags themselves.
 
-From the `pa12/` directory:
+Behaviour is undefined unless the command-line arguments match:
 
-```sh
-make
-make test
-```
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-`make` builds `cppgm++`. `make test` runs the local PA12 suite.
+with the same relaxations as PA11.
 
-### Required Driver Surface
-
-Previously required:
-
-- `--emit-ast`
-- `--emit-types`
-- `-o <outfile>`
-
-New in PA12:
-
-- `--emit-semantics`
-
-No new compile or link driver flags are introduced in PA12. Behavior is
-undefined unless the command line has this form:
-
-```sh
-cppgm++ --emit-semantics -o <outfile> <srcfile1> [<srcfile2> ...]
-```
-
-### Input Contract
-
-The authoritative source syntax is the shared `cppgm++` source grammar, exposed
-for this assignment as `pa12.gram`. The grammar defines accepted syntax only;
-the PA12 procedural semantic requirements are defined by the Required Features
-and Out Of Scope sections below.
-
-Passing PA10 and PA11 is necessary but not sufficient for PA12: a program may
-parse and form declarations successfully while still relying on call or
-expression semantics outside this assignment.
-
-Behavior is undefined for input that:
-
-- does not match the PA12 grammar
-- requires PA12 semantic features outside the assignment boundary below
-- is ill formed in a way PA12 is not required to diagnose
-
-If this README and `pa12.gram` disagree about accepted source syntax, use
-`pa12.gram`. If they disagree about the PA12 semantic slice, use this README.
+Accepting `--emit-lowir` without an explicit `-O0` as the same unoptimized mode is fine,
+but optimized LowIR output is not part of PA12.
 
 ### Output Format
 
-On success, `cppgm++` writes the PA12 semantic dump to `<outfile>`.
+`cppgm++` shall write LowIR text to `<outfile>`.
 
-The first line is:
+The authoritative LowIR definition is `../pa8/lowir.md`. PA12 extends the PA11 object-model
+subset of that IR with the value-semantics lowering needed by this milestone.
 
-```text
-<n> translation units
-```
+PA12 writes a single concatenated LowIR program consisting of:
 
-where `<n>` is the number of source files on the command line.
+- zero or more `global` definitions
+- zero or more `function` definitions
 
-For each translation unit, in command-line order, the output contains:
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
+in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa8/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
 
-```text
-start translation unit <k>
-...
-end translation unit
-```
+For supported class value types, PA12 extends the PA11 lowering convention by introducing:
 
-where `<k>` is the 1-based translation-unit index.
+- indirect LowIR parameters for pass-by-value class objects
+- indirect LowIR return destinations for return-by-value class objects
+- explicit LowIR-level materialization of supported copy/move/value transfers
 
-Between those wrapper lines, write a deterministic semantic dump rooted at:
+Every pointer boundary that denotes a complete object also carries the PA8
+`object_bytes=N` extent in emitted O0 LowIR. This includes the implicit object
+parameter of supported member functions, class references and indirect class
+arguments, and indirect result storage. An ordinary source pointer does not
+gain an extent merely from its pointee type. The extent is semantic LowIR
+metadata and must survive text and compiler-object replay; it is not a native
+calling-convention annotation.
 
-```text
-translation-unit
-```
+Synthesized copy/move constructors, assignment helpers, and related
+temporary-materialization support are part of the PA12 semantic model, but `cppgm++` only
+needs to emit the helper definitions that the lowered program actually requires. Unused
+copy/move/value helpers do not need to appear just because they are synthesizable.
 
-Top-level nodes include:
+The indirect destination and source parameters of a same-class copy or move
+constructor denote distinct live objects during construction. Their emitted
+LowIR boundary metadata may therefore mark both parameters `alias=noalias`.
+Assignment operators do not have that property and must remain conservative.
 
-```text
-type-alias <name> <type>
-variable <name> <type>
-function-declaration <name> <type>
-function-definition <name> <type>
-namespace-definition <name>
-```
+Focused course controls validate these boundary facts and temporary-lifetime
+relationships without comparing a complete LowIR module. They inspect only
+the two constructor parameters versus the assignment-operator control, or the
+ordering and identity of construction, selected use, and destruction within
+one full expression. The lifetime reducer is also compiled and executed.
 
-Function definitions contain resolved statement and expression nodes such as:
+When a same-type conditional class prvalue is materialized in a private
+temporary and then selected for copy or move construction into its final
+complete-object destination, PA12 records the standard source-language
+permission on that outer direct call as `[elision=copy]`.  This is serialized
+optimization information, not an O0 elision: the emitted O0 LowIR retains the
+distinct temporary, transfer call, and normal/exceptional destruction.  The
+focused control checks those relationships and executes the O0 behavior
+without prescribing complete generated LowIR text.
 
-```text
-parameter <name> <type>
-compound-statement
-simple-declaration
-return-statement
-if-statement
-while-statement
-for-statement
-break-statement
-continue-statement
-condition
-condition-declaration
-call-expression <value-category> <type>
-callee <name> <type>
-id-expression <value-category> <type> <name>
-literal <value-category> <type> <token>
-unary-expression <value-category> <type> <operator>
-binary-expression <value-category> <type> <operator>
-subscript-expression <value-category> <type>
-conditional-expression <value-category> <type>
-sizeof-expression <value-category> <type>
-assignment-expression <value-category> <type> OP_ASS:=
-constructor-action <name>
-destructor-action <name>
-```
+For supported indirect return-by-value cases, PA12 may also lower an eligible top-level
+named local directly in `%ret` instead of building a separate local object and then
+copying or moving it into the return destination. That direct return-slot form is part of
+the accepted PA12 output contract.
 
-`<type>` uses the canonical type spelling from PA11. `<value-category>` is one
-of:
+Ref-qualified member functions extend the PA11 member-call model: overload resolution still
+uses the implicit object argument, and the object expression's value category participates in
+viability and ranking for supported `&` and `&&` qualified members.
 
-```text
-lvalue
-prvalue
-xvalue
-```
+The ABI identity of a member function is built from its declared source parameters; the
+implicit object used by LowIR lowering is not part of that declared parameter list. In
+particular, an out-of-class move-assignment definition retains its rvalue-reference parameter
+in the ABI identity.
 
-The PA12 tests primarily exercise `lvalue` and `prvalue`.
+Nested operand and overload analysis must preserve the identity of the
+enclosing binary operator and the lifetime of its full expression. Interning
+additional candidate or conversion spellings while resolving an overloaded
+operator must not change the enclosing operator or its result.
 
-Namespace aliases, using directives, and using declarations affect lookup, but
-they do not necessarily have dedicated output lines. Their effect is visible in
-the resolved declarations and expression subtrees.
+For supported synthesized copy/move special members, PA12 may lower a leading trivially
+copyable storage prefix directly as `copyobj <span> <src>, <dst>` instead of spelling that
+prefix as separate field operations or a `__builtin_memcpy` helper call in the emitted
+LowIR. That direct storage-copy form is also part of the accepted PA12 output contract.
 
-Standard output and standard error are ignored by the automated PA12 tests.
+When a synthesized copy/move constructor or assignment body handles adjacent
+nonvolatile bit-fields in one supported 8-, 16-, 32-, or 64-bit allocation
+unit, it shall transfer that allocation unit once.  A zero-width bit-field or
+a change of storage offset or width starts a new unit.  Fields whose layout
+cannot be transferred safely shall retain field-wise value semantics.
+
+For supported trivially copy-constructible class value transfers, PA12 may also lower the
+copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of
+spelling a call to a synthesized trivial copy/move constructor helper. That direct
+value-transfer form is part of the accepted PA12 output contract.
+
+Supported synthesized constructors, destructors, and copy/move assignment operators may
+also carry LowIR boundary metadata such as `[unwind=no]` when the compiler can determine
+that the synthesized body is semantically non-throwing. That metadata is part of the
+accepted PA12 output contract when it appears in the checked-in `.ref` files.
+
+PA12 also recognizes the argument-free GNU function attribute
+`cppgm_stable_prefix` (and its double-underscore spelling). It is valid on a
+fixed-arity function with a supported scalar result and a final integer
+parameter. The frontend emits the PA8 `[query=stable_prefix]` boundary fact;
+`-O0` preserves the call and program behavior. The attribute is a semantic
+promise that a normally returning query at a higher or equal final index
+preserves the observable result at an already queried lower index for the same
+earlier arguments. It does not request an optimization by itself.
+
+For supported synthesized destructors, trivial union subobject destructor steps may be
+omitted from enclosing synthesized destructors.
+
+The checked-in `.ref` files define the required LowIR facts for the tests. The
+test harness checks exit status, LowIR well-formedness, and the
+course-defined normalized LowIR output rather than requiring students to match every
+non-semantic helper spelling or presentation choice.
 
 ### Error Handling
 
-If preprocessing, tokenization, parsing, or PA12 semantic analysis fails,
-`cppgm++` must exit with `EXIT_FAILURE`.
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
 
-The contents of `<outfile>` are unspecified on failure. For failing tests, the
-harness compares only the named exit status, not diagnostic text and not the
-output file.
+The output file is not required to be meaningful on failure.
 
-### Required Features
+### Standard Output / Error
 
-PA12 must support:
+Standard output and standard error are ignored for automated testing of `cppgm++`.
 
-- namespace-scope simple declarations, alias declarations, function
-  declarations, and function definitions
-- named, inline, and unnamed namespace definitions, namespace aliases, using
-  directives, and using declarations, with same-scope namespace/ordinary-name
-  conflicts rejected
-- type aliases used by the PA12 slice
-- fundamental, pointer, reference, array, and function types
-- function parameter scopes, nested block scopes, and the separate scopes of
-  unbraced selection/iteration substatements
-- local simple declarations
-- block-scope using declarations and using directives
-- supported ordinary anonymous-union local declarations
-- unqualified and qualified lookup of namespace-scope non-template functions
-- unqualified lookup extended by using directives, using declarations, namespace
-  aliases, and unnamed-namespace visibility
-- calls through function names, function references, and function pointers
-- target-directed resolution of overloaded function names in contexts such as
-  function-pointer initialization and function-pointer arguments
-- overload resolution using the assignment's limited standard-conversion subset:
-  identity, lvalue-to-rvalue, top-level cv stripping for by-value arguments,
-  array-to-pointer, function-to-pointer, common integral promotions and
-  conversions, pointer-to-bool, `nullptr_t` to pointer, pointer qualification,
-  object pointer to cv-qualified `void*`, and the supported lvalue-reference
-  bindings
-- function redeclaration matching after top-level parameter cv normalization,
-  with conflicting return types and duplicate definitions rejected
-- recursive pointer-qualification conversion checks, including rejection when
-  the intermediate const qualification required by a deep conversion is absent
-- copy-initialization for local variables, condition declarations, and returns
-  using that same conversion subset
-- integer literals, `true`, `false`, and `nullptr`
-- id-expressions for parameters, locals, and supported globals
-- parenthesized expressions
-- unary `+`, `-`, `!`, `~`, `&`, `*`, prefix `++`, and prefix `--`
-- postfix `++` and postfix `--`
-- built-in arithmetic, bitwise, shift, logical, comparison, equality,
-  conditional, comma, assignment, and compound-assignment expressions over the
-  supported operand categories
-- conditional-expression typing and value-category selection for the supported
-  scalar cases, including mixed `bool` lvalue/prvalue operands
-- pointer arithmetic and pointer comparisons in the ordinary object-pointer
-  cases required by the tests
-- built-in subscript expressions on arrays and pointers
-- explicit casts over the supported integral, enum, pointer, and `nullptr`
-  subset
-- `sizeof(expr)` and `sizeof(type-id)`
-- compound statements, `if` / `else`, `switch`, `while`, `do`, `for`, `break`,
-  and `continue`
-- expression conditions and declaration conditions of the form `T x = expr`
-- supported integral `constexpr` complete objects, enumerator constants, the
-  course-supported `__builtin_constant_p` query over propagated integral
-  expressions, and semantic recognition of a zero-argument `__builtin_abort`
-  call (without requiring its later control-flow lowering); passing arguments
-  to `__builtin_abort` is rejected
-- rejection of type, call-arity, and control-flow violations within this
-  supported slice, including mismatched indirect-call arity, nonconstant case
-  labels, `break` or `continue` outside a permitted statement, `default`
-  outside a switch, a value returned from a `void` function, invalid
-  scoped-enum conditions, and invalid pointer/integer equality or pointer
-  multiplication
-- deterministic resolved-expression output
+You are free to use them for debugging, tracing, or diagnostic messages.
 
-The PA12 output should preserve enough information for later assignments to add
-class-aware conversion ranking and richer overload resolution without reparsing
-the source.
+### Testing
 
+Testing uses checked-in golden outputs, not a reference binary.
+
+For each test case `x`:
+
+- `cppgm++` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is validated as LowIR and compared against `x.ref` using the normalized
+  LowIR comparison
+- `x.my.exit_status` is compared against `x.ref.exit_status`
+
+`make test` runs the checked-in local suite under `tests/` and supplies
+`--emit-lowir -O0` through the harness.
+
+The PA12 suite is split by test role:
+
+- `tests/general/`: the default PA12 LowIR oracle suite. These tests cover value-semantics
+  lowering, copy/value helper emission, temporary materialization, ABI-shape
+  cases, and cross-feature cases whose primary contract is generated LowIR plus
+  exit status.
+- `tests/spec/`: focused C++ language-contract cases that cite a specific N3485 clause.
+  Each source test in this directory starts with a comment of the form:
+
+    // N3485 focus: <clause> [<stable-name>] <short topic>
+
+`tests/spec/` covers the PA12 value-semantics contract: defaulted/deleted
+special members, copy/move construction and assignment, ref-qualified member
+functions, delegating constructors, allocation expressions, unions, conversion
+operators, and class value ABI behavior. `tests/general/` covers
+value-semantics and LowIR-shape cases that are not tied to one specific C++11
+clause.
+
+PA12 is tested against the generated LowIR text.
+
+### PA12 Syntax Spec
+
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa12.gram`. The grammar defines accepted syntax only;
+the PA12 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
+
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checked-in
+`.ref` files.
+
+Syntax for class value-semantics forms, including out-of-class constructor and
+destructor definitions, is already part of that grammar; PA12 gives the
+supported value-semantics subset semantic and lowering meaning.
+
+Passing PA11 is necessary but not sufficient for passing PA12: an input may be syntactically
+valid for PA5-PA11 and code-generation-valid for PA11 and still be outside the PA12
+value-semantics slice described below.
+
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa12.gram` as the source of truth.
+
+`pa12.gram` uses the same token vocabulary and the same extended BNF operators as
+`../shared/source.gram`.
+
+If this README and `pa12.gram` appear to disagree about source syntax, treat `pa12.gram`
+as authoritative. If this README and PA8 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA12 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+
+### Assignment Boundary
+
+PA12 supports the following in addition to the PA11 subset:
+
+- implicit copy constructors in the common field-wise/base-wise cases
+- implicit copy assignment in the common field-wise/base-wise cases
+- implicit move constructors in the common field-wise/base-wise cases needed by the
+  supported value-semantics paths
+- implicit move assignment in the common field-wise/base-wise cases needed by the
+  supported value-semantics paths
+- user-declared copy/move constructors and copy/move assignment operators in the ordinary
+  non-template class cases needed by the supported value-semantics paths
+- ordinary defaulted/deleted move-constructor and move-assignment cases in the supported
+  non-template class patterns used by this assignment
+- value passing of complete class objects to supported functions
+- return-by-value of complete class objects from supported functions
+- demand-driven LowIR emission of the copy/move/value helpers required by those supported
+  paths
+- raw `copyobj` lowering of a supported leading trivial storage prefix inside synthesized
+  copy/move special members when the remaining suffix still needs ordinary field-wise
+  lowering
+- direct `copyobj` lowering of supported trivial class copy/move construction at the call
+  site instead of forcing a separate synthesized trivial constructor call
+- empty class objects and subobjects use the same address-based class copy paths as
+  other class objects; lowering must not invent a scalar payload for an empty class
+- an xvalue class glvalue bound to a reference through a derived-to-base
+  conversion designates the existing base subobject; it is not materialized as
+  a new complete object
+- temporary class-object materialization in the common cases required by:
+  - copy initialization from function results
+  - pass-by-value call arguments
+  - return forwarding through the supported value paths
+- when a direct-register class call initializes a temporary whose destination
+  is already known, its result is copied directly into that temporary; a
+  conditional or full-expression cleanup boundary must not introduce a second
+  call-result object
+- direct reuse of the indirect return destination for supported `return local;` cases when
+  the named local is the returned complete object
+- ref-qualified member functions and out-of-class definitions of ref-qualified
+  members, including xvalue propagation through non-static data-member access;
+  ref-qualifiers are rejected on free functions, static members, constructors,
+  and destructors, and an otherwise-identical member overload set cannot mix an
+  unqualified declaration with a ref-qualified declaration
+- rvalue-reference overload ranking after supported scalar pointer conversions,
+  including null-pointer and pointer-qualification conversions
+- delegating constructors; the delegating mem-initializer must be the only
+  mem-initializer, and a delegation chain must not contain a cycle
+- out-of-class constructor definitions
+- out-of-class destructor definitions
+- scalar `new` / `delete` expressions over the supported object subset,
+  including class-specific allocation/deallocation selection, explicit global
+  qualification, and suppression of scalar initialization after a supported
+  non-throwing allocation returns null
+- array `new` / `delete[]` expressions over the supported object subset
+- union definitions and union object lifetime in the supported non-template
+  class subset, including block-scope anonymous-member injection and an
+  explicit variant initializer taking precedence over another variant's
+  default member initializer; at most one variant may have a default member
+  initializer
+- conditional class-value cases in the supported copy/move subset, including
+  cv-combined glvalue operands, lvalue/prvalue conversion, and destruction of a
+  containing branch temporary only after its selected member result has been
+  materialized
+- serialized `[elision=copy]` permission on the outer copy/move construction
+  from a private same-type conditional prvalue, while retaining its ordinary
+  O0 transfer and cleanup
+- equal temporary-destruction suffixes in the same full-expression and unwind
+  context use shared LowIR cleanup continuations, including conditional
+  lifetime guards where the guarded object identity is the same
+- class temporaries created earlier in an enclosing full expression remain
+  alive across nested conditional and short-circuit branch edges, and are
+  destroyed at the end of that full expression
+- a class prvalue bound directly to a local reference remains alive until the
+  reference's scope ends and is destroyed there rather than at the end of the
+  declaration's full expression
+- class-valued `if` condition declarations are constructed only on paths that
+  reach the declaration and remain alive through the complete selection
+  statement, including braceless nested statements
+- non-template conversion operators that participate in the existing overload
+  and conversion machinery
+
+Within this milestone, PA12 should produce valid LowIR for ordinary non-polymorphic value
+types over the supported PA11 procedural/class subset. That LowIR is intended
+to be accepted by the later PA24 `lowir2native` backend for the supported
+cases.
 ### Out Of Scope
 
-PA12 does not require:
+The following are explicitly out of scope for PA12:
 
-- class-aware call resolution
-- member function calls or implicit object parameters
-- overloaded operators
-- constructor selection
-- user-defined conversions
-- reference binding beyond the basic cases listed above
-- full standard conversion ranking
-- template functions or template-aware overload resolution
-- floating-point, string, or user-defined literals
-- general callable-object semantics beyond plain functions and function
-  pointers
-- statement forms beyond the supported control-flow subset, including `goto`,
-  `throw`, and `try`
-- semantic support for classes, enums, templates, or `decltype` beyond what is
-  needed by this assignment
+- virtual functions, vpointers, and vtables
+- RTTI and `dynamic_cast`
+- multiple inheritance
+- member pointers
+- generalized operator overloading beyond the supported value-semantics paths
+- copy-elision perfection and the full set of standard temporary-materialization rules
+- advanced move-generation rules beyond the common supported field-wise/base-wise cases
+  above, and the full standard move-semantics corner cases
+- exception-aware cleanup during value transfers
+- template-aware value semantics
+- lambda expressions, range-for, and later general convenience syntax that is not
+  needed by the PA12 value-semantics tests
 
-Inputs that rely on those features have undefined behavior for PA12.
+Inputs that rely on those features have undefined behaviour for this milestone.
 
-### Testing And Grading Contract
+### Stage Handoff
 
-The PA12 harness discovers every `.t` file under the requested test root.
-For each test case `x.t`, it runs:
+The intended next stage is PA13, which adds the polymorphic machinery that PA12
+intentionally leaves out:
 
-```sh
-cppgm++ --emit-semantics -o x.my x.t
-```
+- virtual dispatch
+- virtual destructors
+- vtables
+- override/final behavior
 
-and records `x.my.exit_status`.
-
-Comparison rules:
-
-- `x.my.exit_status` must match `x.ref.exit_status`.
-- If the reference status is `EXIT_FAILURE`, the test passes after the exit
-  status comparison.
-- If the reference status is `EXIT_SUCCESS`, `x.my` must match `x.ref` exactly.
-- Standard output and standard error are not compared.
-
-The local suite is split by role:
-
-- `tests/spec/` contains small tests tied to specific C++11 calls,
-  conversions, initialization, overload-resolution, or control-flow clauses.
-  These files begin with an `N3485 focus` comment.
-- `tests/general/` contains broader PA12 call-semantics tests,
-  cross-feature semantic combinations, and useful intake cases that are not a
-  single-clause oracle.
+So PA12 should leave behind a clean non-polymorphic value-semantics object model and LowIR
+lowering path rather than mixing virtual dispatch into the same milestone.
 
 ### Design Notes (Non-Normative)
 
-A good PA12 design keeps these pieces separate:
+The important point is to extend the existing PA11 behavior rather than inventing a second,
+incompatible model just for copy/value behavior. Whether that reuse happens through shared
+code, shared data structures, or a careful reimplementation is up to you.
 
-- PA11 scope/type analysis
-- expression analysis
-- conversion classification
-- overload candidate collection
-- overload ranking for the limited PA12 subset
-- statement-scope construction
-- deterministic semantic printing
+An important implementation rule for this milestone is monotonic extension:
 
-Treat the PA12 call layer as a base that later class and template assignments
-will extend. Avoid hard-coding assumptions that only work before member
-functions, constructors, user-defined conversions, or templates are introduced.
+- PA12 should add value-semantics behavior only when the source actually requires it
+- it should not perturb PA11 outputs for programs that remain entirely inside the PA11
+  subset
+- in practice, that means copy constructor / copy-assignment support should only become
+  semantically visible when the program actually needs it, rather than eagerly changing the
+  behavior or emitted output for every class
+- "PA11 would have treated this as out of scope" is not a sufficient reason to let PA12
+  change the observable output of a still-valid PA11 program
 
-Keep compiler-generated identities separate from ordinary source lookup.
-Anonymous entities should receive stable typed identities rather than names
-that are re-parsed or inserted into the source identifier namespace.
+Useful intermediate representations include:
+
+- class metadata that distinguishes ordinary methods, constructors, destructors, and
+  synthesized special members
+- explicit constructor/destructor/copy actions attached to declarations and returns
+- for supported indirect-value local objects, those attached destructor actions should remain
+  the source of truth for scope cleanup during LowIR lowering rather than being recomputed
+  later from the lowered storage type alone
+- a calling-convention layer that can lower class values indirectly without changing the
+  source-level semantic types
+- a stable way to identify the supported temporary-materialization points without requiring
+  a fully general temporary lifetime model yet
+- a value-category check that distinguishes prvalues needing storage from
+  xvalue glvalues that already designate storage before applying a base
+  projection for reference binding
+- a destination-aware class-call lowering path that accepts the already
+  planned temporary address for both direct-register and indirect-result ABI
+  classes, then marks the temporary live only after the call and required
+  direct-result copy complete
+- extension of PA11 cleanup-state identities with temporary object and
+  conditional-lifetime facts, built from the terminal backward so equal
+  suffixes can be reused in expected constant time per action
+- allocation expressions lowered as ordinary construction/destruction actions
+  over explicit storage, rather than as a separate object model
+- conversion operators represented through the same typed overload-resolution
+  and conversion machinery used for ordinary calls
+- a single linear classifier over completed member-layout facts that marks the
+  first transferable bit-field in an allocation unit and suppresses later
+  fields covered by that transfer

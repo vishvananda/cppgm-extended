@@ -1,0 +1,68 @@
+global @object : i32 [binding=strong, object=_Z6object] = zero
+global @reference : ptr [binding=strong, object=_Z9reference] = zero
+global @second : ptr [binding=strong, object=_Z6second] = zero
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+
+  block ^entry:
+    %t1 = load ptr @second
+    store i32 7, %t1
+    %t2 = addr @object
+    %t3 = addr @object
+    %t4 = cmp eq ptr %t2, %t3
+    branch %t4, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t5 = load ptr @second
+    %t6 = addr @object
+    %t7 = cmp eq ptr %t5, %t6
+    %t8 = cmp ne i64 %t7, 0
+    store i64 %t8, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t9 = load i64 $land__3
+    branch %t9, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t10 = load i32 @object
+    %t11 = cmp eq i32 %t10, 7
+    %t12 = cmp ne i64 %t11, 0
+    store i64 %t12, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t13 = load i64 $land__2
+    branch %t13, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t14 = load i32 $cond__1
+    return i32 %t14
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @object
+    store ptr %t1, @reference
+    %t2 = load ptr @reference
+    store ptr %t2, @second
+    return void
+}

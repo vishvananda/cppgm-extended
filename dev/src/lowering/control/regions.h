@@ -46,7 +46,7 @@ protected:
 		}
 		if (derived.statement_tasks_.size() != boundary)
 			ThrowLoweringInternal(
-				"PA15 statement scheduler crossed its frame");
+				"PA10 statement scheduler crossed its frame");
 	}
 
 	bool RegionStatementCanResume(const DumpNode& record) const

@@ -1,0 +1,26 @@
+global @c : i8 [binding=strong, object=_Z1c] = 97
+global @c16 : u16 [binding=strong, object=_Z3c16] = 960
+global @c32 : u32 [binding=strong, object=_Z3c32] = 119070
+global @cw : i32 [binding=strong, object=_Z2cw] = 119070
+global @sc : i8 [binding=strong, object=_Z2sc] = 1
+global @si : i16 [binding=strong, object=_Z2si] = 2
+global @i : i32 [binding=strong, object=_Z1i] = 3
+global @li : i64 [binding=strong, object=_Z2li] = 4
+global @lli : i64 [binding=strong, object=_Z3lli] = 5
+global @uc : u8 [binding=strong, object=_Z2uc] = 6
+global @usi : u16 [binding=strong, object=_Z3usi] = 7
+global @ui : u32 [binding=strong, object=_Z2ui] = 8
+global @uli : i64 [binding=strong, object=_Z3uli] = 9
+global @ulli : i64 [binding=strong, object=_Z4ulli] = 10
+global @f : f32 [binding=strong, object=_Z1f] = 2.0
+global @d : f64 [binding=strong, object=_Z1d] = 2.0
+global @ld : f80 [binding=strong, object=_Z2ld] = zero
+global @p : ptr [binding=strong, object=_Z1p] = zero
+global @null_function : ptr [binding=strong, object=_Z13null_function] = zero
+global @converted : u8 [binding=strong, object=_Z9converted] = 1
+global @floating_to_integral : i32 [binding=strong, object=_Z20floating_to_integral] = 2
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    return i32 0
+}

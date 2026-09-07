@@ -26,7 +26,7 @@ protected:
 		Derived& derived = static_cast<Derived&>(*this);
 		if (record.binding == kNoBinding ||
 			record.binding >= derived.program_.bindings.size())
-			ThrowLoweringInternal("invalid PA15 global variable binding");
+			ThrowLoweringInternal("invalid PA10 global variable binding");
 		const BindingId canonical =
 			derived.program_.bindings[record.binding].canonical;
 		if (derived.global_symbols_[canonical] == kNoLowId)

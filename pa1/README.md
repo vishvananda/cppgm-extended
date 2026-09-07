@@ -187,14 +187,14 @@ For example the source file:
 Produces an output of:
 
     identifier 3 foo
-    whitespace-sequence 0 
+    whitespace-sequence 0
     pp-number 5 1.0e2
-    whitespace-sequence 0 
+    whitespace-sequence 0
     preprocessing-op-or-punc 2 *=
     non-whitespace-character 1 @
     whitespace-sequence 0
     string-literal 5 "baz"
-    new-line 0 
+    new-line 0
     eof
 
 ## Testing
@@ -334,7 +334,7 @@ An identifier may not start with code points from Annex E2.
         `0` `1` `2` `3` `4` `5` `6` `7` `8` `9`
         `a` `b` `c` `d` `e` `f`
         `A` `B` `C` `D` `E` `F`
-        
+
     user-defined-character-literal:
         character-literal ud-suffix
 

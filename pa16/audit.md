@@ -1,91 +1,62 @@
 # PA16 Final Audit
 
-## Checkpoint Audit Ledger
+## Findings
 
-| Checkpoint | Result | Closure evidence |
-|---|---|---|
-| Direct member / member call | Pass | Canonical member identity, object-aware ranking, typed address/call lowering |
-| Aggregate / initialization | Pass | Aggregate and union rules, ordered base/member actions, retained conversions |
-| Construction / destruction | Pass | Monotonic demand, ABI entry identities, reverse subobject and lexical lifetime |
-| Namespace / TLS lifetime | Pass | Independent storage/linkage facts, one ordered initializer/finalizer pair |
-| Operator / ADL / friends | Pass | Direct ordinary, associated-scope, and hidden-friend indexes; selected typed calls |
-| Access / inheritance | Pass | Indexed grants, canonical base paths, protected-object checks, retained projections |
-| Layout / bit-fields / empty bases | Pass | Shared layout facts, physical/value width split, identity-safe zero-offset placement |
-| Declarators / conversions | Pass | Scoped canonical types, complete conversion facts, narrowing and cv constraints |
-| Full-stage lifetime closure | Pass | Mutable members, TLS demand, explicit/pseudo destruction, unevaluated-demand rules |
-| Final architecture audit | Pass after fixes | Precise lookup dependency invalidation, inline reverse edges, flat lowering maps, terminal-only text |
+All blocking findings are resolved.
 
-## Final Findings
+1. Ordinary runtime calls to `constexpr` functions were eagerly interpreted, so runtime work could become compile-time work. Evaluation is now gated by a constant-required or active constexpr context at scalar-call, constructor, list-initialization, conversion, and address boundaries.
+2. Constexpr local declarations, lookups, packs, and type aliases used frame/block vector scans. Dense `NameId` heads with scope-restored predecessor links now make declaration and lookup proportional to actual facts visited.
+3. Local-static identity depended on rescanning raw source text and could alias same-named declarations in one template function. Canonical function identity plus declaration ordinal now owns deterministic, distinct storage without source retention.
+4. Constant-initialized class local statics were forced through zero/dynamic guard lowering, and recorded local destructors were dead. Typed constant-initialization facts now enable static class data; dynamic finalizers check guards, while statically initialized objects receive unconditional finalization in the supported PA16 model.
+5. C++11 constexpr declaration validation was fragmented. Shared validation now covers literal variables, callable result/parameters, all direct bases and members, volatile subobjects, constructors, conversions, friends, template specializations, implicit inline status, virtual rejection, and the implicit `const` type of non-static constexpr members.
+6. Ordinary namespace objects did not probe constexpr-call initializers for constant initialization. Static-storage definitions now enter the same constant-aware path without reintroducing evaluation for automatic runtime calls.
+7. Static-initializer lowering could consume a scalar zero placeholder before a resolved typed address, and function-address dependencies did not always demand the referenced specialization. Address facts now take precedence and their dependency walk reaches the owning function binding.
+8. The final file audit exposed an oversized declaration routine and two source files at/over fatal limits. Conversion and simple-function declarations now have focused translation units; all new files are registered in the compiler source set.
 
-1. **Architecture blocker fixed:** `Program::LookupCache` used one TU-wide
-   revision. Every declaration, namespace, alias, type-name, or using-edge
-   insertion made every lookup cold, including unrelated names and scopes.
-2. **Allocation blocker fixed:** the first reverse-index implementation and
-   existing lowering helpers used singleton heap lists / node-based hash maps
-   for cache dependents, labels, constructor substitutions, and string-literal
-   pooling.
-3. **Observability gap fixed:** LowIR mode did not publish lookup-cache,
-   specialization, demand, or semantic peak-storage evidence, and duplicated
-   the semantic counter schema when those fields were first added.
-4. **Text-boundary cleanup fixed:** borrowed semantic lowering constructed an
-   unused `ostringstream`; it now uses a non-retaining null sink. No semantic or
-   LowIR text is a production transport.
-
-Independent review found no other PA16 correctness, semantic reconstruction,
-whole-program retry, fallback lookup, external-tool, test-specific, or
-scaling blocker.
+No production path shells out, consumes reference/test data, reconstructs types from text, or hardcodes a fixture. Checked-in PA16 LowIR fixtures were migrated only where canonical local-static identity and correct class constant initialization intentionally change the stage contract.
 
 ## Changes
 
-- Replaced global cache generations with stable `(ScopeId, NameId,
-  LookupKind)` entries, flat `(scope,name)` dependency owners, direct visited-
-  scope dependencies, cache-fact edges, generation-qualified reverse links,
-  and iterative dependency-cone invalidation.
-- Name insertion now invalidates only its exact owner; using-edge insertion
-  retains deliberate whole-scope invalidation because it may affect any name.
-  Negative results use the same complete key and dependency model.
-- Added two-entry inline reverse/dependency lists with geometric overflow and
-  stale-link compaction; cache keys remain unique and invalid entries are
-  refreshed in place.
-- Added hits, misses, invalidations, dependency edges, and invalidation pushes
-  to PA11/PA12 telemetry. LowIR statistics now own one nested semantic schema
-  and expose specialization requests/hits, demand pushes/emissions, semantic
-  peak bytes, typed bytes, IR sizes, and phase timers without duplicate fields.
-- Replaced PA16 lowering's node-based maps with `FlatIdMap`, sorted compact
-  constructor substitutions, and direct interned-literal-to-symbol storage.
-- Replaced the unused semantic text buffer on the borrowed graph path with a
-  null stream buffer.
+- Added typed dense indexes and work counters for constexpr locals, packs, and type aliases, with balanced scope/frame release.
+- Removed semantic ownership of source path/text and source-scanning local-static metadata.
+- Added canonical per-function local-static ordinals, constant-initialization state, guarded dynamic finalization, and class static-data lowering.
+- Centralized constexpr literal/callable/member validation and propagated constexpr/inline facts through ordinary, class, constructor, conversion, friend, function-template, specialization, and variable-template paths.
+- Added constant-context gates so evaluation and emission demand remain independent, including namespace static initialization.
+- Preserved typed object/function addresses through static-initializer lowering and made constant function-address dependencies demand their specialization.
+- Split conversion and simple-function declaration implementations into dedicated source files to satisfy file-audit ownership limits.
+- Added seven focused PA16 regressions for declaration identity, guarded destruction, namespace constant initialization, C++11 implicit-const members, nonliteral member owners, nonliteral secondary bases, and nonliteral constexpr variables.
 
 ## Performance Evidence
 
-- Nested lookup, 2,000/4,000 scopes (five-run medians): 4,007/8,007 queries,
-  2,006/4,006 scope visits, 4,002/8,002 hits, 4,005/8,005 dependency edges,
-  zero unrelated invalidations, 1,902,379/3,801,195 peak semantic bytes,
-  6.697/13.835 ms semantic, and 0.494/0.935 ms lowering.
-- Same-name shadowing: one invalidation and one worklist push; generated LowIR
-  stores through global `@g` before the declaration and local `$g` afterward.
-- Cv/member/lifetime probe, 64/128 members (five-run medians): 64/128 layout
-  visits, 271/527 access checks, 384/768 path visits, 471/919 instructions,
-  72,163/133,603 typed bytes, 0.745/1.408 ms semantic, 0.411/0.729 ms lowering,
-  and 0.192/0.342 ms rendering. Fixed demand remains 4 pushes, 3 demanded
-  functions, and 1 default constructor at both sizes.
-- Two calls to `hello<int>` record 2 specialization requests, 1 specialization
-  hit, 1 demand push, and 1 declaration emission.
-- Final Callgrind totals for the 2,000/4,000 lookup probe are
-  80,111,465/157,901,321 instructions (1.97x). Token interning is the largest
-  named self-cost at 25.76%; lookup-cache routines are below 0.01% self cost.
+| Workload | Evidence |
+| --- | --- |
+| Runtime `spin(1000000)` call | Before: 1 request, 1,000,000 steps, 2,189.469 ms semantic. After: 0 requests, 0 steps, 0.218 ms semantic, 0.00 s elapsed, 7,120 KiB RSS. |
+| Unique constexpr locals, N=8,192/16,384/32,768 | 26.865/59.090/114.561 ms; probes `N+1`; steps `N+2`; RSS 12,784/20,176/33,868 KiB. Previous 32,768 case was 1,519.634 ms. |
+| Local aliases, N=8,192/16,384/32,768 | 10.212/20.219/41.669 ms; probes exactly N; steps `N+2`; RSS 8,860/12,940/21,728 KiB. |
+| Local statics, N=1,024/2,048/4,096 | N globals; semantic 7.562/13.497/28.899 ms; lowering 1.585/3.208/5.673 ms; elapsed 0.02/0.04/0.07 s. |
 
-No timing ratio lacks matching source, semantic, dependency, or output growth,
-so no unexplained slow path remains.
+The measured doubling behavior and exact counters confirm linear owned work. No residual hot path required profiler sampling after the counter-attributed scans and eager evaluator were removed.
 
 ## Validation
 
-- `make test-pa11`: 70/70 pass.
-- `make test-pa15`: 108/108 pass.
-- `make test-pa16`: 291/291 pass.
-- `perl scripts/cppgm_file_audit.pl --stage pa16 --paths dev/src`: pass; six
-  non-blocking header-division warnings.
-- `make test-report-through-pa16`: **1,436/1,436 tests and 16/16 stages pass**.
-- Forbidden-path scan: no implementation shell-out, reference binary, previous
-  compiler, filename/source/test recognition, expected-output table, or text
-  round trip.
+- `perl scripts/cppgm_file_audit.pl --stage pa16 --paths dev/src`: pass, with 13 warning-only header-division advisories.
+- `make test-pa16`: pass, 129/129 handout tests and 15/15 course tests.
+- `make test-report-through-pa16`: pass, 2,329/2,329 tests and 21/21 stages.
+- `git diff --check`: pass.
+- Final audit changes committed with a clean `git status --short` handoff.
+
+## Checkpoint Ledger
+
+| Checkpoint | Audit result | Final evidence |
+| --- | --- | --- |
+| `dd3dd301` / `3f92499b` scalar evaluator | Pass after repair | Runtime demand separated; local/alias indexes and explicit counters are linear |
+| `267d7437` floating evaluator | Pass | Typed floating facts remain in scalar/call/storage paths |
+| `22051550` object evaluator | Pass | Immutable structural objects, full collision equality, bounded projection walks |
+| `0e7c1ea7` constructors/member calls | Pass after repair | Complete callable validation, literal owners, C++11 implicit const, static class initialization |
+| `f76ac972` address evaluator | Pass | Interned canonical address kind/identity/offset/bounds; local escapes rejected |
+| `d4d44664` / `263efed0` class-valued calls | Pass | Receiver/complete object/address included in invocation identity and result facts |
+| `44134d03` / `5fa7f407` base completion | Pass after repair | Ordered base facts preserved; every direct base checked for literal ownership |
+| `149f92db` / `f49edb9b` callables | Pass | Exact parser rollback, typed conversion functions, no semantic text roundtrip |
+| `49e62fbb` / `cc85a99d` `noexcept` | Pass | Constant-required context and temporary-lifetime facts remain bounded and typed |
+| `9db9e273` / `23502678` static constants | Pass after repair | Canonical recipes/dependencies plus namespace constant-initialization probing |
+| `290fab26` full stage | Pass after repair | Local-static ownership/finalization, declaration validation, linear scaling, fatal-free file audit |

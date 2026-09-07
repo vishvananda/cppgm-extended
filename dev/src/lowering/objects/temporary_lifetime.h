@@ -1337,7 +1337,7 @@ protected:
 		const NodeChildren declaration_children = derived.Children(declaration);
 		if (declaration_children.size() != 1 ||
 			derived.arena_.nodes[declaration_children[0]].kind != DUMP_VARIABLE)
-			ThrowLoweringInternal("invalid PA17 condition declaration");
+			ThrowLoweringInternal("invalid PA12 condition declaration");
 		const DumpNode& variable =
 			derived.arena_.nodes[declaration_children[0]];
 		if (derived.stats_) ++derived.stats_->lowered_nodes;
@@ -1352,7 +1352,7 @@ protected:
 				unwind_actions.Push(condition_children[i]);
 			else if (value_node == kNoDumpEdge)
 				value_node = condition_children[i];
-			else ThrowLoweringInternal("invalid PA17 condition suffix");
+			else ThrowLoweringInternal("invalid PA12 condition suffix");
 		}
 		if (value_node != kNoDumpEdge)
 		{

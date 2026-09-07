@@ -7,7 +7,7 @@ Write a C++ application called `posttoken` that accepts a _C++ Source File_ on s
  - preprocessing directives
  - pre-defined macro names
  - the pragma operator
- 
+
 ...executes phases 1, 2, 3, 4, 5, 6 and the tokenization part of 7 of the _Phases of Translation_, and describes the resulting sequence of analyzed and categorized `tokens` to standard output in the specified format.
 
 Notice that by virtue of the restrictions, phase 4 (preprocessing) is a _no-op_ (does nothing).
@@ -83,7 +83,7 @@ For example, for an input of:
     auto &&
 
 the output is:
- 
+
     simple auto KW_AUTO
     simple && OP_LAND
 
@@ -92,15 +92,15 @@ the output is:
 `identifiers` are output as
 
     identifier <source>
-    
+
 Where `<source>` is the identifier in UTF-8, for example for an input of:
 
     foo
-    
+
 the output is:
 
     identifier foo
-        
+
 #### literal
 
     literal <source> <type> <hexdump>
@@ -120,7 +120,7 @@ And `<hexdump>` is the hexadecimal representation of the data in memory in the L
 For example, for an input of:
 
     1000000 'A' "ABC" 3.2
-    
+
 the output is:
 
 	literal 1000000 int 40420F00
@@ -154,7 +154,7 @@ In the case of `string` and `character`, `<type> <hexdump>` have the same meanin
 For example:
 
     123_foo 4.2_bar 0x3_baz "abc"_qux 'a'_quux
-    
+
 outputs:
 
 	user-defined-literal 123_foo _foo integer 123
@@ -172,7 +172,7 @@ For any valid `preprocessing-token` that does not posttokenize output:
 For example:
 
     # 123abc 1..e
-    
+
 Should output:
 
     invalid #
@@ -182,7 +182,7 @@ Should output:
 Also as stated above invalid string literal concatenation should output one invalid.  For example:
 
     u8"abc" u"def" U"ghi"
-    
+
 Should output:
 
     invalid u8"abc" u"def" U"ghi"
@@ -311,7 +311,7 @@ Read 2.14.8.8 for clarification.
 The test suite is similiar to PA1.  Execute:
 
     $ make test
-    
+
 In order to deal with invalids and keep going, stderr is not included in the output.  It is placed in another file.  So the content of the tests directory is:
 
     tests/123-test-name.t                // test stdin
@@ -325,7 +325,7 @@ In order to deal with invalids and keep going, stderr is not included in the out
 If you add a test case:
 
     tests/456-my-test-case.t
-    
+
 You can regenerate reference impl output with:
 
     $ make ref-test
@@ -333,7 +333,7 @@ You can regenerate reference impl output with:
 and then retest against it:
 
     $ make test
-    
+
 However you should not modify existing tests or their reference output.
 
 ## Definition: Fundamental Types
@@ -362,7 +362,7 @@ They are:
     long double
     void
     nullptr_t
-    
+
 Each fundamental type is different (distinct) from every other.
 
 The C++ standard does not specify exactly the size, alignment and representation of each of these types.

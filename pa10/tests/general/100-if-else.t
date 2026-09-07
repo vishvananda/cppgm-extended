@@ -1,1 +1,7 @@
-int main() { if (x < 1) return 1; else return 2; }
+int main() {
+  if(1 < 2) {
+    return 1;
+  } else {
+    return 2;
+  }
+}

@@ -1,4 +1,4 @@
-TARGET = macro
+TARGET = preproc
 CXX = g++
 CPPGM_HOST_CXX ?= $(CXX)
 CPPGM_STDLIB_FLAGS ?=

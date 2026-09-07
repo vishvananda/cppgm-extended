@@ -1,4 +1,4 @@
-// Student-facing scaffold for the PA37 `lowiropt` binary.
+// Student-facing scaffold for the PA32 `lowiropt` binary.
 
 #include "support/exception_types.h"
 #include "lowir/driver/stats_report.h"

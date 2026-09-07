@@ -79,7 +79,7 @@ protected:
 		else if (IsFloating(value.type) && IsFloating(target))
 			instruction.op = target.width < value.type.width ?
 				LOW_OP_FPTRUNC : LOW_OP_FPEXT;
-		else ThrowLoweringSource("unsupported PA15 scalar conversion");
+		else ThrowLoweringSource("unsupported PA10 scalar conversion");
 		const Operand result = derived.Temp(target);
 		instruction.dest = result.id;
 		instruction.first = value;
@@ -177,7 +177,7 @@ protected:
 			else
 			{
 				if (!record.constant)
-					ThrowLoweringInternal("literal is missing its PA12 constant fact");
+					ThrowLoweringInternal("literal is missing its PA7 constant fact");
 				result = Operand(record.constant_value, record.constant_high, type);
 			}
 		}
@@ -220,7 +220,7 @@ protected:
 		else if (record.kind == DUMP_SIZEOF_EXPRESSION)
 		{
 			if (!record.constant)
-				ThrowLoweringInternal("sizeof is missing its PA12 constant fact");
+				ThrowLoweringInternal("sizeof is missing its PA7 constant fact");
 			const LowType type = derived.LowerExpressionType(record.type);
 			result = derived.Temp(type);
 			Instruction constant(Instruction::CONST);
@@ -295,7 +295,7 @@ protected:
 		}
 		else ThrowLoweringSource("semantic expression kind " +
 			std::to_string(static_cast<unsigned>(record.kind)) +
-			" is outside the active PA15 checkpoint");
+			" is outside the active PA10 checkpoint");
 		return expected.kind == LOW_INVALID ? result : derived.Convert(result, expected);
 	}
 
@@ -375,7 +375,7 @@ protected:
 			return derived.LowerPointerDifference(children[0], children[1]);
 		if (record.operand_type == kNoType &&
 			!(comparison && (left_pointer || right_pointer)))
-			ThrowLoweringInternal("binary expression is missing its PA12 operand type");
+			ThrowLoweringInternal("binary expression is missing its PA7 operand type");
 		const LowType operand_type = record.operand_type == kNoType ?
 			LowPtr() : derived.LowerExpressionType(record.operand_type);
 		Operand left = derived.LowerValue(children[0], comparison ?

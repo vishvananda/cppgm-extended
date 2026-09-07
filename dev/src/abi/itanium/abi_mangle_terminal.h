@@ -68,7 +68,7 @@ enum AbiTerminalKind : std::uint8_t
   ABI_TERMINAL_INDEX
 };
 
-// The standalone PA14 adapter classifies its input word once.  Integrated
+// The standalone PA9 adapter classifies its input word once.  Integrated
 // compilation constructs AbiTerminalKind directly and uses the indexed code
 // lookup without entering the text adapter.
 bool abi_find_terminal_kind(const std::string & word,

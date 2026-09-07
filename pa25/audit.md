@@ -1,88 +1,91 @@
 # PA25 Final Audit
 
-## Final Findings
+## Findings and Changes
 
-1. Resolved architecture blocker: PA10 stored each lambda introducer as opaque
-   text and PA22 reparsed it. This violated the one-parse rule and made strings
-   semantic transport.
-2. Resolved performance blocker: every default-reference closure rescanned its
-   complete nested body, allocated a node-based parameter-name set, and
-   repeated enclosing lookups. Deep nested lambdas showed rapidly increasing
-   subtree work, semantic time, and peak storage.
-3. Resolved identity/scaling blocker: local closure presentation names embedded
-   the complete enclosing closure name recursively, causing avoidable LowIR
-   symbol and line growth. Explicit-capture classification and duplicate
-   suppression also had quadratic linear-search loops.
-4. No additional blocker was found in placeholder deduction, retained-template
-   demand, range materialization/lifetime, aggregate actions, class conversion
-   selection, typed class-value boundaries, ABI handoff, lowering ownership, or
-   production self-containment.
+| Finding | Full ownership-path change | Evidence |
+| --- | --- | --- |
+| Constructor cleanup demand rescanned retained syntax for explicit `throw` and missed an indirectly throwing constructor | PA25 object mode now selects `InitializationActionsAreNonthrowing` over typed constructor/call facts and demands prefix destructors from the semantic action graph; PA10's staged textual fixture policy remains explicit | New indirect-call unwind regression failed before and passes after; earlier LowIR references remain stable |
+| Native startup, allocator, and RTTI planning guessed symbol spellings | Added typed generic RTTI data and C allocator roles at semantic/LowIR boundaries; normalized PA8 legacy startup names in the textual parser; removed backend name fallbacks | Legacy/explicit startup, nested catch allocation, RTTI, dynamic-cast, and multi-TU lifecycle controls pass |
+| Compiler-object write/read and link retained duplicate whole-program buffers and copied definitions | Streamed object fields, moved linked units/definitions, passed object vectors by move, and bounded every read by exact remaining bytes and minimum encoded element size | 20k-function RSS 90,972 -> 48,296 KiB; malformed object rejected at 4,376 KiB |
+| Rename paths performed repeated hash probes and compile/link phase work was under-observed | Centralized single-probe renaming, discarded spent export tables, and added source/semantic/lowering/adapt/input/link/encode/write counters and timers | 20,001 symbols: 40,002 symbol and 20,002 rename probes |
+| Production `cppgm++` retained all functions' MIR and duplicated the final ELF content buffer | Added a responsibility-owned lowering session; indexed cross-function facts once, then lowered/encoded/reclaimed each MIR function; wrote ELF header and content without a second image | Final outputs byte-identical; incremental path removes another ~10 MiB at 20k functions |
+| Foreign relocations could not reach C++ ABI labels; linked alias facts were dropped; Clang emitted unsupported relaxable GOT relocations | Carried object symbols through MIR, installed definition/alias labels at final encoding, and safely relaxed R_X86_64_GOTPCRELX/REX_GOTPCRELX loads | New helper regression reaches C2 constructors and a namespaced global from foreign ELF |
+| In-process scalar lowering reparsed integer text despite typed values | Added explicit integer-value presence, populated it in the direct adapter/object reader, and restricted parsing fallback to explicit textual LowIR | PA24 atomics, globals, i128, PA25 scaling, and full local suite pass |
+| PA25 additions created duplicate operation maps and oversized member-pointer ownership | Moved operation spelling to the shared LowIR model and split function-member-pointer lowering from data-member-pointer lowering | File audit warning count returns to the PA24 baseline of 21 |
 
-## Changes
-
-- Added PA25 lambda-introducer syntax ownership. PA10 now emits semantic-only,
-  interned facts for capture defaults, named reference/pack captures, copy forms,
-  and `this`, while retaining the existing public syntax rendering.
-- Added `LambdaCaptureUseTable`, keyed by lambda `NodeId`, with explicit
-  unstarted/in-progress/succeeded/failed states, open-addressed indexing,
-  contiguous name facts, lexical bound-name tracking, source-order deduplication,
-  nested-summary reuse, direct explicit flags, and storage/work counters.
-- Changed PA22 closure formation to consume the structured summary and canonical
-  IDs directly. Named sources, parameter packs, implicit member/`this` use, and
-  nested capture propagation still resolve through ordinary semantic lookup.
-- Replaced recursively rendered local closure identity with a compact binding,
-  token, and ordinal presentation component. Canonical ABI mangling remains
-  based on local context and lambda ordinal.
-- Rejected duplicate explicit named and `this` captures and added a course
-  regression. Removed per-capture linear classification and duplicate scans.
-- Exposed summary request/hit, syntax-visit, name-use, and storage telemetry in
-  semantic and LowIR frontend statistics.
+No test or reference was weakened. Two course regressions were added for the
+previously untested constructor-unwind and foreign-ABI paths.
 
 ## Performance Evidence
 
-Before repair, empty nested `[&]` closures at depths 16/32/64/128 performed
-3,312/24,032/183,232/1,431,424 scope visits; semantic time rose to
-2.46/9.62/48.46/307.55 ms and depth-128 peak semantic storage reached 55.4 MB.
+The 5k/10k/20k one-object link series finishes in 0.05/0.11/0.23 s at
+15,144/26,212/48,296 KiB, versus 0.08/0.16/0.34 s and
+26,324/47,880/90,972 KiB before audit. Object sizes remain
+3,173,495/6,348,495/12,748,497 bytes. Both serialized objects and 80,238/
+160,238/320,238-byte executables compare byte-for-byte with pre-refactor
+outputs.
 
-After repair, depth 16/64/256 empty nesting performed 153/633/2,553 capture
-syntax visits, 0 name uses, and produced 5,592/22,379/90,214 LowIR bytes with
-43,263/173,086/692,669 typed-storage bytes. Median semantic times were
-1.378/5.881/47.598 ms. The matching real-free-use family recorded exactly
-16/64/256 name uses and 7,532/29,900/120,178 LowIR bytes. Wide explicit lists
-of 16/64/256 names took 0.594/1.531/5.805 ms with 103/391/1,543 lookup-scope
-visits. Output line length remained bounded at 108-144 bytes.
+Final 20k counters are 20,001 symbols/functions, 40,002 symbol probes, 20,002
+rename probes, 20,009 LowIR instructions, and 40,019 MIR instructions. Input,
+link, lower, and encode times are 109.47/43.13/40.01/18.80 ms. The exact 2x
+counter slopes and near-2x times show linear object/link/native work; profiling
+identified ownership, not an unexplained algorithmic hot loop, as the original
+memory cost.
 
-Counter profiling attributes the residual pathological nesting cost to the
-sum of ordinary lexical parent-scope edges, not repeated capture-subtree scans.
-An attempted generic lookup dependency-cache change increased cache storage and
-misses without reducing those visits, so it was reverted.
+The demanded-template trace records one specialization request, one demand
+push, and one demanded body in each TU, followed by one weak coalescence. The
+data-relocation trace preserves a typed global address to an external function
+through object serialization, canonical linking, MIR indirect call, absolute
+fixup, and native exit 4. The foreign-ABI trace additionally resolves C2 ABI
+labels and a C++ global from a Clang ELF object.
 
-## Validation
+## Architecture Review
 
-- PA25 focused aggregate/conversion/range/capture checks: 10/10 pass.
-- Focused nested/pack capture checks after the final scaling cleanup: 5/5 pass.
-- PA25 local plus course suite: 136/136 pass (121 local, 15 course).
-- Duplicate explicit reference-capture regression: expected failure passes.
-- Range-prvalue lifetime and capturing-template-pack traces: valid LowIR,
-  PA13 LowIR-to-CY86 success, PA9 x86-64 Linux ELF success, execution status 0.
-- PA29 adapter observation: explicit status 86 (`not yet implemented`) before
-  MIR emission; no PA25 data-dependent failure.
-- `perl scripts/cppgm_file_audit.pl --stage pa25 --paths dev/src`: pass with
-  the same 15 inherited nonfatal header-division warnings.
-- `make test-report-through-pa25`: pass, 3,607/3,607 tests and 25/25
-  tracked stages.
-- `git diff --check`: pass.
+The full `spec.md` checklist was applied to source/token ownership, semantic
+identity and demand, scope/overload/template counters, typed LowIR transport,
+object/link indexes, per-function native ownership, fixup layout, allocation,
+and self-containment. The production path contains no syntax/semantic clone,
+LowIR text round trip, assembly, complete-program retry, lowering-time semantic
+search, name fallback, or external compiler/reference subprocess. The only
+string-keyed hot map in PA25 is the required cross-TU ABI symbol table at the
+serialized object boundary.
+
+The linked LowIR and final code/fixup buffer are necessarily program-wide.
+Semantic graph state is gone before adaptation; typed PA10 and backend LowIR
+overlap only during the direct boundary copy; function-local analyses and MIR
+die after each function is encoded. The standalone PA24 textual/MIR surfaces
+remain explicit assignment adapters and do not alter compiler production
+ownership.
+
+## Final Architecture Review
+
+Representative source data was traced end to end for a demanded class-template
+constructor and a cross-TU function-pointer global; both preserve canonical
+demand/linkage/relocation facts and execute correctly. Additional traces cover
+indirect constructor unwind, runtime RTTI/allocation roles, legacy startup
+normalization, C++ ABI aliases, a foreign GOTPCRELX relocation, and scalar
+integer/atomic facts.
+
+All stage commits and their current owners were reviewed independently of the
+checkpoint conclusions. No open correctness, architecture, performance,
+self-containment, timeout, file-placement, or fatal file-audit finding remains.
 
 ## Checkpoint Ledger
 
 | Checkpoint | Audit result |
-|---|---|
-| Ordinary placeholders (`583b174a`, `7737d2a5`) | Pass: canonical placeholder results, direct initializer ownership, retained visible bodies. |
-| Range-for (`b985f854`, `db9bf14a`) | Pass: bounded parse dispatch, one range evaluation, selected member/ADL calls, complete cleanup. |
-| Aggregates (`ece08579`) | Pass: member-order actions, omitted zero initialization, nested arrays, typed helper ABI. |
-| Class conversions (`cec97359`, `c3651ce0`) | Pass: canonical targets, selected conversion functions, modifiable references, class-value boundaries. |
-| Template placeholder results (`2e7bf454`, `1d508e97`) | Pass: cache-before-body analysis, four-state demand, canonical type/ABI publication. |
-| Captureless call operators (`60cd11b4`, `ade1022b`) | Pass: canonical closure key/body, pack identity, lexical access without implicit capture. |
-| Captureless pointer conversion (`440c7070`) | Pass: semantic-owned static invoker and conversion fact, direct lowering. |
-| By-reference/`this` captures (`7c963c77`) | Pass after final audit: canonical layout/aliases and nested propagation; text reparse, repeated subtree scans, and recursive presentation names removed. |
-| Final PA-wide audit | Pass: findings closed, performance measured, executable traces and required gates validated. |
+| --- | --- |
+| Typed object/driver/link | Pass after streamed bounded ownership, move linkage, and full telemetry |
+| Exception/runtime | Pass after typed constructor unwind and runtime-role closure |
+| Polymorphism/linkage | Pass after RTTI-data roles and final ABI symbol/alias labels |
+| Numeric/helper | Pass after typed scalar transport and retained PA24 runtime controls |
+| Scoped regions | Pass; prior typed region and scheduler audit remains valid |
+| Aggregate/member pointer | Pass after responsibility split and existing ABI controls |
+| Full-stage architecture | Pass after incremental MIR ownership, foreign relocation regression, scaling, and required gates |
+
+## Validation
+
+- `make test-pa25`: 92/92 pass.
+- `perl scripts/cppgm_file_audit.pl --stage pa25 --paths dev/src`: pass; 21
+  warnings are unchanged inherited header-division warnings.
+- `make test-report-through-pa25`: 4,132/4,132 tests and 30/30 stages pass.
+- `git diff --check`: pass before final gate and commit.

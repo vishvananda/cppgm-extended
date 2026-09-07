@@ -1,100 +1,118 @@
 # PA32 Final Audit
 
-Scope: PA32 full stage, from PA31 baseline `617abe30` through `a20d0480`,
-plus the final audit repair. The review independently read `spec.md`, the PA32
-contract, all 20 stage commits, the complete changed-source set, representative
-handout/course tests, prior-stage architecture records, and the production
-source-to-ELF path.
-
-## Checkpoint Audit Ledger
-
-| Checkpoint | Result |
-| --- | --- |
-| Host ABI roots and lifecycle demand (`1137edc6`–`f5e9e5f4`) | Pass: canonical object spellings, weak roots, demand pruning, and lifecycle aliases remain typed and single-owner. |
-| Dependent result, substitution, and NTTP facts (`8670a6bd`–`f83e81ad`) | Pass: recipes retain canonical parameter/member/modifier identity and source type/value facts. |
-| Structured results and audit (`f642998a`–`8094903f`) | Pass: compact framing and transactional publication have complete keys and no text recovery path. |
-| Callable/member facts and audit (`45e35717`–`a631e4d6`) | Pass: typed callable/member terminals flow directly into ABI facts and object symbols. |
-| External data addressing and audit (`0d3e1179`–`a41f3384`) | Pass: local/preemptible address choice survives through MIR and typed fixups. |
-| ELF sections/TLS and audit (`b206d7c2`–`10b241de`) | Pass: section, TLS, wrapper, label, and relocation ownership is indexed and deterministic. |
-| Virtual inheritance (`e51dcbea`) | Pass: complete/base entry points, support symbols, and COMDAT ownership are explicit. |
-| Lifecycle/template preemption (`aed869d8`) | Pass: canonical peers and specialization suppression are demand-owned. |
-| Dependent ABI ownership (`f0d4a536`) | Pass after final repair: shared type children are now classified and encoded once per complete identity. |
-| Anonymous ownership and audit (`03c66170`–`a8c3b663`) | Pass: local ordinals, projected storage, union/default selection, and reverse indexes retain canonical owners. |
-| Callable lifecycle boundary (`2ba6c588`) | Pass: member-pointer calls and direct ELF init/fini arrays preserve typed ownership. |
-| Exception cleanup graph (`a20d0480`) | Pass: goto exits, argument temporaries, member/delegating construction, cleanup-first dispatch, and resume edges are explicit. |
-
 ## Findings
 
-One release-blocking architecture/performance defect was found. A canonical
-type DAG such as `Pair<T,T>` nested repeatedly was expanded as a tree in four
-places:
-
-1. local/anonymous-context classification revisited both equal children;
-2. dependent-template-shape classification did the same;
-3. host semantic shells recursively rendered the complete specialization type
-   as their internal name; and
-4. `AbiFactBuilder` rebuilt and copied an equivalent ABI type-fact subtree for
-   every repeated occurrence.
-
-This violated the specification's canonical-identity, no-rendered-hot-key, and
-O(input + output) requirements. It was not visible in the functional suite:
-depth 16 already reached 498,988 KiB RSS, and depth 20 exceeded 20 seconds while
-approaching 7.9 GiB.
-
-No additional correctness, lifetime, lookup, lowering, backend, object-format,
-self-containment, or placement blocker was found. The 21 file-audit warnings
-are unchanged inherited header-division advisories, not PA32 failures.
+1. Optimized source compilation performed `BuildTypedLowIRProgram` twice: once
+   for host-object facts and again to recover canonical presentation names.
+   This reparsed, reanalyzed, reinstantiated, and relowered every source file;
+   a 2,000-function `-O0` compile took 1.00 s versus 0.21 s without an explicit
+   level.
+2. The optimizer contained several scaling blockers hidden by counters that
+   covered only simplification: a block-squared dominator matrix, one-node-per-
+   retry DCE, whole-function slot retries, slot × instruction validation,
+   repeated jump-chain walks, an eight-merge CFG ceiling, whole-program
+   no-unwind retries, per-call EH analysis, recursive SCC/rematerialization
+   walks, caller restarts, repeated whole-caller substitutions, and caller-tail
+   copying at each inline site.
+3. O2 promotion retained stale per-block load replacements after dataflow facts
+   became less precise and propagated block-local temporary values across CFG
+   boundaries. Hosted `ostringstream` and `vector<string>` object compilation
+   exposed the result as undefined lowered temporaries.
+4. Driver debug metadata repeatedly searched all source lines for every
+   function and slot, forming a scaling-sensitive source cross-product. The
+   production driver also lacked PA32 optimizer counters/timing.
+5. After the repairs and full validation, no correctness, architecture,
+   performance, self-containment, timeout, or file-audit blocker remains.
 
 ## Changes
 
-- `pa32_template_preemption_semantic.cpp`: replaced recursive per-argument
-  local-context expansion with one iterative, validated, visit-once traversal
-  over all argument roots. Visit state includes the type table's maximum valid
-  ID, and unresolved dependent placeholders do not invent concrete ownership.
-- `pa19_template_semantic.cpp`: made dependent-shape traversal iterative and
-  canonical; host-object specialization shells now use compact
-  pattern/argument/partition IDs instead of recursively rendered types. Staged
-  non-host presentation output is unchanged.
-- `pa15_lowering_abi.cpp`: interned ABI type-argument facts in a geometric
-  open-addressed table keyed by `TypeId`, canonical function `BindingId`, and
-  recipe ID; also made dependent-parameter discovery visit-once.
-- Added
-  `pa32/tests/200-canonical-template-type-dag-scaling.t`, a
-  depth-24 compile/link/run regression that would exceed the old build budget.
+- Replaced the second semantic/lowering run with an interned canonical
+  specialization presentation fact on `EntityRecord`; PA10 consumes that fact
+  during its sole lowering pass. Alias ordering is indexed by target, and typed
+  PA10 storage is released immediately after structural adaptation.
+- Replaced the dominator matrix with a near-linear Lengauer-Tarjan tree,
+  recursive graph walks with iterative traversals, retry DCE with a def/use
+  worklist, no-unwind retries with reverse dependencies, and repeated EH scans
+  with one caller context worklist.
+- Made jump bypass and whole straight-line-chain merging complete in one CFG
+  cleanup, deduplicated high-fanout switch edges in O(E log E), and replaced
+  convergence retries with an explicit bounded pass schedule.
+- Added state-product budgets, dirty predecessor worklists, function-local temp
+  stripping, fresh per-block replacement facts, transitive storage-address
+  alias resolution, and single-pass slot validation/promotion classification.
+- Batched call-free single-block inline sites through one block rebuild, used
+  monotonic site allocation and one final substitution pass, and retained the
+  general multi-block continuation path for produced CFG output.
+- Indexed debug source words and return lines once and added optimizer visit,
+  edge, update, candidate, rewrite, budget, IR-size, and elapsed-time telemetry
+  to both `lowiropt` and production driver paths.
+- Consolidated the checkpoint plan into this PA-wide architecture,
+  performance, validation, and ledger record.
 
-The repair is at the shared ownership points rather than at the observed
-timeout. Canonical specialization lookup still uses
-`TemplateSpecializationKey`; compact shell names are presentation/storage
-labels only; final Itanium spelling is still derived from typed ABI facts.
+## Architecture Trace
+
+For the nontrivial declaration trace, the hosted `ostringstream << unsigned`
+source enters one preprocessing/token/syntax owner and one canonical semantic
+graph. Canonical overload, template, layout, lifecycle, EH, linkage, and ABI
+facts produce 311 demanded typed functions and 6,924 LowIR instructions. The
+typed graph is structurally adapted and released; PA32 emits 5,685 optimized
+instructions; native lowering emits 9,536 MIR instructions function by
+function; the ELF writer directly publishes a 3,001,192-byte relocatable
+object. No source-path LowIR text or second semantic graph exists.
+
+For the demanded-template trace, `std::function` uses canonical template,
+argument-list, specialization, binding, and demand identities. Its 727
+specialization requests / 364 cache hits close 37 demanded bodies with 38
+pushes. The presentation name needed by the staged LowIR boundary is a compact
+semantic `NameId`. PA32 visits 95 direct calls, inlines 86, reduces 350 to 253
+instructions in 7.52 ms, and direct native/ELF emission produces a
+157,368-byte object.
+
+At ownership boundaries, semantic parser/analyzer scratch dies before graph
+consumption; PA10 typed and native LowIR coexist only during one structural
+adapter; optimizer analyses are per-program summaries or per-function scratch;
+MIR/encoding state is reclaimed per function; ELF alone retains final global
+symbol/relocation/section state. Text parsing is confined to explicit staged
+tool or `.lowir` input, and text serialization is confined to requested LowIR
+output.
 
 ## Performance Evidence
 
-The initial profile was dominated by ABI fact movement, copy/destruction, and
-argument-reference resolution. After ABI interning, the exposed semantic
-profile was dominated by range interning/moves and recursive specialization
-name/dependent-shape work. Both causes were repaired before remeasurement.
+The audit reproduced superlinear behavior before changing the passes. A dead
+dependent chain at 1k/2k/4k/8k instructions took
+0.17/1.63/2.94/12.86 s. A 1k/2k/4k/8k-block nontrivial CFG took
+0.05/0.13/0.49/1.75 s and reached 82,072 KiB RSS. Tiny inline sites at
+500/1k/2k/4k took 0.04/0.17/0.75/3.07 s.
 
-| DAG depth | Declarations | Template requests | Semantic peak bytes | Semantic + lowering ms | Object bytes | RSS KiB |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 16 | 111 | 19 | 149,152 | 1.211 | 4,424 | 8,040 |
-| 32 | 207 | 35 | 282,992 | 2.017 | 4,936 | 8,468 |
-| 64 | 399 | 67 | 554,256 | 3.152 | 6,072 | 8,772 |
-| 128 | 783 | 131 | 1,095,846 | 5.991 | 8,376 | 9,632 |
-| 256 | 1,551 | 259 | 2,180,262 | 12.446 | 12,984 | 11,128 |
+After repair, the dead chain takes 0.01/0.02/0.04/0.08 s with exactly
+2,007/4,007/8,007/16,007 instruction visits. The CFG chain takes
+0.01/0.03/0.06/0.14 s with 999/1,999/3,999/7,999 block visits and complete
+chain merging. Tiny inline optimizer time is 0.91/1.73/3.39/7.10/15.21 ms for
+500/1k/2k/4k/8k sites, with exactly one candidate visit, update, and inline per
+site.
 
-Across 16x depth, semantic work/storage and output remain proportional; native
-work is constant at 2 functions, 4 LowIR instructions, 9 MIR instructions, and
-3 fixups. The depth-16 generated weak name is byte-for-byte the same raw symbol
-as `g++`; the object links and runs. Stats-on/off objects compare identical.
+The duplicate-frontend workload is now 0.20 s without an explicit level and
+0.21 s at `-O0`. Indexed line-table generation at 1k/2k/4k/8k functions takes
+0.15/0.30/0.61/1.24 s. The hosted `ostringstream` optimizer takes 132.52 ms in
+a 1.47 s / 65,532 KiB compile; `std::function` takes 7.52 ms in a
+0.40 s / 21,620 KiB compile. Counters account for both workloads and show no
+unexplained retry or allocation cliff.
 
 ## Validation
 
-- Focused canonical-DAG regression: 1/1 pass.
-- `make test-pa32`: 133/133 handout and 8/8 course tests pass.
-- `perl scripts/cppgm_file_audit.pl --stage pa32 --paths dev/src`: pass with
-  21 inherited warnings.
-- Process trace of `cppgm++ -c`: one `execve`, no child process.
-- Host inspection: ELF64 `ET_REL`, weak template symbol, COMDAT group,
-  relocations, `.eh_frame`, and compatibility payload present.
-- `make test-report-through-pa32`: 4,291/4,291 tests and 32/32 stages
-  pass; all tracked stages pass.
+- Focused stale-alias regressions: hosted `ostringstream` and
+  `vector<string>::push_back` direct/serialized O2 object round-trips pass.
+- PA32 functional buckets: O0 2/2, O1 48/48, O2 12/12, driver O1 3/3, driver
+  O2 6/6, and object round-trip 7/7 pass.
+- PA32 debug buckets: LowIR O1 2/2, LowIR O2 1/1, driver O1 1/1, driver O2 1/1,
+  and debug object round-trip 7/7 pass.
+- Required PA32 file audit and cumulative PA1-PA32 report are the final release
+  gates: file audit passes with 23 inherited nonfatal header-division
+  advisories; all 37 stages and 5,065/5,065 tests pass.
+
+## Checkpoint Audit Ledger
+
+| Checkpoint commits | Audit disposition |
+| --- | --- |
+| `0cad55d2` | Pass after repair: the stage's typed O0/O1/O2 optimizer and explicit text/object boundary remain intact; duplicate semantics, stale slot facts, repeated scans, scaling cliffs, and missing telemetry are closed across their owners. |
+| Final PA-wide audit | Pass: architecture traces, controlled scaling, hosted profiles, self-containment, file audit, all 37 stages, and 5,065/5,065 cumulative tests are consolidated here. |

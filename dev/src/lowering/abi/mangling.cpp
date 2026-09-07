@@ -1852,7 +1852,7 @@ public:
 			return result;
 		}
 		if (MakeBuiltinAbiType(program_, *record, &result)) return result;
-		ThrowLoweringSource("unsupported ABI type in PA15");
+		ThrowLoweringSource("unsupported ABI type in PA10");
 	}
 };
 

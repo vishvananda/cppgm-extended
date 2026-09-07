@@ -17,7 +17,7 @@
 //   colouring      planned register assignment by interference-graph
 //                  colouring instead of the claim-driven linear scan; no
 //                  local-phi or cyclic-region plans
-//   linear-scan    the newcomer's allocator, written from the PA38 README
+//   linear-scan    the newcomer's allocator, written from the PA33 README
 //                  and planning_seam.h alone (linear_scan.cpp)
 namespace cppgm_variant {
 

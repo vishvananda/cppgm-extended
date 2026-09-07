@@ -10,7 +10,7 @@ ref my), and hold the lane to one invariant:
 
   - a presentation or normalization rewrite passes every fixture;
   - a convention rewrite fails at least one fixture it changed;
-  - the sentence each mode points at is still in pa13/lowir.md.
+  - the sentence each mode points at is still in pa8/lowir.md.
 
 So everything the comparison rejects is a written convention, and
 everything it absorbs is a written normalization.  A new rejection with no
@@ -29,7 +29,7 @@ REPO = os.path.dirname(SCRIPTS)
 sys.path.insert(0, SCRIPTS)
 from lowir_seam_rewrite import MODES, rewrite  # noqa: E402
 
-CONTRACT = os.path.join(REPO, 'pa13', 'lowir.md')
+CONTRACT = os.path.join(REPO, 'pa8', 'lowir.md')
 
 
 def parse_arguments(argv):
@@ -131,7 +131,7 @@ def main(argv):
             passed, total, changed, failure = run_mode(assignment, lane, mode, scratch)
             rows.append((mode, kind, passed, total, changed, failure))
             if ' '.join(rule.split()).lower() not in contract:
-                problems.append(f'{mode}: the rule "{rule}" is not stated in pa13/lowir.md')
+                problems.append(f'{mode}: the rule "{rule}" is not stated in pa8/lowir.md')
             if total == 0:
                 problems.append(f'{mode}: {failure}')
             elif kind in ('presentation', 'normalization'):

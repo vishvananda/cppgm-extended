@@ -1080,7 +1080,7 @@ void RetainedTemplateValidator::VisitSimple(NodeId node, std::size_t scope,
 	const NodeId call_argument = RetainedOperatorCallArgument(node);
 	if (call_argument != kNoNode)
 	{
-		// PA10 retains `qualified::operator=(argument);` in the declaration
+		// PA5 retains `qualified::operator=(argument);` in the declaration
 		// branch.  It is resolved as a call during concrete replay and must not
 		// publish the parenthesized argument as a fresh local declaration.
 		const NameId name = analyzer_.program_->names.Intern(

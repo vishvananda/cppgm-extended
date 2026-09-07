@@ -24,17 +24,17 @@ use CppgmBatchWorker qw(
 	write_numeric_status
 );
 
-# PA13 behavior tests translate a LowIR program to CY86, assemble it, and run
-# the result.  The translator is the assignment tool under test; the assembler
-# is the PA9 tool, which supplies the execution the LowIR text alone cannot.
+# Construct student LowIR, combine it with the fixture's calling program,
+# then compile and execute it with the supplied native backend. The fixture
+# does not supply the function implementation the student is asked to build.
 sub process_one_test
 {
-	my ($assembler, $suffix, $test, $worker_out, $worker_in) = @_;
+	my ($app, $backend, $suffix, $test, $worker_out, $worker_in) = @_;
 	note_progress_state('build', $test);
 	my $test_base = $test;
 	$test_base =~ s/\.t$//;
 
-	unlink(glob("$test_base.$suffix"));
+	unlink(glob("$test_base.$suffix.lowir"));
 	unlink(glob("$test_base.$suffix.program"));
 	unlink(glob("$test_base.$suffix.program.exit_status"));
 	unlink(glob("$test_base.$suffix.program.stdout"));
@@ -48,20 +48,33 @@ sub process_one_test
 	write_file($impl_stdout, '');
 	write_file($impl_stderr, '');
 
-	my $cy86_source = "$test_base.$suffix";
+	my $lowir_source = "$test_base.$suffix.lowir";
+	open(my $exercise_file, '<', "$test_base.exercise")
+		or die "Missing exercise name for $test: $!\n";
+	my $exercise = do { local $/; <$exercise_file> };
+	close($exercise_file);
+	$exercise =~ s/\s+$//;
+	die "Invalid exercise name for $test\n" if $exercise !~ /\A[a-z]+\z/;
 	my $build_timeout = get_timeout_from_env("CPPGM_BUILD_TEST_TIMEOUT_SEC", 30);
-	my $impl_status = submit_cli_request($worker_in,
+	my $impl_status = defined($worker_in) ? submit_cli_request($worker_in,
 	                                     $worker_out,
 	                                     $impl_stdout,
 	                                     $impl_stderr,
 	                                     { CPPGM_BATCH_TIMEOUT_SEC => $build_timeout },
-	                                     '-o', $cy86_source, $test);
+	                                     '--exercise', $exercise, '-o', $lowir_source) :
+		run_command_capture(
+			cmd => [$app, CppgmBatchWorker::app_args_for($app),
+			        '--exercise', $exercise, '-o', $lowir_source],
+			stdout => $impl_stdout,
+			stderr => $impl_stderr,
+			timeout => $build_timeout,
+		);
 
 	if ($impl_status == 0)
 	{
-		note_progress_state('assemble', $test);
+		note_progress_state('native', $test);
 		$impl_status = run_command_capture(
-			cmd => [$assembler, '-o', "$test_base.$suffix.program", $cy86_source],
+			cmd => [$backend, '-O0', '-o', "$test_base.$suffix.program", $lowir_source, $test],
 			stdout => $impl_stdout,
 			stderr => $impl_stderr,
 			timeout => $build_timeout,
@@ -92,23 +105,29 @@ sub process_one_test
 
 sub run_program_tests
 {
-	my ($app, $assembler, $suffix, $tests, $verbose) = @_;
-	my ($worker_pid, $worker_out, $worker_in) = open_worker($app);
+	my ($app, $backend, $suffix, $tests, $verbose) = @_;
+	my ($worker_pid, $worker_out, $worker_in);
+	if ($ENV{CPPGM_BATCH_TESTS} &&
+		(!defined($ENV{CPPGM_TEST_RUNNER}) || $ENV{CPPGM_TEST_RUNNER} ne '0'))
+	{
+		($worker_pid, $worker_out, $worker_in) = open_worker($app);
+	}
 	for my $test (@{$tests})
 	{
 		print "Running $test...\n" if $verbose;
-		process_one_test($assembler, $suffix, $test, $worker_out, $worker_in);
+		process_one_test($app, $backend, $suffix, $test, $worker_out, $worker_in);
 	}
-	close_worker($worker_pid, $worker_out, $worker_in);
+	close_worker($worker_pid, $worker_out, $worker_in) if defined($worker_pid);
 }
 
 if (scalar(@ARGV) != 4)
 {
-	die "Usage: run_lowir_program_tests_worker.pl <app> <assembler> <suffix> <testlocation>";
+	die "Usage: run_lowir_program_tests_worker.pl <app> <native-backend> <suffix> <testlocation>";
 }
 
-my ($app, $assembler, $suffix, $tests_root) = @ARGV;
+my ($app, $backend, $suffix, $tests_root) = @ARGV;
 ensure_test_app_available($app, $suffix, $tests_root);
+ensure_test_app_available($backend, $suffix, $tests_root);
 my @tests = collect_tests($tests_root, qr/\.t$/);
 my $verbose = $ENV{VERBOSE} || $ENV{CPGM_TEST_VERBOSE};
 my $keep_going = $ENV{KEEP_GOING};
@@ -123,7 +142,7 @@ $jobs = $ntests if $jobs > $ntests;
 if ($jobs <= 1)
 {
 	clear_progress_state();
-	run_program_tests($app, $assembler, $suffix, \@tests, $verbose);
+	run_program_tests($app, $backend, $suffix, \@tests, $verbose);
 	clear_progress_state();
 	exit 0;
 }
@@ -147,7 +166,7 @@ for my $shard (@shards)
 	die "fork failed: $!" if !defined($pid);
 	if ($pid == 0)
 	{
-		run_program_tests($app, $assembler, $suffix, $shard, $verbose);
+		run_program_tests($app, $backend, $suffix, $shard, $verbose);
 		exit 0;
 	}
 	push @pids, $pid;

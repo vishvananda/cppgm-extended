@@ -19,7 +19,7 @@ make inception
 - `make test-paN` runs one assignment.
 - `make test-report-through-paN` runs the report suite through PA N.
 - `make test-report` runs the broad keep-going report.
-- `make inception` runs the final PA39 self-host comparison.
+- `make inception` runs the final PA34 self-host comparison.
 
 The exit criterion for PA N is a clean root `make test-report-through-paN`.
 
@@ -51,7 +51,7 @@ make CXX=g++ CPPGM_HOST_CXX=g++
 ```
 
 For normal host builds, `CXX` and `CPPGM_HOST_CXX` should usually match. For
-PA39 self-host work, `CXX` may be `../dev/cppgm++` while `CPPGM_HOST_CXX`
+PA34 self-host work, `CXX` may be `../dev/cppgm++` while `CPPGM_HOST_CXX`
 remains a real host compiler.
 
 ## Test Locations
@@ -61,7 +61,7 @@ remains a real host compiler.
   object-inspection, link, driver).
 - `paN/tests/controls/` holds focused property checks that have no complete
   reference output; the assignment's Makefile routes each to its checker.
-- `paN/tests/regression/` (PA29, PA37 and PA38) pins the course solution's
+- `paN/tests/regression/` (PA24, PA32 and PA33) pins the course solution's
   own outputs and its pass-specific controls.  It runs with `make test` and
   with `make test-regression`, but it is not part of the assignment's
   contract: a fixture whose only justification is the shape the course
@@ -76,12 +76,12 @@ feature the test exercises.
 
 ## Fixture Numbering
 
-A fixture's name starts with a three-digit number.  From PA10 on the number
+A fixture's name starts with a three-digit number.  From PA5 on the number
 is the cluster of the feature the fixture exercises, a multiple of one
 hundred (`100-`, `200-`, ...); the assignment's handout describes what each
 cluster covers, and `scripts/audit_pa_feature_placement.py` checks that a
 fixture sits in the cluster of the latest feature it uses and in the
-assignment that owns it.  PA1 to PA9 number more finely, with the tens
+assignment that owns it.  PA1 to PA4 number more finely, with the tens
 naming a sub-group inside a cluster.  The regression lane and the controls
 are outside the audit and keep whatever number says most about them.
 
@@ -102,13 +102,18 @@ Reference outputs, stdout refs, exit-status refs, and inspect refs are the test
 oracle. Do not edit them to hide an incomplete implementation.
 
 Some assignment handouts retain informational output that is not a grading
-oracle. In particular, PA29 behavior tests include the reference MIR so
+oracle. In particular, PA24 behavior tests include the reference MIR so
 students can inspect it, but grade only compiler and generated-program
 outcomes. The owning README identifies which sidecars are informational.
 
 Reference binaries such as `pptoken-ref` or `cppgm++-ref` are provided for
 observing expected behavior and regenerating reference fixtures. They must not
 be used by your compiler implementation.
+
+PA8's grading harness uses `lowir-ref` to compare LowIR roundtrips and
+`lowir2native-ref` to execute the student's constructed LowIR. These are
+provided grading tools. Implement the required LowIR machinery and later C++
+lowering yourself; the student compiler must not delegate that work to them.
 
 The reference binaries are not perfect. Only checked-in fixtures gate an
 assignment. Synthesizing new inputs is fine, but reference behavior outside

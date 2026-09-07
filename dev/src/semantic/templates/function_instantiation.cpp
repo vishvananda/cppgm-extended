@@ -1767,7 +1767,7 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 	const std::vector<TypeId>& arguments)
 {
 	if (index >= function_templates_.size())
-		ThrowInternalCompilerError("invalid PA12 function template pattern");
+		ThrowInternalCompilerError("invalid PA7 function template pattern");
 	const FunctionTemplatePattern& pattern = function_templates_[index];
 	std::vector<std::uint32_t> offsets;
 	if (!BuildFunctionTemplateArgumentOffsets(
@@ -1791,7 +1791,7 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 	const std::vector<TemplateArgument>& arguments)
 {
 	if (index >= function_templates_.size())
-		ThrowInternalCompilerError("invalid PA12 function template pattern");
+		ThrowInternalCompilerError("invalid PA7 function template pattern");
 	const FunctionTemplatePattern& pattern = function_templates_[index];
 	std::vector<std::uint32_t> offsets;
 	if (!BuildFunctionTemplateArgumentOffsets(
@@ -2052,7 +2052,7 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 	const std::vector<std::uint32_t>& parameter_offsets)
 {
 	if (index >= function_templates_.size())
-		ThrowInternalCompilerError("invalid PA12 function template pattern");
+		ThrowInternalCompilerError("invalid PA7 function template pattern");
 	const FunctionTemplatePattern& pattern = function_templates_[index];
 	// An error raised while analysing this body points at the pattern's
 	// source; the diagnostic names the specialization that reached it.

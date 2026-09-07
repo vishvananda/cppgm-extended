@@ -149,8 +149,8 @@ jobs:
           {
             for exe in \
               abimangle \
-              pptoken posttoken ctrlexpr macro preproc recog nsdecl nsinit cy86 \
-              cppgm++ lowir2cy86 lowiropt lowir2native; do
+              pptoken posttoken ppexpr preproc \
+              cppgm++ lowir lowiropt lowir2native; do
               printf 'dev/%s\n' "$exe"
             done
             if [ -d obj/generated ]; then
@@ -230,9 +230,9 @@ jobs:
             name: test-debuginfo
             command: make test-debuginfo-nobuild
             timeout: 60
-          - id: selfhost-through-pa10
-            name: test-through-pa10
-            command: make -C pa39 test-through-pa10 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
+          - id: selfhost-through-pa5
+            name: test-through-pa5
+            command: make -C pa34 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX="$CPPGM_HOST_CXX" CPPGM_STDLIB_FLAGS="$CPPGM_STDLIB_FLAGS"
             timeout: 90
 
     env:
@@ -295,14 +295,14 @@ jobs:
         run: ${{ matrix.suite.command }}
 
       - name: Package cppgm++ self compiler
-        if: matrix.suite.id == 'selfhost-through-pa10'
+        if: matrix.suite.id == 'selfhost-through-pa5'
         run: |
           set -euo pipefail
           source_sha="$GITHUB_SHA"
           bundle="$RUNNER_TEMP/cppgm-self"
           upload="$RUNNER_TEMP/cppgm-self-upload"
           mkdir -p "$bundle/bin" "$upload"
-          cp obj/pa39/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
+          cp obj/pa34/bin/selfhost/cppgm++-self "$bundle/bin/cppgm++-self"
           chmod 755 "$bundle/bin/cppgm++-self"
           {
             printf 'source_sha=%s\n' "$source_sha"
@@ -337,7 +337,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload cppgm++ self compiler
-        if: matrix.suite.id == 'selfhost-through-pa10'
+        if: matrix.suite.id == 'selfhost-through-pa5'
         uses: actions/upload-artifact@v6
         with:
           name: ${{ env.SELFHOST_ARTIFACT_NAME }}

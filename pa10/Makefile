@@ -1,5 +1,5 @@
 TARGET = cppgm++
-TARGET_ARGS = --emit-ast
+TARGET_ARGS = --emit-lowir -O0
 export CPPGM_APP_ARGS := $(TARGET_ARGS)
 CXX = g++
 CPPGM_STDLIB_FLAGS ?=
@@ -18,6 +18,7 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
+CONTROL_TEST_ROOT ?= tests/controls
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 
@@ -64,9 +65,27 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
+	@if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
+		perl ../scripts/check_pa10_lowir_controls.pl $(CPPGM_TEST_APP) \
+			"$(CONTROL_TEST_ROOT)"; \
+	fi
 
 ref-test:
 	@$(REF_TEST_RUN)
+
+REF_TEST_RUN = case "$(TEST)" in \
+	$(CONTROL_TEST_ROOT)/*) echo "$(TEST): focused LowIR predicate has no reference sidecar" ;; \
+	*) scripts/run_all_tests.pl $(REF_TEST_APP) ref "$(if $(strip $(TEST)),$(TEST),tests)" ;; \
+esac
+
+CHECK_RUN = case "$(TEST)" in \
+	$(CONTROL_TEST_ROOT)/*) perl ../scripts/check_pa10_lowir_controls.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
+esac
+CHECK_COMPARE = case "$(TEST)" in \
+	$(CONTROL_TEST_ROOT)/*) true ;; \
+	*) scripts/compare_results.pl ref check "$(TEST)" ;; \
+esac
 
 include ../scripts/pa_run_check_targets.mk
 

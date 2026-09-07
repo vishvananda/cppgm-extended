@@ -60,7 +60,7 @@ def write_text(path: pathlib.Path, text: str) -> None:
 class CompareResultsCommonTests(unittest.TestCase):
     def test_lowir_compare_accepts_explicit_declarations_and_readonly_globals(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "100"
             write_text(testbase.with_suffix(".t"), "extern int g;\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -89,7 +89,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_out_of_order_reference_lowir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "101"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -114,7 +114,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_out_of_order_generated_lowir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "102"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -146,7 +146,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_direct_compare_rejects_out_of_order_generated_lowir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "102b"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -186,7 +186,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_reordered_function_definitions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "102c"
             write_text(testbase.with_suffix(".t"), "int helper(); int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -226,7 +226,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_failure_writes_canonical_order_diff(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "102c2"
             write_text(testbase.with_suffix(".t"), "int helper(); int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -280,7 +280,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_reordered_structured_global_data(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "102c3"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -325,7 +325,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_same_name_pairing_requires_signature_match(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "102e"
             write_text(testbase.with_suffix(".t"), "template overload names;\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -377,7 +377,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_move_constructor_before_copy_constructor(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "103"
             write_text(testbase.with_suffix(".t"), "struct Box; int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -409,7 +409,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_destructor_complete_before_deleting_entry(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "104"
             write_text(testbase.with_suffix(".t"), "struct Box; int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -441,7 +441,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_vtable_deleting_destructor_before_complete_slot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "105"
             write_text(testbase.with_suffix(".t"), "struct Box; int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -481,7 +481,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_init_after_fini(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "106"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -513,7 +513,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_missing_explicit_declaration(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "110"
             write_text(testbase.with_suffix(".t"), "extern int g;\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -535,7 +535,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_explicit_object_export_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "125"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -558,7 +558,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_ignores_late_export_names_and_hints(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "126"
             write_text(testbase.with_suffix(".t"), "int f(); int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -616,7 +616,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_direct_text_compare_env_disables_relaxed_compare(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "126b"
             write_text(testbase.with_suffix(".t"), "int f(); int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -664,7 +664,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_still_requires_call_boundary_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "127"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -703,7 +703,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_still_requires_same_function_identity_graph(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "128"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -754,7 +754,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_pairs_reordered_functions_by_structure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
+            root = pathlib.Path(tmp) / "pa18"
             testbase = root / "tests" / "200"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -808,7 +808,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_invalid_role_owner(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "130"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -831,7 +831,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_direct_object_return_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "145"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -866,7 +866,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_indirect_call_signature_returning_object(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "146"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -887,7 +887,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_invalid_parameter_pass_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "150"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -908,7 +908,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_invalid_parameter_capture_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "156"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -929,7 +929,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_invalid_parameter_access_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "158"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -950,7 +950,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_invalid_parameter_alias_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "159b"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -971,7 +971,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_variadic_function_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "160"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -997,7 +997,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_switch_terminator(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "162"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1024,7 +1024,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_global_storage_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "166"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1047,7 +1047,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_alignment_aware_storage_ops(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "167"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1069,7 +1069,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_bad_storage_op_alignment(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "168"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1091,7 +1091,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_fixed_arity_call_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "170"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1118,7 +1118,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_linkage_metadata_on_call_signature(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "175"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1146,7 +1146,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_trivial_lifecycle_metadata_on_call_signature(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "175b"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1174,7 +1174,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_accepts_indirect_call_signature_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "180"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1201,7 +1201,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_lowir_compare_rejects_missing_indirect_call_signature_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa19"
+            root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "190"
             write_text(testbase.with_suffix(".t"), "int main();\n")
             write_text(testbase.with_suffix(".ref.exit_status"), "EXIT_SUCCESS\n")
@@ -1229,40 +1229,40 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_program_compare_reports_implementation_timeout(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa9"
+            root = pathlib.Path(tmp) / "pa8"
             testbase = root / "tests" / "100"
-            write_text(pathlib.Path(str(testbase) + ".t.1"), "noop\n")
+            write_text(pathlib.Path(str(testbase) + ".t"), "caller\n")
             write_text(pathlib.Path(str(testbase) + ".ref.impl.exit_status"), "0\n")
             write_text(pathlib.Path(str(testbase) + ".my.impl.exit_status"), "124\n")
-            result = run_compare("program_t1", root, "tests")
+            result = run_compare("program_t", root, "tests")
             output = result.stdout + result.stderr
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("implementation timed out", output)
 
     def test_program_compare_reports_implementation_oom(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa9"
+            root = pathlib.Path(tmp) / "pa8"
             testbase = root / "tests" / "105"
-            write_text(pathlib.Path(str(testbase) + ".t.1"), "noop\n")
+            write_text(pathlib.Path(str(testbase) + ".t"), "caller\n")
             write_text(pathlib.Path(str(testbase) + ".ref.impl.exit_status"), "0\n")
             write_text(pathlib.Path(str(testbase) + ".my.impl.exit_status"), "125\n")
-            result = run_compare("program_t1", root, "tests")
+            result = run_compare("program_t", root, "tests")
             output = result.stdout + result.stderr
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("implementation ran out of memory", output)
 
     def test_program_compare_reports_program_timeout_before_stdout_mismatch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa9"
+            root = pathlib.Path(tmp) / "pa8"
             testbase = root / "tests" / "110"
-            write_text(pathlib.Path(str(testbase) + ".t.1"), "noop\n")
+            write_text(pathlib.Path(str(testbase) + ".t"), "caller\n")
             write_text(pathlib.Path(str(testbase) + ".ref.impl.exit_status"), "0\n")
             write_text(pathlib.Path(str(testbase) + ".my.impl.exit_status"), "0\n")
             write_text(pathlib.Path(str(testbase) + ".ref.program.exit_status"), "0\n")
             write_text(pathlib.Path(str(testbase) + ".my.program.exit_status"), "124\n")
             write_text(pathlib.Path(str(testbase) + ".ref.program.stdout"), "finished\n")
             write_text(pathlib.Path(str(testbase) + ".my.program.stdout"), "")
-            result = run_compare("program_t1", root, "tests")
+            result = run_compare("program_t", root, "tests")
             output = result.stdout + result.stderr
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("generated program timed out", output)
@@ -1489,7 +1489,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_mir_structural_mode_requires_checked_in_cmir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
+            root = pathlib.Path(tmp) / "pa18"
             testbase = root / "tests" / "structural" / "100"
             write_text(testbase.with_suffix(".t"), "noop\n")
             write_text(testbase.with_suffix(".ref.impl.exit_status"), "0\n")
@@ -1506,7 +1506,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_mir_mode_without_checked_in_mir_compares_program_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
+            root = pathlib.Path(tmp) / "pa18"
             testbase = root / "tests" / "behavior" / "100"
             write_text(testbase.with_suffix(".t"), "noop\n")
             write_text(testbase.with_suffix(".ref.impl.exit_status"), "0\n")
@@ -1532,7 +1532,7 @@ class CompareResultsCommonTests(unittest.TestCase):
 
     def test_mir_structural_failure_writes_debug_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            root = pathlib.Path(tmp) / "pa23"
+            root = pathlib.Path(tmp) / "pa18"
             testbase = root / "tests" / "structural" / "420"
             write_text(testbase.with_suffix(".t"), "noop\n")
             write_text(testbase.with_suffix(".ref.impl.exit_status"), "0\n")

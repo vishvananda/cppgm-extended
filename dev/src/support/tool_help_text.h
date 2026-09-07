@@ -45,10 +45,11 @@ inline const char * cppgm_help_text()
       "  --target <target>\n";
 }
 
-inline const char * lowir2cy86_help_text()
+inline const char * lowir_help_text()
 {
   return
-      "usage: lowir2cy86 -o <outfile> <lowirfile>...\n"
+      "usage: lowir -o <outfile> <lowirfile>...\n"
+      "   or: lowir --exercise <sum|swap|call> -o <outfile>\n"
       "\n"
       "query flags:\n"
       "  --help, -h\n"

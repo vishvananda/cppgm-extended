@@ -46,18 +46,13 @@ my %explicit_throw_type = map { $_ => 1 } qw(
 my %terminal_allowlist = (
 	'dev/abimangle.cpp' => 1,
 	'dev/cppgm++.cpp' => 1,
-	'dev/ctrlexpr.cpp' => 1,
-	'dev/cy86.cpp' => 1,
-	'dev/lowir2cy86.cpp' => 1,
+	'dev/ppexpr.cpp' => 1,
+	'dev/lowir.cpp' => 1,
 	'dev/lowir2native.cpp' => 1,
 	'dev/lowiropt.cpp' => 1,
-	'dev/macro.cpp' => 1,
-	'dev/nsdecl.cpp' => 1,
-	'dev/nsinit.cpp' => 1,
 	'dev/posttoken.cpp' => 1,
 	'dev/pptoken.cpp' => 1,
 	'dev/preproc.cpp' => 1,
-	'dev/recog.cpp' => 2,
 );
 
 # std::stoll/stoull expose only these standard types.  The ABI parser converts
@@ -73,7 +68,6 @@ my %translation_allowlist = (
 my %lightweight_error_header = map { $_ => 1 } qw(
 	dev/src/abi/itanium/abi_mangle_errors.h
 	dev/src/compiler_object/errors.h
-	dev/src/cy86/errors.h
 	dev/src/lowering/support/errors.h
 	dev/src/lowir/optimize/errors.h
 	dev/src/native/errors.h

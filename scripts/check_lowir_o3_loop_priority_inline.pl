@@ -157,8 +157,8 @@ for my $test (@tests)
 	die "$test: shared callable body was not retained for non-loop calls\n"
 		if call_count($retained, 'advance') < 256;
 
-	my @records = grep { /^pa37_opt_stats(?:\s|$)/ } split(/\n/, $stats);
-	die "$test: expected one pa37_opt_stats record, found " .
+	my @records = grep { /^pa32_opt_stats(?:\s|$)/ } split(/\n/, $stats);
+	die "$test: expected one pa32_opt_stats record, found " .
 		scalar(@records) . "\n" if scalar(@records) != 1;
 	die "$test: expected at least one loop-priority pair consideration\n"
 		if stat_value($test, $records[0],

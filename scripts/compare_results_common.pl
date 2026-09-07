@@ -7,6 +7,9 @@ use File::Find;
 use File::Basename qw(basename dirname);
 use Scalar::Util qw(looks_like_number);
 use Text::ParseWords qw(shellwords);
+use FindBin;
+use lib $FindBin::Bin;
+use CppgmBatchWorker ();
 
 sub collect_tests
 {
@@ -161,7 +164,7 @@ sub canonicalize_machine_ir
 	my ($data) = @_;
 	return undef if !defined($data);
 	$data = normalize_machine_ir($data);
-	# Focused PA38 properties validate non-default entry alignment.  Keep the
+	# Focused PA33 properties validate non-default entry alignment.  Keep the
 	# legacy structural MIR oracle concerned with instruction and frame shape.
 	$data =~ s/^\s+code_alignment\s+\d+\n//mg;
 	# The frame's total size is a layout choice like its displacements: a
@@ -573,6 +576,36 @@ sub compare_text
 	return ($ref_data eq $my_data
 		? (1, undef)
 		: (0, "ERROR: checked output does not match reference"));
+}
+
+sub compare_lowir_roundtrip
+{
+	my ($ref_suffix, $my_suffix, $testbase) = @_;
+	my ($ok, $message) = compare_text(qr/\.t$/, $ref_suffix, $my_suffix, $testbase);
+	return ($ok, $message) if $ok ||
+		$message ne 'ERROR: checked output does not match reference' ||
+		env_flag_enabled('CPPGM_LOWIR_DIRECT_TEXT_COMPARE');
+
+	# Parse with the supplied LowIR reader rather than applying source-lowering
+	# relaxations, which may discard declarations or impose backend constraints.
+	my $checker = $ENV{CPPGM_LOWIR_CHECK_APP} // '../dev/lowir-ref';
+	CppgmBatchWorker::ensure_test_app_available($checker, 'ref', "$testbase.t");
+	my @canonical;
+	for my $suffix ($ref_suffix, $my_suffix)
+	{
+		my $output = "$testbase.$my_suffix.roundtrip.$suffix.lowir";
+		unlink($output);
+		my $status = CppgmBatchWorker::run_command_capture(
+			cmd => [$checker, '-o', $output, "$testbase.$suffix"],
+			stdout => "$output.stdout",
+			stderr => "$output.stderr",
+			timeout => CppgmBatchWorker::get_timeout_from_env('CPPGM_BUILD_TEST_TIMEOUT_SEC', 30));
+		return (0, "ERROR: $suffix LowIR cannot be read; inspect $output.stderr")
+			if $status != 0 || !-f $output;
+		push @canonical, getdata($output);
+	}
+	return $canonical[0] eq $canonical[1] ? (1, undef) :
+		(0, 'ERROR: LowIR roundtrip changed the represented program');
 }
 
 sub lowir_symbol_basename
@@ -2468,7 +2501,7 @@ sub canonicalize_lowir_local_names_for_compare
 # ---- literals by value, commutative operands in either order ----
 #
 # The relaxed comparison absorbs two spellings a student would not expect
-# to matter (pa13/lowir.md, "What The Comparison Absorbs"): a literal is
+# to matter (pa8/lowir.md, "What The Comparison Absorbs"): a literal is
 # its value, not its spelling, and the operand order of a commutative
 # operation does not matter.  Everything below implements those two
 # sentences and nothing more.
@@ -3459,7 +3492,7 @@ sub canonicalize_lowir_generated_root_annotations_for_compare
 sub canonicalize_lowir_pair_for_compare
 {
 	my ($ref_data, $my_data) = @_;
-	# Source-language copy-elision permission is verified by PA17/PA37
+	# Source-language copy-elision permission is verified by PA12/PA32
 	# structural controls.  Older exact O0 fixtures intentionally remain a
 	# baseline for the ordinary call and lifetime behavior.
 	$ref_data =~ s/\s+\[\s*elision\s*=\s*copy\s*\]//g;
@@ -4139,9 +4172,9 @@ my $host_tag = host_platform_tag();
 my %patterns = (
 	text_t => qr/\.t$/,
 	lowir_t => qr/\.t$/,
+	lowir_roundtrip_t => qr/\.t$/,
 	text_t1 => qr/\.t\.1$/,
-	lowir_behavior_t => qr/\.t$/,
-	program_t1 => qr/\.t\.1$/,
+	program_t => qr/\.t$/,
 	mir_t => qr/\.t$/,
 	mir_behavior_t => qr/\.t$/,
 	mir_canonical_t => qr/\.t$/,
@@ -4216,6 +4249,11 @@ for my $test (@tests)
 			($ok, $message) = compare_text(qr/\.t$/, $ref_suffix, $my_suffix, $testbase, 0);
 			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix");
 		}
+		elsif ($mode eq 'lowir_roundtrip_t')
+		{
+			($ok, $message) = compare_lowir_roundtrip($ref_suffix, $my_suffix, $testbase);
+			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix");
+		}
 		elsif ($mode eq 'lowir_t')
 		{
 			($ok, $message, $hint) =
@@ -4228,52 +4266,13 @@ for my $test (@tests)
 			($ok, $message) = compare_text(qr/\.t\.1$/, $ref_suffix, $my_suffix, $testbase, 1);
 			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix");
 		}
-		elsif ($mode eq 'lowir_behavior_t')
+		elsif ($mode eq 'program_t')
 		{
-			my $ref = "$testbase.$ref_suffix";
-			my $my = "$testbase.$my_suffix";
-			my $ref_impl_raw = getdata("$ref.impl.exit_status");
-			my $my_impl_raw = getdata("$my.impl.exit_status");
-			my $ref_impl = canonical_exit_status($ref_impl_raw);
-			my $my_impl = canonical_exit_status($my_impl_raw);
-			($ok, $message) = (0, status_mismatch_message("implementation", $ref_impl_raw, $my_impl_raw))
-				if !defined($ref_impl) || !defined($my_impl) || $ref_impl ne $my_impl;
-			if (!defined($ok))
-			{
-				if ($ref_impl ne 'EXIT_SUCCESS')
-				{
-					($ok, $message) = (1, undef);
-				}
-				else
-				{
-					my $ref_text = getdata($ref);
-					my $my_text = getdata($my);
-					if (!defined($ref_text) || !defined($my_text))
-					{
-						($ok, $message) = (0,
-							"ERROR: missing generated CY86 translation");
-					}
-					elsif ($ref_text ne $my_text)
-					{
-						($ok, $message) = (0,
-							"ERROR: generated CY86 does not match reference");
-						$hint = checked_output_hint($ref, $my);
-					}
-					else
-					{
-						my ($prog_ok, $prog_message) =
-							compare_program_outputs($ref, $my, 'generated');
-						($ok, $message) = ($prog_ok, $prog_message);
-						$hint = program_output_hint($ref, $my);
-					}
-				}
-			}
-		}
-		elsif ($mode eq 'program_t1')
-		{
-			($ok, $message) = compare_program_outputs("$testbase.$ref_suffix", "$testbase.$my_suffix");
+			($ok, $message) = compare_program_outputs(
+				"$testbase.$ref_suffix", "$testbase.$my_suffix", 'generated');
 			$hint = program_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix");
 		}
+
 		elsif ($mode eq 'mir_t')
 		{
 			my $ref = "$testbase.$ref_suffix";

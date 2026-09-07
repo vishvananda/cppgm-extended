@@ -523,7 +523,7 @@ bool TypeTable::IsNamed(TypeId type) const
 const TypeRecord& TypeTable::Get(TypeId type) const
 {
 	if (type == kNoType || type >= types_.size())
-		ThrowInternalCompilerError("invalid PA11 type identity");
+		ThrowInternalCompilerError("invalid PA6 type identity");
 	return types_[type];
 }
 
@@ -992,7 +992,7 @@ ScopeId Program::NewScope(ScopeId parent, ScopeKind kind, NameId name,
 	EntityId entity, ScopeId output_parent)
 {
 	if (scopes_.size() >= kNoScope)
-		ThrowSemanticResourceLimit("too many PA11 scopes");
+		ThrowSemanticResourceLimit("too many PA6 scopes");
 	const ScopeId scope = static_cast<ScopeId>(scopes_.size());
 	scopes_.push_back(ScopeRecord());
 	ScopeRecord& record = scopes_.back();
@@ -1102,7 +1102,7 @@ void Program::AddUsingEdge(ScopeId owner, ScopeId target)
 	++using_index_probes;
 	if (using_edges_.size() >=
 		std::numeric_limits<std::uint32_t>::max())
-		ThrowSemanticResourceLimit("too many PA11 using edges");
+		ThrowSemanticResourceLimit("too many PA6 using edges");
 	ScopeId owner_namespace = owner;
 	while (owner_namespace != kNoScope &&
 		scopes_[owner_namespace].kind != SCOPE_NAMESPACE)
@@ -1342,7 +1342,7 @@ EntityId Program::NewEntity(NameId emission_name, NamedFlavor flavor,
 	EntityEmissionNameForm emission_name_form)
 {
 	if (entities.size() >= kNoEntity)
-		ThrowSemanticResourceLimit("too many PA11 entities");
+		ThrowSemanticResourceLimit("too many PA6 entities");
 	const EntityId entity = static_cast<EntityId>(entities.size());
 	entities.push_back(EntityRecord());
 	base_jump_offsets_.push_back(0);
@@ -1458,7 +1458,7 @@ BindingId Program::AddBinding(ScopeId owner, BindingKind kind, NameId name,
 		}
 	}
 	if (bindings.size() >= kNoBinding)
-		ThrowSemanticResourceLimit("too many PA11 bindings");
+		ThrowSemanticResourceLimit("too many PA6 bindings");
 	const BindingId binding = static_cast<BindingId>(bindings.size());
 	bindings.push_back(BindingRecord());
 	BindingRecord& record = bindings.back();
@@ -1497,7 +1497,7 @@ BindingId Program::AddUnindexedBinding(ScopeId owner, BindingKind kind,
 	NameId name, TypeId type, BindingId canonical)
 {
 	if (bindings.size() >= kNoBinding)
-		ThrowSemanticResourceLimit("too many PA11 bindings");
+		ThrowSemanticResourceLimit("too many PA6 bindings");
 	const BindingId binding = static_cast<BindingId>(bindings.size());
 	bindings.push_back(BindingRecord());
 	BindingRecord& record = bindings.back();
@@ -1533,7 +1533,7 @@ BindingLayoutFact& Program::MutableBindingLayout(BindingRecord& binding)
 	if (binding.layout_fact == kNoBindingLayoutFact)
 	{
 		if (binding_layout_facts_.size() >= kNoBindingLayoutFact)
-			ThrowSemanticResourceLimit("too many PA11 binding layout facts");
+			ThrowSemanticResourceLimit("too many PA6 binding layout facts");
 		binding.layout_fact = static_cast<std::uint32_t>(
 			binding_layout_facts_.size());
 		binding_layout_facts_.push_back(BindingLayoutFact());
@@ -1545,7 +1545,7 @@ BindingId Program::AddOutputTypeBinding(ScopeId owner, NameId display_name,
 	TypeId type, NamedFlavor display)
 {
 	if (bindings.size() >= kNoBinding)
-		ThrowSemanticResourceLimit("too many PA11 bindings");
+		ThrowSemanticResourceLimit("too many PA6 bindings");
 	const BindingId binding = static_cast<BindingId>(bindings.size());
 	bindings.push_back(BindingRecord());
 	BindingRecord& record = bindings.back();
@@ -1941,14 +1941,14 @@ bool Program::MergeLookup(LookupResult* result,
 			(!merge_equivalent_namespace_types || result->type == kNoType)))
 	{
 		if (tolerate_ambiguity) return false;
-		ThrowSemanticError("ambiguous PA11 lookup");
+		ThrowSemanticError("ambiguous PA6 lookup");
 	}
 	if (result->ordinary == kNoBinding && candidate.ordinary == kNoBinding)
 		return true;
 	if (result->ordinary == kNoBinding || candidate.ordinary == kNoBinding)
 	{
 		if (tolerate_ambiguity) return false;
-		ThrowSemanticError("ambiguous PA11 lookup");
+		ThrowSemanticError("ambiguous PA6 lookup");
 	}
 	const bool result_functions =
 		bindings[result->ordinary].kind == BIND_FUNCTION;
@@ -1961,7 +1961,7 @@ bool Program::MergeLookup(LookupResult* result,
 				bindings[candidate.ordinary].canonical)
 			return true;
 		if (tolerate_ambiguity) return false;
-		ThrowSemanticError("ambiguous PA11 lookup");
+		ThrowSemanticError("ambiguous PA6 lookup");
 	}
 	for (std::size_t i = 0; i < candidate.OrdinaryCount(); ++i)
 		result->AddOrdinary(candidate.OrdinaryAt(i));

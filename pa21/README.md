@@ -3,22 +3,17 @@
 ### Overview
 
 Write a C++ application called `cppgm++` that takes as input a set of C++ Source
-Files, executes translation phases 1 through 7, parses them as PA10/PA21 translation
-units, reuses the PA11-PA20 semantic foundation, builds on the PA15-PA20 LowIR lowering
-path, adds the full `constexpr` / constant-evaluation layer, and writes LowIR text.
+Files, executes translation phases 1 through 7, parses them as PA5/PA21 translation units,
+reuses the PA6-PA7 semantic foundation, builds on the PA10-PA20 LowIR lowering path,
+adds the PA21 advanced-language slice, and writes LowIR text.
 
-PA21 extends PA20's first practical metaprogramming slice into a full language-level
-constant-evaluation milestone. Its job is to make `constexpr` semantics a first-class part
-of the compiler rather than leaving constant evaluation as only the small pragmatic subset
-needed by PA20 template arguments and `static_assert`.
+PA21 finishes the deferred first-tier language features that sit on top of the existing
+single-inheritance object model:
 
-To complete PA21, implement these goals:
-
-- `constexpr` function evaluation
-- `constexpr` constructors, member functions, and variables
-- constant initialization and object-valued constant evaluation
-- a reusable constant-expression engine for both ordinary source semantics and later
-  template machinery
+- capturing lambdas
+- `std::initializer_list` semantic interoperation
+- RTTI and `typeid`
+- pointer-form `dynamic_cast`
 
 PA21 still produces LowIR. It does not introduce a new output format.
 
@@ -28,64 +23,69 @@ You should complete Programming Assignment 20 before starting this assignment.
 
 You will want to reuse:
 
-- the preprocessing and tokenization pipeline from PA1-PA6
-- the PA10 AST as the syntax boundary
-- the PA11-PA12 semantic foundation
-- the PA15-PA20 LowIR lowering path
-- the PA13 LowIR contract
-- the PA20 metaprogramming and integral constant-expression machinery
+- the preprocessing and tokenization pipeline from PA1-PA4
+- the PA5 AST as the syntax boundary
+- the PA6-PA7 semantic foundation
+- the PA10-PA20 LowIR lowering path
+- the PA8 LowIR contract
+- the PA24 native validation path
 
 ### Starter Kit
 
 The starter kit contains:
 
-- a `cppgm++.cpp` assignment entry point, linked to the editable compiler source
-  in `../dev/cppgm++.cpp`
-- the standard assignment `Makefile` and harness scripts
+- `pa21/README.md`, `pa21/Makefile`, and the test scripts in `pa21/scripts/`
+- a student-editable `dev/cppgm++.cpp` starter scaffold
+- the `pa21/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
+- shared support sources and headers under `dev/src/`
+- a local test suite under `pa21/tests/`
+- the grammar for this assignment called `pa21.gram`
+- an HTML grammar explorer of `pa21.gram` in the sub-directory `grammar/`
 - a checked-in local test suite under `tests/`
 
-In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from
-the `cppgm++` scaffold and is the file you extend for this assignment.
+Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
+student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
+test fixtures, comparison scripts, and checked-in reference outputs are support
+files, not implementation files to edit for normal solutions. The shared support files
+provide reusable infrastructure and earlier assignment machinery; they do not implement the
+new PA21 source-to-LowIR language slice for you.
 
-Unlike PA1-PA9, there is no external reference binary for PA21. The checked-in
-`.ref` files are the default oracle.
+The supplied reference tools are available for inspection and reference
+regeneration. The checked-in `.ref` files are the default grading oracle.
 
 ### Input / Command-Line Arguments
 
-The PA21 invocation is the unoptimized LowIR mode:
+Behaviour is undefined unless the command-line arguments match:
 
     $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-Behaviour is undefined unless the command-line arguments match that shape, with
-the same source-file ordering and `-o` relaxations as the earlier source-to-LowIR
-milestones. Other `--emit-*` modes, driver mode, and optimized LowIR output are
-not part of PA21.
+`-O0` is the PA21 test mode. Other optimization levels are later optimizer work and
+are not required for this milestone.
 
 ### Output Format
 
-On success, `cppgm++` shall write LowIR text to `<outfile>` and exit
-`EXIT_SUCCESS`.
+`cppgm++` shall write LowIR text to `<outfile>`.
 
-The authoritative LowIR definition is `../pa13/lowir.md`. PA21 extends the PA20 lowering
+The authoritative LowIR definition is `../pa8/lowir.md`. PA21 extends the PA20 lowering
 surface only by making more of the C++ source language lower into the already-defined LowIR
 family.
 
 LowIR top-level declaration/definition order is a presentation convention, not
 a dependency order. Reference outputs and canonical dumps use the order defined
-in `../pa13/lowir.md`: `declare global`, `declare function`, `global`, then
+in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
 `function`, but the relaxed LowIR comparison canonicalizes top-level entries
 before comparison. Your output must still be repeatable for the same
-inputs; `../pa13/lowir.md` defines the canonical reference presentation and
+inputs; `../pa8/lowir.md` defines the canonical reference presentation and
 notes where internal LowIR symbol names are only a presentation tie-breaker.
 Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
 blocks, item order inside structured globals, vtable slot order, and action
 order inside generated initialization, finalization, constructor, destructor,
 and cleanup bodies.
 
-The test harness checks that the generated LowIR is well formed and matches the
-checked-in `.ref` files after canonicalizing presentation details that are not
-part of the assignment contract. Exact textual LowIR matching is not a PA21
-grading requirement.
+The generated LowIR must be well-formed and must match the checked-in `.ref` files under
+the relaxed LowIR comparison used by the harness. That comparison still checks the
+semantic LowIR shape and required IR facts, but it does not make helper metadata
+presentation or other non-semantic text details part of the student contract.
 
 ### Error Handling
 
@@ -93,7 +93,6 @@ If an error occurs during preprocessing, tokenization, parsing, semantic analysi
 generation, `cppgm++` shall `EXIT_FAILURE`.
 
 The output file is not required to be meaningful on failure.
-Diagnostics are not part of the grading contract.
 
 ### Standard Output / Error
 
@@ -103,156 +102,168 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-PA21 tests live under `tests/`. The suite is split by test role:
+Testing uses checked-in golden outputs, not a reference binary. The `Makefile` invokes
+`cppgm++` with `--emit-lowir -O0`.
 
-- `tests/spec/` contains N3485/spec-anchored constant-evaluation tests. Each
-  provided C++ language test in this directory starts with a leading comment of the
-  form `// N3485 focus: 7.1.5 [dcl.constexpr] ...` or another exact governing
-  clause so a reviewer can find the text in `../doc/n3485.txt`.
-- `tests/general/` contains broader constexpr cross-feature and realistic
-  constant-evaluation examples that are useful for PA21 but are not one-rule
-  spec probes.
+The local checked-in tests live in `tests/general/`. That directory contains
+PA21 source-to-LowIR tests for capturing lambdas, initializer-list
+interoperation, RTTI, `typeid`, `dynamic_cast`, and exception-source lowering
+interactions. PA21 has no `tests/spec/` directory because these tests focus on
+the combined language-to-LowIR contract.
 
-The `make test` target runs both directories through the LowIR validator. For
-successful tests, the validator checks the reference LowIR and your generated
-LowIR for basic structural correctness, then compares the canonicalized LowIR
-against the checked-in reference. For rejected tests, the exit status is the
-checked result; exact diagnostic text is not checked.
+For each test case `x`:
 
-### PA21 Syntax Boundary
+- `cppgm++` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is compared against `x.ref`
+- `x.my.exit_status` is compared against `x.ref.exit_status`
+
+PA21 is tested against generated LowIR text using the relaxed LowIR comparator described
+above. A useful manual validation path is:
+
+- feed that LowIR into PA24 `lowir2native`
+
+The shipped PA21 tests are the contract for this milestone.
+
+### PA21 Syntax Spec
 
 The authoritative source syntax is the shared `cppgm++` source grammar, exposed
 for this assignment as `pa21.gram`. The grammar defines accepted syntax only;
 the PA21 semantic and lowering requirements are defined by the Assignment
 Boundary and Out Of Scope sections below.
 
-### Optional Student Test Ideas
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the
+checked-in `.ref` files.
 
-When adding your own tests, useful PA21 themes include C++11 `constexpr`
-declaration validity, literal type requirements, constant initialization, core
-constant-expression rejection, pointer/reference constant evaluation, and
-aggregate/object-valued constant evaluation.
+PA21 does not add a new source-language grammar format. It instead enables more
+of the already-accepted C++11 syntax to participate in semantic analysis and
+lowering.
+
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa21.gram` as the source of truth.
+
+`pa21.gram` uses the same token vocabulary and the same extended BNF operators as
+`../shared/source.gram`.
+
+If this README and `pa21.gram` appear to disagree about source syntax, treat `pa21.gram`
+as authoritative. If this README and PA8 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA21 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
 
 ### Assignment Boundary
 
-PA21 owns full `constexpr` / constant-evaluation semantics over the implemented language
-surface inherited from PA20, including:
+PA21 supports the following in addition to the PA20 subset:
 
-- full constant-expression evaluation for the implemented expression/type subset
-- `constexpr` functions
-- `constexpr` constructors and member functions
-- `constexpr` variables and constant initialization
-- floating-point `constexpr` evaluation over the implemented scalar language surface
-- `noexcept` constant expressions over the supported call/expression subset
-- object-valued, pointer-valued, and reference-valued constant evaluation where the earlier
-  language/object-model milestones already define the underlying semantics
-- reuse of the constant evaluator for ordinary language semantics, template arguments, and
-  `static_assert`
+- capturing lambdas with supported explicit by-copy and by-reference captures of local
+  values, including class objects whose existing copy-construction path is supported
+- default `[=]` and `[&]` captures over the same supported local-value and `this` subset
+- explicit `this` capture for supported member-function cases
+- `std::initializer_list<T>` interoperation for supported scalar elements and
+  class elements whose construction, copy, and destruction stay within the
+  PA11/PA12/PA19 object and template subset
+- `typeid(type-id)`
+- `typeid(expr)` for supported polymorphic lvalue expressions
+- `dynamic_cast<T*>(expr)` for supported polymorphic single-inheritance pointer conversions
 
-The intent is no longer a pragmatic subset. By the end of PA21, `constexpr` should be a
-complete compiler-owned semantic layer for the supported C++11 language surface, not a
-collection of special cases.
+Within this milestone, PA21 should produce valid LowIR for ordinary source programs over
+that subset. That LowIR should be accepted by PA24 `lowir2native` for the supported cases.
 
-More concretely, over the already-implemented language subset, PA21 should cover the full
-C++11 `constexpr` forms that later template and library code expect include
-dependent function-template return and parameter types. Their literal-type
-requirements are checked on the dependent declaration, and are not reapplied
-after a valid declaration is instantiated with concrete template arguments:
+To complete PA21, implement these goals:
 
-- scalar, floating, `nullptr`, and enum constant expressions
-- unary, arithmetic, comparison, bitwise, logical, conditional, cast, `sizeof`,
-  `alignof`, `sizeof...`, and `noexcept` constant expressions where those operators are
-  already part of the supported language surface
-- `constexpr` free-function calls, including recursive calls and default arguments
-- `constexpr` constructors, including member-initializer lists and base/member
-  initialization for literal class types; access checks performed while
-  evaluating those initializers use the constructor's class context, so a
-  derived constructor may invoke an accessible protected base constructor
-- `constexpr` member-function calls on constant objects
-- constant object values, not just integral scalars:
-  - aggregate/class values
-  - array values
-  - nested aggregate/array values
-- member access on constant objects via `.`
-- array and string-literal element access via `[]`
-- `constexpr` variables whose initializers must be fully evaluated at compile time
-- an automatic nonvolatile array of trivial scalar elements whose complete
-  initializer is known at compile time is initialized from readonly constant
-  data with one object copy; each automatic array still has distinct storage
-- reference-valued constant evaluation and `const T &` / reference parameter passing where
-  the implemented object model already defines the underlying semantics
-- lookup and reuse of previously computed constant values, including qualified lookup and
-  static data members
-- function-local static objects over the supported LowIR subset:
-  - constant initialization when the initializer is a constant expression
-  - dynamic class-object local statics with the required guard/check behavior, including
-    direct initialization from a class-prvalue factory call
-- ordinary namespace objects whose constant-initialization probe encounters a
-  core constant-expression failure use dynamic initialization; only contexts
-  that require a constant expression are rejected for that failure
+1. Capturing lambda lowering.
+   Explicit by-copy captures should materialize deterministic closure-object LowIR and the
+   resulting closure object should be callable through the existing class/method lowering
+   path. A catch parameter declared inside a lambda body is local to that body and is not an
+   implicit capture.
 
-PA21 also owns the semantic validation side of C++11 `constexpr`, not just evaluation. In
-particular, the compiler should enforce the C++11-facing rules that matter for the
-supported language subset, such as:
+2. `std::initializer_list` interoperation.
+   Supported braced-list calls should materialize deterministic lowered storage and expose
+   the expected `__begin` / `__size` semantics to range-for lowering.
 
-- `constexpr` variables require a compile-time initializer and a literal type
-- `constexpr` function return and parameter types must be literal types
-- `constexpr` constructors must produce literal objects through valid base/member
-  initialization
-- invalid `constexpr` declarations should fail during semantic analysis instead of being
-  accepted and only failing later during use
-- an executed declaration whose initializer is not constant invalidates the enclosing
-  constant evaluation even when the declared value is not read
-- a member call on a temporary is constant only when construction of that temporary is
-  itself a valid constant expression
+3. RTTI and `typeid`.
+   The compiler should emit deterministic RTTI globals and lower both static and dynamic
+   `typeid` queries into ordinary LowIR address/load/branch operations.
 
-The implementation may support a strict superset of C++11 evaluation rules internally,
-such as local variables, assignment, and loops inside constexpr evaluation. That is fine
-and often useful for later milestones, but it does not reduce the requirement that the
-standard C++11 forms above be covered cleanly and intentionally.
+4. Pointer-form `dynamic_cast`.
+   The compiler should lower supported polymorphic single-inheritance pointer casts into
+   ordinary LowIR control flow without introducing new IR operations.
+
+5. Full-expression cleanup through condition control flow.
+   Temporary-owning call arguments inside nested `&&` and `||` expressions
+   should be destroyed exactly on evaluated paths, and every nested logical
+   result used by an outer condition should retain a valid LowIR result slot.
+   Guarded local-static initialization should destroy initializer temporaries
+   on the initialization edge before that edge joins the already-initialized path.
+   EH-bearing aggregate construction should invoke nontrivial member constructors
+   instead of representation-copying those members, so cleanup state describes
+   the subobjects that were constructed.
+   Construction and destruction cleanup dependencies on class-template
+   destructors should be demanded only after a recursively containing type is
+   complete, and should retain that concrete owner in emitted cleanup calls.
+   A caller-created copy for a destructible class value parameter transfers to
+   the callee. The callee destroys that parameter, while the caller keeps only
+   the unwind cleanup needed for objects it still owns.
+   Once an exception object has been initialized, destroy the throw operand's
+   temporaries and remove them from later unwind snapshots. A temporary from an
+   untaken throw branch must not appear in a sibling call's cleanup path.
+   If a conditional initializer arm throws before the destination object is
+   constructed, do not schedule destruction of that destination on the unwind path.
+   When a potentially throwing call is reached through a branch in an active
+   handler, its unwind path must finish the handler and destroy objects that
+   remain live from scopes outside the corresponding `try` statement.
+   If construction of a class subobject throws, destroy exactly the already
+   constructed bases and members in reverse construction order.
+   Equal unwind cleanup suffixes may share LowIR blocks only when their complete
+   active try/handler context, handler-exit operations, cleanup-region exits,
+   and terminal continuation are identical.
 
 ### Out Of Scope
 
 The following are explicitly out of scope for PA21:
 
-- template language features that still remain deferred to PA22
-- post-C++11 constant-evaluation features
-- hosted/vendor-only compatibility forms that are not part of the standard C++ language
+- init-captures
+- class captures that require unsupported copy construction, destruction, or object-model
+  features
+- `std::initializer_list` class elements that require unsupported construction,
+  copy, destruction, or later object-model behavior
+- `typeid` cases that require `bad_typeid`
+- `dynamic_cast` reference forms
+- `dynamic_cast<void*>`
+- multiple inheritance and virtual inheritance
+- any PA21 feature path that depends on unsupported later object-model or ABI work
 
 Inputs that rely on those features have undefined behaviour for this milestone.
 
 ### Stage Handoff
 
-The intended next stages are PA22 and PA23, which finish the remaining standard template
-language using the now-complete constant-evaluation engine:
-
-- PA22: complete the template entity and specialization model
-- PA23: complete deduction, substitution, and SFINAE over that model
+The intended next stage is PA22, which completes the remaining non-virtual object-model work
+that PA21 still deliberately avoids, especially non-virtual multiple inheritance and the
+remaining single-vptr RTTI case `dynamic_cast<void*>`.
 
 So PA21 should leave behind:
 
-- a stable constant-evaluation semantic layer
-- ordinary lowered declarations that no longer depend on PA20-specific constant-expression
-  shortcuts
-- a clear boundary where the remaining template-language work can build on real `constexpr`
-  support rather than special-casing it
+- a stable advanced-language semantic layer over the existing single-inheritance model
+- LowIR lowering for the supported RTTI, lambda-capture, and initializer-list subset
+- explicit remaining deferrals only where PA22 really needs to take over
+
+Virtual inheritance and polymorphic multiple inheritance remain intentionally deferred beyond
+PA22.
 
 ### Design Notes (Non-Normative)
 
-The useful shape for PA21 is one typed constant-evaluation layer shared by
-`constexpr`, template arguments, `static_assert`, constant initialization, and
-ordinary semantic checks.
+PA21 should extend the existing semantic and lowering path, not replace it.
 
-Useful intermediate representations include:
+Cleanup continuation keys can use dense identities for the complete active
+exception-region stack. This permits expected constant-time state interning
+without comparing rendered LowIR or rescanning the region stack at each call.
 
-- typed constant values for scalars, enums, pointers, references, arrays, and
-  class objects
-- a distinction between checking whether a declaration is valid `constexpr` and
-  evaluating an expression in a constant-evaluation context
-- reusable evaluated-value storage for bindings whose constant value is needed
-  by lookup, template arguments, and later LowIR lowering
-- typed structural interning of identical automatic constant-data templates,
-  using data-item kinds, values, symbol identities, addends, size, and alignment
-  rather than rendered LowIR text
-- local-static initialization metadata that records whether LowIR lowering can
-  emit a constant initializer or must emit guarded dynamic initialization
+The same monotonic-extension rule applies here:
+
+- PA21 should add its new behavior only when the source actually uses the supported PA21
+  feature set
+- it should not perturb PA20 outputs for programs that remain entirely within the PA20
+  subset
+- in practice, RTTI globals, closure helpers, and dynamic-cast support should stay
+  on-demand rather than eagerly changing the behavior of ordinary earlier programs that do
+  not use those features

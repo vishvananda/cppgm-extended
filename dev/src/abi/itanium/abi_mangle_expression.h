@@ -16,7 +16,7 @@ enum AbiExpressionOperationKind : std::uint8_t
   ABI_EXPRESSION_OPERATION_INDIRECT_MEMBER
 };
 
-// Unknown PA14 operation codes remain textual adapter data.  Integrated
+// Unknown PA9 operation codes remain textual adapter data.  Integrated
 // compilation constructs one of the fixed operation kinds directly.
 AbiExpressionOperationKind abi_expression_operation_kind(
   const std::string & word);

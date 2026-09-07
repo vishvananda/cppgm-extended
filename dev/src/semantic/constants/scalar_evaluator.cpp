@@ -1506,6 +1506,13 @@ void Analyzer::PublishConstantVariableInitializer(BindingId binding,
 		initializer_object == kNoConstexprObject)
 		ThrowSemanticError(
 			"constexpr object initializer is not constant");
+	// A reference can name a mutable static object in a constant expression.
+	// Its address is constant even when reading that object's value is not.
+	if (spec.is_constexpr && program_->types.IsReference(type))
+	{
+		PublishBindingAddress(binding, initializer_address);
+		return;
+	}
 	if (!initializer.constant ||
 		(!spec.is_constexpr &&
 		 !(IsConst(type) && (IsIntegral(type, true) || IsFloating(type) ||

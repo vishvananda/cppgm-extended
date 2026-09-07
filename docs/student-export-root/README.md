@@ -5,7 +5,7 @@ assignments start with preprocessing tokens and grow into a practical
 self-hosting compiler toolchain.
 
 This repository contains the starter sources, assignment handouts, tests,
-reference outputs, and reference-binary wrappers for PA1 through PA39. The
+reference outputs, and reference-binary wrappers for PA1 through PA34. The
 assignment sequence is cumulative: later assignments build on earlier work, and
 most shared implementation work lives in `dev/` and `dev/src/`.
 
@@ -21,7 +21,7 @@ See [NOTICE](NOTICE) for third-party and archival attribution.
 
 ## Archival Note
 
-PA1 through PA9 include assignment material from the CPP Grandmasters challenge.
+Original PA1 through PA9 contributed assignment material from the CPP Grandmasters challenge.
 The original site appears to be defunct, so these materials are preserved here
 for archival and continuity purposes. See [NOTICE](NOTICE) for the PA1-PA9
 copyright attribution and removal contact note.
@@ -52,7 +52,7 @@ mostly hold handouts, tests, references, scripts, and thin wrappers around the
 shared implementation.
 
 See [PROJECT_LAYOUT.md](PROJECT_LAYOUT.md) for the full repository layout and
-PA1-PA39 assignment map.
+PA1-PA34 assignment map.
 
 ## Build And Test
 
@@ -89,7 +89,7 @@ make CXX=g++ CPPGM_HOST_CXX=g++
 ```
 
 For normal host builds, `CXX` and `CPPGM_HOST_CXX` should usually be the same
-compiler. For PA39 self-host experiments, `CXX` may be `../dev/cppgm++`, while
+compiler. For PA34 self-host experiments, `CXX` may be `../dev/cppgm++`, while
 `CPPGM_HOST_CXX` should remain a real host compiler.
 
 ## Working On An Assignment

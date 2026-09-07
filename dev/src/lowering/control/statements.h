@@ -1370,20 +1370,20 @@ protected:
 		if (task.kind == STATEMENT_SWITCH_AFTER_BODY)
 		{
 			if (derived.break_targets_.empty())
-				ThrowLoweringInternal("missing PA15 switch target");
+				ThrowLoweringInternal("missing PA10 switch target");
 			derived.break_targets_.pop_back();
 			if (!derived.CurrentBlock().terminated) derived.EmitContinuationJump(task.first);
 			derived.SelectBlock(task.first);
 			return;
 		}
 		if (derived.RunExceptionStatementTask(task)) return;
-		ThrowLoweringInternal("invalid PA15 statement task");
+		ThrowLoweringInternal("invalid PA10 statement task");
 	}
 	void PopLoopTargets()
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (derived.break_targets_.empty() || derived.continue_targets_.empty())
-			ThrowLoweringInternal("missing PA15 loop target");
+			ThrowLoweringInternal("missing PA10 loop target");
 		derived.continue_targets_.pop_back();
 		derived.break_targets_.pop_back();
 	}
@@ -1470,7 +1470,7 @@ protected:
 		{
 			if (node >= derived.switch_case_blocks_.size() ||
 				derived.switch_case_blocks_[node] == kNoLowId)
-				ThrowLoweringInternal("PA15 case has no switch target");
+				ThrowLoweringInternal("PA10 case has no switch target");
 			const BlockId target = derived.switch_case_blocks_[node];
 			if (!derived.CurrentBlock().terminated) derived.EmitContinuationJump(target);
 			derived.SelectBlock(target);
@@ -1503,7 +1503,7 @@ protected:
 		if (record.kind == DUMP_BREAK_STATEMENT)
 		{
 			if (derived.break_targets_.empty())
-				ThrowLoweringInternal("PA15 break has no target");
+				ThrowLoweringInternal("PA10 break has no target");
 			derived.LowerStructuredControlExit(children, derived.break_targets_.back().region_depth);
 			derived.EmitJump(derived.break_targets_.back().block);
 			return;
@@ -1511,12 +1511,12 @@ protected:
 		if (record.kind == DUMP_CONTINUE_STATEMENT)
 		{
 			if (derived.continue_targets_.empty())
-				ThrowLoweringInternal("PA15 continue has no target");
+				ThrowLoweringInternal("PA10 continue has no target");
 			derived.LowerStructuredControlExit(children, derived.continue_targets_.back().region_depth);
 			derived.EmitJump(derived.continue_targets_.back().block);
 			return;
 		}
-		ThrowLoweringSource("statement is outside the active PA15 checkpoint");
+		ThrowLoweringSource("statement is outside the active PA10 checkpoint");
 	}
 
 	__attribute__((noinline)) Operand LowerControlCondition(
@@ -1525,7 +1525,7 @@ protected:
 		Derived& derived = static_cast<Derived&>(*this);
 		const NodeChildren condition_children = derived.Children(condition_node);
 		if (condition_children.empty())
-			ThrowLoweringInternal("invalid PA15 control condition");
+			ThrowLoweringInternal("invalid PA10 control condition");
 		const std::uint32_t child = condition_children[0];
 		if (derived.arena_.nodes[child].kind != DUMP_CONDITION_DECLARATION)
 		{
@@ -1540,7 +1540,7 @@ protected:
 		Derived& derived = static_cast<Derived&>(*this);
 		const NodeChildren condition_children = derived.Children(condition_node);
 		if (condition_children.empty())
-			ThrowLoweringInternal("invalid PA15 switch condition");
+			ThrowLoweringInternal("invalid PA10 switch condition");
 		const std::uint32_t child = condition_children[0];
 		if (derived.arena_.nodes[child].kind != DUMP_CONDITION_DECLARATION)
 			return derived.LowerFullExpressionCondition(condition_children);
@@ -1609,7 +1609,7 @@ protected:
 			if (derived.arena_.nodes[children[i]].kind != DUMP_CONDITION)
 				body = children[i];
 		if (condition == kNoDumpEdge || body == kNoDumpEdge)
-			ThrowLoweringInternal("invalid PA15 switch statement");
+			ThrowLoweringInternal("invalid PA10 switch statement");
 		SwitchCases cases;
 		derived.CollectSwitchCases(body, &cases);
 		const Operand value = derived.LowerSwitchCondition(condition);
@@ -1637,7 +1637,7 @@ protected:
 			if (derived.arena_.nodes[cases[i]].kind != DUMP_CASE_STATEMENT) continue;
 			const NodeChildren case_children = derived.Children(cases[i]);
 			if (case_children.empty() || !derived.arena_.nodes[case_children[0]].constant)
-				ThrowLoweringInternal("PA15 case lacks constant value");
+				ThrowLoweringInternal("PA10 case lacks constant value");
 			case_values.Push(derived.arena_.nodes[case_children[0]].constant_value);
 			case_targets.Push(derived.switch_case_blocks_[cases[i]]);
 		}
@@ -1659,13 +1659,13 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (values.size() != targets.size())
-			ThrowLoweringInternal("PA15 switch case fact mismatch");
+			ThrowLoweringInternal("PA10 switch case fact mismatch");
 		if (values.empty()) return;
 		if (values.size() >= kNoLowId ||
 			derived.output_.switch_case_values.size() > kNoLowId - values.size() ||
 			derived.output_.switch_case_values.size() !=
 				derived.output_.switch_case_targets.size())
-			ThrowLoweringResourceLimit("too many PA15 switch cases");
+			ThrowLoweringResourceLimit("too many PA10 switch cases");
 		instruction->extra_first = static_cast<std::uint32_t>(
 			derived.output_.switch_case_values.size());
 		instruction->extra_count = static_cast<std::uint32_t>(values.size());
@@ -1682,7 +1682,7 @@ protected:
 		const std::uint32_t condition = derived.FindChildKind(children, DUMP_CONDITION);
 		const std::uint32_t body = derived.FindLoopBody(children);
 		if (condition == kNoDumpEdge || body == kNoDumpEdge)
-			ThrowLoweringInternal("invalid PA15 while statement");
+			ThrowLoweringInternal("invalid PA10 while statement");
 		const BlockId cond_block = derived.AddBlock(derived.NewLabel("while_cond"));
 		const BlockId body_block = derived.AddBlock(derived.NewLabel("while_body"));
 		const BlockId end_block = derived.AddBlock(derived.NewLabel("while_end"));
@@ -1705,7 +1705,7 @@ protected:
 		const std::uint32_t condition = derived.FindChildKind(children, DUMP_CONDITION);
 		const std::uint32_t body = derived.FindLoopBody(children);
 		if (condition == kNoDumpEdge || body == kNoDumpEdge)
-			ThrowLoweringInternal("invalid PA15 do statement");
+			ThrowLoweringInternal("invalid PA10 do statement");
 		const BlockId body_block = derived.AddBlock(derived.NewLabel("do_body"));
 		const BlockId cond_block = derived.AddBlock(derived.NewLabel("do_cond"));
 		const BlockId end_block = derived.AddBlock(derived.NewLabel("do_end"));
@@ -1730,7 +1730,7 @@ protected:
 		const std::uint32_t iteration = derived.FindChildKind(children, DUMP_ITERATION);
 		const std::uint32_t body = derived.FindLoopBody(children);
 		if (body == kNoDumpEdge)
-			ThrowLoweringInternal("invalid PA15 for statement");
+			ThrowLoweringInternal("invalid PA10 for statement");
 		if (init != kNoDumpEdge)
 		{
 			StatementTask after(STATEMENT_FOR_AFTER_INIT);

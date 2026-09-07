@@ -63,8 +63,8 @@ struct TypeViewStats
 	TypeViewStats();
 };
 
-// Parse through the PA10 boundary, run the shared semantic analysis, and write
-// the deterministic PA11 scope/type view. Translation-unit storage is local to
+// Parse through the PA5 boundary, run the shared semantic analysis, and write
+// the deterministic PA6 scope/type view. Translation-unit storage is local to
 // this call.
 void WriteTypeView(const std::string& path,
 	const std::string& source, const PreprocessingOptions& options,

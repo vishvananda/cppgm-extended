@@ -1014,7 +1014,7 @@ void Analyzer::CompleteClassSpecialMembers(EntityId entity)
 		copy.deleted_special_member || !copy.trivial_special_member;
 	const bool nontrivial_move = facts.move_constructor == kNoBinding ||
 		!GetFunction(facts.move_constructor).trivial_special_member;
-	// PA17 may use a direct boundary when either available transfer is trivial.
+	// PA12 may use a direct boundary when either available transfer is trivial.
 	EntityRecord& class_record = program_->entities[entity];
 	class_record.indirect_class_value_abi =
 		(nontrivial_copy && nontrivial_move) ||

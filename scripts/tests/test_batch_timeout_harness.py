@@ -56,6 +56,51 @@ def wait_for_pid_exit(pid: int, timeout_sec: float) -> None:
 
 
 class BatchTimeoutHarnessTests(unittest.TestCase):
+    def test_text_input_contract_is_independent_of_assignment_number(self):
+        profiles = [
+            ("pa5", None, "first\n"),
+            ("unnumbered", "sources", "first\nsecond\n"),
+            ("pa50", "stdin", "first\n"),
+            ("pa51", "stdin-combined", "first\ndiagnostic\n"),
+        ]
+        with tempfile.TemporaryDirectory(prefix="text-input-contract.") as temp_dir:
+            root = Path(temp_dir)
+            app = root / "tool.py"
+            app.write_text(
+                "#!/usr/bin/env python3\n"
+                "import pathlib, sys\n"
+                "if len(sys.argv) == 1:\n"
+                "    print(sys.stdin.read(), end='', flush=True)\n"
+                "else:\n"
+                "    assert sys.argv[1] == '-o'\n"
+                "    pathlib.Path(sys.argv[2]).write_text(''.join(\n"
+                "        pathlib.Path(p).read_text() for p in sys.argv[3:]))\n"
+                "print('diagnostic', file=sys.stderr, flush=True)\n"
+            )
+            app.chmod(0o755)
+            for dirname, profile, expected in profiles:
+                with self.subTest(profile=profile):
+                    pa = root / dirname
+                    tests = pa / "tests"
+                    tests.mkdir(parents=True)
+                    (tests / "input.t").write_text("first\n")
+                    (tests / "input.t2").write_text("second\n")
+                    env = os.environ.copy()
+                    env.pop("CPPGM_TEXT_INPUT_PROFILE", None)
+                    env["CPPGM_BATCH_TESTS"] = "0"
+                    if profile:
+                        env["CPPGM_TEXT_INPUT_PROFILE"] = profile
+                    result = run(
+                        "perl", str(REPO_ROOT / "scripts/run_all_tests_common.pl"),
+                        "text_t", str(app), "my", "tests", cwd=pa, env=env,
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    )
+                    self.assertEqual(result.stderr, "")
+                    self.assertEqual((tests / "input.my").read_text(), expected)
+                    self.assertEqual(
+                        (tests / "input.my.exit_status").read_text(), "EXIT_SUCCESS\n"
+                    )
+
     def test_run_with_timeout_reports_oom_status(self):
         result = run(
             "perl",
@@ -306,7 +351,7 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
 
     def test_run_all_text_test_keeps_later_assignment_output_args(self):
         with tempfile.TemporaryDirectory(prefix="run-all-text-output-args.") as temp_dir:
-            temp = Path(temp_dir) / "pa10"
+            temp = Path(temp_dir) / "pa5"
             tests = temp / "tests"
             app = temp / "write_output_arg.py"
             test = tests / "basic.t"
@@ -346,7 +391,7 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
 
     def test_failed_reference_stdout_is_kept_only_when_requested(self):
         with tempfile.TemporaryDirectory(prefix="failed-reference-stdout.") as temp_dir:
-            pa = Path(temp_dir) / "pa15"
+            pa = Path(temp_dir) / "pa10"
             tests = pa / "tests"
             app = pa / "reject.py"
             test = tests / "bad.t"
@@ -394,52 +439,10 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
                 "host-specific diagnostic\n",
             )
 
-    def test_pa9_driver_mode_runs_without_shell_wrapper(self):
-        with tempfile.TemporaryDirectory(prefix="pa9-driver-no-wrapper.") as temp_dir:
-            temp = Path(temp_dir)
-            pa = temp / "pa9"
-            tests = pa / "tests"
-            app = temp / "fake_cy86.py"
-            test = tests / "basic.t.1"
-
-            tests.mkdir(parents=True)
-            test.write_text("source\n")
-            (tests / "basic.stdin").write_text("stdin\n")
-            app.write_text(
-                "#!/usr/bin/env python3\n"
-                "import os\n"
-                "import stat\n"
-                "import sys\n"
-                "\n"
-                "out = sys.argv[sys.argv.index('-o') + 1]\n"
-                "with open(out, 'w') as fh:\n"
-                "    fh.write('#!/bin/sh\\ncat\\n')\n"
-                "os.chmod(out, stat.S_IRWXU)\n"
-            )
-            app.chmod(0o755)
-
-            result = run(
-                "perl",
-                str(REPO_ROOT / "scripts" / "run_all_tests_common.pl"),
-                "driver_t1",
-                str(app),
-                "my",
-                "tests",
-                cwd=pa,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-
-            self.assertEqual(result.returncode, 0)
-            self.assertEqual(result.stderr, "")
-            self.assertEqual((tests / "basic.my.impl.exit_status").read_text(), "0\n")
-            self.assertEqual((tests / "basic.my.program.exit_status").read_text(), "0\n")
-            self.assertEqual((tests / "basic.my.program.stdout").read_text(), "stdin\n")
-
     def test_driver_assignment_wrapper_uses_worker_script(self):
-        with tempfile.TemporaryDirectory(prefix="pa29-worker-wrapper.") as temp_dir:
+        with tempfile.TemporaryDirectory(prefix="pa24-worker-wrapper.") as temp_dir:
             temp = Path(temp_dir)
-            pa = temp / "pa29"
+            pa = temp / "pa24"
             tests = pa / "tests"
             app = temp / "fake_lowir_native.py"
             test = tests / "basic.t"
@@ -474,7 +477,7 @@ class BatchTimeoutHarnessTests(unittest.TestCase):
 
             result = run(
                 "perl",
-                str(REPO_ROOT / "pa29" / "scripts" / "run_all_tests.pl"),
+                str(REPO_ROOT / "pa24" / "scripts" / "run_all_tests.pl"),
                 str(app),
                 "my",
                 "tests",

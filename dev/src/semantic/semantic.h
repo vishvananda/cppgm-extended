@@ -270,7 +270,7 @@ struct Stats
 	Stats();
 };
 
-// Parse through the shared PA10 boundary, construct canonical PA12 semantic
+// Parse through the shared PA5 boundary, construct canonical PA7 semantic
 // facts, and render the deterministic assignment view. The syntax arena is
 // phase-local; canonical types, bindings, and dump nodes are translation-unit
 // owned and are released together after rendering.

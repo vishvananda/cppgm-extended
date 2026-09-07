@@ -1,314 +1,384 @@
-## CPPGM Programming Assignment 11 (`cppgm++ --emit-types`)
+## CPPGM Programming Assignment 11 (`cppgm++ --emit-lowir`)
 
 ### Overview
 
-Extend `cppgm++` with the PA11 type/scope dump mode:
+Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
+executes translation phases 1 through 7, parses them as PA5 translation units, reuses the
+PA6-PA7 semantic foundation, extends the PA10 LowIR lowering path with the basic
+object-model slice, and writes LowIR text.
 
-```sh
-cppgm++ --emit-types -o <outfile> <srcfile1> [<srcfile2> ...]
-```
+PA11 is the first object-model milestone. It extends the PA10 procedural compiler with the
+basic non-polymorphic class machinery needed by ordinary C++ code:
 
-The program reads one or more C++ source files, runs translation phases 1
-through 7, parses them using the PA10 syntax boundary, and writes a
-deterministic description of the first semantic layer: scopes, declarations,
-bindings, and canonical types.
-
-PA11 builds on PA10. The `--emit-ast` mode remains required, and PA11 adds
-`--emit-types`.
+- class layout and object size/alignment
+- member lookup and access control
+- `this`, `.` and `->`
+- ordinary non-template operator overloading that stays within the PA11 object-model subset
+- non-virtual methods
+- constructors and destructors
+- object lifetime for locals and namespace-scope objects
+- single inheritance without virtual dispatch
 
 ### Prerequisites
 
-Complete PA10 before starting PA11. You should expect to reuse:
+You should complete Programming Assignment 10 before starting this assignment.
 
-- the PA1-PA5 preprocessing and tokenization pipeline
-- the PA10 AST as the syntax boundary
-- canonical type and declaration helpers from PA7/PA8 where they fit
-- scope and lookup machinery from earlier semantic assignments
+You will want to reuse:
 
-PA11 is not a program-image or initialization assignment. Keep the focus on
-scope formation, lookup, declaration binding, and declarator-derived type
-construction.
+- the preprocessing and tokenization pipeline from PA1-PA4
+- the PA5 AST as the syntax boundary
+- the PA6 declarator/type model and class syntax preservation
+- the PA7/PA10 resolved procedural and LowIR lowering path
+- the PA8 LowIR contract
+
+The intended direction is:
+
+- PA5 provides syntax
+- PA6 provides scope/type lookup and complete type metadata
+- PA7 resolves the procedural expression subset
+- PA10 lowers that resolved procedural subset into LowIR
+- PA11 extends that lowering path into a usable basic object model
+
+Because this milestone still consumes the PA5 syntax subset, the same PA5 mock-name
+conventions still matter in ambiguous type positions. In particular, class names used as
+types in ordinary declarations should follow the same `Y...` style used by PA6 unless the
+syntax is otherwise unambiguous.
 
 ### Starter Kit
 
-The PA11 starter kit contains:
+The starter kit contains:
 
-- `README.md`, this assignment handout
-- `Makefile`, which builds `cppgm++` and runs the PA11 tests
-- `cppgm++.cpp`, a link to the editable `dev/cppgm++.cpp` entry point
+- the student-editable `../dev/cppgm++.cpp` entry point, initially seeded from the course
+  `cppgm++` scaffold and reached from this directory through the `cppgm++.cpp` symlink
+- shared `../dev/` and `../dev/src/` support code from the earlier compiler pipeline
+- a local test suite
 - the grammar for this assignment called `pa11.gram`
 - an HTML grammar explorer of `pa11.gram` in the sub-directory `grammar/`
-- `scripts/run_all_tests.pl` and `scripts/compare_results.pl`
-- `tests/spec/`, clause-anchored scope/type tests
-- `tests/general/`, broader scope/type tests
-- checked-in `.ref` and `.ref.exit_status` files used as the oracle
+- a checked-in local test suite under `tests/`
 
-Your main editable file is `dev/cppgm++.cpp`. You may add or change other
-implementation files under `dev/` as needed. Do not edit the test inputs,
-reference outputs, harness scripts, or grammar files unless course staff
-explicitly asks for that.
+The provided scaffold and shared support files establish the driver shape and previous
+frontend modes. They do not implement the PA11 object-model LowIR lowering work.
 
-The starter `dev/cppgm++.cpp` is the same long-lived `cppgm++` dispatcher used
-from PA10 onward. For PA11, extend it so `--emit-types` runs your scope/type
-analysis and dump path.
+The supplied reference tools are available for inspection and reference
+regeneration. The checked-in `.ref` files are the default grading oracle.
 
-There is no required `cppgm++-ref` binary for PA11. The checked-in
-reference files under `tests/` are the grading oracle.
+### Input / Command-Line Arguments
 
-### Build And Test Commands
+The same as PA10 `cppgm++ --emit-lowir`. The PA11 test mode is unoptimized LowIR
+generation. `make test` passes `--emit-lowir -O0` through the harness, so individual test
+files do not spell those flags themselves.
 
-From the `pa11/` directory:
+Behaviour is undefined unless the command-line arguments match:
 
-```sh
-make
-make test
-```
+    $ cppgm++ --emit-lowir -O0 -o <outfile> <srcfile1> <srcfile2> ... <srcfileN>
 
-`make` builds `cppgm++`. `make test` runs the local PA11 suite.
+with the same relaxations as PA10.
 
-### Required Driver Surface
-
-Previously required:
-
-- `--emit-ast`
-- `-o <outfile>`
-
-New in PA11:
-
-- `--emit-types`
-
-No new compile or link driver flags are introduced in PA11. Behavior is
-undefined unless the command line has this form:
-
-```sh
-cppgm++ --emit-types -o <outfile> <srcfile1> [<srcfile2> ...]
-```
-
-### Input Contract
-
-The authoritative source syntax is the shared `cppgm++` source grammar, exposed
-for this assignment as `pa11.gram`. The grammar defines accepted syntax only;
-the PA11 scope/type requirements are defined by the Required Features and Out Of
-Scope sections below.
-
-Passing PA10 syntax is necessary but not sufficient for PA11: a program may
-parse successfully and still require declaration, type, or constant-expression
-behavior that this assignment does not define.
-
-The PA6/PA10 mock-name convention still applies where pure syntax needs a
-type-like name before full semantic disambiguation exists.
-
-Behavior is undefined for input that:
-
-- does not match the PA11 grammar
-- requires PA11 semantic features outside the assignment boundary below
-- is ill formed in a way PA11 is not required to diagnose
-
-If this README and `pa11.gram` disagree about accepted source syntax, use
-`pa11.gram`. If they disagree about the PA11 semantic slice, use this README.
+Accepting `--emit-lowir` without an explicit `-O0` as the same unoptimized mode is fine,
+but optimized LowIR output is not part of PA11.
 
 ### Output Format
 
-On success, `cppgm++` writes the PA11 semantic dump to `<outfile>`.
+`cppgm++` shall write LowIR text to `<outfile>`.
 
-The first line is:
+The authoritative LowIR definition is `../pa8/lowir.md`. PA11 extends the PA10 procedural
+subset of that IR with the object-model lowering needed by this milestone.
 
-```text
-<n> translation units
-```
+When PA11 emits function-boundary metadata such as `unwind=no`, treat that as a
+truthful emitted fact, not as a promise that every semantically equivalent C++
+exception specification is normalized. The direct `noexcept` form on free
+functions, member functions, constructors, and destructors is in scope for the
+tested metadata path. Other explicit `noexcept(expr)` forms may lower
+conservatively without `unwind=no`.
 
-where `<n>` is the number of source files on the command line.
+A call to `__builtin_unreachable()` lowers directly to the PA8
+`unreachable` block terminator. It does not emit a synthetic function
+declaration or call.
 
-For each translation unit, in command-line order, the output contains:
+The backing array for each C++ string literal is emitted as an internal
+structured global with `storage=readonly`.  This records the source array's
+const element contract in serializable LowIR; an ordinary writable character
+array must not gain that storage property merely because it has a static
+initializer.
 
-```text
-start translation unit <k>
-...
-end translation unit
-```
+PA11 writes a single concatenated LowIR program consisting of:
 
-where `<k>` is the 1-based translation-unit index.
+- zero or more `global` definitions
+- zero or more `function` definitions
 
-Between those wrapper lines, write a deterministic semantic dump rooted at:
+LowIR top-level declaration/definition order is a presentation convention, not
+a dependency order. Reference outputs and canonical dumps use the order defined
+in `../pa8/lowir.md`: `declare global`, `declare function`, `global`, then
+`function`, but the relaxed LowIR comparison canonicalizes top-level entries
+before comparison. Your output must still be repeatable for the same
+inputs; `../pa8/lowir.md` defines the canonical reference presentation and
+notes where internal LowIR symbol names are only a presentation tie-breaker.
+Your output must also preserve order-sensitive LowIR regions when they are present: instruction order inside
+blocks, item order inside structured globals, vtable slot order, and action
+order inside generated initialization, finalization, constructor, destructor,
+and cleanup bodies.
 
-```text
-translation-unit
-```
+For non-static member functions, call analysis should treat the object expression as an
+implicit object argument. Member lookup gathers the candidate methods; overload resolution
+then checks and ranks those candidates using the cv-qualification of the object expression.
+After a non-static member function is selected, the generated LowIR uses an explicit hidden
+first parameter for the object pointer (`this`).
 
-The body of the dump is a scope tree. Scope lines include:
+Namespace-scope object lifetime is represented through synthetic startup/shutdown helpers when
+needed:
 
-```text
-scope namespace <name>
-scope template-parameters
-scope class <name>
-scope enum <name>
-scope function <name>
-scope block
-```
+- `@__cppgm_init`
+- `@__cppgm_fini`
 
-Bindings inside a scope are written one per line, using forms such as:
+Synthesized constructors and destructors are part of the PA11 semantic model, but `cppgm++`
+only needs to emit the helper definitions that the lowered program actually requires. Unused
+implicit default constructors / destructors do not need to appear in the PA11 LowIR output.
+In practice, PA11 only needs ctor/dtor helpers for the supported declaration-time, member-
+initializer, recursive subobject, and namespace-scope lifetime paths. Copy/value helpers do
+not belong in PA11 output.
 
-```text
-type <name> <type>
-type-alias <name> <type>
-enumerator <name> <type> <value>
-function <name> <type>
-variable <name> <type>
-parameter <name> <type>
-```
+The generated LowIR is intended to become input for the later PA24
+`lowir2native` backend, which will execute these helpers around `@main`. That
+future native path is not the PA11 grading contract.
 
-`<type>` uses the canonical type spelling established in the earlier semantic
-assignments and fixed by the PA11 `.ref` files.
-
-Using declarations that introduce a visible type name are emitted as
-`type-alias` bindings in the current scope. Supported value-name using
-declarations are emitted through the resulting `function`, `variable`,
-`parameter`, or `enumerator` binding rather than through a separate
-`using-declaration` line.
-
-Namespace aliases and using directives affect lookup. They do not need their
-own output line unless the checked-in reference format for a test requires one.
-
-Standard output and standard error are ignored by the automated PA11 tests.
+The checked-in `.ref` files define the required LowIR facts for the tests. The
+test harness checks exit status, LowIR well-formedness, and the
+course-defined normalized LowIR output rather than requiring students to match every
+non-semantic helper spelling or presentation choice.
 
 ### Error Handling
 
-If preprocessing, tokenization, parsing, or PA11 semantic analysis fails,
-`cppgm++` must exit with `EXIT_FAILURE`.
+If an error occurs during preprocessing, tokenization, parsing, semantic analysis, or LowIR
+generation, `cppgm++` shall `EXIT_FAILURE`.
 
-The contents of `<outfile>` are unspecified on failure. For failing tests, the
-harness compares only the named exit status, not diagnostic text and not the
-output file.
+The output file is not required to be meaningful on failure.
 
-### Required Features
+### Standard Output / Error
 
-PA11 must support:
+Standard output and standard error are ignored for automated testing of `cppgm++`.
 
-- namespace, template-parameter, class, enum, function, and block scopes
-- named namespace reopening
-- named class declarations and forward declarations, including compatible
-  `struct` / `class` redeclarations of the same non-union class
-- named enum declarations and scoped opaque enum declarations
-- elaborated class and enum type specifiers in supported declarations;
-  elaborated class lookup may find a type hidden by an ordinary-name binding,
-  while an elaborated enum specifier must name an existing enumeration
-- namespace-scope anonymous class, union, and enum specifiers when the same
-  declaration immediately introduces a usable type name
-- namespace-scope anonymous-union declarations only when they include the
-  required `static` specifier
-- template declarations with type and template-template parameter scopes
-- simple declarations and function definitions
-- `typedef` and alias declarations
-- namespace aliases
-- using directives
-- using declarations that introduce supported type or value names
-- storage and function specifiers that do not change the PA11 type model:
-  `extern`, `static`, `thread_local`, `inline`, `virtual`, and `constexpr`
-- free-function declarators with supported exception specifications
-- unqualified lookup of visible type aliases, template type parameters,
-  namespaces, and supported value names
-- qualified lookup through namespaces, class scopes, and scoped enum scopes for
-  the supported declaration forms
-- fundamental, class, enum, cv-qualified, pointer, reference, array, and
-  function types
-- array bounds formed from positive integer literals, `sizeof(type-id)`, and
-  `alignof(type-id)`
-- semantic disambiguation of `sizeof(T)` when lookup determines that `T` names a
-  type
-- enumerator values with the supported simple integral constant-evaluation
-  subset, including short-circuit `&&` and `||` evaluation that does not
-  evaluate an unselected operand
-- `static_assert` over the supported integral constant-expression subset
-- rejection of implicit conversion or comparison between a scoped-enum value
-  and an integer
-- `constexpr` object declarations treated as `const` objects for PA11 type and
-  constant-value purposes
-- the supported `decltype(...)` forms listed in the tests and reference output
-- deterministic scope-tree output
+You are free to use them for debugging, tracing, or diagnostic messages.
 
-PA11 also rejects the following declaration forms:
+### Testing
 
-- an object declared with type `void`, which is an incomplete type that can
-  never be completed; `void` return types and pointers to `void` remain valid
-- a reference declared without an initializer, except as a parameter, a
-  function return type, a class member, or where `extern` is used explicitly
-- a qualified definition of a namespace or class member written outside a
-  scope that encloses the member's own scope
-- a member function body is a complete-class context (N3485 3.3.7/1), so a
-  member type declared later in the class is visible inside it; a body that
-  names one must not parse it as an expression
-- a namespace-definition that names an existing namespace-alias, since an alias
-  is another name for a namespace rather than a namespace that can be extended
+Testing uses checked-in golden outputs, not a reference binary.
 
-A reference initialized with a constant expression is itself usable as a
-constant expression, so reading through one may supply an array bound.
+For each test case `x`:
 
-The PA11 output should preserve enough declaration and type information for PA12
-to add expression and call semantics without reparsing the source.
+- `cppgm++` is executed to produce `x.my`
+- the exit status is recorded in `x.my.exit_status`
+- `x.my` is validated as LowIR and compared against `x.ref` using the normalized
+  LowIR comparison
+- `x.my.exit_status` is compared against `x.ref.exit_status`
 
+`make test` runs the checked-in local suite under `tests/` and supplies
+`--emit-lowir -O0` through the harness.
+
+The PA11 suite is split by test role:
+
+- `tests/general/`: the default PA11 LowIR oracle suite. These tests cover object-model
+  lowering, class layout, lifetime, helper emission, and cross-feature cases
+  whose primary contract is the generated LowIR plus exit status.
+- `tests/spec/`: focused C++ language-contract cases that cite a specific N3485 clause.
+  Each source test in this directory starts with a comment of the form:
+
+    // N3485 focus: <clause> [<stable-name>] <short topic>
+
+`tests/spec/` covers the PA11 class/object contract: class layout, access
+control, nested names, static members, aggregate and reference initialization,
+friends/ADL, single inheritance, lifetime, bit-fields, pseudo-destructors,
+ordinary non-template operators, standard `alignas` / `alignof`, and inheriting
+constructors. `tests/general/` covers object-model and LowIR-shape cases that
+are not tied to one specific C++11 clause.
+
+### PA11 Syntax Spec
+
+The authoritative source syntax is the shared `cppgm++` source grammar, exposed
+for this assignment as `pa11.gram`. The grammar defines accepted syntax only;
+the PA11 semantic and lowering requirements are defined by the Assignment
+Boundary and Out Of Scope sections below.
+
+As in the earlier assignments, that grammar defines accepted input syntax only. The output
+format for `cppgm++` is specified by this README, PA8 `lowir.md`, and the checked-in
+`.ref` files.
+
+Because PA11 extends PA10 rather than adding a new syntax layer, PA11 gives the
+class/object subset described below semantic and lowering meaning.
+
+Passing PA10 is necessary but not sufficient for passing PA11: an input may be syntactically
+valid for PA5 and code-generation-valid for PA10 and still be outside the PA11 class/object
+slice described below.
+
+A checked-in HTML grammar explorer for that grammar lives in `grammar/`. Treat
+`pa11.gram` as the source of truth.
+
+`pa11.gram` uses the same token vocabulary and the same extended BNF operators as
+`../shared/source.gram`.
+
+If this README and `pa11.gram` appear to disagree about source syntax, treat `pa11.gram`
+as authoritative. If this README and PA8 `lowir.md` appear to disagree about LowIR syntax,
+treat `lowir.md` as authoritative. If they disagree about the PA11 lowering slice, treat the
+`Assignment Boundary` and `Out Of Scope` sections below as authoritative.
+
+### Assignment Boundary
+
+PA11 supports the following in addition to the PA10 procedural subset:
+
+- namespace-scope and nested-namespace class/struct definitions and forward declarations
+- access control for classes, fields, methods, nested types, and static members
+  in the current non-virtual class model
+- nested class/type declarations and lookup
+- static data members and static member functions over the supported scalar and
+  class subset
+- complete object layout for non-static data members in declaration order, including:
+  - empty classes
+  - alignment and padding, including preservation of a stronger requested
+    class alignment while laying out a direct base and members
+  - ordinary integral and enum bit-fields, including zero-width unnamed separators
+  - self-referential pointer members
+  - previously completed class-type members
+- single inheritance with the direct base subobject at offset `0`
+- member lookup for:
+  - direct fields
+  - inherited fields
+  - direct methods
+  - inherited methods
+- `this`, implicit member lookup inside methods, and member access expressions `.` and `->`
+- non-static member-function calls selected through overload resolution with the implicit
+  object argument described above
+- ordinary non-template operator overloading over the supported object-model subset, including:
+  - member operators such as `operator[]`
+  - hidden-friend and namespace-scope non-member operators found through ordinary lookup / ADL
+  - chained reference-returning operators such as `operator<<`
+  - rejection of a non-member overloaded operator unless at least one operand has class or
+    enumeration type
+- ordinary non-template non-member function calls found through associated-namespace lookup /
+  hidden-friend ADL when the arguments stay within the supported class subset
+- in-class member-function definitions
+- out-of-class definitions for ordinary non-static member functions when the parser accepts
+  them as ordinary qualified function definitions, including a leading return type that
+  names a private nested type in the member's class context
+- constructors and destructors defined inside the class body
+- implicit default constructors and destructors when no user-declared one exists
+- semantically trivial constructor/destructor actions may be omitted directly;
+  if a retained helper must be substituted, use the ordinary mandatory inline
+  policy rather than a separate lifecycle label, let `no_inline` take
+  precedence for that helper, and decide `object_root` retention independently
+- demand-driven LowIR emission of the ctor/dtor helpers required by the supported lifetime
+  paths above
+- constructor initializer lists for:
+  - the single direct base
+  - non-static data members
+- non-static default member initializers for the supported scalar and supported
+  class/aggregate subobject construction forms, with explicit constructor member-initializers
+  taking precedence
+- local-class default member initializers that use an enclosing integral
+  constant expression without odr-using the enclosing automatic object
+- aggregate initialization for the supported PA11 object subset, including namespace-scope
+  aggregate arrays whose elements contain string-literal pointer members
+- local and namespace-scope class object lifetime:
+  - constructor execution at declaration time / program startup
+  - destructor execution at block exit, `return`, loop exit, and program shutdown
+  - a `goto` that leaves one or more active object scopes destroys those
+    objects in reverse construction order before transferring control; a
+    backward `goto` within one scope likewise destroys objects initialized
+    after the target label before reconstructing them on the next pass
+  - per-thread initialization for namespace-scope `thread_local` class objects,
+    with collision-free internal wrapper, guard, and initializer symbols
+- shared LowIR cleanup continuations for equal lexical destructor suffixes;
+  return paths may converge on a continuation only after preserving the return
+  value and only when the destructor sequence and enclosing control context are
+  identical
+- one `zeroinit` operation for value-initialization that already identifies an
+  exact contiguous nonvolatile, non-union object or subobject span; explicit
+  initializer actions and union, volatile, lifetime, or side-effect boundaries
+  remain separate
+- recursive member/base construction and destruction for supported class-type subobjects
+- anonymous struct/union members, including injected member lookup and layout in
+  the supported class subset
+- bit-field member access, assignment, initializer, and built-in increment/decrement
+  lowering; reads of explicitly signed integral and signed-underlying enum bit-fields
+  preserve the represented negative value, and built-in address-of rejects bit-fields
+- pseudo-destructor and explicit destructor-name syntax over supported scalar
+  and class expressions
+- standard `alignas` and `alignof`, including rejection of a requested class
+  alignment weaker than its natural alignment
+- inheriting constructors through `using Base::Base`
+- use of complete class types in:
+  - `sizeof(type-id)`
+  - `sizeof(expr)`
+  - local object declarations
+  - namespace-scope object declarations
+
+Within this milestone, PA11 should produce valid LowIR for ordinary
+non-polymorphic class code over the supported procedural subset. That LowIR is
+intended to be accepted by the later PA24 `lowir2native` backend for the
+supported cases.
 ### Out Of Scope
 
-PA11 does not require:
+The following are explicitly out of scope for PA11:
 
-- overload sets or overload resolution
-- expression typing
-- general `sizeof`, `alignof`, or `decltype` beyond the type-forming cases
-  required by this assignment
-- template-aware semantic disambiguation of PA10 syntax ambiguities
-- non-type template parameter binding, template specialization modeling, or
-  template instantiation semantics
-- floating-point or pointer constant evaluation
-- full constant-expression semantics
-- opaque unscoped enum declarations such as `enum E;`
-- semantic analysis of statements beyond creating nested block scopes
+- virtual functions, virtual inheritance, vpointers, and vtables
+- RTTI and `dynamic_cast`
+- copy/move construction and assignment
+- pass-by-value and return-by-value of class objects
+- temporary class-object materialization beyond the supported declaration/constructor path
+- eager emission of unused constructor/destructor helpers
+- operator overloads that require later value semantics, especially by-value class transfer and
+  copy/move assignment operators
+- template-backed operator overloads
+- multiple inheritance
+- member pointers
+- out-of-class constructor and destructor definitions
+  - the PA11 syntax contract does not include those forms
+- conversion operators
+- static assertions and constexpr metaprogramming
+- hosted/vendor-only attributes such as `[[no_unique_address]]`
+- broader C++ object-model corners such as advanced special-member generation rules
 
-Inputs that rely on those features have undefined behavior for PA11.
+Inputs that rely on those features have undefined behaviour for this milestone.
 
-### Testing And Grading Contract
+### Stage Handoff
 
-The PA11 harness discovers every `.t` file under the requested test root.
-For each test case `x.t`, it runs:
+The intended next stages are:
 
-```sh
-cppgm++ --emit-types -o x.my x.t
-```
+- PA12: add the non-polymorphic value-semantics layer that PA11 intentionally stops short
+  of:
+  - copy/move behavior in the common cases
+  - pass-by-value and return-by-value of class objects
+  - demand-driven copy/value helper emission when those source forms are actually used
+  - the assignment-operator and by-value operator cases that depend on that value-semantics work
+- PA13: add the polymorphic machinery that is still intentionally absent after PA11:
+  - virtual dispatch
+  - vtables and override/final behavior
+- PA14: add template-backed overload participation, including templated operator overloads,
+  on top of the PA11-PA13 non-template object model
 
-and records `x.my.exit_status`.
-
-Comparison rules:
-
-- `x.my.exit_status` must match `x.ref.exit_status`.
-- If the reference status is `EXIT_FAILURE`, the test passes after the exit
-  status comparison.
-- If the reference status is `EXIT_SUCCESS`, `x.my` must match `x.ref` exactly.
-- Standard output and standard error are not compared.
-
-The local suite is split by role:
-
-- `tests/spec/` contains small tests tied to specific C++11 scope, declaration,
-  lookup, or type-formation clauses. These files begin with an `N3485 focus`
-  comment.
-- `tests/general/` contains broader PA11 scope/type tests, cross-feature
-  semantic combinations, and useful intake cases that are not a single-clause
-  oracle.
+So PA11 should leave behind a usable non-virtual object model and a clean extension point for
+the later PA12 value-semantics work and the later PA13 polymorphic work, rather than mixing
+those harder features into the basic class milestone.
 
 ### Design Notes (Non-Normative)
 
-A good PA11 design keeps these pieces separate:
+The cleanest reuse path is to keep the PA10 procedural LowIR lowering model and extend it
+rather than building a second backend just for classes.
 
-- AST traversal from PA10
-- declaration collection
-- scope ownership and parent/child relationships
-- lookup
-- declarator-derived type construction
-- deterministic printing
+Useful intermediate representations include:
 
-Keep the semantic graph and analyzer reusable by later modes. The PA11 dump
-can be a source-facing view over that shared graph: distinguish source
-declarations from implicit implementation facts with typed metadata, and keep
-lookup/type identity separate from presentation. Avoid rebuilding semantic
-names by parsing rendered strings.
-
-Avoid baking PA8 image-construction or initialization behavior into the PA11
-core. Those ideas become useful again later, but this assignment should leave
-behind a reusable scope/type model.
+- complete named types with stable size/alignment metadata
+- class metadata that preserves fields, direct base, access, nested names, static
+  members, friends, and member-function bindings
+- one shared layout service for ordinary fields, bit-fields, anonymous members,
+  and alignment directives
+- resolved member expressions and method calls over the same call-semantics IR shape used by
+  PA7/PA10
+- explicit constructor/destructor actions attached to declarations or generated function bodies
+  so lifetime can be lowered incrementally instead of requiring a separate runtime model
+- compact cleanup-state identities formed from an action, its tail, its terminal
+  continuation, and its control context; interning those identities while
+  lowering avoids copying or repeatedly comparing complete destructor sequences
+- exact typed size/alignment and volatile/union-containment layout facts can
+  select a contiguous `zeroinit` at the initialization site without rescanning
+  emitted instructions
+- demand-driven helper emission keyed by semantic entities rather than source
+  spelling, so unused constructors/destructors do not perturb earlier outputs
