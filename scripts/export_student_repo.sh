@@ -598,6 +598,7 @@ make -s -C "$repo_root/dev" all \
   CPPGM_HOST_CXX="${CPPGM_HOST_CXX:-${CXX:-g++}}" \
   CPPGM_STDLIB_FLAGS="${CPPGM_STDLIB_FLAGS:-}" \
   OBJ="$repo_root/obj/export-reference-build" \
+  HOST_ALLOC_LIBS= \
   OBJECT_ROOT_DEFAULT_DEF=
 
 mkdir -p "$dest/reference-binaries"
