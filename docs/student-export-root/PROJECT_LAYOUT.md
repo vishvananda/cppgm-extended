@@ -78,12 +78,13 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 | PA30 | `cppgm++ -c` | heavy hosted-header compile compatibility |
 | PA31 | `cppgm++ -c` | hosted header-emitted link/runtime compatibility |
 | PA32 | `lowiropt` | LowIR optimization |
-| PA33 | `lowir2native -O1/-O2` | machine/backend optimization |
+| PA33 | `lowir2native -O1/-O2/-O3` | machine/backend optimization |
 | PA34 | inception targets | rebuild `cppgm++` with `cppgm++` |
 
 ## PA34
 
-PA34 is different from the earlier one-binary assignments. Its goal is
-inception: build `cppgm++` with `cppgm++` and match the host build. The
-`test-through` ladder gives intermediate checkpoints, but the final target is a
-matching self-built compiler.
+PA34 rebuilds your compiler with itself. The host-built `dev/cppgm++` produces
+`cppgm++-self`, which produces `cppgm++-inception`. Completion requires the
+last two binaries to match byte for byte. The `test-through-paN` ladder runs
+earlier assignment tests with self-built tools while you work toward that
+comparison; see [PA34](pa34/README.md) for the commands.

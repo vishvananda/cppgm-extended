@@ -1,8 +1,10 @@
 # cppgm assignments
 
 Build a C++11 compiler in 34 cumulative assignments, from preprocessing to
-native code, optimization and self-hosting. Start with [PA1](pa1/README.md)
-and extend the same implementation in `dev/` and `dev/src/` throughout.
+native code, optimization and self-hosting. Later handouts identify the
+additional language and hosted-library extensions they require. Start with
+[PA1](pa1/README.md) and extend the same implementation in `dev/` and
+`dev/src/` throughout.
 
 This student repository contains scaffolds, handouts, tests, references and
 wrappers that download pinned reference tools. The complete course solution
@@ -24,8 +26,10 @@ make test-report-through-paN
 ```
 
 Replace N with the assignment number. A clean through-milestone report is the
-exit criterion for PA1–PA33. PA34 ends with `make inception`. Later milestones
-extend your existing compiler; do not reset to the initial scaffolds.
+exit criterion for PA1–PA33. [PA34](pa34/README.md) runs the self-host ladder
+and ends with `make inception`, comparing the self and inception generations.
+Later milestones extend your existing compiler; do not reset to the initial
+scaffolds.
 
 Reference tools download when needed. `make reference-binaries` fetches them
 ahead of time. Personal test inputs and harnesses can live in `student.tests/`.

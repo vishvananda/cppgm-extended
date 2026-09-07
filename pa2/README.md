@@ -275,9 +275,9 @@ corresponding to the sequence's element type, otherwise the complete
 the course ABI, the code-unit widths are 8 bits for `char`, 16 bits for
 `char16_t`, and 32 bits for `char32_t` and `wchar_t`.
 
-For example, `"\\x3C0"` is invalid because `0x3C0` does not fit in one
-`char` code unit, while `u"\\x3C0"`, `U"\\x3C0"`, and `L"\\x3C0"` are
-valid. `"\\u03C0"` is also valid because a `universal-character-name` is
+For example, `"\x3C0"` is invalid because `0x3C0` does not fit in one
+`char` code unit, while `u"\x3C0"`, `U"\x3C0"`, and `L"\x3C0"` are
+valid. `"\u03C0"` is also valid because a `universal-character-name` is
 encoded rather than treated as a numeric escape.
 
 You then need to consider maximal consequtive sequences of both kinds (user-defined and non-user-defined) together and apply the phase 6 rules about string concatenation.
@@ -320,7 +320,7 @@ make test-report-through-pa2
 Use `posttoken-ref` to investigate behavior. Required output and exit status
 are compared with the checked-in sidecars; diagnostic text is not graded.
 See [Testing and references](../TESTING_AND_REFERENCES.md) for local checks
-and reference regeneration. Do not change fixtures to hide an implementation bug.
+and comparison rules. Keep the supplied fixtures unchanged.
 
 ## Definition: Fundamental Types
 

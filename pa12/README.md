@@ -2,11 +2,6 @@
 
 ### Overview
 
-Write a C++ application called `cppgm++` that takes as input a set of C++ Source Files,
-executes translation phases 1 through 7, parses them as PA5/PA12 translation units,
-reuses the PA6-PA7 semantic foundation, builds on the PA10-PA11 LowIR lowering path, and
-writes LowIR text.
-
 PA12 finishes the non-polymorphic class model so ordinary user-defined value types work
 cleanly before virtual dispatch is added. It extends PA11 with the common value-semantics
 paths:
@@ -57,8 +52,8 @@ The starter kit contains:
 Extend the driver and frontend you implemented in earlier assignments with
 the PA12 lowering behavior.
 
-The supplied reference tools are available for inspection and reference
-regeneration. The checked-in `.ref` files are the default grading oracle.
+Use the supplied reference tools to inspect example output. Tests compare
+your compiler with the checked-in contract references.
 
 ### Input / Command-Line Arguments
 
@@ -128,6 +123,9 @@ relationships without comparing a complete LowIR module. They inspect only
 the two constructor parameters versus the assignment-operator control, or the
 ordering and identity of construction, selected use, and destruction within
 one full expression. The lifetime reducer is also compiled and executed.
+These controls run your `cppgm++ --emit-lowir -O0` frontend, then use the
+supplied `lowir2native-ref` backend to execute its output. Native code emission
+and the compile/link driver remain PA24 and PA25 work.
 
 When a same-type conditional class prvalue is materialized in a private
 temporary and then selected for copy or move construction into its final
@@ -210,7 +208,8 @@ You are free to use them for debugging, tracing, or diagnostic messages.
 
 ### Testing
 
-Testing uses checked-in golden outputs, not a reference binary.
+Tests compare your output with the checked-in references using the LowIR
+comparison described in [the format guide](../pa8/lowir.md).
 
 For each test case `x`:
 

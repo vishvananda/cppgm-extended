@@ -22,8 +22,7 @@ Complete PA5. Reuse the PA1–PA4 preprocessing pipeline and the PA5 AST.
 This is the first semantic assignment: build scopes, declarations, entity
 identity, lookup, and types directly on that AST. Read
 [scopes-and-types.md](scopes-and-types.md) for the implementation order and
-type notation. There is no earlier namespace model or memory-image format to
-implement or preserve.
+type notation.
 
 The representation you create here is extended by PA7's expression analysis
 and later lowering. Initialization bytes, full constant evaluation, and
@@ -196,6 +195,8 @@ PA6 must support:
 - named namespace reopening
 - named class declarations and forward declarations, including compatible
   `struct` / `class` redeclarations of the same non-union class
+- visibility of later-declared member types inside member function bodies,
+  which are complete-class contexts (N3485 3.3.7/1)
 - named enum declarations and scoped opaque enum declarations
 - elaborated class and enum type specifiers in supported declarations;
   elaborated class lookup may find a type hidden by an ordinary-name binding,
@@ -248,9 +249,6 @@ PA6 also rejects the following declaration forms:
   function return type, a class member, or where `extern` is used explicitly
 - a qualified definition of a namespace or class member written outside a
   scope that encloses the member's own scope
-- a member function body is a complete-class context (N3485 3.3.7/1), so a
-  member type declared later in the class is visible inside it; a body that
-  names one must not parse it as an expression
 - a namespace-definition that names an existing namespace-alias, since an alias
   is another name for a namespace rather than a namespace that can be extended
 

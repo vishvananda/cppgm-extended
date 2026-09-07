@@ -2,8 +2,6 @@
 
 ### Overview
 
-Write one C++ application called `cppgm++`.
-
 PA28 is the host C++ ABI/runtime interoperability assignment. It builds on the
 ordinary host-linkable object requirements from PA27 and makes the behavior of
 the host-linked program observable.
@@ -62,7 +60,7 @@ shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
 
-The `cppgm++-ref` wrapper supports investigation and reference regeneration.
+Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
 ### Command-Line Contract

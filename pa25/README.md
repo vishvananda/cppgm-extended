@@ -2,8 +2,6 @@
 
 ### Overview
 
-Write one C++ application called `cppgm++`.
-
 PA25 does not introduce a new executable. It extends the same `cppgm++` binary
 used since PA5 with practical compiler-driver behavior.
 
@@ -43,7 +41,6 @@ You will want to reuse:
 - the PA5 AST and PA6/PA7 semantic foundation
 - the PA10-PA23 LowIR lowering path
 - the PA24 native backend
-- the object emission, linking, and runtime support path used by `cppgm++`
 
 The tests assume a POSIX-like shell environment with `make`, `bash`,
 `perl`, and a working host C/C++ compiler for test helper objects. The harness
@@ -76,7 +73,7 @@ shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you
 to add or update tests.
 
-The `cppgm++-ref` wrapper supports investigation and reference regeneration.
+Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
 ### Driver Surface
@@ -322,8 +319,8 @@ In particular:
 
 - C++ source inputs should still flow through the existing semantic and LowIR
   lowering path.
-- The object and link stages should still reuse the object/runtime machinery
-  from earlier assignments.
+- Build the object and link stages around the PA24 native backend and
+  existing LowIR symbol and data representations.
 - The direct source-link path should behave like repeated separate compilation
   followed by linking, not like a special one-off shortcut.
 - Do not carry a private PA25 object encoding forward as the host-object
@@ -332,5 +329,5 @@ In particular:
 
 ### Stage Handoff
 
-The next stage is PA9, which isolates Itanium C++ ABI name construction before
-the later host-object assignments require host-compatible C++ symbol names.
+PA26 adds host-compatible exception metadata and relocatable objects. PA27
+then completes the host-object symbol and ABI surface using the PA9 encoder.

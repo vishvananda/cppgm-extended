@@ -62,7 +62,7 @@ Encoding tables, Itanium terminal spelling, compiler semantic lowering, and
 other implementation logic are intentionally outside the PA9 wrapper and
 test harness.
 
-The `abimangle-ref` wrapper supports investigation and reference regeneration.
+Use `abimangle-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
 ### Command-Line Contract

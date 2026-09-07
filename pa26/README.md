@@ -2,8 +2,6 @@
 
 ### Overview
 
-Write one C++ application called `cppgm++`.
-
 PA26 is the host exception-handling metadata assignment. Earlier assignments
 lower C++ source to LowIR and native code; PA26 makes EH-bearing `cppgm++ -c`
 objects participate in the host C++ unwinder.
@@ -20,7 +18,7 @@ course:
 - a personality reference to `__gxx_personality_v0` when a function has landing
   pads
 - host unwind metadata and LSDA/call-site information, such as
-  `.gcc_except_table`, `.eh_frame`, and the Mach-O compact-unwind equivalent
+  `.gcc_except_table` and `.eh_frame`
 - type-info references needed for typed catches
 - no private course-only `cppgm_eh_*` runtime symbols in host-EH objects
 - local object binding for compiler-generated functions whose enclosing source
@@ -37,7 +35,7 @@ Complete PA25 before starting this assignment.
 You will want to reuse:
 
 - the PA8 LowIR parser and EH instruction model
-- the PA24 native backend and object-emission infrastructure
+- the PA24 native backend and PA25 object pipeline
 - the PA19-PA23 source-to-LowIR surface
 - the PA25 compile-mode driver path used by `cppgm++ -c`
 - the PA9 ABI naming layer and runtime-role classification used by host object
@@ -51,8 +49,7 @@ a working host C/C++ toolchain. The harness selects host tools from:
 
 If those are not set, the harness searches for common compilers such as
 `clang++`, `g++`, `c++`, `clang`, `gcc`, and `cc`. Object-inspection tests also
-require host symbol/object tools such as `nm`, `readelf`, and `otool` where
-available.
+require host symbol/object tools such as `nm` and `readelf`.
 
 ### Starter Kit
 
@@ -70,7 +67,7 @@ shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you to
 add or update tests.
 
-The `cppgm++-ref` wrapper supports investigation and reference regeneration.
+Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
 ### Command-Line Contract
@@ -244,8 +241,6 @@ A useful implementation shape is to keep frontend LowIR EH operations stable and
 classify runtime roles below LowIR. Object emission can then map those roles to
 host ABI symbols and platform EH metadata:
 
-- Mach-O uses compact-unwind rows plus `__gcc_except_tab` and EH-frame data as
-  required by the host linker/unwinder.
 - ELF uses `.eh_frame`, `.gcc_except_table`, and the corresponding relocation
   records.
 

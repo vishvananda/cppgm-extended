@@ -14,9 +14,8 @@ lighter hosted workload. PA30 raises the bar to large, template- and trait-heavy
 STL headers (`<vector>`, `<unordered_map>`, `<tuple>`, `<random>`,
 `<functional>`, and the iostream/string/exception machinery).
 
-This is the perf-gated tier of hosted compatibility. It is not a link or runtime
-test. The PA30 tests require clean object emission from heavy hosted headers;
-later hosted tests exercise whether emitted header code also links and runs.
+The tests require clean object emission from heavy hosted headers. PA31 then
+checks whether emitted header code links and runs.
 
 To complete PA30, implement these goals:
 
@@ -24,7 +23,7 @@ To complete PA30, implement these goals:
 - carry the template instantiation, trait evaluation, and overload-resolution
   depth those headers exercise without exponential blow-up
 - stay within a workable compile time and memory budget on the heavy-header
-  workload (the perf gate that distinguishes PA30 from the lighter PA29 surface)
+  workload (the harness allows 45 seconds per compile by default)
 
 ### Prerequisites
 
@@ -62,7 +61,7 @@ shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you to
 add or update tests.
 
-The `cppgm++-ref` wrapper supports investigation and reference regeneration.
+Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
 
 ### Command-Line Contract
@@ -99,8 +98,7 @@ sidecars.
 Run the PA30 suite with:
 
 ```sh
-make test                       # non-batch
-make test CPPGM_BATCH_TESTS=1   # batch worker
+make test
 ```
 
 To run one test through the shared check target:
@@ -112,8 +110,8 @@ make check TEST=tests/compile/600-const-unordered-map-find.t
 The local tests live in `tests/compile/`. Each test is `.t` (source) plus an
 empty `.ref` base, a `.ref.exit_status` of `EXIT_SUCCESS`, and a `.ref.stdout`;
 it passes iff `cppgm++ -c` compiles it cleanly. Each test includes a real heavy
-header together with a cheat-proof anchor — a trait, `decltype`, `sizeof`, or
-`static_assert` that cannot be satisfied without genuinely compiling the header,
+header together with a semantic check — a trait, `decltype`, `sizeof`, or
+`static_assert` that cannot be satisfied without analyzing the header,
 so a test cannot pass by skipping or stubbing the include.
 
 Optional `x.no-exceptions` and `x.cxx-standard` sidecars disable exceptions or

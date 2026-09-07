@@ -1,5 +1,8 @@
 name: Inception
 
+# Consume PA34’s self compiler from the PA5 CI checkpoint and compare it
+# with the next generation built from the same source SHA and host toolchain.
+
 on:
   workflow_run:
     workflows:
