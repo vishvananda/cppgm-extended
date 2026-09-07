@@ -30,11 +30,10 @@ built the same way.
   course fixture never compares the shape of your output with the course
   solution's.
 
-The course solution's own outputs are pinned exactly in the regression lane
-(`tests/regression/`, see `TESTING_AND_REFERENCES.md` at the repository
-root).  That lane
-is the compiler team's memory of its decisions; it runs with `make test`
-but it is not part of the assignment's contract.
+Use `make test-course` for the assignment contract and `make test-regression`
+for the course solution's exact design. The compiler solution checkout's
+`make test` runs both; the student export runs only the course contract by
+default. See [Testing and references](../TESTING_AND_REFERENCES.md).
 
 ### Prerequisites
 
@@ -61,12 +60,11 @@ The starter kit supplies:
 
 The expected implementation work is in `dev/lowiropt.cpp` and shared optimizer
 or driver support under `dev/src/`, especially the LowIR optimizer and
-optimization-level plumbing. The supplied LowIR parser, dumper, driver helpers,
-and test harness are support code; they do not implement the optimization
-passes for you.
+optimization-level plumbing. Reuse your PA8 LowIR reader/writer and later
+driver implementation; the supplied harness does not implement these passes.
 
-The harness uses checked-in references as the oracle. There is no
-separate `lowiropt-ref` binary in the starter kit.
+The `lowiropt-ref` wrapper supports investigation and reference regeneration.
+The harness checks the contract sidecars and quality envelopes.
 
 ### Command Line
 

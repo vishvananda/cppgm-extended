@@ -1,5 +1,8 @@
 # CPPGM Programming Assignment 4: Complete preprocessing (`preproc`)
 
+Adapted and combined from the original CPPGM preprocessing assignments.
+See [NOTICE](../NOTICE) for attribution.
+
 Build a preprocessor using the tokenizer, post-token converter, and
 preprocessing-expression evaluator from PA1–PA3. It performs translation
 phases 1 through 6 and the tokenization part of phase 7 under the course

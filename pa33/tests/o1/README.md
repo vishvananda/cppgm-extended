@@ -1,5 +1,6 @@
-This bucket contains local machine-backend `-O1` tests.
+# Machine optimization at O1
 
-Each `.t` file is LowIR input for `lowir2native -O1`. The committed oracle
-sidecars check implementation exit status, dumped machine IR, generated-program
-exit status, and generated-program stdout where relevant.
+Each `.t` file is LowIR input for `lowir2native -O1`. Course checks use
+program outcomes and the code-quality envelopes in `.ref.expect`; informational
+MIR dumps are not exact-output oracles. See the [PA33 handout](../../README.md)
+for the contract and `tests/regression/` for solution-specific output checks.

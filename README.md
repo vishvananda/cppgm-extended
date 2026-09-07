@@ -1,46 +1,46 @@
-# cppgm
+# cppgm-extended
 
 [![Tests](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml/badge.svg)](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml)
 
-`cppgm` is a staged C++ compiler project. This repository contains the active
-compiler implementation, assignment directories, shared tests, validation
-scripts, and documentation used to maintain the self-hosting toolchain.
+A C++11 compiler course in 34 cumulative assignments, from preprocessing to
+native code, optimization and self-hosting. This repository contains the
+complete compiler solution in `dev/`; `pa1/` through `pa34/` hold the handouts,
+tests and wrappers.
 
-Implementation work lives in `dev/`. Assignment directories `pa1` through
-`pa34` contain handouts, tests, references, and milestone wrappers.
+Students should start with
+[cppgm-assignments](https://github.com/vishvananda/cppgm-assignments), the export
+containing scaffolds, handouts, tests and downloadable reference tools.
+The export's references are generated from this compiler.
 
-This repository can also produce the student-facing assignment export. The
-published assignment repository is
-[vishvananda/cppgm-assignments](https://github.com/vishvananda/cppgm-assignments).
+## Build and validate
 
-## Project Background
+The course target is Linux x86-64. Install a C++11 host compiler, GNU make,
+Bash, Perl and Python 3; later checks also use binutils and a debugger.
 
-This project grew out of the C++ Grandmaster Certification, a staged compiler
-course that originally walked through PA1-PA9: preprocessing, parsing, and a
-small backend path. The current repository continues that shape through PA34,
-adding the missing compiler layers: AST construction, semantic analysis,
-templates, typed IR, native object generation, linking, runtime support, and a
-self-hosting ladder.
+```sh
+make CXX=g++ CPPGM_HOST_CXX=g++
+make test-pa8
+make test-report
+make inception
+```
 
-The repository is also an experiment in long-running agentic software
-development. The assignment boundaries, reference outputs, regression tests,
-inception builds, and performance gates are designed to give an autonomous
-coding agent a tight loop: make a change, run the compiler, reduce failures,
-and keep moving without losing correctness at the milestone boundaries. The
-story behind the project is in the blog series starting with
+See [ROADMAP.md](ROADMAP.md) for the assignment sequence,
+[AGENTS.md](AGENTS.md) for contributor instructions, and
+[TESTING_AND_REFERENCES.md](TESTING_AND_REFERENCES.md) for validation and
+reference policy. Personal experiments go in `student.tests/`.
+
+## Origins and license
+
+The original C++ Grandmaster Certification course supplied early assignment
+material, tests and starter code. The cppgm-extended authors have substantially
+revised, combined, renumbered and extended that material into this independent
+34-assignment course. Today's handouts, harnesses and reference implementation
+describe this version; current PA numbers do not identify original CPPGM lessons.
+
+Copyright 2026 The cppgm-extended Authors. Project-maintained code and materials
+use the Apache License 2.0; inherited material retains its original notices.
+See [LICENSE](LICENSE), [NOTICE](NOTICE) and [AUTHORS](AUTHORS).
+
+The project also explores sustained agent-assisted compiler development. Its
+background is in the blog series beginning with
 [I Spent 2 Billion Tokens Writing a C++ Compiler So You Don't Have To](https://medium.com/@vishvananda/i-spent-2-billion-tokens-writing-a-c-compiler-so-you-dont-have-to-d3e4eec4781e).
-
-## License
-
-Copyright 2026 The cppgm-extended Authors.
-
-The project code and repository-maintained materials are licensed under the
-Apache License, Version 2.0. See [LICENSE](LICENSE) and [AUTHORS](AUTHORS).
-See [NOTICE](NOTICE) for third-party and archival attribution.
-
-## Archival Note
-
-Original PA1 through PA9 contributed assignment material from the CPP Grandmasters challenge.
-The original site appears to be defunct, so these materials are preserved here
-for archival and continuity purposes. See [NOTICE](NOTICE) for the PA1-PA9
-copyright attribution and removal contact note.

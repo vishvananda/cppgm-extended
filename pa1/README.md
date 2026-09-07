@@ -1,5 +1,8 @@
 ## CPPGM Programming Assignment 1 (pptoken)
 
+Adapted from the original CPPGM material; revised for cppgm-extended.
+See [NOTICE](../NOTICE) for attribution.
+
 ### Overview
 
 Write a C++ application called `pptoken` that accepts a _C++ Source File_ on standard input, executes phases 1, 2 and 3 of the _Phases of Translation_ (defined below), and describes the resulting sequence of `preprocessing-tokens` to standard output in the specified format.
@@ -18,11 +21,10 @@ Please read _Clause 2: Lexical Conventions_ (pages 16 through 32) of [the C++ st
 
 ### Starter Kit
 
-The starter kit can be obtained from:
-
-    $ git clone git://git.cppgm.org/pa1.git
-
-It contains a stub implementation of pptoken, a compiled reference implementation and a test suite.
+Use the cumulative student repository. Implement `pptoken` in
+`../dev/pptoken.cpp` and reusable helpers under `../dev/src/`.
+The assignment provides tests, references and a `pptoken-ref` wrapper;
+see [Testing and references](../TESTING_AND_REFERENCES.md).
 
 ### Input Format
 
@@ -71,19 +73,9 @@ Internally you may throw an exception and put a catch handler in `main` that the
 
 ### Development Environment
 
-The grading servers run on _Ubuntu 12.10 64-bit_ with the default Ubuntu server packages and only additionally the `build-essential` package installed as a bootstrap toolchain:
-
-    $ sudo apt-get install build-essential
-
-It is recommended that you setup your developer machine with an identical environment.
-
-### Restrictions
-
-You may only depend upon the C++ standard library and what is already included in this skeleton code.  No additional third party libraries/tools dependencies may used.
-
-You may not submit intermediate computer-generated code.  (You may submit original source code for a tool that is built and generates code during the build process - although that is _not recommended_ for this assignment.)
-
-We require that you agree to not publish your solution to this programming assignment as a condition of taking this assignment.  You are free to discuss the design in general terms, but please do not share code.
+Use Linux x86-64 and the toolchain described in the root [README](../README.md).
+Implement the tokenizer using your own reusable C++ code and the supplied
+support interfaces.
 
 ### Output Format
 
@@ -197,47 +189,24 @@ Produces an output of:
     new-line 0
     eof
 
-## Testing
+## Testing and references
 
-To execute the local test suite simply issue the command:
+From the repository root:
 
-    $ make test
+```sh
+make test-pa1
+make test-report-through-pa1
+```
 
-This will build `pptoken`, run each test against it, then compare the results against the reference implementation.
+Inputs are `tests/NNN-name.t`. Their `.ref` and `.ref.exit_status` sidecars
+record expected output and status; generated `.my*` files show your result.
+The prefix groups the feature being tested. Use the `pptoken-ref` wrapper to
+investigate behavior and the documented `ref-test` target to regenerate
+fixtures. A clean root through report completes this assignment.
 
-Each test input has a filename like `tests/NNN-foo.t`
-
-`NNN` is a number representing the test complexity. `foo` is a descriptive name of the test.
-
-The reference output is given in:
-
-`tests/NNN-foo.ref`
-
-and the reference exit status is given in:
-
-`tests/NNN-foo.ref.exit_status`
-
-The output of your version is given in:
-
-`tests/NNN-foo.my`
-
-and the exit status of your version is given in:
-
-`tests/NNN-foo.my.exit_status`
-
-So you can diff the files to determine why a test is failing.
-
-When you execute the test suite it will execute them in order and stop with an error on the first failed test.
-
-## Reference Implementation
-
-There is a compiled reference implementation called `pptoken-ref` of `pptoken` in the starter kit than you can use to generate arbitrary reference output for comparison to your implementation.
-
-If you find a bug in the reference implementation (an inconsistency of its output to what is described in this document or the standard) than please report it to the forum.  Make sure to include the output of `./pptoken-ref -v`.
-
-## Submitting Your Implementation For Grading
-
-We will provide an interface that will allow you to submit your solution for grading closer to the due date.  Instructions will be made available on the main course site.
+See [Testing and references](../TESTING_AND_REFERENCES.md) for comparison and
+reference policy. Report suspected reference bugs to this project's maintainers
+with a reduced input and the reference bundle or source revision.
 
 ## Preprocessing Token Grammar Summary
 

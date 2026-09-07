@@ -49,9 +49,8 @@ so the course compiler and host compiler agree.
 
 The starter kit provides:
 
-- `dev/cppgm++.cpp`, populated from the `cppgm++` scaffold for the cumulative
-  PA5+ compiler driver
-- the shared `dev/` sources needed by the scaffold
+- your cumulative `dev/cppgm++.cpp` compiler entry point
+- the shared implementation you built under `dev/src/`
 - `pa30/cppgm++.cpp`, a link to `../dev/cppgm++.cpp`
 - `pa30/Makefile`
 - `pa30/scripts/`, the hosted `-c` compile test harness (shared with PA29)
@@ -63,8 +62,8 @@ shared implementation files it calls. Do not edit generated `.my` files. Test
 inputs and references are part of the handout unless your instructor asks you to
 add or update tests.
 
-There is no separate PA30 reference binary in the starter kit. The checked-in
-`.ref.*` files are the oracle.
+The `cppgm++-ref` wrapper supports investigation and reference regeneration.
+Tests run your implementation against the checked-in contract fixtures.
 
 ### Command-Line Contract
 

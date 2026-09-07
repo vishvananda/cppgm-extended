@@ -35,7 +35,7 @@ You will want to reuse:
 The starter kit contains:
 
 - `pa23/README.md`, `pa23/Makefile`, and the test scripts in `pa23/scripts/`
-- a student-editable `dev/cppgm++.cpp` starter scaffold
+- your cumulative `dev/cppgm++.cpp` compiler entry point
 - the `pa23/cppgm++.cpp` symlink back to `../dev/cppgm++.cpp`
 - shared support sources and headers under `dev/src/`
 - a local test suite under `pa23/tests/`
@@ -46,9 +46,7 @@ The starter kit contains:
 Students should implement the assignment in `dev/cppgm++.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
 test fixtures, comparison scripts, and checked-in reference outputs are support
-files, not implementation files to edit for normal solutions. The shared support files
-provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA23 source-to-LowIR ABI slice for you.
+files, not implementation files to edit for normal solutions. Reuse your earlier compiler infrastructure when implementing this milestone.
 
 The supplied reference tools are available for inspection and reference
 regeneration. The checked-in `.ref` files are the default grading oracle.
