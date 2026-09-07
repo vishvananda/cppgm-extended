@@ -13,7 +13,7 @@ leaf, the 512-instruction single-call body, and the rest) are its choices,
 recorded so that its outputs are explainable and so that a reader can see a
 complete design that reaches the bar.  None of them is a requirement; the
 course fixtures do not compare your output's shape with the course
-solution's.  
+solution's.
 
 The course solution implements these optimization levels:
 
@@ -911,4 +911,3 @@ exclusive parameters, capture intervals, and parameter memory classes used by
 the O3 bounded-memory analysis. Edge equalities, constant loop-phi edges, and
 late parameter-address rematerializations have separate counters. A
 rematerialization-budget-skip counter makes that transform's limit observable.
-

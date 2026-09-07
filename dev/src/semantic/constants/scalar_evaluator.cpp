@@ -1026,6 +1026,8 @@ bool Analyzer::AddConstexprAddressLocal(NameId name, NameId pack_name,
 	ConstexprLocalValue value(name, pack_name, type,
 		ConstexprScalarValue(static_cast<std::int64_t>(0)));
 	value.address = address;
+	// Knowing a referent's identity does not establish the value stored there.
+	value.scalar_known = false;
 	return AddConstexprLocalValue(value, local);
 }
 
@@ -1132,9 +1134,10 @@ bool Analyzer::TryAnalyzeConstexprLocal(
 		if (value.object != kNoConstexprObject)
 			SetExpressionSubobject(
 				result, value.object, value.complete_object);
-		else if (IsIntegral(EffectiveType(value.type), true) ||
+		else if (value.scalar_known &&
+			(IsIntegral(EffectiveType(value.type), true) ||
 			IsFloating(EffectiveType(value.type)) ||
-			IsMemberPointer(EffectiveType(value.type)))
+			IsMemberPointer(EffectiveType(value.type))))
 			SetExpressionScalar(result, value.value);
 		if (value.address != kNoConstexprAddress)
 			SetExpressionLvalueAddress(result, value.address);
@@ -1152,7 +1155,7 @@ bool Analyzer::TryAnalyzeConstexprLocal(
 	else SetExpressionScalar(result, value.value);
 	result->node = MakeDump(DUMP_ID_EXPRESSION, result->type,
 		VALUE_LVALUE, name);
-	dump_.nodes[result->node].constant = true;
+	dump_.nodes[result->node].constant = result->constant;
 	if (!result->floating_constant &&
 		result->constexpr_object == kNoConstexprObject &&
 		result->constexpr_address == kNoConstexprAddress)
@@ -1636,8 +1639,16 @@ bool Analyzer::EvaluateConstexprDeclaration(NodeId node, ScopeId scope)
 								constexpr_locals_[local].address = address;
 						}
 						else if (address != kNoConstexprAddress)
+						{
 							valid = AddConstexprAddressLocal(
-								parsed.name, 0, parsed.type, address);
+								parsed.name, 0, parsed.type, address, &local);
+							if (valid && program_->types.IsReference(parsed.type) &&
+								value.constant)
+							{
+								constexpr_locals_[local].value = ExpressionScalar(value);
+								constexpr_locals_[local].scalar_known = true;
+							}
+						}
 						else valid =
 							(IsIntegral(parsed.type, true) ||
 							 IsFloating(parsed.type) ||
@@ -2004,8 +2015,11 @@ bool Analyzer::AddConstexprInvocationArguments(
 				(IsIntegral(EffectiveType(type), true) ||
 				 IsFloating(EffectiveType(type)) ||
 				 IsMemberPointer(EffectiveType(type))))
+			{
 				constexpr_locals_[local].value = ConvertScalarConstant(
 					arguments[i].type, type, ExpressionScalar(arguments[i]));
+				constexpr_locals_[local].scalar_known = true;
+			}
 			if (added && object != kNoConstexprObject &&
 				ExpressionCompleteObject(arguments[i]) != kNoConstexprObject)
 			{

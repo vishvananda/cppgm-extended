@@ -1630,7 +1630,8 @@ ExpressionInfo Analyzer::AnalyzeAssignment(NodeId node, ScopeId scope)
 		(IsIntegral(result_type, true) || IsFloating(result_type)))
 	{
 		const std::size_t local = left.constexpr_local;
-		bool valid = local < constexpr_locals_.size();
+		bool valid = local < constexpr_locals_.size() &&
+			(operation == "=" || constexpr_locals_[local].scalar_known);
 		ConstexprScalarValue assigned;
 		if (valid)
 		{
@@ -1667,6 +1668,7 @@ ExpressionInfo Analyzer::AnalyzeAssignment(NodeId node, ScopeId scope)
 		{
 			assigned = NormalizeScalarConstant(result_type, assigned);
 			constexpr_locals_[local].value = assigned;
+			constexpr_locals_[local].scalar_known = true;
 			SetExpressionScalar(&result, assigned);
 			dump_.nodes[expression].constant = true;
 			if (assigned.kind == CONSTEXPR_SCALAR_INTEGRAL) { dump_.nodes[expression].constant_value = assigned.integral; dump_.nodes[expression].constant_high = assigned.integral_high; }

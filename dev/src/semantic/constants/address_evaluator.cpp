@@ -161,6 +161,11 @@ std::uint32_t Analyzer::LvalueAddress(ExpressionInfo* expression)
 			program_->types.RemoveTopCv(EffectiveType(binding.type)));
 		const bool function_binding = binding.kind == BIND_FUNCTION;
 		const bool function_storage = storage.kind == TYPE_FUNCTION;
+		// A call keeps its callee binding for lowering, but the returned
+		// object is not storage belonging to that function declaration.
+		if (function_binding && program_->types.Get(program_->types.RemoveTopCv(
+			EffectiveType(expression->type))).kind != TYPE_FUNCTION)
+			return kNoConstexprAddress;
 		if (!function_storage && storage.kind == TYPE_ARRAY &&
 			storage.bound == 0)
 			return kNoConstexprAddress;

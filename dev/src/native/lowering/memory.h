@@ -18,6 +18,17 @@ template <class Derived>
 class MemoryLowering
 {
 protected:
+	bool load_can_use_compare_storage(
+		const lowir_model::Instruction& instruction) const
+	{
+		const Derived& lowerer = static_cast<const Derived&>(*this);
+		return lowerer.facts_.has(instruction.dest,
+			analysis::FunctionFacts::VF_DIRECT_COMPARE_STORAGE) &&
+			!instruction.volatile_access &&
+			!(instruction.first.kind == lowir_model::Operand::OP_GLOBAL &&
+			  lowerer.tls_wrappers_[instruction.first.symbol].valid());
+	}
+
 	bool load_has_direct_memory_rhs(
 		const lowir_model::Instruction& instruction,
 		const lowir_model::LowirBlock& block,
@@ -148,11 +159,7 @@ protected:
 			lowerer.emit_float_load(instruction, out);
 			return;
 		}
-		if (lowerer.facts_.has(instruction.dest,
-				analysis::FunctionFacts::VF_DIRECT_COMPARE_STORAGE) &&
-			!instruction.volatile_access &&
-			!(instruction.first.kind == lowir_model::Operand::OP_GLOBAL &&
-			  lowerer.tls_wrappers_[instruction.first.symbol].valid()))
+		if (load_can_use_compare_storage(instruction))
 		{
 			lowerer.define(instruction.dest, instruction.type,
 				lowerer.storage(instruction.first));
@@ -177,8 +184,13 @@ protected:
 				lowerer.allocate_temp_home(instruction.dest, instruction.type);
 			destination = reg_operand(XR_RAX);
 		}
-		else if (lowerer.facts_.has(instruction.dest,
-				analysis::FunctionFacts::VF_DIRECT_COMPARE_RAX) ||
+		// Retain the left operand in RAX only when the following right load
+		// is actually folded into compare storage. A multi-use, volatile or
+		// TLS load can otherwise overwrite RAX while materializing its value.
+		else if ((lowerer.facts_.has(instruction.dest,
+				analysis::FunctionFacts::VF_DIRECT_COMPARE_RAX) &&
+			instruction_index + 1 < block.instructions.size() &&
+			load_can_use_compare_storage(block.instructions[instruction_index + 1])) ||
 			(selection::result_is_immediately_stored(block, instruction_index,
 				instruction.dest, lowerer.facts_) ||
 			 lowerer.result_is_immediate_return(block, instruction_index,
