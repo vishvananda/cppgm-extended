@@ -559,12 +559,7 @@ EOF
 
 student_makefiles=(
   "$dest/Makefile"
-  "$dest"/pa29/Makefile
-  "$dest"/pa30/Makefile
-  "$dest"/pa31/Makefile
-  "$dest"/pa32/Makefile
-  "$dest"/pa33/Makefile
-  "$dest"/pa34/Makefile
+  "$dest"/pa*/Makefile
 )
 existing_student_makefiles=()
 for makefile in "${student_makefiles[@]}"; do
