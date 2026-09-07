@@ -47,7 +47,7 @@ protected:
 				return;
 			if (kind == static_cast<std::uint16_t>(OP_LBRACE))
 			{
-				const std::uint32_t close = parser.brace_matches_[scan];
+				const std::uint32_t close = parser.delimiter_matches_[scan];
 				if (close == std::numeric_limits<std::uint32_t>::max()) return;
 				scan = static_cast<std::size_t>(close) + 1;
 				continue;
@@ -573,23 +573,69 @@ protected:
 		return result;
 	}
 
-	bool StartsQualifiedCallArgument()
+	bool StartsKnownCallNameAt(std::size_t* position)
 	{
 		Derived& parser = static_cast<Derived&>(*this);
-		if (parser.position_ + 1 >= parser.tokens_.size() ||
-			parser.tokens_[parser.position_ + 1].Kind() != kIdentifierToken)
-			return false;
-		const typename Derived::Mark mark = parser.Checkpoint();
-		++parser.position_;
-		std::string name;
+		std::size_t scan = *position;
+		if (scan < parser.tokens_.size() &&
+			parser.tokens_[scan].Kind() == OP_COLON2) ++scan;
 		TextId terminal = 0;
-		const bool parsed = parser.ParseName(
-			&name, true, true, true, 0, &terminal);
-		const bool result = parsed && name.find("::") != std::string::npos &&
-			parser.At(OP_LPAREN) &&
-			!parser.HasNameFact(terminal, Derived::kKnownType);
-		parser.Rollback(mark);
-		return result;
+		while (scan < parser.tokens_.size() &&
+			parser.tokens_[scan].Kind() == kIdentifierToken)
+		{
+			terminal = parser.tokens_[scan++].spelling;
+			if (scan < parser.tokens_.size() && parser.tokens_[scan].Kind() == OP_LT)
+			{
+				// Reuse the token-only angle matcher. ParseName will consume
+				// its cached result; no name or template AST is built here.
+				const std::size_t saved = parser.position_;
+				parser.position_ = scan;
+				TryConsumeTemplateArguments();
+				scan = parser.position_;
+				parser.position_ = saved;
+			}
+			if (scan == parser.tokens_.size() ||
+				parser.tokens_[scan].Kind() != OP_COLON2) break;
+			++scan;
+			if (scan < parser.tokens_.size() &&
+				parser.tokens_[scan].Kind() == KW_TEMPLATE) ++scan;
+		}
+		*position = scan;
+		return terminal != 0 && scan < parser.tokens_.size() &&
+			(parser.tokens_[scan].Kind() == OP_LPAREN ||
+			 parser.tokens_[scan].Kind() == OP_LT) &&
+			!parser.HasNameFact(terminal, Derived::kKnownType) &&
+			(parser.HasNameFact(terminal, Derived::kKnownNonTemplate) ||
+			 parser.HasNameFact(terminal, Derived::kKnownTemplate));
+	}
+
+	// Decide before building parameter nodes. Inspect only argument starts;
+	// the delimiter index skips nested expressions without parsing them.
+	bool ParameterClauseHasValueArgument()
+	{
+		const Derived& parser = static_cast<const Derived&>(*this);
+		const std::size_t end = parser.delimiter_matches_[parser.position_];
+		if (end >= parser.tokens_.size()) return false;
+		std::size_t angle = 0;
+		bool argument_start = true;
+		for (std::size_t scan = parser.position_ + 1; scan < end; ++scan)
+		{
+			if (argument_start && StartsKnownCallNameAt(&scan)) return true;
+			if (scan >= end) break;
+			argument_start = false;
+			const std::uint16_t kind = parser.tokens_[scan].Kind();
+			if (kind == OP_LPAREN || kind == OP_LSQUARE || kind == OP_LBRACE)
+			{
+				const std::size_t close = parser.delimiter_matches_[scan];
+				if (close >= end) return false;
+				scan = close;
+			}
+			else if (kind == OP_LT) ++angle;
+			else if (angle != 0 && (kind == OP_GT ||
+				kind == kRShiftFirstToken || kind == kRShiftSecondToken)) --angle;
+			else if (kind == OP_COMMA && angle == 0) argument_start = true;
+		}
+		return false;
 	}
 
 	bool StartsQualifiedCallExpression()
