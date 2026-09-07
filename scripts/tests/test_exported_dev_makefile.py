@@ -56,30 +56,35 @@ class ExportedDevMakefileTests(unittest.TestCase):
         start = script.index("sanitize_student_makefile_defaults() {")
         end = script.index("\n}\n", start) + len("\n}\n")
         sanitize = script[start:end]
+        start = script.index("student_makefiles=(")
+        end = script.index("sanitize_student_root_makefile", start)
+        selection = script[start:end]
         with tempfile.TemporaryDirectory(prefix="exported-test-defaults.") as temp:
             root = Path(temp)
+            (root / "Makefile").write_text("all:\n")
+            for pa in (24, 32, 33):
+                source = (REPO_ROOT / f"pa{pa}/Makefile").read_text()
+                # Exercise the actual file selection as well as the rewrite;
+                # a correct sanitizer does nothing for an omitted assignment.
+                default = next(line for line in source.splitlines()
+                               if line.startswith("test:"))
+                directory = root / f"pa{pa}"
+                directory.mkdir()
+                (directory / "Makefile").write_text(
+                    default + "\n"
+                    "test-course:\n\t@echo course\n"
+                    "test-regression:\n\t@echo regression\n"
+                )
+            subprocess.run(
+                ["bash", "-c", sanitize + '\ndest="$1"\n' + selection,
+                 "bash", str(root)], check=True,
+            )
             for pa in (24, 32, 33):
                 with self.subTest(pa=pa):
-                    source = (REPO_ROOT / f"pa{pa}/Makefile").read_text()
-                    # Keep the actual target dependencies; stand-in recipes
-                    # make the course/regression selection observable.
-                    default = next(line for line in source.splitlines()
-                                   if line.startswith("test:"))
-                    makefile = root / "Makefile"
-                    makefile.write_text(
-                        default + "\n"
-                        "test-course:\n\t@echo course\n"
-                        "test-regression:\n\t@echo regression\n"
-                    )
-                    subprocess.run(
-                        ["bash", "-c", sanitize +
-                         '\nsanitize_student_makefile_defaults "$1"',
-                         "bash", str(makefile)], check=True,
-                    )
                     for target, expected in (("test", "course"),
                                              ("test-regression", "regression")):
                         result = subprocess.run(
-                            ["make", "-s", "-C", str(root), target],
+                            ["make", "-s", "-C", str(root / f"pa{pa}"), target],
                             check=True, text=True, stdout=subprocess.PIPE,
                         )
                         self.assertEqual(result.stdout.strip(), expected)
