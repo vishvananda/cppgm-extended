@@ -392,4 +392,3 @@ assumed location while lowering a later instruction.
    operation keeps the conservative call argument, clobber, unwind, and result
    facts because the fallback is still a real call; its vector temporaries are
    caller-saved encoding scratch rather than allocator-visible values.
-

@@ -632,6 +632,7 @@ struct ConstexprLocalValue
 	TypeId type;
 	ConstexprScalarValue value;
 	std::uint32_t object, complete_object, address;
+	bool scalar_known;
 	std::uint64_t storage_identity;
 	std::size_t previous_same_name, previous_same_pack;
 
@@ -640,14 +641,14 @@ struct ConstexprLocalValue
 		: name(name_value), pack_name(pack_name_value), type(type_value),
 		  value(value_value), object(kNoConstexprObject),
 		  complete_object(kNoConstexprObject),
-		  address(kNoConstexprAddress), storage_identity(0),
+		  address(kNoConstexprAddress), scalar_known(true), storage_identity(0),
 		  previous_same_name(kNoConstexprLocal),
 		  previous_same_pack(kNoConstexprLocal) {}
 	ConstexprLocalValue(NameId name_value, NameId pack_name_value,
 		TypeId type_value, std::uint32_t object_value)
 		: name(name_value), pack_name(pack_name_value), type(type_value),
 		  value(), object(object_value), complete_object(object_value),
-		  address(kNoConstexprAddress),
+		  address(kNoConstexprAddress), scalar_known(false),
 		  storage_identity(0), previous_same_name(kNoConstexprLocal),
 		  previous_same_pack(kNoConstexprLocal) {}
 };
