@@ -40,6 +40,13 @@ def check_export(export: Path, bundle: Path | None) -> None:
                            cwd=client, timeout=120)
 
         run("perl", client / "scripts/ensure_reference_binaries.pl")
+        for binary in (client / "reference-binaries").iterdir():
+            if binary.name == "manifest.tsv":
+                continue
+            dynamic = subprocess.check_output(
+                ["readelf", "-d", str(binary)], text=True, timeout=30)
+            if "libjemalloc.so" in dynamic:
+                raise RuntimeError(f"{binary.name} depends on optional host jemalloc")
         source = client / "smoke.cpp"
         source.write_text("int main() { return 0; }\n")
         for wrapper in wrappers:
