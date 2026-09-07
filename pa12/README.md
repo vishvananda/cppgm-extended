@@ -50,13 +50,12 @@ The starter kit contains:
 - the student-editable `../dev/cppgm++.cpp` entry point, initially seeded from the course
   `cppgm++` scaffold and reached from this directory through the `cppgm++.cpp` symlink
 - shared `../dev/` and `../dev/src/` support code from the earlier compiler pipeline
-- a local test suite
 - the grammar for this assignment called `pa12.gram`
 - an HTML grammar explorer of `pa12.gram` in the sub-directory `grammar/`
 - a checked-in local test suite under `tests/`
 
-The provided scaffold and shared support files establish the driver shape and previous
-frontend modes. They do not implement the PA12 value-semantics LowIR lowering work.
+Extend the driver and frontend you implemented in earlier assignments with
+the PA12 lowering behavior.
 
 The supplied reference tools are available for inspection and reference
 regeneration. The checked-in `.ref` files are the default grading oracle.

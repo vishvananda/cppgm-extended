@@ -39,19 +39,14 @@ built the same way.
   allocator that meets the bar is a correct PA33; a course fixture never
   compares your placement decisions with the course solution's.
 
-The course solution's own dumps are pinned in the regression lane
-(`tests/regression/`, see `TESTING_AND_REFERENCES.md` at the repository
-root) together
-with the controls that name its placement decisions.  That lane runs with
-`make test` and is not part of the assignment's contract.  `make
-test-variants` runs the course suite under other designs of the same
-backend (`backend_variant.h` in the course solution's `dev/src`, not part of
-the starter kit): reversed register pools, a
-padded frame, reverse-postorder layout, a graph-colouring allocator in
-place of the course solution's planner, and a linear-scan allocator written
-by a newcomer from this README and the seam header alone
-(`../doc/backend-review/newcomer-notes.md`); the suite passes under all of
-them.
+Use `make test-course` for the assignment contract and `make test-regression`
+for the course solution's exact design. The compiler solution checkout's
+`make test` runs both; the student export runs only the course contract by
+default. See [Testing and references](../TESTING_AND_REFERENCES.md).
+
+Maintainer `make test-variants` runs the course suite with alternate register
+pools, frame/layout choices, graph coloring and linear-scan allocation. These
+checks demonstrate that the contract supports different backend designs.
 
 ### Prerequisites
 
@@ -70,7 +65,7 @@ The starter kit supplies:
 
 - `pa33/Makefile`
 - `pa33/lowir2native.cpp`, linked to the editable `dev/lowir2native.cpp`
-- a `dev/lowir2native.cpp` scaffold based on `dev/lowir2native-scaffold.cpp`
+- your cumulative `dev/lowir2native.cpp` implementation from PA24
 - shared machine-IR and native backend support under `dev/src/`
 - optional typed machine-IR model scaffolding in
   `dev/src/mir_model.h`, with shared register support in
@@ -81,12 +76,11 @@ The starter kit supplies:
 
 The expected implementation work is in `dev/lowir2native.cpp` and the shared
 machine-IR/native backend modules under `dev/src/`, especially machine-IR
-optimization and object-generation plumbing. The supplied LowIR parser,
-machine-IR data model, object writer, linker helpers, and harness scripts are
-support code; they do not complete the optimization assignment for you.
+optimization and object-generation plumbing. Reuse your earlier LowIR reader,
+native backend, object writer and linking support.
 
-The harness uses checked-in sidecars as the oracle. There is no separate
-`lowir2native-ref` binary in the starter kit.
+The `lowir2native-ref` wrapper supports investigation and reference
+regeneration. Tests run your backend and check the contract sidecars.
 
 ### Command Line
 

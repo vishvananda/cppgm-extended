@@ -5,14 +5,14 @@ assignment harnesses.
 
 ## Repository Layout
 
-- `Makefile`: root build, test, report, strict, reference, and inception targets
+- `Makefile`: root build, test, report, reference, and inception targets
 - `dev/`: compiler entry points
 - `dev/src/`: shared compiler implementation files and support headers
 - `dev/frontend_source_sets.mk`: per-tool lists of `dev/src/*.cpp` files to
   link into each compiler binary
 - `paN/`: assignment handouts, Makefiles, tests, scripts, and reference
   fixtures for the active milestones
-- `cppgm.tests/undefined/`: inputs whose outcome is unspecified; no test lane runs them
+- `student.tests/`: personal tests and harnesses, run explicitly
 - `doc/`: public reference material, including `doc/n3485.txt`
 - `obj/`: generated build artifacts
 - `reference-binaries/`: reference-binary manifest; the large binary payloads
@@ -24,8 +24,8 @@ should stay in `dev/` and `dev/src/`.
 
 When you add a new implementation source file under `dev/src/`, also add its
 basename to each tool that needs it in `dev/frontend_source_sets.mk`. Use the
-path without `.cpp`; for example, `dev/src/parser/foo.cpp` is listed as
-`parser/foo`.
+path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
+`syntax/foo`.
 
 ## Assignment Arc
 

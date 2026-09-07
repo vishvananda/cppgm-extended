@@ -62,8 +62,8 @@ Encoding tables, Itanium terminal spelling, compiler semantic lowering, and
 other implementation logic are intentionally outside the PA9 wrapper and
 test harness.
 
-There is no separate reference binary in the starter kit. The checked-in
-`.ref.*` files are the oracle.
+The `abimangle-ref` wrapper supports investigation and reference regeneration.
+Tests run your implementation against the checked-in contract fixtures.
 
 ### Command-Line Contract
 

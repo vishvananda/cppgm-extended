@@ -108,10 +108,10 @@ def bucket3(prefix):
     differing = sorted(f for f in h & s if not same(os.path.join(here, f), os.path.join(src, f)))
     return sorted(h - s), sorted(s - h), differing
 lines = ['# Tree inventory', '', 'Per area: files only here, files only in the source tree, and common files that differ.', '']
-for prefix, title in (('dev/', 'dev (tool mains, build)'), ('dev/src/', 'dev/src'), ('scripts/', 'scripts'), ('doc/', 'doc'), ('docs/', 'docs'), ('docker/', 'docker'), ('shared/', 'shared'), ('cppgm.tests/', 'cppgm.tests'), ('.github/', '.github')):
+for prefix, title in (('dev/', 'dev (tool mains, build)'), ('dev/src/', 'dev/src'), ('scripts/', 'scripts'), ('doc/', 'doc'), ('docs/', 'docs'), ('docker/', 'docker'), ('shared/', 'shared'), ('student.tests/', 'student.tests'), ('.github/', '.github')):
     only_h, only_s, differing = bucket3(prefix)
     lines += [f'## {title}', '', f'- only here: {len(only_h)}', f'- only in source: {len(only_s)}', f'- differing: {len(differing)}', '']
-    if prefix not in ('dev/src/', 'cppgm.tests/'):
+    if prefix not in ('dev/src/', 'student.tests/'):
         if only_h: lines += ['Only here:', ''] + [f'- `{f}`' for f in only_h] + ['']
         if only_s: lines += ['Only in source:', ''] + [f'- `{f}`' for f in only_s] + ['']
         if differing: lines += ['Differing:', ''] + [f'- `{f}`' for f in differing] + ['']

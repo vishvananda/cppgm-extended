@@ -181,8 +181,6 @@ untrustworthy.
 For quick iteration, use a scratch object probe instead:
 
 ```sh
-make probe-self-object SOURCE=../dev/src/semantic_output.cpp
-make probe-self-object SOURCE=dev/src/semantic_output.cpp
 make probe-self-object SOURCE=../dev/cppgm++.cpp
 ```
 
@@ -196,7 +194,7 @@ If the canonical checkpoint objects already exist, you can link one scratch
 replacement object into a scratch binary:
 
 ```sh
-make probe-self-link SOURCE=../dev/src/semantic_output.cpp PROBE_TARGET=cppgm++
+make probe-self-link SOURCE=../dev/cppgm++.cpp PROBE_TARGET=cppgm++
 ```
 
 `probe-self-link` refuses to link if the probed object is not part of

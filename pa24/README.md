@@ -34,10 +34,10 @@ built the same way.
   that meets the bar is a correct PA24; only the contract-shape fixtures
   compare your instruction selection with the course solution's.
 
-The course solution's own dumps are pinned in the regression lane
-(`tests/regression/`, see `TESTING_AND_REFERENCES.md` at the repository
-root).  That lane runs with `make test` and is not part of the assignment's
-contract.
+Use `make test-course` for the assignment contract and `make test-regression`
+for the course solution's exact design. The compiler solution checkout's
+`make test` runs both; the student export runs only the course contract by
+default. See [Testing and references](../TESTING_AND_REFERENCES.md).
 
 ### Prerequisites
 
@@ -87,9 +87,7 @@ The starter kit contains:
 Students should implement the assignment in `dev/lowir2native.cpp` and any reusable
 student-owned helpers they add under `dev/src/`. The assignment directory, grammar files,
 test fixtures, comparison scripts, and checked-in reference outputs are support
-files, not implementation files to edit for normal solutions. The shared support files
-provide reusable infrastructure and earlier assignment machinery; they do not implement the
-new PA24 native lowering contract for you.
+files, not implementation files to edit for normal solutions. Reuse your earlier compiler infrastructure when implementing this milestone.
 
 The supplied `lowir2native-ref` is available for inspection and reference
 regeneration. Normal tests invoke the student's `lowir2native` and compare

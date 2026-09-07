@@ -51,8 +51,8 @@ The starter kit contains:
 - an HTML grammar explorer of `pa15.gram` in the sub-directory `grammar/`
 - a checked-in local test suite under `tests/`
 
-In the starter kit, the editable `../dev/cppgm++.cpp` file is seeded from the
-`cppgm++` scaffold and is the file you extend for this assignment.
+Extend the `cppgm++` implementation you built in earlier assignments; the
+initial scaffold is not reinstalled at this milestone.
 
 The supplied reference tools are available for inspection and reference
 regeneration. The checked-in `.ref` files are the default grading oracle.

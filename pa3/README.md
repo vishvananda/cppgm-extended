@@ -1,5 +1,8 @@
 ## CPPGM Programming Assignment 3 (ppexpr)
 
+Adapted from the original CPPGM material; revised for cppgm-extended.
+See [NOTICE](../NOTICE) for attribution.
+
 ### Overview
 
 Write a C++ application called `ppexpr` that accepts a _C++ Source File_ on standard input that contains Controlling Expressions (defined below) for Conditional Inclusion, one per logical line.
@@ -20,13 +23,17 @@ You should complete Programming Assignment 2 before starting this assignment.
 
 ### Starter Kit
 
-The starter kit can be obtained from:
+Use the cumulative student repository. Implement `ppexpr` in
+`../dev/ppexpr.cpp` and reusable helpers under `../dev/src/`.
+The assignment provides tests, references and a `ppexpr-ref` wrapper;
+see [Testing and references](../TESTING_AND_REFERENCES.md).
 
-    $ git clone git://git.cppgm.org/pa3.git
+Reuse the implementation from PA2; do not start it over.
 
-It contains a stub implementation of `ppexpr` with some _optional_ starter code, a compiled reference implementation and a test suite.
+### Testing
 
-You will also want to reuse most of your code from PA2.
+Run `make test-pa3` and `make test-report-through-pa3` from the repository root.
+Use `ppexpr-ref` for investigation under the root reference policy.
 
 ### Mock `defined` Implementation
 
@@ -85,9 +92,9 @@ Produces an output of:
     error
     eof
 
-### Restrictions
+### Implementation
 
-As per PA1
+Extend your existing compiler code under `dev/` and `dev/src/`.
 
 ### Definition: Controlling Expression
 

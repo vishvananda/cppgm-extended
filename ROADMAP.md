@@ -29,15 +29,10 @@ files into that model. Compiler stages construct typed targets and call the
 same encoder directly; the fact text format is not an internal compiler
 transport.
 
-## Numbering Migration
+## Numbering history
 
-The September 2026 consolidation keeps the LowIR introduction and
-produces 34 assignments. See [the exact migration map](docs/assignment-numbering-migration-2026-09.md).
-
-Earlier migration, using its original numbers:
-
-
-The 2026-08 move placed the former PA30 `abimangle` assignment at PA14. Former
-PA14-PA29 moved forward by one slot; PA1-PA13 and PA31-PA39 did not move. See
-[`docs/assignment-numbering-migration-2026-08.md`](docs/assignment-numbering-migration-2026-08.md)
-for the exact map and the policy for older historical records.
+The September 2026 consolidation produces the current PA1–PA34 sequence.
+[Its migration map](docs/assignment-numbering-migration-2026-09.md) links the
+previous numbering, including the retained LowIR introduction, to this course.
+The [August map](docs/assignment-numbering-migration-2026-08.md) documents an
+earlier ABI-assignment move. Historical plans retain their original numbers.

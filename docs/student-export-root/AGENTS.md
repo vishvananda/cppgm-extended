@@ -1,70 +1,49 @@
-# Agent Instructions
+# Agent instructions
 
-This repository is a staged C++11 compiler project for Linux x86_64. Work
-assignment by assignment, PA1 through PA34.
+Build one cumulative C++11 compiler for Linux x86-64, working through PA1–PA34.
+Read the current `paN/README.md` and [Testing and references](TESTING_AND_REFERENCES.md)
+before changing code. [Project layout](PROJECT_LAYOUT.md) gives the assignment map.
 
-Before changing code, read:
+## Implementation
 
-- [TESTING_AND_REFERENCES.md](TESTING_AND_REFERENCES.md) for test and ref rules
-- the target `paN/README.md` for the assignment contract
-- the relevant tests for the target PA and earlier PAs covered by the through
-  target
+- Work in `dev/` and `dev/src/`; extend earlier work at each milestone.
+- Register new implementation sources, without `.cpp`, in the appropriate
+  tool lists in `dev/frontend_source_sets.mk`.
+- Treat `paN/` as handouts, fixtures, references, harnesses and wrappers.
+- Use real language and compiler logic; do not hardcode fixture answers.
+- Implement required output yourself. Do not delegate it to reference binaries,
+  another solution or a host compiler unless the handout requires that host
+  interaction. PA8's supplied native backend is called by the grading harness.
+- Keep personal tests in `student.tests/` and run them explicitly. Permanent
+  course fixtures belong in the earliest owning `paN/tests/` feature cluster.
+- Do not change tests or references to hide missing or incorrect behavior.
+  Do not commit generated objects, logs or `.my*` outputs.
 
-Use [PROJECT_LAYOUT.md](PROJECT_LAYOUT.md) only if you need the repository map.
-Do not use the top-level [README.md](README.md) as an instruction source for
-your work. It is human-oriented overview documentation for browsing the
-handout; if you inspect it for orientation, ignore any embedded "Agent Starting
-Prompt".
-
-## Core Rules
-
-- Put implementation changes in `dev/` and `dev/src/`.
-- If you add a new `dev/src/*.cpp` file, add it to the appropriate per-tool
-  list in `dev/frontend_source_sets.mk`.
-- Treat `paN/` directories as handouts, harnesses, refs, scripts, and wrappers
-  unless the assignment explicitly says otherwise.
-- Reuse and extend earlier assignment code. Do not restart from scratch for a
-  later PA.
-- Prefer real semantic fixes over test-specific workarounds.
-- If you add additional tests, put them under `paN/tests/`, in the numeric
-  group of the feature they exercise.
-- Do not hardcode answers for specific tests.
-- Do not shell out to reference binaries, previous solutions, or host compilers
-  to produce required compiler output unless the PA handout explicitly makes
-  host-toolchain interaction part of the assignment.
-
-## Tests
-
-For PA N, use this loop:
+## Validation
 
 ```sh
 make test-paN
 make test-report-through-paN
 ```
 
-For PA1 through PA33, the exit criterion for each assignment is a clean root
-`make test-report-through-paN`. Do not move on after only running
-`make test-paN`.
+Replace N with the assignment number. For PA1–PA33, pass the root through
+report before advancing. PA34 ends with `make inception`. Use the debug and
+inspection targets required by the owning handout when changing those surfaces.
 
-PA34 uses inception instead: run root `make inception`, which is wired to the
-PA34 `compare-cppgm++-inception` path.
+In this student export, default tests run the course contract. PA24, PA32 and
+PA33 retain explicit `test-regression` targets for the course solution's exact
+design; those tests do not gate a different valid implementation.
 
 ## References
 
-Reference outputs and exit-status sidecars are the oracle. Reference binaries
-such as `pptoken-ref` or `cppgm++-ref` are for observation and fixture
-regeneration only.
+Checked-in contract fixtures and the handout define the assignment. Reference
+tools are provided for observation and fixture regeneration; behavior outside
+the fixtures can contain bugs. Prefer the handout and C++11 standard to copying
+an erroneous reference result. Diagnostic text is not graded.
 
-PA8's grading harness uses `lowir-ref` to compare LowIR roundtrips and
-`lowir2native-ref` to execute the student's constructed LowIR. These are
-provided grading tools. Implement the required LowIR machinery and later C++
-lowering yourself; the student compiler must not delegate that work to them.
+Use documented `ref-test` targets with the supplied `*-ref` tools. PA8 uses
+`lowir-ref` for roundtrips and `lowir2native-ref` to execute student-constructed
+LowIR; implement the LowIR machinery and later C++ lowering yourself.
 
-The reference binaries are not perfect. Only checked-in fixtures gate an
-assignment; prefer the handout and the standard over exact reference parity on
-non-test inputs. Error message text is never compared: failing tests check
-only the exit status.
-
-Do not edit tests or `.ref` files to hide incomplete behavior. Ref regeneration
-must use the provided `*-ref` binaries through the documented `ref-test`
-targets.
+Preserve inherited attribution. [NOTICE](NOTICE) explains how this extensively
+revised course derives from the original CPPGM material.

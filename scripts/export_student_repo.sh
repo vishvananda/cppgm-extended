@@ -97,7 +97,7 @@ copy_tracked_paths() {
 list_tracked_reference_outputs() {
   (
     cd "$repo_root"
-    git ls-files -- 'pa[0-9]*' cppgm.tests |
+    git ls-files -- 'pa[0-9]*' student.tests |
       perl -ne 'print if m{(^|/)[^/]+\.ref(?:\.|$)}'
   )
 }
@@ -105,7 +105,7 @@ list_tracked_reference_outputs() {
 list_exported_reference_outputs() {
   (
     cd "$dest"
-    find pa[0-9]* cppgm.tests -type f -print 2>/dev/null |
+    find pa[0-9]* student.tests -type f -print 2>/dev/null |
       perl -ne 's{^\./}{}; print if m{(^|/)[^/]+\.ref(?:\.|$)}'
   )
 }
@@ -253,8 +253,11 @@ verify_regenerated_reference_outputs() {
   echo "==> Retained $exported_diagnostic_count Linux-generated failed-case stdout examples"
 }
 
+# Student exit criteria judge the course contract. Keep the solution-specific
+# regression target available for explicit maintainer/design investigation.
 sanitize_student_makefile_defaults() {
   perl -0pi -e '
+    s/^test: test-course test-regression$/test: test-course/m;
     s/GNUMAKE = \$\(firstword \$\(wildcard \/opt\/homebrew\/opt\/make\/libexec\/gnubin\/make \/usr\/local\/opt\/make\/libexec\/gnubin\/make\)\)\nifneq \(\$\(GNUMAKE\),\)\nMAKE := \$\(GNUMAKE\)\nendif\n//g;
     s/sysctl -n hw\.ncpu 2>\/dev\/null \|\| //g;
     s/LLVM_CXX_LOCAL = \/usr\/local\/opt\/llvm\/bin\/clang\+\+\nLLVM_CXX_HOMEBREW = \/opt\/homebrew\/opt\/llvm\/bin\/clang\+\+\n(?:ifeq \(\$\(HOST_UNAME_S\),Darwin\)\n)?ifeq \(\$\(wildcard \$\(LLVM_CXX_LOCAL\)\),\)\nifneq \(\$\(wildcard \$\(LLVM_CXX_HOMEBREW\)\),\)\nLLVM_CXX_DEFAULT = \$\(LLVM_CXX_HOMEBREW\)\nendif\nelse\nLLVM_CXX_DEFAULT = \$\(LLVM_CXX_LOCAL\)\nendif\n(?:ifdef LLVM_CXX_DEFAULT\nHOST_CXX_DEFAULT = \$\(LLVM_CXX_DEFAULT\)\nelse\nHOST_CXX_DEFAULT = clang\+\+\nendif\nelse\nHOST_CXX_DEFAULT = g\+\+\nendif\n|)//g;
@@ -387,7 +390,7 @@ copy_tracked_paths \
   .gitignore \
   Makefile \
   doc \
-  cppgm.tests \
+  student.tests \
   shared \
   "${pa_dirs[@]}" \
   "${shared_scripts[@]}" \

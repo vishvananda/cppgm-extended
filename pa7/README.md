@@ -47,15 +47,14 @@ The PA7 starter kit contains:
 
 Your main editable file is `dev/cppgm++.cpp`. You may add or change other
 implementation files under `dev/` as needed. Do not edit the test inputs,
-reference outputs, harness scripts, or grammar files unless course staff
-explicitly asks for that.
+reference outputs, harness scripts, or grammar files unless the task explicitly calls for it.
 
 The starter `dev/cppgm++.cpp` is the same long-lived `cppgm++` dispatcher used
 from PA5 onward. For PA7, extend it so `--emit-semantics` runs your resolved
 semantic-analysis and dump path.
 
-There is no required `cppgm++-ref` binary for PA7. The checked-in
-reference files under `tests/` are the grading oracle.
+The `cppgm++-ref` wrapper is available for investigation and reference
+regeneration. Tests run your compiler against the checked-in contract fixtures.
 
 ### Build And Test Commands
 
