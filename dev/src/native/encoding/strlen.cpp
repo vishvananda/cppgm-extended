@@ -8,6 +8,44 @@ namespace lowir_native
 namespace strlen_detail
 {
 
+void plan_runtime(const lowir_model::LowirProgram & source,
+                  lowir_model::SymbolId symbol, mir_model::MirProgram * target)
+{
+  if(!symbol.valid()) return;
+  for(std::size_t i = 0; i < source.functions.size(); ++i)
+    if(source.functions[i].symbol == symbol) return;
+  for(std::size_t i = 0; i < source.function_declarations.size(); ++i) {
+    const lowir_model::FunctionDeclaration & declaration =
+      source.function_declarations[i];
+    if(declaration.symbol != symbol || declaration.params.size() != 1 ||
+       declaration.params[0].type.kind != lowir_model::LTK_PTR ||
+       declaration.return_type.kind != lowir_model::LTK_I64 ||
+       declaration.boundary.arity != lowir_model::CAM_FIXED) continue;
+    mir_model::MirRuntimeFunction runtime;
+    runtime.kind = mir_model::RuntimeFunction::RF_STRLEN;
+    runtime.symbol = symbol;
+    runtime.object_symbol = declaration.metadata.object_symbol;
+    target->runtime_functions.push_back(runtime);
+    return;
+  }
+}
+
+void emit_runtime(elf_detail::CodeBuffer & out)
+{
+  const lowir_model::LocalLabelId loop = out.internal_label("strlen_loop");
+  const lowir_model::LocalLabelId done = out.internal_label("strlen_done");
+  emit_register_move(out, XR_RAX, XR_RDI);
+  out.label(loop);
+  emit_load(out, XR_RCX, XR_RAX, 0, 8);
+  emit_test_register(out, XR_RCX);
+  emit_condition_jump(out, XC_E, done);
+  emit_lea(out, XR_RAX, XR_RAX, 1);
+  out.byte(0xe9); out.relative32(loop);
+  out.label(done);
+  emit_register_alu(out, 0x29, XR_RAX, XR_RDI);
+  out.byte(0xc3);
+}
+
 bool emit_prefix16_call(
     elf_detail::CodeBuffer & out,
     const mir_model::MirInstruction & instruction)

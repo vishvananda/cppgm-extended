@@ -5,6 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
+    zeroinit 1x1 %t1
     %t2 = call i64 @D_int___R__f(%t1)
     %t3 = binary sub i64 %t2, 7
     %t4 = convert trunc i32 i64 %t3

@@ -450,6 +450,7 @@ protected:
 				"omitted runtime aggregate element is outside the checkpoint");
 		Instruction store(Instruction::STORE);
 		store.type = derived.LowerExpressionType(type);
+		store.volatile_access = derived.TypeIsVolatile(type);
 		store.first = store.type.kind == LOW_PTR ?
 			Operand::NullPointer(store.type) : IsFloating(store.type) ?
 			derived.FloatingOperand("0.0", store.type) : Operand(0, store.type);

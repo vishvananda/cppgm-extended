@@ -159,7 +159,7 @@ std::uint32_t Analyzer::BuildClassValueConstructorAction(TypeId type,
 
 ExpressionInfo Analyzer::BuildClassConditional(
 	std::uint32_t condition, const ExpressionInfo& yes,
-	const ExpressionInfo& no, TypeId type, bool preserve_xvalue)
+	const ExpressionInfo& no, TypeId type)
 {
 	const TypeId object = program_->types.RemoveTopCv(EffectiveType(type));
 	if (!IsClassEntity(*program_, EntityOf(object)))
@@ -193,8 +193,6 @@ ExpressionInfo Analyzer::BuildClassConditional(
 			  recipe_kind == DUMP_CLASS_VALUE_TRANSFER));
 		if (!direct)
 		{
-			if (!preserve_xvalue && source.category == VALUE_XVALUE)
-				source.category = VALUE_LVALUE;
 			recipe = BuildClassValueConstructorAction(
 				object, source, true, true);
 		}
@@ -265,7 +263,7 @@ ExpressionInfo Analyzer::RetargetClassConditional(
 	no.type = dump_.nodes[children[2]].type;
 	no.category = dump_.nodes[children[2]].category;
 	no.binding = dump_.nodes[children[2]].binding;
-	return BuildClassConditional(children[0], yes, no, type, true);
+	return BuildClassConditional(children[0], yes, no, type);
 }
 void Analyzer::FinalizeNamedReturnSlot(std::uint32_t function)
 {
@@ -2260,6 +2258,9 @@ void Analyzer::AddNamespaceObjectAction(std::uint32_t variable,
 		initializer, destructor_action, &initializer_list_backing);
 	namespace_objects_.push_back(NamespaceObjectAction(object, type, variable,
 		initializer, destructor_action, initializer_list_backing));
+	if (program_->types.IsReference(type))
+		CollectReferenceLifetimeObjects(initializer,
+			&namespace_objects_.back().reference_temporaries);
 }
 
 void Analyzer::AppendScopeDestructionActions(ScopeId scope,

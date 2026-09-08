@@ -42,8 +42,9 @@ The PA5 starter kit contains:
 - checked-in `.ref` and `.ref.exit_status` files used as the oracle
 
 Your main editable file is `dev/cppgm++.cpp`. You may add or change other
-implementation files under `dev/` as needed. Do not edit the test inputs,
-reference outputs, harness scripts, or grammar files unless the task explicitly calls for it.
+implementation files under `dev/` as needed. Preserve the supplied test inputs,
+harness scripts and grammar. Corrections to reference outputs follow the
+[reference policy](../TESTING_AND_REFERENCES.md).
 
 The starter `dev/cppgm++.cpp` is a command-line scaffold for the long-lived
 `cppgm++` binary. It establishes the expected mode flags and help path; the AST

@@ -54,12 +54,19 @@ const int& global_bound = next();
 
 int main()
 {
+  volatile int clobber = 99;
+  if (counter != 41 || global_bound != counter) return 8;
   if (literal() != 5) return 1;
-  if (call() != 0) return 2;
-  if (converting() != 43) return 3;
-  if (arithmetic() != 45) return 4;
+  int before = counter;
+  if (call() != (before + 1) + (before + 2) - 42 ||
+    counter != before + 2) return 2;
+  before = counter;
+  if (converting() != before + 1 || counter != before + 1) return 3;
+  before = counter;
+  if (arithmetic() != before + 2 || counter != before + 1) return 4;
   if (conditional(1) != 7) return 5;
   if (conditional(0) != 0) return 6;
   if (global_bound != 41) return 7;
+  if (clobber != 99) return 9;
   return 0;
 }

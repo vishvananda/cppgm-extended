@@ -7,6 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $b
     %t2 = addr $tmpobj__1
+    zeroinit 1x1 %t2
     %t3 = addr $b
     %t4 = call ptr @deref__operator__(%t2, %t3)
     %t5 = load i32 %t4

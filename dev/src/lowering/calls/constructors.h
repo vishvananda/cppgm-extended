@@ -432,6 +432,8 @@ protected:
 			return;
 		}
 		Instruction store(Instruction::STORE);
+		store.volatile_access = !derived.IsReferenceType(action.type) &&
+			derived.TypeIsVolatile(action.type);
 		if (derived.IsReferenceType(action.type))
 		{
 			if (values.empty())
@@ -572,6 +574,8 @@ protected:
 			return;
 		}
 		Instruction store(Instruction::STORE);
+		store.volatile_access = !derived.IsReferenceType(action.type) &&
+			derived.TypeIsVolatile(action.type);
 		if (derived.IsReferenceType(action.type))
 		{
 			store.type = LowPtr();

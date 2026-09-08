@@ -11,6 +11,7 @@ function @nonprimary_chained_lambda__run() -> i32 [binding=weak, object=_ZN25non
     eh_try ^cleanup_resume_1
     %t1 = addr $tmpobj__2
     %t2 = addr $tmpobj__3
+    zeroinit 1x1 %t2
     eh_end
     jump ^call_unwind_end_2
 

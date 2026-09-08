@@ -3,6 +3,7 @@
 #include "native/driver/stats.h"
 #include "native/errors.h"
 #include "native/analysis/data_layout.h"
+#include "native/encoding/instructions.h"
 
 #include <cstdint>
 #include <string>
@@ -44,11 +45,14 @@ void emit_float_data(CodeBuffer & out, std::uint64_t low,
 void emit_global(CodeBuffer & out,
                  const mir_model::MirGlobalDefinition & global)
 {
+  if(global.thread_local_storage && global.thread_local_wrapper_symbol.valid()) {
+    out.label(global.thread_local_wrapper_symbol);
+    emit_symbol_move(out, XR_RAX, global.symbol);
+    out.byte(0xc3);
+  }
   out.align(global_alignment(global));
   out.label(global.symbol);
   if(global.object_symbol.valid()) out.label_object(global.object_symbol);
-  if(global.thread_local_storage && global.thread_local_wrapper_symbol.valid())
-    out.label(global.thread_local_wrapper_symbol);
   if(global.storage_kind == mir_model::MirGlobalDefinition::GS_SCALAR) {
     const std::size_t size = type_size(global.type);
     if(global.init_kind == mir_model::MirGlobalDefinition::GI_ADDR)

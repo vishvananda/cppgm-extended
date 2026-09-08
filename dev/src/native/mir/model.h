@@ -438,6 +438,7 @@ struct HostEhClause
     HC_CATCH,
     HC_FILTER
   } kind = HC_CATCH;
+  bool implicit = false;
   bool catch_all = false;
   long long selector = 0;
   lowir_model::SymbolId type_symbol;
@@ -513,7 +514,8 @@ struct RuntimeFunction
     RF_PURE_VIRTUAL,
     RF_DYNAMIC_CAST,
     RF_BAD_CAST,
-    RF_BAD_TYPEID
+    RF_BAD_TYPEID,
+    RF_STRLEN
   } kind = RF_EH_PERSONALITY;
 
   lowir_model::SymbolId symbol;

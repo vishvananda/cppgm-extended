@@ -15,9 +15,11 @@ function @__cppgm_class_template_7_0__go() -> void [binding=internal, object=_ZN
   block ^entry:
     %t1 = addr $a
     %t2 = addr $discard__1
+    zeroinit 1x1 %t2
     store i32 0, %t1
     %t3 = index i8 %t1, 4
     %t4 = addr $discard__2
+    zeroinit 1x1 %t4
     store i32 0, %t3
     %t5 = addr $a
     return void

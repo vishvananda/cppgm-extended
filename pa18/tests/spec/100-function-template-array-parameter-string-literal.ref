@@ -23,6 +23,7 @@ function @delimiter(%s : ptr) -> obj<1x1> [binding=weak, object=_Z9delimiterIcE1
     %t1 = load ptr $s
     %t2 = addr $retobj__1
     %t3 = addr $arg__2
+    zeroinit 1x1 %t3
     call void @delimiter_type_char__char_traits_char____delimiter_type_pointer_to_const_char____cppgm_class_template_identity_0_5_0_(%t2, %t3)
     return obj<1x1> $retobj__1
 }

@@ -129,6 +129,7 @@ protected:
 			}
 			Instruction store(Instruction::STORE);
 			store.type = element;
+			store.volatile_access = derived.TypeIsVolatile(array.child);
 			if (i < values.size())
 				store.first = derived.Convert(
 					derived.LowerValue(values[i]), element, false);

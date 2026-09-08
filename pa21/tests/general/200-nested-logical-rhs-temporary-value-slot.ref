@@ -25,6 +25,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     eh_try ^cleanup_resume_10
     %t2 = addr $arg__4
+    zeroinit 1x1 %t2
     eh_end
     jump ^call_unwind_end_11
 

@@ -31,6 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $predecessor_value
     call void @tagged_argument_predecessor_tag__int___tagged_argument_predecessor_tag__int_(%t7, %t8)
     %t9 = addr $arg__4
+    zeroinit 1x1 %t9
     call void @arg_list___cppgm_class_template_identity_2_6_0__empty_arg_list___arg_list___cppgm_class_template_identity_2_5_0____cppgm_class_template_identity_3_7_0_(%t6, %t7, %t9)
     call void @arg_list___cppgm_class_template_identity_2_5_0____cppgm_class_template_identity_3_7_0___arg_list___cppgm_class_template_identity_2_5_0____cppgm_class_template_identity_3_7_0_(%t3, %t4, %t6)
     %t10 = addr $pack

@@ -244,6 +244,7 @@ protected:
 					derived.program_.SizeOf(record.type);
 				if (element_size != 1)
 				{
+					offset = derived.Convert(offset, LowI64());
 					const Operand scaled = derived.Temp(LowI64());
 					Instruction multiply(Instruction::BINARY);
 					multiply.dest = scaled.id;

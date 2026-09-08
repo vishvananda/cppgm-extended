@@ -41,6 +41,7 @@ function @post(%ctx : ptr [pass=by_address, object_bytes=1], %token : ptr [pass=
     call void @initiate_executor___initiate_executor_(%t1, %t2)
     %t5 = load ptr $token
     %t6 = addr $arg__3
+    zeroinit 1x1 %t6
     %t7 = call i32 @async_result_initiate__ov2(%t1, %t5, %t6)
     return i32 %t7
 }

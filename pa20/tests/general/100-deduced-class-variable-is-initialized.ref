@@ -36,6 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call obj<4x4> @make()
     copyobj 4x4 %t3, %t2
     %t4 = addr $empty
+    zeroinit 1x1 %t4
     %t5 = addr $empty
     %t6 = addr $spelled
     call void @Counted__Counted(%t6)

@@ -10,6 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 7, %t2
     %t3 = addr $values
     %t4 = addr $tmpobj__2
+    zeroinit 1x1 %t4
     %t5 = call i64 @index__operatorlong(%t4)
     %t6 = index i32 [projection=array_element] %t3, %t5
     %t7 = load i32 %t6

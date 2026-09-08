@@ -73,6 +73,8 @@ protected:
 		Derived& derived = static_cast<Derived&>(*this);
 		const LowType type = derived.LowerStorageType(
 			derived.arena_.nodes[node].type);
+		const Operand reference_backing = derived.StaticReferenceStorage(node, type);
+		if (reference_backing.kind != Operand::NONE) return reference_backing;
 		const Operand namespace_backing =
 			derived.NamespaceInitializerListBackingStorage(node, type);
 		if (namespace_backing.kind != Operand::NONE) return namespace_backing;
@@ -231,12 +233,6 @@ protected:
 	void EmitZeroInitialization(TypeId type, const Operand& destination)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (derived.IsClassObjectType(type))
-		{
-			const TypeRecord& object = derived.program_.types.Get(
-				derived.ExpressionObjectType(type));
-			if (derived.program_.entities[object.entity].empty_class) return;
-		}
 		const LowType storage_type = derived.LowerStorageType(type);
 		if (storage_type.kind == LOW_OBJECT &&
 			lowering::zero_initialization::ContiguousSpanEligible(
@@ -387,6 +383,7 @@ protected:
 			else ThrowLoweringSource(
 				"unsupported temporary object initializer");
 			derived.temporary_initialized_[node] = 1;
+			derived.MarkStaticReferenceConstructed(node);
 			derived.MarkConditionalTemporaryConstructed(node);
 			if (derived.full_expression_cleanup_active_)
 				derived.TransitionFullExpressionCleanup(node);
@@ -400,7 +397,11 @@ protected:
 		Derived& derived = static_cast<Derived&>(*this);
 		const DumpKind kind = derived.arena_.nodes[child].kind;
 		if (kind == DUMP_CONSTRUCTOR_ACTION)
+		{
+			if (derived.arena_.nodes[child].value_initialization)
+				derived.EmitZeroInitialization(record.operand_type, result);
 			derived.LowerConstructorAction(child, result);
+		}
 		else if (kind == DUMP_CLASS_VALUE_TRANSFER)
 			derived.LowerClassValueTransfer(child, result);
 		else if (kind == DUMP_CONDITIONAL_EXPRESSION)
@@ -608,6 +609,7 @@ protected:
 				Operand(static_cast<std::int64_t>(i), LowI64()), true);
 			Instruction store(Instruction::STORE);
 			store.type = element;
+			store.volatile_access = derived.TypeIsVolatile(array.child);
 			store.first = value;
 			store.second = destination;
 			derived.Emit(store);
@@ -919,6 +921,7 @@ protected:
 						Operand(i * element_size, LowI64()), false);
 				Instruction store(Instruction::STORE);
 				store.type = element;
+				store.volatile_access = derived.TypeIsVolatile(array.child);
 				store.first = i < values.size() ?
 					derived.LowerConvertedValue(values[i], element) : Operand(0, element);
 				store.second = destination;
@@ -968,6 +971,8 @@ protected:
 					ThrowLoweringSource(
 						"complex bound aggregate leaf is outside the checkpoint");
 				Instruction store(Instruction::STORE);
+				store.volatile_access = !derived.IsReferenceType(action.type) &&
+					derived.TypeIsVolatile(action.type);
 				if (derived.IsReferenceType(action.type))
 				{
 					if (values.empty())
@@ -1067,6 +1072,7 @@ protected:
 		}
 		Instruction store(Instruction::STORE);
 		store.type = derived.LowerExpressionType(type);
+		store.volatile_access = derived.TypeIsVolatile(type);
 		store.first = derived.LowerConvertedValue(node, store.type, false);
 		store.second = destination;
 		derived.Emit(store);
@@ -1199,6 +1205,8 @@ protected:
 		if (derived.LowerAggregateConstructorLeaf(
 			action, values, root, path, retained_destination)) return;
 		Instruction store(Instruction::STORE);
+		store.volatile_access = !derived.IsReferenceType(action.type) &&
+			derived.TypeIsVolatile(action.type);
 		if (derived.IsReferenceType(action.type))
 		{
 			if (values.empty())

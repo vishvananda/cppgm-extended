@@ -104,24 +104,19 @@ function @probe
 
   block ^then
     load.u32 rsi, [r8]
-    mov rbx, rsi
-    zext.i32 rbx
-    load.ptr rsi, [rdi+104]
-    imul rbx, 168
-    lea r12, [rsi+rbx]
+    load.ptr rbx, [rdi+104]
+    imul rsi, 168
+    lea r12, [rbx+rsi]
     load.i64 rsi, [r12+72]
     load.u32 rbx, [rbp-12]
-    zext.i32 rbx
     load.ptr r12, [rdi+104]
     imul rbx, 168
     lea r13, [r12+rbx]
     store.i64 [r13+72], rsi
     load.u32 rsi, [r8]
-    mov r12, rsi
-    zext.i32 r12
-    load.ptr rsi, [rdi+104]
-    imul r12, 168
-    lea r13, [rsi+r12]
+    load.ptr r12, [rdi+104]
+    imul rsi, 168
+    lea r13, [r12+rsi]
     load.u32 rsi, [r13+132]
     load.ptr r12, [rdi+104]
     lea r13, [r12+rbx]
@@ -153,11 +148,9 @@ function @probe
     load.ptr rbx, [rbp-8]
     lea rbx, [rbx+104]
     load.u32 rsi, [rbp-28]
-    mov r12, rsi
-    zext.i32 r12
-    load.ptr rsi, [rbx]
-    imul r12, 168
-    lea rbx, [rsi+r12]
+    load.ptr r12, [rbx]
+    imul rsi, 168
+    lea rbx, [r12+rsi]
     lea rbx, [rbx+136]
     load.u32 rsi, [rbx+4]
     cmp.u32 rsi, 0
@@ -177,7 +170,6 @@ function @probe
     load.ptr rbx, [rbp-8]
     lea rbx, [rbx+104]
     load.u32 rsi, [rbp-12]
-    zext.i32 rsi
     load.ptr r12, [rbx]
     imul rsi, 168
     lea rbx, [r12+rsi]
@@ -219,9 +211,8 @@ function @main
     call @probe [args=(rcx,rdx,rsi,rdi,r8,r9), stack=16]
     add rsp, 16
     mov r8, rax
-    mov r9, r8
-    zext.i32 r9
-    cmp.i64 r9, 2
+    zext.i32 r8
+    cmp.i64 r8, 2
     jne ^fail
     jmp ^check1
 
@@ -235,9 +226,7 @@ function @main
 
   block ^check2
     load.u32 r9, [r8+132]
-    mov r8, r9
-    zext.i32 r8
-    cmp.i64 r8, 8
+    cmp.i64 r9, 8
     jne ^fail
     jmp ^good
 

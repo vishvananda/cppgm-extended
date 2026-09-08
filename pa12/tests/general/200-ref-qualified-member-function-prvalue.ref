@@ -3,6 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
+    zeroinit 1x1 %t1
     %t2 = call i32 @X__f__ov2(%t1)
     %t3 = binary sub i32 %t2, 2
     return i32 %t3

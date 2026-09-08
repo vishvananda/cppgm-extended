@@ -53,5 +53,9 @@ bool emit_prefix16_call(
     elf_detail::CodeBuffer & out,
     const mir_model::MirInstruction & instruction);
 
+void plan_runtime(const lowir_model::LowirProgram & source,
+                  lowir_model::SymbolId symbol, mir_model::MirProgram * target);
+void emit_runtime(elf_detail::CodeBuffer & out);
+
 }
 }

@@ -26,6 +26,7 @@ function @boost__container__dtl__proxy_int__int___call(%this : ptr [object_bytes
     %t1 = load ptr $this
     %t2 = load ptr $a
     %t3 = addr $arg__1
+    zeroinit 1x1 %t3
     %t4 = load ptr $p
     call void @boost__container__dtl__proxy_int__int___priv(%t1, %t2, %t3, %t4)
     return void

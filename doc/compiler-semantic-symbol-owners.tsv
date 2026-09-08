@@ -575,6 +575,7 @@ dev/src/semantic/lifetime/elision.cpp	EmptyDefaultConstructorChain	1	dev/src/sem
 dev/src/semantic/lifetime/elision.cpp	PublishInitializationStats	1	dev/src/semantic/lifetime/elision.cpp	keep
 dev/src/semantic/lifetime/lifetime.cpp	AddLifetimeObligation	1	dev/src/semantic/lifetime/lifetime.cpp	keep
 dev/src/semantic/lifetime/lifetime.cpp	AddTemporaryLifetimeObligation	1	dev/src/semantic/lifetime/lifetime.cpp	keep
+dev/src/semantic/lifetime/lifetime.cpp	CollectReferenceLifetimeObjects	1	dev/src/semantic/lifetime/lifetime.cpp	keep
 dev/src/semantic/lifetime/local_statics.cpp	AddLocalStaticObjectAction	1	dev/src/semantic/lifetime/local_statics.cpp	keep
 dev/src/semantic/lifetime/local_statics.cpp	ApplyConstexprDeclaredFunctionType	1	dev/src/semantic/lifetime/local_statics.cpp	keep
 dev/src/semantic/lifetime/local_statics.cpp	ApplyConstexprMemberFunctionType	1	dev/src/semantic/lifetime/local_statics.cpp	keep

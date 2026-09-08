@@ -31,6 +31,7 @@ function @ptr_Y___ptr_Y___ov4(%this : ptr [object_bytes=1], %p : ptr [pass=by_ad
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = addr $arg__1
+    zeroinit 1x1 %t3
     %t4 = load ptr $p
     %t5 = index i8 [projection=field] %t4, 0
     call void @count_Y___count_Y___ov4(%t2, %t3, %t5)

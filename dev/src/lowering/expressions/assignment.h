@@ -120,7 +120,8 @@ public:
 		const BindingRecord& field = derived.program_.bindings[binding];
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
 		const LowType type = BitFieldMemoryType(field);
-		Operand value = derived.LoadStorage(storage, type);
+		Operand value = derived.LoadStorage(storage, type,
+			derived.TypeIsVolatile(field.type));
 		if (layout.bit_offset != 0)
 		{
 			const Operand shifted = derived.Temp(type);
@@ -177,7 +178,8 @@ public:
 		Derived& derived = static_cast<Derived&>(*this);
 		const BindingRecord& field = derived.program_.bindings[binding];
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
-		const Operand old = derived.LoadStorage(storage, type);
+		const Operand old = derived.LoadStorage(storage, type,
+			derived.TypeIsVolatile(field.type));
 		const std::uint64_t unit_mask = layout.bit_storage_bits == 64 ?
 			~std::uint64_t(0) :
 			(std::uint64_t(1) << layout.bit_storage_bits) - 1;
@@ -217,12 +219,14 @@ public:
 		return CombineBitFieldValue(cleared, positioned, type);
 	}
 
-	void EmitBitFieldStore(const LowType& type, const Operand& value,
+	void EmitBitFieldStore(BindingId binding, const LowType& type, const Operand& value,
 		const Operand& storage)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		Instruction store(Instruction::STORE);
 		store.type = type;
+		store.volatile_access = derived.TypeIsVolatile(
+			derived.program_.bindings[binding].type);
 		store.first = value;
 		store.second = storage;
 		derived.Emit(store);
@@ -233,7 +237,7 @@ public:
 	{
 		const Operand stored = MergeBitFieldStore(
 			binding, storage, positioned, type, preserve);
-		EmitBitFieldStore(type, stored, storage);
+		EmitBitFieldStore(binding, type, stored, storage);
 		return positioned;
 	}
 
@@ -272,7 +276,7 @@ public:
 		const Operand stored = preserve ? CombineBitFieldValue(
 			ClearBitFieldStorage(binding, destination, type),
 			positioned, type) : positioned;
-		EmitBitFieldStore(type, stored, destination);
+		EmitBitFieldStore(binding, type, stored, destination);
 	}
 
 	Operand LowerAssignment(const DumpNode& record,

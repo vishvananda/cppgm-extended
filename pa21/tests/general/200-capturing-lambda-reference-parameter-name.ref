@@ -66,13 +66,14 @@ function @__lambda_run_t34_38____lambda_nested_t45_53__operator__(%this : ptr [o
     %t4 = load ptr %t3
     %t5 = load i32 %t4
     %t6 = binary sub i32 %t5, 1
-    %t7 = binary mul i64 %t6, 4
-    %t8 = index i8 [projection=array_element] %t1, %t7
-    store ptr %t8, $parameter
-    %t9 = load ptr $parameter
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load i32 %t10
-    return i32 %t11
+    %t7 = convert sext i64 i32 %t6
+    %t8 = binary mul i64 %t7, 4
+    %t9 = index i8 [projection=array_element] %t1, %t8
+    store ptr %t9, $parameter
+    %t10 = load ptr $parameter
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load i32 %t11
+    return i32 %t12
 }
 function @Item__Item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
   slot $this : ptr

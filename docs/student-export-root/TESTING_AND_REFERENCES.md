@@ -71,17 +71,19 @@ make reference-binaries
 ```
 
 Reference wrappers fail if a tool cannot be downloaded or verified; they
-never fall back to your implementation. References can have bugs
-on untested inputs: prefer the handout and the C++11 standard over exact parity
-there. Do not edit existing fixtures or references to hide incomplete behavior.
+never fall back to your implementation.
 
 Failed-case stdout is an informational example. Successful stdout and
 required exit-status sidecars remain
 oracles. [The LowIR specification](pa8/lowir.md) explains normal comparison's
 presentation tolerance.
 
-Keep the supplied fixtures and reference outputs unchanged. If a reference
-appears wrong, report a reduced input and the reference bundle revision.
+Reference implementations and checked outputs are not guaranteed bug-free.
+Preserve them by default. You may correct reference outputs when a reduced
+reproducer and cited C++11 rules—or the LowIR contract for IR-only cases—prove
+them incorrect. Document the proof and bundle revision. Compiler agreement
+alone is insufficient. Never weaken required behavior, coverage, or comparison
+rules.
 
 ## Debug and inspection checks
 

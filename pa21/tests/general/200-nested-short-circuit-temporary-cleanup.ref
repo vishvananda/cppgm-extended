@@ -28,6 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     eh_try ^cleanup_resume_7
     %t1 = addr $arg__3
+    zeroinit 1x1 %t1
     eh_end
     jump ^call_unwind_end_8
 
@@ -52,6 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_4:
     eh_try ^cleanup_action_9
     %t4 = addr $arg__6
+    zeroinit 1x1 %t4
     eh_end
     eh_try ^cleanup_action_14
     %t5 = call u8 @use(%t4, 1)
@@ -120,6 +122,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 0, @destroyed
     eh_try ^cleanup_resume_7
     %t13 = addr $arg__9
+    zeroinit 1x1 %t13
     eh_end
     eh_try ^cleanup_action_27
     %t14 = call u8 @use(%t13, 0)
@@ -138,6 +141,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_24:
     eh_try ^cleanup_action_27
     %t16 = addr $arg__12
+    zeroinit 1x1 %t16
     eh_end
     eh_try ^cleanup_action_32
     %t17 = call u8 @use(%t16, 1)

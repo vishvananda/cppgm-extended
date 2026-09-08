@@ -13,6 +13,7 @@ function @get() -> ptr [binding=strong, object=_Z3getv] {
     %t3 = addr @__local_static__get__decl0__p
     %t4 = convert sext i64 i32 24
     %t5 = call ptr @operatornew(%t4)
+    zeroinit 24x8 %t5
     store ptr %t5, %t3
     store i64 1, @__local_static__get__decl0__p__guard
     jump ^local_static_ready_1

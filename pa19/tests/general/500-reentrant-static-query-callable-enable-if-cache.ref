@@ -10,7 +10,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $result
     %t3 = addr $query
     %t4 = addr $arg__1
+    zeroinit 1x1 %t4
     %t5 = addr $arg__2
+    zeroinit 1x1 %t5
     %t6 = call obj<1x1> @api__query_fn__impl__operator__(%t3, %t4, %t5)
     branch 1, ^cond_then_1, ^cond_else_2
 

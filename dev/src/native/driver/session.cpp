@@ -128,6 +128,10 @@ struct ProgramLoweringSession::Impl
     eh::plan_program(source, shell);
     program_lowering::lower_startup(source, shell);
     tls_wrappers = program_lowering::tls_wrapper_index(source);
+    std::vector<unsigned char> defined_tls_wrappers(source.symbol_names.size(), 0);
+    for(std::size_t i = 0; i < source.functions.size(); ++i)
+      if(source.functions[i].metadata.tls_for_symbol_id.valid())
+        defined_tls_wrappers[source.functions[i].symbol] = 1;
     for(std::size_t i = 0; i < source.global_declarations.size(); ++i)
       if(source.global_declarations[i].has_type &&
          source.global_declarations[i].type.kind == lowir_model::LTK_PTR)
@@ -141,12 +145,13 @@ struct ProgramLoweringSession::Impl
         program_lowering::lower_global(source.globals[i]);
       const lowir_model::SymbolId wrapper =
         tls_wrappers[source.globals[i].symbol];
-      if(wrapper.valid())
+      if(wrapper.valid() && !defined_tls_wrappers[wrapper])
         global.thread_local_wrapper_symbol = wrapper;
       shell.globals.push_back(std::move(global));
     }
     IndexSignatures();
     builtins.strlen = strlen_detail::builtin_symbol(source);
+    strlen_detail::plan_runtime(source, builtins.strlen, &shell);
     builtins.memcpy = memcpy_detail::builtin_symbol(source);
     builtins.fill = fill_detail::builtin_symbol(source);
     builtins.fill_units = fill_detail::units_builtin_symbol(source);

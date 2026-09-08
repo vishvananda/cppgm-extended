@@ -907,6 +907,12 @@ usual optimization freedoms. Bulk object operations (`copyobj`, `zeroinit`)
 have no volatile form; objects with volatile subobjects must be transferred
 through scalar volatile accesses.
 
+Explicit scalar initialization, including aggregate members and elements,
+retains the destination's volatile access marker. Preliminary zero-initialization
+of class storage before a constructor is a storage initialization operation;
+it does not make every byte write a volatile scalar access. Subsequent
+constructor accesses and copies retain their ordinary volatile requirements.
+
 Atomic memory-order operands use the GNU/Clang order encoding:
 
 - `0` relaxed

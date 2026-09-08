@@ -12,6 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $value
     %t5 = addr $arg__1
     %t6 = addr $tmpobj__2
+    zeroinit 1x1 %t6
     %t7 = call obj<4x4> @source_int___operatorContainer(%t6)
     copyobj 4x4 %t7, %t5
     %t8 = call ptr @array_int__2___operator___ov2(%t4, %t5)

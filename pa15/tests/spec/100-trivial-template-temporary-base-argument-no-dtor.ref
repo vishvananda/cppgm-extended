@@ -11,6 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $argobj__1
     %t2 = addr $tmpobj__2
+    zeroinit 1x1 %t2
     %t3 = index i8 %t2, 0
     %t4 = call i32 @consume($argobj__1)
     return i32 %t4

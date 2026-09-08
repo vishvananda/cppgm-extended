@@ -3,6 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
+    zeroinit 1x1 %t1
     call void @box_int__float___subset(%t1)
     return i32 0
 }

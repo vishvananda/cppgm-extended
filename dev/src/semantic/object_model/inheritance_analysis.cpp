@@ -1073,7 +1073,7 @@ ExpressionInfo Analyzer::AnalyzeConditional(NodeId node, ScopeId scope)
 	{
 		if (IsClassObjectType(no.type) && no.category == VALUE_PRVALUE)
 			return BuildClassConditional(
-				condition.node, yes, no, no.type, false);
+				condition.node, yes, no, no.type);
 		type = no.type;
 		category = no.category;
 	}
@@ -1081,7 +1081,7 @@ ExpressionInfo Analyzer::AnalyzeConditional(NodeId node, ScopeId scope)
 	{
 		if (IsClassObjectType(yes.type) && yes.category == VALUE_PRVALUE)
 			return BuildClassConditional(
-				condition.node, yes, no, yes.type, false);
+				condition.node, yes, no, yes.type);
 		type = yes.type;
 		category = yes.category;
 	}
@@ -1094,7 +1094,7 @@ ExpressionInfo Analyzer::AnalyzeConditional(NodeId node, ScopeId scope)
 			  dump_.nodes[no.node].kind == DUMP_TEMPORARY_OBJECT);
 		if (!same_glvalue)
 			return BuildClassConditional(
-				condition.node, yes, no, yes_object, false);
+				condition.node, yes, no, yes_object);
 		std::uint8_t cv = CV_NONE;
 		const TypeRecord& yes_top = program_->types.Get(EffectiveType(yes.type));
 		const TypeRecord& no_top = program_->types.Get(EffectiveType(no.type));

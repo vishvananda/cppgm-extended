@@ -73,5 +73,48 @@ void Analyzer::AddTemporaryLifetimeObligation(ScopeId scope,
 	MarkInitializerListLifetimeScope(scope, temporary);
 }
 
+void Analyzer::CollectReferenceLifetimeObjects(std::uint32_t node,
+	std::vector<std::pair<std::uint32_t, std::uint32_t> >* objects)
+{
+	if (node == kNoDumpEdge) return;
+	const DumpNode& value = dump_.nodes[node];
+	if (value.kind == DUMP_TEMPORARY_OBJECT)
+	{
+		const std::uint32_t destructor =
+			MakeTemporaryDestructorAction(node, kNoBinding, true);
+		objects->push_back(std::make_pair(node, destructor));
+		return;
+	}
+	if (value.category == VALUE_PRVALUE && !IsClassObjectType(value.type) &&
+		!program_->types.IsReference(value.type) &&
+		program_->types.Get(program_->types.RemoveTopCv(value.type)).kind != TYPE_ARRAY)
+	{
+		objects->push_back(std::make_pair(node, kNoDumpEdge));
+		return;
+	}
+	if (value.first_edge == kNoDumpEdge) return;
+	const std::uint32_t first = dump_.edges[value.first_edge].child;
+	if ((value.kind == DUMP_MEMBER_EXPRESSION && value.binding != kNoBinding &&
+		 program_->bindings[value.binding].non_static_data_member &&
+		 !program_->types.IsReference(program_->bindings[value.binding].type)) ||
+		(value.kind == DUMP_SUBSCRIPT_EXPRESSION &&
+		 program_->types.Get(program_->types.RemoveTopCv(
+			EffectiveType(dump_.nodes[first].type))).kind == TYPE_ARRAY) ||
+		(value.kind == DUMP_CAST_EXPRESSION && value.category != VALUE_PRVALUE))
+		CollectReferenceLifetimeObjects(first, objects);
+	else if (value.kind == DUMP_BINARY_EXPRESSION && value.OperationIs(OP_COMMA))
+	{
+		const std::uint32_t second = dump_.edges[value.first_edge].next;
+		if (second != kNoDumpEdge)
+			CollectReferenceLifetimeObjects(dump_.edges[second].child, objects);
+	}
+	else if (value.kind == DUMP_CONDITIONAL_EXPRESSION)
+	{
+		for (std::uint32_t edge = dump_.edges[value.first_edge].next;
+			edge != kNoDumpEdge; edge = dump_.edges[edge].next)
+			CollectReferenceLifetimeObjects(dump_.edges[edge].child, objects);
+	}
+}
+
 }  // namespace semantic
 }  // namespace cppgm

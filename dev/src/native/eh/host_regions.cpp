@@ -71,6 +71,7 @@ void collect_host_eh_clauses(mir_model::MirFunction * function)
     if(clauses.empty()) {
       mir_model::MirHostEhClause cleanup;
       cleanup.kind = mir_model::MirHostEhClause::HC_CLEANUP;
+      cleanup.implicit = true;
       clauses.push_back(cleanup);
     }
     function->host_eh_clauses[block] = clauses;

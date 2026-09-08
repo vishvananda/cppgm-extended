@@ -29,6 +29,7 @@ function @N__copy_move_unwrap_iters(%first : i32, %last : i32, %out : i32) -> i3
     store i32 %last, $last
     store i32 %out, $out
     %t1 = addr $tmpobj__1
+    zeroinit 1x1 %t1
     %t2 = load i32 $first
     %t3 = load i32 $last
     %t4 = load i32 $out

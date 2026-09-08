@@ -9,6 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 [projection=field] %t2, 0
     store i32 7, %t3
     %t4 = addr $tmpobj__2
+    zeroinit 1x1 %t4
     %t5 = index i8 %t4, 0
     %t6 = addr $value
     %t7 = call ptr @member_base_record__int__record__id___operator__(%t5, %t6)

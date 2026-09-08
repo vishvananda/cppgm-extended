@@ -39,8 +39,10 @@ protected:
 			derived.UsesIndirectClassResult(source.type, source.binding))
 			return false;
 		const LowType value_type = derived.LowerStorageType(source.type);
-		const Operand temporary(derived.EnsureGeneratedSlot(
-			children[0], "tmpref", value_type), value_type);
+		Operand temporary = derived.StaticReferenceStorage(children[0], value_type);
+		if (temporary.kind == Operand::NONE)
+			temporary = Operand(derived.EnsureGeneratedSlot(
+				children[0], "tmpref", value_type), value_type);
 		Instruction retain(Instruction::STORE);
 		retain.type = value_type;
 		retain.first = derived.LowerInitializerConvertedValue(

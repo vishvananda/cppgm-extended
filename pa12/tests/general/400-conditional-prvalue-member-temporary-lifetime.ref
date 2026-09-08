@@ -46,7 +46,7 @@ function @choose(%ret : ptr [pass=indirect_result, object_bytes=8], %local : u8)
   block ^call_unwind_end_6:
     eh_try ^cleanup_action_7
     %t8 = index i8 [projection=field] %t5, 0
-    call void @Owner__Owner__ov2(%ret, %t8)
+    call void @Owner__Owner__ov3(%ret, %t8)
     call void @Result___Result(%t5)
     eh_end
     jump ^call_unwind_end_8
@@ -275,6 +275,24 @@ function @Owner__Owner__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
   block ^if_end_3:
     return void
 }
+function @Owner__Owner__ov3(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN5OwnerC1EOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $other
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store ptr %t3, %t5
+    %t6 = load ptr $other
+    %t7 = index i8 [projection=field] %t6, 0
+    store ptr 0, %t7
+    return void
+}
 function @Result___Result(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6ResultD1Ev, inline_hint=yes] {
   slot $this : ptr
 
@@ -301,4 +319,5 @@ alias object _ZN5OwnerC2EP7Control = @Owner__Owner
 alias object _ZN5OwnerD2Ev = @Owner___Owner
 alias object _ZN6ResultC2EP7Control = @Result__Result
 alias object _ZN5OwnerC2ERKS_ = @Owner__Owner__ov2
+alias object _ZN5OwnerC2EOS_ = @Owner__Owner__ov3
 alias object _ZN6ResultD2Ev = @Result___Result

@@ -63,16 +63,13 @@ function @probe
     store.i32 [rbp-4], rax
     call @touch [args=()]
     load.i32 r8, [r15]
-    mov r9, r8
-    sext.i32 r9
-    load.i64 r8, [r14]
+    load.i64 r9, [r14]
     load.i64 rdi, [r13]
     load.i64 rsi, [r12]
     load.i64 r15, [rbx]
     load.i32 r14, [rbp-4]
-    sext.i32 r14
-    add r14, r9
     add r14, r8
+    add r14, r9
     add r14, rdi
     add r14, rsi
     add r14, r15

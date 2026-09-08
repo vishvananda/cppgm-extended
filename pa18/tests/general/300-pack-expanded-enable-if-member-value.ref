@@ -8,6 +8,7 @@ function @S__g(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN
     %t1 = addr $f
     %t2 = addr $f
     %t3 = addr $arg__1
+    zeroinit 1x1 %t3
     %t4 = call ptr @Function__operator___ov3(%t2, %t3)
     return void
 }

@@ -92,6 +92,7 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     %t3 = addr $tmpobj__3
     call void @factor_unique_tag___factor_unique_tag_(%t3)
     %t4 = addr $arg__4
+    zeroinit 1x1 %t4
     %t5 = call ptr @factor_unique_tag___operator___ov3(%t3, %t4)
     store ptr %t5, $condaddr__1
     jump ^condaddr_end_3

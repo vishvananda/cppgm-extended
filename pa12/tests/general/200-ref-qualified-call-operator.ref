@@ -7,6 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $f
     %t3 = call i32 @F__operator__(%t2)
     %t4 = addr $tmpobj__1
+    zeroinit 1x1 %t4
     %t5 = call i32 @F__operator____ov2(%t4)
     %t6 = binary add i32 %t3, %t5
     %t7 = binary sub i32 %t6, 7

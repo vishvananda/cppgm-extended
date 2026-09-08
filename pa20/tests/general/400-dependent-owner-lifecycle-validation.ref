@@ -71,6 +71,7 @@ function @copy_move_unwrap_like(%ret : ptr [pass=indirect_result, object_bytes=1
     call void @unwrap_range_like(%t1, %t2, %t5)
     %t6 = addr $result
     %t7 = addr $tmpobj__1
+    zeroinit 1x1 %t7
     %t8 = addr $range
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = call ptr @move_like(%t9)

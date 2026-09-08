@@ -12,9 +12,16 @@ int read(element * elements, int & subscript)
   return elements[subscript].value;
 }
 
+int read_unsigned(element * elements, unsigned & subscript)
+{
+  return elements[subscript].value;
+}
+
 int main()
 {
-  element values[1] = {{7}};
-  int subscript = 0;
-  return read(values, subscript) == 7 ? 0 : 1;
+  element values[3] = {{7}, {11}, {19}};
+  int subscript = -1;
+  unsigned index = 2;
+  return read(values + 1, subscript) != 7 ||
+    read_unsigned(values, index) != 19;
 }

@@ -33,10 +33,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t12, %t14
     %t15 = addr $discard__1
     %t16 = addr $tmpobj__2
+    zeroinit 1x1 %t16
     %t17 = addr $ap
     call void @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_2_0___operator__(%t15, %t16, %t17)
     %t18 = addr $discard__3
     %t19 = addr $tmpobj__4
+    zeroinit 1x1 %t19
     %t20 = addr $ad
     call void @as_marker__impl_lvalue_reference_to_const_struct_proto____cppgm_class_template_identity_1_4_0___operator__(%t18, %t19, %t20)
     return i32 0

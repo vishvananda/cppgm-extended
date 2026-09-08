@@ -1492,6 +1492,8 @@ struct NamespaceObjectAction
 	TypeId type;
 	std::uint32_t variable, initializer, destructor;
 	std::uint32_t initializer_list_backing;
+	// Materialized object identity and its shutdown destructor, if any.
+	std::vector<std::pair<std::uint32_t, std::uint32_t> > reference_temporaries;
 
 	NamespaceObjectAction(BindingId object_value, TypeId type_value,
 		std::uint32_t variable_value, std::uint32_t initializer_value,

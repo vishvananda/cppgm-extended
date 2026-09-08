@@ -1,0 +1,63 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @text
+  storage data
+  item i8 97
+  item i8 98
+  item i8 99
+  item i8 0
+
+function @length
+  abi
+    param %s -> rdi : ptr
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    temp %i -> [rbp-8] : i64
+
+  block ^entry
+    mov r11, 0
+    store.i64 [rbp-8], r11
+    jmp ^loop
+
+  block ^loop
+    mov r8, rdi
+    load.i64 rdx, [rbp-8]
+    add r8, rdx
+    load.i8 r9, [r8]
+    mov rdx, 0
+    cmp.i8 r9, rdx
+    je ^done
+    jmp ^more
+
+  block ^more
+    load.i64 r8, [rbp-8]
+    add r8, 1
+    store.i64 [rbp-8], r8
+    jmp ^loop
+
+  block ^done
+    load.i64 rax, [rbp-8]
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 0
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+
+  block ^entry
+    mov rdi, @text
+    call @length [args=(rdi)]
+    ret rax

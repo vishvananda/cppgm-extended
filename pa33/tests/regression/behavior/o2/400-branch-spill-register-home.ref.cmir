@@ -46,10 +46,8 @@ function @accumulate
 
   block ^join
     load.i8 r9, [rbp-<off0>]
-    mov r8, r9
-    sext.i8 r8
-    lea r9, [<gpr0>+r8]
-    ret r9
+    lea r8, [<gpr0>+r9]
+    ret r8
 
 function @main
   abi

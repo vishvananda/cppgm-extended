@@ -1,0 +1,49 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @g thread_local
+  storage scalar i64
+  init i64 0
+
+global @h thread_local
+  storage scalar i64
+  init i64 9
+
+function @g_wrapper
+  abi
+    return ptr -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+
+  block ^entry
+    mov rbx, 5
+    tls_addr r11, @g_wrapper
+    store.i64 [r11], rbx
+    tls_addr rax, @g_wrapper
+    ret rax
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 16
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+
+  block ^entry
+    call @g_wrapper [args=()]
+    mov rbx, rax
+    call @h_wrapper [args=()]
+    load.i64 r8, [rbx]
+    add r8, [rax]
+    ret r8

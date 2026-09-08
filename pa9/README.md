@@ -47,9 +47,9 @@ The starter kit provides:
 - an optional ABI fact scaffold in `dev/src/abi/itanium/abi_mangle.h`
 
 Put code changes in `dev/`, especially `dev/abimangle.cpp` and reusable
-helpers under `dev/src/`. Do not edit generated `.my` files. Test inputs and
-references are part of the handout unless your instructor asks you to add or
-update tests.
+helpers under `dev/src/`. Do not edit generated `.my` files. Preserve supplied test inputs.
+Corrections to reference outputs follow the
+[reference policy](../TESTING_AND_REFERENCES.md).
 
 The assignment-facing scaffold is the typed fact data model and the declared
 parse/serialize/mangle API in `dev/src/abi/itanium/abi_mangle.h`. Keep the reusable typed

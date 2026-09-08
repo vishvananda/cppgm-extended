@@ -1634,9 +1634,22 @@ private:
        is_integer_or_pointer(instruction.type)) {
       MirOperand pressure_home;
       X64Register result = XR_RSP;
+      const MirOperand source = resolve(instruction.first);
+      const bool normalized_extension =
+        (instruction.op.kind == LowOperation::LOP_SEXT &&
+         selection::is_signed_integer(instruction.source_type)) ||
+        (instruction.op.kind == LowOperation::LOP_ZEXT &&
+         (instruction.source_type.kind == lowir_model::LTK_U8 ||
+          instruction.source_type.kind == lowir_model::LTK_U16 ||
+          instruction.source_type.kind == lowir_model::LTK_U32));
       if(result_is_immediate_return(
            block, instruction_index, instruction.dest)) {
         result = XR_RAX;
+      } else if((optimization_level_ >= 2 || normalized_extension) &&
+                source.kind == MirOperand::OP_REG &&
+                can_reuse(instruction.first) &&
+                !crosses_register_clobber(instruction.dest, source.reg)) {
+        result = source.reg;
       } else if(!try_allocate_result(instruction.dest, out, &result)) {
         pressure_home = allocate_temp_home(instruction.dest, instruction.type);
         result = XR_RAX;
@@ -1644,7 +1657,9 @@ private:
       const MirOperand destination = reg_operand(result);
       move_value_to_register(out, destination.reg, resolve(instruction.first),
                              instruction.source_type);
-      if(instruction.op.kind == LowOperation::LOP_SEXT || instruction.op.kind == LowOperation::LOP_ZEXT) {
+      if(!normalized_extension &&
+         (instruction.op.kind == LowOperation::LOP_SEXT ||
+          instruction.op.kind == LowOperation::LOP_ZEXT)) {
         append_integer_extension(out, destination,
           lowir_model::lowir_type_bit_width(instruction.source_type),
           instruction.op.kind == LowOperation::LOP_SEXT);

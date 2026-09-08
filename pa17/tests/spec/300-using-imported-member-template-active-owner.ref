@@ -22,6 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $tail_args
     %t9 = addr $tagged_index
     %t10 = addr $arg__1
+    zeroinit 1x1 %t10
     call void @arg_list___cppgm_class_template_identity_1_2_0__empty_arg_list___arg_list___cppgm_class_template_identity_1_3_0____cppgm_class_template_identity_2_4_0_(%t8, %t9, %t10)
     %t11 = addr $args
     %t12 = addr $tagged_visitor
@@ -109,6 +110,7 @@ function @override_const_property(%ap : ptr [pass=by_address, object_bytes=16], 
     store i32 0, $fallback
     %t1 = addr $retobj__1
     %t2 = addr $tmpobj__2
+    zeroinit 1x1 %t2
     %t3 = load ptr $g
     %t4 = load ptr $ap
     %t5 = index i8 %t4, 0

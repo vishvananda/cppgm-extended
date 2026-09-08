@@ -4,8 +4,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
+    zeroinit 1x1 %t1
     %t2 = index i8 %t1, 0
     %t3 = addr $tmpobj__2
+    zeroinit 1x1 %t3
     %t4 = index i8 %t3, 0
     %t5 = call i32 @operator_(%t2, %t4)
     return i32 %t5

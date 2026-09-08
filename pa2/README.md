@@ -320,7 +320,8 @@ make test-report-through-pa2
 Use `posttoken-ref` to investigate behavior. Required output and exit status
 are compared with the checked-in sidecars; diagnostic text is not graded.
 See [Testing and references](../TESTING_AND_REFERENCES.md) for local checks
-and comparison rules. Keep the supplied fixtures unchanged.
+and comparison rules. Preserve supplied test inputs; reference corrections
+follow that policy.
 
 ## Definition: Fundamental Types
 

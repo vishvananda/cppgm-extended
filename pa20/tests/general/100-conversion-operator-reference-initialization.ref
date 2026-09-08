@@ -63,16 +63,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_5:
     %t15 = addr $wrappers
     %t16 = load i32 $__idx1
-    %t17 = binary mul i64 %t16, 8
-    %t18 = index i8 [projection=array_element] %t15, %t17
-    %t19 = call ptr @Wrapper__operatorconstBase_(%t18)
-    store ptr %t19, $item
-    %t20 = load ptr $item
-    %t21 = load ptr %t20
+    %t17 = convert sext i64 i32 %t16
+    %t18 = binary mul i64 %t17, 8
+    %t19 = index i8 [projection=array_element] %t15, %t18
+    %t20 = call ptr @Wrapper__operatorconstBase_(%t19)
+    store ptr %t20, $item
+    %t21 = load ptr $item
     %t22 = load ptr %t21
-    %t23 = call i32 %t22(%t20) as (%arg0 : ptr [object_bytes=8]) -> i32
-    %t24 = cmp ne i32 %t23, 7
-    branch %t24, ^if_then_8, ^if_else_9
+    %t23 = load ptr %t22
+    %t24 = call i32 %t23(%t21) as (%arg0 : ptr [object_bytes=8]) -> i32
+    %t25 = cmp ne i32 %t24, 7
+    branch %t25, ^if_then_8, ^if_else_9
 
   block ^if_then_8:
     return i32 2
@@ -84,9 +85,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_iter_6
 
   block ^for_iter_6:
-    %t25 = load i32 $__idx1
-    %t26 = binary add i32 %t25, 1
-    store i32 %t26, $__idx1
+    %t26 = load i32 $__idx1
+    %t27 = binary add i32 %t26, 1
+    store i32 %t27, $__idx1
     jump ^for_cond_4
 
   block ^for_end_7:

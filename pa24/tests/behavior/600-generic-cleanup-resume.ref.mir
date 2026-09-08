@@ -1,0 +1,38 @@
+machine_ir x86_64 linux
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+global @g
+  storage scalar i64
+  init i64 0
+
+function @main
+  abi
+    return i64 -> rax
+  frame
+    stack_size 32
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues shared
+    preserve rbx
+    temp %host-eh-exception -> [rbp-8] : ptr
+    temp %host-eh-selector -> [rbp-16] : i64
+
+  block ^entry
+    eh_push ^handler, 0
+    eh_push ^cleanup, 1
+    mov rax, 10
+    throw rax
+
+  block ^cleanup
+    store.i64 @g, 4
+    resume
+
+  block ^handler
+    load.i64 rbx, @g
+    load_exception r8
+    add rbx, r8
+    ret rbx

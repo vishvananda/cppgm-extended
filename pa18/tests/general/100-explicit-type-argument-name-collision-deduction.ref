@@ -4,6 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $v
+    zeroinit 1x1 %t1
     store ptr 0, $p
     %t2 = addr $v
     %t3 = load ptr $p

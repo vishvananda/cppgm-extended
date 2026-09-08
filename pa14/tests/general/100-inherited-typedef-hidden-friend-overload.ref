@@ -48,6 +48,7 @@ function @ns__Vec__end(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, 
   block ^entry:
     store ptr %this, $this
     %t1 = addr $retobj__1
+    zeroinit 1x1 %t1
     return obj<1x1> $retobj__1
 }
 function @ns__Vec__begin(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK2ns3Vec5beginEv, inline_hint=yes] {
@@ -57,6 +58,7 @@ function @ns__Vec__begin(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak
   block ^entry:
     store ptr %this, $this
     %t1 = addr $retobj__1
+    zeroinit 1x1 %t1
     return obj<1x1> $retobj__1
 }
 function @ns__operator_(%x : ptr [pass=by_address, object_bytes=1], %y : ptr [pass=by_address, object_bytes=1]) -> i64 [binding=weak, object=_ZN2nsmiERKNS_4BaseES2_, inline_hint=yes] {

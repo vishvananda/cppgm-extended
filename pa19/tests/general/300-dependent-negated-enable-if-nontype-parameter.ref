@@ -3,6 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
+    zeroinit 1x1 %t1
     %t2 = call i32 @fn_int___f(%t1, 0)
     return i32 %t2
 }

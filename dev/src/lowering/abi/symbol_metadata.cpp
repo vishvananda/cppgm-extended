@@ -45,6 +45,7 @@ void ApplyBuiltinSymbolMetadata(lowering::ir::Symbol* symbol,
 	case BUILTIN_FUNCTION_IA32_EMMS:
 		symbol->effects = Symbol::EFFECTS_READWRITE; break;
 	case BUILTIN_FUNCTION_ABORT:
+		symbol->runtime_role = Symbol::RUNTIME_ROLE_TERMINATE;
 		symbol->noreturn = true; break;
 	case BUILTIN_FUNCTION_ALLOCA:
 	case BUILTIN_FUNCTION_VSNPRINTF:
@@ -98,4 +99,3 @@ void ApplyBuiltinParameterAliasMetadata(lowering::ir::Parameter* parameter,
 }  // namespace abi
 }  // namespace lowering
 }  // namespace cppgm
-

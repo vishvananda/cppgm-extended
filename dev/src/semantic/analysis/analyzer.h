@@ -1374,8 +1374,7 @@ private:
 	void ApplyConditionalClassConversion(
 		ExpressionInfo* yes, ExpressionInfo* no);
 	ExpressionInfo BuildClassConditional(std::uint32_t condition,
-		const ExpressionInfo& yes, const ExpressionInfo& no, TypeId type,
-		bool preserve_xvalue);
+		const ExpressionInfo& yes, const ExpressionInfo& no, TypeId type);
 	ExpressionInfo RetargetClassConditional(const ExpressionInfo& value,
 		TypeId type);
 	ExpressionInfo AnalyzeSubscript(NodeId node, ScopeId scope);
@@ -1733,6 +1732,8 @@ private:
 		ScopeId stop_exclusive = kNoScope) const;
 	void AddNamespaceObjectAction(std::uint32_t variable, BindingId object,
 		TypeId type, std::uint32_t initializer);
+	void CollectReferenceLifetimeObjects(std::uint32_t node,
+		std::vector<std::pair<std::uint32_t, std::uint32_t> >* objects);
 	void AddLocalStaticObjectAction(std::uint32_t variable, BindingId object,
 		TypeId type, std::uint32_t initializer, NameId source_file,
 		std::uint32_t source_line, std::uint32_t source_column,

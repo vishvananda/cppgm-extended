@@ -220,9 +220,8 @@ function @main
     mov r9, @outmem
     call @probe [args=(rcx,rdx,rsi,rdi,r8,r9)]
     mov r8, rax
-    mov r9, r8
-    zext.i8 r9
-    cmp.i64 r9, 1
+    zext.i8 r8
+    cmp.i64 r8, 1
     jne ^bad
     jmp ^checkcopy
 

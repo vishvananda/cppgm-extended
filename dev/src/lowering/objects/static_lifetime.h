@@ -22,6 +22,102 @@ template <class Derived>
 class StaticLifecycleLowering
 {
 protected:
+	Operand StaticReferenceStorage(std::uint32_t node, const LowType& type) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		std::uint32_t symbol = 0;
+		return derived.static_reference_symbols_.Find(node, &symbol) ?
+			Operand(Operand::GLOBAL, SymbolId(symbol), type) : Operand();
+	}
+
+	bool HasStaticReferenceDestructors(const NamespaceObjectAction& action) const
+	{
+		for (std::size_t i = 0; i < action.reference_temporaries.size(); ++i)
+			if (action.reference_temporaries[i].second != kNoDumpEdge) return true;
+		return false;
+	}
+
+	void RegisterStaticReferenceTemporaries(const NamespaceObjectAction& action)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		for (std::size_t i = 0; i < action.reference_temporaries.size(); ++i)
+		{
+			const std::uint32_t node = action.reference_temporaries[i].first;
+			std::uint32_t existing = 0;
+			if (derived.static_reference_symbols_.Find(node, &existing)) continue;
+			const std::string name = "__cppgm_ref_temporary__" +
+				derived.output_.strings.get(derived.output_.symbols[
+					derived.global_symbols_[action.object]].name) + "_" +
+				std::to_string(i);
+			const SymbolId symbol = derived.AddSyntheticSymbol(
+				Symbol::GLOBAL_SYMBOL, name, std::string(), true);
+			derived.static_reference_symbols_.Insert(node, symbol);
+			Symbol& record = derived.output_.symbols[symbol];
+			record.definition_emitted = true;
+			record.referenced = true;
+			record.thread_local_storage =
+				derived.program_.bindings[action.object].thread_local_storage;
+			Global backing;
+			backing.symbol = symbol;
+			const TypeId type = derived.arena_.nodes[node].type;
+			backing.type = derived.LowerStorageType(type);
+			derived.static_initializers_.SetZero(type, &backing);
+			derived.output_.globals.push_back(backing);
+			if (derived.stats_) ++derived.stats_->globals;
+			if (action.reference_temporaries[i].second == kNoDumpEdge) continue;
+			const SymbolId guard = derived.AddSyntheticSymbol(
+				Symbol::GLOBAL_SYMBOL, name + "_constructed", std::string(), true);
+			derived.static_reference_guards_.Insert(node, guard);
+			derived.output_.symbols[guard].definition_emitted = true;
+			derived.output_.symbols[guard].referenced = true;
+			derived.output_.symbols[guard].thread_local_storage =
+				derived.program_.bindings[action.object].thread_local_storage;
+			Global state;
+			state.symbol = guard;
+			state.type = LowI8();
+			derived.output_.globals.push_back(state);
+			if (derived.stats_) ++derived.stats_->globals;
+		}
+	}
+
+	void MarkStaticReferenceConstructed(std::uint32_t node)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		std::uint32_t guard = 0;
+		if (!derived.static_reference_guards_.Find(node, &guard)) return;
+		Instruction store(Instruction::STORE);
+		store.type = LowI8();
+		store.first = Operand(1, LowI8());
+		store.second = Operand(Operand::GLOBAL, SymbolId(guard), LowI8());
+		derived.Emit(store);
+	}
+
+	void LowerStaticReferenceDestructors(const NamespaceObjectAction& action)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		for (std::size_t i = action.reference_temporaries.size(); i != 0; --i)
+		{
+			const std::uint32_t node = action.reference_temporaries[i - 1].first;
+			const std::uint32_t destructor = action.reference_temporaries[i - 1].second;
+			if (destructor == kNoDumpEdge) continue;
+			std::uint32_t guard = 0;
+			if (!derived.static_reference_guards_.Find(node, &guard))
+				ThrowLoweringInternal("static reference temporary has no guard");
+			const BlockId destroy = derived.AddBlock(derived.NewLabel("ref_destroy"));
+			const BlockId done = derived.AddBlock(derived.NewLabel("ref_destroy_done"));
+			const Operand state = derived.LoadStorage(
+				Operand(Operand::GLOBAL, SymbolId(guard), LowI8()), LowI8());
+			derived.EmitBranch(state, destroy, done);
+			derived.SelectBlock(destroy);
+			const DumpNode& cleanup = derived.arena_.nodes[destructor];
+			const Operand storage = StaticReferenceStorage(node,
+				derived.LowerStorageType(cleanup.operand_type));
+			derived.EmitDestructorCall(cleanup.binding, derived.AddressOfStorage(storage));
+			derived.EmitJump(done);
+			derived.SelectBlock(done);
+		}
+	}
+
 	void BindThreadLocalWrapper(SymbolId target, SymbolId wrapper)
 	{
 		Derived& derived = static_cast<Derived&>(*this);

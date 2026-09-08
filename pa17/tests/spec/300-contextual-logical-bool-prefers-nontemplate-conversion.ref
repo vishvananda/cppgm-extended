@@ -8,6 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__4
+    zeroinit 1x1 %t1
     %t2 = call u8 @value__operatorbool(%t1)
     branch %t2, ^land_rhs_7, ^land_short_8
 
@@ -26,6 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t5 = addr $tmpobj__6
+    zeroinit 1x1 %t5
     %t6 = call u8 @value__operatorbool(%t5)
     branch %t6, ^lor_short_11, ^lor_rhs_10
 

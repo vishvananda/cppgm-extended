@@ -1200,7 +1200,8 @@ void emit_eh_push(CodeBuffer & out,
   const std::uint32_t block = instruction.operands[0].block;
   if(block < function.host_eh_clauses.size())
     for(std::size_t i = 0; i < function.host_eh_clauses[block].size(); ++i)
-      if(function.host_eh_clauses[block][i].kind ==
+      if(!function.host_eh_clauses[block][i].implicit &&
+         function.host_eh_clauses[block][i].kind ==
            mir_model::MirHostEhClause::HC_CLEANUP) {
         region_kind = 1;
         break;
@@ -1415,7 +1416,7 @@ void emit_tls_address_instruction(
                      instruction.tls_storage_symbol);
   else
     emit_symbol_move(out, require_register(instruction.operands[0]),
-                     instruction.operands[1].symbol,
+                     instruction.tls_storage_symbol,
                      instruction.operands[1].address_binding);
 }
 
@@ -2273,6 +2274,7 @@ void emit_eh_runtime(CodeBuffer & out, const mir_model::MirProgram & program)
         out, program.runtime_data, !program.uses_eh); break;
     case mir_model::RuntimeFunction::RF_BAD_CAST:
     case mir_model::RuntimeFunction::RF_BAD_TYPEID: emit_abort_runtime(out); break;
+    case mir_model::RuntimeFunction::RF_STRLEN: strlen_detail::emit_runtime(out); break;
     }
   }
 }

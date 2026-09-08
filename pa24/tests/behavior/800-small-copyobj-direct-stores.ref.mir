@@ -86,15 +86,12 @@ function @main
     mov rdi, @dst7
     lea rdi, [rdi+6]
     load.u8 rbx, [rdi]
-    mov rdi, r9
-    zext.i32 rdi
-    mov r9, rsi
-    zext.i16 r9
-    mov rsi, rbx
-    zext.i8 rsi
-    add r8, rdi
+    zext.i32 r9
+    zext.i16 rsi
+    zext.i8 rbx
     add r8, r9
     add r8, rsi
+    add r8, rbx
     load.i64 r9, @dst33
     mov rdi, @dst33
     lea rdi, [rdi+8]
@@ -108,13 +105,11 @@ function @main
     mov rdi, @dst33
     lea rdi, [rdi+32]
     load.u8 r13, [rdi]
-    mov rdi, r13
-    zext.i8 rdi
     add r8, r9
     add r8, rsi
     add r8, rbx
     add r8, r12
-    add r8, rdi
+    add r8, r13
     cmp.i64 r8, 431
     setne rax
     movzx rax, rax

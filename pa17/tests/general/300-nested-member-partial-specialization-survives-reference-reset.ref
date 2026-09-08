@@ -4,6 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
+    zeroinit 1x1 %t1
     %t2 = addr $value
     %t3 = call i32 @service__make(%t2)
     %t4 = cmp eq i32 %t3, 7

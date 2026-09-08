@@ -351,7 +351,9 @@ protected:
 			const NamespaceObjectAction& action =
 				derived.graph_.namespace_objects[
 					derived.dynamic_finalizers_[i - 1]];
-			if (action.initializer_list_backing != kNoDumpEdge)
+			if (!action.reference_temporaries.empty())
+				derived.LowerStaticReferenceDestructors(action);
+			else if (action.initializer_list_backing != kNoDumpEdge)
 				derived.LowerNamespaceInitializerListBackingDestructor(action);
 			else derived.LowerDestructorAction(
 				derived.arena_.nodes[action.destructor]);

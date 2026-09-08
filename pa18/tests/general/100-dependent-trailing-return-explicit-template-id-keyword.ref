@@ -6,6 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $value
     %t2 = addr $value
     %t3 = addr $arg__1
+    zeroinit 1x1 %t3
     %t4 = call i32 @target_protocol___call(%t2, %t3)
     return i32 %t4
 }

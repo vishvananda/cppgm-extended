@@ -15,6 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $name
     %t6 = index i8 %t5, 0
     %t7 = addr $arg__2
+    zeroinit 1x1 %t7
     %t8 = call obj<4x4> @parser_base_rule___operator__(%t6, %t7)
     copyobj 4x4 %t8, %t4
     %t9 = call ptr @rule__operator___ov3(%t3, %t4)

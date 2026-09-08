@@ -4,6 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $tmpobj__1
+    zeroinit 1x1 %t1
     store i32 1, $refarg__2
     %t2 = addr $refarg__2
     %t3 = call i32 @function_operation___operator____ov2(%t1, %t2)

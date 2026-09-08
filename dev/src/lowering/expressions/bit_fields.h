@@ -87,7 +87,7 @@ protected:
 		{
 			const lowering::ir::Operand positioned =
 				derived.PrepareBitFieldValue(binding, value, type);
-			derived.EmitBitFieldStore(type, positioned,
+			derived.EmitBitFieldStore(binding, type, positioned,
 				ConstructorBitFieldStorage(binding));
 			return;
 		}
@@ -98,7 +98,7 @@ protected:
 			derived.PrepareBitFieldValue(binding, value, type);
 		const lowering::ir::Operand stored =
 			derived.CombineBitFieldValue(cleared, positioned, type);
-		derived.EmitBitFieldStore(type, stored,
+		derived.EmitBitFieldStore(binding, type, stored,
 			ConstructorBitFieldStorage(binding));
 	}
 

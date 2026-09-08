@@ -69,9 +69,9 @@ The starter kit provides:
 - an HTML grammar explorer of `pa25.gram` in the sub-directory `grammar/`
 
 Student code changes should go in `dev/`, especially `dev/cppgm++.cpp` and the
-shared implementation files it calls. Do not edit generated `.my` files. Test
-inputs and references are part of the handout unless your instructor asks you
-to add or update tests.
+shared implementation files it calls. Do not edit generated `.my` files. Preserve supplied test inputs.
+Corrections to reference outputs follow the
+[reference policy](../TESTING_AND_REFERENCES.md).
 
 Use `cppgm++-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.

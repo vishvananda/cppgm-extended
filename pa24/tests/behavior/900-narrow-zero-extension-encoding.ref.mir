@@ -16,13 +16,11 @@ function @main
 
   block ^entry
     mov r8, 255
-    zext.i8 r8
     mov rdx, 255
     cmp.i64 r8, rdx
     setne r8
     movzx r8, r8
     mov r9, 65535
-    zext.i16 r9
     mov rdx, 65535
     cmp.i64 r9, rdx
     setne r9

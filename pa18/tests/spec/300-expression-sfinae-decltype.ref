@@ -16,6 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t4 = addr $arg__4
+    zeroinit 1x1 %t4
     %t5 = call i32 @test_run(%t4)
     %t6 = cmp eq i32 %t5, 2
     %t7 = cmp ne i64 %t6, 0

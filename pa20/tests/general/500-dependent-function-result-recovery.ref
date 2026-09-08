@@ -62,6 +62,7 @@ function @lib__copy_unwrap_iters(%first : ptr, %last : ptr, %out_first : ptr) ->
     copyobj 16x8 %t6, %t1
     %t7 = addr $result
     %t8 = addr $tmpobj__1
+    zeroinit 1x1 %t8
     %t9 = addr $range
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = call ptr @lib__move(%t10)

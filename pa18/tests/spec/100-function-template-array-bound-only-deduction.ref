@@ -6,6 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $buf
     %t2 = addr $arg__2
+    zeroinit 1x1 %t2
     %t3 = call ptr @array_bound_only_deduction__to_zstr(%t1, %t2)
     %t4 = addr $buf
     %t5 = cmp eq ptr %t3, %t4

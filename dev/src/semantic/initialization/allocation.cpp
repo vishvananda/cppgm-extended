@@ -409,6 +409,12 @@ ExpressionInfo Analyzer::AnalyzeNewExpression(NodeId node,
 			{
 				const FunctionInfo& selected_constructor =
 					GetFunction(action.binding);
+				if ((initializer != kNoNode || parsed_empty_initializer) &&
+					constructor_arguments.empty() &&
+					(selected_constructor.implicit_constructor ||
+					 selected_constructor.defaulted_constructor) &&
+					!selected_constructor.user_provided_special_member)
+					action.value_initialization = true;
 				if (action.trivial_special_member_action &&
 					(selected_constructor.special_member ==
 						SPECIAL_MEMBER_COPY_CONSTRUCTOR ||
