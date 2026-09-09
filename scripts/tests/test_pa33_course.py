@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """PA33 accepts alternative code and rejects lost effects, bounds and locations."""
+import json
 import os
 from pathlib import Path
 import re
@@ -82,17 +83,17 @@ class Pa33CourseTests(unittest.TestCase):
                 self.assertEqual(result.returncode == 0, valid, result.stdout + result.stderr)
 
     def test_driver_checks_all_levels_and_both_object_formats(self):
-        with tempfile.TemporaryDirectory() as temporary:
+        with tempfile.TemporaryDirectory(prefix='pa33-driver-c.obj-') as temporary:
             directory = Path(temporary)
             fixture = directory / 'case.t'
             fixture.write_text('int main() { return 0; }\n')
             compiler = directory / 'compiler'
             compiler.write_text('''#!/usr/bin/env python3
-import os, pathlib, sys
+import json, os, pathlib, sys
 args = sys.argv[1:]
 out = pathlib.Path(args[args.index('-o') + 1])
 with open(os.environ['PA33_CALL_LOG'], 'a') as log:
-    log.write(' '.join(args) + '\\n')
+    log.write(json.dumps(args) + '\\n')
 if '-c' in args:
     out.write_text('object')
 else:
@@ -106,11 +107,12 @@ else:
             result = subprocess.run(command, env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn('PASS (9/9)', result.stdout)
-            calls = log.read_text().splitlines()
+            calls = [json.loads(line) for line in log.read_text().splitlines()]
             for level in ('-O1', '-O2', '-O3'):
-                self.assertEqual(sum(line.startswith(level + ' ') for line in calls), 4)
-            self.assertEqual(sum('-c' in line and '.obj' in line for line in calls), 3)
-            self.assertEqual(sum('-c' in line and '.o ' in line for line in calls), 3)
+                self.assertEqual(sum(args[0] == level for args in calls), 4)
+            outputs = [Path(args[args.index('-o') + 1]).suffix
+                       for args in calls if '-c' in args]
+            self.assertCountEqual(outputs, ['.obj', '.o'] * 3)
             for body in ('exit 1', 'echo wrong'):
                 result = subprocess.run(command, env=dict(env, PA33_PROGRAM_BODY=body),
                                         capture_output=True, text=True)
