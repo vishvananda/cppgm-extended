@@ -8,7 +8,7 @@ use File::Find;
 use FindBin;
 
 my $root = abs_path("$FindBin::Bin/..");
-my $manifest = "$root/doc/compiler-semantic-symbol-owners.tsv";
+my $manifest = "$root/scripts/architecture/compiler-semantic-symbol-owners.tsv";
 
 my %actual;
 find({

@@ -7,7 +7,7 @@ use Cwd qw(abs_path);
 use FindBin;
 
 my $root = abs_path("$FindBin::Bin/..");
-my $manifest = "$root/doc/compiler-native-symbol-owners.tsv";
+my $manifest = "$root/scripts/architecture/compiler-native-symbol-owners.tsv";
 
 sub read_source
 {

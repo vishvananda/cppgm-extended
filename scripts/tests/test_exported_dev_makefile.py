@@ -52,6 +52,49 @@ def shell_array(script: str, name: str) -> list[str]:
 
 
 class ExportedDevMakefileTests(unittest.TestCase):
+    def test_export_copies_public_documents_without_run_notes(self):
+        script = EXPORT_SCRIPT.read_text()
+        start = script.index('copy_tracked_paths() {')
+        end = script.index('\n}\n', start) + len('\n}\n')
+        documents = (REPO_ROOT / 'scripts/student_export_documents.txt').read_text().splitlines()
+        self.assertEqual(documents, sorted(set(documents)))
+        for relative in documents:
+            self.assertTrue((REPO_ROOT / relative).is_file(), relative)
+        fixtures = {
+            'pa8/tests/general/100-valid.t': 'program input\n',
+            'pa27/tests/behavior/100-layout.ref.inspect.plan': 'object contract\n',
+        }
+        excluded = [
+            'pa10/plan.md', 'pa10/audit.md', 'pa10/implementation.md',
+            'pa32/optimization-path-unification-plan.md',
+            'pa32/IMPLEMENTATION.MD', 'pa33/maintainer/design-notes.md',
+            'pa34/notes/README.md', 'pa34/run-notes.md',
+            'doc/backend-review/newcomer-notes.md',
+            'doc/backend-review/mutations.txt', 'doc/compiler-native-symbol-owners.tsv',
+        ]
+        with tempfile.TemporaryDirectory(prefix='export-documents.') as temp:
+            source = Path(temp) / 'source'
+            dest = Path(temp) / 'export'
+            source.mkdir()
+            dest.mkdir()
+            for relative in documents:
+                fixtures[relative] = (REPO_ROOT / relative).read_text()
+            for relative, content in {**fixtures, **dict.fromkeys(excluded, 'run notes\n')}.items():
+                path = source / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content)
+            subprocess.run(['git', 'init', '-q', str(source)], check=True)
+            subprocess.run(['git', '-C', str(source), 'add', '.'], check=True)
+            subprocess.run(
+                ['bash', '-euc', script[start:end] +
+                 '\nrepo_root="$1"\ndest="$2"\nscript_dir="$3"\ncopy_tracked_paths .',
+                 'bash', str(source), str(dest), str(EXPORT_SCRIPT.parent)], check=True,
+            )
+            self.assertEqual({str(path.relative_to(dest)) for path in dest.rglob('*')
+                              if path.is_file()}, set(fixtures))
+            for relative, content in fixtures.items():
+                self.assertEqual((dest / relative).read_text(), content)
+
     def test_pa33_export_keeps_course_without_maintainer_dependencies(self):
         script = EXPORT_SCRIPT.read_text()
         start = script.index('prune_student_pa33() {')

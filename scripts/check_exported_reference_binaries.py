@@ -9,7 +9,21 @@ import subprocess
 import tempfile
 
 
+def check_documents(export: Path) -> None:
+    root = Path(__file__).resolve().parents[1]
+    expected = set((root / 'scripts/student_export_documents.txt').read_text().splitlines())
+    expected.update(path.name for path in (root / 'docs/student-export-root').glob('*.md'))
+    actual = {str(path.relative_to(export)) for path in export.rglob('*')
+              if path.is_file() and (path.suffix.lower() == '.md'
+                                    or path.relative_to(export).parts[0] == 'doc')}
+    if actual != expected:
+        raise RuntimeError(f"student documents: missing {sorted(expected - actual)}; "
+                           f"unexpected {sorted(actual - expected)}")
+    print(f"Student document inventory: {len(actual)} files, PASS")
+
+
 def check_export(export: Path, bundle: Path | None) -> None:
+    check_documents(export)
     env = os.environ.copy()
     # A release check must follow the published manifest URL, with no local cache.
     env.pop("CPPGM_REFERENCE_BUNDLE_FILE", None)

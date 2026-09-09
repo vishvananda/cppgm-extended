@@ -12,7 +12,7 @@ use Text::ParseWords qw(shellwords);
 my $root = abs_path("$FindBin::Bin/..");
 my $baseline = '';
 my $candidate = '';
-my $manifest = "$root/doc/compiler-refactor-output-cases.tsv";
+my $manifest = "$root/scripts/architecture/compiler-refactor-output-cases.tsv";
 GetOptions(
 	'baseline=s' => \$baseline,
 	'candidate=s' => \$candidate,

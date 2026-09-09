@@ -19,11 +19,11 @@ class CompilerRenameManifestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="rename-manifest.") as temp:
             root = Path(temp)
             (root / "scripts").mkdir()
-            (root / "doc").mkdir()
+            (root / "scripts/architecture").mkdir(parents=True)
             shutil.copy2(ROOT / "scripts/audit_compiler_rename_manifest.pl",
                          root / "scripts/audit_compiler_rename_manifest.pl")
             subprocess.run(["git", "init", "-q", str(root)], check=True)
-            (root / "doc/compiler-rename-path-manifest.tsv").write_text(
+            (root / "scripts/architecture/compiler-rename-path-manifest.tsv").write_text(
                 "old_path\tcurrent_owner\tdisposition\treason\n"
                 f"{old}\t{owner}\t{disposition}\t{reason}\n"
             )

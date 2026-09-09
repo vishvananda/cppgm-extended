@@ -9,8 +9,8 @@ use File::Spec;
 use FindBin;
 
 my $root = abs_path("$FindBin::Bin/..");
-my $legacy_path = "$root/doc/compiler-layout-legacy.tsv";
-my $contract_path = "$root/doc/compiler-pa-contract-allowlist.tsv";
+my $legacy_path = "$root/scripts/architecture/compiler-layout-legacy.tsv";
+my $contract_path = "$root/scripts/architecture/compiler-pa-contract-allowlist.tsv";
 
 sub read_text
 {

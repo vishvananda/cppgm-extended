@@ -2,7 +2,7 @@
 
 This is the live feature table read by `scripts/audit_pa_feature_placement.py`.
 Owners and clusters use the current 34-assignment sequence. N3485 references
-refer to `n3485.txt`.
+refer to `../../doc/n3485.txt`.
 
 | Feature Family | Canonical Owner PA | Owner Cluster | N3485 Reference | Auditor Status | Required Detections |
 | --- | --- | ---: | --- | --- | --- |

@@ -84,13 +84,19 @@ copy_tracked_paths() {
     cd "$repo_root"
     git ls-files -z -- "$@" |
       perl -0ne '
+        BEGIN {
+          open my $manifest, "<", shift @ARGV or die "student document manifest: $!";
+          %documents = map { $_ => 1 } split /\n/, do { local $/; <$manifest> };
+        }
         chomp;
+        # Export reviewed student documents only, including public doc/ texts.
+        next if (m{\.md$}i || m{^doc/}) && !$documents{$_};
         next if m{(^|/)[^/]+-ref$};
         next if m{\.py$} && !m{^scripts/(?:check_lowir_seams|lowir_seam_rewrite)\.py$};
         next if m{\.diff$};
         next if m{(^|/)[^/]+\.my(?:\.|$)};
         print "$_\0";
-      '
+      ' "$script_dir/student_export_documents.txt"
   ) | rsync -a --from0 --files-from=- "$repo_root/" "$dest/"
 }
 
@@ -375,6 +381,8 @@ shared_scripts=(
 # Copy control checkers for reference regeneration. PA33's private checkers
 # are removed with its maintainer lanes after reference verification.
 for check_script in "$repo_root"/scripts/check_*.pl; do
+  # This compares maintainer compiler builds using a private audit table.
+  [ "$(basename "$check_script")" = check_compiler_refactor_outputs.pl ] && continue
   shared_scripts+=("scripts/$(basename "$check_script")")
 done
 

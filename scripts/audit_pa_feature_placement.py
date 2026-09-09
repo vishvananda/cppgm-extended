@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-DEFAULT_TRACKER = Path("doc/pa-feature-placement.md")
+DEFAULT_TRACKER = Path("scripts/architecture/pa-feature-placement.md")
 DEFAULT_PAS = tuple(f"pa{i}" for i in range(10, 24))
 LOCAL_TEST_HYGIENE_PAS = tuple(f"pa{i}" for i in range(1, 35))
 STRICT_TEMPLATE_PAS = ("pa14", "pa15", "pa17", "pa18", "pa19")

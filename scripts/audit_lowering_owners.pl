@@ -8,7 +8,7 @@ use File::Find;
 use FindBin;
 
 my $root = abs_path("$FindBin::Bin/..");
-my $manifest = "$root/doc/compiler-lowering-symbol-owners.tsv";
+my $manifest = "$root/scripts/architecture/compiler-lowering-symbol-owners.tsv";
 my %actual;
 my $class_count = 0;
 my $function_count = 0;

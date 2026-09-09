@@ -34,7 +34,7 @@ my $model_helpers = read_file("$root/dev/src/lowir/model/program.cpp");
 my $parser = read_file("$root/dev/src/lowir/io/parse.cpp") . $model_helpers;
 my $serializer = read_file("$root/dev/src/lowir/io/serialize.cpp") . $model_helpers;
 my $documentation = read_file("$root/pa8/lowir.md");
-my $ledger_path = "$root/doc/lowir-contract-ledger.tsv";
+my $ledger_path = "$root/scripts/architecture/lowir-contract-ledger.tsv";
 my $ledger = read_file($ledger_path);
 
 my @errors;

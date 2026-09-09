@@ -7,7 +7,7 @@ use Cwd qw(abs_path);
 use FindBin;
 
 my $root = abs_path("$FindBin::Bin/..");
-my $manifest = "$root/doc/compiler-rename-path-manifest.tsv";
+my $manifest = "$root/scripts/architecture/compiler-rename-path-manifest.tsv";
 my $baseline_commit = '5de0a619a05a176cc4bfc56393ff69c3260e6cf3';
 
 # Only these removed course clients may retain a historical, absent owner.

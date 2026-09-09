@@ -10,7 +10,8 @@ attribution and consult [NOTICE](NOTICE), not historical PA numbers, for origins
 ## Ownership
 
 - Put compiler changes in `dev/` and `dev/src/`. Keep tool source lists in
-  `dev/frontend_source_sets.mk` and the owner ledgers in `doc/` current.
+  `dev/frontend_source_sets.mk` and the owner ledgers in
+  `scripts/architecture/` current.
 - Treat `pa1/` through `pa34/` as handouts, tests, references and wrappers.
   Read the owning handout before changing a milestone's behavior.
 - Required fixtures live in the earliest owning `paN/tests/`, in the cluster
@@ -66,6 +67,8 @@ python3 scripts/audit_pa_feature_placement.py --fail-on-early
 The file audit enforces file/function limits and forbids environment reads in
 `dev/src/`. Run `make test-harness` after changing harnesses or export logic.
 Validate a student export after changing shipped files or their discovery.
+Student documents are listed in `scripts/student_export_documents.txt`;
+keep run plans, audits and implementation journals out of the export.
 
 ## Performance
 
@@ -82,9 +85,10 @@ verify output equality.
   native code. PA8's LowIR construction work lives in `lowir/intro/`.
 - `compiler_object`, `support`: object/link support and shared utilities.
 - `scripts/`: runners, comparison, audits and export; `shared/`: source grammar.
-- `doc/`: live architecture ledgers and reference material.
+- `doc/`: the C++ draft and Itanium ABI reference.
+- `scripts/architecture/`: live audit tables and ownership ledgers.
 - `docs/student-export-root/`: documents installed at the student repo root.
-- `docs/implemented/`, `docs/v4/`: historical plans and records; their original
+- `docs/v4/`: historical migration records; their original
   paths and numbers are historical evidence, not current workflow instructions.
 - `benchmarks/`: fixed performance inputs; `obj/`: generated artifacts.
 
