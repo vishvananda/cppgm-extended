@@ -183,7 +183,7 @@ protected:
 							destination, derived.LowerExpressionType(
 								derived.program_.bindings[member].type));
 					else derived.EmitZeroInitialization(
-						derived.program_.bindings[member].type, destination);
+						derived.program_.bindings[member].type, destination, member);
 					continue;
 				}
 				if (constructor != kNoBinding)

@@ -30,6 +30,8 @@ void Analyzer::RegisterInjectedStorageMember(BindingId alias,
 		storage >= program_->bindings.size() ||
 		member >= program_->bindings.size())
 		ThrowInternalCompilerError("injected storage member identity is invalid");
+	program_->bindings[alias].potentially_overlapping_member =
+		program_->bindings[member].potentially_overlapping_member;
 	if (injected_fact_by_binding_.size() <= alias)
 		injected_fact_by_binding_.resize(
 			static_cast<std::size_t>(alias) + 1, kNoDumpEdge);

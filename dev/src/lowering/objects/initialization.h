@@ -156,7 +156,7 @@ protected:
 
 	void LowerClassValueTransfer(std::uint32_t node,
 		const Operand& destination,
-		bool elide_empty_call_source = false)
+		bool elide_empty_call_source = false, BindingId member = kNoBinding)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const DumpNode& action = derived.arena_.nodes[node];
@@ -175,13 +175,13 @@ protected:
 			return;
 		if (source.kind == DUMP_CONDITIONAL_EXPRESSION)
 		{
-			derived.LowerClassConditionalResult(children[0], destination);
+			derived.LowerClassConditionalResult(children[0], destination, member);
 			return;
 		}
 		if (source.kind == DUMP_CLASS_VALUE_TRANSFER)
 		{
 			derived.LowerClassValueTransfer(
-				children[0], destination, elide_empty_call_source);
+				children[0], destination, elide_empty_call_source, member);
 			return;
 		}
 		if (source.kind == DUMP_CALL_EXPRESSION)
@@ -193,7 +193,7 @@ protected:
 		if (source.kind == DUMP_CONSTRUCTOR_ACTION)
 		{
 			if (source.value_initialization)
-				EmitZeroInitialization(action.type, destination);
+				EmitZeroInitialization(action.type, destination, member);
 			if (!IsTrivialConstructorAction(action.type, children))
 				derived.LowerConstructorAction(children[0], destination);
 			return;
@@ -230,9 +230,18 @@ protected:
 		return derived.program_.entities[record.entity].trivial_default_constructor;
 	}
 
-	void EmitZeroInitialization(TypeId type, const Operand& destination)
+	void EmitZeroInitialization(TypeId type, const Operand& destination,
+		BindingId member = kNoBinding)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		if (member != kNoBinding &&
+			derived.program_.bindings[member].potentially_overlapping_member)
+		{
+			const EntityId entity = derived.ClassEntity(type);
+			// This member's padding can be another subobject's live storage.
+			if (entity != kNoEntity && derived.program_.entities[entity].empty_class)
+				return;
+		}
 		const LowType storage_type = derived.LowerStorageType(type);
 		if (storage_type.kind == LOW_OBJECT &&
 			lowering::zero_initialization::ContiguousSpanEligible(
@@ -674,7 +683,7 @@ protected:
 		const Operand destination = derived.AddressOfStorage(
 			derived.StorageFor(variable.binding, type));
 		if (derived.arena_.nodes[children[0]].value_initialization)
-			EmitZeroInitialization(variable.type, destination);
+			EmitZeroInitialization(variable.type, destination, variable.binding);
 		if (!IsTrivialConstructorAction(variable.type, children))
 			derived.LowerConstructorAction(
 				children[0], destination, false, false, true);
@@ -711,7 +720,8 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (!derived.arena_.nodes[initializer].value_initialization) return false;
-		EmitZeroInitialization(variable.type, derived.AddressOfStorage(storage));
+		EmitZeroInitialization(variable.type, derived.AddressOfStorage(storage),
+			variable.binding);
 		const TypeRecord& object = derived.program_.types.Get(
 			derived.ExpressionObjectType(variable.type));
 		return derived.program_.entities[object.entity].trivial_default_constructor;
@@ -781,7 +791,7 @@ protected:
 			derived.ProjectAggregatePath(root, path) : retained_destination;
 		if (kind == DUMP_CLASS_VALUE_TRANSFER)
 		{
-			derived.LowerClassValueTransfer(values[0], destination);
+			derived.LowerClassValueTransfer(values[0], destination, false, action.binding);
 			if (cleanup_segment)
 				derived.PauseFullExpressionCleanupSegment();
 			return true;
@@ -793,7 +803,7 @@ protected:
 			return true;
 		}
 		if (derived.arena_.nodes[values[0]].value_initialization)
-			EmitZeroInitialization(action.type, destination);
+			EmitZeroInitialization(action.type, destination, action.binding);
 		NodeChildren constructor;
 		constructor.Push(values[0]);
 		if (!IsTrivialConstructorAction(action.type, constructor))
@@ -840,7 +850,7 @@ protected:
 			const Operand destination = retained_destination.kind == Operand::NONE ?
 				derived.AddressOfStorage(derived.StorageFor(record.binding, type)) :
 				retained_destination;
-			derived.LowerClassValueTransfer(children[0], destination, true);
+			derived.LowerClassValueTransfer(children[0], destination, true, record.binding);
 			return;
 		}
 		if (derived.LowerInitializerListVariable(record, children)) return;

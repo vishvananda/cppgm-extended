@@ -533,7 +533,7 @@ protected:
 			const Operand destination =
 				derived.ProjectAggregateMember(object, action.binding);
 			if (value.value_initialization)
-				derived.EmitZeroInitialization(action.type, destination);
+				derived.EmitZeroInitialization(action.type, destination, action.binding);
 			if (derived.IsTrivialConstructorAction(action.type, children)) return;
 			if (value.trivial_special_member_action)
 			{
@@ -552,7 +552,7 @@ protected:
 				derived.StorageFor(derived.current_this_binding_, LowPtr()), LowPtr());
 			const Operand destination =
 				derived.ProjectAggregateMember(object, action.binding);
-			derived.LowerClassValueTransfer(value_node, destination);
+			derived.LowerClassValueTransfer(value_node, destination, false, action.binding);
 			return;
 		}
 		if (value.kind == DUMP_BRACED_INIT_LIST &&

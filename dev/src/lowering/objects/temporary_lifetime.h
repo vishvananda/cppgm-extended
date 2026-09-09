@@ -1173,7 +1173,8 @@ protected:
 		return value;
 	}
 
-	void LowerClassDestination(std::uint32_t node, const Operand& destination)
+	void LowerClassDestination(std::uint32_t node, const Operand& destination,
+		BindingId member = kNoBinding)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const DumpNode& record = derived.arena_.nodes[node];
@@ -1190,7 +1191,7 @@ protected:
 		}
 		if (record.kind == DUMP_CLASS_VALUE_TRANSFER)
 		{
-			derived.LowerClassValueTransfer(node, destination);
+			derived.LowerClassValueTransfer(node, destination, false, member);
 			return;
 		}
 		if (record.kind == DUMP_CALL_EXPRESSION)
@@ -1213,7 +1214,7 @@ protected:
 	}
 
 	void LowerClassConditionalArm(std::uint32_t node,
-		const Operand& destination)
+		const Operand& destination, BindingId member = kNoBinding)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const NodeChildren children = derived.Children(node);
@@ -1240,14 +1241,14 @@ protected:
 		}
 		if (derived.arena_.nodes[children[0]].kind == DUMP_THROW_EXPRESSION)
 			(void)derived.LowerValue(children[0]);
-		else LowerClassDestination(children[0], destination);
+		else LowerClassDestination(children[0], destination, member);
 		if (!derived.CurrentBlock().terminated &&
 			children.size() != 1 && !enclosing_cleanup)
 			CompleteFullExpressionCleanup();
 	}
 
 	void LowerClassConditionalResult(std::uint32_t node,
-		const Operand& destination)
+		const Operand& destination, BindingId member = kNoBinding)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const NodeChildren children = derived.Children(node);
@@ -1269,7 +1270,7 @@ protected:
 		derived.SelectBlock(then_block);
 		if (derived.full_expression_cleanup_active_)
 			EnsureFullExpressionCleanupSegment();
-		LowerClassConditionalArm(children[1], destination);
+		LowerClassConditionalArm(children[1], destination, member);
 		if (!derived.CurrentBlock().terminated)
 		{
 			if (derived.full_expression_cleanup_active_)
@@ -1279,7 +1280,7 @@ protected:
 		derived.SelectBlock(else_block);
 		if (derived.full_expression_cleanup_active_)
 			EnsureFullExpressionCleanupSegment();
-		LowerClassConditionalArm(children[2], destination);
+		LowerClassConditionalArm(children[2], destination, member);
 		if (!derived.CurrentBlock().terminated)
 		{
 			if (derived.full_expression_cleanup_active_)
