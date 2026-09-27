@@ -206,8 +206,10 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 	// A specialization's body is analysed here, long after the instantiation
 	// that demanded it; an error inside points at the pattern's source, so
 	// the diagnostic names the specialization that reached it.
-	const ScopedInstantiation instantiation_note(
-		DescribeFunctionSpecialization(binding));
+	const auto describe_instantiation = [this, binding]() {
+		return DescribeFunctionSpecialization(binding);
+	};
+	const ScopedInstantiation instantiation_note(describe_instantiation);
 	const FunctionInfo& initial = GetFunction(binding);
 	if (!program_->bindings[binding].explicit_instantiation_suppressed &&
 		EnclosingExplicitInstantiationSuppressed(binding) &&

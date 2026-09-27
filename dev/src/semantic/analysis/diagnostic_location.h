@@ -16,10 +16,15 @@ namespace semantic
 extern const syntax::SyntaxArena* diagnostic_location_arena;
 extern syntax::NodeId diagnostic_location_node;
 
-// The specialization whose body the analyzer entered, if any.  An error
-// inside a template body points at the pattern's source, which is rarely
-// where the mistake is; naming the instantiation that reached it is.
-extern std::string diagnostic_instantiation;
+// Render the active specialization only if an error needs its name.  Template
+// instantiation is common on successful compiles, while diagnostics are rare.
+struct DiagnosticInstantiation
+{
+	const void* context;
+	std::string (*render)(const void*);
+	const DiagnosticInstantiation* previous;
+};
+extern const DiagnosticInstantiation* diagnostic_instantiation;
 
 std::string DescribeDiagnosticLocation();
 
@@ -56,17 +61,22 @@ private:
 class ScopedInstantiation
 {
 public:
-	explicit ScopedInstantiation(const std::string& specialization)
-		: saved_(diagnostic_instantiation)
+	template<class Renderer>
+	explicit ScopedInstantiation(const Renderer& renderer)
 	{
-		if (!specialization.empty()) diagnostic_instantiation = specialization;
+		current_.context = &renderer;
+		current_.render = [](const void* context) -> std::string {
+			return (*static_cast<const Renderer*>(context))();
+		};
+		current_.previous = diagnostic_instantiation;
+		diagnostic_instantiation = &current_;
 	}
-	~ScopedInstantiation() { diagnostic_instantiation = saved_; }
+	~ScopedInstantiation() { diagnostic_instantiation = current_.previous; }
 
 private:
 	ScopedInstantiation(const ScopedInstantiation&);
 	ScopedInstantiation& operator=(const ScopedInstantiation&);
-	std::string saved_;
+	DiagnosticInstantiation current_;
 };
 
 }

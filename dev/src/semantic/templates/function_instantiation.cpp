@@ -2054,10 +2054,12 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 	if (index >= function_templates_.size())
 		ThrowInternalCompilerError("invalid PA7 function template pattern");
 	const FunctionTemplatePattern& pattern = function_templates_[index];
-	// An error raised while analysing this body points at the pattern's
-	// source; the diagnostic names the specialization that reached it.
-	const ScopedInstantiation instantiation_note(
-		DescribeTemplateSpecialization(pattern.name, arguments));
+	// Defer the specialization name until an error needs a diagnostic.
+	const NameId pattern_name = pattern.name;
+	const auto describe_instantiation = [this, pattern_name, &arguments]() {
+		return DescribeTemplateSpecialization(pattern_name, arguments);
+	};
+	const ScopedInstantiation instantiation_note(describe_instantiation);
 	if (parameter_offsets.size() != pattern.parameters.size() + 1 ||
 		parameter_offsets.empty() || parameter_offsets.front() != 0 ||
 		parameter_offsets.back() != arguments.size()) return kNoBinding;

@@ -650,7 +650,7 @@ void Analyzer::InstallSemanticErrorLocationHook()
 
 const syntax::SyntaxArena* diagnostic_location_arena = 0;
 syntax::NodeId diagnostic_location_node = kNoNode;
-std::string diagnostic_instantiation;
+const DiagnosticInstantiation* diagnostic_instantiation = 0;
 
 std::string DescribeDiagnosticLocation()
 {
@@ -665,8 +665,14 @@ std::string DescribeDiagnosticLocation()
 		diagnostic_location_arena->SourceLine(diagnostic_location_node)) +
 		":" + std::to_string(
 		diagnostic_location_arena->SourceColumn(diagnostic_location_node));
-	return diagnostic_instantiation.empty() ? where :
-		where + " while instantiating " + diagnostic_instantiation;
+	for (const DiagnosticInstantiation* current = diagnostic_instantiation;
+		current != 0; current = current->previous)
+	{
+		const std::string specialization = current->render(current->context);
+		if (!specialization.empty())
+			return where + " while instantiating " + specialization;
+	}
+	return where;
 }
 
 ExpressionInfo Analyzer::AnalyzeExpression(NodeId node, ScopeId scope,
