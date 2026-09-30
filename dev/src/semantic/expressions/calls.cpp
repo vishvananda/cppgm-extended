@@ -2124,7 +2124,8 @@ bool Analyzer::AnalyzeExplicitDestructorCall(NodeId callee,
 	const std::vector<NodeId> no_syntax;
 	const std::vector<ExpressionInfo> no_arguments;
 	*result = BuildResolvedCall(destructor, scope, no_syntax,
-		no_arguments, &object_pointer, target, entity, 0, 0, true);
+		no_arguments, &object_pointer, target, entity, 0, 0,
+		destructor_path.global || destructor_path.Size() > 1);
 	return true;
 }
 

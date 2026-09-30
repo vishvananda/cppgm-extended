@@ -9,7 +9,8 @@ The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-au
 Branch: `fix/student-audit-regressions`. Update this table at each checkpoint;
 retain the numbered evidence below instead of treating a reference difference
 as a bug by itself. **Open** means independently reproduced unless explicitly
-marked **Needs verification**. Student-export validation is deferred until the
+marked **Needs verification**. ABI spellings must be checked against Clang before changing code or references,
+as explicitly requested. Student-export validation is deferred until the
 fix sequence is complete, as requested.
 
 | ID | Work item | Discovery | Status / checkpoint |
@@ -20,8 +21,8 @@ fix sequence is complete, as requested.
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
 | INIT-OBJ | Emit evaluated class/base/array/template constant object values and relocations | v4codex group 1 | Done: a33d1456d. Seven copied ordering reducers and two new runtime fixtures pass; strict 5825/5825, full checks and ABBA pass. |
 | ARRAY-IMAGE | Reconcile PA10 literal arrays and PA16 general constexpr readonly-image/copy rule | v4codex placement / group 1 | Done: 3e2a9a9d1; 48 references regenerated, two new runtime controls, strict 5827/5827 and full checks pass. Performance follow-up finds no persistent regression. |
-| FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Done in this checkpoint: two new runtime controls pass at -O0/-O2, seven references regenerated; strict 5829/5829, full checks and equivalent-output ABBA pass. |
-| DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Open. |
+| FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Done: 31598a5b3; two new runtime controls pass at -O0/-O2, seven references regenerated; strict 5829/5829, full checks and equivalent-output ABBA pass. |
+| DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Done in this checkpoint: direct/virtual/further-derived runtime controls pass; strict 5829/5829, full checks and equivalent-output ABBA pass. |
 | AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Open. |
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Open. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Open; distinguish student-entry observations from supplied-oracle comparisons. |
@@ -31,9 +32,9 @@ fix sequence is complete, as requested.
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | Open; prior fb15cd49e class-value temporary cleanup fixes one case only. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
-| MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open. |
-| ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open: later audit changes `_Z1g` → `g` in two inspection fixtures; our encoder and expectations still use `_Z1g`. Verify host cross-links and update typed ABI identity plus generated expectations. |
-| INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | Open; five source corrections identified below. |
+| MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
+| ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
+| INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime corrected with DTOR; four source corrections remain. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Open: SIGSEGV at -O0 and -O2; host GCC passes. Additional lifetime/ABI regression. |
 | ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Open: same-type case exits 233; distinct-type case rejects at -O0/-O2. Additional mechanism within EH. |
 | ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Open: counter case exits 10 at -O0/-O2; host GCC passes. |
@@ -186,9 +187,36 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
 
+## Explicit virtual destructor checkpoint
+
+Explicit destructor calls now suppress virtual dispatch only when the destructor
+name is qualified. Unqualified `p->~Base()` uses the complete-destructor virtual
+slot; an inherited `this->~Derived()` body can dispatch to a further-derived
+object. Qualified `p->Base::~Base()` retains a direct call.
+
+Renamed the PA13 fixture to
+`400-explicit-virtual-destructor-call-dispatch.t`. It allocates each object,
+explicitly destroys it once, and releases storage directly, avoiding the old
+automatic object's second destruction. Traces verify 21 for virtual derived/base
+destruction, 1 for qualified base-only destruction, and 321 for an inherited
+body acting on a further-derived object. The copied student reducer and new
+fixture return zero at `-O0`/`-O2` with our compiler and GCC; the new fixture also
+passes both levels with Clang. New references are harness-generated; the other
+existing course outputs and acceptance statuses need no changes.
+
+Strict report passes 5829/5829 with one total line; debug-info, backend variants,
+self-host through PA5, all nine architecture checks, file limits and placement
+also pass. Final export validation is still deferred. Four A/A blocks and six
+ABBA blocks use immutable binaries and frozen `recog_token_buffer.cpp`/headers
+at `-O1` on CPU 0; all forty objects have the same SHA-256 as the FIELD gate.
+A/A wall ratio is 1.00704; A/B user-CPU ratio is 0.984675, wall ratio 0.993041
+and RSS ratio 0.999745. No regression is detected on this input; timing remains
+noisy and does not prove a speedup. Every observation is retained in
+`/tmp/cppgm-v4-audit-review/perf-dtor/{aa,ab}.json`.
+
 ## Scope and evidence
 
-Read the milestone plans/audits through PA26, all 30 reference-correction
+The initial review read the milestone plans/audits through PA26, all 30 reference-correction
 notes, PA17 storage-references.md, and the associated reducers/manifests.
 The running checkout advanced from 78410bfc to PA27 during this read-only
 review; the correction evidence is from completed PA9-23 work, while the
@@ -268,21 +296,22 @@ silently importing an EH requirement into PA12 solely through a reference edit.
    pa19/reference-correction92.md.
 
 2. Bit-field typing/promotion and volatile initialization (PA11/12).
-   The small unsigned bit-field arithmetic reducers return incorrect values;
+   At entry, the small unsigned bit-field arithmetic reducers returned incorrect values;
    a field whose entire range fits int must promote to int. The aggregate
    Device helper still emits an ordinary store into its volatile member.
    The reference's missing typed copy operations also violate the LowIR typing
    contract. Fix the shared field-read/promotion and scalar-initialization
-   paths; preserve volatile markers and regenerate the affected outputs.
+   paths. FIELD now resolves these cases and regenerates the seven affected outputs.
    Evidence: pa11/reference-corrections.md; pa12/reference-corrections.md.
 
 3. Unqualified explicit virtual destruction (PA13).
-   The defined reducer returns 1: unqualified p->~B() and an inherited destroy
+   At entry the defined reducer returned 1: unqualified p->~B() and an inherited destroy
    body must use virtual D1 dispatch, whereas p->B::~B() is qualified/direct.
    The existing fixture destroys an automatic object twice. Rewrite it with
    manually managed lifetime/storage and retain a further-derived control.
    Rename the fixture to describe unqualified virtual dispatch. Do not use
-   the existing main as a defined runtime oracle.
+   the existing main as a defined runtime oracle. DTOR now implements the dispatch
+   fix and the defined fixture; the copied reducer passes.
    Evidence: pa13/reference-corrections.md and
    student.tests/pa13/audit-explicit-destruction.cpp.
 
@@ -391,16 +420,19 @@ silently importing an EH requirement into PA12 solely through a reference edit.
 13. ABI substitution state (PA9/21).
     address_abi_reducer.abi still emits ER1C instead of ERS1_ because entity
     names inside template-address expressions fail to share substitution state.
-    PA21's RTTI template-template-argument encoding similarly names the wrong
-    substituted template. These need a shared typed ABI encoder fix and focused
+    The source compiler already matches Clang on the member-address reducer;
+    the remaining mismatch is in the PA9 normalized fact tool. PA21's RTTI
+    template-template-argument encoding names the wrong substituted template,
+    also confirmed against Clang. These need typed ABI encoder fixes and focused
     PA9 coverage, retaining PA21 RTTI coverage for the consumed result.
     Evidence: pa18/reference-correction67.md;
     pa21/reference-corrections102.md; address-abi-main.txt.
 
 ## Fixture corrections authorized by the bug evidence
 
-Five existing inputs deserve source corrections in addition to regenerated
-oracles: PA13 explicit destruction needs manually managed lifetime; PA23
+Five existing inputs were identified for source corrections in addition to
+regenerated oracles. PA13 explicit destruction now uses manually managed lifetime
+in DTOR. Four remain: PA23
 constructor-prvalue virtual-base forwarding needs initialized most-derived
 virtual bases; PA19 defaulted-pack cardinality must compare with 9; PA18
 300-explicit-template-call-transitive-base-deduction and PA19
@@ -488,6 +520,37 @@ acceptance. GCC accepts the `#line` case. No additional compiler fix is needed
 for these controls. PA28's current
 plan reports no new reference corrections and still has six implementation
 failures; those unfinished student behaviors are not evidence of reference bugs.
+
+## Clang verification before ABI edits
+
+Per the user's explicit instruction, ABI corrections require an independent
+Clang check before changing the encoder or expectations. The checks below use
+Ubuntu Clang 21.1.8, target `x86_64-pc-linux-gnu`, `-std=c++11 -O0` and raw ELF
+symbol inspection. No mangling implementation or expected symbol was changed
+while gathering this evidence. Commands, diagnostics and full symbol listings
+are retained in `/tmp/cppgm-v4-audit-review/clang-abi/`.
+
+| Case | Clang | Current checkout | Consequence |
+| --- | --- | --- | --- |
+| Exact PA27 definition, import and provider for external global `g` | Defines/imports `g` | Defines/imports `_Z1g` | Confirmed mismatch; mixed Clang/ours links fail in both directions. |
+| `ns::Holder<&C::m>::f(C&)` source reducer | Ends `ERS1_` | Source compiler also ends `ERS1_` | Source compiler already agrees; do not change this working source boundary. |
+| Equivalent PA9 normalized ABI facts | C++ meaning ends `ERS1_` | `abimangle` and its existing reference end `ER1C` | Remaining mismatch belongs to the fact-tool encoding path/reference. |
+| Reduced RTTI `O<n::W<n::M>>` | Reuses `n::V` with `S3_` | Uses `S4_` | Confirmed mismatch. |
+| Full PA21 `json_encoder<ordered_json>` type with exported address accessor | Reuses vector with `NS4_IhJEE` | Uses `NS5_IhJEE` | Confirms the same RTTI mismatch on the full fixture type. |
+
+Variable boundary controls additionally show that C linkage, namespace data and
+static class members already match Clang. Plain external data and external const
+data have the global-name mismatch. Internal const/static data remain local ELF
+symbols but omit Clang's `L` component; record this spelling difference separately
+and consult the internal-name contract before treating it as an interoperability
+defect. A global-name fix must preserve these distinct linkage categories.
+
+The full fixture's unchanged `&typeid(...) ? 0 : 1` main does not require Clang
+to emit RTTI even at `-O0`. The supplemental accessor forces emission without
+changing the type whose spelling is compared. Its original no-symbol result is
+retained separately, rather than treated as agreement or disagreement. GCC
+corroborates the global and reduced substitution observations, but Clang is the
+requested host comparison for subsequent changes.
 
 ## Implementation order
 
