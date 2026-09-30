@@ -43,15 +43,15 @@ fix sequence is complete, as requested.
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
 | ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Done in 5d4ff5a34: both original reducers and normal/nested throwing-arm controls pass; strict 5843/5843, full checks and equal-output ABBA pass. Other EH mechanisms remain open. |
 | ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Done: edd6b2121; retain constructor calls and argument/parameter lifetimes; counter and by-value lifetime controls pass. |
-| ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Done in the mixed-class conversion checkpoint: direct binding then value fallback, base/cv constraints and implicit-candidate controls; strict 5846/5846, full checks and equal-output ABBA pass. COND-RESULT remains separate. |
-| COND-RESULT | Preserve const class conditional result types and copy glvalue class conditional results | Additional controls while fixing ARG-COND | Open: independently reproduced in the immutable entry compiler and current checkout; const-result overload selects the wrong category, and base-class value initialization rejects with invalid class conditional result. Direct base references pass. |
+| ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Done in d240819cf: direct binding then value fallback, base/cv constraints and implicit-candidate controls; strict 5846/5846, full checks and equal-output ABBA pass. COND-RESULT remains separate. |
+| COND-RESULT | Preserve const class conditional result types and copy glvalue class conditional results | Additional controls while fixing ARG-COND | Done in the qualified conditional results checkpoint: const result facts, selected glvalue copying and scoped reference backing; strict 5849/5849, full checks and equal-output ABBA pass. |
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
 | BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
-| HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Needs verification: unchanged required fixture expects DeletedCopy to be nontrivial/non-POD; student claims no proof or correction yet. Check C++11 declaration rules and Clang/GCC before changing it. |
-| HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Needs verification: unchanged fixture declares only std trait templates before accessing value; review PA29's contract and the compiler's shorthand handling. No reference correction claimed by the student. |
+| HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Open, independently verified: original fixture passes ours but all three negative assertions fail with Clang/GCC in C++11 mode. Typed property mask is 0 here versus 7 on both hosts; N3485 9/6, 12.8/12,25 and 8.4.2/4 support the host declaration rules. Keep declaration traits separate from viability and ABI-for-calls facts. |
+| HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Open, independently verified: unchanged fixture accesses value on forward-declared std templates; Clang/GCC reject undefined/incomplete instantiations, ours accepts. Supply complete typed trait definitions and review shorthand handling; student has not edited its oracle. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence is complete; initial and INIT-ADDR exports already passed. |
 
 ## Static address initialization checkpoint
@@ -194,6 +194,46 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Qualified conditional results and glvalue copies checkpoint
+
+Class conditional expressions retain the combined top-level class qualifiers
+in their semantic result and dump fact; their arms still construct unqualified
+object storage. A selected class value conversion retains its qualified target.
+Direct trivial class initialization bypasses a copy constructor only for an
+actual prvalue conditional recipe; a glvalue source now takes the ordinary
+selected copy-construction path. Deleted copies are rejected there.
+
+Class conditional prvalues bound to local references are materialized before
+binding. A directly bound complete temporary receives a scope lifetime even
+when its constructor recipe contains conditional children; those children keep
+full-expression cleanup. No scope lifetime is extended through a reference-
+returning call. The new PA12 cluster-200 controls check const/nonconst overload
+selection, mixed conversion and const-returning call operands, selected base
+references followed by value copying, copy observations and deleted-copy
+rejection, plus backing-object/argument destruction timing. Ours/GCC/Clang
+agree at -O0/-O2 on the final fixtures.
+
+Evidence lives in /tmp/cppgm-v4-audit-review/conditional-result-fixtures/.
+The initial single-expression test exposed a separate preexisting cleanup
+failure under a five-call compound || condition: both the immutable entry
+compiler and current compiler fail its liveness check; Clang/GCC pass. The
+compound-condition-observations.json reducer is retained with the remaining
+EH work. The required qualification fixture checks each overload in a separate
+full expression and independently checks scope extension. The initial generated
+reference from the failing development control is superseded via ref-test only
+after the source/native assertions pass; it is not accepted as a runtime oracle.
+Strict report passes 5849/5849 with only its final line; debug-info, backend
+variants, self-host through PA5, all nine architecture checks and file audit
+pass. Placement checks 2980 fixtures with zero findings. Logs/statuses are in
+/tmp/cppgm-v4-audit-review/conditional-result-final-validation.json.
+
+Immutable binaries, CPU-0 frozen input, four A/A and six ABBA blocks retain
+all observations under /tmp/cppgm-v4-audit-review/perf-conditional-result/.
+Paired B/A medians: CPU 0.992395, wall 0.952381, RSS 1.000381; A/A CPU
+0.996094, wall 1.003521. All 40 objects have identical SHA-256 08c380bf…55f906.
+No regression is observed; shared-host wall spread does not support a speedup
+claim. No previous fixture reference was changed.
 
 ## Mixed-class conditional conversion checkpoint
 
@@ -799,11 +839,23 @@ The plan explicitly identifies two independent review questions without a proof
 bundle or reference correction: 500-builtin-trivial-deleted-copy expects false
 for three declaration properties, and
 600-hosted-nothrow-default-constructible-shorthand accesses value on std trait
-templates that have only forward declarations. HOST-TRIVIAL/HOST-SHORTHAND record
-these as Needs verification, not confirmed bugs or personal tests explicitly
-reported to disagree with the supplied reference implementation. The plan keeps
+templates that have only forward declarations. HOST-TRIVIAL/HOST-SHORTHAND initially record
+these as Needs verification. Independent current-checkout/Clang/GCC probes now
+confirm both issues; they are not personal tests explicitly reported by the
+student to disagree with the supplied reference implementation. The plan keeps
 both required fixtures as failures; no new personal-reference disagreement is
 established by this handoff.
+
+Independent evidence is retained in
+/tmp/cppgm-v4-audit-review/student-refresh-pa29/observations.json. Exact copied
+fixtures pass ours but fail Clang/GCC at -std=c++11 -O0. A separate declaration-
+property reducer returns a three-bit mask: ours 0, Clang/GCC 7. N3485 9/6 defines
+trivially copyable/trivial classes through their declaration properties; 8.4.2/4
+states that an explicitly deleted first declaration is not user-provided, and
+12.8/12,25 give the trivial copy/assignment conditions. The shorthand fixture
+has no class-template definitions from which value can be obtained; host
+errors identify undefined/incomplete instantiations. Compiler/reference fixes
+for these newly verified issues remain open.
 
 ## Clang verification before ABI edits
 

@@ -2047,17 +2047,27 @@ void Analyzer::FinishLocalVariableInitializer(ScopeId scope,
 	const bool extended_initializer_list =
 		ExtendInitializerListVariableLifetime(
 		type, scope, initializer.node, control_dependent);
-	if (program_->types.IsReference(type) && !control_dependent)
+	const bool direct_temporary =
+		dump_.nodes[initializer.node].kind == DUMP_TEMPORARY_OBJECT &&
+		!dump_.nodes[initializer.node].reference_call_materialization;
+	if (program_->types.IsReference(type) &&
+		(!control_dependent || direct_temporary))
 	{
 		std::vector<std::uint32_t> temporaries;
 		CollectTemporaryObjects(initializer.node, &temporaries);
 		if (temporaries.empty()) return;
 		AddTemporaryLifetimeObligation(scope, temporaries.back());
+		const std::size_t first_cleanup = dump_.edges.size();
 		for (std::size_t i = temporaries.size() - 1; i != 0; --i)
 		{
 			const std::uint32_t action =
 				MakeTemporaryDestructorAction(temporaries[i - 1]);
 			if (action != kNoDumpEdge) dump_.Add(owner, action);
+		}
+		if (control_dependent && dump_.edges.size() != first_cleanup)
+		{
+			dump_.nodes[owner].full_expression_staging = true;
+			MarkFullExpressionCalls(initializer.node);
 		}
 		return;
 	}

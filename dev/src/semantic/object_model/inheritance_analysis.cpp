@@ -1092,15 +1092,14 @@ ExpressionInfo Analyzer::AnalyzeConditional(NodeId node, ScopeId scope)
 			!(yes.category == VALUE_XVALUE &&
 			  dump_.nodes[yes.node].kind == DUMP_TEMPORARY_OBJECT &&
 			  dump_.nodes[no.node].kind == DUMP_TEMPORARY_OBJECT);
-		if (!same_glvalue)
-			return BuildClassConditional(
-				condition.node, yes, no, yes_object);
 		std::uint8_t cv = CV_NONE;
 		const TypeRecord& yes_top = program_->types.Get(EffectiveType(yes.type));
 		const TypeRecord& no_top = program_->types.Get(EffectiveType(no.type));
 		if (yes_top.kind == TYPE_QUALIFIED) cv |= yes_top.cv;
 		if (no_top.kind == TYPE_QUALIFIED) cv |= no_top.cv;
 		type = cv == CV_NONE ? yes_object : program_->types.Qualify(yes_object, cv);
+		if (!same_glvalue)
+			return BuildClassConditional(condition.node, yes, no, type);
 		category = yes.category;
 	}
 	else if (EffectiveType(yes.type) == EffectiveType(no.type))

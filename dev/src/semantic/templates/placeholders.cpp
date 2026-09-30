@@ -536,8 +536,16 @@ void Analyzer::ApplyConditionalClassConversion(
 	const bool convert_no = no_to_yes.rank != CONVERSION_INVALID;
 	if (convert_yes && convert_no)
 		ThrowSemanticError("ambiguous bidirectional conditional class conversion");
-	if (convert_yes) *yes = ApplyCallArgument(*yes, no_target, &yes_to_no);
-	else if (convert_no) *no = ApplyCallArgument(*no, yes_target, &no_to_yes);
+	if (convert_yes)
+	{
+		*yes = ApplyCallArgument(*yes, no_target, &yes_to_no);
+		if (!program_->types.IsReference(no_target)) yes->type = no_target;
+	}
+	else if (convert_no)
+	{
+		*no = ApplyCallArgument(*no, yes_target, &no_to_yes);
+		if (!program_->types.IsReference(yes_target)) no->type = yes_target;
+	}
 }
 
 void Analyzer::CompleteFunctionTemplatePlaceholderResult(BindingId binding)

@@ -215,13 +215,13 @@ ExpressionInfo Analyzer::BuildClassConditional(
 		arms[i] = arm;
 	}
 	const std::uint32_t expression = MakeDump(
-		DUMP_CONDITIONAL_EXPRESSION, object, VALUE_PRVALUE);
+		DUMP_CONDITIONAL_EXPRESSION, type, VALUE_PRVALUE);
 	dump_.Add(expression, condition);
 	dump_.Add(expression, arms[0]);
 	dump_.Add(expression, arms[1]);
 	ExpressionInfo result;
 	result.node = expression;
-	result.type = object;
+	result.type = type;
 	result.category = VALUE_PRVALUE;
 	if ((constant_expression_required_depth_ != 0 ||
 		constexpr_evaluation_depth_ != 0) &&
@@ -758,6 +758,7 @@ ExpressionInfo Analyzer::AnalyzeVariableInitializer(
 			{
 				if (dump_.nodes[initializer.node].kind ==
 					DUMP_CONDITIONAL_EXPRESSION &&
+					initializer.category == VALUE_PRVALUE &&
 					IsDirectTrivialClassValueType(type)) {}
 				else if (initializer.category == VALUE_PRVALUE &&
 					dump_.nodes[initializer.node].kind == DUMP_CALL_EXPRESSION &&
@@ -817,7 +818,8 @@ ExpressionInfo Analyzer::AnalyzeVariableInitializer(
 			 declared_kind == TYPE_RVALUE_REFERENCE) &&
 			initializer.category == VALUE_PRVALUE &&
 			IsClassEntity(*program_, EntityOf(initializer.type)) &&
-			dump_.nodes[initializer.node].kind == DUMP_CALL_EXPRESSION)
+			(dump_.nodes[initializer.node].kind == DUMP_CALL_EXPRESSION ||
+			 dump_.nodes[initializer.node].kind == DUMP_CONDITIONAL_EXPRESSION))
 		{
 			initializer = MaterializeTemporary(initializer);
 			initializer = ApplyTarget(initializer, type);
