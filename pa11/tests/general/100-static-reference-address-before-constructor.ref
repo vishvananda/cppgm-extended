@@ -1,0 +1,181 @@
+global @values [binding=strong, object=_Z6values] = {
+  i32 3
+  i32 5
+  i32 7
+}
+global @observer [binding=strong, object=_Z8observer] = {
+  zero 1
+}
+global @middle : ptr [binding=strong, object=_Z6middle] = addr @values + 4
+global @reference : ptr [binding=strong, object=_Z9reference] = addr @values + 4
+global @alias : ptr [binding=strong, object=_Z5alias] = addr @values + 4
+global @current : ptr [binding=strong, object=_Z7current] = addr @values
+global @advanced : ptr [binding=strong, object=_Z8advanced] = zero
+global @copied : ptr [binding=strong, object=_Z6copied] = zero
+global @through_pointer : ptr [binding=strong, object=_Z15through_pointer] = zero
+
+function @advance() -> ptr [binding=strong, object=_Z7advancev] {
+  block ^entry:
+    %t1 = addr @values
+    %t2 = index i32 [projection=array_element] %t1, 2
+    store ptr %t2, @current
+    %t3 = load ptr @current
+    return ptr %t3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
+  slot $land__4 : i64
+  slot $land__5 : i64
+
+  block ^entry:
+    %t1 = load ptr @alias
+    store i32 11, %t1
+    %t2 = addr @observer
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load u8 %t3
+    branch %t4, ^land_rhs_13, ^land_short_14
+
+  block ^land_rhs_13:
+    %t5 = addr @values
+    %t6 = index i32 [projection=array_element] %t5, 1
+    %t7 = load i32 %t6
+    %t8 = cmp eq i32 %t7, 11
+    %t9 = cmp ne i64 %t8, 0
+    store i64 %t9, $land__5
+    jump ^land_end_15
+
+  block ^land_short_14:
+    store i64 0, $land__5
+    jump ^land_end_15
+
+  block ^land_end_15:
+    %t10 = load i64 $land__5
+    branch %t10, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t11 = load ptr @advanced
+    %t12 = addr @values
+    %t13 = index i32 [projection=array_element] %t12, 2
+    %t14 = cmp eq ptr %t11, %t13
+    %t15 = cmp ne i64 %t14, 0
+    store i64 %t15, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t16 = load i64 $land__4
+    branch %t16, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t17 = load ptr @copied
+    %t18 = load ptr @advanced
+    %t19 = cmp eq ptr %t17, %t18
+    %t20 = cmp ne i64 %t19, 0
+    store i64 %t20, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t21 = load i64 $land__3
+    branch %t21, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t22 = load ptr @through_pointer
+    %t23 = load ptr @advanced
+    %t24 = cmp eq ptr %t22, %t23
+    %t25 = cmp ne i64 %t24, 0
+    store i64 %t25, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t26 = load i64 $land__2
+    branch %t26, ^cond_then_1, ^cond_else_2
+
+  block ^cond_then_1:
+    store i32 0, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_else_2:
+    store i32 1, $cond__1
+    jump ^cond_end_3
+
+  block ^cond_end_3:
+    %t27 = load i32 $cond__1
+    return i32 %t27
+}
+function @Observer__Observer(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8ObserverC1Ev, inline_hint=yes] {
+  slot $this : ptr
+  slot $land__1 : i64
+  slot $land__2 : i64
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr @middle
+    %t2 = addr @values
+    %t3 = index i32 [projection=array_element] %t2, 1
+    %t4 = cmp eq ptr %t1, %t3
+    branch %t4, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t5 = load ptr @reference
+    %t6 = addr @values
+    %t7 = index i32 [projection=array_element] %t6, 1
+    %t8 = cmp eq ptr %t5, %t7
+    %t9 = cmp ne i64 %t8, 0
+    store i64 %t9, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t10 = load i64 $land__2
+    branch %t10, ^land_rhs_1, ^land_short_2
+
+  block ^land_rhs_1:
+    %t11 = load ptr @alias
+    %t12 = addr @values
+    %t13 = index i32 [projection=array_element] %t12, 1
+    %t14 = cmp eq ptr %t11, %t13
+    %t15 = cmp ne i64 %t14, 0
+    store i64 %t15, $land__1
+    jump ^land_end_3
+
+  block ^land_short_2:
+    store i64 0, $land__1
+    jump ^land_end_3
+
+  block ^land_end_3:
+    %t16 = load i64 $land__1
+    %t17 = convert trunc u8 i64 %t16
+    %t18 = load ptr $this
+    %t19 = index i8 [projection=field] %t18, 0
+    store u8 %t17, %t19
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @observer
+    call void @Observer__Observer(%t1)
+    %t2 = call ptr @advance()
+    store ptr %t2, @advanced
+    %t3 = load ptr @current
+    store ptr %t3, @copied
+    %t4 = load ptr @current
+    store ptr %t4, @through_pointer
+    return void
+}
+alias object _ZN8ObserverC2Ev = @Observer__Observer

@@ -199,7 +199,7 @@ SymbolId StaticInitializerLowering::EnsureStringLiteralSpelling(
 }
 
 bool StaticInitializerLowering::ResolveConstantAddress(std::uint32_t node,
-	SymbolId* symbol, std::int64_t* offset)
+	SymbolId* symbol, std::int64_t* offset, bool address_operand)
 {
 	const DumpNode& record = arena_.nodes[node];
 	const NodeChildren children = Children(node);
@@ -211,12 +211,17 @@ bool StaticInitializerLowering::ResolveConstantAddress(std::uint32_t node,
 	}
 	if (record.kind == DUMP_ID_EXPRESSION && record.binding != kNoBinding)
 	{
+		if (types_.IsReference(program_.bindings[record.binding].type) ||
+			(!address_operand && !types_.IsArray(record.type) &&
+			 !program_.types.IsFunction(record.type))) return false;
 		*offset = 0;
 		return SymbolForBinding(record.binding, symbol);
 	}
-	if ((record.kind == DUMP_CAST_EXPRESSION ||
-		record.kind == DUMP_UNARY_EXPRESSION) && children.size() == 1)
-		return ResolveConstantAddress(children[0], symbol, offset);
+	if (record.kind == DUMP_CAST_EXPRESSION && children.size() == 1)
+		return ResolveConstantAddress(children[0], symbol, offset, address_operand);
+	if (record.kind == DUMP_UNARY_EXPRESSION && children.size() == 1 &&
+		record.OperationIs(OP_AMP))
+		return ResolveConstantAddress(children[0], symbol, offset, true);
 	if (record.kind == DUMP_SUBSCRIPT_EXPRESSION && children.size() == 2 &&
 		arena_.nodes[children[1]].constant &&
 		ResolveConstantAddress(children[0], symbol, offset))
@@ -246,23 +251,26 @@ bool StaticInitializerLowering::ResolveConstantAddress(std::uint32_t node,
 	return false;
 }
 
-bool StaticInitializerLowering::RequiresDynamicAddress(std::uint32_t node) const
-{
-	const DumpNode& record = arena_.nodes[node];
-	const NodeChildren children = Children(node);
-	if (record.kind == DUMP_CAST_EXPRESSION && children.size() == 1)
-		return RequiresDynamicAddress(children[0]);
-	return record.kind == DUMP_UNARY_EXPRESSION && children.size() == 1 &&
-		record.OperationIs(OP_AMP) &&
-		arena_.nodes[children[0]].kind == DUMP_SUBSCRIPT_EXPRESSION;
-}
-
-bool StaticInitializerLowering::HasConstantAddress(std::uint32_t node)
+bool StaticInitializerLowering::LowerAddress(
+	const StaticAddressInitializer& address, Global* global)
 {
 	SymbolId symbol = kNoLowId;
-	std::int64_t offset = 0;
-	return node != kNoDumpEdge && !RequiresDynamicAddress(node) &&
-		ResolveConstantAddress(node, &symbol, &offset);
+	if (address.kind == CONSTEXPR_ADDRESS_LOCAL) return false;
+	if (address.kind == CONSTEXPR_ADDRESS_NULL)
+	{
+		global->initializer_kind = Global::INTEGER_VALUE;
+		global->initializer = 0;
+		return true;
+	}
+	if (address.kind == CONSTEXPR_ADDRESS_STRING)
+		symbol = EnsureStringLiteralSpelling(program_.names.Get(
+			static_cast<NameId>(address.identity)));
+	else if (!SymbolForBinding(static_cast<BindingId>(address.identity), &symbol))
+		return false;
+	global->initializer_kind = Global::ADDRESS_VALUE;
+	global->address_symbol = symbol;
+	global->address_offset = address.offset;
+	return true;
 }
 
 void StaticInitializerLowering::AppendZero(std::size_t bytes,
@@ -440,7 +448,7 @@ bool StaticInitializerLowering::AppendValue(TypeId type, std::uint32_t node,
 		return true;
 	}
 	if (value.constant && low_type.kind == LOW_PTR &&
-		value.constant_value == 0 && !RequiresDynamicAddress(node) &&
+		value.constant_value == 0 &&
 		ResolveConstantAddress(node, &item.symbol, &item.offset))
 	{
 		item.kind = Global::DataItem::ADDRESS_ITEM;
@@ -460,7 +468,6 @@ bool StaticInitializerLowering::AppendValue(TypeId type, std::uint32_t node,
 		}
 		return true;
 	}
-	if (RequiresDynamicAddress(node)) return false;
 	if (ResolveConstantAddress(node, &item.symbol, &item.offset))
 	{
 		item.kind = Global::DataItem::ADDRESS_ITEM;
@@ -653,6 +660,8 @@ bool StaticInitializerLowering::Lower(const NamespaceObjectAction& action,
 	bool* needs_global_class_initializer, bool* keep_global_class_address)
 {
 	if (keep_global_class_address) *keep_global_class_address = false;
+	if (global->type.kind == LOW_PTR && LowerAddress(action.constant_address, global))
+		return true;
 	if (types_.IsReference(action.type))
 		return !thread_local_object && LowerScalarReferenceTemporary(action, global);
 	if (action.initializer == kNoDumpEdge)
@@ -749,10 +758,11 @@ bool StaticInitializerLowering::Lower(const NamespaceObjectAction& action,
 			&global->initializer_high);
 		return true;
 	}
+	// Preserve the pointer-width cast relocation contract, including the
+	// pointer/integer/pointer round trip that is not a core constant expression.
 	SymbolId symbol = kNoLowId;
 	std::int64_t offset = 0;
 	if (global->type.kind == LOW_PTR &&
-		!RequiresDynamicAddress(action.initializer) &&
 		ResolveConstantAddress(action.initializer, &symbol, &offset))
 	{
 		global->initializer_kind = Global::ADDRESS_VALUE;

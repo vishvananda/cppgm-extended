@@ -887,7 +887,10 @@ ExpressionInfo Analyzer::AnalyzeNamedValue(
 			 constant_expression_required_depth_ == 0));
 	const std::uint32_t constant_address = binding.constant ?
 		BindingAddress(found.ordinary) : kNoConstexprAddress;
+	const ConstexprAddressValue* materialized_address =
+		ConstexprAddressAt(constant_address);
 	if (constant_address != kNoConstexprAddress &&
+		materialized_address->offset == 0 &&
 		constant_expression_required_depth_ == 0 &&
 		(target == kNoType || !program_->types.IsReference(target)))
 	{
@@ -937,7 +940,9 @@ ExpressionInfo Analyzer::AnalyzeNamedValue(
 	dump_.nodes[result.node].template_parameter_constant =
 		(binding.kind == BIND_PARAMETER && binding.constant) ||
 		binding.template_parameter_constant;
-	if (binding.constant)
+	if (binding.constant ||
+		(program_->types.IsReference(binding.type) &&
+		 BindingAddress(found.ordinary) != kNoConstexprAddress))
 		SetExpressionBindingConstant(&result, found.ordinary);
 	if (binding.kind == BIND_PARAMETER && binding.constant &&
 		IsMemberPointer(binding.type) && result.binding != kNoBinding &&

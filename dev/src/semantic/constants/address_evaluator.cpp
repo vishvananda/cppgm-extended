@@ -83,12 +83,13 @@ std::uint32_t Analyzer::BindingAddress(BindingId binding) const
 }
 
 void Analyzer::PublishBindingAddress(BindingId binding,
-	std::uint32_t address)
+	std::uint32_t address, bool constant)
 {
 	if (binding == kNoBinding || binding >= program_->bindings.size() ||
 		!ConstexprAddressAt(address))
 		ThrowInternalCompilerError("invalid constexpr address publication");
-	program_->bindings[binding].constant = true;
+	program_->bindings[binding].constant =
+		program_->bindings[binding].constant || constant;
 	if (constexpr_address_by_binding_.size() <= binding)
 		constexpr_address_by_binding_.resize(
 			static_cast<std::size_t>(binding) + 1, kNoConstexprAddress);

@@ -2269,7 +2269,9 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 			static_cast<std::uint32_t>(arena_->TokenFirst(item)),
 			static_cast<std::uint32_t>(arena_->TokenLast(item)),
 			has_initializer,
-			has_initializer && HasConstantInitializerFact(initializer));
+			has_initializer && HasConstantInitializerFact(initializer),
+			program_->types.IsReference(parsed.type) ?
+				initializer.constexpr_lvalue_address : ExpressionAddress(initializer));
 		if (local && has_initializer)
 			FinishLocalVariableInitializer(scope, owner, binding, parsed.type,
 				initializer, variable, control_dependent);

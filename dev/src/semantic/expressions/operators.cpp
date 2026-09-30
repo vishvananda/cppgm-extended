@@ -269,7 +269,9 @@ ExpressionInfo Analyzer::AnalyzeUnary(NodeId node, ScopeId scope, TypeId target)
 	std::uint32_t address = ExpressionAddress(operand);
 	if (address == kNoConstexprAddress &&
 		(op == OP_STAR || op == OP_PLUS) &&
-		IsPointer(Decay(operand.type)))
+		(program_->types.Get(EffectiveType(operand.type)).kind == TYPE_ARRAY ||
+		 program_->types.IsFunction(EffectiveType(operand.type)) ||
+		 (IsPointer(Decay(operand.type)) && operand_object != kNoConstexprObject)))
 		address = LvalueAddress(&operand);
 	std::uint32_t lvalue_address = kNoConstexprAddress;
 	BindingId selected_member = kNoBinding;

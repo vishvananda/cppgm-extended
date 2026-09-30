@@ -1742,7 +1742,8 @@ private:
 	void RegisterVariableLifetimeAndStorage(ScopeId scope, bool local, bool declaration_only,
 		std::uint32_t variable, BindingId object, TypeId type, NameId source_file, std::uint32_t source_line,
 		std::uint32_t source_column, std::uint32_t source_token_first,
-		std::uint32_t source_token_last, bool has_initializer, bool constant_initialized);
+		std::uint32_t source_token_last, bool has_initializer, bool constant_initialized,
+		std::uint32_t constant_address = kNoConstexprAddress);
 	bool DemandRuntimeInitializerFunctions(std::uint32_t initializer,
 		bool function_addresses_only = false);
 	void AppendScopeDestructionActions(ScopeId scope,
@@ -1866,7 +1867,8 @@ private:
 	void PublishBindingScalar(BindingId binding,
 		const ConstexprScalarValue& value);
 	void PublishBindingObject(BindingId binding, std::uint32_t object);
-	void PublishBindingAddress(BindingId binding, std::uint32_t address);
+	void PublishBindingAddress(BindingId binding, std::uint32_t address,
+		bool constant = true);
 	void PublishBindingConstant(BindingId binding,
 		const ExpressionInfo& value);
 	void PublishCanonicalBindingConstant(BindingId binding);

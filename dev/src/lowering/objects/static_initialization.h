@@ -36,7 +36,6 @@ public:
 	bool LowerConstantObject(semantic::TypeId type, std::uint32_t initializer,
 		lowering::ir::Global* global);
 	void SetZero(semantic::TypeId type, lowering::ir::Global* global);
-	bool HasConstantAddress(std::uint32_t node);
 	lowering::ir::SymbolId EnsureStringLiteral(std::uint32_t node);
 	lowering::ir::SymbolId EnsureStringLiteralSpelling(
 		const std::string& spelling);
@@ -52,8 +51,10 @@ private:
 	bool SymbolForBinding(semantic::BindingId binding,
 		lowering::ir::SymbolId* symbol);
 	bool ResolveConstantAddress(std::uint32_t node,
-		lowering::ir::SymbolId* symbol, std::int64_t* offset);
-	bool RequiresDynamicAddress(std::uint32_t node) const;
+		lowering::ir::SymbolId* symbol, std::int64_t* offset,
+		bool address_operand = false);
+	bool LowerAddress(const semantic::StaticAddressInitializer& address,
+		lowering::ir::Global* global);
 	void AppendZero(std::size_t bytes,
 		std::vector<lowering::ir::Global::DataItem>* items);
 	bool AppendValue(semantic::TypeId type, std::uint32_t node,

@@ -410,12 +410,14 @@ void Analyzer::PublishBindingConstant(BindingId binding,
 void Analyzer::PublishCanonicalBindingConstant(BindingId binding)
 {
 	if (binding == kNoBinding || binding >= program_->bindings.size() ||
-		!program_->bindings[binding].constant) return;
+		(!program_->bindings[binding].constant &&
+		 BindingAddress(binding) == kNoConstexprAddress)) return;
 	const BindingId canonical = program_->bindings[binding].canonical;
 	const std::uint32_t address = BindingAddress(binding);
-	const std::uint32_t object = BindingObject(binding);
+	const std::uint32_t object = program_->bindings[binding].constant ?
+		BindingObject(binding) : kNoConstexprObject;
 	if (address != kNoConstexprAddress)
-		PublishBindingAddress(canonical, address);
+		PublishBindingAddress(canonical, address, program_->bindings[binding].constant);
 	else if (object != kNoConstexprObject)
 		PublishBindingObject(canonical, object);
 	else PublishBindingScalar(canonical, BindingScalar(binding));
@@ -433,7 +435,8 @@ void Analyzer::SetExpressionBindingConstant(
 	ExpressionInfo* expression, BindingId binding) const
 {
 	const std::uint32_t address = BindingAddress(binding);
-	const std::uint32_t object = BindingObject(binding);
+	const std::uint32_t object = program_->bindings[binding].constant ?
+		BindingObject(binding) : kNoConstexprObject;
 	if (address != kNoConstexprAddress)
 	{
 		if (program_->types.IsReference(program_->bindings[binding].type))
@@ -1511,9 +1514,10 @@ void Analyzer::PublishConstantVariableInitializer(BindingId binding,
 			"constexpr object initializer is not constant");
 	// A reference can name a mutable static object in a constant expression.
 	// Its address is constant even when reading that object's value is not.
-	if (spec.is_constexpr && program_->types.IsReference(type))
+	if (program_->types.IsReference(type) &&
+		initializer_address != kNoConstexprAddress)
 	{
-		PublishBindingAddress(binding, initializer_address);
+		PublishBindingAddress(binding, initializer_address, spec.is_constexpr);
 		return;
 	}
 	if (!initializer.constant ||

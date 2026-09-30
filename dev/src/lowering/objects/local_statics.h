@@ -156,31 +156,21 @@ protected:
 			global.symbol = symbol;
 			const DumpNode& variable = derived.arena_.nodes[action.variable];
 			global.type = derived.LowerVariableStorage(variable);
-			const NamespaceObjectAction initializer(action.object, action.type,
+			NamespaceObjectAction initializer(action.object, action.type,
 				action.variable, action.initializer, action.destructor);
+			initializer.constant_address = action.constant_address;
 			bool static_initialized =
 				derived.SetExplicitVariableZero(variable, &global);
-			if (!static_initialized && derived.IsReferenceType(action.type))
-			{
-				derived.static_initializers_.SetZero(action.type, &global);
-				if (derived.static_initializers_.HasConstantAddress(
-					action.initializer))
-					derived.local_static_eager_initializers_.push_back(
-						static_cast<std::uint32_t>(i));
-			}
-			else if (!static_initialized &&
+			if (!static_initialized &&
 				(!derived.IsClassObjectType(action.type) ||
 				(action.constant_initialized &&
 				 !action.specialization_owned_recipe)))
 				static_initialized = derived.static_initializers_.Lower(
 					initializer, false, &global,
 					&derived.needs_global_class_initializer_);
-			if (!static_initialized && !derived.IsReferenceType(action.type))
+			if (!static_initialized)
 				derived.static_initializers_.SetZero(action.type, &global);
-			const bool eager =
-				!derived.local_static_eager_initializers_.empty() &&
-				derived.local_static_eager_initializers_.back() == i;
-			const bool dynamic = !static_initialized && !eager;
+			const bool dynamic = !static_initialized;
 			const bool thread_local_object =
 				derived.output_.host_object_emission &&
 				derived.program_.bindings[action.object].thread_local_storage;
@@ -245,7 +235,6 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (derived.namespace_initializers_.empty() &&
-			derived.local_static_eager_initializers_.empty() &&
 			!derived.needs_global_class_initializer_) return;
 		const std::string proposed = "__cppgm_init";
 		const SymbolId symbol =
@@ -276,16 +265,6 @@ protected:
 				derived.AddressOfStorage(derived.StorageFor(action.object,
 					derived.LowerVariableStorage(variable)));
 			}
-		}
-		for (std::size_t i = 0;
-			i < derived.local_static_eager_initializers_.size(); ++i)
-		{
-			const LocalStaticObjectAction& action =
-				derived.graph_.local_static_objects[
-					derived.local_static_eager_initializers_[i]];
-			derived.LowerVariableInitializationCore(
-				derived.arena_.nodes[action.variable],
-				derived.Children(action.variable));
 		}
 		derived.lowering_namespace_object_ = false;
 		derived.Emit(Instruction(Instruction::RETURN_VOID));

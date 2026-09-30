@@ -1486,12 +1486,24 @@ struct LifetimeObligation
 		  temporary(temporary_value) {}
 };
 
+// A static relocation published by constant evaluation. LOCAL denotes an
+// unavailable address; transient evaluation storage cannot escape here.
+struct StaticAddressInitializer
+{
+	ConstexprAddressKind kind;
+	std::uint64_t identity;
+	std::int64_t offset;
+	StaticAddressInitializer()
+		: kind(CONSTEXPR_ADDRESS_LOCAL), identity(0), offset(0) {}
+};
+
 struct NamespaceObjectAction
 {
 	BindingId object;
 	TypeId type;
 	std::uint32_t variable, initializer, destructor;
 	std::uint32_t initializer_list_backing;
+	StaticAddressInitializer constant_address;
 	// Materialized object identity and its shutdown destructor, if any.
 	std::vector<std::pair<std::uint32_t, std::uint32_t> > reference_temporaries;
 
@@ -1519,6 +1531,7 @@ struct LocalStaticObjectAction
 	std::uint32_t source_token_first, source_token_last;
 	bool constant_initialized, specialization_owned_recipe;
 	bool source_identity_presentation;
+	StaticAddressInitializer constant_address;
 
 	LocalStaticObjectAction(BindingId object_value, BindingId function_value,
 		TypeId type_value, std::uint32_t variable_value,
