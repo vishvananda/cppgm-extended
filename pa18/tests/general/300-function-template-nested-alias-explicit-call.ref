@@ -1,3 +1,12 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i8 97
+  i8 98
+}
+global @__constexpr_template__2 [storage=readonly, binding=internal] = {
+  i8 0
+  i8 0
+}
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $src_buf : obj<2x1>
   slot $dst_buf : obj<2x1>
@@ -7,28 +16,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $src_buf
-    store i8 97, %t1
-    %t2 = index i8 %t1, 1
-    store i8 98, %t2
-    %t3 = addr $dst_buf
-    store i8 0, %t3
-    %t4 = index i8 %t3, 1
-    store i8 0, %t4
-    %t5 = addr $src_buf
-    store ptr %t5, $src
-    %t6 = addr $dst_buf
-    store ptr %t6, $dst
-    %t7 = addr $tmpobj__1
-    %t8 = load ptr $src
-    %t9 = load ptr $dst
-    %t10 = call obj<16x8> @helper(%t8, 2, %t9)
-    copyobj 16x8 %t10, %t7
-    %t11 = index i8 [projection=field] %t7, 8
-    %t12 = load ptr %t11
-    %t13 = load ptr $dst
-    %t14 = binary sub ptr %t12, %t13
-    %t15 = convert trunc i32 i64 %t14
-    return i32 %t15
+    copyobj 2x1 @__constexpr_template__1, %t1
+    %t2 = addr $dst_buf
+    copyobj 2x1 @__constexpr_template__2, %t2
+    %t3 = addr $src_buf
+    store ptr %t3, $src
+    %t4 = addr $dst_buf
+    store ptr %t4, $dst
+    %t5 = addr $tmpobj__1
+    %t6 = load ptr $src
+    %t7 = load ptr $dst
+    %t8 = call obj<16x8> @helper(%t6, 2, %t7)
+    copyobj 16x8 %t8, %t5
+    %t9 = index i8 [projection=field] %t5, 8
+    %t10 = load ptr %t9
+    %t11 = load ptr $dst
+    %t12 = binary sub ptr %t10, %t11
+    %t13 = convert trunc i32 i64 %t12
+    return i32 %t13
 }
 function @helper(%first : ptr, %n : i64, %result : ptr) -> obj<16x8> [binding=weak, object=_Z6helperI6PolicyPcS1_TnN9enable_ifIXsr6is_ptrIT0_EE5valueEiE4typeELi0EE4PairIS3_T1_ES3_41__function_template_nondeduced_type_shapeS7_] {
   slot $first : ptr

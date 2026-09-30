@@ -1,3 +1,8 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  u16 120
+  u16 0
+}
+
 function @g(%s : ptr, %n : i64, %a : ptr [pass=by_address, object_bytes=2]) -> ptr [binding=strong, object=_Z1gPKDsmRS_] {
   slot $s : ptr
   slot $n : i64
@@ -26,19 +31,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $text
-    store u16 120, %t1
-    %t2 = index i8 %t1, 2
-    store u16 0, %t2
-    %t3 = addr $text
-    %t4 = convert sext i64 i32 1
-    %t5 = addr $text
-    %t6 = index u16 [projection=array_element] %t5, 0
-    %t7 = call ptr @g(%t3, %t4, %t6)
-    %t8 = addr $text
-    %t9 = binary mul i64 1, 2
-    %t10 = index i8 %t8, %t9
-    %t11 = cmp eq ptr %t7, %t10
-    branch %t11, ^cond_then_1, ^cond_else_2
+    copyobj 4x2 @__constexpr_template__1, %t1
+    %t2 = addr $text
+    %t3 = convert sext i64 i32 1
+    %t4 = addr $text
+    %t5 = index u16 [projection=array_element] %t4, 0
+    %t6 = call ptr @g(%t2, %t3, %t5)
+    %t7 = addr $text
+    %t8 = binary mul i64 1, 2
+    %t9 = index i8 %t7, %t8
+    %t10 = cmp eq ptr %t6, %t9
+    branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -49,8 +52,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load i32 $cond__1
-    return i32 %t12
+    %t11 = load i32 $cond__1
+    return i32 %t11
 }
 function @std____find(%first : ptr, %last : ptr, %__param2 : ptr [pass=by_address, object_bytes=2], %__param3 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZSt6__findIDsSt8identityLi0EEPKT_S3_S3_RS2_RT0_] {
   slot $first : ptr

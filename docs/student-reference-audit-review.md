@@ -18,8 +18,8 @@ fix sequence is complete, as requested.
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
 | DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2; twenty false positives removed; genuine class controls pass. |
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
-| INIT-OBJ | Emit evaluated class/base/array/template constant object values and relocations | v4codex group 1 | Done: accompanying constant-object compiler checkpoint. Seven copied ordering reducers and two new runtime fixtures pass; strict 5825/5825, full checks and ABBA pass. |
-| ARRAY-IMAGE | Reconcile PA10 literal arrays and PA16 general constexpr readonly-image/copy rule | v4codex placement / group 1 | Open: course representation conflict; update shared lowering, handouts and affected references together. |
+| INIT-OBJ | Emit evaluated class/base/array/template constant object values and relocations | v4codex group 1 | Done: a33d1456d. Seven copied ordering reducers and two new runtime fixtures pass; strict 5825/5825, full checks and ABBA pass. |
+| ARRAY-IMAGE | Reconcile PA10 literal arrays and PA16 general constexpr readonly-image/copy rule | v4codex placement / group 1 | Done: accompanying array-image checkpoint; 48 references regenerated, two new runtime controls, strict 5827/5827 and full checks pass. Performance follow-up finds no persistent regression. |
 | FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Open. |
 | DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Open. |
 | AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Open. |
@@ -110,6 +110,41 @@ peak-RSS ratio 1.001937. Shared-host timing remains noisy (A/A CPU ratio 1.01308
 these measurements show no detected regression, not a speedup. All runs and
 hashes are in `/tmp/cppgm-v4-audit-review/perf-static-objects/{aa,ab}.json`.
 
+## Automatic scalar-array image checkpoint
+
+Mutable automatic scalar arrays now use the existing constant-data pool when
+the entire initializer is known. Eligibility is checked by array/element type,
+cv and the typed initializer, rather than by the variable's constant binding.
+Eligible array initializers enter the existing constant-evaluation context
+while their syntax is analyzed once; nonconstant calls retain runtime demand
+and execution. PA10 now states the literal-image case and PA16 explains the
+extension to general constexpr evaluation. Class lifetime paths remain separate.
+
+Regenerated exactly 48 existing references through the harness, including the
+PA32 solution regression via its driver-root override. The changes replace
+known element stores with a readonly image and one copy, with expected local
+SSA renumbering. Source fixtures and acceptance statuses are unchanged. New
+PA10/16 controls each copy two independent mutable arrays from one shared image,
+then modify one. The PA10 control also preserves two dynamic calls and volatile
+stores; the PA16 control covers a named constexpr value and a constexpr call.
+Both runtime programs return 0. Strict report 5827/5827 prints one success line;
+debug-info, backend variants, self-host through PA5, all nine architecture
+checks, file limits and post-regeneration placement pass (zero findings).
+
+Performance retained immutable A/B binaries and the same frozen semantic-
+overload input/headers. Four initial A/A blocks measured paired CPU +1.17%;
+six A/B blocks measured +2.64%, prompting investigation instead of declaring a
+pass. Optimizer/native work counters are identical. Eight additional A/B blocks
+pinned to CPU 0 measured -3.89% paired CPU and -3.08% wall time; matching four
+pinned A/A blocks measured +0.054% CPU and -0.342% wall. The initial timing signal
+does not persist. The shared host changes load substantially, so no speedup or
+exact zero-cost claim is made. Every output object across all 88 observations
+is byte-identical; paired peak-RSS differences stay within 0.14% in the pinned
+runs. Every run, load snapshot and compiler/input hash is retained under
+`/tmp/cppgm-v4-audit-review/perf-array-image/` in `aa.json`, `ab.json`,
+`ab-pinned.json` and `aa-pinned.json`. Final student-export validation remains
+pending until the fix sequence is complete.
+
 ## Scope and evidence
 
 Read the milestone plans/audits through PA26, all 30 reference-correction
@@ -175,12 +210,12 @@ a PA12 allocation/constructor smoke test with an explicit noexcept constructor,
 and add the external throwing-constructor/deallocation test in PA21. Avoid
 silently importing an EH requirement into PA12 solely through a reference edit.
 
-## Confirmed outstanding fixes in this checkout
+## Confirmed findings and fixes in this checkout
 
 1. Static initialization and storage identity (PA10/11/16/17/18/19).
-   All copied early-observer address/reference/constexpr-object reducers fail:
-   they return 1 or fault because initialization was delayed to the dynamic
-   hook. Constant reference binding must precede dynamic initialization, even
+   At the initial review, copied early-observer address/reference/constexpr-object
+   reducers returned 1 or faulted because initialization was delayed to the dynamic
+   hook. INIT-ADDR and INIT-OBJ now resolve the reproduced ordering cases. Constant reference binding must precede dynamic initialization, even
    when the referent's own constructor is genuinely dynamic. Constant local
    references likewise need static binding rather than queued startup work.
    Fix classification/publication in shared initialization and constant-value

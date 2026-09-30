@@ -232,6 +232,14 @@ So PA16 should leave behind:
 - a clear boundary where the remaining template-language work can build on real `constexpr`
   support rather than special-casing it
 
+Automatic scalar-array image eligibility depends on the evaluated initializer,
+not on whether the declaration spells `constexpr` or `const`. PA10 establishes
+the literal-initializer case; PA16 adds general constant evaluation. Readonly
+images may be shared, while each automatic array retains its own writable
+storage. Nonconstant initializers retain runtime evaluation, and volatile
+arrays retain their required stores. Class construction and destruction stay
+on their typed lifetime paths.
+
 ### Design Notes (Non-Normative)
 
 The useful shape for PA16 is one typed constant-evaluation layer shared by

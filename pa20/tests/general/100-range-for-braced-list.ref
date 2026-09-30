@@ -1,3 +1,9 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i32 1
+  i32 2
+  i32 3
+}
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $s : i32
   slot $__range1 : obj<12x4>
@@ -7,38 +13,34 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     store i32 0, $s
     %t1 = addr $__range1
-    store i32 1, %t1
-    %t2 = index i8 %t1, 4
-    store i32 2, %t2
-    %t3 = index i8 %t1, 8
-    store i32 3, %t3
+    copyobj 12x4 @__constexpr_template__1, %t1
     store i32 0, $__idx2
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t4 = load i32 $__idx2
-    %t5 = cmp lt i32 %t4, 3
-    branch %t5, ^for_body_2, ^for_end_4
+    %t2 = load i32 $__idx2
+    %t3 = cmp lt i32 %t2, 3
+    branch %t3, ^for_body_2, ^for_end_4
 
   block ^for_body_2:
-    %t6 = addr $__range1
-    %t7 = load i32 $__idx2
-    %t8 = index i32 [projection=array_element] %t6, %t7
-    %t9 = load i32 %t8
-    store i32 %t9, $x
-    %t10 = load i32 $s
-    %t11 = load i32 $x
-    %t12 = binary add i32 %t10, %t11
-    store i32 %t12, $s
+    %t4 = addr $__range1
+    %t5 = load i32 $__idx2
+    %t6 = index i32 [projection=array_element] %t4, %t5
+    %t7 = load i32 %t6
+    store i32 %t7, $x
+    %t8 = load i32 $s
+    %t9 = load i32 $x
+    %t10 = binary add i32 %t8, %t9
+    store i32 %t10, $s
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t13 = load i32 $__idx2
-    %t14 = binary add i32 %t13, 1
-    store i32 %t14, $__idx2
+    %t11 = load i32 $__idx2
+    %t12 = binary add i32 %t11, 1
+    store i32 %t12, $__idx2
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t15 = load i32 $s
-    return i32 %t15
+    %t13 = load i32 $s
+    return i32 %t13
 }

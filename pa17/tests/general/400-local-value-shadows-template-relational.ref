@@ -1,3 +1,8 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i64 0
+  i64 0
+}
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $buffer : obj<16x8>
   slot $values : obj<16x8>
@@ -5,22 +10,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $buffer
     %t2 = addr $values
-    store i64 0, %t2
-    %t3 = index i8 %t2, 8
-    store i64 0, %t3
-    %t4 = addr $values
-    %t5 = addr $buffer
-    %t6 = index i8 [projection=field] %t5, 0
-    store ptr %t4, %t6
-    %t7 = addr $values
-    %t8 = binary mul i64 2, 8
-    %t9 = index i8 %t7, %t8
-    %t10 = addr $buffer
-    %t11 = index i8 [projection=field] %t10, 8
-    store ptr %t9, %t11
-    %t12 = addr $buffer
-    %t13 = call i32 @direct_streambuf_int___seek_impl(%t12, 1)
-    return i32 %t13
+    copyobj 16x8 @__constexpr_template__1, %t2
+    %t3 = addr $values
+    %t4 = addr $buffer
+    %t5 = index i8 [projection=field] %t4, 0
+    store ptr %t3, %t5
+    %t6 = addr $values
+    %t7 = binary mul i64 2, 8
+    %t8 = index i8 %t6, %t7
+    %t9 = addr $buffer
+    %t10 = index i8 [projection=field] %t9, 8
+    store ptr %t8, %t10
+    %t11 = addr $buffer
+    %t12 = call i32 @direct_streambuf_int___seek_impl(%t11, 1)
+    return i32 %t12
 }
 function @direct_streambuf_int___seek_impl(%this : ptr [object_bytes=16], %off : i64) -> i32 [binding=weak, object=_ZN16direct_streambufIiE9seek_implEl, inline_hint=yes] {
   slot $this : ptr

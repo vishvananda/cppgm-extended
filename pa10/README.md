@@ -278,6 +278,10 @@ This PA10 milestone supports the following:
   from its initializer, missing elements are zero-initialized, and excess elements are
   rejected; an `extern` array of unknown bound may be referenced without requiring its
   layout in the current translation unit
+- automatic nonvolatile scalar arrays with completely known literal initializers
+  use one copy from readonly constant data, including omitted zero elements;
+  mutable arrays still have distinct automatic storage. PA16 extends eligibility
+  to initializers evaluated through general constexpr expressions
 - expression statements
 - `return`
 - `if` / `else`

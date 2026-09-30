@@ -1,3 +1,9 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i8 97
+  i8 98
+  i8 97
+}
+
 function @count_chars(%first : ptr, %last : ptr, %value : ptr [pass=by_address, object_bytes=1], %project : obj<1x1>) -> i64 [binding=strong, object=_Z11count_charsPcS_RKc8identity] {
   slot $first : ptr
   slot $last : ptr
@@ -59,20 +65,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $data
-    store i8 97, %t1
-    %t2 = index i8 %t1, 1
-    store i8 98, %t2
-    %t3 = index i8 %t1, 2
-    store i8 97, %t3
-    %t4 = addr $data
+    copyobj 3x1 @__constexpr_template__1, %t1
+    %t2 = addr $data
+    %t3 = addr $data
+    %t4 = index i8 %t3, 3
     %t5 = addr $data
-    %t6 = index i8 %t5, 3
-    %t7 = addr $data
-    %t8 = index i8 [projection=array_element] %t7, 0
-    %t9 = addr $argobj__2
-    %t10 = call i64 @count_chars(%t4, %t6, %t8, $argobj__2)
-    %t11 = cmp eq i64 %t10, 2
-    branch %t11, ^cond_then_1, ^cond_else_2
+    %t6 = index i8 [projection=array_element] %t5, 0
+    %t7 = addr $argobj__2
+    %t8 = call i64 @count_chars(%t2, %t4, %t6, $argobj__2)
+    %t9 = cmp eq i64 %t8, 2
+    branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -83,8 +85,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load i32 $cond__1
-    return i32 %t12
+    %t10 = load i32 $cond__1
+    return i32 %t10
 }
 function @invoke__ov2(%function : ptr [pass=by_address, object_bytes=1], %argument : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z6invokeIR8identityRcES2_OT_OT0_] {
   slot $function : ptr

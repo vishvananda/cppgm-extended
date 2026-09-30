@@ -1,3 +1,8 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i32 1
+  i32 2
+}
+
 function @begin(%r : ptr [pass=by_address, object_bytes=8]) -> obj<8x8> [binding=strong, object=_Z5beginR5Range] {
   slot $r : ptr
   slot $retobj__1 : obj<8x8>
@@ -36,48 +41,46 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $data
-    store i32 1, %t1
-    %t2 = index i8 %t1, 4
-    store i32 2, %t2
-    %t3 = addr $r
-    %t4 = addr $data
-    call void @Range__Range(%t3, %t4)
+    copyobj 8x4 @__constexpr_template__1, %t1
+    %t2 = addr $r
+    %t3 = addr $data
+    call void @Range__Range(%t2, %t3)
     store i32 0, $s
-    %t5 = addr $__begin1
-    %t6 = addr $r
-    %t7 = call obj<8x8> @begin(%t6)
-    copyobj 8x8 %t7, %t5
-    %t8 = addr $__end2
-    %t9 = addr $r
-    %t10 = call obj<8x8> @end(%t9)
-    copyobj 8x8 %t10, %t8
+    %t4 = addr $__begin1
+    %t5 = addr $r
+    %t6 = call obj<8x8> @begin(%t5)
+    copyobj 8x8 %t6, %t4
+    %t7 = addr $__end2
+    %t8 = addr $r
+    %t9 = call obj<8x8> @end(%t8)
+    copyobj 8x8 %t9, %t7
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t11 = addr $__begin1
-    %t12 = addr $__end2
-    %t13 = call u8 @Iter__operator__(%t11, %t12)
-    branch %t13, ^for_body_2, ^for_end_4
+    %t10 = addr $__begin1
+    %t11 = addr $__end2
+    %t12 = call u8 @Iter__operator__(%t10, %t11)
+    branch %t12, ^for_body_2, ^for_end_4
 
   block ^for_body_2:
-    %t14 = addr $__begin1
-    %t15 = call ptr @Iter__operator_(%t14)
-    %t16 = load i32 %t15
-    store i32 %t16, $x
-    %t17 = load i32 $s
-    %t18 = load i32 $x
-    %t19 = binary add i32 %t17, %t18
-    store i32 %t19, $s
+    %t13 = addr $__begin1
+    %t14 = call ptr @Iter__operator_(%t13)
+    %t15 = load i32 %t14
+    store i32 %t15, $x
+    %t16 = load i32 $s
+    %t17 = load i32 $x
+    %t18 = binary add i32 %t16, %t17
+    store i32 %t18, $s
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t20 = addr $__begin1
-    %t21 = call ptr @Iter__operator____sym2(%t20)
+    %t19 = addr $__begin1
+    %t20 = call ptr @Iter__operator____sym2(%t19)
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t22 = load i32 $s
-    return i32 %t22
+    %t21 = load i32 $s
+    return i32 %t21
 }
 function @Iter__Iter(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN4IterC1EPi, inline_hint=yes] {
   slot $this : ptr

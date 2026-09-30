@@ -1,4 +1,9 @@
 global @ns__selected : i32 [binding=strong, object=_ZN2ns8selectedE] = 0
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i32 0
+  i32 0
+  i32 0
+}
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $data : obj<12x4>
@@ -6,22 +11,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $data
-    store i32 0, %t1
-    %t2 = index i8 %t1, 4
-    store i32 0, %t2
-    %t3 = index i8 %t1, 8
-    store i32 0, %t3
-    %t4 = addr $const_data
-    store i32 0, %t4
-    %t5 = index i8 %t4, 4
-    store i32 0, %t5
-    %t6 = index i8 %t4, 8
-    store i32 0, %t6
-    %t7 = addr $data
-    %t8 = call ptr @ns__detail__range_begin__ov3(%t7)
-    %t9 = load i32 @ns__selected
-    %t10 = cmp ne i32 %t9, 3
-    branch %t10, ^if_then_1, ^if_else_2
+    copyobj 12x4 @__constexpr_template__1, %t1
+    %t2 = addr $const_data
+    copyobj 12x4 @__constexpr_template__1, %t2
+    %t3 = addr $data
+    %t4 = call ptr @ns__detail__range_begin__ov3(%t3)
+    %t5 = load i32 @ns__selected
+    %t6 = cmp ne i32 %t5, 3
+    branch %t6, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     return i32 1
@@ -30,11 +27,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_3
 
   block ^if_end_3:
-    %t11 = addr $data
-    %t12 = call ptr @ns__begin(%t11)
-    %t13 = load i32 @ns__selected
-    %t14 = cmp ne i32 %t13, 2
-    branch %t14, ^if_then_4, ^if_else_5
+    %t7 = addr $data
+    %t8 = call ptr @ns__begin(%t7)
+    %t9 = load i32 @ns__selected
+    %t10 = cmp ne i32 %t9, 2
+    branch %t10, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     return i32 2
@@ -43,11 +40,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_6
 
   block ^if_end_6:
-    %t15 = addr $const_data
-    %t16 = call ptr @ns__detail__range_begin__ov2(%t15)
-    %t17 = load i32 @ns__selected
-    %t18 = cmp ne i32 %t17, 2
-    branch %t18, ^if_then_7, ^if_else_8
+    %t11 = addr $const_data
+    %t12 = call ptr @ns__detail__range_begin__ov2(%t11)
+    %t13 = load i32 @ns__selected
+    %t14 = cmp ne i32 %t13, 2
+    branch %t14, ^if_then_7, ^if_else_8
 
   block ^if_then_7:
     return i32 3

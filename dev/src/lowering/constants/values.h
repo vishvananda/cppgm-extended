@@ -80,8 +80,7 @@ protected:
 		if (derived.lowering_namespace_object_ ||
 			record.binding == kNoBinding ||
 			record.binding >= derived.program_.bindings.size() ||
-			children.size() != 1 ||
-			!derived.program_.bindings[record.binding].constant)
+			children.size() != 1)
 			return false;
 		const TypeRecord& top = derived.program_.types.Get(record.type);
 		if ((top.cv & (CV_VOLATILE | CV_ATOMIC)) != 0) return false;

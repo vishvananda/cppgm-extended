@@ -1237,10 +1237,17 @@ ExpressionInfo Analyzer::AnalyzeConstantAwareVariableInitializer(
 bool Analyzer::ShouldProbeConstantInitialization(bool local,
 	const SpecInfo& spec, TypeId type) const
 {
-	return spec.is_constexpr || !local ||
+	if (spec.is_constexpr || !local ||
 		(!program_->types.IsReference(type) && IsConst(type) &&
 		 IsIntegral(type, true)) ||
-		spec.storage_class == STORAGE_CLASS_STATIC;
+		spec.storage_class == STORAGE_CLASS_STATIC) return true;
+	const TypeRecord& array = program_->types.Get(type);
+	if (array.kind != TYPE_ARRAY ||
+		(array.cv & (CV_VOLATILE | CV_ATOMIC)) != 0) return false;
+	const TypeRecord& element = program_->types.Get(array.child);
+	return (element.cv & (CV_VOLATILE | CV_ATOMIC)) == 0 &&
+		(IsIntegral(array.child, true) || IsFloating(array.child) ||
+		 IsPointer(array.child) || IsNullptr(array.child));
 }
 
 bool Analyzer::HasConstantInitializerFact(
