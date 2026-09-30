@@ -1184,7 +1184,8 @@ BindingId Analyzer::InstantiateVariableTemplate(
 				variable, binding, parsed.type, 0, 0, 0, 0, 0,
 				true, HasConstantInitializerFact(initializer),
 				program_->types.IsReference(parsed.type) ?
-					initializer.constexpr_lvalue_address : ExpressionAddress(initializer));
+					initializer.constexpr_lvalue_address : ExpressionAddress(initializer),
+				ExpressionObject(initializer));
 		}
 	}
 	request.Complete(binding);

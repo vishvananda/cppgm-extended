@@ -159,6 +159,7 @@ protected:
 			NamespaceObjectAction initializer(action.object, action.type,
 				action.variable, action.initializer, action.destructor);
 			initializer.constant_address = action.constant_address;
+			initializer.constant_object = action.constant_object;
 			bool static_initialized =
 				derived.SetExplicitVariableZero(variable, &global);
 			if (!static_initialized &&

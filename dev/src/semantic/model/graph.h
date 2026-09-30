@@ -1504,6 +1504,7 @@ struct NamespaceObjectAction
 	std::uint32_t variable, initializer, destructor;
 	std::uint32_t initializer_list_backing;
 	StaticAddressInitializer constant_address;
+	std::uint32_t constant_object;
 	// Materialized object identity and its shutdown destructor, if any.
 	std::vector<std::pair<std::uint32_t, std::uint32_t> > reference_temporaries;
 
@@ -1513,7 +1514,8 @@ struct NamespaceObjectAction
 		std::uint32_t initializer_list_backing_value = kNoDumpEdge)
 		: object(object_value), type(type_value), variable(variable_value),
 		  initializer(initializer_value), destructor(destructor_value),
-		  initializer_list_backing(initializer_list_backing_value) {}
+		  initializer_list_backing(initializer_list_backing_value),
+		  constant_object(kNoConstexprObject) {}
 };
 
 // A block-scope static owns persistent storage independently of an invocation.
@@ -1532,6 +1534,7 @@ struct LocalStaticObjectAction
 	bool constant_initialized, specialization_owned_recipe;
 	bool source_identity_presentation;
 	StaticAddressInitializer constant_address;
+	std::uint32_t constant_object;
 
 	LocalStaticObjectAction(BindingId object_value, BindingId function_value,
 		TypeId type_value, std::uint32_t variable_value,
@@ -1554,7 +1557,8 @@ struct LocalStaticObjectAction
 		  source_token_last(source_token_last_value),
 		  constant_initialized(constant_initialized_value),
 		  specialization_owned_recipe(specialization_owned_recipe_value),
-		  source_identity_presentation(source_identity_presentation_value) {}
+		  source_identity_presentation(source_identity_presentation_value),
+		  constant_object(kNoConstexprObject) {}
 };
 
 // A lowering-only aggregate helper has a canonical typed identity but is not a
@@ -1600,6 +1604,9 @@ struct SemanticGraphView
 	const std::vector<LocalStaticObjectAction>& local_static_objects;
 	const std::vector<AggregateHelperInfo>& aggregate_helpers;
 	const std::vector<ClassPolymorphismFacts>& class_polymorphism;
+	const std::vector<ConstexprAddressValue>& constant_addresses;
+	const std::vector<ConstexprObjectValue>& constant_objects;
+	const std::vector<ConstexprObjectElement>& constant_object_elements;
 	std::uint32_t root;
 
 	SemanticGraphView(const Program& program_value,
@@ -1608,12 +1615,18 @@ struct SemanticGraphView
 		const std::vector<LocalStaticObjectAction>& local_static_objects_value,
 		const std::vector<AggregateHelperInfo>& aggregate_helpers_value,
 		const std::vector<ClassPolymorphismFacts>& class_polymorphism_value,
+		const std::vector<ConstexprAddressValue>& constant_addresses_value,
+		const std::vector<ConstexprObjectValue>& constant_objects_value,
+		const std::vector<ConstexprObjectElement>& constant_object_elements_value,
 		std::uint32_t root_value)
 		: program(program_value), arena(arena_value),
 		  namespace_objects(namespace_objects_value),
 		  local_static_objects(local_static_objects_value),
 		  aggregate_helpers(aggregate_helpers_value),
-		  class_polymorphism(class_polymorphism_value), root(root_value) {}
+		  class_polymorphism(class_polymorphism_value),
+		  constant_addresses(constant_addresses_value),
+		  constant_objects(constant_objects_value),
+		  constant_object_elements(constant_object_elements_value), root(root_value) {}
 };
 
 class SemanticGraphConsumer

@@ -2271,7 +2271,8 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 			has_initializer,
 			has_initializer && HasConstantInitializerFact(initializer),
 			program_->types.IsReference(parsed.type) ?
-				initializer.constexpr_lvalue_address : ExpressionAddress(initializer));
+				initializer.constexpr_lvalue_address : ExpressionAddress(initializer),
+			ExpressionObject(initializer));
 		if (local && has_initializer)
 			FinishLocalVariableInitializer(scope, owner, binding, parsed.type,
 				initializer, variable, control_dependent);
@@ -2706,7 +2707,8 @@ void Analyzer::Render()
 SemanticGraphView GraphStorage::View() const
 {
 	return SemanticGraphView(program, dump, namespace_objects,
-		local_static_objects, aggregate_helpers, class_polymorphism, root);
+		local_static_objects, aggregate_helpers, class_polymorphism,
+		constant_addresses, constant_objects, constant_object_elements, root);
 }
 
 void Analyzer::Consume(const SyntaxArena& arena, NodeId root)

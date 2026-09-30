@@ -6,7 +6,7 @@
 #include "semantic/lifetime/demand_reason.h"
 #include "semantic/model/program.h"
 #include "semantic/semantic.h"
-#include "semantic/model/graph.h"
+#include "semantic/model/storage.h"
 #include "semantic/analysis/index_tables.h"
 #include "semantic/extensions/lambda_capture.h"
 
@@ -58,22 +58,6 @@ bool EquivalentNormalizedTemplateSyntax(const SyntaxArena& arena,
 	NodeId right_global_owner = kNoNode,
 	Program* program = 0, ScopeId left_scope = kNoScope,
 	ScopeId right_scope = kNoScope);
-
-struct GraphStorage
-{
-	InternedStringTable strings;
-	Program program;
-	DumpArena dump;
-	std::vector<NamespaceObjectAction> namespace_objects;
-	std::vector<LocalStaticObjectAction> local_static_objects;
-	std::vector<AggregateHelperInfo> aggregate_helpers;
-	std::vector<ClassPolymorphismFacts> class_polymorphism;
-	std::uint32_t root;
-
-	GraphStorage()
-		: strings(), program(strings), root(kNoDumpEdge) {}
-	SemanticGraphView View() const;
-};
 
 class Analyzer : public SyntaxTreeConsumer
 {
@@ -1743,7 +1727,8 @@ private:
 		std::uint32_t variable, BindingId object, TypeId type, NameId source_file, std::uint32_t source_line,
 		std::uint32_t source_column, std::uint32_t source_token_first,
 		std::uint32_t source_token_last, bool has_initializer, bool constant_initialized,
-		std::uint32_t constant_address = kNoConstexprAddress);
+		std::uint32_t constant_address = kNoConstexprAddress,
+		std::uint32_t constant_object = kNoConstexprObject);
 	bool DemandRuntimeInitializerFunctions(std::uint32_t initializer,
 		bool function_addresses_only = false);
 	void AppendScopeDestructionActions(ScopeId scope,
@@ -2185,11 +2170,11 @@ private:
 	// carry only a compact object identity; elements remain dense by ordinal.
 	std::vector<std::uint32_t> constexpr_object_by_binding_;
 	std::vector<std::uint32_t> constexpr_address_by_binding_;
-	std::vector<ConstexprAddressValue> constexpr_addresses_;
+	std::vector<ConstexprAddressValue>& constexpr_addresses_;
 	std::unordered_map<ConstexprAddressValue, std::uint32_t,
 		ConstexprAddressValueHash> constexpr_address_index_;
-	std::vector<ConstexprObjectValue> constexpr_objects_;
-	std::vector<ConstexprObjectElement> constexpr_object_elements_;
+	std::vector<ConstexprObjectValue>& constexpr_objects_;
+	std::vector<ConstexprObjectElement>& constexpr_object_elements_;
 	std::unordered_multimap<std::size_t, std::uint32_t>
 		constexpr_object_index_;
 	std::vector<std::uint32_t> constexpr_object_by_dump_;

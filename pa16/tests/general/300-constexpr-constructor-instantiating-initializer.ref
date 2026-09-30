@@ -1,5 +1,10 @@
 global @table [binding=strong, object=_Z5table] = {
-  zero 24
+  i32 1
+  i32 1
+  i32 10
+  i32 1
+  i32 2
+  i32 10
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -39,7 +44,7 @@ function @item__item(%this : ptr [object_bytes=12], %a : i32) -> void [binding=w
     store i32 %t6, %t8
     return void
 }
-function @marker__marker__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6markerC2Ev, object_root=yes, inline_hint=yes] {
+function @marker__marker__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6markerC2Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -197,18 +202,6 @@ function @chain_0___chain_1_(%this : ptr [object_bytes=4]) -> void [binding=weak
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     store i32 0, %t2
-    return void
-}
-function @__cppgm_init() -> void [role=init, binding=internal] {
-  block ^entry:
-    %t1 = addr @table
-    %t2 = binary mul i64 0, 12
-    %t3 = index i8 [projection=array_element] %t1, %t2
-    call void @item__item(%t3, 1)
-    %t4 = addr @table
-    %t5 = binary mul i64 1, 12
-    %t6 = index i8 [projection=array_element] %t4, %t5
-    call void @item__item(%t6, 2)
     return void
 }
 alias object _ZN4itemC2Ei = @item__item

@@ -482,7 +482,8 @@ void Analyzer::RegisterVariableLifetimeAndStorage(ScopeId scope,
 	BindingId object, TypeId type, NameId source_file,
 	std::uint32_t source_line, std::uint32_t source_column,
 	std::uint32_t source_token_first, std::uint32_t source_token_last,
-	bool has_initializer, bool constant_initialized, std::uint32_t constant_address)
+	bool has_initializer, bool constant_initialized, std::uint32_t constant_address,
+	std::uint32_t constant_object)
 {
 	RegisterSwitchEntryDeclaration(*program_, scope, local, declaration_only,
 		object, type, has_initializer, &scope_switch_entry_barriers_);
@@ -510,6 +511,7 @@ void Analyzer::RegisterVariableLifetimeAndStorage(ScopeId scope,
 		AddLocalStaticObjectAction(variable, object, type, initializer,
 			source_file, source_line, source_column,
 			source_token_first, source_token_last, constant_initialized);
+		local_static_objects_.back().constant_object = constant_object;
 		const ConstexprAddressValue* address = ConstexprAddressAt(constant_address);
 		if (address && address->kind != CONSTEXPR_ADDRESS_LOCAL)
 		{
@@ -526,6 +528,7 @@ void Analyzer::RegisterVariableLifetimeAndStorage(ScopeId scope,
 		const std::uint32_t initializer = edge == kNoDumpEdge ?
 			kNoDumpEdge : dump_.edges[edge].child;
 		AddNamespaceObjectAction(variable, object, type, initializer);
+		namespace_objects_.back().constant_object = constant_object;
 		const ConstexprAddressValue* address = ConstexprAddressAt(constant_address);
 		if (address && address->kind != CONSTEXPR_ADDRESS_LOCAL)
 		{

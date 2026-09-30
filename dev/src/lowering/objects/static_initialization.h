@@ -19,8 +19,7 @@ class StaticInitializerLowering
 {
 public:
 	StaticInitializerLowering(
-		const semantic::Program& program,
-		const semantic::DumpArena& arena,
+		const semantic::SemanticGraphView& graph,
 		lowering::ir::Program& output,
 		lowering::Stats* stats,
 		const std::vector<lowering::ir::SymbolId>& function_symbols,
@@ -55,6 +54,11 @@ private:
 		bool address_operand = false);
 	bool LowerAddress(const semantic::StaticAddressInitializer& address,
 		lowering::ir::Global* global);
+	bool AppendConstantObject(std::uint32_t object,
+		std::vector<lowering::ir::Global::DataItem>* items);
+	bool AppendConstantElement(semantic::TypeId type,
+		const semantic::ConstexprObjectElement& element,
+		std::vector<lowering::ir::Global::DataItem>* items);
 	void AppendZero(std::size_t bytes,
 		std::vector<lowering::ir::Global::DataItem>* items);
 	bool AppendValue(semantic::TypeId type, std::uint32_t node,
@@ -65,6 +69,7 @@ private:
 		std::vector<lowering::ir::Global::DataItem>* items,
 		bool require_vptr = false);
 
+	const semantic::SemanticGraphView& graph_;
 	const semantic::Program& program_;
 	const semantic::DumpArena& arena_;
 	lowering::ir::Program& output_;

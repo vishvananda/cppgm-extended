@@ -124,7 +124,7 @@ public:
 			  lowering::cleanup::kNoCleanupState),
 		  presentation_names_(program_, stats ? &stats->semantic : 0),
 		  source_types_(program_),
-		  static_initializers_(program_, arena_, output_, stats_,
+		  static_initializers_(graph_, output_, stats_,
 			function_symbols_, global_symbols_, literal_symbols_,
 			function_definition_, polymorphism_.class_vtable_symbols),
 		  constant_templates_(output_, stats_)

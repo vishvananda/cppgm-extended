@@ -896,11 +896,9 @@ ExpressionInfo Analyzer::AnalyzeNamedValue(
 	{
 		ExpressionInfo result = MaterializeConstexprAddress(
 			constant_address, binding.type);
-		const ConstexprAddressValue* address =
-			ConstexprAddressAt(constant_address);
 		result.indirect_constant_designator =
 			binding.kind == BIND_PARAMETER ||
-			(address && address->kind == CONSTEXPR_ADDRESS_FUNCTION);
+			materialized_address->kind == CONSTEXPR_ADDRESS_FUNCTION;
 		return ApplyTarget(result, target);
 	}
 	std::uint32_t injected_fact =

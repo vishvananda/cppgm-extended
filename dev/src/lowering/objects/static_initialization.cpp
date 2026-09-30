@@ -33,18 +33,18 @@ lowir_model::StringId DecodeTypedFloating(lowering::ir::Program& program,
 }
 
 StaticInitializerLowering::StaticInitializerLowering(
-	const semantic::Program& program, const DumpArena& arena,
+	const SemanticGraphView& graph,
 	lowering::ir::Program& output,
 	lowering::Stats* stats, const std::vector<SymbolId>& function_symbols,
 	const std::vector<SymbolId>& global_symbols,
 	std::vector<SymbolId>& literal_symbols,
 	const std::vector<std::uint32_t>& function_definitions,
 	const std::vector<SymbolId>& class_vtable_symbols)
-	: program_(program), arena_(arena), output_(output), stats_(stats),
+	: graph_(graph), program_(graph.program), arena_(graph.arena), output_(output), stats_(stats),
 	  function_symbols_(function_symbols), global_symbols_(global_symbols),
 	  literal_symbols_(literal_symbols),
 	  function_definitions_(function_definitions),
-	  class_vtable_symbols_(class_vtable_symbols), types_(program)
+	  class_vtable_symbols_(class_vtable_symbols), types_(graph.program)
 {
 }
 
@@ -664,6 +664,16 @@ bool StaticInitializerLowering::Lower(const NamespaceObjectAction& action,
 		return true;
 	if (types_.IsReference(action.type))
 		return !thread_local_object && LowerScalarReferenceTemporary(action, global);
+	if (action.constant_object != kNoConstexprObject)
+	{
+		const std::size_t old_size = global->items.size();
+		if (AppendConstantObject(action.constant_object, &global->items))
+		{
+			global->initializer_kind = Global::STRUCTURED_VALUE;
+			return true;
+		}
+		global->items.resize(old_size);
+	}
 	if (action.initializer == kNoDumpEdge)
 	{
 		SetZero(action.type, global);

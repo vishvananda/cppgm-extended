@@ -1,8 +1,8 @@
 global @seed [binding=strong, object=_Z4seed] = {
-  f32 0
+  f32 0.00000000000000000000F
 }
 global @x [binding=internal, object=_Z1x] = {
-  f32 0.0F
+  f32 0.00000000000000000000F
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

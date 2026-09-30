@@ -2,7 +2,7 @@
 
 Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30. This document is excluded from the student export.
 
-The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization and the other numbered groups below remain open.
+The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
 ## Unified progress tracker
 
@@ -18,7 +18,7 @@ fix sequence is complete, as requested.
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
 | DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2; twenty false positives removed; genuine class controls pass. |
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
-| INIT-OBJ | Emit evaluated class/base/array/template constant object values and relocations | v4codex group 1 | Implemented; validating current checkpoint. Seven copied ordering reducers and two new runtime fixtures pass; eleven intentional reference revisions. |
+| INIT-OBJ | Emit evaluated class/base/array/template constant object values and relocations | v4codex group 1 | Done: accompanying constant-object compiler checkpoint. Seven copied ordering reducers and two new runtime fixtures pass; strict 5825/5825, full checks and ABBA pass. |
 | ARRAY-IMAGE | Reconcile PA10 literal arrays and PA16 general constexpr readonly-image/copy rule | v4codex placement / group 1 | Open: course representation conflict; update shared lowering, handouts and affected references together. |
 | FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Open. |
 | DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Open. |
@@ -38,7 +38,7 @@ fix sequence is complete, as requested.
 | ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Open: counter case exits 10 at -O0/-O2; host GCC passes. |
 | ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Open: valid case rejects at -O0/-O2; host GCC passes. |
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Open: valid case rejects at -O0/-O2. Related to AGG-DEST; retain distinct local/static regression. |
-| ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Needs verification: full Argon fixture unavailable; inspect defined reducer and backend frame-size contract. Optimization goal, not an arbitrary language stack-budget rule. |
+| ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
 | BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
@@ -78,6 +78,37 @@ measurements establish no detected compile-time regression, not a speedup.
 Median paired peak-RSS ratio is 1.00508 (about 0.5% higher). All observations and
 input/compiler hashes remain in
 `/tmp/cppgm-v4-audit-review/perf-static-address/{aa,ab}.json`.
+
+## Constant object initialization checkpoint
+
+Evaluated constant address/object/element tables now belong to semantic graph
+storage and survive analysis without copying. Static lowering consumes those
+typed values, emits nested class/base/array members at their layout offsets,
+and preserves function/string relocations, bit-field storage and floating bits.
+Unsupported representations fall back to the previous initializer path; failed
+constant probes still use dynamic initialization. The owning graph storage is
+now declared in `semantic/model/storage.h`, keeping the analyzer header inside
+its file limit. The named-address path reuses its already looked-up address fact.
+
+Seven copied initialization-order reducers and both new PA16/17 runtime controls
+pass. The PA16 control covers calls, base copies, unary results and class arrays,
+plus a runtime initializer whose call must happen exactly once during startup.
+The PA17 control observes a template static object's string relocation before
+its reader initializes a namespace integer. Eleven references were regenerated
+through `ref-test`; no acceptance statuses changed. The existing PA22 member-
+function-pointer array continues to serialize its target and adjustment words.
+
+Validation passed: strict report 5825/5825 with one success line, debug-info,
+backend variants, self-host through PA5, all nine architecture targets, file
+limits and placement. Suites ran sequentially where their generated paths
+might overlap. Student export is deferred until the final combined checkpoint.
+
+Performance retained four A/A blocks and six A/B ABBA blocks with immutable
+binaries and the frozen semantic-overload input/headers at `-O1`. Every object
+hash is identical. Median paired CPU ratio is 0.997628, wall ratio 0.992314 and
+peak-RSS ratio 1.001937. Shared-host timing remains noisy (A/A CPU ratio 1.01308);
+these measurements show no detected regression, not a speedup. All runs and
+hashes are in `/tmp/cppgm-v4-audit-review/perf-static-objects/{aa,ab}.json`.
 
 ## Scope and evidence
 
@@ -348,7 +379,11 @@ The two fenced implementation fragments are not standalone source reproducers.
 | 3. Empty aggregate-member constructor elision drops argument side effects | Additional case; adjacent to group 4 | Returns 10 instead of 0. Preserve evaluation of every argument (or keep the call), including throwing/temporary-producing arguments. Add the plain counter case at PA11 and later EH coverage only for its additional value. |
 | 4. Mixed-class conditional prvalue/lvalue conversion rejects | Additional semantic fix | Rejects compatible TempTracker/Box arms. Implement the conditional operator's bidirectional class conversion rules, with ambiguity, explicit-constructor and category controls at PA12. |
 | 5. Aggregate member array of nontrivial class elements uses scalar lowering | Additional case in group 4 | Rejects a local Ext containing Box[3]. Use typed element construction at the final array address; cover local and static objects plus destruction. Earliest ownership follows class-array/aggregate construction, rather than the hosted PA28 location where Argon noticed it. |
-| 6. Mutually exclusive large temporary slots never share frame space | Additional optimizer/performance issue | Reported 25.6 KB per frame at -O1/-O2/-O3. Full Argon fixture is unavailable here. Add a defined reducer, inspect stack layout and the PA33 reuse contract before treating its arbitrary 300 KB budget as a mandatory language rule. Keep a measured optimization/performance check at the backend owner. |
+| 6. Mutually exclusive large temporary slots never share frame space | Additional optimizer/performance issue | Independent slot-reuse.cpp reproduces 1,639,824 bytes across 64 frames at all three optimization levels, with correct values and 64 destructors; GCC -O1 uses 103,824 bytes. Full original Argon fixture is unavailable. PA33 bounds frame size through explicit expectation sidecars; retain a deterministic backend bound instead of making the report's arbitrary stack budget a language requirement. |
+
+The independent stack reducer is retained in `argon/slot-reuse.cpp`, with all
+host-object-linked observations in `slot-hosted-observations.json`. A printf
+diagnostic needs host linking; the freestanding driver correctly lacks printf.
 
 The separate multi-block-inline note supplies `cmp slt`, while this repository's
 LowIR contract spells it `cmp lt`. The report says the corrected spelling passes
