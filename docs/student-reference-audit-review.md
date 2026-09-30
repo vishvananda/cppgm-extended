@@ -41,14 +41,17 @@ fix sequence is complete, as requested.
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; two remain: PA23 initialized virtual bases and PA19 pack count. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
-| ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Done in the conditional-cleanup checkpoint: both original reducers and normal/nested throwing-arm controls pass; strict 5843/5843, full checks and equal-output ABBA pass. Other EH mechanisms remain open. |
+| ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Done in 5d4ff5a34: both original reducers and normal/nested throwing-arm controls pass; strict 5843/5843, full checks and equal-output ABBA pass. Other EH mechanisms remain open. |
 | ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Done: edd6b2121; retain constructor calls and argument/parameter lifetimes; counter and by-value lifetime controls pass. |
-| ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Open: valid case rejects at -O0/-O2; host GCC passes. |
+| ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Done in the mixed-class conversion checkpoint: direct binding then value fallback, base/cv constraints and implicit-candidate controls; strict 5846/5846, full checks and equal-output ABBA pass. COND-RESULT remains separate. |
+| COND-RESULT | Preserve const class conditional result types and copy glvalue class conditional results | Additional controls while fixing ARG-COND | Open: independently reproduced in the immutable entry compiler and current checkout; const-result overload selects the wrong category, and base-class value initialization rejects with invalid class conditional result. Direct base references pass. |
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
 | BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
+| HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Needs verification: unchanged required fixture expects DeletedCopy to be nontrivial/non-POD; student claims no proof or correction yet. Check C++11 declaration rules and Clang/GCC before changing it. |
+| HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Needs verification: unchanged fixture declares only std trait templates before accessing value; review PA29's contract and the compiler's shorthand handling. No reference correction claimed by the student. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence is complete; initial and INIT-ADDR exports already passed. |
 
 ## Static address initialization checkpoint
@@ -191,6 +194,47 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Mixed-class conditional conversion checkpoint
+
+The class-to-class matching step retains its selected conversion facts and
+tries direct reference binding before the value alternative. A constructor-
+created temporary does not count as a direct lvalue binding. The value fallback
+retains the underlying base-direction and cv restrictions, so a converting
+Derived(Base const&) constructor cannot compete with a direct derived-to-base
+reference match. Both viable conversion directions reject as ambiguous;
+explicit constructors remain excluded from implicit matching.
+
+The original Argon Tracker/Box reducer now passes at -O0/-O2. A header-free
+PA12 cluster-400 fixture checks both operand orders, selected conversions,
+normal destruction/liveness, const operands, direct conversion-function
+reference identity and a base/derived control. Two negative controls cover
+bidirectional and explicit-only conversion. Ours/GCC/Clang agree on all three
+fixtures at -O0/-O2. Evidence lives in
+/tmp/cppgm-v4-audit-review/conditional-conversion-probes/ and
+conditional-conversion-fixtures/. No existing reference is changed. Strict
+report passes 5846/5846 with one success line; debug-info, backend variants,
+self-host through PA5, nine architecture checks, file audit and placement pass
+(2977 fixtures, zero findings). Logs and command statuses are retained in
+conditional-conversion-final-*.log and conditional-conversion-final-validation.json.
+
+After all validation finishes, immutable compilers process the frozen
+recog_token_buffer source and headers at -O1 on CPU 0. Four A/A and six A/B ABBA
+blocks all produce identical objects (40 observations, SHA-256
+08c380bf4060d88ae18fc59b0cfa858fd6c7c02a4c2d0ca1413b59559f55f906).
+Paired A/B CPU ratio is 1.000000, wall ratio 0.996552 and peak RSS ratio
+0.999606; A/A CPU ratio is 0.984733 and wall ratio 0.993080. No regression is
+observed on this input. All observations and binaries are retained in
+perf-conditional-conversion/.
+
+Additional boundary controls reproduce two separate entry defects and remain
+tracked as COND-RESULT: const class conditional results lose their qualifier
+when overloads distinguish const lvalues from nonconst rvalues; initializing a
+base-class value from a glvalue conditional reaches a prvalue-only lowering
+route and rejects. The immutable entry compiler reproduces both, so they are
+not introduced by this fallback. The direct base-reference control passes once
+the base-direction constraint is enforced. These are not promoted as successful
+required oracles before their implementations are corrected.
 
 ## Conditional temporary cleanup checkpoint
 
@@ -741,6 +785,25 @@ confirmed semantic issue to the same tracker. It is distinct from a personal
 test explicitly described as differing from the supplied reference compiler:
 the student's proof identifies its entry compiler, not that oracle. Commands,
 sources and diagnostics live in /tmp/cppgm-v4-audit-review/student-refresh-pa28/.
+
+## Later read-only PA29 handoff156 refresh
+
+Read-only refresh at 5716fcfd; ongoing uncommitted student builtin work is left
+untouched. Since 66bb1c6b, the only tracked plan/audit/test/reference change is
+PA29 plan.md. Its handoff records 272/403 current PA29 passes, 4538/4538 earlier
+checks and 21,987 unchanged fixture files. Neither this diff nor the current
+tracked status shows course test/reference edits. Unfinished student builtin
+implementation remains separate from supplied-oracle evidence.
+
+The plan explicitly identifies two independent review questions without a proof
+bundle or reference correction: 500-builtin-trivial-deleted-copy expects false
+for three declaration properties, and
+600-hosted-nothrow-default-constructible-shorthand accesses value on std trait
+templates that have only forward declarations. HOST-TRIVIAL/HOST-SHORTHAND record
+these as Needs verification, not confirmed bugs or personal tests explicitly
+reported to disagree with the supplied reference implementation. The plan keeps
+both required fixtures as failures; no new personal-reference disagreement is
+established by this handoff.
 
 ## Clang verification before ABI edits
 

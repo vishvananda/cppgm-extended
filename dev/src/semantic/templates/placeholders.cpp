@@ -481,23 +481,63 @@ void Analyzer::ApplyConditionalClassConversion(
 			*yes, class_target, &nonclass_to_class);
 		return;
 	}
-	const TypeId yes_target = yes->category == VALUE_LVALUE ?
-		program_->types.Reference(TYPE_LVALUE_REFERENCE, yes_type) :
-		yes->category == VALUE_XVALUE ?
-		program_->types.Reference(TYPE_RVALUE_REFERENCE, yes_type) : yes_type;
-	const TypeId no_target = no->category == VALUE_LVALUE ?
-		program_->types.Reference(TYPE_LVALUE_REFERENCE, no_type) :
-		no->category == VALUE_XVALUE ?
-		program_->types.Reference(TYPE_RVALUE_REFERENCE, no_type) : no_type;
+	const auto conversion_to_match = [this](const ExpressionInfo& source,
+		const ExpressionInfo& other, TypeId* target) {
+		const TypeId type = EffectiveType(other.type);
+		*target = other.category == VALUE_LVALUE ?
+			program_->types.Reference(TYPE_LVALUE_REFERENCE, type) :
+			other.category == VALUE_XVALUE ?
+			program_->types.Reference(TYPE_RVALUE_REFERENCE, type) : type;
+		CallConversionFact conversion = CallConversion(source, *target, 0, 0);
+		if (*target == type) return conversion;
+		ValueCategory converted_category = source.category;
+		ConversionRank reference_rank = conversion.rank;
+		if (conversion.conversion_function != kNoBinding)
+		{
+			const TypeRecord& result = program_->types.Get(GetFunction(
+				conversion.conversion_function).conversion_target);
+			converted_category = result.kind == TYPE_LVALUE_REFERENCE ?
+				VALUE_LVALUE : result.kind == TYPE_RVALUE_REFERENCE ?
+				VALUE_XVALUE : VALUE_PRVALUE;
+			reference_rank = conversion.conversion_result_rank;
+		}
+		const bool direct_category = other.category == VALUE_LVALUE ?
+			converted_category == VALUE_LVALUE :
+			converted_category != VALUE_LVALUE;
+		if (conversion.constructor == kNoBinding && direct_category &&
+			(reference_rank == CONVERSION_EXACT ||
+			 reference_rank == CONVERSION_DERIVED_TO_BASE)) return conversion;
+		// A failed direct reference match still permits value conversion.
+		// Converting-constructor temporaries do not supply a direct binding.
+		*target = type;
+		const EntityId from = EntityOf(source.type);
+		const EntityId to = EntityOf(type);
+		if (program_->IsBaseOf(from, to)) return CallConversionFact();
+		if (program_->IsBaseOf(to, from))
+		{
+			const TypeRecord& source_top =
+				program_->types.Get(EffectiveType(source.type));
+			const TypeRecord& target_top = program_->types.Get(type);
+			const std::uint8_t source_cv = source_top.kind == TYPE_QUALIFIED ?
+				source_top.cv : CV_NONE;
+			const std::uint8_t target_cv = target_top.kind == TYPE_QUALIFIED ?
+				target_top.cv : CV_NONE;
+			if ((source_cv & ~target_cv) != 0) return CallConversionFact();
+		}
+		return CallConversion(source, *target, 0, 0);
+	};
+	TypeId yes_target = kNoType;
+	TypeId no_target = kNoType;
 	const CallConversionFact yes_to_no =
-		CallConversion(*yes, no_target, 0, 0);
+		conversion_to_match(*yes, *no, &no_target);
 	const CallConversionFact no_to_yes =
-		CallConversion(*no, yes_target, 0, 1);
+		conversion_to_match(*no, *yes, &yes_target);
 	const bool convert_yes = yes_to_no.rank != CONVERSION_INVALID;
 	const bool convert_no = no_to_yes.rank != CONVERSION_INVALID;
-	if (convert_yes == convert_no) return;
+	if (convert_yes && convert_no)
+		ThrowSemanticError("ambiguous bidirectional conditional class conversion");
 	if (convert_yes) *yes = ApplyCallArgument(*yes, no_target, &yes_to_no);
-	else *no = ApplyCallArgument(*no, yes_target, &no_to_yes);
+	else if (convert_no) *no = ApplyCallArgument(*no, yes_target, &no_to_yes);
 }
 
 void Analyzer::CompleteFunctionTemplatePlaceholderResult(BindingId binding)
