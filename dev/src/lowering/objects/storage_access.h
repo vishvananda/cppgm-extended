@@ -279,7 +279,7 @@ protected:
 			return derived.LowerAssignmentCore(record, children, true);
 		if (record.kind == DUMP_CALL_EXPRESSION &&
 			(derived.IsReferenceType(record.type) ||
-			 derived.UsesIndirectClassResult(record.type, record.binding)))
+			 derived.UsesIndirectClassResult(record.type)))
 			return derived.LowerCall(node, record, children);
 		if (record.kind == DUMP_CALL_EXPRESSION &&
 			derived.IsClassObjectType(record.type))

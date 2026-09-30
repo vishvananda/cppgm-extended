@@ -1273,7 +1273,7 @@ protected:
 			return derived.LowerValue(node, LowPtr());
 		if (argument.kind == DUMP_CALL_EXPRESSION &&
 			derived.IsClassObjectType(argument.type) &&
-			derived.UsesIndirectClassResult(argument.type, argument.binding))
+			derived.UsesIndirectClassResult(argument.type))
 		{
 			const LowType type = derived.LowerStorageType(argument.type);
 			const Operand slot(derived.EnsureGeneratedSlot(

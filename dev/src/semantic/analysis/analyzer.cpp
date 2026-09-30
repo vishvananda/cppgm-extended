@@ -1224,17 +1224,11 @@ ExpressionInfo Analyzer::BuildResolvedCall(BindingId selected,
 		dump_.Add(call, argument.node);
 		constexpr_arguments.push_back(argument);
 	}
-	const EntityId result_entity = EntityOf(result_type);
 	const BindingId result_destructor = DestructorForType(result_type);
 	if (unevaluated_depth_ == 0 && result_destructor != kNoBinding &&
 		FunctionIsNonthrowing(selected) &&
 		!IsElidableAutomaticDestructor(result_destructor))
 		dump_.nodes[call].eager_full_expression_cleanup = true;
-	if (program_->bindings[emission_binding].closure_template_specialization &&
-		result_entity != kNoEntity &&
-		program_->entities[result_entity].indirect_class_value_abi)
-		program_->bindings[emission_binding].
-			force_indirect_class_result_abi = true;
 	ExpressionInfo result;
 	result.node = call;
 	result.type = result_type;

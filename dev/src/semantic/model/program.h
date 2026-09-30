@@ -726,11 +726,6 @@ struct BindingRecord
 	bool explicit_function_specialization : 1;
 	bool template_parameter_constant : 1;
 	bool variable_template_specialization : 1;
-	// A canonical callable specialization owns boundary exceptions that cannot
-	// be inferred from its result type alone.  Keeping this on the binding
-	// prevents one call site from mutating the ABI of every function returning
-	// the same class entity.
-	bool force_indirect_class_result_abi : 1;
 	bool closure_template_specialization : 1;
 	// A function template specialization keeps this even when every template
 	// argument sits in an empty pack, so it stays a weak, template-mangled

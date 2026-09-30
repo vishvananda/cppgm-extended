@@ -886,7 +886,6 @@ dev/src/semantic/templates/placeholders.cpp	DeducePlaceholderFunctionReturnType	
 dev/src/semantic/templates/placeholders.cpp	PreferMaterializedConstantDefinition	1	dev/src/semantic/templates/placeholders.cpp	keep
 dev/src/semantic/templates/placeholders.cpp	PublishInClassStaticDefinitionPolicy	1	dev/src/semantic/templates/placeholders.cpp	keep
 dev/src/semantic/templates/placeholders.cpp	PublishPlaceholderFunctionReturn	1	dev/src/semantic/templates/placeholders.cpp	keep
-dev/src/semantic/templates/placeholders.cpp	PublishStableFunctionTemplateResultAbi	1	dev/src/semantic/templates/placeholders.cpp	keep
 dev/src/semantic/templates/placeholders.cpp	PublishVariableInitializer	1	dev/src/semantic/templates/placeholders.cpp	keep
 dev/src/semantic/templates/placeholders.cpp	ShouldPreserveRuntimeInitializerRecipe	1	dev/src/semantic/templates/placeholders.cpp	keep
 dev/src/semantic/templates/preemption.cpp	EnclosingExplicitInstantiationSuppressed	1	dev/src/semantic/templates/preemption.cpp	keep

@@ -1758,8 +1758,7 @@ void Analyzer::UpgradeFunctionTemplateSpecializations(
 		PublishInlineFunctionFacts(function.binding,
 			spec.inline_specifier || constexpr_specialization ||
 			function.definition_in_class);
-		CompleteFunctionTemplatePlaceholderResult(
-			index, function.binding, member_owner);
+		CompleteFunctionTemplatePlaceholderResult(function.binding);
 	}
 }
 
@@ -2246,8 +2245,6 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 		spec.inline_specifier || constexpr_specialization ||
 		function.definition_in_class);
 	function.template_pattern = static_cast<std::uint32_t>(index);
-	PublishStableFunctionTemplateResultAbi(pattern, parsed.type,
-		member_owner, canonical_binding);
 	function.parameter_pack_name = FunctionParameterPackName(pattern.declarator);
 	function.deferred = true;
 	function.lexical_scope = template_scope;
@@ -2287,7 +2284,7 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 			mutable_pattern.specialization_parameter_offsets.end(),
 			parameter_offsets.begin(), parameter_offsets.end());
 	}
-	CompleteFunctionTemplatePlaceholderResult(index, binding, member_owner);
+	CompleteFunctionTemplatePlaceholderResult(binding);
 	return binding;
 }
 

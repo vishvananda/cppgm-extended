@@ -84,7 +84,7 @@ protected:
 		CallArgumentFlags argument_references;
 		CallArgumentSizes argument_object_bytes;
 		const bool indirect_result = derived.UsesIndirectClassResult(
-			function_type.child, callee.binding);
+			function_type.child);
 		const LowType call_type = indirect_result ?
 			LowVoid() : derived.LowerType(record.type);
 		Instruction call = direct ? DirectCallInstruction(

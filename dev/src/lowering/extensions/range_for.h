@@ -36,7 +36,7 @@ protected:
 			return false;
 		if (source.kind == DUMP_CALL_EXPRESSION &&
 			!source.reference_call_materialization &&
-			derived.UsesIndirectClassResult(source.type, source.binding))
+			derived.UsesIndirectClassResult(source.type))
 			return false;
 		const LowType value_type = derived.LowerStorageType(source.type);
 		Operand temporary = derived.StaticReferenceStorage(children[0], value_type);

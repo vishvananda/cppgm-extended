@@ -232,7 +232,7 @@ protected:
 			}
 			if (record.kind == DUMP_CALL_EXPRESSION &&
 				record.full_expression_staging &&
-				!derived.UsesIndirectClassResult(record.type, record.binding))
+				!derived.UsesIndirectClassResult(record.type))
 			{
 				const LowType result = derived.LowerType(record.type);
 				if (result.kind != LOW_VOID && direct_class_call_destination)
@@ -246,7 +246,7 @@ protected:
 			if (record.kind == DUMP_CALL_EXPRESSION &&
 				record.reference_call_materialization &&
 				record.category == VALUE_PRVALUE &&
-				!derived.UsesIndirectClassResult(record.type, record.binding))
+				!derived.UsesIndirectClassResult(record.type))
 				(void)derived.EnsureGeneratedSlot(current, "tmpref",
 					derived.LowerStorageType(record.type));
 			if (record.kind == DUMP_CONDITIONAL_EXPRESSION &&
@@ -358,14 +358,13 @@ protected:
 				children.size() == 1 &&
 				derived.arena_.nodes[children[0]].kind == DUMP_CALL_EXPRESSION &&
 				derived.UsesIndirectClassResult(
-					derived.arena_.nodes[children[0]].type,
-					derived.arena_.nodes[children[0]].binding);
+					derived.arena_.nodes[children[0]].type);
 			const bool empty_call_transfer =
 				derived.ElidesEmptyConversionCallTransfer(record, children);
 			if (record.class_argument_staging && variable_initializer &&
 				!derived.ElidesNestedTemporaryConstruction(record, children) &&
 				!(record.kind == DUMP_CALL_EXPRESSION &&
-				  derived.UsesIndirectClassResult(record.type, record.binding)) &&
+				  derived.UsesIndirectClassResult(record.type)) &&
 				!indirect_result_transfer &&
 				!empty_call_transfer &&
 				derived.generated_slots_[current] == kNoLowId)

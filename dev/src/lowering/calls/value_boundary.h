@@ -66,8 +66,7 @@ protected:
 				derived.arena_.nodes[children[0]].type);
 	}
 
-	bool UsesIndirectClassResult(semantic::TypeId type,
-		semantic::BindingId function = semantic::kNoBinding) const
+	bool UsesIndirectClassResult(semantic::TypeId type) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
 		const semantic::TypeRecord& top = derived.program_.types.Get(type);
@@ -83,16 +82,7 @@ protected:
 			return false;
 		const semantic::EntityRecord& entity =
 			derived.program_.entities[object.entity];
-		if (function != semantic::kNoBinding)
-		{
-			if (function >= derived.program_.bindings.size())
-				ThrowLoweringInternal(
-					"class-result boundary has an invalid callable owner");
-			function = derived.program_.bindings[function].canonical;
-		}
-		const bool forced_indirect = function != semantic::kNoBinding &&
-			derived.program_.bindings[function].force_indirect_class_result_abi;
-		return forced_indirect || entity.indirect_class_result_abi;
+		return entity.indirect_class_result_abi;
 	}
 
 	bool UsesIndirectClassParameter(semantic::TypeId type) const
@@ -173,7 +163,7 @@ protected:
 		const semantic::TypeRecord& function_type =
 			derived.program_.types.Get(record.type);
 		const bool indirect_result =
-			UsesIndirectClassResult(function_type.child, record.binding);
+			UsesIndirectClassResult(function_type.child);
 		*result = indirect_result ? lowering::ir::LowVoid() :
 			derived.LowerBoundaryResult(function_type.child);
 		*variadic = function_type.variadic;

@@ -7,21 +7,25 @@ global @x [binding=internal, object=_Z1x] = {
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : obj<4x4>
+  slot $argobj__1 : obj<4x4>
 
   block ^entry:
     %t1 = addr $value
     %t2 = addr @x
-    call void @X__operatorT(%t1, %t2)
-    %t3 = addr $value
+    %t3 = call obj<4x4> @X__operatorT(%t2)
+    copyobj 4x4 %t3, %t1
+    %t4 = addr $value
     return i32 0
 }
-function @X__operatorT(%ret : ptr [pass=indirect_result, object_bytes=4], %this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZNK1Xcv1AIS0_EEv, inline_hint=yes] {
+function @X__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK1Xcv1AIS0_EEv, inline_hint=yes] {
   slot $this : ptr
+  slot $retobj__1 : obj<4x4>
 
   block ^entry:
     store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    copyobj 4x4 %t2, %ret
-    return void
+    %t1 = addr $retobj__1
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    copyobj 4x4 %t3, %t1
+    return obj<4x4> $retobj__1
 }

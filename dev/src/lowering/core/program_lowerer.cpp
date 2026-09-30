@@ -905,7 +905,7 @@ private:
 		ResetCommonFunctionLoweringState(&result);
 		current_result_ = result.result;
 		current_class_value_boundary_ = FunctionHasClassValueBoundary(record.type);
-		const TypeRecord& source_function = program_.types.Get(record.type); current_indirect_result_ = UsesIndirectClassResult(source_function.child, record.binding);
+		const TypeRecord& source_function = program_.types.Get(record.type); current_indirect_result_ = UsesIndirectClassResult(source_function.child);
 		current_result_reference_ = IsReferenceType(source_function.child);
 		ResetLifetimeFunctionState();
 		parameter_slot_index_ = current_indirect_result_ ? 1 : 0;

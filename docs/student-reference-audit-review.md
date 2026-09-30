@@ -24,7 +24,8 @@ fix sequence is complete, as requested.
 | FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Done: 31598a5b3; two new runtime controls pass at -O0/-O2, seven references regenerated; strict 5829/5829, full checks and equivalent-output ABBA pass. |
 | DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Done: 049b5fa74; direct/virtual/further-derived runtime controls pass; strict 5829/5829, full checks and equivalent-output ABBA pass. |
 | AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Done: edd6b2121; preserve typed member actions at final addresses; five new controls and seven regenerated references, strict 5834/5834 and full checks pass. |
-| RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Open. |
+| RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done in the canonical result checkpoint: one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
+| RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Open: valid x.operator A() rejects; keep distinct from result ABI classification. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Open; distinguish student-entry observations from supplied-oracle comparisons. |
 | DEMAND | Dormant static member initializers and discarded volatile-reference results | v4codex group 7 | Open. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
@@ -35,7 +36,7 @@ fix sequence is complete, as requested.
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime corrected with DTOR; four source corrections remain. |
-| ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done in the reference backing checkpoint: separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
+| ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
 | ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Open: same-type case exits 233; distinct-type case rejects at -O0/-O2. Additional mechanism within EH. |
 | ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Done: edd6b2121; retain constructor calls and argument/parameter lifetimes; counter and by-value lifetime controls pass. |
 | ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Open: valid case rejects at -O0/-O2; host GCC passes. |
@@ -186,6 +187,43 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Canonical class result ABI checkpoint
+
+Class result classification now depends on the completed class entity: large or
+nontrivial-for-calls results use caller storage, including empty and exactly
+16-byte classes. Remove function-specific dependent-spelling overrides, their
+binding flag and publisher; definitions, direct calls, indirect calls and named
+return destinations consume the same fact. Parameter classification and symbol
+spellings are unchanged. The semantic owner ledger removes the retired publisher.
+
+Clang 21.1.8 checks precede this edit. LLVM signatures confirm small alias direct
+results and nontrivial empty/template-empty/16-byte indirect results. The original
+dependent alias pointer faults here but passes with Clang/GCC. A 16-byte mixed
+Clang/ours result links both ways before the edit, returning 1 in one direction
+and faulting in the other; both directions now return 0. Full evidence lives in
+/tmp/cppgm-v4-audit-review/clang-result-abi/.
+
+Two new frontend controls live in PA12 cluster 200 and PA14 cluster 300, the
+earliest result and dependent-name owners. A new PA27 fixture adds host object
+interoperability in both directions and runs with GCC and Clang providers. Only
+.lib.provider.cpp is host compiled; .t.1 is student compiled. Existing PA16/18
+fixtures retain their constexpr, deduction, access and conversion coverage.
+Five existing references are regenerated through ref-test: PA16 nontrivial-empty,
+three PA18 result cases and PA20 dependent-owner lifecycle. No source/status
+corrections accompany these shape changes. All new frontend controls and both
+copied reducers pass with ours/GCC/Clang at -O0/-O2. Explicit conversion-template
+calls still need RESULT-CONV; correcting result ABI alone does not fix lookup.
+
+Architecture, owner and file audits pass. Initial placement passes 2969 fixtures;
+the final default audit passes 2969 fixtures. A separate PA27 audit covers
+159 host-object fixtures with zero findings. Frozen recog_token_buffer -O1
+measurements use immutable binaries, CPU 0, four A/A and six ABBA blocks, all
+output objects equal. Paired B/A medians: CPU 0.892444, wall 0.885022, RSS 1.001966.
+A/A CPU 1.128061 and wall 1.116413 expose substantial machine noise, so claim no
+speedup; no candidate regression is detected. Retain all observations under
+perf-result-abi/. Strict report passes 5838/5838 with one success line;
+debug-info, backend variants and self-host through PA5 also pass.
 
 ## Reference-bound temporary backing checkpoint
 

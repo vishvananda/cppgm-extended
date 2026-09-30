@@ -736,7 +736,6 @@ BindingRecord::BindingRecord()
 	  explicit_function_specialization(false),
 	  template_parameter_constant(false),
 	  variable_template_specialization(false),
-	  force_indirect_class_result_abi(false),
 	  closure_template_specialization(false),
 	  function_template_specialization(false), lambda_invocation(false),
 	  compiler_generated(false), source_view_suppressed(false),

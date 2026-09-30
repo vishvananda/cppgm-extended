@@ -500,41 +500,11 @@ void Analyzer::ApplyConditionalClassConversion(
 	else *no = ApplyCallArgument(*no, yes_target, &no_to_yes);
 }
 
-void Analyzer::PublishStableFunctionTemplateResultAbi(
-	const FunctionTemplatePattern& pattern, TypeId function_type,
-	EntityId member_owner, BindingId canonical_binding)
-{
-	const TypeId result = program_->types.Get(function_type).child;
-	const EntityId entity = EntityOf(result);
-	if (entity == kNoEntity) return;
-	const bool nontrivial_empty_result =
-		program_->entities[entity].empty_class &&
-		entity < class_special_members_.size() &&
-		class_special_members_[entity].user_copy_constructor;
-	const bool deferred_nonmember_result = member_owner == kNoEntity &&
-		program_->entities[entity].has_user_provided_constructor &&
-		(program_->entities[entity].empty_class ? nontrivial_empty_result :
-		 pattern.deferred_result_formation);
-	const bool dependent_move_result = pattern.result_type_dependent &&
-		!program_->entities[entity].empty_class &&
-		entity < class_special_members_.size() &&
-		class_special_members_[entity].user_move_constructor;
-	const bool conversion_result = pattern.conversion_template &&
-		program_->entities[entity].template_argument_count == 0;
-	if (deferred_nonmember_result || dependent_move_result || conversion_result)
-		program_->bindings[canonical_binding].
-			force_indirect_class_result_abi = true;
-}
-
-void Analyzer::CompleteFunctionTemplatePlaceholderResult(
-	std::size_t pattern, BindingId binding, EntityId member_owner)
+void Analyzer::CompleteFunctionTemplatePlaceholderResult(BindingId binding)
 {
 	if (GetFunction(binding).placeholder_return_kind ==
 		PLACEHOLDER_DECLARATOR_NONE) return;
 	AnalyzeRetainedPlaceholderFunctionBody(binding);
-	const BindingId canonical = program_->bindings[binding].canonical;
-	PublishStableFunctionTemplateResultAbi(function_templates_[pattern],
-		GetFunction(binding).type, member_owner, canonical);
 }
 
 bool Analyzer::ShouldPreserveRuntimeInitializerRecipe(bool local,
