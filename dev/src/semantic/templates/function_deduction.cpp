@@ -1220,7 +1220,8 @@ bool Analyzer::DeduceFunctionTemplateOverloadArgument(
 }
 
 void Analyzer::AppendConversionFunctionTemplateCandidates(
-	EntityId entity, TypeId target, std::vector<BindingId>* candidates)
+	EntityId entity, TypeId target, std::vector<BindingId>* candidates,
+	bool explicit_conversion_name)
 {
 	if (!candidates || target == kNoType) return;
 	std::vector<EntityId> pending(1, entity);
@@ -1256,25 +1257,28 @@ void Analyzer::AppendConversionFunctionTemplateCandidates(
 			if (function.kind != TYPE_FUNCTION) continue;
 			TypeId parameter = function.child;
 			TypeId argument = target;
-			TypeRecord parameter_top = program_->types.Get(parameter);
-			TypeRecord argument_top = program_->types.Get(argument);
-			if (parameter_top.kind == TYPE_LVALUE_REFERENCE ||
-				parameter_top.kind == TYPE_RVALUE_REFERENCE)
+			if (!explicit_conversion_name)
 			{
-				parameter = parameter_top.child;
-				parameter_top = program_->types.Get(parameter);
+				TypeRecord parameter_top = program_->types.Get(parameter);
+				TypeRecord argument_top = program_->types.Get(argument);
+				if (parameter_top.kind == TYPE_LVALUE_REFERENCE ||
+					parameter_top.kind == TYPE_RVALUE_REFERENCE)
+				{
+					parameter = parameter_top.child;
+					parameter_top = program_->types.Get(parameter);
+				}
+				if (argument_top.kind == TYPE_LVALUE_REFERENCE ||
+					argument_top.kind == TYPE_RVALUE_REFERENCE)
+					argument = argument_top.child;
+				else
+				{
+					if (parameter_top.kind == TYPE_ARRAY ||
+						parameter_top.kind == TYPE_FUNCTION)
+						parameter = Decay(parameter);
+					else parameter = program_->types.RemoveTopCv(parameter);
+				}
+				argument = program_->types.RemoveTopCv(argument);
 			}
-			if (argument_top.kind == TYPE_LVALUE_REFERENCE ||
-				argument_top.kind == TYPE_RVALUE_REFERENCE)
-				argument = argument_top.child;
-			else
-			{
-				if (parameter_top.kind == TYPE_ARRAY ||
-					parameter_top.kind == TYPE_FUNCTION)
-					parameter = Decay(parameter);
-				else parameter = program_->types.RemoveTopCv(parameter);
-			}
-			argument = program_->types.RemoveTopCv(argument);
 			FunctionTemplateDeduction deduced(pattern.parameters);
 			if (!DeduceFunctionTemplatePackType(parameter, argument,
 				pattern.parameters, &deduced)) continue;

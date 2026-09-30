@@ -1552,17 +1552,19 @@ NodeId SyntaxParser::ParsePostfixSuffixes(NodeId value) {
 			const std::size_t member_first = position_;
 			std::string member;
 			NodeId structure = kNoNode;
+			NodeId conversion_type = kNoNode;
 			const bool qualified_member = AtIdentifier() && AtOffset(1, OP_COLON2);
 			const bool known_template_member = StartsKnownTemplateId();
 			if (!ParseName(&member, qualified_member || known_template_member, true,
 				dependent_template || qualified_member || known_template_member || destructor_member,
-				&structure))
+				&structure, 0, &conversion_type))
 				throw Error("expected member name");
 			if (dependent_template) member = "template " + member;
 			const NodeId expression = MakeTokenNode("member-expression", operation);
 			arena_.Add(expression, value);
 			const NodeId identifier = MakeStructuredNode(
 				"identifier", member, structure);
+			if (conversion_type != kNoNode) arena_.Add(identifier, conversion_type);
 			arena_.SetTokenRange(identifier, member_first, position_);
 			arena_.Add(expression, identifier);
 			value = expression;

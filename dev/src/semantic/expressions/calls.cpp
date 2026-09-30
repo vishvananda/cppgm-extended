@@ -1819,24 +1819,30 @@ bool Analyzer::AnalyzeDirectMemberCall(NodeId callee, ScopeId scope,
 	const LookupResult template_found = explicitly_qualified ?
 		LookupStructuredName(identifier, scope, LOOKUP_FUNCTION_TEMPLATE) :
 		program_->LookupMember(entity, name, LOOKUP_FUNCTION_TEMPLATE);
-	if (found.ordinary == kNoBinding &&
-		member_spelling.compare(0, 8, "operator") == 0)
+	const EntityId source_naming = explicitly_qualified ?
+		program_->EntityForScope(ResolveOwner(scope, member_path)) : kNoEntity;
+	const NodeId conversion_type =
+		FindChild(identifier, ::cppgm::syntax::STAG_CONVERSION_TYPE_ID);
+	std::vector<BindingId> conversion_candidates;
+	if (conversion_type != kNoNode)
 	{
-		std::size_t target_first = 8;
-		while (target_first < member_spelling.size() &&
-			member_spelling[target_first] == ' ') ++target_first;
-		const LookupResult requested = LookupSpelling(scope,
-			member_spelling.substr(target_first), LOOKUP_TYPE,
-			NAME_PATH_PARSE_CALL);
+		const TypeId requested = BuildTypeId(conversion_type, scope);
+		const EntityId conversion_owner = source_naming != kNoEntity ?
+			source_naming : entity;
 		std::vector<BindingId> conversions;
-		AppendConversionFunctions(entity, &conversions);
-		for (std::size_t i = 0; requested.type != kNoType &&
+		AppendConversionFunctions(conversion_owner, &conversions);
+		AppendConversionFunctionTemplateCandidates(
+			conversion_owner, requested, &conversions, true);
+		for (std::size_t i = 0; requested != kNoType &&
 			i < conversions.size(); ++i)
-			if (GetFunction(conversions[i]).conversion_target == requested.type)
+			if (GetFunction(conversions[i]).conversion_target == requested)
 			{
-				found.ordinary = conversions[i];
-				found.naming_class = program_->bindings[conversions[i]].member_owner;
-				break;
+				conversion_candidates.push_back(conversions[i]);
+				if (found.ordinary == kNoBinding)
+				{
+					found.ordinary = conversions[i];
+					found.naming_class = program_->bindings[conversions[i]].member_owner;
+				}
 			}
 	}
 	std::vector<std::size_t> template_patterns;
@@ -1871,6 +1877,7 @@ bool Analyzer::AnalyzeDirectMemberCall(NodeId callee, ScopeId scope,
 	std::vector<BindingId> candidates = ordinary_functions ?
 		FunctionSet(found.ordinary, !template_patterns.empty()) :
 		std::vector<BindingId>();
+	if (conversion_type != kNoNode) candidates.swap(conversion_candidates);
 	ExpressionInfo object_pointer = object;
 	if (!arrow)
 	{
@@ -1929,15 +1936,9 @@ bool Analyzer::AnalyzeDirectMemberCall(NodeId callee, ScopeId scope,
 		*result = CandidateSubstitutionFailure();
 		return true;
 	}
-	EntityId effective_naming_class = found.naming_class;
-	if (explicitly_qualified)
-	{
-		const ScopeId source_owner = ResolveOwner(scope, member_path);
-		const EntityId source_naming = source_owner == kNoScope ? kNoEntity :
-			program_->EntityForScope(source_owner);
-		if (source_naming != kNoEntity)
-			effective_naming_class = source_naming;
-	}
+	EntityId effective_naming_class = conversion_type != kNoNode ?
+		entity : found.naming_class;
+	if (source_naming != kNoEntity) effective_naming_class = source_naming;
 	if (explicitly_qualified && effective_naming_class != kNoEntity &&
 		!program_->bindings[candidates[0]].static_member_function)
 		(void)ApplyQualifiedMemberNamingTarget(

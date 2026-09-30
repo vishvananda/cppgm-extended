@@ -1054,7 +1054,8 @@ private:
 	void AppendConversionFunctions(EntityId entity,
 		std::vector<BindingId>* candidates) const;
 	void AppendConversionFunctionTemplateCandidates(EntityId entity,
-		TypeId target, std::vector<BindingId>* candidates);
+		TypeId target, std::vector<BindingId>* candidates,
+		bool explicit_conversion_name = false);
 	void AppendBuiltinConversionTargets(const ExpressionInfo& source,
 		std::vector<TypeId>* targets) const;
 	bool BuiltinBinaryParameterTypes(const std::string& operation,

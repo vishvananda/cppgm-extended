@@ -24,8 +24,9 @@ fix sequence is complete, as requested.
 | FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Done: 31598a5b3; two new runtime controls pass at -O0/-O2, seven references regenerated; strict 5829/5829, full checks and equivalent-output ABBA pass. |
 | DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Done: 049b5fa74; direct/virtual/further-derived runtime controls pass; strict 5829/5829, full checks and equivalent-output ABBA pass. |
 | AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Done: edd6b2121; preserve typed member actions at final addresses; five new controls and seven regenerated references, strict 5834/5834 and full checks pass. |
-| RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done in the canonical result checkpoint: one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
-| RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Open: valid x.operator A() rejects; keep distinct from result ABI classification. |
+| RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
+| RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done in the explicit conversion checkpoint: typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
+| CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Open with conversion legality work: immutable 70e7a2920 and current reject A a=x when A has A(int) and X::operator T(); GCC/Clang accept. Keep the reducer; the explicit-call fixture uses an aggregate result to isolate its contract. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Open; distinguish student-entry observations from supplied-oracle comparisons. |
 | DEMAND | Dormant static member initializers and discarded volatile-reference results | v4codex group 7 | Open. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
@@ -33,6 +34,7 @@ fix sequence is complete, as requested.
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | Open; prior fb15cd49e class-value temporary cleanup fixes one case only. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
+| MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime corrected with DTOR; four source corrections remain. |
@@ -187,6 +189,46 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Explicit conversion-template call checkpoint
+
+Retain the conversion-type-id already parsed at a member call, then build its
+canonical type and reuse conversion-template deduction. Explicit names preserve
+that complete type (including cv and references); implicit conversion deduction
+keeps its existing adjustments. Match all candidates to the target and retain
+receiver overload selection. Qualified calls collect from the named base;
+unqualified calls retain the receiver's naming class even when an inherited
+specialization was collected first. No source/output reparsing is introduced.
+
+The new PA18 cluster-300 fixture checks class/alias, fundamental, cv-qualified,
+pointer and reference targets, dependent calls, mutable/const receiver overloads,
+implicit calls before explicit calls, and qualified/unqualified inheritance.
+It passes with ours/GCC/Clang at -O0/-O2. The focused controls preserve the initial
+qualified-call regression and its subsequent correction. Private access rejects
+with all three compilers. Final strict report is 5839/5839 with one success line and no existing
+reference changes, including the cv/reference extensions. Debug-info, backend
+variants, self-host through PA5, nine architecture checks, file audit and final
+placement pass (2970 fixtures, zero findings).
+
+A separate valid class copy-initialization reducer still rejects as ambiguous
+in immutable 70e7a2920 and the edited compiler; CONV-IMPLICIT retains it for the
+conversion-legality work. Its ambiguity is not caused by explicit calls. The
+fixture uses an aggregate result to keep that separate defect out of this test.
+The scalar/reference full-target controls additionally expose a naming defect:
+Clang raw object symbols use cvT_ with Ki/Ri template arguments, whereas ours
+places the substituted concrete target in the conversion name. MANGLE-CONV
+records both exact raw spellings and /tmp/cppgm-v4-audit-review/conversion-call-probes/
+clang-object-spellings.json. No mangling implementation was changed. A stripped
+standalone executable's absent symbols are retained as an invalid inspection
+method, not evidence of spelling agreement; relocatable objects provide the
+actual comparison.
+
+Frozen recog_token_buffer -O1 performance uses immutable binaries, CPU 0, four
+A/A and six ABBA blocks; every output object is identical. Paired B/A medians:
+CPU 1.003846, wall 0.996552, RSS 0.999960. The small positive CPU median is within
+observed variation (A/A CPU ratios 0.893–1.022); no regression is detected. All
+observations and checks are retained in perf-conversion-call/ and
+conversion-call-*.json. Student export remains deferred.
 
 ## Canonical class result ABI checkpoint
 
