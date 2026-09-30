@@ -7,6 +7,11 @@ use Cwd qw(abs_path);
 use File::Find qw(find);
 use File::Spec;
 use FindBin;
+use Getopt::Long qw(GetOptions);
+
+my $quiet = 0;
+GetOptions('quiet' => \$quiet) or die "usage: $0 [--quiet]\n";
+die "usage: $0 [--quiet]\n" if @ARGV;
 
 my $root = abs_path("$FindBin::Bin/..");
 
@@ -331,6 +336,8 @@ if (@error)
 	print STDERR "  $_\n" for @error;
 	exit 1;
 }
+
+exit 0 if $quiet;
 
 print "Compiler exception audit passed at E8 architecture limits: " .
 	"$count{logic_throw} logic throws, $count{runtime_throw} runtime throws, " .

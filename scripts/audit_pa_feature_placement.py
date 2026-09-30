@@ -34,9 +34,6 @@ SOURCE_EH_LOWIR_OWNER_PA = 21
 BACKEND_ONLY_PAS = {24}
 EARLY_PLACEMENT_STATUSES = {"violation", "cluster-early"}
 VALID_TEST_CLUSTERS = frozenset(range(100, 1000, 100))
-# The assignments whose harness (run_cpphostinterop_tests_worker.pl) compiles
-# a fixture's numbered companion units with the host C++ compiler.
-HOST_COMPILED_COMPANION_PAS = frozenset({"pa26", "pa27", "pa28", "pa29", "pa31"})
 HOSTED_STL_OWNER_PA = "pa30"
 HOSTED_STL_EARLY_PA_MAX = 29
 HOSTED_STL_INTERNAL_INCLUDE_PREFIXES = ("__", "bits/", "ext/")
@@ -1699,11 +1696,6 @@ def scan_test_hygiene(root: Path, pas: Iterable[str]) -> list[HygieneFinding]:
         current_pa = current_pa_for(path.relative_to(root))
         number = pa_number(current_pa)
         if number is None:
-            continue
-        if (current_pa in HOST_COMPILED_COMPANION_PAS
-                and re.search(r"\.t\.\d+$", path.name)):
-            # The host interop harness hands a numbered companion unit to the
-            # host compiler; what it includes is the host's business.
             continue
         relative = path.relative_to(root).as_posix()
         source = read_text(path)

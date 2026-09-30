@@ -84,7 +84,7 @@ test: $(TEST_DEPS)
 # contract text in ../pa8/lowir.md, not about an implementation, so the
 # repository-root report runs it rather than `make test`.
 test-seams:
-	@python3 ../scripts/tests/test_compare_lowir_results.py 2>&1 | tail -1
+	@python3 ../scripts/tests/test_compare_lowir_results.py
 	@python3 ../scripts/check_lowir_seams.py . tests/general
 
 ref-test:

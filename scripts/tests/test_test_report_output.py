@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""The report keeps successful child logs quiet and exposes failed checks."""
+
+from pathlib import Path
+import os
+import shutil
+import subprocess
+import tempfile
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+class TestReportOutputTests(unittest.TestCase):
+    def report(self, *, failure=None, ordered=True, target="test-report-nobuild",
+               exported=False, low_jobs=False):
+        with tempfile.TemporaryDirectory(prefix="test-report-output.") as directory:
+            root = Path(directory)
+            shutil.copy(ROOT / "Makefile", root / "Makefile")
+            if exported:
+                script = (ROOT / "scripts/export_student_repo.sh").read_text()
+                start = script.index("sanitize_student_root_makefile() {")
+                end = script.index("\n}\n", start) + len("\n}\n")
+                subprocess.run(
+                    ["bash", "-euc", script[start:end] +
+                     '\nsanitize_student_root_makefile "$1"', "bash", str(root / "Makefile")],
+                    check=True,
+                )
+                makefile = (root / "Makefile").read_text()
+                self.assertNotIn("scripts/audit_", makefile)
+                self.assertNotIn("test-seams", makefile)
+                self.assertNotIn("test-harness", makefile)
+            (root / "scripts").mkdir()
+            audit = root / "scripts/audit_compiler_exceptions.pl"
+            audit.write_text(
+                'if ("' + str(failure) + '" eq "audit") { '
+                'print STDERR "audit failure diagnostic\\n"; exit 1; }\n'
+                'print "audit success inventory\\n" unless grep { $_ eq "--quiet" } @ARGV;\n'
+            )
+            (root / "dev").mkdir()
+            (root / "dev/Makefile").write_text(
+                "all:\n\t@echo build success detail\n" +
+                ("\t@echo build failure diagnostic >&2; exit 1\n"
+                 if failure == "build" else "")
+            )
+            (root / "pa11/tests/general").mkdir(parents=True)
+            (root / "pa11/Makefile").write_text(
+                "test:\n"
+                "\t@echo suite success detail\n"
+                "\t@echo maintainer success detail >&2\n"
+                "\t@echo '2 2' >> ../.test_counts\n" +
+                ("\t@echo suite failure diagnostic; exit 1\n" if failure == "suite" else "") +
+                ("\t@echo comparison failure diagnostic; touch .test_failed\n"
+                 if failure == "comparison" else "") +
+                "test-seams:\n"
+                "\t@echo 'expected rewrite ERROR: intentionally rejected'\n" +
+                ("\t@echo seams failure diagnostic >&2; exit 1\n" if failure == "seams" else "")
+            )
+            environment = os.environ.copy()
+            environment.pop("MAKEFLAGS", None)
+            result = subprocess.run(
+                ["make", *(["-j1"] if low_jobs else []), target,
+                 "DEFAULT_BUILD_JOBS=" + ("2" if low_jobs else "1"),
+                 "ACTIVE_TEST_REPORT_PAS=pa11",
+                 "TEST_REPORT_ASSIGNMENT_JOBS=1", "TEST_REPORT_STALL_SEC=0",
+                 "ORDERED=" + ("true" if ordered else "false")],
+                cwd=root, env=environment, capture_output=True, text=True, timeout=30,
+            )
+            return result
+
+    def test_success_prints_only_total_in_both_orders(self):
+        for ordered in (True, False):
+            with self.subTest(ordered=ordered):
+                result = self.report(ordered=ordered)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(result.stdout,
+                                 "===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n")
+                self.assertEqual(result.stderr, "")
+
+    def test_report_build_is_quiet_on_success(self):
+        for target in ("test-report", "test-report-through-pa11"):
+            with self.subTest(target=target):
+                result = self.report(target=target)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(result.stdout,
+                                 "===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n")
+                self.assertEqual(result.stderr, "")
+
+    def test_exported_report_has_no_maintainer_dependencies(self):
+        result = self.report(exported=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout,
+                         "===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n")
+        self.assertEqual(result.stderr, "")
+
+    def test_report_with_low_job_limit_has_no_success_warning(self):
+        result = self.report(low_jobs=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout,
+                         "===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n")
+        self.assertEqual(result.stderr, "")
+
+    def test_failed_children_expose_diagnostics(self):
+        for failure in ("audit", "build", "suite", "comparison", "seams"):
+            for ordered in (True, False):
+                with self.subTest(failure=failure, ordered=ordered):
+                    result = self.report(failure=failure, ordered=ordered,
+                                         target="test-report" if failure == "build"
+                                         else "test-report-nobuild")
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn(failure + " failure diagnostic", result.stdout + result.stderr)
+                    self.assertNotIn("ALL TESTS PASSED", result.stdout)
+                    if failure != "seams":
+                        self.assertNotIn("expected rewrite ERROR", result.stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()

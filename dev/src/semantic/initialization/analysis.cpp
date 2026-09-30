@@ -618,8 +618,12 @@ void Analyzer::AnalyzeReturnStatement(NodeId node, ScopeId scope,
 		const std::size_t first_cleanup_edge = dump_.edges.size();
 		AppendFullExpressionDestructionActions(value.node, statement);
 		StageReturnTemporaryCleanup(value.node, statement, scope);
+		// A direct class-value transfer still evaluates a potentially throwing
+		// call before returning; protect the enclosing locals just as for a
+		// scalar return expression with no temporary cleanup of its own.
 		if (dump_.edges.size() == first_cleanup_edge &&
-			!IsClassObjectType(value.type))
+			(!IsClassObjectType(value.type) ||
+			 dump_.nodes[value.node].kind == DUMP_CLASS_VALUE_TRANSFER))
 			StageExceptionalFullExpression(value.node, statement, scope);
 	}
 	AppendScopeDestructionActions(scope, statement);

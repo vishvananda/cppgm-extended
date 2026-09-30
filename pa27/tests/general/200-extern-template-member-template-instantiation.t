@@ -1,1 +1,1 @@
-# A member template of an extern-template class is still instantiated locally.
+# Host object: member templates of an extern-template class stay local to users.

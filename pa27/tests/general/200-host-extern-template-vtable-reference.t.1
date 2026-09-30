@@ -1,21 +1,7 @@
-#include <iostream>
-#include <iterator>
-#include <sstream>
-#include <string>
-
-std::string parse_with_stream(const std::string& source)
-{
-	std::istringstream input(source);
-	std::string value;
-	input >> value;
-	return value;
-}
+#include "200-host-extern-template-vtable-reference.helper.h"
 
 int main()
 {
-	std::ios_base::sync_with_stdio(false);
-	std::cin.tie(0);
-	const std::string value((std::istreambuf_iterator<char>(std::cin)),
-		std::istreambuf_iterator<char>());
-	return parse_with_stream(value) == "extern-template-vtable" ? 0 : 1;
+  Facet<int> base(5);
+  return host_read(&base) == 7 ? 0 : 1;
 }

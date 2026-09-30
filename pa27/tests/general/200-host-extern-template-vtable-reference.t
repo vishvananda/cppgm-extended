@@ -1,1 +1,1 @@
-# host extern-template vtables and VTTs remain owned by libstdc++
+# Host object: extern-template vtables and VTTs remain owned by the provider.

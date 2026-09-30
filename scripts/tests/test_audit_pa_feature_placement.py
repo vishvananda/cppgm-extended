@@ -351,6 +351,25 @@ class AuditPAFeaturePlacementTests(unittest.TestCase):
                 ],
             )
 
+    def test_hygiene_checks_host_interop_numbered_sources(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
+            root = Path(temp_dir)
+            pas = ["pa26", "pa27", "pa28", "pa29", "pa30", "pa31"]
+            for pa in pas:
+                anchor = root / pa / "tests" / "general" / "300-string.t"
+                write(anchor, "")
+                write(anchor.with_name("300-string.t.1"), "#include <string>\n")
+
+            findings = audit.scan_test_hygiene(root, pas)
+            self.assertEqual(
+                [(finding.path, finding.kind, finding.evidence) for finding in findings],
+                [
+                    (f"{pa}/tests/general/300-string.t.1", "early-hosted-stl",
+                     "#include <string>")
+                    for pa in pas[:4]
+                ],
+            )
+
     def test_hygiene_allows_family_owned_angle_header_override(self) -> None:
         with tempfile.TemporaryDirectory(prefix="cppgm-placement-audit.") as temp_dir:
             root = Path(temp_dir)

@@ -280,12 +280,12 @@ sanitize_student_makefile_defaults() {
 sanitize_student_root_makefile() {
   perl -0pi -e '
     s/^test-report-nobuild: audit-compiler-exceptions$/test-report-nobuild:/m;
-    s/^audit-[a-z-]+:\n\t\@perl scripts\/audit_[a-z_]+\.pl\n\n?//mg;
+    s/^audit-[a-z-]+:\n\t\@perl scripts\/audit_[a-z_]+\.pl[^\n]*\n\n?//mg;
     s/^build-telemetry-off:\n(?:\t[^\n]*\n)+\n?//m;
     s/^test-telemetry-off: build build-telemetry-off\n(?:\t[^\n]*\n)+\n?//m;
     s/(?:^#[^\n]*\n)*^HARNESS_TESTS = \\\n(?:\t[^\n]*\n)+\n?^test-harness:\n(?:\t[^\n]*\n)+\n?//m;
     s/\b(?:audit-[a-z-]+|build-telemetry-off|test-telemetry-off|test-harness) //g;
-    s/^\tif \[ -d pa11\/tests\/general \]; then \\\n\t\t\$\(MAKE\) -s -C pa11 test-seams \|\| touch pa11\/\.test_failed; \\\n\tfi; \\\n//m;
+    s/^\tif \[ -d pa11\/tests\/general \]; then \\\n(?:\t[^\n]*\n)*?\tfi; \\\n//m;
   ' "$@"
 }
 
