@@ -19,8 +19,8 @@ fix sequence is complete, as requested.
 | DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2; twenty false positives removed; genuine class controls pass. |
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
 | INIT-OBJ | Emit evaluated class/base/array/template constant object values and relocations | v4codex group 1 | Done: a33d1456d. Seven copied ordering reducers and two new runtime fixtures pass; strict 5825/5825, full checks and ABBA pass. |
-| ARRAY-IMAGE | Reconcile PA10 literal arrays and PA16 general constexpr readonly-image/copy rule | v4codex placement / group 1 | Done: accompanying array-image checkpoint; 48 references regenerated, two new runtime controls, strict 5827/5827 and full checks pass. Performance follow-up finds no persistent regression. |
-| FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Open. |
+| ARRAY-IMAGE | Reconcile PA10 literal arrays and PA16 general constexpr readonly-image/copy rule | v4codex placement / group 1 | Done: 3e2a9a9d1; 48 references regenerated, two new runtime controls, strict 5827/5827 and full checks pass. Performance follow-up finds no persistent regression. |
+| FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Done in this checkpoint: two new runtime controls pass at -O0/-O2, seven references regenerated; strict 5829/5829, full checks and equivalent-output ABBA pass. |
 | DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Open. |
 | AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Open. |
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Open. |
@@ -32,6 +32,7 @@ fix sequence is complete, as requested.
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open. |
+| ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open: later audit changes `_Z1g` → `g` in two inspection fixtures; our encoder and expectations still use `_Z1g`. Verify host cross-links and update typed ABI identity plus generated expectations. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | Open; five source corrections identified below. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Open: SIGSEGV at -O0 and -O2; host GCC passes. Additional lifetime/ABI regression. |
 | ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Open: same-type case exits 233; distinct-type case rejects at -O0/-O2. Additional mechanism within EH. |
@@ -144,6 +145,46 @@ runs. Every run, load snapshot and compiler/input hash is retained under
 `/tmp/cppgm-v4-audit-review/perf-array-image/` in `aa.json`, `ab.json`,
 `ab-pinned.json` and `aa-pinned.json`. Final student-export validation remains
 pending until the fix sequence is complete.
+
+## Field typing and volatile initialization checkpoint
+
+Integral arithmetic, comparisons, shifts and compound assignments now consume
+bit-field width facts when selecting promotions. A narrow unsigned or long
+field whose values fit `int` uses `int`; a full-width unsigned field retains
+unsigned arithmetic. Enum bit-fields follow their enumeration type's promotion
+rules. Ordinary overload ranking remains unchanged. Lowered bit-field values
+use explicit typed conversions instead of changing an operand's type silently.
+Generated aggregate helpers preserve volatile stores to volatile members.
+
+Seven existing references were regenerated through `ref-test`; all acceptance
+statuses remain unchanged. Two new PA11 fixtures check narrow/full-width fields,
+long and enum fields, unary and compound arithmetic, and volatile aggregate-array
+initialization. Both compilers return zero at `-O0` and `-O2`; LowIR explicitly
+contains the required typed copies and volatile helper store. The shared semantic
+ownership ledger includes the three new helper definitions.
+
+Validation passes: strict report 5829/5829 with exactly one output line,
+debug-info, backend variants, self-host through PA5, all nine architecture
+checks, file limits and placement (zero findings). Export remains deferred.
+
+Performance observations are retained in `perf-fields/` beneath the review
+scratch directory. The original semantic-overload input itself reads bit-fields;
+its corrected object differs. Symbol-size inspection narrows executable growth
+to one function, 1083 → 1089 bytes, caused by two signed typed conversions before
+truth tests. These A/B observations are not an identical-output performance gate.
+The initial measurement watcher also began tests before the intermediate report
+was final; its overlapping observations remain retained rather than discarded.
+The `rtti_names` equivalence trial rejects with both compilers and supplies no
+performance result.
+
+After all suites finished, immutable A/B binaries compiled the frozen
+`recog_token_buffer.cpp` and headers at `-O1` on CPU 0. Four A/A calibration blocks
+and six A/B ABBA blocks all produce the identical SHA-256
+`08c380bf4060d88ae18fc59b0cfa858fd6c7c02a4c2d0ca1413b59559f55f906`.
+Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
+0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
+observed on this input; shared-host measurements do not establish a speedup or
+an exact zero-cost claim. All initial and follow-up observations are preserved.
 
 ## Scope and evidence
 
@@ -424,6 +465,29 @@ The separate multi-block-inline note supplies `cmp slt`, while this repository's
 LowIR contract spells it `cmp lt`. The report says the corrected spelling passes
 our backend. Record this as a test-dialect discrepancy, not a confirmed inliner
 bug or a reason to add an undocumented comparison spelling.
+
+## Later running-checkout refresh
+
+A read-only refresh reached student commit `100de24b` (PA28 loop152); its
+uncommitted EH work was left untouched. PA27 `reference-corrections.md`,
+`audit148.md`, final `audit.md` (audit150), and PA28 `plan.md` add one reference
+correction to the initial review: ordinary global-namespace variable `g` must
+use `g`, not `_Z1g`, under Itanium ABI 5.1.2. Two inspection expectations and
+two generated inspection outputs changed; source, relocation class and runtime
+oracles did not. Our shared variable encoder still prefixes `_Z`, and our two
+inspection expectations retain `_Z1g`; track this separately as ABI-GLOBAL.
+The student's two-source definition/consumer reducer supplies a host cross-link
+control. This belongs to ABI naming, not a reason to move the PA27 object tests.
+
+The later audit also explicitly records a personal `#line __has_include(...)`
+control for which GCC accepts an extension beyond its documented conditional
+probe contract. That is a host-policy difference, not a changed course oracle.
+Our probe rewriter is already called from controlling-expression processing;
+our copied controls confirm ordinary-source and `#line` rejection plus conditional
+acceptance. GCC accepts the `#line` case. No additional compiler fix is needed
+for these controls. PA28's current
+plan reports no new reference corrections and still has six implementation
+failures; those unfinished student behaviors are not evidence of reference bugs.
 
 ## Implementation order
 

@@ -172,6 +172,37 @@ TypeId Analyzer::IntegralPromotionType(TypeId type) const
 	return type;
 }
 
+TypeId Analyzer::BitFieldPromotionType(const ExpressionInfo& value) const
+{
+	if (value.binding == kNoBinding || value.binding >= program_->bindings.size() ||
+		!program_->bindings[value.binding].bit_field) return value.type;
+	const TypeId type = program_->types.RemoveTopCv(EffectiveType(value.type));
+	const TypeRecord& record = program_->types.Get(type);
+	if (record.kind == TYPE_NAMED || !IsIntegral(type)) return type;
+	const BindingLayoutFact& layout = program_->BindingLayout(
+		program_->bindings[value.binding]);
+	if (layout.bit_width == 0) return type;
+	const std::size_t width = std::min<std::size_t>(layout.bit_width, IntegralWidth(type));
+	const TypeId int_type = program_->types.Fundamental(FUND_INT);
+	const std::size_t int_width = IntegralWidth(int_type);
+	if (width < int_width || (width == int_width && !IsUnsignedIntegral(type)))
+		return int_type;
+	if (width == int_width && IsUnsignedIntegral(type))
+		return program_->types.Fundamental(FUND_UNSIGNED_INT);
+	return type;
+}
+
+TypeId Analyzer::IntegralPromotionType(const ExpressionInfo& value) const
+{
+	return IntegralPromotionType(BitFieldPromotionType(value));
+}
+
+TypeId Analyzer::CommonArithmeticType(const ExpressionInfo& left,
+	const ExpressionInfo& right) const
+{
+	return CommonArithmeticType(BitFieldPromotionType(left), BitFieldPromotionType(right));
+}
+
 TypeId Analyzer::CommonArithmeticType(TypeId left, TypeId right) const
 {
 	left = program_->types.RemoveTopCv(EffectiveType(left));
@@ -1623,7 +1654,7 @@ ExpressionInfo Analyzer::AnalyzeAssignment(NodeId node, ScopeId scope)
 		reverse_pointer_add;
 	if (operation != "=" && !pointer_add && !reverse_pointer_add)
 		dump_.nodes[expression].operand_type =
-			CommonArithmeticType(left.type, right.type);
+			CommonArithmeticType(left, right);
 	dump_.Add(expression, left.node);
 	dump_.Add(expression, right.node);
 	ExpressionInfo result;

@@ -247,6 +247,8 @@ protected:
 				{
 					Instruction store(Instruction::STORE);
 					store.type = value_type;
+					store.volatile_access = derived.TypeIsVolatile(
+						derived.program_.bindings[member].type);
 					store.first = value;
 					store.second = destination;
 					derived.Emit(store);

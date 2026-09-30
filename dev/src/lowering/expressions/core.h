@@ -548,7 +548,7 @@ protected:
 		Operand old_value = bit_field == kNoBinding ?
 			derived.LoadStorage(storage, type, volatile_access) :
 			derived.LoadBitField(bit_field, storage);
-		if (bit_field != kNoBinding) old_value.type = type;
+		if (bit_field != kNoBinding) old_value = derived.Convert(old_value, type, false);
 		Operand new_value;
 		if (derived.IsPointerLikeType(derived.arena_.nodes[operand_node].type))
 			new_value = derived.ApplyPointerOffset(old_value, Operand(1, LowI32()),

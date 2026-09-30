@@ -1793,6 +1793,8 @@ private:
 	TypeId EffectiveType(TypeId type) const;
 	TypeId Decay(TypeId type) const;
 	TypeId CommonArithmeticType(TypeId left, TypeId right) const;
+	TypeId CommonArithmeticType(const ExpressionInfo& left,
+		const ExpressionInfo& right) const;
 	bool IsIntegral(TypeId type, bool allow_scoped_enum = false) const;
 	bool IsFloating(TypeId type) const;
 	bool IsArithmetic(TypeId type) const;
@@ -1807,6 +1809,8 @@ private:
 	FundamentalKind FundamentalOf(TypeId type) const;
 	int IntegralRank(TypeId type) const;
 	TypeId IntegralPromotionType(TypeId type) const;
+	TypeId IntegralPromotionType(const ExpressionInfo& value) const;
+	TypeId BitFieldPromotionType(const ExpressionInfo& value) const;
 	bool IsUnsignedIntegral(TypeId type) const;
 	std::size_t IntegralWidth(TypeId type) const;
 	std::int64_t NormalizeIntegralConstant(TypeId type,

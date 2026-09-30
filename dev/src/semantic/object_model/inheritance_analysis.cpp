@@ -1121,7 +1121,7 @@ ExpressionInfo Analyzer::AnalyzeConditional(NodeId node, ScopeId scope)
 		category = VALUE_PRVALUE;
 	}
 	else if (IsArithmetic(yes.type) && IsArithmetic(no.type))
-		type = CommonArithmeticType(yes.type, no.type);
+		type = CommonArithmeticType(yes, no);
 	else if (EntityOf(yes.type) != kNoEntity &&
 		EntityOf(no.type) != kNoEntity && yes.category == no.category &&
 		(yes.category == VALUE_LVALUE || yes.category == VALUE_XVALUE))

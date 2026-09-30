@@ -18,11 +18,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = addr $bits
     %t13 = index i8 [projection=field] %t12, 0
     %t14 = binary and i32 1, 3
-    %t15 = binary shl i32 %t14, 1
-    %t16 = load i32 %t13
-    %t17 = binary and i32 %t16, 4294967289
-    %t18 = binary or i32 %t17, %t15
-    store i32 %t18, %t13
-    %t19 = copy i32 %t14
-    return i32 %t19
+    %t15 = copy u32 %t14
+    %t16 = binary shl i32 %t14, 1
+    %t17 = load i32 %t13
+    %t18 = binary and i32 %t17, 4294967289
+    %t19 = binary or i32 %t18, %t16
+    store i32 %t19, %t13
+    %t20 = copy i32 %t15
+    return i32 %t20
 }

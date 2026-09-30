@@ -12,8 +12,10 @@ dev/src/semantic/analysis/analyzer.cpp	AnalyzeStatement	1	dev/src/semantic/analy
 dev/src/semantic/analysis/analyzer.cpp	AnalyzeSubstatement	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	AnalyzeTemplate	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	ApplyTarget	1	dev/src/semantic/analysis/analyzer.cpp	keep
+dev/src/semantic/analysis/analyzer.cpp	BitFieldPromotionType	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	BuildResolvedCall	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	CommonArithmeticType	1	dev/src/semantic/analysis/analyzer.cpp	keep
+dev/src/semantic/analysis/analyzer.cpp	CommonArithmeticType	2	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	Consume	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	Conversion	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	Conversion	2	dev/src/semantic/analysis/analyzer.cpp	keep
@@ -26,6 +28,7 @@ dev/src/semantic/analysis/analyzer.cpp	FirstSemanticChild	1	dev/src/semantic/ana
 dev/src/semantic/analysis/analyzer.cpp	FundamentalOf	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	InstallSemanticErrorLocationHook	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	IntegralPromotionType	1	dev/src/semantic/analysis/analyzer.cpp	keep
+dev/src/semantic/analysis/analyzer.cpp	IntegralPromotionType	2	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	IntegralRank	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	IsArithmetic	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	IsConst	1	dev/src/semantic/analysis/analyzer.cpp	keep

@@ -384,11 +384,8 @@ ExpressionInfo Analyzer::AnalyzeUnary(NodeId node, ScopeId scope, TypeId target)
 		else if ((op == OP_COMPL && !IsIntegral(result_type)) ||
 			(op != OP_COMPL && !IsArithmetic(result_type)))
 			ThrowSemanticError("invalid unary arithmetic operand");
-		else if (IsIntegral(result_type) &&
-			(IntegralRank(result_type) < 3 ||
-			 program_->types.Get(program_->types.RemoveTopCv(result_type)).kind ==
-				TYPE_NAMED))
-			result_type = program_->types.Fundamental(FUND_INT);
+		else if (IsIntegral(result_type))
+			result_type = IntegralPromotionType(operand);
 		if (constant)
 		{
 			if (IsFloating(result_type))
@@ -515,7 +512,7 @@ bool Analyzer::PrepareBuiltinComparison(const std::string& operation,
 		 program_->entities[comparison_enum].flavor == NAMED_ENUM_CLASS))
 		*operand_type = left_unqualified;
 	else if (IsArithmetic(left->type) && IsArithmetic(right->type))
-		*operand_type = CommonArithmeticType(left->type, right->type);
+		*operand_type = CommonArithmeticType(*left, *right);
 	else if (IsNullptr(left->type) && IsNullptr(right->type) && equality)
 		*operand_type = left_unqualified;
 	else if (equality &&
@@ -620,8 +617,8 @@ TypeId Analyzer::PrepareBuiltinArithmetic(
 		return kNoType;
 	}
 	return op == OP_LSHIFT || op == OP_RSHIFT ?
-		IntegralPromotionType(left.type) :
-		CommonArithmeticType(left.type, right.type);
+		IntegralPromotionType(left) :
+		CommonArithmeticType(left, right);
 }
 
 // The built-in additive operators: pointer arithmetic against an integer,
@@ -680,7 +677,7 @@ TypeId Analyzer::BuiltinAdditiveResultType(int op,
 		result_type = program_->types.Fundamental(FUND_LONG_INT);
 	}
 	else if (IsArithmetic(left.type) && IsArithmetic(right.type))
-		result_type = *operand_type = CommonArithmeticType(left.type, right.type);
+		result_type = *operand_type = CommonArithmeticType(left, right);
 	else ThrowSemanticError("invalid additive operands");
 	return result_type;
 }

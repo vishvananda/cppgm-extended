@@ -93,8 +93,7 @@ public:
 			shift_right.second = Operand(shift_count, type);
 			derived.Emit(shift_right);
 		}
-		normalized.type = declared;
-		return normalized;
+		return derived.Convert(normalized, declared, false);
 	}
 
 	Operand NormalizeBitFieldValue(BindingId binding, Operand value,
