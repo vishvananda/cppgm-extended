@@ -396,12 +396,13 @@ RULES: tuple[FeatureRule, ...] = (
     FeatureRule("lifetime.ctor_dtor",
                 (rx(r"\b~[A-Za-z_][A-Za-z0-9_]*\s*\("),),
                 path_patterns=(rx(r"(?:lifetime|constructor|destructor|global-constructor|member-object-lifetime)"),)),
+    # copyobj also initializes scalar arrays; it is not class-feature evidence.
     FeatureRule("value.copy_move",
                 (rx(r"\b(?:copy|move)\b|operator\s*=(?!=)\s*\(\s*(?:const\s+)?[A-Za-z_][A-Za-z0-9_:<>]*\s*(?:&&|&)|"
                     r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*(?:const\s+)?\1\s*(?:&&|&)"),),
-                ref_patterns=(rx(r"\bcopyobj\b|aSERKS|aSEOS"),)),
+                ref_patterns=(rx(r"C[12]E(?:RK|O)S|aSERKS|aSEOS"),)),
     FeatureRule("value.by_value_abi", (rx(r"\b[A-Z][A-Za-z0-9_:<>]*\s+\w+\s*\([^)]*[A-Z][A-Za-z0-9_:<>]*\s+\w+[^)]*\)"),),
-                ref_patterns=(rx(r"\bcopyobj\b|pass=by_value|return\s+obj<"),)),
+                ref_patterns=(rx(r"pass=by_value|return\s+obj<"),)),
     FeatureRule("value.temporary",
                 (rx(r"\bconst\s+[A-Za-z_][A-Za-z0-9_:<>]*\s*&\s*\w+\s*=\s*[A-Z][A-Za-z0-9_:<>]*\s*\("),),
                 ref_patterns=()),

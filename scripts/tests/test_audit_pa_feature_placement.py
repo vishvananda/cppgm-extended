@@ -30,6 +30,33 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_scalar_array_copy_does_not_claim_class_transfer_features(self) -> None:
+        reference = """global @values [binding=internal, readonly=yes] = {
+  i32 1
+  i32 2
+}
+function @main() -> i32 {
+  slot $array : obj<8x4>
+  block ^entry:
+    %destination = addr $array
+    %source = addr @values
+    copyobj 8x4 %destination, %source
+    return i32 0
+}
+"""
+        hits = audit.detect_features("int main() { int values[2] = {1, 2}; }", reference)
+        self.assertNotIn("value.copy_move", hits)
+        self.assertNotIn("value.by_value_abi", hits)
+
+    def test_class_transfer_signatures_remain_placement_evidence(self) -> None:
+        for name in ("_ZN1CC1ERKS_", "_ZN1CC2EOS_", "_ZN1CaSERKS_", "_ZN1CaSEOS_"):
+            with self.subTest(name=name):
+                hits = audit.detect_features("", f"declare function @transfer() [object={name}]")
+                self.assertIn("value.copy_move", hits)
+        for signature in ("%value : ptr [pass=by_value]", "return obj<4x4> %value"):
+            with self.subTest(signature=signature):
+                self.assertIn("value.by_value_abi", audit.detect_features("", signature))
+
     def test_parser_syntax_does_not_require_later_semantic_behavior(self) -> None:
         for feature_id, owner in (("exception.try_catch", "pa21"),
                                   ("function.noexcept", "pa6"),
