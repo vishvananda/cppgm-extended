@@ -1,26 +1,26 @@
 function @make_partial(%x : i32) -> obj<8x4> [binding=strong, object=_Z12make_partiali] {
   slot $x : i32
   slot $retobj__1 : obj<8x4>
-  slot $argobj__2 : obj<4x4>
 
   block ^entry:
     store i32 %x, $x
     %t1 = addr $retobj__1
-    %t2 = load i32 $x
-    %t3 = addr $argobj__2
-    call void @Inner__Inner(%t3)
-    call void @Outer__Outer__aggregate(%t1, %t2, $argobj__2)
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 $x
+    store i32 %t3, %t2
+    %t4 = index i8 [projection=field] %t1, 4
+    call void @Inner__Inner(%t4)
     return obj<8x4> $retobj__1
 }
 function @make_empty() -> obj<8x4> [binding=strong, object=_Z10make_emptyv] {
   slot $retobj__1 : obj<8x4>
-  slot $argobj__2 : obj<4x4>
 
   block ^entry:
     %t1 = addr $retobj__1
-    %t2 = addr $argobj__2
-    call void @Inner__Inner(%t2)
-    call void @Outer__Outer__aggregate(%t1, 0, $argobj__2)
+    %t2 = index i8 [projection=field] %t1, 0
+    store i32 0, %t2
+    %t3 = index i8 [projection=field] %t1, 4
+    call void @Inner__Inner(%t3)
     return obj<8x4> $retobj__1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -117,26 +117,6 @@ function @Inner__Inner(%this : ptr [object_bytes=4]) -> void [binding=weak, obje
     %t1 = load ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     store i32 7, %t2
-    return void
-}
-function @Outer__Outer__aggregate(%this : ptr, %first : i32, %second : obj<4x4>) -> void [unwind=no, binding=internal] {
-  slot $this : ptr
-  slot $first : i32
-  slot $second : obj<4x4>
-
-  block ^entry:
-    store ptr %this, $this
-    store i32 %first, $first
-    %t1 = addr $second
-    copyobj 4x4 %second, %t1
-    %t2 = load i32 $first
-    %t3 = load ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    store i32 %t2, %t4
-    %t5 = load ptr $this
-    %t6 = index i8 [projection=field] %t5, 4
-    %t7 = addr $second
-    copyobj 4x4 %t7, %t6
     return void
 }
 alias object _ZN5InnerC2Ev = @Inner__Inner

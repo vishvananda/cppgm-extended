@@ -22,8 +22,8 @@ fix sequence is complete, as requested.
 | INIT-OBJ | Emit evaluated class/base/array/template constant object values and relocations | v4codex group 1 | Done: a33d1456d. Seven copied ordering reducers and two new runtime fixtures pass; strict 5825/5825, full checks and ABBA pass. |
 | ARRAY-IMAGE | Reconcile PA10 literal arrays and PA16 general constexpr readonly-image/copy rule | v4codex placement / group 1 | Done: 3e2a9a9d1; 48 references regenerated, two new runtime controls, strict 5827/5827 and full checks pass. Performance follow-up finds no persistent regression. |
 | FIELD | Bit-field signed promotion / typed reads and volatile aggregate stores | v4codex group 2 | Done: 31598a5b3; two new runtime controls pass at -O0/-O2, seven references regenerated; strict 5829/5829, full checks and equivalent-output ABBA pass. |
-| DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Done in this checkpoint: direct/virtual/further-derived runtime controls pass; strict 5829/5829, full checks and equivalent-output ABBA pass. |
-| AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Open. |
+| DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Done: 049b5fa74; direct/virtual/further-derived runtime controls pass; strict 5829/5829, full checks and equivalent-output ABBA pass. |
+| AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Done in the aggregate checkpoint below: preserve typed member actions at final addresses; five new controls and seven regenerated references, strict 5834/5834 and full checks pass. |
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Open. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Open; distinguish student-entry observations from supplied-oracle comparisons. |
 | DEMAND | Dormant static member initializers and discarded volatile-reference results | v4codex group 7 | Open. |
@@ -37,9 +37,9 @@ fix sequence is complete, as requested.
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime corrected with DTOR; four source corrections remain. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Open: SIGSEGV at -O0 and -O2; host GCC passes. Additional lifetime/ABI regression. |
 | ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Open: same-type case exits 233; distinct-type case rejects at -O0/-O2. Additional mechanism within EH. |
-| ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Open: counter case exits 10 at -O0/-O2; host GCC passes. |
+| ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Done in the aggregate checkpoint: retain constructor calls and argument/parameter lifetimes; counter and by-value lifetime controls pass. |
 | ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Open: valid case rejects at -O0/-O2; host GCC passes. |
-| ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Open: valid case rejects at -O0/-O2. Related to AGG-DEST; retain distinct local/static regression. |
+| ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done with AGG-DEST: final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
 | BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
@@ -186,6 +186,34 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Aggregate final-destination checkpoint
+
+Preserve typed aggregate initialization actions whenever a member contains a
+class, and initialize class-array leaves at their retained destination address.
+This avoids relocating constructed objects or adding observable transfers of
+braced-result members. Scalar-only helpers retain their existing path. Remove
+the empty-body constructor shortcut: arguments and by-value parameter lifetimes
+remain observable even when the constructor body is empty. Partial-construction
+exception cleanup remains tracked under EH.
+
+Five new controls live at the earliest feature owner: PA11 aggregate class-array
+lifetime and empty-constructor argument effects, PA12 member-copy observations
+and parameter lifetime, and PA15 templated array element identity. The placement
+audit caught an initial PA11 cluster mistake; these fixtures now use its aggregate
+cluster, rather than weakening detection. All five controls and four discovery
+reducers pass with ours, GCC and Clang at -O0 and -O2. Seven existing references
+were regenerated through ref-test; no acceptance expectations changed.
+
+Strict report: 5834/5834 with one success line. Debug-info, backend variants,
+self-host through PA5, all nine architecture checks, file audit and placement
+pass (2966 fixtures, zero findings). The immutable A/B performance gate uses the
+frozen recog_token_buffer input at -O1, CPU 0, four A/A and six ABBA blocks.
+Every output agrees byte-for-byte. Paired B/A medians: user CPU 0.996154, wall
+1.003285, RSS 1.002870; no detected regression. A/A wall variation was larger
+(0.935460); retain all observations and make no speedup claim. Evidence is in
+/tmp/cppgm-v4-audit-review/aggregate-*.json and perf-aggregate/. Student export
+remains deferred to the final combined checkpoint.
 
 ## Explicit virtual destructor checkpoint
 

@@ -1559,20 +1559,6 @@ ExpressionInfo Analyzer::AnalyzeAggregateElement(TypeId type,
 					 dump_.nodes[constructed.node].kind ==
 						DUMP_BRACED_INIT_LIST))
 				{
-					if (dump_.nodes[constructed.node].kind ==
-						DUMP_CONSTRUCTOR_ACTION &&
-						dump_.nodes[constructed.node].binding != kNoBinding)
-					{
-						const FunctionInfo& constructor = GetFunction(
-							dump_.nodes[constructed.node].binding);
-						if (program_->entities[entity].direct_base == kNoEntity &&
-							entity < entity_data_members_.size() &&
-							entity_data_members_[entity].empty() &&
-							constructor.constructor_initializer == kNoNode &&
-							constructor.definition_body != kNoNode &&
-							FirstSemanticChild(constructor.definition_body) == kNoNode)
-							dump_.nodes[constructed.node].elide_empty_constructor = true;
-					}
 					return constructed;
 				}
 			}
@@ -1717,6 +1703,17 @@ std::uint32_t Analyzer::BuildAggregateConstructionAction(TypeId type,
 		}
 		const TypeKind kind = program_->types.Get(program_->types.RemoveTopCv(action.type)).kind;
 		if (kind == TYPE_ARRAY && !allow_array_members)
+			return aggregate_list;
+		TypeId element = program_->types.RemoveTopCv(action.type);
+		while (program_->types.Get(element).kind == TYPE_ARRAY)
+			element = program_->types.RemoveTopCv(program_->types.Get(element).child);
+		const TypeKind element_kind = program_->types.Get(element).kind;
+		// Class members must consume their original initialization actions at
+		// the destination. Passing staged values through a helper introduces
+		// extra transfers, and relocating an array breaks element identity.
+		if (element_kind != TYPE_LVALUE_REFERENCE &&
+			element_kind != TYPE_RVALUE_REFERENCE &&
+			IsClassEntity(*program_, EntityOf(element)))
 			return aggregate_list;
 	}
 	if (parameter_member_count > std::numeric_limits<std::uint32_t>::max())

@@ -5,6 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $x
     %t2 = addr $x
     %t3 = index i8 [projection=field] %t2, 0
+    call void @value__value(%t3, 1, 2)
     %t4 = addr $x
     %t5 = index i8 [projection=field] %t4, 4
     store i32 0, %t5

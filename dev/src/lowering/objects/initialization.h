@@ -736,13 +736,20 @@ protected:
 		if (values.size() != 1 ||
 			derived.arena_.nodes[values[0]].kind != DUMP_BRACED_INIT_LIST)
 			ThrowLoweringSource("array member requires a braced initializer");
+		const TypeRecord& array = derived.program_.types.Get(
+			derived.ExpressionObjectType(action.type));
+		if (derived.IsClassObjectType(array.child) || derived.IsArrayType(array.child))
+		{
+			const Operand destination = retained_destination.kind == Operand::NONE ?
+				derived.ProjectAggregatePath(root, path) : retained_destination;
+			derived.LowerRuntimeArrayValues(action.type, values[0], destination, true);
+			return;
+		}
 		if (retained_destination.kind != Operand::NONE)
 		{
 			derived.LowerArrayValues(action.type, values[0], retained_destination);
 			return;
 		}
-		const TypeRecord& array = derived.program_.types.Get(
-			derived.ExpressionObjectType(action.type));
 		const NodeChildren elements = derived.Children(values[0]);
 		if (array.kind != TYPE_ARRAY || array.bound == 0 ||
 			elements.size() > array.bound)

@@ -1,5 +1,5 @@
-// A synthesized aggregate constructor owns its by-value field parameters and
-// must move a class-valued parameter into the corresponding aggregate member.
+// A move-only aggregate member can be initialized from a class prvalue.
+// Construction may reuse the final member address under the copy-elision rules.
 struct move_only
 {
   int value;

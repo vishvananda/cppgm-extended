@@ -10,17 +10,15 @@ function @make() -> obj<1x1> [binding=weak, object=_Z4makeI5arrayI4itemLi2EEE6re
   slot $retobj__1 : obj<1x1>
   slot $argobj__2 : obj<1x1>
   slot $arg__3 : obj<2x1>
-  slot $argarr__4 : obj<2x1>
 
   block ^entry:
     %t1 = addr $retobj__1
     %t2 = addr $argobj__2
     %t3 = addr $arg__3
-    %t4 = addr $argarr__4
+    %t4 = index i8 [projection=field] %t3, 0
     call void @item__item(%t4, 0)
     %t5 = index i8 [projection=array_element] %t4, 1
     call void @item__item(%t5, 1)
-    call void @__cppgm_class_template_identity_1_1_0__array__aggregate(%t3, %t4)
     call void @result___cppgm_class_template_identity_1_1_0___result___cppgm_class_template_identity_1_1_0_(%t1, $argobj__2, %t3)
     return obj<1x1> $retobj__1
 }
@@ -41,19 +39,6 @@ function @result___cppgm_class_template_identity_1_1_0___result___cppgm_class_te
   block ^entry:
     store ptr %this, $this
     store ptr %__param2, $__param2
-    return void
-}
-function @__cppgm_class_template_identity_1_1_0__array__aggregate(%this : ptr, %elements : ptr) -> void [unwind=no, binding=internal] {
-  slot $this : ptr
-  slot $elements : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    store ptr %elements, $elements
-    %t1 = load ptr $this
-    %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $elements
-    copyobj 2x1 %t3, %t2
     return void
 }
 alias object _ZN4itemC2Ei = @item__item
