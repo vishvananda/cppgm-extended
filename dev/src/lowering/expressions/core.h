@@ -259,7 +259,8 @@ protected:
 				const DumpNode& source = derived.arena_.nodes[children[0]];
 				if ((source.category == VALUE_LVALUE ||
 					 source.category == VALUE_XVALUE) &&
-					(derived.IsClassObjectType(source.type) || derived.IsArrayType(source.type)))
+					(source.kind == DUMP_CALL_EXPRESSION ||
+					 derived.IsClassObjectType(source.type) || derived.IsArrayType(source.type)))
 					(void)derived.AddressOfStorage(derived.LowerStorage(children[0]));
 				else (void)derived.LowerValue(children[0]);
 				result = Operand(0, LowVoid());

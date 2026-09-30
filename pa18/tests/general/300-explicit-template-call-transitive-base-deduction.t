@@ -15,17 +15,17 @@ template<unsigned long I, class... Ts>
 struct impl {};
 
 template<unsigned long I, class Head, class... Tail>
-struct impl<I, Head, Tail...> : impl<I + 1, Tail...> {};
+struct impl<I, Head, Tail...> : impl<I + 1, Tail...> { Head value{}; };
 
 template<class... Ts>
 struct tuple : impl<0, Ts...> {};
 
 template<unsigned long I, class Head, class... Tail>
-Head& helper(impl<I, Head, Tail...>&) { return *static_cast<Head*>(0); }
+Head& helper(impl<I, Head, Tail...>& object) { return object.value; }
 
 template<unsigned long I, class Head, class... Tail>
-const Head& helper(const impl<I, Head, Tail...>&) {
-  return *static_cast<const Head*>(0);
+const Head& helper(const impl<I, Head, Tail...>& object) {
+  return object.value;
 }
 
 template<unsigned long I, class... Types>

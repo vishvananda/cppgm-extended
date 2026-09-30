@@ -25,19 +25,21 @@ fix sequence is complete, as requested.
 | DTOR | Unqualified explicit virtual destructor dispatch and defined fixture lifetime | v4codex group 3 | Done: 049b5fa74; direct/virtual/further-derived runtime controls pass; strict 5829/5829, full checks and equivalent-output ABBA pass. |
 | AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Done: edd6b2121; preserve typed member actions at final addresses; five new controls and seven regenerated references, strict 5834/5834 and full checks pass. |
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
-| RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done in the explicit conversion checkpoint: typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
+| RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done: 4858ddbc0; typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
 | CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Open with conversion legality work: immutable 70e7a2920 and current reject A a=x when A has A(int) and X::operator T(); GCC/Clang accept. Keep the reducer; the explicit-call fixture uses an aggregate result to isolate its contract. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Open; distinguish student-entry observations from supplied-oracle comparisons. |
-| DEMAND | Dormant static member initializers and discarded volatile-reference results | v4codex group 7 | Open. |
+| DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Open; discarded reference calls completed separately below. |
+| DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in the discarded-call checkpoint: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
+| EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Open: ours accepts throw(double) or unrestricted overrides of throw(int); GCC/Clang reject. The allowed throw(int) control passes all three. Student-entry defect, no course oracle changes. |
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | Open; prior fb15cd49e class-value temporary cleanup fixes one case only. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
-| INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime corrected with DTOR; four source corrections remain. |
+| INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; two remain: PA23 initialized virtual bases and PA19 pack count. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
 | ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Open: same-type case exits 233; distinct-type case rejects at -O0/-O2. Additional mechanism within EH. |
 | ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Done: edd6b2121; retain constructor calls and argument/parameter lifetimes; counter and by-value lifetime controls pass. |
@@ -189,6 +191,41 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Discarded reference calls and defined deduction inputs checkpoint
+
+A void cast of a reference-returning call now evaluates the call through its
+address/storage path, without loading its referent. Existing volatile id accesses
+and used reference results retain their reads. This is a focused correction of
+the reported call form, not a claim that every discarded-expression form has
+been audited. PA10's new cluster-200 control emits all four source calls and only
+the two required volatile reads. Its explicit void casts, ordinary discarded
+call, volatile-id control and consumed result distinguish effect preservation
+from removal of the forbidden read.
+
+PA18 transitive-base helper results now name an initialized member in the
+existing typed tuple implementation, retaining base deduction and deleted
+overload coverage. PA19's helper uses typed static backing, and its main passes a
+real tuple through the existing pointer instead of dereferencing null. Both
+source corrections preserve their template/return-SFINAE goals and make native
+execution defined. All three fixtures pass with ours/GCC/Clang at -O0/-O2.
+The initial strict report flags exactly the two changed-input references; both
+are regenerated through ref-test. The isolated scalar-call control owns PA10;
+the later PA18/19 fixtures retain their additional template coverage.
+
+Validation and performance evidence are retained under
+/tmp/cppgm-v4-audit-review/discard-reference-* and perf-discard-reference/.
+Strict report passes 5840/5840 with one success line. Debug-info, backend
+variants, self-host through PA5, nine architecture checks, file audit and placement
+all pass (2971 fixtures, zero findings). The frozen recog_token_buffer -O1 gate
+uses immutable binaries, CPU 0, initial four A/A + six ABBA blocks and a repeat
+four A/A + eight ABBA blocks after validation stops. Every object is identical.
+Initial B/A CPU median 1.011509, wall 1.006826, RSS 1.000645 prompted repetition;
+repeat CPU 1.001581, wall 1.002110, RSS 0.999852 versus repeat A/A CPU 1.015564.
+The initial timing increase does not persist beyond calibration variation. All
+88 observations are retained; no speedup is claimed. The unused static-member
+demand half of DEMAND and two remaining INPUTS corrections are open. Export
+remains deferred to the combined checkpoint.
 
 ## Explicit conversion-template call checkpoint
 
@@ -653,6 +690,24 @@ acceptance. GCC accepts the `#line` case. No additional compiler fix is needed
 for these controls. PA28's current
 plan reports no new reference corrections and still has six implementation
 failures; those unfinished student behaviors are not evidence of reference bugs.
+
+## Later read-only student refresh through PA28 audit154
+
+Read-only checkout at 66bb1c6b (PA29 baseline), with clean tracked status. Compared
+with the earlier 100de24b review, the only relevant tracked changes are PA28 audit/
+plan and the new PA29 plan; no further required tests, reference outputs or
+correction documents changed. PA29 implementation is unfinished and its entry
+failures are not oracle evidence.
+
+PA28 audit154 reports a student-entry dynamic-exception override defect and 33
+personal controls, rather than a reference correction. Independently compile
+three fresh declaration-only controls here: an override with throw(double) or
+no restriction over a throw(int) base is accepted by ours and rejected by both
+Clang/GCC; an equal throw(int) override passes all three. EH-OVERRIDE adds this
+confirmed semantic issue to the same tracker. It is distinct from a personal
+test explicitly described as differing from the supplied reference compiler:
+the student's proof identifies its entry compiler, not that oracle. Commands,
+sources and diagnostics live in /tmp/cppgm-v4-audit-review/student-refresh-pa28/.
 
 ## Clang verification before ABI edits
 

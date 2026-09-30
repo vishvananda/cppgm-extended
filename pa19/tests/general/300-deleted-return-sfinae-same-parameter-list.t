@@ -25,14 +25,16 @@ struct tuple {};
 
 template<unsigned long I, class... Types>
 const typename tuple_element<I, Types...>::type& get(const tuple<Types...>&) {
-  return *static_cast<const typename tuple_element<I, Types...>::type*>(0);
+  static typename tuple_element<I, Types...>::type value{};
+  return value;
 }
 
 template<unsigned long I, class... Types>
 enable_if_t<(I >= sizeof...(Types))> get(const tuple<Types...>&) = delete;
 
 int main() {
-  const tuple<int, char>* p = 0;
+  const tuple<int, char> object{};
+  const tuple<int, char>* p = &object;
   (void)get<0>(*p);
   return 0;
 }
