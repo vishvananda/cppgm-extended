@@ -685,6 +685,7 @@ ExpressionInfo Analyzer::AnalyzeClassFunctionalCast(TypeId cast_type,
 	if (argument_syntax.empty() &&
 		!program_->entities[cast_entity].has_user_provided_constructor)
 		dump_.nodes[result.node].value_initialization = true;
+	if (reference_target) result = MaterializeTemporary(result);
 	return target == kNoType ? materialize_if_evaluated(result) :
 		ApplyTarget(result, target);
 }
