@@ -1686,7 +1686,7 @@ private:
 	void AppendFullExpressionDestructionActions(std::uint32_t expression,
 		std::uint32_t output_parent,
 		bool preserve_nontrivial_actions = false);
-	void FinalizeStaticallyUnreachableBranchCleanup(
+	void FinalizeBranchCleanupDemand(
 		std::uint32_t function_definition);
 	bool RequiresManagedConditionalFullExpression(
 		std::uint32_t expression, std::size_t first_edge);
@@ -2377,9 +2377,6 @@ private:
 	std::size_t local_type_count_;
 	std::vector<std::uint32_t> range_for_hidden_count_by_function_;
 	std::vector<std::uint32_t> branch_cleanup_node_epochs_;
-	std::vector<std::uint32_t> branch_cleanup_binding_epochs_;
-	std::vector<std::uint32_t> branch_cleanup_binding_uses_;
-	std::vector<std::int8_t> branch_cleanup_literal_truth_;
 	std::uint32_t branch_cleanup_scan_epoch_;
 };
 }

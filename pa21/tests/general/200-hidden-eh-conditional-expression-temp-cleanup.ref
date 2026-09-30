@@ -25,10 +25,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^call_unwind_end_5:
+    eh_try ^cleanup_action_6
     %t3 = call ptr @Box__get(%t2)
     store ptr %t3, $call__2
     %t4 = load ptr $call__2
     store ptr %t4, $cond__1
+    call void @Box___Box(%t2)
+    eh_end
+    jump ^call_unwind_end_7
+
+  block ^cleanup_action_6:
+    call void @Box___Box(%t2)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_7:
     jump ^cond_end_3
 
   block ^cond_else_2:
@@ -40,32 +50,32 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t5, $q
     %t6 = load ptr $q
     %t7 = cmp eq ptr %t6, 0
-    branch %t7, ^land_rhs_9, ^land_short_10
+    branch %t7, ^land_rhs_11, ^land_short_12
 
-  block ^land_rhs_9:
+  block ^land_rhs_11:
     %t8 = load i32 @destroyed
     %t9 = cmp eq i32 %t8, 0
     %t10 = cmp ne i64 %t9, 0
     store i64 %t10, $land__5
-    jump ^land_end_11
+    jump ^land_end_13
 
-  block ^land_short_10:
+  block ^land_short_12:
     store i64 0, $land__5
-    jump ^land_end_11
+    jump ^land_end_13
 
-  block ^land_end_11:
+  block ^land_end_13:
     %t11 = load i64 $land__5
-    branch %t11, ^cond_then_6, ^cond_else_7
+    branch %t11, ^cond_then_8, ^cond_else_9
 
-  block ^cond_then_6:
+  block ^cond_then_8:
     store i32 0, $cond__4
-    jump ^cond_end_8
+    jump ^cond_end_10
 
-  block ^cond_else_7:
+  block ^cond_else_9:
     store i32 1, $cond__4
-    jump ^cond_end_8
+    jump ^cond_end_10
 
-  block ^cond_end_8:
+  block ^cond_end_10:
     %t12 = load i32 $cond__4
     return i32 %t12
 }
@@ -76,3 +86,14 @@ function @Box__get(%this : ptr [object_bytes=1]) -> ptr [unwind=no, binding=weak
     store ptr %this, $this
     return ptr 0
 }
+function @Box___Box(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @destroyed
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @destroyed
+    return void
+}
+alias object _ZN3BoxD2Ev = @Box___Box

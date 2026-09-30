@@ -20,11 +20,11 @@ protected:
 		lowering::ir::BlockId end_block)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (derived.CurrentBlock().terminated) return;
 		derived.LowerBranchCleanupActions(node, child);
 		if (derived.full_expression_cleanup_active_)
 			derived.PauseFullExpressionCleanupSegment();
-		derived.EmitJump(end_block);
+		if (!derived.CurrentBlock().terminated)
+			derived.EmitJump(end_block);
 	}
 
 	lowering::ir::Operand LowerDiscardedConditional(
@@ -137,13 +137,7 @@ protected:
 			yes_store.second = slot;
 			derived.Emit(yes_store);
 		}
-		if (!derived.CurrentBlock().terminated)
-		{
-			derived.LowerBranchCleanupActions(node, children[1]);
-			if (derived.full_expression_cleanup_active_)
-				derived.PauseFullExpressionCleanupSegment();
-			derived.EmitJump(end_block);
-		}
+		FinishConditionalBranch(node, children[1], end_block);
 		derived.SelectBlock(else_block);
 		if (derived.arena_.nodes[children[2]].kind == DUMP_THROW_EXPRESSION)
 			(void)derived.LowerValue(children[2]);
@@ -156,13 +150,7 @@ protected:
 			no_store.second = slot;
 			derived.Emit(no_store);
 		}
-		if (!derived.CurrentBlock().terminated)
-		{
-			derived.LowerBranchCleanupActions(node, children[2]);
-			if (derived.full_expression_cleanup_active_)
-				derived.PauseFullExpressionCleanupSegment();
-			derived.EmitJump(end_block);
-		}
+		FinishConditionalBranch(node, children[2], end_block);
 		derived.SelectBlock(end_block);
 		const Operand result = derived.Temp(type);
 		Instruction load(Instruction::LOAD);

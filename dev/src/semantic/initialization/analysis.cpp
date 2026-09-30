@@ -267,7 +267,7 @@ ExpressionInfo Analyzer::RetargetClassConditional(
 }
 void Analyzer::FinalizeNamedReturnSlot(std::uint32_t function)
 {
-	FinalizeStaticallyUnreachableBranchCleanup(function);
+	FinalizeBranchCleanupDemand(function);
 	const TypeId result = program_->types.Get(dump_.nodes[function].type).child;
 	const EntityId entity = EntityOf(result);
 	if (!IsClassEntity(*program_, entity)) return;

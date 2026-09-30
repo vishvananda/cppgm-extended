@@ -252,7 +252,7 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 			initial.retained_definition_semantics].first_edge;
 			edge != kNoDumpEdge; edge = dump_.edges[edge].next)
 			dump_.Add(function, dump_.edges[edge].child);
-		FinalizeStaticallyUnreachableBranchCleanup(function);
+		FinalizeBranchCleanupDemand(function);
 		DemandMaterializedConstructorActions(function, true);
 		CompleteFunctionDefinition(binding);
 		return;

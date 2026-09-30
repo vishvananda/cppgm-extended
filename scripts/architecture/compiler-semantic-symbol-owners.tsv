@@ -410,7 +410,7 @@ dev/src/semantic/extensions/exceptions.cpp	CollectTemporaryObjects	1	dev/src/sem
 dev/src/semantic/extensions/exceptions.cpp	CollectTemporaryObjectsImpl	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/exceptions.cpp	DelegatingConstructorCleanupDestructor	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/exceptions.cpp	DemandConstructorUnwindDestructors	1	dev/src/semantic/extensions/exceptions.cpp	keep
-dev/src/semantic/extensions/exceptions.cpp	FinalizeStaticallyUnreachableBranchCleanup	1	dev/src/semantic/extensions/exceptions.cpp	keep
+dev/src/semantic/extensions/exceptions.cpp	FinalizeBranchCleanupDemand	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/exceptions.cpp	FinishFunctionControlFlowFacts	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/exceptions.cpp	HasEnclosingNontrivialObjectLifetime	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/exceptions.cpp	HasUnwindDestructionActions	1	dev/src/semantic/extensions/exceptions.cpp	keep

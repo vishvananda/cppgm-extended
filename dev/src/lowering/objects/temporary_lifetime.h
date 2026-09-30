@@ -371,8 +371,6 @@ protected:
 	bool IsRetiredBranchCleanupAction(std::uint32_t action) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
-		if (derived.arena_.nodes[action].
-			lifetime_branch_statically_unreachable) return true;
 		if (!IsBranchCleanupAction(action)) return false;
 		const std::uint32_t temporary =
 			derived.arena_.nodes[action].lifetime_object;
@@ -390,8 +388,6 @@ protected:
 		{
 			const std::uint32_t action =
 				derived.full_expression_cleanup_actions_[i];
-			if (derived.arena_.nodes[action].
-				lifetime_branch_statically_unreachable) continue;
 			if (!IsBranchCleanupAction(action)) continue;
 			const std::uint32_t child =
 				derived.arena_.nodes[action].lifetime_branch_child;
@@ -433,7 +429,8 @@ protected:
 				record.lifetime_branch_child != child ||
 				record.lifetime_object == kNoDumpEdge)
 				ThrowLoweringInternal("invalid branch-local cleanup identity");
-			LowerFullExpressionDestructorAction(action);
+			if (!derived.CurrentBlock().terminated)
+				LowerFullExpressionDestructorAction(action);
 			retired.Push(record.lifetime_object);
 			if (derived.stats_) ++derived.stats_->branch_cleanup_actions;
 			action = derived.full_expression_branch_cleanup_next_[action];
@@ -605,7 +602,10 @@ protected:
 		if (!derived.full_expression_cleanup_active_ ||
 			derived.full_expression_cleanup_dispatch_ == kNoLowId)
 			return;
-		CloseFullExpressionCleanupSegment(end_prefix);
+		if (derived.CurrentBlock().terminated)
+			MaterializePendingCleanupStates();
+		else
+			CloseFullExpressionCleanupSegment(end_prefix);
 		derived.full_expression_cleanup_dispatch_ = kNoLowId;
 		derived.full_expression_cleanup_end_ = kNoLowId;
 	}
@@ -788,7 +788,6 @@ protected:
 		}
 		bool tracked = false;
 		bool eager_transition = false;
-		bool unreachable_branch = false;
 		if (derived.full_expression_uses_linked_dispatch_)
 		{
 			if (derived.full_expression_linked_action_cursor_ != 0)
@@ -797,8 +796,6 @@ protected:
 					derived.full_expression_cleanup_actions_[
 						derived.full_expression_linked_action_cursor_ - 1];
 				tracked = derived.arena_.nodes[action].lifetime_object == temporary;
-				unreachable_branch = tracked && derived.arena_.nodes[action].
-					lifetime_branch_statically_unreachable;
 				eager_transition = tracked &&
 					derived.arena_.nodes[action].eager_full_expression_cleanup;
 			}
@@ -815,9 +812,6 @@ protected:
 						temporary)
 				{
 					tracked = true;
-					unreachable_branch = derived.arena_.nodes[
-						derived.full_expression_cleanup_actions_[i]].
-						lifetime_branch_statically_unreachable;
 					eager_transition = derived.arena_.nodes[
 						derived.full_expression_cleanup_actions_[i]].
 						eager_full_expression_cleanup;
@@ -833,15 +827,6 @@ protected:
 				derived.full_expression_cleanup_dispatch_ = kNoLowId;
 				derived.full_expression_cleanup_end_ = kNoLowId;
 			}
-			return;
-		}
-		if (unreachable_branch)
-		{
-			if (derived.full_expression_cleanup_dispatch_ != kNoLowId)
-				CloseFullExpressionCleanupSegment();
-			derived.full_expression_cleanup_dispatch_ = kNoLowId;
-			derived.full_expression_cleanup_end_ = kNoLowId;
-			derived.full_expression_cleanup_ready_ = false;
 			return;
 		}
 		derived.full_expression_cleanup_ready_ = true;

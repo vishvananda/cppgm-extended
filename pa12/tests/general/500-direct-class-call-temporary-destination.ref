@@ -89,10 +89,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = addr $arg__7
     call void @Guard__Guard(%t9)
     eh_end
+    eh_try ^cleanup_action_8
     %t10 = call i64 @read(%t7, %t9)
     store i64 %t10, $call__5
     %t11 = load i64 $call__5
     store i64 %t11, $cond__1
+    call void @Guard___Guard(%t9)
+    eh_end
+    jump ^call_unwind_end_9
+
+  block ^cleanup_action_8:
+    call void @Guard___Guard(%t9)
+    jump ^cleanup_resume_4
+
+  block ^call_unwind_end_9:
     jump ^cond_end_3
 
   block ^cond_end_3:
@@ -100,20 +110,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i64 %t12, $result
     %t13 = load i64 $result
     %t14 = cmp ne i64 %t13, 9
-    branch %t14, ^lor_short_9, ^lor_rhs_8
+    branch %t14, ^lor_short_11, ^lor_rhs_10
 
-  block ^lor_rhs_8:
+  block ^lor_rhs_10:
     %t15 = load i32 @trace
     %t16 = cmp ne i32 %t15, 123
     %t17 = cmp ne i64 %t16, 0
     store i64 %t17, $lor__8
-    jump ^lor_end_10
+    jump ^lor_end_12
 
-  block ^lor_short_9:
+  block ^lor_short_11:
     store i64 1, $lor__8
-    jump ^lor_end_10
+    jump ^lor_end_12
 
-  block ^lor_end_10:
+  block ^lor_end_12:
     %t18 = load i64 $lor__8
     %t19 = convert trunc i32 i64 %t18
     return i32 %t19

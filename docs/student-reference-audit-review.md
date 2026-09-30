@@ -29,7 +29,7 @@ fix sequence is complete, as requested.
 | CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Open with conversion legality work: immutable 70e7a2920 and current reject A a=x when A has A(int) and X::operator T(); GCC/Clang accept. Keep the reducer; the explicit-call fixture uses an aggregate result to isolate its contract. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Open; distinguish student-entry observations from supplied-oracle comparisons. |
 | DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Open; discarded reference calls completed separately below. |
-| DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in the discarded-call checkpoint: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
+| DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Open: ours accepts throw(double) or unrestricted overrides of throw(int); GCC/Clang reject. The allowed throw(int) control passes all three. Student-entry defect, no course oracle changes. |
@@ -41,7 +41,7 @@ fix sequence is complete, as requested.
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; two remain: PA23 initialized virtual bases and PA19 pack count. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
-| ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Open: same-type case exits 233; distinct-type case rejects at -O0/-O2. Additional mechanism within EH. |
+| ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Done in the conditional-cleanup checkpoint: both original reducers and normal/nested throwing-arm controls pass; strict 5843/5843, full checks and equal-output ABBA pass. Other EH mechanisms remain open. |
 | ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Done: edd6b2121; retain constructor calls and argument/parameter lifetimes; counter and by-value lifetime controls pass. |
 | ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Open: valid case rejects at -O0/-O2; host GCC passes. |
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
@@ -191,6 +191,39 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Conditional temporary cleanup checkpoint
+
+Removed the local-literal reachability guess and its graph/lowering flag.
+Semantic analysis demands destructors for every conditional arm that lowering
+emits. Branch-local cleanup retires the arm's initialized identities before a
+sibling is lowered. A terminated arm materializes its pending unwind targets and
+retires its cleanup-region identity without emitting a continuation or eh_end
+in its sibling. All three conditional lowering forms share the same finish path.
+
+The original same-type Argon reducer changes from exit 233 to 0; the distinct-
+type reducer changes from a missing-destructor binding error to 0, at -O0/-O2.
+An additional nested terminated-arm reducer previously crashes when the sibling
+is selected; both sides now pass. Ours, GCC and Clang agree at -O0/-O2 on these
+reducers and the three new defined fixtures. PA12 owns the normal branch control;
+PA21 owns throw/unwind observations. Existing PA12 direct-class-call and PA21
+hidden-EH conditional references are regenerated through ref-test: emitted arms
+now retain their normal/exceptional destructor calls. No runtime oracle changes.
+
+Evidence: /tmp/cppgm-v4-audit-review/branch-cleanup-probes/,
+branch-cleanup-fixtures/, branch-cleanup-final-*.log and
+branch-cleanup-final-validation.json. Strict report passes 5843/5843 with one success line; debug-info, backend
+variants, self-host through PA5, nine architecture checks, file audit and
+placement pass (2974 fixtures, zero findings).
+
+After validation finishes, immutable A/A and A/B compilers process the frozen
+recog_token_buffer source and headers at -O1 on CPU 0. Four A/A and six A/B
+ABBA blocks produce identical objects (40 observations, SHA-256
+08c380bf4060d88ae18fc59b0cfa858fd6c7c02a4c2d0ca1413b59559f55f906).
+Paired A/B user CPU ratio is 1.000000, wall ratio 0.987590 and peak RSS ratio
+0.987371; A/A CPU ratio is 0.996335 and wall ratio 1.017681. No performance
+regression is observed on this input. Raw observations and immutable binaries
+are retained in perf-branch-cleanup/. Other EH items remain open.
 
 ## Discarded reference calls and defined deduction inputs checkpoint
 
