@@ -5,9 +5,9 @@ struct DeletedCopy
   DeletedCopy& operator=(const DeletedCopy&) = delete;
 };
 
-static_assert(!__is_trivially_copyable(DeletedCopy), "deleted copy is not trivial");
-static_assert(!__is_trivial(DeletedCopy), "trivial classes are trivially copyable");
-static_assert(!__is_pod(DeletedCopy), "POD classes are trivial");
+static_assert(__is_trivially_copyable(DeletedCopy), "deleted copy declaration is trivial");
+static_assert(__is_trivial(DeletedCopy), "trivial classes are trivially copyable");
+static_assert(__is_pod(DeletedCopy), "POD classes are trivial");
 
 int main()
 {

@@ -383,30 +383,120 @@ bool Analyzer::BuiltinAssignmentIsTrivial(BindingId selected,
 		function.trivial_special_member;
 }
 
+bool Analyzer::TrivialSpecialMemberDeclaration(BindingId binding,
+	FlatBindingIdSet* visited) const
+{
+	const FunctionInfo& function = GetFunction(binding);
+	if (function.user_provided_special_member ||
+		(!function.implicit_special_member &&
+		 !function.defaulted_special_member && !function.deleted_special_member &&
+		 !function.deleted_constructor && !function.deleted_function)) return false;
+	if (function.trivial_special_member) return true;
+	// Every consumer is a conjunction that stops at the first false result.
+	// Repeated nodes of the acyclic subobject graph need no second visit.
+	if (!visited->Insert(binding)) return true;
+	const EntityId entity = program_->bindings[binding].member_owner;
+	const EntityRecord& owner = program_->entities[entity];
+	if (owner.polymorphic_class || owner.virtual_base_count != 0) return false;
+	const SpecialMemberKind kind = function.special_member;
+	const bool assignment = kind == SPECIAL_MEMBER_COPY_ASSIGNMENT ||
+		kind == SPECIAL_MEMBER_MOVE_ASSIGNMENT;
+	const auto visit = [this, kind, assignment, visited](TypeId type)
+	{
+		TypeRecord shape = program_->types.Get(type);
+		while (shape.kind == TYPE_ARRAY || shape.kind == TYPE_QUALIFIED)
+		{
+			type = shape.child;
+			shape = program_->types.Get(type);
+		}
+		if (shape.kind != TYPE_NAMED ||
+			!IsClassEntity(program_->entities[shape.entity])) return true;
+		const BindingId selected = assignment ? AssignmentForSubobject(type, kind) :
+			ConstructorForSubobject(type, kind);
+		return selected != kNoBinding &&
+			TrivialSpecialMemberDeclaration(selected, visited);
+	};
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+		if (!visit(program_->entities[program_->DirectBase(entity, i).entity].type))
+			return false;
+	if (entity < entity_data_members_.size())
+		for (std::size_t i = 0; i < entity_data_members_[entity].size(); ++i)
+			if (!visit(program_->bindings[entity_data_members_[entity][i]].type))
+				return false;
+	return true;
+}
+
+bool Analyzer::TrivialDestructorDeclaration(EntityId entity,
+	FlatBindingIdSet* visited) const
+{
+	const EntityRecord& owner = program_->entities[entity];
+	if (owner.trivial_destructor) return true;
+	if (entity >= entity_destructor_by_entity_.size() ||
+		entity_destructor_by_entity_[entity] == kNoBinding) return false;
+	const BindingId binding = entity_destructor_by_entity_[entity];
+	if (!visited->Insert(binding)) return true;
+	const FunctionInfo& function = GetFunction(binding);
+	if (program_->bindings[binding].virtual_function ||
+		function.user_provided_special_member ||
+		(!function.implicit_destructor && !function.defaulted_destructor &&
+		 !function.deleted_destructor)) return false;
+	const auto visit = [this, visited](TypeId type)
+	{
+		const EntityId subobject = DestructedEntity(type);
+		return subobject == kNoEntity ||
+			TrivialDestructorDeclaration(subobject, visited);
+	};
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+		if (!visit(program_->entities[program_->DirectBase(entity, i).entity].type))
+			return false;
+	if (entity < entity_data_members_.size())
+		for (std::size_t i = 0; i < entity_data_members_[entity].size(); ++i)
+			if (!visit(program_->bindings[entity_data_members_[entity][i]].type))
+				return false;
+	return true;
+}
+
 bool Analyzer::EvaluateBuiltinTriviallyCopyable(TypeId type) const
 {
 	type = program_->types.RemoveTopCv(EffectiveType(type));
 	const EntityId entity = EntityOf(type);
 	if (entity == kNoEntity) return true;
 	if (!IsClassEntity(program_->entities[entity]) ||
-		!program_->entities[entity].trivial_destructor ||
 		entity >= class_special_members_.size()) return false;
 	const ClassSpecialMemberFacts& facts = class_special_members_[entity];
+	const bool completed = program_->entities[entity].complete;
+	if (completed && facts.copyable_declaration != DECLARATION_TRIVIALITY_UNKNOWN)
+		return facts.copyable_declaration == DECLARATION_TRIVIALITY_TRIVIAL;
+	const auto finish = [&facts, completed](bool value)
+	{
+		if (completed) facts.copyable_declaration = value ?
+			DECLARATION_TRIVIALITY_TRIVIAL : DECLARATION_TRIVIALITY_NONTRIVIAL;
+		return value;
+	};
+	FlatBindingIdSet destructors;
+	if (!TrivialDestructorDeclaration(entity, &destructors)) return finish(false);
 	const BindingId members[] = {
 		facts.copy_constructor, facts.move_constructor,
 		facts.copy_assignment, facts.move_assignment
 	};
-	bool eligible = false;
+	FlatBindingIdSet transfers;
 	for (std::size_t i = 0; i < sizeof(members) / sizeof(members[0]); ++i)
 	{
 		if (members[i] == kNoBinding) continue;
-		const FunctionInfo& function = GetFunction(members[i]);
-		if (function.deleted_function || function.deleted_constructor ||
-			function.deleted_special_member) continue;
-		eligible = true;
-		if (!function.trivial_special_member) return false;
+		if (!TrivialSpecialMemberDeclaration(members[i], &transfers))
+			return finish(false);
 	}
-	return eligible;
+	const auto check = [this, &transfers](const std::vector<BindingId>& functions)
+	{
+		for (std::size_t i = 0; i < functions.size(); ++i)
+			if (GetFunction(functions[i]).special_member != SPECIAL_MEMBER_NONE &&
+				!TrivialSpecialMemberDeclaration(functions[i], &transfers)) return false;
+		return true;
+	};
+	return finish((entity >= entity_constructors_.size() ||
+		check(entity_constructors_[entity])) &&
+		(entity >= entity_member_functions_.size() ||
+		 check(entity_member_functions_[entity])));
 }
 
 bool Analyzer::EvaluateBuiltinStandardLayout(TypeId type) const

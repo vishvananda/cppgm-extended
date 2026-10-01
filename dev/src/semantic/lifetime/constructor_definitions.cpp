@@ -70,6 +70,7 @@ void Analyzer::CompleteOutOfClassDefaultedConstructor(EntityId entity,
 	BindingId constructor)
 {
 	FunctionInfo& info = GetMutableFunction(constructor);
+	info.user_provided_special_member = true;
 	const std::size_t required_parameters =
 		info.special_member == SPECIAL_MEMBER_NONE ? 0 : 1;
 	if (info.parameters.size() != required_parameters)

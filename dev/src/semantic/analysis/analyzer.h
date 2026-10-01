@@ -1003,6 +1003,10 @@ private:
 	bool BuiltinAssignmentIsTrivial(BindingId selected,
 		const std::vector<CallConversionFact>& argument_conversions) const;
 	bool EvaluateBuiltinTriviallyCopyable(TypeId type) const;
+	bool TrivialSpecialMemberDeclaration(BindingId binding,
+		FlatBindingIdSet* visited) const;
+	bool TrivialDestructorDeclaration(EntityId entity,
+		FlatBindingIdSet* visited) const;
 	bool EvaluateBuiltinStandardLayout(TypeId type) const;
 	bool EvaluateBuiltinTrivialLayoutTrait(
 		hosted_builtin::TypeTraitKind trait, TypeId type,

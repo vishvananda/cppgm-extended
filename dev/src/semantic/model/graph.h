@@ -1021,18 +1021,27 @@ struct FunctionInfo
 		  definition_state(FUNCTION_DEFINITION_NOT_STARTED) {}
 };
 
+enum DeclarationTriviality
+{
+	DECLARATION_TRIVIALITY_UNKNOWN,
+	DECLARATION_TRIVIALITY_NONTRIVIAL,
+	DECLARATION_TRIVIALITY_TRIVIAL
+};
+
 struct ClassSpecialMemberFacts
 {
 	BindingId copy_constructor, move_constructor;
 	BindingId copy_assignment, move_assignment;
 	bool user_copy_constructor, user_move_constructor;
 	bool user_copy_assignment, user_move_assignment;
+	mutable DeclarationTriviality copyable_declaration;
 
 	ClassSpecialMemberFacts()
 		: copy_constructor(kNoBinding), move_constructor(kNoBinding),
 		  copy_assignment(kNoBinding), move_assignment(kNoBinding),
 		  user_copy_constructor(false), user_move_constructor(false),
-		  user_copy_assignment(false), user_move_assignment(false) {}
+		  user_copy_assignment(false), user_move_assignment(false),
+		  copyable_declaration(DECLARATION_TRIVIALITY_UNKNOWN) {}
 };
 
 struct ClassLayoutMember

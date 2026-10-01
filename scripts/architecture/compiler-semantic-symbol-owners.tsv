@@ -448,6 +448,8 @@ dev/src/semantic/extensions/hosted_traits.cpp	EvaluateBuiltinStandardLayout	1	de
 dev/src/semantic/extensions/hosted_traits.cpp	EvaluateBuiltinTrivialLayoutTrait	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
 dev/src/semantic/extensions/hosted_traits.cpp	EvaluateBuiltinTriviallyCopyable	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
 dev/src/semantic/extensions/hosted_traits.cpp	MakeBuiltinTraitOperand	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
+dev/src/semantic/extensions/hosted_traits.cpp	TrivialDestructorDeclaration	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
+dev/src/semantic/extensions/hosted_traits.cpp	TrivialSpecialMemberDeclaration	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
 dev/src/semantic/extensions/numeric.cpp	ApplyGnuVectorAttributes	1	dev/src/semantic/extensions/numeric.cpp	keep
 dev/src/semantic/extensions/numeric.cpp	HostedSpecifierType	1	dev/src/semantic/extensions/numeric.cpp	keep
 dev/src/semantic/extensions/numeric_templates.cpp	DeduceTemplatePartialBitIntType	1	dev/src/semantic/extensions/numeric_templates.cpp	keep

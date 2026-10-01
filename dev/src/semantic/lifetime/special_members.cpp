@@ -1525,6 +1525,7 @@ void Analyzer::AnalyzeOutOfClassSpecialMember(NodeId node,
 	}
 	else
 	{
+		info.user_provided_special_member = true;
 		info.defaulted_destructor = info.defaulted_destructor || defaulted;
 		info.deleted_destructor = info.deleted_destructor || deleted;
 		if (defaulted)
