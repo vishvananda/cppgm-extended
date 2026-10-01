@@ -597,6 +597,24 @@ function @main() -> i32 {
             audit.detect_features(pointer_parameter),
         )
 
+    def test_pointer_nttp_detection_stays_inside_template_parameters(self) -> None:
+        for source in (
+            "template<class T> T* X<T>::n;",
+            "template<class T> T& value(T&);",
+            "template<class T = int*> struct X;",
+            "template<class T> void consume(T*);",
+        ):
+            with self.subTest(source=source):
+                self.assertNotIn("template.nttp.pointer_member", audit.detect_features(source))
+        for source in (
+            "template<int *P> struct pointer;",
+            "template<int &R> struct reference;",
+            "template<int X::*M> struct member;",
+            "template<int (*F)(int)> struct function;",
+        ):
+            with self.subTest(source=source):
+                self.assertIn("template.nttp.pointer_member", audit.detect_features(source))
+
     def test_delegating_constructor_ignores_conditional_prvalues(self) -> None:
         conditional = (
             "int result = value() + (choose ? value() : value());"

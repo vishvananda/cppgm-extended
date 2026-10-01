@@ -1,0 +1,9 @@
+global @__cppgm_class_template_identity_0_0_0__n : i32 [binding=weak, object=_ZN1XIiE1nE] = 7
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load i32 @__cppgm_class_template_identity_0_0_0__n
+    %t2 = cmp ne i32 %t1, 7
+    %t3 = convert trunc i32 i64 %t2
+    return i32 %t3
+}

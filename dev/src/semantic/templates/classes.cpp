@@ -790,6 +790,25 @@ bool Analyzer::AnalyzeClassTemplateMember(NodeId declaration,
 		member.storage_name = path.Last();
 		const std::uint64_t key =
 			(static_cast<std::uint64_t>(pattern_index) << 32) | path.Last();
+		const CompactIndexSequence* prior_definitions = demanded_static_member_definitions_.Find(key);
+		for (std::size_t i = 0; prior_definitions && i < prior_definitions->Size(); ++i)
+		{
+			const ClassTemplateMemberPattern& prior =
+				class_templates_[pattern_index].demanded_member_definitions[(*prior_definitions)[i]];
+			if (prior.owner_partial_pattern != member.owner_partial_pattern ||
+				prior.concrete_owner != member.concrete_owner ||
+				prior.canonical_owner_arguments != member.canonical_owner_arguments ||
+				prior.nested_owner_path != member.nested_owner_path ||
+				arena_->IsTag(prior.declaration, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION) ||
+				arena_->IsTag(member.declaration, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION)) continue;
+			const NodeId prior_item = FirstSemanticChild(FindChild(prior.declaration,
+				::cppgm::syntax::STAG_INIT_DECLARATOR_LIST));
+			const NodeId prior_declarator = FindChild(prior_item, ::cppgm::syntax::STAG_DECLARATOR);
+			if (EquivalentNormalizedTemplateSyntax(*arena_,
+				DeclaratorNameStructure(prior_declarator), structure,
+				prior.parameters, member.parameters))
+				ThrowSemanticError("redefinition of retained static data member");
+		}
 		demanded_static_member_definitions_.Ensure(key).Push(
 			class_templates_[pattern_index].demanded_member_definitions.size());
 		class_templates_[pattern_index].demanded_member_definitions.push_back(member);

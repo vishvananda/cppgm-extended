@@ -120,7 +120,7 @@ dev/src/pa19_template_presentation.h	dev/src/semantic/presentation/templates.h	r
 dev/src/pa19_template_semantic.cpp	dev/src/semantic/templates/classes.cpp	renamed	
 dev/src/pa19_template_shape_semantic.cpp	dev/src/semantic/templates/shape.cpp	renamed	
 dev/src/pa19_template_syntax_identity.cpp	dev/src/semantic/templates/syntax_identity.cpp	renamed	
-dev/src/pa19_template_validation.cpp	dev/src/semantic/templates/validation.cpp	renamed	
+dev/src/pa19_template_validation.cpp	dev/src/semantic/templates/validation.cpp;dev/src/semantic/templates/retained_validation.h	split	
 dev/src/pa20_constant_semantic.cpp	dev/src/semantic/constants/analysis.cpp	renamed	
 dev/src/pa20_pack_semantic.cpp	dev/src/semantic/templates/packs.cpp	renamed	
 dev/src/pa20_template_semantic.cpp	dev/src/semantic/templates/arguments.cpp	renamed	

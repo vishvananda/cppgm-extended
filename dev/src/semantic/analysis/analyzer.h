@@ -9,6 +9,7 @@
 #include "semantic/model/storage.h"
 #include "semantic/analysis/index_tables.h"
 #include "semantic/extensions/lambda_capture.h"
+#include "support/containers/flat_hash_map.h"
 
 #include <deque>
 #include <iosfwd>
@@ -284,7 +285,10 @@ private:
 	void AnalyzeSimple(NodeId node, ScopeId scope,
 		std::uint32_t output_parent, bool local,
 		bool qualified_lexical_scope = false,
-		bool demanded_template_storage = false);
+		bool demanded_template_storage = false,
+		bool specialization_declaration = false);
+	void ValidateStaticMemberDeclaration(BindingId prior, TypeId type,
+		bool definition);
 	EntityId SimpleDeclarationClassContext(NodeId list, ScopeId scope,
 		bool qualified_lexical_scope, std::string* hint);
 	void FinishLocalVariableInitializer(ScopeId scope, std::uint32_t owner,
@@ -2066,11 +2070,9 @@ private:
 	// Replay can publish nested patterns, so published pattern owners must not
 	// move while semantic construction is re-entrant.
 	std::deque<FunctionTemplatePattern> function_templates_;
-	std::vector<TypeId> function_template_shape_parameters_;
-	std::vector<TypeId> dependent_template_argument_shapes_;
+	std::vector<TypeId> function_template_shape_parameters_, dependent_template_argument_shapes_;
 	std::vector<TypeId> dependent_qualified_type_shapes_;
-	TypeId function_template_dependent_result_shape_;
-	TypeId function_template_nondeduced_type_shape_;
+	TypeId function_template_dependent_result_shape_, function_template_nondeduced_type_shape_;
 	TypeId class_template_nondeduced_type_shape_;
 	const FunctionTemplatePattern* active_function_template_result_pattern_;
 	mutable std::vector<std::uint8_t> function_template_dependency_cache_;
@@ -2088,8 +2090,9 @@ private:
 	TemplateArgumentPackBindingTable template_argument_pack_bindings_;
 	std::vector<TemplateArgument> template_argument_pack_values_;
 	IndexedSequenceTable function_parameter_pack_bindings_;
-	IndexedSequenceTable retained_call_function_sets_;
-	IndexedSequenceTable retained_call_template_sets_;
+	IndexedSequenceTable retained_call_function_sets_, retained_call_template_sets_;
+	detail::FlatHashMap<std::uint64_t, RetainedClassDataMemberFact> retained_class_data_members_;
+	detail::FlatHashMap<NodeId, std::vector<RetainedClassNameFact> > retained_class_name_inventories_;
 	std::vector<std::uint8_t> retained_call_lookup_states_;
 	std::vector<EntityId> retained_call_naming_classes_;
 	TemplateArgumentPartitionTable template_argument_partitions_;
@@ -2105,7 +2108,7 @@ private:
 	std::deque<ClassTemplatePattern> class_templates_;
 	IndexedSequenceTable demanded_static_member_definitions_;
 	IndexedSequenceTable requested_static_member_names_, applied_static_member_definitions_;
-	IndexedSequenceTable pending_static_member_definitions_;
+	IndexedSequenceTable pending_static_member_definitions_, retained_nested_class_declarations_;
 	// Alias instantiation can discover and register a nested alias while a
 	// caller still borrows the outer pattern's parameter list.
 	std::deque<AliasTemplatePattern> alias_templates_;

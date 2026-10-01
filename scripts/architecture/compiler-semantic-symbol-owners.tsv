@@ -234,6 +234,7 @@ dev/src/semantic/declarations/analysis.cpp	PublishVariableDeclarationFacts	1	dev
 dev/src/semantic/declarations/analysis.cpp	StructuredSpecifierType	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	ValidateFunctionRefQualifier	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	ValidateNonmemberOperator	1	dev/src/semantic/declarations/analysis.cpp	keep
+dev/src/semantic/declarations/analysis.cpp	ValidateStaticMemberDeclaration	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/anonymous_unions.cpp	AnalyzeDeclaratorlessSimpleDeclaration	1	dev/src/semantic/declarations/anonymous_unions.cpp	keep
 dev/src/semantic/declarations/anonymous_unions.cpp	DeclareAnonymousUnionObject	1	dev/src/semantic/declarations/anonymous_unions.cpp	keep
 dev/src/semantic/declarations/class_scope.cpp	OpenClassDefinitionScope	1	dev/src/semantic/declarations/class_scope.cpp	keep

@@ -1328,6 +1328,25 @@ void Analyzer::AnalyzeBitField(NodeId node, ScopeId scope,
 	}
 }
 
+void Analyzer::ValidateStaticMemberDeclaration(BindingId prior,
+	TypeId type, bool definition)
+{
+	if (prior == kNoBinding || program_->bindings[prior].kind != BIND_VARIABLE)
+		ThrowSemanticError("static member definition has no matching declaration");
+	const BindingRecord& member = program_->bindings[prior];
+	if (member.non_static_data_member)
+		ThrowSemanticError("out-of-class definition names a nonstatic data member");
+	TypeId composite = kNoType;
+	if (member.type != type &&
+		!program_->types.TryCompositeArrayType(member.type, type, &composite))
+		ThrowSemanticError("static member definition has a conflicting type");
+	BindingRecord& canonical = program_->bindings[member.canonical];
+	if (!definition) return;
+	if (canonical.variable_definition_seen)
+		ThrowSemanticError("redefinition of static data member");
+	canonical.variable_definition_seen = true;
+}
+
 void Analyzer::PublishVariableDeclarationFacts(BindingId binding,
 	ScopeId declaration_scope, NameId name, TypeId type,
 	const SpecInfo& spec, bool local)

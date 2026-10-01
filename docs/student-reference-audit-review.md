@@ -17,7 +17,7 @@ fix sequence is complete, as requested.
 | --- | --- | --- | --- |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and isolated export each print one success total. Final combined export pending. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
-| DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2; twenty false positives removed; genuine class controls pass. |
+| DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2 removes twenty scalar-array false positives. The static-declaration checkpoint uses parsed template headers for pointer/reference NTTPs, removing four more false positives while preserving actual pointer/reference/member/function NTTP controls. |
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
 | INIT-OBJ | Emit evaluated class/base/array/template constant object values and relocations | v4codex group 1 | Done: a33d1456d. Seven copied ordering reducers and two new runtime fixtures pass; strict 5825/5825, full checks and ABBA pass. |
 | ARRAY-IMAGE | Reconcile PA10 literal arrays and PA16 general constexpr readonly-image/copy rule | v4codex placement / group 1 | Done: 3e2a9a9d1; 48 references regenerated, two new runtime controls, strict 5827/5827 and full checks pass. Performance follow-up finds no persistent regression. |
@@ -32,11 +32,11 @@ fix sequence is complete, as requested.
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Done: ad5d5dbb8; known type/category facts validate unused operators/calls/bounds without evaluating dependent values. Eight PA14 fixtures, 22 copied rejection controls, strict 5887/5887 and full checks pass. Alpha instruction/RSS gates pass with equal outputs; fixed-call GCC disagreement documented below. PARAM-ADJUST completes the valid bound failure. |
 | PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done: 27eef472d; parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
 | DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Done in the accompanying checkpoint: indexed binding requests preserve unused/sibling/nested definitions, explicit instantiation and specialization ownership. Eight PA14/17 fixtures, fourteen reviewed references, strict 5895/5895 and all required checks pass. Six Alpha inputs pass instruction/RSS gates with equal outputs. Static declaration legality remains STATIC-DECL. |
-| STATIC-DECL | Diagnose static-definition redeclarations/type/member mismatches; preserve explicit specialization declarations | Extended student storage controls during DEMAND | Open: entry compiler accepts four duplicate definitions, two type mismatches and a nonstatic out-of-class definition; rejects a valid declaration followed by its explicit specialization definition. These failures predate selective demand. |
-| STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Needs verification: entry/current return 1 on the unsigned-free A/B/D base-reference reducer while Clang/GCC return 0. Distinguish static relocation from pointer conversion/layout before assigning a fix. |
+| STATIC-DECL | Diagnose static-definition redeclarations/type/member mismatches; preserve explicit specialization declarations | Extended student storage controls during DEMAND | Done in the accompanying checkpoint: all eight original failures fixed; 37 agreed boundary controls and 19 new PA11/14/15/17 fixtures match Clang/GCC at O0/O2. Strict 5943/5943, full compiler/harness checks and placement pass. All six Alpha instruction/RSS gates pass with equal objects; cached name inventories remove the initial measured regression. |
+| STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Open, now isolated: 42 O0/O2 controls distinguish the static reference relocation (offset 0) from the correct pointer conversion and runtime reference binding (offset 4). Mutable object value availability incorrectly gates the address projection in ApplyTarget; the static address fact must preserve its independently known base offset. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Done: receiver/array in 1cb054e23, result identity in 88f5d368b, and implicit conversion chaining in 425bc2a90. All four original inputs remain unchanged; rejection references regenerated through ref-test. Full validation recorded below. |
-| DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Done: closure type in 425bc2a90; canonical defaulted-pack deduction and PA19 runtime expectation in the accompanying checkpoint. Five PA19 controls, strict 5924/5924, all required checks and four Alpha instruction/RSS gates pass. Declared ABI pattern remains MANGLE-PACK. |
+| DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Done: closure type in 425bc2a90; canonical defaulted-pack deduction and PA19 runtime expectation in d65f8b02e. Five PA19 controls, strict 5924/5924, all required checks and four Alpha instruction/RSS gates pass. Declared ABI pattern remains MANGLE-PACK. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
@@ -1583,3 +1583,88 @@ Each input retains four A/A calibration blocks and eight A/B ABBA blocks; all
 candidate. Cycles are retained separately from the instruction/RSS gate. All raw
 observations remain in alpha/ and alpha-deduction/. Combined student export
 remains deferred until the full tracker sequence is complete.
+
+## Static-member declaration checkpoint
+
+Immutable d65f8b02e reproduces the eight STATIC-DECL failures at O0/O2.
+Canonical binding facts now distinguish static member declarations from storage
+definitions. An explicit specialization without an initializer declares the
+member; a later definition clears storage suppression. Duplicate ordinary or
+specialized definitions, nonstatic members and incompatible types reject.
+Retained class declarations index direct data-member and nested-owner facts.
+Definition checks form a canonical type only when its identity is known,
+preserving renamed parameter shapes and equivalent aliases. Unknown dependent
+member types remain checked during concrete replay; unused initializers remain
+undemanded. Duplicate checks inspect only the existing indexed group for that
+member and compare the complete owner shape.
+
+All 37 agreed boundary inputs and 19 new required fixtures agree with Clang/GCC
+at O0/O2, including runtime positives. The extra declaration-after-definition
+control agrees with Clang but GCC rejects it as a redefinition; no required
+oracle was added for this disputed case. The fixture controls preserve their
+original sources and use exact ref-test generation. Ordinary static members
+belong to PA11, basic template declarations to PA14, specialization/non-type
+array bounds to PA15 and partial-owner selection to PA17.
+
+The first strict run exposed five eager alias-proof regressions in PA22/27.
+These now pass individually: dependent member-pointer owners and inaccessible
+member types defer to normal replay. A first six-input Alpha run retained all
+288 observations and equal output objects, but failed the instruction gate
+on the static-heavy inputs (ratios 1.00748, 1.01624, 1.01238). Retained class-name
+inventories now avoid walking the complete class source for every out-of-class
+member declaration while preserving the original validation scope and name
+kinds. Final validation passes: strict report 5943/5943 with exactly one success line,
+debug-info, backend variants, self-host through PA5, all nine architecture
+checks, file limits, test-harness and placement (zero findings). The placement
+rule now uses the existing parsed template-header facts for pointer/reference
+NTTPs; it no longer lets a regexp cross into a following pointer declarator.
+Four false positives disappear while actual pointer/reference/member/function
+NTTP controls still pass. Two PA11 controls use ordinary classes; the original
+unused nonstatic template case has separate PA14 coverage.
+
+The final immutable run uses four A/A calibration blocks and eight A/B ABBA
+blocks for each of six frozen inputs. All 288 output objects agree within their
+input and the manifest matches the final compiler. Instruction/RSS ratios are:
+recog 0.997452/1.000749, virtual 0.999961/0.998876, virtual-large
+1.000089/0.986546, static-16 0.999607/0.997709, static-64
+0.950077/1.000745 and static-256 0.770482/0.999373. All A/A and A/B gates pass;
+cycles and every preliminary observation are retained separately. No general
+speedup is inferred. The canonical definition bit fits the existing 136-byte
+BindingRecord. Final measurements are in alpha-final/.
+The initial failures and subsequent controls remain in
+`/tmp/cppgm-v4-audit-review/static-member-declarations/`; student export remains
+deferred until the full tracker sequence is complete.
+
+## Static base-reference verification
+
+The unsigned-free A/B/D reducer is now isolated by seven variants, each compiled
+with ours, Clang and GCC at O0/O2 (42 commands). Both the write and address checks
+fail for the static reference here; a runtime local reference passes. Returning
+the byte offset directly gives 0 for our static reference and 4 for both hosts;
+our ordinary derived-to-base pointer conversion correctly returns 4. LowIR
+confirms `global @ref = addr @value` while the pointer conversion adds 4.
+ApplyTarget already computes the base projection offset, but updates the static
+address only when ProjectConstexprObject also produces a constant object value.
+These independent facts must be kept separate. No fix is included in this
+checkpoint; STATIC-BASE-ADDR records the next compiler change. Controls and
+LowIR remain in /tmp/cppgm-v4-audit-review/static-base-address/.
+
+## Read-only PA29 audit174 / active handoff176 refresh
+
+A new snapshot at student HEAD 1b19e9ac18eba368b76e1b6389e5126fe5f60a5a
+captures audits170/174 and active implementation176. There are no tracked
+course fixture/reference edits. Both audits explicitly preserve every required
+input, sidecar, discovery and comparison rule. The forward-only std trait and
+false-primary invocable questions repeat HOST-SHORTHAND, already addressed here;
+they are retained student failures, not new oracle corrections. An audit control
+had a hand-calculated sum corrected; this is a personal-control correction.
+
+Audit174 retains a preliminary pack-grouping ABI regression and reports its
+final correction. Its NTTP pack comparison uses GCC and Clang's
+-fclang-abi-compat=17; current default Clang additionally encodes template
+parameter declarations. This evidence belongs with MANGLE-PACK and must be
+checked against the requested Clang policy before any ABI change here. It does
+not establish another supplied-reference bug. Exact audit/plan copies, source
+HEAD/status and their hashes remain in
+/tmp/cppgm-v4-audit-review/student-refresh-pa29-176/. Final student-export
+validation remains deferred until the complete tracker fix sequence is finished.

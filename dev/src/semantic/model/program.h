@@ -724,6 +724,7 @@ struct BindingRecord
 		override_specifier : 1, weak_odr : 1, weak_symbol : 1,
 		object_output_root : 1, emission_demanded : 1;
 	bool explicit_instantiation_suppressed : 1;
+	bool variable_definition_seen : 1;
 	// An explicit instantiation of the owning class does not reach a member
 	// declared with __attribute__((exclude_from_explicit_instantiation)), so
 	// the member keeps its ordinary implicit-instantiation and weak emission.

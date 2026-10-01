@@ -1,5 +1,6 @@
-#include "semantic/analysis/analyzer.h"
+#include "semantic/templates/retained_validation.h"
 #include "support/exceptions.h"
+#include "support/scoped_state.h"
 
 #include <algorithm>
 #include <limits>
@@ -17,94 +18,6 @@ namespace semantic
 namespace
 {
 
-enum RetainedNameKind
-{
-	RETAINED_TYPE_NAME = 1,
-	RETAINED_VALUE_NAME = 2
-};
-
-enum RetainedCallLookupState
-{
-	RETAINED_CALL_LOOKUP_PUBLISHED = 1,
-	RETAINED_CALL_ADL_ELIGIBLE = 2
-};
-
-enum RetainedSpecialMemberKind
-{
-	RETAINED_CONSTRUCTOR,
-	RETAINED_DESTRUCTOR,
-	RETAINED_CONVERSION_FUNCTION
-};
-
-enum RetainedExceptionState
-{
-	RETAINED_EXCEPTION_THROWING,
-	RETAINED_EXCEPTION_NONTHROWING,
-	RETAINED_EXCEPTION_DEFERRED
-};
-
-struct RetainedTemplateParameterKey
-{
-	NameId name;
-	bool pack;
-
-	RetainedTemplateParameterKey(NameId name_value, bool pack_value)
-		: name(name_value), pack(pack_value) {}
-};
-
-struct RetainedTemplateParameterRange
-{
-	std::uint32_t first;
-	std::uint32_t count;
-
-	RetainedTemplateParameterRange() : first(0), count(0) {}
-};
-
-struct RetainedCurrentClass
-{
-	NameId name;
-	NodeId source;
-	RetainedTemplateParameterRange parameters;
-
-	RetainedCurrentClass() : name(0), source(kNoNode) {}
-};
-
-struct RetainedExpressionType
-{
-	TypeId type;
-	ValueCategory category;
-	bool integer_literal_zero;
-	explicit RetainedExpressionType(const ExpressionInfo& expression)
-		: type(expression.type), category(expression.category),
-		  integer_literal_zero(expression.integer_literal_zero) {}
-};
-
-struct RetainedScope
-{
-	ScopeId semantic_scope;
-	std::size_t parent;
-	std::unordered_map<NameId, std::uint8_t> names;
-	std::unordered_map<NameId, std::vector<BindingId> > call_functions;
-	std::unordered_map<NameId, std::vector<std::size_t> > call_templates;
-	std::unordered_map<NameId, EntityId> call_naming_classes;
-	std::unordered_set<NameId> dependent_values;
-	std::unordered_set<NameId> class_type_names;
-	std::unordered_set<NameId> class_type_definitions;
-	RetainedTemplateParameterRange template_parameters;
-	RetainedCurrentClass current_class;
-	std::uint32_t switch_entry_barriers;
-	bool defer_unknown_members;
-	bool unmodeled_fixed_base;
-	bool unmodeled_current_class;
-
-	RetainedScope(ScopeId semantic, std::size_t owner, bool defer,
-		bool fixed_base, bool current_class)
-		: semantic_scope(semantic), parent(owner), switch_entry_barriers(0),
-		  defer_unknown_members(defer),
-		  unmodeled_fixed_base(fixed_base),
-		  unmodeled_current_class(current_class) {}
-};
-
 class ScopedRetainedClassContext
 {
 public:
@@ -120,110 +33,6 @@ private:
 };
 
 }
-
-class RetainedTemplateValidator
-{
-public:
-	RetainedTemplateValidator(Analyzer& analyzer, NodeId target,
-		ScopeId lexical_scope, const std::vector<TemplateParameter>& parameters,
-		NodeId class_declaration)
-		: analyzer_(analyzer), target_(target), lexical_scope_(lexical_scope),
-		  parameters_(parameters), class_declaration_(class_declaration) {}
-
-	void Run();
-
-private:
-	typedef std::unordered_map<NameId, std::size_t> TemplateOrdinalMap;
-
-	std::size_t AddScope(ScopeId semantic_scope, std::size_t parent,
-		bool defer_unknown_members, bool unmodeled_fixed_base = false,
-		bool unmodeled_current_class = false);
-	std::size_t AddChildScope(std::size_t parent, ScopeKind kind,
-		bool defer_unknown_members = false);
-	void DeclareParameter(std::size_t scope,
-		const TemplateParameter& parameter);
-	void Declare(std::size_t scope, NameId name, RetainedNameKind kind,
-		bool allow_existing = false);
-	void DeclareClassType(std::size_t scope, NameId name, bool definition);
-	std::uint8_t LookupLocal(std::size_t scope, NameId name) const;
-	bool LookupLocalCallSets(std::size_t scope, NameId name,
-		std::vector<BindingId>* functions,
-		std::vector<std::size_t>* templates, EntityId* naming_class) const;
-	bool IsDependentValue(std::size_t scope, NameId name) const;
-	bool DefersUnknownMembers(std::size_t scope) const;
-	bool HasUnmodeledFixedBase(std::size_t scope) const;
-	bool HasUnmodeledCurrentClass(std::size_t scope) const;
-	NodeId DeclarationDeclarator(NodeId node) const;
-	bool IsQualifiedMemberDefinition(NodeId node) const;
-	bool IsTypedef(NodeId specifiers) const;
-	bool HasBaseClass(NodeId node) const;
-	bool BaseSyntaxIsDependent(
-		NodeId node, std::size_t scope, NameId injected);
-	bool SyntaxUsesTemplateParameter(NodeId node) const;
-	bool IsCurrentInstantiationQualifier(
-		NodeId component, std::size_t scope) const;
-	bool RequiresDependentTypename(NodeId node, std::size_t scope) const;
-	void ValidateDependentTypenameSpecifiers(
-		NodeId sequence, std::size_t scope) const;
-	bool IsLoneQualifiedNameSpecifier(NodeId sequence) const;
-	void SetTemplateParameterRange(std::size_t scope,
-		const std::vector<TemplateParameter>& parameters);
-	bool SyntaxUsesRetainedType(NodeId node, std::size_t scope) const;
-	bool SyntaxUsesRetainedValue(NodeId node, std::size_t scope) const;
-	void Visit(NodeId node, std::size_t scope, bool unknown_callee = false);
-	void VisitChildren(NodeId node, std::size_t scope);
-	bool VisitSwitchLabel(NodeId node, std::size_t scope);
-	bool VisitControlStatement(NodeId node, std::size_t scope);
-	void VisitClass(NodeId node, std::size_t scope);
-	void PredeclareClassMembers(NodeId node, std::size_t scope);
-	void PredeclareClassSimple(NodeId node, std::size_t scope);
-	void DeclareEnumValues(NodeId node, std::size_t scope);
-	void VisitFunction(NodeId node, std::size_t scope);
-	NodeId FindParameterClause(NodeId declarator) const;
-	void BindFunctionParameters(NodeId declarator, std::size_t scope);
-	bool DeclareStructuredBindings(NodeId declarator, std::size_t scope);
-	NodeId RetainedOperatorCallArgument(NodeId node) const;
-	void VisitSimple(NodeId node, std::size_t scope, bool predeclared);
-	void VisitUsing(NodeId node, std::size_t scope);
-	void VisitCall(NodeId node, std::size_t scope);
-	void VisitSizeof(NodeId node, std::size_t scope);
-	ExpressionInfo KnownExpressionFacts(NodeId node) const;
-	void PublishExpressionFacts(NodeId node, const ExpressionInfo& expression);
-	void ValidateFixedExpression(NodeId node);
-	ExpressionInfo FixedUnaryExpression(NodeId node, ExpressionInfo operand);
-	ExpressionInfo FixedBinaryExpression(NodeId node, ExpressionInfo left,
-		ExpressionInfo right);
-	void ValidateFixedCall(NodeId node);
-	void VisitIdExpression(NodeId node, std::size_t scope,
-		bool unknown_callee);
-	void ValidateKnownTemplateArgumentKinds(NodeId node, ScopeId scope);
-	const TemplateParameter* TemplateParameterUsedBy(NodeId node) const;
-	void ValidateSpecialMemberExceptionSpecification();
-	RetainedSpecialMemberKind SpecialMemberKind(NodeId node) const;
-	TemplateOrdinalMap TemplateOrdinals(
-		const std::vector<TemplateParameter>& parameters) const;
-	bool RetainedTypeSyntaxEquivalent(NodeId left, NodeId right,
-		NodeId left_identifier, NodeId right_identifier,
-		const TemplateOrdinalMap& left_parameters,
-		const TemplateOrdinalMap& right_parameters) const;
-	bool ParameterTypesEquivalent(NodeId left, NodeId right,
-		const std::vector<TemplateParameter>& left_parameters) const;
-	bool FunctionQualifiersEquivalent(NodeId left, NodeId right) const;
-	RetainedExceptionState RetainedExceptionSpecificationState(
-		NodeId declarator) const;
-
-	Analyzer& analyzer_;
-	NodeId target_;
-	ScopeId lexical_scope_;
-	const std::vector<TemplateParameter>& parameters_;
-	NodeId class_declaration_;
-	std::unordered_set<NameId> parameter_names_;
-	std::unordered_set<NodeId> template_argument_validation_visited_;
-	std::vector<RetainedTemplateParameterKey> template_parameter_keys_;
-	std::vector<RetainedScope> scopes_;
-	std::vector<std::size_t> switch_entry_scopes_;
-	std::unordered_map<NodeId, RetainedExpressionType> expression_types_;
-};
 
 std::size_t RetainedTemplateValidator::AddScope(ScopeId semantic_scope,
 	std::size_t parent, bool defer_unknown_members, bool unmodeled_fixed_base,
@@ -275,9 +84,10 @@ void RetainedTemplateValidator::Declare(std::size_t scope, NameId name,
 		// semantic scope.  Mirror validation-only class type declarations there
 		// so an earlier typedef/alias/injected name is visible at that boundary;
 		// concrete replay will publish its canonical substituted type.
-		analyzer_.program_->AddBinding(scopes_[scope].semantic_scope,
-			BIND_TYPE_ALIAS, name,
+		const BindingId placeholder = analyzer_.program_->AddBinding(
+			scopes_[scope].semantic_scope, BIND_TYPE_ALIAS, name,
 			analyzer_.program_->types.Fundamental(FUND_INT));
+		analyzer_.program_->bindings[placeholder].compiler_generated = true;
 	}
 }
 
@@ -904,6 +714,17 @@ void RetainedTemplateValidator::PredeclareClassSimple(NodeId node,
 		Declare(scope, name, type_declaration ? RETAINED_TYPE_NAME :
 			RETAINED_VALUE_NAME,
 			!type_declaration || (embedded_type != 0 && name == embedded_type));
+		const NodeId owner = scopes_[scope].class_declaration;
+		if (!type_declaration && owner != kNoNode &&
+			!IsFunctionDeclarator(declarator))
+		{
+			const std::uint64_t key = (static_cast<std::uint64_t>(owner) << 32) | name;
+			if (!analyzer_.retained_class_data_members_.Find(key))
+				analyzer_.retained_class_data_members_.Insert(key,
+					RetainedClassDataMemberFact(specifiers, declarator,
+						scopes_[scope].semantic_scope,
+						analyzer_.HasDeclSpecifier(specifiers, "static")));
+		}
 	}
 }
 
@@ -1032,9 +853,28 @@ void RetainedTemplateValidator::VisitClass(NodeId node, std::size_t scope)
 		}
 	const std::size_t class_scope = AddChildScope(
 		scope, SCOPE_CLASS, HasBaseClass(node));
+	scopes_[class_scope].class_declaration = node;
+	if (injected != 0 && scopes_[scope].class_declaration != kNoNode)
+	{
+		const std::uint64_t key =
+			(static_cast<std::uint64_t>(scopes_[scope].class_declaration) << 32) | injected;
+		CompactIndexSequence& nested = analyzer_.retained_nested_class_declarations_.Ensure(key);
+		if (!nested.Contains(node)) nested.Push(node);
+	}
 	if (HasBaseClass(node) && !dependent_base)
 		scopes_[class_scope].unmodeled_fixed_base = true;
 	PredeclareClassMembers(node, class_scope);
+	if (!analyzer_.retained_class_name_inventories_.Find(node))
+	{
+		std::vector<RetainedClassNameFact> inventory;
+		inventory.reserve(scopes_[class_scope].names.size());
+		for (std::unordered_map<NameId, std::uint8_t>::const_iterator name =
+			scopes_[class_scope].names.begin(); name != scopes_[class_scope].names.end(); ++name)
+			inventory.push_back(RetainedClassNameFact(name->first, name->second |
+				(scopes_[class_scope].class_type_names.count(name->first) ? RETAINED_CLASS_NAME : 0) |
+				(scopes_[class_scope].class_type_definitions.count(name->first) ? RETAINED_CLASS_DEFINITION : 0)));
+		analyzer_.retained_class_name_inventories_.Insert(node, inventory);
+	}
 	// Retained class scopes have no concrete EntityId, but still own the
 	// injected class name as a dependent type.
 	if (injected != 0)
@@ -1054,14 +894,7 @@ void RetainedTemplateValidator::VisitClass(NodeId node, std::size_t scope)
 		if (analyzer_.arena_->IsTag(member, ::cppgm::syntax::STAG_SIMPLE_DECLARATION))
 			VisitSimple(member, class_scope, true);
 		else if (analyzer_.arena_->IsTag(member, ::cppgm::syntax::STAG_ALIAS_DECLARATION))
-		{
-			const NodeId type_id = analyzer_.FindChild(
-				member, ::cppgm::syntax::STAG_TYPE_ID);
-			ValidateDependentTypenameSpecifiers(type_id == kNoNode ? kNoNode :
-				analyzer_.FindChild(type_id,
-					::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ), class_scope);
-			VisitChildren(member, class_scope);
-		}
+			VisitUsing(member, class_scope, true);
 		else Visit(member, class_scope);
 	}
 }
@@ -1169,6 +1002,19 @@ void RetainedTemplateValidator::VisitSimple(NodeId node, std::size_t scope,
 						 (node == target_ && DefersUnknownMembers(scope))));
 			}
 	}
+	if (IsTypedef(specifiers) &&
+		analyzer_.program_->KindOfScope(scopes_[scope].semantic_scope) == SCOPE_CLASS)
+	{
+		const NodeId aliases = analyzer_.FindChild(node, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
+		for (std::uint32_t edge = aliases == kNoNode ? kNoEdge : analyzer_.arena_->FirstEdge(aliases);
+			edge != kNoEdge; edge = analyzer_.arena_->NextEdge(edge))
+		{
+			const NodeId declarator = analyzer_.FindChild(analyzer_.arena_->EdgeChild(edge),
+				::cppgm::syntax::STAG_DECLARATOR);
+			PublishKnownAlias(scope, analyzer_.DeclaratorName(declarator),
+				KnownDeclarationType(specifiers, declarator, scopes_[scope].semantic_scope));
+		}
+	}
 	const NodeId list = analyzer_.FindChild(node, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
 	for (std::uint32_t edge = analyzer_.arena_->FirstEdge(node);
 		edge != kNoEdge; edge = analyzer_.arena_->NextEdge(edge))
@@ -1212,7 +1058,7 @@ void RetainedTemplateValidator::VisitSimple(NodeId node, std::size_t scope,
 	}
 }
 
-void RetainedTemplateValidator::VisitUsing(NodeId node, std::size_t scope)
+void RetainedTemplateValidator::VisitUsing(NodeId node, std::size_t scope, bool predeclared)
 {
 	if (analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_ALIAS_DECLARATION))
 	{
@@ -1223,7 +1069,12 @@ void RetainedTemplateValidator::VisitUsing(NodeId node, std::size_t scope)
 				type_id, ::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ), scope);
 		const NameId name = analyzer_.program_->names.Intern(
 			analyzer_.arena_->Payload(node));
-		Declare(scope, name, RETAINED_TYPE_NAME);
+		if (!predeclared) Declare(scope, name, RETAINED_TYPE_NAME);
+		if (type_id != kNoNode &&
+			analyzer_.program_->KindOfScope(scopes_[scope].semantic_scope) == SCOPE_CLASS)
+			PublishKnownAlias(scope, name, KnownDeclarationType(analyzer_.FindChild(type_id,
+				::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ), analyzer_.FindChild(type_id,
+				::cppgm::syntax::STAG_ABSTRACT_DECLARATOR), scopes_[scope].semantic_scope));
 		VisitChildren(node, scope);
 		return;
 	}
@@ -1840,6 +1691,7 @@ void RetainedTemplateValidator::Visit(NodeId node, std::size_t scope,
 			&parameter_names_);
 		const std::size_t template_scope = AddChildScope(
 			scope, SCOPE_TEMPLATE_PARAMETERS, DefersUnknownMembers(scope));
+		scopes_[template_scope].class_declaration = scopes_[scope].class_declaration;
 		SetTemplateParameterRange(template_scope, parameters);
 		std::vector<NameId> introduced;
 		for (std::size_t i = 0; i < parameters.size(); ++i)
@@ -2194,6 +2046,151 @@ void RetainedTemplateValidator::ValidateSpecialMemberExceptionSpecification()
 	}
 }
 
+bool RetainedTemplateValidator::IsFunctionDeclarator(NodeId declarator) const
+{
+	const NodeId nested = analyzer_.FindChild(declarator, ::cppgm::syntax::STAG_NESTED_DECLARATOR);
+	if (nested != kNoNode)
+		return IsFunctionDeclarator(analyzer_.FirstSemanticChild(nested));
+	return analyzer_.FindChild(declarator, ::cppgm::syntax::STAG_PARAMETER_CLAUSE) != kNoNode;
+}
+
+void RetainedTemplateValidator::PublishKnownAlias(std::size_t scope, NameId name, TypeId type)
+{
+	if (type == kNoType) return;
+	const LookupResult found = analyzer_.program_->LookupDirect(
+		scopes_[scope].semantic_scope, name, LOOKUP_TYPE);
+	if (found.type_declaration == kNoBinding) return;
+	BindingRecord& binding = analyzer_.program_->bindings[found.type_declaration];
+	binding.type = type;
+	binding.compiler_generated = false;
+	analyzer_.program_->SetTypeName(scopes_[scope].semantic_scope, name, type);
+}
+
+TypeId RetainedTemplateValidator::KnownDeclarationType(NodeId specifiers,
+	NodeId declarator, ScopeId scope)
+{
+	if (specifiers == kNoNode) return kNoType;
+	for (std::uint32_t edge = analyzer_.arena_->FirstEdge(specifiers);
+		edge != kNoEdge; edge = analyzer_.arena_->NextEdge(edge))
+	{
+		const NodeId child = analyzer_.arena_->EdgeChild(edge);
+		if (analyzer_.arena_->IsTag(child, ::cppgm::syntax::STAG_DECLTYPE_SPECIFIER))
+			return kNoType;
+		const NodeId structured = analyzer_.FindChild(child,
+			::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+		if (structured != kNoNode)
+		{
+			const NamePath path = analyzer_.StructuredNamePath(structured);
+			if (analyzer_.FindChild(analyzer_.arena_->TerminalNameComponent(structured),
+				::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST) != kNoNode)
+				return kNoType;
+			const LookupResult found = analyzer_.program_->Lookup(scope, path, LOOKUP_TYPE);
+			if (found.type == kNoType || (found.type_declaration != kNoBinding &&
+				(analyzer_.program_->bindings[found.type_declaration].compiler_generated ||
+				 !analyzer_.CanAccessMember(found.type_declaration, found.naming_class))))
+				return kNoType;
+		}
+		else if (analyzer_.FirstSemanticChild(child) != kNoNode) return kNoType;
+		else if (analyzer_.PayloadTokenKind(child) < 0 &&
+			analyzer_.arena_->SemanticPayloadId(child) != 0)
+		{
+			const LookupResult found = analyzer_.program_->LookupName(scope,
+				analyzer_.program_->names.UseInterned(analyzer_.arena_->SemanticPayloadId(child)),
+				LOOKUP_TYPE);
+			if (found.type == kNoType || (found.type_declaration != kNoBinding &&
+				(analyzer_.program_->bindings[found.type_declaration].compiler_generated ||
+				 !analyzer_.CanAccessMember(found.type_declaration, found.naming_class))))
+				return kNoType;
+		}
+	}
+	std::vector<NodeId> pending;
+	if (declarator != kNoNode) pending.push_back(declarator);
+	while (!pending.empty())
+	{
+		const NodeId node = pending.back();
+		pending.pop_back();
+		if (analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_PTR_OPERATOR))
+		{
+			const NodeId owner = analyzer_.FindChild(node, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
+			if (owner != kNoNode)
+			{
+				const LookupResult found = analyzer_.program_->Lookup(scope,
+					analyzer_.StructuredNamePath(owner), LOOKUP_TYPE);
+				if (found.type == kNoType || !analyzer_.IsClassObjectType(found.type) ||
+					(found.type_declaration != kNoBinding &&
+					 analyzer_.program_->bindings[found.type_declaration].compiler_generated)) return kNoType;
+			}
+		}
+		for (std::uint32_t edge = analyzer_.arena_->FirstEdge(node); edge != kNoEdge;
+			edge = analyzer_.arena_->NextEdge(edge))
+			pending.push_back(analyzer_.arena_->EdgeChild(edge));
+	}
+	ScopedCounterIncrement dependent(&analyzer_.class_template_completion_suppressed_depth_);
+	const SpecInfo spec = analyzer_.BuildSpecifiers(
+		specifiers, scope, std::string(), true);
+	if (spec.placeholder_auto) return kNoType;
+	TypeId type = declarator == kNoNode ? spec.type :
+		analyzer_.BuildDeclarator(declarator, spec.type, scope, false, false, false,
+			&parameter_names_).type;
+	return spec.is_constexpr ? analyzer_.program_->types.Qualify(type, CV_CONST) : type;
+}
+
+std::uint64_t RetainedTemplateValidator::StaticMemberDeclarationKey() const
+{
+	if (class_declaration_ == kNoNode ||
+		!analyzer_.arena_->IsTag(target_, ::cppgm::syntax::STAG_SIMPLE_DECLARATION)) return 0;
+	const NodeId declarator = DeclarationDeclarator(target_);
+	if (declarator == kNoNode || IsFunctionDeclarator(declarator)) return 0;
+	const NodeId structure = analyzer_.DeclaratorNameStructure(declarator);
+	if (structure == kNoNode) return 0;
+	std::vector<NodeId> components;
+	for (std::uint32_t edge = analyzer_.arena_->FirstEdge(structure);
+		edge != kNoEdge; edge = analyzer_.arena_->NextEdge(edge))
+		if (analyzer_.arena_->IsTag(analyzer_.arena_->EdgeChild(edge),
+			::cppgm::syntax::STAG_NAME_COMPONENT))
+			components.push_back(analyzer_.arena_->EdgeChild(edge));
+	std::size_t root = 0;
+	while (root + 1 < components.size() && analyzer_.FindChild(components[root],
+		::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST) == kNoNode) ++root;
+	if (root + 1 >= components.size()) return 0;
+	NodeId owner = class_declaration_;
+	for (std::size_t i = root + 1; i + 1 < components.size(); ++i)
+	{
+		const NameId name = analyzer_.arena_->SemanticPayloadId(components[i]);
+		const std::uint64_t key = (static_cast<std::uint64_t>(owner) << 32) | name;
+		const CompactIndexSequence* nested = analyzer_.retained_nested_class_declarations_.Find(key);
+		if (!nested || nested->Size() == 0) return 0;
+		owner = (*nested)[0];
+	}
+	const NameId name = analyzer_.DeclaratorName(declarator);
+	return (static_cast<std::uint64_t>(owner) << 32) | name;
+}
+
+void RetainedTemplateValidator::ValidateStaticMemberDeclaration(ScopeId scope)
+{
+	const std::uint64_t key = StaticMemberDeclarationKey();
+	if (key == 0) return;
+	RetainedClassDataMemberFact* fact = analyzer_.retained_class_data_members_.Find(key);
+	if (!fact) ThrowSemanticError("out-of-class definition has no data member declaration");
+	if (!fact->static_member)
+		ThrowSemanticError("out-of-class definition names a nonstatic data member");
+	if (!fact->type_formed)
+	{
+		const TypeId type = KnownDeclarationType(fact->specifiers, fact->declarator, fact->scope);
+		fact = analyzer_.retained_class_data_members_.Find(key);
+		fact->type = type;
+		fact->type_formed = true;
+	}
+	const TypeId prior = fact->type;
+	if (prior == kNoType) return;
+	const TypeId defined = KnownDeclarationType(analyzer_.FindChild(target_,
+		::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ), DeclarationDeclarator(target_), scope);
+	TypeId composite = kNoType;
+	if (defined != kNoType && prior != defined &&
+		!analyzer_.program_->types.TryCompositeArrayType(prior, defined, &composite))
+		ThrowSemanticError("retained static member definition has a conflicting type");
+}
+
 void RetainedTemplateValidator::Run()
 {
 	const EntityId template_access_principal =
@@ -2254,8 +2251,20 @@ void RetainedTemplateValidator::Run()
 					scopes_[root].names[class_pattern.parameters[i].name] |=
 						class_pattern.parameters[i].kind == TEMPLATE_ARGUMENT_INTEGRAL ?
 							RETAINED_VALUE_NAME : RETAINED_TYPE_NAME;
-			PredeclareClassMembers(class_declaration_ == kNoNode ?
-				class_pattern.declaration : class_declaration_, root);
+			const NodeId class_source = class_declaration_ == kNoNode ?
+				class_pattern.declaration : class_declaration_;
+			const std::vector<RetainedClassNameFact>* inventory =
+				analyzer_.retained_class_name_inventories_.Find(class_source);
+			if (inventory)
+				for (std::size_t i = 0; i < inventory->size(); ++i)
+				{
+					const RetainedClassNameFact fact = (*inventory)[i];
+					if (fact.kind & RETAINED_TYPE_NAME) Declare(root, fact.name, RETAINED_TYPE_NAME, true);
+					if (fact.kind & RETAINED_CLASS_NAME) scopes_[root].class_type_names.insert(fact.name);
+					if (fact.kind & RETAINED_CLASS_DEFINITION) scopes_[root].class_type_definitions.insert(fact.name);
+					if (fact.kind & RETAINED_VALUE_NAME) Declare(root, fact.name, RETAINED_VALUE_NAME, true);
+				}
+			else PredeclareClassMembers(class_source, root);
 		}
 	}
 	while (analyzer_.function_template_shape_parameters_.size() <
@@ -2310,6 +2319,7 @@ void RetainedTemplateValidator::Run()
 				parameters_[i].value_type, false,
 			static_cast<std::int64_t>(i));
 	}
+	ValidateStaticMemberDeclaration(semantic);
 	ValidateKnownTemplateArgumentKinds(target_, semantic);
 	if (!definition &&
 		!analyzer_.arena_->IsTag(target_, ::cppgm::syntax::STAG_ALIAS_DECLARATION) &&

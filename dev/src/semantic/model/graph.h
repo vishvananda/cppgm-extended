@@ -1307,6 +1307,29 @@ struct FunctionTemplateDeduction
 	}
 };
 
+struct RetainedClassNameFact
+{
+	NameId name;
+	std::uint8_t kind;
+
+	RetainedClassNameFact(NameId member, std::uint8_t kinds)
+		: name(member), kind(kinds) {}
+};
+
+struct RetainedClassDataMemberFact
+{
+	NodeId specifiers, declarator;
+	ScopeId scope;
+	TypeId type;
+	bool static_member, type_formed;
+	RetainedClassDataMemberFact(NodeId specifier_value = kNoNode,
+		NodeId declarator_value = kNoNode, ScopeId scope_value = kNoScope,
+		bool static_value = false)
+		: specifiers(specifier_value), declarator(declarator_value),
+		  scope(scope_value), type(kNoType), static_member(static_value),
+		  type_formed(false) {}
+};
+
 struct ClassTemplateMemberPattern
 {
 	ScopeId lexical_scope;

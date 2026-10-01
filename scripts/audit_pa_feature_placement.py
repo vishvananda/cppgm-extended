@@ -499,8 +499,9 @@ RULES: tuple[FeatureRule, ...] = (
                     r"make_integer_seq|remove_(?:const|cv|cvref|reference|volatile)(?:_t)?|"
                     r"type_pack_element)\b"),)),
     FeatureRule("template.nttp", (rx(r"\btemplate\s*<[^>]*(?:int|bool|char|long|short|unsigned|signed|std::size_t|size_t)\s+\w+"),)),
-    FeatureRule("template.nttp.pointer_member",
-                (rx(r"\btemplate\s*<[^>]*(?:[A-Za-z_][A-Za-z0-9_:<>]*\s*[*&]\s*\w+|[A-Za-z_][A-Za-z0-9_:<>]*::\s*\*\s*\w+)"),)),
+    # Parsed template headers distinguish NTTP declarators from pointer types
+    # following the closing '>' and from type-parameter default arguments.
+    FeatureRule("template.nttp.pointer_member", ()),
     FeatureRule("template.explicit_specialization", (rx(r"\btemplate\s*<\s*>\s*"),)),
     FeatureRule("template.specialization_timing", (),
                 path_patterns=(rx(r"(?:^|[-_/])(?:stale|refresh|late[-_]|after-instantiation|keeps-definition|"

@@ -426,7 +426,12 @@ bool Analyzer::AnalyzeExplicitTemplateSpecialization(
 			if (!arena_->IsTag(target, ::cppgm::syntax::STAG_SIMPLE_DECLARATION))
 				ThrowSemanticError(
 					"explicit member specialization is not a function");
-			AnalyzeSimple(target, definition_scope, root_, false, true, true);
+			const NodeId item = FirstSemanticChild(
+				FindChild(target, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST));
+			const bool declaration_only = item == kNoNode ||
+				FindChild(item, ::cppgm::syntax::STAG_INITIALIZER) == kNoNode;
+			AnalyzeSimple(target, definition_scope, root_, false, true, true,
+				declaration_only);
 			const LookupResult specialized = program_->LookupDirect(
 				program_->entities[entity].member_scope, parsed.name,
 				LOOKUP_ORDINARY);
@@ -439,11 +444,9 @@ bool Analyzer::AnalyzeExplicitTemplateSpecialization(
 				explicit_static_member_specialization_states_.resize(
 					static_cast<std::size_t>(canonical) + 1, 0);
 			explicit_static_member_specialization_states_[canonical] = 1;
-			const NodeId item = FirstSemanticChild(
-				FindChild(target, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST));
-			if (item == kNoNode || FindChild(item, ::cppgm::syntax::STAG_INITIALIZER) == kNoNode)
-				program_->bindings[canonical].explicit_instantiation_suppressed =
-					true;
+			program_->bindings[canonical].explicit_instantiation_suppressed =
+				declaration_only &&
+				!program_->bindings[canonical].variable_definition_seen;
 			return true;
 		}
 

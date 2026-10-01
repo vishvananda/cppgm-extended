@@ -2092,7 +2092,7 @@ void Analyzer::FinishLocalVariableInitializer(ScopeId scope,
 
 void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 	std::uint32_t output_parent, bool local, bool qualified_lexical_scope,
-	bool demanded_template_storage)
+	bool demanded_template_storage, bool specialization_declaration)
 {
 	if (local && AnalyzeQualifiedAssignmentStatement(
 		node, scope, output_parent))
@@ -2109,9 +2109,10 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 	const EntityId previous_class_context = current_class_context_;
 	if (declaration_class_context != kNoEntity) current_class_context_ = declaration_class_context;
 	const bool identity_only = HasDeclSpecifier(specifiers, "typedef");
-	const SpecInfo spec = identity_only ? BuildIdentityOnlySpecifiers(
+	SpecInfo spec = identity_only ? BuildIdentityOnlySpecifiers(
 		specifiers, scope, hint, list != kNoNode) :
 		BuildSpecifiers(specifiers, scope, hint, list != kNoNode);
+	if (specialization_declaration) spec.storage_class = STORAGE_CLASS_EXTERN;
 	if (spec.virtual_specifier)
 		ThrowSemanticError(
 			"virtual specifier is only allowed in a class definition");
@@ -2213,6 +2214,9 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 		if (qualified_lexical_scope)
 			parsed.type = CompleteQualifiedStaticArrayType(
 				occupied.ordinary, parsed.type);
+		if (!local && program_->KindOfScope(declaration_scope) == SCOPE_CLASS)
+			ValidateStaticMemberDeclaration(occupied.ordinary, parsed.type,
+				!specialization_declaration);
 		const BindingId binding = program_->AddBinding(declaration_scope,
 			BIND_VARIABLE,
 			parsed.name, parsed.type);
@@ -2220,7 +2224,8 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 		PublishVariableDeclarationFacts(binding, declaration_scope,
 			parsed.name, parsed.type, spec, local);
 		ApplyVariableObjectAttributes(node, binding);
-		const bool static_constant_definition = IsStaticConstantDefinition(binding, initializer_node);
+		const bool static_constant_definition = !specialization_declaration &&
+			IsStaticConstantDefinition(binding, initializer_node);
 		const bool constexpr_class_default =
 			spec.is_constexpr && IsClassObjectType(parsed.type) &&
 			!static_constant_definition;
@@ -2284,6 +2289,7 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 			!demanded_template_storage &&
 			ClassTemplateHasNonTypeParameter(declaration_class_context);
 		if (!has_initializer &&
+			!specialization_declaration &&
 			(qualified_lexical_scope || static_constant_definition) &&
 			!deferred_template_constant_storage)
 			has_initializer = MaterializeConstantDefinitionInitializer(
