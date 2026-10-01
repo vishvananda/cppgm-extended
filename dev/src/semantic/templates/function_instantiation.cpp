@@ -448,20 +448,27 @@ bool EquivalentDependentFunctionTemplateResults(const SyntaxArena& arena,
 	// results can share a root and differ in what they wrap around it.  When
 	// one side spells the result before the declarator and the other after
 	// it, the roots are the only comparable spelling.
+	const bool normalize_function_parameters =
+		left.function_parameter_names != right.function_parameter_names;
+	const auto equivalent = [&](NodeId left_node, NodeId right_node) {
+		return EquivalentNormalizedTemplateSyntax(arena, left_node, right_node,
+			left.parameters, right.parameters, left_global_owner, right_global_owner,
+			0, kNoScope, kNoScope,
+			normalize_function_parameters ? &left.function_parameter_names : 0,
+			normalize_function_parameters ? &right.function_parameter_names : 0);
+	};
 	const bool left_trailing = left.trailing_return_syntax != kNoNode;
 	const bool right_trailing = right.trailing_return_syntax != kNoNode;
+	if (left_trailing && right_trailing)
+		return equivalent(left.trailing_return_syntax, right.trailing_return_syntax);
 	if (left.result_root_structure != kNoNode &&
 		right.result_root_structure != kNoNode)
 	{
-		if (!EquivalentNormalizedTemplateSyntax(arena,
-			left.result_root_structure, right.result_root_structure,
-			left.parameters, right.parameters,
-			left_global_owner, right_global_owner)) return false;
+		if (!equivalent(left.result_root_structure, right.result_root_structure)) return false;
 		if (left_trailing != right_trailing) return true;
-		// Only a decltype result can differ from its root: a named result
-		// with the same root names the same type.
-		if (!SpellsDecltypeResult(arena, left) ||
-			!SpellsDecltypeResult(arena, right)) return true;
+		// A trailing decltype can wrap its root in different expressions.
+		if (!left_trailing && (!SpellsDecltypeResult(arena, left) ||
+			!SpellsDecltypeResult(arena, right))) return true;
 	}
 	std::uint32_t left_edge = NextDependentResultEdge(arena,
 		left.specifiers == kNoNode ? kNoEdge : arena.FirstEdge(left.specifiers));
@@ -469,20 +476,14 @@ bool EquivalentDependentFunctionTemplateResults(const SyntaxArena& arena,
 		right.specifiers == kNoNode ? kNoEdge : arena.FirstEdge(right.specifiers));
 	while (left_edge != kNoEdge && right_edge != kNoEdge)
 	{
-		if (!EquivalentNormalizedTemplateSyntax(arena,
-			arena.EdgeChild(left_edge), arena.EdgeChild(right_edge),
-			left.parameters, right.parameters,
-			left_global_owner, right_global_owner)) return false;
+		if (!equivalent(arena.EdgeChild(left_edge), arena.EdgeChild(right_edge))) return false;
 		left_edge = NextDependentResultEdge(
 			arena, arena.NextEdge(left_edge));
 		right_edge = NextDependentResultEdge(
 			arena, arena.NextEdge(right_edge));
 	}
 	if (left_edge != right_edge) return false;
-	return EquivalentNormalizedTemplateSyntax(arena,
-		left.trailing_return_syntax, right.trailing_return_syntax,
-		left.parameters, right.parameters,
-		left_global_owner, right_global_owner);
+	return equivalent(left.trailing_return_syntax, right.trailing_return_syntax);
 }
 
 void CaptureFunctionParameterMetadata(FunctionTemplatePattern* pattern,
@@ -782,7 +783,9 @@ void Analyzer::InheritFunctionTemplateResultLookups(
 			for (std::size_t j = 0; j < destination_calls.size(); ++j)
 				if (used_calls[j] == 0 && EquivalentNormalizedTemplateSyntax(
 					*arena_, source_calls[i], destination_calls[j],
-					source.parameters, destination->parameters))
+					source.parameters, destination->parameters, kNoNode, kNoNode,
+					0, kNoScope, kNoScope, &source.function_parameter_names,
+					&destination->function_parameter_names))
 				{
 					match = j;
 					break;
@@ -1234,8 +1237,7 @@ void Analyzer::RegisterFunctionTemplatePattern(NodeId declaration, NodeId target
 	}
 	const NodeId trailing_return = FindChild(declarator, ::cppgm::syntax::STAG_TRAILING_RETURN_TYPE);
 	const bool dependent_trailing_return = trailing_return != kNoNode &&
-		(PayloadSource(trailing_return).find("decltype") == 0 ||
-		 SyntaxUsesAnyTemplateParameter(trailing_return, parameter_names) ||
+		(SyntaxUsesAnyTemplateParameter(trailing_return, parameter_names) ||
 		 FunctionTemplateResultUsesDependentParameter(
 			declarator, trailing_return, parameter_names));
 	if (dependent_result_shape == kNoType && dependent_trailing_return)

@@ -57,7 +57,9 @@ bool EquivalentNormalizedTemplateSyntax(const SyntaxArena& arena,
 	NodeId left_global_owner = kNoNode,
 	NodeId right_global_owner = kNoNode,
 	Program* program = 0, ScopeId left_scope = kNoScope,
-	ScopeId right_scope = kNoScope);
+	ScopeId right_scope = kNoScope,
+	const std::vector<NameId>* left_function_parameters = 0,
+	const std::vector<NameId>* right_function_parameters = 0);
 
 class Analyzer : public SyntaxTreeConsumer
 {

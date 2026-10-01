@@ -33,7 +33,7 @@ fix sequence is complete, as requested.
 | STATIC-DECL | Diagnose static-definition redeclarations/type/member mismatches; preserve explicit specialization declarations | Extended student storage controls during DEMAND | Open: entry compiler accepts four duplicate definitions, two type mismatches and a nonstatic out-of-class definition; rejects a valid declaration followed by its explicit specialization definition. These failures predate selective demand. |
 | STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Needs verification: entry/current return 1 on the unsigned-free A/B/D base-reference reducer while Clang/GCC return 0. Distinguish static relocation from pointer conversion/layout before assigning a fix. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
-| REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | In progress: receiver effects and empty unknown-bound arrays fixed; original PA18 inputs unchanged and rejection references regenerated. Seven earliest-owner controls, strict 5902/5902, all required compiler checks and Alpha instruction/RSS gates pass. Result-type ambiguity and two user conversions remain open. |
+| REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | In progress: receiver/array corrections committed in 1cb054e23 (strict 5902/5902 and full checks). Definition-time fixed result types and structural dependent-result identity are corrected in this checkpoint; eight PA14/18 controls, strict 5910/5910, all required checks and four Alpha instruction/RSS gates pass. Original PA18 inputs unchanged, rejection references regenerated. Two user conversions remain open. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
@@ -42,6 +42,7 @@ fix sequence is complete, as requested.
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
+| MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Open, confirmed against Clang/GCC and unchanged entry 1cb054e23: bare decltype(value) uses DT instead of Dt; named dependent selected(value) loses the expression and emits a concrete result type. Parenthesized decltype((value)) already agrees. No encoder change in the result identity checkpoint. |
 | MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
@@ -1391,3 +1392,81 @@ Full strict report passes 5902/5902 and prints exactly one success line. Debug
 info, backend variants, self-host through PA5, every architecture audit, the
 compiler file audit and placement all pass. Final combined student export
 remains deferred until the unified tracker sequence is complete.
+
+## Rejection correction: definition-time function-template result identity
+
+Trailing `decltype` results were always classified as deferred, even when their
+operands used no dependent names or dependent parameters. Their signatures then
+compared rendered syntax and reused first-declaration lookup. The declaration
+builder now forms fixed trailing result types at definition time, through the
+existing typed type-id path. In the unchanged PA18 input, `selected(0)` first
+resolves to `long`, then to `int`. The templates have distinct return types and
+the final call is ambiguous under N3485 [defns.signature.templ] and
+[temp.over.link]. First-declaration lookup applies to dependent names, so it
+cannot merge these fixed signatures. The negative PA18 reference was regenerated
+through `ref-test`; its original program text is unchanged.
+
+Conversely, different fixed expressions that produce the same return type now
+redeclare one template, including a trailing `decltype` paired with an ordinary
+result spelling. Duplicate definitions are rejected. The old compiler wrongly
+accepted the distinct-result call and a duplicate-definition reducer, and
+rejected several valid equal-result declarations.
+
+The dependent comparison also preserves renamed function parameter positions.
+It compares retained expression structure under decltype and trailing-return
+wrappers, rather than their rendered spelling. Namespace qualification,
+parameter positions, parentheses and surrounding operators remain significant.
+Both trailing results are compared once; a shared lookup root alone cannot
+establish equality. The existing retained lookup remapping preserves the first
+call set for an equivalent dependent redeclaration, including renamed parameters.
+Template-parameter normalization is bypassed when the two clauses already have
+the same names at the same positions. Equal payloads avoid redundant wrapper and
+owner checks. A small local syntax-pair worklist avoids allocation on shallow
+comparisons and spills to a vector for larger trees; a 64-level dependent result
+control preserves acceptance and runtime behavior with both hosts.
+
+The compiler's name facts now retain the concrete type for a fixed result
+instead of manufacturing a dependent decltype expression. This was checked
+against Clang before changing the publication guard: fixed `decltype(value)`
+with an `int` function parameter should emit `_Z6resultIiEiT_i`; the previous
+facts emitted `_Z6resultIiEDTfp0_ET_i`. The ABI encoder is unchanged. Fixed-result
+object symbols now agree with Clang and GCC.
+
+The symbol controls separately exposed two pre-existing dependent-result issues,
+recorded as MANGLE-RESULT. Unparenthesized `decltype(value)` emits `DT` where
+Clang/GCC emit `Dt`; `decltype(selected(value))` falls back to a concrete result
+instead of retaining the dependent named call. Immutable 1cb054e23 and the
+candidate emit the same wrong names. The parenthesized parameter expression
+already agrees with both hosts. These observations do not justify changing
+unrelated ABI spellings or silently normalizing a bad reference.
+
+Eight new required fixtures cover fixed-result ambiguity, same-type lookup,
+spelling equivalence, duplicate definitions, renamed dependent parameters,
+parameter positions, distinct wrappers around a shared root and the original
+PA18 fixture's qualified positive obligations. Simple signatures live in PA14;
+the partial-specialization alias lookup control remains in PA18. All 64 fixture
+compile/reject/runtime controls pass at O0/O2, using both LowIR and native routes
+and both hosts. Seventeen independent semantic controls run at O0/O2 against
+Clang/GCC; all 102 final outcomes agree. The unchanged original PA18 input is also checked at O0/O2: entry accepts, while candidate and both hosts reject as ambiguous. Evidence, exact commands, entry
+reductions and object-symbol observations are retained in
+`/tmp/cppgm-v4-audit-review/template-result-identity/`.
+
+The first correct comparison passed the ordinary Alpha inputs but regressed the
+600-namespace, 3000-equivalent-declaration counter workload by 2.4176%. Removing
+comparison allocations and duplicate root walks reduced that to 1.3726%, still
+above the gate. Both full observations are retained in `alpha-redeclarations/`
+and `alpha-redeclarations-inline/`; neither was accepted as the final result.
+The final stable-name and equal-payload paths pass the same gates: recognition,
+virtual and large-virtual instruction ratios are 0.999964, 0.999962 and 0.999950;
+the targeted declaration ratio is 1.004858. Corresponding RSS ratios are
+0.995368, 0.999045, 0.999592 and 1.000995. Four A/A blocks and eight ABBA blocks
+per input retain all 192 outputs; hashes agree within each input. Both final
+counter manifests match the candidate binary. Final evidence lives in
+`alpha-final/` and `alpha-redeclarations-final/`; the initial/intermediate
+experiments remain separately retained. Cycles are retained independently from
+the instruction/RSS gate and are not reported as an exact wall-time gain.
+The final strict report passes 5910/5910 with exactly one success line. Debug
+info, variants, self-host through PA5, all architecture checks, the compiler
+file audit and placement pass on that final binary. REJECT now has three of
+four corrections complete; implicit chaining of two user conversions remains
+open. Final combined export remains deferred until all tracker work is complete.

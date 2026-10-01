@@ -854,7 +854,8 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 			}
 		}
 	}
-	if (pattern->abi_result_type != kNoFunctionTemplateAbiType) return;
+	if (pattern->abi_result_type != kNoFunctionTemplateAbiType ||
+		!pattern->deferred_result_formation) return;
 	const NodeId decltype_specifier = FindDescendant(
 		*arena_, pattern->trailing_return_syntax, "decltype-specifier");
 	if (decltype_specifier == kNoNode) return;
