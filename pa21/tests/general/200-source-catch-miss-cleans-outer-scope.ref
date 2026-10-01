@@ -45,6 +45,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_dispatch_4:
     eh_catch @__external_rtti__long_int, 1
+    eh_catch @__external_rtti__int, 2
+    eh_cleanup
+    eh_end
     jump ^catch_entry_5
 
   block ^catch_entry_5:
@@ -67,17 +70,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_catch @__external_rtti__int, 2
     call void @__external_runtime____cxa_end_catch()
     eh_end
+    %t9 = addr $guard
+    call void @Guard___Guard(%t9)
     eh_end
     jump ^catch_entry_2
 
   block ^catch_next_8:
-    %t9 = addr $guard
-    call void @Guard___Guard(%t9)
+    %t10 = addr $guard
+    call void @Guard___Guard(%t10)
+    eh_end
     jump ^catch_entry_2
 
   block ^try_end_6:
-    %t10 = addr $guard
-    call void @Guard___Guard(%t10)
+    %t11 = addr $guard
+    call void @Guard___Guard(%t11)
     eh_end
     jump ^try_end_3
 
@@ -86,17 +92,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^catch_entry_2
 
   block ^catch_entry_2:
-    %t11 = exception ptr
-    %t12 = exception_selector i32
-    %t13 = cmp eq i32 %t12, 2
-    branch %t13, ^catch_body_10, ^catch_next_11
+    %t12 = exception ptr
+    %t13 = exception_selector i32
+    %t14 = cmp eq i32 %t13, 2
+    branch %t14, ^catch_body_10, ^catch_next_11
 
   block ^catch_body_10:
-    %t14 = call ptr @__external_runtime____cxa_begin_catch(%t11)
+    %t15 = call ptr @__external_runtime____cxa_begin_catch(%t12)
     eh_cleanup ^catch_cleanup_12
-    %t15 = load i32 @destroyed
-    %t16 = cmp eq i32 %t15, 1
-    branch %t16, ^cond_then_13, ^cond_else_14
+    %t16 = load i32 @destroyed
+    %t17 = cmp eq i32 %t16, 1
+    branch %t17, ^cond_then_13, ^cond_else_14
 
   block ^cond_then_13:
     store i32 0, $cond__1
@@ -107,10 +113,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_15
 
   block ^cond_end_15:
-    %t17 = load i32 $cond__1
+    %t18 = load i32 $cond__1
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t17
+    return i32 %t18
 
   block ^catch_cleanup_12:
     call void @__external_runtime____cxa_end_catch()

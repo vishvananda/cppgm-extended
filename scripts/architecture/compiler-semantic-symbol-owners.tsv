@@ -429,6 +429,7 @@ dev/src/semantic/extensions/exceptions.cpp	RequiresManagedConditionalFullExpress
 dev/src/semantic/extensions/exceptions.cpp	ResolveControlFlowGoto	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/exceptions.cpp	StageAutomaticInitializerException	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/exceptions.cpp	StageControlFullExpression	1	dev/src/semantic/extensions/exceptions.cpp	keep
+dev/src/semantic/extensions/exceptions.cpp	AppendExceptionUnwindActions	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/exceptions.cpp	StageExceptionalFullExpression	1	dev/src/semantic/extensions/exceptions.cpp	keep
 dev/src/semantic/extensions/gnu_asm.cpp	AnalyzeGnuAsmStatement	1	dev/src/semantic/extensions/gnu_asm.cpp	keep
 dev/src/semantic/extensions/gnu_asm.cpp	ApplyFunctionAsmLabel	1	dev/src/semantic/extensions/gnu_asm.cpp	keep

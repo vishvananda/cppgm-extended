@@ -611,21 +611,13 @@ bool Analyzer::AnalyzeExceptionStatement(NodeId node, ScopeId scope,
 	return true;
 }
 
-void Analyzer::StageExceptionalFullExpression(
-	std::uint32_t expression, std::uint32_t statement, ScopeId scope, bool force)
+void Analyzer::AppendExceptionUnwindActions(ScopeId scope,
+	std::uint32_t statement, bool cleanup_region)
 {
-	force = StageNestedTemplateTemporaryCleanup(expression, statement) || force;
-	if (!force && InitializationActionsAreNonthrowing(expression)) return;
 	const ScopeId stop = exception_cleanup_stops_.empty() ? kNoScope :
 		exception_cleanup_stops_.back();
-	// A staged temporary needs the handler boundary even without local objects.
-	// Otherwise the handler's own cleanup region already owns that boundary.
-	if ((exception_handler_cleanup_stops_.empty() ||
-		 !dump_.nodes[expression].full_expression_staging) &&
-		!HasUnwindDestructionActions(scope, stop)) return;
-	const std::size_t first_edge = dump_.edges.size();
 	ScopeId segment = scope;
-	bool first_handler = true;
+	bool first_handler = cleanup_region;
 	for (std::size_t i = exception_handler_cleanup_stops_.size(); i != 0; --i)
 	{
 		const ScopeId handler_stop = exception_handler_cleanup_stops_[i - 1];
@@ -645,12 +637,30 @@ void Analyzer::StageExceptionalFullExpression(
 		DumpNode& action = dump_.nodes[exit];
 		action.unwind_only = true;
 		action.exception_handler_exit = true;
+		// The lowering context retains these handlers while emitting each exit.
+		action.constant_value = exception_handler_cleanup_stops_.size() - i;
 		action.exception_cleanup_region_exit = first_handler;
 		dump_.Add(statement, exit);
 		first_handler = false;
 		segment = handler_stop;
 	}
 	AppendUnwindDestructionActions(segment, statement, stop);
+}
+
+void Analyzer::StageExceptionalFullExpression(
+	std::uint32_t expression, std::uint32_t statement, ScopeId scope, bool force)
+{
+	force = StageNestedTemplateTemporaryCleanup(expression, statement) || force;
+	if (!force && InitializationActionsAreNonthrowing(expression)) return;
+	const ScopeId stop = exception_cleanup_stops_.empty() ? kNoScope :
+		exception_cleanup_stops_.back();
+	// A staged temporary needs the handler boundary even without local objects.
+	// Otherwise the handler's own cleanup region already owns that boundary.
+	if ((exception_handler_cleanup_stops_.empty() ||
+		 !dump_.nodes[expression].full_expression_staging) &&
+		!HasUnwindDestructionActions(scope, stop)) return;
+	const std::size_t first_edge = dump_.edges.size();
+	AppendExceptionUnwindActions(scope, statement, true);
 	if (dump_.edges.size() == first_edge) return;
 	dump_.nodes[statement].full_expression_staging = true;
 	MarkFullExpressionCalls(expression);
@@ -699,6 +709,10 @@ bool Analyzer::HasUnwindDestructionActions(ScopeId scope,
 {
 	if (stop_exclusive == kNoScope)
 		stop_exclusive = FunctionCleanupStop(scope);
+	// The indexed walk skips scopes without obligations. Normalize its stop
+	// to the same index so an empty lexical boundary cannot be skipped.
+	if (stop_exclusive < nearest_lifetime_scopes_.size())
+		stop_exclusive = nearest_lifetime_scopes_[stop_exclusive];
 	ScopeId current = scope < nearest_lifetime_scopes_.size() ?
 		nearest_lifetime_scopes_[scope] : kNoScope;
 	while (current != kNoScope && current != stop_exclusive)
@@ -911,7 +925,6 @@ void Analyzer::AnalyzeTryStatement(NodeId node, ScopeId scope,
 	const std::uint32_t statement = MakeDump(DUMP_TRY_STATEMENT);
 	dump_.Add(output_parent, statement);
 	bool saw_body = false;
-	bool catches_all = false;
 	std::size_t handler_count = 0;
 	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
 		edge = arena_->NextEdge(edge))
@@ -928,16 +941,13 @@ void Analyzer::AnalyzeTryStatement(NodeId node, ScopeId scope,
 		}
 		else if (arena_->IsTag(child, ::cppgm::syntax::STAG_HANDLER))
 		{
-			const NodeId declaration = FindChild(child, ::cppgm::syntax::STAG_EXCEPTION_DECLARATION);
-			catches_all = catches_all || (declaration != kNoNode &&
-				FindChild(declaration, ::cppgm::syntax::STAG_ELLIPSIS) != kNoNode);
 			AnalyzeExceptionHandler(child, scope, statement);
 			++handler_count;
 		}
 	}
 	if (!saw_body || handler_count == 0)
 		ThrowSemanticError("invalid try statement");
-	if (!catches_all) AppendUnwindDestructionActions(scope, statement);
+	AppendExceptionUnwindActions(scope, statement, false);
 }
 
 }

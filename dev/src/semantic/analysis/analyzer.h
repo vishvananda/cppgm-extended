@@ -1706,15 +1706,15 @@ private:
 		bool qualified_lexical_scope);
 	bool StageNestedTemplateTemporaryCleanup(std::uint32_t expression,
 		std::uint32_t statement);
+	void AppendExceptionUnwindActions(ScopeId scope,
+		std::uint32_t statement, bool cleanup_region);
 	void StageExceptionalFullExpression(std::uint32_t expression,
 		std::uint32_t statement, ScopeId scope, bool force = false);
 	void StageAutomaticInitializerException(std::uint32_t expression,
 		std::uint32_t variable, ScopeId scope, BindingId binding, TypeId type,
 		bool eligible);
-	void StageControlFullExpression(std::uint32_t expression,
-		std::uint32_t statement, ScopeId scope);
-	void StageReturnTemporaryCleanup(std::uint32_t expression,
-		std::uint32_t statement, ScopeId scope);
+	void StageControlFullExpression(std::uint32_t expression, std::uint32_t statement, ScopeId scope);
+	void StageReturnTemporaryCleanup(std::uint32_t expression, std::uint32_t statement, ScopeId scope);
 	void AppendUnwindDestructionActions(ScopeId scope,
 		std::uint32_t output_parent, ScopeId stop_exclusive = kNoScope);
 	bool HasUnwindDestructionActions(ScopeId scope,

@@ -44,6 +44,8 @@ function @exercise() -> void [binding=strong, object=_Z8exercisev] {
 
   block ^catch_dispatch_1:
     eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    eh_end
     jump ^catch_entry_2
 
   block ^catch_entry_2:
@@ -96,16 +98,18 @@ function @exercise() -> void [binding=strong, object=_Z8exercisev] {
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    resume
-
-  block ^catch_next_5:
     %t9 = addr $guard
     call void @Guard___Guard(%t9)
     resume
 
-  block ^try_end_3:
+  block ^catch_next_5:
     %t10 = addr $guard
     call void @Guard___Guard(%t10)
+    resume
+
+  block ^try_end_3:
+    %t11 = addr $guard
+    call void @Guard___Guard(%t11)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

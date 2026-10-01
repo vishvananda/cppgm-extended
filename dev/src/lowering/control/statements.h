@@ -40,14 +40,16 @@ protected:
 	struct ExceptionRegionState
 	{
 		ExceptionRegion kind;
+		bool has_unwind;
 		std::uint32_t node;
 		std::uint32_t handler;
 		BlockId entry;
 		ExceptionRegionState(ExceptionRegion kind_value,
 			std::uint32_t node_value = kNoDumpEdge,
 			std::uint32_t handler_value = kNoDumpEdge,
-			BlockId entry_value = kNoLowId)
-			: kind(kind_value), node(node_value), handler(handler_value),
+			BlockId entry_value = kNoLowId, bool has_unwind_value = false)
+			: kind(kind_value), has_unwind(has_unwind_value),
+			  node(node_value), handler(handler_value),
 			  entry(entry_value) {}
 	};
 	struct ExceptionControlTarget
@@ -490,7 +492,7 @@ protected:
 			active_exception_contexts_.empty() ||
 			active_exception_contexts_.back() != context)
 			ThrowLoweringInternal("exception cleanup context changed");
-		return active_exception_regions_.back().kind == EXCEPTION_TRY_REGION;
+		return EnclosingTryRegion() != 0;
 	}
 
 	void PushExceptionRegion(const ExceptionRegionState& region)
@@ -513,11 +515,9 @@ protected:
 
 	bool BeginExceptionTryCleanupDispatch()
 	{
-		if (active_exception_regions_.empty() ||
-			active_exception_regions_.back().kind != EXCEPTION_TRY_REGION)
-			return false;
+		if (!EnclosingTryRegion()) return false;
 		Derived& derived = static_cast<Derived&>(*this);
-		EmitTryHandlerClauses(active_exception_regions_.back().node);
+		EmitEnclosingTryHandlerClauses();
 		derived.Emit(Instruction(Instruction::EH_CLEANUP));
 		return true;
 	}
@@ -531,14 +531,15 @@ protected:
 			EmitExceptionResume();
 			return;
 		}
-		if (active_exception_regions_.empty() ||
-			active_exception_regions_.back().kind != EXCEPTION_TRY_REGION)
-			ThrowLoweringInternal(
-				"exception cleanup lost its source try region");
-		if (closes_cleanup_region)
+		const ExceptionRegionState* parent = EnclosingTryRegion();
+		if (!parent)
+			ThrowLoweringInternal("exception cleanup lost its source try region");
+		// Handler boundary actions already close the full-expression region.
+		if (closes_cleanup_region &&
+			active_exception_regions_.back().kind == EXCEPTION_TRY_REGION)
 			derived.Emit(Instruction(Instruction::EH_END));
 		derived.Emit(Instruction(Instruction::EH_END));
-		derived.EmitJump(active_exception_regions_.back().entry);
+		derived.EmitJump(parent->entry);
 	}
 
 	void FinishExceptionUnwindCleanupPrefix()
@@ -553,17 +554,30 @@ protected:
 				derived.full_expression_segment_actions_[i]].exception_handler_exit)
 				return;
 		derived.Emit(Instruction(Instruction::EH_END));
+		DestroyUnnamedCatch(active_exception_regions_.back().node);
 		CallArguments none;
 		(void)EmitExceptionRuntimeCall(
 			derived.polymorphism_.eh_end_catch_symbol, LowVoid(), none);
 		derived.Emit(Instruction(Instruction::EH_END));
 	}
 
-	void FinishExceptionHandlerUnwindBoundary(bool closes_cleanup_region)
+	void FinishExceptionHandlerUnwindBoundary(bool closes_cleanup_region,
+		std::size_t handler_distance)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (closes_cleanup_region)
 			derived.Emit(Instruction(Instruction::EH_END));
+		std::uint32_t handler = kNoDumpEdge;
+		for (std::size_t i = active_exception_regions_.size(); i != 0; --i)
+			if (active_exception_regions_[i - 1].kind == EXCEPTION_HANDLER_REGION)
+			{
+				if (handler_distance-- != 0) continue;
+				handler = active_exception_regions_[i - 1].node;
+				break;
+			}
+		if (handler == kNoDumpEdge)
+			ThrowLoweringInternal("handler unwind boundary has no active handler");
+		DestroyUnnamedCatch(handler);
 		CallArguments none;
 		(void)EmitExceptionRuntimeCall(
 			derived.polymorphism_.eh_end_catch_symbol, LowVoid(), none);
@@ -869,13 +883,27 @@ protected:
 		derived.Emit(clause);
 	}
 
-	void EmitTryHandlerClauses(std::uint32_t try_node)
+	bool EmitTryHandlerClauses(std::uint32_t try_node)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const NodeChildren children = derived.Children(try_node);
 		for (std::size_t i = 0; i < children.size(); ++i)
 			if (derived.arena_.nodes[children[i]].kind == DUMP_HANDLER)
+			{
 				EmitHandlerClause(children[i]);
+				if (derived.arena_.nodes[children[i]].operand_type == kNoType)
+					return true;
+			}
+		return false;
+	}
+
+	void EmitEnclosingTryHandlerClauses()
+	{
+		for (std::size_t i = active_exception_regions_.size(); i != 0; --i)
+			if (active_exception_regions_[i - 1].kind == EXCEPTION_TRY_REGION &&
+				EmitTryHandlerClauses(active_exception_regions_[i - 1].node))
+				return;
+		EmitFunctionExceptionBoundaryClause();
 	}
 
 	void StartTryStatement(std::uint32_t node, const NodeChildren& children)
@@ -885,6 +913,7 @@ protected:
 			derived.arena_.nodes[children[0]].kind != DUMP_COMPOUND_STATEMENT)
 			ThrowLoweringInternal(
 				"invalid source try region");
+		bool has_unwind = false;
 		std::uint32_t first_handler = kNoDumpEdge;
 		std::uint32_t previous_handler = kNoDumpEdge;
 		for (std::size_t i = 1; i < children.size(); ++i)
@@ -900,6 +929,7 @@ protected:
 			else if (child.kind != DUMP_DESTRUCTOR_ACTION || !child.unwind_only)
 				ThrowLoweringInternal(
 					"invalid source try suffix");
+			else has_unwind = true;
 		}
 		if (first_handler == kNoDumpEdge)
 			ThrowLoweringInternal("source try region has no handler");
@@ -911,7 +941,7 @@ protected:
 		const BlockId end = derived.AddBlock(derived.NewLabel("try_end"));
 		derived.EmitEhTarget(Instruction::EH_TRY, dispatch);
 		PushExceptionRegion(ExceptionRegionState(
-			EXCEPTION_TRY_REGION, node, first_handler, entry));
+			EXCEPTION_TRY_REGION, node, first_handler, entry, has_unwind));
 		typename Derived::StatementTask after(Derived::STATEMENT_TRY_AFTER_BODY);
 		after.node = node;
 		after.auxiliary = first_handler;
@@ -936,21 +966,22 @@ protected:
 		if (!derived.CurrentBlock().terminated)
 		{
 			derived.Emit(Instruction(Instruction::EH_END));
-			derived.EmitJump(end);
+			if (derived.current_block_ == 0) derived.EmitJump(end);
+			else derived.EmitContinuationJump(end);
 		}
 		if (active_exception_regions_.empty() ||
 			active_exception_regions_.back().kind != EXCEPTION_TRY_REGION)
 			ThrowLoweringInternal("source try region stack mismatch");
+		const bool has_unwind = active_exception_regions_.back().has_unwind;
 		PopExceptionRegion();
 		derived.SelectBlock(dispatch);
-		EmitTryHandlerClauses(try_node);
-		const ExceptionRegionState* dispatch_parent = EnclosingTryRegion();
-		if (dispatch_parent && HasInterveningHandler(dispatch_parent))
+		const bool catches_all = EmitTryHandlerClauses(try_node);
+		if (!catches_all) EmitEnclosingTryHandlerClauses();
+		if (!catches_all && has_unwind)
 		{
 			derived.Emit(Instruction(Instruction::EH_CLEANUP));
-			EmitTryHandlerClauses(dispatch_parent->node);
+			derived.Emit(Instruction(Instruction::EH_END));
 		}
-		if (!dispatch_parent) EmitFunctionExceptionBoundaryClause();
 		derived.EmitJump(entry);
 		derived.SelectBlock(entry);
 		StartHandlerBody(try_node, handler_node, end);
@@ -1115,44 +1146,47 @@ protected:
 			derived.Emit(Instruction(Instruction::EH_END));
 			(void)EmitExceptionRuntimeCall(
 				derived.polymorphism_.eh_end_catch_symbol, LowVoid(), none);
-			derived.EmitJump(end);
+			derived.EmitContinuationJump(end);
 			}
 		}
 		derived.SelectBlock(cleanup);
 		DestroyUnnamedCatch(handler_node);
 		const ExceptionRegionState* parent = EnclosingTryRegion();
-		if (parent) EmitTryHandlerClauses(parent->node);
+		EmitEnclosingTryHandlerClauses();
 		(void)EmitExceptionRuntimeCall(
 			derived.polymorphism_.eh_end_catch_symbol, LowVoid(), none);
+		derived.Emit(Instruction(Instruction::EH_END));
+		LowerTryUnwindActions(try_node);
 		if (parent)
 		{
-			if (HasInterveningHandler(parent))
-				LowerTryUnwindActions(try_node);
 			derived.Emit(Instruction(Instruction::EH_END));
-			if (HasInterveningHandler(parent))
-				CloseInterveningHandlers(parent);
-			else derived.Emit(Instruction(Instruction::EH_END));
 			derived.EmitJump(parent->entry);
 		}
-		else
-		{
-			derived.Emit(Instruction(Instruction::EH_END));
-			EmitExceptionResume();
-		}
+		else EmitExceptionResume();
 		derived.SelectBlock(next);
 		if (handler_next_[handler_node] != kNoDumpEdge)
 		{
 			StartHandlerBody(try_node, handler_next_[handler_node], end);
 			return;
 		}
-		LowerTryUnwindActions(try_node);
-		if (parent)
+		if (derived.arena_.nodes[handler_node].operand_type == kNoType)
 		{
-			if (HasInterveningHandler(parent))
-				CloseInterveningHandlers(parent);
-			derived.EmitJump(parent->entry);
+			// A catch-all selector cannot miss. Keep its impossible successor
+			// outside the enclosing protected regions as well.
+			for (std::size_t i = active_exception_regions_.size(); i != 0; --i)
+				derived.Emit(Instruction(Instruction::EH_END));
+			EmitExceptionResume();
 		}
-		else EmitExceptionResume();
+		else
+		{
+			LowerTryUnwindActions(try_node);
+			if (parent)
+			{
+				derived.Emit(Instruction(Instruction::EH_END));
+				derived.EmitJump(parent->entry);
+			}
+			else EmitExceptionResume();
+		}
 		derived.SelectBlock(end);
 	}
 
@@ -1164,17 +1198,6 @@ protected:
 		return 0;
 	}
 
-	bool HasInterveningHandler(const ExceptionRegionState* parent) const
-	{
-		for (std::size_t i = active_exception_regions_.size(); i != 0; --i)
-		{
-			if (&active_exception_regions_[i - 1] == parent) return false;
-			if (active_exception_regions_[i - 1].kind ==
-				EXCEPTION_HANDLER_REGION) return true;
-		}
-		return false;
-	}
-
 	void LowerTryUnwindActions(std::uint32_t try_node)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
@@ -1183,22 +1206,7 @@ protected:
 			if (derived.arena_.nodes[children[i]].kind ==
 					DUMP_DESTRUCTOR_ACTION &&
 				derived.arena_.nodes[children[i]].unwind_only)
-				derived.LowerDestructorAction(derived.arena_.nodes[children[i]]);
-	}
-
-	void CloseInterveningHandlers(const ExceptionRegionState* parent)
-	{
-		Derived& derived = static_cast<Derived&>(*this);
-		CallArguments none;
-		for (std::size_t i = active_exception_regions_.size(); i != 0; --i)
-		{
-			if (&active_exception_regions_[i - 1] == parent) return;
-			if (active_exception_regions_[i - 1].kind !=
-				EXCEPTION_HANDLER_REGION) continue;
-			(void)EmitExceptionRuntimeCall(
-				derived.polymorphism_.eh_end_catch_symbol, LowVoid(), none);
-			derived.Emit(Instruction(Instruction::EH_END));
-		}
+				derived.LowerFullExpressionDestructorAction(children[i]);
 	}
 
 private:
@@ -1312,7 +1320,7 @@ protected:
 		if (task.kind == STATEMENT_IF_AFTER_THEN)
 		{
 			const bool then_terminated = derived.CurrentBlock().terminated;
-			if (!then_terminated) derived.EmitJump(task.second);
+			if (!then_terminated) derived.EmitContinuationJump(task.second);
 			derived.SelectBlock(task.first);
 			StatementTask after(STATEMENT_IF_AFTER_ELSE);
 			after.first = task.second;
@@ -1324,7 +1332,7 @@ protected:
 		if (task.kind == STATEMENT_IF_AFTER_ELSE)
 		{
 			const bool else_terminated = derived.CurrentBlock().terminated;
-			if (!else_terminated) derived.EmitJump(task.first);
+			if (!else_terminated) derived.EmitContinuationJump(task.first);
 			if (!task.flag || !else_terminated) derived.SelectBlock(task.first);
 			return;
 		}

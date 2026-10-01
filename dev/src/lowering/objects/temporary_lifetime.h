@@ -562,7 +562,8 @@ protected:
 		if (record.exception_handler_exit)
 		{
 			derived.FinishExceptionHandlerUnwindBoundary(
-				record.exception_cleanup_region_exit);
+				record.exception_cleanup_region_exit,
+				static_cast<std::size_t>(record.constant_value));
 			return;
 		}
 		if (!UsesRuntimeLifetimeState(action))

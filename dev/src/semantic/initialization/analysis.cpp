@@ -2143,6 +2143,10 @@ void Analyzer::AppendUnwindDestructionActions(ScopeId scope,
 {
 	if (stop_exclusive == kNoScope)
 		stop_exclusive = FunctionCleanupStop(scope);
+	// The indexed walk skips scopes without obligations. Normalize its stop
+	// to the same index so an empty lexical boundary cannot be skipped.
+	if (stop_exclusive < nearest_lifetime_scopes_.size())
+		stop_exclusive = nearest_lifetime_scopes_[stop_exclusive];
 	ScopeId current = scope < nearest_lifetime_scopes_.size() ?
 		nearest_lifetime_scopes_[scope] : kNoScope;
 	while (current != kNoScope && current != stop_exclusive)
