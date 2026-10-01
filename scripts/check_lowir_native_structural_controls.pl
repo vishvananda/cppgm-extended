@@ -1522,4 +1522,4 @@ for my $test (@tests)
 }
 
 print "native structural controls: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

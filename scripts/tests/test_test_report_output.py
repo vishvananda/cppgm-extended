@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class TestReportOutputTests(unittest.TestCase):
     def report(self, *, failure=None, ordered=True, target="test-report-nobuild",
-               exported=False, low_jobs=False):
+               exported=False, low_jobs=False, real_control=False):
         with tempfile.TemporaryDirectory(prefix="test-report-output.") as directory:
             root = Path(directory)
             shutil.copy(ROOT / "Makefile", root / "Makefile")
@@ -45,11 +45,28 @@ class TestReportOutputTests(unittest.TestCase):
                  if failure == "build" else "")
             )
             (root / "pa11/tests/general").mkdir(parents=True)
+            control_recipe = ""
+            if real_control:
+                source = root / "pa11/tests/general/100-unreachable-terminator.cpp"
+                source.write_text("// The producer supplies the control's LowIR.\n")
+                producer = root / "producer"
+                producer.write_text(
+                    "#!/usr/bin/env python3\nimport pathlib, sys\n"
+                    "output = pathlib.Path(sys.argv[sys.argv.index('-o') + 1])\n"
+                    "output.write_text(" + repr(
+                        "function @guarded_value(%x : i1) -> i32 [object=_Z13guarded_valueb] {\n"
+                        "  block ^entry:\n    " +
+                        ("return i32 0" if failure == "control" else "unreachable") +
+                        "\n}\n") + ")\n"
+                )
+                producer.chmod(0o755)
+                control_recipe = ("\t@perl " + str(ROOT / "scripts/check_pa11_unreachable_terminator.pl") +
+                                  " " + str(producer) + " tests/general\n")
             (root / "pa11/Makefile").write_text(
                 "test:\n"
-                "\t@echo suite success detail\n"
-                "\t@echo maintainer success detail >&2\n"
-                "\t@echo '2 2' >> ../.test_counts\n" +
+                "\t@if [ \"$$CPPGM_REPORT_QUIET\" != 1 ]; then echo suite success detail; "
+                "echo maintainer success detail >&2; fi\n" +
+                control_recipe + "\t@echo '2 2' >> ../.test_counts\n" +
                 ("\t@echo suite failure diagnostic; exit 1\n" if failure == "suite" else "") +
                 ("\t@echo comparison failure diagnostic; touch .test_failed\n"
                  if failure == "comparison" else "") +
@@ -101,6 +118,24 @@ class TestReportOutputTests(unittest.TestCase):
                          "===== ALL TESTS PASSED SUCCESSFULLY! (2 / 2) =====\n")
         self.assertEqual(result.stderr, "")
 
+    def test_real_successful_control_stays_quiet_beside_a_failure(self):
+        for exported in (False, True):
+            for ordered in (True, False):
+                with self.subTest(exported=exported, ordered=ordered):
+                    result = self.report(failure="comparison", real_control=True,
+                                         exported=exported, ordered=ordered)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("comparison failure diagnostic", result.stdout)
+                    self.assertNotIn("properties: PASS", result.stdout + result.stderr)
+                    self.assertNotIn("success detail", result.stdout + result.stderr)
+
+    def test_real_control_failure_remains_visible_in_quiet_mode(self):
+        result = self.report(failure="control", real_control=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("source builtin did not lower to an unreachable terminator",
+                      result.stdout + result.stderr)
+        self.assertNotIn("properties: PASS", result.stdout + result.stderr)
+
     def test_failed_children_expose_diagnostics(self):
         for failure in ("audit", "build", "suite", "comparison", "seams"):
             for ordered in (True, False):
@@ -113,6 +148,8 @@ class TestReportOutputTests(unittest.TestCase):
                     self.assertNotIn("ALL TESTS PASSED", result.stdout)
                     if failure != "seams":
                         self.assertNotIn("expected rewrite ERROR", result.stdout)
+                    if failure in ("suite", "comparison"):
+                        self.assertNotIn("success detail", result.stdout + result.stderr)
 
 
 if __name__ == "__main__":

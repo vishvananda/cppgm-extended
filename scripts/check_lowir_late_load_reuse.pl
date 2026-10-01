@@ -165,4 +165,4 @@ for my $test (@tests)
 }
 
 print "late memory/load reuse: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

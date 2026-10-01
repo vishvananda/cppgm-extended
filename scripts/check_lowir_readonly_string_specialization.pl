@@ -151,4 +151,4 @@ for my $test (@tests)
 }
 
 print "Readonly-string specialization: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

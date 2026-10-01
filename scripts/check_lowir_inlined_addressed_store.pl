@@ -118,4 +118,4 @@ for my $test (@tests)
 }
 
 print "inlined addressed stores: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

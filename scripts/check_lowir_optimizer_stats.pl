@@ -79,4 +79,4 @@ for my $test (@tests)
 }
 
 print "optimizer census: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

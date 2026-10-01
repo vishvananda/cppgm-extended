@@ -388,6 +388,7 @@ test-report-through-%: build
 
 test-report-nobuild: audit-compiler-exceptions
 	@export KEEP_GOING=1; \
+	export CPPGM_REPORT_QUIET=1; \
 	if [ "$(CPPGM_TEST_RUNNER)" = "1" ]; then \
 		export CPPGM_BATCH_TESTS=1; \
 		export WRAPPED_BATCH_STDIN=1; \

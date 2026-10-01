@@ -70,4 +70,4 @@ for my $test (@tests)
 }
 
 print "PA11 lifecycle policy properties: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

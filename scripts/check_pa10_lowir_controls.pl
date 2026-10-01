@@ -154,4 +154,4 @@ for my $test (@tests)
 }
 
 print "PA10 focused LowIR controls: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

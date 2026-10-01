@@ -79,4 +79,4 @@ for my $test (@tests)
 }
 
 print "PA11 string-literal storage properties: PASS (" .
-	scalar(@tests) . "/" . scalar(@tests) . ")\n";
+	scalar(@tests) . "/" . scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

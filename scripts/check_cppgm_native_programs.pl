@@ -55,4 +55,4 @@ for my $test (@tests)
 		}
 	}
 }
-print "native driver programs: PASS ($checks/$checks)\n";
+print "native driver programs: PASS ($checks/$checks)\n" unless $ENV{CPPGM_REPORT_QUIET};

@@ -119,4 +119,4 @@ for my $test (@driver_tests)
 
 print "inline-limit controls: PASS (" . scalar(@tests) . "/" .
 	scalar(@tests) . " LowIR, " . scalar(@driver_tests) . "/" .
-	scalar(@driver_tests) . " driver)\n";
+	scalar(@driver_tests) . " driver)\n" unless $ENV{CPPGM_REPORT_QUIET};

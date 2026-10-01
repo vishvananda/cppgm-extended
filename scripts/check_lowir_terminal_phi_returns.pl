@@ -171,4 +171,4 @@ for my $test (@tests)
 }
 
 print "terminal-phi returns: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

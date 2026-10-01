@@ -80,4 +80,4 @@ for my $test (@tests)
 }
 
 print "PA27 global-section properties: PASS (" . scalar(@tests) .
-	"/" . scalar(@tests) . ")\n";
+	"/" . scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

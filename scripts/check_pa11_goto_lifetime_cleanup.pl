@@ -128,4 +128,4 @@ for my $test (@tests)
 }
 
 print "PA11 goto lifetime properties: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

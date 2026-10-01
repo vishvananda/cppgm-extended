@@ -16,7 +16,7 @@ fix sequence is complete, as requested.
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and isolated export each print one success total. Final combined export pending. |
-| HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Open: the failed PA12 assignment log included `PA12 survivor properties: PASS (13/13)` beside real comparison errors. Passing reports remain quiet; successful control producers also need the report's quiet setting. Validate shipped recipes at the final combined export. |
+| HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in the accompanying checkpoint: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Full combined export remains deferred. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
 | DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2 removes twenty scalar-array false positives. The static-declaration checkpoint uses parsed template headers for pointer/reference NTTPs, removing four more false positives while preserving actual pointer/reference/member/function NTTP controls. |
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
@@ -1815,3 +1815,29 @@ checks, file/function limits and placement with no early-placement findings.
 The failed PA12 log from an earlier compiler trial exposed the remaining
 successful-control summary leak recorded in HARNESS-FAIL; no harness code was
 changed in this compiler checkpoint.
+
+## Failed-report control output checkpoint
+
+The report now exports CPPGM_REPORT_QUIET to its assignment subprocesses. All
+39 focused Perl controls suppress their successful summary in that mode while
+retaining their failure diagnostics. Ordinary explicit controls still print
+their summary. This prevents a successful PA12 survivor check from appearing
+beside unrelated fixture failures when the report prints a failed assignment's
+log. The report does not filter diagnostic text by guessing which words denote
+errors.
+
+The seven report-output tests pass, including an actual focused control beside
+a failed comparison in both output orders and under the sanitized student
+Makefile. An actual failing focused control retains its diagnostic. PA12's
+13 survivor controls also pass with the real compiler/backend in ordinary and
+quiet modes, with the expected summary in the former and empty output in the
+latter. All 39 producers pass Perl syntax checks; make test-harness passes;
+strict report remains 5969/5969 with exactly one output line. The compiler hash
+still matches the Alpha conversion-selection performance manifest, so this
+output-only change does not require another compiler performance run.
+
+Evidence remains under /tmp/cppgm-v4-audit-review/report-failure-output/.
+The root Makefile sanitizer retains the quiet export statement and introduces
+no missing script dependency; the focused scripts retain their shipped paths.
+Full fixture discovery, reference bundle and combined student-export validation
+remain deferred until all tracker fixes are complete.

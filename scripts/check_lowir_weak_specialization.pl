@@ -102,4 +102,4 @@ for my $test (@tests)
 }
 
 print "weak specialization profitability: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

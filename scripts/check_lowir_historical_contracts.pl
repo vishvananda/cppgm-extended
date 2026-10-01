@@ -167,4 +167,4 @@ for my $test (@tests)
 }
 
 print "historical LowIR contracts: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

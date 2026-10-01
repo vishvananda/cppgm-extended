@@ -161,4 +161,4 @@ for my $test (@tests)
 }
 
 print "O3 fast-path versioning: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

@@ -268,4 +268,4 @@ for my $test (@tests)
 }
 
 print "native O3 parameter-address rematerialization: PASS (" .
-	scalar(@tests) . "/" . scalar(@tests) . ")\n";
+	scalar(@tests) . "/" . scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};

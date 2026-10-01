@@ -120,4 +120,4 @@ for my $test (@tests)
 }
 
 print "O3 terminal staged object swaps: PASS (" . scalar(@tests) . "/" .
-	scalar(@tests) . ")\n";
+	scalar(@tests) . ")\n" unless $ENV{CPPGM_REPORT_QUIET};
