@@ -700,7 +700,8 @@ private:
 	ParserAttempt TryParseParameterClause(bool speculative);
 	NodeId ParseDeclarator(bool abstract, TextId* name = 0, bool speculative = false);
 	NodeId ParseDeclSpecifierSeq(bool for_type_id, std::string* first_type = 0);
-	bool ParseTypeId(NodeId parent, bool attach = true);
+	bool ParseTypeId(NodeId parent, bool attach = true,
+		bool* plain_fundamental = 0);
 	NodeId ParseCtorInitializer();
 	NodeId ParseCondition(SimpleTokenKind terminator = OP_RPAREN);
 	int BinaryPrecedence(std::uint16_t kind) const;
@@ -726,10 +727,12 @@ NodeId SyntaxParser::ParseDeclSpecifierSeq(bool for_type_id, std::string* first_
 	bool saw_type = false;
 	bool saw_user_type = false;
 	bool saw_int128 = false;
+	bool has_attributes = false;
 	while (true)
 	{
 		if (AtHostedAttribute())
 		{
+			has_attributes = true;
 			std::vector<NodeId> attributes;
 			while (ParseLeadingAttribute(&attributes)) {}
 			for (std::size_t i = 0; i < attributes.size(); ++i)
@@ -888,9 +891,11 @@ NodeId SyntaxParser::ParseDeclSpecifierSeq(bool for_type_id, std::string* first_
 		Rollback(mark);
 		return kNoNode;
 	}
+	if (for_type_id && !saw_user_type && !has_attributes)
+		arena_.AddFlags(sequence, SYNTAX_FLAG_FUNDAMENTAL_TYPES_ONLY);
 	return sequence;
 }
-bool SyntaxParser::ParseTypeId(NodeId parent, bool attach)
+bool SyntaxParser::ParseTypeId(NodeId parent, bool attach, bool* plain_fundamental)
 { if (TryParseBuiltinTransformTypeId(parent, attach)) return true;
 	const Mark mark = Checkpoint();
 	const NodeId type_id = arena_.Make("type-id");
@@ -907,6 +912,8 @@ bool SyntaxParser::ParseTypeId(NodeId parent, bool attach)
 	const NodeId declarator = ParseDeclarator(true, 0, true);
 	if (declarator != kNoNode) arena_.Add(type_id, declarator);
 	else Rollback(declarator_mark);
+	if (plain_fundamental) *plain_fundamental = declarator == kNoNode &&
+		(arena_.Flags(specifiers) & SYNTAX_FLAG_FUNDAMENTAL_TYPES_ONLY) != 0;
 	arena_.SetTokenRange(type_id, mark.position, position_);
 	if (attach) arena_.Add(parent, type_id);
 	return true;
@@ -1177,8 +1184,19 @@ NodeId SyntaxParser::ParseDeclarator(bool abstract, TextId* name, bool speculati
 				{
 					const std::size_t first = position_ - 1; Expect(OP_LPAREN);
 					const NodeId types = arena_.Make("exception-type-list"); arena_.AddFlags(types, SYNTAX_FLAG_SEMANTIC_ONLY);
-					if (!Match(OP_RPAREN)) { do { if (!ParseTypeId(types)) throw Error("expected exception type-id"); } while (Match(OP_COMMA)); Expect(OP_RPAREN); }
+					bool fundamental_only = true;
+					if (!Match(OP_RPAREN))
+					{
+						do
+						{
+							bool plain = false;
+							if (!ParseTypeId(types, true, &plain)) throw Error("expected exception type-id");
+							fundamental_only = fundamental_only && plain;
+						} while (Match(OP_COMMA));
+						Expect(OP_RPAREN);
+					}
 					const NodeId qualifier = arena_.Make("function-qualifier", JoinSpellings(first, position_));
+					if (fundamental_only) arena_.AddFlags(qualifier, SYNTAX_FLAG_FUNDAMENTAL_TYPES_ONLY);
 					arena_.Add(qualifier, types); arena_.Add(result, qualifier);
 					continue;
 				}

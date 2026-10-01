@@ -33,6 +33,7 @@ fix sequence is complete, as requested.
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
+| EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done in the accompanying checkpoint: eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | Open; prior fb15cd49e class-value temporary cleanup fixes one case only. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
@@ -1116,3 +1117,56 @@ sources reject here at O0/O2 and compile with Clang/GCC. PA29-ALIGN records this
 separately; compiler observations and copied sources are retained in
 /tmp/cppgm-v4-audit-review/student-refresh-pa29-158/alignment-controls.json.
 The running student checkout was read only and was not built or modified.
+
+## Ordinary complete-class exception specification checkpoint
+
+[CWG 1330](https://cplusplus.github.io/CWG/issues/1330.html) adds exception
+specifications to complete-class contexts. Ordinary nondependent declarations
+now retain their specification syntax and scope until the enclosing class is
+complete. This includes unused declarations, nested classes and nondependent
+member-template expressions; dependent template expressions remain demand-driven.
+A sparse pending table retains only declarations that require deferral. Nested
+override restrictions travel with their enclosing completion work instead of
+forcing an incomplete outer-class size query. The existing cached specification
+query publishes the final binding facts. sizeof(type) also distinguishes an
+injected class name from its constructor binding within class scope.
+
+Eight new PA6/12/13/17 fixtures cover ordinary and nested size/type/function
+lookup, constructors/destructors/conversions, member-template queries, and
+unused-invalid/nested-override rejection. Of 48 final fixture controls at O0/O2,
+46 match; GCC rejects the two late-typedef dynamic-specification controls that
+Clang and ours accept. CWG 1330 explicitly extends class-name scope to exception
+specifications, so the valid fixture remains. The preceding fixture version
+without this additional late-typedef declaration matched all 48 controls.
+The 87-command matrix has no additional disagreement beyond
+the three previously recorded virtual-template timing controls. Those remain
+EH-SPEC-TIMING review work; this checkpoint does not infer their correctness
+from host acceptance alone or change any associated oracle. Existing references
+and ABI spellings are unchanged; only the eight new fixtures use ref-test.
+
+Final validation after the parser/qualifier refinement passes strict 5877/5877
+with exactly one total line, PA6/12/13/17 (108/269/50/346), debug-info, variants,
+self-host through PA5, all nine architecture targets, file limits, and default
+plus focused placement. File audit retains 36 inherited warnings and no errors.
+The fact type lives in the model header to preserve the analyzer header limit. Bare fundamental exception lists keep immediate validation using
+a fact captured while parsing their type-ids; named and declarator-bearing lists
+retain completion work. The deferral helper consumes the already-found qualifier.
+
+Local wall-time ABBA measurements were noisy, including identical-binary
+calibration. Alpha provides supported hardware counters. Its isolated immutable
+A/A (four blocks) and A/B (eight blocks) comparisons cover frozen recognition
+and 1500/6000-pair virtual-declaration inputs. Median instruction ratios are
+0.999965, 1.001963 and 1.002021; all fall within the repository's 0.5% instruction
+tolerance. Median RSS ratios are 0.999740, 0.999206 and 1.002923. Cycles are
+recorded (ratios 0.997959, 1.008360 and 1.011586), with calibration variation;
+they are not the repository gate. Every one of the 144 objects is identical for
+its input. Local Cachegrind confirms about 0.2% added instruction work on the
+largest declaration input. All intermediate observations are retained.
+
+Evidence is retained in /tmp/cppgm-v4-audit-review/exception-spec-timing/ and
+/tmp/cppgm-v4-audit-review/perf-complete-class-exceptions/alpha/, including raw
+counter/time logs, command and hash manifests, paired summaries and controls.
+The isolated Alpha directory is
+/tmp/cppgm-v4-audit-review-20261001-complete-class/. Existing checkouts there and
+the running student checkout were not modified. Final student export remains
+deferred.

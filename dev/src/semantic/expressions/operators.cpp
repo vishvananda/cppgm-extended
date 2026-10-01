@@ -141,7 +141,8 @@ ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
 		{
 			const LookupResult value =
 				LookupSyntaxName(name, scope, LOOKUP_ORDINARY);
-			if (value.ordinary != kNoBinding)
+			if (value.ordinary != kNoBinding &&
+				!program_->bindings[value.ordinary].constructor)
 			{
 				measured = EffectiveType(
 					program_->bindings[value.ordinary].type);
@@ -166,7 +167,8 @@ ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
 		const std::string spelling = arena_->Payload(operand);
 		const LookupResult ordinary =
 			LookupSyntaxName(operand, scope, LOOKUP_ORDINARY);
-		if (ordinary.ordinary == kNoBinding)
+		if (ordinary.ordinary == kNoBinding ||
+			program_->bindings[ordinary.ordinary].constructor)
 		{
 			const LookupResult type =
 				LookupSyntaxName(operand, scope, LOOKUP_TYPE);

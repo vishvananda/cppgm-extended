@@ -198,6 +198,9 @@ PA6 must support:
   `struct` / `class` redeclarations of the same non-union class
 - visibility of later-declared member types inside member function bodies,
   which are complete-class contexts (N3485 3.3.7/1)
+- complete-class lookup and size queries in ordinary member exception
+  specifications (C++11 defect resolution CWG 1330); an unused ordinary
+  member's specification must still be valid
 - named enum declarations and scoped opaque enum declarations
 - elaborated class and enum type specifiers in supported declarations;
   elaborated class lookup may find a type hidden by an ordinary-name binding,

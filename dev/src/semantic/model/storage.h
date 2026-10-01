@@ -7,6 +7,18 @@ namespace cppgm
 namespace semantic
 {
 
+struct ClassExceptionSpecificationFact
+{
+	EntityId owner;
+	BindingId binding;
+	NodeId declarator;
+	ScopeId scope;
+	ClassExceptionSpecificationFact(EntityId owner_value, BindingId binding_value,
+		NodeId declarator_value, ScopeId scope_value)
+		: owner(owner_value), binding(binding_value),
+		  declarator(declarator_value), scope(scope_value) {}
+};
+
 struct GraphStorage
 {
 	InternedStringTable strings;

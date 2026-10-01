@@ -10,15 +10,17 @@ namespace cppgm
 namespace semantic
 {
 
-bool Analyzer::ShouldDeferClassTemplateMemberExceptionSpecification(
-	NodeId declarator) const
+bool Analyzer::ShouldDeferClassMemberExceptionSpecification(
+	NodeId qualifier) const
 {
-	if (current_class_context_ == kNoEntity ||
-		!IsClassTemplateSpecializationContext(current_class_context_))
-		return false;
-	const NodeId qualifier = FindChild(declarator, ::cppgm::syntax::STAG_FUNCTION_QUALIFIER);
-	return qualifier != kNoNode &&
-		FirstSemanticChild(qualifier) != kNoNode;
+	if (current_class_context_ == kNoEntity || qualifier == kNoNode) return false;
+	const bool templated = IsClassTemplateSpecializationContext(current_class_context_);
+	if (program_->entities[current_class_context_].complete && !templated) return false;
+	// The parser captures this structural fact while consuming each type-id.
+	// Named types and declarators retain complete-class lookup and evaluation.
+	if (!templated && (arena_->Flags(qualifier) &
+		::cppgm::syntax::SYNTAX_FLAG_FUNDAMENTAL_TYPES_ONLY) != 0) return false;
+	return FirstSemanticChild(qualifier) != kNoNode;
 }
 
 bool Analyzer::IsNonthrowing(NodeId declarator, ScopeId scope,
@@ -29,9 +31,8 @@ bool Analyzer::IsNonthrowing(NodeId declarator, ScopeId scope,
 	const std::string spelling = PayloadSource(qualifier);
 	if (spelling == "noexcept" || spelling == "throw()") return true;
 	if (spelling.compare(0, 8, "noexcept") != 0) return false;
-	if (!force_evaluation && current_class_context_ != kNoEntity &&
-		IsClassTemplateSpecializationContext(current_class_context_) &&
-		FirstSemanticChild(qualifier) != kNoNode)
+	if (!force_evaluation &&
+		ShouldDeferClassMemberExceptionSpecification(qualifier))
 		return false;
 	const NodeId expression_node = FirstSemanticChild(qualifier);
 	if (expression_node == kNoNode)
@@ -56,8 +57,9 @@ void Analyzer::ConfigureFunctionExceptionSpecification(
 	if (binding == kNoBinding) return;
 	binding = program_->bindings[binding].canonical;
 	FunctionInfo& function = GetMutableFunction(binding);
+	const NodeId qualifier = FindChild(declarator, ::cppgm::syntax::STAG_FUNCTION_QUALIFIER);
 	if (!force_evaluation &&
-		ShouldDeferClassTemplateMemberExceptionSpecification(declarator))
+		ShouldDeferClassMemberExceptionSpecification(qualifier))
 	{
 		if (function.exception_specification_state ==
 				EXCEPTION_SPECIFICATION_FIXED &&
@@ -67,10 +69,11 @@ void Analyzer::ConfigureFunctionExceptionSpecification(
 			function.exception_specification_scope = scope;
 			function.exception_specification_state =
 				EXCEPTION_SPECIFICATION_DEFERRED;
+			if (!IsClassTemplateSpecializationContext(current_class_context_))
+				DeferOrdinaryClassExceptionSpecification(binding, declarator, scope);
 		}
 		return;
 	}
-	const NodeId qualifier = FindChild(declarator, ::cppgm::syntax::STAG_FUNCTION_QUALIFIER);
 	FunctionExceptionBoundaryKind boundary =
 		program_->bindings[binding].nonthrowing ?
 			FUNCTION_EXCEPTION_BOUNDARY_TERMINATE :
@@ -137,6 +140,46 @@ void Analyzer::ConfigureFunctionExceptionSpecification(
 	program_->function_exception_types.insert(
 		program_->function_exception_types.end(), allowed.begin(), allowed.end());
 	function.exception_specification_configured = true;
+}
+
+void Analyzer::DeferOrdinaryClassExceptionSpecification(BindingId binding,
+	NodeId declarator, ScopeId scope)
+{
+	const std::size_t index = ordinary_class_exception_facts_.size();
+	ordinary_class_exception_facts_.push_back(
+		ClassExceptionSpecificationFact(current_class_context_, binding, declarator, scope));
+	ordinary_class_exception_specifications_.Ensure(current_class_context_).Push(index);
+}
+
+void Analyzer::CompleteClassExceptionSpecifications(EntityId entity,
+	EntityId enclosing)
+{
+	const CompactIndexSequence* pending =
+		ordinary_class_exception_specifications_.Find(entity);
+	if (!pending || pending->Size() == 0) return;
+	// Evaluation can instantiate nested classes and grow this sparse table.
+	const std::vector<std::size_t> specifications = pending->Copy();
+	ordinary_class_exception_specifications_.Ensure(entity).Clear();
+	if (enclosing != kNoEntity && !program_->entities[enclosing].complete)
+	{
+		CompactIndexSequence& outer =
+			ordinary_class_exception_specifications_.Ensure(enclosing);
+		for (std::size_t i = 0; i < specifications.size(); ++i)
+			outer.Push(specifications[i]);
+		return;
+	}
+	for (std::size_t i = 0; i < specifications.size(); ++i)
+	{
+		const ClassExceptionSpecificationFact fact =
+			ordinary_class_exception_facts_[specifications[i]];
+		if (fact.binding != kNoBinding)
+			EnsureFunctionExceptionSpecification(fact.binding);
+		else
+		{
+			ScopedValueRestore<EntityId> class_context(&current_class_context_, fact.owner);
+			IsNonthrowing(fact.declarator, fact.scope, true);
+		}
+	}
 }
 
 bool Analyzer::IsConstexprLiteralType(TypeId type) const

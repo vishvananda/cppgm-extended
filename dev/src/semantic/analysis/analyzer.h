@@ -1431,7 +1431,7 @@ private:
 	void CompleteClassPolymorphism(EntityId entity);
 	void RecordVirtualExceptionOverride(EntityId entity, BindingId function,
 		BindingId base);
-	void CompleteVirtualExceptionOverrides(EntityId entity);
+	void CompleteVirtualExceptionOverrides(EntityId entity, EntityId enclosing);
 	bool ExceptionTypeAllowed(TypeId thrown, TypeId allowed) const;
 	void FinalizeClassPolymorphismViews(EntityId entity);
 	void BeginPolymorphicVirtualViewIndex(
@@ -1757,8 +1757,11 @@ private:
 	bool TryAnalyzeUserDefinedNumericLiteral(const std::string& spelling,
 		ScopeId scope, TypeId target, ExpressionInfo* result);
 	ExpressionInfo AnalyzeThisExpression(ScopeId scope);
-	bool ShouldDeferClassTemplateMemberExceptionSpecification(
-		NodeId declarator) const;
+	void DeferOrdinaryClassExceptionSpecification(BindingId binding,
+		NodeId declarator, ScopeId scope);
+	void CompleteClassExceptionSpecifications(EntityId entity, EntityId enclosing);
+	bool ShouldDeferClassMemberExceptionSpecification(
+		NodeId qualifier) const;
 	bool IsNonthrowing(NodeId declarator, ScopeId scope,
 		bool force_evaluation = false);
 	ExpressionInfo AnalyzeNoexcept(NodeId node, ScopeId scope);
@@ -1998,6 +2001,8 @@ private:
 	std::vector<std::vector<std::size_t> >
 		entity_conversion_function_templates_;
 	std::vector<std::vector<BindingId> > entity_member_functions_;
+	IndexedSequenceTable ordinary_class_exception_specifications_;
+	std::vector<ClassExceptionSpecificationFact> ordinary_class_exception_facts_;
 	std::vector<ClassPolymorphismFacts>& class_polymorphism_;
 	std::vector<std::uint32_t> virtual_slot_by_binding_;
 	std::vector<std::uint32_t> variable_node_by_binding_;

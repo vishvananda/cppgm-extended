@@ -590,7 +590,9 @@ dev/src/semantic/lifetime/local_statics.cpp	IsConstexprImplicitDefaultConstructo
 dev/src/semantic/lifetime/local_statics.cpp	IsConstexprLiteralType	1	dev/src/semantic/lifetime/local_statics.cpp	keep
 dev/src/semantic/lifetime/local_statics.cpp	IsNonthrowing	1	dev/src/semantic/lifetime/local_statics.cpp	keep
 dev/src/semantic/lifetime/local_statics.cpp	RegisterVariableLifetimeAndStorage	1	dev/src/semantic/lifetime/local_statics.cpp	keep
-dev/src/semantic/lifetime/local_statics.cpp	ShouldDeferClassTemplateMemberExceptionSpecification	1	dev/src/semantic/lifetime/local_statics.cpp	keep
+dev/src/semantic/lifetime/local_statics.cpp	ShouldDeferClassMemberExceptionSpecification	1	dev/src/semantic/lifetime/local_statics.cpp	keep
+dev/src/semantic/lifetime/local_statics.cpp	CompleteClassExceptionSpecifications	1	dev/src/semantic/lifetime/local_statics.cpp	keep
+dev/src/semantic/lifetime/local_statics.cpp	DeferOrdinaryClassExceptionSpecification	1	dev/src/semantic/lifetime/local_statics.cpp	keep
 dev/src/semantic/lifetime/local_statics.cpp	ValidateConstexprCallableType	1	dev/src/semantic/lifetime/local_statics.cpp	keep
 dev/src/semantic/lifetime/local_statics.cpp	ValidateConstexprClassDeclarations	1	dev/src/semantic/lifetime/local_statics.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	AddSynthesizedAssignmentBody	1	dev/src/semantic/lifetime/special_members.cpp	keep

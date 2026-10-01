@@ -64,7 +64,7 @@ bool Analyzer::ExceptionTypeAllowed(TypeId thrown, TypeId allowed) const
 		0, &all_public, 0, &ambiguous) && all_public && !ambiguous;
 }
 
-void Analyzer::CompleteVirtualExceptionOverrides(EntityId entity)
+void Analyzer::CompleteVirtualExceptionOverrides(EntityId entity, EntityId enclosing)
 {
 	if (entity >= class_polymorphism_.size() ||
 		class_polymorphism_[entity].exception_overrides.empty()) return;
@@ -73,6 +73,16 @@ void Analyzer::CompleteVirtualExceptionOverrides(EntityId entity)
 	// detach them before evaluation, which can grow the semantic fact tables.
 	std::vector<VirtualExceptionOverrideFact> overrides;
 	overrides.swap(class_polymorphism_[entity].exception_overrides);
+	if (enclosing != kNoEntity && !program_->entities[enclosing].complete &&
+		!IsClassTemplateSpecializationContext(entity))
+	{
+		// A nested member specification can refer to its enclosing class.
+		// Validate its retained edges when that complete-class context is ready.
+		std::vector<VirtualExceptionOverrideFact>& outer =
+			class_polymorphism_[enclosing].exception_overrides;
+		outer.insert(outer.end(), overrides.begin(), overrides.end());
+		return;
+	}
 	for (std::size_t i = 0; i < overrides.size(); ++i)
 	{
 		const BindingId base = overrides[i].base;

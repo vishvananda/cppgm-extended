@@ -1070,7 +1070,10 @@ void Analyzer::ConfigureFunctionTemplateException(
 		pattern->nonthrowing = false;
 		return;
 	}
-	if (ShouldDeferClassTemplateMemberExceptionSpecification(declarator))
+	const NodeId qualifier = FindChild(declarator, ::cppgm::syntax::STAG_FUNCTION_QUALIFIER);
+	if (current_class_context_ != kNoEntity &&
+		IsClassTemplateSpecializationContext(current_class_context_) &&
+		ShouldDeferClassMemberExceptionSpecification(qualifier))
 	{
 		pattern->dependent_exception_specification = true;
 		pattern->nonthrowing = false;
@@ -1080,7 +1083,6 @@ void Analyzer::ConfigureFunctionTemplateException(
 	const EntityId access_owner = member_owner != kNoEntity ? member_owner :
 		pattern->friend_owners.empty() ? kNoEntity : pattern->friend_owners.front();
 	ScopedEntityContext access_context(&current_class_context_, access_owner);
-	const NodeId qualifier = FindChild(declarator, ::cppgm::syntax::STAG_FUNCTION_QUALIFIER);
 	const NodeId expression = qualifier == kNoNode ?
 		kNoNode : FirstSemanticChild(qualifier);
 	if (expression != kNoNode)
@@ -1091,6 +1093,13 @@ void Analyzer::ConfigureFunctionTemplateException(
 				names.insert(shape.parameters[i].name);
 		pattern->dependent_exception_specification =
 			SyntaxUsesAnyTemplateParameter(expression, names);
+	}
+	if (!pattern->dependent_exception_specification &&
+		ShouldDeferClassMemberExceptionSpecification(qualifier))
+	{
+		DeferOrdinaryClassExceptionSpecification(
+			kNoBinding, declarator, shape.parameter_scope);
+		pattern->dependent_exception_specification = true;
 	}
 	pattern->nonthrowing = pattern->dependent_exception_specification ?
 		false : IsNonthrowing(declarator, shape.parameter_scope);
