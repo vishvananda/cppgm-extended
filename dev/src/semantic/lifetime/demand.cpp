@@ -8,14 +8,13 @@ namespace semantic
 
 namespace
 {
-bool HasThrowingLexicalCleanup(const DumpArena& dump, const Program& program,
+bool HasLexicalBodyCleanup(const DumpArena& dump,
 	std::size_t first)
 {
 	for (std::size_t i = first; i < dump.lexical_cleanup_plans.size(); ++i)
 	{
 		const LexicalCleanupPlan& plan = dump.lexical_cleanup_plans[i];
-		if (plan.kind == LEXICAL_CLEANUP_OBJECT &&
-			!program.bindings[dump.nodes[plan.node].binding].nonthrowing) return true;
+		if (plan.kind == LEXICAL_CLEANUP_OBJECT) return true;
 	}
 	return false;
 }
@@ -326,9 +325,11 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 				function, info.function_try_block, &function_try);
 			if (function_try != kNoDumpEdge)
 				PushExceptionControlContext(function_try, function_scope);
+			const std::size_t first_body_context = exception_control_contexts_.size();
 			const std::uint32_t constructor_body =
 				MakeDump(DUMP_COMPOUND_STATEMENT);
 			dump_.Add(constructor_parent, constructor_body);
+			current_exception_body_cleanup_ = constructor_body;
 			if ((info.special_member == SPECIAL_MEMBER_COPY_CONSTRUCTOR ||
 				 info.special_member == SPECIAL_MEMBER_MOVE_CONSTRUCTOR) &&
 				(info.implicit_special_member || info.defaulted_special_member))
@@ -344,8 +345,12 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 				AnalyzeCompound(info.definition_body, function_scope,
 					constructor_body);
 			DemandConstructorUnwindDestructors(constructor_body);
-			dump_.nodes[constructor_body].throwing_lexical_body_cleanup =
-				HasThrowingLexicalCleanup(dump_, *program_, first_lexical_plan);
+			dump_.nodes[constructor_body].body_contains_source_try =
+				exception_control_contexts_.size() != first_body_context;
+			dump_.nodes[constructor_body].lexical_body_cleanup =
+				dump_.nodes[constructor_body].lexical_body_cleanup ||
+				HasLexicalBodyCleanup(dump_, first_lexical_plan);
+			current_exception_body_cleanup_ = kNoDumpEdge;
 			if (function_try != kNoDumpEdge)
 			{
 				PopExceptionControlContext();
@@ -371,9 +376,11 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 				function, info.function_try_block, &function_try);
 			if (function_try != kNoDumpEdge)
 				PushExceptionControlContext(function_try, function_scope);
+			const std::size_t first_body_context = exception_control_contexts_.size();
 			const std::uint32_t destructor_body =
 				MakeDump(DUMP_COMPOUND_STATEMENT);
 			dump_.Add(destructor_parent, destructor_body);
+			current_exception_body_cleanup_ = destructor_body;
 			const EntityId entity =
 				program_->bindings[info.binding].member_owner;
 			if (entity != kNoEntity &&
@@ -384,8 +391,12 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 			if (info.definition_body != kNoNode)
 				AnalyzeCompound(info.definition_body, function_scope,
 					destructor_body);
-			dump_.nodes[destructor_body].throwing_lexical_body_cleanup =
-				HasThrowingLexicalCleanup(dump_, *program_, first_lexical_plan);
+			dump_.nodes[destructor_body].body_contains_source_try =
+				exception_control_contexts_.size() != first_body_context;
+			dump_.nodes[destructor_body].lexical_body_cleanup =
+				dump_.nodes[destructor_body].lexical_body_cleanup ||
+				HasLexicalBodyCleanup(dump_, first_lexical_plan);
+			current_exception_body_cleanup_ = kNoDumpEdge;
 			AddDestructorSubobjectActions(
 				program_->bindings[info.binding].member_owner,
 				info.binding, destructor_body);

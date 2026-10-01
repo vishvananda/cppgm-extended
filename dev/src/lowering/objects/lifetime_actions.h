@@ -62,7 +62,7 @@ protected:
 		const BlockId terminate = derived.AddBlock(derived.NewLabel("lexical_cleanup_terminate"));
 		derived.SelectBlock(terminate);
 		Instruction clause(Instruction::EH_CATCH_ALL);
-		clause.first = Operand(1, LowI32());
+		clause.first = Operand(derived.AllocateExceptionHandlerSelector(), LowI32());
 		derived.Emit(clause);
 		const Operand exception = derived.Temp(LowPtr());
 		Instruction read(Instruction::EXCEPTION);
@@ -76,6 +76,15 @@ protected:
 		derived.Emit(Instruction(Instruction::UNREACHABLE));
 		derived.SelectBlock(original);
 		return terminate;
+	}
+
+	void LowerUnwindDestructorAction(const DumpNode& action)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const bool may_throw = !derived.program_.bindings[action.binding].nonthrowing;
+		if (may_throw) derived.EmitEhTarget(Instruction::EH_TRY, MakeCleanupTerminateBlock());
+		derived.LowerDestructorAction(action, true);
+		if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
 	}
 
 	BlockId LexicalUnwindCleanup(std::uint32_t root, std::size_t depth)
@@ -749,7 +758,7 @@ protected:
 			derived.EmitJump(next);
 			derived.SelectBlock(cleanup);
 			for (std::size_t j = i + 1; j < children.size(); ++j)
-				derived.LowerDestructorAction(derived.arena_.nodes[children[j]]);
+				LowerUnwindDestructorAction(derived.arena_.nodes[children[j]]);
 			derived.Emit(Instruction(Instruction::EH_END));
 			derived.EmitExceptionResume();
 			derived.SelectBlock(next);
@@ -779,7 +788,8 @@ protected:
 		}
 		const BlockId cleanup = derived.AddBlock(
 			derived.NewLabel("destructor_cleanup"));
-		const bool detached = derived.arena_.nodes[body].throwing_lexical_body_cleanup;
+		const bool detached = derived.arena_.nodes[body].lexical_body_cleanup ||
+			derived.arena_.nodes[body].body_contains_source_try;
 		const BlockId cleanup_entry = detached ? derived.AddBlock(
 			derived.NewLabel("destructor_cleanup_entry")) : cleanup;
 		const BlockId end = derived.AddBlock(
@@ -819,7 +829,7 @@ protected:
 			derived.SelectBlock(cleanup_entry);
 		}
 		for (std::size_t i = first_action; i < children.size(); ++i)
-			derived.LowerDestructorAction(derived.arena_.nodes[children[i]]);
+			LowerUnwindDestructorAction(derived.arena_.nodes[children[i]]);
 		if (!detached) derived.Emit(Instruction(Instruction::EH_END));
 		derived.FinishExceptionCleanupDispatch(detached &&
 			derived.EnclosingTryRegion() != 0, false);
@@ -835,7 +845,8 @@ protected:
 			body, "destructor_progress", LowI64()), LowI64());
 		const BlockId cleanup = derived.AddBlock(
 			derived.NewLabel("destructor_cleanup"));
-		const bool detached = derived.arena_.nodes[body].throwing_lexical_body_cleanup;
+		const bool detached = derived.arena_.nodes[body].lexical_body_cleanup ||
+			derived.arena_.nodes[body].body_contains_source_try;
 		const BlockId cleanup_entry = detached ? derived.AddBlock(
 			derived.NewLabel("destructor_cleanup_entry")) : cleanup;
 		const BlockId end = derived.AddBlock(
@@ -915,7 +926,7 @@ protected:
 		for (std::size_t i = 0; i < action_count; ++i)
 		{
 			derived.SelectBlock(cleanup_blocks[i]);
-			derived.LowerDestructorAction(
+			LowerUnwindDestructorAction(
 				derived.arena_.nodes[children[first_action + i]]);
 			if (i + 1 < action_count)
 				derived.EmitJump(cleanup_blocks[i + 1]);

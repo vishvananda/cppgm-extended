@@ -194,6 +194,11 @@ To complete PA21, implement these goals:
    array elements if a later construction step throws. Representation-copy
    prefixes still establish subobject lifetimes. A partial member-array
    cleanup continues with earlier subobjects of the enclosing constructor.
+   Exceptions escaping a source `try` inside a constructor or destructor body
+   still destroy the appropriate bases and members. An enclosing body handler
+   may catch the exception before that cleanup; a function-try handler runs
+   after it. A delegating constructor destroys its completed target when its
+   own body fails. A second exception during unwind destruction terminates.
    Construction and destruction cleanup dependencies on class-template
    destructors should be demanded only after a recursively containing type is
    complete, and should retain that concrete owner in emitted cleanup calls.

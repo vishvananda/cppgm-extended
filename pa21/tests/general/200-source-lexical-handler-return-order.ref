@@ -347,7 +347,7 @@ function @case_0__f() -> i32 [binding=strong, object=_ZN6case_01fEv] {
     jump ^lexical_unwind_13
 
   block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -561,7 +561,7 @@ function @case_1__f() -> void [binding=strong, object=_ZN6case_11fEv] {
     jump ^lexical_unwind_13
 
   block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -800,7 +800,7 @@ function @case_2__f(%flag : u8) -> i32 [binding=strong, object=_ZN6case_21fEb] {
     jump ^lexical_unwind_19
 
   block ^lexical_cleanup_terminate_23:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t13 = exception ptr
     call void @cppgm_call_terminate(%t13)
     unreachable
@@ -1041,7 +1041,7 @@ function @case_3__f() -> i32 [binding=strong, object=_ZN6case_31fEv] {
     jump ^lexical_unwind_20
 
   block ^lexical_cleanup_terminate_23:
-    eh_catch_all, 1
+    eh_catch_all, 3
     %t18 = exception ptr
     call void @cppgm_call_terminate(%t18)
     unreachable
@@ -1296,7 +1296,7 @@ function @case_4__f() -> i32 [binding=strong, object=_ZN6case_41fEv] {
     jump ^lexical_unwind_16
 
   block ^lexical_cleanup_terminate_19:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t14 = exception ptr
     call void @cppgm_call_terminate(%t14)
     unreachable
@@ -1522,7 +1522,7 @@ function @case_5__check() -> i32 [binding=strong, object=_ZN6case_55checkEv] {
     jump ^lexical_unwind_16
 
   block ^lexical_cleanup_terminate_18:
-    eh_catch_all, 1
+    eh_catch_all, 3
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -1721,7 +1721,7 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
     jump ^lexical_unwind_14
 
   block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -1914,7 +1914,7 @@ function @case_7__f() -> i32 [binding=strong, object=_ZN6case_71fEv] {
     jump ^lexical_unwind_9
 
   block ^lexical_cleanup_terminate_10:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t4 = exception ptr
     call void @cppgm_call_terminate(%t4)
     unreachable
@@ -2105,7 +2105,7 @@ function @case_8__f() -> i32 [binding=strong, object=_ZN6case_81fEv] {
     jump ^lexical_unwind_13
 
   block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable

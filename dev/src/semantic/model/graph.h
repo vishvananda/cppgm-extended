@@ -230,11 +230,12 @@ struct DumpNode
 	bool reverse_pointer_compound_assignment : 1;
 	bool dynamic_type_query : 1;
 	bool dynamic_cast_reference : 1;
-	bool throwing_lexical_body_cleanup : 1;
+	bool lexical_body_cleanup : 1;
 	bool construction_recipe : 1;
 	bool construction_nonthrowing : 1;
 	bool contains_construction_cleanup : 1;
 	bool synthesized_prefix_lifetime_only : 1;
+	bool body_contains_source_try : 1;
 	FunctionTryBodyKind function_try_body;
 	// Packed SimpleTokenKind + 1 for operator expression nodes; 0 for none.
 	std::uint8_t operation_kind;
@@ -319,10 +320,10 @@ struct DumpNode
 		  complete_object_destruction(false),
 		  reverse_pointer_compound_assignment(false),
 		  dynamic_type_query(false), dynamic_cast_reference(false),
-		throwing_lexical_body_cleanup(false),
+		lexical_body_cleanup(false),
 		  construction_recipe(false), construction_nonthrowing(false),
 		  contains_construction_cleanup(false),
-		  synthesized_prefix_lifetime_only(false),
+		  synthesized_prefix_lifetime_only(false), body_contains_source_try(false),
 		  function_try_body(FUNCTION_TRY_BODY_NONE),
 		  operation_kind(0),
 		  exception_control_exit_count(0) {}

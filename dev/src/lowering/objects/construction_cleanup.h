@@ -96,15 +96,6 @@ protected:
 				semantic::kNoDumpEdge, type, destructor, destination));
 	}
 
-	std::uint32_t ConstructionCleanupTerminal() const
-	{
-		const Derived& derived = static_cast<const Derived&>(*this);
-		return construction_cleanup_active_ &&
-			derived.lexical_body_unwind_depth_ == derived.ActiveExceptionRegionCount() &&
-			derived.lexical_body_unwind_target_ != ir::kNoLowId ?
-				derived.lexical_body_unwind_target_ + 1 : 0;
-	}
-
 	void PushConstructionCleanup(const ConstructionCleanupStep& step)
 	{
 		if (construction_cleanup_steps_.size() >= UINT32_MAX)

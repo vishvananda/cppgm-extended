@@ -49,6 +49,7 @@ void Analyzer::BeginFunctionControlFlowFacts()
 	FunctionControlFlowFactState saved;
 	saved.contexts.swap(exception_control_contexts_);
 	saved.current_context = current_exception_control_context_;
+	saved.body_cleanup = current_exception_body_cleanup_;
 	saved.labels.swap(control_flow_labels_);
 	saved.pending_gotos.swap(pending_control_flow_gotos_);
 	function_control_flow_stack_.push_back(std::move(saved));
@@ -56,6 +57,7 @@ void Analyzer::BeginFunctionControlFlowFacts()
 	exception_control_contexts_.push_back(
 		ExceptionControlContextFact(kNoDumpEdge, 0));
 	current_exception_control_context_ = 0;
+	current_exception_body_cleanup_ = kNoDumpEdge;
 	control_flow_labels_.clear();
 	pending_control_flow_gotos_.clear();
 }
@@ -74,6 +76,7 @@ void Analyzer::FinishFunctionControlFlowFacts()
 	function_control_flow_stack_.pop_back();
 	exception_control_contexts_.swap(saved.contexts);
 	current_exception_control_context_ = saved.current_context;
+	current_exception_body_cleanup_ = saved.body_cleanup;
 	control_flow_labels_.swap(saved.labels);
 	pending_control_flow_gotos_.swap(saved.pending_gotos);
 }
@@ -682,6 +685,8 @@ void Analyzer::StageExceptionalFullExpression(
 	const std::size_t first_edge = dump_.edges.size();
 	AppendExceptionUnwindActions(scope, statement, true);
 	if (dump_.edges.size() == first_edge) return;
+	if (current_exception_body_cleanup_ != kNoDumpEdge)
+		dump_.nodes[current_exception_body_cleanup_].lexical_body_cleanup = true;
 	dump_.nodes[statement].full_expression_staging = true;
 	MarkFullExpressionCalls(expression);
 	for (std::size_t edge = first_edge; edge < dump_.edges.size(); ++edge)

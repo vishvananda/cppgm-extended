@@ -116,7 +116,7 @@ function @case_0__f() -> i32 [binding=strong, object=_ZN6case_01fEv] {
     jump ^lexical_unwind_9
 
   block ^lexical_cleanup_terminate_10:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t4 = exception ptr
     call void @cppgm_call_terminate(%t4)
     unreachable
@@ -1035,7 +1035,7 @@ function @case_1__X__X(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
     jump ^lexical_unwind_9
 
   block ^lexical_cleanup_terminate_10:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t4 = exception ptr
     call void @cppgm_call_terminate(%t4)
     unreachable
@@ -1153,7 +1153,7 @@ function @case_2__X___X(%this : ptr [object_bytes=1]) -> void [binding=weak, obj
     jump ^lexical_unwind_9
 
   block ^lexical_cleanup_terminate_10:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t4 = exception ptr
     call void @cppgm_call_terminate(%t4)
     unreachable
@@ -1246,7 +1246,9 @@ function @case_3__X__X(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
     resume
 
   block ^cleanup_resume_3:
-    resume
+    eh_end
+    eh_end
+    jump ^constructor_cleanup_entry_2
 
   block ^cleanup_action_4:
     %t7 = addr $a
@@ -1351,7 +1353,7 @@ function @case_4__X__X(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   block ^cleanup_resume_6:
     eh_end
     eh_end
-    jump ^catch_entry_2
+    jump ^constructor_cleanup_entry_5
 
   block ^cleanup_action_7:
     %t7 = addr $a
@@ -1388,7 +1390,7 @@ function @case_4__X__X(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
     jump ^lexical_unwind_11
 
   block ^lexical_cleanup_terminate_12:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t8 = exception ptr
     call void @cppgm_call_terminate(%t8)
     unreachable
@@ -1515,7 +1517,9 @@ function @case_5__X___X(%this : ptr [object_bytes=1]) -> void [binding=weak, obj
     jump ^call_unwind_end_6
 
   block ^cleanup_resume_4:
-    resume
+    eh_end
+    eh_end
+    jump ^destructor_cleanup_entry_2
 
   block ^cleanup_action_5:
     %t3 = addr $a
@@ -1618,7 +1622,7 @@ function @case_6__X___X(%this : ptr [object_bytes=1]) -> void [binding=weak, obj
   block ^cleanup_resume_7:
     eh_end
     eh_end
-    jump ^catch_entry_2
+    jump ^destructor_cleanup_entry_5
 
   block ^cleanup_action_8:
     %t3 = addr $a
@@ -1657,7 +1661,7 @@ function @case_6__X___X(%this : ptr [object_bytes=1]) -> void [binding=weak, obj
     jump ^lexical_unwind_12
 
   block ^lexical_cleanup_terminate_13:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t4 = exception ptr
     call void @cppgm_call_terminate(%t4)
     unreachable
@@ -1799,7 +1803,7 @@ function @case_7__X__f(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [bi
     jump ^lexical_unwind_9
 
   block ^lexical_cleanup_terminate_10:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t4 = exception ptr
     call void @cppgm_call_terminate(%t4)
     unreachable

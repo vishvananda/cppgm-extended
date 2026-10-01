@@ -2243,6 +2243,7 @@ private:
 	std::vector<FunctionControlFlowFactState> function_control_flow_stack_;
 	std::vector<ExceptionControlContextFact> exception_control_contexts_;
 	std::uint32_t current_exception_control_context_;
+	std::uint32_t current_exception_body_cleanup_;
 	std::unordered_map<NameId, LabelControlFact> control_flow_labels_;
 	std::unordered_multimap<NameId, PendingGotoControlFact> pending_control_flow_gotos_;
 	std::size_t unevaluated_depth_;

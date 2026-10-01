@@ -123,8 +123,9 @@ protected:
 		using namespace lowering::cleanup;
 		derived.pending_cleanup_states_.clear();
 		bool inserted = false;
+		const BlockId body = derived.ExceptionBodyCleanupTarget();
 		std::uint32_t tail = InternContinuation(Key(kNoCleanupState,
-			kNoCleanupState, derived.ConstructionCleanupTerminal(), context, FULL_EXPRESSION_TERMINAL),
+			kNoCleanupState, body != kNoLowId ? body + 1 : 0, context, FULL_EXPRESSION_TERMINAL),
 			"cleanup_resume", &inserted);
 		for (std::size_t i = derived.full_expression_segment_actions_.size();
 			i != 0; --i)
@@ -158,13 +159,9 @@ protected:
 			derived.SelectBlock(state.block);
 			if (state.key.mode == FULL_EXPRESSION_TERMINAL)
 			{
-				if (state.key.terminal != 0)
-				{
-					derived.Emit(Instruction(Instruction::EH_END));
-					derived.Emit(Instruction(Instruction::EH_END));
-					derived.EmitJump(state.key.terminal - 1);
-					continue;
-				}
+				if (state.key.terminal != 0 &&
+					state.key.terminal - 1 != derived.ExceptionBodyCleanupTarget())
+					ThrowLoweringInternal("cleanup body continuation changed");
 				const bool routes_to_try =
 					derived.ExceptionCleanupRoutesToTry(state.key.context);
 				derived.FinishExceptionCleanupDispatch(routes_to_try);

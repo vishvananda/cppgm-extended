@@ -2414,6 +2414,8 @@ void Analyzer::AddDestructorSubobjectActions(EntityId entity,
 			ThrowInternalCompilerError("member has no destructor identity");
 		if (!CanAccessMember(destructor, subobject))
 			ThrowSemanticError("inaccessible member destructor");
+		if (!FunctionIsNonthrowing(destructor))
+			dump_.construction_cleanup_may_throw = true;
 		TypeId object = program_->types.RemoveTopCv(EffectiveType(type));
 		const TypeRecord& record = program_->types.Get(object);
 		if (record.kind == TYPE_ARRAY)
@@ -2473,6 +2475,8 @@ void Analyzer::AddDestructorSubobjectActions(EntityId entity,
 			ThrowInternalCompilerError("base has no destructor identity");
 		if (!CanAccessMember(destructor, base))
 			ThrowSemanticError("inaccessible base destructor");
+		if (!FunctionIsNonthrowing(destructor))
+			dump_.construction_cleanup_may_throw = true;
 		destructor = EnsureDestructorBaseEntry(destructor);
 		const std::uint32_t action = MakeDestructorAction(
 			program_->entities[base].type, destructor, kNoBinding, 1);
@@ -2496,6 +2500,8 @@ void Analyzer::AddDestructorSubobjectActions(EntityId entity,
 			ThrowInternalCompilerError("virtual base has no destructor identity");
 		if (!CanAccessMember(destructor, base))
 			ThrowSemanticError("inaccessible virtual base destructor");
+		if (!FunctionIsNonthrowing(destructor))
+			dump_.construction_cleanup_may_throw = true;
 		DemandFunction(destructor);
 		destructor = EnsureDestructorBaseEntry(destructor, true);
 		const std::uint32_t action = MakeDestructorAction(

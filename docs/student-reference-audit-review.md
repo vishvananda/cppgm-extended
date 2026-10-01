@@ -49,9 +49,10 @@ fix sequence is complete, as requested.
 | EH-AGG-NESTED | Invoke a completed nested aggregate's custom destructor when a later outer member fails | Additional EH-AGG-PREFIX boundary control | Needs contract review: Clang invokes the nested destructor, GCC skips its body; both destroy its member objects. N3485's principal-constructor wording predates P0490R0's explicit completed-aggregate rule. Keep this difference separate from the 23 agreed cleanup failures; no oracle changed. |
 | EH-AGG-TEMP-DTOR | Destroy a completed aggregate when an initializer temporary's normal destructor throws | Additional EH-AGG-PREFIX boundary control | Needs contract review: GCC and the candidate destroy both aggregate members; Clang 21.1.8 leaks them at O0/O2. Retain this host disagreement separately from ordinary construction failure; no required oracle added. |
 | EH-SPECIAL-PREFIX | Destroy completed members when a later member in a synthesized copy/move constructor throws | Extended conditional controls and direct memberwise construction reducers | Done: 54 copy/move/base/array/assignment controls agree with Clang/GCC at O0/O2, as do both original memberwise reducers and both extended conditional all-step reducers. Fourteen PA21 fixtures pass their O0 contract; the two independently retained full-TU O2 crashes remain BACKEND-ARRAY-OPT. Strict 6013/6013, debug-info, variants, self-host PA5, all architecture/file/placement checks and fourteen Alpha instruction/RSS gates pass. |
-| EH-CTOR-HANDLER | Retain constructor member cleanup when an inner source handler rethrows or misses | Additional aggregate-in-constructor control | Open: frozen entry and candidate leak a previously constructed member when the constructor's inner handler rethrows; Clang/GCC destroy it at O0/O2. Source-handler resume bypasses the constructor-body suffix. |
+| EH-CTOR-HANDLER | Retain constructor member cleanup when an inner source handler rethrows or misses | Additional aggregate-in-constructor control | Done: 46 boundary programs agree with Clang/GCC at O0/O2, including exact destruction traces. Twelve PA21 fixtures and five independently reviewed references; strict 6025/6025, debug-info, variants, self-host PA5 and all audits pass. Fifteen Alpha instruction/RSS gates and focused calibrated cycle gates pass. Standalone runtime gaps remain BACKEND. |
+| EH-DTOR-HANDLER | Retain destructor member cleanup when an inner source handler rethrows, replaces or misses | Expanded EH-CTOR-HANDLER controls | Done with EH-CTOR-HANDLER: destructor escape, miss, replacement, swallowing, nine-member and twelve-element controls agree with both hosts. Five second-fault programs terminate correctly at O0/O2. Unique termination selectors prevent collision with typed source catches; full compiler and performance checks pass. |
 | EH-COND-THROW | Normalize a class conditional with a raw throw operand before destination lowering | Additional conditional aggregate boundary control | Done: materialized class prvalues use destination-ready arms; nonreturning arms retire their cleanup segments and staged throw sites restore enclosing cleanup after a split. Original reducer and thirteen agreed boundary programs pass at O0/O2; six PA21 fixtures, strict 5999/5999 and all required compiler audits/checks pass. Alpha instruction/RSS gates and an interleaved two-image cycle check pass. Extended synthesized-copy and reference-initializer failures remain separate rows. |
-| EH-CTOR-ARRAY-PREFIX | Retain earlier constructor subobjects after partial construction of a later loop-lowered member array | Expanded EH-SPECIAL-PREFIX controls | Done with EH-SPECIAL-PREFIX: partial-array cleanup explicitly enters the remaining constructor cleanup. Seven independently checked second-fault controls also cover scalar, inline-array, loop-array and completed-array unwind destruction; a second exception terminates immediately. The containing-constructor continuation has its own retired entry, shared by host-object and standalone paths. |
+| EH-CTOR-ARRAY-PREFIX | Retain earlier constructor subobjects after partial construction of a later loop-lowered member array | Expanded EH-SPECIAL-PREFIX controls | Done with EH-SPECIAL-PREFIX: partial-array cleanup explicitly enters the remaining constructor cleanup. Seven independently checked second-fault controls also cover scalar, inline-array, loop-array and completed-array unwind destruction; a second exception terminates immediately. The containing-constructor continuation has its own retired entry, shared by host-object and standalone paths. EH-CTOR-HANDLER also checks inline partial-array continuation through earlier subobjects. |
 | EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Open, independently reproduced: nine direct lvalue/xvalue/reference-call/const-reference/aggregate-reference controls leak prior local objects here at O0/O2; Clang/GCC pass. StageAutomaticInitializerException excludes reference declarations, so no enclosing cleanup is attached. Preserve lifetime-extended backing storage when repairing this staging boundary. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
@@ -74,7 +75,7 @@ fix sequence is complete, as requested.
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
 | BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Open, independently reproduced: the entry and copy-cleanup candidates crash at O2 for the twelve-element move and trivial-copy-prefix array fixtures, in standalone and host-linked object routes. Clang/GCC pass; our O0 routes and corresponding external-companion forms pass. Retain frozen sources, binary hashes, host-link controls and debugger observations under synthesized-construction-prefix/. |
-| BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. |
+| BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. Two defined source-handler controls also retain identical entry/candidate standalone failures at O0/O2: nested-outer-swallow returns 10 and function-try-body-local aborts (134); their host-object routes pass Clang/GCC and the candidate. Keep these runtime routes separate from PA21 LowIR cleanup correctness. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
@@ -2647,3 +2648,107 @@ A scratch second-fault output-name collision was corrected; the complete entry
 baseline remains in entry-expanded-controls.json. None of these intermediate
 results substitute for final validation. Final student-export validation remains
 deferred until all tracker items are complete.
+
+### Constructor/destructor source-handler cleanup checkpoint
+
+EH-CTOR-HANDLER and EH-DTOR-HANDLER share a body-unwind continuation.
+The N3485 15.2/2 rule covers both failed construction and destruction, including
+completed delegating targets; 15.2/3 requires termination if unwind destruction
+throws again. This checkpoint adds no ABI spelling change.
+
+Independent evidence is retained under
+`/tmp/cppgm-v4-audit-review/constructor-handler-cleanup/`:
+
+- `entry-manifest.json` freezes `2eaf1c4f0` and the entry compiler
+  `d913a284cc1f67a176c4c8fe35f84d4e67e4c8f057d75c75a183e646928c8ec7`.
+  `entry-expanded-controls.json` retains 276 observations for 46 programs,
+  Clang/GCC/entry and O0/O2. The entry fails 39 programs; seven swallowing,
+  normal-completion or ordinary body controls succeed.
+- All 92 final boundary observations agree with the 184 retained host
+  observations, including exact destruction traces. Controls cover handler
+  rethrow/miss/replacement, external throwing calls, local objects, nested
+  handlers, function-try blocks, bases, custom member destruction, delegating
+  targets, nine-member bodies and three/twelve-element arrays.
+- `sixth-runtime-verification.json` checks 274 earlier regression observations.
+  The two original constructor-inner-try observations change from leaking to
+  correct cleanup; every other prior status and trace stays unchanged.
+  Existing EH-REF-INIT, failed-new and other independently tracked gaps remain.
+- Twelve freestanding `200-inner-handler-*.t` fixtures use destruction-trace
+  checksums derived from matching independent Clang/GCC traces. All 72 final
+  host-object observations pass at O0/O2. `entry-fixture-final-controls.json`
+  retains the same fixture inputs on the frozen entry.
+- Five second-fault programs agree on the expected termination exit 77 across
+  candidate/Clang/GCC and both optimization levels. The miss case exposed a
+  catch-all selector collision: termination guards previously reused selector 1
+  and could inherit the type of a source catch. Unique handler identities fix
+  that collision; constructor and destructor unwind actions now share guarded
+  lowering, with already-unwinding array destruction stopping immediately.
+
+The semantic owner records body source-try presence from the existing typed
+exception contexts, and body cleanup when exceptional full expressions are
+staged. The function-control-flow snapshot saves and restores that body fact
+across nested function demand. Nonthrowing local destructors can still require
+an enclosing member-cleanup suffix; the old throwing-only body flag missed
+those paths. `DumpNode` remains 152 bytes and the saved control-flow state
+remains 144 bytes. No additional AST scan or per-node allocation is introduced.
+
+Lowering advertises cleanup for source-handler misses, dispatches inner source
+tries before the member suffix, and invokes the member suffix before a
+function-try handler. Full-expression continuation keys include the precise
+body terminal. Inline member-array failure also continues through the earlier
+constructor subobjects. Body-cleanup emission is a separate non-inlined helper
+so this uncommon case does not expand ordinary dispatch code.
+
+Five existing PA21 references were regenerated through the built reference
+wrapper, without editing their input programs or reference text by hand:
+
+- `200-source-lexical-body-unwind-tail`: four dormant full-expression tails now
+  enter member/base cleanup before leaving a constructor/destructor or reaching
+  its function-try handler; direct fault controls establish the missing cleanup.
+- `200-source-lexical-handler-return-order` and
+  `200-source-lexical-handler-scope-order`: termination guards and source catches
+  receive distinct selectors, as independently required by the second-fault
+  miss control.
+- `200-destructor-subobject-unwind-runs-later-base-destruction` and
+  `200-destructor-unwind-shares-generated-suffix`: the unwind bodies include
+  guarded subobject destruction and its demanded terminate helper. Ordinary
+  destructor-exception sequencing stays the same.
+
+`entry-existing-controls.json` and `fifth-existing-controls.json` retain 60
+successful O0/O2 checks of these five inputs, using both frozen compilers and
+both hosts. All 92 boundary objects and traces are byte-identical between the
+inline candidate and the final compiler with the separate body helper.
+
+Two standalone runtime gaps remain in BACKEND: nested-outer-swallow returns 10
+and function-try-body-local exits 134 at both optimization levels. The frozen
+entry and candidate produce identical results for all 24 standalone fixture/
+optimization pairs. The host-object controls pass; these are retained native runtime
+limitations, rather than a reason to move the valid LowIR tests out of PA21.
+
+Final validation (`validation-sixth/validation.json`) passes the affected PA21
+suite, strict **6025/6025**, debug-info, backend variants, self-host through PA5,
+all nine architecture audits, the full file audit (37 existing warnings) and
+placement audit (zero placement/hygiene findings). The strict report log is
+exactly its single final-total line. The actual rebuilt compiler matches the
+measured immutable candidate SHA-256
+`0959dd558c4fd55fd75a7004630715780ced93a703da9f664d1bf17894316a02`.
+
+Alpha hardware-counter evidence is retained locally under `perf/` and with
+all generated objects at
+`alpha:/tmp/cppgm-v4-audit-review-20261001-constructor-handler-fifth/`.
+`sixth-performance-verification.json` checks the final 720 observations across
+15 frozen workloads, identical outputs, A/A calibration and paired A/B blocks.
+All instruction (1.005) and RSS (1.03) gates pass: maximum final A/B deltas are
++0.0327% instructions and +0.4672% RSS. Two balanced, interleaved three-image
+runs retain another 1,152 observations and pass calibrated cycle gates (1.005):
+source-try +0.2432%, noexcept synthesis +0.3606%, virtual +0.2010%, and large
+virtual +0.2593%. Recognition controls also pass.
+
+The earlier inline candidate showed a source-try cycle signal; separating the
+body-emission helper preserves all 92 boundary objects/traces and reduces that
+signal. Raw cycle results, including the noisy broad large-virtual result,
+remain available; focused repeats compare them with their A/A calibration.
+Every observation from all candidate/calibration/repeat runs is retained
+(3,552 total). No unsuccessful build or mismatched binary is counted as final
+validation. The final combined student export remains deferred until the full
+tracker is resolved.

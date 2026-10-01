@@ -331,11 +331,15 @@ protected:
 				derived.Emit(Instruction(Instruction::EH_END));
 				derived.EmitJump(end);
 				derived.SelectBlock(dispatch);
+				const bool routes_to_try = derived.BeginExceptionTryCleanupDispatch();
+				const bool may_throw = !derived.program_.bindings[action.binding].nonthrowing;
+				if (may_throw) derived.EmitEhTarget(Instruction::EH_TRY, derived.MakeCleanupTerminateBlock());
 				for (std::size_t built = i; built != 0; --built)
 					derived.EmitDestructorCall(action.binding,
 						BoundFlatArrayElementAddress(object_binding,
 							action.operand_type, element_type, built - 1));
-				derived.EmitExceptionResume();
+				if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
+				derived.FinishExceptionCleanupDispatch(routes_to_try);
 				derived.SelectBlock(end);
 			}
 		}

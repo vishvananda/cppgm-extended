@@ -4,6 +4,7 @@ declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> p
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 
 global @__typeinfo_name__struct_failure [binding=weak, object=_ZTS7failure] = {
   i8 55
@@ -25,6 +26,12 @@ global @__ehobj_struct_failure [binding=internal, object=@__ehobj_struct_failure
 }
 global @order : i32 [binding=strong, object=_Z5order] = zero
 
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $owner : obj<3x1>
   slot $cond__1 : i32
@@ -126,17 +133,25 @@ function @Owner___Owner(%this : ptr [object_bytes=3]) -> void [binding=weak, obj
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t13 = load ptr $this
-    %t14 = index i8 [projection=field] %t13, 2
-    call void @Throwing___Throwing(%t14)
-    %t15 = load ptr $this
-    %t16 = index i8 [projection=field] %t15, 1
-    call void @Second___Second(%t16)
-    %t17 = load ptr $this
-    %t18 = index i8 [projection=field] %t17, 0
-    call void @First___First(%t18)
+    eh_try ^lexical_cleanup_terminate_7
+    %t14 = load ptr $this
+    %t15 = index i8 [projection=field] %t14, 2
+    call void @Throwing___Throwing(%t15)
+    eh_end
+    %t16 = load ptr $this
+    %t17 = index i8 [projection=field] %t16, 1
+    call void @Second___Second(%t17)
+    %t18 = load ptr $this
+    %t19 = index i8 [projection=field] %t18, 0
+    call void @First___First(%t19)
     eh_end
     resume
+
+  block ^lexical_cleanup_terminate_7:
+    eh_catch_all, 1
+    %t13 = exception ptr
+    call void @cppgm_call_terminate(%t13)
+    unreachable
 
   block ^destructor_end_2:
     return void

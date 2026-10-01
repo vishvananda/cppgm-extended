@@ -72,10 +72,7 @@ protected:
 			derived.EmitJump(entry);
 			derived.SelectBlock(entry);
 		}
-		const bool may_throw = !derived.program_.bindings[action.binding].nonthrowing;
-		if (may_throw) derived.EmitEhTarget(Instruction::EH_TRY, derived.MakeCleanupTerminateBlock());
-		derived.LowerDestructorAction(action, true);
-		if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
+		derived.LowerUnwindDestructorAction(action);
 		// Entry continuations have retired the protected frame. Both a landing
 		// pad and lexical destruction can use the same remaining suffix.
 		if (*active == kNoLowId)
@@ -98,8 +95,9 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const NodeChildren children = derived.Children(body);
-		const bool detached = derived.arena_.nodes[body].throwing_lexical_body_cleanup ||
-			derived.arena_.nodes[body].contains_construction_cleanup;
+		const bool detached = derived.arena_.nodes[body].lexical_body_cleanup ||
+			derived.arena_.nodes[body].contains_construction_cleanup ||
+			derived.arena_.nodes[body].body_contains_source_try;
 		BlockId active = kNoLowId;
 		for (std::size_t i = 0; i < children.size(); ++i)
 		{

@@ -189,7 +189,7 @@ protected:
 		slot.type = LowPtr();
 		derived.function_->slots.push_back(slot);
 		if (function_exception_boundary_ == FUNCTION_EXCEPTION_BOUNDARY_TERMINATE)
-			function_exception_filter_selector_ = next_handler_selector_++;
+			function_exception_filter_selector_ = AllocateExceptionHandlerSelector();
 		derived.EmitEhTarget(Instruction::EH_TRY,
 			function_exception_landing_);
 		(void)node;
@@ -537,10 +537,40 @@ protected:
 		return true;
 	}
 
+	BlockId ExceptionBodyCleanupTarget() const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		if (derived.lexical_body_unwind_target_ == kNoLowId) return kNoLowId;
+		const ExceptionRegionState* parent = EnclosingTryRegion();
+		if (parent && (derived.lexical_body_unwind_depth_ == 0 ||
+			parent > &active_exception_regions_[derived.lexical_body_unwind_depth_ - 1]))
+			return kNoLowId;
+		return derived.lexical_body_unwind_target_;
+	}
+
+	__attribute__((noinline)) void FinishExceptionBodyCleanup(
+		BlockId body, bool closes_cleanup_region)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		// Handler boundary actions retire the full-expression frame. Other
+		// full expressions still own it; then retire the subobject frame.
+		if (closes_cleanup_region && (active_exception_regions_.empty() ||
+			active_exception_regions_.back().kind == EXCEPTION_TRY_REGION))
+			derived.Emit(Instruction(Instruction::EH_END));
+		derived.Emit(Instruction(Instruction::EH_END));
+		derived.EmitJump(body);
+	}
+
 	void FinishExceptionCleanupDispatch(bool routes_to_try,
 		bool closes_cleanup_region = true)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		const BlockId body = ExceptionBodyCleanupTarget();
+		if (body != kNoLowId)
+		{
+			FinishExceptionBodyCleanup(body, closes_cleanup_region);
+			return;
+		}
 		if (!routes_to_try)
 		{
 			EmitExceptionResume();
@@ -908,6 +938,13 @@ protected:
 		}
 	}
 
+	std::uint32_t AllocateExceptionHandlerSelector()
+	{
+		if (next_handler_selector_ == 0)
+			ThrowLoweringResourceLimit("exception handler selector identity overflow");
+		return next_handler_selector_++;
+	}
+
 	std::uint32_t HandlerSelector(std::uint32_t handler)
 	{
 		if (handler >= handler_selectors_.size())
@@ -915,7 +952,7 @@ protected:
 		if (handler_selector_epochs_[handler] != handler_selector_epoch_)
 		{
 			handler_selector_epochs_[handler] = handler_selector_epoch_;
-			handler_selectors_[handler] = next_handler_selector_++;
+			handler_selectors_[handler] = AllocateExceptionHandlerSelector();
 			Derived& derived = static_cast<Derived&>(*this);
 			if (derived.stats_) ++derived.stats_->exception_selector_assignments;
 		}
@@ -1031,7 +1068,8 @@ protected:
 		if (active_exception_regions_.empty() ||
 			active_exception_regions_.back().kind != EXCEPTION_TRY_REGION)
 			ThrowLoweringInternal("source try region stack mismatch");
-		const bool has_unwind = active_exception_regions_.back().has_unwind;
+		const bool has_unwind = active_exception_regions_.back().has_unwind ||
+			derived.lexical_body_unwind_target_ != kNoLowId;
 		PopExceptionRegion();
 		derived.SelectBlock(dispatch);
 		const bool catches_all = EmitTryHandlerClauses(try_node);
@@ -1210,18 +1248,13 @@ protected:
 		}
 		derived.SelectBlock(cleanup);
 		DestroyUnnamedCatch(handler_node);
-		const ExceptionRegionState* parent = EnclosingTryRegion();
 		EmitEnclosingTryHandlerClauses();
+		if (derived.lexical_body_unwind_target_ != kNoLowId)
+			derived.Emit(Instruction(Instruction::EH_CLEANUP));
 		(void)EmitExceptionRuntimeCall(
 			derived.polymorphism_.eh_end_catch_symbol, LowVoid(), none);
 		derived.Emit(Instruction(Instruction::EH_END));
-		LowerTryUnwindActions(try_node);
-		if (parent)
-		{
-			derived.Emit(Instruction(Instruction::EH_END));
-			derived.EmitJump(parent->entry);
-		}
-		else EmitExceptionResume();
+		FinishSourceTryUnwind(try_node);
 		derived.SelectBlock(next);
 		if (handler_next_[handler_node] != kNoDumpEdge)
 		{
@@ -1238,15 +1271,18 @@ protected:
 		}
 		else
 		{
-			LowerTryUnwindActions(try_node);
-			if (parent)
-			{
-				derived.Emit(Instruction(Instruction::EH_END));
-				derived.EmitJump(parent->entry);
-			}
-			else EmitExceptionResume();
+			FinishSourceTryUnwind(try_node);
 		}
 		derived.SelectBlock(end);
+	}
+
+	void FinishSourceTryUnwind(std::uint32_t try_node)
+	{
+		LowerTryUnwindActions(try_node);
+		// Source handlers have already retired their own protected frame.
+		// Dispatch inner source tries before the subobject cleanup, and run
+		// that cleanup before an enclosing function-try handler.
+		FinishExceptionCleanupDispatch(EnclosingTryRegion() != 0, false);
 	}
 
 	const ExceptionRegionState* EnclosingTryRegion() const

@@ -316,7 +316,7 @@ function @case_0__f() -> void [binding=strong, object=_ZN6case_01fEv] {
     jump ^lexical_unwind_13
 
   block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -530,7 +530,7 @@ function @case_1__f() -> void [binding=strong, object=_ZN6case_11fEv] {
     jump ^lexical_unwind_13
 
   block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -747,7 +747,7 @@ function @case_2__f() -> void [binding=strong, object=_ZN6case_21fEv] {
     jump ^lexical_unwind_16
 
   block ^lexical_cleanup_terminate_18:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -977,7 +977,7 @@ function @case_3__f() -> void [binding=strong, object=_ZN6case_31fEv] {
     jump ^lexical_unwind_17
 
   block ^lexical_cleanup_terminate_19:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t13 = exception ptr
     call void @cppgm_call_terminate(%t13)
     unreachable
@@ -1200,7 +1200,7 @@ function @case_4__f() -> void [binding=strong, object=_ZN6case_41fEv] {
     jump ^lexical_unwind_13
 
   block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -1414,7 +1414,7 @@ function @case_5__f() -> void [binding=strong, object=_ZN6case_51fEv] {
     jump ^lexical_unwind_16
 
   block ^lexical_cleanup_terminate_18:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable
@@ -1644,7 +1644,7 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
     jump ^lexical_unwind_17
 
   block ^lexical_cleanup_terminate_19:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t13 = exception ptr
     call void @cppgm_call_terminate(%t13)
     unreachable
@@ -1867,7 +1867,7 @@ function @case_7__f() -> void [binding=strong, object=_ZN6case_71fEv] {
     jump ^lexical_unwind_13
 
   block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
+    eh_catch_all, 2
     %t11 = exception ptr
     call void @cppgm_call_terminate(%t11)
     unreachable

@@ -50,10 +50,10 @@ struct LabelControlFact
 struct FunctionControlFlowFactState
 {
 	std::vector<ExceptionControlContextFact> contexts;
-	std::uint32_t current_context;
+	std::uint32_t current_context, body_cleanup;
 	std::unordered_map<NameId, LabelControlFact> labels;
 	std::unordered_multimap<NameId, PendingGotoControlFact> pending_gotos;
-	FunctionControlFlowFactState() : current_context(0) {}
+	FunctionControlFlowFactState() : current_context(0), body_cleanup(kNoDumpEdge) {}
 };
 
 }
