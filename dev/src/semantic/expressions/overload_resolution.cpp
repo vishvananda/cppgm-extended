@@ -620,6 +620,161 @@ CallConversionFact Analyzer::ConvertingConstructor(
 	return result;
 }
 
+CallConversionFact Analyzer::ConvertingClass(
+	const ExpressionInfo& source, TypeId target)
+{
+	const EntityId entity = EntityOf(source.type);
+	std::vector<BindingId> functions;
+	if (entity != kNoEntity)
+	{
+		AppendConversionFunctions(entity, &functions);
+		AppendConversionFunctionTemplateCandidates(entity, target, &functions);
+	}
+	if (functions.empty()) return ConvertingConstructor(source, target);
+	EnsureClassDefinition(target);
+	const EntityId owner = EntityOf(target);
+	std::vector<BindingId> bindings = ConstructorCandidates(owner);
+	const std::vector<ExpressionInfo> arguments(1, source);
+	AppendConstructorTemplateCandidates(target, arguments, &bindings);
+	bindings.insert(bindings.end(), functions.begin(), functions.end());
+	const auto declared_target = [this](const FunctionInfo& function) -> TypeId
+	{
+		return function.template_specialization && function.template_pattern < function_templates_.size() ?
+			program_->types.Get(function_templates_[function.template_pattern].shape_type).child :
+			function.conversion_target;
+	};
+	struct Candidate
+	{
+		BindingId binding;
+		TypeId parameter;
+		CallConversionFact conversion;
+		Candidate(BindingId selected, TypeId argument,
+			const CallConversionFact& fact)
+			: binding(selected), parameter(argument), conversion(fact) {}
+	};
+	std::vector<Candidate> candidates;
+	for (std::size_t i = 0; i < bindings.size(); ++i)
+	{
+		++overload_candidates_;
+		const BindingId binding = bindings[i];
+		const FunctionInfo& function = GetFunction(binding);
+		const TypeRecord shape = program_->types.Get(function.type);
+		TypeId parameter = kNoType;
+		CallConversionFact fact;
+		if (function.constructor)
+		{
+			if (function.explicit_constructor) continue;
+			std::size_t required = shape.parameter_count;
+			while (required != 0 && required <= function.parameters.size() &&
+				function.parameters[required - 1].default_argument != kNoNode)
+				--required;
+			if (required > 1 || (shape.parameter_count == 0 && !shape.variadic)) continue;
+			if (shape.parameter_count != 0)
+				parameter = program_->types.Parameters(function.type)[0];
+			fact.constructor_argument_rank = parameter == kNoType ?
+				CONVERSION_ELLIPSIS : Conversion(source, parameter);
+			if (fact.constructor_argument_rank == CONVERSION_INVALID) continue;
+			fact.constructor = binding;
+		}
+		else
+		{
+			if (!function.conversion_function || function.explicit_conversion ||
+				!RefQualifierViable(source, shape)) continue;
+			const EntityId function_owner = EntityOf(function.member_owner);
+			bool hidden = false;
+			if (function_owner != entity)
+				for (std::size_t f = 0; f < functions.size(); ++f)
+				{
+					const FunctionInfo& other = GetFunction(functions[f]);
+					const EntityId other_owner = EntityOf(other.member_owner);
+					if (other_owner != function_owner && declared_target(other) == declared_target(function) &&
+						program_->IsBaseOf(function_owner, other_owner)) { hidden = true; break; }
+				}
+			if (hidden) continue;
+			const EntityId result_owner = EntityOf(function.conversion_target);
+			if (result_owner == kNoEntity || !program_->IsBaseOf(owner, result_owner)) continue;
+			ExpressionInfo result;
+			result.type = function.conversion_target;
+			const TypeKind result_kind = program_->types.Get(result.type).kind;
+			result.category = result_kind == TYPE_LVALUE_REFERENCE ? VALUE_LVALUE :
+				result_kind == TYPE_RVALUE_REFERENCE ? VALUE_XVALUE : VALUE_PRVALUE;
+			fact.conversion_result_rank = Conversion(result, target);
+			if (fact.conversion_result_rank == CONVERSION_INVALID) continue;
+			TypeId object_type = function.member_owner;
+			if (shape.cv != CV_NONE) object_type = program_->types.Qualify(object_type, shape.cv);
+			ExpressionInfo object = source;
+			object.type = program_->types.Pointer(EffectiveType(source.type));
+			fact.conversion_object_rank = MemberObjectConversion(
+				object, program_->types.Pointer(object_type), binding);
+			if (fact.conversion_object_rank == CONVERSION_INVALID) continue;
+			// Inherited conversion functions use the source class's implicit
+			// object parameter for selection, while lowering still projects to the owner.
+			TypeId selection_type = program_->types.RemoveTopCv(EffectiveType(source.type));
+			if (shape.cv != CV_NONE) selection_type = program_->types.Qualify(selection_type, shape.cv);
+			parameter = program_->types.Reference(shape.ref_qualifier == FUNCTION_REF_RVALUE ?
+				TYPE_RVALUE_REFERENCE : TYPE_LVALUE_REFERENCE, selection_type);
+			if (fact.conversion_object_rank == CONVERSION_DERIVED_TO_BASE)
+			{
+				const std::size_t count = BaseProjectionCount(source.type, object_type);
+				if (count == std::numeric_limits<std::size_t>::max() ||
+					count > std::numeric_limits<std::uint32_t>::max())
+					ThrowInternalCompilerError("class conversion has no bounded object path");
+				fact.conversion_base_projection_count = static_cast<std::uint32_t>(count);
+			}
+			fact.conversion_function = binding;
+		}
+		fact.rank = CONVERSION_USER_DEFINED;
+		candidates.push_back(Candidate(binding, parameter, fact));
+	}
+	const auto better = [this, &candidates, &source](std::size_t left, std::size_t right) -> bool
+	{
+		++overload_order_comparisons_;
+		const Candidate& l = candidates[left];
+		const Candidate& r = candidates[right];
+		const FunctionInfo& lf = GetFunction(l.binding);
+		const FunctionInfo& rf = GetFunction(r.binding);
+		const ConversionRank lr = lf.constructor ? l.conversion.constructor_argument_rank : CONVERSION_EXACT;
+		const ConversionRank rr = rf.constructor ? r.conversion.constructor_argument_rank : CONVERSION_EXACT;
+		if (lr != rr) return lr < rr;
+		if (l.parameter != kNoType && r.parameter != kNoType)
+		{
+			TypeId lp = l.parameter, rp = r.parameter;
+			if ((lf.conversion_function && program_->types.Get(lf.type).ref_qualifier == FUNCTION_REF_NONE) ||
+				(rf.conversion_function && program_->types.Get(rf.type).ref_qualifier == FUNCTION_REF_NONE))
+			{
+				if (program_->types.IsReference(lp)) lp = program_->types.Reference(TYPE_LVALUE_REFERENCE, EffectiveType(lp));
+				if (program_->types.IsReference(rp)) rp = program_->types.Reference(TYPE_LVALUE_REFERENCE, EffectiveType(rp));
+			}
+			const int reference = CompareReferenceBindings(source, lp, rp);
+			if (reference != 0) return reference > 0;
+			if (lr == CONVERSION_DERIVED_TO_BASE)
+			{
+				const EntityId lb = EntityOf(lp), rb = EntityOf(rp);
+				if (lb != rb && lb != kNoEntity && rb != kNoEntity)
+				{
+					if (program_->IsBaseOf(rb, lb)) return true;
+					if (program_->IsBaseOf(lb, rb)) return false;
+				}
+				const int base = CompareDerivedToBaseQualification(lp, rp);
+				if (base != 0) return base > 0;
+			}
+		}
+		if (lf.conversion_function && rf.conversion_function &&
+			l.conversion.conversion_result_rank != r.conversion.conversion_result_rank)
+			return l.conversion.conversion_result_rank < r.conversion.conversion_result_rank;
+		if (lf.template_specialization != rf.template_specialization)
+			return !lf.template_specialization;
+		return CompareFunctionTemplateConstraints(lf, rf) > 0;
+	};
+	if (candidates.empty()) return CallConversionFact();
+	std::size_t champion = 0;
+	for (std::size_t i = 1; i < candidates.size(); ++i)
+		if (better(i, champion)) champion = i;
+	for (std::size_t i = 0; i < candidates.size(); ++i)
+		if (i != champion && !better(champion, i)) return CallConversionFact();
+	return candidates[champion].conversion;
+}
+
 void Analyzer::AppendConversionFunctions(EntityId entity,
 	std::vector<BindingId>* candidates) const
 {
@@ -1297,6 +1452,12 @@ CallConversionFact Analyzer::CallConversion(
 		}
 		++call_conversion_cache_misses_;
 	}
+	if (!program_->types.IsReference(target) && IsClassObjectType(target))
+	{
+		result = ConvertingClass(source, target);
+		if (cache) cache->Insert(key, result);
+		return result;
+	}
 	const CallConversionFact constructor = ConvertingConstructor(source, target);
 	const CallConversionFact conversion =
 		ConvertingFunction(source, target, false);
@@ -1316,7 +1477,7 @@ CallConversionFact Analyzer::CallConversion(
 
 ExpressionInfo Analyzer::BuildConvertingArgument(
 	const ExpressionInfo& source, TypeId target,
-	const CallConversionFact& conversion)
+	const CallConversionFact& conversion, bool demand)
 {
 	const BindingId constructor_binding = conversion.constructor;
 	if (constructor_binding == kNoBinding)
@@ -1332,6 +1493,15 @@ ExpressionInfo Analyzer::BuildConvertingArgument(
 		ThrowSemanticError("selected converting constructor is deleted");
 	if (!CanAccessMember(constructor_binding))
 		ThrowSemanticError("selected converting constructor is inaccessible");
+	if (!program_->types.IsReference(target))
+	{
+		ExpressionInfo result;
+		result.type = object_type;
+		result.category = VALUE_PRVALUE;
+		if (ValidateClassValueConstruction(object_type, result, false,
+			CandidateSubstitutionActive()) == kNoBinding)
+			return CandidateSubstitutionFailure();
+	}
 	const TypeRecord function = program_->types.Get(constructor.type);
 	if (function.parameter_count == 0 && !function.variadic)
 		ThrowInternalCompilerError("converting constructor has no source parameter");
@@ -1384,13 +1554,13 @@ ExpressionInfo Analyzer::BuildConvertingArgument(
 		TryEvaluateConstexprConstructor(
 			constructor_binding, constexpr_arguments, &constexpr_object))
 		PublishDumpObject(action, constexpr_object);
-	if (constexpr_object == kNoConstexprObject ||
+	if (demand && (constexpr_object == kNoConstexprObject ||
 		(constant_expression_required_depth_ == 0 &&
 		 constexpr_evaluation_depth_ == 0) ||
 		(constant_expression_required_depth_ != 0 &&
 		 constant_initializer_required_depth_ == 0 &&
 		 (target_top.kind == TYPE_LVALUE_REFERENCE ||
-		  target_top.kind == TYPE_RVALUE_REFERENCE)))
+		  target_top.kind == TYPE_RVALUE_REFERENCE))))
 		DemandFunction(constructor_binding);
 	const std::uint32_t temporary = MakeDump(DUMP_TEMPORARY_OBJECT,
 		object_type, VALUE_XVALUE);
@@ -1436,11 +1606,13 @@ ExpressionInfo Analyzer::ApplyCallArgument(
 			value = BuildResolvedCall(resolved.conversion_function, kNoScope,
 				syntax, arguments, &object, target, kNoEntity,
 				&object_conversion, 0);
+			if (CandidateSubstitutionFailed()) return value;
 			converted_by_function = true;
 		}
 		else
 		{
 			value = BuildConvertingArgument(value, target, resolved);
+			if (CandidateSubstitutionFailed()) return value;
 			const TypeRecord converted_target = program_->types.Get(target);
 			if (converted_target.kind != TYPE_LVALUE_REFERENCE &&
 				converted_target.kind != TYPE_RVALUE_REFERENCE)

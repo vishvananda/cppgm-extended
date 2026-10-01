@@ -16,6 +16,7 @@ fix sequence is complete, as requested.
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and isolated export each print one success total. Final combined export pending. |
+| HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Open: the failed PA12 assignment log included `PA12 survivor properties: PASS (13/13)` beside real comparison errors. Passing reports remain quiet; successful control producers also need the report's quiet setting. Validate shipped recipes at the final combined export. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
 | DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2 removes twenty scalar-array false positives. The static-declaration checkpoint uses parsed template headers for pointer/reference NTTPs, removing four more false positives while preserving actual pointer/reference/member/function NTTP controls. |
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
@@ -27,7 +28,7 @@ fix sequence is complete, as requested.
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
 | RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done: 4858ddbc0; typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
 | CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Done in 425bc2a90: remove the competing two-conversion constructor path; PA18 runtime control and Clang/GCC agree at O0/O2. Full validation recorded below. |
-| CONV-SELECTION | Rank converting constructors against conversion functions during class copy initialization | Additional conversion-sequence controls | In progress: immutable 3bcfffacc reproduces 20 failures among 37 Clang/GCC-agreed boundary inputs (16 missed rejections and four wrong selected functions), spanning initializations, arguments, returns, cv/ref/template ranking and required final-copy legality. One derived-result conversion disagrees between hosts and remains a contract-review control. Separate from the two-user-conversion restriction. |
+| CONV-SELECTION | Rank converting constructors against conversion functions during class copy initialization | Additional conversion-sequence controls | Done in the accompanying checkpoint: unified typed candidate selection, inherited receiver rules and required final-copy legality. Fifty host-agreed boundary programs and 21 PA12/18 fixtures pass at O0/O2; strict 5969/5969, full compiler checks and placement pass. Seven Alpha instruction/RSS gates pass with equal objects. One Clang/GCC-disputed derived-result control is excluded from required fixtures; the implementation follows Clang's selection rule as documented below. |
 | LAMBDA-CONV-SPEC | Captureless lambda pointer conversion has a nonthrowing exception specification | Additional hosted-trait controls / CWG 1722 | Done in 425bc2a90: preserve the call operator specification independently; PA20 noexcept and hosted trait controls agree with Clang/GCC. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Done: ad5d5dbb8; known type/category facts validate unused operators/calls/bounds without evaluating dependent values. Eight PA14 fixtures, 22 copied rejection controls, strict 5887/5887 and full checks pass. Alpha instruction/RSS gates pass with equal outputs; fixed-call GCC disagreement documented below. PARAM-ADJUST completes the valid bound failure. |
 | PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done: 27eef472d; parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
@@ -1744,8 +1745,73 @@ deleted copy/move constructor must reject even when copying could be elided in
 C++11. Existing direct construction and list-initialization paths must retain
 their own candidate rules.
 
-No compiler change or reference rewrite has been made for this item yet.
+At this verification checkpoint no compiler change or reference rewrite had
+been made for this item.
 Evidence and the initial classification live in
 /tmp/cppgm-v4-audit-review/class-copy-selection/. Ordinary conversion functions
 and class value semantics belong to PA12; template candidates additionally
 require PA18. The tracker remains active for this item and all later open work.
+
+## Class copy-conversion selection implementation checkpoint
+
+Class copy initialization now ranks converting constructors and source
+conversion functions in one candidate set. Each constructor uses the standard
+conversion to its first parameter; each conversion function uses its implicit
+object parameter. Ambiguous groups remain present during selection. Source
+cv/ref qualifications, constructor defaults, ordinary/template preference and
+template ordering participate before the selected action is built. Direct and
+list initialization retain their constructor rules. Inherited conversion
+functions use the source class for selection and their actual declaring class
+for the receiver projection; a hiding declaration still hides the base
+conversion when the hiding declaration is explicit.
+
+The selected constructor's result must permit the final direct copy/move
+construction required by C++11, even when elision is possible. Deleted final
+copies also cause substitution failure during template deduction. Completed
+implicit trivial move facts prove the common valid final construction without
+forming additional constructor-template candidates. This avoids extra
+instantiations and their presentation names. Ordinary initialization clears the
+call-argument staging flag instead of allocating an unused argument object.
+
+The expanded boundary set has 51 programs. Clang and GCC agree on 50, and the
+candidate matches those 50 at O0/O2 (300 host/candidate commands). The one
+derived-result constructor/conversion disagreement remains excluded from
+required fixtures. Selection follows Clang here: final-result conversions break
+ties between two conversion functions, rather than between a constructor and a
+conversion function. Clang 21.1.8's
+[SemaOverload implementation](https://github.com/llvm/llvm-project/blob/llvmorg-21.1.8/clang/lib/Sema/SemaOverload.cpp#L10046)
+confirms that distinction; its inherited-conversion treatment at lines
+7688-7691 also confirms the implicit object class used for selection.
+
+Twenty-one new required fixtures cover PA12 copy legality and conversion
+selection, plus PA18 conversion templates and substitution. All 126 fixture
+compiler/runtime commands agree with Clang/GCC at O0/O2. Exact ref-test commands
+generate all new sidecars and three reviewed existing references. Those three
+changes only rename internal LowIR functions and their uses: the PA18
+empty-middle-pack constructor, PA18 implicit conversion-template copy and PA19
+current-specialization constructor. All 24 entry/candidate/Clang/GCC runtime
+controls pass. Their ABI names are unchanged. Clang's constructor aliases agree;
+the conversion-template name still differs from Clang as recorded in
+MANGLE-CONV, and this checkpoint does not alter that encoder or expectation.
+
+The seven-input Alpha run uses immutable entry/candidate binaries, CPU 0, four
+A/A calibration blocks and eight A/B ABBA blocks per input. Every one of the
+336 observed objects agrees within its input; every A/A and A/B instruction
+and RSS gate passes. Instruction/RSS ratios are recognition
+1.000008/0.999741, virtual 1.000008/1.001538, large virtual
+1.000000/0.999827, constructor copies 0.984093/1.000033, conversion-function
+copies 0.973391/1.001389, constructor-template copies 0.981192/0.998039
+and competing conversion candidates 0.982157/0.999439. The counter manifest
+matches compiler hash
+7fc7aee9d338781d07c24a098135a16ae8dadd039162c84669a05ae6a3b1667e.
+Cycles are retained separately. All controls, exact reference commands,
+validation logs and raw observations remain under
+/tmp/cppgm-v4-audit-review/class-copy-selection/. Final combined export remains
+deferred until the tracker sequence is complete.
+
+Final validation passes: strict report 5969/5969 with exactly one success line,
+debug-info, all backend variants, self-host through PA5, all nine architecture
+checks, file/function limits and placement with no early-placement findings.
+The failed PA12 log from an earlier compiler trial exposed the remaining
+successful-control summary leak recorded in HARNESS-FAIL; no harness code was
+changed in this compiler checkpoint.

@@ -1051,12 +1051,12 @@ private:
 		TypeId target, CallConversionTable* cache, std::size_t source_ordinal);
 	int CompareCallConversions(const CallConversionFact& left,
 		const CallConversionFact& right) const;
-	CallConversionFact ConvertingConstructor(const ExpressionInfo& source,
-		TypeId target);
-	CallConversionFact ConvertingFunction(const ExpressionInfo& source,
-		TypeId target, bool allow_explicit = false);
-	void AppendConversionFunctions(EntityId entity,
-		std::vector<BindingId>* candidates) const;
+	CallConversionFact ConvertingConstructor(const ExpressionInfo& source, TypeId target);
+	CallConversionFact ConvertingFunction(const ExpressionInfo& source, TypeId target, bool allow_explicit = false);
+	void AppendConversionFunctions(EntityId entity, std::vector<BindingId>* candidates) const;
+	CallConversionFact ConvertingClass(const ExpressionInfo& source, TypeId target);
+	std::uint32_t BuildClassCopyInitialization(TypeId type,
+		const ExpressionInfo& source, bool demand);
 	void AppendConversionFunctionTemplateCandidates(EntityId entity,
 		TypeId target, std::vector<BindingId>* candidates,
 		bool explicit_conversion_name = false);
@@ -1082,7 +1082,7 @@ private:
 	ExpressionInfo ApplyContextualBool(ExpressionInfo value);
 	bool EvaluateExplicitSpecifier(NodeId specifier, ScopeId scope);
 	ExpressionInfo BuildConvertingArgument(const ExpressionInfo& source,
-		TypeId target, const CallConversionFact& conversion);
+		TypeId target, const CallConversionFact& conversion, bool demand = true);
 	bool IsDirectTrivialClassValueType(TypeId type) const;
 	ExpressionInfo BuildDirectClassValueTransfer(
 		const ExpressionInfo& source, TypeId target,
@@ -1627,7 +1627,7 @@ private:
 		const ExpressionInfo& source, BindingId selected_constructor,
 		ExpressionInfo* result);
 	BindingId ValidateClassValueConstruction(TypeId type,
-		const ExpressionInfo& source, bool copy_initialization = true);
+		const ExpressionInfo& source, bool copy_initialization = true, bool quiet = false);
 	void FinalizeNamedReturnSlot(std::uint32_t function);
 	std::uint32_t BuildDefaultConstructorAction(TypeId type, ScopeId scope);
 	void AddConstructorMemberActions(const FunctionInfo& constructor,

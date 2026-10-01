@@ -376,6 +376,7 @@ dev/src/semantic/expressions/overload_resolution.cpp	CallConversion	1	dev/src/se
 dev/src/semantic/expressions/overload_resolution.cpp	CompareCallConversions	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	CompleteArgumentDependentCallCandidates	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	CompletePointeeClass	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
+dev/src/semantic/expressions/overload_resolution.cpp	ConvertingClass	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	ConvertingConstructor	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	ConvertingFunction	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	EnumOperatorOperandType	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
@@ -498,6 +499,7 @@ dev/src/semantic/initialization/analysis.cpp	AppendScopeDestructionActions	1	dev
 dev/src/semantic/initialization/analysis.cpp	AppendUnwindDestructionActions	1	dev/src/semantic/initialization/analysis.cpp	keep
 dev/src/semantic/initialization/analysis.cpp	BuildAggregateConstructionAction	1	dev/src/semantic/initialization/analysis.cpp	keep
 dev/src/semantic/initialization/analysis.cpp	BuildClassConditional	1	dev/src/semantic/initialization/analysis.cpp	keep
+dev/src/semantic/initialization/analysis.cpp	BuildClassCopyInitialization	1	dev/src/semantic/initialization/analysis.cpp	keep
 dev/src/semantic/initialization/analysis.cpp	BuildClassValueConstructorAction	1	dev/src/semantic/initialization/analysis.cpp	keep
 dev/src/semantic/initialization/analysis.cpp	BuildDefaultConstructorAction	1	dev/src/semantic/initialization/analysis.cpp	keep
 dev/src/semantic/initialization/analysis.cpp	BuildDirectClassValueTransfer	1	dev/src/semantic/initialization/analysis.cpp	keep

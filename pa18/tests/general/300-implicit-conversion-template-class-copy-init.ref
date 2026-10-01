@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $source
     %t2 = addr $result
     %t3 = addr $source
-    %t4 = call obj<4x4> @X__operatorT__ov2(%t3)
+    %t4 = call obj<4x4> @X__operatorT(%t3)
     copyobj 4x4 %t4, %t2
     %t5 = addr $result
     %t6 = index i8 [projection=field] %t5, 0
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @X__operatorT__ov2(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK1Xcv1AIS0_EEv, inline_hint=yes] {
+function @X__operatorT(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK1Xcv1AIS0_EEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 

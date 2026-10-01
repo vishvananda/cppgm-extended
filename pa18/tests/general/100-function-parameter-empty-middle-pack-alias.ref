@@ -67,10 +67,10 @@ function @arg_list_factory_arg_list___reverse(%reversed_args : ptr [pass=by_addr
     %t4 = call ptr @forward(%t3)
     %t5 = load ptr $reversed_args__pack2
     %t6 = call ptr @forward(%t5)
-    call void @arg_list__arg_list__ov4(%t1, $argobj__2, %t4, %t6)
+    call void @arg_list__arg_list__ov3(%t1, $argobj__2, %t4, %t6)
     return obj<1x1> $retobj__1
 }
-function @arg_list__arg_list__ov4(%this : ptr [object_bytes=1], %__param1 : obj<1x1>, %__param2 : ptr [pass=by_address, object_bytes=4], %__param3 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8arg_listC1IJRiS1_EEE3tagDpOT_, inline_hint=yes] {
+function @arg_list__arg_list__ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>, %__param2 : ptr [pass=by_address, object_bytes=4], %__param3 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8arg_listC1IJRiS1_EEE3tagDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : ptr
@@ -82,4 +82,4 @@ function @arg_list__arg_list__ov4(%this : ptr [object_bytes=1], %__param1 : obj<
     store ptr %__param3, $__param3
     return void
 }
-alias object _ZN8arg_listC2IJRiS1_EEE3tagDpOT_ = @arg_list__arg_list__ov4
+alias object _ZN8arg_listC2IJRiS1_EEE3tagDpOT_ = @arg_list__arg_list__ov3

@@ -34,18 +34,54 @@ bool Analyzer::IsClassObjectType(TypeId type) const
 }
 
 BindingId Analyzer::ValidateClassValueConstruction(TypeId type,
-	const ExpressionInfo& source, bool copy_initialization)
+	const ExpressionInfo& source, bool copy_initialization, bool quiet)
 {
 	EnsureClassDefinition(type);
 	const EntityId entity = EntityOf(type);
 	if (!IsClassEntity(*program_, entity))
 		ThrowInternalCompilerError("class-value construction has non-class type");
+	if (quiet && program_->entities[entity].abstract_class) return kNoBinding;
 	if (program_->entities[entity].abstract_class)
 		ThrowSemanticError("cannot construct an abstract class value");
+	// An implicit trivial move is an exact non-template match for this prvalue.
+	// Its completed declaration facts prove validity without new template candidates.
+	if (source.category == VALUE_PRVALUE && source.type == program_->types.RemoveTopCv(type) &&
+		entity < class_special_members_.size())
+	{
+		const BindingId move = class_special_members_[entity].move_constructor;
+		if (move != kNoBinding)
+		{
+			const FunctionInfo& function = GetFunction(move);
+			if (function.implicit_special_member && function.trivial_special_member &&
+				!function.deleted_constructor && !function.deleted_special_member &&
+				CanAccessMember(move)) return move;
+		}
+	}
 	std::vector<NodeId> argument_syntax(1, kNoNode);
 	std::vector<ExpressionInfo> arguments(1, source);
 	return SelectConstructor(kNoScope, argument_syntax, arguments,
-		ConstructorCandidates(entity), copy_initialization, false, 0, false, kNoNode, type);
+		ConstructorCandidates(entity), copy_initialization, false, 0, quiet, kNoNode, type);
+}
+
+std::uint32_t Analyzer::BuildClassCopyInitialization(TypeId type,
+	const ExpressionInfo& source, bool demand)
+{
+	const CallConversionFact conversion = CallConversion(source, type, 0, 0);
+	if (conversion.rank == CONVERSION_INVALID)
+		return CandidateExpressionFailure("invalid or ambiguous class copy conversion").node;
+	ExpressionInfo result = conversion.constructor != kNoBinding ?
+		BuildConvertingArgument(source, type, conversion, demand) :
+		ApplyCallArgument(source, type, &conversion);
+	if (CandidateSubstitutionFailed()) return kNoDumpEdge;
+	dump_.nodes[result.node].class_argument_staging = false;
+	if (dump_.nodes[result.node].kind == DUMP_TEMPORARY_OBJECT &&
+		dump_.nodes[result.node].first_edge != kNoDumpEdge &&
+		dump_.edges[dump_.nodes[result.node].first_edge].next == kNoDumpEdge)
+	{
+		const std::uint32_t recipe = dump_.edges[dump_.nodes[result.node].first_edge].child;
+		if (dump_.nodes[recipe].kind == DUMP_CONSTRUCTOR_ACTION) return recipe;
+	}
+	return result.node;
 }
 
 std::uint32_t Analyzer::BuildClassValueConstructorAction(TypeId type,
@@ -55,6 +91,8 @@ std::uint32_t Analyzer::BuildClassValueConstructorAction(TypeId type,
 	const EntityId entity = EntityOf(type);
 	if (!IsClassEntity(*program_, entity))
 		ThrowInternalCompilerError("class-value construction has non-class type");
+	if (copy_initialization && Conversion(source, type) == CONVERSION_INVALID)
+		return BuildClassCopyInitialization(type, source, demand);
 	std::vector<NodeId> argument_syntax(1, kNoNode);
 	std::vector<ExpressionInfo> arguments(1, source);
 	std::vector<CallConversionFact> selected_conversions;

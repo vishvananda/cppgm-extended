@@ -1110,6 +1110,10 @@ std::uint32_t Analyzer::BuildConstructorAction(TypeId type,
 			else arguments.push_back(AnalyzeExpression(argument_syntax[i], scope));
 		}
 	}
+	if (copy_initialization && !list_initialization && !base_subobject &&
+		arguments.size() == 1 && arguments[0].type != kNoType &&
+		Conversion(arguments[0], type) == CONVERSION_INVALID)
+		return BuildClassCopyInitialization(type, arguments[0], demand);
 	const std::vector<BindingId>& candidates = ConstructorCandidates(entity);
 	std::vector<CallConversionFact> selected_conversions;
 	NodeId selected_list_source = source_list;
