@@ -27,18 +27,20 @@ fix sequence is complete, as requested.
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
 | RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done: 4858ddbc0; typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
 | CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Open with conversion legality work: immutable 70e7a2920 and current reject A a=x when A has A(int) and X::operator T(); GCC/Clang accept. Keep the reducer; the explicit-call fixture uses an aggregate result to isolate its contract. |
-| TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Open; distinguish student-entry observations from supplied-oracle comparisons. |
+| TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | In progress: the valid bounds failure reduces to parameter adjustment, recorded as PARAM-ADJUST below. Six unused body operations and one unused bound remain accepted. Fixed-call control rejects in Clang but GCC accepts; review definition-time rules separately. Historical student-entry evidence is not a supplied-oracle comparison. |
+| PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done in the accompanying checkpoint: parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
 | DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Open; discarded reference calls completed separately below. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
-| EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done in the accompanying checkpoint: eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
+| EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | Open; prior fb15cd49e class-value temporary cleanup fixes one case only. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
+| MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; two remain: PA23 initialized virtual bases and PA19 pack count. |
@@ -1170,3 +1172,57 @@ The isolated Alpha directory is
 /tmp/cppgm-v4-audit-review-20261001-complete-class/. Existing checkouts there and
 the running student checkout were not modified. Final student export remains
 deferred.
+
+## Parameter declarator scope checkpoint
+
+The valid dependent-bounds input reduces to sizeof an earlier array parameter
+in a later parameter's bound. BuildParameters had published the unadjusted
+array/function type in its declarator scope, while function bodies already used
+ParameterBindingType. Reusing that existing query preserves original declared
+types for the source dump and applies adjustment plus parameter cv rules to
+lookup. PA6 observes declaration types; PA14 observes template instantiation,
+function-pointer parameters and preservation of a const parameter object's type.
+
+Before/after and host controls are retained in
+/tmp/cppgm-v4-audit-review/parameter-adjustment/ and template-values-final/.
+The original broad reducer and seven simpler bound controls isolate the problem.
+Only the two new fixtures have generated references; existing references are
+unchanged. No encoder change was made. Clang and GCC disagree
+on mangling the adjusted-query template itself: Clang uses RAszfL0p__i and GCC
+uses RA8_i; name facts require separate review before any ABI change.
+
+## Read-only PA29 audit166 / handoff168 refresh
+
+Student HEAD is 217dc69f; current plan records implementation168 and audit166.
+There are no further tracked course fixture/reference edits since 5d2b1657 and
+the student tree is clean. Audits162/166 explicitly preserve fixture/reference
+discovery and describe corrections to student implementation entry behavior.
+Their atomic, assembly, allocation/evaluation and storage findings are not
+additional supplied-oracle corrections. The forward-only std trait and false
+nothrow-invocable primary questions repeat HOST-SHORTHAND, already resolved here.
+
+The current handoff reports 357/403 PA29 passes with 46 remaining; its aggregate
+and mutation controls are implementation evidence. No new personal test was
+explicitly described as disagreeing with the supplied reference implementation.
+A recorded scan of all 329 changed PA29 personal-test paths finds no such claim;
+plan/audit text likewise preserves the oracle questions rather than changing
+their expected status. This does not label every student-entry failure as a
+reference failure. Existing PA29-ALIGN remains open. Evidence and exact read-only
+plan/audit copies live in
+/tmp/cppgm-v4-audit-review/student-refresh-pa29-168/.
+
+PARAM-ADJUST validation: all 24 final source/optimization/compiler combinations
+compile and return 0 (four inputs, three compilers, O0/O2); the entry compiler
+rejects all eight corresponding source/optimization inputs. This includes the
+original broad dependent-bounds input. PA6/7/14 pass 109/186/320; strict report
+passes 5879/5879 with exactly one line. Debug-info, variants, self-host through
+PA5, nine architecture targets, file audit and placement pass. The unused invalid
+body/bound controls remain TMPL-VALID work.
+
+Alpha immutable A/A four-block and A/B eight-block comparisons for each of three
+frozen inputs pass the instruction/RSS gates. Median instruction ratios are
+1.000116, 1.000013 and 1.000006; RSS ratios are 1.000314, 1.000910 and 1.000163.
+All 144 objects are identical. Raw counter/time logs, input/binary manifests and
+paired summaries are retained under parameter-adjustment/alpha/; the isolated
+remote directory is /tmp/cppgm-v4-audit-review-20261001-parameter-adjustment/.
+Final student export remains deferred.

@@ -2077,7 +2077,7 @@ std::vector<ParameterInfo> Analyzer::BuildParameters(NodeId node,
 		if (name != 0 && FunctionTemplateTypeIsDependent(declared)) dependent_parameter_names.insert(name);
 		if (name != 0)
 			program_->AddBinding(parameter_scope, BIND_PARAMETER,
-				name, declared);
+				name, ParameterBindingType(result.back()));
 		const NodeId default_node = FindChild(child, ::cppgm::syntax::STAG_DEFAULT_ARGUMENT);
 		if (default_node != kNoNode)
 		{
