@@ -97,9 +97,9 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
   block ^if_then_13:
     eh_end
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     %t16 = addr $outside
     call void @Guard___Guard(%t16)
-    eh_end
     return i32 1
 
   block ^if_else_14:
@@ -156,9 +156,9 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     eh_cleanup ^catch_cleanup_26
     eh_end
     call void @__external_runtime____cxa_end_catch()
+    eh_end
     %t25 = addr $outside
     call void @Guard___Guard(%t25)
-    eh_end
     return i32 2
 
   block ^catch_cleanup_26:
@@ -213,9 +213,9 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     call void @__external_runtime____cxa_end_catch()
     %t35 = addr $inside
     call void @Guard___Guard(%t35)
+    eh_end
     %t36 = addr $outside
     call void @Guard___Guard(%t36)
-    eh_end
     return i32 3
 
   block ^catch_cleanup_35:

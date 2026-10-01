@@ -50,7 +50,7 @@ protected:
 	}
 
 	void InstallConstructorCleanup(
-		const DumpNode& action, BlockId* active)
+		const DumpNode& action, BlockId* active, bool detached)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (*active != kNoLowId)
@@ -58,26 +58,40 @@ protected:
 		const BlockId source = derived.current_block_;
 		const BlockId cleanup = derived.AddBlock(
 			derived.NewLabel("constructor_cleanup"));
+		const BlockId entry = detached ? derived.AddBlock(
+			derived.NewLabel("constructor_cleanup_entry")) : cleanup;
 		derived.SelectBlock(cleanup);
+		if (detached)
+		{
+			derived.EmitEnclosingTryHandlerClauses();
+			derived.Emit(Instruction(Instruction::EH_END));
+			derived.EmitJump(entry);
+			derived.SelectBlock(entry);
+		}
 		derived.LowerDestructorAction(action);
-		// Each newly constructed subobject owns one cleanup block.  Reuse the
-		// preceding block as the remaining destructor suffix instead of copying
-		// every earlier action into this block.
+		// Entry continuations have retired the protected frame. Both a landing
+		// pad and lexical destruction can use the same remaining suffix.
 		if (*active == kNoLowId)
 		{
-			derived.Emit(Instruction(Instruction::EH_END));
-			derived.EmitExceptionResume();
+			if (detached) derived.FinishExceptionCleanupDispatch(
+				derived.EnclosingTryRegion() != 0, false);
+			else
+			{
+				derived.Emit(Instruction(Instruction::EH_END));
+				derived.EmitExceptionResume();
+			}
 		}
 		else derived.EmitJump(*active);
 		derived.SelectBlock(source);
 		derived.EmitEhTarget(Instruction::EH_CLEANUP, cleanup);
-		*active = cleanup;
+		*active = entry;
 	}
 
 	void LowerConstructorBody(std::uint32_t body)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const NodeChildren children = derived.Children(body);
+		const bool detached = derived.arena_.nodes[body].throwing_lexical_body_cleanup;
 		BlockId active = kNoLowId;
 		for (std::size_t i = 0; i < children.size(); ++i)
 		{
@@ -86,14 +100,17 @@ protected:
 			DumpNode cleanup(DUMP_DESTRUCTOR_ACTION);
 			if (!BuildConstructorCleanup(
 				derived.arena_.nodes[children[i]], &cleanup)) continue;
-			InstallConstructorCleanup(cleanup, &active);
+			InstallConstructorCleanup(cleanup, &active, detached);
 			// Body statements from here on run inside the member cleanup
 			// region; an early return must pop it before leaving.
 			derived.constructor_body_cleanup_active_ = true;
+			derived.lexical_body_unwind_target_ = detached ? active : BlockId(kNoLowId);
+			derived.lexical_body_unwind_depth_ = derived.ActiveExceptionRegionCount();
 		}
 		if (active != kNoLowId && !derived.CurrentBlock().terminated)
 			derived.Emit(Instruction(Instruction::EH_END));
 		derived.constructor_body_cleanup_active_ = false;
+		derived.lexical_body_unwind_target_ = kNoLowId;
 	}
 
 	bool ElidesNestedTemporaryConstruction(

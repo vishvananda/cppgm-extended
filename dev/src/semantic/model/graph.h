@@ -230,10 +230,15 @@ struct DumpNode
 	bool reverse_pointer_compound_assignment : 1;
 	bool dynamic_type_query : 1;
 	bool dynamic_cast_reference : 1;
+	bool throwing_lexical_body_cleanup : 1;
 	FunctionTryBodyKind function_try_body;
 	// Packed SimpleTokenKind + 1 for operator expression nodes; 0 for none.
 	std::uint8_t operation_kind;
-	std::uint32_t exception_control_exit_count;
+	union
+	{
+		std::uint32_t exception_control_exit_count; // DUMP_GOTO_STATEMENT
+		std::uint32_t lexical_cleanup_plan; // DUMP_DESTRUCTOR_ACTION; 0 = none
+	};
 
 	bool OperationIs(int simple_token_kind) const
 	{
@@ -302,6 +307,7 @@ struct DumpNode
 		  complete_object_destruction(false),
 		  reverse_pointer_compound_assignment(false),
 		  dynamic_type_query(false), dynamic_cast_reference(false),
+		throwing_lexical_body_cleanup(false),
 		  function_try_body(FUNCTION_TRY_BODY_NONE),
 		  operation_kind(0),
 		  exception_control_exit_count(0) {}
@@ -313,6 +319,24 @@ struct DumpEdge
 	std::uint32_t next;
 	explicit DumpEdge(std::uint32_t value)
 		: child(value), next(kNoDumpEdge) {}
+};
+
+enum LexicalCleanupKind : std::uint8_t
+{
+	LEXICAL_CLEANUP_OBJECT,
+	LEXICAL_CLEANUP_TRY_EXIT,
+	LEXICAL_CLEANUP_HANDLER_EXIT
+};
+
+struct LexicalCleanupPlan
+{
+	LexicalCleanupKind kind;
+	bool unwind_may_throw;
+	std::uint32_t node, tail, depth;
+	LexicalCleanupPlan(LexicalCleanupKind kind_value, std::uint32_t node_value,
+		std::uint32_t tail_value, std::uint32_t depth_value, bool throwing)
+		: kind(kind_value), unwind_may_throw(throwing), node(node_value),
+		  tail(tail_value), depth(depth_value) {}
 };
 
 class DumpArena
@@ -349,12 +373,25 @@ public:
 		owner.last_edge = edge;
 	}
 
+	std::uint32_t AddLexicalCleanupPlan(LexicalCleanupKind kind,
+		std::uint32_t node, std::uint32_t tail, std::uint32_t depth, bool may_throw = false)
+	{
+		if (lexical_cleanup_plans.size() >= kNoDumpEdge - 1)
+			ThrowSemanticResourceLimit("too many lexical cleanup plans");
+		const bool throwing = kind != LEXICAL_CLEANUP_TRY_EXIT && (may_throw ||
+			(tail != 0 && lexical_cleanup_plans[tail - 1].unwind_may_throw));
+		lexical_cleanup_plans.push_back(LexicalCleanupPlan(kind, node, tail, depth, throwing));
+		return static_cast<std::uint32_t>(lexical_cleanup_plans.size());
+	}
+
 	std::size_t StorageBytes() const
 	{
-		return nodes.capacity() * sizeof(DumpNode) +
+		return lexical_cleanup_plans.capacity() * sizeof(LexicalCleanupPlan) +
+			nodes.capacity() * sizeof(DumpNode) +
 			edges.capacity() * sizeof(DumpEdge);
 	}
 
+	std::vector<LexicalCleanupPlan> lexical_cleanup_plans;
 	std::vector<DumpNode> nodes;
 	std::vector<DumpEdge> edges;
 };
@@ -1497,11 +1534,11 @@ struct LifetimeObligation
 {
 	BindingId object, destructor;
 	TypeId type;
-	std::uint32_t temporary;
+	std::uint32_t temporary, cleanup_plan;
 	LifetimeObligation(BindingId object_value, BindingId destructor_value,
 		TypeId type_value, std::uint32_t temporary_value = kNoDumpEdge)
 		: object(object_value), destructor(destructor_value), type(type_value),
-		  temporary(temporary_value) {}
+		  temporary(temporary_value), cleanup_plan(0) {}
 };
 
 // A static relocation published by constant evaluation. LOCAL denotes an

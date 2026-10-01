@@ -2312,6 +2312,10 @@ void Analyzer::AppendScopeDestructionActions(ScopeId scope,
 		current != stop_exclusive; current = scope_parents_[current])
 	{
 		if (current >= scope_lifetimes_.size()) continue;
+		if (!scope_lifetimes_[current].empty() &&
+			!program_->bindings[scope_lifetimes_[current].back().destructor].nonthrowing &&
+			scope_lifetimes_[current].back().cleanup_plan == 0)
+			(void)CurrentLexicalCleanupRoot(current);
 		const std::vector<LifetimeObligation>& obligations =
 			scope_lifetimes_[current];
 		for (std::size_t i = obligations.size(); i != 0; --i)
@@ -2322,7 +2326,11 @@ void Analyzer::AppendScopeDestructionActions(ScopeId scope,
 					obligation.object) :
 				MakeTemporaryDestructorAction(obligation.temporary,
 					obligation.destructor);
-			if (action != kNoDumpEdge) dump_.Add(output_parent, action);
+			if (action != kNoDumpEdge)
+			{
+				dump_.nodes[action].lexical_cleanup_plan = obligation.cleanup_plan;
+				dump_.Add(output_parent, action);
+			}
 			++lexical_cleanup_action_visits_;
 		}
 	}

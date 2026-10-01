@@ -27,14 +27,161 @@ class LifetimeActionLowering
 {
 protected:
 	LifetimeActionLowering()
-		: direct_return_slot_(kNoLowId), shared_return_slot_(kNoLowId) {}
+		: direct_return_slot_(kNoLowId), shared_return_slot_(kNoLowId), lexical_cleanup_terminate_(kNoLowId), lexical_body_unwind_target_(kNoLowId),
+		  lexical_body_unwind_depth_(0) {}
 
 	void ResetLifetimeFunctionState()
 	{
 		direct_return_slot_ = kNoLowId;
 		shared_return_slot_ = kNoLowId;
+		lexical_cleanup_terminate_ = kNoLowId;
+		lexical_body_unwind_target_ = kNoLowId;
+		lexical_body_unwind_depth_ = 0;
 		return_cleanup_roots_.Clear();
 		return_cleanup_counts_.clear();
+	}
+
+	std::size_t LexicalDestructorDepth(const DumpNode& action) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		return action.lexical_cleanup_plan == 0 ? 0 :
+			derived.arena_.lexical_cleanup_plans[action.lexical_cleanup_plan - 1].depth;
+	}
+
+	BlockId LexicalCleanupTerminateBlock()
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (lexical_cleanup_terminate_ != kNoLowId) return lexical_cleanup_terminate_;
+		const BlockId original = derived.current_block_;
+		lexical_cleanup_terminate_ = derived.AddBlock(derived.NewLabel("lexical_cleanup_terminate"));
+		derived.SelectBlock(lexical_cleanup_terminate_);
+		Instruction clause(Instruction::EH_CATCH_ALL);
+		clause.first = Operand(1, LowI32());
+		derived.Emit(clause);
+		const Operand exception = derived.Temp(LowPtr());
+		Instruction read(Instruction::EXCEPTION);
+		read.dest = exception.id;
+		read.type = LowPtr();
+		derived.Emit(read);
+		CallArguments arguments;
+		arguments.Push(exception);
+		(void)derived.EmitExceptionRuntimeCall(derived.output_.terminate_helper_symbol,
+			LowVoid(), arguments);
+		derived.Emit(Instruction(Instruction::UNREACHABLE));
+		derived.SelectBlock(original);
+		return lexical_cleanup_terminate_;
+	}
+
+	BlockId LexicalUnwindCleanup(std::uint32_t root, std::size_t depth)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		using namespace lowering::cleanup;
+		const std::uint32_t context = derived.ExceptionCleanupContextAtDepth(depth);
+		const BlockId original = derived.current_block_;
+		std::vector<std::uint32_t> pending;
+		BlockId tail = kNoLowId;
+		while (tail == kNoLowId)
+		{
+			bool inserted = false;
+			const std::uint32_t cache = derived.cleanup_continuations_.Intern(
+				Key(root, kNoCleanupState, lexical_body_unwind_target_ + 1, context, LEXICAL_UNWIND_CACHE), &inserted);
+			const State& known = derived.cleanup_continuations_.Get(cache);
+			if (known.block_bound) { tail = known.block; break; }
+			const BlockId block = derived.AddBlock(derived.NewLabel("lexical_unwind"));
+			derived.cleanup_continuations_.BindBlock(cache, block);
+			pending.push_back(cache);
+			if (root == 0) break;
+			const LexicalCleanupPlan& plan = derived.arena_.lexical_cleanup_plans[root - 1];
+			if (plan.kind == LEXICAL_CLEANUP_TRY_EXIT) break;
+			root = plan.tail;
+		}
+		for (std::size_t i = pending.size(); i != 0; --i)
+		{
+			const State state = derived.cleanup_continuations_.Get(pending[i - 1]);
+			derived.SelectBlock(state.block);
+			root = state.key.action;
+			if (root == 0)
+			{
+				if (lexical_body_unwind_target_ != kNoLowId)
+				{
+					derived.Emit(Instruction(Instruction::EH_END));
+					derived.EmitJump(lexical_body_unwind_target_);
+				}
+				else derived.EmitExceptionResume();
+			}
+			else
+			{
+				const LexicalCleanupPlan& plan = derived.arena_.lexical_cleanup_plans[root - 1];
+				if (plan.kind == LEXICAL_CLEANUP_TRY_EXIT)
+					derived.EmitLexicalCleanupTryExit(plan.node, depth);
+				else
+				{
+					if (plan.kind == LEXICAL_CLEANUP_HANDLER_EXIT)
+						derived.EmitLexicalCleanupRegionExit(plan.depth - 1);
+					else
+					{
+						const DumpNode& action = derived.arena_.nodes[plan.node];
+						const bool may_throw = !derived.program_.bindings[action.binding].nonthrowing;
+						if (may_throw)
+							derived.EmitEhTarget(Instruction::EH_TRY, LexicalCleanupTerminateBlock());
+						derived.LowerDestructorAction(action);
+						if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
+					}
+					derived.EmitJump(tail);
+				}
+			}
+			tail = state.block;
+		}
+		derived.SelectBlock(original);
+		return tail;
+	}
+
+	void LowerLexicalDestructorAction(const DumpNode& action, std::size_t* closed = 0)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (action.lexical_cleanup_plan == 0)
+		{
+			derived.LowerDestructorAction(action);
+			return;
+		}
+		const LexicalCleanupPlan& plan =
+			derived.arena_.lexical_cleanup_plans[action.lexical_cleanup_plan - 1];
+		const std::size_t depth = LexicalDestructorDepth(action);
+		const std::size_t active = derived.ActiveExceptionRegionCount();
+		if (depth > active) ThrowLoweringInternal("lexical destructor context exceeds active regions");
+		if (closed)
+		{
+			derived.FinishExceptionControlExit(*closed, active - depth);
+			*closed = active - depth;
+		}
+		if (derived.program_.bindings[action.binding].nonthrowing)
+		{
+			derived.LowerDestructorAction(action);
+			return;
+		}
+		// A bare try boundary already dispatches this call. Only remaining
+		// objects, handler exits, or a body cleanup need an additional tail.
+		const bool body_tail = lexical_body_unwind_target_ != kNoLowId &&
+			depth == lexical_body_unwind_depth_;
+		if (!body_tail && (plan.tail == 0 ||
+			derived.arena_.lexical_cleanup_plans[plan.tail - 1].kind ==
+				LEXICAL_CLEANUP_TRY_EXIT))
+		{
+			derived.LowerDestructorAction(action);
+			return;
+		}
+		const BlockId original = derived.current_block_;
+		const BlockId unwind = LexicalUnwindCleanup(plan.tail, depth);
+		const BlockId dispatch = derived.AddBlock(derived.NewLabel("lexical_cleanup_dispatch"));
+		derived.SelectBlock(dispatch);
+		derived.EmitLexicalCleanupClauses(depth);
+		derived.Emit(Instruction(Instruction::EH_CLEANUP));
+		derived.Emit(Instruction(Instruction::EH_END));
+		derived.EmitJump(unwind);
+		derived.SelectBlock(original);
+		derived.EmitEhTarget(Instruction::EH_TRY, dispatch);
+		derived.LowerDestructorAction(action);
+		derived.Emit(Instruction(Instruction::EH_END));
 	}
 
 	std::size_t ReturnLexicalCleanupStart(const NodeChildren& children,
@@ -215,10 +362,18 @@ protected:
 		std::uint32_t tail = InternLexicalCleanupState(Key(kNoCleanupState,
 			kNoCleanupState, terminal, context, LEXICAL_RETURN_TERMINAL),
 			"return_cleanup_terminal", pending, &inserted);
+		std::size_t depth = 0;
 		for (std::size_t i = children.size(); i != first_cleanup; --i)
 		{
 			const std::size_t index = i - 1;
 			if (!ReturnCleanupActionApplies(children, has_value, index)) continue;
+			const std::size_t target = LexicalDestructorDepth(derived.arena_.nodes[children[index]]);
+			while (depth < target)
+			{
+				tail = InternLexicalCleanupState(Key(static_cast<std::uint32_t>(depth++),
+					tail, terminal, context, LEXICAL_RETURN_REGION_EXIT),
+					"return_cleanup_exit", pending, &inserted);
+			}
 			const ActionKey action_key = MakeActionKey(
 				derived.arena_.nodes[children[index]]);
 			const std::uint32_t action = derived.cleanup_continuations_.InternAction(
@@ -228,6 +383,10 @@ protected:
 			if (!inserted && derived.stats_)
 				++derived.stats_->cleanup_destructor_actions_avoided;
 		}
+		while (depth < derived.ActiveExceptionRegionCount())
+			tail = InternLexicalCleanupState(Key(static_cast<std::uint32_t>(depth++),
+				tail, terminal, context, LEXICAL_RETURN_REGION_EXIT),
+				"return_cleanup_exit", pending, &inserted);
 		return tail;
 	}
 
@@ -236,6 +395,7 @@ protected:
 		std::size_t closed_exception_handlers,
 		std::size_t exception_regions, bool returns_value)
 	{
+		(void)closed_exception_handlers;
 		Derived& derived = static_cast<Derived&>(*this);
 		using namespace lowering::cleanup;
 		const BlockId original = derived.current_block_;
@@ -245,14 +405,19 @@ protected:
 			derived.SelectBlock(state.block);
 			if (state.key.mode == LEXICAL_RETURN_ACTION)
 			{
-				derived.LowerDestructorAction(
+				LowerLexicalDestructorAction(
 					derived.arena_.nodes[derived.cleanup_continuations_.GetAction(
 						state.key.action).representative_node]);
 				derived.EmitJump(LexicalCleanupBlock(state.key.tail));
 			}
+			else if (state.key.mode == LEXICAL_RETURN_REGION_EXIT)
+			{
+				derived.EmitLexicalCleanupRegionExit(state.key.action);
+				derived.EmitJump(LexicalCleanupBlock(state.key.tail));
+			}
 			else if (state.key.mode == LEXICAL_RETURN_TERMINAL)
 			{
-				derived.FinishExceptionControlExit(closed_exception_handlers,
+				derived.FinishExceptionControlExit(exception_regions,
 					exception_regions);
 				if (derived.constructor_body_cleanup_active_)
 					derived.Emit(Instruction(Instruction::EH_END));
@@ -272,6 +437,49 @@ protected:
 				"invalid lexical return cleanup continuation mode");
 		}
 		derived.SelectBlock(original);
+	}
+
+	Operand LowerScalarReturnValue(std::uint32_t node)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const bool boolean_conversion =
+			derived.arena_.nodes[node].boolean_conversion;
+		const Operand value = boolean_conversion ?
+			derived.LowerConvertedValue(node,
+				derived.current_result_, false) :
+			derived.LowerValue(node,
+				derived.current_result_.kind == LOW_PTR ?
+				derived.current_result_ : LowType());
+		const bool preserve_unsigned_conversion =
+			value.kind == Operand::INTEGER && IsInteger(value.type) &&
+			IsInteger(derived.current_result_) && value.type.is_signed &&
+			!derived.current_result_.is_signed &&
+			value.type.width < derived.current_result_.width;
+		return boolean_conversion ? value : derived.Convert(
+			value, derived.current_result_,
+			!preserve_unsigned_conversion);
+	}
+
+	Operand LowerReferenceReturnValue(std::uint32_t node)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const DumpNode& returned = derived.arena_.nodes[node];
+		if (returned.category != VALUE_PRVALUE)
+			return derived.AddressOfStorage(
+				derived.LowerStorage(node));
+		else
+		{
+			const LowType type =
+				derived.LowerExpressionType(returned.type);
+			const Operand slot(derived.EnsureGeneratedSlot(
+				node, "retref", type), type);
+			Instruction store(Instruction::STORE);
+			store.type = type;
+			store.first = derived.LowerValue(node, type);
+			store.second = slot;
+			derived.Emit(store);
+			return derived.AddressOfStorage(slot);
+		}
 	}
 
 	void LowerReturn(std::uint32_t return_node, const NodeChildren& children)
@@ -431,42 +639,11 @@ protected:
 				(void)derived.LowerValue(children[0]);
 			else if (derived.current_result_reference_)
 			{
-				const DumpNode& returned = derived.arena_.nodes[children[0]];
-				if (returned.category != VALUE_PRVALUE)
-					result_value = derived.AddressOfStorage(
-						derived.LowerStorage(children[0]));
-				else
-				{
-					const LowType type =
-						derived.LowerExpressionType(returned.type);
-					const Operand slot(derived.EnsureGeneratedSlot(
-						children[0], "retref", type), type);
-					Instruction store(Instruction::STORE);
-					store.type = type;
-					store.first = derived.LowerValue(children[0], type);
-					store.second = slot;
-					derived.Emit(store);
-					result_value = derived.AddressOfStorage(slot);
-				}
+				result_value = LowerReferenceReturnValue(children[0]);
 			}
 			else
 			{
-				const bool boolean_conversion =
-					derived.arena_.nodes[children[0]].boolean_conversion;
-				const Operand value = boolean_conversion ?
-					derived.LowerConvertedValue(children[0],
-						derived.current_result_, false) :
-					derived.LowerValue(children[0],
-						derived.current_result_.kind == LOW_PTR ?
-						derived.current_result_ : LowType());
-				const bool preserve_unsigned_conversion =
-					value.kind == Operand::INTEGER && IsInteger(value.type) &&
-					IsInteger(derived.current_result_) && value.type.is_signed &&
-					!derived.current_result_.is_signed &&
-					value.type.width < derived.current_result_.width;
-				result_value = boolean_conversion ? value : derived.Convert(
-					value, derived.current_result_,
-					!preserve_unsigned_conversion);
+				result_value = LowerScalarReturnValue(children[0]);
 			}
 		}
 		if (derived.CurrentBlock().terminated) return;
@@ -490,7 +667,7 @@ protected:
 			derived.CompleteFullExpressionCleanup();
 		const std::size_t exception_regions =
 			derived.ActiveExceptionRegionCount();
-		const std::size_t closed_exception_handlers =
+		std::size_t closed_exception_handlers =
 			derived.BeginExceptionControlExit(exception_regions);
 		const std::size_t remaining_cleanup = managed_full_expression ?
 			full_expression_cleanup_end : first_cleanup;
@@ -513,7 +690,8 @@ protected:
 				derived.arena_.nodes[children[i]].object_binding ==
 					derived.arena_.nodes[children[0]].binding)
 				continue;
-			derived.LowerDestructorAction(derived.arena_.nodes[children[i]]);
+			LowerLexicalDestructorAction(derived.arena_.nodes[children[i]],
+				&closed_exception_handlers);
 		}
 		derived.FinishExceptionControlExit(
 			closed_exception_handlers, exception_regions);
@@ -595,14 +773,20 @@ protected:
 		}
 		const BlockId cleanup = derived.AddBlock(
 			derived.NewLabel("destructor_cleanup"));
+		const bool detached = derived.arena_.nodes[body].throwing_lexical_body_cleanup;
+		const BlockId cleanup_entry = detached ? derived.AddBlock(
+			derived.NewLabel("destructor_cleanup_entry")) : cleanup;
 		const BlockId end = derived.AddBlock(
 			derived.NewLabel("destructor_end"));
 		derived.EmitEhTarget(Instruction::EH_CLEANUP, cleanup);
 		derived.destructor_return_target_ = kNoLowId;
 		derived.destructor_return_routes_to_epilogue_ = true;
+		lexical_body_unwind_target_ = detached ? cleanup_entry : BlockId(kNoLowId);
+		lexical_body_unwind_depth_ = derived.ActiveExceptionRegionCount();
 		for (std::size_t i = 0; i < first_action; ++i)
 			derived.LowerStatement(children[i]);
 		derived.destructor_return_routes_to_epilogue_ = false;
+		lexical_body_unwind_target_ = kNoLowId;
 		if (derived.destructor_return_target_ != kNoLowId)
 		{
 			if (!derived.CurrentBlock().terminated)
@@ -621,10 +805,18 @@ protected:
 		EmitDestructorActionRange(children, first_action);
 		derived.EmitJump(end);
 		derived.SelectBlock(cleanup);
+		if (detached)
+		{
+			derived.EmitEnclosingTryHandlerClauses();
+			derived.Emit(Instruction(Instruction::EH_END));
+			derived.EmitJump(cleanup_entry);
+			derived.SelectBlock(cleanup_entry);
+		}
 		for (std::size_t i = first_action; i < children.size(); ++i)
 			derived.LowerDestructorAction(derived.arena_.nodes[children[i]]);
-		derived.Emit(Instruction(Instruction::EH_END));
-		derived.EmitExceptionResume();
+		if (!detached) derived.Emit(Instruction(Instruction::EH_END));
+		derived.FinishExceptionCleanupDispatch(detached &&
+			derived.EnclosingTryRegion() != 0, false);
 		derived.SelectBlock(end);
 	}
 
@@ -637,6 +829,9 @@ protected:
 			body, "destructor_progress", LowI64()), LowI64());
 		const BlockId cleanup = derived.AddBlock(
 			derived.NewLabel("destructor_cleanup"));
+		const bool detached = derived.arena_.nodes[body].throwing_lexical_body_cleanup;
+		const BlockId cleanup_entry = detached ? derived.AddBlock(
+			derived.NewLabel("destructor_cleanup_entry")) : cleanup;
 		const BlockId end = derived.AddBlock(
 			derived.NewLabel("destructor_end"));
 		Instruction initial_progress(Instruction::STORE);
@@ -647,9 +842,12 @@ protected:
 		derived.EmitEhTarget(Instruction::EH_CLEANUP, cleanup);
 		derived.destructor_return_target_ = kNoLowId;
 		derived.destructor_return_routes_to_epilogue_ = true;
+		lexical_body_unwind_target_ = detached ? cleanup_entry : BlockId(kNoLowId);
+		lexical_body_unwind_depth_ = derived.ActiveExceptionRegionCount();
 		for (std::size_t i = 0; i < first_action; ++i)
 			derived.LowerStatement(children[i]);
 		derived.destructor_return_routes_to_epilogue_ = false;
+		lexical_body_unwind_target_ = kNoLowId;
 		if (derived.destructor_return_target_ != kNoLowId)
 		{
 			if (!derived.CurrentBlock().terminated)
@@ -689,6 +887,13 @@ protected:
 			cleanup_blocks.Push(derived.AddBlock(
 				derived.NewLabel("destructor_suffix_cleanup")));
 		derived.SelectBlock(cleanup);
+		if (detached)
+		{
+			derived.EmitEnclosingTryHandlerClauses();
+			derived.Emit(Instruction(Instruction::EH_END));
+			derived.EmitJump(cleanup_entry);
+			derived.SelectBlock(cleanup_entry);
+		}
 		const Operand selected = derived.LoadStorage(progress, LowI64());
 		Instruction dispatch(Instruction::SWITCH);
 		dispatch.first = selected;
@@ -710,14 +915,17 @@ protected:
 				derived.EmitJump(cleanup_blocks[i + 1]);
 			else
 			{
-				derived.Emit(Instruction(Instruction::EH_END));
-				derived.EmitExceptionResume();
+				if (!detached) derived.Emit(Instruction(Instruction::EH_END));
+				derived.FinishExceptionCleanupDispatch(detached &&
+					derived.EnclosingTryRegion() != 0, false);
 			}
 		}
 		derived.SelectBlock(end);
 	}
 
 	SlotId direct_return_slot_, shared_return_slot_;
+	BlockId lexical_cleanup_terminate_, lexical_body_unwind_target_;
+	std::size_t lexical_body_unwind_depth_;
 	FlatIdMap return_cleanup_roots_;
 	std::vector<std::uint32_t> return_cleanup_counts_;
 };

@@ -464,6 +464,13 @@ private:
 					state_.thrown_type_demanded[type] = 1;
 				}
 			}
+			else if (record.kind == DUMP_DESTRUCTOR_ACTION &&
+				record.lexical_cleanup_plan != 0 &&
+				!program_.bindings[record.binding].nonthrowing)
+			{
+				state_.need_exceptions = true;
+				state_.need_exception_handlers = true;
+			}
 			else if (record.kind == DUMP_HANDLER)
 			{
 				state_.need_exceptions = true;

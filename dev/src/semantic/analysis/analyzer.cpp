@@ -2477,7 +2477,9 @@ void Analyzer::AnalyzeFunction(NodeId node, ScopeId scope,
 		{
 			const std::uint32_t region = MakeDump(DUMP_TRY_STATEMENT);
 			dump_.Add(output_node, region);
+			PushExceptionControlContext(region, function_scope);
 			AnalyzeCompound(body, function_scope, region);
+			PopExceptionControlContext();
 			AnalyzeFunctionTryHandlers(function_try_block,
 				function_scope, region, constructor ?
 					FUNCTION_TRY_BODY_CONSTRUCTOR : destructor ?

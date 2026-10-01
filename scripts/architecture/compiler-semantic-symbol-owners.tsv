@@ -581,6 +581,8 @@ dev/src/semantic/lifetime/demand_stats.cpp	PublishFunctionDemandStats	1	dev/src/
 dev/src/semantic/lifetime/demand_stats.cpp	RecordFunctionDemand	1	dev/src/semantic/lifetime/demand_stats.cpp	keep
 dev/src/semantic/lifetime/elision.cpp	EmptyDefaultConstructorChain	1	dev/src/semantic/lifetime/elision.cpp	keep
 dev/src/semantic/lifetime/elision.cpp	PublishInitializationStats	1	dev/src/semantic/lifetime/elision.cpp	keep
+dev/src/semantic/lifetime/lifetime.cpp	CurrentLexicalCleanupRoot	1	dev/src/semantic/lifetime/lifetime.cpp	keep
+dev/src/semantic/lifetime/lifetime.cpp	CreateLifetimeCleanupPlan	1	dev/src/semantic/lifetime/lifetime.cpp	keep
 dev/src/semantic/lifetime/lifetime.cpp	AddLifetimeObligation	1	dev/src/semantic/lifetime/lifetime.cpp	keep
 dev/src/semantic/lifetime/lifetime.cpp	AddTemporaryLifetimeObligation	1	dev/src/semantic/lifetime/lifetime.cpp	keep
 dev/src/semantic/lifetime/lifetime.cpp	CollectReferenceLifetimeObjects	1	dev/src/semantic/lifetime/lifetime.cpp	keep

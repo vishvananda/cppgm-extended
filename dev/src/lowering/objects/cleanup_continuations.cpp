@@ -12,6 +12,7 @@ namespace cleanup
 ActionKey::ActionKey()
 	: lifetime_object(kNoCleanupState), object_binding(kNoCleanupState),
 	  destructor_binding(kNoCleanupState), operand_type(kNoCleanupState),
+	  lexical_cleanup_plan(0),
 	  base_projection_count(0), constant_value(0), base_projection_offset(0),
 	  flags(0) {}
 
@@ -21,6 +22,7 @@ bool ActionKey::operator==(const ActionKey& other) const
 		object_binding == other.object_binding &&
 		destructor_binding == other.destructor_binding &&
 		operand_type == other.operand_type &&
+		lexical_cleanup_plan == other.lexical_cleanup_plan &&
 		base_projection_count == other.base_projection_count &&
 		constant_value == other.constant_value &&
 		base_projection_offset == other.base_projection_offset &&
@@ -37,6 +39,7 @@ ActionKey MakeActionKey(const semantic::DumpNode& action)
 	key.object_binding = action.object_binding;
 	key.destructor_binding = action.binding;
 	key.operand_type = action.operand_type;
+	key.lexical_cleanup_plan = action.lexical_cleanup_plan;
 	key.base_projection_count = action.base_projection_count;
 	key.constant_value = action.constant_value;
 	key.base_projection_offset = action.base_projection_offset;
@@ -94,7 +97,7 @@ std::uint64_t Interner::Fingerprint(const ActionKey& key)
 	std::uint64_t hash = 1469598103934665603ULL;
 	const std::uint64_t words[] = {
 		key.lifetime_object, key.object_binding, key.destructor_binding,
-		key.operand_type, key.base_projection_count,
+		key.operand_type, key.lexical_cleanup_plan, key.base_projection_count,
 		static_cast<std::uint64_t>(key.constant_value),
 		key.base_projection_offset, key.flags };
 	for (std::size_t i = 0; i < sizeof(words) / sizeof(words[0]); ++i)

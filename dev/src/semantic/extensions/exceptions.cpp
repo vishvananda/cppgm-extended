@@ -78,10 +78,11 @@ void Analyzer::FinishFunctionControlFlowFacts()
 	pending_control_flow_gotos_.swap(saved.pending_gotos);
 }
 
-void Analyzer::PushExceptionControlContext()
+void Analyzer::PushExceptionControlContext(std::uint32_t region, ScopeId scope)
 {
 	if (exception_control_contexts_.empty())
 		BeginFunctionControlFlowFacts();
+	const std::uint32_t root = region == kNoDumpEdge ? 0 : CurrentLexicalCleanupRoot(scope);
 	const std::uint32_t parent = current_exception_control_context_;
 	if (parent >= exception_control_contexts_.size())
 		ThrowInternalCompilerError("invalid semantic exception context");
@@ -91,6 +92,14 @@ void Analyzer::PushExceptionControlContext()
 		exception_control_contexts_.size());
 	exception_control_contexts_.push_back(ExceptionControlContextFact(parent,
 		exception_control_contexts_[parent].depth + 1));
+	if (region != kNoDumpEdge)
+	{
+		ExceptionControlContextFact& fact = exception_control_contexts_.back();
+		fact.region = region;
+		fact.cleanup_root = dump_.AddLexicalCleanupPlan(
+			dump_.nodes[region].kind == DUMP_HANDLER ? LEXICAL_CLEANUP_HANDLER_EXIT :
+				LEXICAL_CLEANUP_TRY_EXIT, region, root, fact.depth);
+	}
 }
 
 void Analyzer::PopExceptionControlContext()
@@ -150,7 +159,11 @@ void Analyzer::ResolveControlFlowGoto(
 					obligation.object) :
 				MakeTemporaryDestructorAction(obligation.temporary,
 					obligation.destructor);
-			if (action != kNoDumpEdge) dump_.Add(source.node, action);
+			if (action != kNoDumpEdge)
+			{
+				dump_.nodes[action].lexical_cleanup_plan = obligation.cleanup_plan;
+				dump_.Add(source.node, action);
+			}
 			++lexical_cleanup_action_visits_;
 		}
 	};
@@ -845,6 +858,7 @@ void Analyzer::AnalyzeExceptionHandler(NodeId node, ScopeId scope,
 		scope, SCOPE_BLOCK, 0, ScopePrefixId(scope));
 	const std::uint32_t handler = MakeDump(DUMP_HANDLER);
 	dump_.Add(output_parent, handler);
+	PushExceptionControlContext(handler, scope);
 	const NodeId declaration = FindChild(node, ::cppgm::syntax::STAG_EXCEPTION_DECLARATION);
 	if (declaration == kNoNode)
 		ThrowSemanticError("exception handler has no declaration");
@@ -895,10 +909,11 @@ void Analyzer::AnalyzeExceptionHandler(NodeId node, ScopeId scope,
 				DemandFunction(destructor);
 			}
 		}
-		if (parsed.name != 0)
+		if (parsed.name != 0 || dump_.nodes[handler].selected_binding != kNoBinding)
 		{
 			const BindingId binding = program_->AddBinding(handler_scope,
 				BIND_VARIABLE, parsed.name, parsed.type);
+			program_->bindings[binding].compiler_generated = parsed.name == 0;
 			dump_.nodes[handler].binding = binding;
 			dump_.nodes[handler].text = parsed.name;
 			dump_.Add(handler, MakeDump(DUMP_VARIABLE, parsed.type,
@@ -911,12 +926,12 @@ void Analyzer::AnalyzeExceptionHandler(NodeId node, ScopeId scope,
 		ThrowSemanticError("exception handler has no body");
 	++exception_handler_depth_;
 	exception_handler_cleanup_stops_.push_back(scope);
-	PushExceptionControlContext();
 	AnalyzeCompound(body, handler_scope, handler);
+	const std::uint32_t handler_body = dump_.edges[dump_.nodes[handler].last_edge].child;
+	AppendScopeDestructionActions(handler_scope, handler_body, scope);
 	PopExceptionControlContext();
 	exception_handler_cleanup_stops_.pop_back();
 	--exception_handler_depth_;
-	AppendScopeDestructionActions(handler_scope, handler, scope);
 }
 
 void Analyzer::AnalyzeTryStatement(NodeId node, ScopeId scope,
@@ -933,7 +948,7 @@ void Analyzer::AnalyzeTryStatement(NodeId node, ScopeId scope,
 		if (arena_->IsTag(child, ::cppgm::syntax::STAG_COMPOUND_STATEMENT) && !saw_body)
 		{
 			exception_cleanup_stops_.push_back(scope);
-			PushExceptionControlContext();
+			PushExceptionControlContext(statement, scope);
 			AnalyzeCompound(child, scope, statement);
 			PopExceptionControlContext();
 			exception_cleanup_stops_.pop_back();

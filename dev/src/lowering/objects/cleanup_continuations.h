@@ -26,7 +26,9 @@ enum Mode : std::uint8_t
 	CONDITIONAL_ACTION,
 	LEXICAL_RETURN_CENSUS,
 	LEXICAL_RETURN_TERMINAL,
-	LEXICAL_RETURN_ACTION
+	LEXICAL_RETURN_ACTION,
+	LEXICAL_RETURN_REGION_EXIT,
+	LEXICAL_UNWIND_CACHE
 };
 
 struct ActionKey
@@ -35,6 +37,7 @@ struct ActionKey
 	std::uint32_t object_binding;
 	std::uint32_t destructor_binding;
 	std::uint32_t operand_type;
+	std::uint32_t lexical_cleanup_plan;
 	std::uint32_t base_projection_count;
 	std::int64_t constant_value;
 	std::uint64_t base_projection_offset;

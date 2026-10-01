@@ -91,22 +91,36 @@ function @Derived___Derived(%this : ptr [object_bytes=1]) -> void [binding=weak,
     %t3 = binary mul i32 %t2, 10
     %t4 = binary add i32 %t3, 3
     store i32 %t4, @order
+    eh_try ^lexical_cleanup_dispatch_5
     %t5 = addr $guard
     call void @Guard___Guard(%t5)
+    eh_end
     eh_end
     %t6 = load ptr $this
     %t7 = index i8 %t6, 0
     call void @Base___Base(%t7)
-    jump ^destructor_end_2
+    jump ^destructor_end_3
+
+  block ^lexical_unwind_4:
+    eh_end
+    jump ^destructor_cleanup_entry_2
+
+  block ^lexical_cleanup_dispatch_5:
+    eh_cleanup
+    eh_end
+    jump ^lexical_unwind_4
 
   block ^destructor_cleanup_1:
+    eh_end
+    jump ^destructor_cleanup_entry_2
+
+  block ^destructor_cleanup_entry_2:
     %t8 = load ptr $this
     %t9 = index i8 %t8, 0
     call void @Base___Base(%t9)
-    eh_end
     resume
 
-  block ^destructor_end_2:
+  block ^destructor_end_3:
     return void
 }
 function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {

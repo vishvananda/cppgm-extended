@@ -99,8 +99,23 @@ protected:
 	void PrepareFunctionExceptionPolicyRuntime()
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (!derived.output_.host_object_emission) return;
 		bool need_terminate = false;
+		for (std::size_t i = 0; i < derived.arena_.lexical_cleanup_plans.size(); ++i)
+		{
+			const LexicalCleanupPlan& plan = derived.arena_.lexical_cleanup_plans[i];
+			if (plan.kind == LEXICAL_CLEANUP_OBJECT && plan.tail != 0 &&
+				derived.arena_.lexical_cleanup_plans[plan.tail - 1].unwind_may_throw &&
+				!derived.program_.bindings[derived.arena_.nodes[plan.node].binding].nonthrowing)
+			{
+				need_terminate = true;
+				break;
+			}
+		}
+		if (!derived.output_.host_object_emission)
+		{
+			if (need_terminate) EnsureTerminatePolicyRuntime();
+			return;
+		}
 		bool need_unexpected = false;
 		function_exception_boundary_needed_.assign(
 			derived.program_.bindings.size(), 0);
@@ -584,6 +599,59 @@ protected:
 		derived.Emit(Instruction(Instruction::EH_END));
 	}
 
+	std::uint32_t ExceptionCleanupContextAtDepth(std::size_t depth) const
+	{
+		if (depth > active_exception_contexts_.size())
+			ThrowLoweringInternal("lexical cleanup exceeds active exception context");
+		return depth == 0 ? 0 : active_exception_contexts_[depth - 1];
+	}
+
+	void EmitLexicalCleanupClauses(std::size_t depth)
+	{
+		if (depth > active_exception_regions_.size())
+			ThrowLoweringInternal("lexical cleanup clause depth is invalid");
+		for (std::size_t i = depth; i != 0; --i)
+			if (active_exception_regions_[i - 1].kind == EXCEPTION_TRY_REGION &&
+				EmitTryHandlerClauses(active_exception_regions_[i - 1].node)) return;
+		EmitFunctionExceptionBoundaryClause();
+	}
+
+	void EmitLexicalCleanupRegionExit(std::size_t index)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (index >= active_exception_regions_.size())
+			ThrowLoweringInternal("lexical cleanup region exit is invalid");
+		derived.Emit(Instruction(Instruction::EH_END));
+		if (active_exception_regions_[index].kind == EXCEPTION_HANDLER_REGION)
+		{
+			DestroyUnnamedCatch(active_exception_regions_[index].node);
+			CallArguments none;
+			(void)EmitExceptionRuntimeCall(
+				derived.polymorphism_.eh_end_catch_symbol, LowVoid(), none);
+		}
+	}
+
+	void EmitLexicalCleanupTryExit(std::uint32_t try_node, std::size_t depth)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (derived.lexical_body_unwind_target_ != kNoLowId &&
+			depth == derived.lexical_body_unwind_depth_)
+		{
+			derived.Emit(Instruction(Instruction::EH_END));
+			derived.EmitJump(derived.lexical_body_unwind_target_);
+			return;
+		}
+		for (std::size_t i = depth; i != 0; --i)
+			if (active_exception_regions_[i - 1].kind == EXCEPTION_TRY_REGION &&
+				active_exception_regions_[i - 1].node == try_node)
+			{
+				derived.Emit(Instruction(Instruction::EH_END));
+				derived.EmitJump(active_exception_regions_[i - 1].entry);
+				return;
+			}
+		ThrowLoweringInternal("lexical cleanup lost its destination try");
+	}
+
 	std::size_t ActiveExceptionRegionCount() const
 	{
 		return active_exception_regions_.size();
@@ -591,21 +659,10 @@ protected:
 
 	std::size_t BeginExceptionControlExit(std::size_t exit_count)
 	{
-		Derived& derived = static_cast<Derived&>(*this);
 		if (exit_count > active_exception_regions_.size())
 			ThrowLoweringInternal(
 				"control exit exceeds active exception regions");
-		CallArguments none;
-		std::size_t closed = 0;
-		if (exit_count != 0 && !active_exception_regions_.empty() &&
-			active_exception_regions_.back().kind == EXCEPTION_HANDLER_REGION)
-		{
-			derived.Emit(Instruction(Instruction::EH_END));
-			(void)EmitExceptionRuntimeCall(
-				derived.polymorphism_.eh_end_catch_symbol, LowVoid(), none);
-			++closed;
-		}
-		return closed;
+		return 0;
 	}
 
 	void LowerGotoControlExit(const DumpNode& record,
@@ -613,12 +670,12 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const std::size_t exit_count = record.exception_control_exit_count;
-		const std::size_t closed = BeginExceptionControlExit(exit_count);
+		std::size_t closed = BeginExceptionControlExit(exit_count);
 		for (std::size_t i = 0; i < children.size(); ++i)
 		{
 			if (derived.arena_.nodes[children[i]].kind != DUMP_DESTRUCTOR_ACTION)
 				ThrowLoweringInternal("invalid goto cleanup action");
-			derived.LowerDestructorAction(derived.arena_.nodes[children[i]]);
+			derived.LowerLexicalDestructorAction(derived.arena_.nodes[children[i]], &closed);
 		}
 		FinishExceptionControlExit(closed, exit_count);
 	}
@@ -632,15 +689,15 @@ protected:
 			ThrowLoweringInternal(
 				"structured control transfer enters an exception region");
 		const std::size_t exits = active - target_depth;
+		std::size_t closed = BeginExceptionControlExit(exits);
 		for (std::size_t i = 0; i < children.size(); ++i)
 		{
 			if (derived.arena_.nodes[children[i]].kind !=
 				DUMP_DESTRUCTOR_ACTION)
 				ThrowLoweringInternal(
 					"invalid structured control cleanup action");
-			derived.LowerDestructorAction(derived.arena_.nodes[children[i]]);
+			derived.LowerLexicalDestructorAction(derived.arena_.nodes[children[i]], &closed);
 		}
-		const std::size_t closed = BeginExceptionControlExit(exits);
 		FinishExceptionControlExit(closed, exits);
 	}
 
@@ -1455,7 +1512,7 @@ protected:
 		if (derived.TryLowerConstructorInitializationAction(record, children)) return;
 		if (record.kind == DUMP_DESTRUCTOR_ACTION)
 		{
-			derived.LowerDestructorAction(record);
+			derived.LowerLexicalDestructorAction(record);
 			return;
 		}
 		if (record.kind == DUMP_RETURN_STATEMENT)

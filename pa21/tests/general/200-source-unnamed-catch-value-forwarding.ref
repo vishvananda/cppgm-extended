@@ -63,9 +63,10 @@ global @trace : i32 [binding=strong, object=_Z5trace] = zero
 
 function @single(%mode : i32) -> void [binding=strong, object=_Z6singlei] {
   slot $mode : i32
+  slot $catch__1 : ptr
+  slot $__slot : obj<1x1>
   slot $guard : obj<4x4>
-  slot $throw_alloc__1 : ptr
-  slot $catch_value__2 : obj<1x1>
+  slot $throw_alloc__2 : ptr
 
   block ^entry:
     store i32 %mode, $mode
@@ -90,220 +91,244 @@ function @single(%mode : i32) -> void [binding=strong, object=_Z6singlei] {
 
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
+    store ptr %t7, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t8 = addr $catch_value__2
+    %t8 = addr $__slot
     call void @Error__Error__ov2(%t8, %t7)
     store i32 0, @trace
     %t9 = addr $guard
+    eh_try ^call_unwind_dispatch_10
     call void @Guard__Guard(%t9, 2)
-    %t10 = load i32 $mode
-    %t11 = cmp eq i32 %t10, 0
-    branch %t11, ^if_then_7, ^if_else_8
+    eh_end
+    jump ^call_unwind_end_11
 
-  block ^if_then_7:
-    eh_try ^catch_dispatch_10
-    %t12 = call ptr @__external_runtime____cxa_allocate_exception(8)
-    store i64 7, %t12
-    %t13 = addr @__external_rtti__long_int
-    call void @__external_runtime____cxa_throw(%t12, %t13, 0)
+  block ^cleanup_resume_7:
+    resume
+
+  block ^cleanup_action_8:
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    jump ^cleanup_resume_7
+
+  block ^cleanup_action_9:
+    %t10 = addr $__slot
+    call void @Error___Error(%t10)
+    jump ^cleanup_action_8
+
+  block ^call_unwind_dispatch_10:
+    jump ^cleanup_action_9
+
+  block ^call_unwind_end_11:
+    %t11 = load i32 $mode
+    %t12 = cmp eq i32 %t11, 0
+    branch %t12, ^if_then_12, ^if_else_13
+
+  block ^if_then_12:
+    eh_try ^catch_dispatch_15
+    %t13 = call ptr @__external_runtime____cxa_allocate_exception(8)
+    store i64 7, %t13
+    %t14 = addr @__external_rtti__long_int
+    call void @__external_runtime____cxa_throw(%t13, %t14, 0)
     eh_end
     return void
 
-  block ^catch_dispatch_10:
+  block ^catch_dispatch_15:
     eh_catch @__external_rtti__bool, 2
     eh_cleanup
     eh_end
-    jump ^catch_entry_11
+    jump ^catch_entry_16
 
-  block ^catch_entry_11:
-    %t14 = exception ptr
-    %t15 = exception_selector i32
-    %t16 = cmp eq i32 %t15, 2
-    branch %t16, ^catch_body_13, ^catch_next_14
+  block ^catch_entry_16:
+    %t15 = exception ptr
+    %t16 = exception_selector i32
+    %t17 = cmp eq i32 %t16, 2
+    branch %t17, ^catch_body_18, ^catch_next_19
 
-  block ^catch_body_13:
-    %t17 = call ptr @__external_runtime____cxa_begin_catch(%t14)
-    eh_cleanup ^catch_cleanup_15
+  block ^catch_body_18:
+    %t18 = call ptr @__external_runtime____cxa_begin_catch(%t15)
+    eh_cleanup ^catch_cleanup_20
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^try_end_12
+    jump ^try_end_17
 
-  block ^catch_cleanup_15:
+  block ^catch_cleanup_20:
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    %t18 = addr $guard
-    call void @Guard___Guard(%t18)
-    %t19 = addr $catch_value__2
-    call void @Error___Error(%t19)
-    call void @__external_runtime____cxa_end_catch()
-    eh_end
-    resume
-
-  block ^catch_next_14:
-    %t20 = addr $guard
-    call void @Guard___Guard(%t20)
-    %t21 = addr $catch_value__2
-    call void @Error___Error(%t21)
+    %t19 = addr $guard
+    call void @Guard___Guard(%t19)
+    %t20 = addr $__slot
+    call void @Error___Error(%t20)
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^try_end_12:
-    jump ^if_end_9
+  block ^catch_next_19:
+    %t21 = addr $guard
+    call void @Guard___Guard(%t21)
+    %t22 = addr $__slot
+    call void @Error___Error(%t22)
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
 
-  block ^if_else_8:
-    %t22 = load i32 $mode
-    %t23 = cmp eq i32 %t22, 1
-    branch %t23, ^if_then_16, ^if_else_17
+  block ^try_end_17:
+    jump ^if_end_14
 
-  block ^if_then_16:
-    eh_try ^catch_dispatch_19
+  block ^if_else_13:
+    %t23 = load i32 $mode
+    %t24 = cmp eq i32 %t23, 1
+    branch %t24, ^if_then_21, ^if_else_22
+
+  block ^if_then_21:
+    eh_try ^catch_dispatch_24
     call void @__external_runtime____cxa_rethrow()
     return void
 
-  block ^catch_dispatch_19:
+  block ^catch_dispatch_24:
     eh_catch @__external_rtti__bool, 3
     eh_cleanup
     eh_end
-    jump ^catch_entry_20
+    jump ^catch_entry_25
 
-  block ^catch_entry_20:
-    %t24 = exception ptr
-    %t25 = exception_selector i32
-    %t26 = cmp eq i32 %t25, 3
-    branch %t26, ^catch_body_22, ^catch_next_23
+  block ^catch_entry_25:
+    %t25 = exception ptr
+    %t26 = exception_selector i32
+    %t27 = cmp eq i32 %t26, 3
+    branch %t27, ^catch_body_27, ^catch_next_28
 
-  block ^catch_body_22:
-    %t27 = call ptr @__external_runtime____cxa_begin_catch(%t24)
-    eh_cleanup ^catch_cleanup_24
+  block ^catch_body_27:
+    %t28 = call ptr @__external_runtime____cxa_begin_catch(%t25)
+    eh_cleanup ^catch_cleanup_29
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^try_end_21
+    jump ^try_end_26
 
-  block ^catch_cleanup_24:
+  block ^catch_cleanup_29:
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    %t28 = addr $guard
-    call void @Guard___Guard(%t28)
-    %t29 = addr $catch_value__2
-    call void @Error___Error(%t29)
-    call void @__external_runtime____cxa_end_catch()
-    eh_end
-    resume
-
-  block ^catch_next_23:
-    %t30 = addr $guard
-    call void @Guard___Guard(%t30)
-    %t31 = addr $catch_value__2
-    call void @Error___Error(%t31)
+    %t29 = addr $guard
+    call void @Guard___Guard(%t29)
+    %t30 = addr $__slot
+    call void @Error___Error(%t30)
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^try_end_21:
-    jump ^if_end_18
+  block ^catch_next_28:
+    %t31 = addr $guard
+    call void @Guard___Guard(%t31)
+    %t32 = addr $__slot
+    call void @Error___Error(%t32)
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
 
-  block ^if_else_17:
-    eh_try ^catch_dispatch_25
-    %t32 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 1, %t32
-    %t33 = addr @__external_rtti__int
-    call void @__external_runtime____cxa_throw(%t32, %t33, 0)
+  block ^try_end_26:
+    jump ^if_end_23
+
+  block ^if_else_22:
+    eh_try ^catch_dispatch_30
+    %t33 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store i32 1, %t33
+    %t34 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t33, %t34, 0)
     eh_end
     return void
 
-  block ^catch_dispatch_25:
+  block ^catch_dispatch_30:
     eh_catch @__external_rtti__int, 4
     eh_cleanup
     eh_end
-    jump ^catch_entry_26
+    jump ^catch_entry_31
 
-  block ^catch_entry_26:
-    %t34 = exception ptr
-    %t35 = exception_selector i32
-    %t36 = cmp eq i32 %t35, 4
-    branch %t36, ^catch_body_28, ^catch_next_29
+  block ^catch_entry_31:
+    %t35 = exception ptr
+    %t36 = exception_selector i32
+    %t37 = cmp eq i32 %t36, 4
+    branch %t37, ^catch_body_33, ^catch_next_34
 
-  block ^catch_body_28:
-    %t37 = call ptr @__external_runtime____cxa_begin_catch(%t34)
-    eh_cleanup ^catch_cleanup_30
-    eh_try ^call_unwind_dispatch_35
-    %t38 = call ptr @__external_runtime____cxa_allocate_exception(8)
-    store ptr %t38, $throw_alloc__1
+  block ^catch_body_33:
+    %t38 = call ptr @__external_runtime____cxa_begin_catch(%t35)
+    eh_cleanup ^catch_cleanup_35
+    eh_try ^call_unwind_dispatch_41
+    %t39 = call ptr @__external_runtime____cxa_allocate_exception(8)
+    store ptr %t39, $throw_alloc__2
     eh_end
-    jump ^throw_alloc_unwind_end_36
+    jump ^throw_alloc_unwind_end_42
 
-  block ^cleanup_resume_31:
+  block ^cleanup_resume_36:
     resume
 
-  block ^cleanup_action_32:
-    %t39 = addr $catch_value__2
-    call void @Error___Error(%t39)
+  block ^cleanup_action_37:
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    jump ^cleanup_resume_31
+    jump ^cleanup_resume_36
 
-  block ^cleanup_action_33:
-    %t40 = addr $guard
-    call void @Guard___Guard(%t40)
-    jump ^cleanup_action_32
+  block ^cleanup_action_38:
+    %t40 = addr $__slot
+    call void @Error___Error(%t40)
+    jump ^cleanup_action_37
 
-  block ^cleanup_action_34:
+  block ^cleanup_action_39:
+    %t41 = addr $guard
+    call void @Guard___Guard(%t41)
+    jump ^cleanup_action_38
+
+  block ^cleanup_action_40:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    jump ^cleanup_action_33
+    jump ^cleanup_action_39
 
-  block ^call_unwind_dispatch_35:
-    jump ^cleanup_action_34
+  block ^call_unwind_dispatch_41:
+    jump ^cleanup_action_40
 
-  block ^throw_alloc_unwind_end_36:
-    %t41 = load ptr $throw_alloc__1
-    store i64 7, %t41
-    eh_try ^call_unwind_dispatch_35
-    %t42 = addr @__external_rtti__long_int
-    call void @__external_runtime____cxa_throw(%t41, %t42, 0)
+  block ^throw_alloc_unwind_end_42:
+    %t42 = load ptr $throw_alloc__2
+    store i64 7, %t42
+    eh_try ^call_unwind_dispatch_41
+    %t43 = addr @__external_rtti__long_int
+    call void @__external_runtime____cxa_throw(%t42, %t43, 0)
     eh_end
     return void
 
-  block ^catch_cleanup_30:
+  block ^catch_cleanup_35:
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    %t43 = addr $guard
-    call void @Guard___Guard(%t43)
-    %t44 = addr $catch_value__2
-    call void @Error___Error(%t44)
-    call void @__external_runtime____cxa_end_catch()
-    eh_end
-    resume
-
-  block ^catch_next_29:
-    %t45 = addr $guard
-    call void @Guard___Guard(%t45)
-    %t46 = addr $catch_value__2
-    call void @Error___Error(%t46)
+    %t44 = addr $guard
+    call void @Guard___Guard(%t44)
+    %t45 = addr $__slot
+    call void @Error___Error(%t45)
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^try_end_27:
-    jump ^if_end_18
+  block ^catch_next_34:
+    %t46 = addr $guard
+    call void @Guard___Guard(%t46)
+    %t47 = addr $__slot
+    call void @Error___Error(%t47)
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
 
-  block ^if_end_18:
-    jump ^if_end_9
+  block ^try_end_32:
+    jump ^if_end_23
 
-  block ^if_end_9:
-    %t47 = addr $guard
-    call void @Guard___Guard(%t47)
-    %t48 = addr $catch_value__2
-    call void @Error___Error(%t48)
+  block ^if_end_23:
+    jump ^if_end_14
+
+  block ^if_end_14:
+    %t48 = addr $guard
+    call void @Guard___Guard(%t48)
+    %t49 = addr $__slot
+    call void @Error___Error(%t49)
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
 
   block ^catch_cleanup_6:
-    %t49 = addr $catch_value__2
-    call void @Error___Error(%t49)
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
@@ -315,9 +340,11 @@ function @single(%mode : i32) -> void [binding=strong, object=_Z6singlei] {
     return void
 }
 function @nested() -> void [binding=strong, object=_Z6nestedv] {
+  slot $catch__1 : ptr
+  slot $__slot : obj<1x1>
+  slot $catch__2 : ptr
+  slot $__slot__shadow2 : obj<1x1>
   slot $guard : obj<4x4>
-  slot $catch_value__1 : obj<1x1>
-  slot $catch_value__2 : obj<1x1>
 
   block ^entry:
     eh_try ^catch_dispatch_1
@@ -341,8 +368,9 @@ function @nested() -> void [binding=strong, object=_Z6nestedv] {
 
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
+    store ptr %t7, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t8 = addr $catch_value__1
+    %t8 = addr $__slot
     call void @Error__Error__ov2(%t8, %t7)
     eh_try ^catch_dispatch_7
     %t9 = call ptr @__external_runtime____cxa_allocate_exception(1)
@@ -367,104 +395,133 @@ function @nested() -> void [binding=strong, object=_Z6nestedv] {
 
   block ^catch_body_10:
     %t15 = call ptr @__external_runtime____cxa_begin_catch(%t12)
+    store ptr %t15, $catch__2
     eh_cleanup ^catch_cleanup_12
-    %t16 = addr $catch_value__2
+    %t16 = addr $__slot__shadow2
     call void @Error__Error__ov2(%t16, %t15)
     store i32 0, @trace
     %t17 = addr $guard
+    eh_try ^call_unwind_dispatch_18
     call void @Guard__Guard(%t17, 4)
-    eh_try ^catch_dispatch_13
-    %t18 = call ptr @__external_runtime____cxa_allocate_exception(8)
-    store i64 7, %t18
-    %t19 = addr @__external_rtti__long_int
-    call void @__external_runtime____cxa_throw(%t18, %t19, 0)
+    eh_end
+    jump ^call_unwind_end_19
+
+  block ^cleanup_resume_13:
+    resume
+
+  block ^cleanup_action_14:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    jump ^cleanup_resume_13
+
+  block ^cleanup_action_15:
+    %t18 = addr $__slot
+    call void @Error___Error(%t18)
+    jump ^cleanup_action_14
+
+  block ^cleanup_action_16:
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    jump ^cleanup_action_15
+
+  block ^cleanup_action_17:
+    %t19 = addr $__slot__shadow2
+    call void @Error___Error(%t19)
+    jump ^cleanup_action_16
+
+  block ^call_unwind_dispatch_18:
+    jump ^cleanup_action_17
+
+  block ^call_unwind_end_19:
+    eh_try ^catch_dispatch_20
+    %t20 = call ptr @__external_runtime____cxa_allocate_exception(8)
+    store i64 7, %t20
+    %t21 = addr @__external_rtti__long_int
+    call void @__external_runtime____cxa_throw(%t20, %t21, 0)
     eh_end
     return void
 
-  block ^catch_dispatch_13:
+  block ^catch_dispatch_20:
     eh_catch @__external_rtti__bool, 3
     eh_cleanup
     eh_end
-    jump ^catch_entry_14
+    jump ^catch_entry_21
 
-  block ^catch_entry_14:
-    %t20 = exception ptr
-    %t21 = exception_selector i32
-    %t22 = cmp eq i32 %t21, 3
-    branch %t22, ^catch_body_16, ^catch_next_17
+  block ^catch_entry_21:
+    %t22 = exception ptr
+    %t23 = exception_selector i32
+    %t24 = cmp eq i32 %t23, 3
+    branch %t24, ^catch_body_23, ^catch_next_24
 
-  block ^catch_body_16:
-    %t23 = call ptr @__external_runtime____cxa_begin_catch(%t20)
-    eh_cleanup ^catch_cleanup_18
+  block ^catch_body_23:
+    %t25 = call ptr @__external_runtime____cxa_begin_catch(%t22)
+    eh_cleanup ^catch_cleanup_25
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    jump ^try_end_15
+    jump ^try_end_22
 
-  block ^catch_cleanup_18:
+  block ^catch_cleanup_25:
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    %t24 = addr $guard
-    call void @Guard___Guard(%t24)
-    %t25 = addr $catch_value__2
-    call void @Error___Error(%t25)
+    %t26 = addr $guard
+    call void @Guard___Guard(%t26)
+    %t27 = addr $__slot__shadow2
+    call void @Error___Error(%t27)
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    %t26 = addr $catch_value__1
-    call void @Error___Error(%t26)
-    call void @__external_runtime____cxa_end_catch()
-    eh_end
-    resume
-
-  block ^catch_next_17:
-    %t27 = addr $guard
-    call void @Guard___Guard(%t27)
-    %t28 = addr $catch_value__2
+    %t28 = addr $__slot
     call void @Error___Error(%t28)
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    %t29 = addr $catch_value__1
-    call void @Error___Error(%t29)
+    resume
+
+  block ^catch_next_24:
+    %t29 = addr $guard
+    call void @Guard___Guard(%t29)
+    %t30 = addr $__slot__shadow2
+    call void @Error___Error(%t30)
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    %t31 = addr $__slot
+    call void @Error___Error(%t31)
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^try_end_15:
-    %t30 = addr $guard
-    call void @Guard___Guard(%t30)
-    %t31 = addr $catch_value__2
-    call void @Error___Error(%t31)
+  block ^try_end_22:
+    %t32 = addr $guard
+    call void @Guard___Guard(%t32)
+    %t33 = addr $__slot__shadow2
+    call void @Error___Error(%t33)
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_9
 
   block ^catch_cleanup_12:
-    %t32 = addr $catch_value__2
-    call void @Error___Error(%t32)
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    %t33 = addr $catch_value__1
-    call void @Error___Error(%t33)
-    call void @__external_runtime____cxa_end_catch()
-    eh_end
-    resume
-
-  block ^catch_next_11:
-    %t34 = addr $catch_value__1
+    %t34 = addr $__slot
     call void @Error___Error(%t34)
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^try_end_9:
-    %t35 = addr $catch_value__1
+  block ^catch_next_11:
+    %t35 = addr $__slot
     call void @Error___Error(%t35)
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^try_end_9:
+    %t36 = addr $__slot
+    call void @Error___Error(%t36)
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
 
   block ^catch_cleanup_6:
-    %t36 = addr $catch_value__1
-    call void @Error___Error(%t36)
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume

@@ -41,10 +41,13 @@ fix sequence is complete, as requested.
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
-| EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: EH-HANDLER-TEMP and EH-FORWARD address handler temporaries and nested forwarding. Four of seven refreshed reducers now pass at O0/O2; throwing local cleanup, aggregate construction prefixes and failed-new deallocation remain independently failing. |
+| EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: EH-HANDLER-TEMP, EH-FORWARD and EH-CLEANUP address handler temporaries and nested forwarding. Five of seven refreshed reducers now pass at O0/O2; aggregate construction prefixes and failed-new deallocation remain independently failing. |
 | EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in ac2aaf704: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | EH-FORWARD | Advertise enclosing catch clauses and unwind prefixes/active handlers in lifetime order | v4codex references106/112 plus independent boundary controls | Done in the accompanying checkpoint: 40 agreed boundary programs and six new PA21 fixtures pass at O0/O2; three independently reviewed references change. Strict 5977/5977, full compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. |
-| EH-CLEANUP | Preserve handler lifetime and remaining-object unwind tails during lexical destruction | Original EH reducer plus expanded local cleanup controls | Open, verified in d59b47c5b: 17 runtime failures across return, shared return, scope exit, break/continue/goto and by-value handlers; Clang/GCC pass. Outside-guard positive constrains normal boundary ordering. |
+| EH-CLEANUP | Preserve handler lifetime and remaining-object unwind tails during lexical destruction | Original EH reducer plus expanded local cleanup controls | Done in the accompanying checkpoint: 34 host-agreed runtime boundary programs and seven new PA21/28 fixtures pass at O0/O2; three reviewed references change. Strict 5984/5984, all compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. Array element progress and non-NRVO returned-object cleanup remain separate rows. |
+| EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
+| EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
+| TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Open: the entry and cleanup candidates emit an empty instantiated body and return zero; Clang/GCC run the specified body and handler at O0/O2. Pattern registration uses a direct compound-statement lookup and does not retain handler syntax. |
 | EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Open: three programs reject here and pass Clang/GCC at O0/O2. N3485 15.1/8-9 requires the runtime active exception, rather than a lexical catch in the callee definition. No compiler/reference change yet. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
@@ -2102,3 +2105,133 @@ those trials remain separately named and are excluded from the evidence above.
 The successful EH-FORWARD compiler checkpoint, its full checks and performance
 measurements remain unchanged. Other open rows and the final combined student
 export stay active.
+
+
+## EH-CLEANUP implementation progress
+
+The uncommitted candidate publishes shared semantic lifetime prefixes with
+object, try-exit and handler-exit facts. Normal destruction retires each
+source region at its lexical boundary; throwing destruction follows the exact
+remaining prefix before source matching. Named and unnamed by-value catch
+parameters participate in the same lifetime model, including ordinary handler
+fallthrough. The cleanup interner retains the prefix identity, current source
+context and constructor/destructor body continuation. A second exception during
+remaining-object destruction routes to terminate.
+
+Thirty-two independently host-agreed runtime programs pass the fifth candidate
+at O0/O2: eighteen original boundary controls, seven additional scope/handler
+controls, and seven catch-parameter/NRVO/base-lifetime controls. The latter
+include named and unnamed catch parameters whose destructor throws, an
+abandoned NRVO return, and constructor/destructor local cleanup before base
+cleanup, both with and without function-try handlers. The separate dynamic
+rethrow reducer remains rejected; EH-RETHROW-DYNAMIC is unchanged.
+
+The full fifth strict report passes 5972/5977. The five remaining differences
+are existing PA21 LowIR references, with no remaining runtime failures in that
+report. Ordinary constructor/destructor bodies keep their previous entry
+shape; only bodies with throwing lexical cleanup publish a detached body
+cleanup continuation. No references have been regenerated. The broad trial
+that added these continuations to every body was rejected and is retained only
+as scratch evidence. Two further frozen controls independently fail the entry
+compiler and pass Clang/GCC: an ordinary function-template function-try body,
+and a source unit using imported potentially throwing destructors. The former
+needs the same semantic source-region facts during demanded-function emission;
+the latter verifies runtime preparation without source throw/catch syntax.
+
+The second trial's nine Alpha inputs pass all instruction/RSS gates with equal
+objects (432 observations, AA calibration plus paired ABBA). Those measurements
+are preliminary and do not certify the final compiler. The final immutable
+candidate will be measured again. DumpNode remains 152 bytes; each shared plan
+is 16 bytes and each lifetime obligation grows from 16 to 20 bytes. Owner
+preflights pass; a large return dispatcher is being split into its existing
+scalar/reference result operations to keep the file/function audit clean.
+Final fixture/reference review, architecture/debug/variant/self-host checks,
+performance verification and the commit remain pending. Final student export
+is still deferred until all tracker fixes are complete.
+
+
+## EH-CLEANUP final checkpoint
+
+The final compiler preserves lexical ownership during return, shared return,
+fallthrough, nested block exit, break, continue and goto. It closes handlers
+after their owned locals and catch parameters, and before outside objects.
+Potentially throwing destruction publishes an exact shared remaining tail;
+constructor/destructor body continuations retire their landing frame before
+joining that tail. Existing try boundaries handle bare destructor calls
+without redundant wrappers. The action interner includes the lexical plan
+identity, so a full-expression representative cannot silently erase a normal
+cleanup tail. Runtime preparation covers imported destructors in a unit with
+no source throw/catch. Ordinary demanded member function-try bodies retain
+the same semantic source-region facts as ordinary function bodies.
+
+Thirty-four defined runtime programs agree with Clang/GCC at O0/O2 (204
+observations). Seven new required fixtures consolidate those boundaries into
+six PA21 LowIR inputs and one PA28 hosted terminate-handler program. Their
+42 compiler/link/runtime observations all pass. The five potentially affected
+existing fixtures pass all thirty host/candidate runtime observations; only
+three require reference regeneration:
+
+- 200-destructor-body-unwind-runs-base-destruction shares a retired entry
+  continuation between local destruction and base cleanup.
+- 200-source-exception-empty-scope-boundary retires the source try before
+  destroying an object owned by an outside scope.
+- 200-source-unnamed-catch-value-forwarding gives unnamed copied catch
+  parameters ordinary object storage and a lifetime obligation; failure of a
+  later construction cleans up that completed catch copy before end_catch.
+
+The three references and seven new fixture bundles were generated through
+exact ref-test selections. The other two destructor references retain their
+previous bytes after removing redundant wrappers. No fixture expectations
+were weakened. Forty earlier forwarding programs and eleven handler-temporary
+programs pass all 306 repeated observations. Five of the seven original EH
+reducers now pass; aggregate construction prefixes and failed-new deallocation
+remain unchanged failures and remain EH.
+
+All required checks pass: strict 5984/5984 with exactly one output line,
+debug-info, backend variants, self-host through PA5, all nine architecture
+checks, file/function limits (36 inherited warnings), and placement with zero
+findings or review cases. DumpNode is still 152 bytes, a shared plan is 16
+bytes, and a lifetime obligation is 20 bytes. All defined mangled function
+names in the seven new fixture objects agree with Clang; the explicit
+terminate/set_terminate imports agree as well. No ABI encoder changes were made.
+
+Final Alpha measurements use immutable d59b47c5b and the final candidate, CPU 0,
+identical frozen inputs, four AA calibration blocks and eight paired ABBA
+blocks per input: 432 retained observations, all outputs equal. Every paired
+instruction ratio stays below 1.005 and every RSS ratio below 1.03:
+
+| Input | Instructions B/A | RSS B/A |
+| --- | ---: | ---: |
+| copy-competing | 1.000068552 | 0.999768073 |
+| copy-constructors | 1.000318332 | 0.997682794 |
+| copy-functions | 1.000311699 | 1.000680150 |
+| copy-templates | 1.000238348 | 1.000263773 |
+| eh-handlers | 1.000398131 | 0.999684891 |
+| eh-returns | 1.000264239 | 0.999160075 |
+| recog | 1.000024439 | 0.999849672 |
+| virtual | 0.999962906 | 0.999339482 |
+| virtual-large | 1.000002260 | 0.999764749 |
+
+The measured B SHA-256 is
+b1ec05004d614ec51747b82d977f64f4fbf93ebcd53c842371cc14b23e7754db,
+which matches the compiler after all validation. Authoritative measurements
+are local-cleanup/perf-empty-tail-final/ locally and
+alpha:/tmp/cppgm-v4-audit-review-20261001-lexical-cleanup-empty-tail-final/
+remotely. Earlier trial snapshots and their measurements remain separately
+named. Frozen input hashes, Clang symbol observations and the checkpoint
+verification are retained under /tmp/cppgm-v4-audit-review/local-cleanup/.
+
+Three further boundaries remain explicitly separate. EH-RETHROW-DYNAMIC still
+rejects its three valid dynamic rethrow programs. TMPL-FTRY loses an ordinary
+function-template function-try definition before demanded-body emission.
+EH-ARRAY-DTOR skips remaining elements in the three-element unrolled path,
+while its twelve-element loop positive passes all compilers. No required
+oracles were changed for these open failures. EH-RESULT-CLEANUP records three
+additional non-NRVO returned-object controls: current Clang agrees with this
+compiler's failure, while GCC destroys the already initialized result.
+[CWG 2176](https://cplusplus.github.io/CWG/issues/2176.html) specifies that
+returned-object cleanup after a return-time destructor exception; its wording
+was adopted after N3485. Keep the course-policy decision and host disagreement
+visible before changing that contract. The passing NRVO control remains a
+separate requirement for a named local that already has a lifetime obligation.
+Other tracker rows and the final combined student export remain pending.

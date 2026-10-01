@@ -1670,6 +1670,8 @@ private:
 		std::uint32_t body);
 	ScopeId CompoundCleanupStop(ScopeId scope) const;
 	ScopeId FunctionCleanupStop(ScopeId scope) const;
+	std::uint32_t CurrentLexicalCleanupRoot(ScopeId scope);
+	std::uint32_t CreateLifetimeCleanupPlan(ScopeId scope, const LifetimeObligation& obligation);
 	void AddLifetimeObligation(ScopeId scope, BindingId object, TypeId type,
 		bool allow_elision = true);
 	void AddTemporaryLifetimeObligation(ScopeId scope,
@@ -1742,14 +1744,13 @@ private:
 		std::uint32_t output_parent, ScopeId stop_exclusive = kNoScope);
 	void BeginFunctionControlFlowFacts();
 	void FinishFunctionControlFlowFacts();
-	void PushExceptionControlContext();
+	void PushExceptionControlContext(std::uint32_t region = kNoDumpEdge, ScopeId scope = kNoScope);
 	void PopExceptionControlContext();
 	void RegisterControlFlowLabel(NameId name, ScopeId scope);
 	void RegisterControlFlowGoto(std::uint32_t node, NameId name,
 		ScopeId scope);
-	std::uint32_t MakeDestructorAction(TypeId type, BindingId destructor,
-		BindingId object, std::uint32_t base_projections = 0,
-		bool demand = true);
+	std::uint32_t MakeDestructorAction(TypeId type, BindingId destructor, BindingId object,
+		std::uint32_t base_projections = 0, bool demand = true);
 	std::uint32_t MakeTemporaryDestructorAction(std::uint32_t temporary,
 		BindingId destructor = kNoBinding,
 		bool preserve_nontrivial_action = false);
@@ -2226,11 +2227,10 @@ private:
 	std::vector<ScopeId> exception_handler_cleanup_stops_;
 	struct ExceptionControlContextFact
 	{
-		std::uint32_t parent;
-		std::uint32_t depth;
+		std::uint32_t parent, depth, region, cleanup_root;
 		ExceptionControlContextFact(std::uint32_t parent_value,
 			std::uint32_t depth_value)
-			: parent(parent_value), depth(depth_value) {}
+			: parent(parent_value), depth(depth_value), region(kNoDumpEdge), cleanup_root(0) {}
 	};
 	struct GotoLifetimeSnapshot
 	{

@@ -6,6 +6,21 @@ namespace cppgm
 namespace semantic
 {
 
+namespace
+{
+bool HasThrowingLexicalCleanup(const DumpArena& dump, const Program& program,
+	std::size_t first)
+{
+	for (std::size_t i = first; i < dump.lexical_cleanup_plans.size(); ++i)
+	{
+		const LexicalCleanupPlan& plan = dump.lexical_cleanup_plans[i];
+		if (plan.kind == LEXICAL_CLEANUP_OBJECT &&
+			!program.bindings[dump.nodes[plan.node].binding].nonthrowing) return true;
+	}
+	return false;
+}
+}
+
 void Analyzer::CompleteTranslationUnitDemand()
 {
 	if (source_type_view_)
@@ -302,12 +317,15 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 			program_->bindings[info.binding].member_owner;
 		current_function_context_ =
 			program_->bindings[info.binding].canonical;
+		const std::size_t first_lexical_plan = dump_.lexical_cleanup_plans.size();
 		BeginFunctionControlFlowFacts();
 		if (info.constructor)
 		{
 			std::uint32_t function_try;
 			const std::uint32_t constructor_parent = BeginFunctionTryRegion(
 				function, info.function_try_block, &function_try);
+			if (function_try != kNoDumpEdge)
+				PushExceptionControlContext(function_try, function_scope);
 			const std::uint32_t constructor_body =
 				MakeDump(DUMP_COMPOUND_STATEMENT);
 			dump_.Add(constructor_parent, constructor_body);
@@ -326,8 +344,11 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 				AnalyzeCompound(info.definition_body, function_scope,
 					constructor_body);
 			DemandConstructorUnwindDestructors(constructor_body);
+			dump_.nodes[constructor_body].throwing_lexical_body_cleanup =
+				HasThrowingLexicalCleanup(dump_, *program_, first_lexical_plan);
 			if (function_try != kNoDumpEdge)
 			{
+				PopExceptionControlContext();
 				AnalyzeFunctionTryHandlers(info.function_try_block,
 					function_scope, function_try,
 					FUNCTION_TRY_BODY_CONSTRUCTOR);
@@ -348,6 +369,8 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 			std::uint32_t function_try;
 			const std::uint32_t destructor_parent = BeginFunctionTryRegion(
 				function, info.function_try_block, &function_try);
+			if (function_try != kNoDumpEdge)
+				PushExceptionControlContext(function_try, function_scope);
 			const std::uint32_t destructor_body =
 				MakeDump(DUMP_COMPOUND_STATEMENT);
 			dump_.Add(destructor_parent, destructor_body);
@@ -361,16 +384,33 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 			if (info.definition_body != kNoNode)
 				AnalyzeCompound(info.definition_body, function_scope,
 					destructor_body);
+			dump_.nodes[destructor_body].throwing_lexical_body_cleanup =
+				HasThrowingLexicalCleanup(dump_, *program_, first_lexical_plan);
 			AddDestructorSubobjectActions(
 				program_->bindings[info.binding].member_owner,
 				info.binding, destructor_body);
 			if (function_try != kNoDumpEdge)
+			{
+				PopExceptionControlContext();
 				AnalyzeFunctionTryHandlers(info.function_try_block,
 					function_scope, function_try,
 					FUNCTION_TRY_BODY_DESTRUCTOR);
+			}
 		}
 		else if (info.definition_body != kNoNode)
-			AnalyzeCompound(info.definition_body, function_scope, function);
+		{
+			std::uint32_t region;
+			const std::uint32_t parent = BeginFunctionTryRegion(
+				function, info.function_try_block, &region);
+			if (region != kNoDumpEdge) PushExceptionControlContext(region, function_scope);
+			AnalyzeCompound(info.definition_body, function_scope, parent);
+			if (region != kNoDumpEdge)
+			{
+				PopExceptionControlContext();
+				AnalyzeFunctionTryHandlers(info.function_try_block,
+					function_scope, region, FUNCTION_TRY_BODY_ORDINARY);
+			}
+		}
 		else dump_.Add(function, MakeDump(DUMP_COMPOUND_STATEMENT));
 		FinishFunctionControlFlowFacts();
 		FinalizeNamedReturnSlot(function);
