@@ -942,9 +942,12 @@ protected:
 	}
 
 	Operand ProjectNullableVirtualBaseAddress(const Operand& view,
-		std::uint64_t offset)
+		std::uint64_t offset, EntityId owner = kNoEntity,
+		std::size_t virtual_base_ordinal = 0)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		if ((view.kind == Operand::INTEGER && view.integer_value == 0) ||
+			view.kind == Operand::NULL_POINTER) return Operand(0, LowPtr());
 		Slot slot;
 		slot.name = InternLocalName(derived.output_,
 			derived.GeneratedSlotName("basecast"));
@@ -975,7 +978,9 @@ protected:
 		derived.Emit(store);
 		derived.EmitJump(end_block);
 		derived.SelectBlock(adjust_block);
-		store.first = derived.ProjectBaseSubobjectOffset(view, offset);
+		store.first = derived.ProjectBaseSubobjectOffset(owner == kNoEntity ?
+			view : RuntimeVirtualBaseAddress(view, owner, virtual_base_ordinal),
+			offset);
 		derived.Emit(store);
 		derived.EmitJump(end_block);
 		derived.SelectBlock(end_block);
@@ -1002,6 +1007,19 @@ protected:
 		{
 			if (derived.program_.VirtualBase(owner, ordinal).entity != anchor)
 				continue;
+			const DumpNode& source = derived.arena_.nodes[expression];
+			const bool nullable = derived.program_.types.Get(
+				derived.program_.types.RemoveTopCv(source.type)).kind == TYPE_POINTER &&
+				!(source.kind == DUMP_ID_EXPRESSION &&
+				  source.binding != kNoBinding &&
+				  source.binding == derived.current_this_binding_) &&
+				!(source.kind == DUMP_UNARY_EXPRESSION && source.OperationIs(OP_AMP));
+			if (nullable)
+			{
+				*address = ProjectNullableVirtualBaseAddress(
+					view, relative_offset, owner, ordinal);
+				return true;
+			}
 			*address = derived.ProjectBaseSubobjectOffset(
 				RuntimeVirtualBaseAddress(view, owner, ordinal), relative_offset);
 			return true;

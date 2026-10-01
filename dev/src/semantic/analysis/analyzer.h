@@ -1849,6 +1849,7 @@ private:
 		std::uint32_t address) const;
 	std::uint32_t OffsetConstexprAddress(std::uint32_t address,
 		std::int64_t byte_offset, bool narrow, std::int64_t extent = 0);
+	std::uint32_t ProjectConstexprBaseAddress(std::uint32_t address, const ExpressionInfo& source, const DumpNode& conversion);
 	std::uint32_t NullConstexprAddress();
 	bool ExpressionTruth(const ExpressionInfo& expression) const;
 	bool TryAnalyzeConstexprIndirectCall(ExpressionInfo* callee,
@@ -2186,8 +2187,7 @@ private:
 	std::vector<BindingId> constexpr_member_pointer_by_binding_;
 	// Completed object values are immutable and structurally interned. Bindings
 	// carry only a compact object identity; elements remain dense by ordinal.
-	std::vector<std::uint32_t> constexpr_object_by_binding_;
-	std::vector<std::uint32_t> constexpr_address_by_binding_;
+	std::vector<std::uint32_t> constexpr_object_by_binding_, constexpr_address_by_binding_;
 	std::vector<ConstexprAddressValue>& constexpr_addresses_;
 	std::unordered_map<ConstexprAddressValue, std::uint32_t,
 		ConstexprAddressValueHash> constexpr_address_index_;

@@ -584,6 +584,7 @@ ExpressionInfo Analyzer::ApplyTarget(ExpressionInfo value,
 		dump_.nodes[cast].base_projection_offset = projection_offset;
 		dump_.nodes[cast].has_base_projection_offset = true;
 		dump_.Add(cast, value.node);
+		source_address = ProjectConstexprBaseAddress(source_address, value, dump_.nodes[cast]);
 		value.node = cast;
 		value.type = nonreference;
 		value.category = category;
@@ -591,17 +592,11 @@ ExpressionInfo Analyzer::ApplyTarget(ExpressionInfo value,
 		value.constant = false;
 		value.constexpr_object = kNoConstexprObject;
 		value.constexpr_complete_object = kNoConstexprObject;
+		value.constexpr_address = value.constexpr_lvalue_address = kNoConstexprAddress;
 		const std::uint32_t projected = ProjectConstexprObject(
 			object, nonreference, &projection_offset);
 		if (projected != kNoConstexprObject)
-		{
 			SetExpressionSubobject(&value, projected, complete_object);
-			if (source_address != kNoConstexprAddress &&
-				projection_offset <= static_cast<std::uint64_t>(
-					std::numeric_limits<std::int64_t>::max()))
-				source_address = OffsetConstexprAddress(source_address,
-					static_cast<std::int64_t>(projection_offset), false);
-		}
 		++expression_count_;
 	}
 	if (reference_target &&

@@ -230,6 +230,83 @@ std::uint32_t Analyzer::OffsetConstexprAddress(
 		source->identity, offset, lower, upper));
 }
 
+std::uint32_t Analyzer::ProjectConstexprBaseAddress(std::uint32_t address,
+	const ExpressionInfo& source, const DumpNode& conversion)
+{
+	const ConstexprAddressValue* stored = ConstexprAddressAt(address);
+	if (!stored) return kNoConstexprAddress;
+	if (stored->kind == CONSTEXPR_ADDRESS_NULL) return address;
+	const ConstexprAddressValue value = *stored;
+	if (conversion.base_projection_offset > static_cast<std::uint64_t>(
+		std::numeric_limits<std::int64_t>::max())) return kNoConstexprAddress;
+	std::int64_t adjustment = static_cast<std::int64_t>(conversion.base_projection_offset);
+	if (conversion.inverse_base_projection) adjustment = -adjustment;
+	TypeId from = program_->types.RemoveTopCv(EffectiveType(source.type));
+	const TypeRecord from_record = program_->types.Get(from);
+	if (from_record.kind == TYPE_POINTER) from = from_record.child;
+	const EntityId derived = EntityOf(from);
+	if (!conversion.inverse_base_projection && derived != kNoEntity &&
+		program_->entities[derived].virtual_base_count != 0)
+	{
+		// The conversion's layout is already complete for the binding's root object.
+		if (value.kind == CONSTEXPR_ADDRESS_BINDING && value.offset == 0 &&
+			value.identity < program_->bindings.size() &&
+			program_->types.RemoveTopCv(program_->bindings[value.identity].type) ==
+				program_->types.RemoveTopCv(from))
+			return adjustment == 0 ? address : OffsetConstexprAddress(address, adjustment, false);
+		TypeId to = program_->types.RemoveTopCv(EffectiveType(conversion.type));
+		const TypeRecord to_record = program_->types.Get(to);
+		if (to_record.kind == TYPE_POINTER) to = to_record.child;
+		const EntityId base = EntityOf(to);
+		if (!program_->HasVirtualBasePath(derived, base))
+			return adjustment == 0 ? address : OffsetConstexprAddress(address, adjustment, false);
+		// A virtual base's offset belongs to the complete object's layout.
+		// Address identity can prove that layout without a constant object value.
+		TypeId complete = kNoType;
+		std::int64_t origin = 0;
+		if (value.kind == CONSTEXPR_ADDRESS_BINDING && value.identity < program_->bindings.size())
+		{
+			complete = EffectiveType(program_->bindings[value.identity].type);
+			while (program_->types.Get(program_->types.RemoveTopCv(complete)).kind == TYPE_ARRAY)
+				complete = program_->types.Get(program_->types.RemoveTopCv(complete)).child;
+			if (IsClassObjectType(complete) && program_->types.Get(program_->types.RemoveTopCv(
+				EffectiveType(program_->bindings[value.identity].type))).kind == TYPE_ARRAY)
+			{
+				const std::uint64_t stride = program_->SizeOf(complete);
+				if (stride == 0 || stride > static_cast<std::uint64_t>(
+					std::numeric_limits<std::int64_t>::max()) || value.offset < 0) return kNoConstexprAddress;
+				origin = value.offset - value.offset % static_cast<std::int64_t>(stride);
+			}
+		}
+		const std::uint32_t object = ExpressionCompleteObject(source);
+		if (object != kNoConstexprObject && object < constexpr_objects_.size())
+		{
+			complete = constexpr_objects_[object].type;
+			origin = value.lower_bound;
+		}
+		if (source.binding != kNoBinding && source.binding < program_->bindings.size())
+		{
+			const BindingRecord& member = program_->bindings[source.binding];
+			if (member.non_static_data_member && !program_->types.IsReference(member.type) &&
+				EntityOf(member.type) == derived)
+			{
+				complete = member.type;
+				origin = value.offset;
+			}
+		}
+		const EntityId owner = complete == kNoType ? kNoEntity : EntityOf(complete);
+		std::uint64_t offset = 0;
+		bool ambiguous = false;
+		if (owner == kNoEntity || !program_->IsBaseOf(derived, owner) ||
+			!program_->QueryBasePath(owner, base, 0, 0, &offset, &ambiguous) || ambiguous ||
+			offset > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) ||
+			origin > std::numeric_limits<std::int64_t>::max() - static_cast<std::int64_t>(offset))
+			return kNoConstexprAddress;
+		adjustment = origin + static_cast<std::int64_t>(offset) - value.offset;
+	}
+	return adjustment == 0 ? address : OffsetConstexprAddress(address, adjustment, false);
+}
+
 bool Analyzer::ExpressionTruth(
 	const ExpressionInfo& expression) const
 {

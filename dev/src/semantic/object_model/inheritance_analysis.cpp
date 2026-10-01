@@ -385,6 +385,8 @@ ExpressionInfo Analyzer::ApplyMemberObjectTarget(
 	dump_.nodes[cast].base_projection_offset = projection_offset;
 	dump_.nodes[cast].has_base_projection_offset = true;
 	dump_.Add(cast, value.node);
+	const std::uint32_t projected_address = ProjectConstexprBaseAddress(
+		object_address, value, dump_.nodes[cast]);
 	value.node = cast;
 	value.type = target;
 	value.category = VALUE_PRVALUE;
@@ -392,6 +394,9 @@ ExpressionInfo Analyzer::ApplyMemberObjectTarget(
 	value.constant = false;
 	value.constexpr_object = kNoConstexprObject;
 	value.constexpr_complete_object = kNoConstexprObject;
+	value.constexpr_address = value.constexpr_lvalue_address = kNoConstexprAddress;
+	if (projected_address != kNoConstexprAddress)
+		SetExpressionAddress(&value, projected_address);
 	if (object != kNoConstexprObject && member != kNoBinding &&
 		member < program_->bindings.size())
 	{
@@ -402,16 +407,6 @@ ExpressionInfo Analyzer::ApplyMemberObjectTarget(
 				object, program_->entities[owner].type, &projection_offset);
 		if (projected != kNoConstexprObject)
 		{
-			if (object_address != kNoConstexprAddress &&
-				projection_offset <= static_cast<std::uint64_t>(
-					std::numeric_limits<std::int64_t>::max()))
-			{
-				const std::uint32_t projected_address = OffsetConstexprAddress(
-					object_address, static_cast<std::int64_t>(projection_offset),
-					false);
-				if (projected_address != kNoConstexprAddress)
-					SetExpressionAddress(&value, projected_address);
-			}
 			SetExpressionSubobject(&value, projected, complete_object);
 		}
 	}
@@ -800,9 +795,18 @@ ExpressionInfo Analyzer::AnalyzeCast(NodeId node, ScopeId scope)
 	ExpressionInfo result;
 	result.node = cast;
 	result.type = target;
-	const std::uint32_t operand_address = ExpressionAddress(operand);
+	std::uint32_t operand_address = ExpressionAddress(operand);
+	if (IsPointer(target) && operand_address == kNoConstexprAddress &&
+		cast_kind.find("REINTER") == std::string::npos &&
+		(operand.integer_literal_zero || (operand.constant && IsNullptr(operand.type))))
+		operand_address = NullConstexprAddress();
+	const bool address_operand = operand_address != kNoConstexprAddress;
+	if (operand_address != kNoConstexprAddress && dump_.nodes[cast].has_base_projection_offset)
+		operand_address = ProjectConstexprBaseAddress(operand_address, operand, dump_.nodes[cast]);
 	if (IsPointer(target) && operand_address != kNoConstexprAddress)
 		SetExpressionAddress(&result, operand_address);
+	else if (IsPointer(target) && address_operand)
+		result.constant = false;
 	else if (operand.constant &&
 		(IsIntegral(target, true) || IsFloating(target)) &&
 		(IsIntegral(operand.type, true) || IsFloating(operand.type)))

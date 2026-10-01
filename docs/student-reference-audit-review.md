@@ -33,7 +33,7 @@ fix sequence is complete, as requested.
 | PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done: 27eef472d; parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
 | DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Done in the accompanying checkpoint: indexed binding requests preserve unused/sibling/nested definitions, explicit instantiation and specialization ownership. Eight PA14/17 fixtures, fourteen reviewed references, strict 5895/5895 and all required checks pass. Six Alpha inputs pass instruction/RSS gates with equal outputs. Static declaration legality remains STATIC-DECL. |
 | STATIC-DECL | Diagnose static-definition redeclarations/type/member mismatches; preserve explicit specialization declarations | Extended student storage controls during DEMAND | Done in the accompanying checkpoint: all eight original failures fixed; 37 agreed boundary controls and 19 new PA11/14/15/17 fixtures match Clang/GCC at O0/O2. Strict 5943/5943, full compiler/harness checks and placement pass. All six Alpha instruction/RSS gates pass with equal objects; cached name inventories remove the initial measured regression. |
-| STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Open, now isolated: 42 O0/O2 controls distinguish the static reference relocation (offset 0) from the correct pointer conversion and runtime reference binding (offset 4). Mutable object value availability incorrectly gates the address projection in ApplyTarget; the static address fact must preserve its independently known base offset. |
+| STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Done in the accompanying checkpoint: independent typed address projection, known complete-object virtual layouts, cleared unproved facts and guarded runtime null conversions. Thirty-eight boundary cases, 42 original controls and five PA22/23 fixtures agree with Clang/GCC at O0/O2. Strict 5948/5948 and all required checks pass. Six Alpha instruction/RSS gates pass with equal objects; the root-binding layout proof removes an initial targeted regression. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Done: receiver/array in 1cb054e23, result identity in 88f5d368b, and implicit conversion chaining in 425bc2a90. All four original inputs remain unchanged; rejection references regenerated through ref-test. Full validation recorded below. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Done: closure type in 425bc2a90; canonical defaulted-pack deduction and PA19 runtime expectation in d65f8b02e. Five PA19 controls, strict 5924/5924, all required checks and four Alpha instruction/RSS gates pass. Declared ABI pattern remains MANGLE-PACK. |
@@ -1645,9 +1645,58 @@ our ordinary derived-to-base pointer conversion correctly returns 4. LowIR
 confirms `global @ref = addr @value` while the pointer conversion adds 4.
 ApplyTarget already computes the base projection offset, but updates the static
 address only when ProjectConstexprObject also produces a constant object value.
-These independent facts must be kept separate. No fix is included in this
-checkpoint; STATIC-BASE-ADDR records the next compiler change. Controls and
-LowIR remain in /tmp/cppgm-v4-audit-review/static-base-address/.
+These independent facts must be kept separate. That verification accompanied
+STATIC-DECL; the following checkpoint records the fix. Controls and LowIR
+remain in /tmp/cppgm-v4-audit-review/static-base-address/.
+
+## Static base-address projection checkpoint
+
+ApplyTarget, ApplyMemberObjectTarget and explicit pointer casts now project
+address facts independently of constant object values. Ordinary conversions use
+the existing typed base offset; inverse conversions subtract it. Known complete
+object identities provide the layout for virtual conversions, including arrays
+and direct class members. A conversion whose complete layout cannot be proved
+clears the source address fact and retains its runtime operation. Null explicit
+pointer casts publish a null address without changing reinterpret_cast behavior.
+
+Expanded controls also exposed a separate null runtime pointer bug: virtual-base
+adjustment loaded the vptr before the ordinary pointer guard. The existing
+nullable adjustment helper now performs the virtual offset load only in its
+nonnull branch, including projection through a virtual anchor to a nested base.
+Reference, this and address-of conversions preserve their nonnull paths.
+
+Thirty-eight boundary inputs agree with Clang/GCC at O0/O2 (228 commands),
+including ambiguous/private/inverse-virtual rejections and defined runtime
+positives. All 42 original controls now agree, including the direct byte-offset
+probe returning 4. Five required fixtures live at their earliest owning features:
+nonvirtual multiple inheritance in PA22:100 and virtual-base projection in
+PA23:100. Their 30 compiler/runtime controls agree with both hosts; ten repeated
+candidate controls also pass on the final layout-proof binary. Exact ref-test
+commands generate every new reference. Existing references remain unchanged;
+strict report passes 5948/5948 with exactly one success line. Debug-info,
+backend variants, self-host through PA5, all nine architecture checks, file
+limits and placement (zero findings) pass on the final binary.
+
+The initial five-input Alpha measurement passed, but an additional unchanged
+primary-base/virtual-owner input exposed a 1.005734 instruction ratio, exceeding
+the unchanged 1.005 gate. The source binding's root identity and declared type
+now prove when the conversion's layout already matches the complete object,
+avoiding the extra virtual-path walk and its temporary storage. All initial
+observations and the failed gate are retained. The final six-input run uses
+immutable entry/candidate binaries, CPU 0, four A/A calibration blocks and eight
+A/B ABBA blocks per input. All 288 objects agree within their input; every A/A
+and A/B instruction/RSS gate passes. Instruction/RSS ratios are recognition
+0.999979/0.995687, virtual 1.000005/0.998847, large virtual 0.999966/0.999373,
+base addresses 1.001907/0.999207, runtime base conversions 1.000408/0.999934
+and primary-base/virtual-owner addresses 1.001685/1.000513. The manifest matches
+the final compiler hash ebe7a62408ab3b9ceab8d23f1127075e69679dcb6f6fe80f6d5ef528a19a9e1a.
+Cycles are retained separately; no general speedup is claimed.
+
+Evidence, earlier validation trials and every raw counter observation remain
+under /tmp/cppgm-v4-audit-review/static-base-address/. Combined student export
+remains deferred until the full tracker sequence is complete. CONV-SELECTION
+is the next semantic work item; the remaining virtual-layout/lifecycle issues
+remain VBASE.
 
 ## Read-only PA29 audit174 / active handoff176 refresh
 
