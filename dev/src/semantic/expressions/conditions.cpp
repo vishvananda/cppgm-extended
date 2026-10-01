@@ -100,7 +100,7 @@ void Analyzer::AnalyzeCondition(NodeId node, ScopeId scope,
 	{
 		dump_.nodes[condition].full_expression_staging = true;
 		MarkFullExpressionCalls(value.node);
-		AppendUnwindDestructionActions(scope, condition);
+		StageExceptionalFullExpression(value.node, condition, scope, true);
 	}
 	else if (HasActiveInitializerListBacking(scope))
 	{

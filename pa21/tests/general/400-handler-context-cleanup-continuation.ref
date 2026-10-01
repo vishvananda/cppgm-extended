@@ -109,41 +109,41 @@ function @choose(%first : u8) -> i32 [binding=strong, object=_Z6chooseb] {
   block ^catch_body_16:
     %t11 = call ptr @__external_runtime____cxa_begin_catch(%t8)
     eh_cleanup ^catch_cleanup_18
-    eh_try ^call_unwind_dispatch_20
+    eh_try ^call_unwind_dispatch_21
     %t12 = addr $arg__6
     call void @Value__Value(%t12, 11)
     eh_end
-    jump ^call_unwind_end_21
+    jump ^call_unwind_end_22
 
   block ^cleanup_resume_19:
     resume
 
-  block ^call_unwind_dispatch_20:
+  block ^cleanup_action_20:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     eh_end
     jump ^cleanup_resume_19
 
-  block ^call_unwind_end_21:
-    eh_try ^call_unwind_dispatch_23
+  block ^call_unwind_dispatch_21:
+    jump ^cleanup_action_20
+
+  block ^call_unwind_end_22:
+    eh_try ^call_unwind_dispatch_24
     %t13 = call i32 @read(%t12)
     store i32 %t13, $call__3
     %t14 = load i32 $call__3
     call void @Value___Value(%t12)
     eh_end
-    jump ^call_unwind_end_24
+    jump ^call_unwind_end_25
 
-  block ^cleanup_action_22:
+  block ^cleanup_action_23:
     call void @Value___Value(%t12)
-    jump ^cleanup_resume_19
+    jump ^cleanup_action_20
 
-  block ^call_unwind_dispatch_23:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    eh_end
-    jump ^cleanup_action_22
+  block ^call_unwind_dispatch_24:
+    jump ^cleanup_action_23
 
-  block ^call_unwind_end_24:
+  block ^call_unwind_end_25:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 %t14

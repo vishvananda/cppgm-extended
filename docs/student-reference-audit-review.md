@@ -16,7 +16,7 @@ fix sequence is complete, as requested.
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and isolated export each print one success total. Final combined export pending. |
-| HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in the accompanying checkpoint: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Full combined export remains deferred. |
+| HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in 2481b326d: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Full combined export remains deferred. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
 | DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2 removes twenty scalar-array false positives. The static-declaration checkpoint uses parsed template headers for pointer/reference NTTPs, removing four more false positives while preserving actual pointer/reference/member/function NTTP controls. |
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
@@ -41,7 +41,8 @@ fix sequence is complete, as requested.
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
-| EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | Open; prior fb15cd49e class-value temporary cleanup fixes one case only. |
+| EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: six of seven refreshed reducers fail in 2481b326d at O0/O2 while Clang/GCC pass all seven. EH-HANDLER-TEMP addresses full-expression temporaries; nested forwarding, throwing local cleanup, aggregate prefixes and failed-new ownership remain open. |
+| EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in the accompanying checkpoint: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
@@ -1841,3 +1842,73 @@ The root Makefile sanitizer retains the quiet export statement and introduces
 no missing script dependency; the focused scripts retain their shipped paths.
 Full fixture discovery, reference bundle and combined student-export validation
 remain deferred until all tracker fixes are complete.
+
+## Active-handler full-expression lifetime checkpoint
+
+Refreshed immutable 2481b326d evidence reproduces six failures among the seven
+original EH reducers at O0/O2; Clang and GCC pass all seven. The aggregate
+prefix companion is made definition-compatible with its source: its extra move
+constructor declaration/definition is removed from the copied host control.
+The original student evidence remains unchanged. This corrected two-TU control
+still proves the aggregate prefix failure, so the discovery does not depend on
+the original definition mismatch.
+
+Full-expression cleanup staging previously returned early if there were no
+local objects to unwind, even when a temporary had a live catch context. Its
+landing prefix then ended the catch before destroying the temporary. Return,
+condition and control-expression paths also appended local unwind actions
+directly, bypassing the existing typed handler boundaries. They now reuse
+StageExceptionalFullExpression, preserving temporary destruction before each
+required handler exit. Automatic initializer staging also reaches that helper
+inside a handler without requiring an additional local object. The exception
+and cleanup context identities remain the existing typed facts.
+
+An initial broad handler-only staging trial regressed ordinary rethrow and
+nested forwarding. The final guard adds a handler boundary when the expression
+is already staged, or when local unwind obligations require staging. A simple
+rethrow without these obligations keeps its handler's own cleanup region.
+Failed trials are retained. Nine agreed boundary inputs now pass at O0/O2
+(54 compiler/runtime observations); the two additional nested-handler/inner-try
+inputs still reject during object generation and remain part of EH forwarding.
+The five other original failures remain EH: nested mismatch (two reducers), throwing local
+cleanup, aggregate prefixes and failed-new deallocation.
+
+Two new PA21:200 fixtures cover return, statement, initializer and condition
+boundaries, normal completion, and both conditional temporary arms. Explicit
+exception copy constructors count live objects regardless of copy elision;
+the conditional control checks balanced construction/destruction rather than
+prescribing an optional copy count. All twelve candidate/Clang/GCC fixture
+observations pass at O0/O2, and all four Clang/GCC controls with copy elision
+disabled also pass.
+
+The existing handler-context fixture changes only its dormant exceptional
+cleanup continuation and the resulting local block names. Exact ref-test
+commands regenerate that reference and the two new fixtures. A controlled
+copy of its generated LowIR retains choose and its cleanup blocks, externalizes
+read and moves the fixture entry aside. The host companion throws a class
+exception for value 7 and a long for value 11; the class exception destructor
+appends 3. Required order gives 813. Entry fails at O0/O2; the candidate passes
+at both levels. Clang confirms the injected read symbol; all ABI identities
+remain unchanged. The known global-variable spelling issue remains ABI-GLOBAL.
+
+The nine-input Alpha run uses immutable binaries, frozen sources, CPU 0, four
+A/A calibration blocks and eight A/B ABBA blocks per input. All 432 objects
+agree within their input; every A/A and A/B instruction/RSS gate passes.
+Instruction/RSS ratios are recognition 0.999993/0.999932, virtual
+0.999985/0.996955, large virtual 1.000053/1.000035, constructor copies
+0.999999/0.999372, conversion-function copies 0.999984/0.999288,
+constructor-template copies 1.000017/1.000812, competing copies
+1.000013/0.997711, ordinary EH returns 1.000476/0.999737 and handlers without
+temporaries 0.999986/1.000198. The counter manifest matches compiler hash
+e5dfb62ab187c76cbce6faea1ecb7561c6be9924441c8d064fa3597241c28dc9.
+Cycles are retained separately; no general speedup is claimed.
+
+Evidence, retained trial logs, controls and every raw observation remain under
+/tmp/cppgm-v4-audit-review/exception-lifetimes/. Combined student export stays
+deferred. The next EH work is complete nested catch forwarding and lifetime
+boundaries before the construction-prefix and allocation ownership work.
+
+Final validation passes: strict report 5971/5971 with exactly one output line,
+debug-info, all backend variants, self-host through PA5, all nine architecture
+checks, file/function limits and placement with zero findings. No other
+existing fixture or reference changed.

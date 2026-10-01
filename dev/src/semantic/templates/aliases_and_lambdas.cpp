@@ -967,14 +967,7 @@ void Analyzer::StageReturnTemporaryCleanup(
 			action.full_expression_staging)
 			action.managed_full_expression_cleanup = true;
 	}
-	AppendUnwindDestructionActions(scope, statement);
-	for (std::uint32_t edge = dump_.nodes[statement].first_edge;
-		edge != kNoDumpEdge; edge = dump_.edges[edge].next)
-	{
-		DumpNode& action = dump_.nodes[dump_.edges[edge].child];
-		if (action.kind == DUMP_DESTRUCTOR_ACTION && action.unwind_only)
-			action.full_expression_staging = true;
-	}
+	StageExceptionalFullExpression(expression, statement, scope, true);
 }
 
 void Analyzer::SelectClassTemplateMemberOwner(
