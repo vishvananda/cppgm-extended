@@ -190,6 +190,10 @@ To complete PA21, implement these goals:
    EH-bearing aggregate construction should invoke nontrivial member constructors
    instead of representation-copying those members, so cleanup state describes
    the subobjects that were constructed.
+   Synthesized copy/move constructors destroy completed bases, members and
+   array elements if a later construction step throws. Representation-copy
+   prefixes still establish subobject lifetimes. A partial member-array
+   cleanup continues with earlier subobjects of the enclosing constructor.
    Construction and destruction cleanup dependencies on class-template
    destructors should be demanded only after a recursively containing type is
    complete, and should retain that concrete owner in emitted cleanup calls.

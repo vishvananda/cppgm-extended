@@ -250,6 +250,54 @@ protected:
 		return result;
 	}
 
+	void FinishConstructionArrayCleanup()
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		// Resume continues at a caller frame. An inner array landing must
+		// explicitly enter the remaining cleanup in this constructor first.
+		const ir::BlockId remaining = derived.full_expression_cleanup_dispatch_ != ir::kNoLowId ?
+			derived.full_expression_cleanup_dispatch_ : derived.constructor_body_cleanup_target_;
+		if (remaining == ir::kNoLowId) derived.EmitExceptionResume();
+		else
+		{
+			// Retire the consumed partial-array frame and the enclosing
+			// protected frame whose landing continuation is entered directly.
+			derived.Emit(ir::Instruction(ir::Instruction::EH_END));
+			derived.Emit(ir::Instruction(ir::Instruction::EH_END));
+			derived.EmitJump(remaining);
+		}
+	}
+
+	void LowerConstructionArrayPrefix(semantic::TypeId element,
+		const ir::Operand& destination, semantic::BindingId destructor,
+		const ir::Operand& progress)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const ir::BlockId condition = derived.AddBlock(derived.NewLabel("construction_array_cleanup"));
+		const ir::BlockId body = derived.AddBlock(derived.NewLabel("construction_array_cleanup_body"));
+		const ir::BlockId end = derived.AddBlock(derived.NewLabel("construction_array_cleanup_end"));
+		const bool may_throw = !derived.program_.bindings[destructor].nonthrowing;
+		if (may_throw) derived.EmitEhTarget(ir::Instruction::EH_TRY, derived.MakeCleanupTerminateBlock());
+		derived.EmitJump(condition);
+		derived.SelectBlock(condition);
+		const ir::Operand remaining = derived.LoadStorage(progress, ir::LowI64());
+		const ir::Operand any = derived.Temp(ir::LowI64());
+		ir::Instruction compare(ir::Instruction::CMP);
+		compare.dest = any.id;
+		compare.op = ir::LOW_OP_NE;
+		compare.type = ir::LowI64();
+		compare.first = remaining;
+		compare.second = ir::Operand(0, ir::LowI64());
+		derived.Emit(compare);
+		derived.EmitBranch(any, body, end);
+		derived.SelectBlock(body);
+		const ir::Operand previous = derived.DecrementDestructorArrayProgress(progress, remaining);
+		derived.EmitDestructorCall(destructor, derived.ArrayElementAddress(element, destination, previous));
+		derived.EmitJump(condition);
+		derived.SelectBlock(end);
+		if (may_throw) derived.Emit(ir::Instruction(ir::Instruction::EH_END));
+	}
+
 	void LowerConstructionCleanupState(const cleanup::State& state)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
@@ -260,7 +308,7 @@ protected:
 		const bool may_throw = !derived.program_.bindings[destructor].nonthrowing;
 		if (may_throw) derived.EmitEhTarget(ir::Instruction::EH_TRY, derived.LexicalCleanupTerminateBlock());
 		if (temporary) derived.LowerFullExpressionDestructorAction(step.temporary_action);
-		else derived.LowerDestructorObject(step.type, step.destination, step.destructor);
+		else derived.LowerDestructorObject(step.type, step.destination, step.destructor, false, true);
 		if (may_throw) derived.Emit(ir::Instruction(ir::Instruction::EH_END));
 		std::uint32_t tail = state.key.terminal;
 		if (step.tail != 0)

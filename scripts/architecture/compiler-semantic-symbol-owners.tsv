@@ -605,6 +605,8 @@ dev/src/semantic/lifetime/local_statics.cpp	ValidateConstexprCallableType	1	dev/
 dev/src/semantic/lifetime/local_statics.cpp	ValidateConstexprClassDeclarations	1	dev/src/semantic/lifetime/local_statics.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	AddSynthesizedAssignmentBody	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	AddSynthesizedConstructorBody	1	dev/src/semantic/lifetime/special_members.cpp	keep
+dev/src/semantic/lifetime/special_members.cpp	AddSynthesizedPrefixLifetimes	1	dev/src/semantic/lifetime/special_members.cpp	keep
+dev/src/semantic/lifetime/special_members.cpp	RecordSynthesizedConstructionRecipe	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	AnalyzeOutOfClassSpecialMember	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	AnalyzeQualifiedAssignmentStatement	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	AssignmentForSubobject	1	dev/src/semantic/lifetime/special_members.cpp	keep

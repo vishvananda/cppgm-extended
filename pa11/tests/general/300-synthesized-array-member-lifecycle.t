@@ -4,11 +4,11 @@ int destroyed = 0;
 struct Element {
   int value;
 
-  Element() : value(7) {
+  Element() noexcept : value(7) {
     constructed = constructed + 1;
   }
 
-  ~Element() {
+  ~Element() noexcept {
     destroyed = destroyed + 1;
   }
 };

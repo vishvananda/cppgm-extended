@@ -1046,6 +1046,87 @@ void Analyzer::CompleteClassSpecialMembers(EntityId entity)
 			entity, &GetMutableFunction(facts.move_assignment));
 }
 
+void Analyzer::AddSynthesizedPrefixLifetimes(const FunctionInfo& function,
+	std::uint32_t construction)
+{
+	if (!complete_constructor_unwind_ || FunctionIsNonthrowing(function.binding)) return;
+	const EntityId entity = program_->bindings[function.binding].member_owner;
+	const EntityRecord& owner = program_->entities[entity];
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& base = program_->DirectBase(entity, i);
+		if (program_->bindings[function.binding].constructor_base_entry && base.virtual_base) continue;
+		if (program_->entities[base.entity].trivial_destructor) continue;
+		const std::uint32_t step = MakeDump(DUMP_SPECIAL_MEMBER_SUBOBJECT_ACTION,
+			program_->entities[base.entity].type);
+		dump_.nodes[step].base_projection_count = 1;
+		dump_.nodes[step].base_projection_offset = base.offset;
+		dump_.nodes[step].has_base_projection_offset = true;
+		dump_.nodes[step].synthesized_prefix_lifetime_only = true;
+		dump_.Add(construction, step);
+	}
+	if (entity >= entity_data_members_.size()) return;
+	const std::vector<BindingId>& members = entity_data_members_[entity];
+	for (std::size_t i = 0; i < function.synthesized_prefix_members; ++i)
+	{
+		const BindingId member = members[i];
+		const TypeId type = program_->bindings[member].type;
+		const EntityId subobject = DestructedEntity(type);
+		if (program_->types.IsReference(type) || subobject == kNoEntity ||
+			program_->entities[subobject].trivial_destructor) continue;
+		const std::uint32_t step = MakeDump(DUMP_SPECIAL_MEMBER_SUBOBJECT_ACTION,
+			type, VALUE_NONE, 0, member);
+		dump_.nodes[step].synthesized_prefix_lifetime_only = true;
+		dump_.Add(construction, step);
+	}
+}
+
+void Analyzer::RecordSynthesizedConstructionRecipe(const FunctionInfo& function,
+	std::uint32_t construction)
+{
+	if (!complete_constructor_unwind_) return;
+	const bool nonthrowing = FunctionIsNonthrowing(function.binding);
+	dump_.nodes[construction].construction_recipe = true;
+	dump_.nodes[construction].construction_nonthrowing = nonthrowing;
+	if (nonthrowing) return;
+	bool completed = false;
+	bool required = false;
+	for (std::uint32_t edge = dump_.nodes[construction].first_edge;
+		edge != kNoDumpEdge; edge = dump_.edges[edge].next)
+	{
+		const std::uint32_t step = dump_.edges[edge].child;
+		const TypeId type = dump_.nodes[step].type;
+		const BindingId constructor = dump_.nodes[step].selected_binding;
+		const bool may_throw = constructor != kNoBinding && !FunctionIsNonthrowing(constructor);
+		dump_.nodes[step].construction_recipe = true;
+		dump_.nodes[step].construction_nonthrowing = !may_throw;
+		if (completed && may_throw) required = true;
+		if (dump_.nodes[step].storage_size != 0 || program_->types.IsReference(type)) continue;
+		const EntityId entity = DestructedEntity(type);
+		if (entity == kNoEntity || program_->entities[entity].trivial_destructor) continue;
+		BindingId destructor = DestructorForType(type);
+		if (destructor == kNoBinding) ThrowInternalCompilerError("synthesized subobject has no destructor");
+		if (dump_.nodes[step].base_projection_count != 0)
+			destructor = EnsureDestructorBaseEntry(destructor);
+		dump_.nodes[step].construction_destructor = destructor + 1;
+		DemandFunction(destructor);
+		if (!FunctionIsNonthrowing(destructor)) dump_.construction_cleanup_may_throw = true;
+		completed = true;
+		if (may_throw)
+		{
+			TypeId array_type = type;
+			for (;;)
+			{
+				const TypeRecord& array = program_->types.Get(program_->types.RemoveTopCv(array_type));
+				if (array.kind != TYPE_ARRAY) break;
+				if (array.bound > 1) required = true;
+				array_type = array.child;
+			}
+		}
+	}
+	dump_.nodes[construction].contains_construction_cleanup = required;
+}
+
 void Analyzer::AddSynthesizedConstructorBody(
 	const FunctionInfo& function, const std::vector<BindingId>& parameters,
 	std::uint32_t body)
@@ -1068,6 +1149,7 @@ void Analyzer::AddSynthesizedConstructorBody(
 		dump_.nodes[prefix].storage_alignment =
 			function.synthesized_prefix_alignment;
 		dump_.Add(construction, prefix);
+		AddSynthesizedPrefixLifetimes(function, construction);
 	}
 
 	if ((function.trivial_special_member ||
@@ -1107,7 +1189,8 @@ void Analyzer::AddSynthesizedConstructorBody(
 				ThrowInternalCompilerError(
 					"synthesized base constructor is missing");
 			const FunctionInfo& selected_function = GetFunction(selected);
-			if (!base.empty_class || !selected_function.trivial_special_member)
+			if (!base.empty_class || !selected_function.trivial_special_member ||
+				(complete_constructor_unwind_ && !base.trivial_destructor))
 			{
 				const std::uint32_t step = MakeDump(
 					DUMP_SPECIAL_MEMBER_SUBOBJECT_ACTION, base.type);
@@ -1151,7 +1234,9 @@ void Analyzer::AddSynthesizedConstructorBody(
 				if (member_entity != kNoEntity &&
 					program_->entities[member_entity].empty_class &&
 					GetFunction(selected).trivial_special_member &&
-					!host_object_emission_)
+					!host_object_emission_ &&
+					(!complete_constructor_unwind_ ||
+					 program_->entities[member_entity].trivial_destructor))
 					continue;
 				const std::uint32_t step = MakeDump(
 					DUMP_SPECIAL_MEMBER_SUBOBJECT_ACTION, type,
@@ -1174,6 +1259,7 @@ void Analyzer::AddSynthesizedConstructorBody(
 			}
 		}
 	}
+	RecordSynthesizedConstructionRecipe(function, construction);
 	const std::uint32_t statement = MakeDump(DUMP_EXPRESSION_STATEMENT);
 	dump_.Add(statement, construction);
 	dump_.Add(body, statement);

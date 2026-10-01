@@ -25,6 +25,10 @@ template <class Derived>
 class ConstructorActionLowering
 {
 protected:
+	ConstructorActionLowering() : constructor_body_cleanup_target_(kNoLowId) {}
+
+	BlockId constructor_body_cleanup_target_;
+
 	bool BuildConstructorCleanup(const DumpNode& action,
 		DumpNode* cleanup) const
 	{
@@ -68,7 +72,10 @@ protected:
 			derived.EmitJump(entry);
 			derived.SelectBlock(entry);
 		}
-		derived.LowerDestructorAction(action);
+		const bool may_throw = !derived.program_.bindings[action.binding].nonthrowing;
+		if (may_throw) derived.EmitEhTarget(Instruction::EH_TRY, derived.MakeCleanupTerminateBlock());
+		derived.LowerDestructorAction(action, true);
+		if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
 		// Entry continuations have retired the protected frame. Both a landing
 		// pad and lexical destruction can use the same remaining suffix.
 		if (*active == kNoLowId)
@@ -102,6 +109,7 @@ protected:
 			if (!BuildConstructorCleanup(
 				derived.arena_.nodes[children[i]], &cleanup)) continue;
 			InstallConstructorCleanup(cleanup, &active, detached);
+			constructor_body_cleanup_target_ = active;
 			// Body statements from here on run inside the member cleanup
 			// region; an early return must pop it before leaving.
 			derived.constructor_body_cleanup_active_ = true;
@@ -111,6 +119,7 @@ protected:
 		if (active != kNoLowId && !derived.CurrentBlock().terminated)
 			derived.Emit(Instruction(Instruction::EH_END));
 		derived.constructor_body_cleanup_active_ = false;
+		constructor_body_cleanup_target_ = kNoLowId;
 		derived.lexical_body_unwind_target_ = kNoLowId;
 	}
 

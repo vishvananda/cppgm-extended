@@ -319,7 +319,11 @@ void Analyzer::DemandConstructorUnwindDestructors(
 			action.kind == DUMP_BASE_INITIALIZER_ACTION ||
 			action.kind == DUMP_DELEGATING_INITIALIZER_ACTION) &&
 			action.selected_binding != kNoBinding)
+		{
+			if (!FunctionIsNonthrowing(action.selected_binding))
+				dump_.construction_cleanup_may_throw = true;
 			DemandFunction(action.selected_binding);
+		}
 	}
 }
 

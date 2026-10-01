@@ -48,9 +48,10 @@ fix sequence is complete, as requested.
 | EH-AGG-PREFIX | Preserve completed aggregate members/elements and interleaved temporaries when a later initializer throws | Original aggregate-prefix reducer plus expanded construction controls | Done: 37 agreed construction controls pass at O0/O2; nine independently checked PA21 fixtures and one reviewed reference correction. Strict 5993/5993, debug-info, variants, self-host PA5, all architecture/file/placement audits and twelve Alpha instruction/RSS gates pass. ARCH-FUNCTION closes the previously exposed file-audit findings. Synthesized-copy failures remain EH-SPECIAL-PREFIX; source-handler escape remains EH-CTOR-HANDLER. |
 | EH-AGG-NESTED | Invoke a completed nested aggregate's custom destructor when a later outer member fails | Additional EH-AGG-PREFIX boundary control | Needs contract review: Clang invokes the nested destructor, GCC skips its body; both destroy its member objects. N3485's principal-constructor wording predates P0490R0's explicit completed-aggregate rule. Keep this difference separate from the 23 agreed cleanup failures; no oracle changed. |
 | EH-AGG-TEMP-DTOR | Destroy a completed aggregate when an initializer temporary's normal destructor throws | Additional EH-AGG-PREFIX boundary control | Needs contract review: GCC and the candidate destroy both aggregate members; Clang 21.1.8 leaks them at O0/O2. Retain this host disagreement separately from ordinary construction failure; no required oracle added. |
-| EH-SPECIAL-PREFIX | Destroy completed members when a later member in a synthesized copy/move constructor throws | Extended conditional controls and direct memberwise construction reducers | Open: extending the conditional controls through every observed copy step exposes a leaked destination member. Direct implicit-copy/move controls separate that failure from aggregate initialization; retain baseline and host evidence below. |
+| EH-SPECIAL-PREFIX | Destroy completed members when a later member in a synthesized copy/move constructor throws | Extended conditional controls and direct memberwise construction reducers | Done: 54 copy/move/base/array/assignment controls agree with Clang/GCC at O0/O2, as do both original memberwise reducers and both extended conditional all-step reducers. Fourteen PA21 fixtures pass their O0 contract; the two independently retained full-TU O2 crashes remain BACKEND-ARRAY-OPT. Strict 6013/6013, debug-info, variants, self-host PA5, all architecture/file/placement checks and fourteen Alpha instruction/RSS gates pass. |
 | EH-CTOR-HANDLER | Retain constructor member cleanup when an inner source handler rethrows or misses | Additional aggregate-in-constructor control | Open: frozen entry and candidate leak a previously constructed member when the constructor's inner handler rethrows; Clang/GCC destroy it at O0/O2. Source-handler resume bypasses the constructor-body suffix. |
 | EH-COND-THROW | Normalize a class conditional with a raw throw operand before destination lowering | Additional conditional aggregate boundary control | Done: materialized class prvalues use destination-ready arms; nonreturning arms retire their cleanup segments and staged throw sites restore enclosing cleanup after a split. Original reducer and thirteen agreed boundary programs pass at O0/O2; six PA21 fixtures, strict 5999/5999 and all required compiler audits/checks pass. Alpha instruction/RSS gates and an interleaved two-image cycle check pass. Extended synthesized-copy and reference-initializer failures remain separate rows. |
+| EH-CTOR-ARRAY-PREFIX | Retain earlier constructor subobjects after partial construction of a later loop-lowered member array | Expanded EH-SPECIAL-PREFIX controls | Done with EH-SPECIAL-PREFIX: partial-array cleanup explicitly enters the remaining constructor cleanup. Seven independently checked second-fault controls also cover scalar, inline-array, loop-array and completed-array unwind destruction; a second exception terminates immediately. The containing-constructor continuation has its own retired entry, shared by host-object and standalone paths. |
 | EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Open, independently reproduced: nine direct lvalue/xvalue/reference-call/const-reference/aggregate-reference controls leak prior local objects here at O0/O2; Clang/GCC pass. StageAutomaticInitializerException excludes reference declarations, so no enclosing cleanup is attached. Preserve lifetime-extended backing storage when repairing this staging boundary. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
@@ -72,6 +73,7 @@ fix sequence is complete, as requested.
 | COND-RESULT | Preserve const class conditional result types and copy glvalue class conditional results | Additional controls while fixing ARG-COND | Done in af5f041ed: const result facts, selected glvalue copying and scoped reference backing; strict 5849/5849, full checks and equal-output ABBA pass. |
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
+| BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Open, independently reproduced: the entry and copy-cleanup candidates crash at O2 for the twelve-element move and trivial-copy-prefix array fixtures, in standalone and host-linked object routes. Clang/GCC pass; our O0 routes and corresponding external-companion forms pass. Retain frozen sources, binary hashes, host-link controls and debugger observations under synthesized-construction-prefix/. |
 | BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
@@ -2568,3 +2570,80 @@ retain the observed image/calibration variation rather than attributing a
 precise cycle change to this source fix. The exploratory subtraction of A/A
 and B/B ratios is not the primary estimate: those are different image pairs,
 not an unbiased common timing offset. Final combined export remains deferred.
+
+### Synthesized construction prefixes — validated checkpoint
+
+The entry is e11367e6e, with frozen compiler
+4a38b8559df13cb9b6c5829972bc612e3c8404a8dde3e8e137408812bf202fb0.
+Evidence is under /tmp/cppgm-v4-audit-review/synthesized-construction-prefix/.
+The final compiler-eleventh is
+d913a284cc1f67a176c4c8fe35f84d4e67e4c8f057d75c75a183e646928c8ec7.
+
+Semantic synthesis publishes typed destructor bindings and cached construction
+throw effects. Representation-copy prefixes retain lifetime-only subobject
+steps, including trivial-copy classes with nontrivial destructors. Nonthrowing
+constructors keep the fast path. The packed binding and flag leave DumpNode at
+152 bytes; two Analyzer helpers have explicit semantic-owner ledger entries.
+Lowering retains completed scalar/class/inline-array subobjects in the existing
+construction prefix. Counted member arrays retain their completed-element index
+and enter the remaining cleanup in the same constructor before resuming.
+Ordinary constructors with array cleanup use retired entry continuations too.
+Unwind destruction does not install a normal array-destructor recovery loop:
+a second exception reaches the terminate handler immediately. Distinct guard
+contexts get distinct terminal landings. Assignment controls remain unchanged.
+
+entry-expanded-controls.json retains 324 observations for 54 programs. All
+216 Clang/GCC observations pass and have identical traces. The final candidate's
+108 observations match those traces exactly. These include direct and custom-
+destructor bases/members, nested objects, scalar/reference members, inline and
+counted arrays, matrices, defaulted constructors, representation-copy prefixes,
+empty subobjects, unions and four assignment controls. Both original copy/move
+reducers and both original extended conditional all-step reducers pass all 24
+candidate/Clang/GCC observations. Seven second-fault controls pass all 42
+observations, checking the still-live objects in an installed terminate handler.
+eleventh-runtime-verification.json also confirms no status/stdout changes among
+102 candidate observations corresponding to the previous 210-observation EH
+corpus. Its existing constructor-inner-handler and failed-new gaps remain open.
+All three expanded conditional implicit-copy failures are fixed at O0/O2; the
+nine reference-initializer failures remain EH-REF-INIT.
+
+Fourteen freestanding PA21 fixtures cover the construction boundaries. Every
+candidate O0 standalone execution and every Clang/GCC execution passes.
+Two full-TU array fixtures crash in our O2 routes, with host linking as well as
+standalone linking. The frozen entry reproduces both crashes; corresponding
+external-companion controls pass. This is explicitly BACKEND-ARRAY-OPT, with
+entry-host-array-fixture-controls.json and debugger observations retained.
+The PA21 handout states the completed-subobject and containing-array cleanup
+requirements. Its existing conditional-aggregate reference gains only the
+previously missing first-member destruction when the second member copy throws.
+No fixture input was weakened to conceal that failure.
+
+The two affected PA11 array-lifecycle fixtures exercise normal counts and
+values. PA11's handout permits direct noexcept metadata on constructors and
+destructors. Their nonthrowing bodies now state that property explicitly, so
+these ordinary lifecycle tests do not acquire incidental EH scaffolding.
+All 48 frozen-entry/candidate/Clang/GCC observations for the before/after inputs
+pass. Only their two references and the reviewed PA21 conditional reference
+were regenerated, together with the fourteen new fixture references.
+
+validation-eleventh/ records seven successful gates: strict report, debug-info,
+backend variants, self-host through PA5, all nine architecture audits, file
+audit and placement. The strict report contains exactly one line, 6013/6013.
+The file audit passes with the same 37 warnings. No early placements remain.
+perf-eleventh/ retains 672 Alpha hardware-counter observations across fourteen
+frozen workloads, immutable A/AA/B binaries, A/A calibration and paired ABBA
+blocks. All objects are byte-identical. Every instruction/RSS gate passes;
+the largest A/B instruction median is +0.0077% and the largest RSS median is
++0.1525%. Cycle medians range from -1.082% to +0.298%. The added workload covers
+256 nonthrowing synthesized class-array copies. No ABI encoder spelling changed.
+
+Intermediate builds and failures remain available. A temporary environment
+restriction interrupted build-sixth and left an empty build lock; process
+inspection proved that no build owned it before removal. compiler-sixth was
+verified byte-identical to compiler-fifth, so those observations are labelled
+as measurements of that older image in sixth-stale-build-verification.json.
+The resumed build has an explicit successful exit record and fresh binary hash.
+A scratch second-fault output-name collision was corrected; the complete entry
+baseline remains in entry-expanded-controls.json. None of these intermediate
+results substitute for final validation. Final student-export validation remains
+deferred until all tracker items are complete.

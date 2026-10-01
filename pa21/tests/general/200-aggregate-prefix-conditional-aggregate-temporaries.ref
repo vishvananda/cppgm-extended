@@ -629,7 +629,19 @@ function @E__E__ov2(%this : ptr [alias=noalias, object_bytes=12], %other : ptr [
     %t11 = index i8 [projection=field] %t10, 8
     %t12 = load ptr $other
     %t13 = index i8 [projection=field] %t12, 8
+    eh_try ^construction_cleanup_2
     call void @S__S__ov3(%t11, %t13)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^construction_cleanup_2:
+    call void @S___S(%t2)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
     return void
 }
 function @E___E(%this : ptr [object_bytes=12]) -> void [unwind=no, binding=weak, object=_ZN1ED1Ev, inline_hint=yes] {

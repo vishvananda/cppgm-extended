@@ -1497,6 +1497,10 @@ private:
 		const std::vector<BindingId>& parameters, std::uint32_t body);
 	void AddSynthesizedConstructorBody(const FunctionInfo& function,
 		const std::vector<BindingId>& parameters, std::uint32_t body);
+	void AddSynthesizedPrefixLifetimes(const FunctionInfo& function,
+		std::uint32_t construction);
+	void RecordSynthesizedConstructionRecipe(const FunctionInfo& function,
+		std::uint32_t construction);
 	void DemandSynthesizedConstructorDependencies(BindingId constructor);
 	bool CanAccessMember(BindingId member,
 		EntityId naming_class = kNoEntity,

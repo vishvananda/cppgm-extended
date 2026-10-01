@@ -234,6 +234,7 @@ struct DumpNode
 	bool construction_recipe : 1;
 	bool construction_nonthrowing : 1;
 	bool contains_construction_cleanup : 1;
+	bool synthesized_prefix_lifetime_only : 1;
 	FunctionTryBodyKind function_try_body;
 	// Packed SimpleTokenKind + 1 for operator expression nodes; 0 for none.
 	std::uint8_t operation_kind;
@@ -241,7 +242,15 @@ struct DumpNode
 	{
 		std::uint32_t exception_control_exit_count; // DUMP_GOTO_STATEMENT
 		std::uint32_t lexical_cleanup_plan; // DUMP_DESTRUCTOR_ACTION; 0 = none
+		// DUMP_SPECIAL_MEMBER_SUBOBJECT_ACTION; binding + 1, 0 = none
+		std::uint32_t construction_destructor;
 	};
+
+	BindingId ConstructionDestructor() const
+	{
+		return construction_destructor == 0 ? kNoBinding :
+			static_cast<BindingId>(construction_destructor - 1);
+	}
 
 	bool OperationIs(int simple_token_kind) const
 	{
@@ -313,6 +322,7 @@ struct DumpNode
 		throwing_lexical_body_cleanup(false),
 		  construction_recipe(false), construction_nonthrowing(false),
 		  contains_construction_cleanup(false),
+		  synthesized_prefix_lifetime_only(false),
 		  function_try_body(FUNCTION_TRY_BODY_NONE),
 		  operation_kind(0),
 		  exception_control_exit_count(0) {}

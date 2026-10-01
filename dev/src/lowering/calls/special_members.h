@@ -132,6 +132,8 @@ protected:
 				ThrowLoweringInternal(
 					"synthesized constructor virtual-base ABI is incomplete");
 		}
+		if (construction && !selected_binding.nonthrowing)
+			derived.EnsureFullExpressionCleanupSegment();
 		Instruction call = derived.DirectCallInstruction(
 			derived.function_symbols_[selected],
 			derived.LowerBoundaryResult(function.child));
@@ -264,8 +266,13 @@ protected:
 				if (assignment)
 					LowerAssignmentSubobject(element, selected,
 						destination_element, source_element);
-				else LowerConstructionSubobject(element, selected,
-					destination_element, source_element);
+				else
+				{
+					const std::uint32_t previous = derived.ConstructionCleanupRoot();
+					LowerConstructionSubobject(element, selected, destination_element, source_element);
+					derived.CompleteConstructionObject(previous, element,
+						derived.arena_.nodes[step_node].ConstructionDestructor(), destination_element);
+				}
 			}
 			return;
 		}
@@ -291,6 +298,13 @@ protected:
 		initialize.first = Operand(0, LowI64());
 		initialize.second = index_slot;
 		derived.Emit(initialize);
+		const BindingId destructor = assignment ? kNoBinding :
+			derived.arena_.nodes[step_node].ConstructionDestructor();
+		const bool partial_cleanup = destructor != kNoBinding &&
+			!derived.program_.bindings[selected].nonthrowing;
+		const BlockId cleanup = partial_cleanup ? derived.AddBlock(
+			derived.NewLabel("copy_array_cleanup")) : BlockId(kNoLowId);
+		if (!assignment) derived.EnsureFullExpressionCleanupSegment();
 		derived.EmitJump(condition);
 		derived.SelectBlock(condition);
 		const Operand index = derived.LoadStorage(index_slot, LowI64());
@@ -311,8 +325,12 @@ protected:
 		if (assignment)
 			LowerAssignmentSubobject(element, selected,
 				destination_element, source_element);
-		else LowerConstructionSubobject(element, selected,
-			destination_element, source_element);
+		else
+		{
+			if (partial_cleanup) derived.EmitEhTarget(Instruction::EH_TRY, cleanup);
+			LowerConstructionSubobject(element, selected, destination_element, source_element);
+			if (partial_cleanup) derived.Emit(Instruction(Instruction::EH_END));
+		}
 		const Operand next = derived.Temp(LowI64());
 		Instruction increment(Instruction::BINARY);
 		increment.dest = next.id;
@@ -327,6 +345,12 @@ protected:
 		save.second = index_slot;
 		derived.Emit(save);
 		derived.EmitJump(condition);
+		if (partial_cleanup)
+		{
+			derived.SelectBlock(cleanup);
+			derived.LowerConstructionArrayPrefix(element, destination_base, destructor, index_slot);
+			derived.FinishConstructionArrayCleanup();
+		}
 		derived.SelectBlock(end);
 	}
 
@@ -387,6 +411,13 @@ protected:
 				destination, step.base_projection_count, kNoType,
 				step.base_projection_offset,
 				step.has_base_projection_offset);
+		const std::uint32_t previous = derived.ConstructionCleanupRoot();
+		const BindingId destructor = step.ConstructionDestructor();
+		if (step.synthesized_prefix_lifetime_only)
+		{
+			derived.CompleteConstructionObject(previous, step.type, destructor, destination);
+			return;
+		}
 		const TypeRecord& step_type = derived.program_.types.Get(
 			derived.program_.types.RemoveTopCv(step.type));
 		if (step_type.kind == TYPE_ARRAY)
@@ -394,6 +425,7 @@ protected:
 			LowerArraySubobjectStep(step_node, step.type,
 				step.selected_binding, destination,
 				construction.object_binding, step.binding, false);
+			derived.CompleteConstructionObject(previous, step.type, destructor, destination);
 			return;
 		}
 		Operand source = LoadAssignmentObject(construction.object_binding);
@@ -414,6 +446,7 @@ protected:
 		}
 		LowerConstructionSubobject(step.type, step.selected_binding,
 			destination, source);
+		derived.CompleteConstructionObject(previous, step.type, destructor, destination);
 	}
 
 	LowType BitFieldStorageUnitType(BindingId binding) const
@@ -468,6 +501,7 @@ protected:
 			derived.current_this_binding_ == kNoBinding)
 			ThrowLoweringInternal(
 				"invalid synthesized construction action");
+		const bool owns_expression = derived.BeginConstructionCleanup(construction);
 		const NodeChildren steps = derived.Children(node);
 		for (std::size_t i = 0; i < steps.size(); ++i)
 		{
@@ -475,6 +509,7 @@ protected:
 			LowerConstructionStep(steps[i], construction,
 				derived.arena_.nodes[steps[i]]);
 		}
+		if (owns_expression) derived.CompleteFullExpressionCleanup();
 		return Operand(0, LowVoid());
 	}
 
@@ -780,7 +815,7 @@ protected:
 	}
 
 	void LowerLoopDestructorArray(TypeId element_type,
-		const Operand& address, BindingId destructor, std::size_t count)
+		const Operand& address, BindingId destructor, std::size_t count, bool unwinding)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (count > static_cast<std::size_t>(
@@ -801,7 +836,7 @@ protected:
 			derived.NewLabel("destructor_array_body"));
 		const BlockId end = derived.AddBlock(
 			derived.NewLabel("destructor_array_end"));
-		const bool cleanup_needed =
+		const bool cleanup_needed = !unwinding &&
 			!derived.program_.bindings[destructor].nonthrowing;
 		const BlockId cleanup = cleanup_needed ? derived.AddBlock(
 			derived.NewLabel("destructor_array_cleanup")) : BlockId(kNoLowId);
@@ -864,7 +899,7 @@ protected:
 	}
 
 	void LowerDestructorObject(TypeId type, const Operand& address,
-		BindingId destructor, bool base_subobject = false)
+		BindingId destructor, bool base_subobject = false, bool unwinding = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		type = derived.RemoveTopQualifiers(type);
@@ -891,7 +926,7 @@ protected:
 		}
 		if (count > kDestructorArrayInlineLimit)
 		{
-			LowerLoopDestructorArray(element_type, address, destructor, count);
+			LowerLoopDestructorArray(element_type, address, destructor, count, unwinding);
 			return;
 		}
 		const Operand base = derived.DecayAddress(address);
@@ -902,11 +937,11 @@ protected:
 			const Operand element = derived.IndexAddress(LowI8(), base,
 				Operand(static_cast<std::int64_t>((i - 1) * element_size),
 					LowI64()), true);
-			LowerDestructorObject(record.child, element, destructor);
+			LowerDestructorObject(record.child, element, destructor, false, unwinding);
 		}
 	}
 
-	void LowerDestructorAction(const DumpNode& action)
+	void LowerDestructorAction(const DumpNode& action, bool unwinding = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (action.kind != DUMP_DESTRUCTOR_ACTION ||
@@ -927,7 +962,7 @@ protected:
 				const Operand element = derived.BoundArrayElementAddress(
 					action.object_binding, action.operand_type,
 					static_cast<std::size_t>(action.constant_value));
-				LowerDestructorObject(outer.child, element, action.binding);
+				LowerDestructorObject(outer.child, element, action.binding, false, unwinding);
 				return;
 			}
 			std::size_t count = 1;
@@ -952,7 +987,7 @@ protected:
 						static_cast<std::size_t>(outer.bound) - ordinal - 1;
 					const Operand element = derived.BoundArrayElementAddress(
 						action.object_binding, action.operand_type, index);
-					LowerDestructorObject(outer.child, element, action.binding);
+					LowerDestructorObject(outer.child, element, action.binding, false, unwinding);
 				}
 				return;
 			}
@@ -1004,7 +1039,7 @@ protected:
 			base_subobject = true;
 		}
 		LowerDestructorObject(action.operand_type, destination, action.binding,
-			base_subobject);
+			base_subobject, unwinding);
 	}
 };
 

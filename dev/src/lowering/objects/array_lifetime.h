@@ -268,12 +268,15 @@ protected:
 			save_previous.first = previous;
 			save_previous.second = progress;
 			derived.Emit(save_previous);
+			const bool may_throw = !derived.program_.bindings[destructor].nonthrowing;
+			if (may_throw) derived.EmitEhTarget(Instruction::EH_TRY, derived.MakeCleanupTerminateBlock());
 			derived.EmitDestructorCall(destructor,
 				BoundFlatArrayElementAddress(object_binding, array_type,
 					element_type, previous));
+			if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
 			derived.EmitJump(cleanup);
 			derived.SelectBlock(resume);
-			derived.EmitExceptionResume();
+			derived.FinishConstructionArrayCleanup();
 		}
 		derived.SelectBlock(end);
 	}

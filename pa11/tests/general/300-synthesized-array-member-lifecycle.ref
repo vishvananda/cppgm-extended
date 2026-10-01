@@ -76,7 +76,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = load i32 $cond__1
     return i32 %t12
 }
-function @Holder__Holder(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
+function @Holder__Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -86,69 +86,17 @@ function @Holder__Holder(%this : ptr [object_bytes=12]) -> void [binding=weak, o
     %t3 = binary mul i64 0, 4
     %t4 = index i8 [projection=array_element] %t2, %t3
     call void @Element__Element(%t4)
-    eh_try ^call_unwind_dispatch_1
     %t5 = load ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = binary mul i64 1, 4
     %t8 = index i8 [projection=array_element] %t6, %t7
     call void @Element__Element(%t8)
-    eh_end
-    jump ^call_unwind_end_2
-
-  block ^call_unwind_dispatch_1:
     %t9 = load ptr $this
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = binary mul i64 0, 4
+    %t11 = binary mul i64 2, 4
     %t12 = index i8 [projection=array_element] %t10, %t11
-    call void @Element___Element(%t12)
-    resume
-
-  block ^call_unwind_end_2:
-    eh_try ^call_unwind_dispatch_3
-    %t13 = load ptr $this
-    %t14 = index i8 [projection=field] %t13, 0
-    %t15 = binary mul i64 2, 4
-    %t16 = index i8 [projection=array_element] %t14, %t15
-    call void @Element__Element(%t16)
-    eh_end
-    jump ^call_unwind_end_4
-
-  block ^call_unwind_dispatch_3:
-    %t17 = load ptr $this
-    %t18 = index i8 [projection=field] %t17, 0
-    %t19 = binary mul i64 1, 4
-    %t20 = index i8 [projection=array_element] %t18, %t19
-    call void @Element___Element(%t20)
-    %t21 = load ptr $this
-    %t22 = index i8 [projection=field] %t21, 0
-    %t23 = binary mul i64 0, 4
-    %t24 = index i8 [projection=array_element] %t22, %t23
-    call void @Element___Element(%t24)
-    resume
-
-  block ^call_unwind_end_4:
-    eh_cleanup ^constructor_cleanup_5
-    eh_end
+    call void @Element__Element(%t12)
     return void
-
-  block ^constructor_cleanup_5:
-    %t25 = load ptr $this
-    %t26 = index i8 [projection=field] %t25, 0
-    %t27 = binary mul i64 2, 4
-    %t28 = index i8 [projection=array_element] %t26, %t27
-    call void @Element___Element(%t28)
-    %t29 = load ptr $this
-    %t30 = index i8 [projection=field] %t29, 0
-    %t31 = binary mul i64 1, 4
-    %t32 = index i8 [projection=array_element] %t30, %t31
-    call void @Element___Element(%t32)
-    %t33 = load ptr $this
-    %t34 = index i8 [projection=field] %t33, 0
-    %t35 = binary mul i64 0, 4
-    %t36 = index i8 [projection=array_element] %t34, %t35
-    call void @Element___Element(%t36)
-    eh_end
-    resume
 }
 function @Holder___Holder(%this : ptr [object_bytes=12]) -> void [unwind=no, binding=weak, object=_ZN6HolderD1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -239,7 +187,7 @@ function @Element___Element(%this : ptr [object_bytes=4]) -> void [unwind=no, bi
     store i32 %t2, @destroyed
     return void
 }
-function @Element__Element(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7ElementC1Ev, inline_hint=yes] {
+function @Element__Element(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN7ElementC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

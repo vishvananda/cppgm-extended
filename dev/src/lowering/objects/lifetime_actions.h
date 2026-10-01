@@ -50,11 +50,17 @@ protected:
 
 	BlockId LexicalCleanupTerminateBlock()
 	{
+		if (lexical_cleanup_terminate_ == kNoLowId)
+			lexical_cleanup_terminate_ = MakeCleanupTerminateBlock();
+		return lexical_cleanup_terminate_;
+	}
+
+	BlockId MakeCleanupTerminateBlock()
+	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (lexical_cleanup_terminate_ != kNoLowId) return lexical_cleanup_terminate_;
 		const BlockId original = derived.current_block_;
-		lexical_cleanup_terminate_ = derived.AddBlock(derived.NewLabel("lexical_cleanup_terminate"));
-		derived.SelectBlock(lexical_cleanup_terminate_);
+		const BlockId terminate = derived.AddBlock(derived.NewLabel("lexical_cleanup_terminate"));
+		derived.SelectBlock(terminate);
 		Instruction clause(Instruction::EH_CATCH_ALL);
 		clause.first = Operand(1, LowI32());
 		derived.Emit(clause);
@@ -69,7 +75,7 @@ protected:
 			LowVoid(), arguments);
 		derived.Emit(Instruction(Instruction::UNREACHABLE));
 		derived.SelectBlock(original);
-		return lexical_cleanup_terminate_;
+		return terminate;
 	}
 
 	BlockId LexicalUnwindCleanup(std::uint32_t root, std::size_t depth)

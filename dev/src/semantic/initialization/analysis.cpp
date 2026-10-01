@@ -407,8 +407,15 @@ std::uint32_t Analyzer::BuildDefaultConstructorAction(TypeId type,
 	{
 		dump_.nodes[action].binding = destructor;
 		DemandFunction(destructor);
+		if (!FunctionIsNonthrowing(destructor))
+			dump_.construction_cleanup_may_throw = true;
 	}
-	dump_.Add(action, BuildDefaultConstructorAction(record.child, scope));
+	const bool multiple_elements = record.bound > 1;
+	const std::uint32_t element = BuildDefaultConstructorAction(record.child, scope);
+	dump_.Add(action, element);
+	if (complete_constructor_unwind_ && dump_.nodes[action].binding != kNoBinding &&
+		multiple_elements && !InitializationActionsAreNonthrowing(element))
+		dump_.nodes[action].contains_construction_cleanup = true;
 	return action;
 }
 bool Analyzer::IsDirectTrivialClassValueType(TypeId type) const
