@@ -654,6 +654,9 @@ dev/src/semantic/object_model/polymorphic_layout.cpp	InitializeClassBaseLayout	1
 dev/src/semantic/object_model/polymorphic_layout.cpp	MergeSharedVirtualView	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	PreferredClassLayoutBaseOrdinal	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	PublishVirtualBaseStats	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
+dev/src/semantic/object_model/polymorphism.cpp	CompleteVirtualExceptionOverrides	1	dev/src/semantic/object_model/polymorphism.cpp	keep
+dev/src/semantic/object_model/polymorphism.cpp	ExceptionTypeAllowed	1	dev/src/semantic/object_model/polymorphism.cpp	keep
+dev/src/semantic/object_model/polymorphism.cpp	RecordVirtualExceptionOverride	1	dev/src/semantic/object_model/polymorphism.cpp	keep
 dev/src/semantic/object_model/polymorphism.cpp	ConfigureVirtualFunction	1	dev/src/semantic/object_model/polymorphism.cpp	keep
 dev/src/semantic/object_model/polymorphism.cpp	CovariantVirtualReturn	1	dev/src/semantic/object_model/polymorphism.cpp	keep
 dev/src/semantic/object_model/polymorphism.cpp	MarkVtableDemand	1	dev/src/semantic/object_model/polymorphism.cpp	keep

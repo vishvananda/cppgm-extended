@@ -1101,9 +1101,18 @@ struct PolymorphicViewFact
 		  contributes_primary_override(false) {}
 };
 
+struct VirtualExceptionOverrideFact
+{
+	BindingId function, base;
+
+	VirtualExceptionOverrideFact(BindingId function_value, BindingId base_value)
+		: function(function_value), base(base_value) {}
+};
+
 struct ClassPolymorphismFacts
 {
 	std::vector<VirtualSlotFact> slots;
+	std::vector<VirtualExceptionOverrideFact> exception_overrides;
 	std::vector<EntityId> primary_ancestors;
 	std::vector<PolymorphicViewFact> views;
 	std::vector<std::int64_t> virtual_base_offsets;

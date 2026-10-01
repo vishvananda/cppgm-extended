@@ -2341,11 +2341,13 @@ void Analyzer::EnsureFunctionExceptionSpecification(BindingId binding)
 			ScopedEntityContext class_context(
 				&current_class_context_, owner);
 			bool nonthrowing = false;
+			bool unrestricted = false;
+			std::vector<TypeId> allowed;
 			if (function.implicit_destructor || function.defaulted_destructor)
 			{
 				const bool trivial =
 					program_->entities[owner].trivial_destructor;
-				CompleteDefaultedDestructor(owner, binding);
+				CompleteDefaultedDestructor(owner, binding, &allowed, &unrestricted);
 				program_->entities[owner].trivial_destructor = trivial &&
 					!GetFunction(binding).deleted_destructor;
 				nonthrowing = program_->bindings[binding].nonthrowing;
@@ -2353,16 +2355,20 @@ void Analyzer::EnsureFunctionExceptionSpecification(BindingId binding)
 			else
 			{
 				nonthrowing = EvaluateDestructorSubobjects(
-					owner, false, 0);
+					owner, false, 0, &allowed, &unrestricted);
 				program_->bindings[binding].nonthrowing = nonthrowing;
 			}
 			BindingRecord& completed = program_->bindings[binding];
 			if (completed.exception_type_count != 0)
 				ThrowInternalCompilerError(
 					"implicit destructor has explicit exception types");
-			const FunctionExceptionBoundaryKind boundary = nonthrowing ?
+			const FunctionExceptionBoundaryKind boundary = !unrestricted && !allowed.empty() ?
+				FUNCTION_EXCEPTION_BOUNDARY_UNEXPECTED : nonthrowing ?
 				FUNCTION_EXCEPTION_BOUNDARY_TERMINATE :
 				FUNCTION_EXCEPTION_BOUNDARY_NONE;
+			if (program_->function_exception_types.size() >
+				std::numeric_limits<std::uint32_t>::max() - allowed.size())
+				ThrowSemanticResourceLimit("too many implicit destructor exception types");
 			FunctionInfo& completed_function = GetMutableFunction(binding);
 			if (completed_function.exception_specification_configured &&
 				completed.exception_boundary != boundary)
@@ -2371,7 +2377,9 @@ void Analyzer::EnsureFunctionExceptionSpecification(BindingId binding)
 			completed.exception_boundary = boundary;
 			completed.exception_type_begin = static_cast<std::uint32_t>(
 				program_->function_exception_types.size());
-			completed.exception_type_count = 0;
+			completed.exception_type_count = static_cast<std::uint32_t>(allowed.size());
+			program_->function_exception_types.insert(
+				program_->function_exception_types.end(), allowed.begin(), allowed.end());
 			completed_function.exception_specification_configured = true;
 		}
 		else if (function.inherited_constructor_source != kNoBinding &&

@@ -32,7 +32,8 @@ fix sequence is complete, as requested.
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
-| EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Open: ours accepts throw(double) or unrestricted overrides of throw(int); GCC/Clang reject. The allowed throw(int) control passes all three. Student-entry defect, no course oracle changes. |
+| EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
+| EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | Open; prior fb15cd49e class-value temporary cleanup fixes one case only. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
@@ -52,6 +53,7 @@ fix sequence is complete, as requested.
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
 | HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass; student has not edited its oracle. |
+| PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence is complete; initial and INIT-ADDR exports already passed. |
 
 ## Static address initialization checkpoint
@@ -194,6 +196,74 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Virtual exception override checkpoint
+
+Independent controls reproduce the audit154 entry defect: wider/unrestricted
+specifications over throw(int), lax noexcept overrides and a specification wider
+than an intermediate override are accepted by the entry compiler, contrary to
+Clang/GCC and N3485 15.4 paragraphs 5/8. The same issue affects implicitly declared
+destructors and restrictions from both branches of a shared virtual base.
+Sources, commands and host diagnostics are retained under
+/tmp/cppgm-v4-audit-review/exception-overrides.
+
+Polymorphic completion records only actual restricted or deferred override
+edges before replacing each incoming final overrider. Shared-view merges retain
+both restrictions by consulting the incoming direct-base facts only when the
+merged slot has distinct overriders. After layout and special-member completion,
+the existing exception-specification demand resolves these edges once; detached
+pending edges prevent references into a fact table from surviving recursive
+semantic growth. Validation consumes canonical types, public/unambiguous base
+paths and qualification-conversion facts; no global or source-text scan is added.
+
+Implicit/defaulted/user-provided destructors with omitted specifications retain
+the union of the directly invoked subobject destructor lists. An unrestricted
+subobject makes the result unrestricted; duplicate canonical list entries are
+removed. The existing subobject walk produces these facts, avoiding a second
+walk. Early compatibility probes caught and corrected loss of finite lists in
+the first candidate. Explicit lists also retain reference forms for catch
+matching, reject forbidden rvalue-reference types and restrict pointer
+conversions through nonconst pointer references. Existing RTTI canonicalization
+continues to use the referred object type; no mangling encoder/spelling changes.
+An executed finite-destructor reducer exposes an existing backend limitation:
+entry and candidate both fail standalone emission with an unbound native label,
+LowIR rendering with an invalid pooled string, and host-object emission with a
+missing landing-pad block. Clang/GCC execute the defined reducer and exit 41.
+Its runtime behavior is not claimed fixed by declaration compatibility; sources
+and all three route diagnostics remain in finite-destructor-{runtime,lowir,
+mixed-runtime}.json and are covered by BACKEND/EH follow-up.
+
+Fifteen new fixtures exercise ordinary PA13 restrictions, PA14 dependent lists,
+and PA23 shared virtual-base restrictions. References are generated only for
+these new fixtures, with no existing reference changes. The 192 main matrix and
+126 additional/shipped O0/O2 checks agree with ours and Clang throughout. GCC
+rejects several pointer/qualification/nullptr/reference-list cases allowed by
+N3485 catch matching, and accepts the forbidden rvalue-reference list as an
+extension; these disagreements are retained rather than silently used as an
+oracle. The different sizeof(current-class) virtual-template timing control is
+recorded separately as EH-SPEC-TIMING; valid sizeof(T) controls pass.
+
+The placement detector masks function-suffix dynamic exception metadata while
+preserving throw expressions, nested parentheses, control statements and
+operator/function-pointer declarations. It assigns the metadata its PA6 owner;
+polymorphic/template/hierarchy assertions retain their later owners. Metadata
+also no longer conceals hidden generated EH during review. All 52 detector tests
+pass. The final strict report passes 5869/5869 in one line. Separate PA13/PA14/PA23
+checks pass 48/48, 319/319 and 47/47 respectively; debug-info, backend variants,
+self-host through PA5, all nine architecture audits, the file audit and the
+harness pass. Placement scans 2999 fixtures with zero placement/hygiene findings;
+the existing 57 EH review notes are unchanged. Final logs and statuses are in
+exception-overrides/validation.json and final-architecture.log. Performance
+passes on frozen recog and 1500 virtual override pairs: four A/A calibration
+blocks and six A/B ABBA blocks each give CPU median ratios 1.0 for both inputs,
+wall ratios 1.0/0.98 and RSS ratios 1.001260/1.002006. A/A CPU is 0.996454/1.0;
+shared-host noise does not establish a speedup. All 80 objects match their
+respective baselines (recog SHA-256 08c380bf4060d88ae18fc59b0cfa858fd6c7c02a4c2d0ca1413b59559f55f906;
+virtual SHA-256 f479c1d3ba01bdcdd4ced85b0e4211d032413bc0dba7f13f82e76ffad4b850f0).
+Commands, immutable binaries and every observation are retained under
+/tmp/cppgm-v4-audit-review/perf-exception-overrides. Early affected
+checks were invoked as concurrent root test targets, which share summary-count
+files; those results are superseded by separate sequential assignment checks.
 
 ## Hosted trait definitions checkpoint
 
@@ -816,15 +886,16 @@ silently importing an EH requirement into PA12 solely through a reference edit.
 ## Fixture corrections authorized by the bug evidence
 
 Five existing inputs were identified for source corrections in addition to
-regenerated oracles. PA13 explicit destruction now uses manually managed lifetime
-in DTOR. Four remain: PA23
-constructor-prvalue virtual-base forwarding needs initialized most-derived
-virtual bases; PA19 defaulted-pack cardinality must compare with 9; PA18
+regenerated oracles. DTOR gives PA13 explicit destruction manually managed
+lifetime. DISCARD-CALL gives PA18
 300-explicit-template-call-transitive-base-deduction and PA19
-300-deleted-return-sfinae-same-parameter-list must return references to real
-objects. The latter PA19 main must also pass a real tuple instead of *nullptr.
-Keep deduction, deleted-overload and discarded-reference coverage, using a
-real typed backing object and structural checks for the absent referent load.
+300-deleted-return-sfinae-same-parameter-list real reference backing objects;
+the latter main now also passes a real tuple. Their deduction, deleted-overload
+and discarded-reference goals remain covered, including the absent referent load.
+Two source corrections remain: PA23 constructor-prvalue virtual-base forwarding
+needs initialized most-derived virtual bases, alongside the VBASE compiler work;
+PA19 defaulted-pack cardinality must compare with 9, alongside DEDUCE's completed
+argument facts. Keep each defined source correction with its owning semantic fix.
 Compile-only grading explains how these defective runtime bodies went unnoticed;
 it is not a reason to preserve them when a defined reducer can retain the goal.
 
@@ -1015,3 +1086,33 @@ edited oracle bytes. Add defined, runtime-observable reducers at the earliest
 feature owner, with hosted companions only where they provide needed ABI/EH
 observations. The PA26/27 string rewrites already in this working tree remain
 valid and need no extra duplicate move to PA31.
+
+## Later read-only PA29 audit158 and implementation159 refresh
+
+Snapshot HEAD 5d2b1657 changes exactly one checked oracle since 76430506:
+500-builtin-trivial-deleted-copy.ref.exit_status becomes EXIT_FAILURE, with all
+403 required sources unchanged. reference-correction158.md supplies the pinned
+bundle revision, C++11 clause proof and positive/negative controls. This is a
+valid student correction to the original false assertions, already covered by
+HOST-TRIVIAL here. Our 89a33c0a8 instead corrects the assertions to preserve all
+three positive declaration-property goals and keeps the success oracle. Neither
+approach requires a compiler to recognize that fixture. The student still leaves
+the forward-only std trait oracle unresolved; HOST-SHORTHAND now fixes its goals
+here using complete definitions and the ordinary template path.
+
+Audit158 reports 317/403 with 86 remaining PA29 failures, 4538/4538 earlier
+checks, zero new failures and 34/34 new controls. Implementation159 later records
+321/403, 44/44 code controls and the earlier report still passing; it remains
+unfinished, with final performance/handoff evidence pending. No other required
+source/reference change or new placement claim appears in the reviewed diff.
+The control/proof documents identify student-entry/host comparisons, not a new
+personal test explicitly compared against the supplied reference executable.
+Reference-lifetime trait controls use “reference” in the language sense.
+
+Two audit158 entry reducers do establish a new current-checkout issue:
+using I __attribute__((aligned(1))) = int loses the alias storage alignment;
+typedef int I __attribute__((aligned(1))) also loses it through *&i. Both exact
+sources reject here at O0/O2 and compile with Clang/GCC. PA29-ALIGN records this
+separately; compiler observations and copied sources are retained in
+/tmp/cppgm-v4-audit-review/student-refresh-pa29-158/alignment-controls.json.
+The running student checkout was read only and was not built or modified.

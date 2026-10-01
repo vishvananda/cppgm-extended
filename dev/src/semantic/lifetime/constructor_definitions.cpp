@@ -1,6 +1,8 @@
 #include "semantic/analysis/analyzer.h"
 #include "support/exceptions.h"
 
+#include <algorithm>
+
 namespace cppgm
 {
 namespace semantic
@@ -169,12 +171,15 @@ void Analyzer::CompleteDefaultedDefaultConstructor(EntityId entity,
 }
 
 bool Analyzer::EvaluateDestructorSubobjects(EntityId entity,
-	bool defaulted_destructor, bool* deleted)
+	bool defaulted_destructor, bool* deleted,
+	std::vector<TypeId>* allowed, bool* unrestricted)
 {
 	if (deleted) *deleted = false;
+	if (allowed) allowed->clear();
+	if (unrestricted) *unrestricted = false;
 	bool nonthrowing = true;
 	const EntityRecord& owner = program_->entities[entity];
-	const auto visit = [this, entity, deleted, &nonthrowing](
+	const auto visit = [this, entity, deleted, allowed, unrestricted, &nonthrowing](
 		TypeId type, bool variant)
 	{
 		const EntityId subobject = DestructedEntity(type);
@@ -188,6 +193,21 @@ bool Analyzer::EvaluateDestructorSubobjects(EntityId entity,
 		if (selected == kNoBinding ||
 			!FunctionIsNonthrowing(selected))
 			nonthrowing = false;
+		if (allowed && unrestricted)
+		{
+			if (selected == kNoBinding ||
+				program_->bindings[selected].exception_boundary ==
+					FUNCTION_EXCEPTION_BOUNDARY_NONE)
+				*unrestricted = true;
+			else if (!*unrestricted)
+			{
+				const BindingRecord& binding = program_->bindings[selected];
+				allowed->insert(allowed->end(),
+					program_->function_exception_types.begin() + binding.exception_type_begin,
+					program_->function_exception_types.begin() + binding.exception_type_begin +
+						binding.exception_type_count);
+			}
+		}
 		if (deleted && variant &&
 			!program_->entities[subobject].trivial_destructor)
 			*deleted = true;
@@ -213,15 +233,24 @@ bool Analyzer::EvaluateDestructorSubobjects(EntityId entity,
 				continue;
 			visit(member.type, owner.flavor == NAMED_UNION);
 		}
+	if (allowed && unrestricted)
+	{
+		if (*unrestricted) allowed->clear();
+		else
+		{
+			std::sort(allowed->begin(), allowed->end());
+			allowed->erase(std::unique(allowed->begin(), allowed->end()), allowed->end());
+		}
+	}
 	return nonthrowing;
 }
 
 void Analyzer::CompleteDefaultedDestructor(EntityId entity,
-	BindingId destructor)
+	BindingId destructor, std::vector<TypeId>* allowed, bool* unrestricted)
 {
 	bool deleted = false;
 	const bool nonthrowing = EvaluateDestructorSubobjects(
-		entity, true, &deleted);
+		entity, true, &deleted, allowed, unrestricted);
 	FunctionInfo& info = GetMutableFunction(destructor);
 	info.deleted_destructor = deleted;
 	program_->entities[entity].destructible = !deleted;

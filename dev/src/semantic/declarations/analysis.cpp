@@ -602,6 +602,7 @@ bool Analyzer::CompleteClassDefinition(NodeId node, ScopeId scope,
 		if (!program_->entities[entity].has_user_declared_destructor)
 			EnsureImplicitDestructor(entity);
 		program_->entities[entity].complete = true;
+		CompleteVirtualExceptionOverrides(entity);
 		ValidateConstexprClassDeclarations(entity);
 		ValidateOrdinaryMemberFunctionBodies(entity);
 		current_class_context_ = previous_class_context;

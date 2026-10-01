@@ -1429,6 +1429,10 @@ private:
 	void ConfigureVirtualFunction(BindingId binding, const SpecInfo& spec,
 		NodeId declarator, NodeId initializer);
 	void CompleteClassPolymorphism(EntityId entity);
+	void RecordVirtualExceptionOverride(EntityId entity, BindingId function,
+		BindingId base);
+	void CompleteVirtualExceptionOverrides(EntityId entity);
+	bool ExceptionTypeAllowed(TypeId thrown, TypeId allowed) const;
 	void FinalizeClassPolymorphismViews(EntityId entity);
 	void BeginPolymorphicVirtualViewIndex(
 		const ClassPolymorphismFacts& facts);
@@ -1447,8 +1451,10 @@ private:
 	void CompleteDefaultedDefaultConstructor(EntityId entity,
 		BindingId constructor);
 	void ValidateConstexprConstructorDefinition(const FunctionInfo& constructor);
-	bool EvaluateDestructorSubobjects(EntityId, bool, bool*);
-	void CompleteDefaultedDestructor(EntityId entity, BindingId destructor);
+	bool EvaluateDestructorSubobjects(EntityId, bool, bool*,
+		std::vector<TypeId>* allowed = 0, bool* unrestricted = 0);
+	void CompleteDefaultedDestructor(EntityId entity, BindingId destructor,
+		std::vector<TypeId>* allowed = 0, bool* unrestricted = 0);
 	void RegisterClassSpecialMember(BindingId binding);
 	void ConfigureAssignmentSpecialMember(BindingId binding,
 		NodeId initializer, bool defaulted_inline = true);

@@ -9,6 +9,101 @@ namespace cppgm
 namespace semantic
 {
 
+void Analyzer::RecordVirtualExceptionOverride(EntityId entity,
+	BindingId function, BindingId base)
+{
+	base = program_->bindings[base].canonical;
+	const ExceptionSpecificationState state =
+		GetFunction(base).exception_specification_state;
+	if (program_->bindings[base].exception_boundary ==
+			FUNCTION_EXCEPTION_BOUNDARY_NONE &&
+		(state == EXCEPTION_SPECIFICATION_FIXED ||
+		 state == EXCEPTION_SPECIFICATION_SUCCEEDED)) return;
+	class_polymorphism_[entity].exception_overrides.push_back(
+		VirtualExceptionOverrideFact(function, base));
+}
+
+bool Analyzer::ExceptionTypeAllowed(TypeId thrown, TypeId allowed) const
+{
+	const bool pointer_conversion = !program_->types.IsReference(allowed) ||
+		IsConst(EffectiveType(allowed));
+	thrown = program_->types.RemoveTopCv(EffectiveType(thrown));
+	allowed = program_->types.RemoveTopCv(EffectiveType(allowed));
+	if (thrown == allowed) return true;
+	TypeRecord source = program_->types.Get(thrown);
+	TypeRecord target = program_->types.Get(allowed);
+	if (IsNullptr(thrown))
+		return pointer_conversion &&
+			(target.kind == TYPE_POINTER || target.kind == TYPE_MEMBER_POINTER);
+	if (source.kind == TYPE_POINTER && target.kind == TYPE_POINTER)
+	{
+		if (!pointer_conversion) return false;
+		if (QualificationConversion(thrown, allowed)) return true;
+		source = program_->types.Get(source.child);
+		target = program_->types.Get(target.child);
+		const std::uint8_t source_cv = source.kind == TYPE_QUALIFIED ?
+			source.cv : CV_NONE;
+		const std::uint8_t target_cv = target.kind == TYPE_QUALIFIED ?
+			target.cv : CV_NONE;
+		if ((source_cv & ~target_cv) != 0 ||
+			((source_cv ^ target_cv) & CV_ATOMIC) != 0) return false;
+		if (source.kind == TYPE_QUALIFIED)
+			source = program_->types.Get(source.child);
+		if (target.kind == TYPE_QUALIFIED)
+			target = program_->types.Get(target.child);
+		if (target.kind == TYPE_FUNDAMENTAL &&
+			target.fundamental == FUND_VOID)
+			return source.kind != TYPE_FUNCTION;
+	}
+	else if (!IsClassObjectType(thrown) || !IsClassObjectType(allowed))
+		return false;
+	if (source.kind != TYPE_NAMED || target.kind != TYPE_NAMED) return false;
+	bool all_public = false;
+	bool ambiguous = false;
+	return program_->QueryBasePath(source.entity, target.entity,
+		0, &all_public, 0, &ambiguous) && all_public && !ambiguous;
+}
+
+void Analyzer::CompleteVirtualExceptionOverrides(EntityId entity)
+{
+	if (entity >= class_polymorphism_.size() ||
+		class_polymorphism_[entity].exception_overrides.empty()) return;
+	// Exception expressions and implicit destructor specifications can depend
+	// on the completed class. Keep only actual restricted override edges, and
+	// detach them before evaluation, which can grow the semantic fact tables.
+	std::vector<VirtualExceptionOverrideFact> overrides;
+	overrides.swap(class_polymorphism_[entity].exception_overrides);
+	for (std::size_t i = 0; i < overrides.size(); ++i)
+	{
+		const BindingId base = overrides[i].base;
+		const BindingId function = overrides[i].function;
+		EnsureFunctionExceptionSpecification(base);
+		if (program_->bindings[base].exception_boundary ==
+			FUNCTION_EXCEPTION_BOUNDARY_NONE) continue;
+		EnsureFunctionExceptionSpecification(function);
+		const BindingRecord& original = program_->bindings[base];
+		const BindingRecord& overriding = program_->bindings[function];
+		if (overriding.exception_boundary ==
+			FUNCTION_EXCEPTION_BOUNDARY_TERMINATE) continue;
+		if (overriding.exception_boundary == FUNCTION_EXCEPTION_BOUNDARY_NONE ||
+			original.exception_boundary == FUNCTION_EXCEPTION_BOUNDARY_TERMINATE)
+			ThrowSemanticError("virtual override has a looser exception specification");
+		for (std::uint32_t type = 0; type < overriding.exception_type_count; ++type)
+		{
+			const TypeId thrown = program_->function_exception_types[
+				overriding.exception_type_begin + type];
+			bool allowed = false;
+			for (std::uint32_t candidate = 0;
+				candidate < original.exception_type_count && !allowed; ++candidate)
+				allowed = ExceptionTypeAllowed(thrown,
+					program_->function_exception_types[
+						original.exception_type_begin + candidate]);
+			if (!allowed)
+				ThrowSemanticError("virtual override has a looser exception specification");
+		}
+	}
+}
+
 void Analyzer::ConfigureVirtualFunction(BindingId binding,
 	const SpecInfo& spec, NodeId declarator, NodeId initializer)
 {

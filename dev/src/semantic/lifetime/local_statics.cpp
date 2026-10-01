@@ -98,7 +98,12 @@ void Analyzer::ConfigureFunctionExceptionSpecification(
 		for (std::uint32_t edge = arena_->FirstEdge(list); edge != kNoEdge;
 			edge = arena_->NextEdge(edge))
 		{
-			TypeId type = Decay(BuildTypeId(arena_->EdgeChild(edge), scope));
+			TypeId type = BuildTypeId(arena_->EdgeChild(edge), scope);
+			if (program_->types.Get(type).kind == TYPE_RVALUE_REFERENCE)
+				ThrowSemanticError("rvalue reference is not an allowed exception type");
+			// A reference denotes its catch-matching form. Lowering already
+			// canonicalizes RTTI to the referred object type.
+			if (!program_->types.IsReference(type)) type = Decay(type);
 			type = program_->types.RemoveTopCv(type);
 			if (IsVoid(type))
 				ThrowSemanticError(

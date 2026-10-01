@@ -418,6 +418,28 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 			if (slot.function != kNoBinding &&
 				program_->bindings[slot.function].final_virtual)
 				ThrowSemanticError("virtual function overrides final function");
+			if (slot.function != kNoBinding)
+				RecordVirtualExceptionOverride(entity, member, slot.function);
+			else
+			{
+				// Shared virtual views can merge distinct final overriders.
+				// The new declaration must satisfy each incoming restriction.
+				for (std::size_t ordinal = 0;
+					ordinal < owner.direct_base_count; ++ordinal)
+				{
+					const ClassPolymorphismFacts& inherited = class_polymorphism_[
+						program_->DirectBase(entity, ordinal).entity];
+					for (std::size_t view = 0; view <= inherited.views.size(); ++view)
+					{
+						const std::vector<VirtualSlotFact>& incoming =
+							SlotsForView(inherited, view);
+						for (std::size_t i = 0; i < incoming.size(); ++i)
+							if (incoming[i].root == slot.root)
+								RecordVirtualExceptionOverride(
+									entity, member, incoming[i].function);
+					}
+				}
+			}
 			slot.function = member;
 			location = indexed.next;
 			++virtual_overrides_;

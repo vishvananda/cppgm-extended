@@ -200,6 +200,9 @@ PA13 supports the following in addition to the PA12 subset:
   the supported single-inheritance subset
 - `override` checking for the supported virtual subset
 - method-level `final` checking for the supported virtual subset
+- an override's exception specification allows only exceptions permitted by
+  the overridden declaration, including a narrower intermediate override;
+  non-throwing overrides may use either `throw()` or `noexcept`
 - pure virtual declarations and pure-virtual vtable entries
 - dynamic dispatch for ordinary member calls through:
   - object expressions of polymorphic class type

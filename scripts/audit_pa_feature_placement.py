@@ -365,6 +365,7 @@ RULES: tuple[FeatureRule, ...] = (
         ),
     ),
     FeatureRule("function.noexcept", (rx(r"\bnoexcept\b"),)),
+    FeatureRule("function.dynamic_exception_spec", ()),
     FeatureRule("exception.try_catch",
                 (rx(r"\btry\s*\{"), rx(r"\bcatch\s*\("), rx(r"\bthrow\b")),
                 ref_patterns=(rx(r"\b__cxa_(?:throw|begin_catch|rethrow)\b|\bexception_selector\b"),)),
@@ -702,6 +703,39 @@ def strip_string_literals(source: str) -> str:
 
 def strip_preprocessor_directives(source: str) -> str:
     return re.sub(r"^\s*#.*$", "", source, flags=re.MULTILINE)
+
+
+def strip_dynamic_exception_specifications(code: str) -> str:
+    """Leave throw expressions visible while masking function suffix metadata."""
+    if not re.search(r"\bthrow\s*\(", code):
+        return code
+    stack: list[int] = []
+    openings: dict[int, int] = {}
+    for index, char in enumerate(code):
+        if char == "(":
+            stack.append(index)
+        elif char == ")" and stack:
+            openings[index] = stack.pop()
+    out = list(code)
+    controls = {"if", "while", "for", "switch", "catch", "sizeof", "alignof",
+                "typeid", "decltype", "noexcept", "static_assert"}
+    for match in re.finditer(r"\bthrow\s*\(", code):
+        prefix = re.sub(r"(?:\s+\b(?:const|volatile)\b|\s*[&]{1,2})+\s*$",
+                        "", code[:match.start()]).rstrip()
+        if not prefix.endswith(")"):
+            continue
+        opening = openings.get(len(prefix) - 1)
+        if opening is None:
+            continue
+        name = re.search(r"([A-Za-z_][A-Za-z0-9_]*|>|\]|\))\s*$", code[:opening])
+        operator = re.search(r"\boperator\s*[+*/%=!<>&|^~,\-]+\s*$", code[:opening])
+        if (not name and not operator) or (name and name.group(1) in controls):
+            continue
+        start = match.end() - 1
+        end = matching_delimiter(code, start, "(", ")")
+        if end is not None:
+            out[match.start():end + 1] = " " * (end + 1 - match.start())
+    return "".join(out)
 
 
 def read_text(path: Path) -> str:
@@ -1140,10 +1174,16 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
         return {}
     no_comments = strip_comments(source)
     code = strip_string_literals(no_comments)
+    exception_code = strip_dynamic_exception_specifications(code)
     declared_intrinsics = declared_intrinsic_like_names(code)
     hits: dict[str, FeatureHit] = {}
+    if exception_code != code:
+        hits["function.dynamic_exception_spec"] = FeatureHit(
+            "function.dynamic_exception_spec", ["source:dynamic exception specification"])
     for rule in RULES:
         haystack = no_comments if rule.use_raw else code
+        if rule.feature_id == "exception.try_catch":
+            haystack = exception_code
         if rule.feature_id == "template.builtin_traits":
             matched = match_builtin_trait_patterns(
                 rule.patterns,
@@ -1479,7 +1519,8 @@ def polymorphic_cleanup_lowir_evidence(source: str, ref_text: str) -> str:
 
 
 def hidden_eh_lowir_evidence(source: str, ref_text: str) -> str:
-    stripped_source = strip_string_literals(strip_comments(source))
+    stripped_source = strip_dynamic_exception_specifications(
+        strip_string_literals(strip_comments(source)))
     if SOURCE_EXCEPTION_RE.search(stripped_source):
         return ""
     cleanup_ref = LOWIR_CLEANUP_EH_RE.search(ref_text)
@@ -1505,7 +1546,8 @@ def scan_lowir_eh_review(root: Path, pas: Iterable[str]) -> list[LowIREHFinding]
         if current_number is not None and current_number >= SOURCE_EH_LOWIR_OWNER_PA:
             continue
         source = read_text(path) + "\n" + companion_source_text_for(path)
-        stripped_source = strip_string_literals(strip_comments(source))
+        stripped_source = strip_dynamic_exception_specifications(
+            strip_string_literals(strip_comments(source)))
         if SOURCE_EXCEPTION_RE.search(stripped_source):
             continue
         ref_text = ref_text_for(path)
@@ -1885,7 +1927,8 @@ def host_eh_object_evidence(path: Path, current_pa: str, source: str) -> str:
     """Identify the PA26 host-object layer without relying on its filename."""
     if current_pa != "pa26" or not numbered_test_source_files_for(path):
         return ""
-    stripped_source = strip_string_literals(strip_comments(source))
+    stripped_source = strip_dynamic_exception_specifications(
+        strip_string_literals(strip_comments(source)))
     source_match = SOURCE_EXCEPTION_RE.search(stripped_source)
     if source_match:
         return f"harness:cppgm++ -c, source:{source_match.group(0)}"

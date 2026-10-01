@@ -30,6 +30,40 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_dynamic_exception_declarations_are_metadata_not_source_eh(self) -> None:
+        for source in (
+            "struct B { virtual void f() throw(int, double); };",
+            "struct D { void f() const & throw(int); ~D() throw(); };",
+            "void (*callback)() throw(int);",
+            "struct C { void operator()() throw(int); };",
+            "struct C { int operator+(int) const throw(int); };",
+            "struct C { bool operator==(const C&) const throw(); };",
+            "template<class T> struct C { virtual void f() throw(T); };",
+            "void f() throw(decltype(sizeof(int)));",
+        ):
+            with self.subTest(source=source):
+                hits = audit.detect_features(source)
+                self.assertIn("function.dynamic_exception_spec", hits)
+                self.assertNotIn("exception.try_catch", hits)
+
+    def test_throw_expressions_survive_exception_metadata_masking(self) -> None:
+        for statement in (
+            "throw 1;", "throw(1);", "if (true) throw(1);",
+            "while (false) throw(1);", "for (;;) throw(1);",
+            "if ((true)) throw(1);", "return (throw(1), 0);",
+            "try { throw(1); } catch (...) { throw; }",
+        ):
+            with self.subTest(statement=statement):
+                source = "int f() throw(int) { " + statement + " }"
+                self.assertIn("exception.try_catch", audit.detect_features(source))
+        self.assertIn("exception.try_catch", audit.detect_features(
+            "void f() throw(int);", "declare function @__cxa_throw() -> void"))
+
+    def test_dynamic_exception_metadata_does_not_hide_generated_eh(self) -> None:
+        source = "void f() throw(int);"
+        reference = "function @f() { block ^entry: eh_try ^cleanup }"
+        self.assertTrue(audit.hidden_eh_lowir_evidence(source, reference))
+
     def test_concrete_template_qualification_does_not_claim_dependency(self) -> None:
         concrete = (
             "template<class T> struct trait; struct Character {}; "
