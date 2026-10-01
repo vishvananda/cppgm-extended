@@ -1407,7 +1407,6 @@ bool Analyzer::InitializationActionsAreNonthrowing(
 		pending.pop_back();
 		++nonthrowing_action_visits_;
 		const DumpNode record = dump_.nodes[node];
-		if (record.pseudo_destructor_call) continue;
 		if (record.kind == DUMP_THROW_EXPRESSION) return false;
 		if (record.kind == DUMP_CONSTRUCTOR_ACTION)
 		{

@@ -2064,7 +2064,8 @@ bool Analyzer::AnalyzeExplicitDestructorCall(NodeId callee,
 			destroyed_type)
 		ThrowSemanticError("class has no matching destructor");
 	if (host_object_emission_ &&
-		program_->entities[entity].trivial_destructor)
+		program_->entities[entity].trivial_destructor &&
+		FunctionIsNonthrowing(destructor))
 	{
 		const FunctionInfo& function = GetFunction(destructor);
 		if (function.deleted_function || function.deleted_special_member)

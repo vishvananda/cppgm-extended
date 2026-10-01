@@ -148,6 +148,8 @@ ExpressionInfo Analyzer::AnalyzeArrayAggregateInit(TypeId type,
 	}
 	else
 	{
+		if (count == 0)
+			ThrowSemanticError("unknown-bound array requires an initializer element");
 		type = program_->types.Array(array.child, count);
 		dump_.nodes[list].type = type;
 	}

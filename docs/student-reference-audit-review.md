@@ -33,7 +33,7 @@ fix sequence is complete, as requested.
 | STATIC-DECL | Diagnose static-definition redeclarations/type/member mismatches; preserve explicit specialization declarations | Extended student storage controls during DEMAND | Open: entry compiler accepts four duplicate definitions, two type mismatches and a nonstatic out-of-class definition; rejects a valid declaration followed by its explicit specialization definition. These failures predate selective demand. |
 | STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Needs verification: entry/current return 1 on the unsigned-free A/B/D base-reference reducer while Clang/GCC return 0. Distinguish static relocation from pointer conversion/layout before assigning a fix. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
-| REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
+| REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | In progress: receiver effects and empty unknown-bound arrays fixed; original PA18 inputs unchanged and rejection references regenerated. Seven earliest-owner controls, strict 5902/5902, all required compiler checks and Alpha instruction/RSS gates pass. Result-type ambiguity and two user conversions remain open. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
@@ -1328,3 +1328,66 @@ objects are identical within their input. Both measured candidate hashes match
 the compiler being validated. Raw logs/manifests and earlier experiments remain
 in separate alpha-selected, alpha-final, alpha-reviewed, alpha-heavy,
 alpha-indexed and alpha-indexed-heavy directories. Student export is deferred.
+
+## Rejection corrections: receiver effects and unknown-bound arrays
+
+Two of the four REJECT mechanisms are corrected in this checkpoint. The original
+PA18 source inputs are preserved. Their expected exit statuses were regenerated
+through `ref-test`; the obsolete successful empty-array LowIR and success-only
+stdout sidecars were removed by the runner. Result-type ambiguity and the
+closure-to-function-pointer-to-Wrapper conversion remain open.
+
+The exception-effect walk previously skipped an entire pseudo-destructor node,
+including its receiver. It now visits those child actions. N3485 [expr.pseudo]/1
+states that evaluating the postfix-expression before the dot or arrow is the
+only effect of a scalar pseudo-destructor call; [expr.unary.noexcept]/3 makes a
+potentially evaluated call without a nonthrowing specification yield false.
+GCC agrees with the correction. Clang 21.1.8 accepts the original scalar assertion
+and rejects the new potentially throwing scalar positive assertions, including
+template, arrow, dot, indirect, address, comma and conditional receivers. This
+is a recorded host disagreement; Clang acceptance alone does not justify the
+old course expectation. Runtime receiver exceptions reach handlers on all three
+compilers. No ABI spelling or encoder is changed.
+
+A related host-object optimization erased explicit calls to trivial class
+destructors even when declared `noexcept(false)`. Elision now also requires a
+nonthrowing destructor specification. This preserves the exception facts on the
+ordinary typed call. Class receiver/destructor query controls agree with both
+hosts at O0/O2, and the LowIR route remains covered independently.
+
+Both ordinary aggregate initialization and the expanded-pack initializer reject
+an unknown-bound array completed from zero elements. N3485 [dcl.init.aggr]/4
+explicitly forbids this form. The old pack path invented one byte of storage
+instead; that exception is removed. Known-bound empty initialization, a nonempty
+pack, an empty pack followed by a fixed element, and legal zero-length `new[]`
+remain accepted. The allocation control checks that no element is constructed
+or destroyed; it makes no assumption about allocation-call counts, which the
+language permits compilers to elide.
+
+Seven new required controls are placed at their earliest owners: ordinary empty
+array rejection in PA10, zero-length class-array allocation in PA12, pack array
+completion/rejection in PA15, scalar and trivial-class noexcept queries in PA16,
+and throwing receivers under handlers in PA21. Placement has zero findings.
+Fifteen noexcept cases run at O0/O2 with both hosts; all candidate outcomes agree
+with GCC, and the scalar Clang disagreement is retained. Eleven array/runtime
+cases run at O0/O2 against entry, candidate and both hosts; all candidate compile
+and runtime outcomes agree with both hosts. All fourteen new fixture LowIR
+compile/reject controls pass; native runtime controls additionally cover the
+allocation fixture after the elision-safe correction.
+
+Performance evidence is in
+`/tmp/cppgm-v4-audit-review/rejection-queries/alpha/`, with immutable f57a391e1
+A/A and final candidate binaries, frozen recognition/virtual inputs, pinned
+Alpha user counters, four calibration blocks and eight ABBA blocks per input.
+All 144 object outputs agree within each input. Paired candidate/entry instruction
+ratios are recognition 0.999983, virtual 0.999999 and large virtual 1.000048;
+RSS ratios are 1.000613, 0.998912 and 1.000163. The existing 0.5% instruction
+and 3% RSS gates pass. Cycle observations are retained separately rather than
+used as evidence of a precise wall-time speedup. Semantic controls, original
+fixture host diagnostics, reference commands and validation logs are retained
+in `/tmp/cppgm-v4-audit-review/rejection-queries/`.
+
+Full strict report passes 5902/5902 and prints exactly one success line. Debug
+info, backend variants, self-host through PA5, every architecture audit, the
+compiler file audit and placement all pass. Final combined student export
+remains deferred until the unified tracker sequence is complete.
