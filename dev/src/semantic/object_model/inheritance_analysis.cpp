@@ -1085,7 +1085,9 @@ ExpressionInfo Analyzer::AnalyzeConditional(NodeId node, ScopeId scope)
 	const bool no_throw = dump_.nodes[no.node].kind == DUMP_THROW_EXPRESSION;
 	if (yes_throw && !no_throw)
 	{
-		if (IsClassObjectType(no.type) && no.category == VALUE_PRVALUE)
+		if (IsClassObjectType(no.type) && (no.category == VALUE_PRVALUE ||
+			(dump_.nodes[no.node].kind == DUMP_TEMPORARY_OBJECT &&
+			 !dump_.nodes[no.node].reference_call_materialization)))
 			return BuildClassConditional(
 				condition.node, yes, no, no.type);
 		type = no.type;
@@ -1093,7 +1095,9 @@ ExpressionInfo Analyzer::AnalyzeConditional(NodeId node, ScopeId scope)
 	}
 	else if (no_throw && !yes_throw)
 	{
-		if (IsClassObjectType(yes.type) && yes.category == VALUE_PRVALUE)
+		if (IsClassObjectType(yes.type) && (yes.category == VALUE_PRVALUE ||
+			(dump_.nodes[yes.node].kind == DUMP_TEMPORARY_OBJECT &&
+			 !dump_.nodes[yes.node].reference_call_materialization)))
 			return BuildClassConditional(
 				condition.node, yes, no, yes.type);
 		type = yes.type;

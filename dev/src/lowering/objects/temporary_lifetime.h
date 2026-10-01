@@ -1283,10 +1283,10 @@ protected:
 		const bool first_completes = !derived.CurrentBlock().terminated;
 		const std::uint32_t first_prefix = first_completes ?
 			derived.ConstructionCleanupRoot() : construction_prefix;
+		if (derived.full_expression_cleanup_active_)
+			PauseFullExpressionCleanupSegment();
 		if (!derived.CurrentBlock().terminated)
 		{
-			if (derived.full_expression_cleanup_active_)
-				PauseFullExpressionCleanupSegment();
 			derived.EmitJump(end_block);
 		}
 		derived.SelectBlock(else_block);
@@ -1296,10 +1296,10 @@ protected:
 		LowerClassConditionalArm(children[2], destination, member);
 		const std::uint32_t second_prefix = !derived.CurrentBlock().terminated ?
 			derived.ConstructionCleanupRoot() : construction_prefix;
+		if (derived.full_expression_cleanup_active_)
+			PauseFullExpressionCleanupSegment();
 		if (!derived.CurrentBlock().terminated)
 		{
-			if (derived.full_expression_cleanup_active_)
-				PauseFullExpressionCleanupSegment();
 			derived.EmitJump(end_block);
 		}
 		derived.SelectBlock(end_block);

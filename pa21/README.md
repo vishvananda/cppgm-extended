@@ -201,6 +201,9 @@ To complete PA21, implement these goals:
    untaken throw branch must not appear in a sibling call's cleanup path.
    If a conditional initializer arm throws before the destination object is
    constructed, do not schedule destruction of that destination on the unwind path.
+   A class-valued conditional may have a `throw` operand on either side. Its
+   value arm retains ordinary construction and cleanup; its throwing arm
+   unwinds objects that were already live before the branch.
    When a potentially throwing call is reached through a branch in an active
    handler, its unwind path must finish the handler and destroy objects that
    remain live from scopes outside the corresponding `try` statement.

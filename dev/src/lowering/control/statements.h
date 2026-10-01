@@ -784,6 +784,8 @@ protected:
 		const NodeChildren& children)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		if (derived.full_expression_cleanup_active_)
+			derived.EnsureFullExpressionCleanupSegment();
 		CallArguments arguments;
 		if (record.operand_type == kNoType)
 		{

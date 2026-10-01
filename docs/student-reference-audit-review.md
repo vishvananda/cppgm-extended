@@ -50,7 +50,8 @@ fix sequence is complete, as requested.
 | EH-AGG-TEMP-DTOR | Destroy a completed aggregate when an initializer temporary's normal destructor throws | Additional EH-AGG-PREFIX boundary control | Needs contract review: GCC and the candidate destroy both aggregate members; Clang 21.1.8 leaks them at O0/O2. Retain this host disagreement separately from ordinary construction failure; no required oracle added. |
 | EH-SPECIAL-PREFIX | Destroy completed members when a later member in a synthesized copy/move constructor throws | Extended conditional controls and direct memberwise construction reducers | Open: extending the conditional controls through every observed copy step exposes a leaked destination member. Direct implicit-copy/move controls separate that failure from aggregate initialization; retain baseline and host evidence below. |
 | EH-CTOR-HANDLER | Retain constructor member cleanup when an inner source handler rethrows or misses | Additional aggregate-in-constructor control | Open: frozen entry and candidate leak a previously constructed member when the constructor's inner handler rethrows; Clang/GCC destroy it at O0/O2. Source-handler resume bypasses the constructor-body suffix. |
-| EH-COND-THROW | Normalize a class conditional with a raw throw operand before destination lowering | Additional conditional aggregate boundary control | Open: frozen entry and candidate reject the valid class/throw conditional with invalid class conditional result; Clang/GCC compile and run it at O0/O2. The semantic result retains a raw temporary/throw pair instead of destination-ready arms; keep normalization in the semantic owner. |
+| EH-COND-THROW | Normalize a class conditional with a raw throw operand before destination lowering | Additional conditional aggregate boundary control | Done: materialized class prvalues use destination-ready arms; nonreturning arms retire their cleanup segments and staged throw sites restore enclosing cleanup after a split. Original reducer and thirteen agreed boundary programs pass at O0/O2; six PA21 fixtures, strict 5999/5999 and all required compiler audits/checks pass. Alpha instruction/RSS gates and an interleaved two-image cycle check pass. Extended synthesized-copy and reference-initializer failures remain separate rows. |
+| EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Open, independently reproduced: nine direct lvalue/xvalue/reference-call/const-reference/aggregate-reference controls leak prior local objects here at O0/O2; Clang/GCC pass. StageAutomaticInitializerException excludes reference declarations, so no enclosing cleanup is attached. Preserve lifetime-extended backing storage when repairing this staging boundary. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Open: the entry and cleanup candidates emit an empty instantiated body and return zero; Clang/GCC run the specified body and handler at O0/O2. Pattern registration uses a direct compound-statement lookup and does not retain handler syntax. |
@@ -2503,3 +2504,67 @@ The live rename-manifest audit passes with zero stderr bytes; strict 5993/5993
 prints only its final total. Evidence is in
 /tmp/cppgm-v4-audit-review/rename-history-quiet/. No compiler binary or student
 oracle changes occur in this checkpoint. Final combined export remains pending.
+
+### Conditional throw normalization checkpoint
+
+EH-COND-THROW is complete. Evidence is retained in
+/tmp/cppgm-v4-audit-review/conditional-throw-normalization/. The immutable entry
+compiler is 0645718d1c63cd31a7af17bd23ea3acc8a85204af1c081d8f6ba2ab3764367f6;
+compiler-third and compiler-fourth are byte-identical at
+4a38b8559df13cb9b6c5829972bc612e3c8404a8dde3e8e137408812bf202fb0.
+
+The semantic owner recognizes materialized class prvalues despite their
+internal xvalue storage category. Actual reference casts/calls retain their
+categories. The existing destination-ready conditional arms are reused.
+Lowering pauses cleanup bookkeeping for a nonreturning class arm, so a sibling
+completion cannot inherit its open segment and emit a spurious eh_end at the
+join. Throw lowering restores staged cleanup before invoking the exception
+runtime after a conditional split; scalar and void controls demonstrate the
+previous leak of a live enclosing object.
+
+fourth-controls.json retains 200 observations for 25 programs at O0/O2 using
+the entry, candidate, Clang and GCC. Thirteen programs pass all candidate/host
+runs. Each branch is exercised through every observed throwing step, plus a
+nonthrowing run and a threshold beyond the last step; selected branch,
+exception value, payload and live-object counts are checked. Six new PA21
+fixtures implement the affected constructor, aggregate-with-nothrow-copy,
+scalar and void cases, and are independently compiled and run with all three
+compilers at O0/O2 (36 passing runs). The initial fixture runner used an
+unsupported -x driver option; its failed trial is retained separately, and the
+valid runner freezes byte-identical .cpp inputs with hashes. References were
+generated through ref-test; no existing tracked oracle changes.
+
+The wider controls retain three synthesized-copy failures as
+EH-SPECIAL-PREFIX. Nine reference-initializer failures are now EH-REF-INIT:
+seven actual lvalue/xvalue/reference-call/const-reference controls and two
+lifetime-extended aggregate-reference controls leak prior local objects in
+both entry and candidate. Both hosts pass. StageAutomaticInitializerException
+currently excludes reference declarations; the repair must preserve the
+extended backing object's scope lifetime rather than turn it into an ordinary
+full-expression temporary.
+
+fourth-regression-verification.json checks the previous 210 observations. The
+only status changes are the original conditional-aggregate-throw-arm control:
+it now compiles, links and passes its fixed-bound runtime at O0/O2. Its extended
+all-copy-step failure remains EH-SPECIAL-PREFIX. All other statuses and output
+are unchanged, including the independent constructor-inner-handler failure,
+second-fault termination and failed-new failure.
+
+validation-fourth/ and validation-checkpoint.json record strict 5999/5999
+(one final output line), debug-info, variants, self-host through PA5, all nine
+architecture audits, the full file audit and zero placement findings. All pass.
+Thirteen Alpha instruction/RSS gates pass in perf-third/ across 624 retained
+observations, with exact object equality and matching compiler hashes.
+The initial run and a focused 288-observation repeat showed positive cycle
+ratios on EH handlers and conditional references. Those trials are retained.
+perf-third-interleaved/ then records 576 observations: twelve paired blocks
+for each of three workloads, alternating A/A, B/B and two independent-image
+A/B comparisons with a frozen randomized order. Every object is equal and
+instruction/RSS gates pass. Combined A/B cycle estimates are -0.200% for EH
+handlers, +0.207% for conditional references and +0.226% for recog. All three
+paired bootstrap 95% confidence intervals include zero change. The earlier
+increase does not reproduce across both images and the interleaved windows;
+retain the observed image/calibration variation rather than attributing a
+precise cycle change to this source fix. The exploratory subtraction of A/A
+and B/B ratios is not the primary estimate: those are different image pairs,
+not an unbiased common timing offset. Final combined export remains deferred.
