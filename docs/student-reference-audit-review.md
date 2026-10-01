@@ -27,7 +27,7 @@ fix sequence is complete, as requested.
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
 | RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done: 4858ddbc0; typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
 | CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Done in 425bc2a90: remove the competing two-conversion constructor path; PA18 runtime control and Clang/GCC agree at O0/O2. Full validation recorded below. |
-| CONV-SELECTION | Rank converting constructors against conversion functions during class copy initialization | Additional conversion-sequence controls | Open: entry 88f5d368b and candidate accept A a=x with A(X&) and X::operator A(); Clang/GCC reject as ambiguous at O0/O2. Separate from the two-user-conversion restriction. |
+| CONV-SELECTION | Rank converting constructors against conversion functions during class copy initialization | Additional conversion-sequence controls | In progress: immutable 3bcfffacc reproduces 20 failures among 37 Clang/GCC-agreed boundary inputs (16 missed rejections and four wrong selected functions), spanning initializations, arguments, returns, cv/ref/template ranking and required final-copy legality. One derived-result conversion disagrees between hosts and remains a contract-review control. Separate from the two-user-conversion restriction. |
 | LAMBDA-CONV-SPEC | Captureless lambda pointer conversion has a nonthrowing exception specification | Additional hosted-trait controls / CWG 1722 | Done in 425bc2a90: preserve the call operator specification independently; PA20 noexcept and hosted trait controls agree with Clang/GCC. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Done: ad5d5dbb8; known type/category facts validate unused operators/calls/bounds without evaluating dependent values. Eight PA14 fixtures, 22 copied rejection controls, strict 5887/5887 and full checks pass. Alpha instruction/RSS gates pass with equal outputs; fixed-call GCC disagreement documented below. PARAM-ADJUST completes the valid bound failure. |
 | PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done: 27eef472d; parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
@@ -1717,3 +1717,35 @@ not establish another supplied-reference bug. Exact audit/plan copies, source
 HEAD/status and their hashes remain in
 /tmp/cppgm-v4-audit-review/student-refresh-pa29-176/. Final student-export
 validation remains deferred until the complete tracker fix sequence is finished.
+
+## Class copy-conversion selection verification
+
+Immutable 3bcfffacc supplies 38 boundary inputs and 228 O0/O2 commands.
+Clang and GCC agree on 37 inputs. Twenty fail here: sixteen required
+rejections are accepted, while four valid inputs call the constructor instead
+of the conversion function selected by both hosts. Direct, direct-list and
+copy-list construction still select their expected constructor; same-class
+and derived-class copying, explicit controls and the two-user-conversion
+rejection supply positive and negative boundaries. The derived-result
+conversion-versus-constructor case rejects in Clang and selects the constructor
+in GCC; no required reference has been added for that disputed case.
+
+The competing source conversion is treated as a user conversion to a copy
+constructor's parameter in SelectConstructor, so the ordinary converting
+constructor incorrectly wins as a standard argument conversion. CallConversion
+also picks a converting constructor over a separately selected conversion
+function. An ambiguous constructor or conversion-function group can disappear
+when its helper returns an invalid fact, allowing a losing group to win.
+These initial candidates need to compete using the source argument conversion
+to each constructor parameter or conversion function's implicit object
+parameter, as specified by N3485 8.5 and 13.3.1.4. The later direct construction
+from the selected conversion result also requires a valid copy/move action: a
+deleted copy/move constructor must reject even when copying could be elided in
+C++11. Existing direct construction and list-initialization paths must retain
+their own candidate rules.
+
+No compiler change or reference rewrite has been made for this item yet.
+Evidence and the initial classification live in
+/tmp/cppgm-v4-audit-review/class-copy-selection/. Ordinary conversion functions
+and class value semantics belong to PA12; template candidates additionally
+require PA18. The tracker remains active for this item and all later open work.
