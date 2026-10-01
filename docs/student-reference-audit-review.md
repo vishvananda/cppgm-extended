@@ -92,7 +92,7 @@ required fixtures or expanding the compiler scope.
 | HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass. Student later corrected the three original success sidecars in handoff189; our sources retain complete typed definitions and the positive test goals. |
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Open, independently reproduced: the unchanged PA6 two-int-typedef input and transitive/class/namespace-alias personal composite reject here at O0/O2 and in both semantic dump modes; Clang/GCC accept. Distinct types, variables and namespace targets still reject in all three compilers. N3485 7.1.3 and 7.3.4 support the namespace correction. The PA30 positive includes a global typedef which masks the missing convergence rule. |
-| LOOKUP-BASE-ALIAS | Review same-type typedef lookup through unrelated class bases | v4codex implementation197 retained negative | Needs contract review: Clang accepts, GCC and ours reject the original PA30 input and personal reducer. N3485 10.2/3 replaces type declarations by their designated types before merging lookup sets; compare that rule with the supplied rejection before deciding a correction. No reference change authorized by host agreement alone. |
+| LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
 | TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
@@ -2959,5 +2959,31 @@ Clang defers them. Excess-precision and optional-copy observations remain review
 evidence. Audit178 narrowed a personal no-builtin-call inspection to permit
 declarations; audit182 corrected a personal source/prepared-LowIR comparison to
 validate each phase and compare final objects. Neither weakened supplied tests.
-No evidence establishes another supplied-reference correction beyond the seven
-sidecars listed above.
+At this pinned snapshot no evidence establishes another supplied-reference
+correction beyond the seven sidecars listed above.
+
+### Active audit198 follow-up
+
+A final read found student HEAD `c0b26910289ea30848547c968f3ece8625c3c7f4`,
+with active, uncommitted audit198 changes in semantic lookup, LowIR symbol
+presentation and the PA30 same-type base-alias status/stdout sidecars. The input
+and empty `.ref` remain unchanged. The new proof, source hashes, status and diff
+are frozen read-only under `/tmp/cppgm-v4-audit-review/student-refresh-pa30-198/`.
+The working-state snapshot does not claim the student has completed validation
+or committed those active changes.
+
+The base-type proof follows the N3485 wording independently read above:
+normalization makes both declaration sets `{int}`, so the equal-set merge
+is valid. Audit198 expressly supersedes its earlier claim that independently
+declared member typedefs must remain ambiguous. LOOKUP-BASE-ALIAS is now an
+open C++11 fix, with surrounding identity/access boundaries retained.
+Forty-two O0/O2 observations on seven new controls retain compiler/host outcomes.
+The expanded base-alias positive fails here and passes Clang; GCC's disagreement
+is recorded rather than substituted for the rule proof.
+
+The new namespace/member `main` control passes our direct object route and the
+explicit LowIR/native adapter, as well as both hosts. The student's reserved
+presentation-label fix is therefore not presumed necessary here. These active
+discoveries exercise C++11 lookup and functions; no newer-language feature is
+admitted by this follow-up. The additional two active sidecars bring the observed
+reference delta to nine, with all supplied source inputs and harnesses preserved.
