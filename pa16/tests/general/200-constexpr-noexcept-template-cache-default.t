@@ -6,8 +6,11 @@ struct integral_constant {
 template<class T, T Value>
 const T integral_constant<T, Value>::value;
 
+template<class T> T&& declval() noexcept;
+
 template<class F, class Arg>
-struct __is_nothrow_invocable : integral_constant<bool, false> {};
+struct __is_nothrow_invocable
+  : integral_constant<bool, noexcept(declval<F>()(declval<Arg>()))> {};
 
 template<class T>
 struct __not_ : integral_constant<bool, !T::value> {};

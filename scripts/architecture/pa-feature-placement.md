@@ -86,7 +86,7 @@ refer to `../../doc/n3485.txt`.
 | `template.class` | `pa14` | 100 | 14.5.1 `[temp.class]` | pending | class template declarations, instantiation, member definitions, static members. |
 | `template.function` | `pa14` | 100 | 14.5.6 `[temp.fct]`, 14.8 `[temp.fct.spec]` | pending | function template declarations, calls, and basic overload participation; local static tests inherit the local-static owner. |
 | `template.default_argument` | `pa14` | 200 | 14.1 `[temp.param]` | pending | supported type-parameter defaults and preservation of default-argument scope; template-template defaults inherit the template-template owner, and non-type defaults inherit the NTTP owner. |
-| `template.dependent_name` | `pa14` | 300 | 14.6.2 `[temp.dep]`, 14.6.4 `[temp.dep.res]` | pending | dependent qualified names, dependent member lookup, delayed body checks. |
+| `template.dependent_name` | `pa14` | 300 | 14.6.2 `[temp.dep]`, 14.6.4 `[temp.dep.res]` | pending | dependent qualified names, dependent member lookup, delayed body checks. Template-id qualification requires an in-scope template parameter; a concrete qualifier alone is not dependency evidence. |
 | `template.friend` | `pa17` | 300 | 14.5.4 `[temp.friend]`, 14.6.5 `[temp.inject]` | pending | friend templates, hidden friend templates, namespace-scope friend definitions. Rebalanced from PA14 because this is template declaration-graph and ownership behavior, not first-template instantiation. |
 | `template.current_instantiation` | `pa14` | 300 | 14.6.2.1 `[temp.dep.type]` | pending | current instantiation lookup and owner identity in template bodies. |
 | `template.disambiguator` | `pa14` | 300 | 14.2 `[temp.names]`, 14.6.2.1 `[temp.dep.type]` | pending | dependent `typename` and `template` disambiguators. |

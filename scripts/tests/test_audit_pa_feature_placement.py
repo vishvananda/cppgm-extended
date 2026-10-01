@@ -30,6 +30,30 @@ def write(path: Path, text: str) -> None:
 
 
 class AuditPAFeaturePlacementTests(unittest.TestCase):
+    def test_concrete_template_qualification_does_not_claim_dependency(self) -> None:
+        concrete = (
+            "template<class T> struct trait; struct Character {}; "
+            "typedef trait<Character>::int_type Integer;"
+        )
+        self.assertNotIn("template.dependent_name", audit.detect_features(concrete))
+        shadowed = (
+            "template<class Character> struct Holder; struct Character {}; "
+            "typedef Holder<Character>::value_type Value;"
+        )
+        self.assertNotIn("template.dependent_name", audit.detect_features(shadowed))
+        unnamed = "template<int> struct Probe { typedef trait<int>::type Value; };"
+        self.assertNotIn("template.dependent_name", audit.detect_features(unnamed))
+        for source in (
+            concrete + " template<class Char> struct Probe { "
+            "int padding; typedef typename trait<Char>::int_type Integer; };",
+            concrete + " template<class Char> int probe() { "
+            "int padding = 0; return trait<Char>::value; }",
+            "template<int Count> struct Probe { int padding; "
+            "static const int value = trait<Count>::value; };",
+        ):
+            with self.subTest(source=source):
+                self.assertIn("template.dependent_name", audit.detect_features(source))
+
     def test_scalar_array_copy_does_not_claim_class_transfer_features(self) -> None:
         reference = """global @values [binding=internal, readonly=yes] = {
   i32 1

@@ -1,7 +1,13 @@
 namespace std {
-template<class T> struct is_nothrow_default_constructible;
-template<class T> struct is_nothrow_copy_constructible;
-template<class T> struct is_nothrow_move_constructible;
+template<class T> struct is_nothrow_default_constructible {
+  static const bool value = __is_nothrow_constructible(T);
+};
+template<class T> struct is_nothrow_copy_constructible {
+  static const bool value = __is_nothrow_constructible(T, const T&);
+};
+template<class T> struct is_nothrow_move_constructible {
+  static const bool value = __is_nothrow_constructible(T, T&&);
+};
 }
 
 struct selector

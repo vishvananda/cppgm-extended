@@ -935,6 +935,43 @@ def template_header_before(headers: Iterable[TemplateHeader], pos: int, code: st
     return candidate
 
 
+def match_dependent_name_patterns(patterns: tuple[re.Pattern[str], ...],
+                                  code: str) -> list[str]:
+    scopes: list[tuple[int, int, set[str]]] = []
+    for header in find_template_headers(code):
+        names: set[str] = set()
+        for parameter in header.params:
+            declaration = before_top_level_equal(parameter)
+            name = re.search(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*$", declaration)
+            if name and name.group(1) not in {
+                "class", "typename", "bool", "char", "wchar_t", "char16_t",
+                "char32_t", "short", "int", "long", "signed", "unsigned",
+                "float", "double", "void", "auto",
+            }:
+                names.add(name.group(1))
+        semi = code.find(";", header.end)
+        brace = code.find("{", header.end)
+        if brace != -1 and (semi == -1 or brace < semi):
+            end = matching_delimiter(code, brace, "{", "}")
+        else:
+            end = semi if semi != -1 else len(code)
+        scopes.append((header.start, end if end is not None else len(code), names))
+    matched: list[str] = []
+    for pattern in patterns:
+        for match in pattern.finditer(code):
+            spelling = match.group(0)
+            identifiers = set(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", spelling))
+            if not spelling.startswith("typename") and not any(
+                start <= match.start() < end and identifiers & names
+                for start, end, names in scopes
+            ):
+                continue
+            evidence = "source:" + " ".join(spelling.split())
+            if evidence not in matched:
+                matched.append(evidence)
+    return matched
+
+
 def find_class_spans(code: str, headers: Iterable[TemplateHeader]) -> list[ClassSpan]:
     spans: list[ClassSpan] = []
     for match in re.finditer(r"(?<!enum\s)\b(?:class|struct)\s+[A-Za-z_][A-Za-z0-9_]*", code):
@@ -1114,7 +1151,10 @@ def detect_features(source: str, ref_text: str = "", test_path: str = "") -> dic
                 declared_intrinsics,
             )
         else:
-            matched = match_rule_patterns(rule.patterns, haystack, rule.all_patterns, "source")
+            if rule.feature_id == "template.dependent_name":
+                matched = match_dependent_name_patterns(rule.patterns, haystack)
+            else:
+                matched = match_rule_patterns(rule.patterns, haystack, rule.all_patterns, "source")
             matched.extend(match_rule_patterns(rule.ref_patterns, ref_text, rule.all_patterns, "ref"))
             matched.extend(match_rule_patterns(rule.path_patterns, test_path, rule.all_patterns, "path"))
         if rule.feature_id == "class.member_pointer" and overloaded_arrow_star_without_member_pointer(code):

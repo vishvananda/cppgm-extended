@@ -50,8 +50,8 @@ fix sequence is complete, as requested.
 | BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
-| HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in the PA29 declaration-property checkpoint: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
-| HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Open, independently verified: unchanged fixture accesses value on forward-declared std templates; Clang/GCC reject undefined/incomplete instantiations, ours accepts. Supply complete typed trait definitions and remove name-based synthesis (spec.md section 10); two more required fixtures also fail both hosts: undefined char_traits and a false primary __is_nothrow_invocable overridden by the compiler. Student has not edited its oracle. |
+| HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
+| HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass; student has not edited its oracle. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence is complete; initial and INIT-ADDR exports already passed. |
 
 ## Static address initialization checkpoint
@@ -194,6 +194,55 @@ Paired A/A wall ratio is 1.000; A/B user-CPU ratio is 0.996063, wall ratio
 0.996552 and peak-RSS ratio 0.998712. No compile-time or memory regression is
 observed on this input; shared-host measurements do not establish a speedup or
 an exact zero-cost claim. All initial and follow-up observations are preserved.
+
+## Hosted trait definitions checkpoint
+
+Reviewing HOST-SHORTHAND exposes three template-name shortcuts forbidden by
+spec.md section 10. The original forward-only nothrow and char_traits fixtures
+compile here but Clang/GCC reject their undefined primary instantiations. The
+original vendor __is_nothrow_invocable fixture provides a false primary body,
+but the compiler overrides it with a calculated value; both hosts reject its
+resulting assertion. Entry proof, source copies and host diagnostics are in
+/tmp/cppgm-v4-audit-review/trait-deleted-probes/named-template-observations.json
+and /tmp/cppgm-v4-audit-review/hosted-template-definitions/entry-controls.json.
+These additional cases are independently confirmed here, rather than new
+student reference edits or an explicit personal-reference disagreement.
+
+The three reducers now provide complete definitions: nothrow construction
+traits use __is_nothrow_constructible, the custom character primary supplies its
+alias and conversion bodies, and the vendor invocation trait computes noexcept
+from a declared declval call expression. Clang/GCC compile all three at -O0/-O2.
+The compiler no longer classifies or fabricates a template specialization by
+these names. Template declarations, bodies and explicit specializations take
+the ordinary typed instantiation path; unused forward declarations stay valid,
+but missing members/definitions are rejected when demanded. The construction-builtin reducer and supplied primary/specialization control
+stay in PA29. The complete character-conversion reducer moves to PA14 cluster
+300, and the ordinary template/noexcept cache reducer to PA16 cluster 200.
+Incomplete character/type-member and static trait-value controls live at PA14
+100 and PA15 100 respectively. These checks need neither host headers nor a
+duplicate PA31 fixture; their earlier native/LowIR harnesses make the generic
+goals observable. No mangling was changed.
+Strict report passes 5854/5854 with one success line; debug-info, variants,
+self-host PA5, architecture and file audits pass. Placement first identifies a
+real cluster correction for the dependent character reducer plus a false
+dependent-name claim on the concrete incomplete-character control. The former
+now lives at PA14 cluster 300. The placement detector requires an in-scope
+template parameter in a template-id qualifier, while preserving explicit
+typename evidence and later dependent matches after concrete qualifications.
+Focused negative/positive/scope controls are added. All 49 detector tests pass;
+placement reports zero findings for 2984 default fixtures and 404 PA29 fixtures.
+The harness passes after staging the moved fixture paths: its first run used
+the old Git-index inventory and failed on removed sidecars. The final strict
+report remains one line, 5854/5854. Check logs and both initial/corrected audit
+results remain in hosted-template-definitions-final-validation.json.
+
+Immutable A/A calibration (four blocks) and A/B ABBA (six blocks), on the frozen
+recog input at -O1, give candidate/baseline medians of 1.0 CPU,
+0.993103 wall time and 1.003746 RSS; A/A CPU is 1.003521. All 40 objects have the
+same SHA-256, 08c380bf4060d88ae18fc59b0cfa858fd6c7c02a4c2d0ca1413b59559f55f906.
+Every observation is retained under
+/tmp/cppgm-v4-audit-review/perf-hosted-template-definitions. No persistent
+regression or speedup is established on this shared host.
 
 ## PA29 declaration-property trait checkpoint
 
@@ -905,6 +954,24 @@ states that an explicitly deleted first declaration is not user-provided, and
 has no class-template definitions from which value can be obtained; host
 errors identify undefined/incomplete instantiations. Compiler/reference fixes
 for these newly verified issues remain open.
+
+## Later read-only PA29 handoff157 refresh
+
+The student checkout advances to 76430506 after validated attribute/layout work.
+Since 5716fcfd, its only tracked plan/audit/required-test/reference change is
+PA29 plan.md; no required source or oracle changed. Handoff157 reports PA1–28
+4538/4538, PA29 316/403 and 53/53 new explicit controls, alongside inherited
+77/77 and 40/40 controls plus 10/10 inspections. Its performance evidence
+retains A/A and ABBA observations and makes no speedup claim. Unfinished atomic,
+syntax/type, lifetime, demand/ABI and caller-context work remains implementation
+work, not established supplied-oracle defects.
+
+The same two oracle/source questions remain explicit, with no claimed reference
+correction or proof bundle: deleted-copy triviality and forward-only nothrow
+traits. They are covered by HOST-TRIVIAL and HOST-SHORTHAND here. Searching this
+handoff, performance157.md and evidence157/controls157 notes establishes no new
+personal test explicitly described as disagreeing with the supplied reference.
+Ongoing student implementation is left untouched.
 
 ## Clang verification before ABI edits
 

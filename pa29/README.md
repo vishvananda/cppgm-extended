@@ -58,6 +58,10 @@ library include paths, and standard-library selection flags. When you use a
 non-default standard library, pass the same choice through `CPPGM_STDLIB_FLAGS`
 so the course compiler and host compiler agree.
 
+Library traits use their declared template definitions and specializations.
+A familiar standard-library name does not define an incomplete primary or
+replace its member declarations and values.
+
 Those answers are discovered **once, when `cppgm++` is built**, and baked into
 it. The compiler does not probe the host toolchain at run time to find its
 include paths: a compiler that decided where the standard library lives each

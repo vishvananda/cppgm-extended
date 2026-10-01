@@ -822,12 +822,6 @@ private:
 		BindingId specialization,
 		const std::vector<TemplateArgument>& arguments);
 	void MarkClassTemplatePresentation(EntityId entity);
-	HostedTraitTemplateKind ClassifyHostedTraitTemplate(
-		ScopeId owner, NameId name,
-		const std::vector<TemplateParameter>& parameters) const;
-	bool CompleteHostedTraitTemplateSpecialization(std::size_t pattern,
-		BindingId specialization,
-		const std::vector<TemplateArgument>& arguments);
 	void EnsureClassDefinition(TypeId type);
 	bool ClassTemplateSpecializationArgumentsComplete(EntityId entity) const;
 	bool IsClassTemplateSpecializationEntity(EntityId entity) const;
@@ -1012,8 +1006,6 @@ private:
 		hosted_builtin::TypeTraitKind trait, TypeId type,
 		const TypeRecord& shape, const EntityRecord* named) const;
 	bool EvaluateBuiltinNothrowCopy(TypeId type);
-	bool EvaluateBuiltinInvocability(const std::vector<TypeId>& operands,
-		ScopeId scope, bool* nonthrowing);
 	ExpressionInfo AnalyzeStatementExpression(
 		NodeId node, ScopeId scope, TypeId target);
 	NodeId FunctionDefinitionPart(NodeId node, const char* tag) const;

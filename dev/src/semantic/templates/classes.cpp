@@ -1237,7 +1237,6 @@ void Analyzer::AnalyzeClassTemplate(NodeId declaration, ScopeId scope,
 	pattern.declaration = declaration;
 	pattern.parameters = parameters;
 	pattern.defined = definition;
-	pattern.hosted_trait_template = ClassifyHostedTraitTemplate(owner, name, parameters);
 	pattern.initializer_list_template = IsStandardInitializerListTemplate(name, owner, parameters);
 	pattern.marker_entity = program_->NewEntity(name,
 		NAMED_TEMPLATE_PARAMETER, false, kNoType, owner, name,
@@ -1589,7 +1588,6 @@ void Analyzer::CompleteClassTemplateSpecialization(std::size_t index,
 		(HasTrailingTemplateParameterPack(pattern.parameters) &&
 		 arguments.size() < FixedTemplateParameterCount(pattern.parameters)))
 		ThrowInternalCompilerError("class template completion argument mismatch");
-	if (CompleteHostedTraitTemplateSpecialization(index, binding, arguments)) return;
 	FunctionTemplateDeduction refreshed(pattern.parameters);
 	const std::size_t selected_partial = SelectClassTemplatePartial(
 		pattern, arguments, &refreshed);

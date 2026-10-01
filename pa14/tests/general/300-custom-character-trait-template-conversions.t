@@ -1,11 +1,16 @@
 // VALIDATION: compile-pass
-// Hosted compatibility: Boost.Xpressive uses std::char_traits<T> for a
-// user character type even when the hosted libc++ primary is undefined.
+// Hosted character-trait reducer with a complete primary definition.
+// User character conversions are instantiated through ordinary template facts.
 
 namespace std
 {
   template<class T>
-  struct char_traits;
+  struct char_traits
+  {
+    typedef unsigned int int_type;
+    static T to_char_type(int_type value) { return T(value); }
+    static int_type to_int_type(T value) { return static_cast<int_type>(value); }
+  };
 }
 
 struct UChar
