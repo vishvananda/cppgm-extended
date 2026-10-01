@@ -1024,8 +1024,6 @@ private:
 	ExpressionInfo BuildLambdaInvocationPointer(BindingId conversion_function,
 		TypeId target);
 	bool IsCapturelessLambdaType(TypeId type) const;
-	std::vector<ExpressionInfo> LambdaConstructorDeductionArguments(
-		const std::vector<ExpressionInfo>& arguments);
 	ExpressionInfo AnalyzeNamedValue(const std::string& spelling,
 		ScopeId scope, TypeId target = kNoType, NodeId syntax = kNoNode);
 	BindingId SelectOverload(ScopeId scope,

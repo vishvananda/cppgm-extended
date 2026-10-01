@@ -39,11 +39,9 @@ comment	dev/src/semantic/extensions/range_for.cpp	PA20	assignment boundary or co
 comment	dev/src/semantic/initialization/allocation.cpp	PA18	assignment boundary or compatibility note
 comment	dev/src/semantic/lifetime/special_members.cpp	PA12	assignment boundary or compatibility note
 comment	dev/src/semantic/model/graph.h	PA7	assignment boundary or compatibility note
-comment	dev/src/semantic/model/graph.h	PA20	assignment boundary or compatibility note
 comment	dev/src/semantic/presentation/type_projection.cpp	PA6	assignment boundary or compatibility note
 comment	dev/src/semantic/semantic.h	PA5	assignment boundary or compatibility note
 comment	dev/src/semantic/semantic.h	PA7	assignment boundary or compatibility note
-comment	dev/src/semantic/templates/aliases_and_lambdas.cpp	PA20	assignment boundary or compatibility note
 comment	dev/src/semantic/templates/ambiguities.cpp	PA5	assignment boundary or compatibility note
 comment	dev/src/semantic/templates/validation.cpp	PA5	assignment boundary or compatibility note
 comment	dev/src/semantic/type_view.h	PA5	assignment boundary or compatibility note

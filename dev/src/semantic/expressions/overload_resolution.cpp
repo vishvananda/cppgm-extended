@@ -538,13 +538,9 @@ CallConversionFact Analyzer::ConvertingConstructor(
 
 	std::vector<BindingId> candidates = ConstructorCandidates(object.entity);
 	const std::vector<ExpressionInfo> arguments(1, source);
-	const std::vector<ExpressionInfo> deduction_arguments =
-		LambdaConstructorDeductionArguments(arguments);
-	AppendConstructorTemplateCandidates(
-		target, deduction_arguments, &candidates);
+	AppendConstructorTemplateCandidates(target, arguments, &candidates);
 	BindingId selected = kNoBinding;
 	ConversionRank best = CONVERSION_INVALID;
-	CallConversionFact best_argument_conversion;
 	bool ambiguous = false;
 	for (std::size_t i = 0; i < candidates.size(); ++i)
 	{
@@ -554,7 +550,6 @@ CallConversionFact Analyzer::ConvertingConstructor(
 		if (!constructor.constructor || constructor.explicit_constructor)
 			continue;
 		ConversionRank rank = CONVERSION_INVALID;
-		CallConversionFact argument_conversion;
 		if (function.parameter_count == 0)
 		{
 			if (!function.variadic) continue;
@@ -570,22 +565,12 @@ CallConversionFact Analyzer::ConvertingConstructor(
 			const TypeId parameter =
 				program_->types.Parameters(constructor.type)[0];
 			rank = Conversion(source, parameter);
-			if (rank == CONVERSION_INVALID && IsCapturelessLambdaType(source.type))
-			{
-				argument_conversion =
-					ConvertingFunction(source, parameter, false);
-				if (argument_conversion.conversion_function != kNoBinding &&
-					GetFunction(argument_conversion.conversion_function).
-						lambda_invocation_function != kNoBinding)
-					rank = argument_conversion.rank;
-			}
 			if (rank == CONVERSION_INVALID) continue;
 		}
 		if (selected == kNoBinding || rank < best)
 		{
 			selected = candidates[i];
 			best = rank;
-			best_argument_conversion = argument_conversion;
 			ambiguous = false;
 		}
 		else if (rank == best)
@@ -601,7 +586,6 @@ CallConversionFact Analyzer::ConvertingConstructor(
 				if (reference_preference > 0)
 				{
 					selected = candidates[i];
-					best_argument_conversion = argument_conversion;
 					ambiguous = false;
 					continue;
 				}
@@ -613,7 +597,6 @@ CallConversionFact Analyzer::ConvertingConstructor(
 				if (!constructor.template_specialization)
 				{
 					selected = candidates[i];
-					best_argument_conversion = argument_conversion;
 					ambiguous = false;
 				}
 			}
@@ -624,7 +607,6 @@ CallConversionFact Analyzer::ConvertingConstructor(
 				if (preference > 0)
 				{
 					selected = candidates[i];
-					best_argument_conversion = argument_conversion;
 					ambiguous = false;
 				}
 				else if (preference == 0) ambiguous = true;
@@ -635,14 +617,6 @@ CallConversionFact Analyzer::ConvertingConstructor(
 	result.rank = CONVERSION_USER_DEFINED;
 	result.constructor = selected;
 	result.constructor_argument_rank = best;
-	result.constructor_argument_conversion_function =
-		best_argument_conversion.conversion_function;
-	result.constructor_argument_conversion_result_rank =
-		best_argument_conversion.conversion_result_rank;
-	result.constructor_argument_conversion_object_rank =
-		best_argument_conversion.conversion_object_rank;
-	result.constructor_argument_conversion_base_projection_count =
-		best_argument_conversion.conversion_base_projection_count;
 	return result;
 }
 
@@ -1383,14 +1357,6 @@ ExpressionInfo Analyzer::BuildConvertingArgument(
 	{
 		CallConversionFact parameter_conversion;
 		parameter_conversion.rank = conversion.constructor_argument_rank;
-		parameter_conversion.conversion_function =
-			conversion.constructor_argument_conversion_function;
-		parameter_conversion.conversion_result_rank =
-			conversion.constructor_argument_conversion_result_rank;
-		parameter_conversion.conversion_object_rank =
-			conversion.constructor_argument_conversion_object_rank;
-		parameter_conversion.conversion_base_projection_count =
-			conversion.constructor_argument_conversion_base_projection_count;
 		ExpressionInfo converted = ApplyCallArgument(
 			source, parameters[0], &parameter_conversion);
 		dump_.Add(action, converted.node);

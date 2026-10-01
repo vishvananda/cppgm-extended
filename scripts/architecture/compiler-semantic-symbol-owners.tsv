@@ -703,7 +703,6 @@ dev/src/semantic/templates/aliases_and_lambdas.cpp	InstallLambdaCaptureBindings	
 dev/src/semantic/templates/aliases_and_lambdas.cpp	InstantiateAliasTemplate	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	IsCapturelessLambdaType	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	IsUnqualifiedAliasTemplateName	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
-dev/src/semantic/templates/aliases_and_lambdas.cpp	LambdaConstructorDeductionArguments	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	LookupStructuredTypeSpecifier	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	RegisterAliasTemplate	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	RouteClassTemplateMemberDefinition	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep

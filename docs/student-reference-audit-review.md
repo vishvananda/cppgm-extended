@@ -26,15 +26,17 @@ fix sequence is complete, as requested.
 | AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Done: edd6b2121; preserve typed member actions at final addresses; five new controls and seven regenerated references, strict 5834/5834 and full checks pass. |
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
 | RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done: 4858ddbc0; typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
-| CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Open with conversion legality work: immutable 70e7a2920 and current reject A a=x when A has A(int) and X::operator T(); GCC/Clang accept. Keep the reducer; the explicit-call fixture uses an aggregate result to isolate its contract. |
+| CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Done in the conversion-sequence checkpoint: remove the competing two-conversion constructor path; PA18 runtime control and Clang/GCC agree at O0/O2. Full validation recorded below. |
+| CONV-SELECTION | Rank converting constructors against conversion functions during class copy initialization | Additional conversion-sequence controls | Open: entry 88f5d368b and candidate accept A a=x with A(X&) and X::operator A(); Clang/GCC reject as ambiguous at O0/O2. Separate from the two-user-conversion restriction. |
+| LAMBDA-CONV-SPEC | Captureless lambda pointer conversion has a nonthrowing exception specification | Additional hosted-trait controls / CWG 1722 | Done in the conversion-sequence checkpoint: preserve the call operator specification independently; PA20 noexcept and hosted trait controls agree with Clang/GCC. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Done: ad5d5dbb8; known type/category facts validate unused operators/calls/bounds without evaluating dependent values. Eight PA14 fixtures, 22 copied rejection controls, strict 5887/5887 and full checks pass. Alpha instruction/RSS gates pass with equal outputs; fixed-call GCC disagreement documented below. PARAM-ADJUST completes the valid bound failure. |
 | PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done: 27eef472d; parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
 | DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Done in the accompanying checkpoint: indexed binding requests preserve unused/sibling/nested definitions, explicit instantiation and specialization ownership. Eight PA14/17 fixtures, fourteen reviewed references, strict 5895/5895 and all required checks pass. Six Alpha inputs pass instruction/RSS gates with equal outputs. Static declaration legality remains STATIC-DECL. |
 | STATIC-DECL | Diagnose static-definition redeclarations/type/member mismatches; preserve explicit specialization declarations | Extended student storage controls during DEMAND | Open: entry compiler accepts four duplicate definitions, two type mismatches and a nonstatic out-of-class definition; rejects a valid declaration followed by its explicit specialization definition. These failures predate selective demand. |
 | STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Needs verification: entry/current return 1 on the unsigned-free A/B/D base-reference reducer while Clang/GCC return 0. Distinguish static relocation from pointer conversion/layout before assigning a fix. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
-| REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | In progress: receiver/array corrections committed in 1cb054e23 (strict 5902/5902 and full checks). Definition-time fixed result types and structural dependent-result identity are corrected in this checkpoint; eight PA14/18 controls, strict 5910/5910, all required checks and four Alpha instruction/RSS gates pass. Original PA18 inputs unchanged, rejection references regenerated. Two user conversions remain open. |
-| DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
+| REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Done: receiver/array in 1cb054e23, result identity in 88f5d368b, and implicit conversion chaining in the conversion-sequence checkpoint. All four original inputs remain unchanged; rejection references regenerated through ref-test. Full validation recorded below. |
+| DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | In progress: constructor deduction now preserves closure type in the conversion-sequence checkpoint, with captureless/capturing controls. Defaulted-pack deduction and its runtime expectation 2 → 9 remain open. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
@@ -1470,3 +1472,60 @@ info, variants, self-host through PA5, all architecture checks, the compiler
 file audit and placement pass on that final binary. REJECT now has three of
 four corrections complete; implicit chaining of two user conversions remains
 open. Final combined export remains deferred until all tracker work is complete.
+
+## Conversion sequences and closure constructor deduction checkpoint
+
+An implicit converting constructor now requires a standard conversion for its
+first argument. The special captureless-lambda exception, its fake deduction
+arguments and the nested conversion-function recipe fields are removed. Class
+copy initialization rejects scalar-to-constructor and closure-to-pointer-to-
+constructor chains. A copy/move construction action may still follow a conversion
+function that produces the destination class; this separate construction step
+is valid and fixes CONV-IMPLICIT's conversion-function-template reducer.
+Direct construction and ordinary constructor arguments under list initialization
+retain their valid user conversions. A broad initial list restriction was caught
+by positive controls and removed before validation.
+
+Constructor-template deduction consumes the actual closure type. Both
+captureless and capturing lambdas preserve that type, while a function-pointer
+parameter cannot deduce it through conversion. Unary plus and explicit
+construction remain valid. The original PA20 implicit Wrapper source is
+unchanged and now rejects, as Clang/GCC do. The original preferred-constructor
+source is also unchanged: its reference now passes the closure and invokes its
+call operator, retaining the value 7. Exact references were regenerated through
+ref-test. Before accepting the resulting ABI metadata, object controls checked
+the closure constructor against Clang: both emit
+`_ZN4SinkC2IZ4mainE3$_0EET_`. The ABI encoder is unchanged. GCC uses its own
+lambda discriminator spelling.
+
+The pointer conversion function is now nonthrowing independently of the lambda
+call operator. This follows the defect clarification in
+[CWG 1722's adopted wording](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/p0164r0.html),
+rather than a guarantee stated in the original N3485 text. Hosted trait controls
+check constructibility, nonthrowing construction and the invalid implicit
+conversion separately. Both hosts agree at O0/O2.
+
+Nine required fixtures live in PA12, PA18 and PA20 at their earliest owners.
+Twenty-six boundary programs produce 156 agreeing compile/runtime controls
+across candidate, Clang and GCC at O0/O2. The nine fixtures supply 72 passing
+LowIR/native/host controls. Sixteen original-fixture controls preserve the
+rejection and closure-deduction evidence against immutable entry 88f5d368b.
+Twenty-four additional controls identify the independently pre-existing mixed
+constructor/conversion-function ambiguity recorded as CONV-SELECTION; neither
+entry nor candidate diagnoses it, so it is not claimed as fixed.
+
+Alpha uses immutable entry/candidate binaries, CPU 0, three frozen inputs, four
+A/A calibration blocks and eight A/B ABBA blocks per input. All 144 output
+objects agree within their input. Instruction ratios are recognition 1.000026,
+virtual 1.000023 and large virtual 1.000127; RSS ratios are 0.995552, 0.998974
+and 1.000034. The unchanged 0.5% instruction / 3% RSS gates pass, and the
+manifest matches the validated candidate. Cycles are retained separately.
+Controls, exact reference commands, full validation and raw performance
+observations are retained under
+`/tmp/cppgm-v4-audit-review/conversion-sequences/`.
+
+Full strict report passes 5919/5919 with exactly one success line. Debug-info,
+backend variants, self-host through PA5, all nine architecture checks, file limits
+and placement pass. The layout audit initially identified two stale PA20 comment
+allowlist entries; those obsolete entries are removed and the audit passes. The defaulted-pack portion of DEDUCE and CONV-SELECTION remain open.
+Final combined student export remains deferred until all tracker work is complete.

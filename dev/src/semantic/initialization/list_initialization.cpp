@@ -66,9 +66,10 @@ bool IsClassEntity(const Program& program, EntityId entity)
 bool ChainsUserConversion(const FunctionInfo& constructor,
 	const CallConversionFact& conversion)
 {
-	return conversion.constructor != kNoBinding &&
-		(constructor.special_member == SPECIAL_MEMBER_COPY_CONSTRUCTOR ||
-		 constructor.special_member == SPECIAL_MEMBER_MOVE_CONSTRUCTOR);
+	return conversion.rank == CONVERSION_USER_DEFINED &&
+		(conversion.constructor != kNoBinding ||
+		 (constructor.special_member != SPECIAL_MEMBER_COPY_CONSTRUCTOR &&
+		  constructor.special_member != SPECIAL_MEMBER_MOVE_CONSTRUCTOR));
 }
 
 std::uint64_t BracedFactKey(NodeId node, TypeId type)
@@ -814,9 +815,7 @@ BindingId Analyzer::SelectConstructor(ScopeId scope,
 		++braced_fact_cache_misses_;
 	}
 	std::vector<BindingId> candidates(input_candidates);
-	AppendConstructorTemplateCandidates(initialized_type,
-		copy_initialization && !list_initialization ?
-			LambdaConstructorDeductionArguments(arguments) : arguments, &candidates,
+	AppendConstructorTemplateCandidates(initialized_type, arguments, &candidates,
 		&argument_syntax, scope);
 	const BindingId list_phase = list_initialization ? SelectInitializerListConstructorPhase(
 		scope, initialized_type, source_list, argument_syntax, candidates,
@@ -895,11 +894,10 @@ BindingId Analyzer::SelectConstructor(ScopeId scope,
 				{
 					conversion = CallConversion(arguments[a], parameter,
 						&conversion_cache, a);
-					// N3485 13.3.3.1/4 excludes this second user
-					// conversion only for the copy/move step of class
-					// copy-initialization.  A direct-initialization candidate
-					// remains viable and participates in ranking.
-					if (copy_initialization &&
+					// A converting constructor's first argument is standard.
+					// Copy/move actions may represent the separate construction
+					// step after a conversion function has produced the class.
+					if (copy_initialization && !list_initialization &&
 						ChainsUserConversion(constructor, conversion))
 						conversion = CallConversionFact();
 					if (list_initialization && source_list != kNoNode &&

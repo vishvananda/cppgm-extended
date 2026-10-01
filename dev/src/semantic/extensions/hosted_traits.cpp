@@ -20,8 +20,7 @@ BindingId SelectedConversionFunction(const CallConversionFact& conversion)
 {
 	if (conversion.conversion_function != kNoBinding)
 		return conversion.conversion_function;
-	if (conversion.constructor != kNoBinding) return conversion.constructor;
-	return conversion.constructor_argument_conversion_function;
+	return conversion.constructor;
 }
 
 }
@@ -45,8 +44,7 @@ bool Analyzer::BuiltinConversionIsUsable(
 	if (conversion.rank == CONVERSION_INVALID) return false;
 	const BindingId bindings[] = {
 		conversion.conversion_function,
-		conversion.constructor,
-		conversion.constructor_argument_conversion_function
+		conversion.constructor
 	};
 	for (std::size_t i = 0; i < sizeof(bindings) / sizeof(bindings[0]); ++i)
 	{
@@ -65,8 +63,7 @@ bool Analyzer::BuiltinConversionIsNonthrowing(
 	if (!BuiltinConversionIsUsable(conversion)) return false;
 	const BindingId bindings[] = {
 		conversion.conversion_function,
-		conversion.constructor,
-		conversion.constructor_argument_conversion_function
+		conversion.constructor
 	};
 	for (std::size_t i = 0; i < sizeof(bindings) / sizeof(bindings[0]); ++i)
 		if (bindings[i] != kNoBinding &&

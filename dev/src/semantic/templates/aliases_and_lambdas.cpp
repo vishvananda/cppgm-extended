@@ -510,10 +510,12 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 				conversion_target, std::vector<TypeId>(), false, CV_CONST);
 			const NameId conversion_name = program_->names.Intern(
 				"operator __cppgm_captureless_lambda_pointer");
+			// The pointer conversion is nonthrowing (CWG 1722); the
+			// invocation function retains the call operator's specification.
 			conversion_function = DeclareFunction(member_scope,
 				conversion_name, conversion_type, std::vector<ParameterInfo>(),
 				true, false, STORAGE_CLASS_NONE, LANGUAGE_LINKAGE_CPP,
-				nonthrowing, false);
+				true, false);
 			BindingRecord& conversion_binding =
 				program_->bindings[conversion_function];
 			conversion_binding.member_owner = entity;
@@ -649,31 +651,6 @@ bool Analyzer::IsCapturelessLambdaType(TypeId type) const
 		record.entity < program_->entities.size() &&
 		program_->entities[record.entity].lambda_closure &&
 		program_->entities[record.entity].lambda_capture_count == 0;
-}
-
-std::vector<ExpressionInfo>
-Analyzer::LambdaConstructorDeductionArguments(
-	const std::vector<ExpressionInfo>& arguments)
-{
-	std::vector<ExpressionInfo> result(arguments);
-	if (result.size() != 1 || result[0].type == kNoType ||
-		!IsCapturelessLambdaType(result[0].type))
-		return result;
-	// PA20 copy-initialization exposes the invocation-pointer conversion before
-	// constructor-template deduction; overload ranking still uses the closure.
-	std::vector<TypeId> targets;
-	AppendBuiltinConversionTargets(result[0], &targets);
-	for (std::size_t i = 0; i < targets.size(); ++i)
-	{
-		const TypeId candidate = Decay(targets[i]);
-		const TypeRecord& pointer = program_->types.Get(candidate);
-		if (pointer.kind != TYPE_POINTER ||
-			!program_->types.IsFunction(pointer.child)) continue;
-		result[0].type = candidate;
-		result[0].category = VALUE_PRVALUE;
-		break;
-	}
-	return result;
 }
 
 void Analyzer::InstallLambdaCaptureBindings(ScopeId scope,

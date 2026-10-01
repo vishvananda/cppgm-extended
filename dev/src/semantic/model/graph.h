@@ -845,18 +845,9 @@ struct CallConversionFact
 	ConversionRank rank;
 	BindingId constructor;
 	BindingId conversion_function;
-	// A converting constructor normally owns a standard first-argument
-	// conversion.  The captureless-lambda conversion is the one PA20 path
-	// where that selected argument conversion is itself represented by a
-	// callable semantic fact; retain it instead of repeating class lookup
-	// while constructing the argument.
-	BindingId constructor_argument_conversion_function;
 	ConversionRank constructor_argument_rank;
-	ConversionRank constructor_argument_conversion_result_rank;
-	ConversionRank constructor_argument_conversion_object_rank;
 	ConversionRank conversion_result_rank;
 	ConversionRank conversion_object_rank;
-	std::uint32_t constructor_argument_conversion_base_projection_count;
 	std::uint32_t conversion_base_projection_count;
 	ConversionRank initializer_list_element_rank;
 	bool initializer_list_conversion;
@@ -864,13 +855,9 @@ struct CallConversionFact
 	CallConversionFact()
 		: rank(CONVERSION_INVALID), constructor(kNoBinding),
 		  conversion_function(kNoBinding),
-		  constructor_argument_conversion_function(kNoBinding),
 		  constructor_argument_rank(CONVERSION_INVALID),
-		  constructor_argument_conversion_result_rank(CONVERSION_INVALID),
-		  constructor_argument_conversion_object_rank(CONVERSION_INVALID),
 		  conversion_result_rank(CONVERSION_INVALID),
 		  conversion_object_rank(CONVERSION_INVALID),
-		  constructor_argument_conversion_base_projection_count(0),
 		  conversion_base_projection_count(0),
 		  initializer_list_element_rank(CONVERSION_INVALID),
 		  initializer_list_conversion(false) {}
