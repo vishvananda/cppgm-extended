@@ -128,11 +128,23 @@ void Analyzer::AddLifetimeObligation(ScopeId scope,
 }
 
 void Analyzer::AddTemporaryLifetimeObligation(ScopeId scope,
-	std::uint32_t temporary)
+	std::uint32_t temporary, std::uint32_t known_action)
 {
-	const std::uint32_t action = MakeTemporaryDestructorAction(temporary);
+	const std::uint32_t action = known_action == kNoDumpEdge ?
+		MakeTemporaryDestructorAction(temporary) : known_action;
 	if (action == kNoDumpEdge) return;
 	const DumpNode& cleanup = dump_.nodes[action];
+	if (known_action != kNoDumpEdge)
+	{
+		const DumpNode& object = dump_.nodes[temporary];
+		const EntityId entity = DestructedEntity(object.type);
+		// The reference-chain collector preserves nontrivial actions. Apply
+		// the ordinary lexical elision rule without allocating another action.
+		if (program_->entities[entity].template_argument_count == 0 &&
+			!object.control_dependent_temporary &&
+			!object.projected_subobject_temporary &&
+			IsElidableAutomaticDestructor(cleanup.binding)) return;
+	}
 	LifetimeObligation obligation(kNoBinding, cleanup.binding, cleanup.operand_type, temporary);
 	obligation.cleanup_plan = CreateLifetimeCleanupPlan(scope, obligation);
 	PrepareLifetimeScope(scope, &scope_lifetimes_, &nearest_lifetime_scopes_);
@@ -147,6 +159,12 @@ void Analyzer::CollectReferenceLifetimeObjects(std::uint32_t node,
 	const DumpNode& value = dump_.nodes[node];
 	if (value.kind == DUMP_TEMPORARY_OBJECT)
 	{
+		// Materializing the address returned by a reference call does not
+		// extend the lifetime of the call's temporary arguments.
+		if (value.reference_call_materialization &&
+			value.first_edge != kNoDumpEdge &&
+			program_->types.IsReference(dump_.nodes[
+				dump_.edges[value.first_edge].child].type)) return;
 		const std::uint32_t destructor =
 			MakeTemporaryDestructorAction(node, kNoBinding, true);
 		objects->push_back(std::make_pair(node, destructor));
@@ -161,7 +179,8 @@ void Analyzer::CollectReferenceLifetimeObjects(std::uint32_t node,
 	}
 	if (value.first_edge == kNoDumpEdge) return;
 	const std::uint32_t first = dump_.edges[value.first_edge].child;
-	if ((value.kind == DUMP_MEMBER_EXPRESSION && value.binding != kNoBinding &&
+	if (value.kind == DUMP_CONDITIONAL_ARM ||
+		(value.kind == DUMP_MEMBER_EXPRESSION && value.binding != kNoBinding &&
 		 program_->bindings[value.binding].non_static_data_member &&
 		 !program_->types.IsReference(program_->bindings[value.binding].type)) ||
 		(value.kind == DUMP_SUBSCRIPT_EXPRESSION &&
@@ -181,6 +200,28 @@ void Analyzer::CollectReferenceLifetimeObjects(std::uint32_t node,
 			edge != kNoDumpEdge; edge = dump_.edges[edge].next)
 			CollectReferenceLifetimeObjects(dump_.edges[edge].child, objects);
 	}
+}
+
+void Analyzer::StageAutomaticReferenceInitializer(std::uint32_t expression,
+	std::uint32_t variable, ScopeId scope)
+{
+	// Ordinary aliases neither construct temporary objects nor throw.
+	const DumpNode& value = dump_.nodes[expression];
+	if (value.kind == DUMP_ID_EXPRESSION ||
+		(value.kind == DUMP_MEMBER_EXPRESSION && value.first_edge != kNoDumpEdge &&
+		 dump_.nodes[dump_.edges[value.first_edge].child].kind == DUMP_ID_EXPRESSION))
+		return;
+	std::vector<std::pair<std::uint32_t, std::uint32_t> > lifetimes;
+	CollectReferenceLifetimeObjects(expression, &lifetimes);
+	bool potentially_throwing = false;
+	AppendFullExpressionDestructionActions(expression, variable, true,
+		&lifetimes, &potentially_throwing);
+	if (potentially_throwing)
+		StageExceptionalFullExpression(expression, variable, scope, true);
+	for (std::size_t i = 0; i < lifetimes.size(); ++i)
+		if (lifetimes[i].second != kNoDumpEdge)
+			AddTemporaryLifetimeObligation(scope, lifetimes[i].first,
+				lifetimes[i].second);
 }
 
 }  // namespace semantic

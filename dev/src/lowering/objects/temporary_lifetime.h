@@ -321,7 +321,8 @@ protected:
 				derived.full_expression_cleanup_actions_[i];
 			const std::uint32_t temporary =
 				derived.arena_.nodes[action].lifetime_object;
-			if (derived.arena_.nodes[action].unwind_only ||
+			if ((derived.arena_.nodes[action].unwind_only &&
+				 !derived.arena_.nodes[action].managed_full_expression_cleanup) ||
 				(temporary != kNoDumpEdge &&
 				 derived.temporary_initialized_[temporary]))
 				derived.full_expression_segment_actions_.push_back(action);
@@ -497,7 +498,12 @@ protected:
 			if (IsConditionalTemporaryAction(
 				derived.full_expression_cleanup_actions_[i]))
 			{
-				if (HasBranchCleanupFact(
+				const DumpNode& action = derived.arena_.nodes[
+					derived.full_expression_cleanup_actions_[i]];
+				// Reference backing remains live beyond the branch merge.
+				if (action.unwind_only && action.managed_full_expression_cleanup)
+					derived.full_expression_tracks_lifetime_state_ = true;
+				else if (HasBranchCleanupFact(
 					derived.full_expression_cleanup_actions_[i]))
 					has_branch_cleanup = true;
 				else derived.full_expression_tracks_lifetime_state_ = true;
@@ -531,7 +537,8 @@ protected:
 				derived.arena_.nodes[action].lifetime_object;
 			if (derived.full_expression_uses_linked_dispatch_)
 			{
-				if (derived.arena_.nodes[action].unwind_only ||
+				if ((derived.arena_.nodes[action].unwind_only &&
+					 !derived.arena_.nodes[action].managed_full_expression_cleanup) ||
 					(temporary != kNoDumpEdge &&
 					 derived.temporary_initialized_[temporary]))
 					derived.full_expression_segment_actions_.push_back(action);
@@ -588,8 +595,14 @@ protected:
 			derived.LowerDestructorAction(record);
 			return;
 		}
+		LowerTrackedTemporaryDestructor(record, false);
+	}
+
+	void LowerTrackedTemporaryDestructor(const DumpNode& record, bool unwinding)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
 		const std::uint32_t temporary =
-			derived.arena_.nodes[action].lifetime_object;
+			record.lifetime_object;
 		const Operand state = derived.LoadStorage(Operand(
 			derived.EnsureTemporaryLifetimeSlot(temporary), LowU8()), LowU8());
 		const BlockId destroy = derived.AddBlock(
@@ -608,7 +621,7 @@ protected:
 		const Operand destination = derived.AddressOfStorage(
 			derived.TemporaryObjectStorageSlot(temporary));
 		derived.LowerDestructorObject(
-			cleanup.operand_type, destination, cleanup.binding);
+			cleanup.operand_type, destination, cleanup.binding, false, unwinding);
 		derived.EmitJump(done);
 		derived.SelectBlock(done);
 	}
@@ -728,7 +741,7 @@ protected:
 				derived.full_expression_cleanup_actions_[i]];
 			if (action.managed_full_expression_cleanup)
 				derived.full_expression_deferred_cleanup_ = true;
-			if (action.unwind_only ||
+			if ((action.unwind_only && !action.managed_full_expression_cleanup) ||
 				(action.lifetime_object != kNoDumpEdge &&
 				 (derived.arena_.nodes[action.lifetime_object].
 					conditionally_constructed ||
@@ -748,7 +761,7 @@ protected:
 				const DumpNode& action = derived.arena_.nodes[
 					derived.full_expression_cleanup_actions_[i]];
 				has_preexisting_cleanup = has_preexisting_cleanup ||
-					action.unwind_only ||
+					(action.unwind_only && !action.managed_full_expression_cleanup) ||
 					(action.lifetime_object != kNoDumpEdge &&
 					 derived.temporary_initialized_[action.lifetime_object]);
 			}

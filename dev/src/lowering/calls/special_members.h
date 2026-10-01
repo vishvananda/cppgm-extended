@@ -948,6 +948,16 @@ protected:
 			action.binding == kNoBinding || action.operand_type == kNoType)
 			ThrowLoweringInternal("invalid destructor action");
 		if (derived.LowerInitializerListTemporaryDestructor(action)) return;
+		if (action.lifetime_object != kNoDumpEdge &&
+			derived.arena_.nodes[action.lifetime_object].conditionally_constructed)
+		{
+			std::uint32_t slot = kNoLowId;
+			if (derived.temporary_lifetime_slots_.Find(action.lifetime_object, &slot))
+			{
+				derived.LowerTrackedTemporaryDestructor(action, unwinding);
+				return;
+			}
+		}
 		const TypeRecord& outer = derived.program_.types.Get(
 			derived.RemoveTopQualifiers(action.operand_type));
 		if (outer.kind == TYPE_ARRAY && action.object_binding != kNoBinding)

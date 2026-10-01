@@ -2043,6 +2043,11 @@ void Analyzer::FinishLocalVariableInitializer(ScopeId scope,
 	const ExpressionInfo& initializer, std::uint32_t variable,
 	bool control_dependent)
 {
+	if (program_->types.IsReference(type) &&
+		program_->bindings[binding].storage_class == STORAGE_CLASS_NONE &&
+		(dump_.nodes[initializer.node].kind == DUMP_ID_EXPRESSION ||
+		 !IsInitializerListType(type)))
+		return; // Automatic reference cleanup was staged before registration.
 	const bool extended_initializer_list =
 		ExtendInitializerListVariableLifetime(
 		type, scope, initializer.node, control_dependent);

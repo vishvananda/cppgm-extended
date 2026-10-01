@@ -413,12 +413,16 @@ void Analyzer::MarkDefaultArgumentSubtree(std::uint32_t node)
 
 void Analyzer::AppendFullExpressionDestructionActions(
 	std::uint32_t expression, std::uint32_t output_parent,
-	bool preserve_nontrivial_actions)
+	bool preserve_nontrivial_actions,
+	const std::vector<std::pair<std::uint32_t, std::uint32_t> >*
+		reference_lifetimes, bool* potentially_throwing_result)
 {
 	std::vector<std::uint32_t> temporaries;
 	CollectTemporaryObjects(expression, &temporaries);
 	const bool potentially_throwing =
 		!InitializationActionsAreNonthrowing(expression);
+	if (potentially_throwing_result != 0)
+		*potentially_throwing_result = potentially_throwing;
 	const bool requested_explicit_cleanup =
 		dump_.nodes[expression].full_expression_staging ||
 		dump_.nodes[expression].eager_full_expression_cleanup;
@@ -437,6 +441,14 @@ void Analyzer::AppendFullExpressionDestructionActions(
 	bool appended_managed_action = false;
 	for (std::size_t i = temporaries.size(); i != 0; --i)
 	{
+		bool extended = false;
+		if (reference_lifetimes != 0)
+			for (std::size_t j = 0; j < reference_lifetimes->size(); ++j)
+				extended = extended ||
+					(*reference_lifetimes)[j].first == temporaries[i - 1];
+		if (extended && !potentially_throwing &&
+			!dump_.nodes[temporaries[i - 1]].conditionally_constructed)
+			continue;
 		std::uint32_t action =
 			MakeTemporaryDestructorAction(temporaries[i - 1]);
 		if (action == kNoDumpEdge && preserve_nontrivial_actions)
@@ -454,10 +466,13 @@ void Analyzer::AppendFullExpressionDestructionActions(
 			specialization_action &&
 			program_->entities[action_entity].polymorphic_class;
 		const bool managed_action =
-			(managed_expression ||
+			(extended || managed_expression ||
 			 (polymorphic_specialization_action && potentially_throwing)) &&
 			!dump_.nodes[temporaries[i - 1]].initializer_list_backing;
 		dump_.nodes[action].full_expression_staging = true;
+		// A reference's backing object is guarded during initialization and
+		// transferred to lexical lifetime only after the full expression.
+		dump_.nodes[action].unwind_only = extended;
 		dump_.nodes[action].managed_full_expression_cleanup = managed_action;
 		dump_.nodes[action].eager_full_expression_cleanup =
 			(potentially_throwing &&
@@ -702,8 +717,15 @@ void Analyzer::StageAutomaticInitializerException(
 	BindingId binding, TypeId type, bool eligible)
 {
 	if (!eligible ||
-		program_->bindings[binding].storage_class != STORAGE_CLASS_NONE ||
-		program_->types.IsReference(type) || IsInitializerListType(type)) return;
+		program_->bindings[binding].storage_class != STORAGE_CLASS_NONE) return;
+	if (program_->types.IsReference(type) &&
+		dump_.nodes[expression].kind == DUMP_ID_EXPRESSION) return;
+	if (IsInitializerListType(type)) return;
+	if (program_->types.IsReference(type))
+	{
+		StageAutomaticReferenceInitializer(expression, variable, scope);
+		return;
+	}
 	const ScopeId stop = exception_cleanup_stops_.empty() ? kNoScope :
 		exception_cleanup_stops_.back();
 	dump_.nodes[variable].enclosing_lifetime_cleanup =

@@ -13,6 +13,12 @@ marked **Needs verification**. ABI spellings must be checked against Clang befor
 as explicitly requested. Student-export validation is deferred until the
 fix sequence is complete, as requested.
 
+New discoveries enter the fix queue only when they are C++11 features or when
+a concrete hosted-header dependency requires the newer feature. A personal
+extension test or a later assignment requirement alone does not establish that
+dependency. Retain excluded observations as review evidence without adding
+required fixtures or expanding the compiler scope.
+
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and isolated export each print one success total. Final combined export pending. |
@@ -53,8 +59,12 @@ fix sequence is complete, as requested.
 | EH-DTOR-HANDLER | Retain destructor member cleanup when an inner source handler rethrows, replaces or misses | Expanded EH-CTOR-HANDLER controls | Done with EH-CTOR-HANDLER: destructor escape, miss, replacement, swallowing, nine-member and twelve-element controls agree with both hosts. Five second-fault programs terminate correctly at O0/O2. Unique termination selectors prevent collision with typed source catches; full compiler and performance checks pass. |
 | EH-COND-THROW | Normalize a class conditional with a raw throw operand before destination lowering | Additional conditional aggregate boundary control | Done: materialized class prvalues use destination-ready arms; nonreturning arms retire their cleanup segments and staged throw sites restore enclosing cleanup after a split. Original reducer and thirteen agreed boundary programs pass at O0/O2; six PA21 fixtures, strict 5999/5999 and all required compiler audits/checks pass. Alpha instruction/RSS gates and an interleaved two-image cycle check pass. Extended synthesized-copy and reference-initializer failures remain separate rows. |
 | EH-CTOR-ARRAY-PREFIX | Retain earlier constructor subobjects after partial construction of a later loop-lowered member array | Expanded EH-SPECIAL-PREFIX controls | Done with EH-SPECIAL-PREFIX: partial-array cleanup explicitly enters the remaining constructor cleanup. Seven independently checked second-fault controls also cover scalar, inline-array, loop-array and completed-array unwind destruction; a second exception terminates immediately. The containing-constructor continuation has its own retired entry, shared by host-object and standalone paths. EH-CTOR-HANDLER also checks inline partial-array continuation through earlier subobjects. |
-| EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Open, independently reproduced: nine direct lvalue/xvalue/reference-call/const-reference/aggregate-reference controls leak prior local objects here at O0/O2; Clang/GCC pass. StageAutomaticInitializerException excludes reference declarations, so no enclosing cleanup is attached. Preserve lifetime-extended backing storage when repairing this staging boundary. |
+| EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Done in accompanying checkpoint: all nine original reducers and 48 of 50 expanded programs pass at O0/O2; the two preexisting initialization-form failures are REF-BRACE and REF-BASE-COND. Thirteen C++11 PA21 fixtures pass both hosts and our compiler. Strict 6038/6038 and all eight required check groups pass; seventeen Alpha instruction/RSS gates and four focused raw/calibrated cycle gates pass with equal objects. Initializer-list backing and generic second-fault cleanup remain separately tracked. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
+| REF-INIT-LIST | Give a reference-bound initializer-list backing array one lexical lifetime | Additional EH-REF-INIT boundary control | Open, independently reproduced: a const initializer_list<S>& initialized with two noexcept S temporaries returns 2 with unchanged entry and final cleanup candidate at O0/O2; Clang/GCC pass. An observed counter control confirms two duplicate destructions (alive=-2) here and zero live objects with both hosts. ExtendInitializerListVariableLifetime and the reference branch register the same backing. Host controls provide the standard initializer_list definition with -include; the course reducer uses the authorized forward declaration. |
+| REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: const S& s{S(5)} crashes at O0/O2 with the unchanged entry and first cleanup candidate; Clang/GCC pass. Keep this initialization-form issue separate from unwind staging. |
+| REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: static_cast<const S&>(choice()?D():throw 99) fails lowering at O0/O2 with unchanged entry and first cleanup candidate; Clang/GCC pass. Direct D() base binding is covered by EH-REF-INIT. |
+| EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Open, independently reproduced: four reference-initializer controls and an ordinary object/throw control return 10 with both the unchanged entry and cleanup candidate; Clang/GCC invoke the installed termination handler (77) at O0/O2. Generic full-expression cleanup continuations lower destructor calls without the terminating guard used by constructor/destructor body cleanup. Frozen inputs and host traces are retained under reference-initializer-cleanup/. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Open: the entry and cleanup candidates emit an empty instantiated body and return zero; Clang/GCC run the specified body and handler at O0/O2. Pattern registration uses a direct compound-statement lookup and does not retain handler syntax. |
 | EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Open: three programs reject here and pass Clang/GCC at O0/O2. N3485 15.1/8-9 requires the runtime active exception, rather than a lexical catch in the callee definition. No compiler/reference change yet. |
@@ -79,8 +89,17 @@ fix sequence is complete, as requested.
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
-| HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass; student has not edited its oracle. |
+| HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass. Student later corrected the three original success sidecars in handoff189; our sources retain complete typed definitions and the positive test goals. |
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
+| LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Open, independently reproduced: the unchanged PA6 two-int-typedef input and transitive/class/namespace-alias personal composite reject here at O0/O2 and in both semantic dump modes; Clang/GCC accept. Distinct types, variables and namespace targets still reject in all three compilers. N3485 7.1.3 and 7.3.4 support the namespace correction. The PA30 positive includes a global typedef which masks the missing convergence rule. |
+| LOOKUP-BASE-ALIAS | Review same-type typedef lookup through unrelated class bases | v4codex implementation197 retained negative | Needs contract review: Clang accepts, GCC and ours reject the original PA30 input and personal reducer. N3485 10.2/3 replaces type declarations by their designated types before merging lookup sets; compare that rule with the supplied rejection before deciding a correction. No reference change authorized by host agreement alone. |
+| LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
+| TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
+| TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
+| ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Open, independently reproduced: character, integer and suffixed-string messages are accepted here and rejected by Clang/GCC at O0/O2. These are C++11 syntax constraints and can be tested without hosted headers. |
+| CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Open, independently reduced: static_assert(&S::x, "nonnull member pointer") rejects with both immutable entry and candidate; Clang/GCC accept in C++11 at O0/O2. Ordinary MEMBER adjustments remain separately tracked. |
+| CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Open, independently reduced: a two-bit unsigned field initialized with 5 must read as 1 in its constexpr boolean conversion. The template static assertion fails here and passes Clang/GCC in C++11 at O0/O2. Entry and candidate retain the same failure. |
+| EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Open, independently reproduced: private conversion is accepted and invalid immediate conditions cause a hard error instead of selecting the fallback; Clang/GCC corroborate in C++11 extension mode. This C++20 feature is necessary for the supported libc++ profile: release/21.x __utility/pair.h lines 140/147/162 use conditional explicit in the C++11 constructor branch. Frozen header SHA and observations are recorded below. Deduction-guide controls are excluded from this row without their own header dependency. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence is complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
 | HARNESS-FILE | Stop counting an entire class as a function after an unrecognized constructor signature | Aggregate compiler validation | Done: both scans retire declaration-scope state before stripping an earlier inline body. A large-class control passes, a real oversized member still fails, and the full harness passes. ARCH-FUNCTION subsequently closes all eight genuine baseline size findings. |
@@ -2752,3 +2771,193 @@ Every observation from all candidate/calibration/repeat runs is retained
 (3,552 total). No unsuccessful build or mismatched binary is counted as final
 validation. The final combined student export remains deferred until the full
 tracker is resolved.
+
+
+## Reference initializer cleanup checkpoint
+
+Independent evidence is retained under
+`/tmp/cppgm-v4-audit-review/reference-initializer-cleanup/`. The immutable entry
+is commit `97f2d4f52`, compiler SHA-256
+`0959dd558c4fd55fd75a7004630715780ced93a703da9f664d1bf17894316a02`.
+Thirty-eight initial programs and twelve additional programs compile and run
+with Clang/GCC at O0/O2. The entry fails 33 of the original programs and all
+12 additional ones; the brace form crashes and the conditional-derived-base
+form rejects. The staging candidate passes 48 programs at both optimization
+levels, including all nine original EH-REF-INIT reducers. The two initialization
+forms remain explicitly open in REF-BRACE and REF-BASE-COND.
+
+Automatic reference initialization now has one typed lifetime owner before the
+reference is registered. `CollectReferenceLifetimeObjects` follows the binding
+chain through members, subscripts, casts, comma expressions and conditionals;
+it excludes a reference call's borrowed result and its temporary arguments.
+The cast/address-materialization flag alone does not imply borrowed storage:
+the initializer's reference type establishes that distinction. Full-expression
+actions for extended backing are unwind-only, become active after construction,
+and transfer to lexical scope on successful completion. Conditional backing
+uses its existing lifetime state through scope exit rather than retiring at
+the arm join. Earlier objects retain their unwind actions, and source handlers
+still own their dispatch before constructor/destructor body cleanup.
+
+The ordinary alias path returns before temporary or exception scans. The
+reference owner reuses both the exception analysis and the validated destructor
+action; lexical elision rules remain the same. No graph fields or record sizes
+were added. The semantic-owner ledger records the new lifetime method.
+Initializer-list references retain their existing, separate owner rather than
+being silently included in this refactoring.
+
+Thirteen self-contained PA21 fixtures cover lvalue/xvalue/reference calls,
+scalar member references, cast backing, conditional aggregates, aggregate
+members, comma temporaries, non-extending calls and constructor/destructor
+bodies. Their trace/count expectations come from independent Clang/GCC O0/O2
+runs; all 78 host/compiler observations pass. Four existing PA12 references
+were regenerated with unchanged inputs. All 32 original/candidate/Clang/GCC
+execution observations of those four sources pass; the changed LowIR adds
+initialization unwind boundaries rather than changing their lifecycle outcomes.
+
+The earlier 274-observation regression set changes only the nine old reference
+reducers, from 10 to 0 at both optimization levels. Expected termination codes
+and the still-failing failed-new control are preserved. The temporary lifetime
+optimizations retain every tested object and stdout/status result, as checked
+by `third-equivalence.json` and `fourth-equivalence.json` (400 observations each).
+The expanded successful runs have 94 exact host traces. A nested class
+conditional retains one optional C++11 copy; both the ordinary and
+`-fno-elide-constructors` host variants pass its value/live-object checks. Its
+copy-dependent trace is not a required oracle.
+
+Additional controls are recorded, not hidden: REF-INIT-LIST fails its backing
+lifetime check with the entry and candidate while both hosts pass. Four
+reference-initializer second-fault controls and an ordinary object/throw control
+fail to terminate here at O0/O2, with unchanged entry and candidate; both hosts
+invoke the installed termination handler (77). EH-UNWIND-DTOR owns this generic
+full-expression cleanup guard gap. These inputs do not become required
+fixtures until their owning fixes are independently validated.
+
+The final immutable compiler SHA-256 is
+`366793492b521f0d772e98625981796dc48a179f54317bd630cf80ba3fd8c5ce`.
+`sixth-manifest.json` binds sources, inputs, fixtures and regenerated references.
+`sixth-equivalence.json` checks all 400 prior status/stdout/object outcomes;
+the ordinary-alias fast path changes none. All eight sequential final check
+groups pass: PA21, strict report, debug-info, variants, self-host through PA5,
+all nine architecture audits, exact file audit and placement. The strict log is
+exactly one line, **6038/6038**, and placement has zero early violations. The
+existing substantial-header warnings remain warnings.
+
+Alpha's final broad run retains 816 observations across seventeen frozen inputs.
+All native outputs are identical; the 1.005 instruction and 1.03 RSS gates pass.
+Maximum broad A/B deltas are +0.2107% instructions and +0.1732% RSS. Reference
+aliases use fewer instructions than entry after the typed fast path.
+Earlier focused runs using separate byte-identical baseline files exhibited
+A/A cycle drift and failed calibrated cycle gates; all those observations and
+candidate attempts are retained, not counted as final passing gates. A fourfold
+input run retained that separate-file calibration signal. A final balanced,
+interleaved 768-observation run uses the same immutable baseline executable
+for both A/A labels and freezes the larger reference inputs before measurement.
+It passes both raw and calibrated 1.005 cycle gates for recognition, reference
+aliases, nonthrowing reference backing and EH handlers. Raw/calibrated ratios
+are respectively 0.997077/0.997763, 1.001074/0.995486,
+0.996356/0.996439 and 0.999172/0.999394. Focused instruction/RSS gates also pass.
+The alias A/A ratio remains 1.005613, so the raw passing ratio is reported
+alongside calibration rather than treating its calibrated decrease as a speedup.
+
+`sixth-performance-verification.json` validates every final observation, output
+hash and gate. All completed counter runs from this checkpoint retain **7,920**
+observations, plus the separately recorded failed permission launch. The partial
+409-observation download is retained as a prefix of its completed run, not counted
+again. Raw logs/counters and frozen binaries are local under `perf/`, and Alpha
+retains all generated objects at
+`/tmp/cppgm-v4-audit-review-20261001-reference-initializer/`.
+The student export remains deferred until the complete tracker is resolved.
+
+## Read-only PA29 completion / PA30 implementation197 refresh
+
+The read-only snapshot is student commit
+`94faedf12200563a8886acf21ee1c0ada8c998b3`, compared with the previously reviewed
+`1b19e9ac18eba368b76e1b6389e5126fe5f60a5a`. Exact history, 46 changed plan/audit/
+handoff/proof documents, 477 personal source/control files and their hashes are
+retained under `/tmp/cppgm-v4-audit-review/student-refresh-pa30-197/`.
+The snapshot had only untracked `student.tests/pa30/evidence197/`; this checkout
+was never modified or used to run our controls. The active student may advance
+after this pinned observation.
+
+Only seven supplied sidecars changed since that checkpoint; no supplied test
+input, handout, harness, discovery or comparison rule changed:
+
+| Student change | Independent disposition here |
+| --- | --- |
+| Three PA29 trait success-status sidecars in correction189 | Their undefined primaries/false declared values cannot support the asserted successes. HOST-SHORTHAND already fixes these goals here with actual definitions and lower owning milestones; do not revert those positive fixtures or merely copy the student's rejection sidecars. |
+| PA29 `400-host-gnu-hex-float-pp-number.ref`, correction192 | Q now has binary128 type/bytes rather than the old x87 long-double bytes. Our scratch preprocessor output still has the old representation. The mathematical encoding and both host typed controls corroborate the correction. GNU extension/header necessity must be established before expanding this fix queue, as requested below. |
+| PA6 `300-ambiguous-using-directive-type-bad` output/status/stdout, correction197 | The input's two typedefs both name int and should converge. O0/O2 Clang/GCC compile it, while entry/candidate and both semantic dump modes reject. N3485 7.1.3 and 7.3.4 supply the C++11 proof. LOOKUP-NAMESPACE owns the compiler correction and subsequent generated reference. |
+
+The original PA30 namespace-positive fixture also passes here, but declares a
+global typedef that hides the competing imported typedefs; it does not prove
+the missing convergence rule. The student's transitive/class/namespace-alias
+positive catches that gap. Distinct imported types, variables and namespace
+targets remain rejection boundaries. The base-member-typedef negative was not
+changed by the student. Clang accepts it; GCC and ours reject. N3485 10.2/3
+normalizes type declarations before merging lookup sets, so LOOKUP-BASE-ALIAS
+retains this as a separate rule/contract review, without changing an oracle
+solely on one host's result.
+
+`targeted-corrected-controls.json` retains 606 O0/O2 observations for 101 selected
+inputs with the immutable reference-cleanup candidate and both hosts. The
+initial trial supplied an unsupported gnu++23 flag to our compiler for extension
+inputs; that launch error is retained in `targeted-controls.json` and is not
+counted as a compiler defect. The corrected run uses our supported C++11 driver
+mode. Host extension tests explicitly use their required dialect. A further
+202 entry observations have identical status/stdout outcomes, proving these
+new findings predate the pending cleanup fix. Twenty-four independent reduced
+observations isolate namespace convergence, constant member-pointer truth and
+constant bit-field truncation.
+
+The new C++11 fix rows cover hidden friend/nested tag lookup, dependent type
+demand after a later primary definition, access substitution fallback, assertion
+message syntax, member-pointer constant truth and bit-field constant conversion.
+The current-instantiation construction/qualified-member positive composites,
+partial-alias ordering positive and ambiguous-partial rejection already pass
+here and with both hosts; the student's fixes are not presumed necessary here.
+These ordinary language reducers belong to their earliest semantic owners,
+not automatically PA29/30 because that is where the student discovered them.
+No additional explicit misplaced-fixture claim was found in the refreshed
+plans/audits. New required fixtures must still pass placement checks.
+
+The newer personal controls are a mixture of language versions. Per the user's
+scope clarification, conditional explicit, structured bindings, inline variables,
+static call/subscript operators, bit integers, extended floating formats,
+representation/vector builtins and complex/tag extensions are retained as
+observations, not automatically added to the fix queue. A concrete selected
+hosted-header use in the supported dialect must establish necessity first.
+One dependency is now independently identified: the PA29 handout's supported
+libc++ profile uses conditional explicit in its C++11 pair constructor branch.
+[LLVM release/21.x pair.h](https://github.com/llvm/llvm-project/blob/release/21.x/libcxx/include/__utility/pair.h)
+lines 140, 147 and 162 are outside a C++20 guard. The frozen copy
+`libcxx-21-pair.h` has SHA-256
+`28ee2f80a5d61a596a77e4588ab03b7a9780da06ff956a40018703ebfb4b1496`.
+Eight further Clang/GCC C++11-mode observations corroborate the constructor
+positive/negative boundary; EXPLICIT-CONTEXT is admitted on this header proof.
+Its deduction-guide controls are held without a separate necessary-header proof.
+Our reproduced quad type/classification and signaling-NaN failures,
+including the NaN compile crash, remain in this evidence rather than becoming
+new required fixtures without that scope proof.
+
+`abi-tag-controls.json` retains 156 commands on 39 source193 controls, with
+Clang C++11 O0/O2 symbols checked before any encoder change. Some declaration
+tags disappear here and some explicit-member tags remain when Clang removes
+them; raw global-variable differences repeat ABI-GLOBAL. There was no encoder
+change. These GNU attribute observations also require the hosted-header scope
+proof before adding new tag-policy work. The student's used-before-specialization
+negatives are C++11 ill-formed-with-no-diagnostic-required boundaries, so their
+acceptance here alone does not justify mandatory rejection fixtures.
+
+The refreshed audits disclose several personal expectations which deliberately
+do not use the supplied reference or universal host agreement: zero-sized GNU
+class arrays have differing host constructor/destructor counts; dependent complex
+component mangling follows GCC where Clang erases the operator; contextual
+explicit positives and demanded-definition negatives use different hosts;
+polymorphic typeid-in-default rejection disagrees with Clang; and fixed false
+assertions in dormant templates are demanded in host controls because modern
+Clang defers them. Excess-precision and optional-copy observations remain review
+evidence. Audit178 narrowed a personal no-builtin-call inspection to permit
+declarations; audit182 corrected a personal source/prepared-LowIR comparison to
+validate each phase and compare final objects. Neither weakened supplied tests.
+No evidence establishes another supplied-reference correction beyond the seven
+sidecars listed above.

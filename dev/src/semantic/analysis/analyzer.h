@@ -1688,7 +1688,7 @@ private:
 	void AddLifetimeObligation(ScopeId scope, BindingId object, TypeId type,
 		bool allow_elision = true);
 	void AddTemporaryLifetimeObligation(ScopeId scope,
-		std::uint32_t temporary);
+		std::uint32_t temporary, std::uint32_t known_action = kNoDumpEdge);
 	void MarkInitializerListLifetimeScope(ScopeId scope,
 		std::uint32_t temporary);
 	bool ExtendInitializerListVariableLifetime(TypeId type, ScopeId scope,
@@ -1710,7 +1710,9 @@ private:
 	bool HasControlDependentTemporary(std::uint32_t node);
 	void AppendFullExpressionDestructionActions(std::uint32_t expression,
 		std::uint32_t output_parent,
-		bool preserve_nontrivial_actions = false);
+		bool preserve_nontrivial_actions = false,
+		const std::vector<std::pair<std::uint32_t, std::uint32_t> >*
+			reference_lifetimes = 0, bool* potentially_throwing_result = 0);
 	void FinalizeBranchCleanupDemand(
 		std::uint32_t function_definition);
 	bool RequiresManagedConditionalFullExpression(
@@ -1728,6 +1730,8 @@ private:
 	void StageAutomaticInitializerException(std::uint32_t expression,
 		std::uint32_t variable, ScopeId scope, BindingId binding, TypeId type,
 		bool eligible);
+	void StageAutomaticReferenceInitializer(std::uint32_t expression,
+		std::uint32_t variable, ScopeId scope);
 	void StageControlFullExpression(std::uint32_t expression, std::uint32_t statement, ScopeId scope);
 	void StageReturnTemporaryCleanup(std::uint32_t expression, std::uint32_t statement, ScopeId scope);
 	void AppendUnwindDestructionActions(ScopeId scope,

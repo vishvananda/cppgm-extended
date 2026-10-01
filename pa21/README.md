@@ -208,6 +208,10 @@ To complete PA21, implement these goals:
    Once an exception object has been initialized, destroy the throw operand's
    temporaries and remove them from later unwind snapshots. A temporary from an
    untaken throw branch must not appear in a sibling call's cleanup path.
+   Reference initialization preserves cleanup of earlier automatic objects.
+   A temporary whose lifetime is extended by the reference stays guarded until
+   initialization completes, then remains alive until scope exit; a reference
+   returned by a call does not extend the lifetime of its temporary arguments.
    If a conditional initializer arm throws before the destination object is
    constructed, do not schedule destruction of that destination on the unwind path.
    A class-valued conditional may have a `throw` operand on either side. Its

@@ -39,8 +39,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lifetime__14 : u8
   slot $lifetime__15 : u8
   slot $lifetime__16 : u8
-  slot $tmpobj__17 : obj<4x4>
-  slot $lor__18 : i64
+  slot $lifetime__17 : u8
+  slot $tmpobj__18 : obj<4x4>
+  slot $lor__19 : i64
 
   block ^entry:
     %t1 = addr $fixed
@@ -403,104 +404,117 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_72:
     store u8 0, $lifetime__16
-    eh_try ^conditional_cleanup_dispatch_74
-    %t47 = addr $tmpobj__17
-    eh_end
-    branch 1, ^condobj_then_77, ^condobj_else_78
+    store u8 0, $lifetime__17
+    %t49 = addr $tmpobj__18
+    branch 1, ^condobj_then_80, ^condobj_else_81
 
   block ^conditional_cleanup_dispatch_74:
-    %t45 = load u8 $lifetime__16
+    %t45 = load u8 $lifetime__17
     branch %t45, ^conditional_temporary_destroy_75, ^conditional_temporary_done_76
 
   block ^conditional_temporary_destroy_75:
-    store u8 0, $lifetime__16
+    store u8 0, $lifetime__17
     %t46 = addr $arg__12
     call void @Tracker___Tracker(%t46)
     jump ^conditional_temporary_done_76
 
   block ^conditional_temporary_done_76:
-    jump ^conditional_cleanup_resume_29
+    jump ^conditional_cleanup_dispatch_30
 
-  block ^condobj_then_77:
-    eh_try ^conditional_cleanup_dispatch_74
-    %t48 = addr $arg__12
-    call void @Tracker__Tracker(%t48, 5)
-    store u8 1, $lifetime__16
-    eh_end
-    eh_try ^conditional_cleanup_dispatch_74
-    call void @Box__Box__ov2(%t47, %t48)
-    eh_end
-    jump ^condobj_end_79
+  block ^conditional_cleanup_dispatch_77:
+    %t47 = load u8 $lifetime__16
+    branch %t47, ^conditional_temporary_destroy_78, ^conditional_temporary_done_79
 
-  block ^condobj_else_78:
-    eh_try ^conditional_cleanup_dispatch_74
-    %t49 = addr $fixed
-    call void @Box__Box__ov3(%t47, %t49)
-    eh_end
-    jump ^condobj_end_79
-
-  block ^condobj_end_79:
-    eh_try ^conditional_cleanup_dispatch_74
-    store ptr %t47, $extended
-    %t50 = load u8 $lifetime__16
-    branch %t50, ^conditional_temporary_destroy_80, ^conditional_temporary_done_81
-
-  block ^conditional_temporary_destroy_80:
+  block ^conditional_temporary_destroy_78:
     store u8 0, $lifetime__16
-    %t51 = addr $arg__12
-    call void @Tracker___Tracker(%t51)
-    jump ^conditional_temporary_done_81
+    %t48 = addr $tmpobj__18
+    call void @Box___Box(%t48)
+    jump ^conditional_temporary_done_79
 
-  block ^conditional_temporary_done_81:
+  block ^conditional_temporary_done_79:
+    jump ^conditional_cleanup_dispatch_74
+
+  block ^condobj_then_80:
+    eh_try ^conditional_cleanup_dispatch_77
+    %t50 = addr $arg__12
+    call void @Tracker__Tracker(%t50, 5)
+    store u8 1, $lifetime__17
     eh_end
-    %t52 = load ptr $extended
-    %t53 = index i8 [projection=field] %t52, 0
-    %t54 = load i32 %t53
-    %t55 = cmp ne i32 %t54, 15
-    branch %t55, ^if_then_82, ^lor_rhs_86
+    eh_try ^conditional_cleanup_dispatch_77
+    call void @Box__Box__ov2(%t49, %t50)
+    eh_end
+    jump ^condobj_end_82
 
-  block ^lor_rhs_86:
-    %t56 = load i32 @boxes_alive
-    %t57 = cmp ne i32 %t56, 2
-    branch %t57, ^if_then_82, ^lor_rhs_85
+  block ^condobj_else_81:
+    eh_try ^conditional_cleanup_dispatch_77
+    %t51 = addr $fixed
+    call void @Box__Box__ov3(%t49, %t51)
+    eh_end
+    jump ^condobj_end_82
 
-  block ^lor_rhs_85:
-    %t58 = load i32 @trackers_alive
-    %t59 = cmp ne i32 %t58, 0
-    branch %t59, ^if_then_82, ^if_else_83
+  block ^condobj_end_82:
+    store u8 1, $lifetime__16
+    eh_try ^conditional_cleanup_dispatch_77
+    store ptr %t49, $extended
+    %t52 = load u8 $lifetime__17
+    branch %t52, ^conditional_temporary_destroy_83, ^conditional_temporary_done_84
 
-  block ^if_then_82:
-    call void @Box___Box(%t47)
-    %t60 = addr $fixed
-    call void @Box___Box(%t60)
+  block ^conditional_temporary_destroy_83:
+    store u8 0, $lifetime__17
+    %t53 = addr $arg__12
+    call void @Tracker___Tracker(%t53)
+    jump ^conditional_temporary_done_84
+
+  block ^conditional_temporary_done_84:
+    eh_end
+    %t54 = load ptr $extended
+    %t55 = index i8 [projection=field] %t54, 0
+    %t56 = load i32 %t55
+    %t57 = cmp ne i32 %t56, 15
+    branch %t57, ^if_then_85, ^lor_rhs_89
+
+  block ^lor_rhs_89:
+    %t58 = load i32 @boxes_alive
+    %t59 = cmp ne i32 %t58, 2
+    branch %t59, ^if_then_85, ^lor_rhs_88
+
+  block ^lor_rhs_88:
+    %t60 = load i32 @trackers_alive
+    %t61 = cmp ne i32 %t60, 0
+    branch %t61, ^if_then_85, ^if_else_86
+
+  block ^if_then_85:
+    call void @Box___Box(%t49)
+    %t62 = addr $fixed
+    call void @Box___Box(%t62)
     return i32 3
 
-  block ^if_else_83:
-    jump ^if_end_84
+  block ^if_else_86:
+    jump ^if_end_87
 
-  block ^if_end_84:
-    call void @Box___Box(%t47)
-    %t61 = addr $fixed
-    call void @Box___Box(%t61)
-    %t62 = load i32 @boxes_alive
-    %t63 = cmp ne i32 %t62, 0
-    branch %t63, ^lor_short_88, ^lor_rhs_87
-
-  block ^lor_rhs_87:
-    %t64 = load i32 @trackers_alive
+  block ^if_end_87:
+    call void @Box___Box(%t49)
+    %t63 = addr $fixed
+    call void @Box___Box(%t63)
+    %t64 = load i32 @boxes_alive
     %t65 = cmp ne i32 %t64, 0
-    %t66 = cmp ne i64 %t65, 0
-    store i64 %t66, $lor__18
-    jump ^lor_end_89
+    branch %t65, ^lor_short_91, ^lor_rhs_90
 
-  block ^lor_short_88:
-    store i64 1, $lor__18
-    jump ^lor_end_89
+  block ^lor_rhs_90:
+    %t66 = load i32 @trackers_alive
+    %t67 = cmp ne i32 %t66, 0
+    %t68 = cmp ne i64 %t67, 0
+    store i64 %t68, $lor__19
+    jump ^lor_end_92
 
-  block ^lor_end_89:
-    %t67 = load i64 $lor__18
-    %t68 = convert trunc i32 i64 %t67
-    return i32 %t68
+  block ^lor_short_91:
+    store i64 1, $lor__19
+    jump ^lor_end_92
+
+  block ^lor_end_92:
+    %t69 = load i64 $lor__19
+    %t70 = convert trunc i32 i64 %t69
+    return i32 %t70
 }
 function @Box__Box(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
   slot $this : ptr
