@@ -422,6 +422,28 @@ ExpressionInfo Analyzer::MakeStringLiteral(
 	return result;
 }
 
+ExpressionInfo Analyzer::RetainedScalarLiteralFacts(NodeId syntax)
+{
+	ExpressionInfo result;
+	FundamentalType type = FT_VOID;
+	std::uint64_t value = 0;
+	if (!arena_->ScalarLiteralFact(syntax, &type, &value))
+	{
+		if (!arena_->IsTag(syntax, ::cppgm::syntax::STAG_KEYWORD_LITERAL)) return result;
+		const int token = PayloadTokenKind(syntax);
+		if (token == KW_TRUE || token == KW_FALSE) type = FT_BOOL;
+		else if (token == KW_NULLPTR) type = FT_NULLPTR_T;
+		else return result;
+	}
+	result.type = program_->types.Fundamental(SemanticFundamentalKind(type));
+	// Preserve the numeric literal's null-conversion fact, without treating
+	// a boolean or character literal as an integer literal zero.
+	const std::string& spelling = arena_->Payload(syntax);
+	result.integer_literal_zero = IsIntegral(result.type) && value == 0 &&
+		!spelling.empty() && spelling[0] == '0';
+	return result;
+}
+
 ExpressionInfo Analyzer::MakeBuiltinScalarLiteral(
 	const std::string& spelling, NodeId syntax)
 {

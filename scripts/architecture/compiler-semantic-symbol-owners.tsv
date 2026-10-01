@@ -319,6 +319,7 @@ dev/src/semantic/expressions/literals.cpp	ApplyConstantBinary	1	dev/src/semantic
 dev/src/semantic/expressions/literals.cpp	DecltypeType	1	dev/src/semantic/expressions/literals.cpp	keep
 dev/src/semantic/expressions/literals.cpp	InternNumber	1	dev/src/semantic/expressions/literals.cpp	keep
 dev/src/semantic/expressions/literals.cpp	MakeBuiltinScalarLiteral	1	dev/src/semantic/expressions/literals.cpp	keep
+dev/src/semantic/expressions/literals.cpp	RetainedScalarLiteralFacts	1	dev/src/semantic/expressions/literals.cpp	keep
 dev/src/semantic/expressions/literals.cpp	MakeLiteral	1	dev/src/semantic/expressions/literals.cpp	keep
 dev/src/semantic/expressions/literals.cpp	MakeStringLiteral	1	dev/src/semantic/expressions/literals.cpp	keep
 dev/src/semantic/expressions/literals.cpp	ParseInteger	1	dev/src/semantic/expressions/literals.cpp	keep

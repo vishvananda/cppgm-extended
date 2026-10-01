@@ -69,6 +69,16 @@ struct RetainedCurrentClass
 	RetainedCurrentClass() : name(0), source(kNoNode) {}
 };
 
+struct RetainedExpressionType
+{
+	TypeId type;
+	ValueCategory category;
+	bool integer_literal_zero;
+	explicit RetainedExpressionType(const ExpressionInfo& expression)
+		: type(expression.type), category(expression.category),
+		  integer_literal_zero(expression.integer_literal_zero) {}
+};
+
 struct RetainedScope
 {
 	ScopeId semantic_scope;
@@ -143,6 +153,7 @@ private:
 	bool DefersUnknownMembers(std::size_t scope) const;
 	bool HasUnmodeledFixedBase(std::size_t scope) const;
 	bool HasUnmodeledCurrentClass(std::size_t scope) const;
+	NodeId DeclarationDeclarator(NodeId node) const;
 	bool IsQualifiedMemberDefinition(NodeId node) const;
 	bool IsTypedef(NodeId specifiers) const;
 	bool HasBaseClass(NodeId node) const;
@@ -174,7 +185,15 @@ private:
 	NodeId RetainedOperatorCallArgument(NodeId node) const;
 	void VisitSimple(NodeId node, std::size_t scope, bool predeclared);
 	void VisitUsing(NodeId node, std::size_t scope);
+	void VisitCall(NodeId node, std::size_t scope);
 	void VisitSizeof(NodeId node, std::size_t scope);
+	ExpressionInfo KnownExpressionFacts(NodeId node) const;
+	void PublishExpressionFacts(NodeId node, const ExpressionInfo& expression);
+	void ValidateFixedExpression(NodeId node);
+	ExpressionInfo FixedUnaryExpression(NodeId node, ExpressionInfo operand);
+	ExpressionInfo FixedBinaryExpression(NodeId node, ExpressionInfo left,
+		ExpressionInfo right);
+	void ValidateFixedCall(NodeId node);
 	void VisitIdExpression(NodeId node, std::size_t scope,
 		bool unknown_callee);
 	void ValidateKnownTemplateArgumentKinds(NodeId node, ScopeId scope);
@@ -203,6 +222,7 @@ private:
 	std::vector<RetainedTemplateParameterKey> template_parameter_keys_;
 	std::vector<RetainedScope> scopes_;
 	std::vector<std::size_t> switch_entry_scopes_;
+	std::unordered_map<NodeId, RetainedExpressionType> expression_types_;
 };
 
 std::size_t RetainedTemplateValidator::AddScope(ScopeId semantic_scope,
@@ -357,9 +377,19 @@ bool RetainedTemplateValidator::HasUnmodeledCurrentClass(
 	return false;
 }
 
+NodeId RetainedTemplateValidator::DeclarationDeclarator(NodeId node) const
+{
+	const NodeId direct = analyzer_.FindChild(node, ::cppgm::syntax::STAG_DECLARATOR);
+	if (direct != kNoNode) return direct;
+	const NodeId list = analyzer_.FindChild(node, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
+	const NodeId first = list == kNoNode ? kNoNode : analyzer_.FirstSemanticChild(list);
+	return first == kNoNode ? kNoNode :
+		analyzer_.FindChild(first, ::cppgm::syntax::STAG_DECLARATOR);
+}
+
 bool RetainedTemplateValidator::IsQualifiedMemberDefinition(NodeId node) const
 {
-	const NodeId declarator = analyzer_.FindChild(node, ::cppgm::syntax::STAG_DECLARATOR);
+	const NodeId declarator = DeclarationDeclarator(node);
 	if (declarator == kNoNode) return false;
 	const NamePath path = analyzer_.DeclaratorNamePath(declarator);
 	return path.global || path.Size() > 1;
@@ -1135,7 +1165,8 @@ void RetainedTemplateValidator::VisitSimple(NodeId node, std::size_t scope,
 						type_declaration ? RETAINED_TYPE_NAME :
 						RETAINED_VALUE_NAME,
 						!type_declaration &&
-						FindParameterClause(declarator) != kNoNode);
+						(FindParameterClause(declarator) != kNoNode ||
+						 (node == target_ && DefersUnknownMembers(scope))));
 			}
 	}
 	const NodeId list = analyzer_.FindChild(node, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
@@ -1375,6 +1406,231 @@ void RetainedTemplateValidator::VisitIdExpression(NodeId node,
 		"unknown nondependent name in template definition: " + spelling);
 }
 
+ExpressionInfo RetainedTemplateValidator::KnownExpressionFacts(NodeId node) const
+{
+	if (node == kNoNode) return ExpressionInfo();
+	if ((analyzer_.arena_->Flags(node) & ::cppgm::syntax::SYNTAX_FLAG_LITERAL_FACT) != 0 ||
+		analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_KEYWORD_LITERAL))
+		return analyzer_.RetainedScalarLiteralFacts(node);
+	const std::unordered_map<NodeId, RetainedExpressionType>::const_iterator found =
+		expression_types_.find(node);
+	if (found == expression_types_.end()) return ExpressionInfo();
+	ExpressionInfo result;
+	result.type = found->second.type;
+	result.category = found->second.category;
+	result.integer_literal_zero = found->second.integer_literal_zero;
+	return result;
+}
+
+void RetainedTemplateValidator::PublishExpressionFacts(NodeId node,
+	const ExpressionInfo& expression)
+{
+	if (expression.type != kNoType)
+		expression_types_.emplace(node, RetainedExpressionType(expression));
+}
+
+ExpressionInfo RetainedTemplateValidator::FixedUnaryExpression(
+	NodeId node, ExpressionInfo operand)
+{
+	if (operand.type == kNoType || analyzer_.EntityOf(operand.type) != kNoEntity)
+		return ExpressionInfo();
+	const int operation = analyzer_.PayloadTokenKind(node);
+	ExpressionInfo result;
+	const TypeId type = analyzer_.Decay(operand.type);
+	if (operation == OP_STAR)
+	{
+		if (!analyzer_.IsPointer(type))
+			ThrowSemanticError("invalid nondependent indirection operand");
+		result.type = analyzer_.program_->types.Get(type).child;
+		result.category = VALUE_LVALUE;
+	}
+	else if (operation == OP_AMP)
+	{
+		if (operand.category != VALUE_LVALUE)
+			ThrowSemanticError("invalid nondependent address operand");
+		result.type = analyzer_.program_->types.Pointer(operand.type);
+	}
+	else if (operation == OP_INC || operation == OP_DEC)
+	{
+		if (operand.category != VALUE_LVALUE || analyzer_.IsConst(operand.type) ||
+			(!analyzer_.IsArithmetic(type) && !analyzer_.IsPointer(type)))
+			ThrowSemanticError("invalid nondependent increment operand");
+		result.type = type;
+		result.category = analyzer_.arena_->IsTag(node,
+			::cppgm::syntax::STAG_POSTFIX_EXPRESSION) ? VALUE_PRVALUE : VALUE_LVALUE;
+	}
+	else if (operation == OP_LNOT)
+	{
+		if (!analyzer_.IsBuiltinLogicalOperand(operand))
+			ThrowSemanticError("invalid nondependent logical operand");
+		result.type = analyzer_.program_->types.Fundamental(FUND_BOOL);
+	}
+	else if (operation == OP_PLUS || operation == OP_MINUS || operation == OP_COMPL)
+	{
+		if (operation == OP_PLUS && analyzer_.IsPointer(type)) result.type = type;
+		else
+		{
+			if (operation == OP_COMPL ? !analyzer_.IsIntegral(type) :
+				!analyzer_.IsArithmetic(type))
+				ThrowSemanticError("invalid nondependent unary operand");
+			result.type = analyzer_.IsIntegral(type) ?
+				analyzer_.IntegralPromotionType(type) : type;
+		}
+	}
+	return result;
+}
+
+ExpressionInfo RetainedTemplateValidator::FixedBinaryExpression(NodeId node,
+	ExpressionInfo left, ExpressionInfo right)
+{
+	if (left.type == kNoType || right.type == kNoType ||
+		analyzer_.EntityOf(left.type) != kNoEntity ||
+		analyzer_.EntityOf(right.type) != kNoEntity) return ExpressionInfo();
+	const bool subscript = analyzer_.arena_->IsTag(node,
+		::cppgm::syntax::STAG_SUBSCRIPT_EXPRESSION);
+	const std::string operation = subscript ? "[]" : analyzer_.PayloadSource(node);
+	const int op = subscript ? static_cast<int>(OP_LSQUARE) :
+		analyzer_.PayloadTokenKind(node);
+	if (op == OP_COMMA) return right;
+	ExpressionInfo result;
+	if (subscript)
+	{
+		if (!analyzer_.IsPointer(analyzer_.Decay(left.type))) std::swap(left, right);
+		const TypeId pointer = analyzer_.Decay(left.type);
+		if (!analyzer_.IsPointer(pointer) || !analyzer_.IsIntegral(right.type) ||
+			!analyzer_.IsPointerToCompleteObject(pointer))
+			ThrowSemanticError("invalid nondependent subscript operands");
+		result.type = analyzer_.program_->types.Get(pointer).child;
+		result.category = VALUE_LVALUE;
+		return result;
+	}
+	TypeId left_target = kNoType, right_target = kNoType;
+	if (!analyzer_.BuiltinBinaryParameterTypes(operation, left, left.type,
+		right, right.type, &left_target, &right_target))
+		ThrowSemanticError("invalid nondependent binary operands");
+	if (op == OP_LAND || op == OP_LOR || op == OP_EQ || op == OP_NE ||
+		op == OP_LT || op == OP_LE || op == OP_GT || op == OP_GE)
+		result.type = analyzer_.program_->types.Fundamental(FUND_BOOL);
+	else if (op == OP_PLUS || op == OP_MINUS)
+	{
+		TypeId operand_type = kNoType;
+		bool failed = false;
+		result.type = analyzer_.BuiltinAdditiveResultType(op, left, right,
+			&operand_type, &failed);
+	}
+	else result.type = analyzer_.PrepareBuiltinArithmetic(operation, left, right);
+	return result;
+}
+
+void RetainedTemplateValidator::ValidateFixedExpression(NodeId node)
+{
+	const ::cppgm::syntax::SyntaxTagCode tag = analyzer_.arena_->TagCode(node);
+	if (tag != ::cppgm::syntax::STAG_PARENTHESIZED_EXPRESSION &&
+		tag != ::cppgm::syntax::STAG_UNARY_EXPRESSION &&
+		tag != ::cppgm::syntax::STAG_POSTFIX_EXPRESSION &&
+		tag != ::cppgm::syntax::STAG_BINARY_EXPRESSION &&
+		tag != ::cppgm::syntax::STAG_SUBSCRIPT_EXPRESSION &&
+		tag != ::cppgm::syntax::STAG_ASSIGNMENT_EXPRESSION &&
+		tag != ::cppgm::syntax::STAG_MEMBER_EXPRESSION) return;
+	const std::uint32_t first = analyzer_.arena_->FirstEdge(node);
+	if (first == kNoEdge) return;
+	const ExpressionInfo left = KnownExpressionFacts(analyzer_.arena_->EdgeChild(first));
+	ExpressionInfo result;
+	if (tag == ::cppgm::syntax::STAG_PARENTHESIZED_EXPRESSION) result = left;
+	else if (tag == ::cppgm::syntax::STAG_UNARY_EXPRESSION ||
+		tag == ::cppgm::syntax::STAG_POSTFIX_EXPRESSION)
+		result = FixedUnaryExpression(node, left);
+	else if (tag == ::cppgm::syntax::STAG_MEMBER_EXPRESSION)
+	{
+		if (left.type != kNoType)
+		{
+			TypeId owner = analyzer_.EffectiveType(left.type);
+			if (analyzer_.PayloadTokenKind(node) == OP_ARROW && analyzer_.IsPointer(owner))
+				owner = analyzer_.program_->types.Get(owner).child;
+			if (analyzer_.EntityOf(owner) == kNoEntity &&
+				analyzer_.program_->types.Get(owner).kind != TYPE_VECTOR)
+				ThrowSemanticError("invalid nondependent member object");
+		}
+	}
+	else if (tag == ::cppgm::syntax::STAG_ASSIGNMENT_EXPRESSION)
+	{
+		if (left.type != kNoType && analyzer_.EntityOf(left.type) == kNoEntity &&
+			(left.category != VALUE_LVALUE || analyzer_.IsConst(left.type)))
+			ThrowSemanticError("invalid nondependent assignment target");
+		result = left;
+	}
+	else
+	{
+		const std::uint32_t second = analyzer_.arena_->NextEdge(first);
+		if (second != kNoEdge)
+			result = FixedBinaryExpression(node, left,
+				KnownExpressionFacts(analyzer_.arena_->EdgeChild(second)));
+	}
+	PublishExpressionFacts(node, result);
+}
+
+void RetainedTemplateValidator::ValidateFixedCall(NodeId node)
+{
+	const std::uint32_t first = analyzer_.arena_->FirstEdge(node);
+	if (first == kNoEdge) return;
+	const NodeId callee = analyzer_.arena_->EdgeChild(first);
+	if (callee >= analyzer_.retained_call_lookup_states_.size() ||
+		(analyzer_.retained_call_lookup_states_[callee] &
+			RETAINED_CALL_LOOKUP_PUBLISHED) == 0) return;
+	const CompactIndexSequence* templates =
+		analyzer_.retained_call_template_sets_.Find(callee);
+	if (templates && templates->Size() != 0) return;
+	const CompactIndexSequence* functions =
+		analyzer_.retained_call_function_sets_.Find(callee);
+	if (!functions || functions->Size() == 0) return;
+	std::vector<ExpressionInfo> arguments;
+	for (std::uint32_t edge = analyzer_.arena_->NextEdge(first); edge != kNoEdge;
+		edge = analyzer_.arena_->NextEdge(edge))
+	{
+		const NodeId list = analyzer_.arena_->EdgeChild(edge);
+		if (!analyzer_.arena_->IsTag(list, ::cppgm::syntax::STAG_ARGUMENT_LIST) &&
+			!analyzer_.arena_->IsTag(list, ::cppgm::syntax::STAG_PAREN_ARGUMENT_LIST)) return;
+		for (std::uint32_t argument = analyzer_.arena_->FirstEdge(list);
+			argument != kNoEdge; argument = analyzer_.arena_->NextEdge(argument))
+		{
+			const ExpressionInfo expression =
+				KnownExpressionFacts(analyzer_.arena_->EdgeChild(argument));
+			if (expression.type == kNoType) return;
+			arguments.push_back(expression);
+		}
+	}
+	std::size_t viable = 0;
+	ExpressionInfo result;
+	for (std::size_t i = 0; i < functions->Size(); ++i)
+	{
+		const BindingId binding = static_cast<BindingId>((*functions)[i]);
+		const FunctionInfo& function = analyzer_.GetFunction(binding);
+		if (analyzer_.FunctionTemplateTypeIsDependent(analyzer_.program_->bindings[binding].type) ||
+			function.member_owner != kNoType) return;
+		if (arguments.size() > function.parameters.size() &&
+			!analyzer_.program_->types.Get(function.type).variadic) continue;
+		bool accepted = true;
+		for (std::size_t j = 0; j < function.parameters.size(); ++j)
+		{
+			if (j >= arguments.size())
+			{
+				if (function.parameters[j].default_argument == kNoNode) accepted = false;
+			}
+			else if (analyzer_.Conversion(arguments[j],
+				function.parameters[j].function_type) == CONVERSION_INVALID)
+				accepted = false;
+		}
+		if (!accepted) continue;
+		++viable;
+		const TypeId type = analyzer_.program_->types.Get(
+			analyzer_.program_->bindings[binding].type).child;
+		result = analyzer_.MakeBuiltinTraitOperand(type);
+		if (!analyzer_.program_->types.IsReference(type)) result.category = VALUE_PRVALUE;
+	}
+	if (viable == 0) ThrowSemanticError("no viable nondependent call in template definition");
+	if (viable == 1) PublishExpressionFacts(node, result);
+}
+
 void RetainedTemplateValidator::VisitSizeof(NodeId node, std::size_t scope)
 {
 	const NodeId operand = analyzer_.FirstSemanticChild(node);
@@ -1409,10 +1665,48 @@ void RetainedTemplateValidator::VisitSizeof(NodeId node, std::size_t scope)
 	Visit(operand, scope);
 }
 
+void RetainedTemplateValidator::VisitCall(NodeId node, std::size_t scope)
+{
+	const std::uint32_t first = analyzer_.arena_->FirstEdge(node);
+	if (first == kNoEdge) return;
+	const NodeId callee = analyzer_.arena_->EdgeChild(first);
+	const std::string spelling = analyzer_.PayloadSource(callee);
+	Visit(callee, scope, true);
+	std::size_t ordinal = 0;
+	for (std::uint32_t edge = analyzer_.arena_->NextEdge(first);
+		edge != kNoEdge; edge = analyzer_.arena_->NextEdge(edge))
+	{
+		const NodeId holder = analyzer_.arena_->EdgeChild(edge);
+		if (analyzer_.arena_->IsTag(holder, ::cppgm::syntax::STAG_ARGUMENT_LIST) ||
+			analyzer_.arena_->IsTag(holder, ::cppgm::syntax::STAG_PAREN_ARGUMENT_LIST))
+			for (std::uint32_t argument = analyzer_.arena_->FirstEdge(holder);
+				argument != kNoEdge;
+				argument = analyzer_.arena_->NextEdge(argument), ++ordinal)
+				Visit(analyzer_.arena_->EdgeChild(argument), scope,
+					(spelling == "__builtin_bit_cast" && ordinal == 0) ||
+					(spelling == "__builtin_convertvector" && ordinal == 1));
+		else Visit(holder, scope);
+	}
+	ValidateFixedCall(node);
+}
+
 void RetainedTemplateValidator::Visit(NodeId node, std::size_t scope,
 	bool unknown_callee)
 {
 	if (node == kNoNode) return;
+	switch (analyzer_.arena_->TagCode(node))
+	{
+	case ::cppgm::syntax::STAG_PARENTHESIZED_EXPRESSION:
+	case ::cppgm::syntax::STAG_UNARY_EXPRESSION:
+	case ::cppgm::syntax::STAG_POSTFIX_EXPRESSION:
+	case ::cppgm::syntax::STAG_BINARY_EXPRESSION:
+	case ::cppgm::syntax::STAG_SUBSCRIPT_EXPRESSION:
+	case ::cppgm::syntax::STAG_ASSIGNMENT_EXPRESSION:
+		VisitChildren(node, scope);
+		ValidateFixedExpression(node);
+		return;
+	default: break;
+	}
 	if (VisitSwitchLabel(node, scope)) return;
 	// The parser and specialization demand own type syntax within this boundary.
 	if (analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_BUILTIN_TYPE_OPERAND)) return;
@@ -1423,26 +1717,7 @@ void RetainedTemplateValidator::Visit(NodeId node, std::size_t scope,
 	}
 	if (analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_CALL_EXPRESSION))
 	{
-		const std::uint32_t first = analyzer_.arena_->FirstEdge(node);
-		if (first == kNoEdge) return;
-		const NodeId callee = analyzer_.arena_->EdgeChild(first);
-		const std::string spelling = analyzer_.PayloadSource(callee);
-		Visit(callee, scope, true);
-		std::size_t ordinal = 0;
-		for (std::uint32_t edge = analyzer_.arena_->NextEdge(first);
-			edge != kNoEdge; edge = analyzer_.arena_->NextEdge(edge))
-		{
-			const NodeId holder = analyzer_.arena_->EdgeChild(edge);
-			if (analyzer_.arena_->IsTag(holder, ::cppgm::syntax::STAG_ARGUMENT_LIST) ||
-				analyzer_.arena_->IsTag(holder, ::cppgm::syntax::STAG_PAREN_ARGUMENT_LIST))
-				for (std::uint32_t argument = analyzer_.arena_->FirstEdge(holder);
-					argument != kNoEdge;
-					argument = analyzer_.arena_->NextEdge(argument), ++ordinal)
-					Visit(analyzer_.arena_->EdgeChild(argument), scope,
-						(spelling == "__builtin_bit_cast" && ordinal == 0) ||
-						(spelling == "__builtin_convertvector" && ordinal == 1));
-			else Visit(holder, scope);
-		}
+		VisitCall(node, scope);
 		return;
 	}
 	if (analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_ENUM_SPECIFIER))
@@ -1454,6 +1729,9 @@ void RetainedTemplateValidator::Visit(NodeId node, std::size_t scope,
 	if (analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_SIZEOF_EXPRESSION))
 	{
 		VisitSizeof(node, scope);
+		ExpressionInfo result;
+		result.type = analyzer_.program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+		PublishExpressionFacts(node, result);
 		return;
 	}
 	if (analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_LAMBDA_EXPRESSION))
@@ -1617,6 +1895,7 @@ void RetainedTemplateValidator::Visit(NodeId node, std::size_t scope,
 			}
 		}
 		VisitChildren(node, scope);
+		ValidateFixedExpression(node);
 		return;
 	}
 	if (analyzer_.arena_->IsTag(node, ::cppgm::syntax::STAG_CLASS_SPECIFIER))
@@ -1952,7 +2231,7 @@ void RetainedTemplateValidator::Run()
 	SetTemplateParameterRange(root, parameters_);
 	if (qualified_member)
 	{
-		const NodeId declarator = analyzer_.FindChild(target_, ::cppgm::syntax::STAG_DECLARATOR);
+		const NodeId declarator = DeclarationDeclarator(target_);
 		NamePath owner;
 		const NodeId structure =
 			analyzer_.DeclaratorNameStructure(declarator);
@@ -2032,7 +2311,9 @@ void RetainedTemplateValidator::Run()
 			static_cast<std::int64_t>(i));
 	}
 	ValidateKnownTemplateArgumentKinds(target_, semantic);
-	if (!definition && !analyzer_.arena_->IsTag(target_, ::cppgm::syntax::STAG_ALIAS_DECLARATION))
+	if (!definition &&
+		!analyzer_.arena_->IsTag(target_, ::cppgm::syntax::STAG_ALIAS_DECLARATION) &&
+		!analyzer_.arena_->IsTag(target_, ::cppgm::syntax::STAG_SIMPLE_DECLARATION))
 		return;
 	Visit(target_, root);
 }

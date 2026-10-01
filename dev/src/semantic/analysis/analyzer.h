@@ -1752,6 +1752,7 @@ private:
 		std::size_t* character_count = 0);
 	ExpressionInfo MakeBuiltinScalarLiteral(const std::string& spelling,
 		NodeId syntax = kNoNode);
+	ExpressionInfo RetainedScalarLiteralFacts(NodeId syntax);
 	bool TryAnalyzeUserDefinedStringLiteral(const std::string& spelling,
 		ScopeId scope, TypeId target, ExpressionInfo* result);
 	bool TryAnalyzeUserDefinedNumericLiteral(const std::string& spelling,

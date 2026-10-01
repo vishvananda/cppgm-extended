@@ -27,7 +27,7 @@ fix sequence is complete, as requested.
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
 | RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done: 4858ddbc0; typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
 | CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Open with conversion legality work: immutable 70e7a2920 and current reject A a=x when A has A(int) and X::operator T(); GCC/Clang accept. Keep the reducer; the explicit-call fixture uses an aggregate result to isolate its contract. |
-| TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | In progress: the valid bounds failure reduces to parameter adjustment, recorded as PARAM-ADJUST below. Six unused body operations and one unused bound remain accepted. Fixed-call control rejects in Clang but GCC accepts; review definition-time rules separately. Historical student-entry evidence is not a supplied-oracle comparison. |
+| TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Done in the accompanying checkpoint: known type/category facts validate unused operators/calls/bounds without evaluating dependent values. Eight PA14 fixtures, 22 copied rejection controls, strict 5887/5887 and full checks pass. Alpha instruction/RSS gates pass with equal outputs; fixed-call GCC disagreement documented below. PARAM-ADJUST completes the valid bound failure. |
 | PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done in the accompanying checkpoint: parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
 | DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Open; discarded reference calls completed separately below. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
@@ -1226,3 +1226,45 @@ All 144 objects are identical. Raw counter/time logs, input/binary manifests and
 paired summaries are retained under parameter-adjustment/alpha/; the isolated
 remote directory is /tmp/cppgm-v4-audit-review-20261001-parameter-adjustment/.
 Final student export remains deferred.
+
+## Definition-time fixed expression types checkpoint
+
+N3485 [temp.dep.expr]/4 makes sizeof result types independent of template
+arguments; [temp.dep.constexpr]/2 separately permits dependent values. The
+retained-template visitor now publishes sparse type/category facts, consumes
+source literal facts, and validates known unary/binary/member/assignment/call
+operands without computing a dummy size or emitting runtime expression nodes.
+Unknown operand types remain deferred. Typed expression tags use an early visitor
+dispatch rather than traversing unrelated declaration cases. Simple template declarations also enter
+the same declaration-scope visitor, so unused bound operands retain their type
+obligations. Existing parameter-shape scopes and frozen ordinary call sets remain
+the owners. Baseline compiler and intermediate checks live under
+/tmp/cppgm-v4-audit-review/template-definition-types/. Eight PA14 fixtures and
+all 22 copied rejection controls pass. Final PA14 passes 328/328; strict report
+passes 5887/5887 with exactly one success line. Debug-info, variants, self-host
+through PA5, all nine architecture targets, file audit and placement pass.
+Existing references are unchanged. A qualified static-member declaration now
+inherits its retained owner scope and reuses its predeclared member name,
+preserving dependent aliases and initializer lookup without demanding storage.
+An initial function-size finding was resolved by extracting the call visitor.
+
+Clang rejects all seven required invalid forms. GCC accepts the unused fixed-call
+form take(sizeof(T)) with an int* parameter; the course's definition-time
+validation contract requires this check. This unused form has no valid
+specialization, so compiler acceptance alone does not establish a GCC defect.
+Additional numeric-zero/nullptr controls agree with Clang; GCC also accepts a
+character-zero pointer argument which Clang rejects. Known result types carry
+no fabricated size values: the valid 5/sizeof(T), dependent operand, shorted
+bound and reference-result subscript controls compile and run at O0/O2.
+
+Alpha's final immutable four-block A/A and eight-block A/B comparisons for each
+of three frozen inputs pass the instruction/RSS gates. Median instruction ratios
+are 1.004012, 1.000034 and 0.999992; RSS ratios are 0.990625, 0.999307 and
+1.000198. All 144 objects are identical and the measured candidate hash matches
+the validated compiler. Initial recognition measurements were just above the
+instruction gate (1.005173 / 1.005145); early expression visitor dispatch reduces
+that overhead. All intermediate observations, including the partial failed
+scope experiment, are retained separately in alpha-initial, alpha-refined,
+alpha-completed and alpha-dispatch. The final remote directory is
+/tmp/cppgm-v4-audit-review-20261001-template-definition-types-dispatch/.
+Student export remains deferred until the combined final checkpoint.
