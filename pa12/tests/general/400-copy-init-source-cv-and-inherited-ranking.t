@@ -33,4 +33,3 @@ namespace case10 {
 struct A{int value;A(int n):value(n){}};A result(2);struct X{operator A &(){return result;}};int check(){X x;A a=x;return a.value == 2 ? 0 : 1;}
 }
 int main() { return case0::check() || case1::check() || case2::check() || case3::check() || case4::check() || case5::check() || case6::check() || case7::check() || case8::check() || case9::check() || case10::check(); }
-
