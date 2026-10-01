@@ -45,6 +45,8 @@ fix sequence is complete, as requested.
 | EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in ac2aaf704: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | EH-FORWARD | Advertise enclosing catch clauses and unwind prefixes/active handlers in lifetime order | v4codex references106/112 plus independent boundary controls | Done in the accompanying checkpoint: 40 agreed boundary programs and six new PA21 fixtures pass at O0/O2; three independently reviewed references change. Strict 5977/5977, full compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. |
 | EH-CLEANUP | Preserve handler lifetime and remaining-object unwind tails during lexical destruction | Original EH reducer plus expanded local cleanup controls | Done in the accompanying checkpoint: 34 host-agreed runtime boundary programs and seven new PA21/28 fixtures pass at O0/O2; three reviewed references change. Strict 5984/5984, all compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. Array element progress and non-NRVO returned-object cleanup remain separate rows. |
+| EH-AGG-PREFIX | Preserve completed aggregate members/elements and interleaved temporaries when a later initializer throws | Original aggregate-prefix reducer plus expanded construction controls | In progress: frozen 72a55cd47 fails 23 host-agreed controls at O0/O2. All 24 controls compile and link; one additional custom-destructor control has a host disagreement, tracked separately. Baseline evidence and ordered-prefix requirements are recorded below; no compiler or required-reference change yet. |
+| EH-AGG-NESTED | Invoke a completed nested aggregate's custom destructor when a later outer member fails | Additional EH-AGG-PREFIX boundary control | Needs contract review: Clang invokes the nested destructor, GCC skips its body; both destroy its member objects. N3485's principal-constructor wording predates P0490R0's explicit completed-aggregate rule. Keep this difference separate from the 23 agreed cleanup failures; no oracle changed. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Open: the entry and cleanup candidates emit an empty instantiated body and return zero; Clang/GCC run the specified body and handler at O0/O2. Pattern registration uses a direct compound-statement lookup and does not retain handler syntax. |
@@ -2235,3 +2237,89 @@ was adopted after N3485. Keep the course-policy decision and host disagreement
 visible before changing that contract. The passing NRVO control remains a
 separate requirement for a named local that already has a lifetime obligation.
 Other tracker rows and the final combined student export remain pending.
+
+## Aggregate construction-prefix baseline after EH-CLEANUP
+
+EH-AGG-PREFIX is the next sequential compiler fix. The immutable baseline is
+72a55cd47, with compiler SHA-256
+b1ec05004d614ec51747b82d977f64f4fbf93ebcd53c842371cc14b23e7754db.
+Sources, companions, runner versions and hashes are retained under
+/tmp/cppgm-v4-audit-review/aggregate-prefix-cleanup/. The student's checkout
+and original audit reducers remain unchanged.
+
+Twenty-four construction controls compile and link with the baseline,
+Clang 21.1.8 and GCC at O0/O2. The complete runner observes every configured
+throw point, instead of stopping after the first leaked lifetime. Its 144
+observations are retained in entry-complete-controls.json. All 48 baseline
+executions fail the live-object check; all 96 host executions pass it.
+Twenty-three controls also have identical host traces. The remaining
+nested-custom-destructor control differs only in whether the completed nested
+aggregate's own destructor body runs. Earlier 90 and 54 observations remain
+retained as entry-controls.json and entry-boundary-controls.json; their
+runners stop at the first failure. entry-verification.json verifies frozen
+hashes and distinguishes agreement from the disputed trace.
+
+The agreed failures cover flat and nested member initialization, member arrays,
+arrays of aggregates, omitted/defaulted members and elements, direct braces,
+scalar initializers after and between members, a twelve-element array, a
+two-dimensional array, active source handlers, aggregate results, a completed
+array element with a custom destructor, no preceding local object, successive
+aggregate declarations, constructor member initialization, conditional
+destinations and distinct branch prefixes. Conditional destinations use
+permitted C++11 copy elision differently: the baseline performs two additional
+member copies on its successful path. That normal trace difference is not
+recorded as another compiler bug. The failing live-object check remains valid
+independently of whether those copies are elided.
+
+The original reducer currently invokes member copy constructors directly at
+their final addresses, as required by AGG-DEST. Each call receives the same
+full-expression unwind suffix for the surrounding locals. Successful members
+never enter that suffix. The array and recursive aggregate walkers likewise
+lack a completed-member prefix. Moving the fixture or changing its expected
+result cannot repair this failure.
+
+The mixed temporary controls constrain the implementation more tightly than
+a separate member-cleanup list. In temporary-and-final-scalar, member 3
+finishes, temporary 4 is constructed, and member 6 finishes before scalar
+initializer 7 throws. Both hosts destroy 6, 4 and 3, then the surrounding
+locals. If initializer 5 or member constructor 6 throws instead, temporary 4
+precedes member 3 during cleanup. A blanket rule placing all temporaries
+before all completed subobjects is therefore incorrect. Normal completion
+still destroys the temporary at the end of the full expression and leaves
+the completed aggregate alive until its owning scope ends.
+
+The implementation must record successful construction transitions in one
+ordered prefix, retaining typed destination, type, destructor and ownership
+facts. Nested completion must transfer member obligations to the completed
+subobject without duplicating destruction or losing pending temporaries.
+Untaken branches, retired temporaries, later scalar calls and empty lexical
+suffixes need that same prefix. It must join the existing full-expression
+dispatcher before outer lexical/handler cleanup; a separate enclosing handler
+that inner cleanup bypasses would still lose the members. Equal tails must
+retain their full source exception context and terminal continuation, with
+incremental sharing rather than copying every preceding member at every call.
+Destructor demand must respect completed class ownership. Lowering must not
+fabricate semantic nodes to reuse an existing destructor path.
+
+EH-AGG-NESTED records the separate host disagreement. When the third outer
+member's copy constructor throws, Clang calls the completed inner aggregate's
+custom destructor and then its member destructors. GCC calls only the member
+destructors. The equivalent completed array-element control invokes the custom
+destructor with both hosts. N3485 15.2/2 describes completed subobjects through
+their principal constructors; [P0490R0, US 28](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0490r0.html)
+explicitly extends the deemed-constructed rule to completed aggregate
+initialization. [CWG 2227](https://cplusplus.github.io/CWG/issues/2227.html)
+also discusses aggregate element destructors and exceptional cleanup. Keep
+these later wording changes visible when deciding the course oracle; no
+required fixture or reference was changed at this baseline checkpoint.
+
+Three nonthrowing aggregate inputs with 32, 128 and 512 nontrivially
+destructible members are frozen for an additional performance gate.
+performance-entry.json records successful baseline object and LowIR emission
+and output hashes. They complement the previous nine equivalent-output
+workloads and will expose unnecessary cleanup machinery on the nonthrowing
+path. Alpha's instructions:u and cycles:u counters were verified accessible;
+the actual A/A and A/B measurements await a compiler candidate. No compiler
+code changed in this evidence checkpoint, so the prior validated compiler
+and 5984-test strict result still identify the entry binary. Final combined
+student-export validation remains deferred until all fixes are complete.
