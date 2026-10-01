@@ -44,6 +44,8 @@ fix sequence is complete, as requested.
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: EH-HANDLER-TEMP and EH-FORWARD address handler temporaries and nested forwarding. Four of seven refreshed reducers now pass at O0/O2; throwing local cleanup, aggregate construction prefixes and failed-new deallocation remain independently failing. |
 | EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in ac2aaf704: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | EH-FORWARD | Advertise enclosing catch clauses and unwind prefixes/active handlers in lifetime order | v4codex references106/112 plus independent boundary controls | Done in the accompanying checkpoint: 40 agreed boundary programs and six new PA21 fixtures pass at O0/O2; three independently reviewed references change. Strict 5977/5977, full compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. |
+| EH-CLEANUP | Preserve handler lifetime and remaining-object unwind tails during lexical destruction | Original EH reducer plus expanded local cleanup controls | Open, verified in d59b47c5b: 17 runtime failures across return, shared return, scope exit, break/continue/goto and by-value handlers; Clang/GCC pass. Outside-guard positive constrains normal boundary ordering. |
+| EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Open: three programs reject here and pass Clang/GCC at O0/O2. N3485 15.1/8-9 requires the runtime active exception, rather than a lexical catch in the callee definition. No compiler/reference change yet. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
@@ -2046,3 +2048,57 @@ The refreshed seven original EH reducers pass four cases; throwing local
 cleanup, aggregate prefixes and failed-new deallocation still fail here and
 pass Clang/GCC at O0/O2. Those remain EH; later rows and final combined export
 remain pending.
+
+
+## Lexical cleanup boundary verification after EH-FORWARD
+
+Immutable d59b47c5b supplies nineteen defined controls and 114 O0/O2
+compiler/runtime observations. Clang and GCC pass all nineteen. Seventeen
+runtime controls fail here, one rethrow control is rejected semantically, and
+one positive passes. The runtime failures cover scalar/void/shared return,
+normal handler and nested-block exit, break/continue/goto both out of and
+within a handler, two active handlers, an unnamed by-value handler, a match in
+an enclosing try, and throwing destruction of an outside guard after the catch
+has ended. A nonthrowing return also observes premature destruction of the
+caught exception, so this is not confined to destructor escape.
+
+The passing outside-guard control requires its guard's destructor to run after
+end_catch. Handler-owned local objects require the opposite order. Moving all
+end_catch calls after a flat destructor list therefore cannot satisfy both.
+Likewise, keeping a handler active during a throwing local destructor is
+insufficient: every remaining local destructor must run before the active
+exception is released. A return from a try body must preserve that try's own
+handlers while destroying its locals, and publish the remaining local prefix
+if one destructor throws before source matching.
+
+BeginExceptionControlExit currently closes the top handler before the flat
+return/goto list. Structured jumps and ordinary scope exits leave it active,
+but their direct destructor calls lack the remaining-object cleanup tail. The
+semantic lifetime and source control-region facts should publish precise
+normal boundaries and unwind obligations; lowering should share those tails
+through the existing cleanup continuation interner. Keep catch parameters,
+return storage/NRVO ownership, the current exception context and each exact
+remaining tail in that identity. Avoid source reanalysis or speculative
+per-destructor suffix rebuilding. The current region validator must continue
+to require balanced exits. EH-CLEANUP owns this next implementation.
+
+The separate rethrow control defines throw; in a destructor called while an
+exception is being handled. Two ordinary helper-function controls confirm the
+same rejection independently of lexical cleanup. All three reject here at
+O0/O2 with "rethrow outside an exception handler"; Clang/GCC compile and run
+all twelve host configurations successfully. The source
+analyzer tests exception_handler_depth_, which counts lexical handlers in the
+function definition. N3485 15.1/8 describes reactivation of the currently
+handled exception, and 15.1/9 makes executing an operandless throw without an
+active exception call terminate at runtime. The current compile-time lexical
+restriction cannot establish that dynamic condition. EH-RETHROW-DYNAMIC
+records this additional defect; it is separate from cleanup-tail ordering.
+
+No compiler, required fixture or generated reference changes were made for
+these two new rows. Sources, immutable compiler/hash manifest and observations
+remain under /tmp/cppgm-v4-audit-review/local-cleanup/. Initial malformed scratch
+authoring trials were corrected before the final host-agreed boundary set;
+those trials remain separately named and are excluded from the evidence above.
+The successful EH-FORWARD compiler checkpoint, its full checks and performance
+measurements remain unchanged. Other open rows and the final combined student
+export stay active.
