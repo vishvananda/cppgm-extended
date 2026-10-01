@@ -248,6 +248,9 @@ std::size_t Analyzer::TemplateStorageBytes() const
 		range_for_hidden_count_by_function_.capacity() * sizeof(std::uint32_t) +
 		class_templates_.size() * sizeof(ClassTemplatePattern) +
 		demanded_static_member_definitions_.StorageBytes() +
+		requested_static_member_names_.StorageBytes() +
+		applied_static_member_definitions_.StorageBytes() +
+		pending_static_member_definitions_.StorageBytes() +
 		alias_templates_.size() * sizeof(AliasTemplatePattern) +
 		alias_template_pattern_by_entity_.capacity() * sizeof(std::uint32_t) +
 		alias_template_instantiations_.StorageBytes() +

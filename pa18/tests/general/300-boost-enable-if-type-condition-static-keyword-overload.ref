@@ -1,7 +1,3 @@
-global @boost__parameter____cppgm_class_template_identity_7_1_0__instance [binding=weak, object=_ZN5boost9parameter7keywordINS_5graph8keywords3tag9color_mapEE8instanceE] = {
-  zero 1
-}
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $kw : obj<1x1>
   slot $discard__1 : obj<8x8>

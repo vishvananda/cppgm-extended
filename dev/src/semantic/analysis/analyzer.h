@@ -835,6 +835,10 @@ private:
 		BindingId specialization,
 		const std::vector<TemplateArgument>& arguments, bool demanded = false);
 	void DemandClassTemplateMemberDefinitions(EntityId entity);
+	void DemandStaticMemberDefinition(BindingId member, bool immediate = false);
+	void DemandDefinedStaticMembers(EntityId entity);
+	void QueueStaticMemberDefinition(std::size_t pattern, BindingId owner,
+		std::size_t definition, bool queue_owner = true);
 	void MarkClassTemplateSpecializationUse(EntityId entity);
 	void QueueClassTemplateMemberDefinitions(std::size_t pattern,
 		BindingId specialization);
@@ -2100,6 +2104,8 @@ private:
 	std::vector<std::uint32_t> lambda_count_by_namespace_;
 	std::deque<ClassTemplatePattern> class_templates_;
 	IndexedSequenceTable demanded_static_member_definitions_;
+	IndexedSequenceTable requested_static_member_names_, applied_static_member_definitions_;
+	IndexedSequenceTable pending_static_member_definitions_;
 	// Alias instantiation can discover and register a nested alias while a
 	// caller still borrows the outer pattern's parameter list.
 	std::deque<AliasTemplatePattern> alias_templates_;

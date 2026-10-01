@@ -1,5 +1,3 @@
-global @__cppgm_class_template_identity_0_0_0__block_size : i64 [storage=readonly, binding=weak, object=_ZN4IterIilE10block_sizeE] = 0
-
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $it : obj<1x1>
   slot $next : obj<1x1>

@@ -27,9 +27,11 @@ fix sequence is complete, as requested.
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
 | RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done: 4858ddbc0; typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
 | CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Open with conversion legality work: immutable 70e7a2920 and current reject A a=x when A has A(int) and X::operator T(); GCC/Clang accept. Keep the reducer; the explicit-call fixture uses an aggregate result to isolate its contract. |
-| TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Done in the accompanying checkpoint: known type/category facts validate unused operators/calls/bounds without evaluating dependent values. Eight PA14 fixtures, 22 copied rejection controls, strict 5887/5887 and full checks pass. Alpha instruction/RSS gates pass with equal outputs; fixed-call GCC disagreement documented below. PARAM-ADJUST completes the valid bound failure. |
-| PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done in the accompanying checkpoint: parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
-| DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Open; discarded reference calls completed separately below. |
+| TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Done: ad5d5dbb8; known type/category facts validate unused operators/calls/bounds without evaluating dependent values. Eight PA14 fixtures, 22 copied rejection controls, strict 5887/5887 and full checks pass. Alpha instruction/RSS gates pass with equal outputs; fixed-call GCC disagreement documented below. PARAM-ADJUST completes the valid bound failure. |
+| PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done: 27eef472d; parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
+| DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Done in the accompanying checkpoint: indexed binding requests preserve unused/sibling/nested definitions, explicit instantiation and specialization ownership. Eight PA14/17 fixtures, fourteen reviewed references, strict 5895/5895 and all required checks pass. Six Alpha inputs pass instruction/RSS gates with equal outputs. Static declaration legality remains STATIC-DECL. |
+| STATIC-DECL | Diagnose static-definition redeclarations/type/member mismatches; preserve explicit specialization declarations | Extended student storage controls during DEMAND | Open: entry compiler accepts four duplicate definitions, two type mismatches and a nonstatic out-of-class definition; rejects a valid declaration followed by its explicit specialization definition. These failures predate selective demand. |
+| STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Needs verification: entry/current return 1 on the unsigned-free A/B/D base-reference reducer while Clang/GCC return 0. Distinguish static relocation from pointer conversion/layout before assigning a fix. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
 | REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Open; source inputs unchanged, corrected rejection statuses supported by evidence. |
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Open; defaulted-pack runtime expectation also needs 2 → 9 correction. |
@@ -1268,3 +1270,61 @@ scope experiment, are retained separately in alpha-initial, alpha-refined,
 alpha-completed and alpha-dispatch. The final remote directory is
 /tmp/cppgm-v4-audit-review-20261001-template-definition-types-dispatch/.
 Student export remains deferred until the combined final checkpoint.
+
+## Selective static-member definition demand checkpoint
+
+The original PA17 student reducers are independently confirmed: merely using a
+class specialization executes an unused effectful initializer and instantiates
+an unused T::missing initializer in the entry compiler. Calling a member or a
+conversion function has the same effect. Demanding a single static member also
+pulls in its unused siblings. Neither follows N3485 [temp.inst]/1,2,8,10.
+
+Retained static definitions now carry their member name. Storage demand selects
+the canonical binding, follows its enclosing template owners and queues matching
+definition indices through the existing (pattern, name) table. Definition states
+prevent duplicate replay; nested routing retains the same name/index facts, and
+class reset restores pending states. Late definitions join an existing request.
+Owner/function demand alone carries no static-member request. Constant scalar
+value queries reuse their existing binding identity instead of repeating name
+lookup; known inline constexpr values need no out-of-class storage replay.
+Reference conversion explicitly requests storage for its referent. Explicit
+class definitions request their static members whose definitions are already
+available, while a member specialization retains its own definition.
+
+Eight required PA14/17 fixtures cover dormant invalid/effectful initializers,
+selected siblings and dependencies, nested owners with equal member names,
+explicit class/member instantiation, extern declarations, and specialized
+address use. Template declarations still have one declarator ([temp]/3); two
+host-rejected comma declarations remain negative controls. The copied 37 student
+storage controls and 20 additional controls are retained separately. Broader
+controls expose preexisting static declaration/redefinition/type failures and a
+nonzero base-reference failure; STATIC-DECL and STATIC-BASE-ADDR keep those open.
+They are implementation-entry observations, not new student oracle edits.
+
+Reference review removes genuinely undemanded static objects and retains needed
+storage. It also records constant-load folding and declaration-order changes
+caused by selective demand. Only exact changed fixtures are regenerated through
+ref-test. No source input or old status is edited, and no ABI encoder changes.
+Fourteen existing references were regenerated: ten lose undemanded objects,
+two replace a constant load with its known value, and two reorder otherwise
+unchanged declarations/functions. All evidence lives under
+/tmp/cppgm-v4-audit-review/static-member-demand/. Strict report passes 5895/5895
+with exactly one success line. Debug-info, backend variants, self-host through
+PA5, all nine architecture targets, file limits and placement pass. Final fixture
+and specialized-address controls cover all three compilers at O0/O2; the indexed
+path preserves all 114 earlier compiler-control outcomes. Existing negative
+static-declaration outcomes remain tracked rather than claimed as passing.
+
+Alpha's original three frozen inputs show no instruction regression. Added
+16/64/256-member inputs with identical A/B outputs expose a whole-class rescan
+regression in the first implementation: 1.016447 and 1.075249 instruction ratios
+for 16/64 members (the 256-member observations are retained too). Indexed pending
+work removes those rescans. Final ratios are 1.002607, 1.004926 and 1.004184;
+RSS ratios are 1.000646, 1.000449 and 1.000430. Original workload instruction
+ratios are 0.999937, 1.000062 and 0.999961, with RSS 1.000150, 0.998348 and
+0.999931. All six inputs pass the unchanged 0.5% instruction / 3% RSS gates.
+Each input has four A/A calibration blocks and eight A/B ABBA blocks; all 288
+objects are identical within their input. Both measured candidate hashes match
+the compiler being validated. Raw logs/manifests and earlier experiments remain
+in separate alpha-selected, alpha-final, alpha-reviewed, alpha-heavy,
+alpha-indexed and alpha-indexed-heavy directories. Student export is deferred.

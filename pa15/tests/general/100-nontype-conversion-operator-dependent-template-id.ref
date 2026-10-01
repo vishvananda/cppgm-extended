@@ -1,4 +1,3 @@
 global @value [binding=strong, object=_Z5value] = {
   zero 1
 }
-global @boost____cppgm_class_template_identity_1_0_0__value : i32 [storage=readonly, binding=weak, object=_ZN5boost17integral_constantIiLi7EE5valueE] = 7

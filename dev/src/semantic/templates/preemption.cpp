@@ -196,6 +196,89 @@ void Analyzer::SetClassExplicitInstantiationSuppression(
 		mark(entity_destructor_by_entity_[entity]);
 }
 
+void Analyzer::DemandDefinedStaticMembers(EntityId entity)
+{
+	if (entity >= entity_static_data_members_.size() ||
+		entity >= class_template_pattern_by_entity_.size()) return;
+	const std::size_t pattern = class_template_pattern_by_entity_[entity];
+	if (pattern == kNoDumpEdge) return;
+	const BindingId specialization = program_->entities[entity].declaration;
+	const ClassTemplatePartialSelection* selection =
+		FindClassTemplatePartialSelection(specialization);
+	const std::uint32_t partial = selection ? selection->pattern : kNoDumpEdge;
+	const std::vector<BindingId> members = entity_static_data_members_[entity];
+	for (std::size_t i = 0; i < members.size(); ++i)
+	{
+		const BindingRecord& binding = program_->bindings[members[i]];
+		if (binding.excluded_from_explicit_instantiation) continue;
+		const std::uint64_t key = (static_cast<std::uint64_t>(pattern) << 32) | binding.name;
+		const CompactIndexSequence* definitions = demanded_static_member_definitions_.Find(key);
+		bool defined = false;
+		for (std::size_t j = 0; definitions && j < definitions->Size(); ++j)
+		{
+			const ClassTemplateMemberPattern& definition =
+				class_templates_[pattern].demanded_member_definitions[(*definitions)[j]];
+			if (definition.nested_owner_path.empty() &&
+				definition.owner_partial_pattern == partial &&
+				(definition.concrete_owner == kNoBinding ||
+				 definition.concrete_owner == specialization)) defined = true;
+		}
+		if (defined) EnsureStaticMemberStorage(members[i], true);
+	}
+}
+
+void Analyzer::QueueStaticMemberDefinition(std::size_t pattern,
+	BindingId owner, std::size_t definition, bool queue_owner)
+{
+	if (definition > std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many static member definitions");
+	const std::uint64_t key = (static_cast<std::uint64_t>(owner) << 32) | definition;
+	CompactIndexSequence& state = applied_static_member_definitions_.Ensure(key);
+	if (state.Size() != 0) return;
+	state.Push(1);
+	pending_static_member_definitions_.Ensure(owner).Push(definition);
+	if (queue_owner) QueueClassTemplateMemberDefinitions(pattern, owner);
+}
+
+void Analyzer::DemandStaticMemberDefinition(BindingId member, bool immediate)
+{
+	member = program_->bindings[member].canonical;
+	const BindingRecord& binding = program_->bindings[member];
+	if (binding.kind != BIND_VARIABLE || binding.member_owner == kNoEntity ||
+		binding.non_static_data_member) return;
+	if (member < explicit_static_member_specialization_states_.size() &&
+		explicit_static_member_specialization_states_[member] != 0) return;
+	const NameId name = binding.name;
+	const bool first_request = !binding.emission_demanded;
+	program_->bindings[member].emission_demanded = true;
+	std::vector<BindingId> owners;
+	for (EntityId entity = binding.member_owner; entity != kNoEntity;
+		entity = program_->entities[entity].enclosing_class)
+	{
+		if (entity >= class_template_pattern_by_entity_.size()) continue;
+		const std::size_t pattern = class_template_pattern_by_entity_[entity];
+		if (pattern == kNoDumpEdge) continue;
+		const EntityRecord& owner = program_->entities[entity];
+		if (owner.explicit_template_specialization) break;
+		const BindingId specialization = owner.declaration;
+		CompactIndexSequence& names = requested_static_member_names_.Ensure(specialization);
+		if (first_request) names.Push(name);
+		if (class_template_member_definition_demand_states_.size() <= specialization)
+			class_template_member_definition_demand_states_.resize(
+				static_cast<std::size_t>(specialization) + 1, 0);
+		class_template_member_definition_demand_states_[specialization] |= 1U;
+		const std::uint64_t key = (static_cast<std::uint64_t>(pattern) << 32) | name;
+		const CompactIndexSequence* definitions = demanded_static_member_definitions_.Find(key);
+		for (std::size_t i = 0; definitions && i < definitions->Size(); ++i)
+			QueueStaticMemberDefinition(pattern, specialization, (*definitions)[i], !immediate);
+		if (immediate) owners.push_back(specialization);
+	}
+	// An outer retained definition can attach a nested member pattern; consume
+	// that attachment before asking the inner specialization for its value.
+	for (std::size_t i = owners.size(); i != 0; --i)
+		ApplyDemandedClassTemplateMemberDefinitions(owners[i - 1]);
+}
+
 void Analyzer::EnsureStaticMemberStorage(
 	BindingId member, bool constant_storage)
 {
@@ -250,7 +333,7 @@ void Analyzer::EnsureStaticMemberStorage(
 		}
 		if (!retained_definition || !value_use_requires_storage) return;
 	}
-	DemandClassTemplateMemberDefinitions(binding.member_owner);
+	DemandStaticMemberDefinition(member);
 	const BindingRecord& completed_binding = program_->bindings[member];
 	if (static_member_storage_by_binding_.size() <= member)
 		static_member_storage_by_binding_.resize(

@@ -295,6 +295,15 @@ void Analyzer::ResetClassTemplateSpecializationDefinition(
 	if (specialization <
 		class_template_demanded_member_definition_counts_.size())
 		class_template_demanded_member_definition_counts_[specialization] = 0;
+	const CompactIndexSequence* pending = pending_static_member_definitions_.Find(specialization);
+	for (std::size_t i = 0; pending && i < pending->Size(); ++i)
+	{
+		const std::uint64_t key =
+			(static_cast<std::uint64_t>(specialization) << 32) | (*pending)[i];
+		CompactIndexSequence& state = applied_static_member_definitions_.Ensure(key);
+		state.Clear();
+		state.Push(1);
+	}
 }
 
 bool Analyzer::AnalyzeExplicitTemplateSpecialization(

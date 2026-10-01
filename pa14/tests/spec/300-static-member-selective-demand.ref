@@ -1,0 +1,95 @@
+global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @__cppgm_class_template_identity_0_0_0__first : i32 [binding=weak, object=_ZN8selectedIiE5firstE] = zero
+global @pointer : ptr [binding=strong, object=_Z7pointer] = addr @__cppgm_class_template_identity_0_0_0__first
+global @__cppgm_class_template_identity_0_0_0__second : i32 [binding=weak, object=_ZN8selectedIiE6secondE] = zero
+global @__cppgm_class_template_identity_0_0_0__constant : i32 [binding=weak, object=_ZN8selectedIiE8constantE] = 7
+global @__cppgm_class_template_identity_0_0_0__dependent : i32 [binding=weak, object=_ZN8selectedIiE9dependentE] = zero
+
+function @initialize(%value : i32) -> i32 [binding=strong, object=_Z10initializei] {
+  slot $value : i32
+
+  block ^entry:
+    store i32 %value, $value
+    %t1 = load i32 @calls
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @calls
+    %t3 = load i32 $value
+    return i32 %t3
+}
+function @read_second() -> i32 [binding=strong, object=_Z11read_secondv] {
+  block ^entry:
+    %t1 = load i32 @__cppgm_class_template_identity_0_0_0__second
+    return i32 %t1
+}
+function @read_dependent() -> i32 [binding=strong, object=_Z14read_dependentv] {
+  block ^entry:
+    %t1 = load i32 @__cppgm_class_template_identity_0_0_0__dependent
+    return i32 %t1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+  slot $lor__3 : i64
+
+  block ^entry:
+    %t1 = load ptr @pointer
+    %t2 = load i32 %t1
+    %t3 = cmp ne i32 %t2, 3
+    branch %t3, ^lor_short_8, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t4 = call i32 @read_second()
+    %t5 = cmp ne i32 %t4, 7
+    %t6 = cmp ne i64 %t5, 0
+    store i64 %t6, $lor__3
+    jump ^lor_end_9
+
+  block ^lor_short_8:
+    store i64 1, $lor__3
+    jump ^lor_end_9
+
+  block ^lor_end_9:
+    %t7 = load i64 $lor__3
+    branch %t7, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t8 = call i32 @read_dependent()
+    %t9 = cmp ne i32 %t8, 7
+    %t10 = cmp ne i64 %t9, 0
+    store i64 %t10, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t11 = load i64 $lor__2
+    branch %t11, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t12 = load i32 @calls
+    %t13 = cmp ne i32 %t12, 2
+    %t14 = cmp ne i64 %t13, 0
+    store i64 %t14, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t15 = load i64 $lor__1
+    %t16 = convert trunc i32 i64 %t15
+    return i32 %t16
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = call i32 @initialize(3)
+    store i32 %t1, @__cppgm_class_template_identity_0_0_0__first
+    %t2 = call i32 @initialize(7)
+    store i32 %t2, @__cppgm_class_template_identity_0_0_0__second
+    %t3 = load i32 @__cppgm_class_template_identity_0_0_0__constant
+    store i32 %t3, @__cppgm_class_template_identity_0_0_0__dependent
+    return void
+}

@@ -780,75 +780,15 @@ ExpressionInfo Analyzer::AnalyzeNamedValue(
 		program_->bindings[found.ordinary].member_owner != kNoEntity &&
 		!program_->bindings[found.ordinary].non_static_data_member &&
 		!program_->bindings[found.ordinary].constant &&
-		constant_expression_required_depth_ != 0 && unevaluated_depth_ == 0 &&
+		unevaluated_depth_ == 0 &&
+		(constant_expression_required_depth_ != 0 ||
+		 IsConst(program_->bindings[found.ordinary].type)) &&
 		(IsIntegral(program_->bindings[found.ordinary].type, true) ||
 		 IsFloating(program_->bindings[found.ordinary].type)))
 	{
-		for (EntityId owner = program_->bindings[found.ordinary].member_owner;
-			owner != kNoEntity; owner = program_->entities[owner].enclosing_class)
-		{
-			if (owner >= class_template_pattern_by_entity_.size() ||
-				class_template_pattern_by_entity_[owner] == kNoDumpEdge) continue;
-			const BindingId specialization =
-				program_->entities[owner].declaration;
-			DemandClassTemplateMemberDefinitions(owner);
-			if (specialization != kNoBinding && specialization <
-				class_template_member_definition_demand_states_.size())
-				ApplyDemandedClassTemplateMemberDefinitions(specialization);
-			break;
-		}
-		found = syntax == kNoNode ?
-			LookupSpelling(scope, spelling, LOOKUP_ORDINARY,
-				NAME_PATH_PARSE_LITERAL) :
-			LookupSyntaxName(syntax, scope, LOOKUP_ORDINARY);
-		if (found.ordinary == kNoBinding)
-			ThrowInternalCompilerError(
-				"static member definition replay lost its declaration");
+		DemandStaticMemberDefinition(found.ordinary, true);
 	}
-	std::size_t qualified_component_count = 0;
-	std::size_t first_template_component =
-		std::numeric_limits<std::size_t>::max();
-	const NodeId structured_name = syntax == kNoNode ? kNoNode :
-		FindChild(syntax, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
-	for (std::uint32_t edge = structured_name == kNoNode ? kNoEdge :
-		arena_->FirstEdge(structured_name); edge != kNoEdge;
-		edge = arena_->NextEdge(edge))
-	{
-		const NodeId component = arena_->EdgeChild(edge);
-		if (arena_->IsTag(component, ::cppgm::syntax::STAG_NAME_COMPONENT))
-		{
-			if (first_template_component ==
-					std::numeric_limits<std::size_t>::max() &&
-				FindChild(component, ::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST) != kNoNode)
-				first_template_component = qualified_component_count;
-			++qualified_component_count;
-		}
-	}
-	const bool intermediate_template_qualifier =
-		first_template_component != std::numeric_limits<std::size_t>::max() &&
-		first_template_component + 2 < qualified_component_count;
-	if (intermediate_template_qualifier &&
-		program_->bindings[found.ordinary].kind == BIND_VARIABLE &&
-		program_->bindings[found.ordinary].member_owner != kNoEntity &&
-		!program_->bindings[found.ordinary].non_static_data_member &&
-		program_->bindings[found.ordinary].constant &&
-		(IsIntegral(program_->bindings[found.ordinary].type, true) ||
-		 IsFloating(program_->bindings[found.ordinary].type)))
-	{
-		for (EntityId owner = program_->bindings[found.ordinary].member_owner;
-			owner != kNoEntity; owner = program_->entities[owner].enclosing_class)
-		{
-			if (owner >= class_template_pattern_by_entity_.size() ||
-				class_template_pattern_by_entity_[owner] == kNoDumpEdge) continue;
-			const BindingId specialization =
-				program_->entities[owner].declaration;
-			DemandClassTemplateMemberDefinitions(owner);
-			if (specialization != kNoBinding && specialization <
-				class_template_member_definition_demand_states_.size())
-				ApplyDemandedClassTemplateMemberDefinitions(specialization);
-			break;
-		}
-	}
+
 	const BindingRecord& binding = program_->bindings[found.ordinary];
 	if (found.ordinary < variable_template_bindings_.size() &&
 		variable_template_bindings_[found.ordinary] != 0 && binding.constant &&

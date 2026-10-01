@@ -1325,6 +1325,7 @@ struct ClassTemplateMemberPattern
 	ScopeId lexical_scope;
 	NodeId declaration;
 	BindingId concrete_owner;
+	NameId storage_name;
 	std::uint32_t owner_partial_pattern;
 	std::vector<TemplateParameter> parameters;
 	std::vector<TemplateArgument> canonical_owner_arguments;
@@ -1337,6 +1338,7 @@ struct ClassTemplateMemberPattern
 	ClassTemplateMemberPattern()
 		: lexical_scope(kNoScope), declaration(kNoNode),
 		  concrete_owner(kNoBinding),
+		  storage_name(0),
 		  owner_partial_pattern(kNoDumpEdge),
 		  value_use_requires_storage(false) {}
 };

@@ -1,0 +1,50 @@
+global @__cppgm_class_template_identity_0_0_0__value : i32 [binding=weak, object=_ZN13mutable_valueIiE5valueE] = 7
+global @__cppgm_class_template_identity_1_0_0__value : i32 [binding=weak, object=_ZN12poison_valueIiE5valueE] = 11
+global @__cppgm_class_template_identity_2_0_0__value : i32 [storage=readonly, binding=weak, object=_ZN14constant_valueIiE5valueE] = 13
+global @first : ptr [binding=strong, object=_Z5first] = addr @__cppgm_class_template_identity_0_0_0__value
+global @second : ptr [binding=strong, object=_Z6second] = addr @__cppgm_class_template_identity_1_0_0__value
+global @third : ptr [binding=strong, object=_Z5third] = addr @__cppgm_class_template_identity_2_0_0__value
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $lor__1 : i64
+  slot $lor__2 : i64
+
+  block ^entry:
+    %t1 = load ptr @first
+    %t2 = load i32 %t1
+    %t3 = cmp ne i32 %t2, 7
+    branch %t3, ^lor_short_5, ^lor_rhs_4
+
+  block ^lor_rhs_4:
+    %t4 = load ptr @second
+    %t5 = load i32 %t4
+    %t6 = cmp ne i32 %t5, 11
+    %t7 = cmp ne i64 %t6, 0
+    store i64 %t7, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_short_5:
+    store i64 1, $lor__2
+    jump ^lor_end_6
+
+  block ^lor_end_6:
+    %t8 = load i64 $lor__2
+    branch %t8, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t9 = load ptr @third
+    %t10 = load i32 %t9
+    %t11 = cmp ne i32 %t10, 13
+    %t12 = cmp ne i64 %t11, 0
+    store i64 %t12, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t13 = load i64 $lor__1
+    %t14 = convert trunc i32 i64 %t13
+    return i32 %t14
+}

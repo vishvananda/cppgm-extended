@@ -1,0 +1,23 @@
+global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @__cppgm_class_template_identity_0_0_0__value : i32 [binding=weak, object=_ZN14explicit_valueIiE5valueE] = zero
+
+function @initialize() -> i32 [binding=strong, object=_Z10initializev] {
+  block ^entry:
+    %t1 = load i32 @calls
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @calls
+    return i32 7
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = load i32 @calls
+    %t2 = cmp ne i32 %t1, 1
+    %t3 = convert trunc i32 i64 %t2
+    return i32 %t3
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = call i32 @initialize()
+    store i32 %t1, @__cppgm_class_template_identity_0_0_0__value
+    return void
+}

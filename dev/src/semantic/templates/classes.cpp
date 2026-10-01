@@ -641,6 +641,8 @@ bool Analyzer::AnalyzeClassTemplateMember(NodeId declaration,
 			described_declaration, ::cppgm::syntax::STAG_INIT_DECLARATOR_LIST);
 		const NodeId item = list == kNoNode ? kNoNode :
 			FirstSemanticChild(list);
+		if (list != kNoNode && arena_->NextEdge(arena_->FirstEdge(list)) != kNoEdge)
+			ThrowSemanticError("a template declaration must declare a single entity");
 		declarator = item == kNoNode ? kNoNode :
 			FindChild(item, ::cppgm::syntax::STAG_DECLARATOR);
 	}
@@ -785,12 +787,12 @@ bool Analyzer::AnalyzeClassTemplateMember(NodeId declaration,
 	{
 		if (pattern_index > std::numeric_limits<std::uint32_t>::max())
 			ThrowSemanticResourceLimit("too many class template patterns");
+		member.storage_name = path.Last();
 		const std::uint64_t key =
 			(static_cast<std::uint64_t>(pattern_index) << 32) | path.Last();
 		demanded_static_member_definitions_.Ensure(key).Push(
 			class_templates_[pattern_index].demanded_member_definitions.size());
-		class_templates_[pattern_index].demanded_member_definitions.push_back(
-			member);
+		class_templates_[pattern_index].demanded_member_definitions.push_back(member);
 	}
 	else class_templates_[pattern_index].member_definitions.push_back(member);
 	const std::vector<BindingId> specializations =
@@ -818,8 +820,12 @@ bool Analyzer::AnalyzeClassTemplateMember(NodeId declaration,
 		const std::vector<TemplateArgument> arguments =
 			StoredTemplateArguments(first, count);
 		if (demand_definition)
-			QueueClassTemplateMemberDefinitions(
-				pattern_index, specializations[i]);
+		{
+			const CompactIndexSequence* names = requested_static_member_names_.Find(specializations[i]);
+			if (names && names->Contains(member.storage_name))
+				QueueStaticMemberDefinition(pattern_index, specializations[i],
+					class_templates_[pattern_index].demanded_member_definitions.size() - 1);
+		}
 		else ApplyClassTemplateMemberDefinitions(
 			pattern_index, specializations[i], arguments);
 	}
@@ -1342,12 +1348,24 @@ void Analyzer::ApplyClassTemplateMemberDefinitions(
 	if (counts.size() <= specialization)
 		counts.resize(
 			static_cast<std::size_t>(specialization) + 1, 0);
-	while (counts[specialization] < definitions.size())
+	while (true)
 	{
-		const std::size_t definition_index =
-			counts[specialization]++;
-		const ClassTemplateMemberPattern& definition =
-			definitions[definition_index];
+		const CompactIndexSequence* pending = demanded ?
+			pending_static_member_definitions_.Find(specialization) : 0;
+		const std::size_t size = demanded ? (pending ? pending->Size() : 0) : definitions.size();
+		if (counts[specialization] >= size) break;
+		const std::size_t position = counts[specialization]++;
+		const std::size_t definition_index = demanded ? (*pending)[position] : position;
+		const ClassTemplateMemberPattern& definition = definitions[definition_index];
+		const std::uint64_t demand_key =
+			(static_cast<std::uint64_t>(specialization) << 32) | definition_index;
+		if (demanded)
+		{
+			CompactIndexSequence& state = applied_static_member_definitions_.Ensure(demand_key);
+			if (state.Size() != 0 && state[0] == 2) continue;
+			state.Clear();
+			state.Push(2);
+		}
 		if (definition.concrete_owner != kNoBinding &&
 			definition.concrete_owner != specialization) continue;
 		const ClassTemplatePartialSelection* selection =
@@ -1415,6 +1433,17 @@ void Analyzer::ApplyClassTemplateMemberDefinitions(
 					definition.nested_owner_path.back()));
 		ScopeId definition_scope = make_definition_scope(actual_owner);
 		const NodeId node = definition.declaration;
+		if (demanded)
+		{
+			const LookupResult member = program_->LookupDirect(actual_owner,
+				definition.storage_name, LOOKUP_ORDINARY);
+			if (member.ordinary == kNoBinding ||
+				!program_->bindings[member.ordinary].emission_demanded)
+			{
+				applied_static_member_definitions_.Ensure(demand_key).Clear();
+				continue;
+			}
+		}
 
 		if (arena_->IsTag(node, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION))
 		{
@@ -1465,8 +1494,8 @@ void Analyzer::QueueClassTemplateMemberDefinitions(
 		specialization <
 			class_template_demanded_member_definition_counts_.size() ?
 		class_template_demanded_member_definition_counts_[specialization] : 0;
-	if (applied >=
-		class_templates_[pattern].demanded_member_definitions.size()) return;
+	const CompactIndexSequence* pending = pending_static_member_definitions_.Find(specialization);
+	if (!pending || applied >= pending->Size()) return;
 	state |= 2U;
 	demanded_class_template_member_definitions_.push_back(specialization);
 	++demand_worklist_pushes_;
@@ -2860,6 +2889,7 @@ void Analyzer::AnalyzeExplicitInstantiation(NodeId node,
 	const bool object_output_root = (state & 1) == 0;
 	state |= 2;
 	SetClassExplicitInstantiationSuppression(entity, false);
+	DemandDefinedStaticMembers(entity);
 	const auto demand_member = [this, object_output_root](BindingId binding) {
 		if (binding == kNoBinding) return;
 		binding = program_->bindings[binding].canonical;

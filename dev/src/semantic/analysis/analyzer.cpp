@@ -521,6 +521,10 @@ ExpressionInfo Analyzer::ApplyTarget(ExpressionInfo value,
 		value.converted_scalar_target = conversion_target;
 	const bool reference_target = target_record.kind == TYPE_LVALUE_REFERENCE ||
 		target_record.kind == TYPE_RVALUE_REFERENCE;
+	if (reference_target && unevaluated_depth_ == 0 &&
+		constexpr_evaluation_depth_ == 0 && value.binding != kNoBinding &&
+		program_->IsStaticDataMember(value.binding))
+		EnsureStaticMemberStorage(value.binding, true);
 	const std::uint32_t source_object = ExpressionObject(value);
 	const std::uint32_t source_complete_object =
 		ExpressionCompleteObject(value);

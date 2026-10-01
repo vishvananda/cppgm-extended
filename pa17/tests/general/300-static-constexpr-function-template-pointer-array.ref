@@ -1,11 +1,11 @@
+global @__cppgm_class_template_identity_0_0_0__inv_sizes32 [binding=weak, object=_ZN5tableIvE11inv_sizes32E] = {
+  i64 1
+  i64 2
+}
 global @__cppgm_class_template_identity_0_0_0__sizes [binding=weak, object=_ZN5tableIvE5sizesE] = {
   i64 13
   i64 29
   i64 53
-}
-global @__cppgm_class_template_identity_0_0_0__inv_sizes32 [binding=weak, object=_ZN5tableIvE11inv_sizes32E] = {
-  i64 1
-  i64 2
 }
 global @__cppgm_class_template_identity_0_0_0__positions [binding=weak, object=_ZN5tableIvE9positionsE] = {
   ptr addr @table_void___position

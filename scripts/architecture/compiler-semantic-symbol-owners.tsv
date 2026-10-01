@@ -894,7 +894,10 @@ dev/src/semantic/templates/placeholders.cpp	PublishPlaceholderFunctionReturn	1	d
 dev/src/semantic/templates/placeholders.cpp	PublishVariableInitializer	1	dev/src/semantic/templates/placeholders.cpp	keep
 dev/src/semantic/templates/placeholders.cpp	ShouldPreserveRuntimeInitializerRecipe	1	dev/src/semantic/templates/placeholders.cpp	keep
 dev/src/semantic/templates/preemption.cpp	EnclosingExplicitInstantiationSuppressed	1	dev/src/semantic/templates/preemption.cpp	keep
+dev/src/semantic/templates/preemption.cpp	DemandDefinedStaticMembers	1	dev/src/semantic/templates/preemption.cpp	keep
+dev/src/semantic/templates/preemption.cpp	DemandStaticMemberDefinition	1	dev/src/semantic/templates/preemption.cpp	keep
 dev/src/semantic/templates/preemption.cpp	EnsureStaticMemberStorage	1	dev/src/semantic/templates/preemption.cpp	keep
+dev/src/semantic/templates/preemption.cpp	QueueStaticMemberDefinition	1	dev/src/semantic/templates/preemption.cpp	keep
 dev/src/semantic/templates/preemption.cpp	ExplicitInstantiationCoversMember	1	dev/src/semantic/templates/preemption.cpp	keep
 dev/src/semantic/templates/preemption.cpp	RegisterClassDataMember	1	dev/src/semantic/templates/preemption.cpp	keep
 dev/src/semantic/templates/preemption.cpp	RegisterClassStaticDataMember	1	dev/src/semantic/templates/preemption.cpp	keep

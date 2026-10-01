@@ -1111,6 +1111,7 @@ bool Analyzer::RouteClassTemplateMemberDefinition(
 	ClassTemplateMemberPattern routed;
 	routed.lexical_scope = lexical_scope;
 	routed.declaration = target;
+	routed.storage_name = definition.storage_name;
 	routed.value_use_requires_storage =
 		definition.value_use_requires_storage;
 	routed.parameters.swap(parameters);
@@ -1147,6 +1148,12 @@ bool Analyzer::RouteClassTemplateMemberDefinition(
 	std::deque<ClassTemplateMemberPattern>& definitions = demanded ?
 		pattern.demanded_member_definitions : pattern.member_definitions;
 	definitions.push_back(routed);
+	if (demanded)
+	{
+		const std::uint64_t key =
+			(static_cast<std::uint64_t>(pattern_index) << 32) | routed.storage_name;
+		demanded_static_member_definitions_.Ensure(key).Push(definitions.size() - 1);
+	}
 	const std::vector<BindingId> specializations =
 		pattern.specialization_bindings;
 	for (std::size_t i = 0; i < specializations.size(); ++i)
@@ -1165,8 +1172,11 @@ bool Analyzer::RouteClassTemplateMemberDefinition(
 			StoredTemplateArguments(record.template_argument_begin,
 				record.template_argument_count);
 		if (demanded)
-			QueueClassTemplateMemberDefinitions(
-				pattern_index, specialization);
+		{
+			const CompactIndexSequence* names = requested_static_member_names_.Find(specialization);
+			if (names && names->Contains(routed.storage_name))
+				QueueStaticMemberDefinition(pattern_index, specialization, definitions.size() - 1);
+		}
 		else ApplyClassTemplateMemberDefinitions(
 			pattern_index, specialization, arguments);
 	}
