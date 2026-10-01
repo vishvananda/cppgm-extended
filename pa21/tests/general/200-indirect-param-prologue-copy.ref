@@ -39,9 +39,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_end_5:
     %t6 = addr $e
-    eh_try ^cleanup_action_6
     %t7 = addr $e
     %t8 = index i8 [projection=field] %t7, 0
+    eh_try ^cleanup_action_6
     %t9 = addr $x
     call void @S__S__ov2(%t8, %t9)
     eh_end
@@ -53,27 +53,42 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cleanup_action_4
 
   block ^call_unwind_end_7:
-    eh_try ^cleanup_action_6
     %t11 = addr $e
     %t12 = index i8 [projection=field] %t11, 1
+    eh_try ^construction_cleanup_8
     %t13 = addr $y
     call void @S__S__ov2(%t12, %t13)
     eh_end
-    eh_try ^cleanup_action_6
+    jump ^call_unwind_end_9
+
+  block ^construction_cleanup_8:
+    call void @S___S(%t8)
+    jump ^cleanup_action_6
+
+  block ^call_unwind_end_9:
     %t14 = addr $e
     %t15 = index i8 [projection=field] %t14, 2
+    eh_try ^construction_cleanup_10
     %t16 = addr $z
     call void @S__S__ov2(%t15, %t16)
     eh_end
+    jump ^call_unwind_end_11
+
+  block ^construction_cleanup_10:
+    call void @S___S(%t12)
+    jump ^construction_cleanup_8
+
+  block ^call_unwind_end_11:
     %t17 = addr $e
     %t18 = addr $e
-    call void @E___E(%t18)
-    %t19 = addr $z
-    call void @S___S(%t19)
-    %t20 = addr $y
+    %t19 = addr $e
+    call void @E___E(%t19)
+    %t20 = addr $z
     call void @S___S(%t20)
-    %t21 = addr $x
+    %t21 = addr $y
     call void @S___S(%t21)
+    %t22 = addr $x
+    call void @S___S(%t22)
     return i32 0
 }
 function @E___E(%this : ptr [object_bytes=3]) -> void [unwind=no, binding=weak, object=_ZN1ED1Ev, inline_hint=yes] {

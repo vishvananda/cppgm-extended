@@ -773,6 +773,10 @@ void Analyzer::DemandMaterializedConstructorActions(
 				record.pending_constructor_demand = false;
 				DemandConstructorDefinition(action.binding);
 			}
+			const DumpNode& construction = dump_.nodes[current];
+			if (demand_calls && construction.construction_recipe &&
+				!construction.construction_nonthrowing && construction.selected_binding != kNoBinding)
+				DemandFunction(construction.selected_binding);
 		}
 		if (visit.next_edge == kNoDumpEdge)
 		{

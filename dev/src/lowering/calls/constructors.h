@@ -91,7 +91,8 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const NodeChildren children = derived.Children(body);
-		const bool detached = derived.arena_.nodes[body].throwing_lexical_body_cleanup;
+		const bool detached = derived.arena_.nodes[body].throwing_lexical_body_cleanup ||
+			derived.arena_.nodes[body].contains_construction_cleanup;
 		BlockId active = kNoLowId;
 		for (std::size_t i = 0; i < children.size(); ++i)
 		{
@@ -483,6 +484,14 @@ protected:
 		ConstructorMemberPath* path, const Operand& retained_address)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		const DumpNode& recipe = derived.arena_.nodes[list_node];
+		if (recipe.contains_construction_cleanup)
+		{
+			const Operand destination = retained_address.kind != Operand::NONE ?
+				retained_address : derived.ProjectConstructorMemberPath(*path);
+			derived.LowerRuntimeObjectValue(recipe.type, list_node, destination);
+			return;
+		}
 		derived.ResetInitializedBitFieldUnit();
 		const NodeChildren actions = derived.Children(list_node);
 		for (std::size_t i = 0; i < actions.size(); ++i)

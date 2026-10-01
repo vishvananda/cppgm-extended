@@ -231,6 +231,9 @@ struct DumpNode
 	bool dynamic_type_query : 1;
 	bool dynamic_cast_reference : 1;
 	bool throwing_lexical_body_cleanup : 1;
+	bool construction_recipe : 1;
+	bool construction_nonthrowing : 1;
+	bool contains_construction_cleanup : 1;
 	FunctionTryBodyKind function_try_body;
 	// Packed SimpleTokenKind + 1 for operator expression nodes; 0 for none.
 	std::uint8_t operation_kind;
@@ -308,6 +311,8 @@ struct DumpNode
 		  reverse_pointer_compound_assignment(false),
 		  dynamic_type_query(false), dynamic_cast_reference(false),
 		throwing_lexical_body_cleanup(false),
+		  construction_recipe(false), construction_nonthrowing(false),
+		  contains_construction_cleanup(false),
 		  function_try_body(FUNCTION_TRY_BODY_NONE),
 		  operation_kind(0),
 		  exception_control_exit_count(0) {}
@@ -342,6 +347,8 @@ struct LexicalCleanupPlan
 class DumpArena
 {
 public:
+	DumpArena() : construction_cleanup_may_throw(false) {}
+
 	void ReserveNodes(std::size_t count);
 
 	std::uint32_t Make(DumpKind kind)
@@ -365,6 +372,8 @@ public:
 			nodes[child].template_parameter_constant;
 		owner.contains_temporary_object = owner.contains_temporary_object ||
 			nodes[child].contains_temporary_object;
+		owner.contains_construction_cleanup = owner.contains_construction_cleanup ||
+			nodes[child].contains_construction_cleanup;
 		owner.eager_full_expression_cleanup =
 			owner.eager_full_expression_cleanup ||
 			nodes[child].eager_full_expression_cleanup;
@@ -394,6 +403,7 @@ public:
 	std::vector<LexicalCleanupPlan> lexical_cleanup_plans;
 	std::vector<DumpNode> nodes;
 	std::vector<DumpEdge> edges;
+	bool construction_cleanup_may_throw;
 };
 
 struct SpecInfo

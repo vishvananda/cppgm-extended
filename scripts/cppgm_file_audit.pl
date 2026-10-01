@@ -445,6 +445,10 @@ sub find_function_definitions {
             my $open_pos = index($line, '{');
             next if $open_pos < 0;
             my $prefix = join(' ', @signature);
+            if ($prefix =~ /\b(?:class|struct|enum|namespace|union)\b/) {
+                @signature = ();
+                next;
+            }
             $prefix =~ s/\{.*\z//;
             my $name = function_name_from_signature($prefix);
             next if !$name;
@@ -628,6 +632,10 @@ sub check_functions {
             my $open_pos = index($line, '{');
             next if $open_pos < 0;
             my $prefix = join(' ', @signature);
+            if ($prefix =~ /\b(?:class|struct|enum|namespace|union)\b/) {
+                @signature = ();
+                next;
+            }
             $prefix =~ s/\{.*\z//;
             my $name = function_name_from_signature($prefix);
             next if !$name;

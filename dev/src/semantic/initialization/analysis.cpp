@@ -1435,6 +1435,46 @@ void Analyzer::AddBaseInitializationActionAt(EntityId entity,
 	++expression_count_;
 }
 
+void Analyzer::RecordConstructionRecipe(std::uint32_t node)
+{
+	const TypeId type = dump_.nodes[node].type;
+	const EntityId entity = DestructedEntity(type);
+	if (entity == kNoEntity || program_->types.IsReference(type)) return;
+	const bool nonthrowing = InitializationActionsAreNonthrowing(node);
+	dump_.nodes[node].construction_recipe = true;
+	dump_.nodes[node].construction_nonthrowing = nonthrowing;
+	if (!program_->entities[entity].trivial_destructor)
+		dump_.nodes[node].selected_binding = DestructorForType(type);
+	bool required = dump_.nodes[node].contains_construction_cleanup;
+	if (!nonthrowing && dump_.nodes[node].selected_binding != kNoBinding)
+	{
+		bool completed = false;
+		for (std::uint32_t edge = dump_.nodes[node].first_edge; edge != kNoDumpEdge;
+			edge = dump_.edges[edge].next)
+		{
+			const std::uint32_t child = dump_.edges[edge].child;
+			if (completed && !InitializationActionsAreNonthrowing(child)) required = true;
+			completed = completed || dump_.nodes[child].kind != DUMP_INITIALIZER_ACTION ||
+				dump_.nodes[child].selected_binding != kNoBinding;
+		}
+		if (dump_.nodes[node].contains_temporary_object)
+		{
+			std::vector<std::uint32_t> temporaries;
+			CollectTemporaryObjects(node, &temporaries);
+			for (std::size_t i = 0; i < temporaries.size(); ++i)
+			{
+				const BindingId destructor = DestructorForType(dump_.nodes[temporaries[i]].type);
+				if (destructor != kNoBinding && !FunctionIsNonthrowing(destructor)) required = true;
+			}
+		}
+	}
+	dump_.nodes[node].contains_construction_cleanup = !nonthrowing && required &&
+		dump_.nodes[node].selected_binding != kNoBinding;
+	if (dump_.nodes[node].contains_construction_cleanup &&
+		!FunctionIsNonthrowing(dump_.nodes[node].selected_binding))
+		dump_.construction_cleanup_may_throw = true;
+}
+
 bool Analyzer::InitializationActionsAreNonthrowing(
 	std::uint32_t body)
 {
@@ -1445,6 +1485,11 @@ bool Analyzer::InitializationActionsAreNonthrowing(
 		pending.pop_back();
 		++nonthrowing_action_visits_;
 		const DumpNode record = dump_.nodes[node];
+		if (record.construction_recipe)
+		{
+			if (!record.construction_nonthrowing) return false;
+			continue;
+		}
 		if (record.kind == DUMP_THROW_EXPRESSION) return false;
 		if (record.kind == DUMP_CONSTRUCTOR_ACTION)
 		{

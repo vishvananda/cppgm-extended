@@ -1661,6 +1661,7 @@ private:
 		ScopeId scope, std::uint32_t body);
 	void ClearInjectedConstructorInitializers();
 	bool InitializationActionsAreNonthrowing(std::uint32_t body);
+	void RecordConstructionRecipe(std::uint32_t node);
 	void DemandConstructorUnwindDestructors(std::uint32_t body);
 	BindingId DelegatingConstructorCleanupDestructor(
 		TypeId owner_type, EntityId entity, bool base_entry);
@@ -2390,8 +2391,7 @@ private:
 	ObservationCounter static_constant_dependency_edges_;
 	mutable ObservationCounter empty_destructor_chain_visits_;
 	mutable ObservationCounter empty_destructor_chain_cache_hits_;
-	std::size_t anonymous_enum_count_;
-	std::size_t local_type_count_;
+	std::size_t anonymous_enum_count_, local_type_count_;
 	std::vector<std::uint32_t> range_for_hidden_count_by_function_;
 	std::vector<std::uint32_t> branch_cleanup_node_epochs_;
 	std::uint32_t branch_cleanup_scan_epoch_;

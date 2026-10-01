@@ -41,12 +41,16 @@ fix sequence is complete, as requested.
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
-| EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: EH-HANDLER-TEMP, EH-FORWARD and EH-CLEANUP address handler temporaries and nested forwarding. Five of seven refreshed reducers now pass at O0/O2; aggregate construction prefixes and failed-new deallocation remain independently failing. |
+| EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: EH-HANDLER-TEMP, EH-FORWARD, EH-CLEANUP and the aggregate-prefix candidate fix six of seven refreshed reducers at O0/O2. Failed-new deallocation remains; the expanded independent EH rows below retain additional gaps and contract reviews. |
 | EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in ac2aaf704: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | EH-FORWARD | Advertise enclosing catch clauses and unwind prefixes/active handlers in lifetime order | v4codex references106/112 plus independent boundary controls | Done in the accompanying checkpoint: 40 agreed boundary programs and six new PA21 fixtures pass at O0/O2; three independently reviewed references change. Strict 5977/5977, full compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. |
 | EH-CLEANUP | Preserve handler lifetime and remaining-object unwind tails during lexical destruction | Original EH reducer plus expanded local cleanup controls | Done in the accompanying checkpoint: 34 host-agreed runtime boundary programs and seven new PA21/28 fixtures pass at O0/O2; three reviewed references change. Strict 5984/5984, all compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. Array element progress and non-NRVO returned-object cleanup remain separate rows. |
-| EH-AGG-PREFIX | Preserve completed aggregate members/elements and interleaved temporaries when a later initializer throws | Original aggregate-prefix reducer plus expanded construction controls | In progress: frozen 72a55cd47 fails 23 host-agreed controls at O0/O2. All 24 controls compile and link; one additional custom-destructor control has a host disagreement, tracked separately. Baseline evidence and ordered-prefix requirements are recorded below; no compiler or required-reference change yet. |
+| EH-AGG-PREFIX | Preserve completed aggregate members/elements and interleaved temporaries when a later initializer throws | Original aggregate-prefix reducer plus expanded construction controls | In progress: runtime fix passes the original reducer and 37 agreed construction controls at O0/O2, including conditional temporary joins. Nine independently checked PA21 fixtures and one reviewed reference correction; strict 5993/5993, debug-info, variants, self-host PA5, architecture and placement pass. Twelve Alpha instruction/RSS gates pass with equal objects. Corrected file-audit detection exposes eight existing oversized functions; ARCH-FUNCTION must finish before calling full validation complete. Later synthesized-copy failures are EH-SPECIAL-PREFIX; source-handler escape is EH-CTOR-HANDLER. |
 | EH-AGG-NESTED | Invoke a completed nested aggregate's custom destructor when a later outer member fails | Additional EH-AGG-PREFIX boundary control | Needs contract review: Clang invokes the nested destructor, GCC skips its body; both destroy its member objects. N3485's principal-constructor wording predates P0490R0's explicit completed-aggregate rule. Keep this difference separate from the 23 agreed cleanup failures; no oracle changed. |
+| EH-AGG-TEMP-DTOR | Destroy a completed aggregate when an initializer temporary's normal destructor throws | Additional EH-AGG-PREFIX boundary control | Needs contract review: GCC and the candidate destroy both aggregate members; Clang 21.1.8 leaks them at O0/O2. Retain this host disagreement separately from ordinary construction failure; no required oracle added. |
+| EH-SPECIAL-PREFIX | Destroy completed members when a later member in a synthesized copy/move constructor throws | Extended conditional controls and direct memberwise construction reducers | Open: extending the conditional controls through every observed copy step exposes a leaked destination member. Direct implicit-copy/move controls separate that failure from aggregate initialization; retain baseline and host evidence below. |
+| EH-CTOR-HANDLER | Retain constructor member cleanup when an inner source handler rethrows or misses | Additional aggregate-in-constructor control | Open: frozen entry and candidate leak a previously constructed member when the constructor's inner handler rethrows; Clang/GCC destroy it at O0/O2. Source-handler resume bypasses the constructor-body suffix. |
+| EH-COND-THROW | Normalize a class conditional with a raw throw operand before destination lowering | Additional conditional aggregate boundary control | Open: frozen entry and candidate reject the valid class/throw conditional with invalid class conditional result; Clang/GCC compile and run it at O0/O2. The semantic result retains a raw temporary/throw pair instead of destination-ready arms; keep normalization in the semantic owner. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Open: the entry and cleanup candidates emit an empty instantiated body and return zero; Clang/GCC run the specified body and handler at O0/O2. Pattern registration uses a direct compound-statement lookup and does not retain handler syntax. |
@@ -74,6 +78,9 @@ fix sequence is complete, as requested.
 | HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass; student has not edited its oracle. |
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence is complete; initial and INIT-ADDR exports already passed. |
+| HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Open: the audit intentionally accepts a checkout lacking its historical baseline, but git cat-file writes a fatal diagnostic before the successful result. Check the expected absence quietly while preserving real audit errors. |
+| HARNESS-FILE | Stop counting an entire class as a function after an unrecognized constructor signature | Aggregate compiler validation | Done in the accompanying checkpoint: both scans retire declaration-scope state before stripping an earlier inline body. A large-class control passes, a real oversized member still fails, and the full harness passes. Full file-audit success remains ARCH-FUNCTION, whose eight failures are also present in the frozen entry. |
+| ARCH-FUNCTION | Refactor eight existing oversized functions missed by stale file-audit signature state | HARNESS-FILE detection correction | Open, independently verified: the corrected declaration-scope scan reports the same eight functions above 240 lines in both frozen 72a55cd47 and the current tree. Retire the stale audit state and refactor these responsibility boundaries without relaxing the limit; retained inventory below. |
 
 ## Static address initialization checkpoint
 
@@ -2323,3 +2330,127 @@ the actual A/A and A/B measurements await a compiler candidate. No compiler
 code changed in this evidence checkpoint, so the prior validated compiler
 and 5984-test strict result still identify the entry binary. Final combined
 student-export validation remains deferred until all fixes are complete.
+
+## Aggregate construction-prefix candidate and expanded boundaries
+
+The candidate retains successful subobject and temporary completion in one
+persistent lowering prefix. Each step carries a typed destination, object type
+and retained destructor binding, or an existing temporary cleanup identity.
+Nested completion transfers member obligations to the completed object while
+retaining initializer temporaries. Normal temporary retirement removes that
+obligation before calling its destructor. Conditional joins combine the arms'
+existing guarded temporary obligations instead of retaining only the last
+lowered arm. The prefix precedes the existing lexical/handler suffix, whose
+cache key also retains source exception context and constructor-body terminal.
+No synthetic semantic nodes, source reparsing or ABI encoder changes are added.
+
+Semantic construction recipes cache their nonthrowing and cleanup requirements
+at construction analysis. Destructor demand remains in the completed-owner
+scheduler. The nonthrowing path keeps the previous lowering, and the new flags
+fit existing DumpNode padding: its size remains 152 bytes. A retained arena fact
+requests the terminate helper only when a cleanup destructor can throw. Early
+trials used unresolved destructor specifications and produced four unnecessary
+helper/reference changes; those changes were removed before accepting any
+oracle. The sole existing reference correction is PA21
+200-indirect-param-prologue-copy: a failure in the second or third member copy
+now destroys the completed aggregate members before the surrounding locals.
+The original three member constructors still receive their final addresses.
+
+Evidence remains under /tmp/cppgm-v4-audit-review/aggregate-prefix-cleanup/.
+The immutable candidate is compiler-eighth, SHA-256
+1aed930df76736a69356974296f97ceb9c961f58b3009975f45c5cb5c6c2e446.
+eighth-verification.json checks 37 host-agreed construction programs at O0/O2,
+three separately disputed programs and two separately failing boundaries.
+The original 24-program corpus, ten extended boundaries and eight further
+boundaries are frozen with source/companion manifests. Conditional destinations
+permit different C++11 copy elision, so their live-object and exception checks
+remain authoritative without requiring identical copy-event traces. All other
+agreed controls have identical Clang/GCC/candidate traces. Twelve further
+second-fault observations reach the installed terminate handler with the
+expected still-live outer objects. Their first trial lacked an outer handler;
+the resulting uncaught-exception termination did not guarantee unwinding and
+was not used as cleanup evidence. Both trials are retained.
+
+Nine freestanding source fixtures in PA21 cover flat members, nested member
+arrays, a matrix, interleaved temporary/scalar initializers, a long conditional
+temporary prefix, constructor member arrays, conditional destinations with
+temporaries, template ownership and a short-circuit initializer. No hosted
+headers are needed. Thirty-six independent Clang/GCC executions validate their
+live-object and agreed trace checks. All eighteen baseline fixture executions
+fail; all eighteen candidate executions pass. References were generated only
+for these new fixtures and the independently reviewed existing fixture.
+The strict report is one line, 5993/5993. Debug-info, backend variants,
+self-host through PA5 and all nine architecture audits pass. Placement reports
+zero findings. Compiler validation is retained in validation-eighth/; its first
+file-audit run failed on a false whole-class function span, detailed below.
+
+perf-eighth/ retains the final Alpha counter run, immutable A/AA/B compilers,
+frozen inputs, manifests and all 576 observations. Twelve inputs each have four
+A/A calibration blocks and eight paired A/B blocks. Every output object agrees
+within and across compilers. All instruction and RSS gates pass: the largest
+A/B instruction increase is below 0.067%, and the largest RSS increase is below
+0.31%. Cycles and every individual observation are retained. The additional
+32/128/512-member nonthrowing inputs also retain byte-identical LowIR and object
+outputs against the entry compiler. The earlier fourth-candidate run remains
+separate provisional evidence and is not substituted for the final hash.
+
+The expanded tests deliberately retain four distinct follow-ups:
+
+- EH-AGG-NESTED now also records a completed nested aggregate with an interleaved
+  initializer temporary. Clang and the candidate destroy the completed inner
+  object before the independent temporary; GCC flattens the inner members and
+  interleaves that temporary between them. No disputed expectation was added.
+- EH-AGG-TEMP-DTOR records normal-temporary-destructor-throws. The corrected
+  host companion permits the temporary destructor to throw after successful
+  aggregate initialization. GCC and the candidate destroy both aggregate
+  members; Clang leaves two live objects. The first companion had a duplicated
+  noexcept(false) spelling and failed host compilation; it remains trial
+  evidence, not a compiler failure. No disputed required oracle was added.
+- EH-CTOR-HANDLER records constructor-inner-try. An initialized constructor
+  member remains live when an inner source handler rethrows. The frozen entry
+  and candidate fail identically; both hosts destroy it. This escape bypasses
+  the constructor suffix and is separate from completed aggregate members.
+  EH-COND-THROW separately records a class/throw conditional rejected by the
+  entry and candidate. Its retained semantic shape is a raw temporary and
+  throw operand, whereas destination lowering expects normalized arms.
+- EH-SPECIAL-PREFIX records the later synthesized-copy boundary. The original
+  conditional fixtures cover every aggregate initializer throw point; their
+  configured bound does not include additional permitted copies. Two extended
+  all-steps companions derive their bound from the observed successful path.
+  Those expose one leaked member when a later synthesized member copy throws.
+  Direct implicit-copy-prefix and implicit-move-prefix controls reproduce that
+  failure in the entry and candidate independently of conditional joins; both
+  hosts pass at O0/O2. Do not claim the original fixed-bound controls establish
+  correctness of these later memberwise constructors.
+
+Six of the seven original EH reducers now pass at O0/O2; failed-new remains
+failing, as recorded independently. The missing-history rename-manifest audit
+also writes an expected Git diagnostic before reporting success; HARNESS-AUDIT
+retains that cleanup separately. Other tracker work and the final combined
+student export remain pending.
+
+The whole-class file-audit finding was stale signature state from a short
+constructor initializer list. Both audit scans now retire declaration-scope
+state before discarding an earlier inline body. A large-class test passes and
+an actual 243-line member still fails. This corrected scan also exposes eight
+pre-existing oversized functions. file-audit-entry/ contains immutable copies
+from 72a55cd47, with hashes; file-audit-entry.log reports exactly the same
+eight failures as file-audit-scope-fixed.log in the candidate tree:
+
+| Owner | Function | Lines |
+| --- | --- | --- |
+| lowering/objects/storage_slots.h | CollectSlots | 317 |
+| lowir/driver/stats_report.cpp | ReportOptimizer | 517 |
+| lowir/optimize/small_object_promotion.cpp | promote_small_objects_impl | 275 |
+| native/lowering/indexes.h | emit_index | 377 |
+| semantic/extensions/hosted_builtins.cpp | AnalyzeBuiltinTypeTrait | 297 |
+| semantic/extensions/range_for.cpp | AnalyzeRangeFor | 253 |
+| semantic/object_model/inheritance_analysis.cpp | AnalyzeCast | 371 |
+| semantic/templates/function_deduction.cpp | DeduceFunctionTemplatePackType | 320 |
+
+ARCH-FUNCTION retains these required refactors. The detection correction is
+kept, and the 240-line function limit is unchanged. Full file-audit success is
+pending those repairs; do not describe this checkpoint as fully validated.
+The constructor's formatting cleanup leaves the rebuilt compiler byte
+identical to compiler-eighth, so its complete runtime and Alpha evidence
+still identifies the current compiler. Final student export remains deferred.

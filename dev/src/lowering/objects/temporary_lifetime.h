@@ -57,6 +57,7 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		derived.cleanup_continuations_.Clear();
+		derived.ResetConstructionFunctionState();
 		derived.pending_cleanup_states_.clear();
 		derived.full_expression_cleanup_state_ =
 			lowering::cleanup::kNoCleanupState;
@@ -123,19 +124,26 @@ protected:
 		derived.pending_cleanup_states_.clear();
 		bool inserted = false;
 		std::uint32_t tail = InternContinuation(Key(kNoCleanupState,
-			kNoCleanupState, 0, context, FULL_EXPRESSION_TERMINAL),
+			kNoCleanupState, derived.ConstructionCleanupTerminal(), context, FULL_EXPRESSION_TERMINAL),
 			"cleanup_resume", &inserted);
 		for (std::size_t i = derived.full_expression_segment_actions_.size();
 			i != 0; --i)
+		{
+			if (derived.HasConstructionCleanup() && derived.arena_.nodes[
+				derived.full_expression_segment_actions_[i - 1]].lifetime_object != kNoDumpEdge)
+				continue;
 			tail = InternContinuation(Key(CleanupActionIdentity(
 				derived.full_expression_segment_actions_[i - 1]), tail, 0,
 				context, FULL_EXPRESSION_ACTION), "cleanup_action", &inserted);
+		}
+		if (derived.HasConstructionCleanup())
+			tail = derived.BuildConstructionCleanupTail(tail, context);
 		if (context != 0)
 			tail = InternContinuation(Key(kNoCleanupState, tail, 0, context,
 				FULL_EXPRESSION_LANDING), "call_unwind_dispatch", &inserted);
 		derived.full_expression_cleanup_state_ = tail;
 		derived.full_expression_cleanup_dispatch_ = ContinuationBlock(tail);
-		return !inserted;
+		return derived.pending_cleanup_states_.empty();
 	}
 
 	void MaterializePendingCleanupStates()
@@ -150,6 +158,13 @@ protected:
 			derived.SelectBlock(state.block);
 			if (state.key.mode == FULL_EXPRESSION_TERMINAL)
 			{
+				if (state.key.terminal != 0)
+				{
+					derived.Emit(Instruction(Instruction::EH_END));
+					derived.Emit(Instruction(Instruction::EH_END));
+					derived.EmitJump(state.key.terminal - 1);
+					continue;
+				}
 				const bool routes_to_try =
 					derived.ExceptionCleanupRoutesToTry(state.key.context);
 				derived.FinishExceptionCleanupDispatch(routes_to_try);
@@ -171,6 +186,8 @@ protected:
 				derived.FinishExceptionUnwindCleanupPrefix();
 				derived.EmitJump(ContinuationBlock(state.key.tail));
 			}
+			else if (state.key.mode == CONSTRUCTION_PREFIX)
+				derived.LowerConstructionCleanupState(state);
 			else ThrowLoweringInternal(
 				"invalid full-expression cleanup continuation mode");
 		}
@@ -285,8 +302,9 @@ protected:
 	void StartFullExpressionCleanupSegment()
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (derived.full_expression_tracks_lifetime_state_ ||
-			derived.full_expression_uses_linked_dispatch_)
+		if (!derived.HasConstructionCleanup() &&
+			(derived.full_expression_tracks_lifetime_state_ ||
+			 derived.full_expression_uses_linked_dispatch_))
 		{
 			derived.full_expression_cleanup_dispatch_ =
 				derived.full_expression_tracks_lifetime_state_ ?
@@ -336,6 +354,8 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (full_expression_cleanup_start_suppressed_) return;
+		if (derived.HasConstructionCleanup() && derived.ConstructionCleanupRoot() == 0 &&
+			derived.full_expression_cleanup_actions_.empty()) return;
 		if (derived.full_expression_cleanup_active_ &&
 			derived.full_expression_cleanup_dispatch_ == kNoLowId &&
 			(!derived.full_expression_deferred_cleanup_ ||
@@ -430,7 +450,7 @@ protected:
 				record.lifetime_object == kNoDumpEdge)
 				ThrowLoweringInternal("invalid branch-local cleanup identity");
 			if (!derived.CurrentBlock().terminated)
-				LowerFullExpressionDestructorAction(action);
+				derived.LowerConstructionNormalTemporary(action);
 			retired.Push(record.lifetime_object);
 			if (derived.stats_) ++derived.stats_->branch_cleanup_actions;
 			action = derived.full_expression_branch_cleanup_next_[action];
@@ -640,7 +660,7 @@ protected:
 			i < derived.full_expression_cleanup_actions_.size(); ++i)
 			if (!derived.arena_.nodes[
 				derived.full_expression_cleanup_actions_[i]].unwind_only)
-				LowerFullExpressionDestructorAction(
+				derived.LowerConstructionNormalTemporary(
 					derived.full_expression_cleanup_actions_[i]);
 		PauseFullExpressionCleanupSegment();
 		std::size_t retained = 0;
@@ -762,6 +782,7 @@ protected:
 	void TransitionFullExpressionCleanup(std::uint32_t temporary)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		if (derived.TransitionConstructionTemporary(temporary)) return;
 		if (!derived.full_expression_cleanup_active_)
 			ThrowLoweringInternal(
 				"temporary transition outside full expression");
@@ -856,6 +877,7 @@ protected:
 	void ResetFullExpressionCleanup()
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		derived.ResetConstructionExpressionState();
 		derived.full_expression_cleanup_active_ = false;
 		derived.full_expression_cleanup_actions_.clear();
 		derived.full_expression_segment_actions_.clear();
@@ -903,7 +925,7 @@ protected:
 				derived.full_expression_cleanup_actions_[i]].unwind_only &&
 				!IsRetiredBranchCleanupAction(
 					derived.full_expression_cleanup_actions_[i]))
-				LowerFullExpressionDestructorAction(
+				derived.LowerConstructionNormalTemporary(
 					derived.full_expression_cleanup_actions_[i]);
 		if (derived.full_expression_cleanup_dispatch_ != kNoLowId)
 			CloseFullExpressionCleanupSegment();
@@ -1250,6 +1272,7 @@ protected:
 		const BlockId end_block = derived.AddBlock(
 			derived.NewLabel("condobj_end"));
 		const Operand condition = derived.LowerCondition(children[0]);
+		const std::uint32_t construction_prefix = derived.ConstructionCleanupRoot();
 		if (derived.full_expression_cleanup_active_)
 			PauseFullExpressionCleanupSegment();
 		derived.EmitBranch(condition, then_block, else_block);
@@ -1257,6 +1280,9 @@ protected:
 		if (derived.full_expression_cleanup_active_)
 			EnsureFullExpressionCleanupSegment();
 		LowerClassConditionalArm(children[1], destination, member);
+		const bool first_completes = !derived.CurrentBlock().terminated;
+		const std::uint32_t first_prefix = first_completes ?
+			derived.ConstructionCleanupRoot() : construction_prefix;
 		if (!derived.CurrentBlock().terminated)
 		{
 			if (derived.full_expression_cleanup_active_)
@@ -1264,9 +1290,12 @@ protected:
 			derived.EmitJump(end_block);
 		}
 		derived.SelectBlock(else_block);
+		derived.RestoreConstructionCleanupRoot(construction_prefix);
 		if (derived.full_expression_cleanup_active_)
 			EnsureFullExpressionCleanupSegment();
 		LowerClassConditionalArm(children[2], destination, member);
+		const std::uint32_t second_prefix = !derived.CurrentBlock().terminated ?
+			derived.ConstructionCleanupRoot() : construction_prefix;
 		if (!derived.CurrentBlock().terminated)
 		{
 			if (derived.full_expression_cleanup_active_)
@@ -1274,6 +1303,8 @@ protected:
 			derived.EmitJump(end_block);
 		}
 		derived.SelectBlock(end_block);
+		derived.MergeConstructionBranches(construction_prefix, first_prefix,
+			second_prefix, derived.arena_.nodes[node].type, destination);
 	}
 
 	void LowerForComponent(std::uint32_t child)

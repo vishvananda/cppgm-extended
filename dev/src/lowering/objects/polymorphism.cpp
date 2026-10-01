@@ -471,6 +471,12 @@ private:
 				state_.need_exceptions = true;
 				state_.need_exception_handlers = true;
 			}
+			else if (record.contains_construction_cleanup && record.construction_recipe &&
+				record.value_constructor == kNoDumpEdge)
+			{
+				state_.need_exceptions = true;
+				state_.need_exception_handlers = true;
+			}
 			else if (record.kind == DUMP_HANDLER)
 			{
 				state_.need_exceptions = true;

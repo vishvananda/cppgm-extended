@@ -206,6 +206,11 @@ To complete PA21, implement these goals:
    remain live from scopes outside the corresponding `try` statement.
    If construction of a class subobject throws, destroy exactly the already
    constructed bases and members in reverse construction order.
+   Aggregate member and array-element initialization must retain the completed
+   prefix when a later initializer throws, including a later scalar initializer.
+   Initializer temporaries participate in that completion order and remain live
+   through the full expression. A conditional join must retain the guarded
+   temporaries from whichever arm was evaluated.
    Equal unwind cleanup suffixes may share LowIR blocks only when their complete
    active try/handler context, handler-exit operations, cleanup-region exits,
    and terminal continuation are identical.

@@ -160,6 +160,7 @@ ExpressionInfo Analyzer::AnalyzeArrayAggregateInit(TypeId type,
 	if (constant_object && constant_elements.size() == count)
 		SetExpressionObject(&result,
 			InternConstexprObject(type, constant_elements));
+	RecordConstructionRecipe(list);
 	RecordExpressionFacts(result);
 	++expression_count_;
 	return result;
@@ -199,6 +200,10 @@ ExpressionInfo Analyzer::AnalyzeAggregateInit(TypeId type,
 			member_type, scope, element_edge);
 		dump_.nodes[action].value_initialization = omitted_initializer;
 		if (value.node != kNoDumpEdge) dump_.Add(action, value.node);
+		const EntityId member_entity = DestructedEntity(member_type);
+		if (member_entity != kNoEntity && !program_->types.IsReference(member_type) &&
+			!program_->entities[member_entity].trivial_destructor)
+			dump_.nodes[action].selected_binding = DestructorForType(member_type);
 		ConstexprObjectElement element(
 			member_id, ConstexprScalarValue(static_cast<std::int64_t>(0)));
 		if (constant_object && BuildConstexprObjectElement(
@@ -212,6 +217,7 @@ ExpressionInfo Analyzer::AnalyzeAggregateInit(TypeId type,
 	result.node = list;
 	result.type = type;
 	result.category = VALUE_LVALUE;
+	RecordConstructionRecipe(list);
 	if (constant_object && constant_elements.size() == member_count)
 		SetExpressionObject(&result,
 			InternConstexprObject(type, constant_elements));

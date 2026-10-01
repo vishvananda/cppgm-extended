@@ -358,6 +358,7 @@ ExpressionInfo Analyzer::AnalyzeBracedInit(NodeId node, ScopeId scope,
 	const std::uint32_t list = MakeDump(DUMP_BRACED_INIT_LIST, type,
 		VALUE_LVALUE);
 	for (std::size_t i = 0; i < values.size(); ++i) dump_.Add(list, values[i].node);
+	RecordConstructionRecipe(list);
 	ExpressionInfo result;
 	result.node = list;
 	result.type = type;

@@ -158,3 +158,5 @@ struct	dev/src/lowering/objects/virtual_bases.h	VirtualBaseBoundaryFact	1	dev/sr
 struct	dev/src/lowering/objects/virtual_bases.h	VirtualBaseContractState	1	dev/src/lowering/objects/virtual_bases.h	keep
 struct	dev/src/lowering/objects/virtual_bases.h	VirtualBaseParameterContract	1	dev/src/lowering/objects/virtual_bases.h	keep
 struct	dev/src/lowering/presentation/local_names.h	LocalPresentationCounters	1	dev/src/lowering/presentation/local_names.h	keep
+class	dev/src/lowering/objects/construction_cleanup.h	ConstructionCleanupLowering	1	dev/src/lowering/objects/construction_cleanup.h	keep
+struct	dev/src/lowering/objects/construction_cleanup.h	ConstructionCleanupStep	1	dev/src/lowering/objects/construction_cleanup.h	keep

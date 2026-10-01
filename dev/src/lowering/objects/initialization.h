@@ -546,9 +546,12 @@ protected:
 	}
 
 	void LowerLocalClassArrayInitializer(const DumpNode& record,
-		const NodeChildren& values)
+		const NodeChildren& values, std::uint32_t list_node)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		const DumpNode& recipe = derived.arena_.nodes[list_node];
+		const bool owns_cleanup = derived.BeginConstructionCleanup(recipe);
+		const std::uint32_t previous = derived.ConstructionCleanupRoot();
 		const TypeRecord& array = derived.program_.types.Get(
 			derived.ExpressionObjectType(record.type));
 		const Operand base = derived.AddressOfStorage(derived.StorageFor(
@@ -556,6 +559,7 @@ protected:
 		const std::size_t element_size = derived.program_.SizeOf(array.child);
 		for (std::size_t i = 0; i < values.size(); ++i)
 		{
+			const std::uint32_t element_prefix = derived.ConstructionCleanupRoot();
 			Operand destination = base;
 			if (i != 0)
 				destination = derived.IndexAddress(LowI8(), base,
@@ -568,7 +572,12 @@ protected:
 				derived.LowerAggregateConstructionAction(values[i], destination);
 			else derived.LowerRuntimeObjectValue(
 				array.child, values[i], destination);
+			if (kind != DUMP_BRACED_INIT_LIST)
+				derived.CompleteConstructionObject(element_prefix, array.child,
+					recipe.selected_binding, destination);
 		}
+		derived.CompleteConstructionObject(previous, record.type, recipe.selected_binding, base);
+		if (owns_cleanup) derived.CompleteFullExpressionCleanup();
 	}
 
 	template <class MemberPath>
@@ -576,6 +585,12 @@ protected:
 		std::uint32_t list_node, const MemberPath& path)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		if (derived.arena_.nodes[list_node].contains_construction_cleanup)
+		{
+			const Operand destination = derived.ProjectConstructorMemberPath(path);
+			derived.LowerRuntimeArrayValues(type, list_node, destination, true);
+			return;
+		}
 		const TypeRecord& array = derived.program_.types.Get(
 			derived.ExpressionObjectType(type));
 		const NodeChildren values = derived.Children(list_node);
@@ -950,7 +965,7 @@ protected:
 		{
 			if (!derived.lowering_namespace_object_)
 			{
-				derived.LowerLocalClassArrayInitializer(record, values);
+				derived.LowerLocalClassArrayInitializer(record, values, variable_children[0]);
 				return;
 			}
 			AggregatePath path;
@@ -1045,6 +1060,9 @@ protected:
 		const Operand& array_address, bool compact_addressing = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		const DumpNode& recipe = derived.arena_.nodes[list_node];
+		const bool owns_cleanup = derived.BeginConstructionCleanup(recipe);
+		const std::uint32_t previous = derived.ConstructionCleanupRoot();
 		const TypeRecord& array = derived.program_.types.Get(
 			derived.ExpressionObjectType(type));
 		const NodeChildren values = derived.Children(list_node);
@@ -1056,6 +1074,7 @@ protected:
 		const std::size_t element_size = derived.program_.SizeOf(array.child);
 		for (std::size_t i = 0; i < static_cast<std::size_t>(array.bound); ++i)
 		{
+			const std::uint32_t element_prefix = derived.ConstructionCleanupRoot();
 			const Operand displacement(static_cast<std::int64_t>(
 				i * element_size), LowI64());
 			const Operand destination = compact_addressing && i == 0 ? base :
@@ -1063,7 +1082,12 @@ protected:
 			if (i < values.size())
 				derived.LowerRuntimeObjectValue(array.child, values[i], destination);
 			else derived.LowerRuntimeZeroValue(array.child, destination);
+			if (i >= values.size() || derived.arena_.nodes[values[i]].kind != DUMP_BRACED_INIT_LIST)
+				derived.CompleteConstructionObject(element_prefix, array.child,
+					recipe.selected_binding, destination);
 		}
+		derived.CompleteConstructionObject(previous, type, recipe.selected_binding, array_address);
+		if (owns_cleanup) derived.CompleteFullExpressionCleanup();
 	}
 	void LowerRuntimeObjectValue(TypeId type, std::uint32_t node,
 		const Operand& destination)
@@ -1133,6 +1157,8 @@ protected:
 		const DumpNode& list = derived.arena_.nodes[list_node];
 		if (list.kind != DUMP_BRACED_INIT_LIST)
 			ThrowLoweringInternal("class initializer is not an action list");
+		const bool owns_cleanup = derived.BeginConstructionCleanup(list);
+		const std::uint32_t previous = derived.ConstructionCleanupRoot();
 		const NodeChildren actions = derived.Children(list_node);
 		for (std::size_t i = 0; i < actions.size(); ++i)
 		{
@@ -1146,6 +1172,28 @@ protected:
 			const bool nested = values.size() == 1 &&
 				derived.arena_.nodes[values[0]].kind == DUMP_BRACED_INIT_LIST &&
 				derived.IsClassObjectType(action.type);
+			if (derived.HasConstructionCleanup())
+			{
+				const std::uint32_t member_prefix = derived.ConstructionCleanupRoot();
+				Operand destination;
+				if (retained_address.kind != Operand::NONE)
+					destination = derived.ProjectAggregateMember(retained_address, action.binding);
+				else
+				{
+					path->Push(action.binding);
+					destination = derived.ProjectAggregatePath(root, *path);
+					path->Pop();
+				}
+				if (nested) derived.LowerAggregateActions(values[0], root, path, destination);
+				else
+				{
+					derived.LowerAggregateLeaf(action, values, root, *path, destination);
+					if (!derived.IsArrayType(action.type))
+						derived.CompleteConstructionObject(member_prefix, action.type,
+							action.selected_binding, destination);
+				}
+				continue;
+			}
 			if (retained_address.kind != Operand::NONE)
 			{
 				const Operand destination = derived.ProjectAggregateMember(
@@ -1168,6 +1216,10 @@ protected:
 				derived.LowerAggregateLeaf(action, values, root, *path, Operand());
 			path->Pop();
 		}
+		if (derived.HasConstructionCleanup())
+			derived.CompleteConstructionObject(previous, list.type, list.selected_binding,
+				retained_address.kind != Operand::NONE ? retained_address : derived.ProjectAggregatePath(root, *path));
+		if (owns_cleanup) derived.CompleteFullExpressionCleanup();
 	}
 	Operand ProjectAggregateMember(const Operand& base, BindingId binding)
 	{

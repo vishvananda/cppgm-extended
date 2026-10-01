@@ -919,3 +919,4 @@ dev/src/semantic/templates/validation.cpp	ResolveRetainedDependentCallPatterns	1
 dev/src/semantic/templates/validation.cpp	RetainedCallAllowsArgumentDependentLookup	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/templates/validation.cpp	RetainedFunctionCallCandidates	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/templates/validation.cpp	ValidateRetainedTemplateDefinition	1	dev/src/semantic/templates/validation.cpp	keep
+dev/src/semantic/initialization/analysis.cpp	RecordConstructionRecipe	1	dev/src/semantic/initialization/analysis.cpp	keep

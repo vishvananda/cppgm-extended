@@ -36,6 +36,7 @@
 #include "lowering/calls/value_boundary.h"
 #include "lowering/calls/special_members.h"
 #include "lowering/objects/temporary_lifetime.h"
+#include "lowering/objects/construction_cleanup.h"
 #include "lowering/objects/polymorphism.h"
 #include "lowering/constants/values.h"
 #include "lowering/constants/templates.h"
@@ -84,6 +85,7 @@ class ProgramLowerer :
 	private lowering::SlotPlanning<ProgramLowerer>,
 	private lowering::StorageAccessLowering<ProgramLowerer>,
 	private lowering::TemporaryLifetimeLowering<ProgramLowerer>,
+	private lowering::ConstructionCleanupLowering<ProgramLowerer>,
 	private lowering::ConstantLowering<ProgramLowerer>,
 	private lowering::LocalStaticLowering<ProgramLowerer>,
 	private lowering::RangeForLowering<ProgramLowerer>,
@@ -268,6 +270,7 @@ private:
 	friend class lowering::SlotPlanning<ProgramLowerer>;
 	friend class lowering::StorageAccessLowering<ProgramLowerer>;
 	friend class lowering::TemporaryLifetimeLowering<ProgramLowerer>;
+	friend class lowering::ConstructionCleanupLowering<ProgramLowerer>;
 	friend class lowering::ConstantLowering<ProgramLowerer>;
 	friend class lowering::LocalStaticLowering<ProgramLowerer>;
 	friend class lowering::RangeForLowering<ProgramLowerer>;

@@ -436,6 +436,9 @@ void Analyzer::AppendFullExpressionDestructionActions(
 			action = MakeTemporaryDestructorAction(
 				temporaries[i - 1], kNoBinding, true);
 		if (action == kNoDumpEdge) continue;
+		if (dump_.nodes[expression].contains_construction_cleanup &&
+			!FunctionIsNonthrowing(dump_.nodes[action].binding))
+			dump_.construction_cleanup_may_throw = true;
 		const EntityId action_entity =
 			DestructedEntity(dump_.nodes[action].operand_type);
 		const bool specialization_action = action_entity != kNoEntity &&

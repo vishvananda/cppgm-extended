@@ -99,7 +99,7 @@ protected:
 	void PrepareFunctionExceptionPolicyRuntime()
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		bool need_terminate = false;
+		bool need_terminate = derived.arena_.construction_cleanup_may_throw;
 		for (std::size_t i = 0; i < derived.arena_.lexical_cleanup_plans.size(); ++i)
 		{
 			const LexicalCleanupPlan& plan = derived.arena_.lexical_cleanup_plans[i];
