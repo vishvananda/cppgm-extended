@@ -32,8 +32,15 @@ my %retirement_owner = (
 # implementation in) still checks the manifest's shape and every current
 # owner; only the "is a baseline source" check needs the commit.
 my %baseline;
-my $have_baseline = system('git', '-C', $root, 'cat-file', '-e',
-	"$baseline_commit^{tree}") == 0;
+open(my $baseline_git, '-|', 'git', '-C', $root, 'rev-parse', '--verify',
+	'--quiet', "$baseline_commit^{tree}")
+	or die "unable to check baseline commit $baseline_commit: $!\n";
+my $baseline_tree = <$baseline_git>;
+close($baseline_git);
+my $baseline_status = $?;
+die "unable to check baseline commit $baseline_commit (Git status $baseline_status)\n"
+	if $baseline_status != 0 && $baseline_status != 256;
+my $have_baseline = $baseline_status == 0 && defined($baseline_tree);
 if ($have_baseline)
 {
 	open(my $git, '-|', 'git', '-C', $root, 'ls-tree', '-r', '--name-only',

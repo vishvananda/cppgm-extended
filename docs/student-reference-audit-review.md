@@ -78,8 +78,8 @@ fix sequence is complete, as requested.
 | HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass; student has not edited its oracle. |
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence is complete; initial and INIT-ADDR exports already passed. |
-| HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Open: the audit intentionally accepts a checkout lacking its historical baseline, but git cat-file writes a fatal diagnostic before the successful result. Check the expected absence quietly while preserving real audit errors. |
-| HARNESS-FILE | Stop counting an entire class as a function after an unrecognized constructor signature | Aggregate compiler validation | Done in the accompanying checkpoint: both scans retire declaration-scope state before stripping an earlier inline body. A large-class control passes, a real oversized member still fails, and the full harness passes. Full file-audit success remains ARCH-FUNCTION, whose eight failures are also present in the frozen entry. |
+| HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
+| HARNESS-FILE | Stop counting an entire class as a function after an unrecognized constructor signature | Aggregate compiler validation | Done: both scans retire declaration-scope state before stripping an earlier inline body. A large-class control passes, a real oversized member still fails, and the full harness passes. ARCH-FUNCTION subsequently closes all eight genuine baseline size findings. |
 | ARCH-FUNCTION | Refactor eight existing oversized functions missed by stale file-audit signature state | HARNESS-FILE detection correction | Done: responsibilities extracted without changing references or relaxing the 240-line limit; slot visits use one typed worklist. Exact optimizer stats and 210 unchanged control observations; strict 5993/5993, debug-info, variants, self-host PA5 and every required audit pass. Twelve Alpha instruction/RSS gates pass with equal objects; checkpoint evidence below. |
 
 ## Static address initialization checkpoint
@@ -2488,5 +2488,18 @@ perf-first/ retains all 576 Alpha counter observations across twelve frozen
 workloads, four A/A and eight A/B paired blocks per workload, compiler/input
 hashes and exact object equality. paired-performance-gate.json passes the
 0.5% instruction and 3% RSS gates. The largest A/B instruction increase is
-0.0041%; the largest RSS increase is 0.148%. Cycles remain within calibration
-noise. Final combined student export remains deferred until the other fixes.
+0.0041%; the largest RSS increase is 0.148%. Cycle observations are retained alongside the counter calibration.
+Final combined student export remains deferred until the other fixes.
+
+### Quiet historical-baseline audit checkpoint
+
+HARNESS-AUDIT uses git rev-parse --verify --quiet to probe the historical tree,
+capturing its normal stdout. Only the expected missing-object exit status is
+accepted without history; signals and other Git failures terminate the audit
+and preserve their diagnostics. The focused harness now requires empty stderr
+for a successful missing-history checkout and verifies that a non-repository
+fails visibly. Its five controls and the complete make test-harness pass.
+The live rename-manifest audit passes with zero stderr bytes; strict 5993/5993
+prints only its final total. Evidence is in
+/tmp/cppgm-v4-audit-review/rename-history-quiet/. No compiler binary or student
+oracle changes occur in this checkpoint. Final combined export remains pending.
