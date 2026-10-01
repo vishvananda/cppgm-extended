@@ -356,24 +356,50 @@ void Analyzer::AddRangeForLoopVariable(NodeId declaration,
 	FinishRangeForLocalInitializer(scope, simple, parsed.type, initializer);
 }
 
+namespace
+{
+
+NodeId RangeForBodySyntax(const syntax::SyntaxArena& arena, NodeId node,
+	NodeId declaration, NodeId initializer_node, NodeId initializer_syntax)
+{
+	if (declaration == kNoNode || initializer_syntax == kNoNode)
+		ThrowSemanticError("invalid range-for statement");
+	NodeId body_syntax = kNoNode;
+	for (std::uint32_t edge = arena.FirstEdge(node); edge != kNoEdge;
+		edge = arena.NextEdge(edge))
+	{
+		const NodeId child = arena.EdgeChild(edge);
+		if (child != declaration && child != initializer_node)
+			body_syntax = child;
+	}
+	if (body_syntax == kNoNode)
+		ThrowSemanticError("range-for statement has no body");
+	return body_syntax;
+}
+
+}
+
+BindingId Analyzer::AddRangeForIndex(ScopeId control, std::uint32_t init)
+{
+	ExpressionInfo zero = MakeLiteral(
+		program_->types.Fundamental(FUND_INT),
+		program_->names.Intern("0"));
+	zero.constant = true;
+	zero.value = 0;
+	RecordExpressionFacts(zero);
+	const NameId index_name = NextRangeForHiddenName("__idx");
+	return AddRangeForLocal(control, init,
+		index_name, program_->types.Fundamental(FUND_INT), zero);
+}
+
 void Analyzer::AnalyzeRangeFor(NodeId node, ScopeId scope,
 	std::uint32_t output_parent)
 {
 	const NodeId declaration = FindChild(node, ::cppgm::syntax::STAG_RANGE_DECLARATION);
 	const NodeId initializer_node = FindChild(node, ::cppgm::syntax::STAG_RANGE_INITIALIZER);
 	const NodeId initializer_syntax = FirstSemanticChild(initializer_node);
-	if (declaration == kNoNode || initializer_syntax == kNoNode)
-		ThrowSemanticError("invalid range-for statement");
-	NodeId body_syntax = kNoNode;
-	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
-		edge = arena_->NextEdge(edge))
-	{
-		const NodeId child = arena_->EdgeChild(edge);
-		if (child != declaration && child != initializer_node)
-			body_syntax = child;
-	}
-	if (body_syntax == kNoNode)
-		ThrowSemanticError("range-for statement has no body");
+	const NodeId body_syntax = RangeForBodySyntax(*arena_, node, declaration,
+		initializer_node, initializer_syntax);
 
 	const ScopeId control = NewScope(
 		scope, SCOPE_BLOCK, 0, ScopePrefixId(scope));
@@ -448,15 +474,7 @@ void Analyzer::AnalyzeRangeFor(NodeId node, ScopeId scope,
 	TypeId initializer_list_element = kNoType;
 	if (IsInitializerListType(range_type, &initializer_list_element))
 	{
-		ExpressionInfo zero = MakeLiteral(
-			program_->types.Fundamental(FUND_INT),
-			program_->names.Intern("0"));
-		zero.constant = true;
-		zero.value = 0;
-		RecordExpressionFacts(zero);
-		const NameId index_name = NextRangeForHiddenName("__idx");
-		const BindingId index_binding = AddRangeForLocal(control, init,
-			index_name, program_->types.Fundamental(FUND_INT), zero);
+		const BindingId index_binding = AddRangeForIndex(control, init);
 
 		ExpressionInfo size;
 		// The retained count is lowered as the ABI's signed machine-width index;
@@ -498,15 +516,7 @@ void Analyzer::AnalyzeRangeFor(NodeId node, ScopeId scope,
 	}
 	else if (range_shape.kind == TYPE_ARRAY)
 	{
-		ExpressionInfo zero = MakeLiteral(
-			program_->types.Fundamental(FUND_INT),
-			program_->names.Intern("0"));
-		zero.constant = true;
-		zero.value = 0;
-		RecordExpressionFacts(zero);
-		const NameId index_name = NextRangeForHiddenName("__idx");
-		const BindingId index_binding = AddRangeForLocal(control, init,
-			index_name, program_->types.Fundamental(FUND_INT), zero);
+		const BindingId index_binding = AddRangeForIndex(control, init);
 		ExpressionInfo index_for_condition =
 			MakeRangeForBindingExpression(index_binding);
 		ExpressionInfo bound = MakeLiteral(

@@ -45,7 +45,7 @@ fix sequence is complete, as requested.
 | EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in ac2aaf704: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | EH-FORWARD | Advertise enclosing catch clauses and unwind prefixes/active handlers in lifetime order | v4codex references106/112 plus independent boundary controls | Done in the accompanying checkpoint: 40 agreed boundary programs and six new PA21 fixtures pass at O0/O2; three independently reviewed references change. Strict 5977/5977, full compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. |
 | EH-CLEANUP | Preserve handler lifetime and remaining-object unwind tails during lexical destruction | Original EH reducer plus expanded local cleanup controls | Done in the accompanying checkpoint: 34 host-agreed runtime boundary programs and seven new PA21/28 fixtures pass at O0/O2; three reviewed references change. Strict 5984/5984, all compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. Array element progress and non-NRVO returned-object cleanup remain separate rows. |
-| EH-AGG-PREFIX | Preserve completed aggregate members/elements and interleaved temporaries when a later initializer throws | Original aggregate-prefix reducer plus expanded construction controls | In progress: runtime fix passes the original reducer and 37 agreed construction controls at O0/O2, including conditional temporary joins. Nine independently checked PA21 fixtures and one reviewed reference correction; strict 5993/5993, debug-info, variants, self-host PA5, architecture and placement pass. Twelve Alpha instruction/RSS gates pass with equal objects. Corrected file-audit detection exposes eight existing oversized functions; ARCH-FUNCTION must finish before calling full validation complete. Later synthesized-copy failures are EH-SPECIAL-PREFIX; source-handler escape is EH-CTOR-HANDLER. |
+| EH-AGG-PREFIX | Preserve completed aggregate members/elements and interleaved temporaries when a later initializer throws | Original aggregate-prefix reducer plus expanded construction controls | Done: 37 agreed construction controls pass at O0/O2; nine independently checked PA21 fixtures and one reviewed reference correction. Strict 5993/5993, debug-info, variants, self-host PA5, all architecture/file/placement audits and twelve Alpha instruction/RSS gates pass. ARCH-FUNCTION closes the previously exposed file-audit findings. Synthesized-copy failures remain EH-SPECIAL-PREFIX; source-handler escape remains EH-CTOR-HANDLER. |
 | EH-AGG-NESTED | Invoke a completed nested aggregate's custom destructor when a later outer member fails | Additional EH-AGG-PREFIX boundary control | Needs contract review: Clang invokes the nested destructor, GCC skips its body; both destroy its member objects. N3485's principal-constructor wording predates P0490R0's explicit completed-aggregate rule. Keep this difference separate from the 23 agreed cleanup failures; no oracle changed. |
 | EH-AGG-TEMP-DTOR | Destroy a completed aggregate when an initializer temporary's normal destructor throws | Additional EH-AGG-PREFIX boundary control | Needs contract review: GCC and the candidate destroy both aggregate members; Clang 21.1.8 leaks them at O0/O2. Retain this host disagreement separately from ordinary construction failure; no required oracle added. |
 | EH-SPECIAL-PREFIX | Destroy completed members when a later member in a synthesized copy/move constructor throws | Extended conditional controls and direct memberwise construction reducers | Open: extending the conditional controls through every observed copy step exposes a leaked destination member. Direct implicit-copy/move controls separate that failure from aggregate initialization; retain baseline and host evidence below. |
@@ -80,7 +80,7 @@ fix sequence is complete, as requested.
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence is complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Open: the audit intentionally accepts a checkout lacking its historical baseline, but git cat-file writes a fatal diagnostic before the successful result. Check the expected absence quietly while preserving real audit errors. |
 | HARNESS-FILE | Stop counting an entire class as a function after an unrecognized constructor signature | Aggregate compiler validation | Done in the accompanying checkpoint: both scans retire declaration-scope state before stripping an earlier inline body. A large-class control passes, a real oversized member still fails, and the full harness passes. Full file-audit success remains ARCH-FUNCTION, whose eight failures are also present in the frozen entry. |
-| ARCH-FUNCTION | Refactor eight existing oversized functions missed by stale file-audit signature state | HARNESS-FILE detection correction | Open, independently verified: the corrected declaration-scope scan reports the same eight functions above 240 lines in both frozen 72a55cd47 and the current tree. Retire the stale audit state and refactor these responsibility boundaries without relaxing the limit; retained inventory below. |
+| ARCH-FUNCTION | Refactor eight existing oversized functions missed by stale file-audit signature state | HARNESS-FILE detection correction | Done: responsibilities extracted without changing references or relaxing the 240-line limit; slot visits use one typed worklist. Exact optimizer stats and 210 unchanged control observations; strict 5993/5993, debug-info, variants, self-host PA5 and every required audit pass. Twelve Alpha instruction/RSS gates pass with equal objects; checkpoint evidence below. |
 
 ## Static address initialization checkpoint
 
@@ -2454,3 +2454,39 @@ pending those repairs; do not describe this checkpoint as fully validated.
 The constructor's formatting cleanup leaves the rebuilt compiler byte
 identical to compiler-eighth, so its complete runtime and Alpha evidence
 still identifies the current compiler. Final student export remains deferred.
+
+### Function-size audit repair checkpoint
+
+ARCH-FUNCTION is complete. The eight functions listed above now meet the
+unchanged 240-line limit. Their existing responsibilities stay in the same
+compiler owners: declared storage and array-new slots, optimizer reporting,
+proven object rewriting, materialized native indexes, builtin shape traits,
+range-for body/index setup, scalar casts, and named template-pack deduction.
+Slot planning replaces five parallel vectors with one typed visit worklist,
+preserving traversal and slot order. Five existing control-flow fact records
+move from Analyzer into semantic/analysis/control_flow_facts.h; analyzer.h is
+2365 lines. Semantic and lowering symbol ledgers include the extracted owners.
+No fixture or reference changes accompany these refactors.
+
+Evidence is retained in /tmp/cppgm-v4-audit-review/function-audit-repair/.
+The immutable entry compiler is 1aed930df76736a69356974296f97ceb9c961f58b3009975f45c5cb5c6c2e446;
+compiler-first is 0645718d1c63cd31a7af17bd23ea3acc8a85204af1c081d8f6ba2ab3764367f6.
+entry-manifest.json retains source hashes. A frozen stats probe sets 347 scalar
+fields and all entries in three matrices; both path variants match the entry
+output exactly. control-comparison.json checks 210 compile/link/run observations
+against the aggregate checkpoint, including known independent failures and
+second-fault termination. All statuses and output are unchanged.
+
+validation-first/validation.json records passing strict report (5993/5993,
+one final output line), debug-info, backend variants, self-host through PA5,
+all nine architecture audits, complete file audit and feature placement.
+The complete file audit passes with 37 advisory warnings and no errors. This
+closes the outstanding audit gate for EH-AGG-PREFIX without claiming any of the
+separate EH rows are fixed.
+
+perf-first/ retains all 576 Alpha counter observations across twelve frozen
+workloads, four A/A and eight A/B paired blocks per workload, compiler/input
+hashes and exact object equality. paired-performance-gate.json passes the
+0.5% instruction and 3% RSS gates. The largest A/B instruction increase is
+0.0041%; the largest RSS increase is 0.148%. Cycles remain within calibration
+noise. Final combined student export remains deferred until the other fixes.

@@ -282,6 +282,143 @@ bool TraitReadsOnlyTypeShape(hosted_builtin::TypeTraitKind trait)
 }
 
 }
+namespace
+{
+
+bool EvaluateBuiltinShapeTrait(hosted_builtin::TypeTraitKind trait,
+	Program& program, const std::vector<TypeId>& operands,
+	const TypeRecord& shape, const EntityRecord* named,
+	bool* result, std::int64_t* integral_result, TypeId* result_type_value)
+{
+	using namespace hosted_builtin;
+	const TypeId first = operands[0];
+	bool value = false;
+	std::int64_t& integral_value = *integral_result;
+	TypeId& result_type = *result_type_value;
+	if (trait == TYPE_TRAIT_ARRAY_RANK && operands.size() == 1)
+	{
+		TypeId ranked = program.types.RemoveTopCv(first);
+		while (program.types.Get(ranked).kind == TYPE_ARRAY)
+		{
+			++integral_value;
+			ranked = program.types.RemoveTopCv(
+				program.types.Get(ranked).child);
+		}
+		result_type = program.types.Fundamental(FUND_UNSIGNED_LONG_INT);
+	}
+	else if (trait == TYPE_TRAIT_IS_SAME && operands.size() == 2)
+		value = operands[0] == operands[1];
+	else if (trait == TYPE_TRAIT_IS_POINTER && operands.size() == 1)
+		value = shape.kind == TYPE_POINTER;
+	// N3485 3.9.3/1 puts cv-qualification on the type itself, so these two
+	// read `first` rather than the stripped shape every other trait uses.
+	// A reference is never cv-qualified, however it was written.
+	else if (trait == TYPE_TRAIT_IS_CONST && operands.size() == 1)
+		value = (program.types.Get(first).cv & CV_CONST) != 0;
+	else if (trait == TYPE_TRAIT_IS_VOLATILE && operands.size() == 1)
+		value = (program.types.Get(first).cv & CV_VOLATILE) != 0;
+	else if (trait == TYPE_TRAIT_IS_VOID && operands.size() == 1)
+		value = shape.kind == TYPE_FUNDAMENTAL &&
+			shape.fundamental == FUND_VOID;
+	else if (trait == TYPE_TRAIT_IS_ARRAY && operands.size() == 1)
+		value = shape.kind == TYPE_ARRAY;
+	// N3485 8.3.4/1: an array bound may be omitted, and the two forms are
+	// distinct types.
+	else if (trait == TYPE_TRAIT_IS_BOUNDED_ARRAY && operands.size() == 1)
+		value = shape.kind == TYPE_ARRAY && !shape.IsIncompleteArray();
+	else if (trait == TYPE_TRAIT_IS_UNBOUNDED_ARRAY && operands.size() == 1)
+		value = shape.IsIncompleteArray();
+	else if (trait == TYPE_TRAIT_IS_LVALUE_REFERENCE && operands.size() == 1)
+		value = shape.kind == TYPE_LVALUE_REFERENCE;
+	else if (trait == TYPE_TRAIT_IS_RVALUE_REFERENCE && operands.size() == 1)
+		value = shape.kind == TYPE_RVALUE_REFERENCE;
+	else if (trait == TYPE_TRAIT_IS_UNSIGNED && operands.size() == 1)
+		value = shape.kind == TYPE_FUNDAMENTAL &&
+			IsFundamentalIntegral(shape) &&
+			!IsSignedFundamental(shape.fundamental);
+	// N3485 3.9.1/9 and 3.9/9: the arithmetic types are the integral and
+	// floating ones, and the fundamental types add void and nullptr_t.
+	else if (trait == TYPE_TRAIT_IS_ARITHMETIC && operands.size() == 1)
+		value = IsFundamentalIntegral(shape) || IsFundamentalFloating(shape);
+	else if (trait == TYPE_TRAIT_IS_FUNDAMENTAL && operands.size() == 1)
+		value = shape.kind == TYPE_FUNDAMENTAL;
+	// N3485 3.9/9: an object type is any type that is not a function, a
+	// reference, or void.  A compound type is everything that is not
+	// fundamental.
+	else if (trait == TYPE_TRAIT_IS_OBJECT && operands.size() == 1)
+		value = shape.kind != TYPE_FUNCTION &&
+			shape.kind != TYPE_LVALUE_REFERENCE &&
+			shape.kind != TYPE_RVALUE_REFERENCE &&
+			!(shape.kind == TYPE_FUNDAMENTAL &&
+				shape.fundamental == FUND_VOID);
+	else if (trait == TYPE_TRAIT_IS_COMPOUND && operands.size() == 1)
+		value = shape.kind != TYPE_FUNDAMENTAL;
+	// A referenceable type is one a reference may be formed to: everything
+	// but void and a function type carrying cv-qualifiers or a
+	// ref-qualifier, which this model does not spell separately.
+	else if (trait == TYPE_TRAIT_IS_REFERENCEABLE && operands.size() == 1)
+		value = !(shape.kind == TYPE_FUNDAMENTAL &&
+			shape.fundamental == FUND_VOID);
+	else if (trait == TYPE_TRAIT_IS_REFERENCE && operands.size() == 1)
+		value = shape.kind == TYPE_LVALUE_REFERENCE ||
+			shape.kind == TYPE_RVALUE_REFERENCE;
+	else if (trait == TYPE_TRAIT_IS_FUNCTION && operands.size() == 1)
+		value = shape.kind == TYPE_FUNCTION;
+	else if (trait == TYPE_TRAIT_IS_MEMBER_POINTER && operands.size() == 1)
+		value = shape.kind == TYPE_MEMBER_POINTER;
+	else if (trait == TYPE_TRAIT_IS_MEMBER_FUNCTION_POINTER &&
+		operands.size() == 1)
+		value = shape.kind == TYPE_MEMBER_POINTER &&
+			program.types.Get(shape.child).kind == TYPE_FUNCTION;
+	else if (trait == TYPE_TRAIT_IS_MEMBER_OBJECT_POINTER &&
+		operands.size() == 1)
+		value = shape.kind == TYPE_MEMBER_POINTER &&
+			program.types.Get(shape.child).kind != TYPE_FUNCTION;
+	else if (trait == TYPE_TRAIT_IS_INTEGRAL && operands.size() == 1)
+		value = IsFundamentalIntegral(shape);
+	else if (trait == TYPE_TRAIT_IS_FLOATING_POINT && operands.size() == 1)
+		value = IsFundamentalFloating(shape);
+	else if (trait == TYPE_TRAIT_IS_SIGNED && operands.size() == 1)
+		value = shape.kind == TYPE_FUNDAMENTAL &&
+			IsSignedFundamental(shape.fundamental);
+	else if (trait == TYPE_TRAIT_IS_ENUM && operands.size() == 1)
+		value = named && IsEnumEntity(*named);
+	else if (trait == TYPE_TRAIT_IS_UNION && operands.size() == 1)
+		value = named && named->flavor == NAMED_UNION;
+	else if (trait == TYPE_TRAIT_IS_CLASS && operands.size() == 1)
+		value = named && IsClassEntity(*named) &&
+			named->flavor != NAMED_UNION;
+	else if (trait == TYPE_TRAIT_IS_SCALAR && operands.size() == 1)
+		value = IsFundamentalIntegral(shape) || IsFundamentalFloating(shape) ||
+			(shape.kind == TYPE_FUNDAMENTAL &&
+			 shape.fundamental == FUND_NULLPTR_T) ||
+			shape.kind == TYPE_POINTER || shape.kind == TYPE_MEMBER_POINTER ||
+			shape.kind == TYPE_COMPLEX ||
+			(named && IsEnumEntity(*named));
+	else if (trait == TYPE_TRAIT_IS_EMPTY && operands.size() == 1)
+		value = named && IsClassEntity(*named) && named->empty_class;
+	else if (trait == TYPE_TRAIT_IS_AGGREGATE && operands.size() == 1)
+		value = named && IsClassEntity(*named) && named->is_aggregate;
+	else if (trait == TYPE_TRAIT_IS_ABSTRACT && operands.size() == 1)
+		value = named && IsClassEntity(*named) && named->abstract_class;
+	else if (trait == TYPE_TRAIT_IS_POLYMORPHIC && operands.size() == 1)
+		value = named && IsClassEntity(*named) && named->polymorphic_class;
+	else if ((trait == TYPE_TRAIT_IS_DESTRUCTIBLE ||
+		trait == TYPE_TRAIT_IS_TRIVIALLY_DESTRUCTIBLE) && operands.size() == 1)
+		value = shape.kind == TYPE_LVALUE_REFERENCE ||
+			shape.kind == TYPE_RVALUE_REFERENCE || IsFundamentalIntegral(shape) ||
+			IsFundamentalFloating(shape) || shape.kind == TYPE_COMPLEX ||
+			shape.kind == TYPE_POINTER ||
+			shape.kind == TYPE_MEMBER_POINTER ||
+			(named && named->destructible &&
+			 (trait == TYPE_TRAIT_IS_DESTRUCTIBLE || named->trivial_destructor));
+	else return false;
+	*result = value;
+	return true;
+}
+
+}
+
 ExpressionInfo Analyzer::AnalyzeBuiltinTypeTrait(
 	NodeId node, ScopeId scope)
 {
@@ -373,198 +510,86 @@ ExpressionInfo Analyzer::AnalyzeBuiltinTypeTrait(
 				ThrowSemanticError(
 					"base-of trait requires a complete derived type");
 		}
-		if (trait == TYPE_TRAIT_ARRAY_RANK && operands.size() == 1)
+		const bool shape_trait = EvaluateBuiltinShapeTrait(trait, *program_,
+			operands, shape, named, &value, &integral_value, &result_type);
+		if (!shape_trait)
 		{
-			TypeId ranked = program_->types.RemoveTopCv(first);
-			while (program_->types.Get(ranked).kind == TYPE_ARRAY)
+			if (trait == TYPE_TRAIT_IS_TRIVIALLY_COPYABLE &&
+				operands.size() == 1)
+				value = (named && IsClassEntity(*named)) ?
+					EvaluateBuiltinTriviallyCopyable(first) :
+					IsFundamentalIntegral(shape) || IsFundamentalFloating(shape) ||
+					shape.kind == TYPE_COMPLEX || shape.kind == TYPE_POINTER ||
+					shape.kind == TYPE_MEMBER_POINTER;
+			else if ((trait == TYPE_TRAIT_IS_TRIVIAL || trait == TYPE_TRAIT_IS_POD ||
+				trait == TYPE_TRAIT_IS_STANDARD_LAYOUT ||
+				trait == TYPE_TRAIT_IS_LITERAL_TYPE) && operands.size() == 1)
+				value = EvaluateBuiltinTrivialLayoutTrait(
+					trait, first, shape, named);
+			else if ((trait == TYPE_TRAIT_IS_CONSTRUCTIBLE ||
+				trait == TYPE_TRAIT_IS_NOTHROW_CONSTRUCTIBLE ||
+				trait == TYPE_TRAIT_IS_TRIVIALLY_CONSTRUCTIBLE))
 			{
-				++integral_value;
-				ranked = program_->types.RemoveTopCv(
-					program_->types.Get(ranked).child);
+				BindingId selected = kNoBinding;
+				std::vector<CallConversionFact> conversions;
+				value = EvaluateBuiltinConstructibility(
+					operands, &selected, &conversions);
+				if (value && trait == TYPE_TRAIT_IS_NOTHROW_CONSTRUCTIBLE)
+					value = BuiltinConstructionIsNonthrowing(
+						operands[0], selected, conversions);
+				else if (value && trait == TYPE_TRAIT_IS_TRIVIALLY_CONSTRUCTIBLE)
+					value = BuiltinConstructionIsTrivial(
+						operands[0], selected, conversions);
 			}
-			result_type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+			else if ((trait == TYPE_TRAIT_IS_ASSIGNABLE ||
+				trait == TYPE_TRAIT_IS_NOTHROW_ASSIGNABLE ||
+				trait == TYPE_TRAIT_IS_TRIVIALLY_ASSIGNABLE) && operands.size() == 2)
+			{
+				BindingId selected = kNoBinding;
+				std::vector<CallConversionFact> conversions;
+				value = EvaluateBuiltinAssignability(
+					operands[0], operands[1], scope, &selected, &conversions);
+				if (value && trait == TYPE_TRAIT_IS_NOTHROW_ASSIGNABLE)
+					value = BuiltinAssignmentIsNonthrowing(
+						selected, conversions);
+				else if (value && trait == TYPE_TRAIT_IS_TRIVIALLY_ASSIGNABLE)
+					value = BuiltinAssignmentIsTrivial(selected, conversions);
+			}
+			else if (trait == TYPE_TRAIT_IS_CONVERTIBLE && operands.size() == 2)
+				value = EvaluateBuiltinConvertibility(operands[0], operands[1]);
+			else if (trait == TYPE_TRAIT_IS_BASE_OF && operands.size() == 2)
+			{
+				const EntityId base = ClassEntityOf(*program_, operands[0]);
+				const EntityId derived = ClassEntityOf(*program_, operands[1]);
+				value = base != kNoEntity && derived != kNoEntity &&
+					(base == derived || AccessIsBaseOf(base, derived));
+			}
+			else if (trait == TYPE_TRAIT_IS_COMPLETE_OR_UNBOUNDED &&
+				operands.size() == 1)
+				value = shape.kind == TYPE_ARRAY ? shape.bound == 0 :
+					shape.kind != TYPE_FUNCTION && !IsVoid(first) &&
+					(!named || named->complete);
+			else if (trait == TYPE_TRAIT_HAS_TRIVIAL_CONSTRUCTOR &&
+				operands.size() == 1)
+				value = !named || named->trivial_default_constructor;
+			else if (trait == TYPE_TRAIT_HAS_NOTHROW_COPY && operands.size() == 1)
+				value = EvaluateBuiltinNothrowCopy(first);
+			else if (trait == TYPE_TRAIT_HAS_VIRTUAL_DESTRUCTOR &&
+				operands.size() == 1)
+			{
+				const BindingId destructor = named && IsClassEntity(*named) ?
+					DestructorForType(first) : kNoBinding;
+				value = destructor != kNoBinding &&
+					program_->bindings[destructor].virtual_function;
+			}
+			else if (trait == TYPE_TRAIT_IS_FINAL && operands.size() == 1)
+				value = named && IsClassEntity(*named) && named->final_class;
+			else if (trait == TYPE_TRAIT_REFERENCE_BINDS_TO_TEMPORARY ||
+				trait == TYPE_TRAIT_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+				value = false;
+			else
+				ThrowSemanticError("unsupported builtin type trait operands");
 		}
-		else if (trait == TYPE_TRAIT_IS_SAME && operands.size() == 2)
-			value = operands[0] == operands[1];
-		else if (trait == TYPE_TRAIT_IS_POINTER && operands.size() == 1)
-			value = shape.kind == TYPE_POINTER;
-		// N3485 3.9.3/1 puts cv-qualification on the type itself, so these two
-		// read `first` rather than the stripped shape every other trait uses.
-		// A reference is never cv-qualified, however it was written.
-		else if (trait == TYPE_TRAIT_IS_CONST && operands.size() == 1)
-			value = (program_->types.Get(first).cv & CV_CONST) != 0;
-		else if (trait == TYPE_TRAIT_IS_VOLATILE && operands.size() == 1)
-			value = (program_->types.Get(first).cv & CV_VOLATILE) != 0;
-		else if (trait == TYPE_TRAIT_IS_VOID && operands.size() == 1)
-			value = shape.kind == TYPE_FUNDAMENTAL &&
-				shape.fundamental == FUND_VOID;
-		else if (trait == TYPE_TRAIT_IS_ARRAY && operands.size() == 1)
-			value = shape.kind == TYPE_ARRAY;
-		// N3485 8.3.4/1: an array bound may be omitted, and the two forms are
-		// distinct types.
-		else if (trait == TYPE_TRAIT_IS_BOUNDED_ARRAY && operands.size() == 1)
-			value = shape.kind == TYPE_ARRAY && !shape.IsIncompleteArray();
-		else if (trait == TYPE_TRAIT_IS_UNBOUNDED_ARRAY && operands.size() == 1)
-			value = shape.IsIncompleteArray();
-		else if (trait == TYPE_TRAIT_IS_LVALUE_REFERENCE && operands.size() == 1)
-			value = shape.kind == TYPE_LVALUE_REFERENCE;
-		else if (trait == TYPE_TRAIT_IS_RVALUE_REFERENCE && operands.size() == 1)
-			value = shape.kind == TYPE_RVALUE_REFERENCE;
-		else if (trait == TYPE_TRAIT_IS_UNSIGNED && operands.size() == 1)
-			value = shape.kind == TYPE_FUNDAMENTAL &&
-				IsFundamentalIntegral(shape) &&
-				!IsSignedFundamental(shape.fundamental);
-		// N3485 3.9.1/9 and 3.9/9: the arithmetic types are the integral and
-		// floating ones, and the fundamental types add void and nullptr_t.
-		else if (trait == TYPE_TRAIT_IS_ARITHMETIC && operands.size() == 1)
-			value = IsFundamentalIntegral(shape) || IsFundamentalFloating(shape);
-		else if (trait == TYPE_TRAIT_IS_FUNDAMENTAL && operands.size() == 1)
-			value = shape.kind == TYPE_FUNDAMENTAL;
-		// N3485 3.9/9: an object type is any type that is not a function, a
-		// reference, or void.  A compound type is everything that is not
-		// fundamental.
-		else if (trait == TYPE_TRAIT_IS_OBJECT && operands.size() == 1)
-			value = shape.kind != TYPE_FUNCTION &&
-				shape.kind != TYPE_LVALUE_REFERENCE &&
-				shape.kind != TYPE_RVALUE_REFERENCE &&
-				!(shape.kind == TYPE_FUNDAMENTAL &&
-					shape.fundamental == FUND_VOID);
-		else if (trait == TYPE_TRAIT_IS_COMPOUND && operands.size() == 1)
-			value = shape.kind != TYPE_FUNDAMENTAL;
-		// A referenceable type is one a reference may be formed to: everything
-		// but void and a function type carrying cv-qualifiers or a
-		// ref-qualifier, which this model does not spell separately.
-		else if (trait == TYPE_TRAIT_IS_REFERENCEABLE && operands.size() == 1)
-			value = !(shape.kind == TYPE_FUNDAMENTAL &&
-				shape.fundamental == FUND_VOID);
-		else if (trait == TYPE_TRAIT_IS_REFERENCE && operands.size() == 1)
-			value = shape.kind == TYPE_LVALUE_REFERENCE ||
-				shape.kind == TYPE_RVALUE_REFERENCE;
-		else if (trait == TYPE_TRAIT_IS_FUNCTION && operands.size() == 1)
-			value = shape.kind == TYPE_FUNCTION;
-		else if (trait == TYPE_TRAIT_IS_MEMBER_POINTER && operands.size() == 1)
-			value = shape.kind == TYPE_MEMBER_POINTER;
-		else if (trait == TYPE_TRAIT_IS_MEMBER_FUNCTION_POINTER &&
-			operands.size() == 1)
-			value = shape.kind == TYPE_MEMBER_POINTER &&
-				program_->types.Get(shape.child).kind == TYPE_FUNCTION;
-		else if (trait == TYPE_TRAIT_IS_MEMBER_OBJECT_POINTER &&
-			operands.size() == 1)
-			value = shape.kind == TYPE_MEMBER_POINTER &&
-				program_->types.Get(shape.child).kind != TYPE_FUNCTION;
-		else if (trait == TYPE_TRAIT_IS_INTEGRAL && operands.size() == 1)
-			value = IsFundamentalIntegral(shape);
-		else if (trait == TYPE_TRAIT_IS_FLOATING_POINT && operands.size() == 1)
-			value = IsFundamentalFloating(shape);
-		else if (trait == TYPE_TRAIT_IS_SIGNED && operands.size() == 1)
-			value = shape.kind == TYPE_FUNDAMENTAL &&
-				IsSignedFundamental(shape.fundamental);
-		else if (trait == TYPE_TRAIT_IS_ENUM && operands.size() == 1)
-			value = named && IsEnumEntity(*named);
-		else if (trait == TYPE_TRAIT_IS_UNION && operands.size() == 1)
-			value = named && named->flavor == NAMED_UNION;
-		else if (trait == TYPE_TRAIT_IS_CLASS && operands.size() == 1)
-			value = named && IsClassEntity(*named) &&
-				named->flavor != NAMED_UNION;
-		else if (trait == TYPE_TRAIT_IS_SCALAR && operands.size() == 1)
-			value = IsFundamentalIntegral(shape) || IsFundamentalFloating(shape) ||
-				(shape.kind == TYPE_FUNDAMENTAL &&
-				 shape.fundamental == FUND_NULLPTR_T) ||
-				shape.kind == TYPE_POINTER || shape.kind == TYPE_MEMBER_POINTER ||
-				shape.kind == TYPE_COMPLEX ||
-				(named && IsEnumEntity(*named));
-		else if (trait == TYPE_TRAIT_IS_EMPTY && operands.size() == 1)
-			value = named && IsClassEntity(*named) && named->empty_class;
-		else if (trait == TYPE_TRAIT_IS_AGGREGATE && operands.size() == 1)
-			value = named && IsClassEntity(*named) && named->is_aggregate;
-		else if (trait == TYPE_TRAIT_IS_ABSTRACT && operands.size() == 1)
-			value = named && IsClassEntity(*named) && named->abstract_class;
-		else if (trait == TYPE_TRAIT_IS_POLYMORPHIC && operands.size() == 1)
-			value = named && IsClassEntity(*named) && named->polymorphic_class;
-		else if ((trait == TYPE_TRAIT_IS_DESTRUCTIBLE ||
-			trait == TYPE_TRAIT_IS_TRIVIALLY_DESTRUCTIBLE) && operands.size() == 1)
-			value = shape.kind == TYPE_LVALUE_REFERENCE ||
-				shape.kind == TYPE_RVALUE_REFERENCE || IsFundamentalIntegral(shape) ||
-				IsFundamentalFloating(shape) || shape.kind == TYPE_COMPLEX ||
-				shape.kind == TYPE_POINTER ||
-				shape.kind == TYPE_MEMBER_POINTER ||
-				(named && named->destructible &&
-				 (trait == TYPE_TRAIT_IS_DESTRUCTIBLE || named->trivial_destructor));
-		else if (trait == TYPE_TRAIT_IS_TRIVIALLY_COPYABLE &&
-			operands.size() == 1)
-			value = (named && IsClassEntity(*named)) ?
-				EvaluateBuiltinTriviallyCopyable(first) :
-				IsFundamentalIntegral(shape) || IsFundamentalFloating(shape) ||
-				shape.kind == TYPE_COMPLEX || shape.kind == TYPE_POINTER ||
-				shape.kind == TYPE_MEMBER_POINTER;
-		else if ((trait == TYPE_TRAIT_IS_TRIVIAL || trait == TYPE_TRAIT_IS_POD ||
-			trait == TYPE_TRAIT_IS_STANDARD_LAYOUT ||
-			trait == TYPE_TRAIT_IS_LITERAL_TYPE) && operands.size() == 1)
-			value = EvaluateBuiltinTrivialLayoutTrait(
-				trait, first, shape, named);
-		else if ((trait == TYPE_TRAIT_IS_CONSTRUCTIBLE ||
-			trait == TYPE_TRAIT_IS_NOTHROW_CONSTRUCTIBLE ||
-			trait == TYPE_TRAIT_IS_TRIVIALLY_CONSTRUCTIBLE))
-		{
-			BindingId selected = kNoBinding;
-			std::vector<CallConversionFact> conversions;
-			value = EvaluateBuiltinConstructibility(
-				operands, &selected, &conversions);
-			if (value && trait == TYPE_TRAIT_IS_NOTHROW_CONSTRUCTIBLE)
-				value = BuiltinConstructionIsNonthrowing(
-					operands[0], selected, conversions);
-			else if (value && trait == TYPE_TRAIT_IS_TRIVIALLY_CONSTRUCTIBLE)
-				value = BuiltinConstructionIsTrivial(
-					operands[0], selected, conversions);
-		}
-		else if ((trait == TYPE_TRAIT_IS_ASSIGNABLE ||
-			trait == TYPE_TRAIT_IS_NOTHROW_ASSIGNABLE ||
-			trait == TYPE_TRAIT_IS_TRIVIALLY_ASSIGNABLE) && operands.size() == 2)
-		{
-			BindingId selected = kNoBinding;
-			std::vector<CallConversionFact> conversions;
-			value = EvaluateBuiltinAssignability(
-				operands[0], operands[1], scope, &selected, &conversions);
-			if (value && trait == TYPE_TRAIT_IS_NOTHROW_ASSIGNABLE)
-				value = BuiltinAssignmentIsNonthrowing(
-					selected, conversions);
-			else if (value && trait == TYPE_TRAIT_IS_TRIVIALLY_ASSIGNABLE)
-				value = BuiltinAssignmentIsTrivial(selected, conversions);
-		}
-		else if (trait == TYPE_TRAIT_IS_CONVERTIBLE && operands.size() == 2)
-			value = EvaluateBuiltinConvertibility(operands[0], operands[1]);
-		else if (trait == TYPE_TRAIT_IS_BASE_OF && operands.size() == 2)
-		{
-			const EntityId base = ClassEntityOf(*program_, operands[0]);
-			const EntityId derived = ClassEntityOf(*program_, operands[1]);
-			value = base != kNoEntity && derived != kNoEntity &&
-				(base == derived || AccessIsBaseOf(base, derived));
-		}
-		else if (trait == TYPE_TRAIT_IS_COMPLETE_OR_UNBOUNDED &&
-			operands.size() == 1)
-			value = shape.kind == TYPE_ARRAY ? shape.bound == 0 :
-				shape.kind != TYPE_FUNCTION && !IsVoid(first) &&
-				(!named || named->complete);
-		else if (trait == TYPE_TRAIT_HAS_TRIVIAL_CONSTRUCTOR &&
-			operands.size() == 1)
-			value = !named || named->trivial_default_constructor;
-		else if (trait == TYPE_TRAIT_HAS_NOTHROW_COPY && operands.size() == 1)
-			value = EvaluateBuiltinNothrowCopy(first);
-		else if (trait == TYPE_TRAIT_HAS_VIRTUAL_DESTRUCTOR &&
-			operands.size() == 1)
-		{
-			const BindingId destructor = named && IsClassEntity(*named) ?
-				DestructorForType(first) : kNoBinding;
-			value = destructor != kNoBinding &&
-				program_->bindings[destructor].virtual_function;
-		}
-		else if (trait == TYPE_TRAIT_IS_FINAL && operands.size() == 1)
-			value = named && IsClassEntity(*named) && named->final_class;
-		else if (trait == TYPE_TRAIT_REFERENCE_BINDS_TO_TEMPORARY ||
-			trait == TYPE_TRAIT_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
-			value = false;
-		else
-			ThrowSemanticError("unsupported builtin type trait operands");
 	}
 	if (trait == TYPE_TRAIT_ARRAY_RANK)
 	{

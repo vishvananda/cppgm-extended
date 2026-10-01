@@ -113,12 +113,12 @@ void FinalizeOptimizer(const lowir_model::Program& program,
 	stats->elapsed_nanoseconds = elapsed_nanoseconds;
 }
 
-void ReportOptimizer(std::ostream& output, const std::string& input,
-	const lowir_opt::Stats& stats)
+namespace
 {
-	output << "pa32_opt_stats"
-		 << (input.empty() ? "" : " input=") << input
-		 << " functions=" << stats.functions
+
+void ReportOptimizerAnalyses(std::ostream& output, const lowir_opt::Stats& stats)
+{
+	output << " functions=" << stats.functions
 		 << " input_instructions=" << stats.input_instructions
 		 << " output_instructions=" << stats.output_instructions
 		 << " instruction_visits=" << stats.instruction_visits
@@ -194,8 +194,12 @@ void ReportOptimizer(std::ostream& output, const std::string& input,
 		 << " late_inline_cloned_instructions="
 		 << stats.late_inline_cloned_instructions
 		 << " late_inline_changed_callers="
-		 << stats.late_inline_changed_callers
-		 << " worklist_pushes=" << stats.worklist_pushes
+		 << stats.late_inline_changed_callers;
+}
+
+void ReportOptimizerInlining(std::ostream& output, const lowir_opt::Stats& stats)
+{
+	output << " worklist_pushes=" << stats.worklist_pushes
 		 << " dataflow_updates=" << stats.dataflow_updates
 		 << " inline_direct_edges=" << stats.inline_direct_edges
 		 << " inline_sccs=" << stats.inline_sccs
@@ -322,8 +326,12 @@ void ReportOptimizer(std::ostream& output, const std::string& input,
 		 << " inline_eh_ambiguous_functions="
 		 << stats.inline_eh_ambiguous_functions
 		 << " inline_no_unwind_published_after_strip="
-		 << stats.inline_no_unwind_published_after_strip
-		 << " partial_inline_census_direct_calls="
+		 << stats.inline_no_unwind_published_after_strip;
+}
+
+void ReportOptimizerPartialInlining(std::ostream& output, const lowir_opt::Stats& stats)
+{
+	output << " partial_inline_census_direct_calls="
 		 << stats.partial_inline_census_direct_calls
 		 << " partial_inline_census_eligible_calls="
 		 << stats.partial_inline_census_eligible_calls
@@ -380,8 +388,12 @@ void ReportOptimizer(std::ostream& output, const std::string& input,
 		 << " partial_inline_census_backedge_stops="
 		 << stats.partial_inline_census_backedge_stops
 		 << " partial_inline_census_join_stops="
-		 << stats.partial_inline_census_join_stops
-		 << " predicate_range_folds=" << stats.predicate_range_folds
+		 << stats.partial_inline_census_join_stops;
+}
+
+void ReportOptimizerInterproceduralTransforms(std::ostream& output, const lowir_opt::Stats& stats)
+{
+	output << " predicate_range_folds=" << stats.predicate_range_folds
 		 << " o3_terminal_phi_runs=" << stats.o3_terminal_phi_runs
 		 << " o3_terminal_phi_merges=" << stats.o3_terminal_phi_merges
 		 << " o3_terminal_phi_incoming_edges="
@@ -432,8 +444,12 @@ void ReportOptimizer(std::ostream& output, const std::string& input,
 		 << " o3_terminal_query_call_sites="
 		 << stats.o3_terminal_query_call_sites
 		 << " o3_terminal_query_extracted_instructions="
-		 << stats.o3_terminal_query_extracted_instructions
-		 << " budget_skips=" << stats.budget_skips
+		 << stats.o3_terminal_query_extracted_instructions;
+}
+
+void ReportOptimizerValueAndSlotTransforms(std::ostream& output, const lowir_opt::Stats& stats)
+{
+	output << " budget_skips=" << stats.budget_skips
 		 << " rewrites=" << stats.rewrites
 		 << " simplify_runs=" << stats.simplify_runs
 		 << " simplify_changes=" << stats.simplify_changes
@@ -534,8 +550,12 @@ void ReportOptimizer(std::ostream& output, const std::string& input,
 		 << " promote_phi_budget_skips="
 		 << stats.promote_phi_budget_skips
 		 << " promote_peak_transient_bytes="
-		 << stats.promote_peak_transient_bytes
-		 << " small_object_runs=" << stats.small_object_runs
+		 << stats.promote_peak_transient_bytes;
+}
+
+void ReportOptimizerCleanup(std::ostream& output, const lowir_opt::Stats& stats)
+{
+	output << " small_object_runs=" << stats.small_object_runs
 		 << " small_object_changes=" << stats.small_object_changes
 		 << " small_object_candidates=" << stats.small_object_candidates
 		 << " small_objects_promoted=" << stats.small_objects_promoted
@@ -577,8 +597,12 @@ void ReportOptimizer(std::ostream& output, const std::string& input,
 		 << " unreachable_edges_removed=" << stats.unreachable_edges_removed
 		 << " cfg_phi_bypasses=" << stats.cfg_phi_bypasses
 		 << " cfg_phi_merges=" << stats.cfg_phi_merges
-		 << " block_orders_restored=" << stats.block_orders_restored
-		 << " inline_ns=" << stats.inline_nanoseconds
+		 << " block_orders_restored=" << stats.block_orders_restored;
+}
+
+void ReportOptimizerTimings(std::ostream& output, const lowir_opt::Stats& stats)
+{
+	output << " inline_ns=" << stats.inline_nanoseconds
 		 << " ipa_ns=" << stats.ipa_nanoseconds
 		 << " simplify_ns=" << stats.simplify_nanoseconds
 		 << " memory_gvn_ns=" << stats.memory_gvn_nanoseconds
@@ -609,6 +633,23 @@ void ReportOptimizer(std::ostream& output, const std::string& input,
 		 << stats.o3_terminal_query_nanoseconds
 		 << " licm_ns=" << stats.licm_nanoseconds
 		 << " elapsed_ns=" << stats.elapsed_nanoseconds;
+}
+
+}
+
+void ReportOptimizer(std::ostream& output, const std::string& input,
+	const lowir_opt::Stats& stats)
+{
+	output << "pa32_opt_stats"
+		 << (input.empty() ? "" : " input=") << input;
+	ReportOptimizerAnalyses(output, stats);
+	ReportOptimizerInlining(output, stats);
+	ReportOptimizerPartialInlining(output, stats);
+	ReportOptimizerInterproceduralTransforms(output, stats);
+	ReportOptimizerValueAndSlotTransforms(output, stats);
+	ReportOptimizerCleanup(output, stats);
+	ReportOptimizerTimings(output, stats);
+
 	output << " inline_retained_discardable_definition_matrix=";
 	for (std::size_t i = 0;
 		i < stats.inline_retained_discardable_definition_matrix.size(); ++i)

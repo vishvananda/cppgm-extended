@@ -448,6 +448,113 @@ lowir_model::StringId fresh_field_slot_name(
 
 namespace {
 
+void rewrite_promoted_objects(Function * function, AddressProvenance & provenance,
+    const std::vector<unsigned char> & active, const std::vector<LowType> & scalar_types,
+    const std::vector<unsigned char> & object_candidate, Stats * stats)
+{
+  const std::size_t slot_count = active.size();
+  for(std::size_t b = 0; b < function->blocks.size(); ++b) {
+    std::vector<Instruction> rewritten;
+    rewritten.reserve(function->blocks[b].instructions.size());
+    for(std::size_t i = 0; i < function->blocks[b].instructions.size(); ++i) {
+      Instruction instruction =
+        std::move(function->blocks[b].instructions[i]);
+      if(instruction.kind == Instruction::IK_LOAD ||
+         instruction.kind == Instruction::IK_STORE) {
+        Operand & address = instruction.kind == Instruction::IK_LOAD ?
+          instruction.first : instruction.second;
+        const AddressFact fact = provenance.resolve(address);
+        if(fact.known && fact.zero_offset && fact.slot < slot_count &&
+           active[fact.slot]) {
+          address = slot_operand(fact.slot, scalar_types[fact.slot]);
+          if(stats) {
+            if(object_candidate[fact.slot])
+              ++stats->small_object_memory_rewrites;
+            else
+              ++stats->addressed_scalar_memory_rewrites;
+          }
+        }
+        rewritten.push_back(std::move(instruction));
+        continue;
+      }
+      if(instruction.kind == Instruction::IK_COPYOBJ) {
+        const AddressFact source = provenance.resolve(instruction.first);
+        const AddressFact destination = provenance.resolve(instruction.second);
+        const bool scalar_source = source.known && source.zero_offset &&
+          source.slot < slot_count && active[source.slot];
+        const bool scalar_destination = destination.known &&
+          destination.zero_offset && destination.slot < slot_count &&
+          active[destination.slot];
+        if(scalar_source || scalar_destination) {
+          if(scalar_source && scalar_destination &&
+             source.slot == destination.slot) {
+            if(stats) {
+              if(object_candidate[source.slot])
+                ++stats->small_object_copies_rewritten;
+              else
+                ++stats->addressed_scalar_copies_rewritten;
+            }
+            continue;
+          }
+          const LowType & type = scalar_source ? scalar_types[source.slot] :
+            scalar_types[destination.slot];
+          Instruction load;
+          load.kind = Instruction::IK_LOAD;
+          load.type = type;
+          load.dest = lowir_model::append_lowir_fresh_generated_value(
+            *function, type);
+          load.first = scalar_source ? slot_operand(source.slot, type) :
+            instruction.first;
+          load.debug_location = instruction.debug_location;
+          rewritten.push_back(std::move(load));
+
+          Instruction store;
+          store.kind = Instruction::IK_STORE;
+          store.type = type;
+          store.first = temp_operand(rewritten.back().dest, type);
+          store.second = scalar_destination ?
+            slot_operand(destination.slot, type) : instruction.second;
+          store.debug_location = instruction.debug_location;
+          rewritten.push_back(std::move(store));
+          if(stats) {
+            const bool object_rewrite =
+              (scalar_source && object_candidate[source.slot]) ||
+              (scalar_destination && object_candidate[destination.slot]);
+            const bool addressed_scalar_rewrite =
+              (scalar_source && !object_candidate[source.slot]) ||
+              (scalar_destination && !object_candidate[destination.slot]);
+            if(object_rewrite) ++stats->small_object_copies_rewritten;
+            if(addressed_scalar_rewrite)
+              ++stats->addressed_scalar_copies_rewritten;
+          }
+          continue;
+        }
+      } else if(instruction.kind == Instruction::IK_ZEROINIT) {
+        const AddressFact destination = provenance.resolve(instruction.first);
+        if(destination.known && destination.zero_offset &&
+           destination.slot < slot_count && active[destination.slot]) {
+          instruction.kind = Instruction::IK_STORE;
+          instruction.type = scalar_types[destination.slot];
+          instruction.first = zero_operand(instruction.type);
+          instruction.second = slot_operand(destination.slot, instruction.type);
+          instruction.third = Operand();
+          instruction.args.clear();
+          instruction.byte_count = 0;
+          instruction.byte_alignment = 1;
+          if(stats) {
+            if(object_candidate[destination.slot])
+              ++stats->small_object_memory_rewrites;
+            else
+              ++stats->addressed_scalar_memory_rewrites;
+          }
+        }
+      }
+      rewritten.push_back(std::move(instruction));
+    }
+    function->blocks[b].instructions.swap(rewritten);
+  }
+}
+
 bool promote_small_objects_impl(Function * function, Stats * stats,
                                 bool recover_addressed_scalars)
 {
@@ -623,106 +730,8 @@ bool promote_small_objects_impl(Function * function, Stats * stats,
   // the definition table still points into the original vectors.
   provenance.materialize_all();
 
-  for(std::size_t b = 0; b < function->blocks.size(); ++b) {
-    std::vector<Instruction> rewritten;
-    rewritten.reserve(function->blocks[b].instructions.size());
-    for(std::size_t i = 0; i < function->blocks[b].instructions.size(); ++i) {
-      Instruction instruction =
-        std::move(function->blocks[b].instructions[i]);
-      if(instruction.kind == Instruction::IK_LOAD ||
-         instruction.kind == Instruction::IK_STORE) {
-        Operand & address = instruction.kind == Instruction::IK_LOAD ?
-          instruction.first : instruction.second;
-        const AddressFact fact = provenance.resolve(address);
-        if(fact.known && fact.zero_offset && fact.slot < slot_count &&
-           active[fact.slot]) {
-          address = slot_operand(fact.slot, scalar_types[fact.slot]);
-          if(stats) {
-            if(object_candidate[fact.slot])
-              ++stats->small_object_memory_rewrites;
-            else
-              ++stats->addressed_scalar_memory_rewrites;
-          }
-        }
-        rewritten.push_back(std::move(instruction));
-        continue;
-      }
-      if(instruction.kind == Instruction::IK_COPYOBJ) {
-        const AddressFact source = provenance.resolve(instruction.first);
-        const AddressFact destination = provenance.resolve(instruction.second);
-        const bool scalar_source = source.known && source.zero_offset &&
-          source.slot < slot_count && active[source.slot];
-        const bool scalar_destination = destination.known &&
-          destination.zero_offset && destination.slot < slot_count &&
-          active[destination.slot];
-        if(scalar_source || scalar_destination) {
-          if(scalar_source && scalar_destination &&
-             source.slot == destination.slot) {
-            if(stats) {
-              if(object_candidate[source.slot])
-                ++stats->small_object_copies_rewritten;
-              else
-                ++stats->addressed_scalar_copies_rewritten;
-            }
-            continue;
-          }
-          const LowType & type = scalar_source ? scalar_types[source.slot] :
-            scalar_types[destination.slot];
-          Instruction load;
-          load.kind = Instruction::IK_LOAD;
-          load.type = type;
-          load.dest = lowir_model::append_lowir_fresh_generated_value(
-            *function, type);
-          load.first = scalar_source ? slot_operand(source.slot, type) :
-            instruction.first;
-          load.debug_location = instruction.debug_location;
-          rewritten.push_back(std::move(load));
-
-          Instruction store;
-          store.kind = Instruction::IK_STORE;
-          store.type = type;
-          store.first = temp_operand(rewritten.back().dest, type);
-          store.second = scalar_destination ?
-            slot_operand(destination.slot, type) : instruction.second;
-          store.debug_location = instruction.debug_location;
-          rewritten.push_back(std::move(store));
-          if(stats) {
-            const bool object_rewrite =
-              (scalar_source && object_candidate[source.slot]) ||
-              (scalar_destination && object_candidate[destination.slot]);
-            const bool addressed_scalar_rewrite =
-              (scalar_source && !object_candidate[source.slot]) ||
-              (scalar_destination && !object_candidate[destination.slot]);
-            if(object_rewrite) ++stats->small_object_copies_rewritten;
-            if(addressed_scalar_rewrite)
-              ++stats->addressed_scalar_copies_rewritten;
-          }
-          continue;
-        }
-      } else if(instruction.kind == Instruction::IK_ZEROINIT) {
-        const AddressFact destination = provenance.resolve(instruction.first);
-        if(destination.known && destination.zero_offset &&
-           destination.slot < slot_count && active[destination.slot]) {
-          instruction.kind = Instruction::IK_STORE;
-          instruction.type = scalar_types[destination.slot];
-          instruction.first = zero_operand(instruction.type);
-          instruction.second = slot_operand(destination.slot, instruction.type);
-          instruction.third = Operand();
-          instruction.args.clear();
-          instruction.byte_count = 0;
-          instruction.byte_alignment = 1;
-          if(stats) {
-            if(object_candidate[destination.slot])
-              ++stats->small_object_memory_rewrites;
-            else
-              ++stats->addressed_scalar_memory_rewrites;
-          }
-        }
-      }
-      rewritten.push_back(std::move(instruction));
-    }
-    function->blocks[b].instructions.swap(rewritten);
-  }
+  rewrite_promoted_objects(function, provenance, active, scalar_types,
+                           object_candidate, stats);
   return true;
 }
 

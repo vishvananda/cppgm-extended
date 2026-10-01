@@ -8,6 +8,7 @@
 #include "semantic/semantic.h"
 #include "semantic/model/storage.h"
 #include "semantic/analysis/index_tables.h"
+#include "semantic/analysis/control_flow_facts.h"
 #include "semantic/extensions/lambda_capture.h"
 #include "support/containers/flat_hash_map.h"
 
@@ -357,6 +358,7 @@ private:
 		std::uint32_t output_parent);
 	void AnalyzeSubstatement(NodeId node, ScopeId scope,
 		std::uint32_t output_parent);
+	BindingId AddRangeForIndex(ScopeId control, std::uint32_t init);
 	void AnalyzeRangeFor(NodeId node, ScopeId scope,
 		std::uint32_t output_parent);
 	NameId NextRangeForHiddenName(const char* prefix);
@@ -919,6 +921,10 @@ private:
 	bool DeduceFunctionTemplatePackType(TypeId pattern, TypeId argument,
 		const std::vector<TemplateParameter>& parameters,
 		FunctionTemplateDeduction* deduced) const;
+	bool DeduceNamedFunctionTemplatePackType(TypeId pattern, TypeId argument,
+		const TypeRecord& pattern_record, const TypeRecord& argument_record,
+		const std::vector<TemplateParameter>& parameters,
+		FunctionTemplateDeduction* deduced) const;
 	bool DeduceFunctionTemplatePackArgument(
 		const TemplateArgument& pattern, const TemplateArgument& argument,
 		const std::vector<TemplateParameter>& parameters,
@@ -1337,6 +1343,8 @@ private:
 	ExpressionInfo AnalyzeAssignmentInBracedContext(
 		NodeId node, ScopeId scope);
 	ExpressionInfo AnalyzeCast(NodeId node, ScopeId scope);
+	ExpressionInfo AnalyzeScalarCast(NodeId node, TypeId target,
+		const ExpressionInfo& operand, const std::string& cast_kind);
 	ExpressionInfo AnalyzeTypeid(NodeId node, ScopeId scope);
 	ExpressionInfo AnalyzeThrowExpression(NodeId node, ScopeId scope);
 	bool AnalyzeExceptionStatement(NodeId node, ScopeId scope,
@@ -2226,49 +2234,6 @@ private:
 	std::size_t exception_handler_depth_;
 	std::vector<ScopeId> exception_cleanup_stops_;
 	std::vector<ScopeId> exception_handler_cleanup_stops_;
-	struct ExceptionControlContextFact
-	{
-		std::uint32_t parent, depth, region, cleanup_root;
-		ExceptionControlContextFact(std::uint32_t parent_value,
-			std::uint32_t depth_value)
-			: parent(parent_value), depth(depth_value), region(kNoDumpEdge), cleanup_root(0) {}
-	};
-	struct GotoLifetimeSnapshot
-	{
-		ScopeId scope;
-		std::size_t count;
-		GotoLifetimeSnapshot(ScopeId scope_value, std::size_t count_value)
-			: scope(scope_value), count(count_value) {}
-	};
-	struct PendingGotoControlFact
-	{
-		std::uint32_t node;
-		ScopeId scope;
-		std::uint32_t exception_context;
-		std::vector<GotoLifetimeSnapshot> lifetimes;
-		PendingGotoControlFact(std::uint32_t node_value, ScopeId scope_value,
-			std::uint32_t context_value)
-			: node(node_value), scope(scope_value),
-			  exception_context(context_value) {}
-	};
-	struct LabelControlFact
-	{
-		ScopeId scope;
-		std::uint32_t exception_context;
-		std::vector<GotoLifetimeSnapshot> lifetimes;
-		LabelControlFact()
-			: scope(kNoScope), exception_context(0) {}
-		LabelControlFact(ScopeId scope_value, std::uint32_t context_value)
-			: scope(scope_value), exception_context(context_value) {}
-	};
-	struct FunctionControlFlowFactState
-	{
-		std::vector<ExceptionControlContextFact> contexts;
-		std::uint32_t current_context;
-		std::unordered_map<NameId, LabelControlFact> labels;
-		std::unordered_multimap<NameId, PendingGotoControlFact> pending_gotos;
-		FunctionControlFlowFactState() : current_context(0) {}
-	};
 	void ResolveControlFlowGoto(const PendingGotoControlFact& source,
 		const LabelControlFact& target);
 	std::vector<FunctionControlFlowFactState> function_control_flow_stack_;

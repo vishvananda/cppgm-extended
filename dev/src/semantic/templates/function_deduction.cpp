@@ -777,6 +777,161 @@ bool Analyzer::DeduceFunctionTemplatePackArgument(
 		pattern.value_binding == argument.value_binding;
 }
 
+bool Analyzer::DeduceNamedFunctionTemplatePackType(TypeId pattern, TypeId argument,
+	const TypeRecord& pattern_record, const TypeRecord& argument_record,
+	const std::vector<TemplateParameter>& parameters,
+	FunctionTemplateDeduction* deduced) const
+{
+	if (pattern == argument) return true;
+	const EntityId pattern_entity = pattern_record.entity;
+	const EntityId argument_entity = argument_record.entity;
+	if (pattern_entity >= class_template_pattern_by_entity_.size())
+		return false;
+	const std::uint32_t class_pattern =
+		class_template_pattern_by_entity_[pattern_entity];
+	const std::uint32_t argument_pattern = argument_entity <
+		class_template_pattern_by_entity_.size() ?
+		class_template_pattern_by_entity_[argument_entity] : kNoDumpEdge;
+	if (class_pattern == kNoDumpEdge ||
+		class_pattern >= class_templates_.size())
+		return false;
+	const ClassTemplatePattern& pattern_template =
+		class_templates_[class_pattern];
+	const auto search_bases = [this, pattern, argument_entity,
+		&parameters, deduced]() -> bool
+	{
+		const EntityRecord& derived = program_->entities[argument_entity];
+		for (std::size_t base = 0; base < derived.direct_base_count; ++base)
+		{
+			const EntityId base_entity =
+				program_->DirectBase(argument_entity, base).entity;
+			if (base_entity == kNoEntity ||
+				base_entity >= program_->entities.size()) continue;
+			FunctionTemplateDeduction trial = *deduced;
+			if (DeduceFunctionTemplatePackType(pattern,
+				program_->entities[base_entity].type, parameters, &trial))
+			{
+				*deduced = trial;
+				return true;
+			}
+		}
+		return false;
+	};
+	FunctionTemplateDeduction direct = *deduced;
+	if (pattern_template.template_parameter_proxy)
+	{
+		const std::size_t ordinal =
+			pattern_template.template_parameter_ordinal;
+		if (ordinal >= parameters.size() ||
+			parameters[ordinal].kind != TEMPLATE_ARGUMENT_TEMPLATE ||
+			argument_pattern == kNoDumpEdge ||
+			argument_pattern >= class_templates_.size())
+			return false;
+		const ClassTemplatePattern& argument_template =
+			class_templates_[argument_pattern];
+		if (!TemplateTemplateParameterMatches(
+			parameters[ordinal].template_parameters,
+			argument_template.parameters)) return false;
+		if (!DeduceFunctionTemplatePackArgument(
+			TemplateArgument(TEMPLATE_ARGUMENT_TEMPLATE,
+				program_->entities[pattern_template.marker_entity].type,
+				0, static_cast<std::uint32_t>(ordinal)),
+			TemplateArgument(TEMPLATE_ARGUMENT_TEMPLATE,
+				program_->entities[argument_template.marker_entity].type),
+			parameters, &direct)) return false;
+	}
+	else if (class_pattern != argument_pattern)
+		return search_bases();
+	const EntityRecord& pattern_owner = program_->entities[pattern_entity];
+	const EntityRecord& argument_owner = program_->entities[argument_entity];
+	if (pattern_owner.template_argument_begin == kNoBinding ||
+		argument_owner.template_argument_begin == kNoBinding) return false;
+	const std::vector<TemplateArgument> pattern_arguments =
+		StoredTemplateArguments(pattern_owner.template_argument_begin,
+			pattern_owner.template_argument_count);
+	const std::vector<TemplateArgument> argument_arguments =
+		StoredTemplateArguments(argument_owner.template_argument_begin,
+			argument_owner.template_argument_count);
+	// N3485 [temp.deduct.type]/9 makes the whole list non-deduced when
+	// a written argument follows an expansion. Defaults appended to the
+	// symbolic pattern do not count as written arguments.
+	for (std::size_t i = 0; i < pattern_arguments.size(); ++i)
+		if (pattern_arguments[i].pack_expansion_has_suffix) return true;
+	const std::vector<TemplateParameter>& class_parameters =
+		pattern_template.parameters;
+	std::size_t pattern_index = 0, argument_index = 0;
+	while (pattern_index < pattern_arguments.size())
+	{
+		const TemplateArgument& pattern_argument =
+			pattern_arguments[pattern_index];
+		std::size_t dependent = parameters.size();
+		if (pattern_argument.kind == TEMPLATE_ARGUMENT_TYPE)
+		{
+			for (std::size_t i = 0;
+				i < function_template_shape_parameters_.size() &&
+				i < parameters.size(); ++i)
+				if (pattern_argument.type ==
+					function_template_shape_parameters_[i])
+				{
+					dependent = i;
+					break;
+				}
+		}
+		else if (pattern_argument.IsDependent())
+			dependent = pattern_argument.dependent_parameter;
+		const bool expansion = pattern_argument.pack_expansion &&
+			dependent < parameters.size() &&
+			parameters[dependent].pack;
+		if (expansion)
+		{
+			const bool destination_pack = !class_parameters.empty() &&
+				TemplateParameterForArgument(
+					class_parameters, pattern_index).pack;
+			std::size_t last = argument_arguments.size();
+			if (destination_pack)
+			{
+				const std::size_t remaining =
+					pattern_arguments.size() - pattern_index - 1;
+				if (argument_index + remaining > argument_arguments.size())
+					return false;
+				last = argument_arguments.size() - remaining;
+			}
+			// A trailing expansion consumes every actual canonical argument,
+			// including defaults. Synthesized pattern defaults are not a suffix.
+			const std::size_t prior_size =
+				direct.pack_arguments[dependent].size();
+			const bool prior_started =
+				direct.pack_deduction_started[dependent] != 0;
+			direct.pack_deduction_positions[dependent] = 0;
+			while (argument_index < last)
+				if (!DeduceFunctionTemplatePackArgument(pattern_argument,
+					argument_arguments[argument_index++], parameters,
+					&direct)) return search_bases();
+			if ((prior_started &&
+				 direct.pack_arguments[dependent].size() != prior_size) ||
+				direct.pack_deduction_positions[dependent] !=
+				 direct.pack_arguments[dependent].size()) return search_bases();
+			direct.pack_deduction_started[dependent] = 1;
+			if (!destination_pack)
+			{
+				pattern_index = pattern_arguments.size();
+				argument_index = argument_arguments.size();
+			}
+			else ++pattern_index;
+			continue;
+		}
+		if (argument_index >= argument_arguments.size() ||
+			!DeduceFunctionTemplatePackArgument(pattern_argument,
+				argument_arguments[argument_index], parameters, &direct))
+			return search_bases();
+		++pattern_index;
+		++argument_index;
+	}
+	if (argument_index != argument_arguments.size()) return search_bases();
+	*deduced = direct;
+	return true;
+}
+
 bool Analyzer::DeduceFunctionTemplatePackType(TypeId pattern,
 	TypeId argument, const std::vector<TemplateParameter>& parameters,
 	FunctionTemplateDeduction* deduced) const
@@ -943,156 +1098,8 @@ bool Analyzer::DeduceFunctionTemplatePackType(TypeId pattern,
 			DeduceFunctionTemplatePackType(pattern_record.child,
 				argument_record.child, parameters, deduced);
 	case TYPE_NAMED:
-	{
-		if (pattern == argument) return true;
-		const EntityId pattern_entity = pattern_record.entity;
-		const EntityId argument_entity = argument_record.entity;
-		if (pattern_entity >= class_template_pattern_by_entity_.size())
-			return false;
-		const std::uint32_t class_pattern =
-			class_template_pattern_by_entity_[pattern_entity];
-		const std::uint32_t argument_pattern = argument_entity <
-			class_template_pattern_by_entity_.size() ?
-			class_template_pattern_by_entity_[argument_entity] : kNoDumpEdge;
-		if (class_pattern == kNoDumpEdge ||
-			class_pattern >= class_templates_.size())
-			return false;
-		const ClassTemplatePattern& pattern_template =
-			class_templates_[class_pattern];
-		const auto search_bases = [this, pattern, argument_entity,
-			&parameters, deduced]() -> bool
-		{
-			const EntityRecord& derived = program_->entities[argument_entity];
-			for (std::size_t base = 0; base < derived.direct_base_count; ++base)
-			{
-				const EntityId base_entity =
-					program_->DirectBase(argument_entity, base).entity;
-				if (base_entity == kNoEntity ||
-					base_entity >= program_->entities.size()) continue;
-				FunctionTemplateDeduction trial = *deduced;
-				if (DeduceFunctionTemplatePackType(pattern,
-					program_->entities[base_entity].type, parameters, &trial))
-				{
-					*deduced = trial;
-					return true;
-				}
-			}
-			return false;
-		};
-		FunctionTemplateDeduction direct = *deduced;
-		if (pattern_template.template_parameter_proxy)
-		{
-			const std::size_t ordinal =
-				pattern_template.template_parameter_ordinal;
-			if (ordinal >= parameters.size() ||
-				parameters[ordinal].kind != TEMPLATE_ARGUMENT_TEMPLATE ||
-				argument_pattern == kNoDumpEdge ||
-				argument_pattern >= class_templates_.size())
-				return false;
-			const ClassTemplatePattern& argument_template =
-				class_templates_[argument_pattern];
-			if (!TemplateTemplateParameterMatches(
-				parameters[ordinal].template_parameters,
-				argument_template.parameters)) return false;
-			if (!DeduceFunctionTemplatePackArgument(
-				TemplateArgument(TEMPLATE_ARGUMENT_TEMPLATE,
-					program_->entities[pattern_template.marker_entity].type,
-					0, static_cast<std::uint32_t>(ordinal)),
-				TemplateArgument(TEMPLATE_ARGUMENT_TEMPLATE,
-					program_->entities[argument_template.marker_entity].type),
-				parameters, &direct)) return false;
-		}
-		else if (class_pattern != argument_pattern)
-			return search_bases();
-		const EntityRecord& pattern_owner = program_->entities[pattern_entity];
-		const EntityRecord& argument_owner = program_->entities[argument_entity];
-		if (pattern_owner.template_argument_begin == kNoBinding ||
-			argument_owner.template_argument_begin == kNoBinding) return false;
-		const std::vector<TemplateArgument> pattern_arguments =
-			StoredTemplateArguments(pattern_owner.template_argument_begin,
-				pattern_owner.template_argument_count);
-		const std::vector<TemplateArgument> argument_arguments =
-			StoredTemplateArguments(argument_owner.template_argument_begin,
-				argument_owner.template_argument_count);
-		// N3485 [temp.deduct.type]/9 makes the whole list non-deduced when
-		// a written argument follows an expansion. Defaults appended to the
-		// symbolic pattern do not count as written arguments.
-		for (std::size_t i = 0; i < pattern_arguments.size(); ++i)
-			if (pattern_arguments[i].pack_expansion_has_suffix) return true;
-		const std::vector<TemplateParameter>& class_parameters =
-			pattern_template.parameters;
-		std::size_t pattern_index = 0, argument_index = 0;
-		while (pattern_index < pattern_arguments.size())
-		{
-			const TemplateArgument& pattern_argument =
-				pattern_arguments[pattern_index];
-			std::size_t dependent = parameters.size();
-			if (pattern_argument.kind == TEMPLATE_ARGUMENT_TYPE)
-			{
-				for (std::size_t i = 0;
-					i < function_template_shape_parameters_.size() &&
-					i < parameters.size(); ++i)
-					if (pattern_argument.type ==
-						function_template_shape_parameters_[i])
-					{
-						dependent = i;
-						break;
-					}
-			}
-			else if (pattern_argument.IsDependent())
-				dependent = pattern_argument.dependent_parameter;
-			const bool expansion = pattern_argument.pack_expansion &&
-				dependent < parameters.size() &&
-				parameters[dependent].pack;
-			if (expansion)
-			{
-				const bool destination_pack = !class_parameters.empty() &&
-					TemplateParameterForArgument(
-						class_parameters, pattern_index).pack;
-				std::size_t last = argument_arguments.size();
-				if (destination_pack)
-				{
-					const std::size_t remaining =
-						pattern_arguments.size() - pattern_index - 1;
-					if (argument_index + remaining > argument_arguments.size())
-						return false;
-					last = argument_arguments.size() - remaining;
-				}
-				// A trailing expansion consumes every actual canonical argument,
-				// including defaults. Synthesized pattern defaults are not a suffix.
-				const std::size_t prior_size =
-					direct.pack_arguments[dependent].size();
-				const bool prior_started =
-					direct.pack_deduction_started[dependent] != 0;
-				direct.pack_deduction_positions[dependent] = 0;
-				while (argument_index < last)
-					if (!DeduceFunctionTemplatePackArgument(pattern_argument,
-						argument_arguments[argument_index++], parameters,
-						&direct)) return search_bases();
-				if ((prior_started &&
-					 direct.pack_arguments[dependent].size() != prior_size) ||
-					direct.pack_deduction_positions[dependent] !=
-					 direct.pack_arguments[dependent].size()) return search_bases();
-				direct.pack_deduction_started[dependent] = 1;
-				if (!destination_pack)
-				{
-					pattern_index = pattern_arguments.size();
-					argument_index = argument_arguments.size();
-				}
-				else ++pattern_index;
-				continue;
-			}
-			if (argument_index >= argument_arguments.size() ||
-				!DeduceFunctionTemplatePackArgument(pattern_argument,
-					argument_arguments[argument_index], parameters, &direct))
-				return search_bases();
-			++pattern_index;
-			++argument_index;
-		}
-		if (argument_index != argument_arguments.size()) return search_bases();
-		*deduced = direct;
-		return true;
-	}
+		return DeduceNamedFunctionTemplatePackType(pattern, argument,
+			pattern_record, argument_record, parameters, deduced);
 	case TYPE_FUNDAMENTAL:
 	case TYPE_INVALID:
 	case TYPE_QUALIFIED:

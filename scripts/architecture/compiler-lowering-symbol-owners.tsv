@@ -160,3 +160,4 @@ struct	dev/src/lowering/objects/virtual_bases.h	VirtualBaseParameterContract	1	d
 struct	dev/src/lowering/presentation/local_names.h	LocalPresentationCounters	1	dev/src/lowering/presentation/local_names.h	keep
 class	dev/src/lowering/objects/construction_cleanup.h	ConstructionCleanupLowering	1	dev/src/lowering/objects/construction_cleanup.h	keep
 struct	dev/src/lowering/objects/construction_cleanup.h	ConstructionCleanupStep	1	dev/src/lowering/objects/construction_cleanup.h	keep
+struct	dev/src/lowering/objects/storage_slots.h	SlotPlanningVisit	1	dev/src/lowering/objects/storage_slots.h	keep

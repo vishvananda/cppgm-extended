@@ -453,144 +453,9 @@ bool Analyzer::ApplyQualifiedMemberNamingTarget(ExpressionInfo* value,
 	return true;
 }
 
-ExpressionInfo Analyzer::AnalyzeCast(NodeId node, ScopeId scope)
+ExpressionInfo Analyzer::AnalyzeScalarCast(NodeId node, TypeId target,
+	const ExpressionInfo& operand, const std::string& cast_kind)
 {
-	const NodeId type_id = FindChild(node, ::cppgm::syntax::STAG_TYPE_ID);
-	if (type_id == kNoNode) ThrowSemanticError("cast without type-id");
-	NodeId operand_node = kNoNode;
-	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
-		edge = arena_->NextEdge(edge))
-		if (arena_->EdgeChild(edge) != type_id) operand_node = arena_->EdgeChild(edge);
-	ExpressionInfo parenthesized_call;
-	if (arena_->Payload(node).compare(0, 10, "OP_LPAREN:") == 0 &&
-		AnalyzeParenthesizedFunctionTemplateCast(
-			type_id, operand_node, scope, &parenthesized_call))
-		return parenthesized_call;
-	ExpressionInfo parenthesized_binary;
-	if (arena_->Payload(node).compare(0, 10, "OP_LPAREN:") == 0 &&
-		AnalyzeParenthesizedValueBinaryCast(
-			type_id, operand_node, scope, &parenthesized_binary))
-		return parenthesized_binary;
-	TypeId target = kNoType;
-	{
-		ScopedCounterIncrement suppressed(
-			&class_template_completion_suppressed_depth_);
-		target = BuildTypeId(type_id, scope);
-	}
-	if (CandidateSubstitutionFailed() || target == kNoType)
-		return ExpressionInfo();
-	// Expression analysis can intern more types and reallocate TypeTable storage.
-	// Keep the cast shape by value across the recursive operand analysis.
-	const TypeRecord target_record = program_->types.Get(target);
-	const TypeId unqualified_target = program_->types.RemoveTopCv(target);
-	const TypeRecord unqualified_target_record =
-		program_->types.Get(unqualified_target);
-	const bool function_pointer_target =
-		unqualified_target_record.kind == TYPE_POINTER &&
-		program_->types.IsFunction(unqualified_target_record.child);
-	const bool compound_literal =
-		arena_->IsTag(operand_node, ::cppgm::syntax::STAG_BRACED_INIT_LIST);
-	const bool c_style_cast =
-		arena_->Payload(node).compare(0, 10, "OP_LPAREN:") == 0;
-	ExpressionInfo operand = AnalyzeExpression(operand_node, scope,
-		program_->types.IsFunction(EffectiveType(target)) ||
-		(function_pointer_target &&
-		 (!c_style_cast || arena_->IsTag(operand_node, ::cppgm::syntax::STAG_ID_EXPRESSION))) ||
-		unqualified_target_record.kind == TYPE_MEMBER_POINTER || compound_literal ?
-		target : kNoType);
-	if (CandidateSubstitutionFailed()) return ExpressionInfo();
-	if (compound_literal && EntityOf(target) != kNoEntity &&
-		dump_.nodes[operand.node].kind == DUMP_BRACED_INIT_LIST)
-	{
-		operand.node = BuildAggregateConstructionAction(
-			target, operand.node, true);
-		operand.category = VALUE_PRVALUE;
-		return MaterializeTemporary(operand);
-	}
-	if (compound_literal) return operand;
-	const std::string cast_kind = arena_->Payload(node);
-	ExpressionInfo dynamic_result;
-	if (cast_kind.find("DYNAMIC") != std::string::npos &&
-		TryAnalyzeDynamicCast(target, operand, &dynamic_result))
-		return dynamic_result;
-	TypeId constructed_target = target;
-	if (target_record.kind == TYPE_LVALUE_REFERENCE ||
-		target_record.kind == TYPE_RVALUE_REFERENCE)
-		constructed_target = target_record.child;
-	constructed_target = program_->types.RemoveTopCv(constructed_target);
-	const EntityId constructed_entity = EntityOf(constructed_target);
-	const TypeId operand_object_type = program_->types.RemoveTopCv(
-		EffectiveType(operand.type));
-	const EntityId operand_entity = EntityOf(operand_object_type);
-	if (constructed_entity != kNoEntity &&
-		((target_record.kind != TYPE_LVALUE_REFERENCE &&
-		  target_record.kind != TYPE_RVALUE_REFERENCE) ||
-		 (arena_->Payload(node).find("STATIC") != std::string::npos &&
-		  operand_entity != kNoEntity && operand_entity != constructed_entity)))
-		EnsureClassDefinition(constructed_target);
-	const bool static_reference_downcast =
-		(target_record.kind == TYPE_LVALUE_REFERENCE ||
-		 target_record.kind == TYPE_RVALUE_REFERENCE) &&
-		cast_kind.find("STATIC") != std::string::npos &&
-		operand_entity != kNoEntity && constructed_entity != kNoEntity &&
-		operand_entity != constructed_entity &&
-		program_->IsBaseOf(operand_entity, constructed_entity);
-	const bool static_reference_base_cast =
-		(target_record.kind == TYPE_LVALUE_REFERENCE ||
-		 target_record.kind == TYPE_RVALUE_REFERENCE) &&
-		cast_kind.find("STATIC") != std::string::npos &&
-		operand_entity != kNoEntity && constructed_entity != kNoEntity &&
-		operand_entity != constructed_entity &&
-		program_->IsBaseOf(constructed_entity, operand_entity);
-	const bool direct_reference_cast =
-		(target_record.kind == TYPE_LVALUE_REFERENCE ||
-		 target_record.kind == TYPE_RVALUE_REFERENCE) &&
-		Conversion(operand, target) != CONVERSION_INVALID;
-	const bool direct_rvalue_reclassification =
-		target_record.kind == TYPE_RVALUE_REFERENCE &&
-		SimilarUnqualified(EffectiveType(operand.type), target_record.child);
-	const bool reinterpret_reference_cast =
-		(target_record.kind == TYPE_LVALUE_REFERENCE ||
-		 target_record.kind == TYPE_RVALUE_REFERENCE) &&
-		cast_kind.find("REINTER") != std::string::npos &&
-		operand.category != VALUE_PRVALUE && operand.category != VALUE_NONE;
-	const bool constructor_cast = constructed_entity != kNoEntity &&
-		(program_->entities[constructed_entity].flavor == NAMED_STRUCT ||
-		 program_->entities[constructed_entity].flavor == NAMED_CLASS ||
-		 program_->entities[constructed_entity].flavor == NAMED_UNION) &&
-		(cast_kind.find("STATIC") != std::string::npos ||
-		 cast_kind.compare(0, 10, "OP_LPAREN:") == 0) &&
-		!direct_reference_cast &&
-		!static_reference_downcast &&
-		!static_reference_base_cast &&
-		(program_->types.RemoveTopCv(EffectiveType(operand.type)) !=
-			constructed_target ||
-		 (target_record.kind != TYPE_LVALUE_REFERENCE &&
-		  target_record.kind != TYPE_RVALUE_REFERENCE));
-	if (constructor_cast)
-	{
-		ExpressionInfo initialized;
-		initialized.node = BuildClassValueConstructorAction(
-			constructed_target, operand, false, true);
-		initialized.type = constructed_target;
-		initialized.category = VALUE_PRVALUE;
-		SetExpressionDumpObject(&initialized);
-		initialized = MaterializeTemporary(initialized);
-		if (target_record.kind == TYPE_LVALUE_REFERENCE ||
-			target_record.kind == TYPE_RVALUE_REFERENCE)
-		{
-			initialized.type = target;
-			initialized.category = target_record.kind == TYPE_LVALUE_REFERENCE ?
-				VALUE_LVALUE : VALUE_XVALUE;
-		}
-		return initialized;
-	}
-	if (!direct_reference_cast && !direct_rvalue_reclassification &&
-		!reinterpret_reference_cast &&
-		!static_reference_downcast && !static_reference_base_cast &&
-		EntityOf(operand.type) != kNoEntity &&
-		ConvertingFunction(operand, target, true).rank != CONVERSION_INVALID)
-		return ApplyExplicitConversion(operand, target);
 	const TypeId explicit_source_type = program_->types.RemoveTopCv(
 		EffectiveType(operand.type));
 	const TypeKind explicit_source_kind =
@@ -599,87 +464,6 @@ ExpressionInfo Analyzer::AnalyzeCast(NodeId node, ScopeId scope)
 	const TypeKind explicit_target_kind =
 		program_->types.Get(explicit_target_type).kind;
 	const bool vector_target = explicit_target_kind == TYPE_VECTOR;
-	if (!IsVoid(target) && !IsArithmetic(target) && !IsPointer(target) &&
-		!IsNullptr(target) && target_record.kind != TYPE_LVALUE_REFERENCE &&
-		target_record.kind != TYPE_RVALUE_REFERENCE &&
-		target_record.kind != TYPE_MEMBER_POINTER &&
-		explicit_target_kind != TYPE_NAMED && !vector_target)
-		ThrowSemanticError("unsupported cast target");
-	const ValueCategory category = target_record.kind == TYPE_LVALUE_REFERENCE ?
-		VALUE_LVALUE : target_record.kind == TYPE_RVALUE_REFERENCE ?
-		VALUE_XVALUE : VALUE_PRVALUE;
-	if (target_record.kind == TYPE_LVALUE_REFERENCE ||
-		target_record.kind == TYPE_RVALUE_REFERENCE)
-	{
-		if (static_reference_base_cast)
-		{
-			operand.category = target_record.kind == TYPE_LVALUE_REFERENCE ?
-				VALUE_LVALUE : VALUE_XVALUE;
-			return ApplyTarget(operand, target);
-		}
-		const ConversionRank reference_conversion = Conversion(operand, target);
-		const bool explicit_rvalue = target_record.kind == TYPE_RVALUE_REFERENCE &&
-			SimilarUnqualified(EffectiveType(operand.type), target_record.child);
-		const bool explicit_cv_lvalue =
-			target_record.kind == TYPE_LVALUE_REFERENCE &&
-			operand.category == VALUE_LVALUE &&
-			SimilarUnqualified(EffectiveType(operand.type), target_record.child) &&
-			(cast_kind.find("CONST") != std::string::npos ||
-			 cast_kind.compare(0, 10, "OP_LPAREN:") == 0);
-		if (!explicit_rvalue && !explicit_cv_lvalue &&
-			!reinterpret_reference_cast &&
-			!static_reference_downcast &&
-			reference_conversion == CONVERSION_INVALID)
-			ThrowSemanticError("invalid reference cast");
-		if (reference_conversion == CONVERSION_DERIVED_TO_BASE)
-			return ApplyTarget(operand, target);
-		if (static_reference_downcast)
-		{
-			const std::uint32_t complete = ExpressionCompleteObject(operand);
-			std::uint64_t projection_offset = 0;
-			if (!program_->QueryBasePath(constructed_entity, operand_entity,
-				0, 0, &projection_offset))
-				ThrowInternalCompilerError("reference downcast has no base path");
-			if (projection_offset != 0)
-			{
-				const std::uint32_t cast = MakeDump(DUMP_CAST_EXPRESSION, target,
-					category,
-					program_->names.UseInterned(arena_->PayloadId(node)));
-				dump_.nodes[cast].base_projection_count = 1;
-				dump_.nodes[cast].base_projection_offset = projection_offset;
-				dump_.nodes[cast].has_base_projection_offset = true;
-				dump_.nodes[cast].inverse_base_projection = true;
-				dump_.Add(cast, operand.node);
-				operand.node = cast;
-			}
-			const std::uint32_t projected = ProjectConstexprObject(
-				complete, constructed_target);
-			if (projected != kNoConstexprObject)
-				SetExpressionSubobject(&operand, projected, complete);
-		}
-		operand.type = target;
-		operand.category = category;
-		if (dump_.nodes[operand.node].kind == DUMP_TEMPORARY_OBJECT)
-		{
-			// A reference cast changes the expression type, not the storage type
-			// of the already materialized object.
-			dump_.nodes[operand.node].reference_call_materialization = true;
-		}
-		else
-		{
-			dump_.nodes[operand.node].type = target;
-			dump_.nodes[operand.node].category = category;
-			if (dump_.nodes[operand.node].kind == DUMP_CALL_EXPRESSION)
-				dump_.nodes[operand.node].reference_call_materialization = true;
-		}
-		return operand;
-	}
-	if (target_record.kind == TYPE_MEMBER_POINTER)
-	{
-		operand.type = target;
-		dump_.nodes[operand.node].type = target;
-		return operand;
-	}
 	const EntityId source_entity = EntityOf(operand.type);
 	const EntityId target_entity = EntityOf(target);
 	const bool source_enum = source_entity != kNoEntity &&
@@ -824,6 +608,232 @@ ExpressionInfo Analyzer::AnalyzeCast(NodeId node, ScopeId scope)
 	RecordExpressionFacts(result);
 	++expression_count_;
 	return result;
+}
+
+ExpressionInfo Analyzer::AnalyzeCast(NodeId node, ScopeId scope)
+{
+	const NodeId type_id = FindChild(node, ::cppgm::syntax::STAG_TYPE_ID);
+	if (type_id == kNoNode) ThrowSemanticError("cast without type-id");
+	NodeId operand_node = kNoNode;
+	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+		if (arena_->EdgeChild(edge) != type_id) operand_node = arena_->EdgeChild(edge);
+	ExpressionInfo parenthesized_call;
+	if (arena_->Payload(node).compare(0, 10, "OP_LPAREN:") == 0 &&
+		AnalyzeParenthesizedFunctionTemplateCast(
+			type_id, operand_node, scope, &parenthesized_call))
+		return parenthesized_call;
+	ExpressionInfo parenthesized_binary;
+	if (arena_->Payload(node).compare(0, 10, "OP_LPAREN:") == 0 &&
+		AnalyzeParenthesizedValueBinaryCast(
+			type_id, operand_node, scope, &parenthesized_binary))
+		return parenthesized_binary;
+	TypeId target = kNoType;
+	{
+		ScopedCounterIncrement suppressed(
+			&class_template_completion_suppressed_depth_);
+		target = BuildTypeId(type_id, scope);
+	}
+	if (CandidateSubstitutionFailed() || target == kNoType)
+		return ExpressionInfo();
+	// Expression analysis can intern more types and reallocate TypeTable storage.
+	// Keep the cast shape by value across the recursive operand analysis.
+	const TypeRecord target_record = program_->types.Get(target);
+	const TypeId unqualified_target = program_->types.RemoveTopCv(target);
+	const TypeRecord unqualified_target_record =
+		program_->types.Get(unqualified_target);
+	const bool function_pointer_target =
+		unqualified_target_record.kind == TYPE_POINTER &&
+		program_->types.IsFunction(unqualified_target_record.child);
+	const bool compound_literal =
+		arena_->IsTag(operand_node, ::cppgm::syntax::STAG_BRACED_INIT_LIST);
+	const bool c_style_cast =
+		arena_->Payload(node).compare(0, 10, "OP_LPAREN:") == 0;
+	ExpressionInfo operand = AnalyzeExpression(operand_node, scope,
+		program_->types.IsFunction(EffectiveType(target)) ||
+		(function_pointer_target &&
+		 (!c_style_cast || arena_->IsTag(operand_node, ::cppgm::syntax::STAG_ID_EXPRESSION))) ||
+		unqualified_target_record.kind == TYPE_MEMBER_POINTER || compound_literal ?
+		target : kNoType);
+	if (CandidateSubstitutionFailed()) return ExpressionInfo();
+	if (compound_literal && EntityOf(target) != kNoEntity &&
+		dump_.nodes[operand.node].kind == DUMP_BRACED_INIT_LIST)
+	{
+		operand.node = BuildAggregateConstructionAction(
+			target, operand.node, true);
+		operand.category = VALUE_PRVALUE;
+		return MaterializeTemporary(operand);
+	}
+	if (compound_literal) return operand;
+	const std::string cast_kind = arena_->Payload(node);
+	ExpressionInfo dynamic_result;
+	if (cast_kind.find("DYNAMIC") != std::string::npos &&
+		TryAnalyzeDynamicCast(target, operand, &dynamic_result))
+		return dynamic_result;
+	TypeId constructed_target = target;
+	if (target_record.kind == TYPE_LVALUE_REFERENCE ||
+		target_record.kind == TYPE_RVALUE_REFERENCE)
+		constructed_target = target_record.child;
+	constructed_target = program_->types.RemoveTopCv(constructed_target);
+	const EntityId constructed_entity = EntityOf(constructed_target);
+	const TypeId operand_object_type = program_->types.RemoveTopCv(
+		EffectiveType(operand.type));
+	const EntityId operand_entity = EntityOf(operand_object_type);
+	if (constructed_entity != kNoEntity &&
+		((target_record.kind != TYPE_LVALUE_REFERENCE &&
+		  target_record.kind != TYPE_RVALUE_REFERENCE) ||
+		 (arena_->Payload(node).find("STATIC") != std::string::npos &&
+		  operand_entity != kNoEntity && operand_entity != constructed_entity)))
+		EnsureClassDefinition(constructed_target);
+	const bool static_reference_downcast =
+		(target_record.kind == TYPE_LVALUE_REFERENCE ||
+		 target_record.kind == TYPE_RVALUE_REFERENCE) &&
+		cast_kind.find("STATIC") != std::string::npos &&
+		operand_entity != kNoEntity && constructed_entity != kNoEntity &&
+		operand_entity != constructed_entity &&
+		program_->IsBaseOf(operand_entity, constructed_entity);
+	const bool static_reference_base_cast =
+		(target_record.kind == TYPE_LVALUE_REFERENCE ||
+		 target_record.kind == TYPE_RVALUE_REFERENCE) &&
+		cast_kind.find("STATIC") != std::string::npos &&
+		operand_entity != kNoEntity && constructed_entity != kNoEntity &&
+		operand_entity != constructed_entity &&
+		program_->IsBaseOf(constructed_entity, operand_entity);
+	const bool direct_reference_cast =
+		(target_record.kind == TYPE_LVALUE_REFERENCE ||
+		 target_record.kind == TYPE_RVALUE_REFERENCE) &&
+		Conversion(operand, target) != CONVERSION_INVALID;
+	const bool direct_rvalue_reclassification =
+		target_record.kind == TYPE_RVALUE_REFERENCE &&
+		SimilarUnqualified(EffectiveType(operand.type), target_record.child);
+	const bool reinterpret_reference_cast =
+		(target_record.kind == TYPE_LVALUE_REFERENCE ||
+		 target_record.kind == TYPE_RVALUE_REFERENCE) &&
+		cast_kind.find("REINTER") != std::string::npos &&
+		operand.category != VALUE_PRVALUE && operand.category != VALUE_NONE;
+	const bool constructor_cast = constructed_entity != kNoEntity &&
+		(program_->entities[constructed_entity].flavor == NAMED_STRUCT ||
+		 program_->entities[constructed_entity].flavor == NAMED_CLASS ||
+		 program_->entities[constructed_entity].flavor == NAMED_UNION) &&
+		(cast_kind.find("STATIC") != std::string::npos ||
+		 cast_kind.compare(0, 10, "OP_LPAREN:") == 0) &&
+		!direct_reference_cast &&
+		!static_reference_downcast &&
+		!static_reference_base_cast &&
+		(program_->types.RemoveTopCv(EffectiveType(operand.type)) !=
+			constructed_target ||
+		 (target_record.kind != TYPE_LVALUE_REFERENCE &&
+		  target_record.kind != TYPE_RVALUE_REFERENCE));
+	if (constructor_cast)
+	{
+		ExpressionInfo initialized;
+		initialized.node = BuildClassValueConstructorAction(
+			constructed_target, operand, false, true);
+		initialized.type = constructed_target;
+		initialized.category = VALUE_PRVALUE;
+		SetExpressionDumpObject(&initialized);
+		initialized = MaterializeTemporary(initialized);
+		if (target_record.kind == TYPE_LVALUE_REFERENCE ||
+			target_record.kind == TYPE_RVALUE_REFERENCE)
+		{
+			initialized.type = target;
+			initialized.category = target_record.kind == TYPE_LVALUE_REFERENCE ?
+				VALUE_LVALUE : VALUE_XVALUE;
+		}
+		return initialized;
+	}
+	if (!direct_reference_cast && !direct_rvalue_reclassification &&
+		!reinterpret_reference_cast &&
+		!static_reference_downcast && !static_reference_base_cast &&
+		EntityOf(operand.type) != kNoEntity &&
+		ConvertingFunction(operand, target, true).rank != CONVERSION_INVALID)
+		return ApplyExplicitConversion(operand, target);
+	const TypeId explicit_target_type = program_->types.RemoveTopCv(target);
+	const TypeKind explicit_target_kind =
+		program_->types.Get(explicit_target_type).kind;
+	const bool vector_target = explicit_target_kind == TYPE_VECTOR;
+	if (!IsVoid(target) && !IsArithmetic(target) && !IsPointer(target) &&
+		!IsNullptr(target) && target_record.kind != TYPE_LVALUE_REFERENCE &&
+		target_record.kind != TYPE_RVALUE_REFERENCE &&
+		target_record.kind != TYPE_MEMBER_POINTER &&
+		explicit_target_kind != TYPE_NAMED && !vector_target)
+		ThrowSemanticError("unsupported cast target");
+	const ValueCategory category = target_record.kind == TYPE_LVALUE_REFERENCE ?
+		VALUE_LVALUE : target_record.kind == TYPE_RVALUE_REFERENCE ?
+		VALUE_XVALUE : VALUE_PRVALUE;
+	if (target_record.kind == TYPE_LVALUE_REFERENCE ||
+		target_record.kind == TYPE_RVALUE_REFERENCE)
+	{
+		if (static_reference_base_cast)
+		{
+			operand.category = target_record.kind == TYPE_LVALUE_REFERENCE ?
+				VALUE_LVALUE : VALUE_XVALUE;
+			return ApplyTarget(operand, target);
+		}
+		const ConversionRank reference_conversion = Conversion(operand, target);
+		const bool explicit_rvalue = target_record.kind == TYPE_RVALUE_REFERENCE &&
+			SimilarUnqualified(EffectiveType(operand.type), target_record.child);
+		const bool explicit_cv_lvalue =
+			target_record.kind == TYPE_LVALUE_REFERENCE &&
+			operand.category == VALUE_LVALUE &&
+			SimilarUnqualified(EffectiveType(operand.type), target_record.child) &&
+			(cast_kind.find("CONST") != std::string::npos ||
+			 cast_kind.compare(0, 10, "OP_LPAREN:") == 0);
+		if (!explicit_rvalue && !explicit_cv_lvalue &&
+			!reinterpret_reference_cast &&
+			!static_reference_downcast &&
+			reference_conversion == CONVERSION_INVALID)
+			ThrowSemanticError("invalid reference cast");
+		if (reference_conversion == CONVERSION_DERIVED_TO_BASE)
+			return ApplyTarget(operand, target);
+		if (static_reference_downcast)
+		{
+			const std::uint32_t complete = ExpressionCompleteObject(operand);
+			std::uint64_t projection_offset = 0;
+			if (!program_->QueryBasePath(constructed_entity, operand_entity,
+				0, 0, &projection_offset))
+				ThrowInternalCompilerError("reference downcast has no base path");
+			if (projection_offset != 0)
+			{
+				const std::uint32_t cast = MakeDump(DUMP_CAST_EXPRESSION, target,
+					category,
+					program_->names.UseInterned(arena_->PayloadId(node)));
+				dump_.nodes[cast].base_projection_count = 1;
+				dump_.nodes[cast].base_projection_offset = projection_offset;
+				dump_.nodes[cast].has_base_projection_offset = true;
+				dump_.nodes[cast].inverse_base_projection = true;
+				dump_.Add(cast, operand.node);
+				operand.node = cast;
+			}
+			const std::uint32_t projected = ProjectConstexprObject(
+				complete, constructed_target);
+			if (projected != kNoConstexprObject)
+				SetExpressionSubobject(&operand, projected, complete);
+		}
+		operand.type = target;
+		operand.category = category;
+		if (dump_.nodes[operand.node].kind == DUMP_TEMPORARY_OBJECT)
+		{
+			// A reference cast changes the expression type, not the storage type
+			// of the already materialized object.
+			dump_.nodes[operand.node].reference_call_materialization = true;
+		}
+		else
+		{
+			dump_.nodes[operand.node].type = target;
+			dump_.nodes[operand.node].category = category;
+			if (dump_.nodes[operand.node].kind == DUMP_CALL_EXPRESSION)
+				dump_.nodes[operand.node].reference_call_materialization = true;
+		}
+		return operand;
+	}
+	if (target_record.kind == TYPE_MEMBER_POINTER)
+	{
+		operand.type = target;
+		dump_.nodes[operand.node].type = target;
+		return operand;
+	}
+	return AnalyzeScalarCast(node, target, operand, cast_kind);
 }
 
 void Analyzer::AppendParenthesizedCallArguments(NodeId node,

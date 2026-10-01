@@ -17,6 +17,20 @@ namespace lowering
 
 using namespace semantic;
 using namespace semantic;
+struct SlotPlanningVisit
+{
+	std::uint32_t node;
+	std::uint32_t cleanup_context;
+	std::uint8_t child_context;
+	bool variable_initializer;
+	bool expression_arguments;
+
+	SlotPlanningVisit(std::uint32_t current, bool variable, bool arguments,
+		std::uint8_t context, std::uint32_t cleanup)
+		: node(current), cleanup_context(cleanup), child_context(context),
+		  variable_initializer(variable), expression_arguments(arguments) {}
+};
+
 template <class Derived>
 class SlotPlanning
 {
@@ -122,89 +136,115 @@ protected:
 			}
 	}
 
+	void PlanDeclaredStorage(const DumpNode& record)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const bool persistent_variable = record.kind == DUMP_VARIABLE &&
+			record.binding != kNoBinding &&
+			derived.program_.bindings[record.binding].storage_class ==
+				STORAGE_CLASS_STATIC;
+		if ((record.kind == DUMP_PARAMETER || record.kind == DUMP_VARIABLE) &&
+			record.binding != kNoBinding && !persistent_variable)
+		{
+			if (record.kind == DUMP_VARIABLE && record.direct_return_slot &&
+				derived.current_indirect_result_)
+			{
+				derived.binding_indirect_parameters_[record.binding] =
+					lowering::ir::ParameterId(0);
+				derived.function_slot_bindings_.push_back(record.binding);
+			}
+			else if (derived.binding_slots_[record.binding] == kNoLowId)
+			{
+				derived.binding_slots_[record.binding] =
+					static_cast<SlotId>(derived.function_->slots.size());
+				derived.function_slot_bindings_.push_back(record.binding);
+				Slot slot;
+				if (derived.output_.retain_local_names)
+				{
+					std::string requested = record.text == 0 ? std::string() :
+						derived.program_.names.Get(record.text);
+					if (record.kind == DUMP_PARAMETER && requested.empty())
+						requested = derived.parameter_slot_index_ <
+							derived.function_->parameters.size() ?
+							derived.output_.strings.get(
+								derived.function_->parameters[
+									derived.parameter_slot_index_].name) : "__param";
+					slot.name = InternLocalName(
+						derived.output_, derived.UniqueSlotName(requested));
+				}
+				slot.type = record.kind == DUMP_VARIABLE ?
+					derived.LowerVariableStorage(record) :
+					derived.LowerStorageType(record.type);
+				if (record.kind == DUMP_PARAMETER)
+				{
+					if (derived.parameter_slot_index_ >=
+						derived.function_->parameters.size())
+						ThrowLoweringInternal(
+							"parameter slot has no boundary origin");
+					slot.parameter_origin = ParameterId(
+						static_cast<std::uint32_t>(
+							derived.parameter_slot_index_));
+				}
+				derived.function_->slots.push_back(slot);
+			}
+			if (record.kind == DUMP_PARAMETER)
+			{
+				derived.PlanVirtualBaseBoundarySlots(record);
+				++derived.parameter_slot_index_;
+				if (derived.HasCurrentConstructionVtt() &&
+					derived.parameter_slot_index_ == 1)
+					++derived.parameter_slot_index_;
+			}
+		}
+	}
+
+	void PlanArrayNewSlots(std::uint32_t current, const DumpNode& record,
+		const NodeChildren& children)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (record.kind == DUMP_NEW_EXPRESSION && record.array_action &&
+			!children.empty())
+		{
+			const NodeChildren call = derived.Children(children[0]);
+			const bool retain_size = !record.array_count_constant &&
+				(record.array_cookie || record.value_initialization ||
+				 children.size() == 2);
+			if (retain_size && call.size() > 1)
+				(void)derived.EnsureGeneratedSlot(call[1],
+					"array_new_size", lowering::ir::LowI64());
+			if (record.value_initialization)
+				(void)derived.EnsureGeneratedSlot(children[0],
+					"zeroinit_offset", lowering::ir::LowI64());
+			if (children.size() == 2)
+			{
+				(void)derived.EnsureGeneratedSlot(children[1],
+					"array_new_index", lowering::ir::LowI64());
+				if (record.selected_binding != kNoBinding)
+					(void)derived.EnsureGeneratedSlot(current,
+						"array_dtor_index", lowering::ir::LowI64());
+			}
+		}
+	}
+
 	void CollectSlots(std::uint32_t node)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		std::vector<std::uint32_t> pending(1, node);
-		std::vector<std::uint8_t> under_variable(1, 0);
-		std::vector<std::uint8_t> plan_expression_arguments(1, 0);
-		std::vector<std::uint8_t> child_context(1, 0);
-		std::vector<std::uint32_t> cleanup_context(1, 0);
+		std::vector<SlotPlanningVisit> pending(1,
+			SlotPlanningVisit(node, false, false, 0, 0));
 		while (!pending.empty())
 		{
-			const std::uint32_t current = pending.back();
+			const SlotPlanningVisit visit = pending.back();
 			pending.pop_back();
-			const bool variable_initializer = under_variable.back() != 0;
-			under_variable.pop_back();
-			const bool expression_arguments =
-				plan_expression_arguments.back() != 0;
-			plan_expression_arguments.pop_back();
-			const std::uint8_t current_context = child_context.back();
-			child_context.pop_back();
-			const bool conditional_child = (current_context & 1) != 0;
+			const std::uint32_t current = visit.node;
+			const bool variable_initializer = visit.variable_initializer;
+			const bool expression_arguments = visit.expression_arguments;
+			const bool conditional_child = (visit.child_context & 1) != 0;
 			const bool direct_class_call_destination =
-				(current_context & 2) != 0;
-			const std::uint32_t return_cleanup_context =
-				cleanup_context.back();
-			cleanup_context.pop_back();
+				(visit.child_context & 2) != 0;
+			const std::uint32_t return_cleanup_context = visit.cleanup_context;
 			const DumpNode& record = derived.arena_.nodes[current];
-			const bool persistent_variable = record.kind == DUMP_VARIABLE &&
-				record.binding != kNoBinding &&
-				derived.program_.bindings[record.binding].storage_class ==
-					STORAGE_CLASS_STATIC;
-			if ((record.kind == DUMP_PARAMETER || record.kind == DUMP_VARIABLE) &&
-				record.binding != kNoBinding && !persistent_variable)
-			{
-				if (record.kind == DUMP_VARIABLE && record.direct_return_slot &&
-					derived.current_indirect_result_)
-				{
-					derived.binding_indirect_parameters_[record.binding] =
-						lowering::ir::ParameterId(0);
-					derived.function_slot_bindings_.push_back(record.binding);
-				}
-				else if (derived.binding_slots_[record.binding] == kNoLowId)
-				{
-					derived.binding_slots_[record.binding] =
-						static_cast<SlotId>(derived.function_->slots.size());
-					derived.function_slot_bindings_.push_back(record.binding);
-					Slot slot;
-					if (derived.output_.retain_local_names)
-					{
-						std::string requested = record.text == 0 ? std::string() :
-							derived.program_.names.Get(record.text);
-						if (record.kind == DUMP_PARAMETER && requested.empty())
-							requested = derived.parameter_slot_index_ <
-								derived.function_->parameters.size() ?
-								derived.output_.strings.get(
-									derived.function_->parameters[
-										derived.parameter_slot_index_].name) : "__param";
-						slot.name = InternLocalName(
-							derived.output_, derived.UniqueSlotName(requested));
-					}
-					slot.type = record.kind == DUMP_VARIABLE ?
-						derived.LowerVariableStorage(record) :
-						derived.LowerStorageType(record.type);
-					if (record.kind == DUMP_PARAMETER)
-					{
-						if (derived.parameter_slot_index_ >=
-							derived.function_->parameters.size())
-							ThrowLoweringInternal(
-								"parameter slot has no boundary origin");
-						slot.parameter_origin = ParameterId(
-							static_cast<std::uint32_t>(
-								derived.parameter_slot_index_));
-					}
-					derived.function_->slots.push_back(slot);
-				}
-				if (record.kind == DUMP_PARAMETER)
-				{
-					derived.PlanVirtualBaseBoundarySlots(record);
-					++derived.parameter_slot_index_;
-					if (derived.HasCurrentConstructionVtt() &&
-						derived.parameter_slot_index_ == 1)
-						++derived.parameter_slot_index_;
-				}
-			}
+			if (record.kind == DUMP_PARAMETER || record.kind == DUMP_VARIABLE)
+				PlanDeclaredStorage(record);
 			const TypeId temporary_type = record.kind == DUMP_TEMPORARY_OBJECT ?
 				derived.program_.types.RemoveTopCv(record.type) : kNoType;
 			const EntityId temporary_entity = temporary_type != kNoType &&
@@ -377,37 +417,13 @@ protected:
 						"arg" : "argobj",
 					derived.LowerStorageType(staging_type));
 			}
-			if (record.kind == DUMP_NEW_EXPRESSION && record.array_action &&
-				!children.empty())
-			{
-				const NodeChildren call = derived.Children(children[0]);
-				const bool retain_size = !record.array_count_constant &&
-					(record.array_cookie || record.value_initialization ||
-					 children.size() == 2);
-				if (retain_size && call.size() > 1)
-					(void)derived.EnsureGeneratedSlot(call[1],
-						"array_new_size", lowering::ir::LowI64());
-				if (record.value_initialization)
-					(void)derived.EnsureGeneratedSlot(children[0],
-						"zeroinit_offset", lowering::ir::LowI64());
-				if (children.size() == 2)
-				{
-					(void)derived.EnsureGeneratedSlot(children[1],
-						"array_new_index", lowering::ir::LowI64());
-					if (record.selected_binding != kNoBinding)
-						(void)derived.EnsureGeneratedSlot(current,
-							"array_dtor_index", lowering::ir::LowI64());
-				}
-			}
+			if (record.kind == DUMP_NEW_EXPRESSION && record.array_action)
+				PlanArrayNewSlots(current, record, children);
 			for (std::size_t i = children.size(); i != 0; --i)
 			{
 				const bool range_condition_arguments =
 					record.kind == DUMP_CONDITION &&
 					record.full_expression_staging;
-				pending.push_back(children[i - 1]);
-				under_variable.push_back(variable_initializer ||
-					record.kind == DUMP_VARIABLE ||
-					range_condition_arguments ? 1 : 0);
 				const DumpNode& child =
 					derived.arena_.nodes[children[i - 1]];
 				const bool expression_call =
@@ -418,8 +434,6 @@ protected:
 				const bool plan_child_arguments = expression_arguments ||
 					range_condition_arguments ||
 					(expression_call && !child.temporary_implicit_object);
-				plan_expression_arguments.push_back(
-					plan_child_arguments ? 1 : 0);
 				const bool child_has_direct_class_call_destination =
 					child.kind == DUMP_CALL_EXPRESSION &&
 					derived.IsClassObjectType(child.type) &&
@@ -427,15 +441,18 @@ protected:
 					 record.kind == DUMP_CLASS_VALUE_TRANSFER ||
 					 (record.kind == DUMP_CONDITIONAL_ARM &&
 					  children.size() == 1));
-				child_context.push_back(static_cast<std::uint8_t>(
+				const std::uint8_t next_context = static_cast<std::uint8_t>(
 					(conditional_child ||
 					 record.kind == DUMP_CONDITIONAL_EXPRESSION ? 1 : 0) |
-					(child_has_direct_class_call_destination ? 2 : 0)));
+					(child_has_direct_class_call_destination ? 2 : 0));
 				const bool new_exception_region =
 					record.kind == DUMP_TRY_STATEMENT ||
 					record.kind == DUMP_HANDLER;
-				cleanup_context.push_back(new_exception_region ?
-					children[i - 1] + 1 : return_cleanup_context);
+				pending.push_back(SlotPlanningVisit(children[i - 1],
+					variable_initializer || record.kind == DUMP_VARIABLE ||
+						range_condition_arguments,
+					plan_child_arguments, next_context, new_exception_region ?
+						children[i - 1] + 1 : return_cleanup_context));
 			}
 		}
 		derived.FinalizeLexicalReturnCleanupPlan();

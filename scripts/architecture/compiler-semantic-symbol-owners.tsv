@@ -920,3 +920,6 @@ dev/src/semantic/templates/validation.cpp	RetainedCallAllowsArgumentDependentLoo
 dev/src/semantic/templates/validation.cpp	RetainedFunctionCallCandidates	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/templates/validation.cpp	ValidateRetainedTemplateDefinition	1	dev/src/semantic/templates/validation.cpp	keep
 dev/src/semantic/initialization/analysis.cpp	RecordConstructionRecipe	1	dev/src/semantic/initialization/analysis.cpp	keep
+dev/src/semantic/object_model/inheritance_analysis.cpp	AnalyzeScalarCast	1	dev/src/semantic/object_model/inheritance_analysis.cpp	keep
+dev/src/semantic/templates/function_deduction.cpp	DeduceNamedFunctionTemplatePackType	1	dev/src/semantic/templates/function_deduction.cpp	keep
+dev/src/semantic/extensions/range_for.cpp	AddRangeForIndex	1	dev/src/semantic/extensions/range_for.cpp	keep

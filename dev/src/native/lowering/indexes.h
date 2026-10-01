@@ -69,172 +69,13 @@ protected:
       consumer.second.value == instruction.dest;
   }
 
-  void emit_index(const lowir_model::LowirBlock & block,
-                  std::size_t instruction_index,
-                  const lowir_model::Instruction & instruction,
-                  std::vector<mir_model::MirInstruction> & out)
+  void emit_materialized_index(const lowir_model::LowirBlock & block,
+      std::size_t instruction_index, const lowir_model::Instruction & instruction,
+      std::vector<mir_model::MirInstruction> & out, mir_model::MirOperand base,
+      bool constant_index, long long offset, bool deferred_base)
   {
     using namespace build;
     Derived & lowerer = static_cast<Derived &>(*this);
-    if(lowerer.facts_.uses[instruction.dest] == 0) {
-      lowerer.consume(instruction.first);
-      lowerer.consume(instruction.second);
-      return;
-    }
-    const bool constant_index =
-      instruction.second.kind == lowir_model::Operand::OP_INTEGER;
-    const long long offset = constant_index ?
-      selection::integer_value(instruction.second) *
-        static_cast<long long>(instruction.type.storage_size) : 0;
-    mir_model::MirOperand base = lowerer.resolve(instruction.first);
-    const bool deferred_base =
-      instruction.first.kind == lowir_model::Operand::OP_TEMP &&
-      lowerer.value_known_[instruction.first.value] &&
-      lowerer.values_[instruction.first.value].deferred_address;
-    const bool stable_register_base =
-      instruction.first.kind == lowir_model::Operand::OP_TEMP &&
-      lowerer.value_known_[instruction.first.value] &&
-      lowerer.values_[instruction.first.value].parameter;
-    const bool stable_deferred_base = deferred_base &&
-      lowerer.values_[instruction.first.value].deferred_address_stable;
-    bool require_selected_parameter_home = false;
-    if(constant_index && stable_register_base) {
-      const mir_model::MirOperand selected =
-        lowerer.values_[instruction.first.value].location;
-      if(selected.kind == mir_model::MirOperand::OP_REG &&
-         (base.kind != mir_model::MirOperand::OP_REG ||
-          selected.reg != base.reg) &&
-         !lowerer.crosses_register_clobber(instruction.dest, selected.reg)) {
-        base = selected;
-        require_selected_parameter_home = true;
-      }
-    }
-    if(require_selected_parameter_home)
-      base = lowerer.selected_value_location(instruction.first.value);
-    // The union flag extends deferral only to the FRAME form: a pure
-    // rbp-relative address replays anywhere, while register-carried
-    // forms need the carrier alive at every consumer, which only the
-    // all-storage analysis guarantees.
-    const bool storage_only_uses = lowerer.facts_.has(
-      instruction.dest, analysis::FunctionFacts::VF_ONLY_STORAGE_ADDRESS);
-    if(constant_index &&
-       (storage_only_uses ||
-        lowerer.facts_.has(
-          instruction.dest,
-          analysis::FunctionFacts::VF_ADDRESS_UNION_SAFE))) {
-      mir_model::MirOperand address;
-      bool encodable = false;
-      if(stable_register_base && base.kind == mir_model::MirOperand::OP_REG &&
-         storage_only_uses &&
-         !lowerer.crosses_register_clobber(instruction.dest, base.reg)) {
-        address = dereference(base.reg, offset);
-        encodable = true;
-      } else if((stable_deferred_base ||
-                 lowerer.is_frame_address(instruction.first)) &&
-                (base.kind == mir_model::MirOperand::OP_DEREF ||
-                 base.kind == mir_model::MirOperand::OP_FRAME)) {
-        long long combined = 0;
-        encodable = add_address_offset(base.offset, offset, &combined) &&
-          frame_fold_stays_local(base, combined);
-        if(encodable && base.kind == mir_model::MirOperand::OP_DEREF) {
-          encodable = storage_only_uses &&
-            !lowerer.crosses_register_clobber(
-              instruction.dest, base.reg) &&
-            (!base.has_index || !lowerer.crosses_register_clobber(
-              instruction.dest, base.index));
-        }
-        if(encodable) {
-          address = base;
-          address.offset = combined;
-        }
-      }
-      if(encodable) {
-        lowerer.reserve_deferred_address_carriers(address);
-        ValueFact value;
-        value.location = address;
-        value.type = lowir_model::builtin_lowir_type(lowir_model::LTK_PTR);
-        value.deferred_address = true;
-        value.deferred_address_stable = true;
-        value.deferred_address_base = instruction.first;
-        value.deferred_address_index = instruction.second;
-        if(base.kind == mir_model::MirOperand::OP_FRAME &&
-           lowerer.is_frame_address(instruction.first)) {
-          value.frame_address = true;
-          value.has_frame_provenance = true;
-          value.frame_provenance = address.offset;
-        }
-        lowerer.set_value(instruction.dest, value);
-        return;
-      }
-    }
-    // A pointer value already held in stable storage is cheaper to reload at
-    // the eventual memory operation than to build, spill, and reload a second
-    // pointer for base+constant.  Keep the semantic base alive and replay the
-    // displacement only for the all-storage consumer class.
-    if(lowerer.optimization_level_ >= 1 && constant_index &&
-       storage_only_uses &&
-       (base.kind == mir_model::MirOperand::OP_FRAME ||
-        base.kind == mir_model::MirOperand::OP_SYMBOL ||
-        base.kind == mir_model::MirOperand::OP_GLOBAL ||
-        (instruction.first.kind == lowir_model::Operand::OP_TEMP &&
-         lowerer.value_known_[instruction.first.value] &&
-         lowerer.values_[instruction.first.value].rematerialized_constant_index))) {
-      ValueFact value;
-      value.type = lowir_model::builtin_lowir_type(lowir_model::LTK_PTR);
-      value.deferred_address = true;
-      value.rematerialized_constant_index = true;
-      value.rematerialized_index_offset = offset;
-      value.deferred_address_base = instruction.first;
-      value.deferred_address_index = instruction.second;
-      lowerer.set_value(instruction.dest, value);
-      if(lowerer.stats_)
-        ++lowerer.stats_->planned_rematerialized_constant_indexes;
-      return;
-    }
-    if(index_has_direct_memory_use(block, instruction_index, instruction) &&
-       (base.kind == mir_model::MirOperand::OP_REG ||
-        (constant_index &&
-         base.kind == mir_model::MirOperand::OP_FRAME &&
-         lowerer.is_frame_address(instruction.first) &&
-         frame_fold_stays_local(base, base.offset + offset)))) {
-      mir_model::MirOperand address;
-      if(constant_index) {
-        if(base.kind == mir_model::MirOperand::OP_FRAME) {
-          address = base;
-          address.offset += offset;
-        } else address = dereference(base.reg, offset);
-      } else {
-        const mir_model::MirOperand index =
-          lowerer.resolve(instruction.second);
-        if(index.kind != mir_model::MirOperand::OP_REG || index.reg == XR_RSP)
-          goto materialize_index;
-        address = indexed_dereference(
-          base.reg, index.reg,
-          static_cast<unsigned>(instruction.type.storage_size));
-      }
-      lowerer.reserve_deferred_address_carriers(address);
-      ValueFact value;
-      value.location = address;
-      value.type = lowir_model::builtin_lowir_type(lowir_model::LTK_PTR);
-      value.deferred_address = true;
-      value.deferred_address_stable = constant_index &&
-        (stable_register_base || lowerer.is_frame_address(instruction.first));
-      value.deferred_address_base = instruction.first;
-      value.deferred_address_index = instruction.second;
-      lowerer.set_value(instruction.dest, value);
-      return;
-    }
-    if(instruction.first.kind == lowir_model::Operand::OP_TEMP &&
-       lowerer.facts_.first_use[instruction.first.value] == lowerer.position_ &&
-       !lowerer.result_crosses_call(instruction.dest) &&
-       lowerer.incoming_parameter_register_known_[instruction.first.value]) {
-      const X64Register incoming =
-        lowerer.incoming_parameter_registers_[instruction.first.value];
-      if(lowerer.incoming_parameter_register_is_intact(
-           instruction.first.value, incoming))
-        base = reg_operand(incoming);
-    }
-materialize_index:
     if(constant_index && offset == 0 &&
        instruction.first.kind == lowir_model::Operand::OP_TEMP &&
        base.kind == mir_model::MirOperand::OP_REG &&
@@ -449,6 +290,176 @@ materialize_index:
         pressure_home : destination);
     if(safe_reuse && forwarded_alias)
       lowerer.values_[instruction.dest].parameter = true;
+  }
+
+  void emit_index(const lowir_model::LowirBlock & block,
+                  std::size_t instruction_index,
+                  const lowir_model::Instruction & instruction,
+                  std::vector<mir_model::MirInstruction> & out)
+  {
+    using namespace build;
+    Derived & lowerer = static_cast<Derived &>(*this);
+    if(lowerer.facts_.uses[instruction.dest] == 0) {
+      lowerer.consume(instruction.first);
+      lowerer.consume(instruction.second);
+      return;
+    }
+    const bool constant_index =
+      instruction.second.kind == lowir_model::Operand::OP_INTEGER;
+    const long long offset = constant_index ?
+      selection::integer_value(instruction.second) *
+        static_cast<long long>(instruction.type.storage_size) : 0;
+    mir_model::MirOperand base = lowerer.resolve(instruction.first);
+    const bool deferred_base =
+      instruction.first.kind == lowir_model::Operand::OP_TEMP &&
+      lowerer.value_known_[instruction.first.value] &&
+      lowerer.values_[instruction.first.value].deferred_address;
+    const bool stable_register_base =
+      instruction.first.kind == lowir_model::Operand::OP_TEMP &&
+      lowerer.value_known_[instruction.first.value] &&
+      lowerer.values_[instruction.first.value].parameter;
+    const bool stable_deferred_base = deferred_base &&
+      lowerer.values_[instruction.first.value].deferred_address_stable;
+    bool require_selected_parameter_home = false;
+    if(constant_index && stable_register_base) {
+      const mir_model::MirOperand selected =
+        lowerer.values_[instruction.first.value].location;
+      if(selected.kind == mir_model::MirOperand::OP_REG &&
+         (base.kind != mir_model::MirOperand::OP_REG ||
+          selected.reg != base.reg) &&
+         !lowerer.crosses_register_clobber(instruction.dest, selected.reg)) {
+        base = selected;
+        require_selected_parameter_home = true;
+      }
+    }
+    if(require_selected_parameter_home)
+      base = lowerer.selected_value_location(instruction.first.value);
+    // The union flag extends deferral only to the FRAME form: a pure
+    // rbp-relative address replays anywhere, while register-carried
+    // forms need the carrier alive at every consumer, which only the
+    // all-storage analysis guarantees.
+    const bool storage_only_uses = lowerer.facts_.has(
+      instruction.dest, analysis::FunctionFacts::VF_ONLY_STORAGE_ADDRESS);
+    if(constant_index &&
+       (storage_only_uses ||
+        lowerer.facts_.has(
+          instruction.dest,
+          analysis::FunctionFacts::VF_ADDRESS_UNION_SAFE))) {
+      mir_model::MirOperand address;
+      bool encodable = false;
+      if(stable_register_base && base.kind == mir_model::MirOperand::OP_REG &&
+         storage_only_uses &&
+         !lowerer.crosses_register_clobber(instruction.dest, base.reg)) {
+        address = dereference(base.reg, offset);
+        encodable = true;
+      } else if((stable_deferred_base ||
+                 lowerer.is_frame_address(instruction.first)) &&
+                (base.kind == mir_model::MirOperand::OP_DEREF ||
+                 base.kind == mir_model::MirOperand::OP_FRAME)) {
+        long long combined = 0;
+        encodable = add_address_offset(base.offset, offset, &combined) &&
+          frame_fold_stays_local(base, combined);
+        if(encodable && base.kind == mir_model::MirOperand::OP_DEREF) {
+          encodable = storage_only_uses &&
+            !lowerer.crosses_register_clobber(
+              instruction.dest, base.reg) &&
+            (!base.has_index || !lowerer.crosses_register_clobber(
+              instruction.dest, base.index));
+        }
+        if(encodable) {
+          address = base;
+          address.offset = combined;
+        }
+      }
+      if(encodable) {
+        lowerer.reserve_deferred_address_carriers(address);
+        ValueFact value;
+        value.location = address;
+        value.type = lowir_model::builtin_lowir_type(lowir_model::LTK_PTR);
+        value.deferred_address = true;
+        value.deferred_address_stable = true;
+        value.deferred_address_base = instruction.first;
+        value.deferred_address_index = instruction.second;
+        if(base.kind == mir_model::MirOperand::OP_FRAME &&
+           lowerer.is_frame_address(instruction.first)) {
+          value.frame_address = true;
+          value.has_frame_provenance = true;
+          value.frame_provenance = address.offset;
+        }
+        lowerer.set_value(instruction.dest, value);
+        return;
+      }
+    }
+    // A pointer value already held in stable storage is cheaper to reload at
+    // the eventual memory operation than to build, spill, and reload a second
+    // pointer for base+constant.  Keep the semantic base alive and replay the
+    // displacement only for the all-storage consumer class.
+    if(lowerer.optimization_level_ >= 1 && constant_index &&
+       storage_only_uses &&
+       (base.kind == mir_model::MirOperand::OP_FRAME ||
+        base.kind == mir_model::MirOperand::OP_SYMBOL ||
+        base.kind == mir_model::MirOperand::OP_GLOBAL ||
+        (instruction.first.kind == lowir_model::Operand::OP_TEMP &&
+         lowerer.value_known_[instruction.first.value] &&
+         lowerer.values_[instruction.first.value].rematerialized_constant_index))) {
+      ValueFact value;
+      value.type = lowir_model::builtin_lowir_type(lowir_model::LTK_PTR);
+      value.deferred_address = true;
+      value.rematerialized_constant_index = true;
+      value.rematerialized_index_offset = offset;
+      value.deferred_address_base = instruction.first;
+      value.deferred_address_index = instruction.second;
+      lowerer.set_value(instruction.dest, value);
+      if(lowerer.stats_)
+        ++lowerer.stats_->planned_rematerialized_constant_indexes;
+      return;
+    }
+    if(index_has_direct_memory_use(block, instruction_index, instruction) &&
+       (base.kind == mir_model::MirOperand::OP_REG ||
+        (constant_index &&
+         base.kind == mir_model::MirOperand::OP_FRAME &&
+         lowerer.is_frame_address(instruction.first) &&
+         frame_fold_stays_local(base, base.offset + offset)))) {
+      mir_model::MirOperand address;
+      if(constant_index) {
+        if(base.kind == mir_model::MirOperand::OP_FRAME) {
+          address = base;
+          address.offset += offset;
+        } else address = dereference(base.reg, offset);
+      } else {
+        const mir_model::MirOperand index =
+          lowerer.resolve(instruction.second);
+        if(index.kind != mir_model::MirOperand::OP_REG || index.reg == XR_RSP)
+          goto materialize_index;
+        address = indexed_dereference(
+          base.reg, index.reg,
+          static_cast<unsigned>(instruction.type.storage_size));
+      }
+      lowerer.reserve_deferred_address_carriers(address);
+      ValueFact value;
+      value.location = address;
+      value.type = lowir_model::builtin_lowir_type(lowir_model::LTK_PTR);
+      value.deferred_address = true;
+      value.deferred_address_stable = constant_index &&
+        (stable_register_base || lowerer.is_frame_address(instruction.first));
+      value.deferred_address_base = instruction.first;
+      value.deferred_address_index = instruction.second;
+      lowerer.set_value(instruction.dest, value);
+      return;
+    }
+    if(instruction.first.kind == lowir_model::Operand::OP_TEMP &&
+       lowerer.facts_.first_use[instruction.first.value] == lowerer.position_ &&
+       !lowerer.result_crosses_call(instruction.dest) &&
+       lowerer.incoming_parameter_register_known_[instruction.first.value]) {
+      const X64Register incoming =
+        lowerer.incoming_parameter_registers_[instruction.first.value];
+      if(lowerer.incoming_parameter_register_is_intact(
+           instruction.first.value, incoming))
+        base = reg_operand(incoming);
+    }
+materialize_index:
+    emit_materialized_index(block, instruction_index, instruction, out,
+                            base, constant_index, offset, deferred_base);
   }
 };
 
