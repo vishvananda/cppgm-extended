@@ -42,7 +42,7 @@ fix sequence is complete, as requested.
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: six of seven refreshed reducers fail in 2481b326d at O0/O2 while Clang/GCC pass all seven. EH-HANDLER-TEMP addresses full-expression temporaries; nested forwarding, throwing local cleanup, aggregate prefixes and failed-new ownership remain open. |
-| EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in the accompanying checkpoint: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
+| EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in ac2aaf704: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
@@ -1912,3 +1912,40 @@ Final validation passes: strict report 5971/5971 with exactly one output line,
 debug-info, all backend variants, self-host through PA5, all nine architecture
 checks, file/function limits and placement with zero findings. No other
 existing fixture or reference changed.
+
+## Nested catch forwarding boundary verification
+
+Immutable ac2aaf704 supplies eighteen defined nested-handler inputs and 108
+O0/O2 compiler/runtime observations. Clang and GCC pass all eighteen. Fifteen
+fail here: six abort instead of reaching the dynamically enclosing handler,
+five violate lifetime/order observations, and four fail object generation with
+unbalanced protected regions. Three positives pass: a matching inner handler
+keeps its enclosing guard alive, the matching path through an active outer
+handler preserves its caught object, and an ordinary typed rethrow keeps that
+exception alive for the caller's matching handler. Two external throwing
+companions prove the failures without relying on a locally visible throw body.
+
+The abort set includes a plain nested int/long mismatch without any class
+objects, and a three-level match that skips two inner handler types. The current
+catch landing records its own clauses but does not generally advertise the
+enclosing matching clauses. Cleanup-bearing and active-handler dispatches also
+need to retire their retained region before ordinary source matching begins.
+After a real miss or handler cleanup, the forwarded path must destroy its
+complete object prefix, finish intervening handlers in lifetime order, and
+retire the enclosing try before jumping to its catch entry. Catch-all miss
+edges need separate treatment because matching is exhaustive while the O0
+branch skeleton still participates in region validation.
+
+The native analysis distinguishes cleanup-bearing landings from catch-only
+landings and currently tolerates some catch-entry joins by adopting the
+landing edge's region state. That tolerance does not establish the explicit
+source-lowering exits required by the LowIR contract. The lowering already
+has typed exception-region and handler identities; the fix should derive its
+dispatch and forwarding facts from those identities and the existing child
+inventory, preserving ordinary matched paths and avoiding rescanning rendered
+LowIR or speculative source analysis.
+
+No compiler or reference change has been made for this forwarding item yet.
+Source/compiler hashes, immutable entry binary, companions and all observations
+remain under /tmp/cppgm-v4-audit-review/nested-catch-forwarding/. EH and all later
+open rows remain active; the final combined export is still deferred.
