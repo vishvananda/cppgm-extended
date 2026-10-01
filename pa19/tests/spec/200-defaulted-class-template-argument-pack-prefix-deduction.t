@@ -35,5 +35,5 @@ int take(const tuples::tuple<T0, Ts...> &)
 int main()
 {
   tuples::tuple<int, int, int> value(0, 0, 0);
-  return take(value) == 2 ? 0 : 1;
+  return take(value) == 9 ? 0 : 1;
 }

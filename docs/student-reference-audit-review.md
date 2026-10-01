@@ -26,17 +26,17 @@ fix sequence is complete, as requested.
 | AGG-DEST | Construct aggregate arrays and braced-result members at their final destination | v4codex group 4 | Done: edd6b2121; preserve typed member actions at final addresses; five new controls and seven regenerated references, strict 5834/5834 and full checks pass. |
 | RESULT-ABI | Canonical class result ABI for aliases, indirect calls and nontrivial empty results | v4codex group 5 | Done: 70e7a2920; one completed class fact; strict 5838/5838, full checks, Clang/GCC mixed-object controls and equivalent-output ABBA pass. |
 | RESULT-CONV | Explicit conversion-function-template calls use canonical result deduction | v4codex group 5 | Done: 4858ddbc0; typed full target deduction and receiver selection; strict 5839/5839, full checks and equal-output performance pass. |
-| CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Done in the conversion-sequence checkpoint: remove the competing two-conversion constructor path; PA18 runtime control and Clang/GCC agree at O0/O2. Full validation recorded below. |
+| CONV-IMPLICIT | Valid class copy initialization with a conversion-function template rejects as ambiguous | Additional reducer during RESULT-CONV | Done in 425bc2a90: remove the competing two-conversion constructor path; PA18 runtime control and Clang/GCC agree at O0/O2. Full validation recorded below. |
 | CONV-SELECTION | Rank converting constructors against conversion functions during class copy initialization | Additional conversion-sequence controls | Open: entry 88f5d368b and candidate accept A a=x with A(X&) and X::operator A(); Clang/GCC reject as ambiguous at O0/O2. Separate from the two-user-conversion restriction. |
-| LAMBDA-CONV-SPEC | Captureless lambda pointer conversion has a nonthrowing exception specification | Additional hosted-trait controls / CWG 1722 | Done in the conversion-sequence checkpoint: preserve the call operator specification independently; PA20 noexcept and hosted trait controls agree with Clang/GCC. |
+| LAMBDA-CONV-SPEC | Captureless lambda pointer conversion has a nonthrowing exception specification | Additional hosted-trait controls / CWG 1722 | Done in 425bc2a90: preserve the call operator specification independently; PA20 noexcept and hosted trait controls agree with Clang/GCC. |
 | TMPL-VALID | Definition-time expression/bound validation, plus valid dependent bounds | v4codex group 6 | Done: ad5d5dbb8; known type/category facts validate unused operators/calls/bounds without evaluating dependent values. Eight PA14 fixtures, 22 copied rejection controls, strict 5887/5887 and full checks pass. Alpha instruction/RSS gates pass with equal outputs; fixed-call GCC disagreement documented below. PARAM-ADJUST completes the valid bound failure. |
 | PARAM-ADJUST | Parameter declarator scope uses adjusted array/function object types | v4codex group 6 reducer | Done: 27eef472d; parameter lookup reuses ParameterBindingType; original PA6 source types remain. Two PA6/14 fixtures, strict 5879/5879, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs. |
 | DEMAND | Dormant static-member definition and storage demand | v4codex group 7 | Done in the accompanying checkpoint: indexed binding requests preserve unused/sibling/nested definitions, explicit instantiation and specialization ownership. Eight PA14/17 fixtures, fourteen reviewed references, strict 5895/5895 and all required checks pass. Six Alpha inputs pass instruction/RSS gates with equal outputs. Static declaration legality remains STATIC-DECL. |
 | STATIC-DECL | Diagnose static-definition redeclarations/type/member mismatches; preserve explicit specialization declarations | Extended student storage controls during DEMAND | Open: entry compiler accepts four duplicate definitions, two type mismatches and a nonstatic out-of-class definition; rejects a valid declaration followed by its explicit specialization definition. These failures predate selective demand. |
 | STATIC-BASE-ADDR | Recheck nonzero static base-reference offset reducer | Extended student storage controls during DEMAND | Needs verification: entry/current return 1 on the unsigned-free A/B/D base-reference reducer while Clang/GCC return 0. Distinguish static relocation from pointer conversion/layout before assigning a fix. |
 | DISCARD-CALL | Discarded reference calls preserve effects without loading the referent | v4codex group 7 | Done in ddcd20c8c: PA10 control plus defined PA18/19 inputs; strict 5840/5840 and full checks pass; equal-output repeat performance shows no persistent regression. |
-| REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Done: receiver/array in 1cb054e23, result identity in 88f5d368b, and implicit conversion chaining in the conversion-sequence checkpoint. All four original inputs remain unchanged; rejection references regenerated through ref-test. Full validation recorded below. |
-| DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | In progress: constructor deduction now preserves closure type in the conversion-sequence checkpoint, with captureless/capturing controls. Defaulted-pack deduction and its runtime expectation 2 → 9 remain open. |
+| REJECT | Four invalid programs currently accepted: noexcept receiver, result-type ambiguity, empty array pack, two user conversions | v4codex group 8 | Done: receiver/array in 1cb054e23, result identity in 88f5d368b, and implicit conversion chaining in 425bc2a90. All four original inputs remain unchanged; rejection references regenerated through ref-test. Full validation recorded below. |
+| DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Done: closure type in 425bc2a90; canonical defaulted-pack deduction and PA19 runtime expectation in the accompanying checkpoint. Five PA19 controls, strict 5924/5924, all required checks and four Alpha instruction/RSS gates pass. Declared ABI pattern remains MANGLE-PACK. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
@@ -45,10 +45,11 @@ fix sequence is complete, as requested.
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
 | MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Open, confirmed against Clang/GCC and unchanged entry 1cb054e23: bare decltype(value) uses DT instead of Dt; named dependent selected(value) loses the expression and emits a concrete result type. Parenthesized decltype((value)) already agrees. No encoder change in the result identity checkpoint. |
+| MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Open: entry 425bc2a90 and candidate flatten a fixed-primary parameter expansion and append defaults; Clang/GCC retain `tuple<T_,DpT0_>`. The deduction checkpoint corrects the concrete template argument pack cardinality; the parameter pattern remains wrong. No encoder change made. |
 | MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
-| INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; two remain: PA23 initialized virtual bases and PA19 pack count. |
+| INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; PA19 pack count is corrected in the deduction checkpoint; PA23 initialized virtual bases remain. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
 | ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Done in 5d4ff5a34: both original reducers and normal/nested throwing-arm controls pass; strict 5843/5843, full checks and equal-output ABBA pass. Other EH mechanisms remain open. |
 | ARG-ARGS | Preserve side effects in empty aggregate-member constructor arguments | Argon 3 | Done: edd6b2121; retain constructor calls and argument/parameter lifetimes; counter and by-value lifetime controls pass. |
@@ -1529,3 +1530,56 @@ backend variants, self-host through PA5, all nine architecture checks, file limi
 and placement pass. The layout audit initially identified two stale PA20 comment
 allowlist entries; those obsolete entries are removed and the audit passes. The defaulted-pack portion of DEDUCE and CONV-SELECTION remain open.
 Final combined student export remains deferred until all tracker work is complete.
+
+## Defaulted class arguments and trailing-pack deduction checkpoint
+
+The actual class specialization already stores every canonical argument,
+including omitted defaults. The function pattern also acquired a synthetic
+default suffix after its symbolic expansion. Deduction incorrectly anchored
+that suffix and excluded matching defaults from the pack; explicitly writing
+the same defaults did not help. A trailing expansion now consumes every
+remaining actual argument, as N3485 [temp.deduct.type]/9 requires. The old
+suffix trial, repeated dependent queries and deduction copies are removed.
+
+Typed arguments retain whether an expansion has a written suffix. This fact is
+published during the existing argument construction and forwarded with symbolic
+packs. It participates in interned shape identity, so `box<T,Ts...>` and
+`box<T,Ts...,marker>` cannot collapse after defaults are appended. A written
+suffix makes the entire argument list non-deduced, preserving valid explicit
+arguments or deduction from other call arguments. The added flag fits existing
+padding: entry and candidate TemplateArgument are both 40 bytes. Concrete
+canonical argument identities remain unchanged.
+
+Five PA19 fixtures cover completed type and dependent integral defaults, aliases,
+base deduction, repeated consistent/inconsistent packs, written suffix rejection,
+explicit arguments and separate deduction. Sixteen boundary programs produce
+96 candidate/Clang/GCC controls at O0/O2; all compile/reject/runtime outcomes
+agree. Forty fixture LowIR/native/host controls pass. The original ten-parameter
+PA19 fixture now compares its nine-element trailing pack with 9 instead of 2.
+Sixteen controls preserve the old and corrected sources: entry returns 0 on the
+old wrong expectation and 1 on the correction; candidate and both hosts do the
+reverse. References are generated through exact ref-test selection.
+
+Object names were checked against Clang before accepting the reference changes.
+The concrete function template argument list now contains all nine pack elements,
+matching Clang/GCC. A separately pre-existing declared-parameter fact defect
+remains MANGLE-PACK: the exact Clang/GCC name is
+`_Z4takeIiJiiN6tuples9null_typeES1_S1_S1_S1_S1_S1_EEiRKNS0_5tupleIT_DpT0_EE`;
+our parameter suffix instead flattens the expansion and appends defaults. The
+entry already lacks `Dp`, so this is not a reason to change the ABI encoder
+without reviewing publication of the source pattern. Full original object
+symbols and host commands are retained in original-fixture-controls.json.
+
+Evidence lives in `/tmp/cppgm-v4-audit-review/defaulted-pack-deduction/`. Strict
+report passes 5924/5924 with exactly one success line. Debug-info, backend
+variants, self-host through PA5, all nine architecture checks, file limits and
+placement pass. A targeted 600-namespace workload exercises variadic and fixed
+class deduction with identical entry/candidate output, complementing the three
+standard frozen inputs. All four unchanged gates pass. Instruction ratios are
+recognition 1.000045, virtual 0.999955, large virtual 1.000027 and targeted
+deduction 1.000429; RSS ratios are 0.998575, 0.998117, 1.000000 and 0.997954.
+Each input retains four A/A calibration blocks and eight A/B ABBA blocks; all
+192 objects agree within their input, and both manifests match the validated
+candidate. Cycles are retained separately from the instruction/RSS gate. All raw
+observations remain in alpha/ and alpha-deduction/. Combined student export
+remains deferred until the full tracker sequence is complete.

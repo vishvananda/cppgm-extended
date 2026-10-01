@@ -912,7 +912,8 @@ TemplateArgumentListId Program::InternTemplateArgumentList(
 		hash = MixHash(hash, static_cast<std::uint64_t>(arguments[i].value));
 		hash = MixHash(hash, arguments[i].value_binding);
 		hash = MixHash(hash, arguments[i].dependent_parameter);
-		hash = MixHash(hash, arguments[i].pack_expansion ? 1 : 0);
+		hash = MixHash(hash, (arguments[i].pack_expansion ? 1U : 0U) |
+			(arguments[i].pack_expansion_has_suffix ? 2U : 0U));
 	}
 	if ((template_argument_lists_.size() + 1) * 10 >
 		template_argument_list_slots_.size() * 7)

@@ -1797,7 +1797,9 @@ bool Analyzer::BuildTemplateArguments(
 				ThrowInternalCompilerError(
 					"forwarded template pack length changed during expansion");
 			for (std::size_t element = 0; element < count; ++element)
-				(*symbolic)[element] |= pack[element].pack_expansion ? 1U : 0U;
+				(*symbolic)[element] |=
+					(pack[element].pack_expansion ? 1U : 0U) |
+					(pack[element].pack_expansion_has_suffix ? 2U : 0U);
 		}
 	};
 	const auto append_argument = [&](NodeId source, ScopeId source_scope,
@@ -1828,6 +1830,7 @@ bool Analyzer::BuildTemplateArguments(
 				if (!append_argument(
 					operand, use_scope, dependent_names)) return false;
 				arguments->back().pack_expansion = true;
+				arguments->back().pack_expansion_has_suffix = i + 1 < syntax.size();
 				continue;
 			}
 			std::vector<std::uint8_t> symbolic;
@@ -1839,7 +1842,11 @@ bool Analyzer::BuildTemplateArguments(
 				if (arguments->size() >= fixed && !has_pack) return false;
 				if (!append_argument(operand, element_scopes[element],
 					dependent_names)) return false;
-				arguments->back().pack_expansion = symbolic[element] != 0;
+				arguments->back().pack_expansion = (symbolic[element] & 1U) != 0;
+				arguments->back().pack_expansion_has_suffix =
+					arguments->back().pack_expansion &&
+					((symbolic[element] & 2U) != 0 || i + 1 < syntax.size() ||
+					 element + 1 < element_scopes.size());
 			}
 			continue;
 		}
@@ -1870,6 +1877,7 @@ bool Analyzer::BuildTemplateArguments(
 			if (!append_argument(
 				syntax[i], use_scope, dependent_names)) return false;
 			arguments->back().pack_expansion = true;
+			arguments->back().pack_expansion_has_suffix = i + 1 < syntax.size();
 			continue;
 		}
 		std::vector<std::uint8_t> symbolic;
@@ -1886,7 +1894,10 @@ bool Analyzer::BuildTemplateArguments(
 				TemplateArgument argument(TEMPLATE_ARGUMENT_TYPE,
 					BuildTypeId(type_id, element_scopes[element]));
 				if (argument.type == kNoType) return false;
-				argument.pack_expansion = symbolic[element] != 0;
+				argument.pack_expansion = (symbolic[element] & 1U) != 0;
+				argument.pack_expansion_has_suffix = argument.pack_expansion &&
+					((symbolic[element] & 2U) != 0 || i + 1 < syntax.size() ||
+					 element + 1 < element_scopes.size());
 				arguments->push_back(argument);
 				if (arguments->size() <= fixed)
 					BindTemplateArgument(parameter_scope, destination, argument);
@@ -1896,7 +1907,11 @@ bool Analyzer::BuildTemplateArguments(
 				if (!append_argument(syntax[i], element_scopes[element],
 					dependent_names))
 					return false;
-				arguments->back().pack_expansion = symbolic[element] != 0;
+				arguments->back().pack_expansion = (symbolic[element] & 1U) != 0;
+				arguments->back().pack_expansion_has_suffix =
+					arguments->back().pack_expansion &&
+					((symbolic[element] & 2U) != 0 || i + 1 < syntax.size() ||
+					 element + 1 < element_scopes.size());
 			}
 		}
 	}

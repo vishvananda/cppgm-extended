@@ -54,12 +54,16 @@ struct TemplateArgument
 	BindingId value_binding;
 	std::uint32_t dependent_parameter;
 	bool pack_expansion;
+	// Retained argument-list syntax distinguishes a written suffix from defaults
+	// appended to a symbolic expansion when the primary has fixed parameters.
+	bool pack_expansion_has_suffix;
 
 	TemplateArgument()
 		: kind(TEMPLATE_ARGUMENT_TYPE), type(kNoType),
 		  source_value_type(kNoType), value(0),
 		  value_binding(kNoBinding),
-		  dependent_parameter(kNoTemplateParameter), pack_expansion(false) {}
+		  dependent_parameter(kNoTemplateParameter), pack_expansion(false),
+		  pack_expansion_has_suffix(false) {}
 	TemplateArgument(TemplateArgumentKind kind_value, TypeId type_value,
 		std::int64_t integral_value = 0,
 		std::uint32_t dependent_parameter_value = kNoTemplateParameter,
@@ -69,7 +73,7 @@ struct TemplateArgument
 		  value(integral_value),
 		  value_binding(value_binding_value),
 		  dependent_parameter(dependent_parameter_value),
-		  pack_expansion(pack_expansion_value) {}
+		  pack_expansion(pack_expansion_value), pack_expansion_has_suffix(false) {}
 	bool IsDependent() const
 		{ return dependent_parameter != kNoTemplateParameter; }
 	bool IsNondeduced() const
@@ -80,7 +84,8 @@ struct TemplateArgument
 			source_value_type == other.source_value_type &&
 			value == other.value && value_binding == other.value_binding &&
 			dependent_parameter == other.dependent_parameter &&
-			pack_expansion == other.pack_expansion;
+			pack_expansion == other.pack_expansion &&
+			pack_expansion_has_suffix == other.pack_expansion_has_suffix;
 	}
 	bool operator!=(const TemplateArgument& other) const
 		{ return !(*this == other); }

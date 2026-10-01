@@ -1014,6 +1014,11 @@ bool Analyzer::DeduceFunctionTemplatePackType(TypeId pattern,
 		const std::vector<TemplateArgument> argument_arguments =
 			StoredTemplateArguments(argument_owner.template_argument_begin,
 				argument_owner.template_argument_count);
+		// N3485 [temp.deduct.type]/9 makes the whole list non-deduced when
+		// a written argument follows an expansion. Defaults appended to the
+		// symbolic pattern do not count as written arguments.
+		for (std::size_t i = 0; i < pattern_arguments.size(); ++i)
+			if (pattern_arguments[i].pack_expansion_has_suffix) return true;
 		const std::vector<TemplateParameter>& class_parameters =
 			pattern_template.parameters;
 		std::size_t pattern_index = 0, argument_index = 0;
@@ -1053,37 +1058,8 @@ bool Analyzer::DeduceFunctionTemplatePackType(TypeId pattern,
 						return false;
 					last = argument_arguments.size() - remaining;
 				}
-				else
-				{
-					// Canonical class arguments already contain omitted defaults.
-					// Anchor that suffix once so this function pack consumes only
-					// the preceding fixed-primary argument span.
-					if (pattern_arguments.size() != argument_arguments.size())
-						return search_bases();
-					FunctionTemplateDeduction suffix = direct;
-					last = pattern_arguments.size();
-					while (last > pattern_index + 1)
-					{
-						++function_template_deduction_visits_;
-						const TemplateArgument& suffix_pattern =
-							pattern_arguments[last - 1];
-						if (suffix_pattern.pack_expansion) break;
-						FunctionTemplateDeduction trial = suffix;
-						const bool dependent_suffix =
-							suffix_pattern.IsDependent() ||
-							(suffix_pattern.kind == TEMPLATE_ARGUMENT_TYPE &&
-							 FunctionTemplateTypeIsDependent(suffix_pattern.type));
-						const bool matches = dependent_suffix ?
-							DeduceFunctionTemplatePackArgument(suffix_pattern,
-								argument_arguments[last - 1], parameters, &trial) :
-							suffix_pattern == argument_arguments[last - 1];
-						if (!matches)
-							break;
-						suffix = trial;
-						--last;
-					}
-					direct = suffix;
-				}
+				// A trailing expansion consumes every actual canonical argument,
+				// including defaults. Synthesized pattern defaults are not a suffix.
 				const std::size_t prior_size =
 					direct.pack_arguments[dependent].size();
 				const bool prior_started =
