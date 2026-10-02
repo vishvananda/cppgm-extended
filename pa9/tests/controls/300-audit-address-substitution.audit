@@ -1,0 +1,5 @@
+# AUDIT-ID: MANGLE
+# Reuse the existing normalized facts instead of duplicating the input.
+# Clang's matching C++ Holder<&C::m>::f(C&) object was checked independently.
+input pa9/tests/abi/300-function-owner-member-pointer-nttp-data.t
+expected _ZN2ns6HolderIXadL_ZN1C1mEEEE1fERS1_

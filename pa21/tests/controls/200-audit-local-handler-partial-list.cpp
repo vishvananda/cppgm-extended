@@ -1,0 +1,3 @@
+// AUDIT-ID: EH-LOCAL-ARRAY-CATCH
+// AUDIT-EXPECT: run
+namespace std{template<class E>class initializer_list{const E*p;unsigned long n;initializer_list(const E*q,unsigned long z):p(q),n(z){}public:initializer_list():p(0),n(0){}unsigned long size()const{return n;}const E*begin()const{return p;}};}int alive;struct G{G(){++alive;}~G()noexcept{--alive;}};struct S{int x;S(int n):x(n){if(n==2)throw 7;++alive;}S(const S&s):x(s.x){++alive;}~S()noexcept{--alive;}};int main(){try{G g;const std::initializer_list<S>& xs=std::initializer_list<S>{1,2,3,4};return xs.size();}catch(int n){return n!=7||alive!=0;}}

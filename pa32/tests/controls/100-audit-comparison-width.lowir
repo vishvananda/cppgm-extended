@@ -1,0 +1,8 @@
+# AUDIT-ID: MEMBER
+# The comparison says i32 but its operand is defined as i64.
+# Use ordinary scalar widths to test the guard without adding a wide type.
+function @bad(%value : i64) -> i32 {
+  block ^entry:
+    %truth = cmp ne i32 %value, 0
+    return i32 %truth
+}

@@ -130,7 +130,7 @@ The recent discovery inventory is not all C++11:
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
 | TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Reviewed: no additional required fix or fixture. Instantiating the mismatched member rejects with conflicting function return type at O0/O2 and in PA14 LowIR, while the matching definition passes; both strict C++11 hosts agree. The unused form remains a diagnostic-timing difference under N3485 14.6/8, not a mandatory rejection oracle. Fourteen new observations and contract review are recorded below. |
-| NEW-ARRAY-DTOR-ACCESS | Check destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Open; contract review complete. N3485 5.3.4/17 explicitly requires array-element destructor access checking, without requiring a later DR. PA12/400 owns array new/delete. A compact private-scalar/own-array positive passes all compilers; the original private-array negative is accepted here and rejected by both strict C++11 hosts in the prepared modes. Fourteen fixture observations and 49 exploratory observations are retained. Deleted-array rejection already works; broader disputed destructor cases remain excluded. No default fixture installed yet. |
+| NEW-ARRAY-DTOR-ACCESS | Check destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Open; contract review complete. N3485 5.3.4/17 explicitly requires array-element destructor access checking, without requiring a later DR. PA12/400 owns array new/delete. A compact private-scalar/own-array positive passes all compilers; the original private-array negative is accepted here and rejected by both strict C++11 hosts in the prepared modes. Fourteen fixture observations and 49 exploratory observations are retained. Deleted-array rejection already works; broader disputed destructor cases remain excluded. The positive is installed as 400-new-private-destructor-access-contexts.t; the rejection is a focused pending control. Compiler fix remains open. |
 | TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
 | ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Open, independently reproduced: character, integer and suffixed-string messages are accepted here and rejected by Clang/GCC at O0/O2. These are C++11 syntax constraints and can be tested without hosted headers. |
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Open, independently reduced: static_assert(&S::x, "nonnull member pointer") rejects with both immutable entry and candidate; Clang/GCC accept in C++11 at O0/O2. Ordinary MEMBER adjustments remain separately tracked. |
@@ -139,7 +139,7 @@ The recent discovery inventory is not all C++11:
 | EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Open, independently reduced: reordered and duplicate int/double specifications reject in frozen entry and candidate, in type dumps and at O0/O2; identical class specifications pass. Strict C++11 Clang/GCC accept all three controls. N3485 15.4/3 requires the same set, and PA6 owns supported free-function exception specifications and declaration matching. Keep one compact positive for order/duplicate normalization, with distinct incompatible-set rejection coverage. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
-| ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Argument constraint reviewed and open: N3485 7.6.3/1 expressly forbids an attribute-argument-clause. Six fresh C++11 observations confirm ours accepts [[noreturn(1)]] and both hosts reject it. The placement ledger assigns standard attribute support to PA29/500; one negative is prepared, reusing existing valid noreturn runtime coverage. Variable appertainment remains separately reviewed because GCC only warns. This does not admit additional vendor attributes; no default fixture installed yet. |
+| ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Argument constraint reviewed and open: N3485 7.6.3/1 expressly forbids an attribute-argument-clause. Six fresh C++11 observations confirm ours accepts [[noreturn(1)]] and both hosts reject it. The placement ledger assigns standard attribute support to PA29/500; one focused negative is installed, reusing existing valid noreturn runtime coverage. Variable appertainment remains separately reviewed because GCC only warns. This does not admit additional vendor attributes; no default fixture installed yet. |
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Open, independently reduced without zero-argument inheritance: D<T> : T with using T::T and D<B>(7) rejects as template-parameter redeclaration here, in entry/candidate type dumps and at O0/O2; strict C++11 Clang/GCC accept. N3485 7.3.3 and 12.9 support the parameterized constructor. Ordinary using B::T shadowing remains a separate held host disagreement. |
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Zero-candidate review complete: P0136R1/N4429 establish the adopted C++11 defect-resolution basis. Six fresh host-agreed runtime observations already pass here for ordinary zero-argument availability, member initialization and local hiding; eighteen access/deletion/member negatives also agree. No new zero-availability fix or fixture is needed. Dependent using and parameterized viability remain separate open rows. The throwing-default/nothrow disagreement is preserved in INHERITED-DEFAULT-EXCEPT; no oracle is imposed for it. |
@@ -147,6 +147,7 @@ The recent discovery inventory is not all C++11:
 | NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Open, independently reproduced. The student changed only the existing backward-loop reference and quality envelope; source and status remain unchanged. Here O1/O2/O3 return for unequal mod-eight pointer inputs, while O0 preserves the loop, with both native paths. PA32 requires behavior preservation for defined LowIR; plain index carries no stronger optimization or source forward-progress promise. Eighty fresh observations and the frozen two-sidecar delta are retained. Review/fix the existing loop-finiteness proof and regenerate this reference, without adding a duplicate fixture. |
+| TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Test-only checkpoint: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and 55 opt-in controls covering forty remaining families. Strict C++11 Clang/GCC each pass 99 checks; the solution passes 3/108, exposing the known failures. Standard strict report remains 6105/6105 in one line; harness and explicit control placement pass. Compiler fixes, final course-fixture minimization/promotion and combined export remain open. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending until additions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final pending additions. Keep a fixture only for distinct required language/header behavior or a independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
@@ -4449,3 +4450,120 @@ reference-cv-qualification/perf-twenty-third/gate-review.json and the complete
 raw study in perf-twenty-third-results/. The three compiler source changes
 remain uncommitted and the corresponding compiler-fix rows remain open.
 No further performance variant is part of this test-addition checkpoint.
+
+
+## Completed tests-first additions
+
+The user narrowed the immediate work to completing test additions. No further
+compiler variant, ABI encoder edit, performance study or export regeneration
+was made in this checkpoint. The live compiler remains the frozen twenty-third
+image, SHA-256 c32713ca936d130b3837d4ceb86e96fd9b8a11fb585e6375d69cdedc5d3b57a4;
+its three existing source changes remain uncommitted because its performance
+gate has not passed. Test completion does not close the corresponding fixes.
+
+Two already supported boundaries are added to the default suite through exact
+ref-test selections: PA12/400 permits private-destructor scalar allocation
+in an unevaluated decltype and array allocation inside the owning class;
+PA6/300 rejects same-cardinality exception specifications with different types.
+The positive combines both access contexts without introducing a second
+allocation role into one LowIR reference. Both selected checks pass, as do eight
+strict C++11 host checks. Thirty earlier qualification fixtures are separately
+committed as e4c80f69d.
+
+The remaining definitions use explicit outcome predicates in the existing
+controls lanes. scripts/check_pending_audit_regressions.py runs them explicitly;
+it does not join make test-report or change student grading discovery. Its
+maintainer Python checker is excluded by the current export filter. These
+tests are ready for the fix queue, not a claim that the failing implementation
+or a student release is ready. Do not generate successful references from the
+current incorrect behavior. Promotion into required suites and the final
+combined export remain with the corresponding fixes.
+
+The inventory contains 47 C++ controls, one LowIR frame control and seven small
+metadata controls, covering forty tracker families. One additional LowIR input
+supplies the reader control for comparison operand width. Metadata reuses existing
+inputs for PA9 address mangling, both optimized array-construction programs,
+both standalone source-handler programs and the PA32 backward pointer loop.
+It avoids six duplicate input programs. The registry below records the intended
+additional value; it does not install exploratory matrices wholesale.
+
+| Family | Added or reused boundary |
+| --- | --- |
+| FLOW-DEFINED | Constant-loop return analysis and unreachable handlers; no undefined fallthrough rejection oracle. |
+| REF-BITFIELD | One copied-value runtime and independent mutable/volatile rejection checks. |
+| LOOKUP-TAG | Hidden friend visibility and an explicitly declared nested tag are distinct lookup obligations. |
+| LOCAL-ODR | Ordinary local-class use, member default argument and lambda capture contexts; disputed constant captures remain held. |
+| REF-BRACE | A minimal braced class temporary bound to a local reference. |
+| NEW-ARRAY-DTOR-ACCESS | One negative for inaccessible array-element destruction; the combined valid allocation contexts are in the default suite. |
+| INHERITED-DEPENDENT | Parameterized using T::T construction; no duplicate zero-argument test. |
+| ASSERT-MESSAGE | An ordinary non-string message and a suffixed string token require independent rejections; no character/integer permutation matrix. |
+| CONST-BITFIELD | Width truncation before constexpr conversion; separate from reference binding. |
+| CONST-REF-STATIC-TEMP | A constexpr reference and assertion over its static temporary. |
+| TMPL-ACCESS-SFINAE | Function-overload and partial-specialization immediate contexts; positive outcomes retain fallback selection. |
+| MANGLE-CONV | Declared conversion target symbols at O0, where the functions are emitted; allowed O2 elimination is not a failure. |
+| MANGLE-RESULT | One object combines bare-id decltype and a dependent named-call result; exported addresses retain symbols at O2. |
+| TMPL-LATE-TYPE | A later traits definition plus an undemanded invalid member body, with no hosted headers. |
+| MANGLE-PACK | One completed default pack with an address that retains the declared parameter expansion symbol. |
+| EH-ARRAY-DTOR | Three elements expose the missing normal-destruction unwind suffix; no extra array-size matrix. |
+| REF-BASE-COND | A conditional derived temporary bound to its base reference. |
+| EH-RETHROW-DYNAMIC | One called helper rethrows the dynamically active exception. |
+| EH-LOCAL-ARRAY-CATCH | One direct backing-element failure must reach the current function handler and retire the prefix. |
+| NOEXCEPT-LIST | A header-free initializer-list argument inside noexcept. |
+| INIT-LIST-STATIC | Static value backing survives initialization and repeated access. |
+| TMPL-FTRY | A demanded function template retains its body and handler, with a destruction trace. |
+| MEMBER | Signed inverse member-function adjustment through an unknown receiver, repeated empty-base identity and rejection of mismatched comparison operand width using ordinary i64/i32 types. |
+| CONST-MEMBER-BOOL | A nonnull member pointer in static_assert, distinct from ordinary runtime invocation. |
+| VBASE | Defined most-derived initialization of all virtual scalar bases; no indeterminate value oracle. |
+| ABI-GLOBAL | The external global symbol is g; a correct object-symbol oracle supplements current incorrect inspection references. |
+| EH | Global replacement new/delete count failed-construction deallocation without hosted includes. |
+| BACKEND | Two existing source programs are reused through the standalone native route. |
+| EH-UNWIND-DTOR | An ordinary automatic destructor throwing during unwind must invoke the installed termination handler. |
+| MANGLE | Clang-checked RTTI template substitution plus reused PA9 entity-address facts. |
+| PA29-ALIGN | Combine the already required GNU aligned alias and indirect-expression boundaries; no new vendor feature is admitted. |
+| EXPLICIT-CONTEXT | Constructor-template private conversion and substitution fallback; only the documented libc++ 21 conditional-explicit dependency. |
+| INHERITED-VALIDITY | The already supported constructibility intrinsic includes deleted other-member construction. |
+| ATTR-NORETURN | One forbidden argument-clause rejection; existing valid noreturn tests are reused. |
+| LOOP-PTR-FINITE | Reuse the existing backward-loop input with congruent and incongruent LowIR addresses at O1/O2/O3. |
+| ARG-SLOTS | Two mutually exclusive 1600-byte LowIR objects, correct values from both paths, and a 2048-byte MIR frame bound. |
+| BACKEND-ARRAY-OPT | Reuse both existing full-TU construction programs at O2; no new array fixtures. |
+| LOOKUP-NAMESPACE | The prepared same-type convergence positive, pending replacement of the existing wrong rejection fixture. |
+| EH-SPEC-SET | One positive combines ordering and duplicates; the independent different-set negative is in the default suite. |
+| LOOKUP-NAMESPACE-MIXED | Independent class/value and typedef/value conflicts; positive elaborated lookup remains covered separately. |
+
+All 99 applicable strict-C++11 host observations pass independently with both
+Clang and GCC. Conditional-explicit controls keep C++11 mode but permit the
+documented required extension; ordinary controls use pedantic-errors. ABI
+symbol predicates were first checked against fresh Clang objects. The solution
+passes 3 of 108 observations: the three congruent pointer-loop inputs. All
+other observations expose tracked compiler, backend, ABI or quality failures.
+The opposite loop inputs return incorrectly instead of remaining nonterminating.
+O0 calibration passes both loop controls; nontermination follows the modulo-eight
+invariant for plain 64-bit LowIR indexing, with a two-second timeout used only
+as an observation. No source-language pointer UB or forward-progress rule is
+used as an oracle.
+
+The normal strict report passes 6105/6105 with exactly one line. The full
+harness passes; four new integration tests check diagnostic rejection, signals
+and unsupported exits, runtime results after successful compilation, and a
+successful encoder emitting a wrong name. All 47 C++ controls are explicitly
+checked through the placement detector because the normal audit excludes the
+controls lane; no early feature or cluster remains. The normal placement audit
+also passes. No normalized duplicate C++ control exists.
+
+Retain/combine decisions for this batch are recorded in the table: one combined
+positive per compatible family, independent negative obligations, six reused
+input programs, no zero-arity inheritance permutation, no duplicate default
+noreturn positive, and no disputed/post-C++11 feature expansion. Full course
+fixture minimization stays open until the pending controls are promoted with
+their fixes, so their overlapping temporary check paths can then be removed.
+Raw commands, diagnostics, hashes and terminal outcomes are retained in
+/tmp/cppgm-v4-audit-review/test-additions/. The four original unrelated untracked
+reference artifacts remain outside this test-only checkpoint.
+
+The reader-width control also reproduces the missing validation: lowiropt O0
+accepts an i64 parameter used directly by an i32 comparison. It uses ordinary
+scalar widths rather than adding i128 support as a new requirement. Existing
+PA22 member-pointer null/contextual-bool fixtures remain; a fresh converted-null
+runtime observation already passes here and does not justify another fixture.
+The final focused report is therefore 3/108, with 105 failing observations of
+tracked obligations, rather than 105 separate bug discoveries.

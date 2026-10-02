@@ -1,0 +1,37 @@
+declare function @operatornew__(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
+
+function @owned_array() -> ptr [binding=strong, object=_Z11owned_arrayv] {
+  block ^entry:
+    %t1 = call ptr @Hidden__create_array()
+    return ptr %t1
+}
+function @Hidden__create_array() -> ptr [binding=weak, object=_ZN6Hidden12create_arrayEv, inline_hint=yes] {
+  block ^entry:
+    %t1 = convert sext i64 i32 16
+    %t2 = call ptr @operatornew__(%t1)
+    %t3 = index i8 %t2, 8
+    %t4 = const i64 2
+    store i64 %t4, %t2
+    return ptr %t3
+}
+function @Hidden___Hidden(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6HiddenD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return void
+}
+function @Hidden__Hidden__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+alias object _ZN6HiddenD2Ev = @Hidden___Hidden
