@@ -3549,3 +3549,29 @@ The four reference corrections and compiler checkpoint remain pending; further
 progress requires a justified conversion-path improvement, not another blind
 timing repeat. The user reiterates completing the additions first and keeping
 the final fixture redundancy review deferred until that sequence is complete.
+
+The eighth qualification image, compiler-eighth, has SHA-256
+`2b48e83c30c9bb978b99c25a957fd558c046ce65a747f1b3619159c25fdda6bd`.
+Conversion now reads the target record once and snapshots only its kind and
+referent ID before any call that may mutate the type table, avoiding a full
+record copy. Its compiled conversion function has 804 instructions versus the
+sixth image's 821; this static count is not a runtime gate result. All 950
+control/regression observations retain their expected boundaries, recorded in
+eighth-matrix-review.json. Invalid accepted bit-field references remain outside
+the runtime oracle and in REF-BITFIELD. The four affected suites, strict
+single-line 6101/6101 report and debug checks pass; the remaining required
+checks are running in validation-eighth/. A fresh immutable Alpha study verifies
+all 91 inputs before launch and uses the actual entry binary for A/A; broad
+measurements have completed and the 3840-observation focus sample is running.
+The compiler code and thirty fixture sets remain uncommitted pending all gates.
+
+The next namespace addition is prepared as a compact positive covering
+qualified scalar/array/shared-class aliases, namespace identity, transitive
+cyclic imports and a local using directive. A separate distinct-type negative
+preserves genuine ambiguity when the existing same-int PA6 oracle is corrected.
+These two planned inputs remain in scratch until the preceding checkpoint is
+complete; fixture-plan.json records destinations and coverage. Sixteen valid
+entry/host observations in planned-fixture-entry-controls.json confirm strict
+C++11 Clang/GCC acceptance of the positive and rejection of the negative.
+The immutable entry rejects the positive in both dump modes and at O0/O2.
+No exploratory namespace matrix is copied wholesale into required tests.
