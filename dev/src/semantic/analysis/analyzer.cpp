@@ -295,46 +295,54 @@ bool Analyzer::SimilarUnqualified(TypeId source, TypeId target) const
 }
 
 bool Analyzer::QualificationConversion(TypeId source,
-	TypeId target) const
+	TypeId target, bool reference_binding) const
 {
-	std::vector<std::uint8_t> source_cv;
-	std::vector<std::uint8_t> target_cv;
-	TypeId a = source;
-	TypeId b = target;
+	TypeId a = source, b = target;
+	bool first_level = true, preceding_const = true;
 	while (true)
 	{
-		const TypeRecord ar = program_->types.Get(a);
-		const TypeRecord br = program_->types.Get(b);
-		if (ar.kind != TYPE_POINTER || br.kind != TYPE_POINTER) break;
-		a = ar.child;
-		b = br.child;
-		std::uint8_t acv = CV_NONE;
-		std::uint8_t bcv = CV_NONE;
-		if (program_->types.Get(a).kind == TYPE_QUALIFIED)
+		const TypeRecord* ar = &program_->types.Get(a);
+		const TypeRecord* br = &program_->types.Get(b);
+		std::uint8_t acv = CV_NONE, bcv = CV_NONE;
+		if (ar->kind == TYPE_QUALIFIED)
 		{
-			acv = program_->types.Get(a).cv;
-			a = program_->types.Get(a).child;
+			acv = ar->cv;
+			a = ar->child;
+			ar = &program_->types.Get(a);
 		}
-		if (program_->types.Get(b).kind == TYPE_QUALIFIED)
+		if (br->kind == TYPE_QUALIFIED)
 		{
-			bcv = program_->types.Get(b).cv;
-			b = program_->types.Get(b).child;
+			bcv = br->cv;
+			b = br->child;
+			br = &program_->types.Get(b);
 		}
-		source_cv.push_back(acv);
-		target_cv.push_back(bcv);
+		if (ar->kind == TYPE_ARRAY || br->kind == TYPE_ARRAY)
+		{
+			if (ar->kind != br->kind || ar->bound != br->bound ||
+				ar->zero_length_array != br->zero_length_array ||
+				ar->dependent_bound_type != br->dependent_bound_type ||
+				ar->dependent_bound_parameter != br->dependent_bound_parameter)
+				return false;
+			// Match array dimensions; their cv is stored on the element.
+			a = ar->child;
+			b = br->child;
+			continue;
+		}
+		// Treat a reference as a pointer to its referent for cv checking.
+		if (reference_binding || !first_level)
+		{
+			if (((acv ^ bcv) & CV_ATOMIC) != 0 ||
+				(acv & ~bcv) != 0) return false;
+			if (acv != bcv && !preceding_const) return false;
+			preceding_const = preceding_const && (bcv & CV_CONST) != 0;
+		}
+		if (a == b) return true;
+		if (ar->kind != br->kind) return false;
+		if (ar->kind != TYPE_POINTER) return false;
+		a = ar->child;
+		b = br->child;
+		first_level = false;
 	}
-	if (!SimilarUnqualified(a, b) || source_cv.size() != target_cv.size())
-		return false;
-	for (std::size_t i = 0; i < source_cv.size(); ++i)
-	{
-		if (((source_cv[i] ^ target_cv[i]) & CV_ATOMIC) != 0)
-			return false;
-		if ((source_cv[i] & ~target_cv[i]) != 0) return false;
-		if (i > 0 && source_cv[i] != target_cv[i])
-			for (std::size_t j = 0; j < i; ++j)
-				if ((target_cv[j] & CV_CONST) == 0) return false;
-	}
-	return true;
 }
 
 ConversionRank Analyzer::Conversion(TypeId source,
@@ -347,8 +355,12 @@ ConversionRank Analyzer::Conversion(TypeId source,
 	{
 		const bool lvalue_reference =
 			target_record.kind == TYPE_LVALUE_REFERENCE;
-		if (lvalue_reference && category != VALUE_LVALUE &&
-			!IsConst(target_record.child)) return CONVERSION_INVALID;
+		if (lvalue_reference && category != VALUE_LVALUE)
+		{
+			const std::uint8_t referent_cv = ArrayElementCv(target_record.child);
+			if ((referent_cv & (CV_CONST | CV_VOLATILE)) != CV_CONST)
+				return CONVERSION_INVALID;
+		}
 		TypeId from = program_->types.RemoveTopCv(EffectiveType(source));
 		TypeId to = program_->types.RemoveTopCv(target_record.child);
 		if (from == to)
@@ -368,9 +380,15 @@ ConversionRank Analyzer::Conversion(TypeId source,
 			// the exact-match rank of a const lvalue-reference binding.
 			return CONVERSION_EXACT;
 		}
-		if (QualificationConversion(EffectiveType(source), target_record.child))
+		if (QualificationConversion(EffectiveType(source), target_record.child, true))
 			return !lvalue_reference && category == VALUE_LVALUE ?
 				CONVERSION_INVALID : CONVERSION_EXACT;
+		// A pointer prvalue can initialize a conversion temporary without
+		// exposing a mutable reference to the original pointer object.
+		if (category == VALUE_PRVALUE && IsPointer(from) && IsPointer(to) &&
+			QualificationConversion(from, to)) return CONVERSION_EXACT;
+		const bool temporary_lvalue_binding = lvalue_reference &&
+			(ArrayElementCv(target_record.child) & (CV_CONST | CV_VOLATILE)) == CV_CONST;
 		const EntityId source_entity = EntityOf(from);
 		const EntityId target_entity = EntityOf(to);
 		const bool derived_to_base = source_entity != kNoEntity &&
@@ -380,7 +398,7 @@ ConversionRank Analyzer::Conversion(TypeId source,
 			SimilarUnqualified(EffectiveType(source), target_record.child) ||
 			derived_to_base;
 		if (!reference_related &&
-			(!lvalue_reference || IsConst(target_record.child)))
+			(!lvalue_reference || temporary_lvalue_binding))
 		{
 			const ConversionRank temporary = Conversion(source, category,
 				integer_zero, target_record.child);
@@ -388,17 +406,20 @@ ConversionRank Analyzer::Conversion(TypeId source,
 		}
 		if (derived_to_base)
 		{
+			if (!lvalue_reference && category == VALUE_LVALUE)
+				return CONVERSION_INVALID;
 			const TypeRecord source_top = program_->types.Get(EffectiveType(source));
 			const TypeRecord target_top = program_->types.Get(target_record.child);
 			const std::uint8_t source_cv = source_top.kind == TYPE_QUALIFIED ?
 				source_top.cv : CV_NONE;
 			const std::uint8_t target_cv = target_top.kind == TYPE_QUALIFIED ?
 				target_top.cv : CV_NONE;
-			if ((source_cv & ~target_cv) == 0)
+			if (((source_cv ^ target_cv) & CV_ATOMIC) == 0 &&
+				(source_cv & ~target_cv) == 0)
 				return CONVERSION_DERIVED_TO_BASE;
 		}
 		if (IsArithmetic(from) && IsArithmetic(to) &&
-			(IsConst(target_record.child) || !lvalue_reference))
+			(temporary_lvalue_binding || !lvalue_reference))
 		{
 			const EntityId target_entity = EntityOf(to);
 			if (target_entity != kNoEntity &&

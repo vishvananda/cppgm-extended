@@ -3,6 +3,7 @@
 #include "support/exceptions.h"
 #include "support/scoped_state.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace cppgm
@@ -111,7 +112,8 @@ void Analyzer::ConfigureFunctionExceptionSpecification(
 			if (IsVoid(type))
 				ThrowSemanticError(
 					"void is not an allowed exception type");
-			allowed.push_back(type);
+			if (std::find(allowed.begin(), allowed.end(), type) == allowed.end())
+				allowed.push_back(type);
 		}
 		boundary = allowed.empty() ? FUNCTION_EXCEPTION_BOUNDARY_TERMINATE :
 			FUNCTION_EXCEPTION_BOUNDARY_UNEXPECTED;
@@ -123,9 +125,12 @@ void Analyzer::ConfigureFunctionExceptionSpecification(
 			record.exception_type_count != allowed.size())
 			ThrowSemanticError(
 				"conflicting function exception specification");
+		const std::vector<TypeId>::const_iterator begin =
+			program_->function_exception_types.begin() + record.exception_type_begin;
+		const std::vector<TypeId>::const_iterator end =
+			begin + record.exception_type_count;
 		for (std::size_t i = 0; i < allowed.size(); ++i)
-			if (program_->function_exception_types[
-				record.exception_type_begin + i] != allowed[i])
+			if (std::find(begin, end, allowed[i]) == end)
 				ThrowSemanticError(
 					"conflicting function exception specification");
 		return;

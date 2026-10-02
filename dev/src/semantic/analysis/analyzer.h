@@ -1817,7 +1817,8 @@ private:
 		bool integer_zero, TypeId target) const;
 	ConversionRank Conversion(const ExpressionInfo& source, TypeId target) const;
 	std::uint8_t ArrayElementCv(TypeId type) const;
-	bool QualificationConversion(TypeId source, TypeId target) const;
+	bool QualificationConversion(TypeId source, TypeId target,
+		bool reference_binding = false) const;
 	bool SimilarUnqualified(TypeId source, TypeId target) const;
 	TypeId EffectiveType(TypeId type) const;
 	TypeId Decay(TypeId type) const;

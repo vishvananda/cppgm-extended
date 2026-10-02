@@ -246,12 +246,15 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 			if (!dump_.nodes[action].trivial_special_member_action)
 				DemandFunction(dump_.nodes[action].binding);
 		}
+		const BindingId selected_destructor = DestructorForType(leaf_type);
+		if (selected_destructor == kNoBinding ||
+			GetFunction(selected_destructor).deleted_destructor)
+			ThrowSemanticError("array element is not destructible");
+		if (!CanAccessMember(selected_destructor, entity, entity))
+			ThrowSemanticError("inaccessible array-new destructor");
 		if (!program_->entities[entity].trivial_destructor)
 		{
-			destructor = DestructorForType(leaf_type);
-			if (destructor == kNoBinding ||
-				GetFunction(destructor).deleted_destructor)
-				ThrowSemanticError("array element is not destructible");
+			destructor = selected_destructor;
 			DemandFunction(destructor);
 		}
 	}

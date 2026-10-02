@@ -94,11 +94,11 @@ ExpressionInfo Analyzer::CandidateExpressionFailure(
 
 std::uint8_t Analyzer::ArrayElementCv(TypeId type) const
 {
-	const TypeRecord& record = program_->types.Get(type);
-	if (record.kind == TYPE_QUALIFIED)
-		return static_cast<std::uint8_t>(
-			record.cv | ArrayElementCv(record.child));
-	return record.kind == TYPE_ARRAY ? ArrayElementCv(record.child) : CV_NONE;
+	const TypeRecord* record = &program_->types.Get(type);
+	while (record->kind == TYPE_ARRAY)
+		record = &program_->types.Get(record->child);
+	// Qualify already folds nested qualifiers and distributes them into arrays.
+	return record->kind == TYPE_QUALIFIED ? record->cv : CV_NONE;
 }
 
 ExpressionInfo Analyzer::AnalyzeBuiltinInvoke(ScopeId scope,
