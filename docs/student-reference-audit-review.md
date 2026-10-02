@@ -4596,3 +4596,35 @@ the previously verified strict default report remains 6105/6105 in one line.
 No compiler/performance change or export regeneration belongs to this
 test-addition checkpoint. Outstanding fixes, final fixture pruning/promotion
 and the combined student export remain separate work in this same tracker.
+
+## Reference-binding performance diagnosis and continued fix
+
+The frontend-counter diagnostic is now downloaded and independently checked:
+256 observations have successful status, four unscaled counters and identical
+objects for each workload. For EH handlers, A/B instructions are unchanged
+(0.999999997), cycles are 1.017431, instruction-cache misses are 1.048450 and
+frontend undersupply is 1.035265. A/A medians are respectively 1.000000047,
+1.001462, 1.004556 and 1.003591. Qualification-view A/B instruction and cycle
+ratios are 0.999905799 and 1.006089, with cache/stall ratios 1.012871 and
+1.013261; its A/A cycle ratio is 1.006443. These explain a fetch-related
+cost for the prior image; they do not replace or pass the failed cycles gate.
+Raw results remain in reference-cv-qualification/frontend-counter-diagnostic-results/.
+
+The next source change removes an eager temporary-binding cv query from
+qualification-only returns and skips it for rvalue references. It preserves
+the existing const/nonvolatile temporary-binding rule. This is a code-driven
+change rather than a layout flag, padding adjustment or a blind timing rerun.
+The frozen twenty-fourth image is
+3aeebec9c057a22386fcd08b23ee43fee2596cc00f80be97cbbd887b2254b984.
+All nine boundary/regression matrices complete successfully: 574 fresh
+observations retain their previous status, link and defined runtime boundaries;
+376 unchanged strict-C++11 host observations are reused. Only the already
+invalid negative bit-field runtime can vary and is excluded as an oracle.
+
+Full compiler validation and the preexisting broad/focused Alpha protocol are
+running against that frozen image. The remote setup verified all 91 frozen
+inputs before starting. No compiler source is committed and no open reference
+row is closed by this diagnostic or by starting the measurements. Retain the
+existing instruction/RSS gates and both raw/calibrated focused cycle gates.
+The required next decision is based on terminal validation and performance
+results, without restarting an observed live process or ignoring a failed gate.
