@@ -130,7 +130,7 @@ The recent discovery inventory is not all C++11:
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
 | TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Reviewed: no additional required fix or fixture. Instantiating the mismatched member rejects with conflicting function return type at O0/O2 and in PA14 LowIR, while the matching definition passes; both strict C++11 hosts agree. The unused form remains a diagnostic-timing difference under N3485 14.6/8, not a mandatory rejection oracle. Fourteen new observations and contract review are recorded below. |
-| NEW-ARRAY-DTOR-ACCESS | Review destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Needs contract review: the private-destructor array-new negative compiles here and rejects with Clang/GCC in strict C++11 at O0/O2. Scalar new with a private destructor passes all three and must remain supported. Aggregate-member and inactive-union controls have Clang/GCC disagreements, so their labels are not adopted as oracles. Frozen commands are in student-refresh-pa30-200/entry-controls.json. |
+| NEW-ARRAY-DTOR-ACCESS | Check destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Open; contract review complete. N3485 5.3.4/17 explicitly requires array-element destructor access checking, without requiring a later DR. PA12/400 owns array new/delete. A compact private-scalar/own-array positive passes all compilers; the original private-array negative is accepted here and rejected by both strict C++11 hosts in the prepared modes. Fourteen fixture observations and 49 exploratory observations are retained. Deleted-array rejection already works; broader disputed destructor cases remain excluded. No default fixture installed yet. |
 | TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
 | ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Open, independently reproduced: character, integer and suffixed-string messages are accepted here and rejected by Clang/GCC at O0/O2. These are C++11 syntax constraints and can be tested without hosted headers. |
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Open, independently reduced: static_assert(&S::x, "nonnull member pointer") rejects with both immutable entry and candidate; Clang/GCC accept in C++11 at O0/O2. Ordinary MEMBER adjustments remain separately tracked. |
@@ -4066,3 +4066,67 @@ focused study remain live, so no compiler/fixture checkpoint or row closure is
 claimed yet. The template matching review is resolved, and namespace,
 replacement-new and exception-set additions have concrete prepared inputs for
 the subsequent sequential checkpoints.
+
+
+## Array-new destructor access review
+
+NEW-ARRAY-DTOR-ACCESS is directly within C++11: doc/n3485.txt 5.3.4/17
+explicitly requires access and ambiguity checking for the destructor when a
+new-expression creates an array of class objects. PA12's supported array
+new/delete surface and its 400 cluster own this case. The clause already
+exists in the pinned draft; it does not require importing CWG 1424's later
+potential-invocation wording or its broader constructor-subobject rules.
+The current array allocation semantic owner checks deletion and demands a
+nontrivial destructor, but does not check CanAccessMember as delete does.
+The required repair belongs to that existing typed allocation owner.
+
+new-array-destructor-access/entry-controls.json retains 49 fresh observations
+for seven reducers, in PA12 O0 LowIR and native O0/O2 for ours and strict C++11
+native O0/O2 for each host. The private two-element array negative is accepted
+here and rejected by both hosts; private scalar allocation and array allocation
+from the owning class pass all three. Public arrays and scalar allocation with
+a user-provided constructor/deleted destructor also pass. Deleted-array
+rejection already works here. GCC accepts the zero-sized private array and the
+explicit-constructor deleted array while Clang rejects them. The initial broad
+host-agreement assertion therefore fails; every observation is retained and
+those disagreements are not advertised as consensus or new required fixtures.
+
+fixture-plan.json prepares just two PA12/400 inputs: one compact positive
+combines private scalar allocation outside the class with private array
+allocation inside it, and the independent original private-array negative.
+planned-entry-controls.json retains fourteen fresh observations confirming
+those boundaries. No extra permutation or already working deleted-array
+negative is installed. Aggregate-member and inactive-union disputes remain
+separate from the explicit array-new access requirement. Installation and
+exact generated references remain after the active conversion checkpoint.
+
+
+All eleven eighteenth validation groups pass, including strict 6103/6103 in
+exactly one line, debug-info, variants, self-host through PA5, all nine
+architecture audits, file limits and zero placement/hygiene findings. The
+live compiler matches its immutable image; all thirty fixture hash sets remain
+unchanged. Alpha is still in the original focused phase. One status-file read
+raced the runner's write and returned partial JSON; that observation is not a
+measurement failure or terminal state, and the same live process is rechecked.
+No measured study is restarted because of a polling error.
+
+
+The eighteenth performance study completed without restarting. All 91 inputs
+verify and all 4800 output/status observations agree. Instruction and RSS gates
+pass, but eight focused cycle gates fail: auto aliases, auto prvalues, EH
+handlers, initializer-list values, qualification views, recog, reference aliases
+and volatile views. Both raw and calibrated ratios are retained in
+reference-cv-qualification/perf-eighteenth/gate-review.json; complete raw results
+are also retained locally in perf-eighteenth-results. This is not a passing
+compiler checkpoint.
+
+The nineteenth candidate returns QualificationConversion to its original
+analysis owner now that the narrowed reference implementation fits that file.
+Only parallel declarations and the new helper's own comment are compacted;
+there is no unrelated padding or audit-limit change. analyzer.cpp is 2999
+lines, and calls.cpp and the semantic ownership ledger exactly match the entry.
+The immutable compiler-nineteenth image has SHA-256
+`fe82f4ca3d471b6fa0ec8f5e6a0d4ab9101a585b7795cfc85b21b105a45a70cf`.
+All 574 fresh matrix observations preserve the eighteenth boundaries, with
+376 unchanged strict C++11 host observations reused. Full validation and one
+unchanged-protocol Alpha study are pending. No performance success is claimed.
