@@ -4192,3 +4192,34 @@ removed personal debug-only must-unroll/fill assertion. Those statements are
 recorded as diagnostic/contract review leads, not automatic bug claims. Its
 required PA32 debug checks pass. No additional course reference changed in
 audit218. Further PA33 claims await completed evidence.
+
+
+The nineteenth performance study is terminal: all 91 inputs verify and all
+4800 object/status observations agree. Instruction/RSS gates and six focused
+raw/calibrated cycle gates pass, including EH handlers. Four fail: auto aliases
+1.009021/1.010096, initializer-list values 1.007198/1.007359, qualification
+views 1.004464/1.005550 and reference aliases 1.006833/1.005922. Full raw
+results are retained locally in perf-nineteenth-results, and the exact review
+is perf-nineteenth/gate-review.json. No compiler checkpoint is committed.
+
+The next targeted change replaces the existing ArrayElementCv recursion with
+an iterative accumulation of the same qualified/array records. The corrected
+reference-binding policy invokes this owner on the affected paths. Nineteenth
+assembly confirms that the recursive implementation saves five registers,
+expands repeated qualified-type cases and still makes a recursive call; the
+iterative query can avoid that work without changing type policy or adding a
+cache. It stays in its original calls.cpp owner. The original pointer-to-void
+cv comment is restored, shortening only the new reference-helper comment;
+file limits remain unchanged. Twentieth build, matrices, full validation and
+one unchanged-protocol performance study are pending.
+
+
+The twentieth immutable image is compiler-twentieth, SHA-256
+`183c573123ee8160872f9271300821c9838ad042484537a677bd71971b623803`.
+The iterative ArrayElementCv machine body is 0x49 bytes versus 0xfd in the
+nineteenth image. This source-specific assembly finding is not a timing gate.
+analyzer.cpp is exactly 3000 lines within the unchanged limit; the original
+pointer-to-void comment is restored verbatim. No ownership ledger change is
+needed. Local full validation and nine fresh matrix groups are underway.
+The same Alpha protocol and all frozen inputs are prepared for one study;
+no prior observation is discarded and no threshold is changed.
