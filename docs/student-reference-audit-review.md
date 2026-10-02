@@ -4055,3 +4055,14 @@ unchanged limits. Fresh matrix and all eleven checks are underway. One complete
 immutable Alpha study inherits the seventeenth runners, inputs, thresholds and
 process-only fixed-layout setting. All 91 manifest entries verify before any
 counting. The four reference rows and thirty fixture sets remain uncommitted.
+
+
+The eighteenth matrix review verifies all 574 fresh observations against the
+seventeenth image and reuses the 376 unchanged strict C++11 host observations.
+All intended boundaries remain; only arbitrary runtime values in the separately
+tracked invalid bit-field negatives vary. All thirty frozen fixture sets retain
+their exact source/reference hashes. Local complete validation and the Alpha
+focused study remain live, so no compiler/fixture checkpoint or row closure is
+claimed yet. The template matching review is resolved, and namespace,
+replacement-new and exception-set additions have concrete prepared inputs for
+the subsequent sequential checkpoints.
