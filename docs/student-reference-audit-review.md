@@ -3534,3 +3534,18 @@ ship separately. Keep broad exploratory matrices out of the default suite,
 and preserve independent negatives when combining would let an earlier error
 mask the behavior being checked. Final export validation must run against the
 minimized fixture set and verify discovery and quiet report output together.
+
+The predeclared sixth-image extension has completed successfully. Its pooled
+review retains all 14080 focused observations plus the original 960 broad
+observations, verifies output equality and passes instruction/RSS and all raw
+cycle gates. Two calibrated cycle gates still fail: qualification views
+(raw/calibrated 1.003665/1.005452) and virtual overrides
+(1.004503/1.005853). The remaining eight focused workloads pass both cycle
+checks. perf-sixth-extended/gate-review-pooled.json records the complete result;
+perf-sixth-extended-results/ retains every additional raw measurement, manifest,
+status and review. The immutable remote output objects remain available.
+No original failed calibration observation is excluded and no threshold changes.
+The four reference corrections and compiler checkpoint remain pending; further
+progress requires a justified conversion-path improvement, not another blind
+timing repeat. The user reiterates completing the additions first and keeping
+the final fixture redundancy review deferred until that sequence is complete.
