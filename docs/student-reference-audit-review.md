@@ -125,7 +125,7 @@ The recent discovery inventory is not all C++11:
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | LOOKUP-RESTORE | Restore genuine namespace type/value ambiguity coverage lost during early consolidation | Namespace reference review | Done in the accompanying test-only checkpoint: distinct-type PA6 and original distinct-variable PA7 negatives have exact generated references and pass their owning checks. Strict 6103/6103 prints one line; PA6/PA7 placement scans 297 inputs with zero findings, and the standard full placement audit remains clean. No compiler change. The valid same-int PA6 oracle correction remains LOOKUP-NAMESPACE. |
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Done in the accompanying checkpoint: enable existing canonical-type equivalence when merging namespace graph/import results; preserve direct lookup and class-base rules. All 72 core observations pass at O0/O2 and in both dump modes, including distinct-entity negatives. The reviewed composite replaces the wrong PA6 same-int rejection in PA6/200 and its temporary control is removed; ours and both hosts pass. PA6 112/112, strict 6109/6109 in one line, all required local groups and all frozen incremental Alpha gates pass against approved 8a6bcd105. All 2880 observations retain equal objects and unscaled counters. Independent mixed type/value and class-base alias rows remain open. N3485 7.1.3 and 7.3.4 support this correction. |
-| LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | In progress, performance-held: the fifth candidate passes all twelve correctness/audit groups, strict 6111/6111 and agreed namespace boundaries, but seven focused Alpha cycle gates fail. All 4032 observations retain equal objects and unscaled counters; instruction/RSS gates pass. Restore approved compiler source and retain the reviewed PA6 typedef/value declaration and PA7 class/value expression as opt-in rejection controls. Both strict C++11 hosts pass 4/4 and explicit placement is clean. Generated default promotions and the full candidate patch remain in namespace-mixed-lookup/ for the pending fix. N3485 7.3.4/6 forbids cross-namespace class hiding; restricted elaborated lookup remains valid. |
+| LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | In progress: the fifth full fix passed correctness but failed seven focused cycle gates; all raw evidence is retained. The sixth candidate preserves the original LookupKind values and the complete fix. All 184 focused outcomes and PA6/7/11/12/18 pass; strict and the remaining required checks are running. The unchanged 92-input incremental Alpha protocol is prepared, awaiting strict correctness. PA6 typedef/value and PA7 class/value expression controls remain opt-in until all gates pass. Generated promotions, both immutable candidates and patches are retained in namespace-mixed-lookup/. N3485 7.3.4/6 forbids cross-namespace class hiding; restricted elaborated lookup remains valid. |
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. PA22/100 now has an opt-in compile control reusing the existing PA30 input; correct and move that fixture with the fix rather than adding a duplicate source. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
@@ -4960,3 +4960,48 @@ accepts the ill-formed programs; these are retained bug predicates, not blessed
 references or default-suite failures. The tests-only checkpoint contains the
 control replacement and this tracker, with no compiler diff or export rebuild.
 The four original unrelated untracked reference artifacts remain excluded.
+
+## Continued mixed-lookup performance review
+
+The broader tracker goal resumes after the tests-only checkpoint a308555f0.
+The approved source and image were verified before this continuation. No Alpha
+measurement process remained live. Forty-eight interleaved profiles of the
+approved and held fifth images now retain successful status and identical
+objects on the frozen namespace and constructor workloads. The reports contain
+about eight thousand samples per image/workload; individual lookup functions
+have too few samples to attribute the approximately one-percent cycle difference.
+Do not treat their noisy function deltas as a proved cause. Profiles, commands
+and objects remain in profile-fifth-results/ and the terminal Alpha directory.
+
+Source review identifies a concrete avoidable change in the fifth candidate:
+inserting LOOKUP_TYPE_NAME after LOOKUP_TYPE renumbers ordinary, scope-carrier,
+function-template and variable-template kinds, changing constants throughout
+otherwise existing lookup call sites. The sixth candidate appends the new kind,
+preserving all existing values. The full type/value ambiguity semantics,
+canonical-constructor handling and restricted elaborated lookup remain intact;
+no scan, cache, record field, padding or narrower feature behavior is introduced.
+This is a hypothesis to measure, not performance approval. The source is restored
+from the retained full fifth patch and the host build is running under handle
+50431. All existing correctness controls and the unchanged incremental gates
+remain required before promotion or a compiler commit.
+
+The sixth build completed successfully. Its immutable image is
+358ff8dc9a28d33a7154a5750b5c5023689d24b59e44d7e0e347c9fdc4a99d01;
+its source patch is 5e6536beb9929b48574a42005437d9e67750b46d2c5c2d6a68408b4b729b59d2.
+All 184 focused outcomes pass: 116 namespace/dump observations, forty agreed
+boundaries, eighteen reviewed explicit-template-prefix outcomes, six member-name
+checks and the four exact planned rejection observations. Fresh hosts also pass
+the forty agreed boundaries; the known baseline failures and the elaborated
+template host disagreement remain separate. PA6/7/11/12/18 pass. The strict
+report and remaining required groups are running under handle 61765 in
+validation-sixth/. Alpha has verified all 92 frozen inputs for the unchanged
+960-broad/3072-focused protocol; measurement awaits strict correctness. No
+control is promoted and no compiler source is committed before all gates pass.
+
+The sixth strict report passes 6109/6109 with exactly one success line. Debug
+information and backend variants pass as well; self-host and the remaining
+audits continue under handle 61765. The live image matches the frozen hash.
+Alpha handle 59519 now runs the declared 4032-observation incremental protocol
+in /tmp/cppgm-v4-audit-review-20261002-namespace-mixed-lookup-sixth/. Baseline,
+inputs, 48 focused blocks, unscaled counters, equality requirements and all
+gates are unchanged. These are live checks, not a completed performance claim.
