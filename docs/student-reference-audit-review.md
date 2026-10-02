@@ -34,8 +34,8 @@ ordinary initialization without imposing a new aliasing expectation.
 
 Remaining-work count on 2026-10-02: **38 compiler issue families** remain
 open or in progress, including the correctness-complete but performance-held
-LOOKUP-NAMESPACE-MIXED fix. **Seven further reviews** have no established
-required compiler change: EH-SPEC-TIMING, EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
+LOOKUP-NAMESPACE-MIXED fix. **Six further reviews** have no established
+required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN variable appertainment is now confirmed required work. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
@@ -80,7 +80,7 @@ The recent discovery inventory is not all C++11:
 | DEDUCE | Complete defaulted template arguments and preserve closure type in constructor deduction | v4codex group 9 | Done: closure type in 425bc2a90; canonical defaulted-pack deduction and PA19 runtime expectation in d65f8b02e. Five PA19 controls, strict 5924/5924, all required checks and four Alpha instruction/RSS gates pass. Declared ABI pattern remains MANGLE-PACK. |
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
-| EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Needs contract review: both hosts reject a noexcept(sizeof(D<T>)>0) virtual override while ours accepts. The entry behavior predates EH-OVERRIDE; keep its evidence separate from valid sizeof(T) deferred controls. |
+| EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Reviewed: no required compiler change or fixture. The adopted CWG 1330 complete-class context applies to exception specifications, including overrides; its needed-on-comparison rule does not require comparison before class completion. Keep existing acceptance of the three current-class-size controls, despite both hosts rejecting them. CWG 2510 confirms the analogous declaration-matching delay principle. Fresh 42 observations retain that host difference while ordinary complete-class positives and both outside-context incomplete-size negatives agree across all three compilers. No supplied oracle is changed; proof and sources are recorded below and in exception-spec-timing/contract-review/. |
 | EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: EH-HANDLER-TEMP, EH-FORWARD, EH-CLEANUP and the aggregate-prefix candidate fix six of seven refreshed reducers at O0/O2. Failed-new deallocation remains; the expanded independent EH rows below retain additional gaps and contract reviews. |
 | EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in ac2aaf704: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | EH-FORWARD | Advertise enclosing catch clauses and unwind prefixes/active handlers in lifetime order | v4codex references106/112 plus independent boundary controls | Done in the accompanying checkpoint: 40 agreed boundary programs and six new PA21 fixtures pass at O0/O2; three independently reviewed references change. Strict 5977/5977, full compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. |
@@ -5227,3 +5227,37 @@ Alpha's ninth broad phase is terminal zero and the focused phase remains live
 under handle 88708. Keep polling this same process; the final independent
 scaling, equality and unchanged gates require all 4032 observations. No source
 commit, test promotion or performance approval is made from a partial run.
+
+
+## Virtual current-class exception timing review resolved
+
+The course already adopts the C++11 defect correction
+[CWG 1330](https://cplusplus.github.io/CWG/issues/1330.html) for member exception
+specifications. Its October 2012 resolution makes such specifications a
+complete-class context and retains separate, demand-driven specification
+instantiation. Comparison with an override makes a specification needed, but
+the resolution does not require comparison before the class has completed.
+There is no virtual-function exception to the complete-class rule. Therefore
+our existing completion followed by comparison is a supported reading; eager
+host rejection alone does not establish a required compiler correction.
+
+[CWG 2510](https://cplusplus.github.io/CWG/issues/2510.html), a later NAD
+interpretation concerning friend declarations, explicitly rejects the notion
+that declaration matching must defeat complete-class specification parsing.
+Its example differs from these virtual template controls; use it as supporting
+interpretation, not a new C++11 language feature or an adopted extra oracle.
+The conclusion about permitting deferred override comparison is an inference
+from the already adopted CWG 1330 rules.
+
+Fresh strict-C++11 O0/O2 observations preserve the original three differences:
+ours accepts current-class sizeof specifications on restricted/unrestricted
+virtual overrides and the explicit overriding destructor, while Clang/GCC
+reject. Ordinary template and non-template sizeof specifications pass all three.
+Both an outside-class specification on a forward declaration and an array
+member bound using its incomplete current class reject in all three. Seven
+frozen inputs, SHA values, commands, diagnostics and all 42 observations are
+retained in exception-spec-timing/contract-review/observations.json. This
+supports the contextual distinction without silently converting general
+incomplete types to complete ones. EH-SPEC-TIMING is reviewed with no required
+source change, fixture or reference correction; retain every host observation.
+The remaining inventory is 38 compiler families and six unresolved reviews.
