@@ -136,7 +136,7 @@ The recent discovery inventory is not all C++11:
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Open, independently reduced: static_assert(&S::x, "nonnull member pointer") rejects with both immutable entry and candidate; Clang/GCC accept in C++11 at O0/O2. Ordinary MEMBER adjustments remain separately tracked. |
 | CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Open, independently reduced: a two-bit unsigned field initialized with 5 must read as 1 in its constexpr boolean conversion. The template static assertion fails here and passes Clang/GCC in C++11 at O0/O2. Entry and candidate retain the same failure. |
 | EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Open, independently reproduced: private conversion is accepted and invalid immediate conditions cause a hard error instead of selecting the fallback; Clang/GCC corroborate in C++11 extension mode. This C++20 feature is necessary for the supported libc++ profile: release/21.x __utility/pair.h lines 140/147/162 use conditional explicit in the C++11 constructor branch. Frozen header SHA and observations are recorded below. Deduction-guide controls are excluded from this row without their own header dependency. |
-| EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Open, independently reduced: reordered and duplicate int/double specifications reject in frozen entry and candidate, in type dumps and at O0/O2; identical class specifications pass. Strict C++11 Clang/GCC accept all three controls. N3485 15.4/3 requires the same set, and PA6 owns supported free-function exception specifications and declaration matching. Keep one compact positive for order/duplicate normalization, with distinct incompatible-set rejection coverage. |
+| EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | In progress: deduplicate adjusted TypeIds and compare declarations as sets, preserving first-declaration order. The compact order/duplicate positive is promoted to PA6/300 and its temporary control removed; the independent different-set negative remains. PA6 passes 112/112. Nine scratch boundaries pass ours and Clang at O0/O2; GCC agrees on eight and disagrees on explicitly specified array/function type adjustments. Full validation and global performance against the last approved compiler are running; no compiler source is committed or fix closed yet. N3485 15.4/2,3 supplies the rule. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
 | ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Argument constraint reviewed and open: N3485 7.6.3/1 expressly forbids an attribute-argument-clause. Six fresh C++11 observations confirm ours accepts [[noreturn(1)]] and both hosts reject it. The placement ledger assigns standard attribute support to PA29/500; one focused negative is installed, reusing existing valid noreturn runtime coverage. Variable appertainment remains separately reviewed because GCC only warns. This does not admit additional vendor attributes; no default fixture installed yet. |
@@ -4628,3 +4628,42 @@ row is closed by this diagnostic or by starting the measurements. Retain the
 existing instruction/RSS gates and both raw/calibrated focused cycle gates.
 The required next decision is based on terminal validation and performance
 results, without restarting an observed live process or ignoring a failed gate.
+
+### Terminal reference-only results and the next required fix
+
+The twenty-fourth reference-only image passes all eleven local check groups:
+PA10/12/20/21, strict 6105/6105 in one line, debug-info, variants, self-host
+through PA5, nine architecture audits, file audit and placement. Its performance
+study completes 960 broad and 3,840 focused observations with all objects equal
+and successful statuses. Every CSV independently has four unscaled counters.
+All instruction/RSS gates pass, but nine focused cycle gates fail. Raw/calibrated
+ratios are: auto aliases 1.015117/1.013720, auto prvalues 1.006887/1.006779,
+EH handlers 1.010349/1.010619, initializer-list values 1.015923/1.016733,
+qualification views 1.009722/1.011109, reference aliases 1.015723/1.014737,
+nonthrowing reference temporaries 1.006621/1.008568, virtual dispatch
+1.005602/1.006067 and volatile views 1.009457/1.007082. This is a failed
+performance verdict, not an accepted compiler checkpoint. Raw results and the
+independently checked gate-review.json remain in perf-twenty-fourth-results/.
+
+The next concrete correctness work is EH-SPEC-SET, rather than another
+reference-only layout experiment. ConfigureFunctionExceptionSpecification
+deduplicates adjusted TypeIds in its existing vector and checks membership in
+the canonical declaration's range. It preserves first-occurrence order and
+adds no cache/table or extra allocation. Nine scratch programs independently
+check duplicate-first declarations, aliases, adjusted types, incompatible sets,
+references/pointees and empty/nonempty boundaries. Ours and Clang each pass
+18/18; GCC passes 16/18, disagreeing only on the array/function adjustment
+explicitly specified by N3485 15.4/2. All observations and full diagnostics are
+retained; this disagreement adds no required permutation fixture.
+
+The one existing positive definition moves from the opt-in controls lane to
+pa6/tests/general/300-dynamic-exception-specification-set.t; its references
+are generated through the exact ref-test selection. The independent different-set
+negative stays. PA6 passes 112/112, with full validation still running. The
+frozen combined image is ee8fb044cbeed13d8e930a2ee21040060f624b67767df342238d161efbdac199.
+Alpha verifies the same 91 inputs and runs the unchanged global protocol against
+the last approved baseline e4bcdecf0e30356f800ccebd7ba88e6686ed261f479874c50fe566499d78af6c.
+This baseline is not reset to a previously failed candidate. Results and frozen
+source patches live under /tmp/cppgm-v4-audit-review/exception-specification-sets/;
+Alpha retains /tmp/cppgm-v4-audit-review-20261002-exception-specification-sets/.
+Both compiler fixes remain uncommitted until required checks and gates resolve.
