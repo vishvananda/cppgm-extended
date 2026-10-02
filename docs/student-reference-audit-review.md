@@ -4384,3 +4384,11 @@ the tracker and 105 fixture/sidecar paths. Fresh matrices and full validation
 are underway. Its performance setup inherits the fully populated twenty-first
 study rather than the untimed twenty-second scratch alternative. No compiler
 or reference-binding row is claimed complete yet.
+
+
+The twenty-third fresh review preserves all 574 observations, reusing the
+376 unchanged strict C++11 host observations. Only the separately tracked
+invalid bit-field-negative garbage value changes. All 91 immutable inputs
+verify before one unchanged Alpha study starts. Full local validation and
+performance review are pending; no further compiler fix is installed. Final
+fixture minimization and combined export remain after the complete additions.
