@@ -9,7 +9,7 @@ import shlex
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict
@@ -20,9 +20,21 @@ from typing import Sequence
 from typing import Set
 
 
+def inception_directory(repo_root: Path) -> Path:
+    for name in ("pa34", "pa39"):
+        directory = repo_root / name
+        try:
+            makefile = (directory / "Makefile").read_text()
+        except OSError:
+            continue
+        if re.search(r"^CHECKPOINTS\s*=", makefile, re.MULTILINE):
+            return directory
+    return repo_root / "pa39"
+
+
 REPO_ROOT_EXPLICIT = "CPPGM_WATCH_REPO_ROOT" in os.environ
 REPO_ROOT = Path(os.environ.get("CPPGM_WATCH_REPO_ROOT", Path(__file__).resolve().parent.parent)).resolve()
-INCEPTION_DIR = REPO_ROOT / "pa39"
+INCEPTION_DIR = inception_directory(REPO_ROOT)
 FRONTEND_SOURCE_SETS = REPO_ROOT / "dev" / "frontend_source_sets.mk"
 INCEPTION_MAKEFILE = INCEPTION_DIR / "Makefile"
 MAKE_OPTIONS_WITH_ARGS = {
@@ -90,6 +102,8 @@ class BuildSpec:
     compile_timeout_seconds: Optional[int]
     checkpoints: List[str]
     scope_label: str
+    path_mappings: Dict[Path, Path] = field(default_factory=dict)
+    probe_source: Optional[str] = None
 
 
 @dataclass
@@ -150,7 +164,7 @@ def configure_repo_root(repo_root: Path) -> None:
     global INCEPTION_MAKEFILE
 
     REPO_ROOT = repo_root.resolve()
-    INCEPTION_DIR = REPO_ROOT / "pa39"
+    INCEPTION_DIR = inception_directory(REPO_ROOT)
     FRONTEND_SOURCE_SETS = REPO_ROOT / "dev" / "frontend_source_sets.mk"
     INCEPTION_MAKEFILE = INCEPTION_DIR / "Makefile"
 
@@ -165,10 +179,10 @@ def process_working_directory(pid: int) -> Optional[Path]:
 def repository_root_from_working_directory(cwd: Optional[Path]) -> Optional[Path]:
     if cwd is None:
         return None
-    candidates = [cwd.parent] if cwd.name == "pa39" else []
+    candidates = [cwd.parent] if cwd.name in ("pa34", "pa39") else []
     candidates.append(cwd)
     for candidate in candidates:
-        if ((candidate / "pa39" / "Makefile").is_file() and
+        if ((inception_directory(candidate) / "Makefile").is_file() and
                 (candidate / "dev" / "frontend_source_sets.mk").is_file()):
             return candidate.resolve()
     return None
@@ -198,6 +212,30 @@ def parse_elapsed_text(text: str) -> int:
 def append_source_set_tokens(mapping: Dict[str, List[str]], target: str, text: str) -> None:
     if text:
         mapping[target].extend(text.split())
+
+
+def make_pattern_matches(value: str, pattern: str) -> bool:
+    if "%" not in pattern:
+        return value == pattern
+    prefix, suffix = pattern.split("%", 1)
+    return value.startswith(prefix) and value.endswith(suffix)
+
+
+def evaluate_filter_out(text: str,
+                        variables: Dict[str, List[str]]) -> Optional[List[str]]:
+    match = re.match(
+        r"^\$\(filter-out\s+(.+),\$\((FRONTEND_(?:SOURCE_IDS|OBJ_BASENAMES)_[^)]+)\)\)$",
+        text,
+    )
+    if not match:
+        return None
+    patterns = match.group(1).split()
+    source = variables.get(match.group(2), [])
+    return [
+        value
+        for value in source
+        if not any(make_pattern_matches(value, pattern) for pattern in patterns)
+    ]
 
 
 def expand_source_set_references(variables: Dict[str, List[str]]) -> Dict[str, List[str]]:
@@ -252,6 +290,11 @@ def parse_frontend_source_sets(path: Path) -> Dict[str, List[str]]:
         variable = match.group(1)
         operator = match.group(3)
         remainder = match.group(4).strip()
+        filtered = evaluate_filter_out(remainder, variables)
+        if filtered is not None:
+            variables[variable] = filtered
+            current_variable = None
+            continue
         if operator == "+=":
             variables.setdefault(variable, [])
         else:
@@ -278,7 +321,7 @@ def parse_inception_layout(path: Path) -> tuple[List[str], Dict[str, str]]:
         if match:
             stage_to_checkpoint[match.group(1)] = match.group(2)
     if not checkpoints:
-        raise SystemExit("failed to parse CHECKPOINTS from pa39/Makefile")
+        raise SystemExit(f"failed to parse CHECKPOINTS from {path}")
     return checkpoints, stage_to_checkpoint
 
 
@@ -297,9 +340,12 @@ def capture_processes() -> List[ProcessInfo]:
         elapsed_seconds = int(match.group(3))
         command = match.group(4)
         try:
-            argv = shlex.split(command)
-        except ValueError:
-            argv = command.split()
+            argv = [os.fsdecode(arg) for arg in Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\0") if arg]
+        except OSError:
+            try:
+                argv = shlex.split(command)
+            except ValueError:
+                argv = command.split()
         processes.append(ProcessInfo(pid=pid,
                                      ppid=ppid,
                                      elapsed_seconds=elapsed_seconds,
@@ -313,6 +359,24 @@ def is_make_process(process: ProcessInfo) -> bool:
         return False
     exe = os.path.basename(process.argv[0])
     return exe == "make" or exe.endswith("/make")
+
+
+def make_working_directory(process: ProcessInfo) -> Optional[Path]:
+    # GNU make applies every -C/--directory option before it starts building,
+    # but retains those options in /proc/<pid>/cmdline.  Its live cwd is
+    # therefore already the final directory; replaying argv would turn a
+    # repository-root `make -C pa34` into `pa34/pa34`.
+    return process_working_directory(process.pid)
+
+
+def selfhost_make_repository_root(process: ProcessInfo) -> Optional[Path]:
+    if not is_make_process(process):
+        return None
+    directory = make_working_directory(process)
+    repo_root = repository_root_from_working_directory(directory)
+    if repo_root is None or directory != inception_directory(repo_root).resolve():
+        return None
+    return repo_root
 
 
 def parse_make_invocation(argv: Sequence[str]) -> tuple[List[str], Dict[str, str]]:
@@ -344,37 +408,52 @@ def target_scope(target: str,
                  stage_to_checkpoint: Dict[str, str]) -> tuple[List[str], str]:
     if not target:
         return list(checkpoints), "all checkpoints"
-    if target in ("all", "ladder", "test", "preservation", "inception", "compare-inception", "bitcmp"):
+    target_name = Path(target).name
+    if target_name in ("all", "ladder", "test", "preservation", "inception", "compare-inception", "bitcmp"):
         return list(checkpoints), "all checkpoints"
 
-    compare_match = re.match(r"^compare-(.+)-inception$", target)
+    compare_match = re.match(r"^compare-(.+)-inception$", target_name)
     if compare_match:
         checkpoint = compare_match.group(1)
-        return [checkpoint], checkpoint
+        if checkpoint in checkpoints:
+            return [checkpoint], checkpoint
+        return list(checkpoints), "all checkpoints"
 
-    if target.endswith("-inception"):
-        return [target[:-len("-inception")]], target[:-len("-inception")]
-    if target.endswith("-self"):
-        return [target[:-len("-self")]], target[:-len("-self")]
+    if target_name.endswith("-inception"):
+        checkpoint = target_name[:-len("-inception")]
+        if checkpoint in checkpoints:
+            return [checkpoint], checkpoint
+        return list(checkpoints), "all checkpoints"
+    if target_name.endswith("-self"):
+        checkpoint = target_name[:-len("-self")]
+        if checkpoint in checkpoints:
+            return [checkpoint], checkpoint
+        return list(checkpoints), "all checkpoints"
 
-    if target.startswith("test-through-"):
-        base = target[len("test-through-"):]
+    if target_name.startswith("test-through-"):
+        base = target_name[len("test-through-"):]
         checkpoint = stage_to_checkpoint.get(base, base)
+        if checkpoint not in checkpoints:
+            return list(checkpoints), "all checkpoints"
         return list(checkpoints[:checkpoints.index(checkpoint) + 1]), f"through {checkpoint}"
 
-    if target.startswith("through-"):
-        base = target[len("through-"):]
+    if target_name.startswith("through-"):
+        base = target_name[len("through-"):]
         checkpoint = stage_to_checkpoint.get(base, base)
+        if checkpoint not in checkpoints:
+            return list(checkpoints), "all checkpoints"
         return list(checkpoints[:checkpoints.index(checkpoint) + 1]), f"through {checkpoint}"
 
-    if target.startswith("test-"):
-        base = target[len("test-"):]
+    if target_name.startswith("test-"):
+        base = target_name[len("test-"):]
         if base.endswith("-nobuild"):
             base = base[:-len("-nobuild")]
         checkpoint = stage_to_checkpoint.get(base, base)
-        return [checkpoint], checkpoint
+        if checkpoint in checkpoints:
+            return [checkpoint], checkpoint
+        return list(checkpoints), "all checkpoints"
 
-    checkpoint = stage_to_checkpoint.get(target, target)
+    checkpoint = stage_to_checkpoint.get(target_name, target_name)
     if checkpoint in checkpoints:
         return [checkpoint], checkpoint
     return list(checkpoints), "all checkpoints"
@@ -386,6 +465,14 @@ def infer_flavor(target: str, assignments: Dict[str, str]) -> str:
     if target.endswith("-inception") or target in ("inception", "compare-inception", "bitcmp") or target.startswith("compare-"):
         return "inception"
     cxx = assignments.get("CXX", "")
+    if not cxx:
+        try:
+            makefile = INCEPTION_MAKEFILE.read_text()
+        except OSError:
+            makefile = ""
+        default = re.search(r"^CXX\s*:?=\s*(\S+)", makefile, re.MULTILINE)
+        if default:
+            cxx = default[1]
     if cxx in ("../dev/cppgm++", str((REPO_ROOT / "dev" / "cppgm++").resolve())):
         return "selfhost"
     return "host"
@@ -426,7 +513,7 @@ def infer_compile_timeout_seconds(flavor: str, assignments: Dict[str, str]) -> O
 
 
 def resolve_obj_root_base(assignments: Dict[str, str]) -> Path:
-    raw = assignments.get("INCEPTION_OBJ_ROOT_BASE", "../obj/pa39")
+    raw = assignments.get("INCEPTION_OBJ_ROOT_BASE", f"../obj/{INCEPTION_DIR.name}")
     return (INCEPTION_DIR / raw).resolve()
 
 
@@ -452,6 +539,49 @@ def resolve_cxx_dep(raw: Optional[str]) -> Optional[Path]:
     return None
 
 
+def read_mounts(path: Path) -> List[tuple[str, Path, Path]]:
+    def unescape(value: str) -> str:
+        return re.sub(r"\\([0-7]{3})", lambda match: chr(int(match[1], 8)), value)
+
+    mounts: Dict[Path, tuple[str, Path, Path]] = {}
+    try:
+        lines = path.read_text().splitlines()
+    except OSError:
+        return []
+    for line in lines:
+        fields = line.split()
+        if len(fields) < 6:
+            continue
+        mountpoint = Path(unescape(fields[4]))
+        mounts[mountpoint] = (fields[2], Path(unescape(fields[3])), mountpoint)
+    return list(mounts.values())
+
+
+def process_path_mappings(pid: int) -> Dict[Path, Path]:
+    # Match bind mounts by filesystem device and root. The build's /tmp can
+    # live on a private volume with a different path in the watcher's namespace.
+    host_mounts = read_mounts(Path("/proc/self/mountinfo"))
+    mappings: Dict[Path, Path] = {}
+    for device, root, mountpoint in read_mounts(Path(f"/proc/{pid}/mountinfo")):
+        candidates = []
+        for host_device, host_root, host_mountpoint in host_mounts:
+            if device == host_device and root.is_relative_to(host_root):
+                candidates.append((len(host_root.parts), host_mountpoint / root.relative_to(host_root)))
+        if candidates:
+            destination = max(candidates, key=lambda candidate: candidate[0])[1]
+            # Include identity mappings: a nested mount overrides its parent.
+            mappings[mountpoint] = destination
+    return mappings
+
+
+def mapped_path(path: Path, mappings: Dict[Path, Path]) -> Path:
+    path = Path(os.path.normpath(path))
+    for source in sorted(mappings, key=lambda item: len(item.parts), reverse=True):
+        if path.is_relative_to(source):
+            return (mappings[source] / path.relative_to(source)).resolve()
+    return path.resolve()
+
+
 def infer_cxx_dep(assignments: Dict[str, str],
                   flavor: str,
                   bin_root_base: Path) -> Optional[Path]:
@@ -472,6 +602,7 @@ def build_spec_from_process(process: ProcessInfo,
                             stage_to_checkpoint: Dict[str, str]) -> BuildSpec:
     targets, assignments = parse_make_invocation(process.argv)
     target = targets[0] if targets else "all"
+    path_mappings = process_path_mappings(process.pid)
     obj_root_base = resolve_obj_root_base(assignments)
     bin_root_base = resolve_bin_root_base(assignments, obj_root_base)
     generated_root = resolve_generated_root(assignments, obj_root_base)
@@ -481,17 +612,32 @@ def build_spec_from_process(process: ProcessInfo,
     cxx_dep = infer_cxx_dep(assignments, flavor, bin_root_base)
     compile_timeout_seconds = infer_compile_timeout_seconds(flavor, assignments)
     scope, scope_label = target_scope(target, checkpoints, stage_to_checkpoint)
+    probe_source = assignments.get("SOURCE") if target.startswith("probe-self-") else None
+    if probe_source:
+        probe_base = assignments.get("PROBE_OBJ_ROOT_BASE")
+        obj_root_base = resolve_inception_path(probe_base) if probe_base else obj_root_base / "probe"
+        bin_root_base = obj_root_base / "bin"
+        flavor = "selfhost"
+        output_suffix = "-probe"
+        cxx_dep = resolve_cxx_dep(assignments.get("PROBE_CXX", "../dev/cppgm++"))
+        compile_timeout_seconds = infer_compile_timeout_seconds(flavor, assignments)
+        if "PROBE_TIMEOUT_SEC" in assignments:
+            compile_timeout_seconds = parse_optional_positive_int(assignments["PROBE_TIMEOUT_SEC"])
+        scope = [assignments.get("PROBE_TARGET", "cppgm++")]
+        scope_label = f"probe {probe_source}"
     return BuildSpec(target=target,
-                     obj_root_base=obj_root_base,
-                     bin_root_base=bin_root_base,
-                     generated_root=generated_root,
+                     obj_root_base=mapped_path(obj_root_base, path_mappings),
+                     bin_root_base=mapped_path(bin_root_base, path_mappings),
+                     generated_root=mapped_path(generated_root, path_mappings),
                      flavor=flavor,
                      output_suffix=output_suffix,
                      test_runner=test_runner,
-                     cxx_dep=cxx_dep,
+                     cxx_dep=mapped_path(cxx_dep, path_mappings) if cxx_dep is not None else None,
                      compile_timeout_seconds=compile_timeout_seconds,
                      checkpoints=scope,
-                     scope_label=scope_label)
+                     scope_label=scope_label,
+                     path_mappings=path_mappings,
+                     probe_source=probe_source)
 
 
 def manual_build_spec(args: argparse.Namespace,
@@ -499,7 +645,7 @@ def manual_build_spec(args: argparse.Namespace,
                       stage_to_checkpoint: Dict[str, str]) -> Optional[BuildSpec]:
     if not args.target:
         return None
-    obj_root_base = (REPO_ROOT / args.obj_root_base).resolve() if args.obj_root_base else (REPO_ROOT / "obj" / "pa39")
+    obj_root_base = (REPO_ROOT / args.obj_root_base).resolve() if args.obj_root_base else (REPO_ROOT / "obj" / INCEPTION_DIR.name)
     bin_root_base = obj_root_base / "bin"
     generated_root = (REPO_ROOT / args.generated_root).resolve() if args.generated_root else (obj_root_base / "generated").resolve()
     flavor = args.flavor or "selfhost"
@@ -540,7 +686,8 @@ def prerequisite_specs_for_build(spec: BuildSpec,
                   cxx_dep=resolve_inception_path("../dev/cppgm++"),
                   compile_timeout_seconds=DEFAULT_SELFHOST_COMPILE_TIMEOUT_SEC,
                   checkpoints=scope,
-                  scope_label=scope_label)
+                  scope_label=scope_label,
+                  path_mappings=spec.path_mappings)
     ]
 
 
@@ -622,6 +769,10 @@ def checkpoint_entry_source_path(checkpoint: str) -> Path:
 
 
 def runner_source_path() -> Path:
+    for line in FRONTEND_SOURCE_SETS.read_text().splitlines():
+        match = re.match(r"^FRONTEND_TEST_RUNNER_SOURCE_ID\s*:?=\s*(\S+)", line)
+        if match:
+            return shared_source_path(match[1])
     return REPO_ROOT / "dev" / "src" / "test_runner.cpp"
 
 
@@ -634,6 +785,18 @@ def extract_source_arg(argv: Sequence[str]) -> str:
         if item.endswith(".cpp") or item.endswith(".c"):
             return item
     return ""
+
+
+def compile_source_label(source: str, fallback: Path) -> str:
+    if not source:
+        return fallback.name
+    parts = Path(source).parts
+    for index in range(len(parts) - 1):
+        if parts[index:index + 2] == ("dev", "src"):
+            relative = parts[index + 2:]
+            if relative:
+                return Path(*relative).as_posix()
+    return Path(source).name
 
 
 def arg_after(argv: Sequence[str], flag: str) -> str:
@@ -675,11 +838,12 @@ def active_task_priority(process: ProcessInfo,
     )
 
 
-def resolve_inception_path(raw: str) -> Path:
+def resolve_inception_path(raw: str,
+                           path_mappings: Optional[Dict[Path, Path]] = None) -> Path:
     path = Path(raw)
-    if path.is_absolute():
-        return path
-    return (INCEPTION_DIR / path).resolve()
+    if not path.is_absolute():
+        path = INCEPTION_DIR / path
+    return mapped_path(path, path_mappings or {})
 
 
 def split_make_words(text: str) -> List[str]:
@@ -707,7 +871,8 @@ def split_make_words(text: str) -> List[str]:
     return words
 
 
-def parse_depfile(path: Path) -> List[Path]:
+def parse_depfile(path: Path,
+                  path_mappings: Optional[Dict[Path, Path]] = None) -> List[Path]:
     try:
         text = path.read_text()
     except OSError:
@@ -734,7 +899,7 @@ def parse_depfile(path: Path) -> List[Path]:
             continue
         result: List[Path] = []
         for dep in deps:
-            path = resolve_inception_path(dep)
+            path = resolve_inception_path(dep, path_mappings)
             if path.exists() or dep not in phony_targets:
                 result.append(path)
         return result
@@ -755,8 +920,9 @@ def unique_paths(paths: Iterable[Path]) -> List[Path]:
 
 def object_dependencies(primary_source: Path,
                         depfile: Path,
-                        extra_dependencies: Sequence[Path]) -> List[Path]:
-    return unique_paths([primary_source, *parse_depfile(depfile), *extra_dependencies])
+                        extra_dependencies: Sequence[Path],
+                        path_mappings: Optional[Dict[Path, Path]] = None) -> List[Path]:
+    return unique_paths([primary_source, *parse_depfile(depfile, path_mappings), *extra_dependencies])
 
 
 def compiler_dependencies(spec: BuildSpec) -> List[Path]:
@@ -799,11 +965,11 @@ def shared_object_is_current(spec: BuildSpec,
                              source_stem: str,
                              active_outputs: Set[Path]) -> bool:
     extra = compiler_dependencies(spec)
-    if shared_object_stem(source_stem) == "preprocessor":
+    if Path(source_stem).name == "preprocessor":
         extra = [*extra, builtin_host_config_path(spec)]
     dependencies = object_dependencies(shared_source_path(source_stem),
                                        shared_depfile_path(object_root, source_stem),
-                                       extra)
+                                       extra, spec.path_mappings)
     return output_is_current(shared_object_path(object_root, source_stem),
                              dependencies,
                              active_outputs)
@@ -815,7 +981,7 @@ def checkpoint_entry_is_current(spec: BuildSpec,
                                 active_outputs: Set[Path]) -> bool:
     dependencies = object_dependencies(checkpoint_entry_source_path(checkpoint),
                                        checkpoint_entry_depfile_path(object_root, checkpoint, spec.test_runner),
-                                       compiler_dependencies(spec))
+                                       compiler_dependencies(spec), spec.path_mappings)
     return output_is_current(checkpoint_entry_path(object_root, checkpoint, spec.test_runner),
                              dependencies,
                              active_outputs)
@@ -826,7 +992,7 @@ def runner_object_is_current(spec: BuildSpec,
                              active_outputs: Set[Path]) -> bool:
     dependencies = object_dependencies(runner_source_path(),
                                        runner_depfile_path(object_root, spec.test_runner),
-                                       compiler_dependencies(spec))
+                                       compiler_dependencies(spec), spec.path_mappings)
     return output_is_current(runner_object_path(object_root, spec.test_runner),
                              dependencies,
                              active_outputs)
@@ -902,12 +1068,12 @@ def active_tasks_for_build(root_pid: Optional[int],
         if not argv:
             continue
         output = arg_after(argv, "-o")
-        output_path = resolve_inception_path(output) if output else None
+        output_path = resolve_inception_path(output, spec.path_mappings) if output else None
         source = extract_source_arg(argv)
 
         if output and output_path is not None:
             if object_root in output_path.parents and "-c" in argv:
-                label = Path(source).name if source else output_path.name
+                label = compile_source_label(source, output_path)
                 detail = str(Path(source)) if source else str(output_path)
                 add_task(process, ActiveTask(phase="compile",
                                              label=label,
@@ -953,6 +1119,41 @@ def build_view(spec: BuildSpec,
         for task in active_tasks
         if task.output_path is not None
     }
+
+    if spec.probe_source:
+        source = spec.probe_source
+        if source.startswith(("dev/", "./dev/")):
+            source = "../" + source.removeprefix("./")
+        source_path = resolve_inception_path(source, spec.path_mappings)
+        shared_total = entry_total = runner_total = 0
+        if source_path == runner_source_path():
+            runner_total = 1
+            output = runner_object_path(object_root, spec.test_runner)
+            current = runner_object_is_current(spec, object_root, active_outputs)
+        elif source_path.parent == REPO_ROOT / "dev":
+            entry_total = 1
+            checkpoint = source_path.stem
+            output = checkpoint_entry_path(object_root, checkpoint, spec.test_runner)
+            current = checkpoint_entry_is_current(spec, object_root, checkpoint, active_outputs)
+        else:
+            shared_total = 1
+            stem = source_path.relative_to(REPO_ROOT / "dev" / "src").with_suffix("").as_posix()
+            output = shared_object_path(object_root, stem)
+            current = shared_object_is_current(spec, object_root, stem, active_outputs)
+        binary_total = int(spec.target == "probe-self-link")
+        binary_done = int(bool(binary_total) and current and output_is_current(
+            binary_path(bin_root, spec.checkpoints[0], spec.output_suffix), [output], active_outputs))
+        return BuildView(
+            build_id=str(root_pid) if root_pid is not None else "manual",
+            spec=spec, object_root=object_root, bin_root=bin_root,
+            shared_total=shared_total, shared_done=shared_total * int(current),
+            entry_total=entry_total, entry_done=entry_total * int(current),
+            runner_total=runner_total, runner_done=runner_total * int(current),
+            binary_total=binary_total, binary_done=binary_done,
+            checkpoint_statuses=[], active_tasks=active_tasks, root_pid=root_pid,
+            root_elapsed_seconds=proc_by_pid[root_pid].elapsed_seconds if root_pid in proc_by_pid else None,
+            root_command=root_command,
+        )
 
     shared_sources: Dict[str, str] = {}
     checkpoint_shared_stems: Dict[str, List[str]] = {}
@@ -1041,39 +1242,37 @@ def discover_builds(processes: Sequence[ProcessInfo],
                     stage_to_checkpoint: Dict[str, str]) -> List[BuildSpec]:
     builds: List[BuildSpec] = []
     for process in processes:
-        if not is_make_process(process):
-            continue
-        argv = process.argv
-        if "-C" not in argv:
-            continue
-        try:
-            c_index = argv.index("-C")
-        except ValueError:
-            continue
-        if c_index + 1 >= len(argv):
-            continue
-        if argv[c_index + 1] != "pa39":
+        if selfhost_make_repository_root(process) != REPO_ROOT:
             continue
         builds.append(build_spec_from_process(process, checkpoints, stage_to_checkpoint))
     return builds
 
 
-def discover_build_processes(processes: Sequence[ProcessInfo]) -> List[ProcessInfo]:
+def discover_build_processes(processes: Sequence[ProcessInfo],
+                             repo_root: Optional[Path] = None) -> List[ProcessInfo]:
     roots: List[ProcessInfo] = []
-    make_pids = {process.pid for process in processes if is_make_process(process)}
+    proc_by_pid = {process.pid: process for process in processes}
+
+    def has_selfhost_make_ancestor(process: ProcessInfo) -> bool:
+        seen: Set[int] = set()
+        parent_pid = process.ppid
+        while parent_pid not in seen:
+            seen.add(parent_pid)
+            parent = proc_by_pid.get(parent_pid)
+            if parent is None:
+                return False
+            if selfhost_make_repository_root(parent) is not None:
+                return True
+            parent_pid = parent.ppid
+        return False
+
     for process in processes:
-        if not is_make_process(process):
+        process_repo_root = selfhost_make_repository_root(process)
+        if process_repo_root is None:
             continue
-        argv = process.argv
-        if "-C" not in argv:
+        if repo_root is not None and process_repo_root != repo_root.resolve():
             continue
-        try:
-            c_index = argv.index("-C")
-        except ValueError:
-            continue
-        if c_index + 1 >= len(argv) or argv[c_index + 1] != "pa39":
-            continue
-        if process.ppid in make_pids:
+        if has_selfhost_make_ancestor(process):
             continue
         roots.append(process)
     return roots
@@ -1163,7 +1362,9 @@ def render_build(view: BuildView, use_color: bool) -> List[str]:
 
     frontier = next((status for status in view.checkpoint_statuses
                      if not (status.binary_done and status.entry_done and status.shared_done == status.shared_total)), None)
-    if frontier is None:
+    if view.spec.probe_source:
+        lines.append(f"  probe: {'complete' if done_units == total_units else 'work'}")
+    elif frontier is None:
         lines.append(f"  frontier: {style('complete', Color.GREEN, Color.BOLD, enabled=use_color)}")
     else:
         lines.append(
@@ -1215,17 +1416,18 @@ def render_screen(views: Sequence[BuildView],
                   use_color: bool,
                   stale: bool = False) -> str:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    lines = [style(f"PA39 Build Watch  {now}  refresh={interval:.1f}s",
+    lines = [style(f"{INCEPTION_DIR.name.upper()} Build Watch  {now}  refresh={interval:.1f}s",
                    Color.BOLD,
                    Color.CYAN,
                    enabled=use_color), ""]
     if stale:
-        lines.append(style("No active pa39 build detected; showing last captured snapshot.",
+        lines.append(style(f"No active {INCEPTION_DIR.name} build detected; showing last captured snapshot.",
                            Color.YELLOW,
                            enabled=use_color))
         lines.append("")
     if not views:
-        lines.append("No active pa39 build detected.")
+        lines.append(f"No active {INCEPTION_DIR.name} self-host build detected in {REPO_ROOT}.")
+        lines.append("Ordinary compiler builds and assignment test runs are not tracked here.")
         lines.append("Pass --target/--obj-root-base to watch a completed or detached tree manually.")
         return "\n".join(lines)
 
@@ -1262,7 +1464,7 @@ def collect_views(args: argparse.Namespace,
             append_view(prerequisite, root_pid=None, root_command="manual prerequisite")
         return views
 
-    for process in discover_build_processes(processes):
+    for process in discover_build_processes(processes, REPO_ROOT):
         if args.pid and process.pid != args.pid:
             continue
         spec = build_spec_from_process(process, checkpoints, stage_to_checkpoint)
@@ -1275,14 +1477,14 @@ def collect_views(args: argparse.Namespace,
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Watch pa39 build progress, object counts, and active compile files."
+        description="Watch PA34/PA39 self-host build progress, object counts, and active compile files."
     )
     parser.add_argument("--interval", type=float, default=1.0,
                         help="refresh interval in seconds (default: 1.0)")
     parser.add_argument("--once", action="store_true",
                         help="print one snapshot and exit")
     parser.add_argument("--pid", type=int,
-                        help="watch one active top-level 'make -C pa39' pid")
+                        help="watch one active top-level self-host make pid")
     parser.add_argument("--target",
                         help="manual target to watch even if no active make process exists")
     parser.add_argument("--obj-root-base",
@@ -1312,9 +1514,7 @@ def auto_configure_repo_root(args: argparse.Namespace) -> None:
     for process in discover_build_processes(processes):
         if args.pid is not None and process.pid != args.pid:
             continue
-        root = repository_root_from_working_directory(
-            process_working_directory(process.pid)
-        )
+        root = selfhost_make_repository_root(process)
         if root is not None:
             roots.add(root)
     if len(roots) == 1:
@@ -1322,7 +1522,7 @@ def auto_configure_repo_root(args: argparse.Namespace) -> None:
     elif len(roots) > 1:
         choices = ", ".join(str(root) for root in sorted(roots))
         raise SystemExit(
-            "multiple active PA39 repositories detected: " + choices +
+            "multiple active self-host repositories detected: " + choices +
             "; select a build with --pid or set CPPGM_WATCH_REPO_ROOT"
         )
 
