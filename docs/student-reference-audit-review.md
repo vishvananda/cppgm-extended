@@ -4325,3 +4325,62 @@ started. The explicit atomic commit manifest now has 111 paths: five compiler
 source/header paths, the tracker and 105 required fixture/sidecar paths. No
 unrelated untracked artifacts are included. Complete local validation and the
 performance study remain live, so no row closure is claimed.
+
+
+All eleven twenty-first local validation groups pass, including strict
+6103/6103 in exactly one line, debug-info, variants, PA34 self-host through
+PA5, all nine architecture audits, file limits and zero placement/hygiene
+findings. All thirty fixture sets keep their frozen hashes, and the live
+compiler exactly matches compiler-twenty-first. The original Alpha study
+remains live, with its terminal performance review still pending.
+
+
+The twenty-first study is terminal. All 91 inputs and 4800 object/status
+observations agree; instruction/RSS gates pass. Five focused cycle gates fail:
+EH handlers 1.012033/1.012076, initializer-list values 1.007987/1.009039,
+recog 1.005282/1.004288, reference noexcept temporaries 1.003515/1.006571
+and virtual 1.006300/1.006138. Auto aliases, auto prvalues, qualification views,
+reference aliases and volatile views pass both cycle gates. Complete results
+are retained in perf-twenty-first-results with the exact gate-review.json.
+
+Constructor inspection rejects one possible explanation: TypeRecord's machine
+constructor has the same 0x3c-byte instruction sequence as the nineteenth image;
+the padding byte adds no initialization store. No tagged-storage redesign is
+justified by that evidence. There is, however, an avoidable array-element Get
+in generic Intern, after every array builder already reads that same element.
+The next targeted change computes the derived fact in the three existing array
+builders using their already-read record, restoring generic Intern completely
+to the entry code. This eliminates the second element query and the added kind
+branch from every canonical insertion. It preserves the new field, existing
+identity and original allocation footprint. The zero-sized array builder's
+numeric_types.cpp path must also be frozen with the next candidate.
+
+
+The twenty-second cache-builder alternative builds warning-free and is frozen
+as compiler-twenty-second, SHA-256
+`2de6268bf59603da1970008232b285640419afaa18a3db89296a84f74b51b4f5`.
+It is retained with its full seven-path scratch patch and is not timed. Further
+source review shows that no derived cache is needed: TryQualify distributes cv
+into array elements and merges nested qualifiers, and is the sole constructor
+of TYPE_QUALIFIED. A qualified record therefore cannot wrap an array or another
+qualified record. ArrayElementCv can walk array dimensions and return a
+qualified record's own cv immediately, avoiding its extra child query.
+
+The twenty-third preparation restores program.cpp, program.h and
+numeric_types.cpp byte-for-byte to 1de7a8cbc, with assertions before writing.
+Only the necessary reference policy, qualification walker and the normalized
+cv query remain changed. No derived field, layout change, generic-intern branch
+or array-construction work remains. This is a source invariant based reduction,
+not an assertion that the untimed twenty-second image failed performance.
+The next matrices must verify all prior cv, atomic and reference boundaries.
+
+
+The twenty-third normalized-query image is frozen as compiler-twenty-third,
+SHA-256 `c32713ca936d130b3837d4ceb86e96fd9b8a11fb585e6375d69cdedc5d3b57a4`.
+Its ArrayElementCv body is 0x36 bytes, versus the original 0xfd, without any
+new type record field or constructor work. Five required source/header paths
+are reduced back to three; the explicit atomic manifest is 109 paths including
+the tracker and 105 fixture/sidecar paths. Fresh matrices and full validation
+are underway. Its performance setup inherits the fully populated twenty-first
+study rather than the untimed twenty-second scratch alternative. No compiler
+or reference-binding row is claimed complete yet.
