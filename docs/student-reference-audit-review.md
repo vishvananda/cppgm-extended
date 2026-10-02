@@ -136,6 +136,15 @@ The recent discovery inventory is not all C++11:
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Open, independently reduced: static_assert(&S::x, "nonnull member pointer") rejects with both immutable entry and candidate; Clang/GCC accept in C++11 at O0/O2. Ordinary MEMBER adjustments remain separately tracked. |
 | CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Open, independently reduced: a two-bit unsigned field initialized with 5 must read as 1 in its constexpr boolean conversion. The template static assertion fails here and passes Clang/GCC in C++11 at O0/O2. Entry and candidate retain the same failure. |
 | EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Open, independently reproduced: private conversion is accepted and invalid immediate conditions cause a hard error instead of selecting the fallback; Clang/GCC corroborate in C++11 extension mode. This C++20 feature is necessary for the supported libc++ profile: release/21.x __utility/pair.h lines 140/147/162 use conditional explicit in the C++11 constructor branch. Frozen header SHA and observations are recorded below. Deduction-guide controls are excluded from this row without their own header dependency. |
+| EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Open, independently reduced: reordered and duplicate int/double specifications reject in frozen entry and candidate, in type dumps and at O0/O2; identical class specifications pass. Strict C++11 Clang/GCC accept all three controls. N3485 15.4/3 requires the same set, and PA6 owns supported free-function exception specifications and declaration matching. Keep one compact positive for order/duplicate normalization, with distinct incompatible-set rejection coverage. |
+| LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
+| FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
+| ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Needs contract review: [[noreturn(1)]] is accepted here and rejected by both strict C++11 hosts. A variable attribute rejects in Clang but only warns in GCC. N3485 7.6.3 supplies C++11 constraints; establish the earliest required attribute validation before adding mandatory fixtures. This does not admit additional vendor attributes. |
+| INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Open, independently reduced without zero-argument inheritance: D<T> : T with using T::T and D<B>(7) rejects as template-parameter redeclaration here, in entry/candidate type dumps and at O0/O2; strict C++11 Clang/GCC accept. N3485 7.3.3 and 12.9 support the parameterized constructor. Ordinary using B::T shadowing remains a separate held host disagreement. |
+| INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
+| INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Needs C++11 defect-report review: N3485 12.9/3 explicitly excludes parameterless inherited constructors, whereas the student's implementation applies P0136R1/N4429's later C++11 DR interpretation. Modern host acceptance alone is insufficient. The student's inherited-defaults personal control explicitly disagrees with both hosts at its nothrow assertion and is held, with no reference change. Establish the adopted correction and any necessary hosted-header use before adding fixtures. |
+| NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
+| NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Needs contract review: student changed only the expected success to failure after finding an unrestricted hosted declaration followed by throw(std::bad_alloc). Our current frozen implementation and Clang accept its named-type reducer; GCC rejects, and all three reject the renamed-Failure mismatch. N3485 15.4/3–4 and library allocation declarations require review before correcting the source comment/oracle. No reference or compiler rule changed here. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending until additions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final pending additions. Keep a fixture only for distinct required language/header behavior or a independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
@@ -3724,3 +3733,58 @@ PA6/PA7 placement run scans 297 inputs with no placement or hygiene findings;
 the standard placement run also passes. These two already supported rejection
 boundaries do not depend on the pending reference-conversion implementation or
 its performance decision.
+
+## PA32 student refresh and fixed-layout timing review
+
+Read-only snapshot student-refresh-pa32-410c67bf/ pins student HEAD
+`410c67bfc9098d726537f98d615d0479a5fe6e27`. Since the last pinned PA30 snapshot,
+the student changed one PA30 exit-status reference and four PA31 inspection
+sidecars. Course sources, Makefiles and fixture discovery remain unchanged.
+The two global relocation expectations use g rather than _Z1g and repeat the
+existing Clang-verified ABI-GLOBAL issue; they are not a new mangling family.
+The replacement-new status change has its separate proof and held host
+disagreement in NEW-SPEC-REF. No Itanium encoder changes were made.
+
+Seventy-three copied personal source controls have 438 fresh strict-C++11
+candidate/Clang/GCC compilation observations at O0/O2. Another 146 frozen
+entry compilations preserve every candidate status; these are preexisting
+boundaries. Six reductions supply 60 current observations, including semantic
+mode checks and the header-free PA21 noexcept-list failure. controls.json,
+baseline-controls.json and reducer-controls.json retain commands and diagnostics;
+manifest.json pins the read-only source snapshot. Each group above separates
+verified C++11 failures from disputed results and pending contract/DR reviews.
+No exploratory matrix is installed wholesale as required fixtures.
+
+The student's PA32 call-nested-cleanup.cpp is explicitly recorded as a failing
+personal frontend reducer there. Here it compiles and runs successfully in ten
+checks: both optimization levels with all three host-linked object routes and
+both immutable entry/candidate standalone routes. nested-runtime-controls.json
+records those outcomes. No additional required fixture is justified by that
+student observation. The inherited-defaults personal control is expressly
+retained against an exploratory host disagreement; all three compilers here
+reject its nothrow assertion. This is a held oracle review, not a passing host
+consensus test. The older bundle's replacement-new acceptance is also expressly
+recorded in the student's reference-correction201.md.
+
+The complete original thirteenth Alpha study retains all 4800 equal-object
+observations in perf-thirteenth-results/. Instruction/RSS gates pass; focused
+raw/calibrated cycle ratios fail for EH handlers (1.005620/1.011590),
+qualification views (1.004618/1.012707) and virtual dispatch
+(1.004340/1.007381). The original decision is not discarded.
+
+A predeclared baseline-only aslr-calibration/ diagnostic retains 512
+observations, identical compiler/input/output arguments and equal objects.
+Process-only setarch -R reduces paired A/A median absolute deviation from
+0.006015 to 0.002351 for EH and from 0.005378 to 0.002015 for qualification.
+Fixed-layout A/A medians are 0.999213 and 1.000560. Both predeclared criteria
+(lower variation and medians within 0.25% of unity) pass. Every counter/time/log
+is retained locally; objects remain remote. No global setting is modified.
+
+One complete perf-thirteenth-fixed-layout/ study measures the same immutable
+candidate against the same entry with that process setting. Samples, workloads,
+A/A identity, output equality and all thresholds remain unchanged. Its manifest
+records only the two planned runner-hash changes; all compiler/source hashes
+remain identical. Initial preflight rejected the stale runner hashes before any
+measurement; that failed preflight log is retained. Corrected manifest
+verification passes all 91 entries before the measured run. Compiler code and
+thirty pending fixture sets remain uncommitted until the gate decision.
