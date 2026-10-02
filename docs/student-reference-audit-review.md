@@ -24,6 +24,23 @@ ordinary fixes; for newer features, record the supported header/version and
 the use that remains enabled in its C++11 configuration. The admitted
 `explicit(bool)` constructor work relies on that header evidence, rather than
 on extension-mode acceptance. Other newer controls remain held individually.
+Later defect-report wording also needs a recorded review: distinguish a
+correction to existing C++11 rules from a new language feature, and do not
+turn every modern host result into an N3485 oracle. In particular, pointer
+reference aliasing and arrays of pointers involve CWG 2352 and CWG 330.
+Their already supported boundaries are retained as regression observations;
+the required qualification fixtures below exercise C++11 const safety and
+ordinary initialization without imposing a new aliasing expectation.
+
+The recent discovery inventory is not all C++11:
+
+| Discovery family | Language status | Admission |
+| --- | --- | --- |
+| Ordinary lookup, template substitution/matching, constant expressions, assertions and references | C++11 | Review against the owning contract and language clauses. |
+| Conditional constructor `explicit(bool)` | C++20 | Admitted only for the independently identified libc++ 21 C++11 `pair` constructor branch. |
+| Structured bindings, inline variables and deduction guides | C++17 | Held without a necessary selected-header use; constructor evidence does not admit deduction guides. |
+| Static call and subscript operators | C++23 | Held without a necessary selected-header use. |
+| Additional bit-integer, extended-float, vector, complex, tag and sequence builtin controls | Vendor extensions | Held individually without their own necessary-header evidence; existing supported extensions are not automatically expanded. |
 
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
@@ -72,6 +89,8 @@ on extension-mode acceptance. Other newer controls remain held individually.
 | CONST-REF-STATIC-TEMP | Give a constexpr reference an address fact for a static-storage temporary | AUTO-CONST-REF explicit-type boundary | Open, independently reproduced: constexpr const int& ref=3 rejects with unchanged a3aaf2015 entry at O0/O2, while Clang/GCC accept and the corresponding static_assert succeeds in C++11. The same failure occurs with const auto&. Frozen source/commands are in auto-const-reference/explicit-reference-controls/controls.json. The current reference initializer has no constant address identity for its temporary. |
 | REF-ARRAY-CV | Recognize element cv-qualification when binding a reference to a const array xvalue | AUTO-CONST-REF explicit-type boundary | Open, independently reproduced: an explicit const int(&)[2] reference bound to a const-array xvalue rejects with unchanged a3aaf2015 entry at O0/O2; Clang/GCC accept in C++11. The deduced auto& equivalent fails in the shared conversion owner after deduction succeeds. Frozen source/commands are in auto-const-reference/explicit-reference-controls/controls.json. |
 | REF-POINTER-QUAL | Require valid qualification and reference compatibility when referent pointer types differ | REF-ARRAY-CV preparation controls | Open, independently reproduced: mutable/volatile references incorrectly bind across pointee qualification changes, and a const reference accepts a deep pointer conversion lacking intermediate const. Frozen deduction candidate accepts these C++11 negatives at O0/O2; Clang/GCC reject. The ordinary const-reference conversion, correctly qualified deep conversion and top-level-const-drop rejection controls retain their expected boundaries. The 156-observation matrix is in reference-cv-qualification/controls/entry-controls.json. The thirty supplementary pointer controls agree across all three compilers; the presumed temporary-independent pointee-qualification case is actually an alias in both hosts, and must not become a false bug claim. |
+| REF-BASE-CATEGORY | Reject a related derived lvalue bound to a base rvalue reference | Reference qualification boundary controls | Open, independently reproduced: B&& r=d accepts here at O0/O2 while strict C++11 Clang/GCC reject. N3485 8.5.3/5 prohibits copying an lvalue of a reference-related type into an rvalue reference. Base xvalue and const-volatile base lvalue controls pass all three compilers. The shared qualification candidate also addresses this category check; validation remains pending. |
+| REF-BITFIELD | Copy a bit-field for const-reference binding and reject mutable or volatile lvalue-reference binding | Reference qualification boundary controls | Open, independently reproduced: unsigned& and const volatile unsigned& bind a bit-field here while strict C++11 Clang/GCC reject. A const unsigned& view incorrectly follows subsequent field mutation; both hosts retain its copied value. N3485 8.5.3/5 excludes bit-fields from direct binding. The cast-to-rvalue-reference mutation control disagrees between Clang and GCC and is retained without a mandatory oracle. This expression/materialization owner is separate from CONST-BITFIELD and the cv qualification candidate. |
 | EH-LOCAL-ARRAY-CATCH | Reach a handler in the current function after partial initializer-list backing construction | AUTO-CONST-REF fault boundary | Open, independently reproduced: a throw from the second backing-element constructor or copy constructor terminates instead of reaching the same-function int handler. Both unchanged a3aaf2015 entry and deduction candidate fail with explicit reference types; Clang/GCC execute successfully in C++11 at O0/O2. Frozen inputs and sixteen explicit-type observations are in auto-const-reference/fault-controls/explicit-final-controls.json. The earlier caller-handler prefix controls remain unchanged. Review the partial-array landing and native handler search without attributing this preexisting gap to auto deduction. |
 | INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | Open, independently reproduced: static-value.cpp fails with the unchanged entry and lifetime candidate at O0/O2; Clang/GCC pass. Local-static reference, global reference and scalar-reference controls now pass the pending lifetime candidate. Frozen observations are in initializer-list-reference-lifetime/storage/{entry,fourth}-controls.json. |
 | REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Open, independently reproduced: volatile-reference-negative.cpp compiles with unchanged entry and lifetime candidate at O0/O2; Clang/GCC reject in C++11. Conversion currently checks const without excluding volatile. The mutable lvalue-reference negative is corrected by normal reference conversion in the pending lifetime candidate; retain the separate volatile boundary. |
@@ -3245,3 +3264,96 @@ that portable observation rather than copying the zero-overhead assumption.
 No additional claim that a new personal test deliberately differs from the
 supplied reference is present in these implementation199/200 handoffs; the
 earlier host-disputed extension expectations remain recorded separately.
+
+
+## C++11 reference qualification review
+
+The current entry is `1de7a8cbc`, frozen as
+`reference-cv-qualification/compiler-after-auto` with SHA-256
+`e4bcdecf0e30356f800ccebd7ba88e6686ed261f479874c50fe566499d78af6c`.
+The refreshed 26 core, nineteen expanded and five pointer-alias programs
+retain 300 O0/O2 observations with ours and strict C++11 Clang/GCC. Six
+additional pointer-prvalue/xvalue controls add 36 observations per image.
+Inputs, commands and outcomes remain under
+`/tmp/cppgm-v4-audit-review/reference-cv-qualification/`.
+
+N3485 3.9.3/5 gives arrays their element cv qualification; 8.5.3/4-5 requires
+qualification preservation, a non-volatile const lvalue-reference for indirect
+binding, and rejection of a related lvalue for an rvalue-reference. The unsafe
+deep-pointer conversion is excluded by 4.4/4's intermediate-const rule. These
+are C++11 corrections. No newer syntax, builtin or encoder feature is admitted.
+
+Modern hosts also implement later corrections to reference compatibility.
+[CWG 330](https://cplusplus.github.io/CWG/issues/330.html) was moved to DR in
+2014, with the array-of-pointers wording in
+[N4261](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n4261.html).
+[CWG 2352](https://cplusplus.github.io/CWG/issues/2352.html) was accepted as a
+DR in 2019 and changes similar-pointer reference binding. The five alias
+controls preserve observed existing behavior without demanding a new copied
+pointer temporary. The mutable-pointer-xvalue conversion to a const-pointee
+rvalue reference disagrees between Clang and GCC; it remains review evidence,
+not a required acceptance fixture. The bit-field cast mutation control also
+has a host disagreement, separate from the three agreed bit-field failures.
+
+The candidate streams qualification levels without allocating cv vectors or
+interning virtual pointer types. A reference includes its referent's own cv in
+the intermediate-const check; arrays retain their bounds and element cv.
+Ordinary scalar/class bindings exclude volatile lvalue-reference temporaries,
+and a base rvalue reference rejects a derived lvalue. A pointer prvalue can
+still undergo a valid qualification conversion to a temporary. The first image
+missed that last boundary and changed the existing PA12 rvalue-overload fixture;
+its failing strict report is retained. The second image restores the existing
+reference without regenerating it. Its SHA-256 is
+`fc299a4572716244041e42c67bfb2579d7e67812ccf253448593a5530af717ff`.
+
+Twenty-two independently reviewed fixtures live in PA10's reference/cast
+clusters and PA12's class-value cluster. All 132 ours/Clang/GCC observations
+agree: nine positive programs execute successfully and thirteen negatives
+reject. Generated sidecars come only from their exact `ref-test` selections.
+The candidate's 26 core cases all agree with both hosts; the five pointer-alias
+boundaries remain unchanged. The agreed non-bit-field expanded cases also
+agree. The 274 cleanup, 100 expanded-reference and twelve fault observations
+retain their previous status/stdout outcomes. Bit-field reference materialization
+remains a separate C++11 fix in REF-BITFIELD.
+
+The strict report passes 6093/6093 with one output line. All eleven validation
+commands in `validation-second/validation.json` succeed: PA10, PA12, PA20, PA21,
+strict report, debug information, variants, self-host through PA5, the nine
+architecture audits, file audit and placement. Placement scans 3218 inputs with
+zero placement/hygiene findings. The second image does not pass the performance gate;
+no work item is closed on functional checks alone. The first timing trial retains
+960 broad observations and a
+65-observation incomplete focus run: the extra array benchmark incorrectly
+used an adjusted array parameter. Its corrected declaration compiles with
+equal entry/candidate objects. A subsequent upload failed to replace a
+read-only remote image; hash verification exposed the wrong-image trial,
+which is retained separately and is not used to judge this candidate.
+The fresh final study verifies all ninety input hashes before launching any
+measurements and uses the actual entry image for A/A calibration. The final
+combined export remains deferred until the full fix sequence is complete.
+
+
+The completed second-image study retains 960 broad and 3456 focused observations
+in `perf-final-results/`, with equal objects and verified input identities.
+Instruction and RSS gates pass. Five focused cycle gates fail: auto aliases
+(raw 1.005207), auto prvalues (raw/calibrated 1.009293/1.008811), EH handlers
+(1.006429/1.006348), initializer-list values (1.007915/1.007056), and the added
+qualification views (1.006645/1.006751). `perf-final/gate-review.json` preserves
+all results. The wrong-image study retains 960 broad and 366 completed focus
+rows, plus its raw in-flight measurement files. It is not candidate validation.
+The initial failed benchmark and wrong-image studies remain separate from this
+completed study; none is discarded to manufacture a passing timing result.
+
+The third image has SHA-256
+`e86b966c092ab3aa8186abff53606f9a71691bc4083320133b1f85814dfec926`.
+It caches the effective source type and defers array qualification queries until
+an unchanged lvalue-reference fast path has been ruled out. All 132 fixture
+observations agree with the second image, as do the core reference, pointer
+alias and pointer-rvalue boundaries. The expanded invalid bit-field programs
+remain accepted and can produce different garbage runtime results; their missing
+diagnostic is the separately tracked REF-BITFIELD bug, not a runtime oracle.
+The third-image full validation and ninety-input-verified Alpha study are running
+in `validation-third/` and `/tmp/cppgm-v4-audit-review-20261002-reference-cv-third/`.
+The compiler change and its fixtures remain uncommitted until performance
+validation succeeds. The four reference owners, bit-field owner, other open
+items and final combined export remain open.
