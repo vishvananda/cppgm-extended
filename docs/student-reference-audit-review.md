@@ -125,7 +125,7 @@ The recent discovery inventory is not all C++11:
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | LOOKUP-RESTORE | Restore genuine namespace type/value ambiguity coverage lost during early consolidation | Namespace reference review | Done in the accompanying test-only checkpoint: distinct-type PA6 and original distinct-variable PA7 negatives have exact generated references and pass their owning checks. Strict 6103/6103 prints one line; PA6/PA7 placement scans 297 inputs with zero findings, and the standard full placement audit remains clean. No compiler change. The valid same-int PA6 oracle correction remains LOOKUP-NAMESPACE. |
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Done in the accompanying checkpoint: enable existing canonical-type equivalence when merging namespace graph/import results; preserve direct lookup and class-base rules. All 72 core observations pass at O0/O2 and in both dump modes, including distinct-entity negatives. The reviewed composite replaces the wrong PA6 same-int rejection in PA6/200 and its temporary control is removed; ours and both hosts pass. PA6 112/112, strict 6109/6109 in one line, all required local groups and all frozen incremental Alpha gates pass against approved 8a6bcd105. All 2880 observations retain equal objects and unscaled counters. Independent mixed type/value and class-base alias rows remain open. N3485 7.1.3 and 7.3.4 support this correction. |
-| LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | In progress: the fifth full fix passed correctness but failed seven focused cycle gates; all raw evidence is retained. The sixth complete run failed two focused cycle gates despite all correctness, instruction/RSS and equality checks passing. The seventh full fix prefers an existing local constructor fact and retains canonical alias fallback. All 184 focused outcomes and all twelve local groups pass, including strict 6109/6109. Its unchanged 4032-observation Alpha run is active; no compiler commit or control promotion precedes full gate approval. PA6 typedef/value and PA7 class/value expression controls remain opt-in until all gates pass. Generated promotions, both immutable candidates and patches are retained in namespace-mixed-lookup/. N3485 7.3.4/6 forbids cross-namespace class hiding; restricted elaborated lookup remains valid. |
+| LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | In progress: the fifth full fix passed correctness but failed seven focused cycle gates; all raw evidence is retained. The sixth complete run failed two focused cycle gates despite all correctness, instruction/RSS and equality checks passing. The seventh full fix passed all 184 focused outcomes and all twelve local groups, including strict 6109/6109. Its terminal 4032-observation run passes equality, instruction/RSS and every raw cycle gate, but calibrated copy-constructor cycles narrowly fail (1.005646 against 1.005). All evidence is retained. The next candidate returns completed type/scope results before irrelevant template-only filters; no compiler commit or control promotion precedes full approval. PA6 typedef/value and PA7 class/value expression controls remain opt-in until all gates pass. Generated promotions, both immutable candidates and patches are retained in namespace-mixed-lookup/. N3485 7.3.4/6 forbids cross-namespace class hiding; restricted elaborated lookup remains valid. |
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. PA22/100 now has an opt-in compile control reusing the existing PA30 input; correct and move that fixture with the fix rather than adding a duplicate source. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
@@ -5058,3 +5058,34 @@ Placement scans 3229 inputs with zero early, review or hygiene findings; live
 image and patch hashes match the frozen metadata. Alpha's 960-observation broad
 phase is terminal zero with matching objects. The 3072-observation focused
 phase remains live under handle 97820; final gate review is still required.
+
+The seventh Alpha run is terminal zero under handle 97820. All 92 input
+hashes agree; 960 broad and 3072 focused observations have successful status
+and identical objects, with four independently verified unscaled counters per
+CSV. Instruction and RSS gates pass (maximum instruction ratio 1.000864, RSS
+1.0). Every focused raw cycle gate passes; only calibrated copy constructors
+fail, at 1.005646 (raw 1.003302). The other seven calibrated gates pass. The
+namespace and virtual workload ratios are now below one; this is measurement,
+not a general speedup claim. All observations and thresholds remain unchanged
+in perf-seventh-results/ and the declared Alpha directory.
+
+Source review confirms the completed type-result branch can return immediately:
+its kinds are TYPE, SCOPE_CARRIER, ORDINARY and TYPE_NAME (1,3,2,6), disjoint
+from FUNCTION_TEMPLATE and VARIABLE_TEMPLATE (4,5). Ordinary hiders already
+return earlier, and namespace/type identity fields are populated before the
+new return. The eighth candidate adds that return, retaining every required
+lookup behavior and avoiding subsequent irrelevant template-only filters. No
+field, cache, helper or scan is added. Build and all required gates remain
+pending; this is a source rationale, not claimed performance attribution.
+
+The eighth host build is terminal zero and produces a distinct immutable
+image, 1348fa72086ebd8b692c2374bad19f98f995d940091f5dce4627074a66338166,
+with patch a94dfbcf59804f884e677964dd079315b5af1249818809f702bbd2ee987677f0.
+The released DirectLookup symbol shrinks from 994 to 836 bytes (cold stub
+unchanged); this confirms an executable change, not a performance result.
+All 184 focused outcomes pass, including planned rejections and canonical
+constructor aliases; both hosts again pass the forty agreed boundaries.
+The twelve required local groups are running under handle 35939 in
+validation-eighth/. The unchanged 4032-observation, 92-input Alpha protocol is
+prepared under perf-eighth/ and awaits strict correctness. No gate is relaxed
+and no compiler commit or test promotion is made before full approval.
