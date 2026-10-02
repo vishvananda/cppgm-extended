@@ -125,7 +125,7 @@ The recent discovery inventory is not all C++11:
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | LOOKUP-RESTORE | Restore genuine namespace type/value ambiguity coverage lost during early consolidation | Namespace reference review | Done in the accompanying test-only checkpoint: distinct-type PA6 and original distinct-variable PA7 negatives have exact generated references and pass their owning checks. Strict 6103/6103 prints one line; PA6/PA7 placement scans 297 inputs with zero findings, and the standard full placement audit remains clean. No compiler change. The valid same-int PA6 oracle correction remains LOOKUP-NAMESPACE. |
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Done in the accompanying checkpoint: enable existing canonical-type equivalence when merging namespace graph/import results; preserve direct lookup and class-base rules. All 72 core observations pass at O0/O2 and in both dump modes, including distinct-entity negatives. The reviewed composite replaces the wrong PA6 same-int rejection in PA6/200 and its temporary control is removed; ours and both hosts pass. PA6 112/112, strict 6109/6109 in one line, all required local groups and all frozen incremental Alpha gates pass against approved 8a6bcd105. All 2880 observations retain equal objects and unscaled counters. Independent mixed type/value and class-base alias rows remain open. N3485 7.1.3 and 7.3.4 support this correction. |
-| LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | Open, independently reproduced with frozen 1de7a8cbc entry: class/variable, typedef/variable, class/function and qualified class/variable conflicts accept in both dump modes and at O0/O2; strict C++11 Clang/GCC reject. N3485 7.3.4/6 explicitly excludes hiding a class or enumeration with an ordinary name in another namespace. Elaborated class lookup and a direct local typedef remain valid in all three compilers and must stay separate. Declaration-only boundaries belong to PA6; a call-expression boundary needs PA7. Corrected commands and 48 observations are in namespace-convergence/extra-corrected-entry-controls.json. |
+| LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | In progress, performance-held: the fifth candidate passes all twelve correctness/audit groups, strict 6111/6111 and agreed namespace boundaries, but seven focused Alpha cycle gates fail. All 4032 observations retain equal objects and unscaled counters; instruction/RSS gates pass. Restore approved compiler source and retain the reviewed PA6 typedef/value declaration and PA7 class/value expression as opt-in rejection controls. Both strict C++11 hosts pass 4/4 and explicit placement is clean. Generated default promotions and the full candidate patch remain in namespace-mixed-lookup/ for the pending fix. N3485 7.3.4/6 forbids cross-namespace class hiding; restricted elaborated lookup remains valid. |
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. PA22/100 now has an opt-in compile control reusing the existing PA30 input; correct and move that fixture with the fix rather than adding a duplicate source. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
@@ -147,7 +147,7 @@ The recent discovery inventory is not all C++11:
 | NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Open, independently reproduced. The student changed only the existing backward-loop reference and quality envelope; source and status remain unchanged. Here O1/O2/O3 return for unequal mod-eight pointer inputs, while O0 preserves the loop, with both native paths. PA32 requires behavior preservation for defined LowIR; plain index carries no stronger optimization or source forward-progress promise. Eighty fresh observations and the frozen two-sidecar delta are retained. Review/fix the existing loop-finiteness proof and regenerate this reference, without adding a duplicate fixture. |
-| TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. Current strict report passes 6109/6109 in one line; harness controls and placement pass. Remaining compiler fixes, final course-fixture minimization/promotion and combined export stay open. |
+| TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. The final tests-only checkpoint replaces the PA6 class/value declaration control with a PA7 ordinary-expression rejection control, preserving the independent PA6 typedef/value control. Both hosts pass 4/4 and explicit placement is clean. The namespace compiler candidate is held for failed cycle gates; approved compiler source is restored and the fresh strict report passes 6109/6109 in one line. Remaining compiler fixes, final course-fixture minimization/promotion and combined export stay open. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending final review after the outstanding fixes promote their controls; test definitions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final additions. Keep a fixture only for distinct required language/header behavior or an independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
@@ -4881,3 +4881,82 @@ failures remain open in LOOKUP-NAMESPACE-MIXED, and LOOKUP-BASE-ALIAS remains
 separate. Neither this checkpoint nor the completed test-definition queue
 closes the remaining compiler fixes, contract reviews, final fixture pruning
 or combined student-export validation.
+
+## Mixed namespace ambiguity: test promotion and validation
+
+The pending LOOKUP-NAMESPACE-MIXED tests now cover two distinct use contexts:
+PA6/300 rejects an imported typedef/value conflict in a declaration, and
+PA7/300 rejects an imported class/value conflict in an ordinary expression.
+The PA7 class is only forward-declared; the test needs no class construction,
+layout or class-aware call. Exact ref-test selections generate empty rejection
+outputs and failure sidecars. Both hosts and the candidate agree at O0/O2.
+Remove the two overlapping opt-in controls rather than adding their entire
+qualified, function and template permutation matrix to the required suite.
+The earlier tests-first definitions remain available for the independent fixes.
+
+The compiler distinguishes ordinary type-name visibility from restricted
+elaborated lookup, and checks type/namespace compatibility before merging
+template markers. Functional casts reuse that ordinary lookup. Constructor
+names stored by the implementation retain the injected class name using the
+canonical binding's existing constructor fact, including out-of-class
+redeclarations. No source file, record field, scan, cache or allocation is added.
+
+Earlier correctness candidates and their diagnostics are retained, including
+the first constructor regressions and the fourth candidate's two PA12
+out-of-class constructor failures. None was performance-approved. The fifth
+image is 343f056c6e0c1134fba9e91cef0f84b18e45076303aa9f15d1159c549cc764f3;
+its patch hash is 416c254b1e8dca2e9cbb09dfc8ad3df0a1b9cabb688b9e0321b5dee315fb5943.
+All 116 namespace controls and forty additional agreed boundary observations
+pass. Explicit template prefixes follow ordinary visibility, while the
+elaborated-template host disagreement remains scratch evidence. The additional
+using-declaration probes preserve overload merging and reproduce an existing
+same-scope constructor limitation in both baseline and candidate; no new
+required fixture is inferred from that existing limitation.
+
+PA6/7/11/12/18, strict 6111/6111 with exactly one line and debug information
+pass. Backend variants and the remaining local checks are running in
+namespace-mixed-lookup/validation-fifth/. Alpha handle 24705 measures the
+immutable fifth image against approved c286b1db6 (fd842d2ce4c05b3d7588291bf2eca6e4cce9c67dae870eacd681c2bc6b9cf7e0).
+All 92 input hashes are verified. The declared protocol retains twenty broad
+workloads (960 observations) and eight focused workloads with 48 interleaved
+A/A and A/B blocks (3072 observations). The previous five focused workloads
+are supplemented by existing constructor, conversion-function and template
+copy workloads because ordinary type visibility changes those paths. Limits
+remain 1.005 instructions, 1.03 RSS and 1.005 raw/calibrated focused cycles;
+all objects must agree. Raw results remain under perf-fifth/ and the declared
+Alpha directory. Code and promoted tests await these gates before committing;
+other fixes, final course-wide pruning and combined export remain open.
+
+The fifth candidate's checks are now terminal. All twelve local groups pass,
+including self-host through PA5, all nine architecture targets, the file audit
+and placement (3229 inputs, zero early/review/hygiene findings). The complete
+Alpha study retains 960 broad and 3072 focused observations, successful statuses,
+equal objects and four unscaled counters per CSV. All 92 input hashes agree.
+Instruction and RSS gates pass, but seven focused raw/calibrated cycle gates
+fail: automatic aliases, constructor/function/template copy, namespace lookup,
+reference aliases and virtual classes. Raw ratios range from 1.006146 to
+1.012321 on those workloads; the gate is 1.005. No input, observation, baseline
+or threshold changes. Full results are retained in perf-fifth-results/ and
+on Alpha; this candidate is not approved for the compiler checkpoint.
+
+Respect the user's immediate test-addition scope: retain the full candidate
+patch and generated default promotions in scratch, restore the approved
+compiler source, and keep the rejection definitions opt-in until the fix passes
+its gates. The PA6 typedef/value control is unchanged. Replace the overlapping
+PA6 class/value declaration control with the reviewed ordinary-expression
+control in PA7/300, its earliest expression owner. There is no net addition of
+probe inputs and no generated default reference committed from the held fix.
+Fresh Clang/GCC checks pass 4/4 per host at O0/O2; explicit control placement
+passes 2/2. The four regression-runner integration tests also pass. This completes
+the admitted regression definitions without launching another compiler variant;
+remaining fixes, final course-wide fixture pruning/promotion and the combined
+student export remain open in this tracker.
+
+The approved compiler rebuild exactly matches c286b1db6 image
+fd842d2ce4c05b3d7588291bf2eca6e4cce9c67dae870eacd681c2bc6b9cf7e0.
+The final strict default report passes 6109/6109 and contains exactly one line.
+The two opt-in rejections still fail 0/4 with the approved solution because it
+accepts the ill-formed programs; these are retained bug predicates, not blessed
+references or default-suite failures. The tests-only checkpoint contains the
+control replacement and this tracker, with no compiler diff or export rebuild.
+The four original unrelated untracked reference artifacts remain excluded.
