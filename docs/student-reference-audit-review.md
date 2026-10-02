@@ -62,6 +62,7 @@ required fixtures or expanding the compiler scope.
 | EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Done in accompanying checkpoint: all nine original reducers and 48 of 50 expanded programs pass at O0/O2; the two preexisting initialization-form failures are REF-BRACE and REF-BASE-COND. Thirteen C++11 PA21 fixtures pass both hosts and our compiler. Strict 6038/6038 and all eight required check groups pass; seventeen Alpha instruction/RSS gates and four focused raw/calibrated cycle gates pass with equal objects. Initializer-list backing and generic second-fault cleanup remain separately tracked. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
 | REF-INIT-LIST | Give a reference-bound initializer-list backing array one lexical lifetime | Additional EH-REF-INIT boundary control | Open, independently reproduced: a const initializer_list<S>& initialized with two noexcept S temporaries returns 2 with unchanged entry and final cleanup candidate at O0/O2; Clang/GCC pass. An observed counter control confirms two duplicate destructions (alive=-2) here and zero live objects with both hosts. ExtendInitializerListVariableLifetime and the reference branch register the same backing. Host controls provide the standard initializer_list definition with -include; the course reducer uses the authorized forward declaration. |
+| AUTO-CONST-REF | Deduce const auto& from an rvalue without imposing an auto& lvalue constraint | REF-INIT-LIST boundary controls | Open, independently reproduced: scalar and aggregate const auto& bindings reject here with "auto& requires an lvalue initializer" and compile with Clang/GCC in C++11. Frozen entry observations are in initializer-list-reference-lifetime/auto-reference-controls.json. This ordinary C++11 deduction issue is separate from initializer-list backing lifetime. |
 | REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: const S& s{S(5)} crashes at O0/O2 with the unchanged entry and first cleanup candidate; Clang/GCC pass. Keep this initialization-form issue separate from unwind staging. |
 | REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: static_cast<const S&>(choice()?D():throw 99) fails lowering at O0/O2 with unchanged entry and first cleanup candidate; Clang/GCC pass. Direct D() base binding is covered by EH-REF-INIT. |
 | EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Open, independently reproduced: four reference-initializer controls and an ordinary object/throw control return 10 with both the unchanged entry and cleanup candidate; Clang/GCC invoke the installed termination handler (77) at O0/O2. Generic full-expression cleanup continuations lower destructor calls without the terminating guard used by constructor/destructor body cleanup. Frozen inputs and host traces are retained under reference-initializer-cleanup/. |
@@ -2987,3 +2988,40 @@ presentation-label fix is therefore not presumed necessary here. These active
 discoveries exercise C++11 lookup and functions; no newer-language feature is
 admitted by this follow-up. The additional two active sidecars bring the observed
 reference delta to nine, with all supplied source inputs and harnesses preserved.
+
+### Initializer-list lifetime work in progress
+
+The current REF-INIT-LIST exploration is frozen under
+`/tmp/cppgm-v4-audit-review/initializer-list-reference-lifetime/`. N3485 8.5.4/6
+extends a backing array when the initializer-list object is initialized from
+it, exactly as a reference lifetime extension; 18.9/2 says copying the wrapper
+does not copy its elements. This is C++11 work, independent of hosted-header
+extensions.
+
+The one-line duplicate-registration patch fixes the original reducer but is
+insufficient. The expanded complete-definition controls also expose a 16-byte
+list object written into an 8-byte reference slot, and a broad temporary scan
+which extends call arguments. The pending implementation uses normal temporary
+materialization for the list object and follows its typed binding recipe for
+backing ownership. It is not validated or ready to commit. The second candidate
+retains compile failures at direct list-reference storage and a partial-array
+unwind which skips the earlier automatic object. These results remain in
+`second-controls.json`; no failed observation is claimed as a pass.
+
+The original matrix deliberately retains exploratory expectations which require
+correction or review: conditional list-wrapper copies do not extend the backing
+array through the copy (both hosts destroy it before the next statement), while
+comma and parenthesized-brace controls show host disagreements. These will not
+be promoted to required positive fixtures on one host result. The const auto&
+control exposed the independent AUTO-CONST-REF row above. Earlier malformed
+control generation and incomplete-list/companion setup failures are retained
+in separate scratch directories and are not compiler-bug evidence.
+
+The third immutable candidate materializes a separate list object before
+reference conversion. All direct noexcept copy-list, direct-list, rvalue-reference,
+empty-list and wrapper-alias controls now execute successfully at O0/O2; empty
+references no longer crash. `third-controls.json` retains all 72 observations.
+Throwing second-element initialization still skips the earlier automatic
+object, and explicit-cast binding still fails its lifetime check. Those remain
+required work before this checkpoint can be marked done. No full-suite or
+performance result is claimed for these intermediate candidates.
