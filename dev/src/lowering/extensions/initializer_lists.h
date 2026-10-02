@@ -190,7 +190,7 @@ protected:
 				for (std::size_t built = i; built != 0; --built)
 					derived.EmitDestructorCall(
 						destructor, (*addresses)[built - 1]);
-				derived.EmitExceptionResume();
+				derived.FinishConstructionArrayCleanup();
 				derived.SelectBlock(end);
 			}
 			return true;
@@ -288,7 +288,7 @@ protected:
 			derived.IndexAddress(LowI8(), base, displacement, true));
 		derived.EmitJump(cleanup);
 		derived.SelectBlock(resume);
-		derived.EmitExceptionResume();
+		derived.FinishConstructionArrayCleanup();
 		derived.SelectBlock(continuation);
 		return true;
 	}
@@ -417,7 +417,8 @@ protected:
 		const NodeChildren& children)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (!derived.IsClassObjectType(record.type) || children.size() != 1 ||
+		if (derived.IsReferenceType(record.type) ||
+			!derived.IsClassObjectType(record.type) || children.size() != 1 ||
 			derived.arena_.nodes[children[0]].kind != DUMP_INITIALIZER_LIST)
 			return false;
 		const NodeChildren list_children = derived.Children(children[0]);

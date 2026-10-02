@@ -543,6 +543,14 @@ ExpressionInfo Analyzer::AnalyzeClassFunctionalCast(TypeId cast_type,
 		program_->entities[cast_entity].abstract_class)
 		return CandidateExpressionFailure(
 			"cannot construct an abstract class value");
+	if (arguments_node != kNoNode &&
+		arena_->IsTag(arguments_node, ::cppgm::syntax::STAG_BRACED_INIT_LIST) &&
+		IsInitializerListType(cast_type))
+	{
+		ExpressionInfo initialized = materialize_if_evaluated(
+			AnalyzeInitializerList(arguments_node, scope, cast_type));
+		return target == kNoType ? initialized : ApplyTarget(initialized, target);
+	}
 	bool has_initializer_list_constructor = false;
 	const std::vector<BindingId> cast_constructors =
 		ConstructorCandidates(cast_entity);

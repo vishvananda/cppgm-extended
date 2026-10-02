@@ -61,8 +61,10 @@ required fixtures or expanding the compiler scope.
 | EH-CTOR-ARRAY-PREFIX | Retain earlier constructor subobjects after partial construction of a later loop-lowered member array | Expanded EH-SPECIAL-PREFIX controls | Done with EH-SPECIAL-PREFIX: partial-array cleanup explicitly enters the remaining constructor cleanup. Seven independently checked second-fault controls also cover scalar, inline-array, loop-array and completed-array unwind destruction; a second exception terminates immediately. The containing-constructor continuation has its own retired entry, shared by host-object and standalone paths. EH-CTOR-HANDLER also checks inline partial-array continuation through earlier subobjects. |
 | EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Done in accompanying checkpoint: all nine original reducers and 48 of 50 expanded programs pass at O0/O2; the two preexisting initialization-form failures are REF-BRACE and REF-BASE-COND. Thirteen C++11 PA21 fixtures pass both hosts and our compiler. Strict 6038/6038 and all eight required check groups pass; seventeen Alpha instruction/RSS gates and four focused raw/calibrated cycle gates pass with equal objects. Initializer-list backing and generic second-fault cleanup remain separately tracked. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
-| REF-INIT-LIST | Give a reference-bound initializer-list backing array one lexical lifetime | Additional EH-REF-INIT boundary control | Open, independently reproduced: a const initializer_list<S>& initialized with two noexcept S temporaries returns 2 with unchanged entry and final cleanup candidate at O0/O2; Clang/GCC pass. An observed counter control confirms two duplicate destructions (alive=-2) here and zero live objects with both hosts. ExtendInitializerListVariableLifetime and the reference branch register the same backing. Host controls provide the standard initializer_list definition with -include; the course reducer uses the authorized forward declaration. |
+| REF-INIT-LIST | Give a reference-bound initializer-list backing array one lexical lifetime | Additional EH-REF-INIT boundary control | Done in accompanying checkpoint: normal list-object materialization and typed binding ownership prevent duplicate backing destruction and reference-slot corruption; partial-array landings retain earlier automatic cleanup. Sixteen C++11 PA21 fixtures and 36 agreed boundary programs pass ours/Clang/GCC at O0/O2, including twelve-element construction progress, borrowed/copy boundaries and static/global references. Strict 6054/6054 and all eight required check groups pass, with zero placement findings. Alpha instruction/RSS and raw/calibrated cycle gates pass across 2,016 equal-object observations. AUTO-CONST-REF, INIT-LIST-STATIC and REF-VOLATILE remain separate preexisting gaps; disputed value-copy/comma forms remain review evidence. |
 | AUTO-CONST-REF | Deduce const auto& from an rvalue without imposing an auto& lvalue constraint | REF-INIT-LIST boundary controls | Open, independently reproduced: scalar and aggregate const auto& bindings reject here with "auto& requires an lvalue initializer" and compile with Clang/GCC in C++11. Frozen entry observations are in initializer-list-reference-lifetime/auto-reference-controls.json. This ordinary C++11 deduction issue is separate from initializer-list backing lifetime. |
+| INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | Open, independently reproduced: static-value.cpp fails with the unchanged entry and lifetime candidate at O0/O2; Clang/GCC pass. Local-static reference, global reference and scalar-reference controls now pass the pending lifetime candidate. Frozen observations are in initializer-list-reference-lifetime/storage/{entry,fourth}-controls.json. |
+| REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Open, independently reproduced: volatile-reference-negative.cpp compiles with unchanged entry and lifetime candidate at O0/O2; Clang/GCC reject in C++11. Conversion currently checks const without excluding volatile. The mutable lvalue-reference negative is corrected by normal reference conversion in the pending lifetime candidate; retain the separate volatile boundary. |
 | REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: const S& s{S(5)} crashes at O0/O2 with the unchanged entry and first cleanup candidate; Clang/GCC pass. Keep this initialization-form issue separate from unwind staging. |
 | REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: static_cast<const S&>(choice()?D():throw 99) fails lowering at O0/O2 with unchanged entry and first cleanup candidate; Clang/GCC pass. Direct D() base binding is covered by EH-REF-INIT. |
 | EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Open, independently reproduced: four reference-initializer controls and an ordinary object/throw control return 10 with both the unchanged entry and cleanup candidate; Clang/GCC invoke the installed termination handler (77) at O0/O2. Generic full-expression cleanup continuations lower destructor calls without the terminating guard used by constructor/destructor body cleanup. Frozen inputs and host traces are retained under reference-initializer-cleanup/. |
@@ -3025,3 +3027,86 @@ Throwing second-element initialization still skips the earlier automatic
 object, and explicit-cast binding still fails its lifetime check. Those remain
 required work before this checkpoint can be marked done. No full-suite or
 performance result is claimed for these intermediate candidates.
+
+The fourth immutable candidate has SHA-256
+`fc11a9e94b0d50d3fb77371b4193b82bbfac68924daf1d0e24b1359dadba63df`.
+The partial-array landing now enters the existing enclosing construction/full-
+expression cleanup continuation, which preserves earlier automatic objects in
+both the inline and loop backing-array paths. Functional list construction uses
+the direct list recipe rather than an artificial wrapper copy. Reference storage
+retains the separately materialized list object.
+
+`v2/fourth-controls.json` retains 228 observations. All 36 agreed programs pass
+with ours/Clang/GCC at O0/O2. The two additional value-functional programs expose
+a host disagreement: Clang and ours destroy the backing before the next
+statement, whereas GCC extends it. They remain review evidence rather than
+required positive fixtures. `v2/entry-controls.json` retains 76 entry observations
+on exactly the same frozen inputs. `storage/{entry,fourth}-controls.json` each
+retain 42 observations; global/rvalue/static/scalar references improve, the
+mutable-reference rejection improves, and the two independent preexisting
+static-value/volatile-reference issues are tracked above.
+
+Sixteen PA21 required fixtures use a complete local definition of the permitted
+standard initializer-list model, with no hosted includes. The final fixture
+text is independently compiled and executed by both hosts and ours at O0/O2:
+`fixture-controls/fourth-controls.json` has 90 positive executions and six
+expected mutable-reference compile rejections. The first host launch omitted
+`-x c++` for the `.t` suffix; its setup failures are retained separately and are
+not counted as compiler defects. `fourth-regression-equivalence.json` proves
+all 274 previous cleanup observations retain their compile/link/runtime statuses
+and stdout.
+
+The initial strict report has only one changed existing reference,
+`200-initializer-list-backing-array-lifetime.ref`; the source is unchanged. Its
+new guarded landing destroys an already completed backing array when a later
+initializer expression throws. Only this independently covered reference and
+the sixteen new fixtures are regenerated through `ref-test`. Full validation
+and the Alpha performance gates are still running; this row is not yet done.
+
+### Initializer-list lifetime checkpoint validation
+
+The final fourth candidate and all sixteen fixture inputs retain their frozen
+hashes after validation. `validation-fourth/validation.json` records all eight
+check groups passing: affected PA21, full strict report, debug-info, backend
+variants, PA34 self-host through PA5, nine architecture audits, file audit and
+placement. The strict log contains exactly one final 6054/6054 success line.
+Placement scans 3,179 fixtures with zero findings and zero local hygiene findings.
+The file audit has no errors; its existing advisory warnings remain.
+
+`fourth-original-controls.json` retains sixteen observations on the original
+forward-declaration reducers, including the measured final live-object count.
+The final candidate returns zero for the success reducer and three for the
+`alive+3` observation, matching both hosts at O0/O2; entry returns two and one,
+respectively. `fourth-host-trace-verification.json` verifies all agreed v2 and
+required-fixture stdout traces match both hosts exactly. The earlier 100 expanded
+reference-cleanup observations also retain their statuses and stdout, as proved
+by `fourth-expanded-equivalence.json`.
+
+Alpha measurements are retained at
+`alpha:/tmp/cppgm-v4-audit-review-20261002-initializer-list/` and downloaded under
+`perf/`. Frozen entry SHA is
+`366793492b521f0d772e98625981796dc48a179f54317bd630cf80ba3fd8c5ce`; final
+candidate SHA is recorded above. `complete-input-verification.json` on Alpha
+verifies all 83 binary/source/header hashes against the local frozen manifest.
+The A/A commands execute the same actual entry image as the A/B entry commands.
+`verify-final-performance.py` and `fourth-performance-verification.json` retain
+864 broad observations on eighteen workloads, 768 balanced interleaved focused
+observations on four workloads, and 384 interleaved observations on the two
+broad workloads with calibration drift. Every generated object agrees exactly.
+All instruction and RSS gates (1.005/1.03) pass; maxima are +0.2265% and +0.9299%.
+All raw cycle gates pass, and the six interleaved focused/calibrated gates pass
+(1.005), with a maximum calibrated ratio of 1.004845. The initial broad
+conditional/virtual-large calibration differences are retained, rather than
+discarded; the interleaved follow-up ratios are 1.001477 and 0.983517. The initial
+missing-symlink setup launch contains no measurements and is retained separately.
+
+REF-VOLATILE also has an independent ordinary scalar/class reduction:
+`volatile-reference/controls.json` retains 24 C++11 compile observations. Entry
+and candidate accept both rvalue negatives, while Clang/GCC reject; every compiler
+accepts the volatile lvalue positive. N3485 8.5.3/5 requires a non-volatile const
+lvalue reference in the temporary-binding alternative. This evidence establishes
+the new row without attributing it to the completed lifetime patch.
+
+This checkpoint closes REF-INIT-LIST only. The other open tracker rows and final
+combined student export remain required work; no student export is regenerated
+between fixes.

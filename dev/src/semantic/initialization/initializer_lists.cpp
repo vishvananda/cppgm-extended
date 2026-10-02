@@ -120,8 +120,13 @@ bool Analyzer::TryAnalyzeInitializerListVariable(NodeId expression,
 		!arena_->IsTag(expression, ::cppgm::syntax::STAG_BRACED_INIT_LIST) ||
 		!IsInitializerListType(type)) return false;
 	*initializer = AnalyzeInitializerList(expression, scope, type);
-	initializer->type = type;
-	initializer->category = VALUE_NONE;
+	if (program_->types.IsReference(type))
+		*initializer = ApplyTarget(MaterializeTemporary(*initializer), type);
+	else
+	{
+		initializer->type = type;
+		initializer->category = VALUE_NONE;
+	}
 	*initializer = FinalizeVariableInitializer(
 		*initializer, type, class_entity, local);
 	return true;

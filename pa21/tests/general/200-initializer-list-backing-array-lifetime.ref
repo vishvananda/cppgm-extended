@@ -106,8 +106,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = addr $held
     %t12 = addr $initlist__4
     call void @Item__Item(%t12, 4)
-    %t13 = index i8 [projection=array_element] %t12, 1
     eh_try ^call_unwind_dispatch_17
+    %t13 = index i8 [projection=array_element] %t12, 1
     call void @Item__Item(%t13, 5)
     eh_end
     jump ^call_unwind_end_18
@@ -117,18 +117,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^call_unwind_end_18:
-    eh_try ^call_unwind_dispatch_19
+    eh_try ^cleanup_action_19
     store ptr %t12, %t11
     %t14 = index i8 %t11, 8
     store i64 2, %t14
     eh_end
     jump ^call_unwind_end_20
 
-  block ^call_unwind_dispatch_19:
-    resume
+  block ^cleanup_action_19:
+    call void @Item___Item(%t13)
+    call void @Item___Item(%t12)
+    jump ^cleanup_resume_4
 
   block ^call_unwind_end_20:
-    eh_try ^call_unwind_dispatch_19
+    eh_try ^cleanup_resume_4
     %t15 = addr $held
     %t16 = call i64 @std__initializer_list_Item___size(%t15)
     store i64 %t16, $call__5

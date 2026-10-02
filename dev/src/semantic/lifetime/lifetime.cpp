@@ -157,6 +157,13 @@ void Analyzer::CollectReferenceLifetimeObjects(std::uint32_t node,
 {
 	if (node == kNoDumpEdge) return;
 	const DumpNode& value = dump_.nodes[node];
+	if (value.kind == DUMP_INITIALIZER_LIST)
+	{
+		if (value.first_edge != kNoDumpEdge)
+			CollectReferenceLifetimeObjects(
+				dump_.edges[value.first_edge].child, objects);
+		return;
+	}
 	if (value.kind == DUMP_TEMPORARY_OBJECT)
 	{
 		// Materializing the address returned by a reference call does not
@@ -165,9 +172,15 @@ void Analyzer::CollectReferenceLifetimeObjects(std::uint32_t node,
 			value.first_edge != kNoDumpEdge &&
 			program_->types.IsReference(dump_.nodes[
 				dump_.edges[value.first_edge].child].type)) return;
+		const std::uint32_t recipe = value.first_edge == kNoDumpEdge ?
+			kNoDumpEdge : dump_.edges[value.first_edge].child;
+		const bool owns_initializer_list = recipe != kNoDumpEdge &&
+			dump_.nodes[recipe].kind == DUMP_INITIALIZER_LIST;
 		const std::uint32_t destructor =
 			MakeTemporaryDestructorAction(node, kNoBinding, true);
 		objects->push_back(std::make_pair(node, destructor));
+		if (owns_initializer_list)
+			CollectReferenceLifetimeObjects(recipe, objects);
 		return;
 	}
 	if (value.category == VALUE_PRVALUE && !IsClassObjectType(value.type) &&

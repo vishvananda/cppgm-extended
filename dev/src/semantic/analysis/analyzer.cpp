@@ -2043,18 +2043,16 @@ void Analyzer::FinishLocalVariableInitializer(ScopeId scope,
 	const ExpressionInfo& initializer, std::uint32_t variable,
 	bool control_dependent)
 {
-	if (program_->types.IsReference(type) &&
-		program_->bindings[binding].storage_class == STORAGE_CLASS_NONE &&
-		(dump_.nodes[initializer.node].kind == DUMP_ID_EXPRESSION ||
-		 !IsInitializerListType(type)))
-		return; // Automatic reference cleanup was staged before registration.
+	if (program_->bindings[binding].storage_class == STORAGE_CLASS_NONE &&
+		(program_->types.IsReference(type) || IsInitializerListType(type)))
+		return; // Extended backing cleanup was staged before registration.
 	const bool extended_initializer_list =
 		ExtendInitializerListVariableLifetime(
 		type, scope, initializer.node, control_dependent);
 	const bool direct_temporary =
 		dump_.nodes[initializer.node].kind == DUMP_TEMPORARY_OBJECT &&
 		!dump_.nodes[initializer.node].reference_call_materialization;
-	if (program_->types.IsReference(type) &&
+	if (!extended_initializer_list && program_->types.IsReference(type) &&
 		(!control_dependent || direct_temporary))
 	{
 		std::vector<std::uint32_t> temporaries;

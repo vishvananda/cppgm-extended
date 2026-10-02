@@ -468,7 +468,7 @@ void Analyzer::AppendFullExpressionDestructionActions(
 		const bool managed_action =
 			(extended || managed_expression ||
 			 (polymorphic_specialization_action && potentially_throwing)) &&
-			!dump_.nodes[temporaries[i - 1]].initializer_list_backing;
+			(extended || !dump_.nodes[temporaries[i - 1]].initializer_list_backing);
 		dump_.nodes[action].full_expression_staging = true;
 		// A reference's backing object is guarded during initialization and
 		// transferred to lexical lifetime only after the full expression.
@@ -720,8 +720,7 @@ void Analyzer::StageAutomaticInitializerException(
 		program_->bindings[binding].storage_class != STORAGE_CLASS_NONE) return;
 	if (program_->types.IsReference(type) &&
 		dump_.nodes[expression].kind == DUMP_ID_EXPRESSION) return;
-	if (IsInitializerListType(type)) return;
-	if (program_->types.IsReference(type))
+	if (program_->types.IsReference(type) || IsInitializerListType(type))
 	{
 		StageAutomaticReferenceInitializer(expression, variable, scope);
 		return;
