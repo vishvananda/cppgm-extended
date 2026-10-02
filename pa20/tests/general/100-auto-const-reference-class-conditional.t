@@ -1,0 +1,1 @@
+int alive,pick;struct S{int x;S(int v)noexcept:x(v){++alive;}S(const S&s)noexcept:x(s.x){++alive;}~S()noexcept{--alive;}};int main(){for(int p=0;p<2;++p){pick=p;{const auto& s=pick?S(3):S(4);if(alive!=1||s.x!=(pick?3:4))return 1;}if(alive)return 2;}return 0;}

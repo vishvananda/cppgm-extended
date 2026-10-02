@@ -2252,7 +2252,8 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 				// produce the same graph.  Only that shape is re-analyzed, so
 				// deduction does not pay for it twice in general.
 				initializer = placeholder_initializer;
-				if (IsClassObjectType(parsed.type) &&
+				if (!program_->types.IsReference(parsed.type) &&
+					IsClassObjectType(parsed.type) &&
 					initializer.node != kNoDumpEdge &&
 					dump_.nodes[initializer.node].kind ==
 						DUMP_TEMPORARY_OBJECT)

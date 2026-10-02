@@ -1,0 +1,1 @@
+int alive;struct S{int x;S(int v)noexcept:x(v){++alive;}~S()noexcept{--alive;}};S& borrow(S&v)noexcept{return v;}int main(){S value(3);{const auto& s=borrow(value);if(&s!=&value||alive!=1)return 1;}return alive!=1;}

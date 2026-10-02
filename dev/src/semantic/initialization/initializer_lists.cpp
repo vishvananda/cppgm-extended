@@ -353,8 +353,11 @@ ExpressionInfo Analyzer::BuildInitializerListFromValues(
 			program_->types.Qualify(element, CV_CONST), values.size());
 		const std::uint32_t list = MakeDump(
 			DUMP_BRACED_INIT_LIST, array_type, VALUE_LVALUE);
+		const bool class_element = IsClassObjectType(element);
 		for (std::size_t i = 0; i < values.size(); ++i)
-			dump_.Add(list, ApplyTarget(values[i], element).node);
+			dump_.Add(list, (class_element ?
+				ApplyCallArgument(values[i], element) :
+				ApplyTarget(values[i], element)).node);
 		ExpressionInfo backing;
 		backing.node = list;
 		backing.type = array_type;

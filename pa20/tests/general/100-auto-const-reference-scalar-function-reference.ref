@@ -1,0 +1,15 @@
+function @f() -> i32 [binding=strong, object=_Z1fv] {
+  block ^entry:
+    return i32 3
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $function : ptr
+
+  block ^entry:
+    %t1 = addr @f
+    store ptr %t1, $function
+    %t2 = call i32 @f()
+    %t3 = cmp ne i32 %t2, 3
+    %t4 = convert trunc i32 i64 %t3
+    return i32 %t4
+}

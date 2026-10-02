@@ -90,9 +90,16 @@ DeclaratorInfo Analyzer::BuildVariableDeclarator(
 		ConfigureInitializerListSpecialization(list_type);
 		DeclaratorInfo parsed = BuildDeclarator(declarator,
 			program_->types.Qualify(list_type, spec.placeholder_cv), scope);
+		if (program_->types.Get(parsed.type).kind == TYPE_LVALUE_REFERENCE &&
+			(ArrayElementCv(EffectiveType(parsed.type)) & CV_VOLATILE) != 0)
+			ThrowSemanticError(
+				"auto& rvalue initializer requires non-volatile const binding");
 		*prepared_initializer = BuildInitializerListFromValues(
 			parsed.type, values);
-		prepared_initializer->type = parsed.type;
+		if (program_->types.IsReference(parsed.type))
+			*prepared_initializer = ApplyTarget(
+				MaterializeTemporary(*prepared_initializer), parsed.type);
+		else prepared_initializer->type = parsed.type;
 		return parsed;
 	}
 	if (expression == kNoNode)
@@ -130,7 +137,13 @@ DeclaratorInfo Analyzer::BuildVariableDeclarator(
 	else if (pointer_operator == "&")
 	{
 		if (value.category != VALUE_LVALUE)
-			ThrowSemanticError("auto& requires an lvalue initializer");
+		{
+			const std::uint8_t cv =
+				ArrayElementCv(base) | spec.placeholder_cv;
+			if ((cv & CV_CONST) == 0 || (cv & CV_VOLATILE) != 0)
+				ThrowSemanticError(
+					"auto& rvalue initializer requires non-volatile const binding");
+		}
 	}
 	else if (pointer_operator == "&&")
 	{
@@ -147,10 +160,16 @@ DeclaratorInfo Analyzer::BuildVariableDeclarator(
 	}
 	else ThrowSemanticError(
 		"unsupported placeholder pointer operator in PA18");
-	base = program_->types.Qualify(base, spec.placeholder_cv);
+	if (spec.placeholder_cv != CV_NONE && !program_->types.IsFunction(base))
+		base = program_->types.Qualify(base, spec.placeholder_cv);
 	parsed = BuildDeclarator(declarator, base, scope);
 	if (spec.is_constexpr)
 		parsed.type = program_->types.Qualify(parsed.type, CV_CONST);
+	if (program_->types.IsReference(parsed.type) &&
+		value.category == VALUE_PRVALUE && IsClassObjectType(value.type) &&
+		(dump_.nodes[value.node].kind == DUMP_CALL_EXPRESSION ||
+		 dump_.nodes[value.node].kind == DUMP_CONDITIONAL_EXPRESSION))
+		value = MaterializeTemporary(value);
 	value = ApplyTarget(value, parsed.type);
 	const TypeRecord& declared = program_->types.Get(parsed.type);
 	if (declared.kind != TYPE_LVALUE_REFERENCE &&

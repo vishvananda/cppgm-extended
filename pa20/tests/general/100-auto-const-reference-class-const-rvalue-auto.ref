@@ -1,0 +1,37 @@
+function @get() -> obj<4x4> [binding=strong, object=_Z3getv] {
+  slot $retobj__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $retobj__1
+    call void @S__S__aggregate(%t1, 3)
+    return obj<4x4> $retobj__1
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $s : ptr
+  slot $tmpobj__1 : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $tmpobj__1
+    %t2 = call obj<4x4> @get()
+    copyobj 4x4 %t2, %t1
+    store ptr %t1, $s
+    %t3 = load ptr $s
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    %t6 = cmp ne i32 %t5, 3
+    %t7 = convert trunc i32 i64 %t6
+    return i32 %t7
+}
+function @S__S__aggregate(%this : ptr, %x : i32) -> void [unwind=no, binding=internal] {
+  slot $this : ptr
+  slot $x : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %x, $x
+    %t1 = load i32 $x
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}

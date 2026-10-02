@@ -18,6 +18,12 @@ a concrete hosted-header dependency requires the newer feature. A personal
 extension test or a later assignment requirement alone does not establish that
 dependency. Retain excluded observations as review evidence without adding
 required fixtures or expanding the compiler scope.
+Host acceptance with `-std=c++11` does not by itself establish C++11 ownership:
+hosts can accept later features as extensions. Record the language clause for
+ordinary fixes; for newer features, record the supported header/version and
+the use that remains enabled in its C++11 configuration. The admitted
+`explicit(bool)` constructor work relies on that header evidence, rather than
+on extension-mode acceptance. Other newer controls remain held individually.
 
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
@@ -62,7 +68,11 @@ required fixtures or expanding the compiler scope.
 | EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Done in accompanying checkpoint: all nine original reducers and 48 of 50 expanded programs pass at O0/O2; the two preexisting initialization-form failures are REF-BRACE and REF-BASE-COND. Thirteen C++11 PA21 fixtures pass both hosts and our compiler. Strict 6038/6038 and all eight required check groups pass; seventeen Alpha instruction/RSS gates and four focused raw/calibrated cycle gates pass with equal objects. Initializer-list backing and generic second-fault cleanup remain separately tracked. |
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
 | REF-INIT-LIST | Give a reference-bound initializer-list backing array one lexical lifetime | Additional EH-REF-INIT boundary control | Done in accompanying checkpoint: normal list-object materialization and typed binding ownership prevent duplicate backing destruction and reference-slot corruption; partial-array landings retain earlier automatic cleanup. Sixteen C++11 PA21 fixtures and 36 agreed boundary programs pass ours/Clang/GCC at O0/O2, including twelve-element construction progress, borrowed/copy boundaries and static/global references. Strict 6054/6054 and all eight required check groups pass, with zero placement findings. Alpha instruction/RSS and raw/calibrated cycle gates pass across 2,016 equal-object observations. AUTO-CONST-REF, INIT-LIST-STATIC and REF-VOLATILE remain separate preexisting gaps; disputed value-copy/comma forms remain review evidence. |
-| AUTO-CONST-REF | Deduce const auto& from an rvalue without imposing an auto& lvalue constraint | REF-INIT-LIST boundary controls | Open, independently reproduced: scalar and aggregate const auto& bindings reject here with "auto& requires an lvalue initializer" and compile with Clang/GCC in C++11. Frozen entry observations are in initializer-list-reference-lifetime/auto-reference-controls.json. This ordinary C++11 deduction issue is separate from initializer-list backing lifetime. |
+| AUTO-CONST-REF | Deduce const auto& from an rvalue without imposing an auto& lvalue constraint | REF-INIT-LIST boundary controls | Done in accompanying checkpoint: ordinary non-volatile const deduction, function cv handling, typed reference recipes and class-element copies retain C++11 behavior. Seventeen PA20/21 fixtures pass ours/Clang/GCC, including strict host C++11 checks; strict 6071/6071 and all required checks pass with zero placement/hygiene findings. Final Alpha instruction/RSS and eight focused raw/calibrated cycle gates pass across 4032 equal-object observations; 5312 earlier timing observations remain recorded. CONST-REF-STATIC-TEMP, REF-ARRAY-CV, REF-POINTER-QUAL and EH-LOCAL-ARRAY-CATCH remain independent owner gaps. |
+| CONST-REF-STATIC-TEMP | Give a constexpr reference an address fact for a static-storage temporary | AUTO-CONST-REF explicit-type boundary | Open, independently reproduced: constexpr const int& ref=3 rejects with unchanged a3aaf2015 entry at O0/O2, while Clang/GCC accept and the corresponding static_assert succeeds in C++11. The same failure occurs with const auto&. Frozen source/commands are in auto-const-reference/explicit-reference-controls/controls.json. The current reference initializer has no constant address identity for its temporary. |
+| REF-ARRAY-CV | Recognize element cv-qualification when binding a reference to a const array xvalue | AUTO-CONST-REF explicit-type boundary | Open, independently reproduced: an explicit const int(&)[2] reference bound to a const-array xvalue rejects with unchanged a3aaf2015 entry at O0/O2; Clang/GCC accept in C++11. The deduced auto& equivalent fails in the shared conversion owner after deduction succeeds. Frozen source/commands are in auto-const-reference/explicit-reference-controls/controls.json. |
+| REF-POINTER-QUAL | Require valid qualification and reference compatibility when referent pointer types differ | REF-ARRAY-CV preparation controls | Open, independently reproduced: mutable/volatile references incorrectly bind across pointee qualification changes, and a const reference accepts a deep pointer conversion lacking intermediate const. Frozen deduction candidate accepts these C++11 negatives at O0/O2; Clang/GCC reject. The ordinary const-reference conversion, correctly qualified deep conversion and top-level-const-drop rejection controls retain their expected boundaries. The 156-observation matrix is in reference-cv-qualification/controls/entry-controls.json. The thirty supplementary pointer controls agree across all three compilers; the presumed temporary-independent pointee-qualification case is actually an alias in both hosts, and must not become a false bug claim. |
+| EH-LOCAL-ARRAY-CATCH | Reach a handler in the current function after partial initializer-list backing construction | AUTO-CONST-REF fault boundary | Open, independently reproduced: a throw from the second backing-element constructor or copy constructor terminates instead of reaching the same-function int handler. Both unchanged a3aaf2015 entry and deduction candidate fail with explicit reference types; Clang/GCC execute successfully in C++11 at O0/O2. Frozen inputs and sixteen explicit-type observations are in auto-const-reference/fault-controls/explicit-final-controls.json. The earlier caller-handler prefix controls remain unchanged. Review the partial-array landing and native handler search without attributing this preexisting gap to auto deduction. |
 | INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | Open, independently reproduced: static-value.cpp fails with the unchanged entry and lifetime candidate at O0/O2; Clang/GCC pass. Local-static reference, global reference and scalar-reference controls now pass the pending lifetime candidate. Frozen observations are in initializer-list-reference-lifetime/storage/{entry,fourth}-controls.json. |
 | REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Open, independently reproduced: volatile-reference-negative.cpp compiles with unchanged entry and lifetime candidate at O0/O2; Clang/GCC reject in C++11. Conversion currently checks const without excluding volatile. The mutable lvalue-reference negative is corrected by normal reference conversion in the pending lifetime candidate; retain the separate volatile boundary. |
 | REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: const S& s{S(5)} crashes at O0/O2 with the unchanged entry and first cleanup candidate; Clang/GCC pass. Keep this initialization-form issue separate from unwind staging. |
@@ -98,6 +108,8 @@ required fixtures or expanding the compiler scope.
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
+| TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Needs contract review: the unchanged mismatched-return negative compiles here and rejects with Clang/GCC in strict C++11 at O0/O2; the matching definition positive passes all three. Establish the declaration-matching requirement and template diagnostic timing before adding a mandatory rejection fixture. Frozen commands are in student-refresh-pa30-200/entry-controls.json. |
+| NEW-ARRAY-DTOR-ACCESS | Review destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Needs contract review: the private-destructor array-new negative compiles here and rejects with Clang/GCC in strict C++11 at O0/O2. Scalar new with a private destructor passes all three and must remain supported. Aggregate-member and inactive-union controls have Clang/GCC disagreements, so their labels are not adopted as oracles. Frozen commands are in student-refresh-pa30-200/entry-controls.json. |
 | TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
 | ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Open, independently reproduced: character, integer and suffixed-string messages are accepted here and rejected by Clang/GCC at O0/O2. These are C++11 syntax constraints and can be tested without hosted headers. |
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Open, independently reduced: static_assert(&S::x, "nonnull member pointer") rejects with both immutable entry and candidate; Clang/GCC accept in C++11 at O0/O2. Ordinary MEMBER adjustments remain separately tracked. |
@@ -3110,3 +3122,126 @@ the new row without attributing it to the completed lifetime patch.
 This checkpoint closes REF-INIT-LIST only. The other open tracker rows and final
 combined student export remain required work; no student export is regenerated
 between fixes.
+
+## C++11 auto-reference deduction candidate
+
+The pending AUTO-CONST-REF candidate starts from `a3aaf2015`. Its frozen image
+has SHA-256 `7902309d70743a55d5fd27f43ebac0949c77db47ea7afa7868fc20dd2c72313c`;
+sources and controls are retained under
+`/tmp/cppgm-v4-audit-review/auto-const-reference/`. N3485 7.1.6.4/6 explicitly
+models `const auto &i = expr` by deduction against `const U&`. The patch admits
+non-volatile const rvalue binding, ignores function cv qualification, preserves
+the typed reference initializer and constructs class elements of deduced lists
+with their ordinary copy recipe. No newer-language syntax or ABI encoder change
+is included.
+
+Thirteen ordinary deduction fixtures belong to PA20:100; four initializer-list
+companions belong to PA21:200. The initial fixture run retains 102 O0/O2
+observations: 90 successful executions and twelve expected compile rejections.
+Three PA20 helpers are subsequently marked `noexcept` to keep incidental EH
+lowering out of their milestone; `final-controls.json` adds eighteen successful
+observations for those changed sources. Both hosts also check all seventeen
+final sources with `-std=c++11 -pedantic-errors`: all fifteen positives compile,
+and both negatives reject. Host extension acceptance is not used as language
+version proof.
+
+The initial twenty programs and eighteen agreed expanded controls retain their
+host boundaries. CONST-REF-STATIC-TEMP and REF-ARRAY-CV remain independently
+reproduced explicit-type owner gaps. All 274 prior cleanup and 100 expanded
+reference observations have identical status/stdout outcomes to the preceding
+checkpoint. Of six added fault programs, four agree with both hosts at O0/O2;
+the two partial initializer-list programs establish EH-LOCAL-ARRAY-CATCH above.
+Their explicit-type entry controls prove that this same-function-handler failure
+predates deduction changes. No failed boundary is silently counted as passing.
+
+The initial strict report passes 6071/6071, as do PA20/21, debug information,
+variants, self-host through PA5, architecture and file checks. The initial
+placement check identifies only the three helper EH hygiene issues described
+above. Following targeted `ref-test` regeneration, final PA20 and strict checks
+pass again, with one report line for 6071/6071; final placement checks scan 3196
+tests with zero placement or hygiene findings. No existing reference source or
+oracle is changed.
+
+Alpha retains 960 broad and 1152 focused observations, followed by 1152
+interleaved cycle-review observations for all six timing leads. Object hashes
+agree throughout, and all 85 frozen input hashes match remotely. Instruction
+and RSS gates pass; the deduced-class-prvalue workload executes approximately
+13.6 percent fewer compiler instructions after avoiding repeated initializer
+analysis. Timing is still under review: the first focus EH-handler raw ratio is
+1.005870 (calibrated 1.004637); the follow-up passes that boundary but retains
+virtual raw/calibrated ratios 1.005930/1.008190 and initializer-list calibrated
+ratio 1.005054. These observations are preserved in `second-gate-review.json`
+and `cycle-review/`, and are not represented as a completed performance gate.
+This second-image trial did not close AUTO-CONST-REF; its measurements are kept
+as failed timing evidence. The final image and closure evidence follow below.
+The full goal and deferred combined export remain open.
+
+The final third image has SHA-256
+`e4bcdecf0e30356f800ccebd7ba88e6686ed261f479874c50fe566499d78af6c`.
+It classifies the deduced list's element once and skips qualification queries
+when no cv qualifier is added. Both adjustments preserve the required typed
+construction recipe while avoiding repeated work. All original twenty controls,
+the eighteen agreed expanded cases and the two separately recorded owner gaps
+retain identical outcomes; all seventeen final fixtures pass their 102 O0/O2
+compile/link/run observations. Repeating the 274 cleanup, 100 expanded reference
+and twelve fault observations with this final image produces no status/stdout
+change, including the two independently retained same-function-handler failures.
+
+`validation-third/validation.json` records every required command with status
+zero: PA20, PA21, strict report, debug information, variants, self-host through
+PA5, all nine architecture audits, file audit and placement. The strict log is
+one line for 6071/6071. Placement scans 3196 tests with no placement or hygiene
+findings. No ABI encoder, earlier fixture source or existing reference changes.
+
+The final Alpha study retains 960 broad and 3072 focused observations. The
+eight focus workloads use 48 balanced interleaved A/A and A/B blocks each;
+calibration executes the same entry image. Every object agrees between images,
+and all 86 frozen input hashes match. `perf/third-gate-review.json` records the
+1.005 instruction and 1.03 RSS gates for all twenty broad and eight focused
+workloads, and the 1.005 raw/calibrated cycle gates for all eight focus workloads.
+Maximum instruction growth is 0.0035 percent; maximum RSS growth is 0.4839
+percent. Focused raw/calibrated cycle maxima are 1.001958/1.003148. The broad
+copy-competing calibrated ratio 1.006089 remains a diagnostic: its raw ratio
+1.002827 passes, and the separate broad calibration is not treated as an
+interleaved cycle gate. The second-image extended timing study has 2048 further
+observations. All 9344 observations across both images are retained; none is
+discarded to claim a passing final study.
+
+This closes AUTO-CONST-REF only. The explicit static-temporary, array cv,
+pointer qualification, volatile-reference and local array-handler owners remain
+in the unified queue, along with every other open item and the final export.
+
+## Read-only PA30 implementation200 refresh
+
+The next pinned student commit is
+`b0790726de6c67722826833b395b76853e051e2d`. Its snapshot under
+`/tmp/cppgm-v4-audit-review/student-refresh-pa30-200/` retains 57 files, including
+44 personal sources and the plan/audit/design/performance documents. A full
+path-filtered Git delta from the previous `c0b26910` snapshot changes only the
+two PA30 same-type-base-alias sidecars already reviewed in LOOKUP-BASE-ALIAS.
+No further supplied source, handout, harness, discovery or comparison rule
+changes. The active implementation201 work has no supplied-fixture changes in
+the observed working state. This tree is still read-only; controls use copies.
+
+Twenty-eight ordinary-language sources yield 168 O0/O2 observations using the
+final deduction image and both hosts; host compilation uses
+`-std=c++11 -pedantic-errors`. The mismatched inherited return-type definition
+and inaccessible array-new destructor are new review leads above. Other
+aggregate-member, inactive-union and undemanded enclosing-deleted-constructor
+controls disagree between Clang and GCC, so the student's negative labels are
+not adopted as mandatory oracles. Matching inherited definitions, access/friend
+controls, selected-union cleanup, complete-enclosing-class positives, scalar new
+with a private destructor and ordinary dependent new forms retain their
+independently observed boundaries. Vector extensions and compiler-generated
+integer-sequence controls remain held without their own necessary-header proof.
+
+The personal `source199/new-placement.cpp` checks the original buffer at the
+returned array's subscript, assuming no array-allocation overhead. Its divergent
+runtime result here is not a C++11 compiler bug proof: N3485 5.3.4/12 explicitly
+permits overhead for placement array new, including the standard void-pointer
+form. A copied reducer checks the returned `p[argc]` instead; all six O0/O2
+ours/Clang/GCC executions pass. Preserve the allocation/construction goal with
+that portable observation rather than copying the zero-overhead assumption.
+No additional claim that a new personal test deliberately differs from the
+supplied reference is present in these implementation199/200 handoffs; the
+earlier host-disputed extension expectations remain recorded separately.
