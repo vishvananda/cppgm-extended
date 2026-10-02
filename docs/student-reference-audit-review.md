@@ -130,13 +130,13 @@ The recent discovery inventory is not all C++11:
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
 | TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Reviewed: no additional required fix or fixture. Instantiating the mismatched member rejects with conflicting function return type at O0/O2 and in PA14 LowIR, while the matching definition passes; both strict C++11 hosts agree. The unused form remains a diagnostic-timing difference under N3485 14.6/8, not a mandatory rejection oracle. Fourteen new observations and contract review are recorded below. |
-| NEW-ARRAY-DTOR-ACCESS | Check destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Open; contract review complete. N3485 5.3.4/17 explicitly requires array-element destructor access checking, without requiring a later DR. PA12/400 owns array new/delete. A compact private-scalar/own-array positive passes all compilers; the original private-array negative is accepted here and rejected by both strict C++11 hosts in the prepared modes. Fourteen fixture observations and 49 exploratory observations are retained. Deleted-array rejection already works; broader disputed destructor cases remain excluded. The positive is installed as 400-new-private-destructor-access-contexts.t; the rejection is a focused pending control. Compiler fix remains open. |
+| NEW-ARRAY-DTOR-ACCESS | Check destructor accessibility when constructing a class array with new | v4codex PA30 source200 | In progress: use the existing indexed destructor binding and naming/object-class access check before trivial destruction is elided. Promote the private-array negative to PA12/400; retain the existing scalar/own-array positive. One additional protected-base-object negative covers the independent N3485 11.4/1 object restriction. Demanded scratch boundaries pass ours and Clang 22/22; three GCC-disputed cases remain scratch evidence, without new required fixtures. PA12 passes 298/298 and strict passes 6108/6108 in one line. Broader checks and global Alpha gates are running; no compiler source is committed or fix closed yet. N3485 5.3.4/17 requires the access check even for trivial destructors. |
 | TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
 | ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Open, independently reproduced: character, integer and suffixed-string messages are accepted here and rejected by Clang/GCC at O0/O2. These are C++11 syntax constraints and can be tested without hosted headers. |
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Open, independently reduced: static_assert(&S::x, "nonnull member pointer") rejects with both immutable entry and candidate; Clang/GCC accept in C++11 at O0/O2. Ordinary MEMBER adjustments remain separately tracked. |
 | CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Open, independently reduced: a two-bit unsigned field initialized with 5 must read as 1 in its constexpr boolean conversion. The template static assertion fails here and passes Clang/GCC in C++11 at O0/O2. Entry and candidate retain the same failure. |
 | EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Open, independently reproduced: private conversion is accepted and invalid immediate conditions cause a hard error instead of selecting the fallback; Clang/GCC corroborate in C++11 extension mode. This C++20 feature is necessary for the supported libc++ profile: release/21.x __utility/pair.h lines 140/147/162 use conditional explicit in the C++11 constructor branch. Frozen header SHA and observations are recorded below. Deduction-guide controls are excluded from this row without their own header dependency. |
-| EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | In progress: deduplicate adjusted TypeIds and compare declarations as sets, preserving first-declaration order. The compact order/duplicate positive is promoted to PA6/300 and its temporary control removed; the independent different-set negative remains. PA6 passes 112/112. Nine scratch boundaries pass ours and Clang at O0/O2; GCC agrees on eight and disagrees on explicitly specified array/function type adjustments. Full validation and global performance against the last approved compiler are running; no compiler source is committed or fix closed yet. N3485 15.4/2,3 supplies the rule. |
+| EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | In progress: deduplicate adjusted TypeIds and compare declarations as sets, preserving first-declaration order. The compact order/duplicate positive is promoted to PA6/300 and its temporary control removed; the independent different-set negative remains. All eight local validation groups pass, including PA6 112/112 and strict 6106/6106 in one line. Nine scratch boundaries pass ours and Clang at O0/O2; GCC disagrees only on explicitly specified array/function type adjustments. The combined 4800-observation global study passes instruction/RSS gates but two focused cycle gates fail narrowly. No compiler source is committed or fix closed yet; global performance acceptance remains open. N3485 15.4/2,3 supplies the rule. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
 | ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Argument constraint reviewed and open: N3485 7.6.3/1 expressly forbids an attribute-argument-clause. Six fresh C++11 observations confirm ours accepts [[noreturn(1)]] and both hosts reject it. The placement ledger assigns standard attribute support to PA29/500; one focused negative is installed, reusing existing valid noreturn runtime coverage. Variable appertainment remains separately reviewed because GCC only warns. This does not admit additional vendor attributes; no default fixture installed yet. |
@@ -4667,3 +4667,53 @@ This baseline is not reset to a previously failed candidate. Results and frozen
 source patches live under /tmp/cppgm-v4-audit-review/exception-specification-sets/;
 Alpha retains /tmp/cppgm-v4-audit-review-20261002-exception-specification-sets/.
 Both compiler fixes remain uncommitted until required checks and gates resolve.
+
+## Exception-set terminal checks and array-new access work
+
+The exception-set image completes all eight local validation groups with
+successful terminal status: PA6, strict report, debug-info, variants, self-host
+through PA5, architecture, file audit and placement. Its strict report is
+exactly one line, 6106/6106. Alpha completes all 4,800 observations with equal
+objects and four unscaled counters per observation. All instruction/RSS gates
+pass. Two focused raw/calibrated cycle gates fail: initializer-list values
+1.005242/1.005932 and nonthrowing reference temporaries 1.006389/1.005479.
+Retain this failed global verdict in exception-specification-sets/perf-results/;
+the baseline remains the last approved compiler, not a failed candidate.
+
+NEW-ARRAY-DTOR-ACCESS now has a concrete source fix. AnalyzeArrayNewExpression
+gets its existing indexed destructor binding for every class element, checks
+deletion/access, and keeps destructor emission conditional on nontriviality.
+The access call supplies the allocated class as both naming and object class;
+N3485 11.4/1 and fresh Clang/GCC observations require rejecting a derived
+member which allocates base objects with a protected base destructor. No new
+lookup table, cache, reparse or speculative instantiation is introduced.
+DestructorForType is a const indexed query. Scalar new is unchanged.
+
+Eleven scratch programs preserve owner/friend/public/scalar positives and
+private/protected/deleted/zero/trivial boundaries at O0/O2. The initial inline
+member examples were undemanded in our compiler; their source snapshots and
+observations are retained, but are not evidence that the allocation body ran.
+Ordinary callers now demand those definitions. The complete demanded set
+passes ours and Clang 22/22; GCC passes 16/22 and accepts the deleted,
+zero-extent private and defaulted-private cases. Those three disagreements
+remain scratch evidence; deleted-array rejection already existed here, and
+none adds a required fixture. The pre-fix image passed 12/22, retaining the
+ten observations of missing access checks.
+
+The existing private-array rejection moves into
+pa12/tests/general/400-new-array-private-destructor-bad.t and its temporary
+control is removed. One independent protected-base-object rejection is added
+as 400-new-array-protected-base-destructor-bad.t; it demands the inline body.
+The existing combined scalar/own-array positive stays. Both negative reference
+sets are generated through the exact ref-test selection. This is one access
+boundary per fixture, rather than a permutation matrix or a cloned positive.
+
+PA12 passes 298/298; strict passes 6108/6108 in exactly one line, and debug-info
+passes. Remaining local checks and Alpha measurements are running against the
+frozen combined image 59e3168a112b07e27745a4b549edab14d19f994d7fc1276500408893249804aa.
+The preceding Alpha study is terminal before this one starts. All 91 inputs
+are verified, the approved baseline and all gates are unchanged, and every
+observation is retained. Scratch sources, image hashes, source patches and
+check logs live in /tmp/cppgm-v4-audit-review/array-new-destructor-access/;
+Alpha retains /tmp/cppgm-v4-audit-review-20261002-array-new-destructor-access/.
+Compiler source and promoted fixtures remain uncommitted pending the full gates.
