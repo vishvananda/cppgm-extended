@@ -221,6 +221,7 @@ bool ConsumeLeadingStandardObjectAttribute(
 	if (!At(tokens, *position, OP_LSQUARE) ||
 		!At(tokens, *position + 1, OP_LSQUARE)) return false;
 	*position += 2;
+	const std::size_t attribute_begin = *position;
 	bool no_unique_address = false;
 	bool always_inline = false;
 	bool noreturn = false;
@@ -232,6 +233,10 @@ bool ConsumeLeadingStandardObjectAttribute(
 		if (tokens[*position].Kind() == kIdentifierToken)
 		{
 			const std::string& name = strings.Get(tokens[*position].spelling);
+			if (name == "noreturn" &&
+				(*position == attribute_begin || At(tokens, *position - 1, OP_COMMA)) &&
+				At(tokens, *position + 1, OP_LPAREN))
+				ThrowSyntaxError("noreturn attribute cannot have arguments");
 			no_unique_address = no_unique_address ||
 				name == "no_unique_address" || name == "__no_unique_address__";
 			always_inline = always_inline ||
@@ -240,6 +245,20 @@ bool ConsumeLeadingStandardObjectAttribute(
 				name == "noreturn" || name == "__noreturn__";
 		}
 		++*position;
+		if (At(tokens, *position, OP_LPAREN))
+		{
+			// Attribute arguments are balanced tokens, not declaration attributes.
+			std::size_t depth = 0;
+			do
+			{
+				if (*position >= tokens.size() ||
+					tokens[*position].Kind() == kEofToken)
+					ThrowSyntaxError("unterminated standard attribute argument");
+				if (At(tokens, *position, OP_LPAREN)) ++depth;
+				else if (At(tokens, *position, OP_RPAREN)) --depth;
+				++*position;
+			} while (depth != 0);
+		}
 	}
 	*position += 2;
 	if (no_unique_address)

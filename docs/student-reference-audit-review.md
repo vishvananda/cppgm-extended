@@ -139,7 +139,7 @@ The recent discovery inventory is not all C++11:
 | EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Done in the accompanying performance-approved checkpoint: deduplicate adjusted TypeIds and compare declarations as sets while retaining first-declaration order. The one positive is promoted to PA6/300 and its temporary control removed; the distinct-set negative remains. Nine scratch boundaries pass ours and Clang; GCC's adjusted-array/function disagreement is retained. PA6 112/112, strict report, every required compiler check and the final combined 4800-observation global performance gate pass. Earlier two failed cycle gates remain recorded. N3485 15.4/2,3 supplies the rule. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
-| ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Argument constraint reviewed and open: N3485 7.6.3/1 expressly forbids an attribute-argument-clause. Six fresh C++11 observations confirm ours accepts [[noreturn(1)]] and both hosts reject it. The placement ledger assigns standard attribute support to PA29/500; one focused negative is installed, reusing existing valid noreturn runtime coverage. Variable appertainment remains separately reviewed because GCC only warns. This does not admit additional vendor attributes; no default fixture installed yet. |
+| ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Argument constraint done in the accompanying checkpoint: reject an argument clause on the unqualified standard noreturn attribute and consume other argument payloads as balanced tokens. Promote the existing negative to PA29/500 and reuse existing valid noreturn runtime coverage. Ours and GCC pass 16/16 scratch observations; Clang's two malformed unknown-attribute disagreements remain scratch evidence. PA29 405/405, strict 6109/6109 in one line, all required local checks and the 4800-observation global Alpha gates pass. N3485 7.6.3/1 supplies the argument constraint. Variable appertainment remains a separate contract review because GCC only warns; no mandatory fixture or extra vendor attribute is admitted for it. |
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Open, independently reduced without zero-argument inheritance: D<T> : T with using T::T and D<B>(7) rejects as template-parameter redeclaration here, in entry/candidate type dumps and at O0/O2; strict C++11 Clang/GCC accept. N3485 7.3.3 and 12.9 support the parameterized constructor. Ordinary using B::T shadowing remains a separate held host disagreement. |
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Zero-candidate review complete: P0136R1/N4429 establish the adopted C++11 defect-resolution basis. Six fresh host-agreed runtime observations already pass here for ordinary zero-argument availability, member initialization and local hiding; eighteen access/deletion/member negatives also agree. No new zero-availability fix or fixture is needed. Dependent using and parameterized viability remain separate open rows. The throwing-default/nothrow disagreement is preserved in INHERITED-DEFAULT-EXCEPT; no oracle is imposed for it. |
@@ -147,7 +147,7 @@ The recent discovery inventory is not all C++11:
 | NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Open, independently reproduced. The student changed only the existing backward-loop reference and quality envelope; source and status remain unchanged. Here O1/O2/O3 return for unequal mod-eight pointer inputs, while O0 preserves the loop, with both native paths. PA32 requires behavior preservation for defined LowIR; plain index carries no stronger optimization or source forward-progress promise. Eighty fresh observations and the frozen two-sidecar delta are retained. Review/fix the existing loop-finiteness proof and regenerate this reference, without adding a duplicate fixture. |
-| TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and 56 opt-in controls covering forty-one remaining families. The original batch has 99 agreeing strict C++11 checks per host; the additional existing base-alias input passes Clang and exposes the documented GCC disagreement. The solution passes 3/110 observations, exposing known failures. Standard strict report remains 6105/6105 in one line; harness and explicit control placement pass. Compiler fixes, final course-fixture minimization/promotion and combined export remain open. |
+| TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. Current strict report passes 6109/6109 in one line; harness controls and placement pass. Remaining compiler fixes, final course-fixture minimization/promotion and combined export stay open. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending final review after the outstanding fixes promote their controls; test definitions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final additions. Keep a fixture only for distinct required language/header behavior or an independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
@@ -4751,3 +4751,60 @@ excluded from this snapshot and receives its own validation/performance study.
 No ABI encoder or generated reference is hand-edited, and the unrelated four
 untracked artifacts remain outside the checkpoint. Final course-fixture pruning
 and the combined student export remain open with the other compiler fixes.
+
+## Standard noreturn argument checkpoint and completed test definitions
+
+The preceding semantic checkpoint is committed as ed64e4b4b. The separate
+syntax checkpoint fixes the reviewed C++11 argument constraint in N3485
+7.6.3/1: the unqualified standard noreturn attribute cannot have an
+attribute-argument-clause, including an empty one. The existing standard
+attribute consumer checks that boundary and consumes balanced argument tokens
+once. Identifiers inside an opaque argument payload no longer accidentally
+become declaration attributes. No new parser helper, source file, cache or
+vendor attribute is introduced.
+
+Eight scratch programs run at O0/O2. Ours and GCC pass all sixteen observations;
+Clang passes fourteen, accepting the malformed unknown-attribute argument
+cases which ours and GCC reject. Those disagreements remain scratch evidence.
+Unknown-attribute behavior is implementation-defined under N3485 7.6.1/5;
+the opaque-payload controls preserve the course's existing policy, rather than
+claiming a universal C++11 acceptance rule. Variable appertainment remains a
+separate review and adds no mandatory fixture.
+
+The existing temporary negative moves to
+pa29/tests/compile/500-standard-noreturn-arguments-bad.t with its exact
+ref-test-generated reference and rejection status. Its temporary copy is
+removed. Existing valid noreturn runtime fixtures are reused; no new positive
+or malformed-unknown-attribute fixture is added. The independent protected
+base-object array-new negative in the preceding checkpoint tests the distinct
+object-class access restriction, and its inline allocation body is demanded.
+
+All eight local groups finish successfully: PA29 405/405, strict report
+6109/6109 in exactly one line, debug-info, backend variants, self-host through
+PA5, all nine architecture targets, file audit and placement. The four pending
+regression runner integration tests also pass. The source patch and frozen
+compiler hashes are retained in
+/tmp/cppgm-v4-audit-review/noreturn-attribute-arguments/.
+
+Alpha's frozen global comparison is terminal with 4,800 successful observations,
+equal objects for every workload and four independently verified unscaled
+counters per observation. All instruction/RSS gates and all ten focused raw
+and calibrated cycle gates pass. The largest instruction ratio is 1.000086;
+all median paired RSS ratios are 1.0. The largest focused raw/calibrated cycle
+ratios are 1.001939/1.002583. This protocol was frozen against the approved
+AUTO-CONST-REF image e4bcdecf0e30356f800ccebd7ba88e6686ed261f479874c50fe566499d78af6c
+before ed64e4b4b was approved; it is a global comparison against that image,
+not a separate incremental timing claim against ed64e4b4b. The candidate is
+bdecba5ad57cdaf6293fe5e53ca98513e6b9a250d00136a3aab8f6ee5b55b283.
+All 91 input hashes are verified. Protocol, raw observations and gate review
+remain in noreturn-attribute-arguments/perf/ and perf-results/ locally, with
+the full objects retained on Alpha under
+/tmp/cppgm-v4-audit-review-20261002-noreturn-attribute-arguments/.
+
+The requested admitted test-definition queue is complete. Unfixed compiler
+regressions remain explicit opt-in controls with independently reviewed
+expectations, rather than accepting today's incorrect solution behavior as
+generated reference truth. Promotions remove their temporary controls, and
+metadata controls reuse existing inputs where appropriate. Final course-wide
+fixture minimization follows the remaining fix/promotion sequence; combined
+student-export validation remains deferred to that final stage as requested.
