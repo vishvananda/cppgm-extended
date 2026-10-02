@@ -2036,7 +2036,8 @@ LookupResult Program::LookupGraphCandidate(ScopeId scope, NameId name,
 		const LookupResult direct = DirectLookup(current, name, kind);
 		if (!direct.Empty())
 		{
-			if (!MergeLookup(&result, direct, ambiguous != 0))
+			if (!MergeLookup(&result, direct, ambiguous != 0,
+				naming_class == kNoEntity))
 			{
 				*ambiguous = true;
 				return LookupResult();
@@ -2143,7 +2144,6 @@ LookupResult Program::LookupUnqualifiedCandidate(ScopeId scope, NameId name,
 
 		++lookup_scope_visits;
 		result = DirectLookup(current, name, kind);
-		const bool direct_type_result = result.type != kNoType;
 		const EntityId scope_entity = scopes_[current].entity;
 		if (result.Empty() && scope_entity != kNoEntity &&
 			(entities[scope_entity].flavor == NAMED_STRUCT ||
@@ -2172,7 +2172,7 @@ LookupResult Program::LookupUnqualifiedCandidate(ScopeId scope, NameId name,
 				lookup_pending_targets_[pending], name, kind,
 				ambiguous ? &graph_ambiguous : 0);
 			if (graph_ambiguous || !MergeLookup(&result, candidate,
-				ambiguous != 0, direct_type_result))
+				ambiguous != 0, true))
 			{
 				*ambiguous = true;
 				return LookupResult();

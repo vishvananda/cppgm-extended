@@ -124,7 +124,7 @@ The recent discovery inventory is not all C++11:
 | HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass. Student later corrected the three original success sidecars in handoff189; our sources retain complete typed definitions and the positive test goals. |
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | LOOKUP-RESTORE | Restore genuine namespace type/value ambiguity coverage lost during early consolidation | Namespace reference review | Done in the accompanying test-only checkpoint: distinct-type PA6 and original distinct-variable PA7 negatives have exact generated references and pass their owning checks. Strict 6103/6103 prints one line; PA6/PA7 placement scans 297 inputs with zero findings, and the standard full placement audit remains clean. No compiler change. The valid same-int PA6 oracle correction remains LOOKUP-NAMESPACE. |
-| LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | In progress: enable existing canonical-type equivalence when merging namespace graph/import results; preserve direct lookup and class-base rules. All 72 core observations pass at O0/O2 and in both dump modes, including distinct-entity negatives. The prepared composite replaces the wrong PA6 same-int rejection in PA6/200 and its temporary control is removed; ours and both hosts pass. PA6 remains 112/112. Full local checks and frozen incremental Alpha gates are running against approved 8a6bcd105. The independent mixed type/value and class-base alias rows remain open. N3485 7.1.3 and 7.3.4 support this correction. |
+| LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Done in the accompanying checkpoint: enable existing canonical-type equivalence when merging namespace graph/import results; preserve direct lookup and class-base rules. All 72 core observations pass at O0/O2 and in both dump modes, including distinct-entity negatives. The reviewed composite replaces the wrong PA6 same-int rejection in PA6/200 and its temporary control is removed; ours and both hosts pass. PA6 112/112, strict 6109/6109 in one line, all required local groups and all frozen incremental Alpha gates pass against approved 8a6bcd105. All 2880 observations retain equal objects and unscaled counters. Independent mixed type/value and class-base alias rows remain open. N3485 7.1.3 and 7.3.4 support this correction. |
 | LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | Open, independently reproduced with frozen 1de7a8cbc entry: class/variable, typedef/variable, class/function and qualified class/variable conflicts accept in both dump modes and at O0/O2; strict C++11 Clang/GCC reject. N3485 7.3.4/6 explicitly excludes hiding a class or enumeration with an ordinary name in another namespace. Elaborated class lookup and a direct local typedef remain valid in all three compilers and must stay separate. Declaration-only boundaries belong to PA6; a call-expression boundary needs PA7. Corrected commands and 48 observations are in namespace-convergence/extra-corrected-entry-controls.json. |
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. PA22/100 now has an opt-in compile control reusing the existing PA30 input; correct and move that fixture with the fix rather than adding a duplicate source. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
@@ -4854,3 +4854,30 @@ Protocol, scripts, hashes and results are retained in
 /tmp/cppgm-v4-audit-review-20261002-namespace-convergence-first/.
 Compiler code and promoted references remain uncommitted pending these gates;
 the full tracker, final fixture pruning and combined export remain open.
+
+The namespace candidate's gates are now terminal and successful. All eight
+local groups pass, including backend variants, self-host through PA5, all nine
+architecture targets and the file audit. Strict output is exactly one line,
+6109/6109. Placement scans 3229 inputs with zero placement findings, zero tests
+needing review and zero local hygiene findings; the existing separate EH
+review leads are unchanged. The source patch and live compiler match the
+frozen image and patch hashes exactly.
+
+The incremental Alpha study passes all declared gates: 960 broad and 1920
+focused observations have successful status and equal objects per workload.
+All 2880 CSV files independently contain the four required unscaled counters.
+The largest paired instruction ratio is 0.999991 and all median paired RSS
+ratios are 1.0. The largest focused raw/calibrated cycle ratios are
+0.999910/1.000078. Namespace lookups measure 0.988297/0.988226; ratios below
+one remain measurements, without a general speedup claim. No observation,
+input, baseline or gate is changed or removed. The complete raw study and
+independent review are retained in namespace-convergence/perf-first-results/,
+with the full objects retained in the declared Alpha directory.
+
+Commit the existing semantic owner and the PA6 replacement/reference set
+together. The genuine ambiguity negatives remain, and the temporary convergence
+control is removed. LOOKUP-NAMESPACE is complete; the sixteen mixed type/value
+failures remain open in LOOKUP-NAMESPACE-MIXED, and LOOKUP-BASE-ALIAS remains
+separate. Neither this checkpoint nor the completed test-definition queue
+closes the remaining compiler fixes, contract reviews, final fixture pruning
+or combined student-export validation.
