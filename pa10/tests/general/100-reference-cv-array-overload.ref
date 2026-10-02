@@ -1,0 +1,55 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i32 1
+  i32 2
+}
+global @__constexpr_template__2 [storage=readonly, binding=internal] = {
+  i32 3
+  i32 4
+}
+
+function @f(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z1fRA2_i] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 1
+}
+function @f__ov2(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z1fRA2_Ki] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    return i32 2
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $a : obj<8x4>
+  slot $b : obj<8x4>
+  slot $lor__1 : i64
+
+  block ^entry:
+    %t1 = addr $a
+    copyobj 8x4 @__constexpr_template__1, %t1
+    %t2 = addr $b
+    copyobj 8x4 @__constexpr_template__2, %t2
+    %t3 = addr $a
+    %t4 = call i32 @f(%t3)
+    %t5 = cmp ne i32 %t4, 1
+    branch %t5, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t6 = addr $b
+    %t7 = call i32 @f__ov2(%t6)
+    %t8 = cmp ne i32 %t7, 2
+    %t9 = cmp ne i64 %t8, 0
+    store i64 %t9, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t10 = load i64 $lor__1
+    %t11 = convert trunc i32 i64 %t10
+    return i32 %t11
+}

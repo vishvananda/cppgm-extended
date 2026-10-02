@@ -142,7 +142,8 @@ The recent discovery inventory is not all C++11:
 | ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Argument constraint reviewed and open: N3485 7.6.3/1 expressly forbids an attribute-argument-clause. Six fresh C++11 observations confirm ours accepts [[noreturn(1)]] and both hosts reject it. The placement ledger assigns standard attribute support to PA29/500; one negative is prepared, reusing existing valid noreturn runtime coverage. Variable appertainment remains separately reviewed because GCC only warns. This does not admit additional vendor attributes; no default fixture installed yet. |
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Open, independently reduced without zero-argument inheritance: D<T> : T with using T::T and D<B>(7) rejects as template-parameter redeclaration here, in entry/candidate type dumps and at O0/O2; strict C++11 Clang/GCC accept. N3485 7.3.3 and 12.9 support the parameterized constructor. Ordinary using B::T shadowing remains a separate held host disagreement. |
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
-| INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Needs C++11 defect-report review: N3485 12.9/3 explicitly excludes parameterless inherited constructors, whereas the student's implementation applies P0136R1/N4429's later C++11 DR interpretation. Modern host acceptance alone is insufficient. The student's inherited-defaults personal control explicitly disagrees with both hosts at its nothrow assertion and is held, with no reference change. Establish the adopted correction and any necessary hosted-header use before adding fixtures. |
+| INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Zero-candidate review complete: P0136R1/N4429 establish the adopted C++11 defect-resolution basis. Six fresh host-agreed runtime observations already pass here for ordinary zero-argument availability, member initialization and local hiding; eighteen access/deletion/member negatives also agree. No new zero-availability fix or fixture is needed. Dependent using and parameterized viability remain separate open rows. The throwing-default/nothrow disagreement is preserved in INHERITED-DEFAULT-EXCEPT; no oracle is imposed for it. |
+| INHERITED-DEFAULT-EXCEPT | Review throwing defaults on a zero-argument inherited constructor and the corresponding nothrow trait | Existing INHERITED-ZERO exception review, isolated source206 | Needs contract review. Six fresh observations show ours catches the second default-argument throw, while Clang/GCC terminate at O0/O2; all three report the zero construction nothrow in the isolated trait control. The student's false nothrow assertion disagrees with all three. Preserve the default-argument runtime/trait discrepancy without changing its oracle or adding a mandatory fixture. Primary adopted C++11 DR sources and frozen controls are in inherited-zero-contract/. |
 | NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Open, independently reproduced. The student changed only the existing backward-loop reference and quality envelope; source and status remain unchanged. Here O1/O2/O3 return for unequal mod-eight pointer inputs, while O0 preserves the loop, with both native paths. PA32 requires behavior preservation for defined LowIR; plain index carries no stronger optimization or source forward-progress promise. Eighty fresh observations and the frozen two-sidecar delta are retained. Review/fix the existing loop-finiteness proof and regenerate this reference, without adding a duplicate fixture. |
@@ -4392,3 +4393,59 @@ invalid bit-field-negative garbage value changes. All 91 immutable inputs
 verify before one unchanged Alpha study starts. Full local validation and
 performance review are pending; no further compiler fix is installed. Final
 fixture minimization and combined export remain after the complete additions.
+
+
+## Inherited zero-argument contract review
+
+N4429 explicitly states CWG's intent to apply the inheritance rewording as a
+C++11 defect resolution. P0136R1 supplies the adopted wording; CWG1941 records
+October 2015 adoption. Primary sources are frozen with exact URLs and SHA-256
+hashes in inherited-zero-contract/primary-source-manifest.json. This establishes
+a C++11 DR basis rather than inferring language ownership from host acceptance.
+N3485's earlier exclusion of parameterless inherited constructors remains
+recorded. The course's class.inheriting_constructor owner is PA11/500.
+
+The pure ordinary zero-argument runtime reducer passes ours and both strict
+C++11 hosts at O0/O2: move-declared derived construction, members following the
+inherited base construction, local constructor hiding and parameterized
+construction all retain their expected values. Three independent private,
+deleted and deleted-member negatives reject in all eighteen observations.
+The original composite's dependent using T::T and parameterized validity failures
+therefore do not establish a zero-availability bug here. Existing inheriting-
+constructor fixtures and the independent open rows remain; no new zero-arity
+fixture is added merely to repeat a working boundary.
+
+The isolated throwing-default runtime is different: ours catches int 17, while
+both hosts abort at O0/O2. A separate trait observation is accepted by all three
+and reports zero construction nothrow; the student's opposite assertion is not
+an agreed reference oracle. All thirty observations, including every diagnostic
+and signal, are retained in isolated-zero-controls.json, alongside the six
+ordinary-runtime observations. The existing exception review is preserved in
+INHERITED-DEFAULT-EXCEPT rather than silently closing it with availability.
+No required input/reference or compiler source is changed for this review.
+
+
+## Test-addition checkpoint: reference qualification
+
+The user requested finishing test additions separately from the remaining fixes.
+Thirty PA10/12 qualification fixtures and their 75 generated reference sidecars
+are ready as a test-only checkpoint. All 105 files still match the frozen
+fixture-sidecar manifest; the references were generated through exact ref-test
+selections, not edited by hand. The four unrelated untracked reference artifacts
+remain outside this checkpoint. Final overlap review stays deferred until the
+remaining additions are complete.
+
+The twenty-third compiler image passes all eleven local validation groups:
+PA10/12/20/21, strict 6103/6103 with one success line, debug information, backend
+variants, self-host through PA5, architecture, file and placement audits. Its
+574 fresh and 376 reused strict-host observations preserve the reviewed
+boundaries. This is correctness validation, not performance approval.
+
+Its Alpha study is terminal: all 91 frozen inputs and all 4800 output/status
+observations agree, and instruction/memory gates pass. Five focused cycle
+gates fail (auto aliases, EH handlers, initializer-list values, qualification
+views and reference aliases); exact results remain in
+reference-cv-qualification/perf-twenty-third/gate-review.json and the complete
+raw study in perf-twenty-third-results/. The three compiler source changes
+remain uncommitted and the corresponding compiler-fix rows remain open.
+No further performance variant is part of this test-addition checkpoint.
