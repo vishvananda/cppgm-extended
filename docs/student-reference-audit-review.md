@@ -144,7 +144,7 @@ The recent discovery inventory is not all C++11:
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Needs C++11 defect-report review: N3485 12.9/3 explicitly excludes parameterless inherited constructors, whereas the student's implementation applies P0136R1/N4429's later C++11 DR interpretation. Modern host acceptance alone is insufficient. The student's inherited-defaults personal control explicitly disagrees with both hosts at its nothrow assertion and is held, with no reference change. Establish the adopted correction and any necessary hosted-header use before adding fixtures. |
 | NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
-| NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Needs contract review: student changed only the expected success to failure after finding an unrestricted hosted declaration followed by throw(std::bad_alloc). Our current frozen implementation and Clang accept its named-type reducer; GCC rejects, and all three reject the renamed-Failure mismatch. N3485 15.4/3–4 and library allocation declarations require review before correcting the source comment/oracle. No reference or compiler rule changed here. |
+| NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Reviewed; fixture rewrite pending after the active compiler checkpoint. Clang explicitly implements the named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. A prepared unrestricted replacement-new positive passes all three compilers at O0/O2 and preserves object-emission coverage without requiring that extension. Retain the independent wrong-spec negative. No additional fixture or compiler rule is needed; exact reference generation and owning/strict/placement checks remain pending. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending until additions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final pending additions. Keep a fixture only for distinct required language/header behavior or a independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
@@ -3957,3 +3957,101 @@ The original unused observations remain preserved in student-refresh-pa30-200/.
 No compiler rule, reference or required fixture changes merely to enforce the
 hosts' earlier diagnostic timing. This resolves the review item; the distinct
 namespace, template access/substitution and demand bugs remain in the queue.
+
+
+## Replacement-new reference review
+
+NEW-SPEC-REF is reviewed against N3485 3.7.4/2, 15.4/3–4 and 18.6.1.1,
+and the actual selected header declarations. LLVM tag llvmorg-21.1.8
+[Clang exception matching](https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-21.1.8/clang/lib/Sema/SemaExceptionSpec.cpp)
+lines 565–587 deliberately accepts the std::bad_alloc difference for backward
+compatibility. That host acceptance is not evidence that C++11 generally
+permits restrictive redeclarations of an unrestricted allocation declaration.
+The same release's
+[libc++ global allocation declarations](https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-21.1.8/libcxx/include/__new/global_new_delete.h)
+lines 22–27 enable the dynamic throw macro only in C++03. The selected
+libstdc++ 15 C++11 macro is likewise empty, as recorded by the student.
+Pinned primary files and hashes are retained in
+replacement-new-reference-review/primary-source-manifest.json.
+N3485's Annex C older-code example retains the old specification, but its
+normative implicit/library declarations and compatibility clauses remain the
+basis for portable required coverage.
+
+The proposed replacement-new positive removes the dynamic specification and
+preserves hosted object emission. controls.json records eighteen fresh
+observations: the new positive passes ours/Clang/GCC at O0/O2; the original
+hosted legacy positive also passes all three here, unlike the student's
+header-free reducer with an explicit unrestricted redeclaration. The existing
+wrong-spec negative rejects ours/Clang but GCC accepts it as a concession.
+The strict language argument, not that permissive host result, justifies
+retaining the negative. Initial commands accidentally passed unsupported -x
+to our driver; all eighteen initial observations and the script are retained
+separately as invocation errors, then rerun with copied .cpp sources and valid
+commands. No invocation error is counted as semantic evidence.
+
+fixture-plan.json proposes renaming/rewriting the existing positive as
+pa30/tests/compile/700-hosted-replaceable-operator-new.t, retaining its owning
+hosted-header milestone and cluster. This keeps one positive and one
+independent negative without adding another required input. The wrong-spec
+comment should describe the incompatible restriction rather than claim the
+C++11 header has a dynamic specification. No default fixture or reference is
+changed before the active reference-conversion checkpoint; exact regeneration,
+owning/strict/placement checks and the later final export remain pending.
+
+
+All eleven seventeenth validation groups pass, including the one-line strict
+6103/6103 report, debug-info, variants, self-host through PA5, all nine
+architecture audits, file limits and zero placement/hygiene findings. The
+574 fresh matrix observations retain their boundaries, with 376 unchanged
+strict C++11 host observations reused; invalid bit-field runtime variations
+remain explicitly outside the oracle. seventeenth-matrix-review.json records
+the complete comparison. The live compiler matches its frozen image. The
+Alpha focused study remains live, with no gate decision or repeated trial yet.
+
+
+EH-SPEC-SET preparation now has one compact order/duplicate positive and one
+independent equal-cardinality/different-types negative. Sixteen fresh commands
+in exception-spec-set/entry-controls.json confirm that both strict C++11 hosts
+accept the positive and reject the negative; our immutable seventeenth image
+rejects both in type/semantic dumps and at O0/O2. No default fixture is installed
+yet. An initial expanded cv/array/function adjustment control has a Clang/GCC
+compatibility disagreement despite the N3485 adjustment wording; its source and
+all sixteen original observations are retained as exploratory evidence, not
+added to the required positive. That neighboring implementation behavior is
+not presumed to be an additional compiler bug or fixture obligation.
+
+
+The seventeenth study is complete and retained in perf-seventeenth-results/.
+All 91 inputs verify, all 4800 objects agree, and instruction/RSS gates pass.
+Nine focused raw/calibrated cycle gates fail: auto aliases 1.019783/1.020064,
+auto prvalues 1.008613/1.008435, EH handlers 1.007588/1.009007,
+initializer-list values 1.008996/1.009668, qualification views
+1.018251/1.018377, recognition 1.006036/1.007144, reference aliases
+1.014106/1.012620, virtual dispatch 1.010230/1.011604 and volatile views
+1.011706/1.010774. Reference noexcept temporaries alone pass both cycle gates.
+The fundamental identity shortcut is removed; the source restoration is
+verified byte-for-byte against sixteenth-source.patch before the next change.
+No failed timing observation or threshold is discarded.
+
+The next candidate removes the remaining nonessential cached record reads in
+the reference branch itself. It restores the original EffectiveType,
+RemoveTopCv and full-record read locations in exact-type and derived-to-base
+binding, keeping only the required array/cv, volatile, qualification and value-
+category corrections. The ordinary value path remains the entry implementation;
+QualificationConversion remains in the existing calls module. This narrows the
+source change to required policy rather than retaining an unsuccessful generic
+optimization. The eighteen-image build, fresh matrices, complete validation and
+immutable performance study are pending. No other compiler fix or required
+fixture is installed before this checkpoint passes its gates.
+
+
+The eighteenth warning-free image is compiler-eighteenth, SHA-256
+`26bad327a8becf777647c542070bfce6b63e377755d48c0036f109868e2bebea`.
+Conversion remains one function without a split clone. Its stack reservation
+matches the entry's 0x168 bytes; the whole function size is 0xea7 versus the
+entry's 0xeb6. These assembly facts explain the narrowed implementation and
+are not a performance gate. The source sizes are 2947/2541 lines, within the
+unchanged limits. Fresh matrix and all eleven checks are underway. One complete
+immutable Alpha study inherits the seventeenth runners, inputs, thresholds and
+process-only fixed-layout setting. All 91 manifest entries verify before any
+counting. The four reference rows and thirty fixture sets remain uncommitted.
