@@ -3558,12 +3558,21 @@ record copy. Its compiled conversion function has 804 instructions versus the
 sixth image's 821; this static count is not a runtime gate result. All 950
 control/regression observations retain their expected boundaries, recorded in
 eighth-matrix-review.json. Invalid accepted bit-field references remain outside
-the runtime oracle and in REF-BITFIELD. The four affected suites, strict
-single-line 6101/6101 report and debug checks pass; the remaining required
-checks are running in validation-eighth/. A fresh immutable Alpha study verifies
-all 91 inputs before launch and uses the actual entry binary for A/A; broad
-measurements have completed and the 3840-observation focus sample is running.
-The compiler code and thirty fixture sets remain uncommitted pending all gates.
+the runtime oracle and in REF-BITFIELD. All eleven required checks in
+validation-eighth/ pass: the four affected suites, strict single-line 6101/6101
+report, debug information, variants, self-host through PA5, nine architecture
+audits, file limits and placement. Placement scans 3226 inputs with zero
+placement/hygiene findings. A fresh immutable Alpha study verifies
+all 91 inputs before launch and uses the actual entry binary for A/A. All
+4800 observations complete with equal objects, and instruction/RSS gates pass.
+Nine focused workloads pass both cycle gates. EH handlers still fail
+(raw/calibrated 1.007373/1.009440). perf-eighth/gate-review.json records the full
+result; perf-eighth-results/ retains every raw measurement, and remote objects
+remain available. The compiler code and thirty fixture sets remain uncommitted.
+Disassembly identifies a full-record copy in EffectiveType, which is inlined
+into conversion/type-decay paths even though it consumes only kind and child.
+The next candidate reads that immutable record by reference; the helper makes
+no intervening type-table mutation. No failed study or threshold is discarded.
 
 The next namespace addition is prepared as a compact positive covering
 qualified scalar/array/shared-class aliases, namespace identity, transitive
@@ -3575,3 +3584,18 @@ entry/host observations in planned-fixture-entry-controls.json confirm strict
 C++11 Clang/GCC acceptance of the positive and rejection of the negative.
 The immutable entry rejects the positive in both dump modes and at O0/O2.
 No exploratory namespace matrix is copied wholesale into required tests.
+
+The ninth qualification candidate is frozen as compiler-ninth, SHA-256
+`2b734a93e9196e335b8a97279ccca0c2ab1c22f0b873c6ae34fd4ea592be3d30`.
+Its only change from the eighth image reads EffectiveType's immutable record
+by reference. ninth-matrix-review.json retains 574 freshly executed candidate
+observations and explicitly reuses 376 unchanged strict C++11 host observations
+from the eighth matrix. All expected boundaries are preserved; arbitrary
+runtime values from accepted invalid bit-field references remain non-oracles.
+The eleven required validation groups are running in validation-ninth/. The
+new immutable Alpha study under reference-cv-ninth verifies all 91 inputs,
+retains the same A/A baseline and thresholds, and is running its complete
+960-broad/3840-focused sample. No previous trial is substituted for this image.
+The eighth study's 4800 time/counter files and observations are fully collected
+locally; the ninth source patch and image are frozen before any measurements.
+Reference owners remain open until both correctness and performance gates pass.
