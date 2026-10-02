@@ -3807,9 +3807,44 @@ QualificationConversion to its original analysis owner, and appends the existing
 reference-binding helper after the existing call functions. Reference-binding
 and qualification policy are byte-identical to the thirteenth bodies; the
 ownership ledger follows the retained definitions. The file sizes are 2932 and
-2567 lines, within the unchanged limits. A fresh build passes. Required
-validation and control matrices are running; one immutable complete Alpha study
+2567 lines, within the unchanged limits. A fresh build passes. All 574 fresh candidate observations preserve their
+previous boundaries; 376 unchanged host observations are explicitly reused in
+fourteenth-matrix-review.json. All eleven required validation groups pass,
+including the one-line strict 6103/6103 report, debug-info, variants, self-host
+through PA5, nine architecture checks, file limits and zero placement/hygiene
+findings. One immutable complete Alpha study
 uses the established fixed-layout protocol, unchanged thresholds and all 91
 verified manifest entries. No additional compiler/source or output-argument
 protocol changes are made during its measurements. The four reference rows,
 thirty fixture sets and later compiler fixes remain pending.
+
+The fourteenth study is complete: all 91 manifest entries verify and all 4800
+objects agree. Broad instruction/RSS and nine focused cycle gates pass. Only
+EH handlers fail, at raw/calibrated cycles 1.010908/1.013188.
+perf-fourteenth/gate-review.json and perf-fourteenth-results/ retain the decision
+and every observation. Inspection of the frozen EH input shows no reference
+initialization: it consists of unused class declarations and ordinary int
+returns through try/catch. Its timing does not measure the corrected reference
+binding rules directly; no unrelated compiler owner is changed on that basis.
+
+The next patch removes the remaining optional ordinary-conversion optimizations:
+target-record copying, normal decay/exact matching and pointer-record copies
+return to the original implementation. The required array-element cv check for
+pointer-to-void conversion is retained, as are the unchanged reference-binding
+and qualification bodies. An initial fifteenth image
+`84cb306478bb57c48417a2bc169e7258cddef7942f9221daf5539056f0cc2677`
+exposed an accidental duplicate pointee unwrapping and unused variable during
+build review. Its partial validation and frozen image are retained; it was
+never timed. The warning cleanup reuses the already computed pointee.
+
+The measured image is compiler-fifteenth-clean, SHA-256
+`9c4a63202b5f742a556b757119d022078f07a245658b9d0e8b73044b40aa7616`.
+Its build has no compiler-source warnings. All 574 fresh candidate observations
+retain their boundaries, with 376 unchanged host observations reused in
+fifteenth-clean-matrix-review.json. Required aggregate validation is running.
+The fresh immutable Alpha study inherits the fourteenth fixed-layout runners,
+thresholds and sample counts. All 91 manifest entries verify before counting.
+Initial preflight logs are retained: the untimed fifteenth root had no source
+inputs, so preparation now copies the identical verified inputs from the
+complete fourteenth root. No preflight failure produced timing observations.
+Compiler code and thirty fixture sets remain uncommitted until all gates pass.
