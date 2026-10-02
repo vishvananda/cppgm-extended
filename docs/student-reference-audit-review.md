@@ -3788,3 +3788,28 @@ remain identical. Initial preflight rejected the stale runner hashes before any
 measurement; that failed preflight log is retained. Corrected manifest
 verification passes all 91 entries before the measured run. Compiler code and
 thirty pending fixture sets remain uncommitted until the gate decision.
+
+The complete fixed-layout thirteenth study also retains all 4800 equal-object
+observations in perf-thirteenth-fixed-layout-results/. Instruction/RSS gates
+pass; three focused cycle gates fail: EH raw/calibrated 1.016530/1.019994,
+initializer-list values 1.006478/1.007762 and qualification views
+1.006715/1.012903. Disabling ASLR alone does not clear the performance concern.
+A separate predeclared 512-observation fixed-layout-argv-calibration/ diagnostic
+compares unique output arguments with identical compiler arguments. Neither
+workload meets its required 0.25% median separation; its criterion fails. All
+observations are retained locally and objects remote. No further output-argument
+protocol change is made, and none of the failed candidate gates is excused.
+
+The fourteenth image is compiler-fourteenth, SHA-256
+`3164e691811917a83d2e74f9e3166563a7650ee0af06d33c547db6fa258ff7c5`.
+It removes thirteen nonessential record-copy changes from the patch, restores
+QualificationConversion to its original analysis owner, and appends the existing
+reference-binding helper after the existing call functions. Reference-binding
+and qualification policy are byte-identical to the thirteenth bodies; the
+ownership ledger follows the retained definitions. The file sizes are 2932 and
+2567 lines, within the unchanged limits. A fresh build passes. Required
+validation and control matrices are running; one immutable complete Alpha study
+uses the established fixed-layout protocol, unchanged thresholds and all 91
+verified manifest entries. No additional compiler/source or output-argument
+protocol changes are made during its measurements. The four reference rows,
+thirty fixture sets and later compiler fixes remain pending.
