@@ -1,6 +1,6 @@
 // VALIDATION: compile-fail
-// A replacement operator new may not contradict the hosted declaration's
-// dynamic exception specification.
+// A restricted replacement conflicts with the unrestricted C++11
+// declaration of operator new in <new>.
 
 #include <new>
 

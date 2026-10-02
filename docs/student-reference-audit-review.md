@@ -144,7 +144,7 @@ The recent discovery inventory is not all C++11:
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Needs C++11 defect-report review: N3485 12.9/3 explicitly excludes parameterless inherited constructors, whereas the student's implementation applies P0136R1/N4429's later C++11 DR interpretation. Modern host acceptance alone is insufficient. The student's inherited-defaults personal control explicitly disagrees with both hosts at its nothrow assertion and is held, with no reference change. Establish the adopted correction and any necessary hosted-header use before adding fixtures. |
 | NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
-| NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Reviewed; fixture rewrite pending after the active compiler checkpoint. Clang explicitly implements the named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. A prepared unrestricted replacement-new positive passes all three compilers at O0/O2 and preserves object-emission coverage without requiring that extension. Retain the independent wrong-spec negative. No additional fixture or compiler rule is needed; exact reference generation and owning/strict/placement checks remain pending. |
+| NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending until additions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final pending additions. Keep a fixture only for distinct required language/header behavior or a independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
@@ -4130,3 +4130,26 @@ The immutable compiler-nineteenth image has SHA-256
 All 574 fresh matrix observations preserve the eighteenth boundaries, with
 376 unchanged strict C++11 host observations reused. Full validation and one
 unchanged-protocol Alpha study are pending. No performance success is claimed.
+
+
+## Portable replacement-new fixture checkpoint
+
+The prepared unrestricted positive replaces, rather than supplements, the old
+700-hosted-replaceable-operator-new-dynamic-exception-spec input. Its new name
+is pa30/tests/compile/700-hosted-replaceable-operator-new.t. The wrong-spec
+negative keeps its source behavior and corrects its comment to describe the
+unrestricted C++11 declaration. Exact make -C pa30 ref-test generates only the
+new positive's sidecars; the superseded fixture and its references are removed.
+PA30 passes 153/153; placement and local hygiene findings remain zero. The
+unchanged compiler-after-auto entry independently compiles the new positive.
+This test-only correction proceeds independently of the immutable reference
+conversion performance study. The new combined strict report passes 6103/6103 in exactly one line;
+student export remains deferred to the requested final check.
+
+
+All eleven nineteenth compiler validation groups pass, including the unchanged
+strict 6103/6103 report, debug-info, variants, PA34 self-host through PA5, nine
+architecture audits, file limits and placement/hygiene. The subsequently
+rewritten PA30 fixture passes its own combined strict report with the same
+count. The live compiler still matches compiler-nineteenth exactly. The Alpha
+study remains live; no reference-binding compiler checkpoint is claimed yet.
