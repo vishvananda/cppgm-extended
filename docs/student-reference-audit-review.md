@@ -3592,10 +3592,94 @@ by reference. ninth-matrix-review.json retains 574 freshly executed candidate
 observations and explicitly reuses 376 unchanged strict C++11 host observations
 from the eighth matrix. All expected boundaries are preserved; arbitrary
 runtime values from accepted invalid bit-field references remain non-oracles.
-The eleven required validation groups are running in validation-ninth/. The
-new immutable Alpha study under reference-cv-ninth verifies all 91 inputs,
-retains the same A/A baseline and thresholds, and is running its complete
-960-broad/3840-focused sample. No previous trial is substituted for this image.
+All eleven required validation groups in validation-ninth/ pass, including
+the single-line strict 6101/6101 report, self-hosting and zero placement/hygiene
+findings across 3226 inputs. The
+new immutable Alpha study under reference-cv-ninth verifies all 91 inputs and
+completes 960 broad plus 3840 focused equal-object observations, with unchanged
+A/A calibration and thresholds. Instructions/RSS pass, but focused cycles fail
+for auto prvalues (raw/calibrated 1.004920/1.009339), EH handlers
+(1.009875/1.009353), initializer-list values (1.011085/1.011717), qualification
+views (1.009268/1.008553), reference aliases (1.008364/1.009103), and volatile
+views (1.007707/1.006734). perf-ninth/gate-review.json and perf-ninth-results/
+retain the full result and every raw measurement. No previous trial is
+substituted for this image.
 The eighth study's 4800 time/counter files and observations are fully collected
 locally; the ninth source patch and image are frozen before any measurements.
 Reference owners remain open until both correctness and performance gates pass.
+
+The tenth image is compiler-tenth, SHA-256
+`233382a7dcf1565f0e837025b6ce553c940c32cb48c47fde1c253a651ad6b7a1`.
+It removes twelve additional full-record copies from conversion's shared type
+predicates, arithmetic rank/promotion, decay and similarity helpers. Reads in
+the predicates and recursive similarity checks do not mutate the type table;
+decay/parameter adjustment read kind/child before their terminal interning call
+and never dereference the record afterwards. tenth-change.json records the
+scope and lifetime review. Its source/image and all 91 inputs are frozen before
+the new complete Alpha study. All eleven required correctness/audit groups
+and the 574 fresh candidate controls pass, with 376 unchanged host observations
+reused explicitly. The 4800-observation performance study verifies output equality
+and passes instructions/RSS. Focused cycles fail for EH handlers
+(raw/calibrated 1.005620/1.010129) and qualification views
+(1.001766/1.008652); the other eight workloads pass both cycle gates.
+perf-tenth/gate-review.json and perf-tenth-results/ retain all observations.
+No new required fixture is introduced for these representation-only read changes.
+
+Git evidence also corrects a consolidation coverage claim. The original
+4b8ac246c parent source pa8/tests/320-using-directive-ambiguity-bad.t.1 declares
+two distinct namespace variables and initializes result from their ambiguous
+value name. Its individual source SHA-256 is
+`3787a02c33b9d94f4d4780d88a2ba53a3e1c3126c3f5ced1f9e35b8be3f918a1`.
+early-assignment-consolidation-inventory.tsv incorrectly lists the valid
+same-int PA6 typedef program as covering that negative. The planned namespace
+checkpoint therefore includes a PA7 distinct-variable negative retaining the
+original source, separately from the PA6 type-convergence correction. PA6
+excludes expression typing; PA7 owns the global id-expression in the initializer.
+The frozen complete implementation also diagnoses this input in its type dump,
+but that observation does not make the initializer a PA6 requirement. Twenty-four
+corrected observations in planned-fixture-corrected-entry-controls.json confirm
+both planned negatives with strict C++11 hosts; the composite positive still
+exposes the namespace convergence bug. Initial phase-expectation metadata is
+retained separately. Update the inventory's destination when the PA7 fixture is
+installed; its historical baseline hash and historical lane inventory stay intact.
+
+The eleventh image is compiler-eleventh, SHA-256
+`892ea8b052e214e636a0f1c283257af3f1345c78e518978ebc13f2c1f008ad34`.
+Conversion uses canonical identity immediately for identical non-reference
+source/target types after the reference branch. Arrays and functions retain
+normal decay. This skips repeated immutable type unwrapping for the ordinary
+same-type case without bypassing reference category/cv checks. All 574 fresh
+candidate observations retain their previous boundaries, with 376 unchanged
+host observations reused; eleventh-matrix-review.json records the comparison.
+All eleven required groups in validation-eleventh/ pass, including the one-line
+strict 6101/6101 report, variants, self-hosting and zero placement/hygiene
+findings. The complete immutable Alpha study verifies all 91 inputs and is
+complete with 4800 equal-object observations. Instructions/RSS and eight
+focused cycle gates pass. EH handlers (raw/calibrated 1.007692/1.011947) and
+qualification views (1.003191/1.007344) still fail. perf-eleventh/gate-review.json
+and perf-eleventh-results/ retain every observation. Compiler code and thirty
+fixture sets remain uncommitted until every performance gate passes.
+
+An independent baseline-only diagnostic investigates the A/A command-line
+observer: unique output filenames differ by one character between a and aa,
+although both execute the actual same compiler-a image. The predeclared
+argv-calibration/ study retains 512 observations across fixed and unique output
+paths, with all compiler arguments identical in each fixed group and each
+object archived after measurement. EH median A/A ratios are 0.999992 (fixed)
+and 1.000368 (unique); qualification views are 0.999265 and 0.999406. These
+results do not show a meaningful output-filename effect and do not explain or
+excuse the failed gates. All diagnostic raw counters, times and logs are
+retained locally and objects remain remote. The original gate thresholds and
+measurement harness stay unchanged.
+
+The twelfth image is compiler-twelfth, SHA-256
+`b17b0f6ea5528890f606716d70e1463f76136af906298d56178ae15917c6f996`.
+The ordinary pointer path snapshots its two pointee IDs before any downstream
+call and reads qualifier/void-pointee records by reference, removing five
+remaining full-record copies from Conversion. No record is read across a
+mutating call. All 574 fresh candidate observations preserve their boundaries;
+376 unchanged strict C++11 host observations are reused explicitly in
+twelfth-matrix-review.json. Required validation is running in validation-twelfth/.
+The fresh immutable Alpha study verifies all 91 inputs, completes broad
+measurements with equal objects and is running the complete focused sample.
+The four reference owners and all subsequent additions remain pending.
