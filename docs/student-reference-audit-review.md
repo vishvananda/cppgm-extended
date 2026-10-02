@@ -129,7 +129,7 @@ The recent discovery inventory is not all C++11:
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
-| TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Needs contract review: the unchanged mismatched-return negative compiles here and rejects with Clang/GCC in strict C++11 at O0/O2; the matching definition positive passes all three. Establish the declaration-matching requirement and template diagnostic timing before adding a mandatory rejection fixture. Frozen commands are in student-refresh-pa30-200/entry-controls.json. |
+| TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Reviewed: no additional required fix or fixture. Instantiating the mismatched member rejects with conflicting function return type at O0/O2 and in PA14 LowIR, while the matching definition passes; both strict C++11 hosts agree. The unused form remains a diagnostic-timing difference under N3485 14.6/8, not a mandatory rejection oracle. Fourteen new observations and contract review are recorded below. |
 | NEW-ARRAY-DTOR-ACCESS | Review destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Needs contract review: the private-destructor array-new negative compiles here and rejects with Clang/GCC in strict C++11 at O0/O2. Scalar new with a private destructor passes all three and must remain supported. Aggregate-member and inactive-union controls have Clang/GCC disagreements, so their labels are not adopted as oracles. Frozen commands are in student-refresh-pa30-200/entry-controls.json. |
 | TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
 | ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Open, independently reproduced: character, integer and suffixed-string messages are accepted here and rejected by Clang/GCC at O0/O2. These are C++11 syntax constraints and can be tested without hosted headers. |
@@ -3904,3 +3904,56 @@ planned fixtures, in both dumps and at O0/O2. The same seven core convergence
 positives and planned positive fail; the same four mixed-name negatives are
 incorrectly accepted. All other boundaries remain unchanged. The reference
 binding patch therefore does not resolve or introduce these lookup defects.
+
+
+The sixteenth Alpha study is complete: all 91 inputs verify and all 4800
+objects agree. Instruction/RSS and nine focused raw/calibrated cycle gates
+pass. EH handlers alone fail at 1.008330/1.011434. Every raw measurement is
+retained in perf-sixteenth-results/; perf-sixteenth/gate-review.json retains
+the complete gate decision. Removing GCC's split ordinary path was useful
+but insufficient to clear that remaining threshold; no row is closed.
+
+The next candidate short-circuits an identical fundamental source/target type
+before record copying, decay and qualification. It obtains the target fact
+once and preserves the existing full-record snapshot for all other paths.
+The ordinary EH source returns int to int, so this change removes actual
+redundant type-table reads on the measured path rather than changing an
+unrelated compiler owner. References, arrays, functions, class values and
+qualified types retain their previous conversion paths. The preliminary build
+log is retained; no preliminary image was timed. Fresh validation and an
+immutable full study remain required before the compiler/fixture checkpoint.
+
+
+The seventeenth warning-free image is compiler-seventeenth, SHA-256
+`158bc4d281f0548dfbab381fc24a1e55ed65bb7d5e6cb200f7be558d6f32d4ca`.
+Conversion remains one function, without a .part.0 clone. Source sizes are
+2954/2541 lines, within unchanged limits. Its matrix and all eleven required
+validation groups are running. The fresh Alpha study inherits the exact
+sixteenth runners, sample counts, inputs, fixed-layout setting and thresholds;
+only the candidate image changes. No measured image or source will change
+during counting, and the prior sixteen-image evidence remains retained.
+
+
+## Inherited return-type matching review
+
+TMPL-MEMBER-MATCH is reviewed against PA14's supported instantiated member
+machinery and definition-time checks, PA17's dependent-return-type scope rule,
+and N3485 13.1/1–2, 14.5.1.1/1–2 and 14.6/8. The original student negative has
+no use of Service<T>::get. Its out-of-class return spelling precedes the
+qualified declarator and denotes a retained qualified template type. Modern
+hosts diagnose the mismatch eagerly, while our compiler waits for demand.
+The C++11 template rule permits no diagnostic for an invalid uninstantiated
+template; PA14's explicit unused-body checks do not impose that eager
+out-of-class dependent-return matching rule.
+
+A copied reducer adds a call to Service<int>::get without changing the
+mismatched declaration or definition. Our immutable seventeenth image rejects
+it at O0/O2 and in PA14 O0 LowIR with conflicting function return type. Both
+strict C++11 hosts reject it. The original matching-definition positive passes
+all seven corresponding compiler/mode checks. All fourteen commands, sources,
+statuses and diagnostics are retained in
+/tmp/cppgm-v4-audit-review/template-member-match-review/controls.json.
+The original unused observations remain preserved in student-refresh-pa30-200/.
+No compiler rule, reference or required fixture changes merely to enforce the
+hosts' earlier diagnostic timing. This resolves the review item; the distinct
+namespace, template access/substitution and demand bugs remain in the queue.
