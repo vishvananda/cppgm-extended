@@ -4,6 +4,41 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
+## Paused for strategy review — 2026-10-02
+
+The user requested a pause and review of the approach. The thread goal is
+paused. Stop the tenth local validation process group (handle 23278, exit 143)
+at that request; five affected suites had passed, and the strict report was
+interrupted. No tenth Alpha measurement started. The six-file typed-dispatch
+patch and immutable image remain preserved; their hashes still match the
+recorded tenth metadata. Previously completed checks and measurements retain
+their original status. No compiler change is made by this review.
+
+The workflow expanded too far: the branch has 96 commits since fb15cd49e,
+45 documentation-only commits, 291 added numbered fixtures and a 5306-line
+tracker before this pause note. These figures describe scope and overhead,
+not a claim that every added fixture is redundant. The mixed namespace fix
+alone reached ten candidates and five full 4032-observation performance studies
+(20,160 compiler measurements), despite the correctness-complete candidates
+passing instruction and memory gates. The additional 0.5% raw/calibrated cycle
+gates were imposed by this work, not scripts/validate_perf_regression.py,
+whose gating metrics are instructions and memory. Those extra gates and
+repeated full validation of intermediate variants became a major bottleneck.
+
+Recommended resumption strategy: freeze the existing discovery inventory and
+prioritize original student/Argon defects and demonstrated reference errors;
+group reducers by root cause; reuse existing required fixtures and admit a
+minimal regression for each distinct missing rule. Run targeted checks during
+editing, a small frozen performance screen before expensive qualification,
+and all repository-required checks once the final patch is ready. Use the
+repository instruction/memory policy, with focused A/A-calibrated confirmation
+for suspected cycle slowdowns; establish repeatability and uncertainty before
+rewriting correct code. Keep disputed language cases in the review queue
+without making them block unrelated confirmed fixes. Keep one concise summary
+per completed fix and raw detail in artifacts. Final fixture minimization and
+combined student-export validation remain required. Work remains paused;
+these are review recommendations, not a resumed fix run.
+
 ## Unified progress tracker
 
 Branch: `fix/student-audit-regressions`. Update this table at each checkpoint;
