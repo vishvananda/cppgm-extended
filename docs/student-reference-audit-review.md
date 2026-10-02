@@ -145,6 +145,7 @@ The recent discovery inventory is not all C++11:
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Needs C++11 defect-report review: N3485 12.9/3 explicitly excludes parameterless inherited constructors, whereas the student's implementation applies P0136R1/N4429's later C++11 DR interpretation. Modern host acceptance alone is insufficient. The student's inherited-defaults personal control explicitly disagrees with both hosts at its nothrow assertion and is held, with no reference change. Establish the adopted correction and any necessary hosted-header use before adding fixtures. |
 | NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
+| LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Open, independently reproduced. The student changed only the existing backward-loop reference and quality envelope; source and status remain unchanged. Here O1/O2/O3 return for unequal mod-eight pointer inputs, while O0 preserves the loop, with both native paths. PA32 requires behavior preservation for defined LowIR; plain index carries no stronger optimization or source forward-progress promise. Eighty fresh observations and the frozen two-sidecar delta are retained. Review/fix the existing loop-finiteness proof and regenerate this reference, without adding a duplicate fixture. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending until additions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final pending additions. Keep a fixture only for distinct required language/header behavior or a independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
@@ -4153,3 +4154,41 @@ architecture audits, file limits and placement/hygiene. The subsequently
 rewritten PA30 fixture passes its own combined strict report with the same
 count. The live compiler still matches compiler-nineteenth exactly. The Alpha
 study remains live; no reference-binding compiler checkpoint is claimed yet.
+
+
+## Completed PA32 student review refresh
+
+The read-only checkout now reports HEAD
+441d5ec9bc49b631675c3dc5632b20fe93d11d5f, with ongoing PA33 source work.
+Since the previous 410c67bf snapshot, the only course fixture/reference changes
+are the existing PA32 backward even-stride loop's .ref and .ref.expect. No
+course input, exit status or comparison implementation changed. Seven review
+files and their SHA-256 hashes are frozen in
+student-refresh-pa32-441d5ec9/source-manifest.json, along with the exact delta.
+The ongoing student worktree was neither built nor modified.
+
+Its correction is substantive: deleting a pointer loop with stride minus eight
+requires proof that the starting and ending addresses have the same residue.
+The independent pointer arguments supply no such fact. PA8 lowir.md's Memory
+and Addressing clause defines plain index without a stronger optimization
+claim; PA32's Output Format requires preserving every defined input program.
+A C++ source forward-progress rule cannot add a promise to this direct LowIR
+fixture. The reference should retain the potentially nonterminating branch.
+
+current-controls.json retains eighty fresh observations: sixteen optimizer
+invocations, thirty-two lowerings and thirty-two executions, using equal,
+finite same-residue and unequal-residue pointer inputs at O0 through O3 with
+both cppgm++ and lowir2native. Every build succeeds. All finite executions
+return zero. O0's unequal-residue executions time out; both native paths at
+O1/O2/O3 incorrectly return zero instead. A timeout alone is not a proof;
+the invariant end - 8*k modulo eight supplies the missing termination
+boundary. LOOP-PTR-FINITE enters the same tracker. Reuse the existing required
+fixture rather than adding a duplicate; exact generated references follow the
+compiler repair.
+
+The completed audit also discloses five inherited optional PA8 debug-shape
+mismatches, present with its frozen entry as well as its final tools, and a
+removed personal debug-only must-unroll/fill assertion. Those statements are
+recorded as diagnostic/contract review leads, not automatic bug claims. Its
+required PA32 debug checks pass. No additional course reference changed in
+audit218. Further PA33 claims await completed evidence.
