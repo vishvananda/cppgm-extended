@@ -3841,7 +3841,11 @@ The measured image is compiler-fifteenth-clean, SHA-256
 `9c4a63202b5f742a556b757119d022078f07a245658b9d0e8b73044b40aa7616`.
 Its build has no compiler-source warnings. All 574 fresh candidate observations
 retain their boundaries, with 376 unchanged host observations reused in
-fifteenth-clean-matrix-review.json. Required aggregate validation is running.
+fifteenth-clean-matrix-review.json. All eleven required groups in
+validation-fifteenth-clean/ pass, including the one-line strict 6103/6103 report,
+debug-info, variants, self-host through PA5, nine architecture audits, file
+limits and zero placement/hygiene findings. Live and frozen compiler hashes
+match before the next checkpoint; the Alpha performance decision is pending.
 The fresh immutable Alpha study inherits the fourteenth fixed-layout runners,
 thresholds and sample counts. All 91 manifest entries verify before counting.
 Initial preflight logs are retained: the untimed fifteenth root had no source
