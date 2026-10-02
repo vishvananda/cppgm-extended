@@ -139,7 +139,7 @@ The recent discovery inventory is not all C++11:
 | EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Open, independently reduced: reordered and duplicate int/double specifications reject in frozen entry and candidate, in type dumps and at O0/O2; identical class specifications pass. Strict C++11 Clang/GCC accept all three controls. N3485 15.4/3 requires the same set, and PA6 owns supported free-function exception specifications and declaration matching. Keep one compact positive for order/duplicate normalization, with distinct incompatible-set rejection coverage. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
-| ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Needs contract review: [[noreturn(1)]] is accepted here and rejected by both strict C++11 hosts. A variable attribute rejects in Clang but only warns in GCC. N3485 7.6.3 supplies C++11 constraints; establish the earliest required attribute validation before adding mandatory fixtures. This does not admit additional vendor attributes. |
+| ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | Argument constraint reviewed and open: N3485 7.6.3/1 expressly forbids an attribute-argument-clause. Six fresh C++11 observations confirm ours accepts [[noreturn(1)]] and both hosts reject it. The placement ledger assigns standard attribute support to PA29/500; one negative is prepared, reusing existing valid noreturn runtime coverage. Variable appertainment remains separately reviewed because GCC only warns. This does not admit additional vendor attributes; no default fixture installed yet. |
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Open, independently reduced without zero-argument inheritance: D<T> : T with using T::T and D<B>(7) rejects as template-parameter redeclaration here, in entry/candidate type dumps and at O0/O2; strict C++11 Clang/GCC accept. N3485 7.3.3 and 12.9 support the parameterized constructor. Ordinary using B::T shadowing remains a separate held host disagreement. |
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Needs C++11 defect-report review: N3485 12.9/3 explicitly excludes parameterless inherited constructors, whereas the student's implementation applies P0136R1/N4429's later C++11 DR interpretation. Modern host acceptance alone is insufficient. The student's inherited-defaults personal control explicitly disagrees with both hosts at its nothrow assertion and is held, with no reference change. Establish the adopted correction and any necessary hosted-header use before adding fixtures. |
@@ -4223,3 +4223,48 @@ pointer-to-void comment is restored verbatim. No ownership ledger change is
 needed. Local full validation and nine fresh matrix groups are underway.
 The same Alpha protocol and all frozen inputs are prepared for one study;
 no prior observation is discarded and no threshold is changed.
+
+
+The twentieth matrix review preserves all 574 fresh semantic/runtime boundaries
+and reuses the unchanged 376 strict C++11 host observations. Two arbitrary
+bit-field-negative runtime values change between 1 and 253; those programs
+remain invalid and belong to REF-BITFIELD, so their values are not oracles.
+Full validation and the original twentieth performance study remain live.
+
+Eighteen supplementary array-new observations check a private defaulted
+(trivial) destructor. Clang rejects external array allocation, GCC and ours
+accept it, and all three accept scalar allocation and allocation inside the
+owning class. The access clause still requires checking before the trivial-
+destructor lowering shortcut, but host disagreement is retained explicitly in
+new-array-destructor-access/defaulted-destructor-entry-controls.json. No extra
+required fixture is added for this permutation; the prepared two-fixture plan
+remains unchanged.
+
+
+## Noreturn argument constraint and remaining fixture inventory
+
+ATTR-NORETURN's argument case is directly C++11 under doc/n3485.txt
+7.6.3/1: no attribute-argument-clause is permitted. The existing support.attribute
+ledger assigns standard-attribute support to PA29/500. The token-owned parser
+ConsumeLeadingStandardObjectAttribute currently records a noreturn identifier
+without validating its arguments. The repair belongs to that existing parser,
+without reparsing rendered text. noreturn-attribute-contract/argument-controls.json
+retains six O0/O2 native-compile observations for ours and strict C++11 hosts.
+One negative fixture is prepared. Existing PA29 noreturn-call-before-break
+runtime coverage supplies the positive boundary; no new positive permutation
+is proposed. Variable appertainment remains a distinct diagnostic review and
+is not silently claimed as a host-consensus rejection.
+
+The final-review scratch input-inventory.json records 297 input changes since
+fb15cd49e: 254 committed additions, nine modifications, two removals, two
+renames and thirty pending reference fixtures. These are changes, not 297
+independent bugs. This is an inventory only; required retain/combine/remove
+review remains after the complete addition sequence, followed by final export.
+
+
+All eleven twentieth validation groups pass: PA10/12/20/21, strict 6103/6103
+in exactly one line, debug-info, variants, PA34 self-host through PA5, all nine
+architecture audits, file limits and zero placement/hygiene findings. All
+thirty fixture hash sets are unchanged, and the live compiler matches its
+immutable image. The original Alpha study remains live; the four reference
+rows remain uncommitted pending its terminal performance decision.
