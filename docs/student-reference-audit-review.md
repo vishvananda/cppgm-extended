@@ -3852,3 +3852,55 @@ Initial preflight logs are retained: the untimed fifteenth root had no source
 inputs, so preparation now copies the identical verified inputs from the
 complete fourteenth root. No preflight failure produced timing observations.
 Compiler code and thirty fixture sets remain uncommitted until all gates pass.
+
+
+The fifteenth-clean study is complete. All 91 manifest entries verify and all
+4800 objects agree. Instruction/RSS gates pass. Four focused raw/calibrated
+cycle gates fail: auto aliases 1.006692/1.007228, EH handlers
+1.007596/1.008375, initializer-list values 1.004718/1.006834 and
+qualification views 1.009737/1.015294. The decision and every observation are
+retained in perf-fifteenth-clean/ and perf-fifteenth-clean-results/.
+
+A subsequent 256-compilation EH sampling profile compares the same immutable
+entry and fifteenth-clean images, with successful equal objects. Conversion,
+ReferenceConversion and QualificationConversion are below the 0.1% reporting
+cutoff; TypeTable::Get accounts for 0.32%/0.29% of entry/candidate samples.
+This does not justify changing unrelated lexer or native owners. Assembly
+inspection does reveal a concrete conversion-path change: GCC splits ordinary
+Conversion into a wrapper and .part.0, with an additional prologue on ordinary
+value conversions. The entry keeps this path in one function. Both assembly
+listings and profiles are retained in reference-cv-qualification/.
+
+The sixteenth candidate removes the reference-helper extraction, restoring the
+reference-binding branch inside Conversion. QualificationConversion moves to
+the existing calls module to keep both source files within their unchanged
+limits (2950/2541 lines); the owner ledger follows its definition. Binding and
+qualification policy are unchanged. The fresh warning-free image is
+compiler-sixteenth, SHA-256
+`77c106abf5a0f559ab9403ee8cb7bee08767d5db64bc81060f4aca7bad036f99`.
+Its symbol table confirms that Conversion has no .part.0 clone. Fresh matrix,
+full compiler validation and one immutable Alpha study are pending; thresholds,
+samples, inputs and process-only fixed-layout protocol remain unchanged.
+Compiler changes and the thirty fixture sets remain uncommitted until the
+required gates pass. Later additions, final fixture review and export remain
+pending.
+
+
+All eleven sixteenth validation groups pass, including strict 6103/6103 in
+exactly one output line, debug-info, backend variants, self-host through PA5,
+nine architecture audits, file limits and zero placement/hygiene findings.
+sixteenth-matrix-review.json verifies all 574 fresh observations against
+fifteenth-clean, reusing 376 unchanged strict C++11 host observations. Only
+arbitrary runtime values from already accepted invalid bit-field negatives
+vary; those remain explicitly excluded from the oracle. The live compiler
+matches the immutable sixteenth image. Alpha remains live in its focused
+phase; the compiler/fixture checkpoint awaits that decision.
+
+
+Namespace preparation is rechecked with the immutable sixteenth image:
+after-reference-controls.json retains 116 fresh observations over the eighteen
+core controls, six mixed-name controls, two scope-qualifier controls and three
+planned fixtures, in both dumps and at O0/O2. The same seven core convergence
+positives and planned positive fail; the same four mixed-name negatives are
+incorrectly accepted. All other boundaries remain unchanged. The reference
+binding patch therefore does not resolve or introduce these lookup defects.
