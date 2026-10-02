@@ -3490,3 +3490,36 @@ original inputs and the new harness identity are checked before measurement.
 The instruction/RSS and raw/calibrated 1.005 cycle thresholds are unchanged.
 This resolves the sixth study's asymmetric A/A calibration signal with a
 larger predeclared sample; it does not reclassify a failed gate as a pass.
+
+## Required-fixture growth and current coverage review
+
+Since the initial fb15cd49e harness checkpoint, the branch adds 255 committed
+numbered test input files, modifies eight and removes three. Thirty reference
+qualification inputs remain pending. PA21 accounts for 91 of the committed
+additions. These counts are source inputs, rather than independent bug counts;
+compiler/optimization combinations and repeated timing runs are observations.
+The expansion combines student/Argon discoveries, independent language proof,
+and boundary controls generated during shared-owner repairs. Some original
+references encoded incorrect behavior (the PA6 same-int typedef rejection is
+one independently confirmed example), while some interactions had no supplied
+fixture. Positive preservation controls are also required to keep a repair
+from rejecting legitimate neighboring programs.
+
+fixture-baseline-review.json checks all thirty pending inputs against the
+immutable compiler-after-auto entry at both O0 and O2: eighteen expose
+preexisting failures, and twelve already passed and guard valid/rejected
+boundaries. Six of the latter caught false rejections introduced by the fourth
+qualification candidate, before any compiler checkpoint was committed. Thus
+these thirty inputs do not imply thirty previously missing implementations.
+Required coverage should be justified by distinct contract boundaries; the
+larger exploratory and timing matrices remain scratch evidence. This review
+establishes the current thirty-input classification and does not claim that
+all 255 committed additions have completed a redundancy review.
+
+The namespace lookup preparation also retains sixteen agreed positive
+observations for mixed class/value and alias/value names before ::. N3485
+3.4.3/1 explicitly restricts that lookup to namespaces/types/type templates;
+it must remain different from ordinary declaration lookup's no-hiding rule.
+The upcoming LOOKUP-NAMESPACE-MIXED diagnostic must preserve this existing
+scope-carrier behavior. Commands and outcomes are in
+namespace-convergence/qualifier-corrected-entry-controls.json.
