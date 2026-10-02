@@ -123,6 +123,7 @@ The recent discovery inventory is not all C++11:
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
 | HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass. Student later corrected the three original success sidecars in handoff189; our sources retain complete typed definitions and the positive test goals. |
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
+| LOOKUP-RESTORE | Restore genuine namespace type/value ambiguity coverage lost during early consolidation | Namespace reference review | Done in the accompanying test-only checkpoint: distinct-type PA6 and original distinct-variable PA7 negatives have exact generated references and pass their owning checks. Strict 6103/6103 prints one line; PA6/PA7 placement scans 297 inputs with zero findings, and the standard full placement audit remains clean. No compiler change. The valid same-int PA6 oracle correction remains LOOKUP-NAMESPACE. |
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Open, independently reproduced: the unchanged PA6 two-int-typedef input and transitive/class/namespace-alias personal composite reject here at O0/O2 and in both semantic dump modes; Clang/GCC accept. Distinct types, variables and namespace targets still reject in all three compilers. N3485 7.1.3 and 7.3.4 support the namespace correction. The PA30 positive includes a global typedef which masks the missing convergence rule. |
 | LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | Open, independently reproduced with frozen 1de7a8cbc entry: class/variable, typedef/variable, class/function and qualified class/variable conflicts accept in both dump modes and at O0/O2; strict C++11 Clang/GCC reject. N3485 7.3.4/6 explicitly excludes hiding a class or enumeration with an ordinary name in another namespace. Elaborated class lookup and a direct local typedef remain valid in all three compilers and must stay separate. Declaration-only boundaries belong to PA6; a call-expression boundary needs PA7. Corrected commands and 48 observations are in namespace-convergence/extra-corrected-entry-controls.json. |
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. |
@@ -3679,7 +3680,47 @@ call and reads qualifier/void-pointee records by reference, removing five
 remaining full-record copies from Conversion. No record is read across a
 mutating call. All 574 fresh candidate observations preserve their boundaries;
 376 unchanged strict C++11 host observations are reused explicitly in
-twelfth-matrix-review.json. Required validation is running in validation-twelfth/.
-The fresh immutable Alpha study verifies all 91 inputs, completes broad
-measurements with equal objects and is running the complete focused sample.
-The four reference owners and all subsequent additions remain pending.
+twelfth-matrix-review.json. All eleven required groups in validation-twelfth/
+pass, including the single-line strict 6101/6101 report, variants, self-hosting,
+architecture/file limits and zero placement/hygiene findings across 3226 inputs.
+The complete immutable Alpha study verifies all 91 inputs and retains 4800
+equal-object observations. Instruction/RSS gates and eight focused cycle gates
+pass. EH handlers (raw/calibrated 1.011892/1.014228) and qualification views
+(1.004239/1.012619) fail the unchanged cycle gate. Every observation is retained
+in perf-twelfth-results/, with the gate decision in perf-twelfth/gate-review.json.
+A separate profile-twelfth/ study, started after timing completed, retains 512
+successful equal-object compilations and all four profiles. Conversion and
+QualificationConversion are each below the report's 0.1% cutoff in both images;
+TypeTable::Get occupies 0.34%/0.33% of EH samples and 1.15%/1.38% of qualification
+samples for entry/candidate respectively. These percentages do not establish a
+new dominant owner and do not justify changes to unrelated compiler modules.
+
+The thirteenth image is compiler-thirteenth, SHA-256
+`5a9d61c287af1c6f4fc2825bae3c04c67a777a6ab4400d986de044c7a0053ef3`.
+The existing reference-binding body moves unchanged into ReferenceConversion
+in the existing semantic call module, leaving ordinary Conversion smaller.
+The conversion counter remains in the caller, and the helper consumes the
+already identified referent and reference category. Its ownership ledger entry
+is explicit. All 574 fresh candidate observations retain their boundaries;
+376 unchanged host observations are reused in thirteenth-matrix-review.json.
+All eleven required groups in validation-thirteenth/ pass, including strict
+6101/6101, debug-info, variants, self-host through PA5 and architecture/file/
+placement audits. The immutable Alpha study verifies all 91 frozen inputs and
+is running the unchanged complete broad/focused measurement sequence. The four reference
+owners and all subsequent additions remain pending until all gates pass.
+
+The two independent namespace rejection fixtures are now installed without a
+compiler change: PA6 300-distinct-using-directive-types-bad.t rejects genuinely
+different designated types, and PA7 300-distinct-using-directive-values-bad.t
+restores the exact original distinct-variable source. Both refs were generated
+through exact ref-test selections; both owning check selections pass. The early
+consolidation inventory now points to the PA7 fixture and explains why the valid
+same-type typedef case cannot replace its expression-lookup goal. Historical
+input hashes remain untouched. The namespace positive and its existing wrong
+negative oracle remain pending the namespace compiler fix.
+
+The test-only restoration passes the strict one-line 6103/6103 report. A focused
+PA6/PA7 placement run scans 297 inputs with no placement or hygiene findings;
+the standard placement run also passes. These two already supported rejection
+boundaries do not depend on the pending reference-conversion implementation or
+its performance decision.
