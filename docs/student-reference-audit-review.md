@@ -124,6 +124,7 @@ The recent discovery inventory is not all C++11:
 | HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass. Student later corrected the three original success sidecars in handoff189; our sources retain complete typed definitions and the positive test goals. |
 | PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Open, independently reproduced: the unchanged PA6 two-int-typedef input and transitive/class/namespace-alias personal composite reject here at O0/O2 and in both semantic dump modes; Clang/GCC accept. Distinct types, variables and namespace targets still reject in all three compilers. N3485 7.1.3 and 7.3.4 support the namespace correction. The PA30 positive includes a global typedef which masks the missing convergence rule. |
+| LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | Open, independently reproduced with frozen 1de7a8cbc entry: class/variable, typedef/variable, class/function and qualified class/variable conflicts accept in both dump modes and at O0/O2; strict C++11 Clang/GCC reject. N3485 7.3.4/6 explicitly excludes hiding a class or enumeration with an ordinary name in another namespace. Elaborated class lookup and a direct local typedef remain valid in all three compilers and must stay separate. Declaration-only boundaries belong to PA6; a call-expression boundary needs PA7. Corrected commands and 48 observations are in namespace-convergence/extra-corrected-entry-controls.json. |
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
@@ -3352,8 +3353,140 @@ observations agree with the second image, as do the core reference, pointer
 alias and pointer-rvalue boundaries. The expanded invalid bit-field programs
 remain accepted and can produce different garbage runtime results; their missing
 diagnostic is the separately tracked REF-BITFIELD bug, not a runtime oracle.
-The third-image full validation and ninety-input-verified Alpha study are running
-in `validation-third/` and `/tmp/cppgm-v4-audit-review-20261002-reference-cv-third/`.
-The compiler change and its fixtures remain uncommitted until performance
-validation succeeds. The four reference owners, bit-field owner, other open
-items and final combined export remain open.
+The completed third-image study retains 4416 observations in
+`perf-third-results/`. Objects match, and instruction/RSS gates pass. The
+focused cycle gates fail for auto prvalues (raw/calibrated
+1.002996/1.005622) and qualification views (1.010357/1.011424). Its functional
+validation reaches the file audit, which rejects analyzer.cpp at 3008 lines.
+The qualification helper subsequently moves beside ArrayElementCv in the
+existing calls.cpp module, with the semantic ownership ledger updated.
+
+The fourth image, SHA-256
+`2e78b44abfba2c8da92883cb03c59c098d2d66597e5afd167909d3dacef2d7ad`,
+passes all eleven validation commands, including the file audit. Additional
+volatile-array boundary controls uncover six false rejections introduced by
+counting an array and its qualified element as separate pointer levels.
+No timing study is launched for this known incorrect image. The fifth image
+walks array dimensions without adding a qualification level; it retains the
+array bounds and checks the actual element qualifiers and intervening pointers.
+
+Eight additional PA10 reference/cast fixtures cover volatile scalar arrays,
+multidimensional arrays, array pointers, volatile pointer elements, and the
+unsafe pointee/deep-pointer boundaries. All thirty fixtures retain 180 agreed
+ours/Clang/GCC observations at O0/O2: fifteen positives run successfully and
+fifteen negatives reject. The eight new array controls add 48 agreed
+observations. The existing 300 reference controls, 36 pointer-category controls
+and 386 previous regression observations retain their expected boundaries;
+only the separately documented bit-field and host-disputed cases differ.
+Sidecars are generated only through each exact ref-test selection.
+
+The fifth image has SHA-256
+`7e11d9c887ccf959a253c14aa66ff0e50699ee2bb84ba6f1833344c268bab88f`.
+All eleven checks in validation-fifth/validation.json pass. The strict report
+prints exactly one line, 6101/6101, and placement scans 3226 tests with zero
+placement/hygiene findings. Its completed Alpha study verifies all 91 input
+hashes and retains 960 broad plus 3840 focused observations in
+perf-fifth-results/. All objects match, and instruction/RSS gates pass.
+The focused cycle gates fail for EH handlers (raw/calibrated
+1.009143/1.013147), qualification views (1.012187/1.014563), and volatile views
+(1.008290/1.008031). perf-fifth/gate-review.json preserves every result.
+
+The next candidate reuses the already-read source and referent records for
+qualification stripping and cv checks, instead of repeating type-table reads.
+The qualification walker reads records through pointers rather than copying
+and reassigning full TypeRecord values. No type-table mutation occurs while
+these records are read. The compiler change and its fixtures remain
+uncommitted until performance validation succeeds. The four reference owners,
+bit-field owner, other open items and final combined export remain open.
+
+The sixth candidate is frozen with SHA-256
+`fe4d5baeec6ae760882d9b58b0e882969d96614d30e7db25e4d8bdc24158ebd3`.
+All 950 control/regression observations retain the intended boundaries; the
+accepted invalid volatile bit-field reference continues to have arbitrary
+runtime results and stays in REF-BITFIELD. sixth-matrix-review.json records
+those comparisons. All eleven checks in validation-sixth/validation.json pass, including the
+single-line strict 6101/6101 report, self-hosting and placement over 3226
+inputs with zero placement/hygiene findings. The fresh immutable Alpha study
+has completed with 4800 equal-object observations, retained in perf-sixth-results/.
+Instruction/RSS and all raw focused cycle gates pass. Calibrated cycle gates
+fail for auto aliases (raw/calibrated 1.003820/1.005141), qualification views
+(1.004462/1.009575) and virtual overrides (1.004578/1.005248). No owner is
+closed on this partial performance result. A separate qualification-workload
+profile is launched only after the balanced measurements have ended.
+Its manifest verifies 87 compilation inputs before measurement; the
+four unchanged harness scripts are independently checked against their frozen
+fifth-study hashes in verified-harness-scripts.json. No input or image is
+changed during measurement.
+
+Eighteen reduced namespace controls are prepared independently in
+namespace-convergence/, with 144 corrected entry/host observations across
+C++11 O0/O2 and our two semantic dump modes. All host results agree with the expected
+boundaries. Seven positive typedef/class/array convergence cases reject here;
+the direct-typedef masking case, same namespace aliases, repeated variable
+entity and repeated function entity already pass. All seven distinct-type,
+cv, array-bound, class, variable, function and namespace-target negatives
+reject here and with both hosts. This narrows LOOKUP-NAMESPACE to equivalent
+type merging; existing same-namespace/entity convergence needs preservation,
+not an assumed additional compiler fix. No namespace implementation change
+has begun before the reference qualification checkpoint passes its gates.
+
+The separate sixth-image qualification profile retains both perf data files,
+reports and all 256 successful equal-object compilations in profile-sixth/.
+TypeTable::Get appears among the measured owners; conversion/qualification
+functions are each below the report's 0.1% cutoff, so this is not evidence for
+a large direct helper cost or a basis to change unrelated compiler modules.
+The next candidate stops walking once the remaining canonical type identities
+are equal. Equality already establishes identical remaining qualification,
+array bounds and type structure, avoiding two redundant type-table reads of
+an unchanged terminal suffix. This is an ordinary typed-fact optimization;
+calibrated gates remain required and no failed trial is discarded.
+
+The seventh candidate is frozen as compiler-seventh, SHA-256
+`b6d938ab29a1308e244989bfb9fee4f9b5ad3ef043cdfbd2dc1ade25f424296c`.
+The complete Alpha manifest verifies all 91 inputs, including harness scripts,
+before any observation. The fresh study is under
+/tmp/cppgm-v4-audit-review-20261002-reference-cv-seventh/; its immutable A/A
+labels both invoke compiler-a. validation-seventh/ and the same 950 controls
+are running. The prior sixth-image study and separate profiling data are
+retained in full. Compiler code, thirty fixture sets and the semantic owner
+ledger remain uncommitted pending the required performance gates.
+
+The initial namespace preparation invocations incorrectly included
+-std=c++11 in our dump modes, which do not accept that flag. Their 48 original
+phase observations (36 core and twelve extra) are retained as invocation errors,
+not semantic evidence. corrected-entry-controls.json and
+extra-corrected-entry-controls.json rerun all 192 observations with valid
+dump-mode commands and retain strict C++11 flags for ordinary compilation.
+The seven typedef/type convergence positives still fail in both dump modes,
+while the direct masking, same namespace/entity and distinct type/entity
+boundaries have the expected results. Four additional type/value namespace
+conflicts are incorrectly accepted in every current mode; both hosts reject.
+N3485 7.3.4/6 supplies the explicit no-hiding rule. LOOKUP-NAMESPACE-MIXED
+tracks this independent diagnostic gap. The elaborated-class and local-type
+hiding positives pass every mode, so the eventual diagnostic must respect
+lookup kind and scope. These controls expose a preexisting bug, rather than
+a regression introduced by the pending reference or namespace changes.
+
+The seventh image passes all eleven functional/audit checks and all 950
+control/regression boundaries. Its completed 4800-observation Alpha study
+passes object equality and instruction/RSS gates but fails focused cycle gates:
+auto aliases (raw/calibrated 1.020689/1.020386), EH handlers
+(1.007124/1.005222), qualification views (1.019971/1.021345), reference aliases
+(1.012242/1.011554), reference temporaries (1.004812/1.005448), virtual
+(1.009283/1.008743), and volatile views (1.016070/1.016167).
+perf-seventh-results/ and perf-seventh/gate-review.json retain all observations.
+The terminal-identity shortcut is removed; the compiler source and owner ledger
+match sixth-source.patch exactly. No unrelated optimization or layout padding
+is introduced to manufacture a favorable sample.
+
+A fixed extension of the sixth image is declared before launch in
+perf-sixth-extended/predeclared-study.json: 128 additional balanced interleaved
+A/A and A/B blocks for each of the same ten focused workloads, using the
+original immutable images and identical source paths. All 10240 additional
+observations will be pooled with all original 3840 sixth-image focus
+observations; none of the original failed calibration data will be excluded.
+The original 960 broad observations remain part of its final gate. All 91
+original inputs and the new harness identity are checked before measurement.
+The instruction/RSS and raw/calibrated 1.005 cycle thresholds are unchanged.
+This resolves the sixth study's asymmetric A/A calibration signal with a
+larger predeclared sample; it does not reclassify a failed gate as a pass.
