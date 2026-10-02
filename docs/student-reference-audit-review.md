@@ -4268,3 +4268,60 @@ architecture audits, file limits and zero placement/hygiene findings. All
 thirty fixture hash sets are unchanged, and the live compiler matches its
 immutable image. The original Alpha study remains live; the four reference
 rows remain uncommitted pending its terminal performance decision.
+
+
+The twentieth Alpha study is terminal, with all 91 verified inputs and 4800
+equal-object/status observations. Instruction and memory gates pass; eight
+focused cycle gates fail: auto aliases 1.016909/1.015098, auto prvalues
+1.009474/1.008950, EH handlers 1.017166/1.015666, initializer-list values
+1.015408/1.013814, qualification views 1.017626/1.018837, reference aliases
+1.018592/1.020936, reference noexcept temporaries 1.012454/1.012400 and
+volatile views 1.011016/1.010250. Recog and virtual pass. All raw results are
+retained in perf-twentieth-results, with exact gate-review.json. The smaller
+iterative machine body does not establish a performance success.
+
+The next targeted investigation records array element cv as an immutable
+derived type fact at canonical insertion, then consumes it with one record
+read. This directly supports the required reference-binding check and the
+architecture's typed-fact contract. Type identity, hashing, existing cv fields,
+trait behavior and published output remain unchanged. The existing model owner
+constructs ordinary, dependent and zero-sized arrays through Intern; repeated
+intern hits need no extra derivation. Qualified types are already normalized
+so they cannot directly wrap arrays or another qualified record. A new derived
+byte must fit existing padding without enlarging TypeRecord or changing prior
+field offsets. No candidate is frozen or timed before those facts are verified.
+
+
+The proposed derived array_element_cv byte occupies prior TypeRecord padding.
+The host layout probe verifies size 56 and all previous field offsets unchanged:
+cv 40, ref_qualifier 41, variadic 42, bitint_unsigned 43, zero_length_array 44
+and fundamental 48. Its first invocation omitted the required dev/src include
+path and failed to compile; the corrected before/after invocations pass and
+their outputs agree exactly. This is a layout check, not a language oracle.
+Intern derives the array fact only after an identity miss and before publishing
+the new record, covering ordinary/dependent/zero-sized arrays through their
+existing common owner. The existing hash, equality and cv field are untouched.
+ArrayElementCv consumes one record and returns either normalized qualifier cv
+or the derived array fact. Other type kinds keep the default zero fact. The
+scratch freezer now includes both model source paths so no required source
+change is omitted from the frozen patch. The twenty-first build is pending.
+
+
+The twenty-first build succeeds without compiler warnings. The frozen image is
+compiler-twenty-first, SHA-256
+`50eff87d24b5747dd74759eef5cc204928af7bea0ffee23f9260495805f34a02`.
+The direct-fact ArrayElementCv machine body is 0x31 bytes. All fresh matrices
+and full compiler checks are launched; Alpha inputs are uploaded but counting
+waits for the fresh semantic boundary review. Earlier immutable images and
+failed timing studies remain retained. The compiler/30 fixtures remain
+uncommitted, and the goal remains active.
+
+
+The twenty-first fresh matrix review preserves all 574 observations, reusing
+376 unchanged strict host observations. Only arbitrary bit-field-negative
+runtime values differ; those invalid programs remain separately tracked.
+All 91 Alpha manifest entries verify before one unchanged-protocol study is
+started. The explicit atomic commit manifest now has 111 paths: five compiler
+source/header paths, the tracker and 105 required fixture/sidecar paths. No
+unrelated untracked artifacts are included. Complete local validation and the
+performance study remain live, so no row closure is claimed.
