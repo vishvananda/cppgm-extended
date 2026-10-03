@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = call obj<1x1> @make_holder($argobj__3)
     copyobj 1x1 %t7, %t3
     %t8 = addr $value
-    %t9 = call i32 @holder_example____cppgm_class_template_identity_0_4_0___apply(%t3, %t8)
+    %t9 = call i32 @holder_example____cppgm_class_template_identity_0_5_0___apply(%t3, %t8)
     %t10 = cmp eq i32 %t9, 7
     branch %t10, ^cond_then_1, ^cond_else_2
 
@@ -47,10 +47,10 @@ function @make_holder(%value : obj<1x1>) -> obj<1x1> [binding=weak, object=_Z11m
     %t1 = addr $retobj__1
     %t2 = addr $argobj__2
     %t3 = addr $value
-    call void @holder_example____cppgm_class_template_identity_0_4_0___holder_example____cppgm_class_template_identity_0_4_0_(%t1, $argobj__2)
+    call void @holder_example____cppgm_class_template_identity_0_5_0___holder_example____cppgm_class_template_identity_0_5_0_(%t1, $argobj__2)
     return obj<1x1> $retobj__1
 }
-function @example__fast_mem_fn_maker_member_pointer_of_class_target_to_function_of____const_returning_int___make_fast_mem_fn(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN7example17fast_mem_fn_makerIM6targetKFivEE16make_fast_mem_fnIXadL_ZNKS1_2idEvEEEENS_11fast_mem_fnIS3_XadL_ZNKS1_2idEvEELi1EEEv, inline_hint=yes] {
+function @example__fast_mem_fn_maker_member_pointer_of_class_target_to_function_of____const_returning_int___make_fast_mem_fn(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN7example17fast_mem_fn_makerIM6targetKFivEE16make_fast_mem_fnIXadL_ZNKS1_2idEvEEEENS_11fast_mem_fnIS3_XT_ELi1EEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 
@@ -59,7 +59,7 @@ function @example__fast_mem_fn_maker_member_pointer_of_class_target_to_function_
     %t1 = addr $retobj__1
     return obj<1x1> $retobj__1
 }
-function @holder_example____cppgm_class_template_identity_0_4_0___apply(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEE5applyIS2_EEiRKT_, inline_hint=yes] {
+function @holder_example____cppgm_class_template_identity_0_5_0___apply(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEE5applyIS2_EEiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -72,7 +72,7 @@ function @holder_example____cppgm_class_template_identity_0_4_0___apply(%this : 
     %t4 = call i32 @example__fast_mem_fn_member_pointer_of_class_target_to_function_of____const_returning_int__target__id__1___operator__(%t2, %t3)
     return i32 %t4
 }
-function @holder_example____cppgm_class_template_identity_0_4_0___holder_example____cppgm_class_template_identity_0_4_0_(%this : ptr [object_bytes=1], %value : obj<1x1>) -> void [binding=weak, object=_ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC1ES5_, inline_hint=yes] {
+function @holder_example____cppgm_class_template_identity_0_5_0___holder_example____cppgm_class_template_identity_0_5_0_(%this : ptr [object_bytes=1], %value : obj<1x1>) -> void [binding=weak, object=_ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC1ES5_, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<1x1>
 
@@ -94,4 +94,4 @@ function @example__fast_mem_fn_member_pointer_of_class_target_to_function_of____
     %t3 = call i32 %t2(%t1) as (%arg0 : ptr [object_bytes=1]) -> i32
     return i32 %t3
 }
-alias object _ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC2ES5_ = @holder_example____cppgm_class_template_identity_0_4_0___holder_example____cppgm_class_template_identity_0_4_0_
+alias object _ZN6holderIN7example11fast_mem_fnIM6targetKFivEXadL_ZNKS2_2idEvEELi1EEEEC2ES5_ = @holder_example____cppgm_class_template_identity_0_5_0___holder_example____cppgm_class_template_identity_0_5_0_

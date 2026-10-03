@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load i32 $cond__1
     return i32 %t9
 }
-function @get(%kvp : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=strong, object=_Z3getILm0EEK11string_viewRK14key_value_pair] {
+function @get(%kvp : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=strong, object=_Z3getILm0EENSt11conditionalIXeqT_Li0EEK11string_viewRK5valueE4typeERK14key_value_pair] {
   slot $kvp : ptr
   slot $retobj__1 : obj<4x4>
 

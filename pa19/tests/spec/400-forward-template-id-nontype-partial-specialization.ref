@@ -18,11 +18,11 @@ function @bind(%a1 : ptr [pass=by_address]) -> obj<1x1> [binding=weak, object=_Z
     store ptr %a1, $a1
     %t1 = addr $retobj__1
     %t2 = addr $argobj__2
-    call void @lambda_functor_base___cppgm_class_template_identity_1_7_0__int___lambda_functor_base___cppgm_class_template_identity_1_7_0__int_(%t2, 0)
-    call void @lambda_functor___cppgm_class_template_identity_3_9_0___lambda_functor___cppgm_class_template_identity_3_9_0_(%t1, $argobj__2)
+    call void @lambda_functor_base___cppgm_class_template_identity_1_8_0__int___lambda_functor_base___cppgm_class_template_identity_1_8_0__int_(%t2, 0)
+    call void @lambda_functor___cppgm_class_template_identity_3_10_0___lambda_functor___cppgm_class_template_identity_3_10_0_(%t1, $argobj__2)
     return obj<1x1> $retobj__1
 }
-function @lambda_functor_base___cppgm_class_template_identity_1_7_0__int___lambda_functor_base___cppgm_class_template_identity_1_7_0__int_(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN19lambda_functor_baseI6actionILi1E15function_actionILi1EiEEiEC1Ei, inline_hint=yes] {
+function @lambda_functor_base___cppgm_class_template_identity_1_8_0__int___lambda_functor_base___cppgm_class_template_identity_1_8_0__int_(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN19lambda_functor_baseI6actionILi1E15function_actionILi1EiEEiEC1Ei, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -31,7 +31,7 @@ function @lambda_functor_base___cppgm_class_template_identity_1_7_0__int___lambd
     store i32 %__param1, $__param1
     return void
 }
-function @lambda_functor___cppgm_class_template_identity_3_9_0___lambda_functor___cppgm_class_template_identity_3_9_0_(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN14lambda_functorI19lambda_functor_baseI6actionILi1E15function_actionILi1EiEEiEEC1ES5_, inline_hint=yes] {
+function @lambda_functor___cppgm_class_template_identity_3_10_0___lambda_functor___cppgm_class_template_identity_3_10_0_(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN14lambda_functorI19lambda_functor_baseI6actionILi1E15function_actionILi1EiEEiEEC1ES5_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
@@ -39,5 +39,5 @@ function @lambda_functor___cppgm_class_template_identity_3_9_0___lambda_functor_
     store ptr %this, $this
     return void
 }
-alias object _ZN19lambda_functor_baseI6actionILi1E15function_actionILi1EiEEiEC2Ei = @lambda_functor_base___cppgm_class_template_identity_1_7_0__int___lambda_functor_base___cppgm_class_template_identity_1_7_0__int_
-alias object _ZN14lambda_functorI19lambda_functor_baseI6actionILi1E15function_actionILi1EiEEiEEC2ES5_ = @lambda_functor___cppgm_class_template_identity_3_9_0___lambda_functor___cppgm_class_template_identity_3_9_0_
+alias object _ZN19lambda_functor_baseI6actionILi1E15function_actionILi1EiEEiEC2Ei = @lambda_functor_base___cppgm_class_template_identity_1_8_0__int___lambda_functor_base___cppgm_class_template_identity_1_8_0__int_
+alias object _ZN14lambda_functorI19lambda_functor_baseI6actionILi1E15function_actionILi1EiEEiEEC2ES5_ = @lambda_functor___cppgm_class_template_identity_3_10_0___lambda_functor___cppgm_class_template_identity_3_10_0_

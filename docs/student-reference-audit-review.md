@@ -6667,3 +6667,52 @@ During final fixture pruning, reconcile the existing PA23 virtual-destructor
 multiple-inheritance fixtures with its explicit out-of-scope wording; this is
 a contract/placement review, not a reason to add another duplicate fixture or
 expand the frozen compiler inventory.
+
+## MANGLE dependent result expressions checkpoint — 2026-10-03
+
+Fresh strict C++11 Clang/GCC comparisons of the frozen 31-source ABI inventory
+confirm the existing PA18 `300-dependent-enable-if-return-nontype-less-pack`
+fixture loses its written `enable_if<I < sizeof...(U) - 1, T>::type` result.
+Retain cached scalar literal type/value and the sizeof-pack wrapper in its
+canonical identity, then publish typed literal, pack-size and binary-expression
+ABI nodes. Add fixed equality/less/pack-size operation codes and encode typed
+integral expressions. Reuse canonical argument storage; no persistent record
+growth, source reparsing or new fixture files. Extend the existing fixture to
+demand its equality overload as well. Remaining MANGLE findings stay open. Entry SHA256:
+`64645cfb05152b06ec05b51f5aa36c7b0df1de7bbda66a97d169b6ded946ec17`.
+Evidence: `/tmp/cppgm-v4-audit-review/dependent-expression-names/`.
+
+
+Both equality and less-than overload names match fresh strict C++11 Clang/GCC.
+All 56 focused observations pass at O0/O2, including mixed objects in both
+directions and explicitly demanded provider symbols at O2. The unchanged
+31-source ABI inventory compiles, with no loss of names that previously matched
+Clang. Four other required references differ: fresh hosts agree with the new
+explicit-specialization and member-template result names; two references only
+shift canonical argument identity ordinals. All 96 host/entry/candidate checks
+of these sources pass at O0/O2. Generate the five references through their
+owning ref-test wrappers; the reused PA18 source is the only fixture edit.
+No new fixture files or persistent record fields.
+
+The initial full report exposed an expression wrapper around a known literal
+argument. Fresh Clang requires the ordinary value spelling, so lower that
+argument to the existing value fact. Preserve initial functional assertions,
+reference comparison and preliminary performance observations separately;
+qualify the corrected final binary, not the initial patch.
+
+Full strict report passes 6126/6126 with exactly one output line. Debug-info,
+backend variants, self-host through PA5, all nine architecture audits, file
+and placement checks pass (37 existing file warnings). Final SHA256:
+`cbe425fb837456e5476cc938a9219f8d08470a3aff36003bff43eb0c2aedd6ad`.
+Independently verify all 288 Alpha screen and 48 recognition confirmation
+observations against raw unscaled counters, RSS, zero statuses and equal object
+hashes. Maximum screen instruction median is 1.000095110 and RSS median
+1.000054104. Recognition screen calibrated cycles 1.010105365 trigger the one
+focused confirmation: 0.993256787 (95% interval [0.982446332, 1.012861524]).
+Retain timing uncertainty; no further repeat and no timing-neutrality claim.
+
+Seven compiler families and seven reviews remain. MANGLE stays open for the
+frozen dependent member/result packs, integral alias parameters, qualified
+calls and casts, and typed template-parameter annotations. Continue with those
+existing owning fixtures, then the other compiler families, final pruning and
+combined export/harness/quiet-output validation.

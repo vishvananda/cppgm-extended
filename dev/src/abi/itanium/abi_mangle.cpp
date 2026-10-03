@@ -1901,6 +1901,10 @@ private:
         if(expression.index != 0) output_ += base36(expression.index - 1);
         output_ += '_';
         return;
+      case ABI_EXPRESSION_INTEGRAL_VALUE:
+        output_ += 'L'; encode_type(expression.value_type);
+        output_ += integral_value(expression.value_type, expression.value) + 'E';
+        return;
       case ABI_EXPRESSION_LITERAL:
         output_ += "Li" + graph_.strings.get(expression.symbol) + 'E'; return;
       case ABI_EXPRESSION_UNARY:

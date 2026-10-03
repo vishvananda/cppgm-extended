@@ -106,7 +106,8 @@ enum ResultIdentityAtomKind
 	RESULT_IDENTITY_ARGUMENT_END,
 	RESULT_IDENTITY_ARGUMENTS_END,
 	RESULT_IDENTITY_PACK_EXPANSION,
-	RESULT_IDENTITY_BOUND_ARGUMENT
+	RESULT_IDENTITY_BOUND_ARGUMENT,
+	RESULT_IDENTITY_LITERAL_ARGUMENT
 };
 
 std::uint64_t ResultIdentityAtom(ResultIdentityAtomKind kind,
@@ -231,6 +232,22 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 				RESULT_IDENTITY_PACK_EXPANSION));
 			return true;
 		}
+		FundamentalType literal_type = FT_VOID;
+		std::uint64_t literal_value = 0;
+		if (arena_->ScalarLiteralFact(reference.node, &literal_type, &literal_value))
+		{
+			const TypeId type = RetainedScalarLiteralFacts(reference.node).type;
+			if (IsIntegral(type))
+			{
+				std::uint32_t first = 0;
+				program_->InternTemplateArgumentList(std::vector<TemplateArgument>(1,
+					TemplateArgument(TEMPLATE_ARGUMENT_INTEGRAL, type,
+						static_cast<std::int64_t>(literal_value))), &first);
+				atoms->push_back(ResultIdentityAtom(
+					RESULT_IDENTITY_LITERAL_ARGUMENT, first));
+				return true;
+			}
+		}
 		const NameId semantic_name =
 			arena_->SemanticPayloadId(reference.node);
 		const std::vector<ResultSyntaxReference>* substitution =
@@ -253,6 +270,16 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 		const std::size_t parameter = root_parameter(semantic_name);
 		if (parameter < pattern->parameters.size())
 		{
+			if (arena_->IsTag(reference.node, ::cppgm::syntax::STAG_SIZEOF_PACK_EXPRESSION))
+			{
+				if (!pattern->parameters[parameter].pack) return false;
+				atoms->push_back(ResultIdentityAtom(
+					RESULT_IDENTITY_NODE_BEGIN, arena_->TagId(reference.node)));
+				atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_NODE_PAYLOAD));
+				atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_PARAMETER, parameter));
+				atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_NODE_END));
+				return true;
+			}
 			if (arena_->IsTag(reference.node, ::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION) ||
 				arena_->HasDescendantTag(reference.node, ::cppgm::syntax::STAG_PARAMETER_PACK))
 				atoms->push_back(ResultIdentityAtom(

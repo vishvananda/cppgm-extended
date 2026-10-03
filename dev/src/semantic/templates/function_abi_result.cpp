@@ -147,6 +147,18 @@ public:
 				kNoFunctionTemplateAbiExpression, kNoFunctionTemplateAbiType,
 				0, static_cast<std::uint32_t>(parameter)));
 		}
+		if (kind == FUNCTION_TEMPLATE_RESULT_LITERAL_ARGUMENT)
+		{
+			const std::uint64_t first = ResultIdentityValue(atoms_[position_++]);
+			if (first >= program_->canonical_template_arguments.size() ||
+				program_->canonical_template_arguments[first].kind != TEMPLATE_ARGUMENT_INTEGRAL)
+				return kNoFunctionTemplateAbiExpression;
+			return AppendAbiExpression(program_, FunctionTemplateAbiExpression(
+				FUNCTION_TEMPLATE_ABI_EXPRESSION_INTEGRAL,
+				kNoFunctionTemplateAbiExpression, kNoFunctionTemplateAbiExpression,
+				kNoFunctionTemplateAbiType, 0, kNoTemplateParameter, OPERATOR_NONE,
+				false, static_cast<std::uint32_t>(first), 1));
+		}
 		if (kind == FUNCTION_TEMPLATE_RESULT_QUALIFIED_BEGIN)
 		{
 			FunctionTemplateAbiExpressionId expression =
@@ -156,7 +168,8 @@ public:
 		}
 		if (!IsNode("parenthesized-expression") &&
 			!IsNode("id-expression") && !IsNode("unary-expression") &&
-			!IsNode("call-expression"))
+			!IsNode("call-expression") && !IsNode("binary-expression") &&
+			!IsNode("sizeof-pack-expression"))
 			return kNoFunctionTemplateAbiExpression;
 		NameId payload = 0;
 		const NameId tag = static_cast<NameId>(
@@ -173,6 +186,25 @@ public:
 				ParseTemplateIdExpression() : ParseExpression();
 		else if (node == "parenthesized-expression")
 			expression = ParseExpression();
+		else if (node == "sizeof-pack-expression")
+		{
+			const FunctionTemplateAbiExpressionId operand = ParseExpression();
+			if (operand != kNoFunctionTemplateAbiExpression)
+				expression = AppendAbiExpression(program_, FunctionTemplateAbiExpression(
+					FUNCTION_TEMPLATE_ABI_EXPRESSION_SIZEOF_PACK, operand));
+		}
+		else if (node == "binary-expression")
+		{
+			const std::string& spelling = program_->names.Get(payload);
+			const OperatorKind operation = spelling == "-" ? OPERATOR_MINUS :
+				spelling == "==" ? OPERATOR_EQUAL : spelling == "<" ? OPERATOR_LESS : OPERATOR_NONE;
+			if (operation == OPERATOR_NONE) return kNoFunctionTemplateAbiExpression;
+			const FunctionTemplateAbiExpressionId left = ParseExpression(), right = ParseExpression();
+			if (left != kNoFunctionTemplateAbiExpression && right != kNoFunctionTemplateAbiExpression)
+				expression = AppendAbiExpression(program_, FunctionTemplateAbiExpression(
+					FUNCTION_TEMPLATE_ABI_EXPRESSION_BINARY, left, right,
+					kNoFunctionTemplateAbiType, 0, kNoTemplateParameter, operation));
+		}
 		else if (node == "call-expression")
 		{
 			const FunctionTemplateAbiExpressionId callee = ParseExpression();

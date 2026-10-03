@@ -12,16 +12,19 @@ AbiExpressionOperationKind abi_expression_operation_kind(
   if(word == "mi") return ABI_EXPRESSION_OPERATION_SUBTRACT;
   if(word == "dt") return ABI_EXPRESSION_OPERATION_MEMBER;
   if(word == "pt") return ABI_EXPRESSION_OPERATION_INDIRECT_MEMBER;
+  if(word == "lt") return ABI_EXPRESSION_OPERATION_LESS;
+  if(word == "eq") return ABI_EXPRESSION_OPERATION_EQUAL;
+  if(word == "sZ") return ABI_EXPRESSION_OPERATION_SIZEOF_PACK;
   return ABI_EXPRESSION_OPERATION_TEXT;
 }
 
 const char * abi_expression_operation_code(AbiExpressionOperationKind kind)
 {
-  static const char * codes[] = {nullptr, "de", "mi", "dt", "pt"};
+  static const char * codes[] = {nullptr, "de", "mi", "dt", "pt", "lt", "eq", "sZ"};
   static_assert(sizeof(codes) / sizeof(codes[0]) ==
-                  ABI_EXPRESSION_OPERATION_INDIRECT_MEMBER + 1,
+                  ABI_EXPRESSION_OPERATION_SIZEOF_PACK + 1,
                 "ABI expression operation table is incomplete");
-  if(kind > ABI_EXPRESSION_OPERATION_INDIRECT_MEMBER || codes[kind] == nullptr)
+  if(kind > ABI_EXPRESSION_OPERATION_SIZEOF_PACK || codes[kind] == nullptr)
     ThrowAbiInternal("ABI expression operation has no fixed encoding");
   return codes[kind];
 }

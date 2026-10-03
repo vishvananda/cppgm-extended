@@ -1312,6 +1312,24 @@ public:
 					program_.function_template_abi_arguments[
 						source.argument_begin + i].expression, recipe));
 		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_INTEGRAL)
+		{
+			if (source.argument_begin >= program_.canonical_template_arguments.size())
+				ThrowLoweringInternal("retained dependent literal argument is invalid");
+			const TemplateArgument& argument = program_.canonical_template_arguments[source.argument_begin];
+			if (argument.kind != TEMPLATE_ARGUMENT_INTEGRAL)
+				ThrowLoweringInternal("retained dependent literal argument is not integral");
+			target.kind = ABI_EXPRESSION_INTEGRAL_VALUE;
+			target.value_type = MakeType(argument.type);
+			target.value = argument.value;
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_SIZEOF_PACK)
+		{
+			target.kind = ABI_EXPRESSION_UNARY;
+			target.operation = ABI_EXPRESSION_OPERATION_SIZEOF_PACK;
+			target.expression_refs.push_resolved(
+				AddFunctionTemplateAbiExpression(source.left, recipe));
+		}
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_UNARY)
 		{
 			target.kind = ABI_EXPRESSION_UNARY;
@@ -1325,10 +1343,13 @@ public:
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_BINARY)
 		{
 			target.kind = ABI_EXPRESSION_BINARY;
-			if (source.operation != OPERATOR_MINUS)
-				ThrowLoweringInternal(
-					"unsupported retained dependent binary operation");
-			target.operation = ABI_EXPRESSION_OPERATION_SUBTRACT;
+			if (source.operation == OPERATOR_MINUS)
+				target.operation = ABI_EXPRESSION_OPERATION_SUBTRACT;
+			else if (source.operation == OPERATOR_EQUAL)
+				target.operation = ABI_EXPRESSION_OPERATION_EQUAL;
+			else if (source.operation == OPERATOR_LESS)
+				target.operation = ABI_EXPRESSION_OPERATION_LESS;
+			else ThrowLoweringInternal("unsupported retained dependent binary operation");
 			target.expression_refs.push_resolved(
 				AddFunctionTemplateAbiExpression(source.left, recipe));
 			target.expression_refs.push_resolved(
@@ -1373,6 +1394,20 @@ public:
 				expansion.kind = ABI_TYPE_PACK_EXPANSION;
 				target.type.modifiers.insert(target.type.modifiers.begin(), expansion);
 			}
+		}
+		else if (!source.pack_expansion &&
+			source.expression < program_.function_template_abi_expressions.size() &&
+			program_.function_template_abi_expressions[source.expression].kind ==
+				FUNCTION_TEMPLATE_ABI_EXPRESSION_INTEGRAL)
+		{
+			const FunctionTemplateAbiExpression& literal =
+				program_.function_template_abi_expressions[source.expression];
+			if (literal.argument_begin >= program_.canonical_template_arguments.size())
+				ThrowLoweringInternal("retained template literal argument is invalid");
+			const TemplateArgument& argument = program_.canonical_template_arguments[literal.argument_begin];
+			target.kind = ABI_TEMPLATE_ARGUMENT_VALUE;
+			target.value_type = MakeType(argument.type);
+			target.value = argument.value;
 		}
 		else
 		{

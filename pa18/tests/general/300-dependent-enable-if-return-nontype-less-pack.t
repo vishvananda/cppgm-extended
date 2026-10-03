@@ -39,5 +39,5 @@ struct second
 int main()
 {
   tuple<first, second> value;
-  return find<second>(value) == 0 ? 0 : 1;
+  return find<second>(value) == 0 && find<second, 1>(value) == 0 ? 0 : 1;
 }
