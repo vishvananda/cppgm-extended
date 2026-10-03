@@ -46,7 +46,7 @@ global @__typeinfo_name__struct_AB [binding=weak, object=_ZTS2AB] = {
 global @__rtti_struct_AB [binding=weak, object=_ZTI2AB] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_AB
-  i32 0
+  i32 2
   i32 2
   ptr addr @__rtti_struct_A
   i64 2

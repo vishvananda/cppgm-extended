@@ -48,7 +48,7 @@ global @__typeinfo_name__class_YD [binding=weak, object=_ZTS2YD] = {
 global @__rtti_class_YD [binding=weak, object=_ZTI2YD] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__class_YD
-  i32 0
+  i32 2
   i32 2
   ptr addr @__rtti_class_YB
   i64 2

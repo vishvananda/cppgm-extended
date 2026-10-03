@@ -86,7 +86,7 @@ global @__typeinfo_name__struct_IOStream [binding=weak, object=_ZTS8IOStream] = 
 global @__rtti_struct_IOStream [binding=weak, object=_ZTI8IOStream] = {
   ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
   ptr addr @__typeinfo_name__struct_IOStream
-  i32 0
+  i32 2
   i32 2
   ptr addr @__rtti_struct_IStream
   i64 2

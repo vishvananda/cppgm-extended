@@ -1765,6 +1765,54 @@ private:
 		return -24;
 	}
 
+	std::uint32_t RttiBaseFlags(EntityId entity)
+	{
+		if (!program_.entities[entity].nonlinear_base_graph) return 0;
+		if (rtti_physical_base_marks_.size() < program_.entities.size())
+		{
+			rtti_physical_base_marks_.resize(program_.entities.size(), 0);
+			rtti_virtual_base_marks_.resize(program_.entities.size(), 0);
+		}
+		// Each demanded descriptor is emitted once, so its identity supplies
+		// a distinct marker without clearing the entity indices for every root.
+		const std::uint32_t marker = entity + 1;
+		rtti_base_pending_.clear();
+		rtti_base_pending_.push_back(entity);
+		rtti_physical_base_marks_[entity] = marker;
+		std::uint32_t flags = 0;
+		while (!rtti_base_pending_.empty() && flags != 3)
+		{
+			const EntityId current = rtti_base_pending_.back();
+			rtti_base_pending_.pop_back();
+			const EntityRecord& owner = program_.entities[current];
+			for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
+			{
+				const DirectBaseEdge& edge = program_.DirectBase(current, ordinal);
+				if (edge.virtual_base)
+				{
+					if (rtti_virtual_base_marks_[edge.entity] == marker)
+					{
+						flags |= 2;
+						continue;
+					}
+					rtti_virtual_base_marks_[edge.entity] = marker;
+				}
+				if (rtti_physical_base_marks_[edge.entity] == marker)
+				{
+					flags |= 1;
+					// Repeated physical subtrees also share any virtual bases
+					// they contain; their descendants need no second traversal.
+					if (program_.entities[edge.entity].virtual_base_count != 0)
+						flags |= 2;
+					continue;
+				}
+				rtti_physical_base_marks_[edge.entity] = marker;
+				rtti_base_pending_.push_back(edge.entity);
+			}
+		}
+		return flags;
+	}
+
 	void EmitGlobals()
 	{
 		for (EntityId entity = 0;
@@ -1800,7 +1848,7 @@ private:
 						program_.DirectBase(entity, 0).entity]);
 			else if (record.direct_base_count != 0)
 			{
-				AddIntegerItem(&rtti, LowI32(), 0);
+				AddIntegerItem(&rtti, LowI32(), RttiBaseFlags(entity));
 				AddIntegerItem(&rtti, LowI32(), record.direct_base_count);
 				for (std::size_t base = 0; base < record.direct_base_count; ++base)
 				{
@@ -1952,6 +2000,8 @@ private:
 	std::vector<std::uint8_t> local_function_definitions_;
 	std::vector<AdjustedSlotEntry> adjusted_slot_entries_;
 	std::vector<std::uint32_t> adjusted_slot_slots_;
+	std::vector<std::uint32_t> rtti_physical_base_marks_, rtti_virtual_base_marks_;
+	std::vector<EntityId> rtti_base_pending_;
 };
 
 class DeletingDestructorBuilder
