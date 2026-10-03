@@ -805,8 +805,6 @@ ExpressionInfo Analyzer::AnalyzeThrowExpression(
 	const NodeId operand = FirstSemanticChild(node);
 	if (operand == kNoNode)
 	{
-		if (exception_handler_depth_ == 0)
-			ThrowSemanticError("rethrow outside an exception handler");
 		ExpressionInfo result;
 		result.node = MakeDump(DUMP_THROW_EXPRESSION,
 			program_->types.Fundamental(FUND_VOID), VALUE_PRVALUE);
@@ -957,14 +955,12 @@ void Analyzer::AnalyzeExceptionHandler(NodeId node, ScopeId scope,
 	const NodeId body = FindChild(node, ::cppgm::syntax::STAG_COMPOUND_STATEMENT);
 	if (body == kNoNode)
 		ThrowSemanticError("exception handler has no body");
-	++exception_handler_depth_;
 	exception_handler_cleanup_stops_.push_back(scope);
 	AnalyzeCompound(body, handler_scope, handler);
 	const std::uint32_t handler_body = dump_.edges[dump_.nodes[handler].last_edge].child;
 	AppendScopeDestructionActions(handler_scope, handler_body, scope);
 	PopExceptionControlContext();
 	exception_handler_cleanup_stops_.pop_back();
-	--exception_handler_depth_;
 }
 
 void Analyzer::AnalyzeTryStatement(NodeId node, ScopeId scope,

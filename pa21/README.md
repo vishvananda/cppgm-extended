@@ -208,6 +208,9 @@ To complete PA21, implement these goals:
    Once an exception object has been initialized, destroy the throw operand's
    temporaries and remove them from later unwind snapshots. A temporary from an
    untaken throw branch must not appear in a sibling call's cleanup path.
+   Operandless `throw;` rethrows the dynamically handled exception, including
+   from a called function or destructor. With no active exception it terminates
+   at runtime; it does not require a lexical enclosing handler.
    Reference initialization preserves cleanup of earlier automatic objects.
    A temporary whose lifetime is extended by the reference stays guarded until
    initialization completes, then remains alive until scope exit; a reference

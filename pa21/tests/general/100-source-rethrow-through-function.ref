@@ -19,6 +19,11 @@ global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
 
+function @rethrow() -> void [binding=strong, object=_Z7rethrowv] {
+  block ^entry:
+    call void @__external_runtime____cxa_rethrow()
+    return void
+}
 function @f() -> i32 [binding=strong, object=_Z1fv] {
   block ^entry:
     eh_try ^catch_dispatch_1
@@ -42,8 +47,10 @@ function @f() -> i32 [binding=strong, object=_Z1fv] {
   block ^catch_body_4:
     %t6 = call ptr @__external_runtime____cxa_begin_catch(%t3)
     eh_cleanup ^catch_cleanup_6
-    call void @__external_runtime____cxa_rethrow()
-    return i32 0
+    call void @rethrow()
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    return i32 1
 
   block ^catch_cleanup_6:
     call void @__external_runtime____cxa_end_catch()

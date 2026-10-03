@@ -1,8 +1,13 @@
+void rethrow() {
+  throw;
+}
+
 int f() {
   try {
     throw 3;
   } catch (int) {
-    throw;
+    rethrow();
+    return 1;
   }
 }
 

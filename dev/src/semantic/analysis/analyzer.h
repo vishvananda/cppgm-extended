@@ -2243,7 +2243,6 @@ private:
 	std::vector<std::size_t> pack_alignment_stack_;
 	std::size_t loop_depth_;
 	std::size_t switch_depth_;
-	std::size_t exception_handler_depth_;
 	std::vector<ScopeId> exception_cleanup_stops_;
 	std::vector<ScopeId> exception_handler_cleanup_stops_;
 	void ResolveControlFlowGoto(const PendingGotoControlFact& source,

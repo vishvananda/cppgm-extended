@@ -186,7 +186,7 @@ The recent discovery inventory is not all C++11:
 | EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Open, independently reproduced: four reference-initializer controls and an ordinary object/throw control return 10 with both the unchanged entry and cleanup candidate; Clang/GCC invoke the installed termination handler (77) at O0/O2. Generic full-expression cleanup continuations lower destructor calls without the terminating guard used by constructor/destructor body cleanup. Frozen inputs and host traces are retained under reference-initializer-cleanup/. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Open: the entry and cleanup candidates emit an empty instantiated body and return zero; Clang/GCC run the specified body and handler at O0/O2. Pattern registration uses a direct compound-statement lookup and does not retain handler syntax. |
-| EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Open: three programs reject here and pass Clang/GCC at O0/O2. N3485 15.1/8-9 requires the runtime active exception, rather than a lexical catch in the callee definition. No compiler/reference change yet. |
+| EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Done for source acceptance and lowering: remove the lexical-handler restriction and its unused counter. All three original programs pass host linking at O0/O2; the called-function case and rewritten existing fixture also pass standalone/object routes. No-active-exception execution invokes the installed termination handler. Same-function nested-handler and destructor traces still fail only in the native BACKEND family; retain/reclassify the existing opt-in reducer. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
@@ -204,7 +204,7 @@ The recent discovery inventory is not all C++11:
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
 | BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Open, independently reproduced: the entry and copy-cleanup candidates crash at O2 for the twelve-element move and trivial-copy-prefix array fixtures, in standalone and host-linked object routes. Clang/GCC pass; our O0 routes and corresponding external-companion forms pass. Retain frozen sources, binary hashes, host-link controls and debugger observations under synthesized-construction-prefix/. |
-| BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. Two defined source-handler controls also retain identical entry/candidate standalone failures at O0/O2: nested-outer-swallow returns 10 and function-try-body-local aborts (134); their host-object routes pass Clang/GCC and the candidate. Keep these runtime routes separate from PA21 LowIR cleanup correctness. The standalone shutdown-registration dependency exposed by INIT-LIST-STATIC is fixed in the native callback checkpoint below. Existing object metadata already maps its helper to C atexit; no ABI spelling change was needed. The two source-handler routes above remain open. |
+| BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. Two defined source-handler controls also retain identical entry/candidate standalone failures at O0/O2: nested-outer-swallow returns 10 and function-try-body-local aborts (134); their host-object routes pass Clang/GCC and the candidate. Keep these runtime routes separate from PA21 LowIR cleanup correctness. The standalone shutdown-registration dependency exposed by INIT-LIST-STATIC is fixed in the native callback checkpoint below. Existing object metadata already maps its helper to C atexit; no ABI spelling change was needed. The two source-handler routes above remain open. Dynamic rethrow acceptance now exposes two more native-only observations within this handler/cleanup family: same-function nested rethrow terminates (134), and the destructor-rethrow trace returns 1, while both host-object routes pass. Retain pa21/tests/controls/200-audit-dynamic-rethrow.cpp under BACKEND; no new fixture. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
@@ -5690,3 +5690,31 @@ runtime timing claim. Candidate SHA256:
 Raw checks and performance evidence: `/tmp/cppgm-v4-audit-review/native-shutdown-runtime/`.
 Remaining: 25 compiler families and six reviews; final fixture pruning and
 combined student-export validation remain pending.
+
+
+### Dynamic rethrow — source acceptance and lowering complete
+
+N3485 15.1/8–9 bases operandless throw on the dynamically handled exception.
+Remove the invalid lexical-handler check and its otherwise-unused depth field.
+Existing typed throw lowering already calls the exception runtime. Extend PA21's
+existing function-rethrow fixture with a called helper; regenerate only its
+LowIR reference. No new required fixture files and no ABI encoder changes.
+
+All three original programs compile and pass host-object execution at O0/O2.
+The caller-handler program and rewritten fixture also pass direct/native-object
+execution. A no-active-exception control calls the installed termination handler
+with ours, Clang and GCC at O0/O2. Two other native routes expose the existing
+BACKEND handler/cleanup gaps: same-function nested rethrow exits 134, and the
+destructor trace returns 1. Preserve/reclassify the original opt-in reducer;
+these observations remain open, rather than claiming complete native EH support.
+
+PA21 208/208, strict 6118/6118, debug-info, self-host through PA5, nine architecture
+audits, file audit and placement pass. No lowering/optimizer implementation
+changed, so backend variants were not repeated. Alpha's 192 equal-object
+observations pass instruction/RSS gates with independently verified raw counters.
+A copy-template calibrated cycle median of 1.011133 triggered the single required
+96-observation confirmation: 1.001314, bootstrap 95% interval 0.998849–1.014178.
+The confirmation passes instruction/RSS/equality checks; no further repeats.
+Candidate SHA256: `cf82417206f899edccd4bdafaf74c4e8b6ba1dedd92589ff1857b9936b549f9a`.
+Evidence: `/tmp/cppgm-v4-audit-review/dynamic-rethrow/`.
+Remaining: 24 compiler families and six reviews; final pruning/export pending.
