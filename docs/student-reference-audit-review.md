@@ -83,13 +83,13 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **36 compiler issue families** remain
+Remaining-work count on 2026-10-03: **35 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
-ATTR-NORETURN variable appertainment is now confirmed required work. These are tracker
+ATTR-NORETURN variable appertainment is now completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -202,7 +202,7 @@ The recent discovery inventory is not all C++11:
 | EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Done in the accompanying performance-approved checkpoint: deduplicate adjusted TypeIds and compare declarations as sets while retaining first-declaration order. The one positive is promoted to PA6/300 and its temporary control removed; the distinct-set negative remains. Nine scratch boundaries pass ours and Clang; GCC's adjusted-array/function disagreement is retained. PA6 112/112, strict report, every required compiler check and the final combined 4800-observation global performance gate pass. Earlier two failed cycle gates remain recorded. N3485 15.4/2,3 supplies the rule. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
-| ATTR-NORETURN | Review standard noreturn argument/appertainment constraints | v4codex PA30 source201 | In progress: argument constraint done in the accompanying checkpoint: reject an argument clause on the unqualified standard noreturn attribute and consume other argument payloads as balanced tokens. Promote the existing negative to PA29/500 and reuse existing valid noreturn runtime coverage. Ours and GCC pass 16/16 scratch observations; Clang's two malformed unknown-attribute disagreements remain scratch evidence. PA29 405/405, strict 6109/6109 in one line, all required local checks and the 4800-observation global Alpha gates pass. N3485 7.6.3/1 supplies the argument constraint. Variable appertainment is now confirmed open C++11 work under N3485 7.6.1/4 and 7.6.3/1: both prefix and declarator-id variable spellings silently pass here, Clang rejects and GCC diagnoses with a warning. GCC acceptance does not make the program well-formed. Function and unknown-attribute positives pass all three. Frozen sources and 24 observations are retained in noreturn-variable-appertainment/. No extra vendor attribute or permutation fixture is admitted; select one standard-variable negative with the fix. |
+| ATTR-NORETURN | Diagnose standard noreturn argument and non-function target constraints | v4codex PA30 source201 | Done: argument rejection in 8a6bcd105; variable-target/provenance fix in this checkpoint. N3485 7.6.1/4 and 7.6.3/1 restrict the standard attribute to functions. Preserve GNU attribute provenance (including both namespace spellings), ignore unknown scoped attributes, and check resolved declarator types plus variable/member/parameter owners. Ours and Clang pass 28/28 focused outcomes; GCC invalid-target acceptance differences remain recorded. Add one PA29/500 variable negative and reuse the existing GNU-attribute fixture for an unknown-scoped-variable positive and existing noreturn runtime coverage. Affected 558/558, strict 6112/6112 in one line, debug/self-host PA5/all nine architecture checks/file/placement pass. The 192-observation screen plus 96-observation namespace timing confirmation pass instruction/RSS/equality/unscaled-counter checks: maximum instruction ratio 1.000729, median RSS ratios 1.0; combined namespace cycles median 1.004159 with interval [1.001728,1.010226], retained as diagnostic cost. Raw evidence is in noreturn-variable-appertainment/. |
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Open, independently reduced without zero-argument inheritance: D<T> : T with using T::T and D<B>(7) rejects as template-parameter redeclaration here, in entry/candidate type dumps and at O0/O2; strict C++11 Clang/GCC accept. N3485 7.3.3 and 12.9 support the parameterized constructor. Ordinary using B::T shadowing remains a separate held host disagreement. |
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Zero-candidate review complete: P0136R1/N4429 establish the adopted C++11 defect-resolution basis. Six fresh host-agreed runtime observations already pass here for ordinary zero-argument availability, member initialization and local hiding; eighteen access/deletion/member negatives also agree. No new zero-availability fix or fixture is needed. Dependent using and parameterized viability remain separate open rows. The throwing-default/nothrow disagreement is preserved in INHERITED-DEFAULT-EXCEPT; no oracle is imposed for it. |
@@ -5389,3 +5389,21 @@ no timing confirmation is indicated. Image
 source patch, commands and observations are retained in `base-alias-convergence/`.
 Remaining: 36 compiler families and six reviews; final fixture minimization and
 combined export remain pending.
+
+
+### Completed standard noreturn variable targets — 2026-10-03
+
+The three-file correction retains typed attribute provenance and diagnoses
+non-function targets without rejecting unknown scoped attributes. One required
+negative is added; an existing positive fixture supplies the unknown-attribute
+boundary. Ours and Clang pass 28 focused outcomes each; GCC warning/acceptance
+differences remain explicit. All eight final validation groups pass, including
+strict 6112/6112 in one line and zero placement/review/hygiene findings. The
+192-observation screen and 96-observation focused confirmation pass instruction
+and RSS gates, output equality and independent unscaled-counter verification.
+The small confirmed namespace cycle cost is recorded without claiming timing
+neutrality. Qualified image, source patch and raw results are retained in
+`noreturn-variable-appertainment/`; image SHA
+`760b15be4963c77c48b44bbcf7bd576ae4487b156528689ef1e39f73182e3b9a`.
+Remaining: 35 compiler families and six reviews. Final fixture minimization and
+combined student-export validation remain pending.

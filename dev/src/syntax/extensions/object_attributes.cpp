@@ -225,6 +225,7 @@ bool ConsumeLeadingStandardObjectAttribute(
 	bool no_unique_address = false;
 	bool always_inline = false;
 	bool noreturn = false;
+	bool gnu_noreturn = false;
 	while (!At(tokens, *position, OP_RSQUARE) ||
 		!At(tokens, *position + 1, OP_RSQUARE))
 	{
@@ -233,16 +234,22 @@ bool ConsumeLeadingStandardObjectAttribute(
 		if (tokens[*position].Kind() == kIdentifierToken)
 		{
 			const std::string& name = strings.Get(tokens[*position].spelling);
-			if (name == "noreturn" &&
-				(*position == attribute_begin || At(tokens, *position - 1, OP_COMMA)) &&
+			const bool unqualified = *position == attribute_begin ||
+				At(tokens, *position - 1, OP_COMMA);
+			if (name == "noreturn" && unqualified &&
 				At(tokens, *position + 1, OP_LPAREN))
 				ThrowSyntaxError("noreturn attribute cannot have arguments");
 			no_unique_address = no_unique_address ||
 				name == "no_unique_address" || name == "__no_unique_address__";
 			always_inline = always_inline ||
 				name == "always_inline" || name == "__always_inline__";
-			noreturn = noreturn ||
-				name == "noreturn" || name == "__noreturn__";
+			noreturn = noreturn || (name == "noreturn" && unqualified);
+			gnu_noreturn = gnu_noreturn ||
+				(name == "__noreturn__" && unqualified) ||
+				((name == "noreturn" || name == "__noreturn__") &&
+				 *position >= 2 && At(tokens, *position - 1, OP_COLON2) &&
+				 (strings.Get(tokens[*position - 2].spelling) == "gnu" ||
+				  strings.Get(tokens[*position - 2].spelling) == "__gnu__"));
 		}
 		++*position;
 		if (At(tokens, *position, OP_LPAREN))
@@ -277,6 +284,12 @@ bool ConsumeLeadingStandardObjectAttribute(
 	if (noreturn)
 	{
 		const NodeId attribute = arena.Make("standard-attribute", "noreturn");
+		arena.AddFlags(attribute, SYNTAX_FLAG_SEMANTIC_ONLY);
+		attributes->push_back(attribute);
+	}
+	if (gnu_noreturn)
+	{
+		const NodeId attribute = arena.Make("gnu-attribute", "noreturn");
 		arena.AddFlags(attribute, SYNTAX_FLAG_SEMANTIC_ONLY);
 		attributes->push_back(attribute);
 	}

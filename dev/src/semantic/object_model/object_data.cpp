@@ -36,6 +36,9 @@ void Analyzer::ApplyVariableObjectAttributes(
 		edge = arena_->NextEdge(edge))
 	{
 		const NodeId attribute = arena_->EdgeChild(edge);
+		if (arena_->IsTag(attribute, ::cppgm::syntax::STAG_STANDARD_ATTRIBUTE) &&
+			arena_->SemanticPayload(attribute) == "noreturn")
+			ThrowSemanticError("noreturn attribute requires a function");
 		if (!arena_->IsTag(attribute, ::cppgm::syntax::STAG_GNU_ATTRIBUTE)) continue;
 		const std::string name = arena_->SemanticPayload(attribute);
 		if (name == "weak" || name == "__weak__")

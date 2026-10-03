@@ -15,6 +15,8 @@ struct rlimit;
 int getrlimit(int, struct rlimit*) __asm("_getrlimit");
 void abort(void) __attribute__((noreturn));
 
+[[vendor::noreturn]] int ignored_noreturn_attribute;
+
 int main() {
   return 0;
 }

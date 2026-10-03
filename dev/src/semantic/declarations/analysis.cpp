@@ -1140,6 +1140,8 @@ void Analyzer::AnalyzeClassMember(NodeId node, ScopeId scope,
 		}
 		else
 		{
+			if (hosted_extension::HasStandardAttribute(*arena_, node, "noreturn"))
+				ThrowSemanticError("noreturn attribute requires a function");
 			if (spec.thread_local_storage &&
 				spec.storage_class != STORAGE_CLASS_STATIC)
 				ThrowSemanticError(
@@ -1978,6 +1980,9 @@ std::vector<ParameterInfo> Analyzer::BuildParameters(NodeId node,
 		}
 		if (!arena_->IsTag(child, ::cppgm::syntax::STAG_PARAMETER_DECLARATION)) continue;
 		const NodeId specifiers = FindChild(child, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ);
+		if (hosted_extension::HasStandardAttribute(*arena_, child, "noreturn") ||
+			hosted_extension::HasStandardAttribute(*arena_, specifiers, "noreturn"))
+			ThrowSemanticError("noreturn attribute requires a function");
 		NodeId declarator = FindChild(child, ::cppgm::syntax::STAG_DECLARATOR);
 		if (declarator == kNoNode)
 			declarator = FindChild(child, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR);
@@ -2134,11 +2139,15 @@ DeclaratorInfo Analyzer::BuildDeclarator(NodeId node, TypeId base,
 	std::uint8_t function_cv = CV_NONE;
 	std::uint8_t function_ref = FUNCTION_REF_NONE;
 	bool saw_function_suffix = false;
+	bool standard_noreturn = false;
 	for (std::uint32_t edge = arena_->FirstEdge(node); edge != kNoEdge;
 		edge = arena_->NextEdge(edge))
 	{
 		const NodeId child = arena_->EdgeChild(edge);
-		if (arena_->IsTag(child, ::cppgm::syntax::STAG_PTR_OPERATOR))
+		if (arena_->IsTag(child, ::cppgm::syntax::STAG_STANDARD_ATTRIBUTE))
+			standard_noreturn = standard_noreturn ||
+				arena_->SemanticPayload(child) == "noreturn";
+		else if (arena_->IsTag(child, ::cppgm::syntax::STAG_PTR_OPERATOR))
 		{
 			const std::string operation = PayloadSource(child);
 			const int op = PayloadTokenKind(child);
@@ -2309,9 +2318,13 @@ DeclaratorInfo Analyzer::BuildDeclarator(NodeId node, TypeId base,
 			inner.trailing_return_scope = result.trailing_return_scope;
 		if (inner.placeholder_return_kind == PLACEHOLDER_DECLARATOR_NONE)
 			inner.placeholder_return_kind = result.placeholder_return_kind;
+		if (standard_noreturn && !program_->types.IsFunction(inner.type))
+			ThrowSemanticError("noreturn attribute requires a function");
 		return inner;
 	}
 	result.type = type;
+	if (standard_noreturn && !program_->types.IsFunction(result.type))
+		ThrowSemanticError("noreturn attribute requires a function");
 	if (deduced_placeholder && !program_->types.IsFunction(result.type))
 		ThrowSemanticError("placeholder return deduction requires a function definition");
 	return result;
