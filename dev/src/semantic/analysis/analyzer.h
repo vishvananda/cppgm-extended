@@ -1537,14 +1537,16 @@ private:
 	EntityId ZeroOffsetClassEntity(TypeId type) const;
 	bool VisitZeroOffsetSubobjects(EntityId root, std::uint32_t marker,
 		std::uint32_t conflict_marker);
-	std::uint32_t BeginClassZeroOffsetSubobjects(EntityId entity);
+	std::uint32_t BeginClassZeroOffsetSubobjects(EntityId entity,
+		bool include_bases = true);
 	bool ClassZeroOffsetSubobjectConflict(TypeId member_type,
 		std::uint32_t occupied_marker);
 	void MarkClassZeroOffsetSubobject(TypeId member_type,
 		std::uint32_t occupied_marker);
 	const EntityRecord* InitializeClassBaseLayout(EntityId entity,
 		std::size_t packing_alignment, std::size_t* size,
-		std::size_t* alignment, std::size_t* natural_alignment);
+		std::size_t* alignment, std::size_t* natural_alignment,
+		std::size_t* empty_base_extent);
 	std::size_t PreferredClassLayoutBaseOrdinal(EntityId entity) const;
 	void CollectVirtualBaseLayouts(EntityId entity,
 		std::vector<VirtualBaseLayout>* layouts);

@@ -190,7 +190,8 @@ std::size_t Analyzer::PreferredClassLayoutBaseOrdinal(
 
 const EntityRecord* Analyzer::InitializeClassBaseLayout(
 	EntityId entity, std::size_t packing_alignment, std::size_t* size,
-	std::size_t* alignment, std::size_t* natural_alignment)
+	std::size_t* alignment, std::size_t* natural_alignment,
+	std::size_t* empty_base_extent)
 {
 	EntityRecord& owner = program_->entities[entity];
 	if (!owner.has_user_declared_destructor)
@@ -199,6 +200,8 @@ const EntityRecord* Analyzer::InitializeClassBaseLayout(
 		owner.trivial_destructor = true;
 	}
 	if (owner.direct_base_count == 0) return 0;
+	const std::uint32_t zero_offset_marker = owner.direct_base_count > 1 ?
+		BeginClassZeroOffsetSubobjects(entity, false) : 0;
 	const std::size_t preferred_ordinal = PreferredClassLayoutBaseOrdinal(entity);
 	owner.direct_base = kNoEntity;
 	const EntityRecord* primary = 0;
@@ -221,6 +224,18 @@ const EntityRecord* Analyzer::InitializeClassBaseLayout(
 		const std::size_t effective_base_alignment = packing_alignment == 0 ?
 			base_alignment : std::min(base_alignment, packing_alignment);
 		std::size_t offset = 0;
+		if (!edge.virtual_base && base->empty_class)
+		{
+			if (zero_offset_marker != 0 &&
+				ClassZeroOffsetSubobjectConflict(base->type, zero_offset_marker))
+				offset = AlignClassBase(std::max(*size, *empty_base_extent),
+					effective_base_alignment);
+			const std::size_t base_size = static_cast<std::size_t>(
+				base->nonvirtual_size == 0 ? base->object_size : base->nonvirtual_size);
+			if (offset > std::numeric_limits<std::size_t>::max() - base_size)
+				ThrowSemanticResourceLimit("class layout is too large");
+			*empty_base_extent = std::max(*empty_base_extent, offset + base_size);
+		}
 		if (!edge.virtual_base && !base->empty_class)
 		{
 			if (primary == base && owner.polymorphic_class &&
@@ -238,6 +253,8 @@ const EntityRecord* Analyzer::InitializeClassBaseLayout(
 			*size = offset + base_size;
 		}
 		edge.offset = offset;
+		if (!edge.virtual_base && offset == 0 && zero_offset_marker != 0)
+			MarkClassZeroOffsetSubobject(base->type, zero_offset_marker);
 		owner.has_nonzero_base_subobject_offset =
 			owner.has_nonzero_base_subobject_offset || offset != 0 ||
 			base->has_nonzero_base_subobject_offset;

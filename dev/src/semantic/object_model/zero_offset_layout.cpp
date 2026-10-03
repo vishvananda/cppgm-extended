@@ -61,14 +61,16 @@ bool Analyzer::VisitZeroOffsetSubobjects(EntityId root,
 	return false;
 }
 
-std::uint32_t Analyzer::BeginClassZeroOffsetSubobjects(EntityId entity)
+std::uint32_t Analyzer::BeginClassZeroOffsetSubobjects(EntityId entity,
+	bool include_bases)
 {
 	const std::size_t member_count = entity_layout_members_[entity].size();
-	if (member_count >= std::numeric_limits<std::uint32_t>::max())
+	const std::size_t base_count = program_->entities[entity].direct_base_count;
+	if (member_count >= std::numeric_limits<std::uint32_t>::max() - base_count)
 		ThrowSemanticResourceLimit("too many class layout members");
 	zero_offset_subobject_marks_.resize(program_->entities.size(), 0);
 	const std::uint32_t reserve =
-		static_cast<std::uint32_t>(member_count + 1);
+		static_cast<std::uint32_t>(member_count + base_count + 1);
 	if (zero_offset_subobject_generation_ >
 		std::numeric_limits<std::uint32_t>::max() - reserve)
 	{
@@ -77,6 +79,7 @@ std::uint32_t Analyzer::BeginClassZeroOffsetSubobjects(EntityId entity)
 		zero_offset_subobject_generation_ = 0;
 	}
 	const std::uint32_t occupied_marker = ++zero_offset_subobject_generation_;
+	if (!include_bases) return occupied_marker;
 	const EntityRecord& owner = program_->entities[entity];
 	for (std::size_t base_index = 0;
 		base_index < owner.direct_base_count; ++base_index)

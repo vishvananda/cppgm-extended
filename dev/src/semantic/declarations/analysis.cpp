@@ -694,10 +694,11 @@ void Analyzer::CompleteClassLayout(EntityId entity)
 	std::size_t size = 0;
 	std::size_t alignment = 1;
 	std::size_t natural_alignment = 1;
+	std::size_t empty_base_extent = 0;
 	const std::size_t packing_alignment =
 		static_cast<std::size_t>(owner.packing_alignment);
 	const EntityRecord* base = InitializeClassBaseLayout(entity,
-		packing_alignment, &size, &alignment, &natural_alignment);
+		packing_alignment, &size, &alignment, &natural_alignment, &empty_base_extent);
 	const std::uint32_t zero_offset_marker =
 		BeginClassZeroOffsetSubobjects(entity);
 	const bool is_union = owner.flavor == NAMED_UNION;
@@ -919,6 +920,7 @@ void Analyzer::CompleteClassLayout(EntityId entity)
 	}
 	CompleteClassMemberDestructionFacts(entity, is_union,
 		defaulted_destructor);
+	size = std::max(size, empty_base_extent);
 	FinalizeClassVirtualBaseLayout(entity, packing_alignment, &size,
 		&alignment, &natural_alignment, &empty_class);
 }
