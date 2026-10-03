@@ -83,14 +83,14 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **30 compiler issue families** remain
+Remaining-work count on 2026-10-03: **29 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
-LOOKUP-TAG and ABI-GLOBAL are also completed. These are tracker
+LOOKUP-TAG, ABI-GLOBAL and NOEXCEPT-LIST are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -208,7 +208,7 @@ The recent discovery inventory is not all C++11:
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Zero-candidate review complete: P0136R1/N4429 establish the adopted C++11 defect-resolution basis. Six fresh host-agreed runtime observations already pass here for ordinary zero-argument availability, member initialization and local hiding; eighteen access/deletion/member negatives also agree. No new zero-availability fix or fixture is needed. Dependent using and parameterized viability remain separate open rows. The throwing-default/nothrow disagreement is preserved in INHERITED-DEFAULT-EXCEPT; no oracle is imposed for it. |
 | INHERITED-DEFAULT-EXCEPT | Review throwing defaults on a zero-argument inherited constructor and the corresponding nothrow trait | Existing INHERITED-ZERO exception review, isolated source206 | Needs contract review. Six fresh observations show ours catches the second default-argument throw, while Clang/GCC terminate at O0/O2; all three report the zero construction nothrow in the isolated trait control. The student's false nothrow assertion disagrees with all three. Preserve the default-argument runtime/trait discrepancy without changing its oracle or adding a mandatory fixture. Primary adopted C++11 DR sources and frozen controls are in inherited-zero-contract/. |
-| NOEXCEPT-LIST | Compute exception facts for a braced initializer-list constructor argument | v4codex PA31 source205 | Open, independently reduced without hosted headers: noexcept(consume({1,2})) for a nonthrowing Box/Item list rejects with invalid type identity in entry/candidate at O0/O2; both strict C++11 hosts accept. Type dumps alone pass. PA21 owns initializer-list interoperation; its existing handwritten std::initializer_list definition supplies the reduction. Nested-list source206 controls already compile here and are not additional compile-failure claims. |
+| NOEXCEPT-LIST | Preserve constructor ownership facts across parameter template instantiation | v4codex PA31 source205 | Done. The shared failure also affects ordinary calls: a stale EntityRecord reference loses the user-provided-constructor fact when parameter template instantiation moves the entity vector. Reacquire by stable ID before publishing constructor facts. Reuse the PA21 private initializer-list argument fixture, including nonthrowing/throwing-element assertions and runtime class-list conversion; remove the redundant control. Strict 6116/6116 and all required checks pass; Alpha instruction/RSS gates pass. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Open, independently reproduced. The student changed only the existing backward-loop reference and quality envelope; source and status remain unchanged. Here O1/O2/O3 return for unequal mod-eight pointer inputs, while O0 preserves the loop, with both native paths. PA32 requires behavior preservation for defined LowIR; plain index carries no stronger optimization or source forward-progress promise. Eighty fresh observations and the frozen two-sidecar delta are retained. Review/fix the existing loop-finiteness proof and regenerate this reference, without adding a duplicate fixture. |
 | TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. The final tests-only checkpoint replaces the PA6 class/value declaration control with a PA7 ordinary-expression rejection control, preserving the independent PA6 typedef/value control. Both hosts pass 4/4 and explicit placement is clean. At the definition checkpoint the namespace candidate was held for cycle gates. The completed LOOKUP-NAMESPACE-MIXED fix now promotes its two existing controls under the updated qualification policy; strict passes 6111/6111 in one line. Remaining compiler fixes, final course-fixture minimization/promotion and combined export stay open. |
@@ -5516,4 +5516,29 @@ These small measured timing costs are recorded; instruction/memory gates pass
 and neither confirmation exceeds the agreed 1.01 trigger. Evidence and
 regeneration logs are in `/tmp/cppgm-v4-audit-review/global-variable-symbol/`.
 Remaining: 30 compiler families and six reviews. Final fixture minimization and
+combined student-export validation remain pending.
+
+### Completed initializer-list constructor ownership — 2026-10-03
+
+NOEXCEPT-LIST is a stale entity reference in special-member declaration
+analysis, shared by ordinary calls and noexcept operands. Parameter template
+instantiation can move the entity vector before user-provided constructor facts
+are published. Reacquire the class record by its existing ID after parameter
+analysis. This preserves C++11 aggregate classification (N3485 8.5.1/1) without
+new records, allocations or parsing. The extended existing PA21 private
+initializer-list argument fixture fails on the committed preceding compiler,
+passes strict Clang/GCC C++11, and tests class-list conversion in an ordinary
+call, a nonthrowing noexcept operand and a throwing list-element operand.
+Remove the duplicate opt-in control; no new fixture file is added.
+
+All 42 focused checks and 1410 affected-suite checks pass. Strict remains
+6116/6116 in one line. Debug information, self-host through PA5, nine
+architecture audits, file audit and placement pass. Final image SHA-256:
+`02cb8a5691984e1d446bb66fdad7864380ec91ddf8007c463d909fa606c4f1ce`.
+Alpha's 240 observations independently verify every raw unscaled counter, RSS,
+zero status and equal object hash. Maximum instruction ratio is 1.000002 and
+RSS is 1.000; all calibrated cycle medians remain below 1.01. No timing
+confirmation is triggered. Evidence is in
+`/tmp/cppgm-v4-audit-review/noexcept-list-argument/`.
+Remaining: 29 compiler families and six reviews. Final fixture minimization and
 combined student-export validation remain pending.

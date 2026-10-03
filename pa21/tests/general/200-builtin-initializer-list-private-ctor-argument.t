@@ -16,10 +16,22 @@ public:
 };
 }
 
+struct Item { Item(int) noexcept {} };
+struct Box {
+  unsigned long count;
+  Box(std::initializer_list<Item> values) noexcept : count(values.size()) {}
+};
+int consume(const Box& box) noexcept { return (int)box.count; }
+static_assert(noexcept(consume({1, 2})), "list argument is nonthrowing");
+
+int may_throw();
+static_assert(!noexcept(consume({may_throw(), 2})),
+              "list element evaluation may throw");
+
 int take(std::initializer_list<int> values) {
   return (int)values.size();
 }
 
 int main() {
-  return take({1, 2, 3}) == 3 ? 0 : 1;
+  return take({1, 2, 3}) == 3 && consume({1, 2}) == 2 ? 0 : 1;
 }

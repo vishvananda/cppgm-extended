@@ -1556,8 +1556,7 @@ void Analyzer::AnalyzeSpecialMember(NodeId node, ScopeId scope,
 		 FindChild(declarator, ::cppgm::syntax::STAG_VIRT_SPECIFIER) != kNoNode))
 		ThrowSemanticError("constructor cannot have a virtual specifier");
 
-	EntityRecord& class_record = program_->entities[entity];
-	class_record.has_user_declared_constructor = true;
+	program_->entities[entity].has_user_declared_constructor = true;
 	if (declarator == kNoNode)
 		ThrowSemanticError("constructor is missing its declarator");
 	const DeclaratorInfo parsed = BuildDeclarator(declarator,
@@ -1637,6 +1636,8 @@ void Analyzer::AnalyzeSpecialMember(NodeId node, ScopeId scope,
 	std::size_t required = info.parameters.size();
 	while (required != 0 &&
 		info.parameters[required - 1].default_argument != kNoNode) --required;
+	// Building the parameter types may instantiate classes and move entities.
+	EntityRecord& class_record = program_->entities[entity];
 	if (!info.deleted_constructor && required == 0)
 		class_record.default_constructible = true;
 	class_record.has_user_provided_constructor =

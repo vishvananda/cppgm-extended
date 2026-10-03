@@ -1,3 +1,23 @@
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
+
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
+function @consume(%box : ptr [pass=by_address, object_bytes=8]) -> i32 [unwind=no, binding=strong, object=_Z7consumeRK3Box] {
+  slot $box : ptr
+
+  block ^entry:
+    store ptr %box, $box
+    %t1 = load ptr $box
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i64 %t2
+    %t4 = convert trunc i32 i64 %t3
+    return i32 %t4
+}
 function @take(%values : obj<16x8>) -> i32 [binding=strong, object=_Z4takeSt16initializer_listIiE] {
   slot $values : obj<16x8>
 
@@ -11,12 +31,16 @@ function @take(%values : obj<16x8>) -> i32 [binding=strong, object=_Z4takeSt16in
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
-  slot $argobj__2 : obj<16x8>
-  slot $initlist__3 : obj<12x4>
+  slot $land__2 : i64
+  slot $argobj__3 : obj<16x8>
+  slot $initlist__4 : obj<12x4>
+  slot $arg__5 : obj<8x8>
+  slot $argobj__6 : obj<16x8>
+  slot $initlist__7 : obj<2x1>
 
   block ^entry:
-    %t1 = addr $argobj__2
-    %t2 = addr $initlist__3
+    %t1 = addr $argobj__3
+    %t2 = addr $initlist__4
     store i32 1, %t2
     %t3 = index i8 %t2, 4
     store i32 2, %t3
@@ -25,9 +49,34 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store ptr %t2, %t1
     %t5 = index i8 %t1, 8
     store i64 3, %t5
-    %t6 = call i32 @take($argobj__2)
+    %t6 = call i32 @take($argobj__3)
     %t7 = cmp eq i32 %t6, 3
-    branch %t7, ^cond_then_1, ^cond_else_2
+    branch %t7, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t8 = addr $arg__5
+    %t9 = addr $argobj__6
+    %t10 = addr $initlist__7
+    call void @Item__Item(%t10, 1)
+    %t11 = index i8 [projection=array_element] %t10, 1
+    call void @Item__Item(%t11, 2)
+    store ptr %t10, %t9
+    %t12 = index i8 %t9, 8
+    store i64 2, %t12
+    call void @Box__Box(%t8, $argobj__6)
+    %t13 = call i32 @consume(%t8)
+    %t14 = cmp eq i32 %t13, 2
+    %t15 = cmp ne i64 %t14, 0
+    store i64 %t15, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t16 = load i64 $land__2
+    branch %t16, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -38,8 +87,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t8 = load i32 $cond__1
-    return i32 %t8
+    %t17 = load i32 $cond__1
+    return i32 %t17
 }
 function @std__initializer_list_int___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listIiE4sizeEv, inline_hint=yes] {
   slot $this : ptr
@@ -51,3 +100,53 @@ function @std__initializer_list_int___size(%this : ptr [object_bytes=16]) -> i64
     %t3 = load i64 %t2
     return i64 %t3
 }
+function @Item__Item(%this : ptr [object_bytes=1], %__param1 : i32) -> void [unwind=no, binding=weak, object=_ZN4ItemC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    return void
+}
+function @Box__Box(%this : ptr [object_bytes=8], %values : obj<16x8>) -> void [unwind=no, binding=weak, object=_ZN3BoxC1ESt16initializer_listI4ItemE, inline_hint=yes] {
+  slot $this : ptr
+  slot $values : obj<16x8>
+  slot $function_exception__1 : ptr
+
+  block ^entry:
+    eh_try ^function_exception_landing_1
+    store ptr %this, $this
+    %t1 = addr $values
+    copyobj 16x8 %values, %t1
+    %t2 = addr $values
+    %t3 = call i64 @std__initializer_list_Item___size(%t2)
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i64 %t3, %t5
+    eh_end
+    return void
+
+  block ^function_exception_landing_1:
+    eh_catch_all, 1
+    %t6 = exception ptr
+    store ptr %t6, $function_exception__1
+    jump ^function_exception_action_2
+
+  block ^function_exception_action_2:
+    %t7 = load ptr $function_exception__1
+    call void @cppgm_call_terminate(%t7)
+    return void
+}
+function @std__initializer_list_Item___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI4ItemE4sizeEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    %t3 = load i64 %t2
+    return i64 %t3
+}
+alias object _ZN4ItemC2Ei = @Item__Item
+alias object _ZN3BoxC2ESt16initializer_listI4ItemE = @Box__Box
