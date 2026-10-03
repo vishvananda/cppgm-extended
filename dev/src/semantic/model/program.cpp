@@ -969,6 +969,15 @@ TemplateArgumentListId Program::InternTemplateArgumentList(
 	return id;
 }
 
+const TemplateArgument& Program::GetTemplateArgument(
+	TemplateArgumentListId list, std::uint32_t argument) const
+{
+	if (list >= template_argument_lists_.size() ||
+		argument >= template_argument_lists_[list].count)
+		ThrowInternalCompilerError("canonical template argument index is invalid");
+	return canonical_template_arguments[template_argument_lists_[list].first + argument];
+}
+
 Program::~Program()
 {
 }

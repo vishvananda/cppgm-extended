@@ -6716,3 +6716,54 @@ frozen dependent member/result packs, integral alias parameters, qualified
 calls and casts, and typed template-parameter annotations. Continue with those
 existing owning fixtures, then the other compiler families, final pruning and
 combined export/harness/quiet-output validation.
+
+## MANGLE dependent member and alias recipes checkpoint — 2026-10-03
+
+Use the three existing PA18 member-pack, namespace-qualified alias and
+index-sequence constructor fixtures. Scratch debugger inspection identifies
+three publication gaps: qualified `T::member` components are not counted as
+dependent; bound enclosing-class pack arguments are not consumed; and known
+named type leaves such as `size_t` remain opaque inside alias environments.
+Count qualified parameter components, read bound arguments through their
+canonical list index, and retain resolved named leaves after environment/root
+parameter handling. Reuse canonical formed types for fully concrete aliases
+so underlying pointer/reference modifiers are applied once. Namespace/global
+qualification must win over an unrelated local type name during identity
+formation (`detail::matcher` and `::local` exposed this). Reject unresolved
+class-owned alias markers as member class templates; preserve written alias
+names in dependent expression owners and registered template-template proxies.
+No source reparsing, persistent record growth or ABI encoder changes.
+
+All 72 host/entry/candidate observations of the three original sources pass at
+O0/O2; their O0 names match fresh strict C++11 Clang/GCC. The frozen 31-source
+inventory compiles without losing previously matching Clang names. Review all
+eight extra sources exposed by strict comparison: sixteen O0/O2 candidate
+compiles pass, and each changed name agrees with the previously collected fresh
+Clang objects. The existing pointer-alias constructor retains its correct name.
+Five further expression/annotation fixtures retain exact prior LowIR in twenty
+fresh strict-host/entry/candidate compile-and-symbol observations. Their existing
+unresolved declared-call names remain open within MANGLE. Ten references change
+only object metadata (including the constructor base-entry alias), generated
+through owning ref-test wrappers. No fixture source changes or new fixtures.
+
+Retain the preliminary binaries, host comparisons, failed report logs, and both
+288-observation preliminary Alpha screens under their original identities.
+The fully concrete alias and namespace review corrected the additional metadata
+before qualification. Final full strict report passes 6126/6126 with exactly
+one output line. Debug-info, backend variants, self-host through PA5, all nine
+architecture audits, file audit (37 existing warnings), and placement with
+--fail-on-early pass. Final SHA256:
+`6c17d8143a0ee40e0371537ee60fe2aaff2fb0b1f36864d43e19622eba607d46`.
+Independently verify all 288 final Alpha observations against unscaled raw
+counters, RSS, zero statuses and equal object hashes. Maximum instruction median
+is 1.000036289 and RSS median 1.000053694. No calibrated cycle median exceeds
+1.01, so no confirmation run is needed; retain the bootstrap intervals and
+avoid a timing-neutrality claim. Final performance work uses this strict-passed
+binary. Evidence: `/tmp/cppgm-v4-audit-review/dependent-member-recipes/`.
+
+Seven compiler families and seven reviews remain. MANGLE continues with
+qualified dependent calls/casts, template-parameter annotations, and the
+remaining declared value-parameter/alias spellings; reuse the existing sources.
+After compiler fixes, finish fixture pruning (including duplicated PA18/PA19
+controls and the previously noted PA23 contract review) and the combined
+export/harness/quiet-output validation. No student export is regenerated here.

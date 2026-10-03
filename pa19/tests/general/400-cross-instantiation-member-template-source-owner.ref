@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $f
     return i32 0
 }
-function @convert() -> obj<8x8> [unwind=no, binding=weak, object=_Z7convertI10double_tag6traitsIS0_EE3boxIxEv] {
+function @convert() -> obj<8x8> [unwind=no, binding=weak, object=_Z7convertI10double_tag6traitsIS0_EE3boxINT0_7carrierEEv] {
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
@@ -22,7 +22,7 @@ function @convert() -> obj<8x8> [unwind=no, binding=weak, object=_Z7convertI10do
     copyobj 8x8 %t2, %t1
     return obj<8x8> $retobj__1
 }
-function @convert__ov2() -> obj<4x4> [unwind=no, binding=weak, object=_Z7convertI9float_tag6traitsIS0_EE3boxIiEv] {
+function @convert__ov2() -> obj<4x4> [unwind=no, binding=weak, object=_Z7convertI9float_tag6traitsIS0_EE3boxINT0_7carrierEEv] {
   slot $retobj__1 : obj<4x4>
 
   block ^entry:

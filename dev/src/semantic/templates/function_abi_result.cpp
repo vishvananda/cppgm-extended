@@ -322,6 +322,18 @@ private:
 				FUNCTION_TEMPLATE_ABI_TYPE_PARAMETER, kNoFunctionTemplateAbiType,
 				0, 0, static_cast<std::uint32_t>(parameter)));
 		}
+		if (kind == FUNCTION_TEMPLATE_RESULT_BOUND_ARGUMENT)
+		{
+			const std::uint64_t list = ResultIdentityValue(atoms_[position_++]);
+			if (list >= kNoTemplateArgumentList) return kNoFunctionTemplateAbiType;
+			const TemplateArgument& argument = program_->GetTemplateArgument(
+				static_cast<TemplateArgumentListId>(list), 0);
+			if (argument.kind != TEMPLATE_ARGUMENT_TYPE || argument.type == kNoType)
+				return kNoFunctionTemplateAbiType;
+			return AppendAbiType(program_, FunctionTemplateAbiType(
+				FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE, kNoFunctionTemplateAbiType,
+				0, 0, kNoTemplateParameter, 0, argument.type));
+		}
 		if (kind == FUNCTION_TEMPLATE_RESULT_TYPE)
 		{
 			const std::uint64_t type = ResultIdentityValue(atoms_[position_++]);
@@ -489,7 +501,8 @@ private:
 	}
 
 	FunctionTemplateAbiTypeId ComponentType(
-		const ParsedComponent& component, FunctionTemplateAbiTypeId owner)
+		const ParsedComponent& component, FunctionTemplateAbiTypeId owner,
+		bool expression_owner = false)
 	{
 		if (component.arguments.empty())
 		{
@@ -512,6 +525,15 @@ private:
 				0, 0, kNoTemplateParameter, 0,
 				program_->entities[component.entity].type));
 		}
+		// An unresolved class-owned alias cannot name a member class template.
+		// Expression owners retain written alias names; actual template-template
+		// parameters have registered proxy patterns.
+		if (!expression_owner && component.entity < program_->entities.size() &&
+			program_->entities[component.entity].flavor == NAMED_TEMPLATE_PARAMETER &&
+			program_->entities[component.entity].enclosing_class != kNoEntity &&
+			(component.entity >= class_template_by_entity_.size() ||
+			 class_template_by_entity_[component.entity] == kNoDumpEdge))
+			return kNoFunctionTemplateAbiType;
 		if (component.entity == kNoEntity ||
 			component.arguments.size() >
 				std::numeric_limits<std::uint32_t>::max() ||
@@ -602,7 +624,7 @@ private:
 					component.arguments.empty() && !terminal &&
 					!IsTypeParameterName(component.name))
 					continue;
-				root = ComponentType(component, root);
+				root = ComponentType(component, root, value_terminal);
 				if (root == kNoFunctionTemplateAbiType)
 					return kNoFunctionTemplateAbiType;
 			}
@@ -627,6 +649,25 @@ FunctionTemplateAbiTypeId ApplyTypeModifiers(Program* program,
 	TypeId shape, FunctionTemplateAbiTypeId root)
 {
 	if (root == kNoFunctionTemplateAbiType || shape == kNoType) return root;
+	// A completely concrete alias already includes its underlying modifiers.
+	// Consume the canonical formed type, including any outside declarator and
+	// reference collapsing, rather than applying that shape to it a second time.
+	FunctionTemplateAbiTypeId leaf = root;
+	for (;;)
+	{
+		const FunctionTemplateAbiType& type = program->function_template_abi_types[leaf];
+		if (type.kind == FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE)
+			return AppendAbiType(program, FunctionTemplateAbiType(
+				FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE, kNoFunctionTemplateAbiType,
+				0, 0, kNoTemplateParameter, 0, shape));
+		if (type.kind != FUNCTION_TEMPLATE_ABI_TYPE_POINTER &&
+			type.kind != FUNCTION_TEMPLATE_ABI_TYPE_LVALUE_REFERENCE &&
+			type.kind != FUNCTION_TEMPLATE_ABI_TYPE_RVALUE_REFERENCE &&
+			type.kind != FUNCTION_TEMPLATE_ABI_TYPE_QUALIFIED &&
+			type.kind != FUNCTION_TEMPLATE_ABI_TYPE_ARRAY) break;
+		leaf = type.child;
+	}
+
 	struct Modifier
 	{
 		FunctionTemplateAbiTypeKind kind;
@@ -799,7 +840,14 @@ bool HasRetainedParameterRoot(const Program& program,
 	{
 		const FunctionTemplateResultIdentityAtomKind kind =
 			ResultIdentityKind(atoms[atom]);
-		if (kind == FUNCTION_TEMPLATE_RESULT_COMPONENT) terminal = atom;
+		if (kind == FUNCTION_TEMPLATE_RESULT_COMPONENT)
+		{
+			terminal = atom;
+			const NameId name = static_cast<NameId>(ResultIdentityValue(atoms[atom]));
+			for (std::size_t parameter = 0; parameter < pattern.parameters.size(); ++parameter)
+				if (pattern.parameters[parameter].name == name)
+					dependent = true;
+		}
 		else if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER)
 		{
 			dependent = true;

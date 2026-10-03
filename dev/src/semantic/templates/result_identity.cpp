@@ -288,6 +288,17 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 				RESULT_IDENTITY_PARAMETER, parameter));
 			return true;
 		}
+		if (arena_->IsTag(reference.node, ::cppgm::syntax::STAG_TYPE_NAME) &&
+			arena_->FirstEdge(reference.node) == kNoEdge && semantic_name != 0)
+		{
+			const LookupResult named = program_->LookupName(
+				reference.scope, semantic_name, LOOKUP_TYPE);
+			if (named.type != kNoType && !FunctionTemplateTypeIsDependent(named.type))
+			{
+				atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_TYPE, named.type));
+				return true;
+			}
+		}
 		if (!reference.environment &&
 			arena_->IsTag(reference.node, ::cppgm::syntax::STAG_TYPE_ID) &&
 			!arena_->HasDescendantTag(reference.node, ::cppgm::syntax::STAG_PARAMETER_PACK) &&
@@ -421,9 +432,8 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 				direct_component.Push(name);
 				LookupResult marker = LookupPath(
 					reference.scope, direct_component, LOOKUP_TYPE);
-				if (!resolved_type_prefix && marker.type == kNoType &&
-					marker.type_declaration == kNoBinding &&
-					component_path.Size() > 1)
+				if (!resolved_type_prefix &&
+					(component_path.global || component_path.Size() > 1))
 					marker = LookupPath(
 						reference.scope, component_path, LOOKUP_TYPE);
 				if (marker.type != kNoType ||

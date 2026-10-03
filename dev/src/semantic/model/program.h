@@ -853,6 +853,8 @@ public:
 	TemplateArgumentListId InternTemplateArgumentList(
 		const std::vector<TemplateArgument>& arguments,
 		std::uint32_t* first = 0, std::uint32_t* count = 0);
+	const TemplateArgument& GetTemplateArgument(TemplateArgumentListId list,
+		std::uint32_t argument) const;
 	EntityId NewEntity(NameId emission_name, NamedFlavor flavor, bool complete,
 		TypeId underlying = kNoType, ScopeId owner = kNoScope,
 		NameId identity_name = 0,

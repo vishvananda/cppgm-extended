@@ -53,7 +53,7 @@ function @detail__compiler___cppgm_class_template_identity_0_0_0___insert(%this 
   block ^while_end_3:
     return void
 }
-function @detail__compiler___cppgm_class_template_identity_0_0_0___term(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN6detail8compilerI6traitsIcEE4termILb1ELb0EEEbR5stateRNS_7matcherIS2_Lb0ELb0EEE] {
+function @detail__compiler___cppgm_class_template_identity_0_0_0___term(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN6detail8compilerI6traitsIcEE4termILb1ELb0EEEbR5stateRNS_7matcherIS2_XT_EXT0_EEE] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

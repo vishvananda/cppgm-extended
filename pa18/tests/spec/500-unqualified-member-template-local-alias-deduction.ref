@@ -43,7 +43,7 @@ function @compiler_int___bracket(%this : ptr [object_bytes=1], %__param1 : ptr [
     %t6 = call u8 @compiler_int___term(%t3, %t4, %t5)
     return u8 %t6
 }
-function @compiler_int___term(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address]) -> u8 [binding=weak, object=_ZN8compilerIiE4termILb1EEEbR5stateRN6detail7matcherIiLb0EEE] {
+function @compiler_int___term(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address]) -> u8 [binding=weak, object=_ZN8compilerIiE4termILb1EEEbR5stateRN6detail7matcherIiXT_EEE] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
