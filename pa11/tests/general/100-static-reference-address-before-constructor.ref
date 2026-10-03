@@ -1,18 +1,18 @@
-global @values [binding=strong, object=_Z6values] = {
+global @values [binding=strong] = {
   i32 3
   i32 5
   i32 7
 }
-global @observer [binding=strong, object=_Z8observer] = {
+global @observer [binding=strong] = {
   zero 1
 }
-global @middle : ptr [binding=strong, object=_Z6middle] = addr @values + 4
-global @reference : ptr [binding=strong, object=_Z9reference] = addr @values + 4
-global @alias : ptr [binding=strong, object=_Z5alias] = addr @values + 4
-global @current : ptr [binding=strong, object=_Z7current] = addr @values
-global @advanced : ptr [binding=strong, object=_Z8advanced] = zero
-global @copied : ptr [binding=strong, object=_Z6copied] = zero
-global @through_pointer : ptr [binding=strong, object=_Z15through_pointer] = zero
+global @middle : ptr [binding=strong] = addr @values + 4
+global @reference : ptr [binding=strong] = addr @values + 4
+global @alias : ptr [binding=strong] = addr @values + 4
+global @current : ptr [binding=strong] = addr @values
+global @advanced : ptr [binding=strong] = zero
+global @copied : ptr [binding=strong] = zero
+global @through_pointer : ptr [binding=strong] = zero
 
 function @advance() -> ptr [binding=strong, object=_Z7advancev] {
   block ^entry:

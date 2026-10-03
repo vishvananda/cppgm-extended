@@ -1,6 +1,6 @@
 declare function @transformer__transform__ov2(%arg0 : ptr [object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_ZN11transformer9transformI16external_specialEEiRT_]
 
-global @complete_transformer_owner [binding=strong, object=_Z26complete_transformer_owner] = {
+global @complete_transformer_owner [binding=strong] = {
   zero 4
 }
 

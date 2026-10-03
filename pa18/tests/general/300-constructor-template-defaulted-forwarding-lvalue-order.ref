@@ -1,5 +1,5 @@
 global @box__selected : i32 [binding=strong, object=_ZN3box8selectedE] = 0
-global @global_value [binding=strong, object=_Z12global_value] = {
+global @global_value [binding=strong] = {
   zero 1
 }
 

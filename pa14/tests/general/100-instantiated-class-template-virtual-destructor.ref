@@ -24,7 +24,7 @@ global @__cppgm_class_template_identity_0_0_0__vtable [binding=weak, object=_ZTV
   ptr addr @owner_int____owner
   ptr addr @__cppgm_class_template_identity_0_0_0___owner__deleting_entry
 }
-global @value [binding=strong, object=_Z5value] = {
+global @value [binding=strong] = {
   ptr addr @__cppgm_class_template_identity_0_0_0__vtable + 16
 }
 

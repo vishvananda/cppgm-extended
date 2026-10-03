@@ -1,4 +1,4 @@
-global @global_vec [binding=strong, object=_Z10global_vec] = {
+global @global_vec [binding=strong] = {
   zero 1
 }
 

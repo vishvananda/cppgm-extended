@@ -1,8 +1,8 @@
 declare function @operatornew__(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new_array]
 declare function @operatordelete__(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete_array]
 
-global @allocated : ptr [binding=strong, object=_Z9allocated] = zero
-global @good : i32 [binding=strong, object=_Z4good] = zero
+global @allocated : ptr [binding=strong] = zero
+global @good : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $array_delete_index__1 : i64

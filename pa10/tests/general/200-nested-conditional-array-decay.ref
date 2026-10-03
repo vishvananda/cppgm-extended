@@ -1,13 +1,13 @@
-global @short_array [binding=strong, object=_Z11short_array] = {
+global @short_array [binding=strong] = {
   zero 3
 }
-global @first_array [binding=strong, object=_Z11first_array] = {
+global @first_array [binding=strong] = {
   zero 4
 }
-global @second_array [binding=strong, object=_Z12second_array] = {
+global @second_array [binding=strong] = {
   zero 4
 }
-global @third_array [binding=strong, object=_Z11third_array] = {
+global @third_array [binding=strong] = {
   zero 4
 }
 

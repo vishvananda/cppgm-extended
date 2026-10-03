@@ -1,4 +1,4 @@
-global @observed : i32 [binding=strong, object=_Z8observed] = zero
+global @observed : i32 [binding=strong] = zero
 global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 111
   i8 110

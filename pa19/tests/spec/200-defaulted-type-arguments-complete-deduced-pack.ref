@@ -1,4 +1,4 @@
-global @identity [binding=strong, object=_Z8identity] = {
+global @identity [binding=strong] = {
   zero 1
 }
 

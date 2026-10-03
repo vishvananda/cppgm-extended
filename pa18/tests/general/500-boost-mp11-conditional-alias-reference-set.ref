@@ -1,4 +1,4 @@
-global @check [binding=strong, object=_Z5check] = {
+global @check [binding=strong] = {
   zero 4
 }
 

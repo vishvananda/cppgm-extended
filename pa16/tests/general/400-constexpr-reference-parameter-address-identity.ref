@@ -1,5 +1,5 @@
-global @stored : i32 [storage=readonly, binding=internal, object=_Z6stored] = 5
-global @address : ptr [storage=readonly, binding=internal, object=_Z7address] = addr @stored
+global @stored : i32 [storage=readonly, binding=internal, object=stored] = 5
+global @address : ptr [storage=readonly, binding=internal, object=address] = addr @stored
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

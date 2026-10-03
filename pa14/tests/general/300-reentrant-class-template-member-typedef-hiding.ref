@@ -1,4 +1,4 @@
-global @values [binding=strong, object=_Z6values] = {
+global @values [binding=strong] = {
   zero 24
 }
 

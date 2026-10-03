@@ -1,4 +1,4 @@
-global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @calls : i32 [binding=strong] = zero
 
 function @initialize() -> i32 [binding=strong, object=_Z10initializev] {
   block ^entry:

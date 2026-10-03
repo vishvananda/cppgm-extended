@@ -1,6 +1,6 @@
-global @syntax_char : u8 [storage=readonly, binding=internal, object=_Z11syntax_char] = 0
-global @syntax_newline : u8 [storage=readonly, binding=internal, object=_Z14syntax_newline] = 26
-global @char_syntax [binding=internal, object=_Z11char_syntax] = {
+global @syntax_char : u8 [storage=readonly, binding=internal, object=syntax_char] = 0
+global @syntax_newline : u8 [storage=readonly, binding=internal, object=syntax_newline] = 26
+global @char_syntax [binding=internal, object=char_syntax] = {
   u8 0
   u8 26
 }

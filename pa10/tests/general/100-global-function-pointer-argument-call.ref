@@ -1,4 +1,4 @@
-global @fp : ptr [binding=strong, object=_Z2fp] = addr @callee
+global @fp : ptr [binding=strong] = addr @callee
 
 function @callee(%x : i32) -> i32 [binding=strong, object=_Z6calleei] {
   slot $x : i32

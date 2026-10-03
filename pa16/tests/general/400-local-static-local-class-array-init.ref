@@ -11,7 +11,7 @@ global @__local_static__make_result__decl0__prefixes [binding=internal] = {
   zero 32
 }
 global @__local_static__make_result__decl0__prefixes__guard : i64 [binding=internal] = zero
-global @constructed : i32 [binding=strong, object=_Z11constructed] = 0
+global @constructed : i32 [binding=strong] = 0
 global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 115
   i8 116

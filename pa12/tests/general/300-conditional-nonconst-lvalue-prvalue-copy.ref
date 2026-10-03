@@ -1,4 +1,4 @@
-global @copies : i32 [binding=strong, object=_Z6copies] = zero
+global @copies : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $local : obj<4x4>

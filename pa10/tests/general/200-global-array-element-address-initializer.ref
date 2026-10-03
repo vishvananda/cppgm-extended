@@ -1,7 +1,7 @@
-global @values [binding=strong, object=_Z6values] = {
+global @values [binding=strong] = {
   zero 12
 }
-global @middle : ptr [binding=strong, object=_Z6middle] = addr @values + 4
+global @middle : ptr [binding=strong] = addr @values + 4
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

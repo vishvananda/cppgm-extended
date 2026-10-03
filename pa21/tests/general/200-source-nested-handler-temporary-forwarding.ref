@@ -46,9 +46,9 @@ global @__ehobj_struct_Error [binding=internal, object=@__ehobj_struct_Error] = 
 global @__ehobj_long_int [binding=internal, object=@__ehobj_long_int] = {
   zero 8
 }
-global @live : i32 [binding=strong, object=_Z4live] = zero
-global @drops : i32 [binding=strong, object=_Z5drops] = zero
-global @bad : i32 [binding=strong, object=_Z3bad] = zero
+global @live : i32 [binding=strong] = zero
+global @drops : i32 [binding=strong] = zero
+global @bad : i32 [binding=strong] = zero
 
 function @use(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_Z3useRK8Argument] {
   slot $__param0 : ptr

@@ -1,2 +1,2 @@
 global @__cppgm_class_template_identity_0_0_0__sizes_length : i64 [storage=readonly, binding=weak, object=_ZN17bucket_array_baseILb1EE12sizes_lengthE] = 3
-global @observed : i64 [storage=readonly, binding=internal, object=_Z8observed] = 3
+global @observed : i64 [storage=readonly, binding=internal, object=observed] = 3

@@ -1,4 +1,4 @@
-global @stored_target [binding=strong, object=_Z13stored_target] = {
+global @stored_target [binding=strong] = {
   zero 1
 }
 

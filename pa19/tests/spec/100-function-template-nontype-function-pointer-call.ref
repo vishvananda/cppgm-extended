@@ -1,4 +1,4 @@
-global @calls : i32 [binding=strong, object=_Z5calls] = 0
+global @calls : i32 [binding=strong] = 0
 global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 115
   i8 97

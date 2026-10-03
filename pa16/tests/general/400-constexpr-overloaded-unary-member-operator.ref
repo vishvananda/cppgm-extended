@@ -1,7 +1,7 @@
-global @source [binding=internal, object=_Z6source] = {
+global @source [binding=internal, object=source] = {
   i32 3
 }
-global @negated [binding=internal, object=_Z7negated] = {
+global @negated [binding=internal, object=negated] = {
   i32 -3
 }
 

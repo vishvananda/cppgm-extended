@@ -39,9 +39,9 @@ global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
 global @__ehobj_long_int [binding=internal, object=@__ehobj_long_int] = {
   zero 8
 }
-global @live : i32 [binding=strong, object=_Z4live] = zero
-global @drops : i32 [binding=strong, object=_Z5drops] = zero
-global @trace : i32 [binding=strong, object=_Z5trace] = zero
+global @live : i32 [binding=strong] = zero
+global @drops : i32 [binding=strong] = zero
+global @trace : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $mode : i32

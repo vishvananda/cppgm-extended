@@ -1,6 +1,6 @@
 declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
 
-global @selected : i32 [binding=strong, object=_Z8selected] = zero
+global @selected : i32 [binding=strong] = zero
 
 function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete] {
   slot $arg0 : ptr

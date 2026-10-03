@@ -1,15 +1,15 @@
 global @__local_static__local_reference__decl0__result : ptr [binding=internal] = addr @object + 4
 global @__local_static__local_pointer__decl0__result : ptr [binding=internal] = addr @object + 4
-global @object [binding=strong, object=_Z6object] = {
+global @object [binding=strong] = {
   zero 12
 }
-global @reference : ptr [binding=strong, object=_Z9reference] = addr @object + 4
-global @pointer : ptr [binding=strong, object=_Z7pointer] = addr @object + 4
-global @explicit_pointer : ptr [binding=strong, object=_Z16explicit_pointer] = addr @object + 4
-global @explicit_reference : ptr [binding=strong, object=_Z18explicit_reference] = addr @object + 4
-global @constant_reference : ptr [binding=strong, object=_Z18constant_reference] = addr @object + 4
-global @inverse_pointer : ptr [binding=strong, object=_Z15inverse_pointer] = zero
-global @null_pointer : ptr [binding=strong, object=_Z12null_pointer] = 0
+global @reference : ptr [binding=strong] = addr @object + 4
+global @pointer : ptr [binding=strong] = addr @object + 4
+global @explicit_pointer : ptr [binding=strong] = addr @object + 4
+global @explicit_reference : ptr [binding=strong] = addr @object + 4
+global @constant_reference : ptr [binding=strong] = addr @object + 4
+global @inverse_pointer : ptr [binding=strong] = zero
+global @null_pointer : ptr [binding=strong] = 0
 
 function @local_reference() -> ptr [binding=strong, object=_Z15local_referencev] {
   block ^entry:

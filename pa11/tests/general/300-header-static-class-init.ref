@@ -1,7 +1,7 @@
-global @header_init [binding=internal, object=_Z11header_init] = {
+global @header_init [binding=internal, object=header_init] = {
   zero 1
 }
-global @counter : i32 [binding=strong, object=_Z7counter] = zero
+global @counter : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

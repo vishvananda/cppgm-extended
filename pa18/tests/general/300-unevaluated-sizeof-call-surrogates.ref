@@ -1,8 +1,8 @@
-global @surrogate_call_use [binding=strong, object=_Z18surrogate_call_use] = {
+global @surrogate_call_use [binding=strong] = {
   zero 1
 }
-global @arg : i32 [binding=strong, object=_Z3arg] = zero
-global @variadic_ctor_use [binding=strong, object=_Z17variadic_ctor_use] = {
+global @arg : i32 [binding=strong] = zero
+global @variadic_ctor_use [binding=strong] = {
   zero 1
 }
 

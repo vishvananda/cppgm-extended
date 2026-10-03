@@ -20,7 +20,7 @@ global @base__vtable [binding=weak, object=_ZTV4base] = {
   ptr addr @base___base
   ptr addr @base___base__deleting_entry
 }
-global @observed : i32 [binding=strong, object=_Z8observed] = zero
+global @observed : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

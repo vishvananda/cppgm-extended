@@ -1,5 +1,5 @@
-global @calls : i32 [binding=strong, object=_Z5calls] = zero
-global @values [binding=strong, object=_Z6values] = {
+global @calls : i32 [binding=strong] = zero
+global @values [binding=strong] = {
   i32 1
   i32 2
   i32 3

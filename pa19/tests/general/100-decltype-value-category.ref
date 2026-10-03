@@ -1,4 +1,4 @@
-global @global_value : i32 [binding=strong, object=_Z12global_value] = 0
+global @global_value : i32 [binding=strong] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $a : i32

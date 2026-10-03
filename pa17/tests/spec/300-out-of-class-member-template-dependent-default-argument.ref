@@ -1,4 +1,4 @@
-global @complete_sequence [binding=strong, object=_Z17complete_sequence] = {
+global @complete_sequence [binding=strong] = {
   zero 4
 }
 

@@ -1,21 +1,21 @@
-global @late_calls : i32 [binding=strong, object=_Z10late_calls] = 0
-global @observer [binding=strong, object=_Z8observer] = {
+global @late_calls : i32 [binding=strong] = 0
+global @observer [binding=strong] = {
   zero 1
 }
-global @point [binding=strong, object=_Z5point] = {
+global @point [binding=strong] = {
   i32 9
 }
-global @negative [binding=strong, object=_Z8negative] = {
+global @negative [binding=strong] = {
   i32 -9
 }
-global @derived [binding=strong, object=_Z7derived] = {
+global @derived [binding=strong] = {
   i32 9
 }
-global @elements [binding=strong, object=_Z8elements] = {
+global @elements [binding=strong] = {
   i32 3
   i32 5
 }
-global @dynamic [binding=strong, object=_Z7dynamic] = {
+global @dynamic [binding=strong] = {
   zero 4
 }
 

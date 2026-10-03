@@ -1,4 +1,4 @@
-global @global_values [binding=strong, object=_Z13global_values] = {
+global @global_values [binding=strong] = {
   zero 1
 }
 

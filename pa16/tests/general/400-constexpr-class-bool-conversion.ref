@@ -1,8 +1,8 @@
-global @box_value : u8 [storage=readonly, binding=internal, object=_Z9box_value] = 1
-global @and_value : u8 [storage=readonly, binding=internal, object=_Z9and_value] = 1
-global @box_sink [binding=strong, object=_Z8box_sink] = {
+global @box_value : u8 [storage=readonly, binding=internal, object=box_value] = 1
+global @and_value : u8 [storage=readonly, binding=internal, object=and_value] = 1
+global @box_sink [binding=strong] = {
   zero 1
 }
-global @and_sink [binding=strong, object=_Z8and_sink] = {
+global @and_sink [binding=strong] = {
   zero 1
 }

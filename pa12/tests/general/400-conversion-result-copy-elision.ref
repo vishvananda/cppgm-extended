@@ -1,4 +1,4 @@
-global @copies : i32 [binding=strong, object=_Z6copies] = zero
+global @copies : i32 [binding=strong] = zero
 
 function @operatornew__ov2(%__param0 : i64, %p : ptr) -> ptr [unwind=no, binding=strong, object=_ZnwmPv] {
   slot $__param0 : i64

@@ -1,4 +1,4 @@
-global @global : i32 [binding=strong, object=_Z6global] = zero
+global @global : i32 [binding=strong] = zero
 
 function @get() -> i32 [binding=strong, object=_Z3getv] {
   block ^entry:

@@ -1,4 +1,4 @@
-global @instantiated [binding=strong, object=_Z12instantiated] = {
+global @instantiated [binding=strong] = {
   zero 1
 }
 

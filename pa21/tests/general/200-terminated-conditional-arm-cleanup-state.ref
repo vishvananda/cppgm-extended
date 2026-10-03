@@ -17,9 +17,9 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @constructions : i32 [binding=strong, object=_Z13constructions] = zero
-global @destructions : i32 [binding=strong, object=_Z12destructions] = zero
-global @invalid_destructions : i32 [binding=strong, object=_Z20invalid_destructions] = zero
+global @constructions : i32 [binding=strong] = zero
+global @destructions : i32 [binding=strong] = zero
+global @invalid_destructions : i32 [binding=strong] = zero
 
 function @use(%__param0 : ptr [pass=by_address, object_bytes=4], %fail : u8) -> i32 [binding=strong, object=_Z3useRK5Guardb] {
   slot $__param0 : ptr

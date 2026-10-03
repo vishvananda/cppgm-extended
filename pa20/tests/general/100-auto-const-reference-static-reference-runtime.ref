@@ -1,6 +1,6 @@
 global @__local_static__get__s__tokens36_43 : ptr [binding=internal] = zero
 global @__local_static__get__s__tokens36_43__guard : i64 [binding=internal] = zero
-global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @calls : i32 [binding=strong] = zero
 
 function @get() -> ptr [binding=strong, object=_Z3getv] {
   slot $tmpobj__1 : obj<4x4>

@@ -1,4 +1,4 @@
-global @global_node [binding=strong, object=_Z11global_node] = {
+global @global_node [binding=strong] = {
   i32 7
 }
 

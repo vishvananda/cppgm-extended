@@ -1,4 +1,4 @@
-global @x : i32 [binding=strong, object=_Z1x] = 7
+global @x : i32 [binding=strong] = 7
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

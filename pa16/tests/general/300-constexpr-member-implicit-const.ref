@@ -1,4 +1,4 @@
-global @object [binding=internal, object=_Z6object] = {
+global @object [binding=internal, object=object] = {
   i32 3
 }
 

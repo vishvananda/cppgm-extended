@@ -1,5 +1,5 @@
-global @converted : i32 [binding=strong, object=_Z9converted] = zero
-global @seen : i32 [binding=strong, object=_Z4seen] = zero
+global @converted : i32 [binding=strong] = zero
+global @seen : i32 [binding=strong] = zero
 
 function @consume(%value : ptr [pass=by_address, object_bytes=8]) -> void [binding=strong, object=_Z7consume6Holder] {
   slot $value : obj<8x8>

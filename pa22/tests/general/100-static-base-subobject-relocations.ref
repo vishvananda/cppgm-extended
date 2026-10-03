@@ -1,17 +1,17 @@
-global @holder [binding=strong, object=_Z6holder] = {
+global @holder [binding=strong] = {
   zero 24
 }
-global @objects [binding=strong, object=_Z7objects] = {
+global @objects [binding=strong] = {
   zero 36
 }
-global @further [binding=strong, object=_Z7further] = {
+global @further [binding=strong] = {
   zero 16
 }
-global @member_reference : ptr [binding=strong, object=_Z16member_reference] = addr @holder + 12
-global @member_pointer : ptr [binding=strong, object=_Z14member_pointer] = addr @holder + 12
-global @array_reference : ptr [binding=strong, object=_Z15array_reference] = addr @objects + 16
-global @nested_reference : ptr [binding=strong, object=_Z16nested_reference] = addr @further + 4
-global @alias : ptr [binding=strong, object=_Z5alias] = addr @objects + 16
+global @member_reference : ptr [binding=strong] = addr @holder + 12
+global @member_pointer : ptr [binding=strong] = addr @holder + 12
+global @array_reference : ptr [binding=strong] = addr @objects + 16
+global @nested_reference : ptr [binding=strong] = addr @further + 4
+global @alias : ptr [binding=strong] = addr @objects + 16
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__1 : i64

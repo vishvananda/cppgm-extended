@@ -1,5 +1,5 @@
-global @observed : i32 [binding=strong, object=_Z8observed] = zero
-global @value [binding=strong, object=_Z5value] = {
+global @observed : i32 [binding=strong] = zero
+global @value [binding=strong] = {
   i64 7
   i8 0
   i8 0

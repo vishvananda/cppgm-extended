@@ -1,5 +1,5 @@
-global @selected : ptr [binding=strong, object=_Z8selected] = addr @choose
-global @selected_void : ptr [binding=strong, object=_Z13selected_void] = addr @choose_void
+global @selected : ptr [binding=strong] = addr @choose
+global @selected_void : ptr [binding=strong] = addr @choose_void
 
 function @choose(%__param0 : i32) -> i32 [binding=strong, object=_Z6choosei] {
   slot $__param0 : i32

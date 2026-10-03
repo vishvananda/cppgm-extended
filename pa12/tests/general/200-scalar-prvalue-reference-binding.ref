@@ -1,6 +1,6 @@
-global @counter : i32 [binding=strong, object=_Z7counter] = 40
+global @counter : i32 [binding=strong] = 40
 global @__cppgm_ref_temporary__global_bound_0 : i32 [binding=internal] = zero
-global @global_bound : ptr [binding=strong, object=_Z12global_bound] = zero
+global @global_bound : ptr [binding=strong] = zero
 
 function @next() -> i32 [binding=strong, object=_Z4nextv] {
   block ^entry:

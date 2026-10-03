@@ -19,12 +19,12 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @alive : i32 [binding=strong, object=_Z5alive] = zero
-global @made : i32 [binding=strong, object=_Z4made] = zero
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
-global @selected : i32 [binding=strong, object=_Z8selected] = zero
-global @limit : i32 [binding=strong, object=_Z5limit] = zero
-global @attempts : i32 [binding=strong, object=_Z8attempts] = zero
+global @alive : i32 [binding=strong] = zero
+global @made : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
+global @selected : i32 [binding=strong] = zero
+global @limit : i32 [binding=strong] = zero
+global @attempts : i32 [binding=strong] = zero
 global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 37
   i8 100

@@ -23,7 +23,7 @@ global @__rtti_struct_failure [binding=weak, object=_ZTI7failure] = {
 global @__ehobj_struct_failure [binding=internal, object=@__ehobj_struct_failure] = {
   zero 1
 }
-global @order : i32 [binding=strong, object=_Z5order] = zero
+global @order : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : obj<1x1>

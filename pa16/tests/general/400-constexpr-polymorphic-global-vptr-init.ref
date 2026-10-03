@@ -40,7 +40,7 @@ global @object__vtable [binding=weak, object=_ZTV6object] = {
   ptr addr @__rtti_struct_object
   ptr addr @object__get
 }
-global @value [binding=strong, object=_Z5value] = {
+global @value [binding=strong] = {
   ptr addr @object__vtable + 16
 }
 

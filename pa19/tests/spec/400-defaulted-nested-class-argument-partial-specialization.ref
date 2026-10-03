@@ -1,7 +1,7 @@
-global @placeholder_value [binding=strong, object=_Z17placeholder_value] = {
+global @placeholder_value [binding=strong] = {
   zero 1
 }
-global @increment_value [binding=strong, object=_Z15increment_value] = {
+global @increment_value [binding=strong] = {
   zero 1
 }
 

@@ -1,7 +1,7 @@
-global @v : i64 [storage=readonly, binding=internal, object=_Z1v] = 42
-global @x : ptr [binding=strong, object=_Z1x] = addr @v
-global @y : ptr [binding=strong, object=_Z1y] = addr @v
-global @arr [binding=strong, object=_Z3arr] = {
+global @v : i64 [storage=readonly, binding=internal, object=v] = 42
+global @x : ptr [binding=strong] = addr @v
+global @y : ptr [binding=strong] = addr @v
+global @arr [binding=strong] = {
   zero 336
 }
 

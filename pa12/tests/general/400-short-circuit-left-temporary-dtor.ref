@@ -1,4 +1,4 @@
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
+global @destroyed : i32 [binding=strong] = zero
 
 function @make(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z4makev] {
   block ^entry:

@@ -4,7 +4,7 @@ global @__local_static__get_value__decl0__item [binding=internal] = {
   zero 4
 }
 global @__local_static__get_value__decl0__item__guard : i64 [binding=internal] = zero
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
+global @destroyed : i32 [binding=strong] = 0
 
 function @__cppgm_local_static_destructor____local_static__get_value__decl0__item() -> void [unwind=no, binding=internal] {
   block ^entry:

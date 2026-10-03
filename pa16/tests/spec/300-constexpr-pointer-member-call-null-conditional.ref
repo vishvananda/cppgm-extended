@@ -1,4 +1,4 @@
-global @x [binding=internal, object=_Z1x] = {
+global @x [binding=internal, object=x] = {
   i32 1
 }
 

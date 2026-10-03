@@ -1,4 +1,4 @@
-global @t5 : i32 [binding=strong, object=_Z2t5] = 5
+global @t5 : i32 [binding=strong] = 5
 
 function @use(%t3 : i32, %other : i32) -> i32 [binding=strong, object=_Z3useii] {
   slot $t3 : i32

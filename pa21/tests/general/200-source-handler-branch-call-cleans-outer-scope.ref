@@ -17,7 +17,7 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @depth : i32 [binding=strong, object=_Z5depth] = zero
+global @depth : i32 [binding=strong] = zero
 
 function @raise(%value : i32) -> void [binding=strong, object=_Z5raisei] {
   slot $value : i32

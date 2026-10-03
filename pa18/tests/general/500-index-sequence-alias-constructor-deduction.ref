@@ -1,4 +1,4 @@
-global @piecewise_construct [binding=strong, object=_Z19piecewise_construct] = {
+global @piecewise_construct [binding=strong] = {
   zero 1
 }
 

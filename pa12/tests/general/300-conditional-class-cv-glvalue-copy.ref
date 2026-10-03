@@ -1,5 +1,5 @@
-global @copies : i32 [binding=strong, object=_Z6copies] = zero
-global @moves : i32 [binding=strong, object=_Z5moves] = zero
+global @copies : i32 [binding=strong] = zero
+global @moves : i32 [binding=strong] = zero
 
 function @choose(%ret : ptr [pass=indirect_result, object_bytes=4], %use_local : u8, %fallback : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z6choosebRK5Value] {
   slot $use_local : u8

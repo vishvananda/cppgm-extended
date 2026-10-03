@@ -1,5 +1,5 @@
-global @range_alive : i32 [binding=strong, object=_Z11range_alive] = 0
-global @range_destroyed : i32 [binding=strong, object=_Z15range_destroyed] = 0
+global @range_alive : i32 [binding=strong] = 0
+global @range_destroyed : i32 [binding=strong] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $sum : i32

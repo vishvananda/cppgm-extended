@@ -1,4 +1,4 @@
-global @destructions : i32 [binding=strong, object=_Z12destructions] = zero
+global @destructions : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $range : obj<8x4>

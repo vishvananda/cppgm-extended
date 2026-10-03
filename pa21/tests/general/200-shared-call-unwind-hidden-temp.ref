@@ -1,4 +1,4 @@
-declare global @g_runtime_branch : i32 [binding=strong, object=_Z16g_runtime_branch]
+declare global @g_runtime_branch : i32 [binding=strong]
 
 declare function @complete(%arg0 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_Z8completeR6Cursor]
 declare function @process(%arg0 : i32, %arg1 : ptr [pass=by_address, object_bytes=1], %arg2 : u8) -> u8 [binding=strong, object=_Z7processiRK7Payloadb]

@@ -19,8 +19,8 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @live : i32 [binding=strong, object=_Z4live] = zero
-global @freed : i32 [binding=strong, object=_Z5freed] = zero
+global @live : i32 [binding=strong] = zero
+global @freed : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $array_new_index__1 : i64

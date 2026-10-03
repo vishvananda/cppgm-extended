@@ -1,4 +1,4 @@
-global @runtime_value : i32 [binding=strong, object=_Z13runtime_value] = zero
+global @runtime_value : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

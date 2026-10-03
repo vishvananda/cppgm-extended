@@ -1,8 +1,8 @@
-global @value [binding=strong, object=_Z5value] = {
+global @value [binding=strong] = {
   zero 1
 }
-global @first : ptr [binding=strong, object=_Z5first] = addr @value
-global @second : ptr [binding=strong, object=_Z6second] = addr @value
+global @first : ptr [binding=strong] = addr @value
+global @second : ptr [binding=strong] = addr @value
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

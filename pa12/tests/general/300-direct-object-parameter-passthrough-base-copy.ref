@@ -1,4 +1,4 @@
-global @seen : i32 [binding=strong, object=_Z4seen] = 0
+global @seen : i32 [binding=strong] = 0
 
 function @use(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z3useRK4Pair] {
   slot $value : ptr

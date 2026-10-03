@@ -1,7 +1,7 @@
-global @constructed : i32 [binding=strong, object=_Z11constructed] = zero
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
-global @bad_addresses : i32 [binding=strong, object=_Z13bad_addresses] = zero
-global @global [binding=strong, object=_Z6global] = {
+global @constructed : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
+global @bad_addresses : i32 [binding=strong] = zero
+global @global [binding=strong] = {
   zero 56
 }
 

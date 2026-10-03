@@ -69,7 +69,7 @@ global @Further__vtable [binding=weak, object=_ZTV7Further] = {
   ptr addr @Further___Further__deleting_entry
   ptr addr @Derived__destroy
 }
-global @trace : i32 [binding=strong, object=_Z5trace] = zero
+global @trace : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $complete : ptr

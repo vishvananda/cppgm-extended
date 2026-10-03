@@ -1,9 +1,9 @@
-global @local_control [binding=strong, object=_Z13local_control] = {
+global @local_control [binding=strong] = {
   i32 0
   i32 0
   i32 5
 }
-global @result_control [binding=strong, object=_Z14result_control] = {
+global @result_control [binding=strong] = {
   i32 0
   i32 0
   i32 7

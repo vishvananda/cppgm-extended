@@ -82,7 +82,7 @@ global @derived____vtt [binding=weak, object=_ZTT7derived, object_root=yes] = {
   ptr addr @derived__vtable + 24
   ptr addr @derived____view__virtual_base__8__vtable + 24
 }
-global @called : i32 [binding=strong, object=_Z6called] = zero
+global @called : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : obj<16x8>

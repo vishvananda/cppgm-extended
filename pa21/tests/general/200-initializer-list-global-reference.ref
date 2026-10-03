@@ -1,6 +1,6 @@
-global @alive : i32 [binding=strong, object=_Z5alive] = zero
-global @made : i32 [binding=strong, object=_Z4made] = zero
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
+global @alive : i32 [binding=strong] = zero
+global @made : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
 global @__cppgm_ref_temporary__held_0 [binding=internal] = {
   zero 16
 }
@@ -8,7 +8,7 @@ global @__cppgm_ref_temporary__held_1 [binding=internal] = {
   zero 8
 }
 global @__cppgm_ref_temporary__held_1_constructed : i8 [binding=internal] = zero
-global @held : ptr [binding=strong, object=_Z4held] = zero
+global @held : ptr [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__1 : i64

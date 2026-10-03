@@ -1,4 +1,4 @@
-global @count : i32 [binding=strong, object=_Z5count] = zero
+global @count : i32 [binding=strong] = zero
 
 function @at(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z2atv] {
   block ^entry:

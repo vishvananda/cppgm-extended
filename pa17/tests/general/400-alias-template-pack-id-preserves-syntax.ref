@@ -1,7 +1,7 @@
-global @seed [binding=strong, object=_Z4seed] = {
+global @seed [binding=strong] = {
   zero 1
 }
-global @value [binding=strong, object=_Z5value] = {
+global @value [binding=strong] = {
   zero 1
 }
 

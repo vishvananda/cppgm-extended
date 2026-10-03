@@ -1,7 +1,7 @@
-global @object [binding=strong, object=_Z6object] = {
+global @object [binding=strong] = {
   zero 8
 }
-global @saved : ptr [binding=strong, object=_Z5saved] = zero
+global @saved : ptr [binding=strong] = zero
 
 function @get() -> ptr [binding=strong, object=_Z3getv] {
   block ^entry:

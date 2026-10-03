@@ -1,4 +1,4 @@
-global @storage [binding=strong, object=_Z7storage] = {
+global @storage [binding=strong] = {
   zero 128
 }
 

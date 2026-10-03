@@ -1,4 +1,4 @@
-global @selected : ptr [binding=strong, object=_Z8selected] = addr @inspect__ov2
+global @selected : ptr [binding=strong] = addr @inspect__ov2
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : i32

@@ -1,6 +1,6 @@
 declare function @algorithm__algorithm(%arg0 : ptr [object_bytes=4], %arg1 : obj<8x8>) -> void [binding=strong, object=_ZN9algorithmC1E6params]
 
-global @value : i32 [binding=strong, object=_Z5value] = zero
+global @value : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $instance : obj<4x4>

@@ -1,8 +1,8 @@
-global @v [binding=internal, object=_Z1v] = {
+global @v [binding=internal, object=v] = {
   i32 3
   i32 4
 }
-global @w [binding=internal, object=_Z1w] = {
+global @w [binding=internal, object=w] = {
   i32 1
   i32 2
 }

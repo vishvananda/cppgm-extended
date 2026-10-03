@@ -1,10 +1,10 @@
 declare function @X__f(%arg0 : ptr [object_bytes=1]) -> void [binding=strong, object=_ZNK1X1fEv]
 declare function @pick(%arg0 : i128, %arg1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4pickIv1XS0_EiMT0_KFT_T1_zERKT2_DpRKT3_]
 
-global @x [binding=strong, object=_Z1x] = {
+global @x [binding=strong] = {
   zero 1
 }
-global @selected : i32 [binding=strong, object=_Z8selected] = zero
+global @selected : i32 [binding=strong] = zero
 
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:

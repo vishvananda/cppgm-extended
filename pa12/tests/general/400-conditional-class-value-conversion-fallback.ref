@@ -1,7 +1,7 @@
-global @tracker_alive : i32 [binding=strong, object=_Z13tracker_alive] = zero
-global @box_alive : i32 [binding=strong, object=_Z9box_alive] = zero
-global @conversions : i32 [binding=strong, object=_Z11conversions] = zero
-global @invalid_lifetimes : i32 [binding=strong, object=_Z17invalid_lifetimes] = zero
+global @tracker_alive : i32 [binding=strong] = zero
+global @box_alive : i32 [binding=strong] = zero
+global @conversions : i32 [binding=strong] = zero
+global @invalid_lifetimes : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $existing : obj<4x4>

@@ -1,4 +1,4 @@
-global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @calls : i32 [binding=strong] = zero
 
 function @next() -> i32 [unwind=no, binding=strong, object=_Z4nextv] {
   block ^entry:

@@ -1,6 +1,6 @@
-global @counter : i32 [binding=strong, object=_Z7counter] = 0
-global @g : i32 [binding=strong, object=_Z1g] = zero
-global @h : i32 [binding=strong, object=_Z1h] = zero
+global @counter : i32 [binding=strong] = 0
+global @g : i32 [binding=strong] = zero
+global @h : i32 [binding=strong] = zero
 
 function @init_value() -> i32 [binding=strong, object=_Z10init_valuev] {
   block ^entry:

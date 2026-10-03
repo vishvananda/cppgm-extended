@@ -1,4 +1,4 @@
-global @trace : i32 [binding=strong, object=_Z5trace] = zero
+global @trace : i32 [binding=strong] = zero
 
 function @make_pair(%value : i64) -> obj<16x8> [binding=strong, object=_Z9make_pairl] {
   slot $value : i64

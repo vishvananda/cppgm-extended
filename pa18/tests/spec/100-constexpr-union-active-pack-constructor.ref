@@ -1,8 +1,8 @@
-global @inactive [binding=internal, object=_Z8inactive] = {
+global @inactive [binding=internal, object=inactive] = {
   u8 0
   zero 3
 }
-global @active [binding=internal, object=_Z6active] = {
+global @active [binding=internal, object=active] = {
   i32 1
 }
 

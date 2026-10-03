@@ -1,6 +1,6 @@
-global @conditions : i32 [binding=strong, object=_Z10conditions] = zero
-global @copies : i32 [binding=strong, object=_Z6copies] = zero
-global @alive : i32 [binding=strong, object=_Z5alive] = zero
+global @conditions : i32 [binding=strong] = zero
+global @copies : i32 [binding=strong] = zero
+global @alive : i32 [binding=strong] = zero
 
 function @select_left() -> u8 [binding=strong, object=_Z11select_leftv] {
   block ^entry:

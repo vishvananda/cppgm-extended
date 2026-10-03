@@ -1,4 +1,4 @@
-global @value : u8 [binding=strong, object=_Z5value] = zero
+global @value : u8 [binding=strong] = zero
 
 function @sink(%input : u8) -> i32 [binding=strong, object=_Z4sinkh] {
   slot $input : u8

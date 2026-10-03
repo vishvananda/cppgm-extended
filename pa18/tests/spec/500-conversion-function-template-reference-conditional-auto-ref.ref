@@ -1,4 +1,4 @@
-global @selected : ptr [binding=internal, object=_Z8selected] = addr @__cppgm_class_template_identity_0_3_0__value
+global @selected : ptr [binding=internal, object=selected] = addr @__cppgm_class_template_identity_0_3_0__value
 global @__cppgm_class_template_identity_0_3_0__value [binding=weak, object=_ZN14static_storageI7wrapperI12callable_tagEE5valueE] = {
   i32 11
 }

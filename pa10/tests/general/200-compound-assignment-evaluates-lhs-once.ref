@@ -1,5 +1,5 @@
-global @count : i32 [binding=strong, object=_Z5count] = zero
-global @value : i32 [binding=strong, object=_Z5value] = zero
+global @count : i32 [binding=strong] = zero
+global @value : i32 [binding=strong] = zero
 
 function @lhs() -> ptr [binding=strong, object=_Z3lhsv] {
   block ^entry:

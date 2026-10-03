@@ -1,5 +1,5 @@
-global @value : i32 [binding=strong, object=_Z5value] = 7
-global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @value : i32 [binding=strong] = 7
+global @calls : i32 [binding=strong] = zero
 
 function @get_reference() -> ptr [binding=strong, object=_Z13get_referencev] {
   block ^entry:

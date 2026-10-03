@@ -1,4 +1,4 @@
-global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @calls : i32 [binding=strong] = zero
 global @__cppgm_class_template_identity_0_0_0__value : i32 [binding=weak, object=_ZN14explicit_valueIiE5valueE] = zero
 
 function @initialize() -> i32 [binding=strong, object=_Z10initializev] {

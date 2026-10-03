@@ -1,4 +1,4 @@
-global @input : u8 [binding=strong, object=_Z5input] = 133
+global @input : u8 [binding=strong] = 133
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

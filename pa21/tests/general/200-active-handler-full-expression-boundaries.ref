@@ -34,10 +34,10 @@ global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
 global @__ehobj_struct_Error [binding=internal, object=@__ehobj_struct_Error] = {
   zero 1
 }
-global @exceptions : i32 [binding=strong, object=_Z10exceptions] = zero
-global @arguments : i32 [binding=strong, object=_Z9arguments] = zero
-global @drops : i32 [binding=strong, object=_Z5drops] = zero
-global @bad : i32 [binding=strong, object=_Z3bad] = zero
+global @exceptions : i32 [binding=strong] = zero
+global @arguments : i32 [binding=strong] = zero
+global @drops : i32 [binding=strong] = zero
+global @bad : i32 [binding=strong] = zero
 
 function @use(%__param0 : ptr [pass=by_address, object_bytes=1], %fail : u8) -> i32 [binding=strong, object=_Z3useRK8Argumentb] {
   slot $__param0 : ptr

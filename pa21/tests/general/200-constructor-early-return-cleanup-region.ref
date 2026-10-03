@@ -15,8 +15,8 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @constructed : i32 [binding=strong, object=_Z11constructed] = zero
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
+global @constructed : i32 [binding=strong] = zero
+global @destroyed : i32 [binding=strong] = zero
 
 function @check(%populate : u8, %expected_constructed : i32) -> i32 [binding=strong, object=_Z5checkbi] {
   slot $populate : u8

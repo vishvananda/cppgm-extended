@@ -17,7 +17,7 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @live : i32 [binding=strong, object=_Z4live] = zero
+global @live : i32 [binding=strong] = zero
 
 function @make(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z4makev] {
   block ^entry:

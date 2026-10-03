@@ -1,4 +1,4 @@
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
+global @destroyed : i32 [binding=strong] = zero
 
 function @make_small(%x : i32) -> obj<4x4> [binding=strong, object=_Z10make_smalli] {
   slot $x : i32

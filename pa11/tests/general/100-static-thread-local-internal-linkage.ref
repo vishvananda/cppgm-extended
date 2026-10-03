@@ -1,6 +1,6 @@
 declare function @__cppgm_tls_wrapper__value() -> ptr [binding=internal, object=_ZTW5value, tls_for=@value]
 
-global @value : i32 [storage=thread_local, binding=internal, object=_Z5value] = 3
+global @value : i32 [storage=thread_local, binding=internal, object=value] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

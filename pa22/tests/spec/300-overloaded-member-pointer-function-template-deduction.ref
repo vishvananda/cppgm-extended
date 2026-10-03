@@ -1,7 +1,7 @@
-global @unit_test_log [binding=strong, object=_Z13unit_test_log] = {
+global @unit_test_log [binding=strong] = {
   zero 1
 }
-global @cout_stream [binding=strong, object=_Z11cout_stream] = {
+global @cout_stream [binding=strong] = {
   zero 1
 }
 

@@ -1,4 +1,4 @@
-global @global_service [binding=strong, object=_Z14global_service] = {
+global @global_service [binding=strong] = {
   zero 1
 }
 

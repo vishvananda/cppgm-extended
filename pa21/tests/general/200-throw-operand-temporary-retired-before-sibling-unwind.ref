@@ -34,9 +34,9 @@ global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
 global @__ehobj_struct_Error [binding=internal, object=@__ehobj_struct_Error] = {
   zero 4
 }
-global @temporary_destructions : i32 [binding=strong, object=_Z22temporary_destructions] = zero
-global @scope_destructions : i32 [binding=strong, object=_Z18scope_destructions] = zero
-global @source [binding=strong, object=_Z6source] = {
+global @temporary_destructions : i32 [binding=strong] = zero
+global @scope_destructions : i32 [binding=strong] = zero
+global @source [binding=strong] = {
   zero 4
 }
 global @__strlit__1 [storage=readonly, binding=internal] = {

@@ -1,4 +1,4 @@
-global @default_alloc [binding=strong, object=_Z13default_alloc] = {
+global @default_alloc [binding=strong] = {
   zero 4
 }
 

@@ -211,7 +211,7 @@ global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D____view__B__8__vtable + 24
   ptr addr @D____view__V__16__vtable + 24
 }
-global @live : i32 [binding=strong, object=_Z4live] = 0
+global @live : i32 [binding=strong] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : obj<24x8>

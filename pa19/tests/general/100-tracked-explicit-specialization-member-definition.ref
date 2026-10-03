@@ -1,4 +1,4 @@
-global @before : ptr [binding=strong, object=_Z6before] = 0
+global @before : ptr [binding=strong] = 0
 
 function @f() -> i32 [binding=strong, object=_Z1fv] {
   slot $x : i8

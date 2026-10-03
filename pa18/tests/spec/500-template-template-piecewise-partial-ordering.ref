@@ -1,5 +1,5 @@
-global @fixed_selected : i32 [binding=strong, object=_Z14fixed_selected] = 0
-global @variadic_selected : i32 [binding=strong, object=_Z17variadic_selected] = 0
+global @fixed_selected : i32 [binding=strong] = 0
+global @variadic_selected : i32 [binding=strong] = 0
 
 function @run_fixed_arity() -> i32 [binding=strong, object=_Z15run_fixed_arityv] {
   slot $a : obj<1x1>

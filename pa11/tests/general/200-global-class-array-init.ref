@@ -6,7 +6,7 @@ global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 98
   i8 0
 }
-global @table [binding=strong, object=_Z5table] = {
+global @table [binding=strong] = {
   ptr addr @__strlit__1
   i32 1
   zero 4

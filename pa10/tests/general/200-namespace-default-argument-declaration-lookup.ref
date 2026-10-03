@@ -1,5 +1,5 @@
 global @library__default_value : i32 [binding=strong, object=_ZN7library13default_valueE] = 7
-global @default_value : i32 [binding=strong, object=_Z13default_value] = 99
+global @default_value : i32 [binding=strong] = 99
 
 function @library__read(%value : i32) -> i32 [binding=strong, object=_ZN7library4readEi] {
   slot $value : i32

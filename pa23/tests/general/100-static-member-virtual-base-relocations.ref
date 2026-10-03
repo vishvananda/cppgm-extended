@@ -131,14 +131,14 @@ global @Object____vtt [binding=weak, object=_ZTT6Object, object_root=yes] = {
   ptr addr @Object____construction__Base__0__s1__vtable + 24
   ptr addr @Object____view__Virtual__32__vtable + 24
 }
-global @holder [binding=strong, object=_Z6holder] = {
+global @holder [binding=strong] = {
   zero 56
 }
-global @reference : ptr [binding=strong, object=_Z9reference] = addr @holder + 40
-global @pointer : ptr [binding=strong, object=_Z7pointer] = zero
-global @explicit_pointer : ptr [binding=strong, object=_Z16explicit_pointer] = zero
-global @base_reference : ptr [binding=strong, object=_Z14base_reference] = addr @holder + 8
-global @alias_reference : ptr [binding=strong, object=_Z15alias_reference] = zero
+global @reference : ptr [binding=strong] = addr @holder + 40
+global @pointer : ptr [binding=strong] = zero
+global @explicit_pointer : ptr [binding=strong] = zero
+global @base_reference : ptr [binding=strong] = addr @holder + 8
+global @alias_reference : ptr [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $expected : ptr

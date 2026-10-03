@@ -1,4 +1,4 @@
-global @force_full_collection : i32 [binding=strong, object=_Z21force_full_collection] = 1
+global @force_full_collection : i32 [binding=strong] = 1
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

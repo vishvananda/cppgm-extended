@@ -34,7 +34,7 @@ global @__rtti_type_PFvvE [binding=weak, object=_ZTIPFvvE] = {
 global @__ehobj_type_PFvvE [binding=internal, object=@__ehobj_type_PFvvE] = {
   zero 8
 }
-global @called : i32 [binding=strong, object=_Z6called] = zero
+global @called : i32 [binding=strong] = zero
 
 function @f() -> void [binding=strong, object=_Z1fv] {
   block ^entry:

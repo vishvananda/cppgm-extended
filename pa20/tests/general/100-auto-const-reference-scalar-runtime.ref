@@ -1,4 +1,4 @@
-global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @calls : i32 [binding=strong] = zero
 
 function @get() -> i32 [binding=strong, object=_Z3getv] {
   block ^entry:

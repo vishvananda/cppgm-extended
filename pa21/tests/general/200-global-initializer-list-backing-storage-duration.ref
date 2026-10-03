@@ -1,8 +1,8 @@
-global @live : i32 [binding=strong, object=_Z4live] = zero
+global @live : i32 [binding=strong] = zero
 global @__cppgm_initlist_backing_1 [binding=internal] = {
   zero 8
 }
-global @values [binding=strong, object=_Z6values] = {
+global @values [binding=strong] = {
   zero 16
 }
 

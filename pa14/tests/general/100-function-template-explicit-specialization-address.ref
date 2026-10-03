@@ -1,7 +1,7 @@
-global @global_stream [binding=strong, object=_Z13global_stream] = {
+global @global_stream [binding=strong] = {
   zero 1
 }
-global @global_passthrough : ptr [binding=strong, object=_Z18global_passthrough] = addr @ns__passthrough
+global @global_passthrough : ptr [binding=strong] = addr @ns__passthrough
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

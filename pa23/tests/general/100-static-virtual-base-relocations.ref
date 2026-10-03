@@ -131,20 +131,20 @@ global @Object____vtt [binding=weak, object=_ZTT6Object, object_root=yes] = {
   ptr addr @Object____construction__Base__0__s1__vtable + 24
   ptr addr @Object____view__Virtual__32__vtable + 24
 }
-global @object [binding=strong, object=_Z6object] = {
+global @object [binding=strong] = {
   zero 48
 }
-global @objects [binding=strong, object=_Z7objects] = {
+global @objects [binding=strong] = {
   zero 96
 }
-global @reference : ptr [binding=strong, object=_Z9reference] = addr @object + 32
-global @pointer : ptr [binding=strong, object=_Z7pointer] = addr @object + 32
-global @explicit_pointer : ptr [binding=strong, object=_Z16explicit_pointer] = addr @object + 32
-global @base_reference : ptr [binding=strong, object=_Z14base_reference] = addr @object
-global @alias_reference : ptr [binding=strong, object=_Z15alias_reference] = addr @object + 32
-global @base_pointer : ptr [binding=strong, object=_Z12base_pointer] = addr @object
-global @alias_pointer : ptr [binding=strong, object=_Z13alias_pointer] = zero
-global @array_reference : ptr [binding=strong, object=_Z15array_reference] = addr @objects + 80
+global @reference : ptr [binding=strong] = addr @object + 32
+global @pointer : ptr [binding=strong] = addr @object + 32
+global @explicit_pointer : ptr [binding=strong] = addr @object + 32
+global @base_reference : ptr [binding=strong] = addr @object
+global @alias_reference : ptr [binding=strong] = addr @object + 32
+global @base_pointer : ptr [binding=strong] = addr @object
+global @alias_pointer : ptr [binding=strong] = zero
+global @array_reference : ptr [binding=strong] = addr @objects + 80
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $expected : ptr

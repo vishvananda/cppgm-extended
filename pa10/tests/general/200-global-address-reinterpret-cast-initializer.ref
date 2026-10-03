@@ -1,6 +1,6 @@
-global @object : i32 [binding=strong, object=_Z6object] = zero
-global @function_address : ptr [binding=strong, object=_Z16function_address] = addr @target
-global @object_address : ptr [binding=strong, object=_Z14object_address] = addr @object
+global @object : i32 [binding=strong] = zero
+global @function_address : ptr [binding=strong] = addr @target
+global @object_address : ptr [binding=strong] = addr @object
 
 function @target() -> void [binding=strong, object=_Z6targetv] {
   block ^entry:

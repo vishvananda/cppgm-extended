@@ -1,4 +1,4 @@
-global @trace : i32 [binding=strong, object=_Z5trace] = zero
+global @trace : i32 [binding=strong] = zero
 
 function @read(%value : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z4readRK5Value] {
   slot $value : ptr

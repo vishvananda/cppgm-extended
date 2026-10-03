@@ -1,5 +1,5 @@
-global @x : i32 [storage=readonly, binding=internal, object=_Z1x] = 720
-global @lit [binding=internal, object=_Z3lit] = {
+global @x : i32 [storage=readonly, binding=internal, object=x] = 720
+global @lit [binding=internal, object=lit] = {
   i32 42
 }
 

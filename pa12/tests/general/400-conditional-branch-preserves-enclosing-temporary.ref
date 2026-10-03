@@ -1,5 +1,5 @@
-global @alive : i32 [binding=strong, object=_Z5alive] = zero
-global @choose_second : u8 [binding=strong, object=_Z13choose_second] = 1
+global @alive : i32 [binding=strong] = zero
+global @choose_second : u8 [binding=strong] = 1
 
 function @operator_(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_ZplRK5valueS1_] {
   slot $__param0 : ptr

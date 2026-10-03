@@ -1,4 +1,4 @@
-global @live : i32 [binding=strong, object=_Z4live] = zero
+global @live : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $object : obj<1x1>

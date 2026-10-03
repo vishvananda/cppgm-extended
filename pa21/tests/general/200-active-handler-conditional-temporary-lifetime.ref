@@ -30,11 +30,11 @@ global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
 global @__ehobj_struct_E [binding=internal, object=@__ehobj_struct_E] = {
   zero 1
 }
-global @live : i32 [binding=strong, object=_Z4live] = zero
-global @drops : i32 [binding=strong, object=_Z5drops] = zero
-global @bad : i32 [binding=strong, object=_Z3bad] = zero
-global @temporaries : i32 [binding=strong, object=_Z11temporaries] = zero
-global @choose : u8 [binding=strong, object=_Z6choose] = zero
+global @live : i32 [binding=strong] = zero
+global @drops : i32 [binding=strong] = zero
+global @bad : i32 [binding=strong] = zero
+global @temporaries : i32 [binding=strong] = zero
+global @choose : u8 [binding=strong] = zero
 
 function @use(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=strong, object=_Z3useRK1G] {
   slot $__param0 : ptr

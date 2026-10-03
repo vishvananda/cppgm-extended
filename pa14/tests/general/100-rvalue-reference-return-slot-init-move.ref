@@ -1,5 +1,5 @@
-global @copies : i32 [binding=strong, object=_Z6copies] = 0
-global @moves : i32 [binding=strong, object=_Z5moves] = 0
+global @copies : i32 [binding=strong] = 0
+global @moves : i32 [binding=strong] = 0
 
 function @get(%ret : ptr [pass=indirect_result, object_bytes=4], %source : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z3getR3Box] {
   slot $source : ptr

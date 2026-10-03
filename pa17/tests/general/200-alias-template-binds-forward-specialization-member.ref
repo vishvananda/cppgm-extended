@@ -1,4 +1,4 @@
-global @global_holder [binding=strong, object=_Z13global_holder] = {
+global @global_holder [binding=strong] = {
   zero 8
 }
 

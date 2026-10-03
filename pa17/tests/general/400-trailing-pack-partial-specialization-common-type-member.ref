@@ -1,5 +1,5 @@
-global @g1 : i64 [binding=strong, object=_Z2g1] = zero
-global @g2 : i64 [binding=strong, object=_Z2g2] = zero
+global @g1 : i64 [binding=strong] = zero
+global @g2 : i64 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

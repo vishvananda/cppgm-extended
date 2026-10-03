@@ -26,7 +26,7 @@ global @__rtti_long_int [binding=weak, object=_ZTIl] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
+global @destroyed : i32 [binding=strong] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $guard : obj<1x1>

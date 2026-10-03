@@ -1,6 +1,6 @@
 declare function @operatornew__ov2(%arg0 : i64, %arg1 : ptr) -> ptr [unwind=no, binding=strong, object=_ZnwmPv]
 
-global @gx : i32 [binding=strong, object=_Z2gx] = 0
+global @gx : i32 [binding=strong] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $buf : obj<1x1>

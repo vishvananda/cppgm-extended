@@ -1,4 +1,4 @@
-global @side : i32 [binding=strong, object=_Z4side] = zero
+global @side : i32 [binding=strong] = zero
 
 function @pick(%values : ptr, %index : i32) -> ptr [binding=strong, object=_Z4pickPii] {
   slot $values : ptr

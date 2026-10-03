@@ -1,4 +1,4 @@
-global @total : i32 [binding=strong, object=_Z5total] = zero
+global @total : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

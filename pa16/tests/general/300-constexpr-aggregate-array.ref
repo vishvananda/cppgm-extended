@@ -1,13 +1,13 @@
-global @p [binding=internal, object=_Z1p] = {
+global @p [binding=internal, object=p] = {
   i32 3
   i32 4
 }
-global @bits [binding=internal, object=_Z4bits] = {
+global @bits [binding=internal, object=bits] = {
   u32 29
   u8 1
   zero 3
 }
-global @arr [binding=strong, object=_Z3arr] = {
+global @arr [binding=strong] = {
   i32 10
   i32 20
   i32 30

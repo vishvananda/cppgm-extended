@@ -1,5 +1,5 @@
-global @constructed : i32 [binding=strong, object=_Z11constructed] = 0
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
+global @constructed : i32 [binding=strong] = 0
+global @destroyed : i32 [binding=strong] = 0
 
 function @observed() -> i32 [unwind=no, binding=strong, object=_Z8observedv] {
   block ^entry:

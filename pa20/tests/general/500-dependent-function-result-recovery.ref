@@ -1,8 +1,8 @@
-global @src [binding=strong, object=_Z3src] = {
+global @src [binding=strong] = {
   i32 1
   i32 2
 }
-global @dst [binding=strong, object=_Z3dst] = {
+global @dst [binding=strong] = {
   zero 8
 }
 

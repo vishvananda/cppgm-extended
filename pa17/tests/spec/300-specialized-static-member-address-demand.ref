@@ -1,9 +1,9 @@
 global @__cppgm_class_template_identity_0_0_0__value : i32 [binding=weak, object=_ZN13mutable_valueIiE5valueE] = 7
 global @__cppgm_class_template_identity_1_0_0__value : i32 [binding=weak, object=_ZN12poison_valueIiE5valueE] = 11
 global @__cppgm_class_template_identity_2_0_0__value : i32 [storage=readonly, binding=weak, object=_ZN14constant_valueIiE5valueE] = 13
-global @first : ptr [binding=strong, object=_Z5first] = addr @__cppgm_class_template_identity_0_0_0__value
-global @second : ptr [binding=strong, object=_Z6second] = addr @__cppgm_class_template_identity_1_0_0__value
-global @third : ptr [binding=strong, object=_Z5third] = addr @__cppgm_class_template_identity_2_0_0__value
+global @first : ptr [binding=strong] = addr @__cppgm_class_template_identity_0_0_0__value
+global @second : ptr [binding=strong] = addr @__cppgm_class_template_identity_1_0_0__value
+global @third : ptr [binding=strong] = addr @__cppgm_class_template_identity_2_0_0__value
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__1 : i64

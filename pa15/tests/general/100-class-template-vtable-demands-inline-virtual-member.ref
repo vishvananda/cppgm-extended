@@ -19,7 +19,7 @@ global @__cppgm_class_template_identity_0_0_0__vtable [binding=weak, object=_ZTV
   ptr addr @__rtti_struct___cppgm_class_template_identity_0_0_0
   ptr addr @box_int___value
 }
-global @value [binding=strong, object=_Z5value] = {
+global @value [binding=strong] = {
   ptr addr @__cppgm_class_template_identity_0_0_0__vtable + 16
 }
 

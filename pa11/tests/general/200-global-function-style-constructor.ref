@@ -1,5 +1,5 @@
-global @f2 : i32 [binding=strong, object=_Z2f2] = 7
-global @x [binding=strong, object=_Z1x] = {
+global @f2 : i32 [binding=strong] = 7
+global @x [binding=strong] = {
   zero 4
 }
 

@@ -1,4 +1,4 @@
-global @alive : i32 [binding=strong, object=_Z5alive] = zero
+global @alive : i32 [binding=strong] = zero
 
 function @get(%ret : ptr [pass=indirect_result, object_bytes=4]) -> void [unwind=no, binding=strong, object=_Z3getv] {
   block ^entry:

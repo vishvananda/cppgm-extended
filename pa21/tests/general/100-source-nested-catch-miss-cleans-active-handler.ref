@@ -29,7 +29,7 @@ global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
 global @__ehobj_long_int [binding=internal, object=@__ehobj_long_int] = {
   zero 8
 }
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
+global @destroyed : i32 [binding=strong] = 0
 
 function @throw_long() -> void [binding=strong, object=_Z10throw_longv] {
   block ^entry:

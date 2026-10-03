@@ -1,4 +1,4 @@
-global @observed : i32 [binding=strong, object=_Z8observed] = zero
+global @observed : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] !dbg(tests/debuginfo/driver/o3/500-source-full-unroll-debug.t, 3, 1) {
   block ^entry:

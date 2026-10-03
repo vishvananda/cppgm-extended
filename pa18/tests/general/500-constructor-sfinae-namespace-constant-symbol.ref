@@ -1,4 +1,4 @@
-global @dynamic_extent : i64 [storage=readonly, binding=internal, object=_Z14dynamic_extent] = -1
+global @dynamic_extent : i64 [storage=readonly, binding=internal, object=dynamic_extent] = -1
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i8 104
   i8 101

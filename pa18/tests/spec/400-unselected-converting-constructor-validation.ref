@@ -1,6 +1,6 @@
 declare function @A_int___A_int_(%arg0 : ptr [alias=noalias, object_bytes=1], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN1AIiEC1EOS0_]
 
-global @c [binding=strong, object=_Z1c] = {
+global @c [binding=strong] = {
   zero 1
 }
 

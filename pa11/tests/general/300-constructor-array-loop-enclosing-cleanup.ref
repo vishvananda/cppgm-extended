@@ -1,5 +1,5 @@
-global @constructed : i32 [binding=strong, object=_Z11constructed] = 0
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
+global @constructed : i32 [binding=strong] = 0
+global @destroyed : i32 [binding=strong] = 0
 
 function @build() -> i32 [binding=strong, object=_Z5buildv] {
   slot $earlier : obj<4x4>

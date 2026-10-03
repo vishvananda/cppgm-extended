@@ -1,4 +1,4 @@
-global @source : i32 [binding=internal, object=_Z6source] = 3
+global @source : i32 [binding=internal, object=source] = 3
 global @stored__value : i32 [storage=readonly, binding=strong, object=_ZN6stored5valueE] = 9
 global @late__value : i32 [storage=readonly, binding=strong, object=_ZN4late5valueE] = 11
 

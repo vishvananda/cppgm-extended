@@ -1,5 +1,5 @@
-global @gx : i32 [binding=strong, object=_Z2gx] = zero
-global @g [binding=strong, object=_Z1g] = {
+global @gx : i32 [binding=strong] = zero
+global @g [binding=strong] = {
   zero 1
 }
 

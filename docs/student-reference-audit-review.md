@@ -83,14 +83,14 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **31 compiler issue families** remain
+Remaining-work count on 2026-10-03: **30 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
-LOOKUP-TAG are also completed. These are tracker
+LOOKUP-TAG and ABI-GLOBAL are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -171,7 +171,7 @@ The recent discovery inventory is not all C++11:
 | MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Open: entry 425bc2a90 and candidate flatten a fixed-primary parameter expansion and append defaults; Clang/GCC retain `tuple<T_,DpT0_>`. The deduction checkpoint corrects the concrete template argument pack cardinality; the parameter pattern remains wrong. No encoder change made. |
 | MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
-| ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Open, checked against Clang 21.1.8: exact fixtures emit `g`, ours `_Z1g`; mixed links fail in both directions. Two inspection expectations and the variable encoder need correction. |
+| ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Done. Fresh Clang O0/O2 checks and mixed links in both directions establish `g`; the typed ABI variable target now preserves that raw name. Existing PA9/PA27 tests carry the regression, and related LowIR/hosted inspection references were regenerated and independently checked. Strict 6116/6116, required checks and Alpha instruction/memory gates pass. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; PA19 pack count is corrected in the deduction checkpoint; PA23 initialized virtual bases remain. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
 | ARG-BRANCH | Remove invalid branch destructor suppression and prevent cross-arm initialized-state leakage | Argon 2 | Done in 5d4ff5a34: both original reducers and normal/nested throwing-arm controls pass; strict 5843/5843, full checks and equal-output ABBA pass. Other EH mechanisms remain open. |
@@ -5488,4 +5488,32 @@ confirmation (calibrated ratio 1.002048). Image:
 `7d4aa5ecce4eff12fe4452edd2804cc555889025d1736de5b31dfa4bcb43f848`.
 Source, fixed inputs, commands and raw results remain in `tag-introduction/`.
 Remaining: 31 compiler families and six reviews. Final fixture minimization and
+combined student-export validation remain pending.
+
+### Completed external global variable symbols — 2026-10-03
+
+ABI-GLOBAL is fixed in the existing typed variable-name encoder: an unscoped
+ordinary target returns its source name; namespace/member encodings, explicit
+internal-linkage ABI facts and expression entity references retain their
+existing encodings. Fresh Clang object checks precede the change. Thirty focused
+checks pass, including mixed links in both directions at O0/O2. Extend the
+existing PA9 namespace-variable case, correct the two existing PA27 and two
+PA31 relocation predicates, and remove the redundant opt-in control. No new
+fixture files are added. The 420 regenerated LowIR references (one debug)
+were independently verified to change only unscoped object-name metadata;
+instructions, linkage and other metadata remain identical.
+
+Affected PA9/PA27 passes 270/270; strict passes 6116/6116 with one output line.
+Debug information, self-host through PA5, all nine architecture audits, file
+audit and placement pass. Final image SHA-256:
+`52c67e9f93bdf6a5c3aeda17bd0c2291296b900e2971081df6affe7a05edf522`.
+Alpha verifies 240 screen observations and 192 focused confirmation observations,
+including all raw unscaled counters, RSS, zero statuses and equal objects.
+Maximum screen instruction ratio is 1.000489 and RSS is 1.000. Confirmation
+cycle ratios are 1.008993 for copy templates (95% bootstrap interval
+1.003011–1.012519) and 1.005528 for virtual overrides (1.000306–1.011863).
+These small measured timing costs are recorded; instruction/memory gates pass
+and neither confirmation exceeds the agreed 1.01 trigger. Evidence and
+regeneration logs are in `/tmp/cppgm-v4-audit-review/global-variable-symbol/`.
+Remaining: 30 compiler families and six reviews. Final fixture minimization and
 combined student-export validation remain pending.

@@ -1,4 +1,4 @@
-global @default_source [binding=strong, object=_Z14default_source] = {
+global @default_source [binding=strong] = {
   zero 4
 }
 

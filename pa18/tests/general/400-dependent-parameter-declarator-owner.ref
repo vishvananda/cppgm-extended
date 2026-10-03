@@ -1,4 +1,4 @@
-global @function_value [binding=strong, object=_Z14function_value] = {
+global @function_value [binding=strong] = {
   zero 1
 }
 

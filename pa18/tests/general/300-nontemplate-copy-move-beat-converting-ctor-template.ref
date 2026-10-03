@@ -1,6 +1,6 @@
 declare function @h(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=strong, object=_Z1hv]
 
-global @which : i32 [binding=strong, object=_Z5which] = zero
+global @which : i32 [binding=strong] = zero
 
 function @g() -> i32 [binding=strong, object=_Z1gv] {
   slot $a : obj<1x1>

@@ -1,7 +1,7 @@
-global @_weight [binding=strong, object=_Z7_weight] = {
+global @_weight [binding=strong] = {
   zero 1
 }
-global @_predecessor [binding=strong, object=_Z12_predecessor] = {
+global @_predecessor [binding=strong] = {
   zero 1
 }
 

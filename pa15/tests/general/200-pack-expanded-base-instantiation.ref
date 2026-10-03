@@ -1,4 +1,4 @@
-global @k [binding=strong, object=_Z1k] = {
+global @k [binding=strong] = {
   zero 4
 }
 

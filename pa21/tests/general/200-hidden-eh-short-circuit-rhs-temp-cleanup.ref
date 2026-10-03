@@ -1,5 +1,5 @@
-global @constructed : i32 [binding=strong, object=_Z11constructed] = 0
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = 0
+global @constructed : i32 [binding=strong] = 0
+global @destroyed : i32 [binding=strong] = 0
 
 function @use(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [unwind=no, binding=strong, object=_Z3useRK5Probe] {
   slot $__param0 : ptr

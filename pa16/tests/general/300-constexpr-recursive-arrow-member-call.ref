@@ -1,4 +1,4 @@
-global @pointer [binding=internal, object=_Z7pointer] = {
+global @pointer [binding=internal, object=pointer] = {
   i32 17
 }
 

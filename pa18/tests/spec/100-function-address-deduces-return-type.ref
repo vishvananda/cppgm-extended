@@ -1,4 +1,4 @@
-global @selected : ptr [binding=strong, object=_Z8selected] = addr @make_value
+global @selected : ptr [binding=strong] = addr @make_value
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:

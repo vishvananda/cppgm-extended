@@ -1,8 +1,8 @@
-global @data [binding=strong, object=_Z4data] = {
+global @data [binding=strong] = {
   zero 800
 }
-global @dpa : ptr [binding=strong, object=_Z3dpa] = addr @data
-global @dpb : ptr [binding=strong, object=_Z3dpb] = addr @data + 800
+global @dpa : ptr [binding=strong] = addr @data
+global @dpb : ptr [binding=strong] = addr @data + 800
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

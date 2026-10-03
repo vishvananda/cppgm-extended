@@ -1,4 +1,4 @@
-global @alive : i32 [binding=strong, object=_Z5alive] = zero
+global @alive : i32 [binding=strong] = zero
 
 function @borrow(%v : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=strong, object=_Z6borrowR1S] {
   slot $v : ptr

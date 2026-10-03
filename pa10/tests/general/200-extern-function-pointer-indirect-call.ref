@@ -1,4 +1,4 @@
-declare global @target : ptr [binding=strong, object=_Z6target]
+declare global @target : ptr [binding=strong]
 
 function @call_target(%value : i32) -> void [binding=strong, object=_Z11call_targeti] {
   slot $value : i32

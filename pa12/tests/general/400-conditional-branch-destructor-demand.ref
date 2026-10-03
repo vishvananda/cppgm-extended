@@ -1,6 +1,6 @@
-global @constructions : i32 [binding=strong, object=_Z13constructions] = zero
-global @destructions : i32 [binding=strong, object=_Z12destructions] = zero
-global @invalid_destructions : i32 [binding=strong, object=_Z20invalid_destructions] = zero
+global @constructions : i32 [binding=strong] = zero
+global @destructions : i32 [binding=strong] = zero
+global @invalid_destructions : i32 [binding=strong] = zero
 
 function @read(%object : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z4readRK4Left] {
   slot $object : ptr

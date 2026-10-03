@@ -1,6 +1,6 @@
-global @calls : i32 [binding=strong, object=_Z5calls] = zero
+global @calls : i32 [binding=strong] = zero
 global @__cppgm_class_template_identity_0_0_0__first : i32 [binding=weak, object=_ZN8selectedIiE5firstE] = zero
-global @pointer : ptr [binding=strong, object=_Z7pointer] = addr @__cppgm_class_template_identity_0_0_0__first
+global @pointer : ptr [binding=strong] = addr @__cppgm_class_template_identity_0_0_0__first
 global @__cppgm_class_template_identity_0_0_0__second : i32 [binding=weak, object=_ZN8selectedIiE6secondE] = zero
 global @__cppgm_class_template_identity_0_0_0__constant : i32 [binding=weak, object=_ZN8selectedIiE8constantE] = 7
 global @__cppgm_class_template_identity_0_0_0__dependent : i32 [binding=weak, object=_ZN8selectedIiE9dependentE] = zero

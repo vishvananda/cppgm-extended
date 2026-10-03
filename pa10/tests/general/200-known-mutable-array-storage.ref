@@ -1,4 +1,4 @@
-global @calls : i32 [binding=strong, object=_Z5calls] = 0
+global @calls : i32 [binding=strong] = 0
 global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i32 1
   i32 2

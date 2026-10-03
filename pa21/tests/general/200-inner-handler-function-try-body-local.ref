@@ -18,23 +18,23 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @progress : i32 [binding=internal, object=_Z8progress] = zero
-global @limit : i32 [binding=internal, object=_Z5limit] = zero
-global @live : i32 [binding=internal, object=_Z4live] = zero
-global @bad : i32 [binding=internal, object=_Z3bad] = zero
-global @count : i32 [binding=internal, object=_Z5count] = zero
-global @seen : i32 [binding=internal, object=_Z4seen] = zero
-global @trace [binding=internal, object=_Z5trace] = {
+global @progress : i32 [binding=internal, object=progress] = zero
+global @limit : i32 [binding=internal, object=limit] = zero
+global @live : i32 [binding=internal, object=live] = zero
+global @bad : i32 [binding=internal, object=bad] = zero
+global @count : i32 [binding=internal, object=count] = zero
+global @seen : i32 [binding=internal, object=seen] = zero
+global @trace [binding=internal, object=trace] = {
   zero 16384
 }
-global @expected_trace [binding=internal, object=_Z14expected_trace] = {
+global @expected_trace [binding=internal, object=expected_trace] = {
   i64 226540682150
   i64 60000
   i64 1729277030
   i64 3887642183105040
   i64 226540682150
 }
-global @expected_count [binding=internal, object=_Z14expected_count] = {
+global @expected_count [binding=internal, object=expected_count] = {
   i32 4
   i32 1
   i32 3

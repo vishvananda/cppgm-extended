@@ -1272,16 +1272,21 @@ private:
       return output_;
     }
     if(target.kind == ABI_TARGET_FACT_VARIABLE) {
-      output_ += "_Z";
       if(target.function.kind == ABI_FUNCTION_TARGET_ENCODING) {
+        output_ += "_Z";
         encode_structured_object(collect_function_facts(records));
       } else if(target.function.kind == ABI_FUNCTION_TARGET_MEMBER) {
+        output_ += "_Z";
         encode_member_object(target.function, collect_function_facts(records));
-      } else if(target.function.resolved_path != ABI_NO_RESOLVED_REFERENCE) {
-        encode_object_name(graph_.path(target.function.resolved_path),
-                           target.internal_linkage);
       } else {
-        encode_object_name(target.qualified_name, target.internal_linkage);
+        const size_t path = target.function.resolved_path != ABI_NO_RESOLVED_REFERENCE ?
+          graph_.path(target.function.resolved_path) : graph_.paths.intern(
+            target.qualified_name, stats_ ? &stats_->text_object_path_components : nullptr);
+        const PathNode & name = graph_.paths.get(path);
+        if(!target.internal_linkage && name.parent == NO_ID)
+          return graph_.strings.get(name.name);
+        output_ += "_Z";
+        encode_object_name(path, target.internal_linkage);
       }
       return output_;
     }

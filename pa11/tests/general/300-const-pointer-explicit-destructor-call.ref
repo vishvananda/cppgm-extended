@@ -1,4 +1,4 @@
-global @destroyed : i32 [binding=strong, object=_Z9destroyed] = zero
+global @destroyed : i32 [binding=strong] = zero
 
 function @destroy_const(%p : ptr) -> void [binding=strong, object=_Z13destroy_constPK5value] {
   slot $p : ptr

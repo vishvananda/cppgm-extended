@@ -1,6 +1,6 @@
-global @object : i32 [binding=strong, object=_Z6object] = zero
-global @reference : ptr [binding=strong, object=_Z9reference] = addr @object
-global @second : ptr [binding=strong, object=_Z6second] = addr @object
+global @object : i32 [binding=strong] = zero
+global @reference : ptr [binding=strong] = addr @object
+global @second : ptr [binding=strong] = addr @object
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

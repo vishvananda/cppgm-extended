@@ -1,4 +1,4 @@
-global @value : i32 [binding=strong, object=_Z5value] = zero
+global @value : i32 [binding=strong] = zero
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $assign : obj<1x1>

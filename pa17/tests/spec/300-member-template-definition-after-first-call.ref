@@ -1,4 +1,4 @@
-global @early_specialization [binding=strong, object=_Z20early_specialization] = {
+global @early_specialization [binding=strong] = {
   zero 1
 }
 

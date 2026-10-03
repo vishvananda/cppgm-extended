@@ -17,7 +17,7 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @cleanup_count : i32 [binding=strong, object=_Z13cleanup_count] = zero
+global @cleanup_count : i32 [binding=strong] = zero
 
 function @fail() -> void [binding=strong, object=_Z4failv, no_inline=yes] {
   block ^entry:

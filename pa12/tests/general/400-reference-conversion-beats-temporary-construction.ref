@@ -1,5 +1,5 @@
-global @selected_constructor : i32 [binding=strong, object=_Z20selected_constructor] = 0
-global @stored_target [binding=strong, object=_Z13stored_target] = {
+global @selected_constructor : i32 [binding=strong] = 0
+global @stored_target [binding=strong] = {
   zero 1
 }
 

@@ -1,10 +1,10 @@
 global @__local_static__read_constant_reference__decl0__reference : ptr [binding=internal] = addr @source
 global @__local_static__read_dynamic_reference__decl0__reference : ptr [binding=internal] = zero
 global @__local_static__read_dynamic_reference__decl0__reference__guard : i64 [binding=internal] = zero
-global @source : i32 [binding=strong, object=_Z6source] = 7
-global @observed : i32 [binding=strong, object=_Z8observed] = zero
-global @selections : i32 [binding=strong, object=_Z10selections] = 0
-global @other : i32 [binding=strong, object=_Z5other] = 13
+global @source : i32 [binding=strong] = 7
+global @observed : i32 [binding=strong] = zero
+global @selections : i32 [binding=strong] = 0
+global @other : i32 [binding=strong] = 13
 
 function @read_constant_reference() -> i32 [binding=strong, object=_Z23read_constant_referencev] {
   block ^entry:

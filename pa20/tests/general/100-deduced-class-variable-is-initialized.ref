@@ -1,5 +1,5 @@
-global @constructions : i32 [binding=strong, object=_Z13constructions] = 0
-global @calls : i32 [binding=strong, object=_Z5calls] = 0
+global @constructions : i32 [binding=strong] = 0
+global @calls : i32 [binding=strong] = 0
 
 function @make() -> obj<4x4> [binding=strong, object=_Z4makev] {
   slot $p : obj<4x4>

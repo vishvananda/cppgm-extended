@@ -1,9 +1,9 @@
-global @values [binding=strong, object=_Z6values] = {
+global @values [binding=strong] = {
   i32 1
   i32 2
   i32 3
 }
-global @cursor : ptr [binding=strong, object=_Z6cursor] = addr @values
+global @cursor : ptr [binding=strong] = addr @values
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

@@ -1,7 +1,7 @@
-global @copies : i32 [binding=strong, object=_Z6copies] = zero
-global @moves : i32 [binding=strong, object=_Z5moves] = zero
-global @returned_copies : i32 [binding=strong, object=_Z15returned_copies] = zero
-global @returned_moves : i32 [binding=strong, object=_Z14returned_moves] = zero
+global @copies : i32 [binding=strong] = zero
+global @moves : i32 [binding=strong] = zero
+global @returned_copies : i32 [binding=strong] = zero
+global @returned_moves : i32 [binding=strong] = zero
 
 function @make(%ret : ptr [pass=indirect_result, object_bytes=40], %first : ptr [pass=by_address, object_bytes=16], %second : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z4makeR5ValueS0_] {
   slot $first : ptr

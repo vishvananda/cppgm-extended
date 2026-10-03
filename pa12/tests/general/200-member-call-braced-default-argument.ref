@@ -1,4 +1,4 @@
-global @seen : i32 [binding=strong, object=_Z4seen] = 0
+global @seen : i32 [binding=strong] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : obj<1x1>

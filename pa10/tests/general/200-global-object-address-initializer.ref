@@ -1,5 +1,5 @@
-global @value : i32 [binding=strong, object=_Z5value] = 4
-global @pointer : ptr [binding=strong, object=_Z7pointer] = addr @value
+global @value : i32 [binding=strong] = 4
+global @pointer : ptr [binding=strong] = addr @value
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
