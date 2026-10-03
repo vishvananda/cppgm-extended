@@ -229,7 +229,7 @@ The recent discovery inventory is not all C++11:
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
 | ATTR-NORETURN | Diagnose standard noreturn argument and non-function target constraints | v4codex PA30 source201 | Done: argument rejection in 8a6bcd105; variable-target/provenance fix in this checkpoint. N3485 7.6.1/4 and 7.6.3/1 restrict the standard attribute to functions. Preserve GNU attribute provenance (including both namespace spellings), ignore unknown scoped attributes, and check resolved declarator types plus variable/member/parameter owners. Ours and Clang pass 28/28 focused outcomes; GCC invalid-target acceptance differences remain recorded. Add one PA29/500 variable negative and reuse the existing GNU-attribute fixture for an unknown-scoped-variable positive and existing noreturn runtime coverage. Affected 558/558, strict 6112/6112 in one line, debug/self-host PA5/all nine architecture checks/file/placement pass. The 192-observation screen plus 96-observation namespace timing confirmation pass instruction/RSS/equality/unscaled-counter checks: maximum instruction ratio 1.000729, median RSS ratios 1.0; combined namespace cycles median 1.004159 with interval [1.001728,1.010226], retained as diagnostic cost. Raw evidence is in noreturn-variable-appertainment/. |
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Done: retained validation treats the terminal T as a constructor name, preserving ordinary parameter shadowing checks. Extend the existing PA14 inherited-constructor fixture in cluster 300; remove the duplicate control. Strict 6120/6120, required audits and qualification, fresh C++11 hosts and Alpha performance gates pass. Ordinary using B::T and typename disagreements remain held. |
-| INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Open, independently reduced with a parameterized inherited constructor: __is_constructible(D,int) wrongly remains true when another member has a deleted default constructor; strict C++11 hosts report false, and the negative static assertion rejects in entry/candidate. Original zero-argument controls are not the sole evidence. Preserve private, reference and throwing-subobject boundaries when reviewing the shared validity owner. |
+| INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Done: selected inherited-constructor trait queries validate default construction of other subobjects using typed member facts and existing constructor selection. Extend the existing PA29 fixture; remove the duplicate control. Original and private/reference/throwing boundaries agree with fresh strict C++11 hosts. Strict 6120/6120, required qualification/audits and Alpha instruction/RSS gates pass. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Zero-candidate review complete: P0136R1/N4429 establish the adopted C++11 defect-resolution basis. Six fresh host-agreed runtime observations already pass here for ordinary zero-argument availability, member initialization and local hiding; eighteen access/deletion/member negatives also agree. No new zero-availability fix or fixture is needed. Dependent using and parameterized viability remain separate open rows. The throwing-default/nothrow disagreement is preserved in INHERITED-DEFAULT-EXCEPT; no oracle is imposed for it. |
 | INHERITED-DEFAULT-EXCEPT | Review throwing defaults on a zero-argument inherited constructor and the corresponding nothrow trait | Existing INHERITED-ZERO exception review, isolated source206 | Needs contract review. Six fresh observations show ours catches the second default-argument throw, while Clang/GCC terminate at O0/O2; all three report the zero construction nothrow in the isolated trait control. The student's false nothrow assertion disagrees with all three. Preserve the default-argument runtime/trait discrepancy without changing its oracle or adding a mandatory fixture. Primary adopted C++11 DR sources and frozen controls are in inherited-zero-contract/. |
 | NOEXCEPT-LIST | Preserve constructor ownership facts across parameter template instantiation | v4codex PA31 source205 | Done. The shared failure also affects ordinary calls: a stale EntityRecord reference loses the user-provided-constructor fact when parameter template instantiation moves the entity vector. Reacquire by stable ID before publishing constructor facts. Reuse the PA21 private initializer-list argument fixture, including nonthrowing/throwing-element assertions and runtime class-list conversion; remove the redundant control. Strict 6116/6116 and all required checks pass; Alpha instruction/RSS gates pass. |
@@ -6106,3 +6106,34 @@ uncertainty instead of claiming timing neutrality. Final compiler SHA256:
 Evidence: `/tmp/cppgm-v4-audit-review/dependent-inherited-constructor/`.
 Remaining frozen compiler families: 15, plus six reviews; final fixture pruning
 and combined export/harness/quiet-output validation remain pending.
+
+
+## Inherited constructor other-subobject validity — 2026-10-03
+
+Close INHERITED-VALIDITY with the original deleted-member reproduction. After
+a trait selects an inherited constructor, verify default initialization of
+other bases and members through existing typed facts and quiet constructor
+selection in the derived class context. Preserve member initializers and recurse
+through inherited sources. Ordinary constructor trait queries retain their
+existing path; no compiler payload or source file is added. The helper belongs
+to the lifetime owner and has one new semantic owner row.
+
+Extend the existing PA29 inherited-constructor fixture with a parameterized
+positive and deleted-member negative; its exact regenerated compile reference
+is unchanged. Remove the superseded opt-in control. The C++11 construction rule
+is N3485 12.9; the already supported constructibility intrinsic remains in PA29.
+Eighteen final compilations/executions agree with Clang and GCC at O0/O2,
+including private/reference/initialized-reference/throwing members and another
+deleted or protected base. PA29 passes 406/406. Strict 6120/6120 prints one
+final line; debug-info, backend variants, self-host through PA5, all nine
+architecture targets, file and placement checks pass. Existing file warnings: 37.
+
+Alpha independently verifies all 288 unscaled screen observations, RSS, statuses
+and equal output hashes. Maximum instruction median is 1.000000230 and maximum
+RSS ratio is 1.0; no timing confirmation threshold is triggered. Final SHA256:
+`1909b6781868cea87a59836dcb8c4ecdce44feb6fd4e1c9130bc97a095ea96c8`.
+Evidence: `/tmp/cppgm-v4-audit-review/inherited-constructor-validity/`. The first
+build's missing shared scoped-state include is corrected before any candidate
+qualification; its failed log is retained. Remaining frozen compiler families:
+14, plus six reviews. Final fixture pruning and combined export/harness/quiet
+validation remain pending. Next: LOOP-PTR-FINITE's existing PA32 reference.

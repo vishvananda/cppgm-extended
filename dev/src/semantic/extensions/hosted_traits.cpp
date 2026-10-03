@@ -119,7 +119,9 @@ bool Analyzer::EvaluateBuiltinConstructibility(
 		*selected = SelectConstructor(kNoScope, syntax, arguments,
 			ConstructorCandidates(entity), false, false,
 			argument_conversions, true, kNoNode, target);
-		if (*selected != kNoBinding) return true;
+		if (*selected != kNoBinding)
+			return GetFunction(*selected).inherited_constructor_source == kNoBinding ||
+				InheritedConstructorSubobjectsAreConstructible(*selected);
 		if (arguments.size() != 1) return false;
 		const CallConversionFact conversion =
 			ConvertingFunction(arguments[0], target, true);

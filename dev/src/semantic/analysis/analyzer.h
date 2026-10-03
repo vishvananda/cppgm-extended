@@ -1480,6 +1480,7 @@ private:
 		BindingId constructor);
 	void CompleteDefaultedDefaultConstructor(EntityId entity,
 		BindingId constructor);
+	bool InheritedConstructorSubobjectsAreConstructible(BindingId constructor);
 	void ValidateConstexprConstructorDefinition(const FunctionInfo& constructor);
 	bool EvaluateDestructorSubobjects(EntityId, bool, bool*,
 		std::vector<TypeId>* allowed = 0, bool* unrestricted = 0);

@@ -561,6 +561,7 @@ dev/src/semantic/initialization/list_initialization.cpp	ReusePreparedBracedExpre
 dev/src/semantic/initialization/list_initialization.cpp	SelectConstructor	1	dev/src/semantic/initialization/list_initialization.cpp	keep
 dev/src/semantic/initialization/list_initialization.cpp	UntypedCallArgumentConversion	1	dev/src/semantic/initialization/list_initialization.cpp	keep
 dev/src/semantic/lifetime/constructor_definitions.cpp	CompleteDefaultedDefaultConstructor	1	dev/src/semantic/lifetime/constructor_definitions.cpp	keep
+dev/src/semantic/lifetime/constructor_definitions.cpp	InheritedConstructorSubobjectsAreConstructible	1	dev/src/semantic/lifetime/constructor_definitions.cpp	keep
 dev/src/semantic/lifetime/constructor_definitions.cpp	CompleteDefaultedDestructor	1	dev/src/semantic/lifetime/constructor_definitions.cpp	keep
 dev/src/semantic/lifetime/constructor_definitions.cpp	CompleteOutOfClassDefaultedConstructor	1	dev/src/semantic/lifetime/constructor_definitions.cpp	keep
 dev/src/semantic/lifetime/constructor_definitions.cpp	EvaluateDestructorSubobjects	1	dev/src/semantic/lifetime/constructor_definitions.cpp	keep

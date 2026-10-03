@@ -1,5 +1,6 @@
 #include "semantic/analysis/analyzer.h"
 #include "support/exceptions.h"
+#include "support/scoped_state.h"
 
 #include <algorithm>
 
@@ -168,6 +169,60 @@ void Analyzer::CompleteDefaultedDefaultConstructor(EntityId entity,
 	program_->entities[entity].trivial_default_constructor =
 		!deleted && trivial;
 	program_->bindings[constructor].nonthrowing = !deleted && trivial;
+}
+
+bool Analyzer::InheritedConstructorSubobjectsAreConstructible(
+	BindingId constructor)
+{
+	const BindingId source = GetFunction(constructor).inherited_constructor_source;
+	if (GetFunction(source).inherited_constructor_source != kNoBinding &&
+		!InheritedConstructorSubobjectsAreConstructible(source)) return false;
+	const EntityId entity = program_->bindings[constructor].member_owner;
+	const EntityId inherited_base = program_->bindings[source].member_owner;
+	ScopedValueRestore<EntityId> class_context(&current_class_context_, entity);
+	const std::vector<NodeId> syntax;
+	const std::vector<ExpressionInfo> arguments;
+	const auto default_constructible = [this, entity, &syntax, &arguments](TypeId type)
+	{
+		bool is_const = false;
+		TypeRecord shape = program_->types.Get(type);
+		while (shape.kind == TYPE_ARRAY || shape.kind == TYPE_QUALIFIED)
+		{
+			if (shape.kind == TYPE_QUALIFIED && (shape.cv & CV_CONST) != 0)
+				is_const = true;
+			type = shape.child;
+			shape = program_->types.Get(type);
+		}
+		if (shape.kind == TYPE_LVALUE_REFERENCE ||
+			shape.kind == TYPE_RVALUE_REFERENCE) return false;
+		if (shape.kind != TYPE_NAMED ||
+			!IsClassNamedFlavor(program_->entities[shape.entity].flavor))
+			return !is_const;
+		const BindingId selected = SelectConstructor(program_->entities[entity].member_scope,
+			syntax, arguments, ConstructorCandidates(shape.entity),
+			false, false, 0, true, kNoNode, type);
+		return selected != kNoBinding &&
+			(GetFunction(selected).inherited_constructor_source == kNoBinding ||
+			 InheritedConstructorSubobjectsAreConstructible(selected));
+	};
+	const std::size_t base_count = program_->entities[entity].direct_base_count;
+	for (std::size_t i = 0; i < base_count; ++i)
+	{
+		const EntityId base = program_->DirectBase(entity, i).entity;
+		if (base != inherited_base &&
+			!default_constructible(program_->entities[base].type)) return false;
+	}
+	if (entity < entity_data_members_.size())
+	{
+		const std::vector<BindingId> members = entity_data_members_[entity];
+		for (std::size_t i = 0; i < members.size(); ++i)
+		{
+			const BindingRecord member = program_->bindings[members[i]];
+			if (!member.has_default_member_initializer &&
+				!default_constructible(member.type)) return false;
+		}
+	}
+	return true;
 }
 
 bool Analyzer::EvaluateDestructorSubobjects(EntityId entity,
