@@ -311,10 +311,17 @@ protected:
 	void LowerNamespaceInitializerListBackingDestructor(
 		const NamespaceObjectAction& action)
 	{
+		LowerStaticInitializerListBackingDestructor(
+			action.initializer_list_backing,
+			static_cast<Derived&>(*this).arena_.nodes[action.destructor]);
+	}
+
+	void LowerStaticInitializerListBackingDestructor(
+		std::uint32_t backing, const DumpNode& destructor)
+	{
 		Derived& derived = static_cast<Derived&>(*this);
-		const DumpNode& destructor = derived.arena_.nodes[action.destructor];
 		const SymbolId symbol = derived.initializer_lists_.backing_symbols[
-			action.initializer_list_backing];
+			backing];
 		if (symbol == kNoLowId)
 			ThrowLoweringInternal(
 				"namespace initializer-list backing has no global");

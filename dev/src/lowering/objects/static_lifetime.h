@@ -196,7 +196,7 @@ protected:
 	}
 
 	SymbolId EmitStaticDestructorWrapper(const std::string& proposed,
-		const DumpNode& action)
+		const DumpNode& action, std::uint32_t backing = kNoDumpEdge)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const SymbolId symbol = derived.AddSyntheticSymbol(
@@ -208,7 +208,10 @@ protected:
 		function.symbol = symbol;
 		function.result = LowVoid();
 		derived.BeginSyntheticFunction(&function);
-		derived.LowerDestructorAction(action);
+		if (backing != kNoDumpEdge)
+			derived.LowerStaticInitializerListBackingDestructor(
+				backing, action);
+		else derived.LowerDestructorAction(action);
 		derived.Emit(Instruction(Instruction::RETURN_VOID));
 		derived.EndSyntheticFunction(function);
 		derived.output_.functions.push_back(function);

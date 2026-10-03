@@ -473,7 +473,7 @@ void Analyzer::AddLocalStaticObjectAction(std::uint32_t variable,
 		ThrowInternalCompilerError("local static object has no function owner");
 	const BindingId function =
 		program_->bindings[current_function_context_].canonical;
-	const BindingRecord& function_record = program_->bindings[function];
+	const BindingRecord function_record = program_->bindings[function];
 	const bool specialized_function =
 		function_record.template_argument_count != 0 ||
 		IsClassTemplateSpecializationContext(function_record.member_owner);
@@ -503,6 +503,10 @@ void Analyzer::AddLocalStaticObjectAction(std::uint32_t variable,
 			DemandFunction(destructor, FUNCTION_DEMAND_STATIC_LIFECYCLE);
 		}
 	}
+	std::uint32_t initializer_list_backing = kNoDumpEdge;
+	if (!program_->types.IsReference(type))
+		destructor_action = PrepareNamespaceInitializerListLifetime(
+			type, initializer, destructor_action, &initializer_list_backing);
 	const bool specialized_addresses = initializer != kNoDumpEdge &&
 		DemandRuntimeInitializerFunctions(initializer, true);
 	const bool specialization_owned_recipe = constant_initialized &&
@@ -528,6 +532,7 @@ void Analyzer::AddLocalStaticObjectAction(std::uint32_t variable,
 		source_token_first, source_token_last,
 		constant_initialized, specialization_owned_recipe,
 		source_identity_presentation));
+	local_static_objects_.back().initializer_list_backing = initializer_list_backing;
 }
 
 void Analyzer::RegisterVariableLifetimeAndStorage(ScopeId scope,

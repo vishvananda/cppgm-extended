@@ -160,6 +160,9 @@ protected:
 				action.variable, action.initializer, action.destructor);
 			initializer.constant_address = action.constant_address;
 			initializer.constant_object = action.constant_object;
+			initializer.initializer_list_backing = action.initializer_list_backing;
+			if (action.initializer_list_backing != kNoDumpEdge)
+				derived.RegisterNamespaceInitializerListBacking(initializer);
 			bool static_initialized =
 				derived.SetExplicitVariableZero(variable, &global);
 			if (!static_initialized &&
@@ -215,7 +218,7 @@ protected:
 						"__cppgm_local_static_destructor__" +
 							derived.output_.strings.get(
 								derived.output_.symbols[symbol].name),
-						derived.arena_.nodes[action.destructor]);
+						derived.arena_.nodes[action.destructor], action.initializer_list_backing);
 			else if (action.destructor != kNoDumpEdge)
 				derived.local_static_finalizers_.push_back(
 					static_cast<std::uint32_t>(i));
@@ -321,8 +324,10 @@ protected:
 			derived.Emit(compare);
 			derived.EmitBranch(initialized, destroy, next);
 			derived.SelectBlock(destroy);
-			derived.LowerDestructorAction(
-				derived.arena_.nodes[action.destructor]);
+			if (action.initializer_list_backing != kNoDumpEdge)
+				derived.LowerStaticInitializerListBackingDestructor(
+					action.initializer_list_backing, derived.arena_.nodes[action.destructor]);
+			else derived.LowerDestructorAction(derived.arena_.nodes[action.destructor]);
 			derived.EmitJump(next);
 			derived.SelectBlock(next);
 		}
@@ -346,8 +351,10 @@ protected:
 			if (derived.local_static_dynamic_[action_index]) continue;
 			const LocalStaticObjectAction& action =
 				derived.graph_.local_static_objects[action_index];
-			derived.LowerDestructorAction(
-				derived.arena_.nodes[action.destructor]);
+			if (action.initializer_list_backing != kNoDumpEdge)
+				derived.LowerStaticInitializerListBackingDestructor(
+					action.initializer_list_backing, derived.arena_.nodes[action.destructor]);
+			else derived.LowerDestructorAction(derived.arena_.nodes[action.destructor]);
 		}
 		derived.Emit(Instruction(Instruction::RETURN_VOID));
 		derived.EndSyntheticFunction(result);

@@ -1611,6 +1611,7 @@ struct LocalStaticObjectAction
 	bool source_identity_presentation;
 	StaticAddressInitializer constant_address;
 	std::uint32_t constant_object;
+	std::uint32_t initializer_list_backing;
 
 	LocalStaticObjectAction(BindingId object_value, BindingId function_value,
 		TypeId type_value, std::uint32_t variable_value,
@@ -1634,7 +1635,7 @@ struct LocalStaticObjectAction
 		  constant_initialized(constant_initialized_value),
 		  specialization_owned_recipe(specialization_owned_recipe_value),
 		  source_identity_presentation(source_identity_presentation_value),
-		  constant_object(kNoConstexprObject) {}
+		  constant_object(kNoConstexprObject), initializer_list_backing(kNoDumpEdge) {}
 };
 
 // A lowering-only aggregate helper has a canonical typed identity but is not a

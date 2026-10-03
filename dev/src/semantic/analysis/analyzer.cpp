@@ -2044,6 +2044,19 @@ void Analyzer::FinishLocalVariableInitializer(ScopeId scope,
 	if (program_->bindings[binding].storage_class == STORAGE_CLASS_NONE &&
 		(program_->types.IsReference(type) || IsInitializerListType(type)))
 		return; // Extended backing cleanup was staged before registration.
+	if (program_->bindings[binding].storage_class == STORAGE_CLASS_STATIC &&
+		!program_->types.IsReference(type) && IsInitializerListType(type))
+	{
+		const std::uint32_t backing =
+			InitializerListBackingTemporary(type, initializer.node);
+		if (backing != kNoDumpEdge)
+		{
+			const std::vector<std::pair<std::uint32_t, std::uint32_t> > retained(
+				1, std::make_pair(backing, kNoDumpEdge));
+			AppendFullExpressionDestructionActions(initializer.node, owner, true, &retained);
+			return;
+		}
+	}
 	const bool extended_initializer_list =
 		ExtendInitializerListVariableLifetime(
 		type, scope, initializer.node, control_dependent);
