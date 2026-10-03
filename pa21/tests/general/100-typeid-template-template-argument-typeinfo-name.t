@@ -37,7 +37,13 @@ struct json_encoder {
   virtual ~json_encoder() {}
 };
 
+// An exported accessor makes the same typeinfo observable to host object checks.
+const std::type_info& encoder_typeinfo()
+{
+  return typeid(json_encoder<nlohmann::ordered_json>);
+}
+
 int main()
 {
-  return &typeid(json_encoder<nlohmann::ordered_json>) ? 0 : 1;
+  return &encoder_typeinfo() == &typeid(json_encoder<nlohmann::ordered_json>) ? 0 : 1;
 }

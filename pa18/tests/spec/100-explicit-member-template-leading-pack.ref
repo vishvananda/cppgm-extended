@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @box_int__float___subset(%t1)
     return i32 0
 }
-function @box_int__float___subset(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3boxIJifEE6subsetIfivEEvv, inline_hint=yes] {
+function @box_int__float___subset(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3boxIJifEE6subsetIJfiEvEEvv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

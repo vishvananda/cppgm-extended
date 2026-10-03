@@ -1,6 +1,6 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
 
-global @__typeinfo_name__struct___cppgm_class_template_identity_9_2_0 [binding=weak, object=_ZTS12json_encoderIN8nlohmann16json_abi_v3_11_310basic_jsonINS1_11ordered_mapENS1_6vectorEcbxydNS1_9allocatorENS1_14adl_serializerENS5_IhJEEEvEEE] = {
+global @__typeinfo_name__struct___cppgm_class_template_identity_9_2_0 [binding=weak, object=_ZTS12json_encoderIN8nlohmann16json_abi_v3_11_310basic_jsonINS1_11ordered_mapENS1_6vectorEcbxydNS1_9allocatorENS1_14adl_serializerENS4_IhJEEEvEEE] = {
   i8 49
   i8 50
   i8 106
@@ -130,7 +130,7 @@ global @__typeinfo_name__struct___cppgm_class_template_identity_9_2_0 [binding=w
   i8 69
   i8 78
   i8 83
-  i8 53
+  i8 52
   i8 95
   i8 73
   i8 104
@@ -144,17 +144,24 @@ global @__typeinfo_name__struct___cppgm_class_template_identity_9_2_0 [binding=w
   i8 69
   i8 0
 }
-global @__rtti_struct___cppgm_class_template_identity_9_2_0 [binding=weak, object=_ZTI12json_encoderIN8nlohmann16json_abi_v3_11_310basic_jsonINS1_11ordered_mapENS1_6vectorEcbxydNS1_9allocatorENS1_14adl_serializerENS5_IhJEEEvEEE] = {
+global @__rtti_struct___cppgm_class_template_identity_9_2_0 [binding=weak, object=_ZTI12json_encoderIN8nlohmann16json_abi_v3_11_310basic_jsonINS1_11ordered_mapENS1_6vectorEcbxydNS1_9allocatorENS1_14adl_serializerENS4_IhJEEEvEEE] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct___cppgm_class_template_identity_9_2_0
 }
 
+function @encoder_typeinfo() -> ptr [binding=strong, object=_Z16encoder_typeinfov] {
+  block ^entry:
+    %t1 = addr @__rtti_struct___cppgm_class_template_identity_9_2_0
+    return ptr %t1
+}
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = addr @__rtti_struct___cppgm_class_template_identity_9_2_0
-    branch %t1, ^cond_then_1, ^cond_else_2
+    %t1 = call ptr @encoder_typeinfo()
+    %t2 = addr @__rtti_struct___cppgm_class_template_identity_9_2_0
+    %t3 = cmp eq ptr %t1, %t2
+    branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -165,6 +172,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t2 = load i32 $cond__1
-    return i32 %t2
+    %t4 = load i32 $cond__1
+    return i32 %t4
 }

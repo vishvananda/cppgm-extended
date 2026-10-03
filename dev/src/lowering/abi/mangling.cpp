@@ -657,7 +657,7 @@ public:
 			program_.canonical_template_arguments[argument];
 		if (source.kind == TEMPLATE_ARGUMENT_TEMPLATE)
 		{
-			const std::size_t identity = next_argument_++;
+			++next_argument_;
 			AbiTemplateArgument target;
 			if (source.dependent_parameter != kNoTemplateParameter)
 			{
@@ -668,15 +668,10 @@ public:
 			else
 			{
 				// The canonical marker type carries the template's indexed
-				// qualified path.  Encoding it as a type argument gives the
-				// Itanium substitution order used for a template-name argument,
-				// without introducing a value-expression wrapper.  Keep the
-				// template-name identity separate from its qualified path: both
-				// are substitution candidates in the ABI grammar.
+				// qualified path. Its template-name argument and a later use as
+				// a template prefix share that canonical substitution identity.
 				target.kind = ABI_TEMPLATE_ARGUMENT_TYPE;
 				target.type = MakeType(source.type, function, recipe);
-				target.type.resolved_expression = make_semantic_substitution(
-					ABI_SEMANTIC_SUBSTITUTION_TEMPLATE_ARGUMENT, identity);
 			}
 			return context_->resolve_argument(target);
 		}
@@ -765,7 +760,8 @@ public:
 						target.resolved_entity =
 							ResolveName(value.operator_literal_suffix);
 				}
-				if (value.template_argument_count != 0)
+				if (value.template_argument_count != 0 ||
+					value.function_template_specialization)
 				{
 					if (value.function_template_abi_recipe ==
 						kNoFunctionTemplateAbiRecipe ||
@@ -776,30 +772,10 @@ public:
 					const FunctionTemplateAbiRecipe& member_recipe =
 						program_.function_template_abi_recipes[
 							value.function_template_abi_recipe];
-					const std::size_t first = value.template_argument_begin;
-					const std::size_t count = value.template_argument_count;
-					if (first > program_.template_arguments.size() ||
-						count > program_.template_arguments.size() - first)
-						ThrowLoweringInternal(
-							"ABI member function template argument range is invalid");
-					if ((member_recipe.template_parameter_pack &&
-						 member_recipe.template_parameter_count == 0) ||
-						(!member_recipe.template_parameter_pack &&
-						 count != member_recipe.template_parameter_count))
-						ThrowLoweringInternal(
-							"ABI member function template argument shape is invalid");
-					const std::size_t fixed = member_recipe.template_parameter_pack ?
-						member_recipe.template_parameter_count - 1 :
-						member_recipe.template_parameter_count;
-					if (fixed > count)
-						ThrowLoweringInternal(
-							"ABI member function template pack range is invalid");
-					for (std::size_t i = 0; i < fixed; ++i)
-						target.argument_refs.push_resolved(AddTemplateArgument(
-							first + i, &value, &member_recipe, i));
-					if (member_recipe.template_parameter_pack)
-						target.argument_refs.push_resolved(AddTemplateArgumentPack(
-							first + fixed, count - fixed, &value, &member_recipe));
+					ForEachFunctionTemplateArgument(value, member_recipe,
+						[&](std::size_t argument) {
+							target.argument_refs.push_resolved(argument);
+						});
 					target.resolved_expression = make_semantic_substitution(
 						ABI_SEMANTIC_SUBSTITUTION_MEMBER_TEMPLATE,
 						value.canonical);
@@ -828,8 +804,11 @@ public:
 					for (std::size_t i = 0;
 						i < recipe_type.parameter_count; ++i)
 					{
-						AbiType encoded = MakeFunctionTemplateType(
-							recipe_parameters[i], value, &member_recipe);
+						const FunctionTemplateAbiTypeId retained =
+							FunctionTemplateParameterAbiType(member_recipe, i);
+						AbiType encoded = retained != kNoFunctionTemplateAbiType ?
+							MakeFunctionTemplateAbiType(retained, member_recipe) :
+							MakeFunctionTemplateType(recipe_parameters[i], value, &member_recipe);
 						if (member_recipe.function_parameter_pack &&
 							i + 1 == recipe_type.parameter_count)
 						{
@@ -886,6 +865,47 @@ public:
 			argument_pack.argument_refs.push_resolved(
 				AddTemplateArgument(first + argument, function, recipe));
 		return context_->resolve_argument(argument_pack);
+	}
+
+	template<class Consumer>
+	void ForEachFunctionTemplateArgument(
+		const semantic::BindingRecord& binding,
+		const semantic::FunctionTemplateAbiRecipe& recipe, Consumer consume)
+	{
+		using namespace semantic;
+		const std::size_t count = binding.template_argument_count;
+		const std::size_t first = count == 0 ? 0 : binding.template_argument_begin;
+		if (first > program_.template_arguments.size() ||
+			count > program_.template_arguments.size() - first)
+			ThrowLoweringInternal("function template ABI arguments are invalid");
+		if (recipe.argument_partition_begin != kNoTemplateParameter)
+		{
+			const std::size_t begin = recipe.argument_partition_begin;
+			if (begin > program_.function_template_abi_argument_partitions.size() ||
+				recipe.template_parameter_count >
+					program_.function_template_abi_argument_partitions.size() - begin)
+				ThrowLoweringInternal("function template ABI partitions are invalid");
+			for (std::size_t p = 0; p < recipe.template_parameter_count; ++p)
+			{
+				const FunctionTemplateAbiArgumentPartition& partition =
+					program_.function_template_abi_argument_partitions[begin + p];
+				if (partition.begin > count || partition.count > count - partition.begin ||
+					(!partition.pack && partition.count != 1))
+					ThrowLoweringInternal("function template ABI partition range is invalid");
+				consume(partition.pack ? AddTemplateArgumentPack(
+					first + partition.begin, partition.count, &binding, &recipe) :
+					AddTemplateArgument(first + partition.begin, &binding, &recipe, p));
+			}
+			return;
+		}
+		const std::size_t fixed = recipe.template_parameter_pack ?
+			recipe.template_parameter_count - 1 : count;
+		if (fixed > count)
+			ThrowLoweringInternal("function template ABI pack range is invalid");
+		for (std::size_t p = 0; p < fixed; ++p)
+			consume(AddTemplateArgument(first + p, &binding, &recipe, p));
+		if (recipe.template_parameter_pack)
+			consume(AddTemplateArgumentPack(first + fixed, count - fixed, &binding, &recipe));
 	}
 
 	std::size_t AddTemplateParameterExpression(std::size_t parameter)
@@ -1027,40 +1047,19 @@ public:
 		}
 		if (function.template_argument_count != 0 ||
 			(function.function_template_specialization && recipe &&
-			 recipe->template_parameter_pack))
+			 (recipe->template_parameter_pack ||
+			  recipe->argument_partition_begin != kNoTemplateParameter)))
 		{
 			if (recipe == 0)
 				ThrowLoweringInternal(
 					"function template specialization has no canonical recipe");
-			const std::size_t count = function.template_argument_count;
-			const std::size_t first = count == 0 ? 0 :
-				function.template_argument_begin;
-			if (first > program_.template_arguments.size() ||
-				count > program_.template_arguments.size() - first)
-				ThrowLoweringInternal(
-					"local ABI context template arguments are invalid");
-			const std::size_t fixed = recipe &&
-				recipe->template_parameter_pack ?
-				recipe->template_parameter_count - 1 : count;
-			if (fixed > count)
-				ThrowLoweringInternal(
-					"local ABI context template pack is invalid");
-			for (std::size_t i = 0; i < fixed; ++i)
-			{
-				AbiFunctionPathOperand argument;
-				argument.kind = ABI_FUNCTION_PATH_TEMPLATE_ARGUMENT;
-				argument.resolved_argument = AddTemplateArgument(
-					first + i, &function, recipe, i);
-				target.path_operands.push_back(argument);
-			}
-			if (recipe && recipe->template_parameter_pack)
-			{
-				AbiFunctionPathOperand pack;
-				pack.kind = ABI_FUNCTION_PATH_TEMPLATE_ARGUMENT;
-				pack.resolved_argument = AddTemplateArgumentPack(
-					first + fixed, count - fixed, &function, recipe);
-				target.path_operands.push_back(pack);
-			}
+			ForEachFunctionTemplateArgument(function, *recipe,
+				[&](std::size_t resolved) {
+					AbiFunctionPathOperand argument;
+					argument.kind = ABI_FUNCTION_PATH_TEMPLATE_ARGUMENT;
+					argument.resolved_argument = resolved;
+					target.path_operands.push_back(argument);
+				});
 			if (recipe->result_type != kNoFunctionTemplateAbiType)
 				target.result_type = MakeFunctionTemplateAbiType(
 					recipe->result_type, *recipe);
@@ -1237,7 +1236,7 @@ public:
 		std::size_t parameter) const
 	{
 		using namespace semantic;
-		if (parameter >= recipe.function_parameter_count ||
+		if (parameter >= program_.types.Get(recipe.function_type).parameter_count ||
 			recipe.function_parameter_type_begin >
 				program_.function_template_abi_function_parameter_types.size() ||
 			parameter >=
@@ -2125,36 +2124,25 @@ void AppendFunctionTemplateArgumentsAndResult(const semantic::Program& program,
 	// An empty pack is still a template argument list: "IJEE".
 	if (binding.template_argument_count == 0 &&
 		!(binding.function_template_specialization && recipe &&
-		  recipe->template_parameter_pack)) return;
-	const std::size_t count = binding.template_argument_count;
-	const std::size_t first = count == 0 ? 0 : binding.template_argument_begin;
-	if (first > program.template_arguments.size() ||
-		count > program.template_arguments.size() - first)
-		ThrowLoweringInternal(
-			"function template argument range is invalid during mangling");
-	const std::size_t fixed = recipe && recipe->template_parameter_pack ?
-		recipe->template_parameter_count - 1 : count;
-	if (fixed > count)
-		ThrowLoweringInternal("function template ABI pack range is invalid");
-	for (std::size_t i = 0; i < fixed; ++i)
-	{
+		  (recipe->template_parameter_pack ||
+		   recipe->argument_partition_begin != kNoTemplateParameter))) return;
+	const auto append_argument = [&](std::size_t resolved) {
 		AbiFactRecord argument;
 		argument.set_kind(ABI_FACT_RECORD_FUNCTION);
-		argument.function.kind =
-			ABI_FUNCTION_RECORD_FUNCTION_TEMPLATE_ARGUMENT;
-		argument.function.argument_refs.push_resolved(
-			facts->AddTemplateArgument(first + i, &binding, recipe, i));
+		argument.function.kind = ABI_FUNCTION_RECORD_FUNCTION_TEMPLATE_ARGUMENT;
+		argument.function.argument_refs.push_resolved(resolved);
 		AppendTypedFact(output, &argument);
-	}
-	if (recipe && recipe->template_parameter_pack)
+	};
+	if (recipe) facts->ForEachFunctionTemplateArgument(binding, *recipe, append_argument);
+	else
 	{
-		AbiFactRecord argument;
-		argument.set_kind(ABI_FACT_RECORD_FUNCTION);
-		argument.function.kind =
-			ABI_FUNCTION_RECORD_FUNCTION_TEMPLATE_ARGUMENT;
-		argument.function.argument_refs.push_resolved(
-			facts->AddTemplateArgumentPack(first + fixed, count - fixed));
-		AppendTypedFact(output, &argument);
+		const std::size_t first = binding.template_argument_begin;
+		const std::size_t count = binding.template_argument_count;
+		if (first > program.template_arguments.size() ||
+			count > program.template_arguments.size() - first)
+			ThrowLoweringInternal("function template argument range is invalid during mangling");
+		for (std::size_t i = 0; i < count; ++i)
+			append_argument(facts->AddTemplateArgument(first + i, &binding, 0, i));
 	}
 	// Itanium constructor, destructor, and conversion-function encodings do
 	// not carry a result type, including when the callable is a template.

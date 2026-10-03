@@ -650,13 +650,23 @@ struct FunctionTemplateAbiType
 		  argument_count(argument_count_value), cv(cv_value) {}
 };
 
+struct FunctionTemplateAbiArgumentPartition
+{
+	std::uint32_t begin, count;
+	bool pack;
+
+	FunctionTemplateAbiArgumentPartition(std::uint32_t begin_value,
+		std::uint32_t count_value, bool pack_value)
+		: begin(begin_value), count(count_value), pack(pack_value) {}
+};
+
 struct FunctionTemplateAbiRecipe
 {
 	TypeId function_type;
 	FunctionTemplateAbiTypeId result_type;
 	std::uint32_t parameter_shape_begin, template_parameter_type_begin,
 		function_parameter_type_begin, template_parameter_count,
-		function_parameter_count;
+		argument_partition_begin;
 	bool template_parameter_pack;
 	bool function_parameter_pack;
 	bool overloaded_pattern;
@@ -673,7 +683,7 @@ struct FunctionTemplateAbiRecipe
 		  template_parameter_type_begin(0),
 		  function_parameter_type_begin(0),
 		  template_parameter_count(template_parameter_count_value),
-		  function_parameter_count(0),
+		  argument_partition_begin(kNoTemplateParameter),
 		  template_parameter_pack(template_parameter_pack_value),
 		  function_parameter_pack(function_parameter_pack_value),
 		  overloaded_pattern(overloaded_pattern_value) {}
@@ -942,6 +952,8 @@ public:
 	std::vector<FunctionTemplateAbiTypeId>
 		function_template_abi_function_parameter_types;
 	std::vector<FunctionTemplateAbiRecipe> function_template_abi_recipes;
+	std::vector<FunctionTemplateAbiArgumentPartition>
+		function_template_abi_argument_partitions;
 	ObservationCounter lookup_queries, lookup_scope_visits, lookup_edge_visits;
 	mutable ObservationCounter base_path_queries, base_path_cache_hits,
 		base_path_cache_misses;

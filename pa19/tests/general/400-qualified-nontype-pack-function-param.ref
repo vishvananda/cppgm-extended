@@ -31,7 +31,7 @@ function @boost__container__dtl__proxy_int__int___call(%this : ptr [object_bytes
     call void @boost__container__dtl__proxy_int__int___priv(%t1, %t2, %t3, %t4)
     return void
 }
-function @boost__container__dtl__proxy_int__int___priv(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : ptr) -> void [binding=weak, object=_ZN5boost9container3dtl5proxyIiJiEE4privILm0EPiEEvRiRKNS1_11index_tupleIJXspT_EEEET0_, inline_hint=yes] {
+function @boost__container__dtl__proxy_int__int___priv(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : ptr) -> void [binding=weak, object=_ZN5boost9container3dtl5proxyIiJiEE4privIJLm0EEPiEEvRiRKNS1_11index_tupleIJXspT_EEEET0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

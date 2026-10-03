@@ -557,7 +557,8 @@ AbiDefinitionRecord parse_definition(const vector<string> & words)
 
 AbiTemplateArgument parse_argument(const vector<string> & words)
 {
-  require(words.size() >= 4, "incomplete template argument definition");
+  require(words.size() >= 3 && (words.size() >= 4 || words[2] == "pack"),
+          "incomplete template argument definition");
   AbiTemplateArgument argument;
   const string & form = words[2];
   if(form == "type") {

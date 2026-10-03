@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = call i32 @run(%t4, $argobj__1, $argobj__2)
     return i32 %t7
 }
-function @run(%tuple : ptr [pass=by_address, object_bytes=4], %__param1 : obj<1x1>, %__param2 : obj<1x1>) -> i32 [binding=weak, object=_Z3runIiLm0EEiR6tuple1IiE9type_listIJDpT_EE7indexesIJXspT0_EEE] {
+function @run(%tuple : ptr [pass=by_address, object_bytes=4], %__param1 : obj<1x1>, %__param2 : obj<1x1>) -> i32 [binding=weak, object=_Z3runIJiEJLm0EEEiR6tuple1IiE9type_listIJDpT_EE7indexesIJXspT0_EEE] {
   slot $tuple : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : obj<1x1>
@@ -44,7 +44,7 @@ function @run(%tuple : ptr [pass=by_address, object_bytes=4], %__param1 : obj<1x
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @pair_like__pair_like(%this : ptr [object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZZ3runIiLm0EEiR6tuple1IiE9type_listIJDpT_EE7indexesIJXspT0_EEEEN9pair_likeC1ES2_, object_root=yes, inline_hint=yes] {
+function @pair_like__pair_like(%this : ptr [object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZZ3runIJiEJLm0EEEiR6tuple1IiE9type_listIJDpT_EE7indexesIJXspT0_EEEEN9pair_likeC1ES2_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
 
@@ -80,4 +80,4 @@ function @identity(%value : i32) -> i32 [binding=weak, object=_Z8identityIiET_S0
     %t1 = load i32 $value
     return i32 %t1
 }
-alias object _ZZ3runIiLm0EEiR6tuple1IiE9type_listIJDpT_EE7indexesIJXspT0_EEEEN9pair_likeC2ES2_ = @pair_like__pair_like
+alias object _ZZ3runIJiEJLm0EEEiR6tuple1IiE9type_listIJDpT_EE7indexesIJXspT0_EEEEN9pair_likeC2ES2_ = @pair_like__pair_like

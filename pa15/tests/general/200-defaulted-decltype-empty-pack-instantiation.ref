@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = binary sub i32 %t5, 7
     return i32 %t6
 }
-function @construct_at(%ptr : ptr) -> ptr [binding=weak, object=_Z12construct_atI3BoxPS0_EPT_S3_DpOT0_] {
+function @construct_at(%ptr : ptr) -> ptr [binding=weak, object=_Z12construct_atI3BoxJEPS0_EPT_S3_DpOT0_] {
   slot $ptr : ptr
 
   block ^entry:

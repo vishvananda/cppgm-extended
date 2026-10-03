@@ -26,14 +26,14 @@ function @expand(%__param0 : obj<1x1>) -> void [binding=weak, object=_Z6expandIJ
     call void @consume($argobj__1, $argobj__2)
     return void
 }
-function @make_tag() -> obj<1x1> [binding=weak, object=_Z8make_tagILi1EE3tagILi1EEv] {
+function @make_tag() -> obj<1x1> [binding=weak, object=_Z8make_tagILi1EE3tagIXT_EEv] {
   slot $retobj__1 : obj<1x1>
 
   block ^entry:
     %t1 = addr $retobj__1
     return obj<1x1> $retobj__1
 }
-function @make_tag__ov2() -> obj<1x1> [binding=weak, object=_Z8make_tagILi2EE3tagILi2EEv] {
+function @make_tag__ov2() -> obj<1x1> [binding=weak, object=_Z8make_tagILi2EE3tagIXT_EEv] {
   slot $retobj__1 : obj<1x1>
 
   block ^entry:

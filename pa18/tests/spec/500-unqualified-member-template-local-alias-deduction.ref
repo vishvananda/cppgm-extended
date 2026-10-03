@@ -1,7 +1,7 @@
 declare function @get_state() -> ptr [binding=strong, object=_Z9get_statev]
 declare function @get_flag() -> ptr [binding=strong, object=_Z8get_flagv]
 declare function @get_compiler() -> ptr [binding=strong, object=_Z12get_compilerv]
-declare function @get_matcher() -> ptr [binding=weak, object=_Z11get_matcherIiLb1EEPN6detail7matcherIiLb1EEEv]
+declare function @get_matcher() -> ptr [binding=weak, object=_Z11get_matcherIiLb1EEPN6detail7matcherIT_XT0_EEEv]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

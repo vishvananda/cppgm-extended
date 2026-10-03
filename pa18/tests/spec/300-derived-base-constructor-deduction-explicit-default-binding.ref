@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @target_template_parameter_alloc___target_template_parameter_alloc___ov3(%t2, %t4)
     return i32 0
 }
-function @target_template_parameter_alloc___target_template_parameter_alloc___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN6targetI5allocEC1I7derivedEERK4baseIT_5allocE, inline_hint=yes] {
+function @target_template_parameter_alloc___target_template_parameter_alloc___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN6targetI5allocEC1I7derivedEERK4baseIT_S0_E, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -19,4 +19,4 @@ function @target_template_parameter_alloc___target_template_parameter_alloc___ov
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN6targetI5allocEC2I7derivedEERK4baseIT_5allocE = @target_template_parameter_alloc___target_template_parameter_alloc___ov3
+alias object _ZN6targetI5allocEC2I7derivedEERK4baseIT_S0_E = @target_template_parameter_alloc___target_template_parameter_alloc___ov3

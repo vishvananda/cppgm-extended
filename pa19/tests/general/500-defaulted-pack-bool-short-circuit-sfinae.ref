@@ -18,7 +18,7 @@ function @box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2
   block ^entry:
     return u8 0
 }
-function @box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2_0_0___box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2_0_0___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3boxIJRKS_IJiiEEEEC1IiiLb0ELb0EEERKS_IJDpT_EE, inline_hint=yes] {
+function @box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2_0_0___box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2_0_0___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3boxIJRKS_IJiiEEEEC1IJiiELb0ELb0EEERKS_IJDpT_EE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -27,4 +27,4 @@ function @box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN3boxIJRKS_IJiiEEEEC2IiiLb0ELb0EEERKS_IJDpT_EE = @box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2_0_0___box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2_0_0___ov3
+alias object _ZN3boxIJRKS_IJiiEEEEC2IJiiELb0ELb0EEERKS_IJDpT_EE = @box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2_0_0___box_lvalue_reference_to_const_struct___cppgm_class_template_identity_2_0_0___ov3

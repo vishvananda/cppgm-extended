@@ -92,7 +92,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call i32 @run_variadic_fallback()
     return i32 %t5
 }
-function @fixed_dispatch(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr, %__param3 : obj<1x1>, %__param4 : obj<1x1>, %__param5 : obj<1x1>) -> i32 [binding=weak, object=_Z14fixed_dispatchI11fixed_alloc12fixed_scoped10fixed_pairIiiE11fixed_tupleiiEiRT_RT0_PT1_17fixed_piecewise_tT2_IT3_15fixed_null_typeSE_ET2_IT4_SE_SE_E] {
+function @fixed_dispatch(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr, %__param3 : obj<1x1>, %__param4 : obj<1x1>, %__param5 : obj<1x1>) -> i32 [binding=weak, object=_Z14fixed_dispatchI11fixed_alloc12fixed_scoped10fixed_pairIiiE11fixed_tupleiiEiRT_RT0_PT1_17fixed_piecewise_tT2_IT3_15fixed_null_typeSE_ESC_IT4_SE_SE_E] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
@@ -108,7 +108,7 @@ function @fixed_dispatch(%__param0 : ptr [pass=by_address, object_bytes=1], %__p
     %t1 = load i32 @fixed_selected
     return i32 %t1
 }
-function @variadic_dispatch(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr, %__param3 : obj<1x1>, %__param4 : obj<1x1>, %__param5 : obj<1x1>) -> i32 [binding=weak, object=_Z17variadic_dispatchI14variadic_alloc15variadic_scoped13variadic_pairIiiE14variadic_tupleiiEiRT_RT0_PT1_20variadic_piecewise_tT2_IT3_18variadic_null_typeSE_ET2_IT4_SE_SE_E] {
+function @variadic_dispatch(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr, %__param3 : obj<1x1>, %__param4 : obj<1x1>, %__param5 : obj<1x1>) -> i32 [binding=weak, object=_Z17variadic_dispatchI14variadic_alloc15variadic_scoped13variadic_pairIiiE14variadic_tupleiiEiRT_RT0_PT1_20variadic_piecewise_tT2_IT3_18variadic_null_typeSE_ESC_IT4_SE_SE_E] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

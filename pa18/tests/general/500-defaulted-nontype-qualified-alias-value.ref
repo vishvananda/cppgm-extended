@@ -17,7 +17,7 @@ function @X__X(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1X
     store ptr %this, $this
     return void
 }
-function @tuple_rvalue_reference_to_struct_X___tuple_rvalue_reference_to_struct_X___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5tupleIJO1XEEC1IS0_Li0EEEDpOT_, inline_hint=yes] {
+function @tuple_rvalue_reference_to_struct_X___tuple_rvalue_reference_to_struct_X___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5tupleIJO1XEEC1IJS0_ELi0EEEDpOT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -27,4 +27,4 @@ function @tuple_rvalue_reference_to_struct_X___tuple_rvalue_reference_to_struct_
     return void
 }
 alias object _ZN1XC2Ev = @X__X
-alias object _ZN5tupleIJO1XEEC2IS0_Li0EEEDpOT_ = @tuple_rvalue_reference_to_struct_X___tuple_rvalue_reference_to_struct_X___ov3
+alias object _ZN5tupleIJO1XEEC2IJS0_ELi0EEEDpOT_ = @tuple_rvalue_reference_to_struct_X___tuple_rvalue_reference_to_struct_X___ov3

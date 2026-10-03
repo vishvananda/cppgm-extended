@@ -17,7 +17,7 @@ function @wrapper_int__char___wrapper_int__char___ov2(%this : ptr [object_bytes=
     call void @wrapper_int__char___wrapper_int__char___ov5(%t1, $argobj__1)
     return void
 }
-function @wrapper_int__char___wrapper_int__char___ov5(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN7wrapperIJicEEC1ILm0ELm1EEE7indicesIJXspT_EEEDpOT0_, inline_hint=yes] {
+function @wrapper_int__char___wrapper_int__char___ov5(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN7wrapperIJicEEC1IJLm0ELm1EEJEEE7indicesIJXspT_EEEDpOT0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $refarg__1 : i32
@@ -53,5 +53,5 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     return void
 }
 alias object _ZN7wrapperIJicEEC2Ev = @wrapper_int__char___wrapper_int__char___ov2
-alias object _ZN7wrapperIJicEEC2ILm0ELm1EEE7indicesIJXspT_EEEDpOT0_ = @wrapper_int__char___wrapper_int__char___ov5
+alias object _ZN7wrapperIJicEEC2IJLm0ELm1EEJEEE7indicesIJXspT_EEEDpOT0_ = @wrapper_int__char___wrapper_int__char___ov5
 alias object _ZN7wrapperIJicEEC2EiRKiRKc = @wrapper_int__char___wrapper_int__char_

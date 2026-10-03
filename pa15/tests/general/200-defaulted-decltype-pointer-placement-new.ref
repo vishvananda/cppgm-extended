@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @construct_at(%ptr : ptr, %args : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z12construct_atIP4ItemRS1_PS1_EPT_S5_DpOT0_] {
+function @construct_at(%ptr : ptr, %args : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z12construct_atIP4ItemJRS1_EPS1_EPT_S5_DpOT0_] {
   slot $ptr : ptr
   slot $args : ptr
 

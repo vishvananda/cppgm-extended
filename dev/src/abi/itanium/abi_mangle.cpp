@@ -38,6 +38,7 @@ using detail::SUBSTITUTION_MEMBER_TEMPLATE_PREFIX;
 using detail::SUBSTITUTION_PATH;
 using detail::SUBSTITUTION_RESOLVED;
 using detail::SUBSTITUTION_TYPE;
+using detail::SUBSTITUTION_TEMPLATE_PARAMETER;
 using detail::SubstitutionKind;
 using detail::SubstitutionKey;
 using detail::SubstitutionTable;
@@ -1380,6 +1381,8 @@ private:
                                         type.substitution}
                                     : type.kind == ABI_TYPE_NAMED && type.tags.empty()
                                     ? SubstitutionKey{SUBSTITUTION_PATH, type.path}
+                                    : type.kind == ABI_TYPE_TEMPLATE_PARAMETER
+                                    ? SubstitutionKey{SUBSTITUTION_TEMPLATE_PARAMETER, type.index}
                                     : SubstitutionKey{SUBSTITUTION_TYPE, id};
       if(substitutions_.emit_if_known(key, output_)) break;
 
@@ -1500,7 +1503,14 @@ private:
         encode_template_type(id, type);
         return;
       case ABI_TYPE_TEMPLATE_PARAMETER_SPECIALIZATION:
-        output_ += template_parameter(type.index) + 'I';
+        {
+          const SubstitutionKey prefix{SUBSTITUTION_TEMPLATE_PARAMETER, type.index};
+          if(!substitutions_.emit_if_known(prefix, output_)) {
+            output_ += template_parameter(type.index);
+            substitutions_.add(prefix);
+          }
+        }
+        output_ += 'I';
         encode_arguments(type.arguments);
         output_ += 'E';
         return;
@@ -1593,6 +1603,8 @@ private:
                                       type.substitution}
                                   : type.kind == ABI_TYPE_NAMED && type.tags.empty()
                                   ? SubstitutionKey{SUBSTITUTION_PATH, type.path}
+                                  : type.kind == ABI_TYPE_TEMPLATE_PARAMETER
+                                  ? SubstitutionKey{SUBSTITUTION_TEMPLATE_PARAMETER, type.index}
                                   : SubstitutionKey{SUBSTITUTION_TYPE, id};
     if(substitutions_.emit_if_known(key, output_)) return;
     if(type.kind == ABI_TYPE_NAMED) {
@@ -1962,9 +1974,6 @@ private:
     if(entity.kind == ABI_ENTITY_FACT_SYMBOL) {
       output_ += entity.qualified_name;
     } else {
-      SubstitutionTable outer_substitutions;
-      substitutions_.swap(outer_substitutions);
-      if(stats_) ++stats_->isolated_entity_encodings;
       output_ += "_Z";
       if(entity.kind == ABI_ENTITY_FACT_FUNCTION) {
         encode_function(entity.function, FunctionFacts());
@@ -1974,7 +1983,6 @@ private:
       } else {
         encode_object_name(entity.qualified_name, entity.internal_linkage);
       }
-      substitutions_.swap(outer_substitutions);
     }
     output_ += 'E';
   }

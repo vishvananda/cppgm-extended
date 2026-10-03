@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Box_int__int__template_parameter_LayoutImpl___f(%t1, %t2)
     return i32 0
 }
-function @Box_int__int__template_parameter_LayoutImpl___f(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIii10LayoutImplE1fERS2_, inline_hint=yes] {
+function @Box_int__int__template_parameter_LayoutImpl___f(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIii10LayoutImplE1fERS1_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 

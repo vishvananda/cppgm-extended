@@ -150,10 +150,36 @@ FunctionTemplateAbiRecipeId PublishFunctionTemplateAbiRecipe(Program* program,
 		source_type_begin;
 	program->function_template_abi_recipes.back().function_parameter_type_begin =
 		function_source_type_begin;
-	program->function_template_abi_recipes.back().function_parameter_count =
-		static_cast<std::uint32_t>(
-			pattern.abi_function_parameter_types.size());
 	return recipe;
+}
+
+FunctionTemplateAbiRecipeId PublishFunctionTemplateAbiPartitions(Program* program,
+	const FunctionTemplatePattern& pattern,
+	const std::vector<std::uint32_t>& parameter_offsets)
+{
+	FunctionTemplateAbiRecipeId abi_recipe = pattern.abi_recipe;
+	if (!parameter_offsets.empty())
+	{
+		if (program->function_template_abi_recipes.size() >=
+			kNoFunctionTemplateAbiRecipe ||
+			program->function_template_abi_argument_partitions.size() >
+				kNoTemplateParameter - pattern.parameters.size())
+			ThrowSemanticResourceLimit("too many function template ABI partitions");
+		FunctionTemplateAbiRecipe specialization_recipe(
+			program->function_template_abi_recipes[pattern.abi_recipe]);
+		specialization_recipe.argument_partition_begin = static_cast<std::uint32_t>(
+			program->function_template_abi_argument_partitions.size());
+		for (std::size_t parameter = 0;
+			parameter < pattern.parameters.size(); ++parameter)
+			program->function_template_abi_argument_partitions.push_back(
+				FunctionTemplateAbiArgumentPartition(parameter_offsets[parameter],
+					parameter_offsets[parameter + 1] - parameter_offsets[parameter],
+					pattern.parameters[parameter].pack));
+		abi_recipe = static_cast<FunctionTemplateAbiRecipeId>(
+			program->function_template_abi_recipes.size());
+		program->function_template_abi_recipes.push_back(specialization_recipe);
+	}
+	return abi_recipe;
 }
 
 void MarkOverloadedFunctionTemplateAbiRecipes(Program* program,
@@ -2207,9 +2233,10 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 		pattern.abi_recipe >= program_->function_template_abi_recipes.size())
 		ThrowInternalCompilerError(
 			"function template specialization has no ABI recipe");
-	binding_record.function_template_abi_recipe = pattern.abi_recipe;
+	binding_record.function_template_abi_recipe =
+		PublishFunctionTemplateAbiPartitions(program_, pattern, identity_offsets);
 	program_->bindings[canonical_binding].function_template_abi_recipe =
-		pattern.abi_recipe;
+		binding_record.function_template_abi_recipe;
 	binding_record.function_template_specialization = true;
 	program_->bindings[canonical_binding].function_template_specialization =
 		true;

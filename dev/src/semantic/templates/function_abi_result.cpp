@@ -487,6 +487,15 @@ private:
 				std::numeric_limits<std::uint32_t>::max() -
 				component.arguments.size())
 			return kNoFunctionTemplateAbiType;
+		if (owner == kNoFunctionTemplateAbiType &&
+			component.entity < program_->entities.size())
+		{
+			const EntityId enclosing = program_->entities[component.entity].enclosing_class;
+			if (enclosing != kNoEntity && enclosing < program_->entities.size())
+				owner = AppendAbiType(program_, FunctionTemplateAbiType(
+					FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE, kNoFunctionTemplateAbiType,
+					0, 0, kNoTemplateParameter, 0, program_->entities[enclosing].type));
+		}
 		const std::uint32_t begin = static_cast<std::uint32_t>(
 			program_->function_template_abi_arguments.size());
 		program_->function_template_abi_arguments.insert(
@@ -759,7 +768,14 @@ bool HasRetainedParameterRoot(const Program& program,
 		const FunctionTemplateResultIdentityAtomKind kind =
 			ResultIdentityKind(atoms[atom]);
 		if (kind == FUNCTION_TEMPLATE_RESULT_COMPONENT) terminal = atom;
-		else if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER) dependent = true;
+		else if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER)
+		{
+			dependent = true;
+			const std::uint64_t parameter = ResultIdentityValue(atoms[atom]);
+			if (parameter < pattern.parameters.size() &&
+				pattern.parameters[parameter].kind == TEMPLATE_ARGUMENT_INTEGRAL)
+				return true;
+		}
 	}
 	if (dependent && terminal < atoms.size())
 	{

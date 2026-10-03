@@ -520,6 +520,8 @@ void Analyzer::AddLocalStaticObjectAction(std::uint32_t variable,
 	const bool recipe_source_identity =
 		recipe != kNoFunctionTemplateAbiRecipe &&
 		(program_->function_template_abi_recipes[recipe].overloaded_pattern ||
+		 program_->function_template_abi_recipes[recipe].argument_partition_begin !=
+			kNoTemplateParameter ||
 		 program_->function_template_abi_recipes[recipe].
 			template_parameter_pack ||
 		 program_->function_template_abi_recipes[recipe].

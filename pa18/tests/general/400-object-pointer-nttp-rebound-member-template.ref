@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = load i32 $cond__1
     return i32 %t2
 }
-function @ns__core___cppgm_class_template_identity_1_0_0___init() -> u8 [binding=weak, object=_ZN2ns4coreI14factory_markerIXadL_ZN2ns4markEEEEE4initEv, inline_hint=yes] {
+function @ns__core___cppgm_class_template_identity_1_0_0___init() -> u8 [binding=weak, object=_ZN2ns4coreI14factory_markerIXadL_ZNS_4markEEEEE4initEv, inline_hint=yes] {
   slot $a : obj<1x1>
 
   block ^entry:
@@ -30,7 +30,7 @@ function @ns__core___cppgm_class_template_identity_1_0_0___init() -> u8 [binding
     %t3 = index i8 [projection=field] %t2, 0
     return u8 1
 }
-function @ns__core___cppgm_class_template_identity_1_0_0___holder_arg__holder_arg(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN2ns4coreI14factory_markerIXadL_ZN2ns4markEEEEE10holder_argC1Ev, inline_hint=yes] {
+function @ns__core___cppgm_class_template_identity_1_0_0___holder_arg__holder_arg(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN2ns4coreI14factory_markerIXadL_ZNS_4markEEEEE10holder_argC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -55,5 +55,5 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     store u8 %t1, @ns__init
     return void
 }
-alias object _ZN2ns4coreI14factory_markerIXadL_ZN2ns4markEEEEE10holder_argC2Ev = @ns__core___cppgm_class_template_identity_1_0_0___holder_arg__holder_arg
+alias object _ZN2ns4coreI14factory_markerIXadL_ZNS_4markEEEEE10holder_argC2Ev = @ns__core___cppgm_class_template_identity_1_0_0___holder_arg__holder_arg
 alias object _ZN13factory_classIXadL_ZN2ns4markEEEiiEC2Ev = @factory_class__ns__mark__int__int___factory_class__ns__mark__int__int_

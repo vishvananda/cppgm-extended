@@ -105,7 +105,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **20 compiler issue families** remain
+Remaining-work count on 2026-10-03: **19 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
@@ -114,7 +114,7 @@ EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
 LOOKUP-TAG, ABI-GLOBAL, NOEXCEPT-LIST, REF-BITFIELD and
 CONST-REF-STATIC-TEMP, REF-BRACE, INIT-LIST-STATIC, EH-RETHROW-DYNAMIC,
-TMPL-FTRY, REF-BASE-COND, MANGLE-CONV and MANGLE-RESULT are also completed. These are tracker
+TMPL-FTRY, REF-BASE-COND, MANGLE-CONV, MANGLE-RESULT and MANGLE-PACK are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -194,7 +194,7 @@ The recent discovery inventory is not all C++11:
 | MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Done: retain id/member-access decltype category and unqualified named dependent call arguments in existing typed recipe payloads. Fresh Clang/GCC symbols agree at O0/O2, including parenthesized, member, nested, multiple-argument and ADL controls. Extend existing PA9 and PA14 fixtures and retire the opt-in duplicate; one other reference changes only two object names. Payload sizes are unchanged. Strict 6119/6119, all required checks and Alpha gates pass. |
 | MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Done: retain written type/value expansions, transformed pointer packs and primary pack grouping in typed recipes; stop default completion at unresolved expansions. Fresh Clang/GCC symbols agree for the original reducer and reused PA19 fixtures at O0/O2. Preserve Clang template-parameter annotation spelling. Extend two existing fixtures and retire the opt-in duplicate. PA19 428/428, strict 6119/6119, all required checks and Alpha gates pass. Non-final function argument-list partitions remain MANGLE. No encoder change. |
 | MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
-| MANGLE | ABI substitution state for address expressions, RTTI template-template arguments and function-pack partitions | v4codex group 13 / declared-pack boundary checks | Open, checked against Clang: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. Non-final function packs still flatten their template argument list: both entry 833095c1f and the declared-pack candidate encode `IilcE`; Clang/GCC encode `IJilEcE`. Complex mixed-pack names in existing fixtures retain other preexisting argument/owner mismatches; the declared-parameter-pattern fix does not close those. |
+| MANGLE | ABI substitution state, function-pack partitions and remaining dependent-expression names | v4codex group 13 / declared-pack boundary checks | In progress: fix PA9 entity-address state, canonical RTTI template-name identity, dependent template-prefix substitutions, non-final/multiple pack partitions (including member-pointer arguments and local contexts), retained integral result arguments and nested template owners. Fresh Clang/GCC checks preserve previously matching function-template names; the source member-address path already matched and stays correct. Reuse five required fixtures and retire the two opt-in controls. Remaining existing dependent-expression result spellings are tracked separately within this family; no new required fixture files. Strict 6119/6119, all required checks and Alpha instruction/RSS gates pass; evidence in abi-substitutions-and-partitions/. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Done. Fresh Clang O0/O2 checks and mixed links in both directions establish `g`; the typed ABI variable target now preserves that raw name. Existing PA9/PA27 tests carry the regression, and related LowIR/hosted inspection references were regenerated and independently checked. Strict 6116/6116, required checks and Alpha instruction/memory gates pass. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; PA19 pack count is corrected in the deduction checkpoint; PA23 initialized virtual bases remain. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
@@ -5907,3 +5907,49 @@ remain evidence, not qualification of the final binary. Final compiler SHA256:
 Evidence: `/tmp/cppgm-v4-audit-review/declared-parameter-pack/`.
 Remaining: 19 compiler families and six reviews; final fixture pruning and
 combined student-export/quiet-output validation remain pending.
+
+
+### Shared ABI substitutions and function argument partitions — MANGLE progress
+
+Fix the original PA9 entity-address and RTTI template-name substitution defects,
+verified against fresh Clang/GCC before edits. Share entity-reference state and
+canonical template-name identity. Publish the missing dependent template-prefix
+candidate rather than relying on a duplicate concrete template-name candidate;
+this preserves the two previously host-matching function-template names caught
+by the independent review. Reuse an existing PA9 fixture for a complete,
+host-verified function name.
+
+Publish non-final/multiple function-pack partitions from existing deduction
+offsets into rare typed recipe side storage. Ordinary specializations retain
+their existing path; BindingRecord remains 136 bytes and ABI recipes 32 bytes.
+Use those facts for ordinary names, member-pointer arguments and local contexts.
+Also retain integral result arguments and concrete nested template owners.
+No source reparse, environment read, new compiler module or required fixture
+file. Five existing owning fixtures carry the regressions; retire the original
+PA9 audit pointer and PA28 RTTI control/sidecar.
+
+Generate exactly 41 references through ref-test: five owning references and 36
+other name-only changes. Normalized instruction bodies are byte-identical for
+those 36; fresh host objects confirm no previously matching symbol regression.
+Keep the remaining dependent-expression result/name gaps open within MANGLE,
+including the existing enable_if less-than/sizeof-pack result and complex
+async/member-pointer recipes. Passing regenerated LowIR does not establish
+full ABI agreement for those cases.
+
+Focused qualification passes 48 compilations, 42 host-linked executions and 48
+executions across direct/compiler-object/host-object routes at O0/O2. PA9,
+PA15 and PA21 pass; strict 6119/6119 prints exactly one success line. Debug-info,
+backend variants, self-host through PA5, all nine architecture targets, file
+and placement checks pass. The file audit retains 37 existing warnings.
+
+Alpha's final 288-observation screen plus one 96-observation timing confirmation
+retain every counter, RSS, status and equal object hash, independently verified.
+Maximum screen median instruction ratio 1.000183422 (+0.0184%); maximum RSS
+ratio 1.0. Three initial cycle signals above 1.01 fall below that threshold on
+the declared focused confirmation (medians 1.0073–1.0100); retain intervals and
+observations without claiming timing neutrality. Earlier candidates/screens
+remain evidence, not qualification of the final binary. Final SHA256:
+`2421f4f40b24132faeec303d9174fdd7a21d79e805fdb63643394389162dd3d3`.
+Evidence: `/tmp/cppgm-v4-audit-review/abi-substitutions-and-partitions/`.
+Remaining: 19 compiler families and six reviews; final fixture pruning and
+combined student-export/harness/quiet-output validation remain pending.
