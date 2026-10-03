@@ -2177,7 +2177,10 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 		if (parsed.name == 0) ThrowSemanticError("unnamed declaration");
 		if (spec.is_typedef)
 		{
-			program_->AddBinding(scope, BIND_TYPE_ALIAS, parsed.name, parsed.type);
+			const BindingId binding = program_->AddBinding(
+				scope, BIND_TYPE_ALIAS, parsed.name, parsed.type);
+			PublishDeclaredTypeLayout(binding, parsed.type, spec.type_layout,
+				std::max(RequestedAlignment(node, scope), RequestedAlignment(declarator, scope)));
 			const std::uint32_t alias = MakeDump(DUMP_TYPE_ALIAS, parsed.type,
 				VALUE_NONE, parsed.name);
 			dump_.Add(owner, alias);

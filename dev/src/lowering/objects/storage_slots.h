@@ -5,6 +5,7 @@
 #include "lowering/support/errors.h"
 #include "lowering/support/sequences.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -69,7 +70,13 @@ protected:
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
 		if (record.storage_size == 0)
+		{
+			if (record.storage_alignment != 0)
+				return LowObject(std::max<std::size_t>(
+					derived.program_.SizeOf(record.type), record.storage_alignment),
+					record.storage_alignment);
 			return derived.LowerStorageType(record.type);
+		}
 		if (record.kind != DUMP_VARIABLE || record.storage_alignment == 0 ||
 			record.storage_size > std::numeric_limits<std::size_t>::max())
 			ThrowLoweringInternal("invalid explicit object storage fact");

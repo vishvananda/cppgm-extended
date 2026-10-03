@@ -417,9 +417,24 @@ public:
 	bool construction_cleanup_may_throw;
 };
 
+const std::uint32_t kNoDeclaredTypeLayout = kNoDumpEdge;
+
+// Declaration layout sugar never changes the canonical source-language type.
+// A parent retains an attributed alias beneath a pointer or array declarator.
+struct DeclaredTypeLayoutFact
+{
+	TypeId type;
+	std::uint32_t parent;
+	std::uint64_t alignment;
+	DeclaredTypeLayoutFact(TypeId type_value, std::uint32_t parent_value,
+		std::uint64_t alignment_value)
+		: type(type_value), parent(parent_value), alignment(alignment_value) {}
+};
+
 struct SpecInfo
 {
 	TypeId type;
+	std::uint32_t type_layout;
 	StorageClass storage_class;
 	bool is_typedef;
 	bool is_constexpr;
@@ -430,7 +445,8 @@ struct SpecInfo
 	bool thread_local_storage;
 	bool mutable_member;
 	bool virtual_specifier;
-	SpecInfo() : type(kNoType), storage_class(STORAGE_CLASS_NONE),
+	SpecInfo() : type(kNoType), type_layout(kNoDeclaredTypeLayout),
+		storage_class(STORAGE_CLASS_NONE),
 		is_typedef(false), is_constexpr(false), is_friend(false),
 		inline_specifier(false),
 		placeholder_auto(false), placeholder_cv(CV_NONE),

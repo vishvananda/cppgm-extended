@@ -156,6 +156,7 @@ protected:
 			global.symbol = symbol;
 			const DumpNode& variable = derived.arena_.nodes[action.variable];
 			global.type = derived.LowerVariableStorage(variable);
+			global.explicit_storage_alignment = variable.storage_alignment != 0;
 			NamespaceObjectAction initializer(action.object, action.type,
 				action.variable, action.initializer, action.destructor);
 			initializer.constant_address = action.constant_address;

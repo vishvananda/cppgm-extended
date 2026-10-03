@@ -659,7 +659,12 @@ dev/src/semantic/object_model/multiple_inheritance.cpp	CanElideDestructorChain	1
 dev/src/semantic/object_model/multiple_inheritance.cpp	FindClassTemplate	1	dev/src/semantic/object_model/multiple_inheritance.cpp	keep
 dev/src/semantic/object_model/multiple_inheritance.cpp	LookupExplicitUnqualifiedTemplateName	1	dev/src/semantic/object_model/multiple_inheritance.cpp	keep
 dev/src/semantic/object_model/object_data.cpp	ApplyVariableObjectAttributes	1	dev/src/semantic/object_model/object_data.cpp	keep
+dev/src/semantic/object_model/object_data.cpp	BindingDeclaredTypeLayout	1	dev/src/semantic/object_model/object_data.cpp	keep
+dev/src/semantic/object_model/object_data.cpp	CopyDeclaredExpressionLayout	1	dev/src/semantic/object_model/object_data.cpp	keep
+dev/src/semantic/object_model/object_data.cpp	DeclaredTypeAlignment	1	dev/src/semantic/object_model/object_data.cpp	keep
+dev/src/semantic/object_model/object_data.cpp	ExpressionDeclaredTypeLayout	1	dev/src/semantic/object_model/object_data.cpp	keep
 dev/src/semantic/object_model/object_data.cpp	MakeVariableDeclarationDump	1	dev/src/semantic/object_model/object_data.cpp	keep
+dev/src/semantic/object_model/object_data.cpp	PublishDeclaredTypeLayout	1	dev/src/semantic/object_model/object_data.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	AppendPolymorphicView	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	BeginPolymorphicVirtualViewIndex	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	CompleteClassPolymorphism	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep

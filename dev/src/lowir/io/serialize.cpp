@@ -438,7 +438,8 @@ void write_global(std::ostream & out, const GlobalDefinition & item,
                   const Program & program)
 {
   out << "global @" << lowir_symbol_name(program, item.symbol);
-  if(!item.structured) out << " : " << lowir_type_text(item.type);
+  if(!item.structured || item.type.kind != LTK_INVALID)
+    out << " : " << lowir_type_text(item.type);
   write_global_metadata(out, item.storage, item.metadata, program);
   out << " = ";
   if(item.structured) {

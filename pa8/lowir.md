@@ -489,6 +489,12 @@ global @name [storage=thread_local] = {
 }
 ```
 
+A structured global may also specify an object storage type before its metadata,
+for example `global @aligned : obj<16x16> = { i32 7 }`. The type supplies
+the minimum alignment and storage span. Data items retain their own layout;
+remaining storage bytes are zero-filled. This permits an over-aligned scalar's
+storage to differ from its source-language size and canonical scalar type.
+
 Where each `<data-item>` is one of:
 
 ```text

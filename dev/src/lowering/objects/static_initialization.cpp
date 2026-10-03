@@ -595,7 +595,8 @@ void StaticInitializerLowering::SetZero(TypeId type, Global* global)
 		return;
 	}
 	const TypeRecord& record = program_.types.Get(types_.ExpressionObject(type));
-	if (record.kind != TYPE_ARRAY && !types_.IsClassObject(type))
+	if (record.kind != TYPE_ARRAY && !types_.IsClassObject(type) &&
+		global->type.kind != LOW_OBJECT)
 	{
 		global->initializer_kind = Global::ZERO;
 		return;
@@ -660,6 +661,10 @@ bool StaticInitializerLowering::Lower(const NamespaceObjectAction& action,
 	bool* needs_global_class_initializer, bool* keep_global_class_address)
 {
 	if (keep_global_class_address) *keep_global_class_address = false;
+	if (global->type.kind == LOW_OBJECT && !types_.IsClassObject(action.type) &&
+		!types_.IsArray(action.type) && !types_.IsReference(action.type) &&
+		LowerConstantObject(action.type, action.initializer, global))
+		return true;
 	if (global->type.kind == LOW_PTR && LowerAddress(action.constant_address, global))
 		return true;
 	if (types_.IsReference(action.type))

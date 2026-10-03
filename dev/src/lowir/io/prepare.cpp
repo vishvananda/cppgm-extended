@@ -252,8 +252,6 @@ void canonicalize_serialized_lowir_facts(Program& program,
 	const Clock::time_point started = Clock::now();
 	for (std::size_t i = 0; i < program.globals.size(); ++i)
 	{
-		if (program.globals[i].structured)
-			program.globals[i].type = LowType();
 		clear_serialized_operand_facts(program.globals[i].init_operand, stats);
 		for (std::size_t j = 0; j < program.globals[i].data_items.size(); ++j)
 			clear_serialized_operand_facts(

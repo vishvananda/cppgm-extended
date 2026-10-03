@@ -47,6 +47,7 @@ mir_model::MirGlobalDefinition lower_global(
   if(source.metadata.section_name.valid())
     target.section_name = source.metadata.section_name;
   if(source.structured) {
+    target.type = source.type;
     target.storage_kind = mir_model::MirGlobalDefinition::GS_DATA;
     for(std::size_t i = 0; i < source.data_items.size(); ++i) {
       const lowir_model::LowirGlobalDefinition::DataItem & item = source.data_items[i];

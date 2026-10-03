@@ -326,6 +326,13 @@ private:
 		ScopeId declaration_scope, NameId name, TypeId type,
 		const SpecInfo& spec, bool local);
 	void ApplyVariableObjectAttributes(NodeId declaration, BindingId binding);
+	std::uint32_t BindingDeclaredTypeLayout(BindingId binding) const;
+	void PublishDeclaredTypeLayout(BindingId binding, TypeId type,
+		std::uint32_t parent, std::size_t alignment = 0);
+	std::size_t DeclaredTypeAlignment(TypeId type, std::uint32_t layout) const;
+	std::uint32_t ExpressionDeclaredTypeLayout(const ExpressionInfo& value) const;
+	void CopyDeclaredExpressionLayout(const ExpressionInfo& source,
+		std::uint32_t target);
 	void ApplyClassAbiTagAttributes(NodeId declaration, EntityId entity);
 	void ApplyFunctionAbiTagAttributes(NodeId declaration, BindingId binding);
 	void CollectFunctionAbiTagNames(NodeId declaration,
@@ -474,9 +481,11 @@ private:
 	TypeId HostedSpecifierType(const std::string& spelling) const;
 	SpecInfo BuildIdentityOnlySpecifiers(NodeId node, ScopeId scope,
 		const std::string& hint, bool has_declarators);
-	TypeId BuildTypeId(NodeId node, ScopeId scope);
+	TypeId BuildTypeId(NodeId node, ScopeId scope,
+		std::uint32_t* type_layout = 0);
 	TypeId BuildBuiltinTransformType(NodeId node, ScopeId scope);
-	TypeId BuildIdentityOnlyTypeId(NodeId node, ScopeId scope);
+	TypeId BuildIdentityOnlyTypeId(NodeId node, ScopeId scope,
+		std::uint32_t* type_layout = 0);
 	TypeId ApplyGnuVectorAttributes(NodeId node, TypeId type, ScopeId scope);
 	DeclaratorInfo BuildDeclarator(NodeId node, TypeId base, ScopeId scope,
 		bool placeholder_auto = false,
@@ -1991,6 +2000,9 @@ private:
 	bool complete_constructor_unwind_;
 	bool host_object_emission_;
 	bool source_type_view_;
+	std::vector<DeclaredTypeLayoutFact> declared_type_layout_facts_;
+	std::unordered_map<BindingId, std::uint32_t> binding_declared_type_layouts_;
+	std::unordered_map<std::uint32_t, std::uint32_t> expression_declared_type_layouts_;
 	std::vector<BindingId> source_type_override_bindings_;
 	std::vector<TypeId> source_type_override_types_;
 	DumpArena& dump_;

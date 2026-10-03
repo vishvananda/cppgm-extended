@@ -754,7 +754,10 @@ void Analyzer::CompleteClassLayout(EntityId entity)
 			!TypeHasKnownSize(layout.type))
 			continue;
 		const std::size_t member_size = program_->SizeOf(layout.type);
-		const std::size_t type_alignment = program_->AlignOf(layout.type);
+		const std::size_t alias_alignment = member ? DeclaredTypeAlignment(
+			layout.type, BindingDeclaredTypeLayout(layout.binding)) : 0;
+		const std::size_t type_alignment = alias_alignment != 0 ?
+			alias_alignment : program_->AlignOf(layout.type);
 		const std::size_t requested_member_alignment = member ?
 			static_cast<std::size_t>(member_layout->requested_alignment) : 0;
 		const std::size_t required_alignment = std::max(type_alignment,
@@ -1096,6 +1099,8 @@ void Analyzer::AnalyzeClassMember(NodeId node, ScopeId scope,
 				parsed.name, parsed.type);
 			program_->bindings[alias].member_owner = EntityOf(owner_type);
 			program_->bindings[alias].access = access;
+			PublishDeclaredTypeLayout(alias, parsed.type, spec.type_layout,
+				std::max(RequestedAlignment(node, scope), RequestedAlignment(declarator, scope)));
 			continue;
 		}
 		if (program_->types.IsFunction(parsed.type))
@@ -1170,6 +1175,7 @@ void Analyzer::AnalyzeClassMember(NodeId node, ScopeId scope,
 			const BindingId member = program_->AddBinding(scope, BIND_VARIABLE,
 				parsed.name, member_type, false, 0, NAMED_NONE, 0, kNoBinding,
 				false);
+			PublishDeclaredTypeLayout(member, member_type, spec.type_layout);
 			const std::size_t requested_alignment =
 				RequestedAlignment(node, scope);
 			const bool non_static_data_member =
@@ -1376,6 +1382,7 @@ void Analyzer::PublishVariableDeclarationFacts(BindingId binding,
 		record.unnamed_namespace_linkage = true;
 	}
 	record.thread_local_storage = spec.thread_local_storage;
+	PublishDeclaredTypeLayout(binding, type, spec.type_layout);
 	const TypeRecord top_type = program_->types.Get(type);
 	// A namespace-scope const variable is internal unless it is inline: the
 	// inline specifier is what makes one definition per translation unit the
@@ -1851,6 +1858,7 @@ SpecInfo Analyzer::BuildSpecifiers(NodeId node, ScopeId scope,
 					found.naming_class))
 				ThrowSemanticError("inaccessible member type");
 			result.type = found.type;
+			result.type_layout = BindingDeclaredTypeLayout(found.type_declaration);
 		}
 	}
 	if (bitint_specifier != kNoNode)
@@ -1905,7 +1913,8 @@ SpecInfo Analyzer::BuildSpecifiers(NodeId node, ScopeId scope,
 	return result;
 }
 
-TypeId Analyzer::BuildTypeId(NodeId node, ScopeId scope)
+TypeId Analyzer::BuildTypeId(NodeId node, ScopeId scope,
+	std::uint32_t* type_layout)
 {
 	if (node == kNoNode) ThrowSemanticError("missing type-id");
 	const ScopedDiagnosticLocation located(arena_, node);
@@ -1915,6 +1924,7 @@ TypeId Analyzer::BuildTypeId(NodeId node, ScopeId scope)
 	const SpecInfo spec = BuildSpecifiers(
 		specifiers, scope, std::string(), false, true);
 	if (CandidateSubstitutionFailed()) return kNoType;
+	if (type_layout) *type_layout = spec.type_layout;
 	NodeId declarator = FindChild(node, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR);
 	if (declarator == kNoNode) declarator = FindChild(node, ::cppgm::syntax::STAG_DECLARATOR);
 	return declarator == kNoNode ? spec.type :
@@ -2519,11 +2529,13 @@ void Analyzer::AnalyzeUsing(NodeId node, ScopeId scope,
 	const EntityId class_owner = program_->EntityForScope(scope);
 	if (arena_->IsTag(node, ::cppgm::syntax::STAG_ALIAS_DECLARATION))
 	{
+		std::uint32_t type_layout = kNoDeclaredTypeLayout;
 		const TypeId type = BuildIdentityOnlyTypeId(
-			FindChild(node, ::cppgm::syntax::STAG_TYPE_ID), scope);
+			FindChild(node, ::cppgm::syntax::STAG_TYPE_ID), scope, &type_layout);
 		const NameId name = program_->names.UseInterned(arena_->PayloadId(node));
 		const BindingId binding =
 			program_->AddBinding(scope, BIND_TYPE_ALIAS, name, type);
+		PublishDeclaredTypeLayout(binding, type, type_layout, RequestedAlignment(node, scope));
 		if (class_owner != kNoEntity)
 		{
 			program_->bindings[binding].member_owner = class_owner;

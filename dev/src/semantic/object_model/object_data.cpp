@@ -3,6 +3,7 @@
 #include "support/exceptions.h"
 
 #include <string>
+#include <limits>
 
 namespace cppgm
 {
@@ -25,6 +26,68 @@ bool IsTokenSafeElfSectionName(const std::string& name)
 	return true;
 }
 
+}
+
+std::uint32_t Analyzer::BindingDeclaredTypeLayout(BindingId binding) const
+{
+	if (declared_type_layout_facts_.empty()) return kNoDeclaredTypeLayout;
+	const auto found = binding_declared_type_layouts_.find(binding);
+	return found == binding_declared_type_layouts_.end() ?
+		kNoDeclaredTypeLayout : found->second;
+}
+
+void Analyzer::PublishDeclaredTypeLayout(BindingId binding, TypeId type,
+	std::uint32_t parent, std::size_t alignment)
+{
+	if (alignment != 0)
+	{
+		if (declared_type_layout_facts_.size() >= kNoDeclaredTypeLayout)
+			ThrowSemanticResourceLimit("too many declared type layout facts");
+		const std::uint32_t layout = static_cast<std::uint32_t>(
+			declared_type_layout_facts_.size());
+		declared_type_layout_facts_.push_back(DeclaredTypeLayoutFact(
+			program_->types.RemoveTopCv(type), parent, alignment));
+		parent = layout;
+	}
+	if (parent == kNoDeclaredTypeLayout) return;
+	binding_declared_type_layouts_[binding] = parent;
+	binding_declared_type_layouts_[program_->bindings[binding].canonical] = parent;
+}
+
+std::size_t Analyzer::DeclaredTypeAlignment(TypeId type, std::uint32_t layout) const
+{
+	for (; layout != kNoDeclaredTypeLayout;
+		layout = declared_type_layout_facts_[layout].parent)
+	{
+		if (layout >= declared_type_layout_facts_.size())
+			ThrowInternalCompilerError("invalid declared type layout fact");
+		const DeclaredTypeLayoutFact& fact = declared_type_layout_facts_[layout];
+		TypeId measured = program_->types.RemoveTopCv(type);
+		for (;;)
+		{
+			if (measured == fact.type) return static_cast<std::size_t>(fact.alignment);
+			const TypeRecord& shape = program_->types.Get(measured);
+			if (shape.kind != TYPE_ARRAY) break;
+			measured = program_->types.RemoveTopCv(shape.child);
+		}
+	}
+	return 0;
+}
+
+std::uint32_t Analyzer::ExpressionDeclaredTypeLayout(const ExpressionInfo& value) const
+{
+	if (declared_type_layout_facts_.empty()) return kNoDeclaredTypeLayout;
+	const auto found = expression_declared_type_layouts_.find(value.node);
+	return found == expression_declared_type_layouts_.end() ?
+		BindingDeclaredTypeLayout(value.binding) : found->second;
+}
+
+void Analyzer::CopyDeclaredExpressionLayout(const ExpressionInfo& source,
+	std::uint32_t target)
+{
+	const std::uint32_t layout = ExpressionDeclaredTypeLayout(source);
+	if (layout != kNoDeclaredTypeLayout)
+		expression_declared_type_layouts_[target] = layout;
 }
 
 void Analyzer::ApplyVariableObjectAttributes(
@@ -89,6 +152,14 @@ std::uint32_t Analyzer::MakeVariableDeclarationDump(
 		 direct_linkage_declaration_depth_ != 0);
 	const std::uint32_t variable = MakeDump(
 		DUMP_VARIABLE, type, VALUE_NONE, name, binding);
+	const std::size_t alignment = DeclaredTypeAlignment(
+		type, BindingDeclaredTypeLayout(binding));
+	if (alignment != 0 && alignment != program_->AlignOf(type))
+	{
+		if (alignment > std::numeric_limits<std::uint32_t>::max())
+			ThrowSemanticResourceLimit("declared alignment exceeds object limits");
+		dump_.nodes[variable].storage_alignment = static_cast<std::uint32_t>(alignment);
+	}
 	return variable;
 }
 

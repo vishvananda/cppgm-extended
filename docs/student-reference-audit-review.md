@@ -210,7 +210,7 @@ The recent discovery inventory is not all C++11:
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
 | HOST-SHORTHAND | Give the hosted nothrow trait fixture complete, typed definitions | v4codex PA29 handoff156 question | Done: complete typed definitions replace compiler template-name synthesis (spec.md section 10). Generic character and noexcept reducers move to PA14/PA16; incomplete/body controls enforce ordinary template rules. Strict 5854/5854, placement/harness/audits and performance pass. Student later corrected the three original success sidecars in handoff189; our sources retain complete typed definitions and the positive test goals. |
-| PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Open, independently confirmed: using-alias aligned(1) and typedef-alias *&i controls fail here at O0/O2 and pass Clang/GCC. No required fixture or oracle change was made for these controls. |
+| PA29-ALIGN | Preserve GNU alias alignment through declarations and expression indirection | v4codex audit158 entry regressions | Done in the accompanying checkpoint: sparse declaration layout facts retain canonical type identity, GNU alignof accepts expression operands, and typed object storage retains alignment through initialization, serialization and native lowering. Reuse two existing PA29 fixtures and remove the duplicate control; no reference change. Strict 6119/6119, all required compiler checks and the final Alpha instruction/memory screen pass. The independently reproduced preexisting 32-byte automatic-stack limitation remains within BACKEND. |
 | LOOKUP-RESTORE | Restore genuine namespace type/value ambiguity coverage lost during early consolidation | Namespace reference review | Done in the accompanying test-only checkpoint: distinct-type PA6 and original distinct-variable PA7 negatives have exact generated references and pass their owning checks. Strict 6103/6103 prints one line; PA6/PA7 placement scans 297 inputs with zero findings, and the standard full placement audit remains clean. No compiler change. The valid same-int PA6 oracle correction remains LOOKUP-NAMESPACE. |
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Done in the accompanying checkpoint: enable existing canonical-type equivalence when merging namespace graph/import results; preserve direct lookup and class-base rules. All 72 core observations pass at O0/O2 and in both dump modes, including distinct-entity negatives. The reviewed composite replaces the wrong PA6 same-int rejection in PA6/200 and its temporary control is removed; ours and both hosts pass. PA6 112/112, strict 6109/6109 in one line, all required local groups and all frozen incremental Alpha gates pass against approved 8a6bcd105. All 2880 observations retain equal objects and unscaled counters. Independent mixed type/value and class-base alias rows remain open. N3485 7.1.3 and 7.3.4 support this correction. |
 | LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | Done in this compiler checkpoint: typed ordinary/type-name lookup diagnoses imported type/value conflicts while preserving local hiding, injected constructor names and restricted elaborated lookup. Reuse the existing PA6 typedef/value and PA7 class/value expression controls as required negatives; exact ref-test generates their references. All 184 focused outcomes and affected suites pass, strict 6111/6111 prints one line, debug-info/self-host PA5/all nine architecture targets/file/placement pass. The 384-observation screen plus 384-observation focused confirmation pass instruction/RSS gates, object equality and unscaled-counter verification (maximum instructions 1.000289, median RSS ratios 1.0). Confirmed namespace/auto-alias calibrated cycle costs around 1–1.6% remain explicit diagnostics under the updated policy; no timing-neutrality claim. Full immutable patch, binary and raw observations are retained in namespace-mixed-lookup/. Historical cycle-gate failures remain unchanged. |
@@ -5952,4 +5952,50 @@ remain evidence, not qualification of the final binary. Final SHA256:
 `2421f4f40b24132faeec303d9174fdd7a21d79e805fdb63643394389162dd3d3`.
 Evidence: `/tmp/cppgm-v4-audit-review/abi-substitutions-and-partitions/`.
 Remaining: 19 compiler families and six reviews; final fixture pruning and
+combined student-export/harness/quiet-output validation remain pending.
+
+
+## PA29 alias alignment — 2026-10-03
+
+Fix the original using/typedef aligned(1) and indirect GNU alignof controls.
+Retain layout sugar in sparse declaration/expression facts without changing
+canonical TypeIds, ABI names or type equality. GNU alignof expression parsing
+uses the existing deterministic operand classification. Class layout consumes
+the declaration alignment; initialized variables retain it. Existing object
+storage carries stronger alignment through LowIR text, compiler objects and
+native globals; canonicalization no longer erases a structured global's type.
+Document the already parsed typed structured-global form and zero-fill its
+remaining storage span. BindingRecord, DumpNode and Global sizes remain
+136, 152 and 88 bytes; SpecInfo grows from 16 to 20 bytes. Add five semantic
+owner entries; no new compiler source or module.
+
+Extend two existing PA29 fixtures for the original queries, canonical identity,
+member layout and initialized/zero/dynamic/local/static storage. Remove the
+superseded opt-in source. Add no fixture files and regenerate no references.
+Twenty fresh Clang/GCC C++11 compilations/executions and forty O0/O2 executions
+across direct, compiler-object, host-object and text-roundtrip routes pass.
+PA29 passes 49 preprocessor, 303 compile and 54 runtime tests. Strict 6119/6119
+prints only its final line; debug-info, backend variants, self-host through PA5,
+all nine architecture targets, file and placement checks pass. The file audit
+retains 37 existing warnings. Placement has no early-feature failures.
+
+Alpha's final frozen screen retains and independently verifies all 288 unscaled
+counter/RSS observations, successful statuses and equal object hashes. Maximum
+median instruction ratio is 0.999961912; maximum RSS ratio is 1.000109183.
+No workload triggers the declared timing confirmation threshold; cycle medians
+remain diagnostics rather than a claim of timing neutrality. Final SHA256:
+`0e25d25cbe813b3d0a6a8e3cd4275e384b42ad059c300c525795922a87de2d14`.
+Evidence: `/tmp/cppgm-v4-audit-review/alias-alignment/`, with final performance
+artifacts under `qualified/`. The earlier semantic-only screen is intermediate
+evidence, not qualification of this final compiler.
+
+Keep the GCC/Clang-disputed GNU arithmetic-alignment observation out of required
+fixtures. A separate ordinary C++11 alignas(32) automatic-object probe fails
+intermittently in both the frozen entry and final compiler at O0/O2; all 32
+host executions pass. Retain that evidence under the existing BACKEND review
+instead of expanding this alias-query fix into stack realignment. Stronger
+alignment of global/static objects and 16-byte automatic storage pass all four
+qualified routes.
+
+Remaining: 18 compiler families and six reviews; final fixture pruning and
 combined student-export/harness/quiet-output validation remain pending.

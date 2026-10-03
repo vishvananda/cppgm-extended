@@ -900,7 +900,8 @@ lowir_model::LowirProgram AdaptTypedLowirForBackend(
 		lowir_model::GlobalDefinition result;
 		result.symbol = lowir_model::SymbolId(item.symbol);
 		if (item.type.kind != LOW_INVALID &&
-			item.initializer_kind != Global::STRUCTURED_VALUE)
+			(item.initializer_kind != Global::STRUCTURED_VALUE ||
+			 item.explicit_storage_alignment))
 			result.type = AdaptType(item.type);
 		if (symbol.thread_local_storage)
 			result.storage = lowir_model::GSM_THREAD_LOCAL;

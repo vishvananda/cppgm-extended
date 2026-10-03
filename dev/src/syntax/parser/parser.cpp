@@ -1644,7 +1644,8 @@ NodeId SyntaxParser::ParseUnaryExpression()
 			return trait;
 		}
 		Expect(OP_LPAREN);
-		bool prefer_type = kind == KW_ALIGNOF;
+		bool prefer_type = kind == KW_ALIGNOF &&
+			strings_.Get(tokens_[keyword].spelling) == "alignof";
 		if (StartsHostedType(position_)) prefer_type = true;
 		if (At(KW_CONST) || At(KW_VOLATILE) || At(KW_DECLTYPE)) prefer_type = true;
 		if (At(KW_STRUCT) || At(KW_CLASS) || At(KW_UNION) ||

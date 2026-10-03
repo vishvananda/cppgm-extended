@@ -28,11 +28,12 @@ SpecInfo Analyzer::BuildIdentityOnlySpecifiers(
 	return BuildSpecifiers(node, scope, hint, has_declarators);
 }
 
-TypeId Analyzer::BuildIdentityOnlyTypeId(NodeId node, ScopeId scope)
+TypeId Analyzer::BuildIdentityOnlyTypeId(NodeId node, ScopeId scope,
+	std::uint32_t* type_layout)
 {
 	ScopedCounterIncrement suppressed(
 		&class_template_completion_suppressed_depth_);
-	return BuildTypeId(node, scope);
+	return BuildTypeId(node, scope, type_layout);
 }
 
 void Analyzer::BindDeclaratorImplicitObject(

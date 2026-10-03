@@ -2161,8 +2161,9 @@ std::uint32_t Analyzer::PublishVariableInitializerActions(
 	{
 		dump_.nodes[variable].storage_size =
 			dump_.nodes[initializer.node].storage_size;
-		dump_.nodes[variable].storage_alignment =
-			dump_.nodes[initializer.node].storage_alignment;
+		dump_.nodes[variable].storage_alignment = std::max(
+			dump_.nodes[variable].storage_alignment,
+			dump_.nodes[initializer.node].storage_alignment);
 		dump_.Add(variable, initializer.node);
 		return initializer.node;
 	}

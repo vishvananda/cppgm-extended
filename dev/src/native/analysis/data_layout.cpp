@@ -55,7 +55,7 @@ std::size_t global_alignment(const mir_model::MirGlobalDefinition & global)
     alignment = 16;
     while(alignment > 1 && zero_bytes % alignment != 0) alignment /= 2;
   }
-  return alignment;
+  return std::max<std::size_t>(alignment, global.type.alignment);
 }
 
 }  // namespace data_layout

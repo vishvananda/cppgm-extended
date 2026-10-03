@@ -64,6 +64,7 @@ void emit_global(CodeBuffer & out,
       emit_integer_data(out, global.int_value, global.literal_high, size);
     return;
   }
+  const std::size_t begin = out.size();
   for(std::size_t i = 0; i < global.data_items.size(); ++i) {
     const mir_model::MirGlobalDefinition::DataItem & item = global.data_items[i];
     if(item.kind == mir_model::MirGlobalDefinition::DataItem::ITEM_ZERO) {
@@ -81,6 +82,9 @@ void emit_global(CodeBuffer & out,
     else
       native_errors::ThrowSource("unsupported native global data item");
   }
+  if(global.type.kind == lowir_model::LTK_OBJECT &&
+     global.type.storage_size > out.size() - begin)
+    out.zeros(global.type.storage_size - (out.size() - begin));
 }
 
 }  // namespace global_encoding

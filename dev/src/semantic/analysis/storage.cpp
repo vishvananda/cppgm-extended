@@ -137,6 +137,12 @@ Analyzer::Analyzer(GraphStorage& graph, std::ostream& output,
 std::size_t Analyzer::DeclarationStorageBytes() const
 {
 	return
+		declared_type_layout_facts_.capacity() * sizeof(DeclaredTypeLayoutFact) +
+		(binding_declared_type_layouts_.bucket_count() +
+		 expression_declared_type_layouts_.bucket_count()) * sizeof(void*) +
+		(binding_declared_type_layouts_.size() +
+		 expression_declared_type_layouts_.size()) *
+			(sizeof(std::pair<const std::uint32_t, std::uint32_t>) + 2 * sizeof(void*)) +
 		string_literal_units_.capacity() * sizeof(std::uint32_t) +
 		source_type_override_bindings_.capacity() * sizeof(BindingId) +
 		source_type_override_types_.capacity() * sizeof(TypeId) +

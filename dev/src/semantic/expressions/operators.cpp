@@ -106,6 +106,7 @@ ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
 	const NodeId operand = FirstSemanticChild(node);
 	if (operand == kNoNode) ThrowSemanticError("empty sizeof");
 	TypeId measured = kNoType;
+	std::uint32_t type_layout = kNoDeclaredTypeLayout;
 	if (arena_->IsTag(operand, ::cppgm::syntax::STAG_TYPE_ID))
 	{
 		const NodeId specifiers = FindChild(operand, ::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ);
@@ -146,6 +147,7 @@ ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
 			{
 				measured = EffectiveType(
 					program_->bindings[value.ordinary].type);
+				type_layout = BindingDeclaredTypeLayout(value.ordinary);
 				for (std::uint32_t edge = declarator == kNoNode ? kNoEdge :
 					arena_->FirstEdge(declarator); edge != kNoEdge;
 					edge = arena_->NextEdge(edge))
@@ -160,7 +162,7 @@ ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
 					}
 			}
 		}
-		if (measured == kNoType) measured = BuildTypeId(operand, scope);
+		if (measured == kNoType) measured = BuildTypeId(operand, scope, &type_layout);
 	}
 	else if (arena_->IsTag(operand, ::cppgm::syntax::STAG_ID_EXPRESSION))
 	{
@@ -172,16 +174,25 @@ ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
 		{
 			const LookupResult type =
 				LookupSyntaxName(operand, scope, LOOKUP_TYPE);
-			if (type.type != kNoType) measured = type.type;
+			if (type.type != kNoType)
+			{
+				measured = type.type;
+				type_layout = BindingDeclaredTypeLayout(type.type_declaration);
+			}
 		}
-		else measured = EffectiveType(
-			program_->bindings[ordinary.ordinary].type);
+		else
+		{
+			measured = EffectiveType(program_->bindings[ordinary.ordinary].type);
+			type_layout = BindingDeclaredTypeLayout(ordinary.ordinary);
+		}
 	}
 	if (measured == kNoType)
 	{
 		{
 			ScopedCounterIncrement unevaluated(&unevaluated_depth_);
-			measured = EffectiveType(AnalyzeExpression(operand, scope).type);
+			const ExpressionInfo expression = AnalyzeExpression(operand, scope);
+			measured = EffectiveType(expression.type);
+			type_layout = ExpressionDeclaredTypeLayout(expression);
 		}
 	}
 	const bool alignment_query = arena_->IsTag(node, ::cppgm::syntax::STAG_TYPE_TRAIT_EXPRESSION);
@@ -208,7 +219,10 @@ ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
 		return CandidateExpressionFailure(
 			alignment_query ? "invalid alignof operand type" :
 			"invalid sizeof operand type");
-	const std::size_t value = alignment_query ? program_->AlignOf(measured) :
+	const std::size_t declared_alignment = alignment_query ?
+		DeclaredTypeAlignment(measured, type_layout) : 0;
+	const std::size_t value = alignment_query ?
+		(declared_alignment != 0 ? declared_alignment : program_->AlignOf(measured)) :
 		program_->SizeOf(measured);
 	ExpressionInfo result;
 	result.type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
@@ -413,6 +427,8 @@ ExpressionInfo Analyzer::AnalyzeUnary(NodeId node, ScopeId scope, TypeId target)
 	if (member_pointer_address)
 		RecordMemberPointerAddressFacts(expression, selected_member);
 	dump_.Add(expression, operand.node);
+	if (op == OP_AMP || op == OP_STAR)
+		CopyDeclaredExpressionLayout(operand, expression);
 	ExpressionInfo result;
 	result.node = expression;
 	result.type = result_type;
@@ -935,6 +951,7 @@ ExpressionInfo Analyzer::AnalyzeSubscript(NodeId node, ScopeId scope)
 	result.node = expression;
 	result.type = pointer.child;
 	result.category = VALUE_LVALUE;
+	CopyDeclaredExpressionLayout(left, expression);
 	std::uint32_t base_address = ExpressionAddress(left);
 	if (base_address == kNoConstexprAddress &&
 		program_->types.Get(program_->types.RemoveTopCv(

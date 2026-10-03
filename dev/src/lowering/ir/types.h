@@ -408,6 +408,7 @@ struct GlobalDeclaration
 struct Global
 {
 	enum StorageMode : std::uint8_t { STORAGE_DEFAULT, STORAGE_READONLY } storage;
+	bool explicit_storage_alignment;
 	enum InitializerKind { ZERO, INTEGER_VALUE, FLOATING_VALUE, ADDRESS_VALUE,
 		STRUCTURED_VALUE } initializer_kind;
 	struct DataItem
@@ -443,7 +444,8 @@ struct Global
 	std::int64_t address_offset;
 	std::vector<DataItem> items;
 
-	Global() : storage(STORAGE_DEFAULT), initializer_kind(ZERO),
+	Global() : storage(STORAGE_DEFAULT), explicit_storage_alignment(false),
+		initializer_kind(ZERO),
 		symbol(kNoLowId), initializer(0),
 		initializer_high(0),
 		floating_initializer(0),

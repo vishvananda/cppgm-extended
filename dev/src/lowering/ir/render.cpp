@@ -622,7 +622,8 @@ void RenderProgram(const lowering::ir::Program& program, std::ostream& output)
 		const Symbol& symbol = program.symbols[global.symbol];
 		if (wrote) output << '\n';
 		output << "global @" << program.strings.get(symbol.name);
-		if (global.initializer_kind != Global::STRUCTURED_VALUE)
+		if (global.initializer_kind != Global::STRUCTURED_VALUE ||
+			global.explicit_storage_alignment)
 		{
 			output << " : ";
 			WriteType(output, global.type);

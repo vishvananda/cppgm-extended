@@ -742,7 +742,7 @@ private:
 			RemoveTopQualifiers(record.type));
 		declaration.typed = !record.declaration_only &&
 			!type.IsIncompleteArray();
-		if (declaration.typed) declaration.type = LowerStorageType(record.type);
+		if (declaration.typed) declaration.type = LowerVariableStorage(record);
 		return declaration;
 	}
 	Global LowerGlobal(std::uint32_t node)
@@ -751,6 +751,7 @@ private:
 		Global global;
 		global.symbol = global_symbols_[record.binding];
 		global.type = LowerVariableStorage(record);
+		global.explicit_storage_alignment = record.storage_alignment != 0;
 		const BindingId canonical = program_.bindings[record.binding].canonical;
 		const std::uint32_t action_index = canonical < namespace_action_.size() ?
 			namespace_action_[canonical] : kNoDumpEdge;
