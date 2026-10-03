@@ -978,7 +978,8 @@ void report_generated_identity_stats(
 		"dependent_member_template_shape",
 		"dependent_qualified_type_shape",
 		"range_for_hidden",
-		"structured_binding_storage"
+		"structured_binding_storage",
+		"static_reference_temporary"
 	};
 	static_assert(sizeof(names) / sizeof(names[0]) ==
 		cppgm::semantic::SEMANTIC_GENERATED_IDENTITY_FAMILY_COUNT,

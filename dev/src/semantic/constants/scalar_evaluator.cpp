@@ -453,10 +453,14 @@ void Analyzer::SetExpressionBindingConstant(
 			{
 				const BindingId target =
 					static_cast<BindingId>(referent->identity);
-				if (program_->bindings[target].constant &&
-					BindingAddress(target) == kNoConstexprAddress &&
-					BindingObject(target) == kNoConstexprObject)
-					SetExpressionScalar(expression, BindingScalar(target));
+				if (program_->bindings[target].constant)
+				{
+					if (BindingAddress(target) != kNoConstexprAddress)
+						SetExpressionAddress(expression, BindingAddress(target));
+					else if (BindingObject(target) != kNoConstexprObject)
+						SetExpressionObject(expression, BindingObject(target));
+					else SetExpressionScalar(expression, BindingScalar(target));
+				}
 			}
 		}
 		else SetExpressionAddress(expression, address);

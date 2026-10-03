@@ -1,11 +1,16 @@
 global @object : i32 [binding=strong] = zero
 global @reference : ptr [binding=strong] = addr @object
 global @second : ptr [binding=strong] = addr @object
+global @__constexpr_reference_temporary__8 : i32 [storage=readonly, binding=internal, object=__constexpr_reference_temporary__8] = 3
+global @temporary : ptr [binding=strong] = addr @__constexpr_reference_temporary__8
+global @alias : ptr [binding=strong] = addr @__constexpr_reference_temporary__8
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
   slot $land__2 : i64
   slot $land__3 : i64
+  slot $land__4 : i64
+  slot $land__5 : i64
 
   block ^entry:
     %t1 = load ptr @second
@@ -13,14 +18,44 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr @object
     %t3 = addr @object
     %t4 = cmp eq ptr %t2, %t3
-    branch %t4, ^land_rhs_7, ^land_short_8
+    branch %t4, ^land_rhs_13, ^land_short_14
 
-  block ^land_rhs_7:
+  block ^land_rhs_13:
     %t5 = load ptr @second
     %t6 = addr @object
     %t7 = cmp eq ptr %t5, %t6
     %t8 = cmp ne i64 %t7, 0
-    store i64 %t8, $land__3
+    store i64 %t8, $land__5
+    jump ^land_end_15
+
+  block ^land_short_14:
+    store i64 0, $land__5
+    jump ^land_end_15
+
+  block ^land_end_15:
+    %t9 = load i64 $land__5
+    branch %t9, ^land_rhs_10, ^land_short_11
+
+  block ^land_rhs_10:
+    %t10 = load i32 @object
+    %t11 = cmp eq i32 %t10, 7
+    %t12 = cmp ne i64 %t11, 0
+    store i64 %t12, $land__4
+    jump ^land_end_12
+
+  block ^land_short_11:
+    store i64 0, $land__4
+    jump ^land_end_12
+
+  block ^land_end_12:
+    %t13 = load i64 $land__4
+    branch %t13, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t14 = load i32 @__constexpr_reference_temporary__8
+    %t15 = cmp eq i32 %t14, 3
+    %t16 = cmp ne i64 %t15, 0
+    store i64 %t16, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -28,14 +63,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t9 = load i64 $land__3
-    branch %t9, ^land_rhs_4, ^land_short_5
+    %t17 = load i64 $land__3
+    branch %t17, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t10 = load i32 @object
-    %t11 = cmp eq i32 %t10, 7
-    %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $land__2
+    %t18 = addr @__constexpr_reference_temporary__8
+    %t19 = addr @__constexpr_reference_temporary__8
+    %t20 = cmp eq ptr %t18, %t19
+    %t21 = cmp ne i64 %t20, 0
+    store i64 %t21, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -43,8 +79,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t13 = load i64 $land__2
-    branch %t13, ^cond_then_1, ^cond_else_2
+    %t22 = load i64 $land__2
+    branch %t22, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -55,6 +91,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load i32 $cond__1
-    return i32 %t14
+    %t23 = load i32 $cond__1
+    return i32 %t23
 }

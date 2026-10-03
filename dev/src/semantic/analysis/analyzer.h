@@ -1111,8 +1111,10 @@ private:
 	bool ShouldPreserveRuntimeInitializerRecipe(bool local,
 		const SpecInfo& spec, TypeId type, NodeId initializer) const;
 	void PublishVariableInitializer(BindingId binding, TypeId type,
-		const SpecInfo& spec, const ExpressionInfo& initializer,
+		const SpecInfo& spec, ExpressionInfo& initializer,
 		bool preserve_runtime_recipe);
+	void MaterializeStaticReferenceTemporary(BindingId binding, TypeId type,
+		ExpressionInfo* initializer);
 	bool HasConstantInitializerFact(const ExpressionInfo& initializer) const;
 	TypeId StructuredSpecifierType(NodeId child, NodeId structured_name,
 		ScopeId scope, TypeId deferred_type, bool* substitution_failed);

@@ -85,6 +85,7 @@ dev/src/semantic/constants/address_evaluator.cpp	ExpressionAddress	1	dev/src/sem
 dev/src/semantic/constants/address_evaluator.cpp	ExpressionTruth	1	dev/src/semantic/constants/address_evaluator.cpp	keep
 dev/src/semantic/constants/address_evaluator.cpp	InternConstexprAddress	1	dev/src/semantic/constants/address_evaluator.cpp	keep
 dev/src/semantic/constants/address_evaluator.cpp	LvalueAddress	1	dev/src/semantic/constants/address_evaluator.cpp	keep
+dev/src/semantic/constants/address_evaluator.cpp	MaterializeStaticReferenceTemporary	1	dev/src/semantic/constants/address_evaluator.cpp	keep
 dev/src/semantic/constants/address_evaluator.cpp	MaterializeConstexprAddress	1	dev/src/semantic/constants/address_evaluator.cpp	keep
 dev/src/semantic/constants/address_evaluator.cpp	NullConstexprAddress	1	dev/src/semantic/constants/address_evaluator.cpp	keep
 dev/src/semantic/constants/address_evaluator.cpp	OffsetConstexprAddress	1	dev/src/semantic/constants/address_evaluator.cpp	keep

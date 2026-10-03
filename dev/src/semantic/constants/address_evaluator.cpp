@@ -2,11 +2,68 @@
 #include "support/exceptions.h"
 
 #include <limits>
+#include <sstream>
 
 namespace cppgm
 {
 namespace semantic
 {
+
+void Analyzer::MaterializeStaticReferenceTemporary(BindingId binding,
+	TypeId type, ExpressionInfo* initializer)
+{
+	const ScopeKind scope = program_->KindOfScope(program_->bindings[binding].owner);
+	if (initializer->category != VALUE_PRVALUE || !initializer->constant ||
+		program_->bindings[binding].thread_local_storage ||
+		(scope != SCOPE_NAMESPACE && scope != SCOPE_CLASS &&
+		 program_->bindings[binding].storage_class != STORAGE_CLASS_STATIC))
+		return;
+	const TypeId object_type = EffectiveType(type);
+	// Base-subobject temporary lifetimes retain their complete-object recipe.
+	if (!SimilarUnqualified(initializer->type, object_type)) return;
+	std::ostringstream generated;
+	generated << "__constexpr_reference_temporary__" << binding;
+	const std::string generated_name = generated.str();
+	if (stats_)
+		RecordGeneratedIdentityRender(
+			SEMANTIC_GENERATED_STATIC_REFERENCE_TEMPORARY, generated_name, 1);
+	const NameId name = program_->names.Intern(generated_name);
+	const BindingId storage = program_->AddUnindexedBinding(
+		program_->GlobalScope(), BIND_VARIABLE, name, object_type, kNoBinding);
+	SpecInfo spec;
+	spec.storage_class = STORAGE_CLASS_STATIC;
+	spec.is_constexpr = true;
+	PublishVariableDeclarationFacts(storage, program_->GlobalScope(), name,
+		object_type, spec, false);
+	program_->bindings[storage].compiler_generated = true;
+	PublishConstantVariableInitializer(storage, object_type, spec, *initializer);
+	bool declaration_only = false;
+	const std::uint32_t variable = MakeVariableDeclarationDump(
+		object_type, name, storage, false, true, &declaration_only);
+	PublishVariableInitializerActions(variable, storage, object_type,
+		*initializer, true, false, false);
+	dump_.Add(root_, variable);
+	AddNamespaceObjectAction(variable, storage, object_type, initializer->node);
+	namespace_objects_.back().constant_object = ExpressionObject(*initializer);
+	const ConstexprAddressValue* address = ConstexprAddressAt(
+		ExpressionAddress(*initializer));
+	if (address && address->kind != CONSTEXPR_ADDRESS_LOCAL)
+	{
+		StaticAddressInitializer& value = namespace_objects_.back().constant_address;
+		value.kind = address->kind;
+		value.identity = address->identity;
+		value.offset = address->offset;
+	}
+	ExpressionInfo referent;
+	referent.node = MakeDump(DUMP_ID_EXPRESSION, object_type,
+		VALUE_LVALUE, name, storage);
+	referent.type = object_type;
+	referent.category = VALUE_LVALUE;
+	referent.binding = storage;
+	SetExpressionBindingConstant(&referent, storage);
+	LvalueAddress(&referent);
+	*initializer = referent;
+}
 
 std::uint32_t Analyzer::InternConstexprAddress(
 	const ConstexprAddressValue& address)

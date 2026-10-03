@@ -610,9 +610,11 @@ void Analyzer::PublishInClassStaticDefinitionPolicy(
 }
 
 void Analyzer::PublishVariableInitializer(BindingId binding,
-	TypeId type, const SpecInfo& spec, const ExpressionInfo& initializer,
+	TypeId type, const SpecInfo& spec, ExpressionInfo& initializer,
 	bool preserve_runtime_recipe)
 {
+	if (spec.is_constexpr && program_->types.IsReference(type))
+		MaterializeStaticReferenceTemporary(binding, type, &initializer);
 	program_->bindings[binding].template_parameter_constant =
 		dump_.nodes[initializer.node].template_parameter_constant;
 	program_->bindings[program_->bindings[binding].canonical].

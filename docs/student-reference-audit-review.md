@@ -4,7 +4,29 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-## Updated workflow — resumed 2026-10-03
+## Current pause and strategy review — 2026-10-03
+
+Implementation paused at the user's request after a70d1174b and resumed
+on their subsequent instruction. The latest
+qualified compiler passes strict 6118/6118 and the required audits. There are
+28 open compiler families and six unresolved reviews; this is not a count of
+independent failing root causes. Since fb15cd49e the branch has 107 commits,
+46 documentation-only commits and 331 added test sources (301 outside opt-in
+controls, 30 controls). These counts do not establish that each fixture is
+needed. The previous reduction in benchmarking overhead helped, but speculative
+design and adjacent conformance exploration still delay concrete fixes.
+
+Recommended next workflow: fix only frozen student/Argon reproductions, group
+them by existing compiler owner, and make a concrete patch before expanding
+boundary analysis. Reuse one regression per demonstrated rule; add independent
+negatives only when needed to prevent an incorrect repair. Use targeted checks
+during edits and qualify a small coherent batch once, retaining all required
+checks and calibrated performance evidence. Keep disputed reviews out of the
+critical path. Record only status, regression, result and evidence path for
+each fix. Finish with fixture minimization and one combined export validation.
+No compiler or fixture change is made during this review.
+
+## Previous updated workflow — resumed 2026-10-03
 
 Freeze the discovery inventory and finish confirmed student/Argon defects by
 root cause. Reuse fixtures; add only independent missing regressions. During
@@ -83,14 +105,15 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **28 compiler issue families** remain
+Remaining-work count on 2026-10-03: **27 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
-LOOKUP-TAG, ABI-GLOBAL, NOEXCEPT-LIST and REF-BITFIELD are also completed. These are tracker
+LOOKUP-TAG, ABI-GLOBAL, NOEXCEPT-LIST, REF-BITFIELD and
+CONST-REF-STATIC-TEMP are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -150,7 +173,7 @@ The recent discovery inventory is not all C++11:
 | EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Needs contract review: three prvalue/call/conditional controls fail here and in Clang 21.1.8 at O0/O2, but pass GCC. CWG 2176 adds returned-object destruction beyond the frozen N3485 wording. Keep this host disagreement separate; no required fixture or reference changes. |
 | REF-INIT-LIST | Give a reference-bound initializer-list backing array one lexical lifetime | Additional EH-REF-INIT boundary control | Done in accompanying checkpoint: normal list-object materialization and typed binding ownership prevent duplicate backing destruction and reference-slot corruption; partial-array landings retain earlier automatic cleanup. Sixteen C++11 PA21 fixtures and 36 agreed boundary programs pass ours/Clang/GCC at O0/O2, including twelve-element construction progress, borrowed/copy boundaries and static/global references. Strict 6054/6054 and all eight required check groups pass, with zero placement findings. Alpha instruction/RSS and raw/calibrated cycle gates pass across 2,016 equal-object observations. AUTO-CONST-REF, INIT-LIST-STATIC and REF-VOLATILE remain separate preexisting gaps; disputed value-copy/comma forms remain review evidence. |
 | AUTO-CONST-REF | Deduce const auto& from an rvalue without imposing an auto& lvalue constraint | REF-INIT-LIST boundary controls | Done in accompanying checkpoint: ordinary non-volatile const deduction, function cv handling, typed reference recipes and class-element copies retain C++11 behavior. Seventeen PA20/21 fixtures pass ours/Clang/GCC, including strict host C++11 checks; strict 6071/6071 and all required checks pass with zero placement/hygiene findings. Final Alpha instruction/RSS and eight focused raw/calibrated cycle gates pass across 4032 equal-object observations; 5312 earlier timing observations remain recorded. CONST-REF-STATIC-TEMP, REF-ARRAY-CV, REF-POINTER-QUAL and EH-LOCAL-ARRAY-CATCH remain independent owner gaps. |
-| CONST-REF-STATIC-TEMP | Give a constexpr reference an address fact for a static-storage temporary | AUTO-CONST-REF explicit-type boundary | Open, independently reproduced: constexpr const int& ref=3 rejects with unchanged a3aaf2015 entry at O0/O2, while Clang/GCC accept and the corresponding static_assert succeeds in C++11. The same failure occurs with const auto&. Frozen source/commands are in auto-const-reference/explicit-reference-controls/controls.json. The current reference initializer has no constant address identity for its temporary. |
+| CONST-REF-STATIC-TEMP | Give a constexpr reference an address fact for a static-storage temporary | AUTO-CONST-REF explicit-type boundary | Done: private unindexed backing storage supplies the existing constant address and static initialization paths. Extend the existing PA16 static-object reference fixture; remove the redundant control. Original scalar, aliases, distinct identities, local-static, floating and pointer boundaries pass at O0/O2; invalid automatic/runtime initializers still reject. Strict 6118/6118 and all required checks pass; 144 Alpha observations pass instruction/RSS/equality gates. |
 | REF-ARRAY-CV | Recognize element cv-qualification when binding a reference to a const array xvalue | AUTO-CONST-REF explicit-type boundary | Done in the accompanying performance-approved checkpoint: consume normalized element cv while matching array dimensions and reference qualification. Explicit and deduced const-array xvalue bindings pass, as do all required qualifier/category boundaries. Thirty qualification fixtures, 574 fresh controls plus 376 retained host observations, strict 6108/6108, all compiler checks and the global 4800-observation performance gate pass. |
 | REF-POINTER-QUAL | Require valid qualification and reference compatibility when referent pointer types differ | REF-ARRAY-CV preparation controls | Done in the accompanying performance-approved checkpoint: enforce cv subset, atomic parity and intermediate const while distinguishing direct reference compatibility from pointer-prvalue conversion temporaries. Mutable/volatile/deep-pointer negatives and valid const/deep-pointer boundaries pass. Already supported host-agreed aliases remain preserved; no new CWG2352/330 aliasing oracle is imposed. The full boundary matrix, strict report, required checks and global performance gate pass. Bit-field materialization remains separate. |
 | REF-BASE-CATEGORY | Reject a related derived lvalue bound to a base rvalue reference | Reference qualification boundary controls | Done in the accompanying performance-approved checkpoint: reject the lvalue category before accepting the related derived-to-base reference conversion, per N3485 8.5.3/5. Base xvalue and const-volatile base lvalue positives remain. Full boundary/regression controls, strict report, all required compiler checks and global performance gate pass. |
@@ -5571,3 +5594,21 @@ Both images, checks and raw observations remain in
 `/tmp/cppgm-v4-audit-review/bitfield-reference/`.
 Remaining: 28 compiler families and six reviews. Final fixture minimization and
 combined student-export validation remain pending.
+
+### Completed static constexpr reference temporary — 2026-10-03
+
+CONST-REF-STATIC-TEMP reuses private semantic bindings and existing static
+initialization actions for lifetime-extended constant temporaries (N3485
+5.19 and 12.2/5). References and aliases retain the backing object's address
+and constant referent facts. Extend the existing PA16 reference-alias fixture;
+remove its opt-in duplicate. No fixture file is added. All 48 admitted focused
+checks pass across ours/Clang/GCC at O0/O2; PA16 passes 160/160. Strict remains
+6118/6118 in one line; debug-info, self-host PA5, nine architecture audits,
+file audit and placement pass. Final SHA-256:
+`256ecbabc005eb0c9fbda58c6a57203ca380d3595e21dd85359d631ee4150f5e`.
+Alpha's 144 raw observations independently pass unscaled counter, RSS, status
+and equal-output verification. Maximum instruction ratio 1.000045 and RSS
+1.009711; all calibrated cycle medians below 1.01. No repeat is indicated.
+Evidence: `/tmp/cppgm-v4-audit-review/static-reference-temporary/`.
+Remaining: 27 compiler families and six reviews; fixture pruning and combined
+export remain pending.
