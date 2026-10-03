@@ -1441,6 +1441,7 @@ private:
 	void AnalyzeClassMemberFunctionDefinition(NodeId node, ScopeId scope,
 		TypeId owner_type, const SpecInfo& spec, AccessKind access);
 	bool IsCallableDeclaration(NodeId node) const;
+	bool HasOnlyIndirectDeclarators(NodeId list) const;
 	void ValidateOrdinaryMemberFunctionBodies(EntityId entity);
 	void ValidateOrdinaryMemberFunctionBody(BindingId function);
 	void ValidateStaticAssertionsInBlock(NodeId block, ScopeId scope,

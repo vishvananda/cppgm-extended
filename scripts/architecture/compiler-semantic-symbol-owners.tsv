@@ -246,6 +246,7 @@ dev/src/semantic/declarations/declarator_types.cpp	BuildIdentityOnlySpecifiers	1
 dev/src/semantic/declarations/declarator_types.cpp	BuildIdentityOnlyTypeId	1	dev/src/semantic/declarations/declarator_types.cpp	keep
 dev/src/semantic/declarations/declarator_types.cpp	EntityOf	1	dev/src/semantic/declarations/declarator_types.cpp	keep
 dev/src/semantic/declarations/declarator_types.cpp	HasDeclSpecifier	1	dev/src/semantic/declarations/declarator_types.cpp	keep
+dev/src/semantic/declarations/declarator_types.cpp	HasOnlyIndirectDeclarators	1	dev/src/semantic/declarations/declarator_types.cpp	keep
 dev/src/semantic/declarations/declarator_types.cpp	IsCallableDeclaration	1	dev/src/semantic/declarations/declarator_types.cpp	keep
 dev/src/semantic/declarations/entity_ownership.cpp	AddInjectedStorageInitializationActions	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/entity_ownership.cpp	ClearInjectedConstructorInitializers	1	dev/src/semantic/declarations/entity_ownership.cpp	keep

@@ -172,6 +172,22 @@ EntityId Analyzer::EntityOf(TypeId type) const
 	return record.kind == TYPE_NAMED ? record.entity : kNoEntity;
 }
 
+bool Analyzer::HasOnlyIndirectDeclarators(NodeId list) const
+{
+	if (list == kNoNode || arena_->FirstEdge(list) == kNoEdge) return false;
+	for (std::uint32_t edge = arena_->FirstEdge(list); edge != kNoEdge;
+		edge = arena_->NextEdge(edge))
+	{
+		const NodeId declarator = FindChild(arena_->EdgeChild(edge),
+			::cppgm::syntax::STAG_DECLARATOR);
+		if (declarator == kNoNode ||
+			FindChild(declarator, ::cppgm::syntax::STAG_PTR_OPERATOR) == kNoNode ||
+			FindChild(declarator, ::cppgm::syntax::STAG_PARAMETER_CLAUSE) != kNoNode)
+			return false;
+	}
+	return true;
+}
+
 bool Analyzer::IsCallableDeclaration(NodeId node) const
 {
 	if (arena_->IsTag(node, ::cppgm::syntax::STAG_FUNCTION_DEFINITION)) return true;

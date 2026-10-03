@@ -2117,7 +2117,8 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 		SimpleDeclarationClassContext(list, scope, qualified_lexical_scope, &hint);
 	const EntityId previous_class_context = current_class_context_;
 	if (declaration_class_context != kNoEntity) current_class_context_ = declaration_class_context;
-	const bool identity_only = HasDeclSpecifier(specifiers, "typedef");
+	const bool identity_only = HasDeclSpecifier(specifiers, "typedef") ||
+		HasOnlyIndirectDeclarators(list);
 	SpecInfo spec = identity_only ? BuildIdentityOnlySpecifiers(
 		specifiers, scope, hint, list != kNoNode) :
 		BuildSpecifiers(specifiers, scope, hint, list != kNoNode);
