@@ -83,7 +83,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **35 compiler issue families** remain
+Remaining-work count on 2026-10-03: **34 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
@@ -195,7 +195,7 @@ The recent discovery inventory is not all C++11:
 | TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Reviewed: no additional required fix or fixture. Instantiating the mismatched member rejects with conflicting function return type at O0/O2 and in PA14 LowIR, while the matching definition passes; both strict C++11 hosts agree. The unused form remains a diagnostic-timing difference under N3485 14.6/8, not a mandatory rejection oracle. Fourteen new observations and contract review are recorded below. |
 | NEW-ARRAY-DTOR-ACCESS | Check destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Done in the accompanying performance-approved checkpoint: use the indexed destructor binding and naming/object-class access check before trivial destruction is elided. Promote the private-array negative, add one protected-base-object negative and retain the existing scalar/own-array positive in PA12/400. Demanded scratch boundaries pass ours and Clang 22/22; three GCC-disputed cases stay scratch evidence. PA12 298/298, strict 6108/6108 in one line, all required compiler checks and global Alpha gates pass. N3485 5.3.4/17 and 11.4/1 supply the rule. |
 | TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
-| ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Open, independently reproduced: character, integer and suffixed-string messages are accepted here and rejected by Clang/GCC at O0/O2. These are C++11 syntax constraints and can be tested without hosted headers. |
+| ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Done: typed ordinary-string token category and retained message range enforce PA15 semantics while preserving PA5 generic-literal AST acceptance. Promote two unchanged independent controls; no new source fixture or record field. Adjacent literal kinds use one guarded range check. All 49 focused outcomes and eight required final validation groups pass; strict 6114/6114 prints one line. Final 288-observation screen/confirmation passes instruction/RSS/equality gates; confirmed virtual-class cycles increase 3.49%, explicitly retained. A 72-compile profile found no actionable new hotspot. First-candidate evidence and final source/image/results remain in static-assert-message/. |
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Open, independently reduced: static_assert(&S::x, "nonnull member pointer") rejects with both immutable entry and candidate; Clang/GCC accept in C++11 at O0/O2. Ordinary MEMBER adjustments remain separately tracked. |
 | CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Open, independently reduced: a two-bit unsigned field initialized with 5 must read as 1 in its constexpr boolean conversion. The template static assertion fails here and passes Clang/GCC in C++11 at O0/O2. Entry and candidate retain the same failure. |
 | EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Open, independently reproduced: private conversion is accepted and invalid immediate conditions cause a hard error instead of selecting the fallback; Clang/GCC corroborate in C++11 extension mode. This C++20 feature is necessary for the supported libc++ profile: release/21.x __utility/pair.h lines 140/147/162 use conditional explicit in the C++11 constructor branch. Frozen header SHA and observations are recorded below. Deduction-guide controls are excluded from this row without their own header dependency. |
@@ -5406,4 +5406,24 @@ neutrality. Qualified image, source patch and raw results are retained in
 `noreturn-variable-appertainment/`; image SHA
 `760b15be4963c77c48b44bbcf7bd576ae4487b156528689ef1e39f73182e3b9a`.
 Remaining: 35 compiler families and six reviews. Final fixture minimization and
+combined student-export validation remain pending.
+
+
+### Completed static-assert message validation — 2026-10-03
+
+The existing parser grammar and PA5 rendering remain unchanged. PA15 semantics
+consume the retained message token range and ordinary-string category, rejecting
+integer, character and user-defined messages. Two existing controls become
+required negatives; no source fixture is added. All 49 focused outcomes and
+eight required final qualification groups pass; strict is 6114/6114 in one line.
+The final 288 counter observations independently pass instruction/RSS and equal
+object checks with every counter unscaled. Virtual-class calibrated cycles
+increase 3.49% (focused 95% bootstrap interval 3.08–4.15%); this is a timing
+limitation, not a claim of neutrality. The short alternating 72-compile profile
+finds no actionable new hotspot. Namespace/template timing signals from the
+first candidate disappear with the guarded single-range classification.
+Qualification follows the revised instruction/memory policy; both candidates'
+evidence is retained in `static-assert-message/`. Final image SHA:
+`b1e20ba434feb50af3b96240228117ea268b86bfa89b3bad02eae7306df808de`.
+Remaining: 34 compiler families and six reviews. Final fixture minimization and
 combined student-export validation remain pending.

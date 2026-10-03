@@ -2665,8 +2665,10 @@ NodeId SyntaxParser::ParseStaticAssert()
 	if (Match(OP_COMMA))
 	{
 		if (!AtLiteral()) throw Error("expected static assertion message");
-		arena_.Add(declaration, arena_.Make("message",
-			Spelling(position_++)));
+		const NodeId message = arena_.Make("message", Spelling(position_));
+		arena_.SetTokenRange(message, position_, position_ + 1);
+		arena_.Add(declaration, message);
+		++position_;
 	}
 	Expect(OP_RPAREN);
 	Expect(OP_SEMICOLON);
@@ -2837,7 +2839,7 @@ NodeId SyntaxParser::ParseDeclarationCore(bool in_class)
 	}
 	if (At(KW_TEMPLATE)) return ParseTemplate(in_class);
 	if (At(KW_EXTERN) && position_ + 1 < tokens_.size() &&
-		tokens_[position_ + 1].Kind() == kLiteralToken)
+		IsLiteralKind(tokens_[position_ + 1].Kind()))
 	{
 		position_ += 1;
 		std::string language = Spelling(position_++);

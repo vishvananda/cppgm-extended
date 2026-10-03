@@ -17,19 +17,22 @@ const std::uint16_t kSimpleTokenCount =
 	static_cast<std::uint16_t>(OP_ARROW) + 1;
 const std::uint16_t kIdentifierToken = kSimpleTokenCount;
 const std::uint16_t kLiteralToken = kSimpleTokenCount + 1;
-const std::uint16_t kEofToken = kSimpleTokenCount + 2;
-const std::uint16_t kRShiftFirstToken = kSimpleTokenCount + 3;
-const std::uint16_t kRShiftSecondToken = kSimpleTokenCount + 4;
-const std::uint16_t kPragmaPackPushToken = kSimpleTokenCount + 5;
-const std::uint16_t kPragmaPackPopToken = kSimpleTokenCount + 6;
+const std::uint16_t kStringLiteralToken = kSimpleTokenCount + 2;
+const std::uint16_t kEofToken = kSimpleTokenCount + 3;
+const std::uint16_t kRShiftFirstToken = kSimpleTokenCount + 4;
+const std::uint16_t kRShiftSecondToken = kSimpleTokenCount + 5;
+const std::uint16_t kPragmaPackPushToken = kSimpleTokenCount + 6;
+const std::uint16_t kPragmaPackPopToken = kSimpleTokenCount + 7;
 const std::uint32_t kNoLiteralFact =
 	std::numeric_limits<std::uint32_t>::max();
 const NodeId kNoNode = std::numeric_limits<NodeId>::max();
 const std::uint32_t kNoEdge = std::numeric_limits<std::uint32_t>::max();
 const std::size_t kSyntaxTagCacheEntries = 4096;
 
-static_assert(static_cast<unsigned int>(OP_ARROW) + 7 <= 0xffU,
+static_assert(static_cast<unsigned int>(OP_ARROW) + 8 <= 0xffU,
 	"syntax token kinds must fit the packed identity byte");
+static_assert(kStringLiteralToken == kLiteralToken + 1,
+	"literal kinds must remain adjacent for the parser range check");
 static_assert(sizeof(SyntaxToken) == 16,
 	"syntax token provenance must remain four compact 32-bit words");
 static_assert(sizeof(SyntaxLiteralFact) == 16,
@@ -193,7 +196,7 @@ void SyntaxTokenSink::EmitLiteral(const std::string& source, FundamentalType typ
 void SyntaxTokenSink::EmitLiteralArray(const std::string& source, std::size_t,
 	FundamentalType, const void*, std::size_t)
 {
-	EmitLiteralSpelling(source);
+	tokens_.push_back(LocatedToken(kStringLiteralToken, InternTokenSpelling(source)));
 }
 
 void SyntaxTokenSink::EmitUserDefinedCharacter(const std::string& source,

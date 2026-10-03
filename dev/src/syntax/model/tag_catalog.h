@@ -174,6 +174,7 @@
 	APPLY(STAG_TYPE_PACK_EXPANSION, "type-pack-expansion") \
 	APPLY(STAG_VIRTUAL, "virtual") \
 	APPLY(STAG_WHILE_STATEMENT, "while-statement") \
+	APPLY(STAG_MESSAGE, "message") \
 	/**/
 
 #endif

@@ -1,4 +1,5 @@
 #include "syntax/extensions/object_attributes.h"
+#include "syntax/parser/token_classification.h"
 
 #include "support/exceptions.h"
 
@@ -121,7 +122,7 @@ bool ConsumeGnuObjectAttributeFacts(
 					argument_begin = *position + 1;
 				}
 				else if (depth == 1 &&
-					tokens[*position].Kind() == kLiteralToken)
+					IsLiteralKind(tokens[*position].Kind()))
 				{
 					++direct_tokens;
 					saw_argument_token = true;

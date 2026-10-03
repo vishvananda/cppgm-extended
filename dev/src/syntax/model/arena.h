@@ -26,6 +26,7 @@ extern const std::uint16_t kRShiftFirstToken;
 extern const std::uint16_t kRShiftSecondToken;
 extern const std::uint16_t kPragmaPackPushToken;
 extern const std::uint16_t kPragmaPackPopToken;
+extern const std::uint16_t kStringLiteralToken;
 extern const std::uint32_t kNoLiteralFact;
 extern const NodeId kNoNode;
 extern const std::uint32_t kNoEdge;

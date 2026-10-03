@@ -9,6 +9,11 @@ namespace cppgm
 namespace syntax
 {
 
+inline bool IsLiteralKind(std::uint16_t kind)
+{
+	return static_cast<unsigned int>(kind) - kLiteralToken <= 1;
+}
+
 inline bool IsFundamentalKind(std::uint16_t kind)
 {
 	switch (static_cast<SimpleTokenKind>(kind))

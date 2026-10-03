@@ -700,6 +700,12 @@ ExpressionInfo Analyzer::AnalyzeClassFunctionalCast(TypeId cast_type,
 
 void Analyzer::AnalyzeStaticAssert(NodeId node, ScopeId scope)
 {
+	const NodeId message = FindChild(node, ::cppgm::syntax::STAG_MESSAGE);
+	if (message != kNoNode && (!arena_->HasTokenRange(message) ||
+		arena_->TokenKind(arena_->TokenFirst(message)) !=
+			::cppgm::syntax::kStringLiteralToken))
+		ThrowSemanticError("static_assert message requires a string literal" +
+			StaticAssertLocation(*arena_, node));
 	const NodeId condition_syntax = FirstSemanticChild(node);
 	if (condition_syntax == kNoNode)
 		ThrowSemanticError("static_assert has no condition" +

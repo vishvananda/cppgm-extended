@@ -1,6 +1,7 @@
 #pragma once
 
 #include "syntax/model/arena.h"
+#include "syntax/parser/token_classification.h"
 #include "support/exception_types.h"
 
 #include <cstddef>
@@ -88,7 +89,7 @@ protected:
 	{
 		const Derived& parser = static_cast<const Derived&>(*this);
 		return parser.position_ < parser.tokens_.size() &&
-			parser.tokens_[parser.position_].Kind() == kLiteralToken;
+			IsLiteralKind(parser.tokens_[parser.position_].Kind());
 	}
 
 	bool AtEof() const
@@ -146,7 +147,7 @@ protected:
 		const SyntaxToken& token = parser.tokens_[position];
 		if (token.Kind() == kIdentifierToken)
 			return "TT_IDENTIFIER:" + Spelling(position);
-		if (token.Kind() == kLiteralToken) return Spelling(position);
+		if (IsLiteralKind(token.Kind())) return Spelling(position);
 		if (token.Kind() == kRShiftFirstToken ||
 			token.Kind() == kRShiftSecondToken)
 			return "OP_RSHIFT:>>";
