@@ -105,8 +105,8 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **19 compiler issue families** remain
-open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
+Remaining-work count on 2026-10-03: **10 compiler issue families** remain
+open or in progress. EH-UNWIND-DTOR is completed below. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
@@ -184,7 +184,7 @@ The recent discovery inventory is not all C++11:
 | REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Done in the accompanying performance-approved checkpoint: temporary lvalue-reference binding requires const without volatile, including normalized array element cv. The independent scalar/class/array negatives and valid lvalue controls pass; full compiler checks and global performance gate pass. |
 | REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Done: reference-related single elements bind directly; other class lists create a separate temporary through existing materialization. Reuse prepared typed elements. Extend the existing PA12 constructor-argument lifetime fixture; remove the opt-in duplicate. Original, alias, conversion, aggregate, derived and rejection boundaries pass 48 focused checks at O0/O2. PA12 298/298, strict 6118/6118, all required checks and Alpha instruction/RSS/equality gates pass. |
 | REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Done: materialize the complete derived prvalue before projecting the base reference, preserve cv and binding category, and publish later lifecycle definitions to cached base entries. Extend the existing PA21 lifetime fixture with a nonzero base offset; add one independent PA12 mutable-xvalue cast rejection. Original and fixture pass all three link routes at O0/O2. Eighteen reviewed LowIR references add only the previously missing base-destructor body. Strict 6119/6119, all required checks and Alpha gates pass. |
-| EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Open, independently reproduced: four reference-initializer controls and an ordinary object/throw control return 10 with both the unchanged entry and cleanup candidate; Clang/GCC invoke the installed termination handler (77) at O0/O2. Generic full-expression cleanup continuations lower destructor calls without the terminating guard used by constructor/destructor body cleanup. Frozen inputs and host traces are retained under reference-initializer-cleanup/. |
+| EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Done in this checkpoint: cached/linked cleanup actions carry unwind mode and use the existing termination guard; staged typed actions supply runtime demand. All six frozen host forms agree with Clang/GCC at O0/O2. Native rethrow resets handler selection, preserving existing source-handler behavior and fixing three recorded standalone observations. One PA28 fixture replaces its control; extend the existing PA25 destructor function-try fixture. Strict 6122/6122, all required checks and final Alpha instruction/RSS/equality gates pass; measured cycle diagnostics are retained below. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Done: retain body, nested constructor initializer and function-try syntax through registration, definition adoption, specialization upgrades and explicit specialization. The original program passes all three link routes at O0/O2; specialization/upgrade boundaries match Clang/GCC. Extend the existing PA21 function-try fixture and retire the opt-in duplicate. The extended fixture's preexisting native failure remains BACKEND. Pattern storage remains 512 bytes. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Done for source acceptance and lowering: remove the lexical-handler restriction and its unused counter. All three original programs pass host linking at O0/O2; the called-function case and rewritten existing fixture also pass standalone/object routes. No-active-exception execution invokes the installed termination handler. Same-function nested-handler and destructor traces still fail only in the native BACKEND family; retain/reclassify the existing opt-in reducer. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
@@ -205,7 +205,7 @@ The recent discovery inventory is not all C++11:
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
 | BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Open, independently reproduced: the entry and copy-cleanup candidates crash at O2 for the twelve-element move and trivial-copy-prefix array fixtures, in standalone and host-linked object routes. Clang/GCC pass; our O0 routes and corresponding external-companion forms pass. Retain frozen sources, binary hashes, host-link controls and debugger observations under synthesized-construction-prefix/. |
-| BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. Two defined source-handler controls also retain identical entry/candidate standalone failures at O0/O2: nested-outer-swallow returns 10 and function-try-body-local aborts (134); their host-object routes pass Clang/GCC and the candidate. Keep these runtime routes separate from PA21 LowIR cleanup correctness. The standalone shutdown-registration dependency exposed by INIT-LIST-STATIC is fixed in the native callback checkpoint below. Existing object metadata already maps its helper to C atexit; no ABI spelling change was needed. The two source-handler routes above remain open. Dynamic rethrow acceptance now exposes two more native-only observations within this handler/cleanup family: same-function nested rethrow terminates (134), and the destructor-rethrow trace returns 1, while both host-object routes pass. Retain pa21/tests/controls/200-audit-dynamic-rethrow.cpp under BACKEND; no new fixture. |
+| BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Open review: shared RTTI host-object route passes while standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations remain. Private-derived/base reducer already passes both. EH-UNWIND-DTOR fixes nested-outer-swallow, function-try-body-local and same-function dynamic rethrow at O0/O2 by resetting the native rethrow selector. The destructor-rethrow trace still returns 1 on the native route while both host-object routes pass. The independently reproduced 32-byte automatic-stack limitation also remains. Standalone shutdown registration is fixed in the native callback checkpoint. Keep these runtime routes separate from PA21 LowIR cleanup correctness; no ABI spelling change. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
@@ -4604,8 +4604,8 @@ additional value; it does not install exploratory matrices wholesale.
 | VBASE | Defined most-derived initialization of all virtual scalar bases; no indeterminate value oracle. |
 | ABI-GLOBAL | The external global symbol is g; a correct object-symbol oracle supplements current incorrect inspection references. |
 | EH | Global replacement new/delete count failed-construction deallocation without hosted includes. |
-| BACKEND | Two existing source programs are reused through the standalone native route. |
-| EH-UNWIND-DTOR | An ordinary automatic destructor throwing during unwind must invoke the installed termination handler. |
+| BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Open review: shared RTTI host-object route passes while standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations remain. Private-derived/base reducer already passes both. EH-UNWIND-DTOR fixes nested-outer-swallow, function-try-body-local and same-function dynamic rethrow at O0/O2 by resetting the native rethrow selector. The destructor-rethrow trace still returns 1 on the native route while both host-object routes pass. The independently reproduced 32-byte automatic-stack limitation also remains. Standalone shutdown registration is fixed in the native callback checkpoint. Keep these runtime routes separate from PA21 LowIR cleanup correctness; no ABI spelling change. |
+| EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Done in this checkpoint: cached/linked cleanup actions carry unwind mode and use the existing termination guard; staged typed actions supply runtime demand. All six frozen host forms agree with Clang/GCC at O0/O2. Native rethrow resets handler selection, preserving existing source-handler behavior and fixing three recorded standalone observations. One PA28 fixture replaces its control; extend the existing PA25 destructor function-try fixture. Strict 6122/6122, all required checks and final Alpha instruction/RSS/equality gates pass; measured cycle diagnostics are retained below. |
 | MANGLE | Clang-checked RTTI template substitution plus reused PA9 entity-address facts. |
 | PA29-ALIGN | Combine the already required GNU aligned alias and indirect-expression boundaries; no new vendor feature is admitted. |
 | EXPLICIT-CONTEXT | Constructor-template private conversion and substitution fallback; only the documented libc++ 21 conditional-explicit dependency. |
@@ -6268,3 +6268,49 @@ Evidence: `/tmp/cppgm-v4-audit-review/local-backing-array-catch/`.
 Remaining frozen compiler families: 11, plus six reviews. Final fixture pruning
 and combined export/harness validation remain pending. Next is EH-UNWIND-DTOR,
 using its frozen ordinary-object and reference-initializer controls.
+
+## EH-UNWIND-DTOR checkpoint — 2026-10-03
+
+N3485 15.5.1/1 requires termination when destruction during stack unwinding
+throws. Generic cached and linked full-expression cleanup actions now carry
+unwind mode and reuse the existing terminate landing. Preserve runtime lifetime
+flags, including flags for unconditional temporaries in mixed expressions.
+The existing typed destructor-action walks record termination-runtime demand;
+normal destruction retains its existing behavior. No ABI spelling changes.
+
+Review of eight exact PA21 reference changes exposed a native regression:
+constructor/destructor function-try handlers rethrew with a selector belonging
+to the previous handler search. Reset the selector when rethrow redispatches.
+All eight isolated existing cases pass at O0/O2. The same correction fixes the
+previously recorded native nested-outer-swallow, function-try-body-local and
+same-function dynamic-rethrow failures. The destructor-rethrow trace remains
+BACKEND; do not close that broader family.
+
+One header-free PA28 host fixture replaces the ordinary termination control.
+Extend the existing PA25 destructor function-try fixture with body-object unwind
+order and outer rethrow assertions; no additional native fixture. Fresh strict
+C++11 Clang/GCC runs pass. All 36 frozen second-fault observations pass, plus
+92 existing-fixture compile/runtime observations; host output traces agree.
+The imported-destructor fixture is compile-only and is checked accordingly.
+The default native termination boundary exits 134 at both optimization levels.
+
+Full strict report passes 6122/6122 with exactly one output line. Debug-info,
+variants, self-host PA5, all nine architecture audits, file and placement audits
+pass; 37 existing file warnings remain. The eight PA21 references were generated
+only through owning ref-test and reviewed against unchanged source behavior.
+
+Independently verify all 288 final Alpha screen observations and 144 focused
+confirmation observations: unscaled counters, RSS, zero statuses and equal
+object hashes. Maximum screen instruction median is 1.000004436 and RSS is 1.0.
+Confirmation calibrated cycle medians are 1.019749083 for reference aliases,
+0.999878967 for copy templates and 1.007571914 for multi-pack. The reference-alias
+95% interval [1.001139509, 1.042971727] retains a measured cycle cost under the
+updated diagnostic policy; no timing-neutrality claim and no further noise
+search. Retain the incomplete first variant, its regression and all 384 initial
+screen/confirmation observations separately.
+Final compiler SHA256:
+`c1d24f3105e6ec7f119b7810a6617a20434b900f9b54857fde8c32e914ca3e2e`.
+Evidence: `/tmp/cppgm-v4-audit-review/unwind-destructor-termination/final/`.
+Remaining frozen compiler families: 10, plus six reviews. Final fixture pruning
+and combined export/harness validation remain pending. Next is EH-ARRAY-DTOR,
+using its frozen three-element reducer and existing twelve-element boundary.

@@ -820,75 +820,83 @@ function @template_probe(%__param0 : i32) -> i32 [binding=weak, object=_Z14templ
     jump ^catch_entry_2
 
   block ^cleanup_action_5:
-    %t3 = addr $first
-    call void @TemplateGuard___TemplateGuard(%t3)
+    eh_try ^lexical_cleanup_terminate_8
+    %t4 = addr $first
+    call void @TemplateGuard___TemplateGuard(%t4)
+    eh_end
     jump ^cleanup_resume_4
 
+  block ^lexical_cleanup_terminate_8:
+    eh_catch_all, 1
+    %t3 = exception ptr
+    call void @cppgm_call_terminate(%t3)
+    unreachable
+
   block ^call_unwind_dispatch_6:
-    eh_catch @__external_rtti__int, 1
+    eh_catch @__external_rtti__int, 2
     eh_cleanup
     jump ^cleanup_action_5
 
   block ^call_unwind_end_7:
-    eh_try ^lexical_cleanup_dispatch_11
-    %t6 = addr $second
-    call void @TemplateGuard___TemplateGuard(%t6)
-    eh_end
-    %t7 = addr $first
+    eh_try ^lexical_cleanup_dispatch_12
+    %t7 = addr $second
     call void @TemplateGuard___TemplateGuard(%t7)
+    eh_end
+    %t8 = addr $first
+    call void @TemplateGuard___TemplateGuard(%t8)
     eh_end
     return i32 8
 
-  block ^lexical_unwind_9:
+  block ^lexical_unwind_10:
     eh_end
     jump ^catch_entry_2
 
-  block ^lexical_unwind_8:
-    eh_try ^lexical_cleanup_terminate_10
-    %t5 = addr $first
-    call void @TemplateGuard___TemplateGuard(%t5)
+  block ^lexical_unwind_9:
+    eh_try ^lexical_cleanup_terminate_11
+    %t6 = addr $first
+    call void @TemplateGuard___TemplateGuard(%t6)
+    eh_end
+    jump ^lexical_unwind_10
+
+  block ^lexical_cleanup_terminate_11:
+    eh_catch_all, 3
+    %t5 = exception ptr
+    call void @cppgm_call_terminate(%t5)
+    unreachable
+
+  block ^lexical_cleanup_dispatch_12:
+    eh_catch @__external_rtti__int, 2
+    eh_cleanup
     eh_end
     jump ^lexical_unwind_9
 
-  block ^lexical_cleanup_terminate_10:
-    eh_catch_all, 2
-    %t4 = exception ptr
-    call void @cppgm_call_terminate(%t4)
-    unreachable
-
-  block ^lexical_cleanup_dispatch_11:
-    eh_catch @__external_rtti__int, 1
-    eh_cleanup
-    eh_end
-    jump ^lexical_unwind_8
-
   block ^catch_dispatch_1:
-    eh_catch @__external_rtti__int, 1
+    eh_catch @__external_rtti__int, 2
     jump ^catch_entry_2
 
   block ^catch_entry_2:
-    %t8 = exception ptr
-    %t9 = exception_selector i32
-    %t10 = cmp eq i32 %t9, 1
-    branch %t10, ^catch_body_12, ^catch_next_13
+    %t9 = exception ptr
+    %t10 = exception_selector i32
+    %t11 = cmp eq i32 %t10, 2
+    branch %t11, ^catch_body_13, ^catch_next_14
 
-  block ^catch_body_12:
-    %t11 = call ptr @__external_runtime____cxa_begin_catch(%t8)
-    store ptr %t11, $catch__1
-    eh_cleanup ^catch_cleanup_14
-    %t12 = load i32 %t11
-    store i32 %t12, $n
-    %t13 = load i32 $n
+  block ^catch_body_13:
+    %t12 = call ptr @__external_runtime____cxa_begin_catch(%t9)
+    store ptr %t12, $catch__1
+    eh_cleanup ^catch_cleanup_15
+    %t13 = load i32 %t12
+    store i32 %t13, $n
+    %t14 = load i32 $n
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t13
+    return i32 %t14
 
-  block ^catch_cleanup_14:
+  block ^catch_cleanup_15:
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^catch_next_13:
+  block ^catch_next_14:
     resume
 
   block ^try_end_3:

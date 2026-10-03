@@ -6,6 +6,7 @@ declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [rol
 declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
 declare function @__external_runtime____cxa_rethrow() -> void [return=noreturn, role=eh_rethrow, linkage=c, binding=strong, object=__cxa_rethrow]
 declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
 
 global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
   i8 105
@@ -56,6 +57,12 @@ global @expected_count [binding=internal, object=expected_count] = {
   i32 19
 }
 
+function @cppgm_call_terminate(%exception_object : ptr) -> void [unwind=no, return=noreturn, binding=internal, no_inline=yes] {
+  block ^entry:
+    %t1 = call ptr @__external_runtime____cxa_begin_catch(%exception_object)
+    call void @std_terminate()
+    return void
+}
 function @construction_probe() -> void [linkage=c, binding=strong] {
   slot $h : obj<72x4>
 
@@ -77,13 +84,21 @@ function @construction_probe() -> void [linkage=c, binding=strong] {
     resume
 
   block ^cleanup_action_2:
-    %t8 = addr $h
-    call void @H___H(%t8)
-    jump ^cleanup_resume_1
-
-  block ^call_unwind_end_3:
+    eh_try ^lexical_cleanup_terminate_4
     %t9 = addr $h
     call void @H___H(%t9)
+    eh_end
+    jump ^cleanup_resume_1
+
+  block ^lexical_cleanup_terminate_4:
+    eh_catch_all, 1
+    %t8 = exception ptr
+    call void @cppgm_call_terminate(%t8)
+    unreachable
+
+  block ^call_unwind_end_3:
+    %t10 = addr $h
+    call void @H___H(%t10)
     return void
 }
 function @next() -> i32 [binding=internal, object=_Z4nextv] {

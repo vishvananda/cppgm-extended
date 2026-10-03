@@ -455,7 +455,7 @@ void Analyzer::AppendFullExpressionDestructionActions(
 			action = MakeTemporaryDestructorAction(
 				temporaries[i - 1], kNoBinding, true);
 		if (action == kNoDumpEdge) continue;
-		if (dump_.nodes[expression].contains_construction_cleanup &&
+		if ((potentially_throwing || dump_.nodes[expression].contains_construction_cleanup) &&
 			!FunctionIsNonthrowing(dump_.nodes[action].binding))
 			dump_.construction_cleanup_may_throw = true;
 		const EntityId action_entity =
@@ -714,7 +714,11 @@ void Analyzer::StageExceptionalFullExpression(
 	{
 		DumpNode& action = dump_.nodes[dump_.edges[edge].child];
 		if (action.kind == DUMP_DESTRUCTOR_ACTION && action.unwind_only)
+		{
 			action.full_expression_staging = true;
+			if (action.binding != kNoBinding && !FunctionIsNonthrowing(action.binding))
+				dump_.construction_cleanup_may_throw = true;
+		}
 	}
 }
 

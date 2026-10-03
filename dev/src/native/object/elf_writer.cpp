@@ -2247,6 +2247,9 @@ void emit_eh_rethrow(CodeBuffer & out)
   emit_load(out, XR_RSI, XR_RDI, -24, 64);
   emit_symbol_move(out, XR_R11, kEhType);
   emit_store(out, XR_R11, 0, XR_RSI, 64);
+  emit_symbol_move(out, XR_R11, kEhSelector);
+  emit_immediate_move(out, XR_RAX, 0);
+  emit_store(out, XR_R11, 0, XR_RAX, 64);
   emit_unconditional_jump(out, kEhDispatch);
 }
 

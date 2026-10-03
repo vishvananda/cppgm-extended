@@ -170,7 +170,7 @@ protected:
 			{
 				LowerFullExpressionDestructorAction(
 					derived.cleanup_continuations_.GetAction(
-						state.key.action).representative_node);
+						state.key.action).representative_node, true);
 				derived.EmitJump(ContinuationBlock(state.key.tail));
 			}
 			else if (state.key.mode == FULL_EXPRESSION_LANDING)
@@ -243,7 +243,7 @@ protected:
 		}
 		derived.full_expression_cleanup_dispatch_ = tail;
 		derived.SelectBlock(block);
-		LowerFullExpressionDestructorAction(action);
+		LowerFullExpressionDestructorAction(action, true);
 		derived.EmitJump(tail);
 		derived.full_expression_cleanup_dispatch_ = previous_dispatch;
 		derived.SelectBlock(original);
@@ -579,7 +579,8 @@ protected:
 		if (derived.stats_) ++derived.stats_->conditional_lifetime_marks;
 	}
 
-	void LowerFullExpressionDestructorAction(std::uint32_t action)
+	void LowerFullExpressionDestructorAction(std::uint32_t action,
+		bool unwinding = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const DumpNode& record = derived.arena_.nodes[action];
@@ -590,12 +591,14 @@ protected:
 				static_cast<std::size_t>(record.constant_value));
 			return;
 		}
+		const bool may_throw = unwinding &&
+			!derived.program_.bindings[record.binding].nonthrowing;
+		if (may_throw) derived.EmitEhTarget(Instruction::EH_TRY,
+			derived.MakeCleanupTerminateBlock());
 		if (!UsesRuntimeLifetimeState(action))
-		{
-			derived.LowerDestructorAction(record);
-			return;
-		}
-		LowerTrackedTemporaryDestructor(record, false);
+			derived.LowerDestructorAction(record, unwinding);
+		else LowerTrackedTemporaryDestructor(record, unwinding);
+		if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
 	}
 
 	void LowerTrackedTemporaryDestructor(const DumpNode& record, bool unwinding)
