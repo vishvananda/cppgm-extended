@@ -88,7 +88,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load i32 $cond__1
     return i32 %t10
 }
-function @invoke__ov2(%function : ptr [pass=by_address, object_bytes=1], %argument : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z6invokeIR8identityRcES2_OT_OT0_] {
+function @invoke__ov2(%function : ptr [pass=by_address, object_bytes=1], %argument : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z6invokeIR8identityRcEDTclscT_fp_scT0_fp0_EEOS3_OS4_] {
   slot $function : ptr
   slot $argument : ptr
 

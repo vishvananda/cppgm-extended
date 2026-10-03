@@ -102,9 +102,12 @@ struct ParsedComponent
 {
 	NameId name;
 	EntityId entity;
+	ScopeId name_space;
+	bool callable;
+	std::size_t function_template;
 	std::vector<FunctionTemplateAbiArgument> arguments;
 
-	ParsedComponent() : name(0), entity(kNoEntity) {}
+	ParsedComponent() : name(0), entity(kNoEntity), name_space(kNoScope), callable(false), function_template(kNoDumpEdge) {}
 };
 
 class AbiIdentityReader
@@ -112,11 +115,12 @@ class AbiIdentityReader
 public:
 	AbiIdentityReader(Program* program,
 		const std::deque<ClassTemplatePattern>& class_templates,
+		const std::deque<FunctionTemplatePattern>& function_templates,
 		const std::vector<std::uint32_t>& class_template_by_entity,
 		const std::vector<TemplateParameter>& parameters,
 		const std::vector<std::uint64_t>& atoms,
 		bool group_template_packs = true)
-		: program_(program), class_templates_(class_templates),
+		: program_(program), class_templates_(class_templates), function_templates_(function_templates),
 		  class_template_by_entity_(class_template_by_entity),
 		  parameters_(parameters), atoms_(atoms),
 		  position_(0), group_template_packs_(group_template_packs) {}
@@ -145,19 +149,31 @@ public:
 		return root;
 	}
 
+	FunctionTemplateAbiTypeId ParseParameterType()
+	{
+		NameId payload = 0;
+		if (!BeginNode("parameter-declaration", &payload) || !BeginNode("decl-specifier-seq", &payload))
+			return kNoFunctionTemplateAbiType;
+		FunctionTemplateAbiTypeId type = ParseType();
+		if (type == kNoFunctionTemplateAbiType || !EndNode()) return kNoFunctionTemplateAbiType;
+		if (IsNode("declarator") && !ParseAbstractDeclarator(&type, 0, "declarator")) return kNoFunctionTemplateAbiType;
+		return EndNode() ? type : kNoFunctionTemplateAbiType;
+	}
+
 	FunctionTemplateAbiExpressionId ParseExpression()
 	{
 		if (position_ >= atoms_.size())
 			return kNoFunctionTemplateAbiExpression;
 		const FunctionTemplateResultIdentityAtomKind kind =
 			ResultIdentityKind(atoms_[position_]);
-		if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER)
+		if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER || kind == FUNCTION_TEMPLATE_RESULT_FUNCTION_PARAMETER)
 		{
 			const std::uint64_t parameter = ResultIdentityValue(atoms_[position_++]);
 			if (parameter >= kNoTemplateParameter)
 				return kNoFunctionTemplateAbiExpression;
 			return AppendAbiExpression(program_, FunctionTemplateAbiExpression(
-				FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_PARAMETER,
+				kind == FUNCTION_TEMPLATE_RESULT_FUNCTION_PARAMETER ?
+					FUNCTION_TEMPLATE_ABI_EXPRESSION_FUNCTION_PARAMETER : FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_PARAMETER,
 				kNoFunctionTemplateAbiExpression,
 				kNoFunctionTemplateAbiExpression, kNoFunctionTemplateAbiType,
 				0, static_cast<std::uint32_t>(parameter)));
@@ -181,7 +197,7 @@ public:
 		if (!IsNode("parenthesized-expression") &&
 			!IsNode("id-expression") && !IsNode("unary-expression") &&
 			!IsNode("call-expression") && !IsNode("binary-expression") &&
-			!IsNode("sizeof-pack-expression"))
+			!IsNode("sizeof-pack-expression") && !IsNode("cast-expression"))
 			return kNoFunctionTemplateAbiExpression;
 		NameId payload = 0;
 		const NameId tag = static_cast<NameId>(
@@ -220,11 +236,41 @@ public:
 		else if (node == "call-expression")
 		{
 			const FunctionTemplateAbiExpressionId callee = ParseExpression();
-			if (callee != kNoFunctionTemplateAbiExpression &&
-				ParseEmptyNode("argument-list"))
-				expression = AppendAbiExpression(program_,
-					FunctionTemplateAbiExpression(
-						FUNCTION_TEMPLATE_ABI_EXPRESSION_CALL, callee));
+			NameId ignored = 0;
+			if (callee == kNoFunctionTemplateAbiExpression || !BeginNode("argument-list", &ignored))
+				return kNoFunctionTemplateAbiExpression;
+			std::vector<FunctionTemplateAbiArgument> arguments;
+			while (position_ < atoms_.size() && ResultIdentityKind(atoms_[position_]) != FUNCTION_TEMPLATE_RESULT_NODE_END)
+			{
+				const bool expansion = IsNode("pack-expansion-expression");
+				if (expansion && !BeginNode("pack-expansion-expression", &ignored))
+					return kNoFunctionTemplateAbiExpression;
+				const FunctionTemplateAbiExpressionId argument = ParseExpression();
+				if (argument == kNoFunctionTemplateAbiExpression) return argument;
+				if (expansion && !EndNode()) return kNoFunctionTemplateAbiExpression;
+				arguments.push_back(FunctionTemplateAbiArgument(FUNCTION_TEMPLATE_ABI_ARGUMENT_EXPRESSION,
+					kNoFunctionTemplateAbiType, argument, expansion));
+			}
+			std::uint32_t begin = 0;
+			if (!EndNode() || !StoreArguments(arguments, &begin)) return kNoFunctionTemplateAbiExpression;
+			expression = AppendAbiExpression(program_, FunctionTemplateAbiExpression(
+				FUNCTION_TEMPLATE_ABI_EXPRESSION_CALL, callee, kNoFunctionTemplateAbiExpression,
+				kNoFunctionTemplateAbiType, 0, kNoTemplateParameter, OPERATOR_NONE, false, begin,
+				static_cast<std::uint32_t>(arguments.size())));
+		}
+		else if (node == "cast-expression" && program_->names.Get(payload) == "static_cast")
+		{
+			FunctionTemplateAbiTypeId type = ParseType();
+			const FunctionTemplateAbiExpressionId operand = ParseExpression();
+			if (type != kNoFunctionTemplateAbiType && operand != kNoFunctionTemplateAbiExpression)
+			{
+				// Clang encodes the referred-to type for a reference cast.
+				const FunctionTemplateAbiTypeKind cast_kind = program_->function_template_abi_types[type].kind;
+				if (cast_kind == FUNCTION_TEMPLATE_ABI_TYPE_LVALUE_REFERENCE || cast_kind == FUNCTION_TEMPLATE_ABI_TYPE_RVALUE_REFERENCE)
+					type = program_->function_template_abi_types[type].child;
+				expression = AppendAbiExpression(program_, FunctionTemplateAbiExpression(
+					FUNCTION_TEMPLATE_ABI_EXPRESSION_STATIC_CAST, operand, kNoFunctionTemplateAbiExpression, type));
+			}
 		}
 		else if (program_->names.Get(payload) == "*")
 		{
@@ -324,7 +370,7 @@ private:
 		}
 		const FunctionTemplateResultIdentityAtomKind kind =
 			ResultIdentityKind(atoms_[position_]);
-		if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER)
+		if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER || kind == FUNCTION_TEMPLATE_RESULT_FUNCTION_PARAMETER)
 		{
 			const std::uint64_t parameter = ResultIdentityValue(atoms_[position_++]);
 			if (parameter >= kNoTemplateParameter)
@@ -348,7 +394,8 @@ private:
 		if (kind == FUNCTION_TEMPLATE_RESULT_TYPE)
 		{
 			const std::uint64_t type = ResultIdentityValue(atoms_[position_++]);
-			if (type >= program_->types.Size()) return kNoFunctionTemplateAbiType;
+			if (type == kNoType || type > program_->types.Size())
+				return kNoFunctionTemplateAbiType;
 			return AppendAbiType(program_, FunctionTemplateAbiType(
 				FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE,
 				kNoFunctionTemplateAbiType, 0, 0, kNoTemplateParameter, 0,
@@ -362,7 +409,9 @@ private:
 		if (!BeginNode("decltype-specifier", &payload))
 			return kNoFunctionTemplateAbiType;
 		const bool id_expression = IsNode("id-expression") ||
-			IsNode("member-expression");
+			IsNode("member-expression") ||
+			(position_ < atoms_.size() && (ResultIdentityKind(atoms_[position_]) == FUNCTION_TEMPLATE_RESULT_FUNCTION_PARAMETER ||
+			 ResultIdentityKind(atoms_[position_]) == FUNCTION_TEMPLATE_RESULT_PARAMETER));
 		const FunctionTemplateAbiExpressionId expression = ParseExpression();
 		if (expression == kNoFunctionTemplateAbiExpression || !EndNode())
 			return kNoFunctionTemplateAbiType;
@@ -373,32 +422,86 @@ private:
 			expression));
 	}
 
+	FunctionTemplateAbiTypeId ApplyNestedDeclarator(FunctionTemplateAbiTypeId nested,
+		FunctionTemplateAbiTypeId type)
+	{
+		if (nested == kNoFunctionTemplateAbiType) return type;
+		FunctionTemplateAbiType modifier = program_->function_template_abi_types[nested];
+		modifier.child = ApplyNestedDeclarator(modifier.child, type);
+		return AppendAbiType(program_, modifier);
+	}
+
 	bool ParseAbstractDeclarator(FunctionTemplateAbiTypeId* root,
-		bool* pack_expansion)
+		bool* pack_expansion, const char* tag = "abstract-declarator")
 	{
 		NameId payload = 0;
-		if (!BeginNode("abstract-declarator", &payload)) return false;
+		if (!BeginNode(tag, &payload)) return false;
+		FunctionTemplateAbiTypeId nested = kNoFunctionTemplateAbiType;
 		while (position_ < atoms_.size() &&
-			ResultIdentityKind(atoms_[position_]) !=
-				FUNCTION_TEMPLATE_RESULT_NODE_END)
+			ResultIdentityKind(atoms_[position_]) != FUNCTION_TEMPLATE_RESULT_NODE_END)
 		{
-			if (ResultIdentityKind(atoms_[position_]) ==
-				FUNCTION_TEMPLATE_RESULT_PACK_EXPANSION)
+			if (ResultIdentityKind(atoms_[position_]) == FUNCTION_TEMPLATE_RESULT_PACK_EXPANSION)
 			{
 				if (!pack_expansion) return false;
 				*pack_expansion = true;
 				++position_;
 				continue;
 			}
+			if (IsNode("identifier"))
+			{
+				if (!ParseEmptyNode("identifier")) return false;
+				continue;
+			}
+			if (IsNode("nested-declarator"))
+			{
+				if (!BeginNode("nested-declarator", &payload) ||
+					!ParseAbstractDeclarator(&nested, pack_expansion, IsNode("declarator") ? "declarator" : "abstract-declarator") || !EndNode()) return false;
+				continue;
+			}
+			if (IsNode("parameter-clause"))
+			{
+				if (!BeginNode("parameter-clause", &payload)) return false;
+				std::vector<FunctionTemplateAbiArgument> arguments;
+				while (IsNode("parameter-declaration"))
+				{
+					if (!BeginNode("parameter-declaration", &payload) ||
+						!BeginNode("decl-specifier-seq", &payload)) return false;
+					FunctionTemplateAbiTypeId type = ParseType();
+					if (type == kNoFunctionTemplateAbiType || !EndNode()) return false;
+					bool expansion = false;
+					if (IsNode("declarator") && !ParseAbstractDeclarator(&type, &expansion, "declarator")) return false;
+					if (!EndNode()) return false;
+					arguments.push_back(FunctionTemplateAbiArgument(FUNCTION_TEMPLATE_ABI_ARGUMENT_TYPE,
+						type, kNoFunctionTemplateAbiExpression, expansion));
+				}
+				std::uint32_t begin = 0;
+				if (!EndNode() || !StoreArguments(arguments, &begin)) return false;
+				*root = AppendAbiType(program_, FunctionTemplateAbiType(FUNCTION_TEMPLATE_ABI_TYPE_FUNCTION,
+					*root, 0, 0, kNoTemplateParameter, 0, kNoType, kNoEntity, begin,
+					static_cast<std::uint32_t>(arguments.size())));
+				continue;
+			}
 			if (!BeginNode("ptr-operator", &payload)) return false;
 			FunctionTemplateAbiTypeKind kind = FUNCTION_TEMPLATE_ABI_TYPE_POINTER;
+			std::uint32_t begin = 0, count = 0;
 			const std::string& op = program_->names.Get(payload);
 			if (op == "&") kind = FUNCTION_TEMPLATE_ABI_TYPE_LVALUE_REFERENCE;
 			else if (op == "&&") kind = FUNCTION_TEMPLATE_ABI_TYPE_RVALUE_REFERENCE;
+			else if (op.empty())
+			{
+				const FunctionTemplateAbiTypeId owner = ParseType();
+				if (owner == kNoFunctionTemplateAbiType || !StoreArguments(
+					std::vector<FunctionTemplateAbiArgument>(1, FunctionTemplateAbiArgument(
+						FUNCTION_TEMPLATE_ABI_ARGUMENT_TYPE, owner)), &begin)) return false;
+				kind = FUNCTION_TEMPLATE_ABI_TYPE_MEMBER_POINTER;
+				count = 1;
+			}
 			else if (op != "*") return false;
 			if (!EndNode()) return false;
-			*root = AppendAbiType(program_, FunctionTemplateAbiType(kind, *root));
+			*root = AppendAbiType(program_, FunctionTemplateAbiType(kind, *root, 0, 0,
+				kNoTemplateParameter, 0, kNoType, kNoEntity, begin, count));
 		}
+		*root = ApplyNestedDeclarator(nested, *root);
 		return EndNode();
 	}
 
@@ -453,13 +556,22 @@ private:
 		{
 			const FunctionTemplateResultIdentityAtomKind marker =
 				ResultIdentityKind(atoms_[position_]);
-			if (marker == FUNCTION_TEMPLATE_RESULT_DECLARATION ||
+			if (marker == FUNCTION_TEMPLATE_RESULT_NAMESPACE)
+				component->name_space = static_cast<ScopeId>(ResultIdentityValue(atoms_[position_++]));
+			else if (marker == FUNCTION_TEMPLATE_RESULT_CALLABLE)
+			{
+				component->callable = true;
+				++position_;
+			}
+			else if (marker == FUNCTION_TEMPLATE_RESULT_DECLARATION ||
 				marker == FUNCTION_TEMPLATE_RESULT_ENTITY)
 			{
 				component->entity = EntityFromMarker(
 					marker, ResultIdentityValue(atoms_[position_++]));
 			}
 		}
+		if (position_ < atoms_.size() && ResultIdentityKind(atoms_[position_]) == FUNCTION_TEMPLATE_RESULT_FUNCTION_TEMPLATE)
+			component->function_template = static_cast<std::size_t>(ResultIdentityValue(atoms_[position_++]));
 		if (position_ >= atoms_.size() ||
 			ResultIdentityKind(atoms_[position_]) !=
 				FUNCTION_TEMPLATE_RESULT_ARGUMENTS_BEGIN) return true;
@@ -471,6 +583,9 @@ private:
 			if (ResultIdentityKind(atoms_[position_]) !=
 				FUNCTION_TEMPLATE_RESULT_ARGUMENT_BEGIN) return false;
 			++position_;
+			const bool value_argument = position_ < atoms_.size() &&
+				ResultIdentityKind(atoms_[position_]) == FUNCTION_TEMPLATE_RESULT_VALUE_ARGUMENT;
+			if (value_argument) ++position_;
 			bool pack_expansion = position_ < atoms_.size() &&
 				ResultIdentityKind(atoms_[position_]) ==
 					FUNCTION_TEMPLATE_RESULT_PACK_EXPANSION;
@@ -479,7 +594,7 @@ private:
 				ResultIdentityKind(atoms_[position_]) == FUNCTION_TEMPLATE_RESULT_PARAMETER &&
 				ResultIdentityValue(atoms_[position_]) < parameters_.size() &&
 				parameters_[ResultIdentityValue(atoms_[position_])].kind == TEMPLATE_ARGUMENT_INTEGRAL;
-			if (value_parameter || ArgumentKind(component->entity, argument) ==
+			if (value_argument || value_parameter || ArgumentKind(component->entity, argument) ==
 				TEMPLATE_ARGUMENT_INTEGRAL)
 			{
 				const FunctionTemplateAbiExpressionId expression = ParseExpression();
@@ -615,6 +730,7 @@ private:
 			return kNoFunctionTemplateAbiType;
 		FunctionTemplateAbiTypeId root = kNoFunctionTemplateAbiType;
 		std::size_t components = 0;
+		ScopeId name_space = kNoScope;
 		while (position_ < atoms_.size() &&
 			ResultIdentityKind(atoms_[position_]) !=
 				FUNCTION_TEMPLATE_RESULT_QUALIFIED_END)
@@ -628,20 +744,45 @@ private:
 			if (value_terminal && terminal)
 			{
 				if (root == kNoFunctionTemplateAbiType &&
-					(components != 1 || component.arguments.empty()))
+					name_space == kNoScope && (components != 1 || (component.arguments.empty() && !component.callable)))
 					return kNoFunctionTemplateAbiType;
 				std::uint32_t begin = 0;
 				if (!StoreArguments(component.arguments, &begin)) return kNoFunctionTemplateAbiType;
-				const FunctionTemplateAbiExpressionKind kind = root != kNoFunctionTemplateAbiType ?
+				bool entity = component.function_template < function_templates_.size();
+				if (entity)
+				{
+					const FunctionTemplatePattern& primary = function_templates_[component.function_template];
+					entity = primary.abi_recipe != kNoFunctionTemplateAbiRecipe &&
+						primary.parameters.size() == component.arguments.size();
+					for (std::size_t p = 0; entity && p < component.arguments.size(); ++p)
+						entity = !primary.parameters[p].pack && !component.arguments[p].pack_expansion &&
+							component.arguments[p].kind == FUNCTION_TEMPLATE_ABI_ARGUMENT_TYPE &&
+							program_->function_template_abi_types[component.arguments[p].type].kind == FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE;
+				}
+				if (entity)
+				{
+					const FunctionTemplatePattern& primary = function_templates_[component.function_template];
+					const FunctionTemplateAbiExpressionId name = AppendAbiExpression(program_, FunctionTemplateAbiExpression(
+						FUNCTION_TEMPLATE_ABI_EXPRESSION_NAMESPACE_MEMBER, kNoFunctionTemplateAbiExpression,
+						kNoFunctionTemplateAbiExpression, kNoFunctionTemplateAbiType, primary.name, primary.owner));
+					*expression = AppendAbiExpression(program_, FunctionTemplateAbiExpression(
+						FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_ENTITY, name, kNoFunctionTemplateAbiExpression,
+						kNoFunctionTemplateAbiType, 0, primary.abi_recipe, OPERATOR_NONE, false, begin,
+						static_cast<std::uint32_t>(component.arguments.size())));
+					continue;
+				}
+				const FunctionTemplateAbiExpressionKind kind = root == kNoFunctionTemplateAbiType && name_space != kNoScope ?
+					FUNCTION_TEMPLATE_ABI_EXPRESSION_NAMESPACE_MEMBER : root != kNoFunctionTemplateAbiType ?
 					FUNCTION_TEMPLATE_ABI_EXPRESSION_TYPE_MEMBER : component.arguments.empty() ?
 					FUNCTION_TEMPLATE_ABI_EXPRESSION_SOURCE_NAME : FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_ID;
 				*expression = AppendAbiExpression(program_, FunctionTemplateAbiExpression(kind,
 					kNoFunctionTemplateAbiExpression, kNoFunctionTemplateAbiExpression, root,
-					component.name, kNoTemplateParameter, OPERATOR_NONE, false, begin,
+					component.name, name_space, OPERATOR_NONE, false, begin,
 					static_cast<std::uint32_t>(component.arguments.size())));
 			}
 			else
 			{
+				if (component.name_space != kNoScope) name_space = component.name_space;
 				// Namespace qualifiers have no type entity.  Their full path is
 				// carried by the first following type entity and reconstructed
 				// from that entity's canonical owner during ABI lowering.
@@ -665,6 +806,7 @@ private:
 
 	Program* program_;
 	const std::deque<ClassTemplatePattern>& class_templates_;
+	const std::deque<FunctionTemplatePattern>& function_templates_;
 	const std::vector<std::uint32_t>& class_template_by_entity_;
 	const std::vector<TemplateParameter>& parameters_;
 	const std::vector<std::uint64_t>& atoms_;
@@ -879,6 +1021,22 @@ bool HasRetainedParameterRoot(const Program& program,
 	const FunctionTemplatePattern& pattern,
 	const std::vector<std::uint64_t>& atoms)
 {
+	std::size_t decltype_depth = 0;
+	for (std::size_t atom = 0; atom < atoms.size(); ++atom)
+	{
+		const FunctionTemplateResultIdentityAtomKind kind = ResultIdentityKind(atoms[atom]);
+		if (kind == FUNCTION_TEMPLATE_RESULT_NODE_BEGIN)
+		{
+			if (decltype_depth) ++decltype_depth;
+			else if (program.names.Get(static_cast<NameId>(ResultIdentityValue(atoms[atom]))) == "decltype-specifier")
+			{
+				if (pattern.deferred_result_formation) return true;
+				decltype_depth = 1;
+			}
+		}
+		else if (kind == FUNCTION_TEMPLATE_RESULT_NODE_END && decltype_depth) --decltype_depth;
+		else if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER && decltype_depth) return true;
+	}
 	if (!atoms.empty() && ResultIdentityKind(atoms[0]) ==
 		FUNCTION_TEMPLATE_RESULT_PARAMETER) return true;
 	if (atoms.size() < 3 || ResultIdentityKind(atoms[0]) !=
@@ -992,7 +1150,7 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 		AbiPublication publication(program_);
 		// Clang's template-parameter declaration annotation retains the written
 		// argument list, before grouping arguments into a primary's pack.
-		AbiIdentityReader reader(program_, class_templates_,
+		AbiIdentityReader reader(program_, class_templates_, function_templates_,
 			class_template_pattern_by_entity_, pattern->parameters, atoms, false);
 		const FunctionTemplateAbiTypeId type = reader.ParseType();
 		if (type != kNoFunctionTemplateAbiType && reader.Complete())
@@ -1014,9 +1172,22 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 		if (pattern->parameters[p].kind == TEMPLATE_ARGUMENT_INTEGRAL &&
 			pattern->parameters[p].name != 0) value_parameters.insert(pattern->parameters[p].name);
 	}
+	std::vector<NodeId> parameter_syntax;
 	for (std::size_t p = 0; p < declarator.parameters.size(); ++p)
 	{
-		const NodeId root = FindDescendant(*arena_,
+		const TypeRecord& parameter_type = program_->types.Get(declarator.parameters[p].function_type);
+		const bool member_pointer_pack = has_template_pack &&
+			parameter_type.kind == TYPE_MEMBER_POINTER && program_->types.Get(parameter_type.child).kind == TYPE_FUNCTION &&
+			program_->types.Get(parameter_type.child).variadic;
+		if (member_pointer_pack && parameter_syntax.empty())
+		{
+			const NodeId clause = FindChild(pattern->declarator, STAG_PARAMETER_CLAUSE);
+			for (std::uint32_t edge = arena_->FirstEdge(clause); edge != kNoEdge; edge = arena_->NextEdge(edge))
+				if (arena_->IsTag(arena_->EdgeChild(edge), STAG_PARAMETER_DECLARATION))
+					parameter_syntax.push_back(arena_->EdgeChild(edge));
+		}
+		if (member_pointer_pack && p >= parameter_syntax.size()) continue;
+		const NodeId root = member_pointer_pack ? parameter_syntax[p] : FindDescendant(*arena_,
 			declarator.parameters[p].type_syntax,
 			"structured-type-name");
 		if (root == kNoNode) continue;
@@ -1026,10 +1197,10 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 		const bool dependent_value = !value_parameters.empty() &&
 			SyntaxUsesAnyTemplateParameter(root, value_parameters);
 		const NamePath path = StructuredNamePath(root);
-		if (path.Empty()) continue;
-		const LookupResult marker = LookupPath(
+		if (!member_pointer_pack && path.Empty()) continue;
+		const LookupResult marker = member_pointer_pack ? LookupResult() : LookupPath(
 			pattern->lexical_scope, path, LOOKUP_TYPE);
-		if (!declarator.parameters[p].nondeduced && !written_expansion && !dependent_value &&
+		if (!member_pointer_pack && !declarator.parameters[p].nondeduced && !written_expansion && !dependent_value &&
 			FindAliasTemplateIndex(marker, path.Last()) >=
 				alias_templates_.size()) continue;
 		FunctionTemplatePattern probe;
@@ -1044,15 +1215,15 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 		InternExpandedFunctionTemplateResult(&probe);
 		if (probe.expanded_result_identity ==
 			kNoFunctionTemplateResultIdentity) continue;
-		if (!declarator.parameters[p].nondeduced && !written_expansion && !dependent_value &&
+		if (!member_pointer_pack && !declarator.parameters[p].nondeduced && !written_expansion && !dependent_value &&
 			!probe.expanded_result_has_alias) continue;
 		std::vector<std::uint64_t> atoms;
 		function_template_result_identities_.CopyAtoms(
 			probe.expanded_result_identity, &atoms);
 		AbiPublication publication(program_);
-		AbiIdentityReader reader(program_, class_templates_,
+		AbiIdentityReader reader(program_, class_templates_, function_templates_,
 			class_template_pattern_by_entity_, pattern->parameters, atoms);
-		const FunctionTemplateAbiTypeId type = reader.ParseType();
+		const FunctionTemplateAbiTypeId type = member_pointer_pack ? reader.ParseParameterType() : reader.ParseType();
 		if (type != kNoFunctionTemplateAbiType && reader.Complete())
 		{
 			pattern->abi_function_parameter_types[p] = ApplyTypeModifiers(
@@ -1071,7 +1242,7 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 			HasRetainedParameterRoot(*program_, *pattern, atoms))
 		{
 			AbiPublication publication(program_);
-			AbiIdentityReader reader(program_, class_templates_,
+			AbiIdentityReader reader(program_, class_templates_, function_templates_,
 				class_template_pattern_by_entity_, pattern->parameters, atoms);
 			const FunctionTemplateAbiTypeId root = reader.ParseType();
 			if (root != kNoFunctionTemplateAbiType && reader.Complete())

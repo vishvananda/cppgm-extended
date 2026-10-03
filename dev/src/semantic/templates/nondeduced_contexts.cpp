@@ -21,7 +21,8 @@ NodeId FirstResultStructure(const SyntaxArena& arena, NodeId root)
 	for (std::size_t next = 0; next < pending.size(); ++next)
 	{
 		const NodeId node = pending[next];
-		if (arena.IsTag(node, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME)) return node;
+		if (arena.IsTag(node, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME) ||
+			arena.IsTag(node, ::cppgm::syntax::STAG_DECLTYPE_SPECIFIER)) return node;
 		for (std::uint32_t edge = arena.FirstEdge(node); edge != kNoEdge;
 			edge = arena.NextEdge(edge))
 			pending.push_back(arena.EdgeChild(edge));

@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call obj<1x1> @bind(%t2)
     return i32 0
 }
-function @bind(%a1 : ptr [pass=by_address]) -> obj<1x1> [binding=weak, object=_Z4bindIiEK14lambda_functorI19lambda_functor_baseI6actionILi1E15function_actionILi1ET_EEiEERFS4_vE] {
+function @bind(%a1 : ptr [pass=by_address]) -> obj<1x1> [binding=weak, object=_Z4bindIiEK14lambda_functorI19lambda_functor_baseI6actionILi1E15function_actionILi1ET_EEN6mapperIRFS4_vEE4typeEEES9_] {
   slot $a1 : ptr
   slot $retobj__1 : obj<1x1>
   slot $argobj__2 : obj<1x1>

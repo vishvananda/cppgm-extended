@@ -107,7 +107,12 @@ enum ResultIdentityAtomKind
 	RESULT_IDENTITY_ARGUMENTS_END,
 	RESULT_IDENTITY_PACK_EXPANSION,
 	RESULT_IDENTITY_BOUND_ARGUMENT,
-	RESULT_IDENTITY_LITERAL_ARGUMENT
+	RESULT_IDENTITY_LITERAL_ARGUMENT,
+	RESULT_IDENTITY_FUNCTION_PARAMETER,
+	RESULT_IDENTITY_NAMESPACE,
+	RESULT_IDENTITY_CALLABLE,
+	RESULT_IDENTITY_FUNCTION_TEMPLATE,
+	RESULT_IDENTITY_VALUE_ARGUMENT
 };
 
 std::uint64_t ResultIdentityAtom(ResultIdentityAtomKind kind,
@@ -250,6 +255,14 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 		}
 		const NameId semantic_name =
 			arena_->SemanticPayloadId(reference.node);
+		if (arena_->IsTag(reference.node, STAG_ID_EXPRESSION) &&
+			arena_->TokenLast(reference.node) == arena_->TokenFirst(reference.node) + 1)
+			for (std::size_t p = 0; p < pattern->function_parameter_names.size(); ++p)
+				if (semantic_name != 0 && pattern->function_parameter_names[p] == semantic_name)
+				{
+					atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_FUNCTION_PARAMETER, p));
+					return true;
+				}
 		const std::vector<ResultSyntaxReference>* substitution =
 			FindResultSyntaxBinding(reference.environment, semantic_name,
 				environment_names, root_bindings, &environment_probes);
@@ -467,13 +480,35 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 					EntityOf(marker.type) != kNoEntity)
 					atoms->push_back(ResultIdentityAtom(
 						RESULT_IDENTITY_ENTITY, EntityOf(marker.type)));
+				else if (!resolved_type_prefix)
+				{
+					const LookupResult carrier = LookupPath(reference.scope, component_path, LOOKUP_SCOPE_CARRIER);
+					if (carrier.name_space != kNoScope)
+						atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_NAMESPACE, carrier.name_space));
+					else if (c + 1 == components.size())
+					{
+						const LookupResult callable = LookupPath(reference.scope, component_path, LOOKUP_ORDINARY);
+						if (callable.HasFunctionTemplateLookup() ||
+							(callable.ordinary != kNoBinding && program_->bindings[callable.ordinary].kind == BIND_FUNCTION))
+							atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_CALLABLE));
+					}
+				}
 				const NodeId list = FindChild(
 					components[c], ::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST);
 				if (list == kNoNode) continue;
+				if (!resolved_type_prefix && c + 1 == components.size())
+				{
+					const std::vector<std::size_t> functions = FindFunctionTemplates(reference.scope, component_path);
+					if (functions.size() == 1)
+						atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_FUNCTION_TEMPLATE, functions[0]));
+				}
 				std::vector<ResultSyntaxReference> arguments;
 				collect_arguments(list, reference, &arguments);
-				const std::size_t class_index =
-					FindClassTemplateIndex(marker, name);
+				const std::size_t class_index = FindClassTemplateIndex(marker, name);
+				const std::size_t alias_index = FindAliasTemplateIndex(marker, name);
+				const std::vector<TemplateParameter>* declared_parameters = class_index < class_templates_.size() ?
+					&class_templates_[class_index].parameters : alias_index < alias_templates_.size() ?
+					&alias_templates_[alias_index].parameters : 0;
 				std::vector<ResultSyntaxEnvironment> defaults;
 				if (class_index < class_templates_.size())
 				{
@@ -531,6 +566,9 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 				{
 					atoms->push_back(ResultIdentityAtom(
 						RESULT_IDENTITY_ARGUMENT_BEGIN));
+					if (declared_parameters && !declared_parameters->empty() &&
+						(*declared_parameters)[std::min(a, declared_parameters->size() - 1)].kind == TEMPLATE_ARGUMENT_INTEGRAL)
+						atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_VALUE_ARGUMENT));
 					const bool pack_expansion =
 						arguments[a].bound_argument == kNoTemplateArgumentList &&
 						arena_->IsTag(arguments[a].node,
@@ -570,7 +608,7 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 				RESULT_IDENTITY_NODE_BEGIN, arena_->TagId(reference.node)));
 			const bool structured = arena_->HasDirectChildTag(
 				reference.node, "structured-type-name");
-			const std::uint64_t payload = structured ? 0 :
+			const std::uint64_t payload = structured || arena_->IsTag(reference.node, STAG_DECLTYPE_SPECIFIER) ? 0 :
 				semantic_name == 0 ? arena_->PayloadId(reference.node) :
 				semantic_name;
 			atoms->push_back(ResultIdentityAtom(

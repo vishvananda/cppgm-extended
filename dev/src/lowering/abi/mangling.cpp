@@ -1302,6 +1302,56 @@ public:
 			target.expression_refs.push_resolved(
 				AddFunctionTemplateAbiExpression(source.left, recipe));
 		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_STATIC_CAST)
+		{
+			target.kind = ABI_EXPRESSION_CAST;
+			target.operation = ABI_EXPRESSION_OPERATION_STATIC_CAST;
+			target.type = MakeFunctionTemplateAbiType(source.type, recipe);
+			target.expression_refs.push_resolved(AddFunctionTemplateAbiExpression(source.left, recipe));
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_NAMESPACE_MEMBER)
+		{
+			target.kind = ABI_EXPRESSION_MEMBER;
+			target.type.kind = ABI_TYPE_NAMED;
+			target.type.index = ResolveScopePath(source.parameter) + 1;
+			target.close_member_owner = true;
+			target.index = ResolveName(source.name) + 1;
+			for (std::size_t i = 0; i < source.argument_count; ++i)
+				target.argument_refs.push_resolved(AddFunctionTemplateAbiArgument(
+					program_.function_template_abi_arguments[source.argument_begin + i], recipe));
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_ENTITY)
+		{
+			if (source.parameter >= program_.function_template_abi_recipes.size() ||
+				source.left >= program_.function_template_abi_expressions.size())
+				ThrowLoweringInternal("retained template entity has no primary recipe");
+			const FunctionTemplateAbiExpression& name = program_.function_template_abi_expressions[source.left];
+			const FunctionTemplateAbiRecipe& primary = program_.function_template_abi_recipes[source.parameter];
+			AbiEntityFact entity;
+			entity.kind = ABI_ENTITY_FACT_FUNCTION;
+			SetPath(&entity.function, name.parameter, name.name);
+			for (std::size_t i = 0; i < source.argument_count; ++i)
+			{
+				AbiFunctionPathOperand argument;
+				argument.kind = ABI_FUNCTION_PATH_TEMPLATE_ARGUMENT;
+				argument.resolved_argument = AddFunctionTemplateAbiArgument(
+					program_.function_template_abi_arguments[source.argument_begin + i], recipe);
+				entity.function.path_operands.push_back(argument);
+			}
+			const TypeRecord& function = program_.types.Get(primary.function_type);
+			entity.function.has_result_type = true;
+			entity.function.result_type = primary.result_type != kNoFunctionTemplateAbiType ?
+				MakeFunctionTemplateAbiType(primary.result_type, primary) : MakeType(function.child, 0, &primary);
+			const TypeId* parameters = program_.types.Parameters(primary.function_type);
+			for (std::size_t p = 0; p < function.parameter_count; ++p)
+			{
+				const FunctionTemplateAbiTypeId retained = FunctionTemplateParameterAbiType(primary, p);
+				entity.function.signature_parameter_types.push_back(retained != kNoFunctionTemplateAbiType ?
+					MakeFunctionTemplateAbiType(retained, primary) : MakeType(parameters[p], 0, &primary));
+			}
+			target.kind = ABI_EXPRESSION_ENTITY;
+			target.resolved_entity = context_->store_entity(entity);
+		}
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_SOURCE_NAME)
 		{
 			target.kind = ABI_EXPRESSION_SOURCE_NAME;
@@ -1317,9 +1367,19 @@ public:
 					source.argument_begin)
 				ThrowLoweringInternal("retained dependent call argument range is invalid");
 			for (std::size_t i = 0; i < source.argument_count; ++i)
-				target.expression_refs.push_resolved(AddFunctionTemplateAbiExpression(
-					program_.function_template_abi_arguments[
-						source.argument_begin + i].expression, recipe));
+			{
+				const FunctionTemplateAbiArgument& argument =
+					program_.function_template_abi_arguments[source.argument_begin + i];
+				std::size_t expression = AddFunctionTemplateAbiExpression(argument.expression, recipe);
+				if (argument.pack_expansion)
+				{
+					AbiDependentExpression expansion;
+					expansion.kind = ABI_EXPRESSION_PACK_EXPANSION;
+					expansion.expression_refs.push_resolved(expression);
+					expression = context_->resolve_expression(expansion);
+				}
+				target.expression_refs.push_resolved(expression);
+			}
 		}
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_INTEGRAL)
 		{
@@ -1524,6 +1584,30 @@ public:
 							source.argument_begin + i], recipe));
 				result.argument_refs.push_resolved(context_->resolve_argument(pack));
 			}
+			return result;
+		}
+		if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_FUNCTION || source.kind == FUNCTION_TEMPLATE_ABI_TYPE_MEMBER_POINTER)
+		{
+			if (source.argument_begin > program_.function_template_abi_arguments.size() ||
+				source.argument_count > program_.function_template_abi_arguments.size() - source.argument_begin)
+				ThrowLoweringInternal("retained function or member pointer argument range is invalid");
+			result.kind = source.kind == FUNCTION_TEMPLATE_ABI_TYPE_FUNCTION ? ABI_TYPE_FUNCTION : ABI_TYPE_MEMBER_POINTER;
+			if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_FUNCTION)
+				result.types.push_back(MakeFunctionTemplateAbiType(source.child, recipe));
+			for (std::size_t i = 0; i < source.argument_count; ++i)
+			{
+				const FunctionTemplateAbiArgument& argument = program_.function_template_abi_arguments[source.argument_begin + i];
+				AbiType type = MakeFunctionTemplateAbiType(argument.type, recipe);
+				if (argument.pack_expansion)
+				{
+					AbiTypeModifier expansion;
+					expansion.kind = ABI_TYPE_PACK_EXPANSION;
+					type.modifiers.insert(type.modifiers.begin(), expansion);
+				}
+				result.types.push_back(type);
+			}
+			if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_MEMBER_POINTER)
+				result.types.push_back(MakeFunctionTemplateAbiType(source.child, recipe));
 			return result;
 		}
 		if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE ||

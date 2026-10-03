@@ -53,7 +53,7 @@ function @wrapper___cppgm_class_template_identity_4_0_0___async_write_some(%this
     %t5 = call i32 @basic_stream_socket_tcp__executor___async_write_some(%t2, %t3, %t4)
     return i32 %t5
 }
-function @basic_stream_socket_tcp__executor___async_write_some(%this : ptr [object_bytes=1], %buffer : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN19basic_stream_socketI3tcp8executorE16async_write_someIiPFviEEEiRKT_OT0_, inline_hint=yes] {
+function @basic_stream_socket_tcp__executor___async_write_some(%this : ptr [object_bytes=1], %buffer : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN19basic_stream_socketI3tcp8executorE16async_write_someIiPFviEEEDTcl14async_initiateIT0_S4_EclL_Z7declvalIiEOT_vEEscS6_fp0_EERKS8_OS6_, inline_hint=yes] {
   slot $this : ptr
   slot $buffer : ptr
   slot $token : ptr
@@ -67,7 +67,7 @@ function @basic_stream_socket_tcp__executor___async_write_some(%this : ptr [obje
     %t3 = call i32 @async_initiate(%t1, %t2)
     return i32 %t3
 }
-function @async_initiate(%initiation : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEN12async_resultIT_T0_E8initiateEOT1_OS3_] {
+function @async_initiate(%initiation : ptr [pass=by_address, object_bytes=4], %token : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z14async_initiateIPFviES0_iEDTclsr12async_resultIT_T0_EE8initiatescT1_fp_scS2_fp0_EEOS4_OS2_] {
   slot $initiation : ptr
   slot $token : ptr
 

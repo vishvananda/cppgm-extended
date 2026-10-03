@@ -1330,6 +1330,7 @@ void Analyzer::RegisterFunctionTemplatePattern(NodeId declaration, NodeId target
 		defer_trailing_return, &parameter_names);
 	current_class_context_ = previous_class;
 	ConfigureFunctionTemplateException(&pattern, declarator, shape_declarator);
+	CaptureFunctionParameterMetadata(&pattern, shape_declarator);
 	ValidateFunctionTemplatePatternResults(&pattern, shape_declarator, shape_scope,
 		parameter_names, defer_trailing_return);
 	// A declarator that produced no type at all reaches IsFunction as kNoType,
@@ -1355,7 +1356,6 @@ void Analyzer::RegisterFunctionTemplatePattern(NodeId declaration, NodeId target
 			shape_spec.storage_class == STORAGE_CLASS_STATIC);
 	pattern.shape_type = shape_declarator.type;
 	pattern.result_type_dependent = FunctionTemplateTypeIsDependent(program_->types.Get(pattern.shape_type).child);
-	CaptureFunctionParameterMetadata(&pattern, shape_declarator);
 	CaptureFunctionTemplateDefaultContexts(&pattern);
 	if (pattern.constructor_template && pattern.name !=
 		program_->entities[member_owner].identity_name)

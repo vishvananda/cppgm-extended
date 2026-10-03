@@ -15,13 +15,14 @@ AbiExpressionOperationKind abi_expression_operation_kind(
   if(word == "pt") return ABI_EXPRESSION_OPERATION_INDIRECT_MEMBER;
   if(word == "lt") return ABI_EXPRESSION_OPERATION_LESS;
   if(word == "eq") return ABI_EXPRESSION_OPERATION_EQUAL;
+  if(word == "sc") return ABI_EXPRESSION_OPERATION_STATIC_CAST;
   if(word == "sZ") return ABI_EXPRESSION_OPERATION_SIZEOF_PACK;
   return ABI_EXPRESSION_OPERATION_TEXT;
 }
 
 const char * abi_expression_operation_code(AbiExpressionOperationKind kind)
 {
-  static const char * codes[] = {nullptr, "de", "mi", "dt", "pt", "lt", "eq", "pl", "sZ"};
+  static const char * codes[] = {nullptr, "de", "mi", "dt", "pt", "lt", "eq", "pl", "sc", "sZ"};
   static_assert(sizeof(codes) / sizeof(codes[0]) ==
                   ABI_EXPRESSION_OPERATION_SIZEOF_PACK + 1,
                 "ABI expression operation table is incomplete");

@@ -33,7 +33,7 @@ function @Table___cppgm_class_template_identity_0_0_0___emplace(%this : ptr [obj
     %t6 = call i32 @__try_key_extraction($argobj__1, $argobj__2, %t5)
     return i32 %t6
 }
-function @__try_key_extraction(%__with_key : obj<8x8>, %__without_key : obj<1x1>, %__args : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=internal, object=_Z20__try_key_extractionI3KeyIiclEZN5TableIS1_E7emplaceERA2_KcEUlRKS1_S6_E_ZNS3_7emplaceES6_EUlS6_E0_JS6_EEiT0_T1_DpOT2_] {
+function @__try_key_extraction(%__with_key : obj<8x8>, %__without_key : obj<1x1>, %__args : ptr [pass=by_address, object_bytes=2]) -> i32 [binding=internal, object=_Z20__try_key_extractionI3KeyIiclEZN5TableIS1_E7emplaceERA2_KcEUlRKS1_S6_E_ZNS3_7emplaceES6_EUlS6_E0_JS6_EEDTclclsr3stdE7declvalIT1_EEspclsr3stdE7declvalIT2_EEEET0_SB_DpOSC_] {
   slot $__with_key : obj<8x8>
   slot $__without_key : obj<1x1>
   slot $__args : ptr

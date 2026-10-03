@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = convert trunc i32 i64 %t4
     return i32 %t5
 }
-function @get(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z3getIiiERiRT0_] {
+function @get(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z3getIiiEDTcl10unsafe_getIT_Efp_EERT0_] {
   slot $value : ptr
 
   block ^entry:

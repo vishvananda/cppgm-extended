@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = call ptr @lib__optional_edge___operator___ov3(%t3, $argobj__1)
     return i32 0
 }
-function @lib__optional_edge___operator___ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN3lib8optionalI4edgeEaSI5proxyEERS2_T_, inline_hint=yes] {
+function @lib__optional_edge___operator___ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN3lib8optionalI4edgeEaSI5proxyEENS_9enable_ifINS_6detail9candidateIS1_T_Xsr4sameIS1_S8_EE5valueEEERS2_E4typeES8_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 

@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 %t4
     return i32 %t5
 }
-function @deref__operator__(%this : ptr [object_bytes=1], %r : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK5derefclI3boxIiEEERKiRKT_, inline_hint=yes] {
+function @deref__operator__(%this : ptr [object_bytes=1], %r : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK5derefclI3boxIiEEEDTdefp_ERKT_, inline_hint=yes] {
   slot $this : ptr
   slot $r : ptr
 

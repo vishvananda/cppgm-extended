@@ -14,7 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = convert trunc i32 i64 %t4
     return i32 %t5
 }
-function @invoke__ov2(%f : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z6invokeIRPFivEJEEiOT_DpOT0_] {
+function @invoke__ov2(%f : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z6invokeIRPFivEJEEDTclfp_spfp0_EEOT_DpOT0_] {
   slot $f : ptr
 
   block ^entry:

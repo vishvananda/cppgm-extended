@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @target_protocol___call(%t2, %t3)
     return i32 %t4
 }
-function @target_protocol___call(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6targetI8protocolE4callI7handlerEEiOT_, inline_hint=yes] {
+function @target_protocol___call(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6targetI8protocolE4callI7handlerEEDTcl8initiateIT_Fv6socketIlEEEscPiLi0EEEOS4_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
