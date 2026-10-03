@@ -83,14 +83,14 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **29 compiler issue families** remain
+Remaining-work count on 2026-10-03: **28 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
-LOOKUP-TAG, ABI-GLOBAL and NOEXCEPT-LIST are also completed. These are tracker
+LOOKUP-TAG, ABI-GLOBAL, NOEXCEPT-LIST and REF-BITFIELD are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -154,7 +154,7 @@ The recent discovery inventory is not all C++11:
 | REF-ARRAY-CV | Recognize element cv-qualification when binding a reference to a const array xvalue | AUTO-CONST-REF explicit-type boundary | Done in the accompanying performance-approved checkpoint: consume normalized element cv while matching array dimensions and reference qualification. Explicit and deduced const-array xvalue bindings pass, as do all required qualifier/category boundaries. Thirty qualification fixtures, 574 fresh controls plus 376 retained host observations, strict 6108/6108, all compiler checks and the global 4800-observation performance gate pass. |
 | REF-POINTER-QUAL | Require valid qualification and reference compatibility when referent pointer types differ | REF-ARRAY-CV preparation controls | Done in the accompanying performance-approved checkpoint: enforce cv subset, atomic parity and intermediate const while distinguishing direct reference compatibility from pointer-prvalue conversion temporaries. Mutable/volatile/deep-pointer negatives and valid const/deep-pointer boundaries pass. Already supported host-agreed aliases remain preserved; no new CWG2352/330 aliasing oracle is imposed. The full boundary matrix, strict report, required checks and global performance gate pass. Bit-field materialization remains separate. |
 | REF-BASE-CATEGORY | Reject a related derived lvalue bound to a base rvalue reference | Reference qualification boundary controls | Done in the accompanying performance-approved checkpoint: reject the lvalue category before accepting the related derived-to-base reference conversion, per N3485 8.5.3/5. Base xvalue and const-volatile base lvalue positives remain. Full boundary/regression controls, strict report, all required compiler checks and global performance gate pass. |
-| REF-BITFIELD | Copy a bit-field for const-reference binding and reject mutable or volatile lvalue-reference binding | Reference qualification boundary controls | Open, independently reproduced: unsigned& and const volatile unsigned& bind a bit-field here while strict C++11 Clang/GCC reject. A const unsigned& view incorrectly follows subsequent field mutation; both hosts retain its copied value. N3485 8.5.3/5 excludes bit-fields from direct binding. The cast-to-rvalue-reference mutation control disagrees between Clang and GCC and is retained without a mandatory oracle. This expression/materialization owner is separate from CONST-BITFIELD and the cv qualification candidate. |
+| REF-BITFIELD | Copy a bit-field for const-reference binding and reject mutable or volatile lvalue-reference binding | Reference qualification boundary controls | Done. Use the existing typed binding bit-field fact after overload selection: non-volatile const lvalue references copy through the scalar temporary path; mutable/volatile bindings reject. Extend the existing PA11 bit-field aggregate test for local and argument snapshots and promote two independent negatives, with the mutable case also checking overload selection. Remove three duplicate opt-in controls. Strict 6118/6118 and all required checks pass; final Alpha gates pass. The disputed rvalue-reference cast control remains held without a mandatory oracle. |
 | EH-LOCAL-ARRAY-CATCH | Reach a handler in the current function after partial initializer-list backing construction | AUTO-CONST-REF fault boundary | Open, independently reproduced: a throw from the second backing-element constructor or copy constructor terminates instead of reaching the same-function int handler. Both unchanged a3aaf2015 entry and deduction candidate fail with explicit reference types; Clang/GCC execute successfully in C++11 at O0/O2. Frozen inputs and sixteen explicit-type observations are in auto-const-reference/fault-controls/explicit-final-controls.json. The earlier caller-handler prefix controls remain unchanged. Review the partial-array landing and native handler search without attributing this preexisting gap to auto deduction. |
 | INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | Open, independently reproduced: static-value.cpp fails with the unchanged entry and lifetime candidate at O0/O2; Clang/GCC pass. Local-static reference, global reference and scalar-reference controls now pass the pending lifetime candidate. Frozen observations are in initializer-list-reference-lifetime/storage/{entry,fourth}-controls.json. |
 | REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Done in the accompanying performance-approved checkpoint: temporary lvalue-reference binding requires const without volatile, including normalized array element cv. The independent scalar/class/array negatives and valid lvalue controls pass; full compiler checks and global performance gate pass. |
@@ -5541,4 +5541,33 @@ RSS is 1.000; all calibrated cycle medians remain below 1.01. No timing
 confirmation is triggered. Evidence is in
 `/tmp/cppgm-v4-audit-review/noexcept-list-argument/`.
 Remaining: 29 compiler families and six reviews. Final fixture minimization and
+combined student-export validation remain pending.
+
+### Completed bit-field lvalue-reference binding — 2026-10-03
+
+REF-BITFIELD consumes the existing binding bit-field fact after overload
+selection. Reject mutable/volatile lvalue references and route non-volatile
+const bindings through the existing scalar copy/temporary conversion, without
+assigning an address to the original field (N3485 8.5.3/5 and 9.6/3).
+Overload ranks remain unchanged: choosing a mutable-reference overload for a
+bit-field is diagnosed rather than falling back to a const-reference overload.
+Extend the existing aggregate fixture to check copied values in local binding
+and function arguments. Two independent negatives replace two opt-in controls;
+remove the duplicate positive control. No separate positive fixture is added.
+
+All 42 final focused checks pass against strict C++11 Clang/GCC. The affected
+suite passes 1687/1687; final strict passes 6118/6118 with one output line.
+Debug information, self-host through PA5, nine architecture audits, file audit
+and placement pass. The first image passed correctness/performance but exceeded
+analyzer.cpp's 3000-line cap. Move the unchanged cold source-location diagnostic
+code into existing diagnostic_names.cpp and update its live method owner;
+analyzer.cpp is now 2977 lines. Final image SHA-256:
+`e9ae960a938e6aea771f236d7e3b120f37eb082aea0a1b1686307b2d886597e0`.
+Alpha independently verifies 240 observations for each image, including all
+raw unscaled counters, RSS, zero statuses and equal object hashes. Final maximum
+instruction ratio is 1.000091 and RSS is 1.000219. All calibrated cycle medians
+remain below 1.01 (largest 1.008705); no timing confirmation is triggered.
+Both images, checks and raw observations remain in
+`/tmp/cppgm-v4-audit-review/bitfield-reference/`.
+Remaining: 28 compiler families and six reviews. Final fixture minimization and
 combined student-export validation remain pending.

@@ -542,6 +542,13 @@ ExpressionInfo Analyzer::ApplyTarget(ExpressionInfo value,
 		value.converted_scalar_target = conversion_target;
 	const bool reference_target = target_record.kind == TYPE_LVALUE_REFERENCE ||
 		target_record.kind == TYPE_RVALUE_REFERENCE;
+	const bool bit_field_reference =
+		target_record.kind == TYPE_LVALUE_REFERENCE &&
+		value.binding != kNoBinding &&
+		program_->bindings[value.binding].bit_field;
+	if (bit_field_reference &&
+		(ArrayElementCv(target_record.child) & (CV_CONST | CV_VOLATILE)) != CV_CONST)
+		ThrowSemanticError("bit-field cannot bind a mutable or volatile lvalue reference");
 	if (reference_target && unevaluated_depth_ == 0 &&
 		constexpr_evaluation_depth_ == 0 && value.binding != kNoBinding &&
 		program_->IsStaticDataMember(value.binding))
@@ -549,11 +556,12 @@ ExpressionInfo Analyzer::ApplyTarget(ExpressionInfo value,
 	const std::uint32_t source_object = ExpressionObject(value);
 	const std::uint32_t source_complete_object =
 		ExpressionCompleteObject(value);
-	std::uint32_t source_address = ExpressionAddress(value);
+	std::uint32_t source_address = bit_field_reference ?
+		kNoConstexprAddress : ExpressionAddress(value);
 	if (source_address == kNoConstexprAddress && value.constant &&
 		IsNullptr(conversion_source))
 		source_address = NullConstexprAddress();
-	if (source_address == kNoConstexprAddress &&
+	if (!bit_field_reference && source_address == kNoConstexprAddress &&
 		((!reference_target &&
 		  (conversion_source_record.kind == TYPE_ARRAY ||
 		   conversion_source_record.kind == TYPE_FUNCTION)) ||
@@ -621,7 +629,8 @@ ExpressionInfo Analyzer::ApplyTarget(ExpressionInfo value,
 		++expression_count_;
 	}
 	if (reference_target &&
-		!SimilarUnqualified(EffectiveType(value.type), target_record.child) &&
+		(bit_field_reference ||
+		 !SimilarUnqualified(EffectiveType(value.type), target_record.child)) &&
 		conversion != CONVERSION_DERIVED_TO_BASE)
 	{
 		const std::uint32_t cast = MakeDump(DUMP_CAST_EXPRESSION,
@@ -694,38 +703,6 @@ bool Analyzer::IsModifiableLvalue(const ExpressionInfo& value) const
 		!program_->types.IsFunction(EffectiveType(value.type)) &&
 		!IsVoid(value.type);
 }
-void Analyzer::InstallSemanticErrorLocationHook()
-{
-	SetSemanticErrorLocationHook(&DescribeDiagnosticLocation);
-}
-
-const syntax::SyntaxArena* diagnostic_location_arena = 0;
-syntax::NodeId diagnostic_location_node = kNoNode;
-const DiagnosticInstantiation* diagnostic_instantiation = 0;
-
-std::string DescribeDiagnosticLocation()
-{
-	if (diagnostic_location_arena == 0 ||
-		diagnostic_location_node == kNoNode) return std::string();
-	if (!diagnostic_location_arena->HasSourceLocation(
-		diagnostic_location_node)) return std::string();
-	const std::string& file =
-		diagnostic_location_arena->SourceFile(diagnostic_location_node);
-	if (file.empty()) return std::string();
-	const std::string where = " at " + file + ":" + std::to_string(
-		diagnostic_location_arena->SourceLine(diagnostic_location_node)) +
-		":" + std::to_string(
-		diagnostic_location_arena->SourceColumn(diagnostic_location_node));
-	for (const DiagnosticInstantiation* current = diagnostic_instantiation;
-		current != 0; current = current->previous)
-	{
-		const std::string specialization = current->render(current->context);
-		if (!specialization.empty())
-			return where + " while instantiating " + specialization;
-	}
-	return where;
-}
-
 ExpressionInfo Analyzer::AnalyzeExpression(NodeId node, ScopeId scope,
 	TypeId target)
 {

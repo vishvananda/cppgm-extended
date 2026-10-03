@@ -26,7 +26,6 @@ dev/src/semantic/analysis/analyzer.cpp	FindChild	2	dev/src/semantic/analysis/ana
 dev/src/semantic/analysis/analyzer.cpp	FinishLocalVariableInitializer	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	FirstSemanticChild	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	FundamentalOf	1	dev/src/semantic/analysis/analyzer.cpp	keep
-dev/src/semantic/analysis/analyzer.cpp	InstallSemanticErrorLocationHook	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	IntegralPromotionType	1	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	IntegralPromotionType	2	dev/src/semantic/analysis/analyzer.cpp	keep
 dev/src/semantic/analysis/analyzer.cpp	IntegralRank	1	dev/src/semantic/analysis/analyzer.cpp	keep
@@ -693,6 +692,7 @@ dev/src/semantic/presentation/diagnostic_names.cpp	DescribeTemplateArgument	1	de
 dev/src/semantic/presentation/diagnostic_names.cpp	DescribeTemplateSpecialization	1	dev/src/semantic/presentation/diagnostic_names.cpp	keep
 dev/src/semantic/presentation/diagnostic_names.cpp	DescribeType	1	dev/src/semantic/presentation/diagnostic_names.cpp	keep
 dev/src/semantic/presentation/diagnostic_names.cpp	DescribeTypeAt	1	dev/src/semantic/presentation/diagnostic_names.cpp	keep
+dev/src/semantic/presentation/diagnostic_names.cpp	InstallSemanticErrorLocationHook	1	dev/src/semantic/presentation/diagnostic_names.cpp	keep
 dev/src/semantic/presentation/render.cpp	DumpFunctionText	1	dev/src/semantic/presentation/render.cpp	keep
 dev/src/semantic/presentation/render.cpp	RenderLine	1	dev/src/semantic/presentation/render.cpp	keep
 dev/src/semantic/presentation/type_projection.cpp	ApplySourceTypeOverrides	1	dev/src/semantic/presentation/type_projection.cpp	keep

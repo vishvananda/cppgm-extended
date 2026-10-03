@@ -4,11 +4,45 @@
 // these render the source spelling instead, without disturbing the
 // presentation contract the reference outputs depend on.
 #include "semantic/analysis/analyzer.h"
+#include "semantic/analysis/diagnostic_location.h"
 
 #include <string>
 #include <vector>
 
 namespace cppgm { namespace semantic {
+
+void Analyzer::InstallSemanticErrorLocationHook()
+{
+	SetSemanticErrorLocationHook(&DescribeDiagnosticLocation);
+}
+
+const syntax::SyntaxArena* diagnostic_location_arena = 0;
+syntax::NodeId diagnostic_location_node = kNoNode;
+const DiagnosticInstantiation* diagnostic_instantiation = 0;
+
+std::string DescribeDiagnosticLocation()
+{
+	if (diagnostic_location_arena == 0 ||
+		diagnostic_location_node == kNoNode) return std::string();
+	if (!diagnostic_location_arena->HasSourceLocation(
+		diagnostic_location_node)) return std::string();
+	const std::string& file =
+		diagnostic_location_arena->SourceFile(diagnostic_location_node);
+	if (file.empty()) return std::string();
+	const std::string where = " at " + file + ":" + std::to_string(
+		diagnostic_location_arena->SourceLine(diagnostic_location_node)) +
+		":" + std::to_string(
+		diagnostic_location_arena->SourceColumn(diagnostic_location_node));
+	for (const DiagnosticInstantiation* current = diagnostic_instantiation;
+		current != 0; current = current->previous)
+	{
+		const std::string specialization = current->render(current->context);
+		if (!specialization.empty())
+			return where + " while instantiating " + specialization;
+	}
+	return where;
+}
+
 namespace {
 
 // A class template specialization carries the emission identity the object
