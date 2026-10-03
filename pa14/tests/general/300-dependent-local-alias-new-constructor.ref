@@ -56,7 +56,7 @@ function @make_pair_argument(%count : i64) -> ptr [binding=weak, object=_Z18make
     call void @pair_argument_int___pair_argument_int_(%t2, %t3, 0)
     return ptr %t2
 }
-function @pair_argument_int___pair_argument_int_(%this : ptr [object_bytes=16], %count_ : i64, %value_ : i32) -> void [binding=weak, object=_ZN13pair_argumentIiEC1Emi, inline_hint=yes] {
+function @pair_argument_int___pair_argument_int_(%this : ptr [object_bytes=16], %count_ : i64, %value_ : i32) -> void [unwind=no, binding=weak, object=_ZN13pair_argumentIiEC1Emi, inline_hint=yes] {
   slot $this : ptr
   slot $count_ : i64
   slot $value_ : i32

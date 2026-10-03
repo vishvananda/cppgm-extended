@@ -3,7 +3,7 @@ struct Base
   virtual void destroy() = 0;
 
 protected:
-  Base()
+  Base() noexcept
   {
   }
 
@@ -19,7 +19,7 @@ struct Impl : Base
     return new Impl();
   }
 
-  Impl()
+  Impl() noexcept
   {
   }
 

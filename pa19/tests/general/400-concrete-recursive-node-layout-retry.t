@@ -207,7 +207,7 @@ template <class j> struct base_node {
   typename i<sizeof(j)>::ab a;
 
 public:
-  template <class db, class... c> explicit base_node(db &p1);
+  template <class db, class... c> explicit base_node(db &p1) noexcept;
 
 private:
 };

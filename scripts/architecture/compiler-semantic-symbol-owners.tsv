@@ -485,6 +485,7 @@ dev/src/semantic/initialization/aggregates.cpp	IsStructuredBindingDeclarator	1	d
 dev/src/semantic/initialization/allocation.cpp	AnalyzeArrayNewExpression	1	dev/src/semantic/initialization/allocation.cpp	keep
 dev/src/semantic/initialization/allocation.cpp	AnalyzeDeleteExpression	1	dev/src/semantic/initialization/allocation.cpp	keep
 dev/src/semantic/initialization/allocation.cpp	AnalyzeNewExpression	1	dev/src/semantic/initialization/allocation.cpp	keep
+dev/src/semantic/initialization/allocation.cpp	BuildScalarNewResult	1	dev/src/semantic/initialization/allocation.cpp	keep
 dev/src/semantic/initialization/allocation.cpp	SelectUsualDeallocation	1	dev/src/semantic/initialization/allocation.cpp	keep
 dev/src/semantic/initialization/analysis.cpp	AddBaseInitializationAction	1	dev/src/semantic/initialization/analysis.cpp	keep
 dev/src/semantic/initialization/analysis.cpp	AddBaseInitializationActionAt	1	dev/src/semantic/initialization/analysis.cpp	keep

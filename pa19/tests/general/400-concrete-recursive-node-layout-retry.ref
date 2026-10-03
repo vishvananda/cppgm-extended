@@ -1,6 +1,6 @@
 declare function @boost__container__de_boost__container____cppgm_class_template_identity_3_8_0__boost____cppgm_class_template_identity_36_78_0___m_fn1(%arg0 : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZN5boost9container2deINS0_1kI15recursive_slistEENS_2cyINS_8bhtraitsINS0_9base_nodeIS3_EENS_2asIPvEEEEEEE5m_fn1Ev]
 declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
-declare function @boost__container__base_node_recursive_slist___base_node_recursive_slist___ov3(%arg0 : ptr [object_bytes=4], %arg1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost9container9base_nodeI15recursive_slistEC1INS0_1kIS3_EEJEEERT_, inline_hint=yes]
+declare function @boost__container__base_node_recursive_slist___base_node_recursive_slist___ov3(%arg0 : ptr [object_bytes=4], %arg1 : ptr [pass=by_address, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5boost9container9base_nodeI15recursive_slistEC1INS0_1kIS3_EEJEEERT_, inline_hint=yes]
 
 global @boost__e : i8 [binding=strong, object=_ZN5boost1eE] = zero
 

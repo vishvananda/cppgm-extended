@@ -17,14 +17,15 @@ struct ConstructionCleanupStep
 {
 	std::uint32_t tail;
 	std::uint32_t temporary_action;
+	std::uint32_t allocation_node;
 	semantic::TypeId type;
 	semantic::BindingId destructor;
 	ir::Operand destination;
 
 	ConstructionCleanupStep(std::uint32_t previous, std::uint32_t temporary,
 		semantic::TypeId object_type, semantic::BindingId destructor_binding,
-		const ir::Operand& address)
-		: tail(previous), temporary_action(temporary), type(object_type),
+		const ir::Operand& address, std::uint32_t allocation = semantic::kNoDumpEdge)
+		: tail(previous), temporary_action(temporary), allocation_node(allocation), type(object_type),
 		  destructor(destructor_binding), destination(address)
 	{
 	}
@@ -111,10 +112,10 @@ protected:
 			action, semantic::kNoType, semantic::kNoBinding, ir::Operand()));
 	}
 
-	bool BeginConstructionCleanup(const semantic::DumpNode& recipe)
+	bool BeginConstructionCleanup(const semantic::DumpNode& recipe, bool allocation = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (!construction_cleanup_active_ && (!recipe.contains_construction_cleanup ||
+		if (!allocation && !construction_cleanup_active_ && (!recipe.contains_construction_cleanup ||
 			recipe.value_constructor != semantic::kNoDumpEdge))
 			return false;
 		const bool owns_expression = !derived.full_expression_cleanup_active_;
@@ -137,15 +138,10 @@ protected:
 		return owns_expression;
 	}
 
-	void CompleteConstructionObject(std::uint32_t previous,
-		semantic::TypeId type, semantic::BindingId destructor,
-		const ir::Operand& destination)
+	void RetainConstructionTemporaries(std::uint32_t previous)
 	{
-		if (!construction_cleanup_active_ || destructor == semantic::kNoBinding) return;
-		Derived& derived = static_cast<Derived&>(*this);
-		derived.PauseFullExpressionCleanupSegment();
-		// Nested completion transfers its members to the completed object. The
-		// initializer's temporaries retain their independent full-expression life.
+		// Successful construction transfers its subobjects and allocation to
+		// the result; argument temporaries keep their full-expression lifetime.
 		std::vector<std::uint32_t> retained;
 		for (std::uint32_t root = construction_cleanup_root_; root != previous;)
 		{
@@ -156,6 +152,16 @@ protected:
 		}
 		construction_cleanup_root_ = previous;
 		for (std::size_t i = retained.size(); i != 0; --i) PushConstructionTemporary(retained[i - 1]);
+	}
+
+	void CompleteConstructionObject(std::uint32_t previous,
+		semantic::TypeId type, semantic::BindingId destructor,
+		const ir::Operand& destination)
+	{
+		if (!construction_cleanup_active_ || destructor == semantic::kNoBinding) return;
+		Derived& derived = static_cast<Derived&>(*this);
+		derived.PauseFullExpressionCleanupSegment();
+		RetainConstructionTemporaries(previous);
 		PushConstructionCleanup(ConstructionCleanupStep(construction_cleanup_root_,
 			semantic::kNoDumpEdge, type, destructor, destination));
 		derived.full_expression_cleanup_ready_ = true;
@@ -299,6 +305,9 @@ protected:
 		const bool may_throw = !derived.program_.bindings[destructor].nonthrowing;
 		if (may_throw) derived.EmitEhTarget(ir::Instruction::EH_TRY, derived.LexicalCleanupTerminateBlock());
 		if (temporary) derived.LowerFullExpressionDestructorAction(step.temporary_action);
+		else if (step.allocation_node != semantic::kNoDumpEdge)
+			derived.EmitSelectedDeallocation(derived.arena_.nodes[step.allocation_node],
+				step.destination, step.destructor);
 		else derived.LowerDestructorObject(step.type, step.destination, step.destructor, false, true);
 		if (may_throw) derived.Emit(ir::Instruction(ir::Instruction::EH_END));
 		std::uint32_t tail = state.key.terminal;

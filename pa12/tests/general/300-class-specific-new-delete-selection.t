@@ -16,7 +16,7 @@ struct Item
     ::operator delete(storage);
   }
 
-  Item() {}
+  Item() noexcept {}
   ~Item() {}
 };
 

@@ -1,6 +1,7 @@
 #ifndef CPPGM_LOWERING_INITIALIZATION_ACTIONS_H
 #define CPPGM_LOWERING_INITIALIZATION_ACTIONS_H
 
+#include "lowering/objects/construction_cleanup.h"
 #include "lowering/objects/storage_facts.h"
 #include "lowering/support/errors.h"
 #include "lowering/support/sequences.h"
@@ -420,6 +421,27 @@ protected:
 		else derived.LowerRuntimeObjectValue(record.operand_type, child, result);
 	}
 
+	void LowerScalarNewInitialization(std::uint32_t node, const DumpNode& record,
+		std::uint32_t child, const Operand& result)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (record.object_binding == kNoBinding)
+		{
+			LowerNewInitialization(record, child, result);
+			return;
+		}
+		const bool owns_cleanup = derived.BeginConstructionCleanup(record, true);
+		const std::uint32_t previous = derived.ConstructionCleanupRoot();
+		derived.PauseFullExpressionCleanupSegment();
+		derived.PushConstructionCleanup(ConstructionCleanupStep(previous,
+			kNoDumpEdge, record.operand_type, record.object_binding, result, node));
+		derived.full_expression_cleanup_ready_ = true;
+		LowerNewInitialization(record, child, result);
+		derived.PauseFullExpressionCleanupSegment();
+		derived.RetainConstructionTemporaries(previous);
+		if (owns_cleanup) derived.CompleteFullExpressionCleanup();
+	}
+
 	Operand LowerNewExpression(std::uint32_t node, const DumpNode& record,
 		const NodeChildren& children)
 	{
@@ -432,9 +454,11 @@ protected:
 		if (children.size() != 2) return result;
 		if (!record.allocation_may_return_null)
 		{
-			LowerNewInitialization(record, children[1], result);
+			LowerScalarNewInitialization(node, record, children[1], result);
 			return result;
 		}
+		// Both allocation outcomes leave the same enclosing cleanup segment.
+		derived.PauseFullExpressionCleanupSegment();
 		const BlockId initialize = derived.AddBlock(derived.NewLabel("new_init"));
 		const BlockId done = derived.AddBlock(derived.NewLabel("new_end"));
 		const Operand nonnull = derived.Temp(LowI64());
@@ -447,17 +471,17 @@ protected:
 		derived.Emit(compare);
 		derived.EmitBranch(nonnull, initialize, done);
 		derived.SelectBlock(initialize);
-		LowerNewInitialization(record, children[1], result);
+		LowerScalarNewInitialization(node, record, children[1], result);
 		derived.EmitJump(done);
 		derived.SelectBlock(done);
 		return result;
 	}
 
 	void EmitSelectedDeallocation(const DumpNode& record,
-		const Operand& pointer)
+		const Operand& pointer, BindingId selected = kNoBinding)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		const BindingId binding = record.binding;
+		const BindingId binding = selected == kNoBinding ? record.binding : selected;
 		if (binding == kNoBinding || binding >= derived.function_symbols_.size() ||
 			derived.function_symbols_[binding] == kNoLowId)
 			ThrowLoweringInternal("delete action has no deallocation symbol");

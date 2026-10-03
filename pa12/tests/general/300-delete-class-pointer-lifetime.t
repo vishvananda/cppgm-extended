@@ -1,7 +1,7 @@
 int c;
 
 struct A {
-  A()
+  A() noexcept
   {
     ++c;
   }

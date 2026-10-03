@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load i32 @c
     return i32 %t5
 }
-function @A__A(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1AC1Ev, inline_hint=yes] {
+function @A__A(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1AC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

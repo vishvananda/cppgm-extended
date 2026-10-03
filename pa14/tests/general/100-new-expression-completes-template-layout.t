@@ -7,7 +7,7 @@ template<class T>
 struct Control : Base
 {
   T *ptr;
-  Control(T *p) : ptr(p) {}
+  Control(T *p) noexcept : ptr(p) {}
 };
 
 template<class T>

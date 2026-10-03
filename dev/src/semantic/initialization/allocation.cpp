@@ -496,6 +496,14 @@ ExpressionInfo Analyzer::AnalyzeNewExpression(NodeId node,
 		else construction = AnalyzeExpression(
 			initializer, scope, object_type).node;
 	}
+	return BuildScalarNewResult(scope, object_type, selected, allocation.node,
+		construction, explicit_global, target);
+}
+
+ExpressionInfo Analyzer::BuildScalarNewResult(ScopeId scope, TypeId object_type,
+	BindingId selected, std::uint32_t allocation_node, std::uint32_t construction,
+	bool explicit_global, TypeId target)
+{
 	const TypeId result_type = program_->types.Pointer(object_type);
 	const std::uint32_t result_node = MakeDump(DUMP_NEW_EXPRESSION,
 		result_type, VALUE_PRVALUE, 0, selected);
@@ -503,6 +511,8 @@ ExpressionInfo Analyzer::AnalyzeNewExpression(NodeId node,
 	const FunctionInfo& allocation_function = GetFunction(selected);
 	const TypeRecord& allocation_type =
 		program_->types.Get(allocation_function.type);
+	const bool ordinary_allocation = allocation_type.parameter_count == 1 &&
+		!allocation_type.variadic;
 	bool nonallocating_placement = false;
 	if (allocation_type.parameter_count == 2)
 	{
@@ -515,7 +525,11 @@ ExpressionInfo Analyzer::AnalyzeNewExpression(NodeId node,
 	const bool allocation_nonthrowing = FunctionIsNonthrowing(selected);
 	dump_.nodes[result_node].allocation_may_return_null =
 		allocation_nonthrowing && !nonallocating_placement;
-	dump_.Add(result_node, allocation.node);
+	if (construction != kNoDumpEdge && ordinary_allocation &&
+		!InitializationActionsAreNonthrowing(construction))
+		dump_.nodes[result_node].object_binding = SelectUsualDeallocation(
+			scope, EntityOf(object_type), explicit_global, false, object_type);
+	dump_.Add(result_node, allocation_node);
 	if (construction != kNoDumpEdge) dump_.Add(result_node, construction);
 	ExpressionInfo result;
 	result.node = result_node;

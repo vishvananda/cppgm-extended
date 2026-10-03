@@ -4,12 +4,14 @@ int trace;
 
 struct Base
 {
+  Base() noexcept = default;
   virtual ~Base() noexcept { trace = trace * 10 + 1; }
   virtual void destroy() noexcept {}
 };
 
 struct Derived : Base
 {
+  Derived() noexcept = default;
   ~Derived() noexcept override { trace = trace * 10 + 2; }
 
   void destroy() noexcept override
@@ -20,6 +22,7 @@ struct Derived : Base
 
 struct Further : Derived
 {
+  Further() noexcept = default;
   ~Further() noexcept override { trace = trace * 10 + 3; }
 };
 

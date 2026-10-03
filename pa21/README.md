@@ -228,6 +228,9 @@ To complete PA21, implement these goals:
    When a potentially throwing call is reached through a branch in an active
    handler, its unwind path must finish the handler and destroy objects that
    remain live from scopes outside the corresponding `try` statement.
+   If initialization after ordinary scalar allocation throws, call the selected
+   usual deallocation function after construction cleanup and propagate the exception.
+   Successful initialization transfers the allocation to the result.
    If construction of a class subobject throws, destroy exactly the already
    constructed bases and members in reverse construction order.
    Aggregate member and array-element initialization must retain the completed

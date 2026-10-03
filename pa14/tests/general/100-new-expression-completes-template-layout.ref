@@ -45,7 +45,7 @@ function @Owner_Node___Owner_Node_(%this : ptr [object_bytes=8], %p : ptr) -> vo
     store ptr %t4, %t6
     return void
 }
-function @Control_Node___Control_Node_(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN7ControlI4NodeEC1EPS0_, inline_hint=yes] {
+function @Control_Node___Control_Node_(%this : ptr [object_bytes=8], %p : ptr) -> void [unwind=no, binding=weak, object=_ZN7ControlI4NodeEC1EPS0_, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 

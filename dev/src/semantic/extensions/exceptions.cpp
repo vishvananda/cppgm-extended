@@ -574,8 +574,10 @@ bool Analyzer::CollectTemporaryObjectsImpl(std::uint32_t node,
 	}
 	const bool short_circuit = record.kind == DUMP_BINARY_EXPRESSION &&
 		record.logical_operation != LOGICAL_OPERATION_NONE;
+	const bool nullable_new = record.kind == DUMP_NEW_EXPRESSION &&
+		record.allocation_may_return_null;
 	bool control_dependent = record.kind == DUMP_CONDITIONAL_EXPRESSION ||
-		short_circuit;
+		short_circuit || nullable_new;
 	std::size_t child_index = 0;
 	for (std::uint32_t edge = record.first_edge; edge != kNoDumpEdge;
 		edge = dump_.edges[edge].next, ++child_index)
@@ -583,9 +585,13 @@ bool Analyzer::CollectTemporaryObjectsImpl(std::uint32_t node,
 		const std::uint32_t child = dump_.edges[edge].child;
 		const bool branch_only =
 			(short_circuit && child_index == 1) ||
-			(record.kind == DUMP_CONDITIONAL_EXPRESSION && child_index != 0);
+			(record.kind == DUMP_CONDITIONAL_EXPRESSION && child_index != 0) ||
+			(nullable_new && child_index != 0);
 		control_dependent = CollectTemporaryObjectsImpl(child, temporaries,
-			conditionally_evaluated || branch_only, branch_owner,
+			// Nullable allocation can skip initialization. Its temporaries remain
+			// live through the expression join, using existing runtime lifetime flags.
+			conditionally_evaluated || branch_only,
+			nullable_new && child_index != 0 ? kNoDumpEdge : branch_owner,
 			branch_only && branch_depth == 0 ? child : branch_child,
 			branch_depth + (branch_only ? 1 : 0),
 			projected_subobject ||

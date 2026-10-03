@@ -61,7 +61,7 @@ function @Item__operatornew(%size : i64) -> ptr [binding=weak, object=_ZN4Itemnw
     %t2 = call ptr @operatornew(%t1)
     return ptr %t2
 }
-function @Item__Item(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4ItemC1Ev, inline_hint=yes] {
+function @Item__Item(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4ItemC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

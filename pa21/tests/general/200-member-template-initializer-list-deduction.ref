@@ -1,4 +1,5 @@
 declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $a : obj<8x8>
@@ -59,7 +60,19 @@ function @any_like__emplace__ov2(%this : ptr [object_bytes=8], %il : obj<16x8>, 
     %t5 = addr $il
     copyobj 16x8 %t5, %t4
     %t6 = load ptr $args
+    eh_try ^construction_cleanup_2
     call void @any_like__holder_payload___holder_payload___ov4(%t3, $argobj__1, %t6)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^construction_cleanup_2:
+    call void @operatordelete(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
     store ptr %t3, $raw
     %t7 = load ptr $raw
     %t8 = load ptr $this

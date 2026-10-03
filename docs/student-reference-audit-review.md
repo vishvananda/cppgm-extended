@@ -158,7 +158,7 @@ The recent discovery inventory is not all C++11:
 | EH-OVERRIDE | Dynamic exception specifications on virtual overrides require an allowed subset | v4codex PA28 audit154 plus independent current reproduction | Done: typed restrictions compare incoming final overriders after completion, retain finite destructor unions and catch-reference rules. Fifteen new PA13/14/23 fixtures; strict 5869/5869, full checks and equal-output performance pass. Existing references unchanged; later runtime EH/backend issues remain separate. |
 | EH-SPEC-COMPLETE | Complete-class lookup in ordinary member exception specifications | Additional timing controls / CWG 1330 | Done: 64f1a59d4; eight PA6/12/13/17 fixtures; strict 5877/5877, full compiler checks and placement pass. Alpha instruction/RSS gates pass with equal outputs; GCC late-typedef disagreement documented below. |
 | EH-SPEC-TIMING | Timing of a virtual template exception specification using sizeof its current class | Additional override controls | Reviewed: no required compiler change or fixture. The adopted CWG 1330 complete-class context applies to exception specifications, including overrides; its needed-on-comparison rule does not require comparison before class completion. Keep existing acceptance of the three current-class-size controls, despite both hosts rejecting them. CWG 2510 confirms the analogous declaration-matching delay principle. Fresh 42 observations retain that host difference while ordinary complete-class positives and both outside-context incomplete-size negatives agree across all three compilers. No supplied oracle is changed; proof and sources are recorded below and in exception-spec-timing/contract-review/. |
-| EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | In progress: EH-HANDLER-TEMP, EH-FORWARD, EH-CLEANUP and the aggregate-prefix candidate fix six of seven refreshed reducers at O0/O2. Failed-new deallocation remains; the expanded independent EH rows below retain additional gaps and contract reviews. |
+| EH | Construction prefixes, active-handler lifetime/forwarding and failed-new deallocation | v4codex group 10 | Done for all seven original refreshed reducers: ordinary scalar allocation now selects usual deletion and participates in construction cleanup, including constructor-argument temporaries. One PA21 fixture covers failed construction and skipped initialization after null allocation. Strict 6121/6121, required compiler checks and final Alpha instruction/RSS gates pass. The independent EH families and six contract reviews below remain open. |
 | EH-HANDLER-TEMP | Destroy full-expression temporaries before ending their active catch | v4codex reference110 plus expanded EH controls | Done in ac2aaf704: existing typed handler boundaries cover return, statement, initializer and condition cleanup. Nine agreed controls and two PA21 fixtures pass at O0/O2; one dormant reference edge is corrected. Strict 5971/5971, full compiler checks and placement pass. Nine Alpha instruction/RSS gates pass with equal objects. Nested forwarding remains EH. |
 | EH-FORWARD | Advertise enclosing catch clauses and unwind prefixes/active handlers in lifetime order | v4codex references106/112 plus independent boundary controls | Done in the accompanying checkpoint: 40 agreed boundary programs and six new PA21 fixtures pass at O0/O2; three independently reviewed references change. Strict 5977/5977, full compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. |
 | EH-CLEANUP | Preserve handler lifetime and remaining-object unwind tails during lexical destruction | Original EH reducer plus expanded local cleanup controls | Done in the accompanying checkpoint: 34 host-agreed runtime boundary programs and seven new PA21/28 fixtures pass at O0/O2; three reviewed references change. Strict 5984/5984, all compiler checks and zero placement findings pass. Nine Alpha instruction/RSS gates pass with equal objects. Array element progress and non-NRVO returned-object cleanup remain separate rows. |
@@ -6177,3 +6177,49 @@ Remaining frozen compiler families: 13, plus six reviews. Final fixture pruning
 and combined export/harness/quiet-output validation remain pending. Next is
 failed-new deallocation: scalar new lacks the selected cleanup binding and
 cleanup region already used by array new.
+
+
+## EH failed-new checkpoint — 2026-10-03
+
+N3485 5.3.4 [expr.new]/18–21 requires matching deallocation if initialization
+throws after ordinary scalar allocation succeeds. Both C++11 hosts return zero
+for the frozen replacement-operator reducer at O0/O2; the entry compiler leaks
+and returns one. Select the usual deletion binding in semantic allocation and
+use the existing construction cleanup chain in lowering. Constructor-argument
+temporary transitions retain the allocation obligation; successful construction
+transfers it to the result while keeping independent argument temporaries.
+A separate manual EH guard was rejected because those transitions can pop it.
+
+The null-return boundary exposes a preexisting unconditional argument-destructor
+bug and an unbalanced guard in the intermediate patch. Treat nullable-new
+initializers as conditional in the existing typed lifetime walk, using runtime
+flags at the join, and close the enclosing segment before branching. One new
+PA21 fixture covers both throwing construction and null allocation, with cleanup
+order/count assertions; retire the duplicate PA28 control. Eight earlier
+allocation/template/virtual smoke fixtures declare construction explicitly
+noexcept to preserve their milestone scope. Exact ref-test regenerates only
+those references, the new fixture and the PA21 initializer-list allocation
+reference that legitimately needs the new cleanup. Sixteen fresh strict C++11
+host syntax checks confirm the early rewrites.
+
+The final 48 runtime checks pass at O0/O2 across standalone and host-object
+routes, including allocation failure, lexical and expression cleanup, successful
+construction, null allocation and class-specific sized deletion. Six additional
+host/candidate checks confirm a throwing argument to a noexcept constructor.
+Full strict make test-report passes 6121/6121 with exactly one output line.
+Debug-info, variants, self-host through PA5, all nine architecture checks, file
+and final placement audits pass; 37 existing file warnings remain.
+
+All 288 screen and 144 focused confirmation observations retain unscaled Alpha
+counters, RSS, zero statuses and equal output hashes, independently verified.
+Maximum screen instruction median is 1.000227840 and RSS ratio is 1.008787730;
+all instruction/RSS gates pass. Confirmation cycle medians are 1.007308466 for
+copy templates, 1.016394992 for local statics and 1.006639972 for multi-pack.
+The local-static 95% bootstrap interval [0.988776680, 1.027463526] is inconclusive;
+retain the diagnostic and do not claim timing neutrality or chase more runs.
+Final compiler SHA256:
+`7e649ea7b2f2d13590be09e35e0ff211d329b07e8bea09b71a623beebbcd4092`.
+Evidence: `/tmp/cppgm-v4-audit-review/failed-new-deallocation/`.
+Remaining frozen compiler families: 12, plus six reviews. Final fixture pruning
+and combined student export/harness validation remain pending. Next is
+EH-LOCAL-ARRAY-CATCH, using the two frozen explicit-type backing-array reducers.

@@ -80,7 +80,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = convert sext i64 i32 8
     %t2 = call ptr @operatornew(%t1)
-    call void @Derived__Derived(%t2)
     store ptr %t2, $complete
     %t3 = load ptr $complete
     %t4 = index i8 %t3, 0
@@ -105,7 +104,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 0, @trace
     %t11 = convert sext i64 i32 8
     %t12 = call ptr @operatornew(%t11)
-    call void @Derived__Derived(%t12)
     store ptr %t12, $complete
     %t13 = load ptr $complete
     %t14 = index i8 %t13, 0
@@ -128,7 +126,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 0, @trace
     %t19 = convert sext i64 i32 8
     %t20 = call ptr @operatornew(%t19)
-    call void @Further__Further(%t20)
     store ptr %t20, $further
     %t21 = load ptr $further
     %t22 = index i8 %t21, 0
@@ -247,43 +244,6 @@ function @Derived__destroy(%this : ptr [object_bytes=8]) -> void [unwind=no, bin
     call void %t3(%t1) as (%arg0 : ptr [object_bytes=8]) -> void
     return void
 }
-function @Derived__Derived__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7DerivedC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 %t1, 0
-    call void @Base__Base__base_entry(%t2)
-    %t3 = load ptr $this
-    %t4 = addr @Derived__vtable
-    %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
-    return void
-}
-function @Derived__Derived(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 %t1, 0
-    call void @Base__Base__base_entry(%t2)
-    eh_cleanup ^constructor_cleanup_1
-    %t5 = load ptr $this
-    %t6 = addr @Derived__vtable
-    %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
-    eh_end
-    return void
-
-  block ^constructor_cleanup_1:
-    %t3 = load ptr $this
-    %t4 = index i8 %t3, 0
-    call void @Base___Base__base_entry(%t4)
-    eh_end
-    resume
-}
 function @Base___Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
@@ -395,30 +355,7 @@ function @Further___Further(%this : ptr [object_bytes=8]) -> void [unwind=no, bi
   block ^destructor_end_2:
     return void
 }
-function @Further__Further(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7FurtherC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = index i8 %t1, 0
-    call void @Derived__Derived__base_entry(%t2)
-    eh_cleanup ^constructor_cleanup_1
-    %t5 = load ptr $this
-    %t6 = addr @Further__vtable
-    %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
-    eh_end
-    return void
-
-  block ^constructor_cleanup_1:
-    %t3 = load ptr $this
-    %t4 = index i8 %t3, 0
-    call void @Derived___Derived__base_entry(%t4)
-    eh_end
-    resume
-}
-function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
+function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC2Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -429,5 +366,15 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=n
     store ptr %t3, %t1
     return void
 }
+function @Derived__Derived__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7DerivedC2Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @Derived__vtable
+    %t3 = index i8 %t2, 16
+    store ptr %t3, %t1
+    return void
+}
 alias object _ZN7FurtherD2Ev = @Further___Further
-alias object _ZN7FurtherC2Ev = @Further__Further

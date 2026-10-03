@@ -1,5 +1,5 @@
 struct S {
-  S();
+  S() noexcept;
 };
 
 int main() {
