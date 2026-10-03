@@ -49,5 +49,11 @@ int main()
       return Counter::count;
     }
   }
+  if (Counter::count != 0) return Counter::count;
+  {
+    const Counter & value{Counter()};
+    if (Counter::count != 1) return Counter::count;
+    (void)value;
+  }
   return Counter::count;
 }

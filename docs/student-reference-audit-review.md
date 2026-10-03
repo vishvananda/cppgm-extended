@@ -105,7 +105,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **27 compiler issue families** remain
+Remaining-work count on 2026-10-03: **26 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
@@ -113,7 +113,7 @@ required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
 LOOKUP-TAG, ABI-GLOBAL, NOEXCEPT-LIST, REF-BITFIELD and
-CONST-REF-STATIC-TEMP are also completed. These are tracker
+CONST-REF-STATIC-TEMP and REF-BRACE are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -181,7 +181,7 @@ The recent discovery inventory is not all C++11:
 | EH-LOCAL-ARRAY-CATCH | Reach a handler in the current function after partial initializer-list backing construction | AUTO-CONST-REF fault boundary | Open, independently reproduced: a throw from the second backing-element constructor or copy constructor terminates instead of reaching the same-function int handler. Both unchanged a3aaf2015 entry and deduction candidate fail with explicit reference types; Clang/GCC execute successfully in C++11 at O0/O2. Frozen inputs and sixteen explicit-type observations are in auto-const-reference/fault-controls/explicit-final-controls.json. The earlier caller-handler prefix controls remain unchanged. Review the partial-array landing and native handler search without attributing this preexisting gap to auto deduction. |
 | INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | Open, independently reproduced: static-value.cpp fails with the unchanged entry and lifetime candidate at O0/O2; Clang/GCC pass. Local-static reference, global reference and scalar-reference controls now pass the pending lifetime candidate. Frozen observations are in initializer-list-reference-lifetime/storage/{entry,fourth}-controls.json. |
 | REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Done in the accompanying performance-approved checkpoint: temporary lvalue-reference binding requires const without volatile, including normalized array element cv. The independent scalar/class/array negatives and valid lvalue controls pass; full compiler checks and global performance gate pass. |
-| REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: const S& s{S(5)} crashes at O0/O2 with the unchanged entry and first cleanup candidate; Clang/GCC pass. Keep this initialization-form issue separate from unwind staging. |
+| REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Done: reference-related single elements bind directly; other class lists create a separate temporary through existing materialization. Reuse prepared typed elements. Extend the existing PA12 constructor-argument lifetime fixture; remove the opt-in duplicate. Original, alias, conversion, aggregate, derived and rejection boundaries pass 48 focused checks at O0/O2. PA12 298/298, strict 6118/6118, all required checks and Alpha instruction/RSS/equality gates pass. |
 | REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: static_cast<const S&>(choice()?D():throw 99) fails lowering at O0/O2 with unchanged entry and first cleanup candidate; Clang/GCC pass. Direct D() base binding is covered by EH-REF-INIT. |
 | EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Open, independently reproduced: four reference-initializer controls and an ordinary object/throw control return 10 with both the unchanged entry and cleanup candidate; Clang/GCC invoke the installed termination handler (77) at O0/O2. Generic full-expression cleanup continuations lower destructor calls without the terminating guard used by constructor/destructor body cleanup. Frozen inputs and host traces are retained under reference-initializer-cleanup/. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
@@ -5612,3 +5612,20 @@ and equal-output verification. Maximum instruction ratio 1.000045 and RSS
 Evidence: `/tmp/cppgm-v4-audit-review/static-reference-temporary/`.
 Remaining: 27 compiler families and six reviews; fixture pruning and combined
 export remain pending.
+
+### Completed braced class reference binding — 2026-10-03
+
+REF-BRACE follows N3485 8.5.4/3: bind a reference-related single element
+directly, otherwise materialize a separate class object and bind to it.
+Reuse the existing braced-expression cache and conversion/lifetime machinery.
+The preceding compiler crashes on the original source and fails the extended
+existing PA12 fixture; the patch passes both. No fixture file is added.
+All 48 focused observations agree with strict C++11 Clang/GCC at O0/O2.
+PA12 passes 298/298; strict stays 6118/6118 in one line. Debug-info,
+self-host PA5, nine architecture audits, file audit and placement pass.
+Final SHA-256: `9bc4ae3b83d9d1de7ee6b619d71a926a3f9ac3889f49622b9701d060afc71023`.
+Alpha's 144 observations independently pass raw unscaled counter, RSS, zero
+status and equal-output checks. Maximum instruction ratio 1.00000024, RSS
+1.000; all calibrated cycle medians below 1.01. No repeat is indicated.
+Evidence: `/tmp/cppgm-v4-audit-review/braced-reference-temporary/`.
+Remaining: 26 compiler families and six reviews; final pruning/export pending.

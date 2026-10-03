@@ -274,6 +274,37 @@ ExpressionInfo Analyzer::AnalyzeBracedInit(NodeId node, ScopeId scope,
 	if (IsInitializerListType(target))
 		return AnalyzeInitializerList(node, scope, target);
 	EnsureClassDefinition(target);
+	if (program_->types.IsReference(target) &&
+		IsClassEntity(*program_, EntityOf(target)))
+	{
+		if (!braced_initialization_context_)
+		{
+			BracedInitializationContext context;
+			ScopedBracedInitializationContext prepared(
+				braced_initialization_context_, &context);
+			PrepareBracedInitialization(node, scope);
+			return AnalyzeBracedInit(node, scope, target);
+		}
+		const TypeId referred = EffectiveType(target);
+		const std::uint32_t first = arena_->FirstEdge(node);
+		if (first != kNoEdge && arena_->NextEdge(first) == kNoEdge &&
+			!arena_->IsTag(arena_->EdgeChild(first),
+				::cppgm::syntax::STAG_BRACED_INIT_LIST))
+		{
+			ExpressionInfo value = AnalyzeExpression(arena_->EdgeChild(first), scope);
+			const EntityId source = EntityOf(value.type);
+			// N3485 8.5.4/3: a reference-related single element binds directly.
+			if (SimilarUnqualified(value.type, referred) ||
+				(source != kNoEntity && program_->IsBaseOf(EntityOf(referred), source)))
+				return ApplyTarget(value, target);
+		}
+		ExpressionInfo value = AnalyzeBracedInit(node, scope, referred);
+		value.category = VALUE_PRVALUE;
+		dump_.nodes[value.node].category = VALUE_PRVALUE;
+		if (dump_.nodes[value.node].kind == DUMP_BRACED_INIT_LIST)
+			value.node = BuildAggregateConstructionAction(referred, value.node);
+		return ApplyTarget(MaterializeTemporary(value), target);
+	}
 	ExpressionInfo expanded;
 	if (TryAnalyzeExpandedBracedInit(node, scope, target, &expanded))
 		return expanded;
