@@ -834,6 +834,7 @@ void Analyzer::AdoptFunctionTemplateDefinition(
 	retained->expanded_result_has_alias = incoming->expanded_result_has_alias;
 	retained->definition_body = incoming->definition_body;
 	retained->constructor_initializer = incoming->constructor_initializer;
+	retained->function_try_block = incoming->function_try_block;
 	retained->function_parameter_names = incoming->function_parameter_names;
 	retained->function_parameter_defaults = incoming->function_parameter_defaults;
 	retained->language_linkage = incoming->language_linkage;
@@ -1160,9 +1161,11 @@ void Analyzer::RegisterFunctionTemplatePattern(NodeId declaration, NodeId target
 	pattern.declarator = declarator;
 	CollectFunctionAbiTagNames(target, &pattern.abi_tags);
 	pattern.definition_body = definition ?
-		FindChild(target, ::cppgm::syntax::STAG_COMPOUND_STATEMENT) : kNoNode;
-	pattern.constructor_initializer = definition ? FindChild(
-		target, ::cppgm::syntax::STAG_CTOR_INITIALIZER) : kNoNode;
+		FunctionDefinitionPart(target, "compound-statement") : kNoNode;
+	pattern.constructor_initializer = definition ?
+		FunctionDefinitionPart(target, "ctor-initializer") : kNoNode;
+	pattern.function_try_block = definition ? FindChild(
+		target, ::cppgm::syntax::STAG_FUNCTION_TRY_BLOCK) : kNoNode;
 	pattern.parameters = parameters;
 	pattern.language_linkage = current_language_linkage_;
 	pattern.member_access = member_access;
@@ -1756,6 +1759,7 @@ void Analyzer::UpgradeFunctionTemplateSpecializations(
 		function.defined = true;
 		function.deferred = true;
 		function.definition_body = pattern.definition_body;
+		function.function_try_block = pattern.function_try_block;
 		if (pattern.constructor_template)
 			function.constructor_initializer = pattern.constructor_initializer;
 		function.lexical_scope = template_scope;
@@ -2262,6 +2266,7 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 	if (pattern.defined)
 	{
 		function.definition_body = pattern.definition_body;
+		function.function_try_block = pattern.function_try_block;
 		// A constructor's mem-initializers are part of its definition, not a
 		// separate thing the body carries: taking the body without them
 		// instantiates a constructor that runs and initializes nothing.

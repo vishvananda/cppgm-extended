@@ -1259,6 +1259,7 @@ struct FunctionTemplatePattern
 	NodeId trailing_return_syntax;
 	NodeId definition_body;
 	NodeId constructor_initializer;
+	NodeId function_try_block;
 	TypeId shape_type;
 	std::size_t required_parameter_count;
 	std::vector<TemplateParameter> parameters;
@@ -1321,6 +1322,7 @@ struct FunctionTemplatePattern
 		  declarator(kNoNode), trailing_return_syntax(kNoNode),
 		  definition_body(kNoNode),
 		  constructor_initializer(kNoNode),
+		  function_try_block(kNoNode),
 		  shape_type(kNoType), required_parameter_count(0),
 		  result_root_structure(kNoNode), result_root_name(0),
 		  result_root_declaration(kNoBinding),

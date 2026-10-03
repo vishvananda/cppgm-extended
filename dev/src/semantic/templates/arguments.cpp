@@ -524,9 +524,11 @@ bool Analyzer::AnalyzeExplicitTemplateSpecialization(
 		function.defined = target_definition;
 		function.deferred = true;
 		function.definition_body = target_definition ?
-			FindChild(target, ::cppgm::syntax::STAG_COMPOUND_STATEMENT) : kNoNode;
+			FunctionDefinitionPart(target, "compound-statement") : kNoNode;
 		function.constructor_initializer = target_definition ?
-			FindChild(target, ::cppgm::syntax::STAG_CTOR_INITIALIZER) : kNoNode;
+			FunctionDefinitionPart(target, "ctor-initializer") : kNoNode;
+		function.function_try_block = target_definition ?
+			FindChild(target, ::cppgm::syntax::STAG_FUNCTION_TRY_BLOCK) : kNoNode;
 		function.lexical_scope = definition_scope;
 		function.constexpr_function = function.constexpr_function ||
 			member_spec.is_constexpr;
@@ -843,7 +845,9 @@ bool Analyzer::AnalyzeExplicitTemplateSpecialization(
 		function.constexpr_function || spec.is_constexpr;
 	function.defined = target_definition;
 	function.deferred = true;
-	function.definition_body = FindChild(target, ::cppgm::syntax::STAG_COMPOUND_STATEMENT);
+	function.definition_body = FunctionDefinitionPart(target, "compound-statement");
+	function.function_try_block = FindChild(target,
+		::cppgm::syntax::STAG_FUNCTION_TRY_BLOCK);
 	function.lexical_scope = specialization_semantic_scope;
 	const NodeId exception_qualifier = FindChild(declarator,
 		::cppgm::syntax::STAG_FUNCTION_QUALIFIER);

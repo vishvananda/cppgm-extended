@@ -185,7 +185,7 @@ The recent discovery inventory is not all C++11:
 | REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: static_cast<const S&>(choice()?D():throw 99) fails lowering at O0/O2 with unchanged entry and first cleanup candidate; Clang/GCC pass. Direct D() base binding is covered by EH-REF-INIT. |
 | EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Open, independently reproduced: four reference-initializer controls and an ordinary object/throw control return 10 with both the unchanged entry and cleanup candidate; Clang/GCC invoke the installed termination handler (77) at O0/O2. Generic full-expression cleanup continuations lower destructor calls without the terminating guard used by constructor/destructor body cleanup. Frozen inputs and host traces are retained under reference-initializer-cleanup/. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
-| TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Open: the entry and cleanup candidates emit an empty instantiated body and return zero; Clang/GCC run the specified body and handler at O0/O2. Pattern registration uses a direct compound-statement lookup and does not retain handler syntax. |
+| TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Done: retain body, nested constructor initializer and function-try syntax through registration, definition adoption, specialization upgrades and explicit specialization. The original program passes all three link routes at O0/O2; specialization/upgrade boundaries match Clang/GCC. Extend the existing PA21 function-try fixture and retire the opt-in duplicate. The extended fixture's preexisting native failure remains BACKEND. Pattern storage remains 512 bytes. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Done for source acceptance and lowering: remove the lexical-handler restriction and its unused counter. All three original programs pass host linking at O0/O2; the called-function case and rewritten existing fixture also pass standalone/object routes. No-active-exception execution invokes the installed termination handler. Same-function nested-handler and destructor traces still fail only in the native BACKEND family; retain/reclassify the existing opt-in reducer. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
@@ -5718,3 +5718,32 @@ The confirmation passes instruction/RSS/equality checks; no further repeats.
 Candidate SHA256: `cf82417206f899edccd4bdafaf74c4e8b6ba1dedd92589ff1857b9936b549f9a`.
 Evidence: `/tmp/cppgm-v4-audit-review/dynamic-rethrow/`.
 Remaining: 24 compiler families and six reviews; final pruning/export pending.
+
+
+### Function-template try blocks — TMPL-FTRY complete
+
+Function-template patterns now retain typed function-try syntax alongside the
+body and constructor initializer. Reuse FunctionDefinitionPart to find the
+nested definition parts, and propagate the retained syntax when adopting a
+later definition or upgrading/instantiating a specialization. Explicit member
+and namespace specializations use the same existing definition-part helper.
+The additional NodeId fills padding: FunctionTemplatePattern stays 512 bytes.
+No parsing pass, ABI encoder change or new required fixture file.
+
+Extend the existing PA21 function-try/body-cleanup fixture with a declared-then-
+defined function template and a constructor template using a nested initializer.
+Retire the now-passing opt-in template reducer. The original passes direct,
+compiler-object and host-object routes at O0/O2, matching Clang/GCC. Explicit
+namespace/member specialization and use-before-definition upgrade controls pass
+all three compilers at O0/O2. The extended fixture passes host linking and both
+host compilers; its unchanged standalone 134 failure remains in BACKEND.
+
+PA21 208/208, strict 6118/6118, debug-info, self-host through PA5, nine architecture
+audits, file audit and placement pass. Alpha's 192 observations retain equal
+object hashes, independently verified unscaled counters and RSS. Maximum median
+instruction ratio 1.000236909 (+0.0237%); RSS ratio 1.0. No calibrated cycle median
+exceeds the 1.01 confirmation threshold. Compiler candidate SHA256:
+`40caf0f7fb30c0ba728ca600c9d625bb440052ae903ae5b3959f85fe016d5df1`.
+Evidence: `/tmp/cppgm-v4-audit-review/template-function-try/`.
+Remaining: 23 compiler families and six reviews; final fixture pruning and
+combined student-export validation remain pending.

@@ -199,6 +199,8 @@ To complete PA21, implement these goals:
    may catch the exception before that cleanup; a function-try handler runs
    after it. A delegating constructor destroys its completed target when its
    own body fails. A second exception during unwind destruction terminates.
+   Function-template instantiation retains function-try bodies and handlers,
+   including constructor mem-initializers within the function-try block.
    Construction and destruction cleanup dependencies on class-template
    destructors should be demanded only after a recursively containing type is
    complete, and should retain that concrete owner in emitted cleanup calls.
