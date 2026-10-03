@@ -375,7 +375,7 @@ ExpressionInfo Analyzer::ApplyContextualBool(ExpressionInfo value)
 		return value;
 	}
 	if (IsArithmetic(value.type) || IsPointer(Decay(value.type)) ||
-		IsNullptr(value.type))
+		IsNullptr(value.type) || IsMemberPointer(value.type))
 	{
 		value = ApplyTarget(value, boolean);
 		value.type = boolean;
