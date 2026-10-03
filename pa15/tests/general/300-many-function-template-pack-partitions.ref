@@ -164,7 +164,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t99 = load i32 $cond__25
     return i32 %t99
 }
-function @partition_size(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiEi5typesIJT_EEDpT0_] {
+function @partition_size(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -176,7 +176,7 @@ function @partition_size(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov2(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov2(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -188,7 +188,7 @@ function @partition_size__ov2(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bin
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov3(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov3(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -200,7 +200,7 @@ function @partition_size__ov3(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bin
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov4(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov4(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -212,7 +212,7 @@ function @partition_size__ov4(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bin
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov5(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov5(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -224,7 +224,7 @@ function @partition_size__ov5(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bin
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov6(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov6(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -236,7 +236,7 @@ function @partition_size__ov6(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bin
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov7(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov7(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -248,7 +248,7 @@ function @partition_size__ov7(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bin
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov8(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov8(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -260,7 +260,7 @@ function @partition_size__ov8(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bin
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov9(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov9(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -272,7 +272,7 @@ function @partition_size__ov9(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bin
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov10(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov10(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -284,7 +284,7 @@ function @partition_size__ov10(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov11(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov11(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -296,7 +296,7 @@ function @partition_size__ov11(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov12(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov12(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -308,7 +308,7 @@ function @partition_size__ov12(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov13(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov13(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -320,7 +320,7 @@ function @partition_size__ov13(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov14(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov14(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -332,7 +332,7 @@ function @partition_size__ov14(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov15(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov15(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -344,7 +344,7 @@ function @partition_size__ov15(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov16(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov16(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -356,7 +356,7 @@ function @partition_size__ov16(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov17(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov17(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -368,7 +368,7 @@ function @partition_size__ov17(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov18(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov18(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -380,7 +380,7 @@ function @partition_size__ov18(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov19(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov19(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -392,7 +392,7 @@ function @partition_size__ov19(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov20(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov20(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -404,7 +404,7 @@ function @partition_size__ov20(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov21(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov21(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -416,7 +416,7 @@ function @partition_size__ov21(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov22(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov22(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -428,7 +428,7 @@ function @partition_size__ov22(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov23(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov23(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 
@@ -440,7 +440,7 @@ function @partition_size__ov23(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [bi
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @partition_size__ov24(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiiiiiEi5typesIJT_EEDpT0_] {
+function @partition_size__ov24(%__param0 : obj<1x1>, %__param1 : i32) -> i32 [binding=weak, object=_Z14partition_sizeIiiiiiiiiiiiiiiiiiiiiiiiiEi5typesIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $__param1 : i32
 

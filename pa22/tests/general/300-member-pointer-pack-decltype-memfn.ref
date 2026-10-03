@@ -84,7 +84,7 @@ function @model__mem_fn(%pmf : i128) -> obj<16x8> [binding=weak, object=_ZN5mode
     copyobj 16x8 %t6, %t5
     return obj<16x8> $retobj__1
 }
-function @model__bind(%f : obj<16x8>, %__param1 : ptr, %__param2 : i32, %__param3 : obj<1x1>) -> obj<16x8> [binding=weak, object=_ZN5model4bindINS_16function_wrapperIM5log_tFviR6streamEvS2_JiS4_EEEJPS2_iS3_EEENS_6bind_tINS_11unspecifiedET_NS_7list_avIDpT0_E4typeEEESB_DpSD_] {
+function @model__bind(%f : obj<16x8>, %__param1 : ptr, %__param2 : i32, %__param3 : obj<1x1>) -> obj<16x8> [binding=weak, object=_ZN5model4bindINS_16function_wrapperIM5log_tFviR6streamEvS2_JiS4_EEEJPS2_iS3_EEENS_6bind_tINS_11unspecifiedET_NS_7list_avIJDpT0_EE4typeEEESB_SE_] {
   slot $f : obj<16x8>
   slot $__param1 : ptr
   slot $__param2 : i32

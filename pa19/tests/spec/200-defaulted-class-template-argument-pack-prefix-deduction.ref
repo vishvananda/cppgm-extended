@@ -35,7 +35,7 @@ function @tuples__tuple_int__int__int__tuples__null_type__tuples__null_type__tup
     store i32 %__param3, $__param3
     return void
 }
-function @take(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4takeIiJiiN6tuples9null_typeES1_S1_S1_S1_S1_S1_EEiRKNS0_5tupleIT_T0_S1_S1_S1_S1_S1_S1_S1_S1_EE] {
+function @take(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4takeIiJiiN6tuples9null_typeES1_S1_S1_S1_S1_S1_EEiRKNS0_5tupleIT_DpT0_EE] {
   slot $__param0 : ptr
 
   block ^entry:

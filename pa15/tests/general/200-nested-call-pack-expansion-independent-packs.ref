@@ -19,7 +19,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = binary sub i32 %t2, 3
     return i32 %t3
 }
-function @transform(%__param0 : obj<1x1>, %t : i32) -> i32 [binding=weak, object=_Z9transformIcsiEi1SIJT_EEDpT0_] {
+function @transform(%__param0 : obj<1x1>, %t : i32) -> i32 [binding=weak, object=_Z9transformIcsiEi1SIJDpT_EEDpT0_] {
   slot $__param0 : obj<1x1>
   slot $t : i32
 

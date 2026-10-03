@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @test_map(%t1)
     return i32 0
 }
-function @boost__fusion__make_map(%arg : ptr [pass=by_address, object_bytes=4], %arg__pack2 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN5boost6fusion8make_mapI1A1BicEENS0_3mapIDpNS0_4pairIT_NS0_6detail10as_elementIT0_E4typeEEEEEDpRKS9_] {
+function @boost__fusion__make_map(%arg : ptr [pass=by_address, object_bytes=4], %arg__pack2 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN5boost6fusion8make_mapI1A1BicEENS0_3mapIJDpNS0_4pairIT_NS0_6detail10as_elementIT0_E4typeEEEEEEDpRKS9_] {
   slot $arg : ptr
   slot $arg__pack2 : ptr
   slot $retobj__1 : obj<1x1>

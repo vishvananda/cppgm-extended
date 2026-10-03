@@ -19,7 +19,7 @@ function @ns__tuple_pointer_to_int__int___tuple_pointer_to_int__int_(%this : ptr
     call void @ns__impl_0__pointer_to_int__int___impl_2___base_entry(%t2)
     return void
 }
-function @ns__helper(%object : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN2ns6helperILm1EiJEEERT0_RNS_4implILm0EJS1_T1_EEE] {
+function @ns__helper(%object : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN2ns6helperILm1EiJEEERT0_RNS_4implIXT_EJS1_DpT1_EEE] {
   slot $object : ptr
 
   block ^entry:

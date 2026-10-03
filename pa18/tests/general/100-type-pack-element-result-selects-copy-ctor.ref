@@ -1,4 +1,4 @@
-declare function @get(%arg0 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z3getILm0EJRK1VEERN13tuple_elementIXT_E5tupleIDpT0_EE4typeERS4_IJS5_EE]
+declare function @get(%arg0 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z3getILm0EJRK1VEERN13tuple_elementIXT_E5tupleIJDpT0_EEE4typeERS7_]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $t : obj<1x1>

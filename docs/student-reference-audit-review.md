@@ -192,9 +192,9 @@ The recent discovery inventory is not all C++11:
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Done: build conversion terminals from retained template recipes; resolve explicit conversion specializations and qualified conversion addresses through existing deduction using retained syntax. Fresh Clang/GCC O0 symbols agree. Extend existing PA18 direct-conversion and PA22 pointer-target fixtures; retire the opt-in duplicate. Fourteen other references change only conversion object-name metadata. Strict 6119/6119, all required checks and Alpha gates pass; no ABI encoder change. |
 | MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Done: retain id/member-access decltype category and unqualified named dependent call arguments in existing typed recipe payloads. Fresh Clang/GCC symbols agree at O0/O2, including parenthesized, member, nested, multiple-argument and ADL controls. Extend existing PA9 and PA14 fixtures and retire the opt-in duplicate; one other reference changes only two object names. Payload sizes are unchanged. Strict 6119/6119, all required checks and Alpha gates pass. |
-| MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Open: entry 425bc2a90 and candidate flatten a fixed-primary parameter expansion and append defaults; Clang/GCC retain `tuple<T_,DpT0_>`. The deduction checkpoint corrects the concrete template argument pack cardinality; the parameter pattern remains wrong. No encoder change made. |
+| MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Done: retain written type/value expansions, transformed pointer packs and primary pack grouping in typed recipes; stop default completion at unresolved expansions. Fresh Clang/GCC symbols agree for the original reducer and reused PA19 fixtures at O0/O2. Preserve Clang template-parameter annotation spelling. Extend two existing fixtures and retire the opt-in duplicate. PA19 428/428, strict 6119/6119, all required checks and Alpha gates pass. Non-final function argument-list partitions remain MANGLE. No encoder change. |
 | MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
-| MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
+| MANGLE | ABI substitution state for address expressions, RTTI template-template arguments and function-pack partitions | v4codex group 13 / declared-pack boundary checks | Open, checked against Clang: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. Non-final function packs still flatten their template argument list: both entry 833095c1f and the declared-pack candidate encode `IilcE`; Clang/GCC encode `IJilEcE`. Complex mixed-pack names in existing fixtures retain other preexisting argument/owner mismatches; the declared-parameter-pattern fix does not close those. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Done. Fresh Clang O0/O2 checks and mixed links in both directions establish `g`; the typed ABI variable target now preserves that raw name. Existing PA9/PA27 tests carry the regression, and related LowIR/hosted inspection references were regenerated and independently checked. Strict 6116/6116, required checks and Alpha instruction/memory gates pass. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | In progress: PA13 lifetime and PA18/19 backing objects corrected; PA19 pack count is corrected in the deduction checkpoint; PA23 initialized virtual bases remain. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
@@ -5863,3 +5863,47 @@ Final compiler SHA256:
 Evidence: `/tmp/cppgm-v4-audit-review/dependent-result-pattern/`.
 Remaining: 20 compiler families and six reviews; final fixture pruning and
 combined student-export validation remain pending.
+
+
+### Declared parameter-pack patterns — MANGLE-PACK complete
+
+Fresh Clang/GCC reproduce the original `_Z4takeIiJiEEvRK3BoxIT_DpT0_E`
+control. Publish written expansions for ordinary deducible parameters instead
+of reconstructing the name from a completed concrete class specialization.
+Stop class-default completion when an unresolved expansion can fill the
+remaining slots. Preserve pointer declarators, type-node substitution identity,
+value-expression expansions and the primary class template's pack grouping.
+Reuse existing typed payload fields; no persistent record growth, source
+reparse or ABI encoder change.
+
+Extend the existing PA19 type/value defaulted-pack fixtures with retained
+addresses; the type fixture also checks pointer transformation and repeated
+parameter substitution. No new required fixture files. Retire the opt-in
+original source and symbol sidecar. The original and owning fixtures agree with
+Clang/GCC at O0/O2. Thirty host-linked executions and 24 executions across
+direct, compiler-object and host-object routes pass. The existing tuple reducer
+retains its corrected nine-element deduction expectation.
+
+Regenerate exactly 33 references: two extended fixtures and 31 metadata-only
+changes with byte-identical instruction bodies after name normalization. Fresh
+Clang/GCC object checks preserve every previously matching changed symbol.
+Complex mixed/non-final function packs still have preexisting flattened
+argument-list or owner/substitution defects; keep them in MANGLE, without new
+fixture files or another family. Clang's modern dependent template-parameter
+declaration annotation uses the written class argument list before pack
+grouping. Confirm the PA28 ratio name against fresh default Clang, preserve
+its pinned expectation, and retain GCC/Clang-ABI17 evidence that omits this
+annotation. Do not replace it with the grouped candidate spelling.
+
+PA19 428/428, strict 6119/6119, debug-info, backend variants, self-host through
+PA5, nine architecture audits, file audit and placement pass. The strict report
+prints only its final total on success. Alpha's final 240 observations verify
+every unscaled counter, RSS, status and equal object hash on the same five
+frozen inputs with interleaved A/A and alternating paired blocks. Maximum median
+instruction ratio 1.000074196 (+0.0074%); all RSS ratios 1.0. No calibrated cycle
+median exceeds the 1.01 confirmation threshold. Earlier candidates and screens
+remain evidence, not qualification of the final binary. Final compiler SHA256:
+`458b0f3258a01d12d0ba4aeaaedc9e85b2995caf5b24ac2657809d15e78ff66b`.
+Evidence: `/tmp/cppgm-v4-audit-review/declared-parameter-pack/`.
+Remaining: 19 compiler families and six reviews; final fixture pruning and
+combined student-export/quiet-output validation remain pending.

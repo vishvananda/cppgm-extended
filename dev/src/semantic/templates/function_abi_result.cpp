@@ -113,18 +113,19 @@ public:
 		const std::deque<ClassTemplatePattern>& class_templates,
 		const std::vector<std::uint32_t>& class_template_by_entity,
 		const std::vector<TemplateParameter>& parameters,
-		const std::vector<std::uint64_t>& atoms)
+		const std::vector<std::uint64_t>& atoms,
+		bool group_template_packs = true)
 		: program_(program), class_templates_(class_templates),
 		  class_template_by_entity_(class_template_by_entity),
 		  parameters_(parameters), atoms_(atoms),
-		  position_(0) {}
+		  position_(0), group_template_packs_(group_template_packs) {}
 
-	FunctionTemplateAbiTypeId ParseType()
+	FunctionTemplateAbiTypeId ParseType(bool* pack_expansion = 0)
 	{
 		FunctionTemplateAbiTypeId root = ParsePrimaryType();
 		if (root == kNoFunctionTemplateAbiType) return root;
 		while (IsNode("abstract-declarator"))
-			if (!ParseAbstractDeclarator(&root))
+			if (!ParseAbstractDeclarator(&root, pack_expansion))
 				return kNoFunctionTemplateAbiType;
 		return root;
 	}
@@ -317,7 +318,8 @@ private:
 			expression));
 	}
 
-	bool ParseAbstractDeclarator(FunctionTemplateAbiTypeId* root)
+	bool ParseAbstractDeclarator(FunctionTemplateAbiTypeId* root,
+		bool* pack_expansion)
 	{
 		NameId payload = 0;
 		if (!BeginNode("abstract-declarator", &payload)) return false;
@@ -325,6 +327,14 @@ private:
 			ResultIdentityKind(atoms_[position_]) !=
 				FUNCTION_TEMPLATE_RESULT_NODE_END)
 		{
+			if (ResultIdentityKind(atoms_[position_]) ==
+				FUNCTION_TEMPLATE_RESULT_PACK_EXPANSION)
+			{
+				if (!pack_expansion) return false;
+				*pack_expansion = true;
+				++position_;
+				continue;
+			}
 			if (!BeginNode("ptr-operator", &payload)) return false;
 			FunctionTemplateAbiTypeKind kind = FUNCTION_TEMPLATE_ABI_TYPE_POINTER;
 			const std::string& op = program_->names.Get(payload);
@@ -422,7 +432,7 @@ private:
 			}
 			else
 			{
-				const FunctionTemplateAbiTypeId type = ParseType();
+				const FunctionTemplateAbiTypeId type = ParseType(&pack_expansion);
 				if (type == kNoFunctionTemplateAbiType) return false;
 				component->arguments.push_back(FunctionTemplateAbiArgument(
 					FUNCTION_TEMPLATE_ABI_ARGUMENT_TYPE, type,
@@ -496,9 +506,19 @@ private:
 					kNoType, component.entity, begin,
 					static_cast<std::uint32_t>(component.arguments.size())));
 		}
+		std::uint32_t pack_parameter = kNoTemplateParameter;
+		if (group_template_packs_ &&
+			component.entity < class_template_by_entity_.size())
+		{
+			const std::uint32_t index = class_template_by_entity_[component.entity];
+			if (index < class_templates_.size() &&
+				HasTrailingTemplateParameterPack(class_templates_[index].parameters))
+				pack_parameter = static_cast<std::uint32_t>(
+					FixedTemplateParameterCount(class_templates_[index].parameters));
+		}
 		return AppendAbiType(program_, FunctionTemplateAbiType(
 			FUNCTION_TEMPLATE_ABI_TYPE_TEMPLATE_SPECIALIZATION, owner,
-			component.name, 0, kNoTemplateParameter, 0, kNoType,
+			component.name, 0, pack_parameter, 0, kNoType,
 			component.entity, begin,
 			static_cast<std::uint32_t>(component.arguments.size())));
 	}
@@ -559,6 +579,7 @@ private:
 	const std::vector<TemplateParameter>& parameters_;
 	const std::vector<std::uint64_t>& atoms_;
 	std::size_t position_;
+	bool group_template_packs_;
 };
 
 FunctionTemplateAbiTypeId ApplyTypeModifiers(Program* program,
@@ -822,8 +843,10 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 		function_template_result_identities_.CopyAtoms(
 			probe.expanded_result_identity, &atoms);
 		AbiPublication publication(program_);
+		// Clang's template-parameter declaration annotation retains the written
+		// argument list, before grouping arguments into a primary's pack.
 		AbiIdentityReader reader(program_, class_templates_,
-			class_template_pattern_by_entity_, pattern->parameters, atoms);
+			class_template_pattern_by_entity_, pattern->parameters, atoms, false);
 		const FunctionTemplateAbiTypeId type = reader.ParseType();
 		if (type != kNoFunctionTemplateAbiType && reader.Complete())
 		{
@@ -831,17 +854,23 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 			publication.Commit();
 		}
 	}
+	bool has_template_pack = false;
+	for (std::size_t p = 0; p < pattern->parameters.size(); ++p)
+		has_template_pack = has_template_pack || pattern->parameters[p].pack;
 	for (std::size_t p = 0; p < declarator.parameters.size(); ++p)
 	{
 		const NodeId root = FindDescendant(*arena_,
 			declarator.parameters[p].type_syntax,
 			"structured-type-name");
 		if (root == kNoNode) continue;
+		const bool written_expansion = has_template_pack &&
+			(arena_->HasDescendantTag(root, STAG_PARAMETER_PACK) ||
+			 arena_->HasDescendantTag(root, STAG_PACK_EXPANSION_EXPRESSION));
 		const NamePath path = StructuredNamePath(root);
 		if (path.Empty()) continue;
 		const LookupResult marker = LookupPath(
 			pattern->lexical_scope, path, LOOKUP_TYPE);
-		if (!declarator.parameters[p].nondeduced &&
+		if (!declarator.parameters[p].nondeduced && !written_expansion &&
 			FindAliasTemplateIndex(marker, path.Last()) >=
 				alias_templates_.size()) continue;
 		FunctionTemplatePattern probe;
@@ -856,7 +885,7 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 		InternExpandedFunctionTemplateResult(&probe);
 		if (probe.expanded_result_identity ==
 			kNoFunctionTemplateResultIdentity) continue;
-		if (!declarator.parameters[p].nondeduced &&
+		if (!declarator.parameters[p].nondeduced && !written_expansion &&
 			!probe.expanded_result_has_alias) continue;
 		std::vector<std::uint64_t> atoms;
 		function_template_result_identities_.CopyAtoms(

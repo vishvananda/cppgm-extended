@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @library__version__apply(%t2, $argobj__1)
     return i32 %t4
 }
-function @library__version__apply(%bound : ptr [pass=by_address, object_bytes=1], %__param1 : obj<1x1>) -> i32 [binding=weak, object=_ZN7library7version5applyINS0_5tupleIJidEEEJLm0ELm1EEEEiRT_NS0_7indicesIJLm0EEEE] {
+function @library__version__apply(%bound : ptr [pass=by_address, object_bytes=1], %__param1 : obj<1x1>) -> i32 [binding=weak, object=_ZN7library7version5applyINS0_5tupleIJidEEEJLm0ELm1EEEEiRT_NS0_7indicesIJXspT0_EEEE] {
   slot $bound : ptr
   slot $__param1 : obj<1x1>
   slot $args : i32
@@ -40,7 +40,7 @@ function @library__version__apply(%bound : ptr [pass=by_address, object_bytes=1]
     %t9 = call i32 @library__version__sum(%t4, %t8)
     return i32 %t9
 }
-function @library__version__get(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN7library7version3getILm0EJidEEENS0_13tuple_elementIXT_ENS0_5tupleIDpT0_EEE4typeERNS3_IJS4_EEE] {
+function @library__version__get(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN7library7version3getILm0EJidEEENS0_13tuple_elementIXT_ENS0_5tupleIJDpT0_EEEE4typeERS6_] {
   slot $__param0 : ptr
 
   block ^entry:
@@ -56,7 +56,7 @@ function @library__version__transform(%__param0 : i32, %__param1 : ptr [pass=by_
     store ptr %__param1, $__param1
     return i32 1
 }
-function @library__version__get__ov2(%__param0 : ptr [pass=by_address, object_bytes=1]) -> f64 [binding=weak, object=_ZN7library7version3getILm1EJidEEENS0_13tuple_elementIXT_ENS0_5tupleIDpT0_EEE4typeERNS3_IJS4_EEE] {
+function @library__version__get__ov2(%__param0 : ptr [pass=by_address, object_bytes=1]) -> f64 [binding=weak, object=_ZN7library7version3getILm1EJidEEENS0_13tuple_elementIXT_ENS0_5tupleIJDpT0_EEEE4typeERS6_] {
   slot $__param0 : ptr
 
   block ^entry:

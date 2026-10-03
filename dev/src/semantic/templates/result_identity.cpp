@@ -432,6 +432,20 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 					for (std::size_t p = 0;
 						p < class_pattern.parameters.size(); ++p)
 					{
+						if (argument < arguments.size() &&
+							arguments[argument].bound_argument == kNoTemplateArgumentList)
+						{
+							const NodeId node = arguments[argument].node;
+							const NodeId declarator = FindChild(
+								node, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR);
+							// An unresolved expansion can fill every remaining slot;
+							// defaults belong to the completed type, not this pattern.
+							if (arena_->IsTag(node,
+								::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION) ||
+								(declarator != kNoNode && arena_->HasDirectChildTag(
+									declarator, ::cppgm::syntax::STAG_PARAMETER_PACK)))
+								break;
+						}
 						defaults.push_back(ResultSyntaxEnvironment(
 							environment, class_pattern.parameters[p].name));
 						IndexResultSyntaxBinding(&environment_names,
@@ -490,8 +504,6 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 			arena_->IsTag(reference.node, ::cppgm::syntax::STAG_TYPE_ID) ||
 			arena_->IsTag(reference.node, ::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ) ||
 			arena_->IsTag(reference.node, ::cppgm::syntax::STAG_DEFAULT_TEMPLATE_ARGUMENT) ||
-			(arena_->IsTag(reference.node, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR) &&
-			 arena_->HasDirectChildTag(reference.node, ::cppgm::syntax::STAG_PARAMETER_PACK)) ||
 			(arena_->IsTag(reference.node, ::cppgm::syntax::STAG_TYPE_NAME) &&
 			 arena_->HasDirectChildTag(
 				reference.node, "structured-type-name")) ||

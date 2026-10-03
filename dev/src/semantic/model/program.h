@@ -627,6 +627,8 @@ struct FunctionTemplateAbiType
 	EntityId entity;
 	NameId name;
 	std::uint64_t bound;
+	// For a template specialization, parameter is the primary's trailing pack
+	// ordinal (or kNoTemplateParameter); other kinds use a parameter reference.
 	std::uint32_t parameter, argument_begin, argument_count;
 	std::uint8_t cv;
 

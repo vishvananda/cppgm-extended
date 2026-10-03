@@ -34,7 +34,7 @@ function @holder_int___holder_int_(%this : ptr [object_bytes=4]) -> void [bindin
     call void @detail__relay_int___relay_int___base_entry(%t2)
     return void
 }
-function @unsafe_get(%v : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z10unsafe_getILm0EJiEERKN3altIXT_E6holderIDpT0_EE4typeERKS1_IJS2_EE] {
+function @unsafe_get(%v : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z10unsafe_getILm0EJiEERKN3altIXT_E6holderIJDpT0_EEE4typeERKS4_] {
   slot $v : ptr
   slot $argobj__1 : obj<1x1>
 

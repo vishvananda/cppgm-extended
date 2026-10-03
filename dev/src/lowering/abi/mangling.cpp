@@ -1368,13 +1368,25 @@ public:
 		{
 			target.kind = ABI_TEMPLATE_ARGUMENT_TYPE;
 			target.type = MakeFunctionTemplateAbiType(source.type, recipe);
-			target.pack_expansion = source.pack_expansion;
+			if (source.pack_expansion)
+			{
+				AbiTypeModifier expansion;
+				expansion.kind = ABI_TYPE_PACK_EXPANSION;
+				target.type.modifiers.insert(target.type.modifiers.begin(), expansion);
+			}
 		}
 		else
 		{
 			target.kind = ABI_TEMPLATE_ARGUMENT_EXPRESSION;
 			target.resolved_expression = AddFunctionTemplateAbiExpression(
 				source.expression, recipe);
+			if (source.pack_expansion)
+			{
+				AbiDependentExpression expansion;
+				expansion.kind = ABI_EXPRESSION_PACK_EXPANSION;
+				expansion.expression_refs.push_resolved(target.resolved_expression);
+				target.resolved_expression = context_->resolve_expression(expansion);
+			}
 		}
 		return context_->resolve_argument(target);
 	}
@@ -1445,10 +1457,24 @@ public:
 			if (source.child != kNoFunctionTemplateAbiType)
 				result.types.push_back(
 					MakeFunctionTemplateAbiType(source.child, recipe));
-			for (std::size_t i = 0; i < source.argument_count; ++i)
+			const std::size_t fixed = source.parameter == kNoTemplateParameter ?
+				source.argument_count : source.parameter;
+			if (fixed > source.argument_count)
+				ThrowLoweringInternal("function template ABI specialization pack is invalid");
+			for (std::size_t i = 0; i < fixed; ++i)
 				result.argument_refs.push_resolved(AddFunctionTemplateAbiArgument(
 					program_.function_template_abi_arguments[
 						source.argument_begin + i], recipe));
+			if (source.parameter != kNoTemplateParameter)
+			{
+				AbiTemplateArgument pack;
+				pack.kind = ABI_TEMPLATE_ARGUMENT_PACK;
+				for (std::size_t i = fixed; i < source.argument_count; ++i)
+					pack.argument_refs.push_resolved(AddFunctionTemplateAbiArgument(
+						program_.function_template_abi_arguments[
+							source.argument_begin + i], recipe));
+				result.argument_refs.push_resolved(context_->resolve_argument(pack));
+			}
 			return result;
 		}
 		if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE ||
