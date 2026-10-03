@@ -332,11 +332,11 @@ bool twin_header_phi(const Function & function,
 
 // Every edge that leaves the loop is taken on an equality test between a
 // pointer the loop walks by a constant stride and a pointer from outside it.
-// N3485 5.7/5 makes pointer arithmetic that leaves an object undefined, so a
-// walk that compares for equality with another pointer reaches it or is not
-// a program at all; that, not the forward-progress rule, is the licence to
-// delete the walk.  An integer count with an unproven bound, or a loop that
-// spins on a phi, is left alone.
+// Plain LowIR index is address arithmetic, without a source-level in-bounds
+// promise. An odd byte stride visits every address modulo 2^64. An even
+// stride needs a proof that the starting and ending residues agree; without
+// one, the loop may never reach its exit. Integer-counted loops and phis that
+// do not advance stay with their own termination proofs.
 bool exits_on_pointer_walk(const Function & function,
                            const lowir_analysis::NaturalLoop & loop,
                            const lowir_analysis::ValueIndex & values,
@@ -376,6 +376,10 @@ bool exits_on_pointer_walk(const Function & function,
          advance.first.kind != Operand::OP_TEMP ||
          advance.second.kind != Operand::OP_INTEGER ||
          !advance.second.has_int_value || advance.second.int_value == 0)
+        return false;
+      // The byte stride is odd only if both factors are odd.
+      if((advance.type.storage_size &
+          static_cast<std::uint64_t>(advance.second.int_value) & 1) == 0)
         return false;
       // The step may advance a twin of this phi -- a header phi with the
       // same incoming operands, which promotion of a field that mirrored
@@ -994,11 +998,9 @@ bool simplify_counted_loops(Function * function,
 // Delete a loop that does nothing: every instruction in it is effect-free,
 // no value it defines is used after it, it has one exit, and it leaves on an
 // equality test between a pointer it walks by a constant stride and a
-// pointer from outside -- the range walk, whose termination N3485 5.7/5
-// guarantees for any defined program (see exits_on_pointer_walk).  libc++
-// presents one at every destruction of a vector of a trivially destructible
-// element (__base_destruct_at_end), which is why this runs at -O1: the loop
-// is not slow code, it is no code.  Integer-counted loops stay with
+// pointer from outside, with termination proved by exits_on_pointer_walk.
+// Byte-range destruction walks can disappear at -O1 without depending on
+// frontend-only pointer promises. Integer-counted loops stay with
 // simplify_counted_loops and its termination proof.
 bool delete_effect_free_loops(Function * function,
                               lowir_analysis::FunctionAnalysis * analysis,

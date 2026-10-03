@@ -234,7 +234,7 @@ The recent discovery inventory is not all C++11:
 | INHERITED-DEFAULT-EXCEPT | Review throwing defaults on a zero-argument inherited constructor and the corresponding nothrow trait | Existing INHERITED-ZERO exception review, isolated source206 | Needs contract review. Six fresh observations show ours catches the second default-argument throw, while Clang/GCC terminate at O0/O2; all three report the zero construction nothrow in the isolated trait control. The student's false nothrow assertion disagrees with all three. Preserve the default-argument runtime/trait discrepancy without changing its oracle or adding a mandatory fixture. Primary adopted C++11 DR sources and frozen controls are in inherited-zero-contract/. |
 | NOEXCEPT-LIST | Preserve constructor ownership facts across parameter template instantiation | v4codex PA31 source205 | Done. The shared failure also affects ordinary calls: a stale EntityRecord reference loses the user-provided-constructor fact when parameter template instantiation moves the entity vector. Reacquire by stable ID before publishing constructor facts. Reuse the PA21 private initializer-list argument fixture, including nonthrowing/throwing-element assertions and runtime class-list conversion; remove the redundant control. Strict 6116/6116 and all required checks pass; Alpha instruction/RSS gates pass. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
-| LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Open, independently reproduced. The student changed only the existing backward-loop reference and quality envelope; source and status remain unchanged. Here O1/O2/O3 return for unequal mod-eight pointer inputs, while O0 preserves the loop, with both native paths. PA32 requires behavior preservation for defined LowIR; plain index carries no stronger optimization or source forward-progress promise. Eighty fresh observations and the frozen two-sidecar delta are retained. Review/fix the existing loop-finiteness proof and regenerate this reference, without adding a duplicate fixture. |
+| LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Done: effect-free pointer walks require a proved odd byte stride; plain LowIR carries no C++ in-bounds promise. Include the typed element size in the stride proof. Existing course/regression references and the generated quality envelope now retain the backward even-stride loop, without changing source/status or adding fixtures. Sixty-four runtime and nine shape checks, strict 6120/6120, required qualification/audits and Alpha instruction/RSS gates pass. Combine the parity check into one branch after the first variant showed a confirmed timing cost. |
 | TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. The final tests-only checkpoint replaces the PA6 class/value declaration control with a PA7 ordinary-expression rejection control, preserving the independent PA6 typedef/value control. Both hosts pass 4/4 and explicit placement is clean. At the definition checkpoint the namespace candidate was held for cycle gates. The completed LOOKUP-NAMESPACE-MIXED fix now promotes its two existing controls under the updated qualification policy; strict passes 6111/6111 in one line. Remaining compiler fixes, final course-fixture minimization/promotion and combined export stay open. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending final review after the outstanding fixes promote their controls; test definitions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final additions. Keep a fixture only for distinct required language/header behavior or an independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
@@ -6137,3 +6137,43 @@ build's missing shared scoped-state include is corrected before any candidate
 qualification; its failed log is retained. Remaining frozen compiler families:
 14, plus six reviews. Final fixture pruning and combined export/harness/quiet
 validation remain pending. Next: LOOP-PTR-FINITE's existing PA32 reference.
+
+
+## PA32 pointer-loop finiteness — 2026-10-03
+
+Close LOOP-PTR-FINITE. The old proof assumed source C++ pointer bounds despite
+PA8 plain index carrying no such promise. An odd byte stride reaches every
+64-bit address; an even stride cannot establish termination for arbitrary
+endpoint residues. Check the parity of both the typed element size and index
+step in the existing walk proof. No new analysis, payload, source or owner
+method is introduced. PA32 behavior preservation, rather than a newer C++
+feature, governs this direct LowIR correction.
+
+Reuse the unchanged backward-loop input and status. Exact ref-test regenerates
+its course and maintainer references; the standard quality/outcome generators
+replace its invalid no-phi envelope. No new fixture. Retain the existing
+metadata control because runtime nontermination adds value beyond an exact
+output shape. Sixty-four final executions cover equal, finite and unreachable
+endpoints at O0/O1/O2/O3 on both native routes, including index i64 by -1 and
+index i8 by -3. Nine independent shape checks confirm that even strides remain
+and odd walks disappear. PA32 passes 414/414; final strict 6120/6120 prints one
+line. Debug-info, variants, self-host through PA5, all nine architecture audits,
+file and placement checks pass; 37 existing file warnings remain.
+
+The initial two-branch guard passes correctness and instruction/RSS gates but
+shows confirmed local-statics/multi-pack cycle costs of about 1.4%/2.0%. Combine
+the factors into one parity branch and freeze the final binary. Independently
+verify its 288 screen observations and one 48-observation timing confirmation,
+including unscaled counters, RSS, statuses and identical output hashes. Maximum
+instruction median is 1.000001969 and maximum RSS ratio is 1.0. The earlier
+timing signals disappear; copy-template confirmation has calibrated cycle
+median 1.002757129, with 95% bootstrap interval [0.994112696, 1.008287615].
+Retain both variants and all observations, without claiming timing neutrality.
+Final compiler SHA256:
+`a9ecfa531894c4daeb834f3f2037cdb4b9a01535d654257dcb4760a599db2287`.
+Evidence: `/tmp/cppgm-v4-audit-review/pointer-loop-finiteness/combined/`; the
+parent directory retains the first variant and its confirmed timing cost.
+Remaining frozen compiler families: 13, plus six reviews. Final fixture pruning
+and combined export/harness/quiet-output validation remain pending. Next is
+failed-new deallocation: scalar new lacks the selected cleanup binding and
+cleanup region already used by array new.
