@@ -22,6 +22,7 @@ global @storage [binding=strong] = {
 }
 global @allocations : i32 [binding=strong] = zero
 global @cleanup_order : i32 [binding=strong] = zero
+global @arguments_alive : i32 [binding=strong] = zero
 
 function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new] {
   slot $arg0 : i64
@@ -58,6 +59,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lifetime__5 : u8
   slot $lor__6 : i64
   slot $lor__7 : i64
+  slot $lor__8 : i64
+  slot $land__9 : i64
 
   block ^entry:
     eh_try ^catch_dispatch_1
@@ -82,7 +85,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^call_unwind_end_6:
     %t4 = addr $arg__4
     eh_try ^call_unwind_dispatch_8
-    zeroinit 1x1 %t4
+    call void @argument__argument(%t4)
     eh_end
     jump ^call_unwind_end_9
 
@@ -135,17 +138,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 %t9, $value
     %t10 = load i32 $value
     %t11 = cmp ne i32 %t10, 7
-    branch %t11, ^if_then_16, ^lor_rhs_20
+    branch %t11, ^if_then_16, ^lor_rhs_21
 
-  block ^lor_rhs_20:
+  block ^lor_rhs_21:
     %t12 = load i32 @allocations
     %t13 = cmp ne i32 %t12, 0
-    branch %t13, ^if_then_16, ^lor_rhs_19
+    branch %t13, ^if_then_16, ^lor_rhs_20
+
+  block ^lor_rhs_20:
+    %t14 = load i32 @arguments_alive
+    %t15 = cmp ne i32 %t14, 0
+    branch %t15, ^if_then_16, ^lor_rhs_19
 
   block ^lor_rhs_19:
-    %t14 = load i32 @cleanup_order
-    %t15 = cmp ne i32 %t14, 21
-    branch %t15, ^if_then_16, ^if_else_17
+    %t16 = load i32 @cleanup_order
+    %t17 = cmp ne i32 %t16, 21
+    branch %t17, ^if_then_16, ^if_else_17
 
   block ^if_then_16:
     eh_end
@@ -157,144 +165,174 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_18:
     store u8 0, $lifetime__5
-    %t18 = convert sext i64 i32 1
-    eh_try ^conditional_cleanup_landing_21
-    %t19 = call ptr @nullable_item__operatornew(%t18)
+    %t20 = convert sext i64 i32 1
+    eh_try ^conditional_cleanup_landing_22
+    %t21 = call ptr @nullable_item__operatornew(%t20)
     eh_end
-    %t20 = cmp ne ptr %t19, 0
-    branch %t20, ^new_init_27, ^new_end_28
+    %t22 = cmp ne ptr %t21, 0
+    branch %t22, ^new_init_28, ^new_end_29
 
-  block ^conditional_cleanup_landing_21:
-    jump ^conditional_cleanup_dispatch_24
+  block ^conditional_cleanup_landing_22:
+    jump ^conditional_cleanup_dispatch_25
 
-  block ^conditional_cleanup_route_22:
+  block ^conditional_cleanup_route_23:
     resume
-
-  block ^conditional_cleanup_dispatch_23:
-    eh_end
-    call void @__external_runtime____cxa_end_catch()
-    eh_end
-    jump ^conditional_cleanup_route_22
 
   block ^conditional_cleanup_dispatch_24:
-    %t16 = load u8 $lifetime__5
-    branch %t16, ^conditional_temporary_destroy_25, ^conditional_temporary_done_26
-
-  block ^conditional_temporary_destroy_25:
-    store u8 0, $lifetime__5
-    %t17 = addr $arg__3
-    call void @argument___argument(%t17)
-    jump ^conditional_temporary_done_26
-
-  block ^conditional_temporary_done_26:
-    jump ^conditional_cleanup_dispatch_23
-
-  block ^new_init_27:
-    %t21 = addr $arg__3
-    eh_try ^call_unwind_dispatch_32
-    zeroinit 1x1 %t21
-    store u8 1, $lifetime__5
-    eh_end
-    jump ^call_unwind_end_33
-
-  block ^cleanup_resume_29:
-    resume
-
-  block ^cleanup_action_30:
     eh_end
     call void @__external_runtime____cxa_end_catch()
     eh_end
-    jump ^cleanup_resume_29
+    jump ^conditional_cleanup_route_23
 
-  block ^construction_cleanup_31:
-    call void @nullable_item__operatordelete(%t19)
-    jump ^cleanup_action_30
+  block ^conditional_cleanup_dispatch_25:
+    %t18 = load u8 $lifetime__5
+    branch %t18, ^conditional_temporary_destroy_26, ^conditional_temporary_done_27
 
-  block ^call_unwind_dispatch_32:
-    jump ^construction_cleanup_31
-
-  block ^call_unwind_end_33:
-    eh_try ^call_unwind_dispatch_35
-    call void @nullable_item__nullable_item(%t19, %t21)
-    eh_end
-    jump ^call_unwind_end_36
-
-  block ^construction_cleanup_34:
-    %t22 = load u8 $lifetime__5
-    branch %t22, ^conditional_temporary_destroy_37, ^conditional_temporary_done_38
-
-  block ^conditional_temporary_destroy_37:
+  block ^conditional_temporary_destroy_26:
     store u8 0, $lifetime__5
+    %t19 = addr $arg__3
+    call void @argument___argument(%t19)
+    jump ^conditional_temporary_done_27
+
+  block ^conditional_temporary_done_27:
+    jump ^conditional_cleanup_dispatch_24
+
+  block ^new_init_28:
     %t23 = addr $arg__3
-    call void @argument___argument(%t23)
-    jump ^conditional_temporary_done_38
+    eh_try ^call_unwind_dispatch_33
+    call void @argument__argument(%t23)
+    store u8 1, $lifetime__5
+    eh_end
+    jump ^call_unwind_end_34
 
-  block ^conditional_temporary_done_38:
-    jump ^construction_cleanup_31
+  block ^cleanup_resume_30:
+    resume
 
-  block ^call_unwind_dispatch_35:
-    jump ^construction_cleanup_34
+  block ^cleanup_action_31:
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    jump ^cleanup_resume_30
 
-  block ^call_unwind_end_36:
-    jump ^new_end_28
+  block ^construction_cleanup_32:
+    call void @nullable_item__operatordelete(%t21)
+    jump ^cleanup_action_31
 
-  block ^new_end_28:
-    store ptr %t19, $skipped
-    eh_try ^call_unwind_dispatch_39
+  block ^call_unwind_dispatch_33:
+    jump ^construction_cleanup_32
+
+  block ^call_unwind_end_34:
+    eh_try ^call_unwind_dispatch_36
+    call void @nullable_item__nullable_item(%t21, %t23)
+    eh_end
+    jump ^call_unwind_end_37
+
+  block ^construction_cleanup_35:
     %t24 = load u8 $lifetime__5
-    branch %t24, ^conditional_temporary_destroy_40, ^conditional_temporary_done_41
+    branch %t24, ^conditional_temporary_destroy_38, ^conditional_temporary_done_39
 
-  block ^conditional_temporary_destroy_40:
+  block ^conditional_temporary_destroy_38:
     store u8 0, $lifetime__5
     %t25 = addr $arg__3
     call void @argument___argument(%t25)
-    jump ^conditional_temporary_done_41
+    jump ^conditional_temporary_done_39
 
-  block ^conditional_temporary_done_41:
+  block ^conditional_temporary_done_39:
+    jump ^construction_cleanup_32
+
+  block ^call_unwind_dispatch_36:
+    jump ^construction_cleanup_35
+
+  block ^call_unwind_end_37:
+    jump ^new_end_29
+
+  block ^new_end_29:
+    store ptr %t21, $skipped
+    eh_try ^call_unwind_dispatch_40
+    %t26 = load u8 $lifetime__5
+    branch %t26, ^conditional_temporary_destroy_41, ^conditional_temporary_done_42
+
+  block ^conditional_temporary_destroy_41:
+    store u8 0, $lifetime__5
+    %t27 = addr $arg__3
+    call void @argument___argument(%t27)
+    jump ^conditional_temporary_done_42
+
+  block ^conditional_temporary_done_42:
     eh_end
-    jump ^call_unwind_end_42
+    jump ^call_unwind_end_43
 
-  block ^call_unwind_dispatch_39:
-    jump ^cleanup_action_30
+  block ^call_unwind_dispatch_40:
+    jump ^cleanup_action_31
 
-  block ^call_unwind_end_42:
-    %t26 = load ptr $skipped
-    %t27 = copy ptr nullptr
-    %t28 = cmp ne ptr %t26, %t27
-    branch %t28, ^lor_short_47, ^lor_rhs_46
+  block ^call_unwind_end_43:
+    %t28 = load ptr $skipped
+    %t29 = copy ptr nullptr
+    %t30 = cmp ne ptr %t28, %t29
+    branch %t30, ^lor_short_51, ^lor_rhs_50
 
-  block ^lor_rhs_46:
-    %t29 = load i32 @allocations
-    %t30 = cmp ne i32 %t29, 0
-    %t31 = cmp ne i64 %t30, 0
-    store i64 %t31, $lor__7
-    jump ^lor_end_48
+  block ^lor_rhs_50:
+    %t31 = load i32 @allocations
+    %t32 = cmp ne i32 %t31, 0
+    %t33 = cmp ne i64 %t32, 0
+    store i64 %t33, $lor__8
+    jump ^lor_end_52
 
-  block ^lor_short_47:
+  block ^lor_short_51:
+    store i64 1, $lor__8
+    jump ^lor_end_52
+
+  block ^lor_end_52:
+    %t34 = load i64 $lor__8
+    branch %t34, ^lor_short_48, ^lor_rhs_47
+
+  block ^lor_rhs_47:
+    %t35 = load i32 @arguments_alive
+    %t36 = cmp ne i32 %t35, 0
+    %t37 = cmp ne i64 %t36, 0
+    store i64 %t37, $lor__7
+    jump ^lor_end_49
+
+  block ^lor_short_48:
     store i64 1, $lor__7
-    jump ^lor_end_48
+    jump ^lor_end_49
 
-  block ^lor_end_48:
-    %t32 = load i64 $lor__7
-    branch %t32, ^lor_short_44, ^lor_rhs_43
+  block ^lor_end_49:
+    %t38 = load i64 $lor__7
+    branch %t38, ^lor_short_45, ^lor_rhs_44
 
-  block ^lor_rhs_43:
-    %t33 = load i32 @cleanup_order
-    %t34 = cmp ne i32 %t33, 21
-    %t35 = cmp ne i64 %t34, 0
-    store i64 %t35, $lor__6
-    jump ^lor_end_45
+  block ^lor_rhs_44:
+    %t39 = load i32 @cleanup_order
+    %t40 = cmp ne i32 %t39, 21
+    branch %t40, ^land_rhs_53, ^land_short_54
 
-  block ^lor_short_44:
+  block ^land_rhs_53:
+    %t41 = load i32 @cleanup_order
+    %t42 = cmp ne i32 %t41, 212
+    %t43 = cmp ne i64 %t42, 0
+    store i64 %t43, $land__9
+    jump ^land_end_55
+
+  block ^land_short_54:
+    store i64 0, $land__9
+    jump ^land_end_55
+
+  block ^land_end_55:
+    %t44 = load i64 $land__9
+    %t45 = cmp ne i64 %t44, 0
+    store i64 %t45, $lor__6
+    jump ^lor_end_46
+
+  block ^lor_short_45:
     store i64 1, $lor__6
-    jump ^lor_end_45
+    jump ^lor_end_46
 
-  block ^lor_end_45:
-    %t36 = load i64 $lor__6
-    %t37 = convert trunc i32 i64 %t36
+  block ^lor_end_46:
+    %t46 = load i64 $lor__6
+    %t47 = convert trunc i32 i64 %t46
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t37
+    return i32 %t47
 
   block ^catch_cleanup_15:
     call void @__external_runtime____cxa_end_catch()
@@ -306,6 +344,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^try_end_3:
     return i32 2
+}
+function @argument__argument(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN8argumentC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load i32 @arguments_alive
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @arguments_alive
+    return void
 }
 function @item__item(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN4itemC1ERK8argument, inline_hint=yes] {
   slot $this : ptr
@@ -325,10 +373,13 @@ function @argument___argument(%this : ptr [object_bytes=1]) -> void [unwind=no, 
 
   block ^entry:
     store ptr %this, $this
-    %t1 = load i32 @cleanup_order
-    %t2 = binary mul i32 %t1, 10
-    %t3 = binary add i32 %t2, 2
-    store i32 %t3, @cleanup_order
+    %t1 = load i32 @arguments_alive
+    %t2 = binary sub i32 %t1, 1
+    store i32 %t2, @arguments_alive
+    %t3 = load i32 @cleanup_order
+    %t4 = binary mul i32 %t3, 10
+    %t5 = binary add i32 %t4, 2
+    store i32 %t5, @cleanup_order
     return void
 }
 function @nullable_item__operatornew(%__param0 : i64) -> ptr [unwind=no, binding=weak, object=_ZN13nullable_itemnwEm, inline_hint=yes] {
@@ -360,6 +411,7 @@ function @nullable_item__operatordelete(%__param0 : ptr) -> void [unwind=no, bin
     store i32 99, @cleanup_order
     return void
 }
+alias object _ZN8argumentC2Ev = @argument__argument
 alias object _ZN4itemC2ERK8argument = @item__item
 alias object _ZN8argumentD2Ev = @argument___argument
 alias object _ZN13nullable_itemC2ERK8argument = @nullable_item__nullable_item

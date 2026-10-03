@@ -6195,7 +6195,11 @@ bug and an unbalanced guard in the intermediate patch. Treat nullable-new
 initializers as conditional in the existing typed lifetime walk, using runtime
 flags at the join, and close the enclosing segment before branching. One new
 PA21 fixture covers both throwing construction and null allocation, with cleanup
-order/count assertions; retire the duplicate PA28 control. Eight earlier
+order/count assertions; retire the duplicate PA28 control. The final fixture
+review follows N3485 5.3.4/16: evaluating initializer expressions after null
+allocation is unspecified. Permit either balanced argument-evaluation choice
+and use a live-argument counter to detect destruction without construction.
+Repeat all 48 runtime checks and its strict owning check for that refinement. Eight earlier
 allocation/template/virtual smoke fixtures declare construction explicitly
 noexcept to preserve their milestone scope. Exact ref-test regenerates only
 those references, the new fixture and the PA21 initializer-list allocation

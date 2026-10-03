@@ -2,6 +2,7 @@
 long long storage[8];
 int allocations;
 int cleanup_order;
+int arguments_alive;
 
 void* operator new(unsigned long) {
   ++allocations;
@@ -13,7 +14,8 @@ void operator delete(void*) noexcept {
 }
 
 struct argument {
-  ~argument() noexcept { cleanup_order = cleanup_order * 10 + 2; }
+  argument() { ++arguments_alive; }
+  ~argument() noexcept { --arguments_alive; cleanup_order = cleanup_order * 10 + 2; }
 };
 struct item {
   item(const argument&) { throw 7; }
@@ -28,10 +30,12 @@ struct nullable_item {
 int main() {
   try { new item{argument()}; }
   catch (int value) {
-    if (value != 7 || allocations != 0 || cleanup_order != 21) return 1;
-    // A null allocation skips initialization and argument temporary cleanup.
+    if (value != 7 || allocations != 0 || arguments_alive != 0 || cleanup_order != 21) return 1;
+    // C++11 permits evaluating arguments before null allocation; destroy only
+    // arguments that were constructed and never call the item constructor.
     nullable_item* skipped = new nullable_item{argument()};
-    return skipped != nullptr || allocations != 0 || cleanup_order != 21;
+    return skipped != nullptr || allocations != 0 || arguments_alive != 0 ||
+      (cleanup_order != 21 && cleanup_order != 212);
   }
   return 2;
 }
