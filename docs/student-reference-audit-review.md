@@ -105,7 +105,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **10 compiler issue families** remain
+Remaining-work count on 2026-10-03: **9 compiler issue families** remain
 open or in progress. EH-UNWIND-DTOR is completed below. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
@@ -185,7 +185,7 @@ The recent discovery inventory is not all C++11:
 | REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Done: reference-related single elements bind directly; other class lists create a separate temporary through existing materialization. Reuse prepared typed elements. Extend the existing PA12 constructor-argument lifetime fixture; remove the opt-in duplicate. Original, alias, conversion, aggregate, derived and rejection boundaries pass 48 focused checks at O0/O2. PA12 298/298, strict 6118/6118, all required checks and Alpha instruction/RSS/equality gates pass. |
 | REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Done: materialize the complete derived prvalue before projecting the base reference, preserve cv and binding category, and publish later lifecycle definitions to cached base entries. Extend the existing PA21 lifetime fixture with a nonzero base offset; add one independent PA12 mutable-xvalue cast rejection. Original and fixture pass all three link routes at O0/O2. Eighteen reviewed LowIR references add only the previously missing base-destructor body. Strict 6119/6119, all required checks and Alpha gates pass. |
 | EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Done in this checkpoint: cached/linked cleanup actions carry unwind mode and use the existing termination guard; staged typed actions supply runtime demand. All six frozen host forms agree with Clang/GCC at O0/O2. Native rethrow resets handler selection, preserving existing source-handler behavior and fixing three recorded standalone observations. One PA28 fixture replaces its control; extend the existing PA25 destructor function-try fixture. Strict 6122/6122, all required checks and final Alpha instruction/RSS/equality gates pass; measured cycle diagnostics are retained below. |
-| EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
+| EH-ARRAY-DTOR | Preserve remaining elements when a class-array destructor throws | Additional EH-CLEANUP array boundary controls | Done in this checkpoint: reuse the bounded progress loop for normal potentially throwing multi-element destruction and guard remaining-element unwind calls against second faults. The frozen three/twelve-element reducers and termination boundaries agree with strict C++11 hosts on both routes. One PA21 fixture replaces its control; reuse the PA25 function-try fixture and add one distinct PA28 array second-fault fixture. Strict 6124/6124, all required local checks and final Alpha instruction/RSS/equality gates pass; measured cycle costs retained below. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Done: retain body, nested constructor initializer and function-try syntax through registration, definition adoption, specialization upgrades and explicit specialization. The original program passes all three link routes at O0/O2; specialization/upgrade boundaries match Clang/GCC. Extend the existing PA21 function-try fixture and retire the opt-in duplicate. The extended fixture's preexisting native failure remains BACKEND. Pattern storage remains 512 bytes. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Done for source acceptance and lowering: remove the lexical-handler restriction and its unused counter. All three original programs pass host linking at O0/O2; the called-function case and rewritten existing fixture also pass standalone/object routes. No-active-exception execution invokes the installed termination handler. Same-function nested-handler and destructor traces still fail only in the native BACKEND family; retain/reclassify the existing opt-in reducer. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
@@ -4592,7 +4592,7 @@ additional value; it does not install exploratory matrices wholesale.
 | MANGLE-RESULT | One object combines bare-id decltype and a dependent named-call result; exported addresses retain symbols at O2. |
 | TMPL-LATE-TYPE | A later traits definition plus an undemanded invalid member body, with no hosted headers. |
 | MANGLE-PACK | One completed default pack with an address that retains the declared parameter expansion symbol. |
-| EH-ARRAY-DTOR | Three elements expose the missing normal-destruction unwind suffix; no extra array-size matrix. |
+| EH-ARRAY-DTOR | Preserve remaining elements when a class-array destructor throws | Additional EH-CLEANUP array boundary controls | Done in this checkpoint: reuse the bounded progress loop for normal potentially throwing multi-element destruction and guard remaining-element unwind calls against second faults. The frozen three/twelve-element reducers and termination boundaries agree with strict C++11 hosts on both routes. One PA21 fixture replaces its control; reuse the PA25 function-try fixture and add one distinct PA28 array second-fault fixture. Strict 6124/6124, all required local checks and final Alpha instruction/RSS/equality gates pass; measured cycle costs retained below. |
 | REF-BASE-COND | A conditional derived temporary bound to its base reference. |
 | EH-RETHROW-DYNAMIC | One called helper rethrows the dynamically active exception. |
 | EH-LOCAL-ARRAY-CATCH | One direct backing-element failure must reach the current function handler and retire the prefix. |
@@ -6314,3 +6314,43 @@ Evidence: `/tmp/cppgm-v4-audit-review/unwind-destructor-termination/final/`.
 Remaining frozen compiler families: 10, plus six reviews. Final fixture pruning
 and combined export/harness validation remain pending. Next is EH-ARRAY-DTOR,
 using its frozen three-element reducer and existing twelve-element boundary.
+
+## EH-ARRAY-DTOR checkpoint — 2026-10-03
+
+N3485 15.2/2–3 requires destruction of remaining completed subobjects when
+normal destruction throws, and termination if an unwind destructor throws.
+Use the existing progress-tracking loop for normal potentially throwing arrays
+with more than one element. Keep existing inline destruction for nonthrowing
+arrays and unwind-mode arrays. The loop's remaining-element calls use the
+existing terminate guard; typed array destructor actions supply runtime demand.
+No new cleanup representation, source reparse or ABI spelling change.
+
+The frozen three-element reducer fails both entry routes; its twelve-element
+boundary already passes. All 44 retained host/native observations now agree
+with strict C++11 Clang/GCC, including second-fault default and installed-handler
+termination. Native default termination exits 134; host default termination is
+SIGABRT. Promote the three-element control into one PA21 fixture and remove its
+duplicate. Reuse the existing PA25 destructor function-try fixture for native
+array cleanup and rethrow. Add one PA28 host fixture for the distinct loop
+second-fault path, which existing scalar termination fixtures do not exercise.
+Both reused/new runtime fixtures pass six fresh strict-host/candidate checks.
+No existing reference changes; generate only the two new fixture references.
+
+PA21 passes 210/210. Full strict report passes 6124/6124 with one output line;
+the earlier 6123 run precedes the final second-fault fixture. Debug-info,
+variants, self-host PA5, all nine architecture audits, file and placement audits
+pass. The final PA28 fixture placement check also passes; 37 existing file
+warnings remain. Final compiler SHA256:
+`57c61e9087c0df7b61686a5f587457dfb1c4dbc7aa3c925313453d80d14f56f9`.
+
+Independently verify all 288 Alpha screen and 144 focused confirmation
+observations: unscaled counters, zero statuses, RSS and equal object hashes.
+Maximum screen instruction median is 1.000012064; RSS medians are 1.0.
+Confirmation calibrated cycles are 1.011996353 for copy templates (95% interval
+[1.008775882, 1.041431028]), 1.015067416 for local statics
+[1.006278976, 1.019117104] and 1.027187719 for multi-pack
+[1.023166192, 1.041496619]. Retain these measured cycle costs under the updated
+diagnostic policy; do not claim timing neutrality or run further noise searches.
+Evidence: `/tmp/cppgm-v4-audit-review/array-destructor-progress/`.
+Remaining frozen compiler families: nine, plus six reviews. Final fixture
+pruning and combined export/harness validation remain pending. Next is MEMBER.

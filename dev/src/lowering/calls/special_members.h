@@ -888,9 +888,12 @@ protected:
 			derived.SelectBlock(cleanup_body);
 			const Operand cleanup_previous =
 				DecrementDestructorArrayProgress(progress, cleanup_remaining);
+			derived.EmitEhTarget(Instruction::EH_TRY,
+				derived.MakeCleanupTerminateBlock());
 			derived.EmitDestructorCall(destructor,
 				FlatDestructorArrayElement(
 					element_type, address, cleanup_previous));
+			derived.Emit(Instruction(Instruction::EH_END));
 			derived.EmitJump(cleanup);
 			derived.SelectBlock(resume);
 			derived.EmitExceptionResume();
@@ -924,7 +927,9 @@ protected:
 			count *= static_cast<std::size_t>(array.bound);
 			element_type = array.child;
 		}
-		if (count > kDestructorArrayInlineLimit)
+		if (count > kDestructorArrayInlineLimit ||
+			(count > 1 && !unwinding &&
+			 !derived.program_.bindings[destructor].nonthrowing))
 		{
 			LowerLoopDestructorArray(element_type, address, destructor, count, unwinding);
 			return;
@@ -988,7 +993,9 @@ protected:
 				count *= static_cast<std::size_t>(array.bound);
 				element_type = array.child;
 			}
-			if (count <= kDestructorArrayInlineLimit)
+			if (count <= kDestructorArrayInlineLimit &&
+				(count == 1 || unwinding ||
+				 derived.program_.bindings[action.binding].nonthrowing))
 			{
 				for (std::size_t ordinal = 0;
 					ordinal < static_cast<std::size_t>(outer.bound); ++ordinal)

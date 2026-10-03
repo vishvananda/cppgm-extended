@@ -2143,6 +2143,9 @@ std::uint32_t Analyzer::MakeDestructorAction(TypeId type,
 	const FunctionInfo& info = GetFunction(destructor);
 	if (info.deleted_destructor)
 		ThrowSemanticError("deleted destructor is required");
+	if (program_->types.Get(program_->types.RemoveTopCv(EffectiveType(type))).kind ==
+		TYPE_ARRAY && !FunctionIsNonthrowing(destructor))
+		dump_.construction_cleanup_may_throw = true;
 	const std::uint32_t action = MakeDump(DUMP_DESTRUCTOR_ACTION,
 		AdaptMemberFunctionType(destructor), VALUE_NONE, 0, destructor);
 	dump_.nodes[action].operand_type = type;
