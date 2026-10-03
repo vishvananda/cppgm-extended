@@ -1097,7 +1097,14 @@ void RetainedTemplateValidator::VisitUsing(NodeId node, std::size_t scope, bool 
 	const NamePath path = analyzer_.SyntaxNamePath(target_node);
 	const NameId name = path.Last();
 	if (parameter_names_.find(name) != parameter_names_.end())
+	{
+		// T::T names a dependent constructor, not a member named T.
+		// Instantiation resolves the constructor and its owning class.
+		if (scopes_[scope].class_declaration != kNoNode &&
+			!path.global && path.Size() == 2 && path[0] == name)
+			return;
 		ThrowSemanticError("using declaration redeclares template parameter");
+	}
 	if (SyntaxUsesTemplateParameter(target_node))
 	{
 		Declare(scope, name, RETAINED_TYPE_NAME, true);

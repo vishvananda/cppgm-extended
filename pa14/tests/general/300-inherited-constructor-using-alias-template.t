@@ -11,6 +11,17 @@ struct YDerived : public YBase<T> {
   using YAlias::YAlias;
 };
 
+// N3485 12.9: the terminal T names a constructor, not a new member.
+template<class T>
+struct DirectDerived : T {
+  using T::T;
+};
+
+struct IntBase {
+  int value;
+  explicit IntBase(int n) : value(n) {}
+};
+
 template<class T>
 struct YHolder {
   typedef YDerived<T> YMember;
@@ -23,5 +34,6 @@ struct YHolder {
 int main() {
   YTraits t;
   YHolder<YTraits> h(t);
-  return 0;
+  DirectDerived<IntBase> direct(7);
+  return direct.value != 7;
 }
