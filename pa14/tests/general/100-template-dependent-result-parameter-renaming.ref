@@ -48,7 +48,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load i32 $cond__1
     return i32 %t7
 }
-function @identity(%renamed : i32) -> i32 [binding=weak, object=_Z8identityIiEDTfp_ET_] {
+function @identity(%renamed : i32) -> i32 [binding=weak, object=_Z8identityIiEDtfp_ET_] {
   slot $renamed : i32
 
   block ^entry:
@@ -56,7 +56,7 @@ function @identity(%renamed : i32) -> i32 [binding=weak, object=_Z8identityIiEDT
     %t1 = load i32 $renamed
     return i32 %t1
 }
-function @result(%value : i32) -> i64 [binding=weak, object=_Z6resultIiElT_] {
+function @result(%value : i32) -> i64 [binding=weak, object=_Z6resultIiEDTcl8selectedfp_EET_] {
   slot $value : i32
 
   block ^entry:

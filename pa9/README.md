@@ -157,6 +157,11 @@ param ref String
 
 Definition forms:
 
+`decltype-id <expr-ref>` preserves an unparenthesized id-expression or class
+member access and emits `Dt`; `decltype <expr-ref>` emits `DT`. The dependent
+expression form `source-name <identifier>` retains an unqualified name, such as
+the callee of `decltype(selected(value))`.
+
 - `let-type <id> ...`: a type fact
 - `let-arg <id> ...`: a template-argument fact
 - `let-expr <id> ...`: a dependent-expression fact

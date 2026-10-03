@@ -105,7 +105,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **21 compiler issue families** remain
+Remaining-work count on 2026-10-03: **20 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
@@ -114,7 +114,7 @@ EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
 LOOKUP-TAG, ABI-GLOBAL, NOEXCEPT-LIST, REF-BITFIELD and
 CONST-REF-STATIC-TEMP, REF-BRACE, INIT-LIST-STATIC, EH-RETHROW-DYNAMIC,
-TMPL-FTRY, REF-BASE-COND and MANGLE-CONV are also completed. These are tracker
+TMPL-FTRY, REF-BASE-COND, MANGLE-CONV and MANGLE-RESULT are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -191,7 +191,7 @@ The recent discovery inventory is not all C++11:
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Done: build conversion terminals from retained template recipes; resolve explicit conversion specializations and qualified conversion addresses through existing deduction using retained syntax. Fresh Clang/GCC O0 symbols agree. Extend existing PA18 direct-conversion and PA22 pointer-target fixtures; retire the opt-in duplicate. Fourteen other references change only conversion object-name metadata. Strict 6119/6119, all required checks and Alpha gates pass; no ABI encoder change. |
-| MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Open, confirmed against Clang/GCC and unchanged entry 1cb054e23: bare decltype(value) uses DT instead of Dt; named dependent selected(value) loses the expression and emits a concrete result type. Parenthesized decltype((value)) already agrees. No encoder change in the result identity checkpoint. |
+| MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Done: retain id/member-access decltype category and unqualified named dependent call arguments in existing typed recipe payloads. Fresh Clang/GCC symbols agree at O0/O2, including parenthesized, member, nested, multiple-argument and ADL controls. Extend existing PA9 and PA14 fixtures and retire the opt-in duplicate; one other reference changes only two object names. Payload sizes are unchanged. Strict 6119/6119, all required checks and Alpha gates pass. |
 | MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Open: entry 425bc2a90 and candidate flatten a fixed-primary parameter expansion and append defaults; Clang/GCC retain `tuple<T_,DpT0_>`. The deduction checkpoint corrects the concrete template argument pack cardinality; the parameter pattern remains wrong. No encoder change made. |
 | MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
 | MANGLE | ABI substitution state for address expressions and RTTI template-template arguments | v4codex group 13 | Open, checked against Clang 21.1.8: source compiler already matches the member-address reducer; PA9 fact tool ends ER1C instead of ERS1_; RTTI template prefix uses S4_ instead of Clang's S3_. |
@@ -5818,4 +5818,48 @@ counter, RSS, status and equal object hash. Maximum median instruction ratio
 Evidence: `/tmp/cppgm-v4-audit-review/conversion-template-target/`, including
 `owning-validation.json` for the final fixture placement qualification.
 Remaining: 21 compiler families and six reviews; final fixture pruning and
+combined student-export validation remain pending.
+
+
+### Dependent decltype result patterns — MANGLE-RESULT complete
+
+Fresh Clang/GCC objects reproduce both retained symbols at O0/O2:
+`_Z8identityIiEDtfp_ET_` and `_Z6resultIiEDTcl8selectedfp_EET_`. The local
+Itanium document specifies `Dt` for an unparenthesized id/member operand and
+`DT` for other expressions, both C++11. Add the missing typed operand category
+and unqualified source-name expression form, preserving dependent call
+arguments in the existing ABI argument storage. Publication consumes retained
+syntax and semantic lookup, including rejecting type and non-function bindings
+from the source-name path. Parentheses preserve their `DT` category.
+
+The PA9 scaffold exposes `decltype-id` and `source-name` forms alongside the
+existing forms. Public record parse/serialize roundtrip preserves all three
+symbols in the extended existing ABI fixture. Extend the existing PA14 trailing
+return fixture with the original source obligations; retain its inherited
+HHC-090 attribution. One other regenerated PA14 reference changes only two
+object ABI names, independently matching both hosts; its bodies are unchanged.
+Retire the opt-in PA18 reducer and symbol sidecar. No new required fixture file.
+
+Original, reused source fixture and focused parenthesized/member/nested/multiple-
+argument/ADL boundaries match Clang/GCC symbols and execute at O0/O2. Eighteen
+executions pass across direct, compiler-object and host-object routes. Typed
+payload sizes remain 48/36 bytes for semantic type/expression nodes and
+400/1024 bytes for ABI type/expression records. No source reparse or additional
+persistent fields.
+
+PA9 111/111, PA14 349/349, strict 6119/6119, debug-info, backend variants,
+self-host through PA5, nine architecture audits, file audit and placement pass.
+An earlier report ran out of temporary filesystem inodes; preserve it as an
+invalid validation run. Move the inactive reference-cv-qualification evidence
+to the main filesystem with a symlink preserving its original path, then repeat
+all required checks successfully. No audit evidence was deleted.
+
+Alpha's 240 frozen-input observations independently verify every unscaled
+counter, RSS, status and equal object hash. Maximum median instruction ratio
+1.000011951 (+0.0012%); maximum RSS ratio 1.008784 (+0.8784%), within the 1.03
+gate. No calibrated cycle median exceeds the 1.01 confirmation threshold.
+Final compiler SHA256:
+`abd829953d3cf623ad068d8bb2258a6460f5e05d1fcb814706e5f57e2c847c81`.
+Evidence: `/tmp/cppgm-v4-audit-review/dependent-result-pattern/`.
+Remaining: 20 compiler families and six reviews; final fixture pruning and
 combined student-export validation remain pending.

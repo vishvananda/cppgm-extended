@@ -1294,11 +1294,24 @@ public:
 			target.expression_refs.push_resolved(
 				AddFunctionTemplateAbiExpression(source.left, recipe));
 		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_SOURCE_NAME)
+		{
+			target.kind = ABI_EXPRESSION_SOURCE_NAME;
+			target.index = ResolveName(source.name) + 1;
+		}
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_CALL)
 		{
 			target.kind = ABI_EXPRESSION_CALL;
 			target.expression_refs.push_resolved(
 				AddFunctionTemplateAbiExpression(source.left, recipe));
+			if (source.argument_begin > program_.function_template_abi_arguments.size() ||
+				source.argument_count > program_.function_template_abi_arguments.size() -
+					source.argument_begin)
+				ThrowLoweringInternal("retained dependent call argument range is invalid");
+			for (std::size_t i = 0; i < source.argument_count; ++i)
+				target.expression_refs.push_resolved(AddFunctionTemplateAbiExpression(
+					program_.function_template_abi_arguments[
+						source.argument_begin + i].expression, recipe));
 		}
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_UNARY)
 		{
@@ -1438,9 +1451,11 @@ public:
 						source.argument_begin + i], recipe));
 			return result;
 		}
-		if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE)
+		if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE ||
+			source.kind == FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE_ID)
 		{
-			result.kind = ABI_TYPE_DECLTYPE_EXPRESSION;
+			result.kind = source.kind == FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE_ID ?
+				ABI_TYPE_DECLTYPE_ID_EXPRESSION : ABI_TYPE_DECLTYPE_EXPRESSION;
 			result.resolved_expression = AddFunctionTemplateAbiExpression(
 				source.expression, recipe);
 			return result;

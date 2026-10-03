@@ -372,10 +372,11 @@ AbiType parse_type(const vector<string> & words, size_t begin)
     }
     return type;
   }
-  if(form == "decltype") {
+  if(form == "decltype" || form == "decltype-id") {
     require(begin + 2 == words.size(), "decltype needs one expression");
     AbiType type;
-    type.kind = ABI_TYPE_DECLTYPE_EXPRESSION;
+    type.kind = form == "decltype-id" ? ABI_TYPE_DECLTYPE_ID_EXPRESSION
+                                       : ABI_TYPE_DECLTYPE_EXPRESSION;
     type.expression_ref = words[begin + 1];
     return type;
   }
@@ -668,6 +669,10 @@ AbiDependentExpression parse_expression(const vector<string> & words)
     expression.operation = abi_expression_operation_kind(expression.op);
     expression.type = compact_type(words[4]);
     expression.expression_refs.push_name(words[5]);
+  } else if(form == "source-name") {
+    require(words.size() == 4, "source-name expression takes one name");
+    expression.kind = ABI_EXPRESSION_SOURCE_NAME;
+    expression.text = words[3];
   } else if(form == "template-id") {
     require(words.size() >= 4, "template-id expression needs a name");
     expression.kind = ABI_EXPRESSION_TEMPLATE_ID;
@@ -966,6 +971,7 @@ string unmodified_type_text(const AbiType & type)
       return result;
     }
     case ABI_TYPE_DECLTYPE_EXPRESSION: return "decltype " + type.expression_ref;
+    case ABI_TYPE_DECLTYPE_ID_EXPRESSION: return "decltype-id " + type.expression_ref;
     case ABI_TYPE_LAMBDA_CLOSURE:
       return "lambda-closure " + type.context_ref + " " + type.discriminator;
     case ABI_TYPE_LOCAL_TYPE:
@@ -1130,7 +1136,8 @@ string definition_text(const AbiDefinitionRecord & definition)
     else if(expression.kind == ABI_EXPRESSION_CALL) result += "call";
     else if(expression.kind == ABI_EXPRESSION_CAST) {
       result += "cast " + expression.op + " " + type_text(expression.type);
-    } else if(expression.kind == ABI_EXPRESSION_TEMPLATE_ID) result += "template-id " + expression.text;
+    } else if(expression.kind == ABI_EXPRESSION_SOURCE_NAME) return result + "source-name " + expression.text;
+    else if(expression.kind == ABI_EXPRESSION_TEMPLATE_ID) result += "template-id " + expression.text;
     else if(expression.kind == ABI_EXPRESSION_TYPE_TRAIT) {
       result += "type-trait " + expression.text;
       for(const AbiType & type : expression.type_arguments) result += " " + type_text(type);

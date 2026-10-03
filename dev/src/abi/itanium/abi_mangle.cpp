@@ -973,6 +973,7 @@ private:
       && (source.kind == ABI_EXPRESSION_MEMBER
           || source.kind == ABI_EXPRESSION_OBJECT_MEMBER
           || source.kind == ABI_EXPRESSION_TEMPLATE_ID
+          || source.kind == ABI_EXPRESSION_SOURCE_NAME
           || source.kind == ABI_EXPRESSION_TYPE_TRAIT);
     if(resolved_source_name) node.symbol = source.index - 1;
     else if(!source.text.empty()) node.symbol = strings.intern(source.text);
@@ -1525,7 +1526,8 @@ private:
         output_ += 'E';
         return;
       case ABI_TYPE_DECLTYPE_EXPRESSION:
-        output_ += "DT";
+      case ABI_TYPE_DECLTYPE_ID_EXPRESSION:
+        output_ += type.kind == ABI_TYPE_DECLTYPE_ID_EXPRESSION ? "Dt" : "DT";
         encode_expression(type.expression);
         output_ += 'E';
         return;
@@ -1914,6 +1916,9 @@ private:
         output_ += source_name(graph_.strings.get(expression.symbol)) + 'I';
         encode_arguments(expression.arguments);
         output_ += 'E';
+        return;
+      case ABI_EXPRESSION_SOURCE_NAME:
+        output_ += source_name(graph_.strings.get(expression.symbol));
         return;
       case ABI_EXPRESSION_TYPE_TRAIT:
         output_ += 'u' + source_name(graph_.strings.get(expression.symbol));

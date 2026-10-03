@@ -305,11 +305,14 @@ private:
 		NameId payload = 0;
 		if (!BeginNode("decltype-specifier", &payload))
 			return kNoFunctionTemplateAbiType;
+		const bool id_expression = IsNode("id-expression") ||
+			IsNode("member-expression");
 		const FunctionTemplateAbiExpressionId expression = ParseExpression();
 		if (expression == kNoFunctionTemplateAbiExpression || !EndNode())
 			return kNoFunctionTemplateAbiType;
 		return AppendAbiType(program_, FunctionTemplateAbiType(
-			FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE, kNoFunctionTemplateAbiType,
+			id_expression ? FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE_ID :
+				FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE, kNoFunctionTemplateAbiType,
 			0, 0, kNoTemplateParameter, 0, kNoType, kNoEntity, 0, 0,
 			expression));
 	}
@@ -606,7 +609,7 @@ FunctionTemplateAbiTypeId ApplyTypeModifiers(Program* program,
 
 FunctionTemplateAbiExpressionId PublishSyntaxExpression(Program* program,
 	const SyntaxArena& arena, NodeId syntax,
-	const std::vector<ParameterInfo>& parameters)
+	const std::vector<ParameterInfo>& parameters, ScopeId scope)
 {
 	if (syntax == kNoNode) return kNoFunctionTemplateAbiExpression;
 	if (arena.IsTag(syntax, ::cppgm::syntax::STAG_PARENTHESIZED_EXPRESSION))
@@ -614,7 +617,7 @@ FunctionTemplateAbiExpressionId PublishSyntaxExpression(Program* program,
 		const std::uint32_t edge = arena.FirstEdge(syntax);
 		return edge == kNoEdge ? kNoFunctionTemplateAbiExpression :
 			PublishSyntaxExpression(
-				program, arena, arena.EdgeChild(edge), parameters);
+				program, arena, arena.EdgeChild(edge), parameters, scope);
 	}
 	if (arena.IsTag(syntax, ::cppgm::syntax::STAG_ID_EXPRESSION))
 	{
@@ -628,7 +631,22 @@ FunctionTemplateAbiExpressionId PublishSyntaxExpression(Program* program,
 						kNoFunctionTemplateAbiExpression,
 						kNoFunctionTemplateAbiType, 0,
 						static_cast<std::uint32_t>(i)));
-		return kNoFunctionTemplateAbiExpression;
+		const std::size_t first = arena.TokenFirst(syntax);
+		if (arena.TokenLast(syntax) != first + 1 ||
+			first >= arena.TokenCount() ||
+			arena.TokenKind(first) != ::cppgm::syntax::kIdentifierToken)
+			return kNoFunctionTemplateAbiExpression;
+		const LookupResult found = program->LookupName(scope, name, LOOKUP_ORDINARY);
+		if (found.ordinary != kNoBinding &&
+			program->bindings[found.ordinary].kind != BIND_FUNCTION)
+			return kNoFunctionTemplateAbiExpression;
+		if (found.ordinary == kNoBinding && !found.HasFunctionTemplateLookup() &&
+			program->LookupName(scope, name, LOOKUP_TYPE).type != kNoType)
+			return kNoFunctionTemplateAbiExpression;
+		return AppendAbiExpression(program, FunctionTemplateAbiExpression(
+			FUNCTION_TEMPLATE_ABI_EXPRESSION_SOURCE_NAME,
+			kNoFunctionTemplateAbiExpression, kNoFunctionTemplateAbiExpression,
+			kNoFunctionTemplateAbiType, name));
 	}
 	const std::uint32_t first = arena.FirstEdge(syntax);
 	if (first == kNoEdge) return kNoFunctionTemplateAbiExpression;
@@ -637,7 +655,7 @@ FunctionTemplateAbiExpressionId PublishSyntaxExpression(Program* program,
 		const std::uint32_t second = arena.NextEdge(first);
 		if (second == kNoEdge) return kNoFunctionTemplateAbiExpression;
 		const FunctionTemplateAbiExpressionId object = PublishSyntaxExpression(
-			program, arena, arena.EdgeChild(first), parameters);
+			program, arena, arena.EdgeChild(first), parameters, scope);
 		if (object == kNoFunctionTemplateAbiExpression)
 			return kNoFunctionTemplateAbiExpression;
 		return AppendAbiExpression(program, FunctionTemplateAbiExpression(
@@ -651,15 +669,37 @@ FunctionTemplateAbiExpressionId PublishSyntaxExpression(Program* program,
 	if (arena.IsTag(syntax, ::cppgm::syntax::STAG_CALL_EXPRESSION))
 	{
 		const FunctionTemplateAbiExpressionId callee = PublishSyntaxExpression(
-			program, arena, arena.EdgeChild(first), parameters);
+			program, arena, arena.EdgeChild(first), parameters, scope);
 		if (callee == kNoFunctionTemplateAbiExpression)
 			return kNoFunctionTemplateAbiExpression;
 		const std::uint32_t argument_edge = arena.NextEdge(first);
-		if (argument_edge != kNoEdge &&
-			arena.FirstEdge(arena.EdgeChild(argument_edge)) != kNoEdge)
-			return kNoFunctionTemplateAbiExpression;
+		std::vector<FunctionTemplateAbiArgument> arguments;
+		for (std::uint32_t edge = argument_edge == kNoEdge ? kNoEdge :
+			arena.FirstEdge(arena.EdgeChild(argument_edge)); edge != kNoEdge;
+			edge = arena.NextEdge(edge))
+		{
+			const FunctionTemplateAbiExpressionId argument = PublishSyntaxExpression(
+				program, arena, arena.EdgeChild(edge), parameters, scope);
+			if (argument == kNoFunctionTemplateAbiExpression)
+				return kNoFunctionTemplateAbiExpression;
+			arguments.push_back(FunctionTemplateAbiArgument(
+				FUNCTION_TEMPLATE_ABI_ARGUMENT_EXPRESSION,
+				kNoFunctionTemplateAbiType, argument));
+		}
+		if (arguments.size() >= kNoFunctionTemplateAbiExpression ||
+			program->function_template_abi_arguments.size() >=
+				kNoFunctionTemplateAbiExpression - arguments.size())
+			ThrowSemanticResourceLimit("too many dependent call arguments");
+		const std::uint32_t begin = static_cast<std::uint32_t>(
+			program->function_template_abi_arguments.size());
+		program->function_template_abi_arguments.insert(
+			program->function_template_abi_arguments.end(),
+			arguments.begin(), arguments.end());
 		return AppendAbiExpression(program, FunctionTemplateAbiExpression(
-			FUNCTION_TEMPLATE_ABI_EXPRESSION_CALL, callee));
+			FUNCTION_TEMPLATE_ABI_EXPRESSION_CALL, callee,
+			kNoFunctionTemplateAbiExpression, kNoFunctionTemplateAbiType,
+			0, kNoTemplateParameter, OPERATOR_NONE, false, begin,
+			static_cast<std::uint32_t>(arguments.size())));
 	}
 	if (arena.IsTag(syntax, ::cppgm::syntax::STAG_BINARY_EXPRESSION) &&
 		ClassifyOperationSpelling(arena.SemanticPayload(syntax)) == OP_MINUS)
@@ -667,9 +707,9 @@ FunctionTemplateAbiExpressionId PublishSyntaxExpression(Program* program,
 		const std::uint32_t second = arena.NextEdge(first);
 		if (second == kNoEdge) return kNoFunctionTemplateAbiExpression;
 		const FunctionTemplateAbiExpressionId left = PublishSyntaxExpression(
-			program, arena, arena.EdgeChild(first), parameters);
+			program, arena, arena.EdgeChild(first), parameters, scope);
 		const FunctionTemplateAbiExpressionId right = PublishSyntaxExpression(
-			program, arena, arena.EdgeChild(second), parameters);
+			program, arena, arena.EdgeChild(second), parameters, scope);
 		if (left == kNoFunctionTemplateAbiExpression ||
 			right == kNoFunctionTemplateAbiExpression)
 			return kNoFunctionTemplateAbiExpression;
@@ -863,10 +903,15 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 	if (edge == kNoEdge) return;
 	AbiPublication publication(program_);
 	const FunctionTemplateAbiExpressionId expression = PublishSyntaxExpression(
-		program_, *arena_, arena_->EdgeChild(edge), declarator.parameters);
+		program_, *arena_, arena_->EdgeChild(edge), declarator.parameters,
+		declarator.parameter_scope);
 	if (expression == kNoFunctionTemplateAbiExpression) return;
+	const NodeId operand = arena_->EdgeChild(edge);
+	const bool id_expression = arena_->IsTag(operand, ::cppgm::syntax::STAG_ID_EXPRESSION) ||
+		arena_->IsTag(operand, ::cppgm::syntax::STAG_MEMBER_EXPRESSION);
 	const FunctionTemplateAbiTypeId root = AppendAbiType(program_,
-		FunctionTemplateAbiType(FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE,
+		FunctionTemplateAbiType(id_expression ? FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE_ID :
+			FUNCTION_TEMPLATE_ABI_TYPE_DECLTYPE,
 			kNoFunctionTemplateAbiType, 0, 0, kNoTemplateParameter, 0,
 			kNoType, kNoEntity, 0, 0, expression));
 	pattern->abi_result_type = ApplyTypeModifiers(program_,
