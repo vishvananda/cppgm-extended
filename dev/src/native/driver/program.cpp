@@ -3,6 +3,7 @@
 #include "native/errors.h"
 #include "native/mir/construction.h"
 #include "native/lowering/selection.h"
+#include "native/encoding/lifecycle.h"
 
 
 namespace lowir_native {
@@ -150,9 +151,11 @@ void lower_startup(const lowir_model::LowirProgram & source,
   if(!entry.valid()) return;
   if(init.valid()) append_startup_call(target.startup, init);
   append_startup_call(target.startup, entry);
-  if(fini.valid()) {
+  const bool callbacks = lifecycle_detail::has_runtime(target);
+  if(fini.valid() || callbacks) {
     append_move(target.startup, reg_operand(XR_R12), reg_operand(XR_RAX));
-    append_startup_call(target.startup, fini);
+    if(callbacks) target.startup.push_back(machine_instruction(MirInstruction::MI_ATEXIT_DRAIN));
+    if(fini.valid()) append_startup_call(target.startup, fini);
     append_move(target.startup, reg_operand(XR_RDI), reg_operand(XR_R12));
   } else {
     append_move(target.startup, reg_operand(XR_RDI), reg_operand(XR_RAX));

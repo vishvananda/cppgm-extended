@@ -179,7 +179,7 @@ The recent discovery inventory is not all C++11:
 | REF-BASE-CATEGORY | Reject a related derived lvalue bound to a base rvalue reference | Reference qualification boundary controls | Done in the accompanying performance-approved checkpoint: reject the lvalue category before accepting the related derived-to-base reference conversion, per N3485 8.5.3/5. Base xvalue and const-volatile base lvalue positives remain. Full boundary/regression controls, strict report, all required compiler checks and global performance gate pass. |
 | REF-BITFIELD | Copy a bit-field for const-reference binding and reject mutable or volatile lvalue-reference binding | Reference qualification boundary controls | Done. Use the existing typed binding bit-field fact after overload selection: non-volatile const lvalue references copy through the scalar temporary path; mutable/volatile bindings reject. Extend the existing PA11 bit-field aggregate test for local and argument snapshots and promote two independent negatives, with the mutable case also checking overload selection. Remove three duplicate opt-in controls. Strict 6118/6118 and all required checks pass; final Alpha gates pass. The disputed rvalue-reference cast control remains held without a mandatory oracle. |
 | EH-LOCAL-ARRAY-CATCH | Reach a handler in the current function after partial initializer-list backing construction | AUTO-CONST-REF fault boundary | Open, independently reproduced: a throw from the second backing-element constructor or copy constructor terminates instead of reaching the same-function int handler. Both unchanged a3aaf2015 entry and deduction candidate fail with explicit reference types; Clang/GCC execute successfully in C++11 at O0/O2. Frozen inputs and sixteen explicit-type observations are in auto-const-reference/fault-controls/explicit-final-controls.json. The earlier caller-handler prefix controls remain unchanged. Review the partial-array landing and native handler search without attributing this preexisting gap to auto deduction. |
-| INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | In progress: persistent backing storage and shutdown cleanup now pass PA21 LowIR and host-object execution at O0/O2, including retry and shutdown checks. Extend the existing static-reference fixture with a static value; no new file. Strict 6118/6118 and all required checks including variants pass; Alpha gates pass. The original opt-in control remains: standalone native execution cannot resolve the existing __cppgm_runtime_atexit registration helper, a dependency shared with BACKEND. |
+| INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | Done: persistent backing and cleanup now work through direct native, compiler-object and host-object routes at O0/O2, including shutdown and failed-initialization retry. Native atexit callbacks drain in LIFO order before the shutdown hook and preserve the entry result. Extend existing PA21/PA24 fixtures; remove the opt-in duplicate. Strict 6118/6118, all required checks including variants and Alpha instruction/RSS/equality gates pass. |
 | REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Done in the accompanying performance-approved checkpoint: temporary lvalue-reference binding requires const without volatile, including normalized array element cv. The independent scalar/class/array negatives and valid lvalue controls pass; full compiler checks and global performance gate pass. |
 | REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Done: reference-related single elements bind directly; other class lists create a separate temporary through existing materialization. Reuse prepared typed elements. Extend the existing PA12 constructor-argument lifetime fixture; remove the opt-in duplicate. Original, alias, conversion, aggregate, derived and rejection boundaries pass 48 focused checks at O0/O2. PA12 298/298, strict 6118/6118, all required checks and Alpha instruction/RSS/equality gates pass. |
 | REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: static_cast<const S&>(choice()?D():throw 99) fails lowering at O0/O2 with unchanged entry and first cleanup candidate; Clang/GCC pass. Direct D() base binding is covered by EH-REF-INIT. |
@@ -204,7 +204,7 @@ The recent discovery inventory is not all C++11:
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
 | BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Open, independently reproduced: the entry and copy-cleanup candidates crash at O2 for the twelve-element move and trivial-copy-prefix array fixtures, in standalone and host-linked object routes. Clang/GCC pass; our O0 routes and corresponding external-companion forms pass. Retain frozen sources, binary hashes, host-link controls and debugger observations under synthesized-construction-prefix/. |
-| BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. Two defined source-handler controls also retain identical entry/candidate standalone failures at O0/O2: nested-outer-swallow returns 10 and function-try-body-local aborts (134); their host-object routes pass Clang/GCC and the candidate. Keep these runtime routes separate from PA21 LowIR cleanup correctness. INIT-LIST-STATIC now also exposes missing standalone shutdown-registration runtime support (__cppgm_runtime_atexit); its PA21 storage/lifetime and host-object routes pass. The existing object metadata already correctly maps this helper to C atexit; no ABI spelling change is needed. |
+| BACKEND | Standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations | v4codex backend observations | Open review: shared RTTI host-object route passes; standalone route fails. Private-derived/base reducer already passes both. Two defined source-handler controls also retain identical entry/candidate standalone failures at O0/O2: nested-outer-swallow returns 10 and function-try-body-local aborts (134); their host-object routes pass Clang/GCC and the candidate. Keep these runtime routes separate from PA21 LowIR cleanup correctness. The standalone shutdown-registration dependency exposed by INIT-LIST-STATIC is fixed in the native callback checkpoint below. Existing object metadata already maps its helper to C atexit; no ABI spelling change was needed. The two source-handler routes above remain open. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
@@ -5658,3 +5658,35 @@ correct (also checked with Clang); the host-object route executes successfully.
 No runtime-symbol mapping or Itanium spelling is changed. Evidence is in
 `/tmp/cppgm-v4-audit-review/static-initializer-list-backing/`. Remaining: 26
 compiler families and six reviews; fixture pruning and combined export pending.
+
+
+### Native shutdown callbacks — INIT-LIST-STATIC complete
+
+The standalone backend now supplies the existing external C `atexit` declaration
+with callback registration and startup draining. Typed declarations select the
+runtime; source definitions retain ownership. Nodes are released before each
+callback, so new registrations during shutdown run in the same LIFO sequence.
+The entry return value survives shutdown. Host-object linkage is unchanged;
+there is no Itanium spelling change.
+
+Reuse PA24's existing startup/shutdown fixture for LIFO order, registration from
+a callback and the nonzero entry result; regenerate only its reference and
+size envelope. The existing PA21 fixture covers persistent value/reference
+backing. Remove its redundant opt-in control. No new required fixture files.
+Original, fixture, shutdown and retry programs pass 24 checks across O0/O2 and
+all three link routes. A user-defined `atexit` passes six ours/Clang/GCC checks.
+A discarded static-registration observer depended on each host's choice of
+`atexit` versus `__cxa_atexit`; it is not an admitted language regression.
+
+PA21/24 pass 629/629 in one serialized report. Strict 6118/6118, debug-info,
+backend variants, self-host through PA5, nine architecture audits, file audit
+and placement all pass. Alpha's 192 immutable ABBA/BAAB and interleaved A/A
+observations have equal object hashes and independently verified unscaled
+counters/RSS. Maximum median instruction ratio 1.000005481; RSS 1.000054546.
+No calibrated cycle median exceeds the 1.01 confirmation threshold. These
+measurements qualify compilation of the frozen workloads, not a universal
+runtime timing claim. Candidate SHA256:
+`65c8c3872832975831fa315c51d1f1ca80ee78f4e7b8ae73b97a29b5aabe6b42`.
+Raw checks and performance evidence: `/tmp/cppgm-v4-audit-review/native-shutdown-runtime/`.
+Remaining: 25 compiler families and six reviews; final fixture pruning and
+combined student-export validation remain pending.

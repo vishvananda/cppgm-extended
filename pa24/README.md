@@ -357,6 +357,9 @@ Within the supported subset, PA24 should lower:
 - direct function calls to direct machine-IR call sites
 - block control flow to direct machine-IR conditional and unconditional branches
 - startup and shutdown hooks to direct machine-IR call sites in the startup path
+- external C `atexit` registration to process-lifetime callbacks: after the entry
+  function returns, invoke callbacks in reverse registration order before the
+  shutdown hook, including callbacks registered by another callback
 - bulk object-memory operations to first-class machine-IR `copy_bytes` / `zero_bytes`
   instructions
 - truly indirect LowIR calls to machine-IR indirect calls, rather than forcing all calls

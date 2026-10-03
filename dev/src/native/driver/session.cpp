@@ -10,6 +10,7 @@
 #include "native/allocation/registers.h"
 #include "native/driver/session.h"
 #include "native/encoding/strlen.h"
+#include "native/encoding/lifecycle.h"
 #include "native/lowering/memcpy.h"
 
 #include <algorithm>
@@ -126,6 +127,7 @@ struct ProgramLoweringSession::Impl
 	pointer_globals.assign(source.symbol_names.size(), 0);
 	signatures.resize(source.symbol_names.size());
     eh::plan_program(source, shell);
+    lifecycle_detail::plan_runtime(source, &shell);
     program_lowering::lower_startup(source, shell);
     tls_wrappers = program_lowering::tls_wrapper_index(source);
     std::vector<unsigned char> defined_tls_wrappers(source.symbol_names.size(), 0);

@@ -206,6 +206,7 @@ const char * opcode_name(Instruction::Opcode opcode)
   case Instruction::MI_RET: return "ret";
   case Instruction::MI_FRET: return "fret";
   case Instruction::MI_EXIT: return "exit";
+  case Instruction::MI_ATEXIT_DRAIN: return "atexit_drain";
   default: break;
   }
   native_errors::ThrowInternal("MIR serializer does not support opcode");

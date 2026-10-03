@@ -350,7 +350,8 @@ struct Instruction
     // A scalar return names its selected logical register. Native encoding
     // performs the final ABI transfer when that register is not the carrier.
     MI_RET,
-    MI_EXIT
+    MI_EXIT,
+    MI_ATEXIT_DRAIN
   } opcode = MI_MOV;
 
   MachineType type;
@@ -515,7 +516,8 @@ struct RuntimeFunction
     RF_DYNAMIC_CAST,
     RF_BAD_CAST,
     RF_BAD_TYPEID,
-    RF_STRLEN
+    RF_STRLEN,
+    RF_ATEXIT
   } kind = RF_EH_PERSONALITY;
 
   lowir_model::SymbolId symbol;

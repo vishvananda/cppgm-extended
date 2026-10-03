@@ -20,6 +20,7 @@
 #include "native/object/elf_format.h"
 #include "native/encoding/scalar_memory.h"
 #include "native/encoding/strlen.h"
+#include "native/encoding/lifecycle.h"
 #include "native/encoding/zeroing.h"
 #include <algorithm>
 #include <cerrno>
@@ -1653,6 +1654,9 @@ void emit_instruction(CodeBuffer & out, const mir_model::MirInstruction & instru
     out.byte(0xe8);
     out.relative32(instruction.operands[0].symbol);
     return;
+  case mir_model::MirInstruction::MI_ATEXIT_DRAIN:
+    lifecycle_detail::emit_drain(out);
+    return;
   case mir_model::MirInstruction::MI_SIBLING_CALL:
     if(!function) native_errors::ThrowInternal("sibling call outside function");
     require_operands(instruction, 1);
@@ -2275,6 +2279,7 @@ void emit_eh_runtime(CodeBuffer & out, const mir_model::MirProgram & program)
     case mir_model::RuntimeFunction::RF_BAD_CAST:
     case mir_model::RuntimeFunction::RF_BAD_TYPEID: emit_abort_runtime(out); break;
     case mir_model::RuntimeFunction::RF_STRLEN: strlen_detail::emit_runtime(out); break;
+    case mir_model::RuntimeFunction::RF_ATEXIT: lifecycle_detail::emit_registration(out); break;
     }
   }
 }
@@ -2349,6 +2354,7 @@ void emit_program_tail(CodeBuffer & content,
                        const std::vector<RelocatableObject> & objects)
 {
   emit_eh_runtime(content, program);
+  if(lifecycle_detail::has_runtime(program)) lifecycle_detail::emit_data(content);
   for(std::size_t i = 0; i < program.globals.size(); ++i)
     emit_global(content, program.globals[i]);
   emit_eh_data(content, program);
@@ -2766,6 +2772,7 @@ void write_linux_executable(const std::string & path,
   content.label("__startup");
   for(std::size_t i = 0; i < program.startup.size(); ++i)
     emit_instruction(content, program.startup[i], 0);
+  content.relax_forward_branches(0);
   for(std::size_t i = 0; i < program.functions.size(); ++i)
     emit_function(content, program.functions[i], stats);
   emit_program_tail(content, program, objects);
@@ -2793,6 +2800,7 @@ void write_linux_executable(const std::string & path,
   content.label("__startup");
   for(std::size_t i = 0; i < program.startup.size(); ++i)
     emit_instruction(content, program.startup[i], 0);
+  content.relax_forward_branches(0);
   if(stats) encode_nanoseconds += static_cast<std::uint64_t>(
     std::chrono::duration_cast<std::chrono::nanoseconds>(
       std::chrono::steady_clock::now() - encode_started).count());
