@@ -81,8 +81,10 @@ protected:
 		multiply.op = LOW_OP_MUL;
 		multiply.type = LowI64();
 		multiply.first = widened;
-		multiply.second = Operand(static_cast<std::int64_t>(
-			conversion.base_projection_offset), LowI64());
+		const std::int64_t delta = static_cast<std::int64_t>(
+			conversion.base_projection_offset);
+		multiply.second = Operand(conversion.inverse_base_projection ? -delta :
+			delta, LowI64());
 		derived.Emit(multiply);
 		Operand added = adjustment;
 		if (function_member)

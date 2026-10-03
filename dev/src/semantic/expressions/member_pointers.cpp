@@ -36,12 +36,14 @@ bool Analyzer::DeduceTemplatePartialMemberPointerType(
 }
 
 TypeId Analyzer::UnaryAddressOperandTarget(
-	const std::string& operation, TypeId target) const
+	const std::string& operation, TypeId target, bool preserve_member_owner) const
 {
 	if (operation != "&" || target == kNoType) return kNoType;
 	const TypeId desired = program_->types.RemoveTopCv(target);
 	const TypeRecord shape = program_->types.Get(desired);
-	if (shape.kind == TYPE_MEMBER_POINTER) return desired;
+	if (shape.kind == TYPE_MEMBER_POINTER)
+		return !preserve_member_owner ? desired :
+			program_->types.IsFunction(shape.child) ? shape.child : kNoType;
 	return shape.kind == TYPE_POINTER && program_->types.IsFunction(shape.child) ?
 		shape.child : kNoType;
 }
@@ -110,9 +112,7 @@ ConversionRank Analyzer::MemberPointerConversion(
 		target == program_->types.Fundamental(FUND_BOOL))
 		return CONVERSION_BOOLEAN;
 	if (from.kind == TYPE_MEMBER_POINTER && to.kind == TYPE_MEMBER_POINTER &&
-		SimilarUnqualified(from.child, to.child) &&
-		BaseConversionAllowed(EntityOf(static_cast<TypeId>(to.bound)),
-			EntityOf(static_cast<TypeId>(from.bound))))
+		MemberPointerBaseAdjustment(source, target, 0))
 		return CONVERSION_STANDARD;
 	return CONVERSION_INVALID;
 }
@@ -141,12 +141,14 @@ bool Analyzer::MemberPointerBaseAdjustment(
 	if (!program_->QueryBasePath(derived, base, &distance, 0, &offset,
 		&ambiguous) || distance == 0 || ambiguous ||
 		!BaseConversionAllowed(derived, base)) return false;
+	if (program_->entities[derived].virtual_base_count != 0 &&
+		program_->HasVirtualBasePath(derived, base)) return false;
 	if (adjustment) *adjustment = offset;
 	return true;
 }
 
 bool Analyzer::ApplyMemberPointerTarget(
-	ExpressionInfo* value, TypeId source, TypeId target)
+	ExpressionInfo* value, TypeId source, TypeId target, bool allow_inverse)
 {
 	if (!value) ThrowInternalCompilerError("missing member pointer target value");
 	const TypeRecord from = program_->types.Get(source);
@@ -172,23 +174,33 @@ bool Analyzer::ApplyMemberPointerTarget(
 	}
 	if (from.kind != TYPE_MEMBER_POINTER) return false;
 	std::uint64_t adjustment = 0;
+	bool inverse = false;
 	if (!MemberPointerBaseAdjustment(source, target, &adjustment))
-		return false;
+	{
+		if (!allow_inverse ||
+			!MemberPointerBaseAdjustment(target, source, &adjustment)) return false;
+		inverse = true;
+	}
 	if (adjustment > static_cast<std::uint64_t>(
 		std::numeric_limits<std::int64_t>::max()))
 		ThrowSemanticResourceLimit("member pointer adjustment is too large");
 	if (adjustment != 0)
 	{
+		const std::int64_t delta = inverse ?
+			-static_cast<std::int64_t>(adjustment) :
+			static_cast<std::int64_t>(adjustment);
 		if (value->constant)
 		{
 			ConstexprScalarValue scalar = ExpressionScalar(*value);
 			if (ScalarTruth(scalar))
 			{
-				if (scalar.integral > std::numeric_limits<std::int64_t>::max() -
-					static_cast<std::int64_t>(adjustment))
+				if ((!inverse && scalar.integral >
+					std::numeric_limits<std::int64_t>::max() - delta) ||
+					(inverse && scalar.integral <
+					 std::numeric_limits<std::int64_t>::min() - delta))
 					ThrowSemanticResourceLimit(
 						"member pointer adjustment is too large");
-				scalar.integral += static_cast<std::int64_t>(adjustment);
+				scalar.integral += delta;
 			}
 			SetExpressionScalar(value, scalar);
 		}
@@ -197,6 +209,7 @@ bool Analyzer::ApplyMemberPointerTarget(
 		dump_.nodes[cast].member_pointer_conversion = true;
 		dump_.nodes[cast].base_projection_offset = adjustment;
 		dump_.nodes[cast].has_base_projection_offset = true;
+		dump_.nodes[cast].inverse_base_projection = inverse;
 		dump_.Add(cast, value->node);
 		value->node = cast;
 		value->category = VALUE_PRVALUE;
@@ -206,6 +219,25 @@ bool Analyzer::ApplyMemberPointerTarget(
 	value->type = target;
 	dump_.nodes[value->node].type = target;
 	return true;
+}
+
+ExpressionInfo Analyzer::AnalyzeMemberPointerCast(
+	NodeId node, ScopeId scope, TypeId target)
+{
+	while (arena_->IsTag(node, ::cppgm::syntax::STAG_PARENTHESIZED_EXPRESSION))
+		node = FirstSemanticChild(node);
+	const bool direct_address =
+		arena_->IsTag(node, ::cppgm::syntax::STAG_UNARY_EXPRESSION) &&
+		PayloadTokenKind(node) == OP_AMP;
+	ExpressionInfo value = direct_address ?
+		AnalyzeUnary(node, scope, target, true) : AnalyzeExpression(node, scope);
+	if (CandidateSubstitutionFailed()) return value;
+	if (direct_address) RecordExpressionFacts(value);
+	if (!ApplyMemberPointerTarget(&value,
+		program_->types.RemoveTopCv(EffectiveType(value.type)),
+		program_->types.RemoveTopCv(target), true))
+		return CandidateExpressionFailure("invalid member pointer cast");
+	return value;
 }
 
 bool Analyzer::FormMemberPointerAddress(

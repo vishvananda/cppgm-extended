@@ -1314,11 +1314,11 @@ private:
 		ScopeId use_scope = kNoScope,
 		const std::vector<NodeId>* argument_syntax = 0);
 	ExpressionInfo AnalyzeUnary(NodeId node, ScopeId scope,
-		TypeId target = kNoType);
+		TypeId target = kNoType, bool preserve_member_owner = false);
 	ExpressionInfo AnalyzeComplexComponent(const std::string& operation,
 		const ExpressionInfo& operand, TypeId target);
 	TypeId UnaryAddressOperandTarget(const std::string& operation,
-		TypeId target) const;
+		TypeId target, bool preserve_member_owner = false) const;
 	TypeId UnaryAddressContextTarget(const std::string& operation,
 		TypeId target, NodeId operand, ScopeId scope);
 	TypeId MemberPointerAddressSyntaxTarget(NodeId syntax, ScopeId scope);
@@ -1816,7 +1816,9 @@ private:
 	ConversionRank MemberPointerConversion(TypeId source, bool integer_zero,
 		TypeId target) const;
 	bool ApplyMemberPointerTarget(ExpressionInfo* value, TypeId source,
-		TypeId target);
+		TypeId target, bool allow_inverse = false);
+	ExpressionInfo AnalyzeMemberPointerCast(NodeId node,
+		ScopeId scope, TypeId target);
 	bool MemberPointerBaseAdjustment(TypeId source, TypeId target,
 		std::uint64_t* adjustment) const;
 	bool HasTargetTypedSpecializedMemberImmediate(

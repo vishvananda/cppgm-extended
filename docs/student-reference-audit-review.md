@@ -188,7 +188,7 @@ The recent discovery inventory is not all C++11:
 | EH-ARRAY-DTOR | Preserve remaining elements when a class-array destructor throws | Additional EH-CLEANUP array boundary controls | Done in this checkpoint: reuse the bounded progress loop for normal potentially throwing multi-element destruction and guard remaining-element unwind calls against second faults. The frozen three/twelve-element reducers and termination boundaries agree with strict C++11 hosts on both routes. One PA21 fixture replaces its control; reuse the PA25 function-try fixture and add one distinct PA28 array second-fault fixture. Strict 6124/6124, all required local checks and final Alpha instruction/RSS/equality gates pass; measured cycle costs retained below. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Done: retain body, nested constructor initializer and function-try syntax through registration, definition adoption, specialization upgrades and explicit specialization. The original program passes all three link routes at O0/O2; specialization/upgrade boundaries match Clang/GCC. Extend the existing PA21 function-try fixture and retire the opt-in duplicate. The extended fixture's preexisting native failure remains BACKEND. Pattern storage remains 512 bytes. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Done for source acceptance and lowering: remove the lexical-handler restriction and its unused counter. All three original programs pass host linking at O0/O2; the called-function case and rewritten existing fixture also pass standalone/object routes. No-active-exception execution invokes the installed termination handler. Same-function nested-handler and destructor traces still fail only in the native BACKEND family; retain/reclassify the existing opt-in reducer. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
-| MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
+| MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | In progress: explicit inverse function/data conversions preserve the declaring owner through signature selection and apply the signed typed adjustment. Unknown function pointers consume incoming adjustment and virtual-dispatch words regardless of the static owner layout; final mixed Clang/GCC objects pass both directions. The shared path query rejects implicit/explicit virtual-base conversions. Reuse two PA22 fixtures, retire their control and add one PA23 composite for virtual dispatch plus both substitution-failure constraints. Nine additional references preserve runtime behavior. Corrected direct-address fact publication passes all 200 collected functional observations, strict report 6125/6125, debug-info, variants, self-host PA5 and all audits. Alpha instruction/RSS gates pass; retain the measured copy-template cycle cost and raw confirmation. Target-word/reader-width review and repeated empty-base identity remain in this family. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Done: build conversion terminals from retained template recipes; resolve explicit conversion specializations and qualified conversion addresses through existing deduction using retained syntax. Fresh Clang/GCC O0 symbols agree. Extend existing PA18 direct-conversion and PA22 pointer-target fixtures; retire the opt-in duplicate. Fourteen other references change only conversion object-name metadata. Strict 6119/6119, all required checks and Alpha gates pass; no ABI encoder change. |
 | MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Done: retain id/member-access decltype category and unqualified named dependent call arguments in existing typed recipe payloads. Fresh Clang/GCC symbols agree at O0/O2, including parenthesized, member, nested, multiple-argument and ADL controls. Extend existing PA9 and PA14 fixtures and retire the opt-in duplicate; one other reference changes only two object names. Payload sizes are unchanged. Strict 6119/6119, all required checks and Alpha gates pass. |
@@ -4599,7 +4599,7 @@ additional value; it does not install exploratory matrices wholesale.
 | NOEXCEPT-LIST | A header-free initializer-list argument inside noexcept. |
 | INIT-LIST-STATIC | Static value backing survives initialization and repeated access. |
 | TMPL-FTRY | A demanded function template retains its body and handler, with a destruction trace. |
-| MEMBER | Signed inverse member-function adjustment through an unknown receiver, repeated empty-base identity and rejection of mismatched comparison operand width using ordinary i64/i32 types. |
+| MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | In progress: explicit inverse function/data conversions preserve the declaring owner through signature selection and apply the signed typed adjustment. Unknown function pointers consume incoming adjustment and virtual-dispatch words regardless of the static owner layout; final mixed Clang/GCC objects pass both directions. The shared path query rejects implicit/explicit virtual-base conversions. Reuse two PA22 fixtures, retire their control and add one PA23 composite for virtual dispatch plus both substitution-failure constraints. Nine additional references preserve runtime behavior. Corrected direct-address fact publication passes all 200 collected functional observations, strict report 6125/6125, debug-info, variants, self-host PA5 and all audits. Alpha instruction/RSS gates pass; retain the measured copy-template cycle cost and raw confirmation. Target-word/reader-width review and repeated empty-base identity remain in this family. |
 | CONST-MEMBER-BOOL | A nonnull member pointer in static_assert, distinct from ordinary runtime invocation. |
 | VBASE | Defined most-derived initialization of all virtual scalar bases; no indeterminate value oracle. |
 | ABI-GLOBAL | The external global symbol is g; a correct object-symbol oracle supplements current incorrect inspection references. |
@@ -6354,3 +6354,43 @@ diagnostic policy; do not claim timing neutrality or run further noise searches.
 Evidence: `/tmp/cppgm-v4-audit-review/array-destructor-progress/`.
 Remaining frozen compiler families: nine, plus six reviews. Final fixture
 pruning and combined export/harness validation remain pending. Next is MEMBER.
+
+## MEMBER inverse conversion and incoming words checkpoint — 2026-10-03
+
+Explicit static/C-style inverse member-pointer casts retain the declaring owner
+through overload selection and apply the signed typed adjustment. Publish direct
+address facts before conversion so data-member offsets reach lowering. Unknown
+function pointers consume their incoming adjustment and virtual-dispatch words
+without guessing from the static owner layout. The shared conversion query
+rejects implicit and explicit virtual-base paths. Existing Itanium spellings
+are unchanged; fresh strict C++11 Clang/GCC and mixed objects agree.
+
+Reuse two PA22 fixtures for function/data inverse conversion and retire their
+control. PA22 excludes polymorphic multiple inheritance, so one PA23 composite
+checks virtual dispatch and forward/inverse virtual-base substitution failures.
+Generate references only through owning wrappers. Eight further PA22 references
+and one PA23 reference change for incoming-word dispatch; their source runtime
+behavior agrees with entry/candidate and both host compilers at O0/O2.
+
+Collect all 200 functional observations before qualification: 40 frozen positive
+controls, 12 rejection checks, 24 actual required-fixture checks, 108 changed-
+reference checks and 16 mixed-object checks. Earlier candidate qualification
+missed a direct-address runtime failure; preserve that evidence but do not use
+it to qualify this corrected binary. Full strict report passes 6125/6125 with
+exactly one output line. Debug-info, backend variants, self-host through PA5,
+all nine architecture audits, file and placement checks pass (37 existing file
+warnings). Final compiler SHA256:
+`a832201fec64f3b08cf9492867c087a37f32ce33e1dfc110e5f471388abd0b8e`.
+
+Independently verify every counter, RSS, zero status and equal object hash for
+288 Alpha screen and 96 focused confirmation observations. Maximum instruction
+median is 1.000019940; RSS medians are 1.0. Confirmation calibrated cycles are
+1.006227057 for reference aliases (95% interval [0.992980502, 1.027017217])
+and 1.015112783 for copy templates [1.005711496, 1.025297656]. Retain the
+measured copy-template timing cost under the diagnostic policy; do not claim
+timing neutrality or repeat the timing search. Evidence:
+`/tmp/cppgm-v4-audit-review/member-pointer-adjustment/published-facts/`.
+
+MEMBER remains open for target-word truth/reader width and repeated empty-base
+identity. Nine compiler families and six reviews remain; final pruning and
+combined export/harness validation remain pending.

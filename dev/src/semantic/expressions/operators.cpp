@@ -236,12 +236,16 @@ ExpressionInfo Analyzer::AnalyzeSizeof(NodeId node, ScopeId scope)
 	return result;
 }
 
-ExpressionInfo Analyzer::AnalyzeUnary(NodeId node, ScopeId scope, TypeId target) {
+ExpressionInfo Analyzer::AnalyzeUnary(NodeId node, ScopeId scope, TypeId target,
+	bool preserve_member_owner) {
 	const bool postfix = arena_->IsTag(node, ::cppgm::syntax::STAG_POSTFIX_EXPRESSION); const std::string operation = PayloadSource(node);
 	const int op = PayloadTokenKind(node);
 	const NodeId operand_syntax = FirstSemanticChild(node); const TypeId address_context_target = UnaryAddressContextTarget(operation, target, operand_syntax, scope);
-	const TypeId operand_target =
-		UnaryAddressOperandTarget(operation, address_context_target);
+	TypeId operand_target =
+		UnaryAddressOperandTarget(operation, address_context_target,
+			preserve_member_owner);
+	if (preserve_member_owner && operand_target == kNoType)
+		operand_target = MemberPointerAddressSyntaxTarget(operand_syntax, scope);
 	ExpressionInfo operand = AnalyzeExpression(operand_syntax, scope, operand_target);
 	if (CandidateSubstitutionFailed()) return operand;
 	if (operand.type == kNoType)
@@ -269,7 +273,8 @@ ExpressionInfo Analyzer::AnalyzeUnary(NodeId node, ScopeId scope, TypeId target)
 		operand_complete_object = ExpressionCompleteObject(operand);
 	(void)ApplyBuiltinUnaryConversion(operation, &operand);
 	const TypeId address_target = MemberPointerAddressTarget(
-		operand, operand_syntax, address_context_target);
+		operand, operand_syntax,
+		preserve_member_owner ? kNoType : address_context_target);
 	const bool member_pointer_address =
 		address_target != kNoType && IsMemberPointer(address_target);
 	if (op == OP_AMP && operand.binding != kNoBinding &&

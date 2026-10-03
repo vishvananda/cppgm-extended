@@ -1,6 +1,7 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $x : obj<4x4>
   slot $p : i128
+  slot $member_pointer_callee__1 : ptr
 
   block ^entry:
     %t1 = addr $x
@@ -14,11 +15,32 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i128 %t6, $p
     %t7 = addr $x
     %t8 = load i128 $p
-    %t9 = convert trunc i64 i128 %t8
-    %t10 = copy ptr %t9
-    %t11 = call i32 %t10(%t7, 4) as (%arg0 : ptr [object_bytes=4], %arg1 : i32) -> i32
-    %t12 = binary sub i32 %t11, 7
-    return i32 %t12
+    %t9 = binary shr i128 %t8, 64
+    %t10 = convert trunc i64 i128 %t9
+    %t11 = convert trunc i64 i128 %t8
+    %t12 = binary and i64 %t11, 1
+    %t13 = cmp ne i64 %t12, 0
+    %t14 = index i8 %t7, %t10
+    branch %t13, ^member_pointer_virtual_1, ^member_pointer_direct_2
+
+  block ^member_pointer_virtual_1:
+    %t15 = load ptr %t14
+    %t16 = binary sub i64 %t11, 1
+    %t17 = index i8 %t15, %t16
+    %t18 = load ptr %t17
+    store ptr %t18, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_direct_2:
+    %t19 = copy ptr %t11
+    store ptr %t19, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_end_3:
+    %t20 = load ptr $member_pointer_callee__1
+    %t21 = call i32 %t20(%t14, 4) as (%arg0 : ptr [object_bytes=4], %arg1 : i32) -> i32
+    %t22 = binary sub i32 %t21, 7
+    return i32 %t22
 }
 function @X__X(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1XC1Ev, inline_hint=yes] {
   slot $this : ptr

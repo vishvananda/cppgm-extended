@@ -65,16 +65,6 @@ protected:
 		const DumpNode& designator = derived.arena_.nodes[children[1]];
 		Operand callee;
 		Operand adjustment(0, LowI64());
-		const TypeRecord& pointer_type = derived.program_.types.Get(
-			derived.program_.types.RemoveTopCv(application.operand_type));
-		const EntityId pointer_owner = pointer_type.kind == TYPE_MEMBER_POINTER ?
-			derived.BaseEntityForType(static_cast<TypeId>(pointer_type.bound)) :
-			kNoEntity;
-		const bool owner_may_adjust = pointer_owner != kNoEntity &&
-			derived.program_.entities[pointer_owner].
-				has_nonzero_base_subobject_offset;
-		const bool owner_may_dispatch_virtual = pointer_owner != kNoEntity &&
-			derived.program_.entities[pointer_owner].polymorphic_class;
 		if (designator.binding != kNoBinding &&
 			designator.binding < derived.program_.bindings.size() &&
 			derived.program_.bindings[designator.binding].kind == BIND_FUNCTION &&
@@ -97,12 +87,8 @@ protected:
 		else
 		{
 			const Operand encoded = derived.LowerValue(children[1], LowI128());
-			if (owner_may_adjust)
-				adjustment = MemberFunctionPointerAdjustment(encoded);
+			adjustment = MemberFunctionPointerAdjustment(encoded);
 			const Operand low_word = derived.Convert(encoded, LowU64(), false);
-			if (!owner_may_dispatch_virtual)
-				callee = derived.Convert(low_word, LowPtr(), false);
-			else
 			{
 				const Operand virtual_bit = derived.Temp(LowU64());
 				Instruction mask(Instruction::BINARY);

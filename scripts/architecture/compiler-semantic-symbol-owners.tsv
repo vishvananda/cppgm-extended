@@ -328,6 +328,7 @@ dev/src/semantic/expressions/literals.cpp	MakeStringLiteral	1	dev/src/semantic/e
 dev/src/semantic/expressions/literals.cpp	ParseInteger	1	dev/src/semantic/expressions/literals.cpp	keep
 dev/src/semantic/expressions/literals.cpp	TryAnalyzeUserDefinedNumericLiteral	1	dev/src/semantic/expressions/literals.cpp	keep
 dev/src/semantic/expressions/literals.cpp	TryAnalyzeUserDefinedStringLiteral	1	dev/src/semantic/expressions/literals.cpp	keep
+dev/src/semantic/expressions/member_pointers.cpp	AnalyzeMemberPointerCast	1	dev/src/semantic/expressions/member_pointers.cpp	keep
 dev/src/semantic/expressions/member_pointers.cpp	ApplyMemberPointerTarget	1	dev/src/semantic/expressions/member_pointers.cpp	keep
 dev/src/semantic/expressions/member_pointers.cpp	DeduceTemplatePartialMemberPointerType	1	dev/src/semantic/expressions/member_pointers.cpp	keep
 dev/src/semantic/expressions/member_pointers.cpp	FormMemberPointerAddress	1	dev/src/semantic/expressions/member_pointers.cpp	keep

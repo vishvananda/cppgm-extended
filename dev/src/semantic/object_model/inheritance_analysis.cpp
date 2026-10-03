@@ -649,13 +649,19 @@ ExpressionInfo Analyzer::AnalyzeCast(NodeId node, ScopeId scope)
 		arena_->IsTag(operand_node, ::cppgm::syntax::STAG_BRACED_INIT_LIST);
 	const bool c_style_cast =
 		arena_->Payload(node).compare(0, 10, "OP_LPAREN:") == 0;
-	ExpressionInfo operand = AnalyzeExpression(operand_node, scope,
+	const bool explicit_member_conversion =
+		unqualified_target_record.kind == TYPE_MEMBER_POINTER &&
+		(PayloadTokenKind(node) == KW_STATIC_CAST || c_style_cast);
+	ExpressionInfo operand = explicit_member_conversion ?
+		AnalyzeMemberPointerCast(operand_node, scope, target) :
+		AnalyzeExpression(operand_node, scope,
 		program_->types.IsFunction(EffectiveType(target)) ||
 		(function_pointer_target &&
 		 (!c_style_cast || arena_->IsTag(operand_node, ::cppgm::syntax::STAG_ID_EXPRESSION))) ||
 		unqualified_target_record.kind == TYPE_MEMBER_POINTER || compound_literal ?
 		target : kNoType);
 	if (CandidateSubstitutionFailed()) return ExpressionInfo();
+	if (explicit_member_conversion) return operand;
 	if (compound_literal && EntityOf(target) != kNoEntity &&
 		dump_.nodes[operand.node].kind == DUMP_BRACED_INIT_LIST)
 	{

@@ -14,6 +14,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 function @owner_int___select(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIcEEvv, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<16x8>
+  slot $member_pointer_callee__1 : ptr
 
   block ^entry:
     store ptr %this, $this
@@ -28,14 +29,36 @@ function @owner_int___select(%this : ptr [object_bytes=1]) -> void [binding=weak
     %t8 = addr $value
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load i128 %t9
-    %t11 = convert trunc i64 i128 %t10
-    %t12 = copy ptr %t11
-    call void %t12(%t7) as (%arg0 : ptr [object_bytes=16]) -> void
+    %t11 = binary shr i128 %t10, 64
+    %t12 = convert trunc i64 i128 %t11
+    %t13 = convert trunc i64 i128 %t10
+    %t14 = binary and i64 %t13, 1
+    %t15 = cmp ne i64 %t14, 0
+    %t16 = index i8 %t7, %t12
+    branch %t15, ^member_pointer_virtual_1, ^member_pointer_direct_2
+
+  block ^member_pointer_virtual_1:
+    %t17 = load ptr %t16
+    %t18 = binary sub i64 %t13, 1
+    %t19 = index i8 %t17, %t18
+    %t20 = load ptr %t19
+    store ptr %t20, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_direct_2:
+    %t21 = copy ptr %t13
+    store ptr %t21, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_end_3:
+    %t22 = load ptr $member_pointer_callee__1
+    call void %t22(%t16) as (%arg0 : ptr [object_bytes=16]) -> void
     return void
 }
 function @owner_int___select__ov2(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIsEEvv, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<16x8>
+  slot $member_pointer_callee__1 : ptr
 
   block ^entry:
     store ptr %this, $this
@@ -50,14 +73,36 @@ function @owner_int___select__ov2(%this : ptr [object_bytes=1]) -> void [binding
     %t8 = addr $value
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load i128 %t9
-    %t11 = convert trunc i64 i128 %t10
-    %t12 = copy ptr %t11
-    call void %t12(%t7) as (%arg0 : ptr [object_bytes=16]) -> void
+    %t11 = binary shr i128 %t10, 64
+    %t12 = convert trunc i64 i128 %t11
+    %t13 = convert trunc i64 i128 %t10
+    %t14 = binary and i64 %t13, 1
+    %t15 = cmp ne i64 %t14, 0
+    %t16 = index i8 %t7, %t12
+    branch %t15, ^member_pointer_virtual_1, ^member_pointer_direct_2
+
+  block ^member_pointer_virtual_1:
+    %t17 = load ptr %t16
+    %t18 = binary sub i64 %t13, 1
+    %t19 = index i8 %t17, %t18
+    %t20 = load ptr %t19
+    store ptr %t20, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_direct_2:
+    %t21 = copy ptr %t13
+    store ptr %t21, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_end_3:
+    %t22 = load ptr $member_pointer_callee__1
+    call void %t22(%t16) as (%arg0 : ptr [object_bytes=16]) -> void
     return void
 }
 function @owner_int___select__ov3(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5ownerIiE6selectIlEEvv, inline_hint=yes] {
   slot $this : ptr
   slot $value : obj<16x8>
+  slot $member_pointer_callee__1 : ptr
 
   block ^entry:
     store ptr %this, $this
@@ -72,9 +117,30 @@ function @owner_int___select__ov3(%this : ptr [object_bytes=1]) -> void [binding
     %t8 = addr $value
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load i128 %t9
-    %t11 = convert trunc i64 i128 %t10
-    %t12 = copy ptr %t11
-    call void %t12(%t7) as (%arg0 : ptr [object_bytes=16]) -> void
+    %t11 = binary shr i128 %t10, 64
+    %t12 = convert trunc i64 i128 %t11
+    %t13 = convert trunc i64 i128 %t10
+    %t14 = binary and i64 %t13, 1
+    %t15 = cmp ne i64 %t14, 0
+    %t16 = index i8 %t7, %t12
+    branch %t15, ^member_pointer_virtual_1, ^member_pointer_direct_2
+
+  block ^member_pointer_virtual_1:
+    %t17 = load ptr %t16
+    %t18 = binary sub i64 %t13, 1
+    %t19 = index i8 %t17, %t18
+    %t20 = load ptr %t19
+    store ptr %t20, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_direct_2:
+    %t21 = copy ptr %t13
+    store ptr %t21, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_end_3:
+    %t22 = load ptr $member_pointer_callee__1
+    call void %t22(%t16) as (%arg0 : ptr [object_bytes=16]) -> void
     return void
 }
 function @owner_int___nested__function(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5ownerIiE6nested8functionIcEEvv] {

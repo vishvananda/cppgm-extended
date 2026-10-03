@@ -23,6 +23,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 function @matcher_int__long_int__char___find(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN7matcherIilcE4findEv] {
   slot $this : ptr
   slot $pointer : i128
+  slot $member_pointer_callee__1 : ptr
 
   block ^entry:
     store ptr %this, $this
@@ -32,10 +33,31 @@ function @matcher_int__long_int__char___find(%this : ptr [object_bytes=1]) -> u8
     store i128 %t3, $pointer
     %t4 = load ptr $this
     %t5 = load i128 $pointer
-    %t6 = convert trunc i64 i128 %t5
-    %t7 = copy ptr %t6
-    %t8 = call u8 %t7(%t4) as (%arg0 : ptr [object_bytes=1]) -> u8
-    return u8 %t8
+    %t6 = binary shr i128 %t5, 64
+    %t7 = convert trunc i64 i128 %t6
+    %t8 = convert trunc i64 i128 %t5
+    %t9 = binary and i64 %t8, 1
+    %t10 = cmp ne i64 %t9, 0
+    %t11 = index i8 %t4, %t7
+    branch %t10, ^member_pointer_virtual_1, ^member_pointer_direct_2
+
+  block ^member_pointer_virtual_1:
+    %t12 = load ptr %t11
+    %t13 = binary sub i64 %t8, 1
+    %t14 = index i8 %t12, %t13
+    %t15 = load ptr %t14
+    store ptr %t15, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_direct_2:
+    %t16 = copy ptr %t8
+    store ptr %t16, $member_pointer_callee__1
+    jump ^member_pointer_end_3
+
+  block ^member_pointer_end_3:
+    %t17 = load ptr $member_pointer_callee__1
+    %t18 = call u8 %t17(%t11) as (%arg0 : ptr [object_bytes=1]) -> u8
+    return u8 %t18
 }
 function @matcher_int__long_int__char___first(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZN7matcherIilcE5firstEv] {
   slot $this : ptr
