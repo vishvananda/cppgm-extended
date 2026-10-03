@@ -209,7 +209,8 @@ void Analyzer::RegisterClassMemberFunction(EntityId entity,
 LookupResult Analyzer::LookupName(ScopeId scope, NameId name,
 	LookupKind kind)
 {
-	if (kind == LOOKUP_TYPE || kind == LOOKUP_SCOPE_CARRIER)
+	if (kind == LOOKUP_TYPE || kind == LOOKUP_TYPE_NAME ||
+		kind == LOOKUP_SCOPE_CARRIER)
 	{
 		TypeId alias = kNoType;
 		if (FindConstexprTypeAlias(name, &alias))
@@ -297,7 +298,7 @@ LookupResult Analyzer::LookupStructuredName(NodeId syntax,
 	ScopeId scope, LookupKind kind, ScopeId* terminal_owner,
 	bool defer_dependent_type, bool defer_dependent_specialization)
 {
-	TypeId builtin_pack_type = kNoType; if (kind == LOOKUP_TYPE && (TryResolveBuiltinTypePackElement(syntax, scope, &builtin_pack_type) || TryResolveBuiltinMakeIntegerSequence(syntax, scope, &builtin_pack_type))) { LookupResult result; result.type = builtin_pack_type; return result; }
+	TypeId builtin_pack_type = kNoType; if ((kind == LOOKUP_TYPE || kind == LOOKUP_TYPE_NAME) && (TryResolveBuiltinTypePackElement(syntax, scope, &builtin_pack_type) || TryResolveBuiltinMakeIntegerSequence(syntax, scope, &builtin_pack_type))) { LookupResult result; result.type = builtin_pack_type; return result; }
 	if (terminal_owner) *terminal_owner = kNoScope;
 	const NodeId structure = syntax != kNoNode &&
 		arena_->IsTag(syntax, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME) ? syntax :
@@ -329,7 +330,8 @@ LookupResult Analyzer::LookupStructuredName(NodeId syntax,
 			(kind == LOOKUP_FUNCTION_TEMPLATE ||
 			 kind == LOOKUP_VARIABLE_TEMPLATE);
 		const LookupKind component_kind = terminal_template ? kind :
-			argument_list != kNoNode ? LOOKUP_TYPE :
+			argument_list != kNoNode ?
+				(kind == LOOKUP_TYPE ? LOOKUP_TYPE : LOOKUP_TYPE_NAME) :
 			terminal ? kind : LOOKUP_SCOPE_CARRIER;
 		LookupResult found;
 		if (FindFunctionTemplateResultLookup(component_node, &found))
@@ -422,7 +424,8 @@ LookupResult Analyzer::LookupStructuredName(NodeId syntax,
 		if (found.type != kNoType)
 		{
 			const TypeRecord& carrier_type = program_->types.Get(found.type);
-			if (defer_dependent_type && kind == LOOKUP_TYPE &&
+			if (defer_dependent_type &&
+				(kind == LOOKUP_TYPE || kind == LOOKUP_TYPE_NAME) &&
 				carrier_type.kind == TYPE_NAMED &&
 				(program_->entities[carrier_type.entity].flavor ==
 					NAMED_TYPENAME_PARAMETER ||

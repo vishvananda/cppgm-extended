@@ -1856,46 +1856,60 @@ LookupResult Program::DirectLookup(ScopeId scope, NameId name,
 		if (IsClassNamedFlavor(flavor))
 			result.naming_class = scope_entity;
 	}
-	if (kind == LOOKUP_NAMESPACE || kind == LOOKUP_SCOPE_CARRIER)
+	switch (kind)
+	{
+	case LOOKUP_ORDINARY:
+	case LOOKUP_TYPE_NAME:
+		// Constructors do not hide their injected class name (12.1).
+		if ((entry->ordinary != kNoBinding || entry->function_template ||
+			 entry->variable_template) &&
+			!(kind == LOOKUP_TYPE_NAME && result.naming_class != kNoEntity &&
+			  entry->type == entities[result.naming_class].type &&
+			  (entry->ordinary == kNoBinding ? entry->function_template :
+			   bindings[entry->ordinary].constructor ||
+			   bindings[bindings[entry->ordinary].canonical].constructor)))
+		{
+			result.ordinary = entry->ordinary;
+			result.ordinary_declaration = entry->ordinary == kNoBinding ?
+				kNoBinding : bindings[entry->ordinary].canonical;
+			// Template-only entries also hide declarations in enclosing scopes.
+			if (entry->function_template) result.BeginFunctionTemplateLookup();
+			if (entry->variable_template) result.BeginVariableTemplateLookup();
+			return result;
+		}
 		result.name_space = entry->name_space;
-	if (kind == LOOKUP_TYPE || kind == LOOKUP_SCOPE_CARRIER)
-	{
-		result.type = entry->type;
-		result.type_declaration = entry->type_declaration;
-		result.type_declaration_canonical =
-			entry->type_declaration == kNoBinding ?
-			kNoBinding : bindings[entry->type_declaration].canonical;
-	}
-	if (kind == LOOKUP_ORDINARY)
-	{
-		result.ordinary = entry->ordinary;
-		result.ordinary_declaration = entry->ordinary == kNoBinding ?
-			kNoBinding : bindings[entry->ordinary].canonical;
-		// Function and variable templates occupy the ordinary lookup namespace.
-		// A local template-only entry therefore hides ordinary declarations in
-		// base or enclosing scopes even though it has no concrete binding to
-		// return from this half of lookup.
-		if (entry->function_template)
+		break;
+	case LOOKUP_SCOPE_CARRIER:
+		result.name_space = entry->name_space;
+		break;
+	case LOOKUP_NAMESPACE:
+		result.name_space = entry->name_space;
+		return result;
+	case LOOKUP_FUNCTION_TEMPLATE:
+		if (entry->ordinary != kNoBinding || entry->type != kNoType ||
+			entry->function_template)
+		{
 			result.BeginFunctionTemplateLookup();
-		if (entry->variable_template)
+			if (entry->function_template) result.AddFunctionTemplateOwner(scope);
+		}
+		return result;
+	case LOOKUP_VARIABLE_TEMPLATE:
+		if (entry->ordinary != kNoBinding || entry->type != kNoType ||
+			entry->variable_template)
+		{
 			result.BeginVariableTemplateLookup();
+			if (entry->variable_template) result.AddVariableTemplateOwner(scope);
+		}
+		return result;
+	case LOOKUP_TYPE:
+		break;
+	default:
+		return result;
 	}
-	if (kind == LOOKUP_FUNCTION_TEMPLATE &&
-		(entry->ordinary != kNoBinding || entry->type != kNoType ||
-		 entry->function_template))
-	{
-		result.BeginFunctionTemplateLookup();
-		if (entry->function_template)
-			result.AddFunctionTemplateOwner(scope);
-	}
-	if (kind == LOOKUP_VARIABLE_TEMPLATE &&
-		(entry->ordinary != kNoBinding || entry->type != kNoType ||
-		 entry->variable_template))
-	{
-		result.BeginVariableTemplateLookup();
-		if (entry->variable_template)
-			result.AddVariableTemplateOwner(scope);
-	}
+	result.type = entry->type;
+	result.type_declaration = entry->type_declaration;
+	result.type_declaration_canonical = entry->type_declaration == kNoBinding ?
+		kNoBinding : bindings[entry->type_declaration].canonical;
 	return result;
 }
 
@@ -1904,6 +1918,20 @@ bool Program::MergeLookup(LookupResult* result,
 	bool merge_equivalent_namespace_types) const
 {
 	if (candidate.Empty()) return true;
+	if (result->Empty())
+	{
+		*result = candidate;
+		return true;
+	}
+	if (result->name_space != candidate.name_space ||
+		result->type != candidate.type ||
+		(result->type_declaration_canonical !=
+			candidate.type_declaration_canonical &&
+			(!merge_equivalent_namespace_types || result->type == kNoType)))
+	{
+		if (tolerate_ambiguity) return false;
+		ThrowSemanticError("ambiguous PA6 lookup");
+	}
 	if (candidate.HasFunctionTemplateLookup())
 	{
 		if (!result->HasFunctionTemplateLookup())
@@ -1929,20 +1957,6 @@ bool Program::MergeLookup(LookupResult* result,
 			result->AddVariableTemplateOwner(
 				candidate.VariableTemplateOwnerAt(i));
 		return true;
-	}
-	if (result->Empty())
-	{
-		*result = candidate;
-		return true;
-	}
-	if (result->name_space != candidate.name_space ||
-		result->type != candidate.type ||
-		(result->type_declaration_canonical !=
-			candidate.type_declaration_canonical &&
-			(!merge_equivalent_namespace_types || result->type == kNoType)))
-	{
-		if (tolerate_ambiguity) return false;
-		ThrowSemanticError("ambiguous PA6 lookup");
 	}
 	if (result->ordinary == kNoBinding && candidate.ordinary == kNoBinding)
 		return true;

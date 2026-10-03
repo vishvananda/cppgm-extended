@@ -1764,7 +1764,7 @@ SpecInfo Analyzer::BuildSpecifiers(NodeId node, ScopeId scope,
 					ThrowSemanticError(
 						"decltype qualifier does not name a class type");
 				const LookupResult found = LookupStructuredName(
-					qualified, carrier, LOOKUP_TYPE);
+					qualified, carrier, LOOKUP_TYPE_NAME);
 				if (found.type == kNoType)
 					ThrowSemanticError(
 						"qualified decltype type was not found");
@@ -1816,7 +1816,7 @@ SpecInfo Analyzer::BuildSpecifiers(NodeId node, ScopeId scope,
 		{
 			if (deferred_type != kNoType)
 			{ result.type = deferred_type; continue; }
-			const LookupResult found = LookupSyntaxName(child, scope, LOOKUP_TYPE);
+			const LookupResult found = LookupSyntaxName(child, scope, LOOKUP_TYPE_NAME);
 			if (found.type == kNoType)
 			{
 				const ScopedDiagnosticLocation at(arena_, child);

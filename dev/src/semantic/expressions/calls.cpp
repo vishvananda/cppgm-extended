@@ -1683,33 +1683,7 @@ TypeId Analyzer::ResolveFunctionalCastType(ScopeId scope,
 	if (structure != kNoNode) return kNoType;
 	const NamePath path = syntax == kNoNode ?
 		ParseNamePath(spelling, NAME_PATH_PARSE_CALL) : SyntaxNamePath(syntax);
-	const LookupResult named = LookupPath(scope, path, LOOKUP_TYPE);
-	if (named.type != kNoType && !path.Empty() && !path.global &&
-		path.Size() == 1)
-	{
-		const LookupResult ordinary = LookupPath(scope, path, LOOKUP_ORDINARY);
-		if (ordinary.ordinary != kNoBinding)
-		{
-			const BindingRecord& value =
-				program_->bindings[ordinary.ordinary];
-			const BindingKind kind = value.kind;
-			if (kind == BIND_VARIABLE || kind == BIND_PARAMETER ||
-				kind == BIND_ENUMERATOR)
-			{
-				const ScopeId type_owner = named.type_declaration == kNoBinding ?
-					kNoScope :
-					program_->bindings[named.type_declaration].owner;
-				bool value_precedes = value.owner == type_owner;
-				for (ScopeId current = scope; !value_precedes &&
-					current != kNoScope; current = program_->ParentScope(current))
-				{
-					if (current == value.owner) value_precedes = true;
-					if (current == type_owner) break;
-				}
-				if (value_precedes) return kNoType;
-			}
-		}
-	}
+	const LookupResult named = LookupPath(scope, path, LOOKUP_TYPE_NAME);
 	if (named.type != kNoType) return named.type;
 	if (spelling.size() > 10 && spelling.compare(0, 9, "decltype(") == 0 &&
 		spelling[spelling.size() - 1] == ')')

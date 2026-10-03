@@ -1293,7 +1293,7 @@ bool Analyzer::BuildTemplateTemplateArgument(NodeId syntax,
 	if (name == kNoNode) return false;
 	const NodeId structured = FindChild(
 		name, ::cppgm::syntax::STAG_STRUCTURED_TYPE_NAME);
-	const LookupResult found = LookupSyntaxName(name, lookup_scope, LOOKUP_TYPE);
+	const LookupResult found = LookupSyntaxName(name, lookup_scope, LOOKUP_TYPE_NAME);
 	if (found.type == kNoType && structured != kNoNode)
 	{
 		const NamePath path = StructuredNamePath(structured);
@@ -1535,14 +1535,14 @@ LookupResult Analyzer::LookupStructuredTypeSpecifier(
 	LookupResult found;
 	if (deferred_type == kNoType)
 		found = LookupStructuredName(
-			syntax, scope, LOOKUP_TYPE, 0, typename_specifier);
+			syntax, scope, LOOKUP_TYPE_NAME, 0, typename_specifier);
 	else
 	{
 		{
 			ScopedContainerPush<std::vector<std::uint8_t> > substitution(
 				&candidate_substitution_failures_, 0);
 			found = LookupStructuredName(
-				syntax, scope, LOOKUP_TYPE, 0, typename_specifier);
+				syntax, scope, LOOKUP_TYPE_NAME, 0, typename_specifier);
 			const bool formation_failed = CandidateSubstitutionFailed();
 			if (formation_failed)
 			{
