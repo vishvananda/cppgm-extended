@@ -121,7 +121,7 @@ global @Object____construction__Base__0__s0__vtable [binding=internal, object=@O
 global @Object____construction__Base__0__s1__vtable [binding=internal, object=@Object____construction__Base__0__s1__vtable] = {
   i64 0
   i64 -32
-  ptr addr @__rtti_struct_Virtual
+  ptr addr @__rtti_struct_Base
   ptr addr @_Base___Base__vtable_return_adjust__this_neg24__return_pos0
   ptr addr @_Base___Base__deleting_entry__vtable_return_adjust__this_neg24__return_pos0
 }

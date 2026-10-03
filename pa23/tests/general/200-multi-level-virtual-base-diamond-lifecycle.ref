@@ -122,18 +122,18 @@ global @AB____construction__A__0__s0__vtable [binding=internal, object=@AB____co
 global @AB____construction__A__0__s1__vtable [binding=internal, object=@AB____construction__A__0__s1__vtable] = {
   i64 0
   i64 -16
-  ptr addr @__rtti_struct_V
+  ptr addr @__rtti_struct_A
   ptr addr @V__anchor
 }
 global @AB____construction__B__8__s0__vtable [binding=internal, object=@AB____construction__B__8__s0__vtable] = {
   i64 8
-  i64 -8
+  i64 0
   ptr addr @__rtti_struct_B
 }
 global @AB____construction__B__8__s1__vtable [binding=internal, object=@AB____construction__B__8__s1__vtable] = {
   i64 0
-  i64 -16
-  ptr addr @__rtti_struct_V
+  i64 -8
+  ptr addr @__rtti_struct_B
   ptr addr @V__anchor
 }
 global @AB____vtt [binding=weak, object=_ZTT2AB, object_root=yes] = {
@@ -174,29 +174,29 @@ global @D____construction__A__0__s0__vtable [binding=internal, object=@D____cons
 global @D____construction__A__0__s1__vtable [binding=internal, object=@D____construction__A__0__s1__vtable] = {
   i64 0
   i64 -16
-  ptr addr @__rtti_struct_V
+  ptr addr @__rtti_struct_A
   ptr addr @V__anchor
 }
 global @D____construction__B__8__s0__vtable [binding=internal, object=@D____construction__B__8__s0__vtable] = {
   i64 8
-  i64 -8
+  i64 0
   ptr addr @__rtti_struct_B
 }
 global @D____construction__B__8__s1__vtable [binding=internal, object=@D____construction__B__8__s1__vtable] = {
   i64 0
-  i64 -16
-  ptr addr @__rtti_struct_V
+  i64 -8
+  ptr addr @__rtti_struct_B
   ptr addr @V__anchor
 }
 global @D____construction__AB__0__s1__vtable [binding=internal, object=@D____construction__AB__0__s1__vtable] = {
   i64 8
   i64 -8
-  ptr addr @__rtti_struct_B
+  ptr addr @__rtti_struct_AB
 }
 global @D____construction__AB__0__s2__vtable [binding=internal, object=@D____construction__AB__0__s2__vtable] = {
   i64 0
   i64 -16
-  ptr addr @__rtti_struct_V
+  ptr addr @__rtti_struct_AB
   ptr addr @V__anchor
 }
 global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {

@@ -1557,7 +1557,7 @@ private:
 	}
 
 	void EmitVtableView(EntityId entity, EntityId rtti_entity, SymbolId symbol,
-		std::uint64_t offset, const std::vector<VirtualSlotFact>& slots,
+		std::int64_t offset, const std::vector<VirtualSlotFact>& slots,
 		const std::vector<std::int64_t>& virtual_base_offsets,
 		const std::vector<std::int64_t>& virtual_call_offsets,
 		const std::vector<SymbolId>& targets,
@@ -1575,8 +1575,7 @@ private:
 			AddIntegerItem(&vtable, LowI64(), virtual_base_offsets[row]);
 		if (stats_) stats_->vtable_offset_rows +=
 			virtual_base_offsets.size() + virtual_call_offsets.size();
-		AddIntegerItem(&vtable, LowI64(),
-			-static_cast<std::int64_t>(offset));
+		AddIntegerItem(&vtable, LowI64(), -offset);
 		AddAddressItem(&vtable, state_.class_rtti_symbols[rtti_entity]);
 		for (std::size_t slot = 0; slot < slots.size(); ++slot)
 		{
@@ -1615,7 +1614,7 @@ private:
 		}
 		const std::vector<std::int64_t> no_virtual_call_offsets;
 		EmitVtableView(base_entity, base_entity, symbols[(*cursor)++],
-			base_offset, PrimarySlots(base_entity), offsets,
+			0, PrimarySlots(base_entity), offsets,
 			!output_.host_object_emission && base_offset == 0 ?
 				base.virtual_call_offsets : no_virtual_call_offsets,
 			state_.class_view_slot_symbols[base_entity][0],
@@ -1655,8 +1654,9 @@ private:
 					static_cast<std::int64_t>(complete_offset) -
 					static_cast<std::int64_t>(complete_view_offset));
 			}
-			EmitVtableView(base_entity, base.views[view].entity,
-				symbols[(*cursor)++], complete_view_offset,
+			EmitVtableView(base_entity, base_entity,
+				symbols[(*cursor)++], static_cast<std::int64_t>(complete_view_offset) -
+					static_cast<std::int64_t>(base_offset),
 				base.views[view].slots, view_offsets,
 				base.views[view].virtual_call_offsets,
 				state_.class_view_slot_symbols[base_entity][view + 1],

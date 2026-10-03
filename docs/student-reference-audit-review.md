@@ -189,7 +189,7 @@ The recent discovery inventory is not all C++11:
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Done: retain body, nested constructor initializer and function-try syntax through registration, definition adoption, specialization upgrades and explicit specialization. The original program passes all three link routes at O0/O2; specialization/upgrade boundaries match Clang/GCC. Extend the existing PA21 function-try fixture and retire the opt-in duplicate. The extended fixture's preexisting native failure remains BACKEND. Pattern storage remains 512 bytes. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Done for source acceptance and lowering: remove the lexical-handler restriction and its unused counter. All three original programs pass host linking at O0/O2; the called-function case and rewritten existing fixture also pass standalone/object routes. No-active-exception execution invokes the installed termination handler. Same-function nested-handler and destructor traces still fail only in the native BACKEND family; retain/reclassify the existing opt-in reducer. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Done in three qualified checkpoints: explicit inverse casts retain declaring-owner facts and signed adjustments; unknown calls consume incoming adjustment/virtual words; conditions and negation test the target word; the reader rejects mismatched wide comparison operands; repeated zero-address empty bases receive distinct storage with inherited extents preserved. Reuse five existing PA22 fixtures, retire duplicate controls, add one PA23 virtual/constraint composite and one PA32 malformed-input test. Fresh strict C++11 hosts and mixed objects agree. Final strict 6126/6126, debug-info, variants, self-host PA5 and all audits pass. Alpha instruction/RSS gates pass; raw timing costs and uncertainty are retained in the checkpoints below. |
-| VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
+| VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | In progress: construction views use active-base RTTI and relative offsets; the strengthened existing PA23 fixture, proper-header reducer, 36 changed-reference runtime observations, strict 6126/6126, all compiler checks and Alpha gates pass. Nonpolymorphic reference access, indirect virtual-base initialization and descriptor flags remain open. Correct the forwarding fixture’s uninitialized virtual scalars with that initialization fix. Reserved null placement is a CWG 1748 contract review; its modern host results do not establish the student’s zero-result oracle. |
 | MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Done: build conversion terminals from retained template recipes; resolve explicit conversion specializations and qualified conversion addresses through existing deduction using retained syntax. Fresh Clang/GCC O0 symbols agree. Extend existing PA18 direct-conversion and PA22 pointer-target fixtures; retire the opt-in duplicate. Fourteen other references change only conversion object-name metadata. Strict 6119/6119, all required checks and Alpha gates pass; no ABI encoder change. |
 | MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Done: retain id/member-access decltype category and unqualified named dependent call arguments in existing typed recipe payloads. Fresh Clang/GCC symbols agree at O0/O2, including parenthesized, member, nested, multiple-argument and ADL controls. Extend existing PA9 and PA14 fixtures and retire the opt-in duplicate; one other reference changes only two object names. Payload sizes are unchanged. Strict 6119/6119, all required checks and Alpha gates pass. |
 | MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Done: retain written type/value expansions, transformed pointer packs and primary pack grouping in typed recipes; stop default completion at unresolved expansions. Fresh Clang/GCC symbols agree for the original reducer and reused PA19 fixtures at O0/O2. Preserve Clang template-parameter annotation spelling. Extend two existing fixtures and retire the opt-in duplicate. PA19 428/428, strict 6119/6119, all required checks and Alpha gates pass. Non-final function argument-list partitions remain MANGLE. No encoder change. |
@@ -6473,3 +6473,70 @@ Evidence: `/tmp/cppgm-v4-audit-review/repeated-empty-base/`.
 This closes the frozen MEMBER family. Eight compiler families and six reviews
 remain. Final fixture pruning and combined export/harness validation remain
 pending; VBASE is next.
+
+## VBASE fresh entry audit — 2026-10-03
+
+Freeze entry `ebe14f6317c528e9304bbb91c66231ad01a8838b93bd6a4530890433a5ac74c2`
+and recollect seven original reducers at O0/O2. Nonpolymorphic virtual references
+return one on both compiler routes while strict hosts return zero. Shared-copy
+and defined-forwarding indirect virtual-base initializers reject here while
+strict hosts pass. The repeated-destructor runtime control and class-specific
+null-allocation control already pass; RTTI descriptor flags remain a separate
+metadata obligation.
+
+The header-free construction RTTI reducer lacks a host definition for inline
+std::type_info equality; its four host link failures are not runtime results.
+Use the real <typeinfo> header for the fresh host oracle: all four strict-host
+observations pass, while the retained compiler header-free routes return two.
+The confirmed table defect uses complete-object offsets and the virtual view's
+RTTI during an active base constructor; the ABI requires the active base's RTTI
+and offsets relative to that base. Fresh Clang table evidence is retained.
+No symbol spelling change is proposed.
+
+Standard reserved placement new with a null argument is a contract review:
+N3485's null-return guard predates CWG 1748, adopted as a DR in November 2014,
+which makes this case undefined. Fresh host programs crash or give an optimizer-
+dependent result; they do not corroborate the student's zero-result oracle.
+The class-specific nonthrowing allocation control still passes everywhere.
+Primary issue text: https://cplusplus.github.io/CWG/issues/1748.html. Do not
+add a mandatory null-reserved-placement fixture or change its reference until
+that profile wording is resolved. This review is within VBASE and does not
+block the confirmed reference, initialization and construction-table fixes.
+Evidence: `/tmp/cppgm-v4-audit-review/virtual-base-reconciliation/`.
+
+## VBASE construction table checkpoint — 2026-10-03
+
+Construction tables now identify the active base for every view. Their primary
+offset-to-top is zero and secondary offsets are relative to the active base,
+while virtual-base rows retain complete-object positions. Use a signed table
+offset to retain valid positive offset-to-top cases. Names are unchanged.
+N3485 12.7 and Itanium 2.6.4 provide this rule; fresh Clang vtable dumps confirm
+active A RTTI and zero top offset in A-in-D. ABI primary text:
+https://itanium-cxx-abi.github.io/cxx-abi/abi.html#vtable-ctor.
+
+The proper <typeinfo> control builds with this compiler too: entry host/native
+programs return two at O0/O2. Strengthen the existing PA23 hidden-target fixture
+with a dynamic_cast<void*> check in B's constructor and make its first base
+polymorphic so B is secondary. Entry returns one in both routes at O0/O2; all
+16 fresh strict-host and final candidate observations pass for both sources.
+No new fixture or language feature is added. Three additional PA23 references
+change only construction RTTI/offset metadata: both static virtual-base relocation
+fixtures and the multi-level diamond lifecycle fixture. Their 36 strict-host,
+entry and candidate host/native observations at O0/O2 preserve runtime behavior.
+Generate every reference through the owning wrapper; no function-name changes.
+
+Full strict report passes 6126/6126 with exactly one output line. Debug-info,
+backend variants, self-host through PA5, all nine architecture audits, file and
+placement checks pass (37 existing file warnings). Final compiler SHA256:
+`db8ff7ac12357d34f6e52d28bd4d3769aeade31087b367ac39a9d1f78adf9a0f`.
+Independently verify all 288 Alpha screen and 48 focused confirmation observations
+against unscaled raw counters, RSS, zero statuses and equal object hashes.
+Maximum instruction median is 1.000001302 and RSS median 1.000027064. Reference-
+alias confirmation calibrated cycles are 1.003632364 (95% interval
+[0.995994243, 1.019170103]); no further timing repeat. Evidence:
+`/tmp/cppgm-v4-audit-review/virtual-base-reconciliation/`, performance and
+qualification lane `construction-tables/`.
+
+VBASE remains open for nonpolymorphic layout/projection, indirect initialization
+and RTTI flags. Eight compiler families and six further reviews remain; final
+pruning and combined export validation remain deferred.
