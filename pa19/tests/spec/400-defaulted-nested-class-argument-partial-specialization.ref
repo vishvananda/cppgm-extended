@@ -107,7 +107,7 @@ function @switch_statement(%a0 : ptr [pass=by_address, object_bytes=1], %a1 : pt
     call void @lambda_functor___cppgm_class_template_identity_3_20_0___lambda_functor___cppgm_class_template_identity_3_20_0_(%t1, $argobj__2)
     return obj<1x1> $retobj__1
 }
-function @selected_case_of(%__param0 : obj<1x1>) -> ptr [binding=weak, object=_Z16selected_case_ofI19lambda_functor_baseI13switch_actionILi2E13default_label9null_typeS3_S3_S3_S3_S3_S3_S3_E5tupleI14lambda_functorI11placeholderES6_IS0_I30pre_increment_decrement_actionI16increment_actionES5_I8identityIiES3_EEEEEEPNS6_IT_E13selected_caseES6_ISJ_E] {
+function @selected_case_of(%__param0 : obj<1x1>) -> ptr [binding=weak, object=_Z16selected_case_ofI19lambda_functor_baseI13switch_actionILi2E13default_label9null_typeS3_S3_S3_S3_S3_S3_S3_E5tupleI14lambda_functorI11placeholderES6_IS0_I30pre_increment_decrement_actionI16increment_actionES5_I8identityIiES3_EEEEEEPNS6_IT_E13selected_caseESK_] {
   slot $__param0 : obj<1x1>
 
   block ^entry:

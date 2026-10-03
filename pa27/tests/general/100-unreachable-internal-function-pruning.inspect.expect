@@ -1,2 +1,2 @@
-absent_defined_symbol_canonical 1 _Z15unused_internalv
-defined_symbol_canonical 1 _Z13used_internalv
+absent_defined_symbol_canonical 1 _ZL15unused_internalv
+defined_symbol_canonical 1 _ZL13used_internalv

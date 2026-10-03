@@ -66,7 +66,7 @@ function @view_char___view_char_(%this : ptr [object_bytes=1], %__param1 : ptr) 
     store ptr %__param1, $__param1
     return void
 }
-function @equal(%__param0 : obj<1x1>, %__param1 : obj<1x1>) -> i32 [binding=weak, object=_Z5equalIcEi4viewIT_EN13type_identityIS0_IS1_EE4typeE] {
+function @equal(%__param0 : obj<1x1>, %__param1 : obj<1x1>) -> i32 [binding=weak, object=_Z5equalIcEi4viewIT_EN13type_identityIS2_E4typeE] {
   slot $__param0 : obj<1x1>
   slot $__param1 : obj<1x1>
 

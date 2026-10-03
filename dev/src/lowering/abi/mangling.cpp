@@ -610,6 +610,10 @@ public:
 		if (binding.kind == BIND_FUNCTION)
 		{
 			entity.kind = ABI_ENTITY_FACT_FUNCTION;
+			entity.internal_linkage = binding.storage_class == STORAGE_CLASS_STATIC &&
+				binding.member_owner == kNoEntity && !binding.lambda_invocation &&
+				program_.KindOfScope(binding.owner) == SCOPE_NAMESPACE &&
+				!program_.HasInternalLinkageScope(binding.owner);
 			entity.function.kind = ABI_FUNCTION_TARGET_PATH;
 			if (binding.name == 0)
 				ThrowLoweringInternal(
@@ -1069,7 +1073,7 @@ public:
 				const TypeRecord& recipe_type =
 					program_.types.Get(recipe->function_type);
 				if (UsesFunctionTemplateParameter(
-					recipe_type.child, function, *recipe))
+					recipe_type.child, &function, *recipe))
 					result = recipe_type.child;
 				target.result_type = result == type.child ? MakeType(result) :
 					MakeType(result, &function, recipe);
@@ -1098,7 +1102,7 @@ public:
 						"local ABI context parameter recipe is invalid");
 				pack_expansion = recipe->function_parameter_pack && i >= fixed;
 				if (pack_expansion || UsesFunctionTemplateParameter(
-					recipe_parameters[source], function, *recipe))
+					recipe_parameters[source], &function, *recipe))
 				{
 					parameter = recipe_parameters[source];
 					parameter_recipe = recipe;
@@ -1542,8 +1546,8 @@ public:
 		if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_TEMPLATE_SPECIALIZATION ||
 			source.kind == FUNCTION_TEMPLATE_ABI_TYPE_WRITTEN_QUALIFIER)
 		{
-			if (source.entity == kNoEntity ||
-				source.entity >= program_.entities.size() ||
+			if ((source.entity == kNoEntity && source.child == kNoFunctionTemplateAbiType) ||
+				(source.entity != kNoEntity && source.entity >= program_.entities.size()) ||
 				source.argument_begin >
 					program_.function_template_abi_arguments.size() ||
 				source.argument_count >
@@ -1554,15 +1558,15 @@ public:
 			result.kind = source.kind == FUNCTION_TEMPLATE_ABI_TYPE_WRITTEN_QUALIFIER &&
 				source.argument_count == 0 ? ABI_TYPE_NAMED : source.child == kNoFunctionTemplateAbiType ?
 				ABI_TYPE_TEMPLATE_SPECIALIZATION : ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION;
-			const EntityRecord& entity = program_.entities[source.entity];
 			if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_WRITTEN_QUALIFIER)
 				result.index = context_->resolve_path(
 					std::vector<std::size_t>(1, ResolveName(source.name))) + 1;
 			else if (source.child == kNoFunctionTemplateAbiType)
 				result.index = ResolvePath(
-					entity.owner, entity.identity_name) + 1;
+					program_.entities[source.entity].owner, program_.entities[source.entity].identity_name) + 1;
 			else
-				result.index = ResolveName(entity.identity_name) + 1;
+				result.index = ResolveName(source.entity == kNoEntity ? source.name :
+					program_.entities[source.entity].identity_name) + 1;
 			if (source.child != kNoFunctionTemplateAbiType)
 				result.types.push_back(
 					MakeFunctionTemplateAbiType(source.child, recipe));
@@ -1679,7 +1683,7 @@ public:
 	}
 
 	bool UsesFunctionTemplateParameter(semantic::TypeId type,
-		const semantic::BindingRecord& function,
+		const semantic::BindingRecord* function,
 		const semantic::FunctionTemplateAbiRecipe& recipe) const
 	{
 		using namespace semantic;
@@ -1696,7 +1700,7 @@ public:
 			visited[current] = 1;
 			std::size_t parameter = 0;
 			if (FunctionTemplateParameter(
-				current, &function, &recipe, &parameter)) return true;
+				current, function, &recipe, &parameter)) return true;
 			const TypeRecord& record = program_.types.Get(current);
 			if (record.kind == TYPE_ARRAY &&
 				record.dependent_bound_parameter != kNoTemplateParameter)
@@ -2034,8 +2038,9 @@ public:
 					result.standard_substitution_includes_arguments =
 						standard.includes_arguments;
 				}
-				else result.resolved_expression = make_semantic_substitution(
-					ABI_SEMANTIC_SUBSTITUTION_CLASS, record->entity);
+				else if (!recipe || !UsesFunctionTemplateParameter(type, function, *recipe))
+					result.resolved_expression = make_semantic_substitution(
+						ABI_SEMANTIC_SUBSTITUTION_CLASS, record->entity);
 				result.index = ResolvePath(
 					entity.owner, entity.identity_name) + 1;
 				AppendClassTemplateArguments(entity, function, recipe, &result);
@@ -2296,7 +2301,7 @@ void AppendFunctionTemplateArgumentsAndResult(const semantic::Program& program,
 		if (recipe)
 		{
 			const TypeId source = program.types.Get(recipe->function_type).child;
-			if (facts->UsesFunctionTemplateParameter(source, binding, *recipe))
+			if (facts->UsesFunctionTemplateParameter(source, &binding, *recipe))
 				result_type = source;
 		}
 		result.function.type = facts->MakeFunctionTemplateType(result_type,
@@ -2530,8 +2535,9 @@ std::string MangleFunction(const semantic::Program& program,
 	target.set_kind(ABI_FACT_RECORD_TARGET);
 	target.target.kind = ABI_TARGET_FACT_FUNCTION;
 	target.target.internal_linkage =
-		binding.storage_class == STORAGE_CLASS_STATIC &&
-		!binding.unnamed_namespace_linkage;
+		binding.storage_class == STORAGE_CLASS_STATIC && binding.member_owner == kNoEntity &&
+		!binding.lambda_invocation && program.KindOfScope(binding.owner) == SCOPE_NAMESPACE &&
+		!program.HasInternalLinkageScope(binding.owner);
 	target.target.function.kind = structured_owner ?
 		ABI_FUNCTION_TARGET_ENCODING : typed_class_owner ?
 			ABI_FUNCTION_TARGET_MEMBER : ABI_FUNCTION_TARGET_PATH;

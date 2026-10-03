@@ -1971,7 +1971,7 @@ private:
     } else {
       output_ += "_Z";
       if(entity.kind == ABI_ENTITY_FACT_FUNCTION) {
-        encode_function(entity.function, FunctionFacts());
+        encode_function(entity.function, FunctionFacts(), entity.internal_linkage);
       } else if(entity.function.resolved_path != ABI_NO_RESOLVED_REFERENCE) {
         encode_object_name(graph_.path(entity.function.resolved_path),
                            entity.internal_linkage);

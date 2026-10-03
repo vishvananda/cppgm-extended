@@ -21,7 +21,7 @@ function @holder_int___run(%this : ptr [object_bytes=1]) -> void [binding=weak, 
     %t4 = call obj<1x1> @make_pack(%t2, %t3)
     return void
 }
-function @make_pack(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=internal, object=_Z9make_packIJZN6holderIiE3runEvEUlvE_ZNS1_3runEvEUlvE0_EE4packIJOT_EEDpS6_] {
+function @make_pack(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=internal, object=_Z9make_packIJZN6holderIiE3runEvEUlvE_ZNS1_3runEvEUlvE0_EE4packIJDpOT_EES7_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $retobj__1 : obj<1x1>

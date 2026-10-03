@@ -87,6 +87,18 @@ void IndexResultSyntaxBinding(std::vector<NameId>* names, NameId name)
 		names->insert(position, name);
 }
 
+bool UsesResultSyntaxEnvironment(const SyntaxArena& arena, NodeId node,
+	const std::vector<NameId>& names)
+{
+	if (node == kNoNode) return false;
+	if (std::binary_search(names.begin(), names.end(), arena.SemanticPayloadId(node)))
+		return true;
+	for (std::uint32_t edge = arena.FirstEdge(node); edge != kNoEdge;
+		edge = arena.NextEdge(edge))
+		if (UsesResultSyntaxEnvironment(arena, arena.EdgeChild(edge), names)) return true;
+	return false;
+}
+
 enum ResultIdentityAtomKind
 {
 	RESULT_IDENTITY_NODE_BEGIN = 1,
@@ -166,8 +178,9 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 			found->second : pattern->parameters.size();
 	};
 
+	std::vector<ResultSyntaxReference> transformed_pack;
 	const auto direct_pack = [this, &environment_names, &root_bindings,
-		&environment_probes](
+		&environment_probes, &transformed_pack](
 		const ResultSyntaxReference& reference)
 		-> const std::vector<ResultSyntaxReference>* {
 		if (reference.node == kNoNode) return 0;
@@ -179,8 +192,7 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 			if (declarator == kNoNode)
 				declarator = FindChild(type, ::cppgm::syntax::STAG_DECLARATOR);
 			const NodeId specifiers = FindChild(type, ::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ);
-			const NodeId name = specifiers == kNoNode ? kNoNode :
-				FirstSemanticChild(specifiers);
+			const NodeId name = FindChild(specifiers, ::cppgm::syntax::STAG_TYPE_NAME);
 			const NamePath path = StructuredNamePath(name);
 			const NameId direct_name = !path.global && path.Size() == 1 ?
 				path.Last() : name == kNoNode ? 0 :
@@ -188,9 +200,58 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 			if (declarator != kNoNode &&
 				FindChild(declarator, ::cppgm::syntax::STAG_PARAMETER_PACK) != kNoNode &&
 				direct_name != 0)
-				return FindResultSyntaxBinding(
+			{
+				const std::vector<ResultSyntaxReference>* pack = FindResultSyntaxBinding(
 					reference.environment, direct_name, environment_names,
 					root_bindings, &environment_probes);
+				if (!pack) return 0;
+				std::uint8_t cv = CV_NONE;
+				for (std::uint32_t edge = arena_->FirstEdge(specifiers); edge != kNoEdge;
+					edge = arena_->NextEdge(edge))
+				{
+					const NodeId child = arena_->EdgeChild(edge);
+					if (child == name) continue;
+					if (!arena_->IsTag(child, ::cppgm::syntax::STAG_CV_QUALIFIER)) return 0;
+					cv |= PayloadTokenKind(child) == KW_CONST ? CV_CONST : CV_VOLATILE;
+				}
+				bool modified = cv != CV_NONE;
+				for (std::uint32_t edge = arena_->FirstEdge(declarator); edge != kNoEdge;
+					edge = arena_->NextEdge(edge))
+				{
+					const NodeId child = arena_->EdgeChild(edge);
+					if (arena_->IsTag(child, ::cppgm::syntax::STAG_PARAMETER_PACK)) continue;
+					if (!arena_->IsTag(child, ::cppgm::syntax::STAG_PTR_OPERATOR) &&
+						!arena_->IsTag(child, ::cppgm::syntax::STAG_CV_QUALIFIER)) return 0;
+					modified = true;
+				}
+				if (!modified) return pack;
+				transformed_pack.clear();
+				for (std::size_t i = 0; i < pack->size(); ++i)
+				{
+					if ((*pack)[i].bound_argument == kNoTemplateArgumentList) return 0;
+					TemplateArgument argument = program_->GetTemplateArgument((*pack)[i].bound_argument, 0);
+					if (argument.kind != TEMPLATE_ARGUMENT_TYPE) return 0;
+					TypeId formed = program_->types.TryQualify(argument.type, cv);
+					for (std::uint32_t edge = arena_->FirstEdge(declarator); formed != kNoType && edge != kNoEdge;
+						edge = arena_->NextEdge(edge))
+					{
+						const NodeId child = arena_->EdgeChild(edge);
+						if (arena_->IsTag(child, ::cppgm::syntax::STAG_PARAMETER_PACK)) continue;
+						const int operation = PayloadTokenKind(child);
+						if (arena_->IsTag(child, ::cppgm::syntax::STAG_CV_QUALIFIER))
+							formed = program_->types.TryQualify(formed, operation == KW_CONST ? CV_CONST : CV_VOLATILE);
+						else if (operation == OP_STAR) formed = program_->types.TryPointer(formed);
+						else if (operation == OP_AMP || operation == OP_LAND)
+							formed = program_->types.TryReference(operation == OP_AMP ? TYPE_LVALUE_REFERENCE : TYPE_RVALUE_REFERENCE, formed);
+						else return 0;
+					}
+					if (formed == kNoType) return 0;
+					argument.type = formed;
+					transformed_pack.push_back(ResultSyntaxReference(kNoNode, reference.scope, 0,
+						program_->InternTemplateArgumentList(std::vector<TemplateArgument>(1, argument))));
+				}
+				return &transformed_pack;
+			}
 		}
 		if (!arena_->IsTag(reference.node, ::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION))
 			return 0;
@@ -226,7 +287,14 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 		if (++*visits > visit_limit) return false;
 		if (reference.bound_argument != kNoTemplateArgumentList)
 		{
-			atoms->push_back(ResultIdentityAtom(
+			const TemplateArgument& argument = program_->GetTemplateArgument(reference.bound_argument, 0);
+			if (argument.kind == TEMPLATE_ARGUMENT_INTEGRAL)
+			{
+				std::uint32_t first = 0;
+				program_->InternTemplateArgumentList(std::vector<TemplateArgument>(1, argument), &first);
+				atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_LITERAL_ARGUMENT, first));
+			}
+			else atoms->push_back(ResultIdentityAtom(
 				RESULT_IDENTITY_BOUND_ARGUMENT, reference.bound_argument));
 			return true;
 		}
@@ -554,8 +622,38 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 							ResultSyntaxReference value(
 								class_pattern.parameters[p].default_argument,
 								class_pattern.lexical_scope, environment);
+							const TemplateParameter& parameter = class_pattern.parameters[p];
+							if (parameter.kind == TEMPLATE_ARGUMENT_INTEGRAL && parameter.value_type != kNoType &&
+								IsIntegral(parameter.value_type) &&
+								!SyntaxUsesAnyTemplateParameter(value.node, dependent_names) &&
+								!UsesResultSyntaxEnvironment(*arena_, value.node, environment_names))
+							{
+								// An independent default is a constant of its declared value type.
+								// Dependent defaults retain their source operand and environment.
+								NodeId expression_node = FirstSemanticChild(value.node);
+								ScopedContainerPush<std::vector<std::uint8_t> > candidate(
+									&candidate_substitution_failures_, 0);
+								ScopedValueRestore<std::size_t> constant_root(
+									&constant_evaluation_suppressed_depth_, 0);
+								ScopedCounterIncrement required(&constant_expression_required_depth_);
+								TemplateArgument formed(TEMPLATE_ARGUMENT_INTEGRAL, parameter.value_type);
+								ExpressionInfo expression;
+								if (arena_->IsTag(expression_node, ::cppgm::syntax::STAG_TYPE_ID))
+								{
+									const NodeId specifiers = FindChild(expression_node, ::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ);
+									const NodeId name = FirstSemanticChild(specifiers);
+									if (!arena_->HasDirectChildTag(expression_node, ::cppgm::syntax::STAG_ABSTRACT_DECLARATOR) &&
+										arena_->IsTag(name, ::cppgm::syntax::STAG_TYPE_NAME))
+										expression = AnalyzeNamedValue(PayloadSource(name), value.scope, formed.type, name);
+								}
+								else expression = AnalyzeExpression(expression_node, value.scope, formed.type);
+								if (!CandidateSubstitutionFailed() && FormNonTypeTemplateArgumentValue(expression, &formed))
+									value = ResultSyntaxReference(kNoNode, value.scope, 0,
+										program_->InternTemplateArgumentList(std::vector<TemplateArgument>(1, formed)));
+							}
 							frame.values.push_back(value);
 							arguments.push_back(value);
+							++argument;
 						}
 						environment = &frame;
 					}

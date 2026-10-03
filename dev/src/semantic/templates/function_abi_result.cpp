@@ -630,6 +630,41 @@ private:
 		return true;
 	}
 
+	bool ExpressionHasTemplateParameter(FunctionTemplateAbiExpressionId expression) const
+	{
+		if (expression == kNoFunctionTemplateAbiExpression) return false;
+		const FunctionTemplateAbiExpression& node = program_->function_template_abi_expressions[expression];
+		if (node.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_PARAMETER ||
+			node.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_FUNCTION_PARAMETER) return true;
+		if (HasTemplateParameter(node.type) || ExpressionHasTemplateParameter(node.left) ||
+			ExpressionHasTemplateParameter(node.right)) return true;
+		if (node.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_INTEGRAL) return false;
+		for (std::size_t i = 0; i < node.argument_count; ++i)
+			if (ArgumentHasTemplateParameter(program_->function_template_abi_arguments[node.argument_begin + i])) return true;
+		return false;
+	}
+
+	bool ArgumentHasTemplateParameter(const FunctionTemplateAbiArgument& argument) const
+	{
+		return argument.kind == FUNCTION_TEMPLATE_ABI_ARGUMENT_TYPE ?
+			HasTemplateParameter(argument.type) : ExpressionHasTemplateParameter(argument.expression);
+	}
+
+	bool HasTemplateParameter(FunctionTemplateAbiTypeId type) const
+	{
+		if (type == kNoFunctionTemplateAbiType) return false;
+		const FunctionTemplateAbiType& node = program_->function_template_abi_types[type];
+		if (node.kind == FUNCTION_TEMPLATE_ABI_TYPE_PARAMETER ||
+			node.kind == FUNCTION_TEMPLATE_ABI_TYPE_TEMPLATE_PARAMETER_SPECIALIZATION) return true;
+		if (HasTemplateParameter(node.child) || ExpressionHasTemplateParameter(node.expression)) return true;
+		for (std::size_t i = 0; i < node.argument_count; ++i)
+		{
+			const FunctionTemplateAbiArgument& argument = program_->function_template_abi_arguments[node.argument_begin + i];
+			if (ArgumentHasTemplateParameter(argument)) return true;
+		}
+		return false;
+	}
+
 	FunctionTemplateAbiTypeId ComponentType(
 		const ParsedComponent& component, FunctionTemplateAbiTypeId owner,
 		bool expression_owner = false, bool written_qualifier = false)
@@ -660,15 +695,44 @@ private:
 				0, 0, kNoTemplateParameter, 0,
 				program_->entities[component.entity].type));
 		}
-		// An unresolved class-owned alias cannot name a member class template.
-		// Expression owners retain written alias names; actual template-template
-		// parameters have registered proxy patterns.
-		if (!expression_owner && component.entity < program_->entities.size() &&
+		if (!expression_owner && owner == kNoFunctionTemplateAbiType && component.entity < program_->entities.size())
+		{
+			const EntityRecord& known = program_->entities[component.entity];
+			bool concrete = known.template_argument_list != kNoTemplateArgumentList &&
+				known.template_argument_count == component.arguments.size();
+			for (std::size_t i = 0; concrete && i < component.arguments.size(); ++i)
+			{
+				const FunctionTemplateAbiArgument& argument = component.arguments[i];
+				const TemplateArgument& formed = program_->GetTemplateArgument(known.template_argument_list, i);
+				concrete = !argument.pack_expansion && argument.kind == FUNCTION_TEMPLATE_ABI_ARGUMENT_TYPE &&
+					formed.kind == TEMPLATE_ARGUMENT_TYPE &&
+					program_->function_template_abi_types[argument.type].kind == FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE &&
+					program_->function_template_abi_types[argument.type].concrete_type == formed.type;
+			}
+			if (concrete)
+				return AppendAbiType(program_, FunctionTemplateAbiType(FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE,
+					kNoFunctionTemplateAbiType, 0, 0, kNoTemplateParameter, 0, known.type));
+		}
+		// A dependent member alias retains its owner, terminal and arguments.
+		// Its source recipe does not require a fabricated class-template entity.
+		const bool unresolved_member = !expression_owner && owner != kNoFunctionTemplateAbiType &&
+			(component.entity == kNoEntity || (component.entity < program_->entities.size() &&
 			program_->entities[component.entity].flavor == NAMED_TEMPLATE_PARAMETER &&
 			program_->entities[component.entity].enclosing_class != kNoEntity &&
 			(component.entity >= class_template_by_entity_.size() ||
-			 class_template_by_entity_[component.entity] == kNoDumpEdge))
-			return kNoFunctionTemplateAbiType;
+			 class_template_by_entity_[component.entity] == kNoDumpEdge)));
+		if (unresolved_member)
+		{
+			// A fully bound owner can expand its member alias through the
+			// established semantic type; retain only an unresolved dependent owner.
+			if (!HasTemplateParameter(owner)) return kNoFunctionTemplateAbiType;
+			std::uint32_t begin = 0;
+			if (!StoreArguments(component.arguments, &begin)) return kNoFunctionTemplateAbiType;
+			return AppendAbiType(program_, FunctionTemplateAbiType(
+				FUNCTION_TEMPLATE_ABI_TYPE_TEMPLATE_SPECIALIZATION, owner, component.name, 0,
+				kNoTemplateParameter, 0, kNoType, kNoEntity, begin,
+				static_cast<std::uint32_t>(component.arguments.size())));
+		}
 		if (component.entity == kNoEntity ||
 			component.arguments.size() >
 				std::numeric_limits<std::uint32_t>::max() ||
@@ -1035,7 +1099,7 @@ bool HasRetainedParameterRoot(const Program& program,
 			}
 		}
 		else if (kind == FUNCTION_TEMPLATE_RESULT_NODE_END && decltype_depth) --decltype_depth;
-		else if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER && decltype_depth) return true;
+		else if (kind == FUNCTION_TEMPLATE_RESULT_PARAMETER) return true;
 	}
 	if (!atoms.empty() && ResultIdentityKind(atoms[0]) ==
 		FUNCTION_TEMPLATE_RESULT_PARAMETER) return true;

@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $m
     return i32 0
 }
-function @get__ov2(%__param0 : obj<1x1>, %g : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_Z3getI9directedS6Vertex4Edge11no_propertymmEN12property_mapI5graphIT_T0_T1_T2_T3_T4_E12vertex_all_tE4typeESD_RS5_IS6_S7_S8_S9_SA_SB_E] {
+function @get__ov2(%__param0 : obj<1x1>, %g : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_Z3getI9directedS6Vertex4Edge11no_propertymmEN12property_mapI5graphIT_T0_T1_T2_T3_T4_E12vertex_all_tE4typeESD_RSC_] {
   slot $__param0 : obj<1x1>
   slot $g : ptr
   slot $retobj__1 : obj<1x1>

@@ -35,7 +35,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = convert trunc i32 i64 %t12
     return i32 %t13
 }
-function @helper(%first : ptr, %n : i64, %result : ptr) -> obj<16x8> [binding=weak, object=_Z6helperI6PolicyPcS1_TnN9enable_ifIXsr6is_ptrIT0_EE5valueEiE4typeELi0EE4PairIS3_T1_ES3_41__function_template_nondeduced_type_shapeS7_] {
+function @helper(%first : ptr, %n : i64, %result : ptr) -> obj<16x8> [binding=weak, object=_Z6helperI6PolicyPcS1_TnN9enable_ifIXsr6is_ptrIT0_EE5valueEiE4typeELi0EE4PairIS3_T1_ES3_N7IterOpsIT_E15difference_typeIS3_EES7_] {
   slot $first : ptr
   slot $n : i64
   slot $result : ptr

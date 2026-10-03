@@ -69,7 +69,7 @@ function @construction_probe() -> void [linkage=c, binding=strong] {
     call void @H___H(%t9)
     return void
 }
-function @next() -> i32 [binding=internal, object=_Z4nextv] {
+function @next() -> i32 [binding=internal, object=_ZL4nextv] {
   block ^entry:
     %t1 = load i32 @progress
     %t2 = binary add i32 %t1, 1

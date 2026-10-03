@@ -41,7 +41,7 @@ function @units__box_long_int___box_double_(%this : ptr [object_bytes=8], %input
     store i64 %t1, %t3
     return void
 }
-function @units__operator_(%input : ptr [pass=by_address, object_bytes=8], %scalar : f64) -> obj<8x8> [binding=weak, object=_ZN5unitsdvIldEENS_6detail13divide_resultINS_3boxIT_EET0_Xsr6is_boxIS6_EE5valueEE4typeERKNS3_IS4_EES6_] {
+function @units__operator_(%input : ptr [pass=by_address, object_bytes=8], %scalar : f64) -> obj<8x8> [binding=weak, object=_ZN5unitsdvIldEENS_6detail13divide_resultINS_3boxIT_EET0_Xsr6is_boxIS6_EE5valueEE4typeERKS5_S6_] {
   slot $input : ptr
   slot $scalar : f64
   slot $retobj__1 : obj<8x8>
