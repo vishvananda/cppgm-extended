@@ -442,7 +442,8 @@ private:
 		bool complete_definition = true,
 		NameId specialization_lookup_name = 0,
 		NameId specialization_emission_name = 0,
-		NameId typedef_linkage_name = 0);
+		NameId typedef_linkage_name = 0,
+		bool hidden_friend_declaration = false);
 	void BuildClassDeclarationNamePath(NodeId node, const std::string& hint,
 		const std::string& specialization_name, std::string* spelling,
 		NamePath* path, bool* generated_identity);

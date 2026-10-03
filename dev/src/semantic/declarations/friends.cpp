@@ -177,7 +177,20 @@ void Analyzer::AnalyzeFriendClass(NodeId node,
 		found = LookupStructuredName(
 			declaration, class_scope, LOOKUP_TYPE);
 	}
-	else found = LookupPath(class_scope, path, LOOKUP_TYPE);
+	else
+	{
+		// An unqualified friend tag cannot find declarations outside the
+		// innermost namespace (N3485 7.3.1.2/3).
+		for (ScopeId current = class_scope; current != kNoScope;
+			current = program_->ParentScope(current))
+		{
+			const bool namespace_scope = program_->KindOfScope(current) == SCOPE_NAMESPACE;
+			found = namespace_scope ?
+				program_->LookupDirect(current, path.Last(), LOOKUP_TAG_IDENTITY) :
+				program_->LookupQualifiedName(current, path.Last(), LOOKUP_TYPE);
+			if (found.type != kNoType || namespace_scope) break;
+		}
+	}
 	TypeId friend_type = found.type;
 	if (friend_type != kNoType && found.type_declaration != kNoBinding &&
 		!CanAccessMember(found.type_declaration, found.naming_class))
@@ -193,7 +206,7 @@ void Analyzer::AnalyzeFriendClass(NodeId node,
 		friend_type = AnalyzeClass(declaration,
 			!path.global && path.Size() == 1 ?
 				namespace_owner : class_scope,
-			std::string(), true);
+			std::string(), true, std::string(), kNoScope, 0, true, 0, 0, 0, true);
 	}
 	const EntityId friend_entity = EntityOf(friend_type);
 	if (friend_entity == kNoEntity)

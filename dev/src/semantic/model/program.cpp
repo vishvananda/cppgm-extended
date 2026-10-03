@@ -740,7 +740,8 @@ BindingRecord::BindingRecord()
 	  closure_template_specialization(false),
 	  function_template_specialization(false), lambda_invocation(false),
 	  compiler_generated(false), source_view_suppressed(false),
-	  source_view_qualified_name(false), source_view_qualified_type(false)
+	  source_view_qualified_name(false), source_view_qualified_type(false),
+	  hidden_friend_class(false)
 {
 }
 
@@ -1849,6 +1850,10 @@ LookupResult Program::DirectLookup(ScopeId scope, NameId name,
 	LookupResult result;
 	const NameEntry* entry = FindEntry(scope, name);
 	if (!entry) return result;
+	const auto type_visible = [&]() {
+		return entry->type_declaration == kNoBinding ||
+			!bindings[entry->type_declaration].hidden_friend_class;
+	};
 	const EntityId scope_entity = scopes_[scope].entity;
 	if (scope_entity != kNoEntity)
 	{
@@ -1886,7 +1891,8 @@ LookupResult Program::DirectLookup(ScopeId scope, NameId name,
 		result.name_space = entry->name_space;
 		return result;
 	case LOOKUP_FUNCTION_TEMPLATE:
-		if (entry->ordinary != kNoBinding || entry->type != kNoType ||
+		if (entry->ordinary != kNoBinding ||
+			(entry->type != kNoType && type_visible()) ||
 			entry->function_template)
 		{
 			result.BeginFunctionTemplateLookup();
@@ -1894,7 +1900,8 @@ LookupResult Program::DirectLookup(ScopeId scope, NameId name,
 		}
 		return result;
 	case LOOKUP_VARIABLE_TEMPLATE:
-		if (entry->ordinary != kNoBinding || entry->type != kNoType ||
+		if (entry->ordinary != kNoBinding ||
+			(entry->type != kNoType && type_visible()) ||
 			entry->variable_template)
 		{
 			result.BeginVariableTemplateLookup();
@@ -1902,10 +1909,12 @@ LookupResult Program::DirectLookup(ScopeId scope, NameId name,
 		}
 		return result;
 	case LOOKUP_TYPE:
+	case LOOKUP_TAG_IDENTITY:
 		break;
 	default:
 		return result;
 	}
+	if (kind != LOOKUP_TAG_IDENTITY && !type_visible()) return result;
 	result.type = entry->type;
 	result.type_declaration = entry->type_declaration;
 	result.type_declaration_canonical = entry->type_declaration == kNoBinding ?

@@ -147,7 +147,7 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 	const std::string& specialization_name, ScopeId specialization_owner,
 	NameId specialization_identity, bool complete_definition,
 	NameId specialization_lookup_name, NameId specialization_emission_name,
-	NameId typedef_linkage_name)
+	NameId typedef_linkage_name, bool hidden_friend_declaration)
 {
 	const NodeId key = FindChild(node, ::cppgm::syntax::STAG_CLASS_KEY);
 	if (key == kNoNode) ThrowSemanticError("class without class-key");
@@ -173,12 +173,15 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 	// A generated anonymous/local identity names a fresh entity: it never
 	// matches a source declaration and must not enter ordinary type lookup,
 	// where it could collide with a user type of the same spelling.
-	const LookupResult old = generated_identity ? LookupResult() :
+	LookupResult old = generated_identity ? LookupResult() :
 		path.global || path.Size() > 1 ?
 		program_->LookupDirect(owner, lookup_name, LOOKUP_TYPE) :
 		(elaborated && specialization_lookup_name == 0 ?
 		 program_->LookupName(scope, lookup_name, LOOKUP_TYPE) :
-		 program_->LookupDirect(owner, lookup_name, LOOKUP_TYPE));
+		 program_->LookupDirect(owner, lookup_name, LOOKUP_TAG_IDENTITY));
+	if (!generated_identity && old.type == kNoType && elaborated &&
+		!path.global && path.Size() == 1)
+		old = program_->LookupDirect(owner, lookup_name, LOOKUP_TAG_IDENTITY);
 	EntityId entity = kNoEntity;
 	bool created_entity = false;
 	// Repeated analysis of one generated-identity node (the class-template
@@ -272,9 +275,14 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 		entity_destructor_by_entity_.resize(
 			static_cast<std::size_t>(entity) + 1, kNoBinding);
 	if (old.type == kNoType && arena_->Payload(node).size() != 0)
-		program_->AddBinding(owner, BIND_TYPE, lookup_name, type,
+	{
+		const BindingId declaration = program_->AddBinding(owner, BIND_TYPE, lookup_name, type,
 			false, 0, flavor);
-	else if (source_type_view_ && old.type != kNoType && !elaborated &&
+		program_->bindings[declaration].hidden_friend_class = hidden_friend_declaration;
+	}
+	else if (!hidden_friend_declaration && old.type_declaration != kNoBinding)
+		program_->bindings[old.type_declaration].hidden_friend_class = false;
+	if (source_type_view_ && old.type != kNoType && !elaborated &&
 		arena_->Payload(node).size() != 0)
 		program_->AddOutputTypeBinding(owner, lookup_name, type, flavor);
 	const std::size_t requested_alignment = RequestedAlignment(node, scope);
@@ -457,8 +465,7 @@ bool Analyzer::CompleteClassDefinition(NodeId node, ScopeId scope,
 					arena_->IsTag(member, ::cppgm::syntax::STAG_CLASS_SPECIFIER) &&
 					(nested_in_specialization || incomplete_pattern_arguments);
 				const TypeId nested_type = AnalyzeClass(member, member_scope,
-					std::string(),
-					arena_->IsTag(member, ::cppgm::syntax::STAG_CLASS_FORWARD_DECLARATION),
+					std::string(), false,
 					std::string(), kNoScope, 0, !deferred_definition);
 				const EntityId nested = EntityOf(nested_type);
 				if (nested == kNoEntity)

@@ -742,6 +742,7 @@ struct BindingRecord
 	bool source_view_suppressed : 1;
 	bool source_view_qualified_name : 1;
 	bool source_view_qualified_type : 1;
+	bool hidden_friend_class : 1;
 
 	BindingRecord();
 };
@@ -802,7 +803,8 @@ enum LookupKind
 	LOOKUP_SCOPE_CARRIER,
 	LOOKUP_FUNCTION_TEMPLATE,
 	LOOKUP_VARIABLE_TEMPLATE,
-	LOOKUP_TYPE_NAME // Ordinary visibility when a name must denote a type.
+	LOOKUP_TYPE_NAME, // Ordinary visibility when a name must denote a type.
+	LOOKUP_TAG_IDENTITY // Declaration identity, including hidden friend tags.
 };
 
 enum ProgramRenderMode

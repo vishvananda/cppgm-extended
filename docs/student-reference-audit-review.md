@@ -83,13 +83,14 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **32 compiler issue families** remain
+Remaining-work count on 2026-10-03: **31 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
-ATTR-NORETURN variable appertainment is now completed. These are tracker
+ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
+LOOKUP-TAG are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -190,7 +191,7 @@ The recent discovery inventory is not all C++11:
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Done in the accompanying checkpoint: enable existing canonical-type equivalence when merging namespace graph/import results; preserve direct lookup and class-base rules. All 72 core observations pass at O0/O2 and in both dump modes, including distinct-entity negatives. The reviewed composite replaces the wrong PA6 same-int rejection in PA6/200 and its temporary control is removed; ours and both hosts pass. PA6 112/112, strict 6109/6109 in one line, all required local groups and all frozen incremental Alpha gates pass against approved 8a6bcd105. All 2880 observations retain equal objects and unscaled counters. Independent mixed type/value and class-base alias rows remain open. N3485 7.1.3 and 7.3.4 support this correction. |
 | LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | Done in this compiler checkpoint: typed ordinary/type-name lookup diagnoses imported type/value conflicts while preserving local hiding, injected constructor names and restricted elaborated lookup. Reuse the existing PA6 typedef/value and PA7 class/value expression controls as required negatives; exact ref-test generates their references. All 184 focused outcomes and affected suites pass, strict 6111/6111 prints one line, debug-info/self-host PA5/all nine architecture targets/file/placement pass. The 384-observation screen plus 384-observation focused confirmation pass instruction/RSS gates, object equality and unscaled-counter verification (maximum instructions 1.000289, median RSS ratios 1.0). Confirmed namespace/auto-alias calibrated cycle costs around 1–1.6% remain explicit diagnostics under the updated policy; no timing-neutrality claim. Full immutable patch, binary and raw observations are retained in namespace-mixed-lookup/. Historical cycle-gate failures remain unchanged. |
 | LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Done in this compiler checkpoint: compare canonical designated types in the existing merge owner, preserving the declaration representative for access checks. All 20 focused outcomes pass, including fundamental/class/dependent-alias runtime input and distinct type/value/template/private-access boundaries. Move the unchanged erroneous PA30 rejection fixture to PA22/100; exact ref-test generates successful LowIR/status references, and redundant opt-in metadata is removed. No new source fixture. N3485 10.2/3,6,7 supplies the C++11 proof despite GCC disagreement; mixed-access base-order observations remain scratch evidence. Affected suites 1590/1590, strict 6111/6111 in one line, debug/self-host PA5/all nine architecture checks/file/placement pass. All 192 frozen performance observations pass instruction/RSS/equality/unscaled-counter checks, with no timing signal requiring confirmation. Candidate and full raw results are retained in base-alias-convergence/. |
-| LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
+| LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Done: own-scope nested declarations, a packed hidden-friend visibility fact, declaration-only canonical tag lookup, and namespace-bounded unqualified friend lookup implement N3485 3.4.4/2 and 7.3.1.2/3. Matching declarations publish the same class identity. Promote two unchanged controls to PA11/100 and /200; no new source fixture. All 72 focused outcomes and eight final qualification groups pass; affected 1271/1271, strict 6116/6116 in one line, placement/review/hygiene zero. All 336 screen/confirmation observations pass instruction/RSS/equality gates; the noisy initial virtual timing signal does not repeat. BindingRecord/EntityRecord remain 136/208 bytes. Artifacts in tag-introduction/. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
 | TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Reviewed: no additional required fix or fixture. Instantiating the mismatched member rejects with conflicting function return type at O0/O2 and in PA14 LowIR, while the matching definition passes; both strict C++11 hosts agree. The unused form remains a diagnostic-timing difference under N3485 14.6/8, not a mandatory rejection oracle. Fourteen new observations and contract review are recorded below. |
 | NEW-ARRAY-DTOR-ACCESS | Check destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Done in the accompanying performance-approved checkpoint: use the indexed destructor binding and naming/object-class access check before trivial destruction is elided. Promote the private-array negative, add one protected-base-object negative and retain the existing scalar/own-array positive in PA12/400. Demanded scratch boundaries pass ours and Clang 22/22; three GCC-disputed cases stay scratch evidence. PA12 298/298, strict 6108/6108 in one line, all required compiler checks and global Alpha gates pass. N3485 5.3.4/17 and 11.4/1 supply the rule. |
@@ -5467,3 +5468,24 @@ timing confirmation indicated. Image:
 Source, frozen inputs, commands and raw qualification results remain in
 `constant-bitfield-width/`. Remaining: 32 compiler families and six reviews.
 Final fixture minimization and combined student-export validation remain pending.
+
+
+### Completed friend-tag visibility and nested introduction — 2026-10-03
+
+Nested forward declarations introduce into their own scope. New friend class
+identities remain hidden from ordinary/qualified lookup until a matching
+namespace declaration publishes them; a declaration-only lookup keeps that
+identity stable, and unqualified friend lookup stops at the innermost namespace.
+N3485 3.4.4/2 and 7.3.1.2/3 supply the rules. One packed visibility bit preserves
+BindingRecord/EntityRecord sizes at 136/208 bytes. Two unchanged controls become
+required PA11/100 and /200 negatives; no source fixture is added. All 72 focused
+outcomes and eight required qualification groups pass: affected 1271/1271,
+strict 6116/6116 in one line, placement/review/hygiene zero. The 240-observation
+screen plus 96-observation timing confirmation independently pass instruction,
+RSS, equal-object and unscaled-counter checks. Maximum instruction ratio is
+1.000235, RSS 1.0; the initial virtual-class timing signal does not repeat in
+confirmation (calibrated ratio 1.002048). Image:
+`7d4aa5ecce4eff12fe4452edd2804cc555889025d1736de5b31dfa4bcb43f848`.
+Source, fixed inputs, commands and raw results remain in `tag-introduction/`.
+Remaining: 31 compiler families and six reviews. Final fixture minimization and
+combined student-export validation remain pending.
