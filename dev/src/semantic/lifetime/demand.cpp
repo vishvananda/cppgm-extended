@@ -173,16 +173,43 @@ void Analyzer::DemandRuntimeDefinition(BindingId binding)
 		const BindingId base_entry =
 			constructor_base_entry_by_binding_[binding];
 		if (base_entry != kNoBinding && base_entry != binding)
+		{
+			RefreshLifecycleBaseDefinition(binding, base_entry);
 			DemandRuntimeDefinition(base_entry);
+		}
 	}
 	if (binding < destructor_base_entry_by_binding_.size())
 	{
 		const BindingId base_entry =
 			destructor_base_entry_by_binding_[binding];
 		if (base_entry != kNoBinding && base_entry != binding)
+		{
+			RefreshLifecycleBaseDefinition(binding, base_entry);
 			DemandRuntimeDefinition(base_entry);
+		}
 	}
 	QueueDeferredFunctionDefinition(binding);
+}
+
+void Analyzer::RefreshLifecycleBaseDefinition(BindingId source, BindingId base)
+{
+	const FunctionInfo& definition = GetFunction(source);
+	FunctionInfo& target = GetMutableFunction(base);
+	if (target.defined || !definition.defined ||
+		definition.definition_body == kNoNode) return;
+	target.defined = true;
+	target.deferred = true;
+	target.definition_body = definition.definition_body;
+	target.constructor_initializer = definition.constructor_initializer;
+	target.function_try_block = definition.function_try_block;
+	target.lexical_scope = definition.lexical_scope;
+	target.parameters = definition.parameters;
+	const BindingRecord& source_binding = program_->bindings[source];
+	BindingRecord& base_binding = program_->bindings[base];
+	base_binding.inline_function = source_binding.inline_function;
+	base_binding.weak_odr = source_binding.weak_odr;
+	base_binding.weak_symbol = source_binding.weak_symbol;
+	base_binding.nonthrowing = source_binding.nonthrowing;
 }
 
 void Analyzer::QueueDeferredFunctionDefinition(BindingId binding)

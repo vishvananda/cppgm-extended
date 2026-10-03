@@ -575,6 +575,7 @@ dev/src/semantic/lifetime/demand.cpp	ExplicitInstantiationSuppressesDefinition	1
 dev/src/semantic/lifetime/demand.cpp	FunctionObjectDefinitionRequired	1	dev/src/semantic/lifetime/demand.cpp	keep
 dev/src/semantic/lifetime/demand.cpp	MarkFunctionObjectOutputRoot	1	dev/src/semantic/lifetime/demand.cpp	keep
 dev/src/semantic/lifetime/demand.cpp	QueueDeferredFunctionDefinition	1	dev/src/semantic/lifetime/demand.cpp	keep
+dev/src/semantic/lifetime/demand.cpp	RefreshLifecycleBaseDefinition	1	dev/src/semantic/lifetime/demand.cpp	keep
 dev/src/semantic/lifetime/demand.cpp	ReplayFunctionDemandEdges	1	dev/src/semantic/lifetime/demand.cpp	keep
 dev/src/semantic/lifetime/demand.cpp	ReplayRequiredFunctionDemandEdges	1	dev/src/semantic/lifetime/demand.cpp	keep
 dev/src/semantic/lifetime/demand_stats.cpp	PublishFunctionDemandStats	1	dev/src/semantic/lifetime/demand_stats.cpp	keep

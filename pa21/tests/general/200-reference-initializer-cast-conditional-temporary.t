@@ -2,7 +2,9 @@ struct S{int value,id;S(int);S(const S&);~S()noexcept;};
 extern int choice();extern void check(int);extern void check_live(int);extern int step_value();extern void handled(int);
 extern S make_value();extern S& reference_value(S&);extern S&& rvalue_value(S&);extern const S& reference_const(const S&);
 struct E{S a;int n;S b;};
-extern "C" void construction_probe(){S prefix(1);S&& s=choice()?static_cast<S&&>(S(5)):throw 99;check(s.value==5);check_live(2);step_value();}
+struct Padding{long marker;Padding():marker(9){}};
+struct D:Padding,S{D():S(5){}};
+extern "C" void construction_probe(){S prefix(1);const S& s=static_cast<const S&>(choice()?D():throw 99);check(s.value==5);check_live(2);step_value();}
 
 static int selected,progress,limit,live,bad,count,trace[4096];
 static int next(){if(++progress==limit)throw progress;return progress;}

@@ -766,8 +766,14 @@ ExpressionInfo Analyzer::AnalyzeCast(NodeId node, ScopeId scope)
 	{
 		if (static_reference_base_cast)
 		{
-			operand.category = target_record.kind == TYPE_LVALUE_REFERENCE ?
-				VALUE_LVALUE : VALUE_XVALUE;
+			if (operand.category == VALUE_PRVALUE)
+			{
+				const TypeId source_type = operand.type;
+				operand = MaterializeTemporary(operand);
+				operand.type = source_type;
+			}
+			if (target_record.kind == TYPE_RVALUE_REFERENCE)
+				operand.category = VALUE_XVALUE;
 			return ApplyTarget(operand, target);
 		}
 		const ConversionRank reference_conversion = Conversion(operand, target);

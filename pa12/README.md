@@ -12,6 +12,8 @@ paths:
 - temporary materialization in the common call/return/initialization paths
 - delegating constructors
 - out-of-class constructor and destructor definitions
+- construction and destruction of base subobjects using definitions that appear
+  later in the translation unit
 - the ordinary user-defined copy/move constructors and assignment operators directly
   needed by that value-semantics work
 

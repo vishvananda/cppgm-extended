@@ -105,7 +105,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **26 compiler issue families** remain
+Remaining-work count on 2026-10-03: **22 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
@@ -182,7 +182,7 @@ The recent discovery inventory is not all C++11:
 | INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | Done: persistent backing and cleanup now work through direct native, compiler-object and host-object routes at O0/O2, including shutdown and failed-initialization retry. Native atexit callbacks drain in LIFO order before the shutdown hook and preserve the entry result. Extend existing PA21/PA24 fixtures; remove the opt-in duplicate. Strict 6118/6118, all required checks including variants and Alpha instruction/RSS/equality gates pass. |
 | REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Done in the accompanying performance-approved checkpoint: temporary lvalue-reference binding requires const without volatile, including normalized array element cv. The independent scalar/class/array negatives and valid lvalue controls pass; full compiler checks and global performance gate pass. |
 | REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Done: reference-related single elements bind directly; other class lists create a separate temporary through existing materialization. Reuse prepared typed elements. Extend the existing PA12 constructor-argument lifetime fixture; remove the opt-in duplicate. Original, alias, conversion, aggregate, derived and rejection boundaries pass 48 focused checks at O0/O2. PA12 298/298, strict 6118/6118, all required checks and Alpha instruction/RSS/equality gates pass. |
-| REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Open, independently reproduced: static_cast<const S&>(choice()?D():throw 99) fails lowering at O0/O2 with unchanged entry and first cleanup candidate; Clang/GCC pass. Direct D() base binding is covered by EH-REF-INIT. |
+| REF-BASE-COND | Bind a base reference to a conditional derived-class temporary | Additional EH-REF-INIT controls | Done: materialize the complete derived prvalue before projecting the base reference, preserve cv and binding category, and publish later lifecycle definitions to cached base entries. Extend the existing PA21 lifetime fixture with a nonzero base offset; add one independent PA12 mutable-xvalue cast rejection. Original and fixture pass all three link routes at O0/O2. Eighteen reviewed LowIR references add only the previously missing base-destructor body. Strict 6119/6119, all required checks and Alpha gates pass. |
 | EH-UNWIND-DTOR | Terminate when a staged lexical/full-expression unwind destructor throws | Additional EH-REF-INIT boundary controls | Open, independently reproduced: four reference-initializer controls and an ordinary object/throw control return 10 with both the unchanged entry and cleanup candidate; Clang/GCC invoke the installed termination handler (77) at O0/O2. Generic full-expression cleanup continuations lower destructor calls without the terminating guard used by constructor/destructor body cleanup. Frozen inputs and host traces are retained under reference-initializer-cleanup/. |
 | EH-ARRAY-DTOR | Preserve remaining elements when an unrolled class-array destructor throws | Additional EH-CLEANUP array boundary controls | Open, independently verified: a three-element array skips its first element after the second destructor throws; entry and cleanup candidates fail at O0/O2, Clang/GCC pass. A twelve-element control passes all compilers because the loop path already owns an unwind-progress suffix. |
 | TMPL-FTRY | Retain the complete definition of a function template using a function-try block | Additional EH-CLEANUP source control | Done: retain body, nested constructor initializer and function-try syntax through registration, definition adoption, specialization upgrades and explicit specialization. The original program passes all three link routes at O0/O2; specialization/upgrade boundaries match Clang/GCC. Extend the existing PA21 function-try fixture and retire the opt-in duplicate. The extended fixture's preexisting native failure remains BACKEND. Pattern storage remains 512 bytes. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
@@ -5746,4 +5746,33 @@ exceeds the 1.01 confirmation threshold. Compiler candidate SHA256:
 `40caf0f7fb30c0ba728ca600c9d625bb440052ae903ae5b3959f85fe016d5df1`.
 Evidence: `/tmp/cppgm-v4-audit-review/template-function-try/`.
 Remaining: 23 compiler families and six reviews; final fixture pruning and
+combined student-export validation remain pending.
+
+
+### Conditional base-reference temporary — REF-BASE-COND complete
+
+Materialize a derived prvalue before its static base-reference projection while
+preserving source cv and the required binding category. This also rejects an
+explicit mutable lvalue-base cast of a derived xvalue. Reuse the existing PA21
+conditional-reference lifetime fixture with a nonzero base offset and complete
+derived destruction. One PA12 negative covers the independent explicit-cast
+rejection boundary. Retire the now-passing opt-in reducer.
+
+The strengthened fixture exposed base lifecycle entries cached before their
+source definition. Publish the later typed body, initializer, handler and
+linkage metadata before demanding these entries. Fresh Clang checks confirm
+existing C1/C2 and D1/D2 spellings and weak inline linkage; no ABI encoder change.
+Eighteen other regenerated references add only the previously absent base
+destructor body, with every existing function byte-identical.
+
+Original and lifetime fixture pass direct, compiler-object and host-object
+routes at O0/O2. Cast boundaries and later inline definitions match Clang/GCC.
+PA12 299/299, PA21 208/208, strict 6119/6119, debug-info, self-host through PA5,
+nine architecture audits, file audit and placement pass. Alpha's 192 raw
+observations independently verify equal object hashes, unscaled counters, RSS
+and zero statuses. Maximum median instruction ratio 1.000000430; RSS 1.0. No
+calibrated cycle median exceeds the 1.01 confirmation threshold. Final compiler
+SHA256: `0b5da77d53228caf12a72fc2e95756c693beeca816aa7cc3a839ed278dbd1459`.
+Evidence: `/tmp/cppgm-v4-audit-review/conditional-base-reference/`.
+Remaining: 22 compiler families and six reviews; final fixture pruning and
 combined student-export validation remain pending.

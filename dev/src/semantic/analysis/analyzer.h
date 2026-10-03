@@ -959,6 +959,7 @@ private:
 		FunctionDemandReason reason = FUNCTION_DEMAND_EVALUATED_USE);
 	void DemandRuntimeFunction(BindingId binding, FunctionDemandReason reason);
 	void DemandRuntimeDefinition(BindingId binding);
+	void RefreshLifecycleBaseDefinition(BindingId source, BindingId base);
 	void MarkFunctionObjectOutputRoot(BindingId binding);
 	void RecordFunctionDemand(BindingId binding, FunctionDemandReason reason);
 	bool FunctionObjectDefinitionRequired(BindingId binding) const;

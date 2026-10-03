@@ -219,6 +219,9 @@ To complete PA21, implement these goals:
    returned by a call does not extend the lifetime of its temporary arguments.
    If a conditional initializer arm throws before the destination object is
    constructed, do not schedule destruction of that destination on the unwind path.
+   A reference cast from a conditional class prvalue materializes the complete
+   object before selecting a base subobject; lifetime extension retains that
+   complete object and its destructor.
    A class-valued conditional may have a `throw` operand on either side. Its
    value arm retains ordinary construction and cleanup; its throwing arm
    unwinds objects that were already live before the branch.

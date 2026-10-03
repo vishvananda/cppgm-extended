@@ -454,6 +454,26 @@ function @S__S__ov2(%this : ptr [object_bytes=8], %n : i32) -> void [binding=str
     store i32 %t4, %t6
     return void
 }
+function @S___S__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong, object=_ZN1SD2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 4
+    %t3 = load i32 %t2
+    %t4 = unary neg i32 %t3
+    %t5 = addr @trace
+    %t6 = load i32 @count
+    %t7 = binary add i32 %t6, 1
+    store i32 %t7, @count
+    %t8 = index i32 [projection=array_element] %t5, %t6
+    store i32 %t4, %t8
+    %t9 = load i32 @live
+    %t10 = binary sub i32 %t9, 1
+    store i32 %t10, @live
+    return void
+}
 function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong, object=_ZN1SD1Ev] {
   slot $this : ptr
 
