@@ -1669,6 +1669,20 @@ std::vector<BindingId> Analyzer::FunctionTemplateTargetCandidates(
 	if (patterns.empty() && !structured_base.Empty())
 		patterns = FindFunctionTemplates(scope, structured_base);
 	std::vector<BindingId> result;
+	if (patterns.empty() && program_->types.IsFunction(target))
+	{
+		const NodeId conversion_type = FindChild(
+			syntax, ::cppgm::syntax::STAG_CONVERSION_TYPE_ID);
+		if (conversion_type != kNoNode)
+		{
+			const ScopeId owner = ResolveOwner(scope, structured_base);
+			const EntityId entity = program_->EntityForScope(owner);
+			const TypeId requested = BuildTypeId(conversion_type, scope);
+			AppendConversionFunctionTemplateCandidates(
+				entity, requested, &result, true);
+			return result;
+		}
+	}
 	for (std::size_t i = 0; i < patterns.size(); ++i)
 	{
 		if (patterns[i] >= function_templates_.size())

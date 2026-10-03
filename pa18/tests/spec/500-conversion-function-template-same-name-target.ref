@@ -50,7 +50,7 @@ function @source_ns__view_char___view_typename___retained_template_parameter_sha
     store i32 %t1, %t3
     return void
 }
-function @source_ns__view_char___view_U_(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK9source_ns4viewIcEcvN9target_ns4viewIcEEIcEEv, inline_hint=yes] {
+function @source_ns__view_char___view_U_(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK9source_ns4viewIcEcvN9target_ns4viewIT_EEIcEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 

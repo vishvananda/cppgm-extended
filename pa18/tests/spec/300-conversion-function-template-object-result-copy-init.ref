@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = addr $value
     return i32 0
 }
-function @X__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK1Xcv1AIS0_EEv, inline_hint=yes] {
+function @X__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK1XcvT_I1AEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 

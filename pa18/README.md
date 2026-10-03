@@ -140,6 +140,8 @@ the implemented surface, including:
 - substitution behavior and candidate dropping
 - `enable_if`, `void_t`, and detected-idiom style SFINAE behavior
 - conversion function template deduction
+- conversion template ABI names retain the declared target pattern, including
+  explicit specializations and cv/reference target arguments
 - constructor template deduction and overload participation
 - non-deduced contexts and explicit template-id deduction edge cases
 - braced-init deduction in the supported template-call subset

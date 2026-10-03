@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = load i32 $cond__3
     return i32 %t13
 }
-function @source_int___operatorContainer(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK6sourceIiEcv5arrayIiLm2EEIS2_vvEEv, inline_hint=yes] {
+function @source_int___operatorContainer(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK6sourceIiEcvT_I5arrayIiLm2EEvvEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 

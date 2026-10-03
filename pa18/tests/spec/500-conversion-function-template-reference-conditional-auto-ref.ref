@@ -49,7 +49,7 @@ function @factor_unique_tag___operator___ov3(%this : ptr [object_bytes=1], %__pa
     %t1 = call ptr @static_const_var()
     return ptr %t1
 }
-function @deduce_unique_unique_tag___operatorconstF_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK13deduce_uniqueI10unique_tagEcvRK7wrapperI12callable_tagEIS4_EEv, inline_hint=yes] {
+function @deduce_unique_unique_tag___operatorconstF_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK13deduce_uniqueI10unique_tagEcvRKT_I7wrapperI12callable_tagEEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

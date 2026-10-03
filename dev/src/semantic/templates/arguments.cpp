@@ -735,7 +735,9 @@ bool Analyzer::AnalyzeExplicitTemplateSpecialization(
 
 	if (declarator == kNoNode) return false;
 	const NodeId specifiers = FindChild(target, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ);
-	if (specifiers == kNoNode) return false;
+	const NodeId conversion_type = FindChild(
+		declarator, ::cppgm::syntax::STAG_CONVERSION_TYPE_ID);
+	if (specifiers == kNoNode && conversion_type == kNoNode) return false;
 	ScopeId specialization_semantic_scope = scope;
 	if (structure != kNoNode && structured_path.Size() > 1)
 	{
@@ -748,10 +750,23 @@ bool Analyzer::AnalyzeExplicitTemplateSpecialization(
 		program_->EntityForScope(specialization_semantic_scope);
 	if (specialization_class != kNoEntity)
 		current_class_context_ = specialization_class;
-	const SpecInfo spec = BuildSpecifiers(
+	SpecInfo spec;
+	if (conversion_type != kNoNode)
+	{
+		spec.type = BuildTypeId(conversion_type, specialization_semantic_scope);
+		const NodeId member_specifiers = FindChild(
+			target, ::cppgm::syntax::STAG_MEMBER_SPECIFIERS);
+		spec.inline_specifier = HasDeclSpecifier(member_specifiers, "inline");
+		spec.is_constexpr = HasDeclSpecifier(member_specifiers, "constexpr");
+	}
+	else spec = BuildSpecifiers(
 		specifiers, specialization_semantic_scope, std::string(), true);
-	const DeclaratorInfo parsed = BuildDeclarator(
-		declarator, spec.type, specialization_semantic_scope);
+	DeclaratorInfo parsed = BuildDeclarator(
+		declarator, spec.type, specialization_semantic_scope, false,
+		conversion_type != kNoNode);
+	if (conversion_type != kNoNode && spec.is_constexpr)
+		parsed.type = ApplyConstexprMemberFunctionType(
+			parsed.type, specialization_class, false);
 	current_class_context_ = previous_class_context;
 	if (!program_->types.IsFunction(parsed.type)) return false;
 	BindingId selected = kNoBinding;
@@ -760,8 +775,11 @@ bool Analyzer::AnalyzeExplicitTemplateSpecialization(
 		const NodeId identifier = FindChild(declarator, ::cppgm::syntax::STAG_IDENTIFIER);
 		const NodeId name_syntax = structure != kNoNode ? structure : identifier;
 		if (name_syntax == kNoNode) return false;
-		const std::vector<BindingId> candidates =
-			FunctionTemplateTargetCandidates(scope,
+		std::vector<BindingId> candidates;
+		if (conversion_type != kNoNode)
+			AppendConversionFunctionTemplateCandidates(
+				specialization_class, spec.type, &candidates, true);
+		else candidates = FunctionTemplateTargetCandidates(scope,
 				program_->names.Get(primary.Last()), parsed.type, name_syntax);
 		for (std::size_t i = 0; i < candidates.size(); ++i)
 		{
@@ -814,7 +832,8 @@ bool Analyzer::AnalyzeExplicitTemplateSpecialization(
 	std::uint8_t& specialization_state =
 		function_explicit_specialization_states_[selected];
 	const bool target_definition =
-		arena_->IsTag(target, ::cppgm::syntax::STAG_FUNCTION_DEFINITION);
+		arena_->IsTag(target, ::cppgm::syntax::STAG_FUNCTION_DEFINITION) ||
+		arena_->IsTag(target, ::cppgm::syntax::STAG_SPECIAL_MEMBER_DEFINITION);
 	if (target_definition && (specialization_state & 2) != 0)
 		ThrowSemanticError(
 			"duplicate explicit function specialization definition");

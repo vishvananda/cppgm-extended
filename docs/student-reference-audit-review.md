@@ -105,7 +105,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **22 compiler issue families** remain
+Remaining-work count on 2026-10-03: **21 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
@@ -113,7 +113,8 @@ required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN, ASSERT-MESSAGE, CONST-MEMBER-BOOL, CONST-BITFIELD and
 LOOKUP-TAG, ABI-GLOBAL, NOEXCEPT-LIST, REF-BITFIELD and
-CONST-REF-STATIC-TEMP and REF-BRACE are also completed. These are tracker
+CONST-REF-STATIC-TEMP, REF-BRACE, INIT-LIST-STATIC, EH-RETHROW-DYNAMIC,
+TMPL-FTRY, REF-BASE-COND and MANGLE-CONV are also completed. These are tracker
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
@@ -189,7 +190,7 @@ The recent discovery inventory is not all C++11:
 | EH-RETHROW-DYNAMIC | Accept operandless throw in a function called with a dynamically active handler | Additional defined destructor/helper controls | Done for source acceptance and lowering: remove the lexical-handler restriction and its unused counter. All three original programs pass host linking at O0/O2; the called-function case and rewritten existing fixture also pass standalone/object routes. No-active-exception execution invokes the installed termination handler. Same-function nested-handler and destructor traces still fail only in the native BACKEND family; retain/reclassify the existing opt-in reducer. Strict 6118/6118, all required semantic-change checks and Alpha gates pass. |
 | MEMBER | Signed member-pointer adjustment, target-word truth, inverse conversion, width checks and repeated empty bases | v4codex group 11 | Open. |
 | VBASE | Virtual-base layout/lifecycle, construction RTTI, null placement and diamond flags | v4codex group 12 | Open; correct uninitialized fixture before using it as a runtime oracle. |
-| MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Open: Clang emits _ZN1XcvT_IKiEEv / _ZN1XcvT_IRiEEv; ours emits _ZN1XcvKiIS0_EEv / _ZN1XcvRiIS0_EEv. No encoder change yet; concrete target has replaced declared T in the name facts. |
+| MANGLE-CONV | Conversion-function template names retain the declared dependent target | Additional Clang object check during RESULT-CONV | Done: build conversion terminals from retained template recipes; resolve explicit conversion specializations and qualified conversion addresses through existing deduction using retained syntax. Fresh Clang/GCC O0 symbols agree. Extend existing PA18 direct-conversion and PA22 pointer-target fixtures; retire the opt-in duplicate. Fourteen other references change only conversion object-name metadata. Strict 6119/6119, all required checks and Alpha gates pass; no ABI encoder change. |
 | MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Open, confirmed against Clang/GCC and unchanged entry 1cb054e23: bare decltype(value) uses DT instead of Dt; named dependent selected(value) loses the expression and emits a concrete result type. Parenthesized decltype((value)) already agrees. No encoder change in the result identity checkpoint. |
 | MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Open: entry 425bc2a90 and candidate flatten a fixed-primary parameter expansion and append defaults; Clang/GCC retain `tuple<T_,DpT0_>`. The deduction checkpoint corrects the concrete template argument pack cardinality; the parameter pattern remains wrong. No encoder change made. |
 | MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
@@ -5775,4 +5776,46 @@ calibrated cycle median exceeds the 1.01 confirmation threshold. Final compiler
 SHA256: `0b5da77d53228caf12a72fc2e95756c693beeca816aa7cc3a839ed278dbd1459`.
 Evidence: `/tmp/cppgm-v4-audit-review/conditional-base-reference/`.
 Remaining: 22 compiler families and six reviews; final fixture pruning and
+combined student-export validation remain pending.
+
+
+### Conversion-template target patterns — MANGLE-CONV complete
+
+Fresh Clang and GCC objects reproduce the two retained target-pattern names:
+`_ZN1XcvT_IKiEEv` and `_ZN1XcvT_IRiEEv`. Build both ordinary conversion
+terminals and member-address facts from the existing template ABI recipe
+instead of its substituted concrete target. The encoder is unchanged.
+
+Explicit conversion specializations now select their template specialization
+through existing conversion deduction and retain inline/constexpr facts.
+Qualified conversion addresses retain their target-type syntax during parsing
+and consume it through existing target deduction. No source reparse, new
+persistent fields or fixture files. Extend the existing PA18 direct-conversion
+fixture with an explicit specialization. Extend the PA22 member-function
+pointer-target fixture with direct and NTTP conversion addresses and invocation.
+Placement correctly assigns member-pointer invocation to PA22; keep that check
+out of PA18. Retire the now-passing opt-in conversion reducer and symbol sidecar.
+
+Fourteen other regenerated references change only conversion object symbol
+metadata. Clang omits one unused constexpr specialization that we emit. The
+existing dependent non-type parameter annotation matches GCC and Clang's
+ABI-17 compatibility mode; current Clang's default uses a newer annotation.
+This does not establish another C++ language bug or require another fixture.
+Every O0 conversion/address symbol in the focused direct, specialization,
+SFINAE and owning-fixture checks agrees with Clang/GCC. O2 execution passes,
+with unused-symbol elimination allowed. Original and final owning fixtures
+pass direct, compiler-object and host-object routes at O0/O2.
+
+PA18 427/427, PA19 428/428 and PA22 102/102 pass. Strict 6119/6119, debug-info,
+backend variants, self-host through PA5, nine architecture audits, file audit
+and final placement pass. Alpha's final 240 observations cover four existing
+frozen workloads plus non-template conversions, with pinned alternating paired
+blocks and interleaved A/A calibration. Independently verify every unscaled
+counter, RSS, status and equal object hash. Maximum median instruction ratio
+1.000455783 (+0.0456%); RSS ratios 1.0. No calibrated cycle median exceeds the
+1.01 confirmation threshold. Final compiler SHA256:
+`c8ba5e3ffe148208472151fcea20f470793c2596db071a7cbd5a48edb4850feb`.
+Evidence: `/tmp/cppgm-v4-audit-review/conversion-template-target/`, including
+`owning-validation.json` for the final fixture placement qualification.
+Remaining: 21 compiler families and six reviews; final fixture pruning and
 combined student-export validation remain pending.

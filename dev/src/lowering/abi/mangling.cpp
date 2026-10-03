@@ -750,7 +750,7 @@ public:
 					target.member_function_terminal_kind =
 						ABI_MEMBER_FUNCTION_TERMINAL_CONVERSION;
 					target.member_function_conversion_type =
-						MakeType(value.conversion_target);
+						MakeConversionFunctionType(value);
 				}
 				else if (value.operator_kind != OPERATOR_NONE)
 				{
@@ -1166,6 +1166,25 @@ public:
 			}
 		}
 		return false;
+	}
+
+	abi_mangle::AbiType MakeConversionFunctionType(
+		const semantic::BindingRecord& function)
+	{
+		using namespace semantic;
+		if (function.function_template_abi_recipe ==
+			kNoFunctionTemplateAbiRecipe)
+			return MakeType(function.conversion_target);
+		if (function.function_template_abi_recipe >=
+			program_.function_template_abi_recipes.size())
+			ThrowLoweringInternal("conversion function ABI recipe is invalid");
+		const FunctionTemplateAbiRecipe& recipe =
+			program_.function_template_abi_recipes[
+				function.function_template_abi_recipe];
+		if (recipe.result_type != kNoFunctionTemplateAbiType)
+			return MakeFunctionTemplateAbiType(recipe.result_type, recipe);
+		return MakeFunctionTemplateType(
+			program_.types.Get(recipe.function_type).child, function, &recipe);
 	}
 
 	abi_mangle::AbiType MakeType(semantic::TypeId type)
@@ -2433,7 +2452,7 @@ std::string MangleFunction(const semantic::Program& program,
 		AbiFactRecord terminal;
 		terminal.set_kind(ABI_FACT_RECORD_FUNCTION);
 		terminal.function.kind = ABI_FUNCTION_RECORD_CONVERSION_TERMINAL;
-		terminal.function.type = facts.MakeType(binding.conversion_target);
+		terminal.function.type = facts.MakeConversionFunctionType(binding);
 		AppendTypedFact(&fact_case, &terminal);
 	}
 	else if (binding.constructor)

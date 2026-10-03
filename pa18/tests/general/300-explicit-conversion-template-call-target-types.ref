@@ -175,7 +175,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t76 = index i8 [projection=field] %t75, 0
     store i32 91, %t76
     %t77 = addr $result
-    %t78 = call ptr @ReferenceResult__operatorT(%t77)
+    %t78 = call ptr @ReferenceResult__operatorT__ov2(%t77)
     store ptr %t78, $result_reference
     %t79 = load ptr $result_reference
     store i32 101, %t79
@@ -192,31 +192,54 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_25
 
   block ^if_end_25:
-    %t84 = addr $derived
-    %t85 = addr $derived
-    %t86 = index i8 %t85, 0
-    %t87 = call i32 @Base__operatorT(%t86)
-    %t88 = cmp ne i32 %t87, 19
-    branch %t88, ^lor_short_27, ^lor_rhs_26
+    %t84 = addr $result
+    %t85 = call i32 @ReferenceResult__operatorT(%t84)
+    %t86 = cmp ne i32 %t85, 102
+    branch %t86, ^if_then_26, ^if_else_27
 
-  block ^lor_rhs_26:
-    %t89 = addr $derived
-    %t90 = call i32 @Derived__operatorT(%t89)
-    %t91 = cmp ne i32 %t90, 23
-    %t92 = cmp ne i64 %t91, 0
-    store i64 %t92, $lor__3
-    jump ^lor_end_28
+  block ^if_then_26:
+    return i32 7
 
-  block ^lor_short_27:
+  block ^if_else_27:
+    jump ^if_end_28
+
+  block ^if_end_28:
+    %t87 = addr $derived
+    %t88 = addr $derived
+    %t89 = index i8 %t88, 0
+    %t90 = call i32 @Base__operatorT(%t89)
+    %t91 = cmp ne i32 %t90, 19
+    branch %t91, ^lor_short_30, ^lor_rhs_29
+
+  block ^lor_rhs_29:
+    %t92 = addr $derived
+    %t93 = call i32 @Derived__operatorT(%t92)
+    %t94 = cmp ne i32 %t93, 23
+    %t95 = cmp ne i64 %t94, 0
+    store i64 %t95, $lor__3
+    jump ^lor_end_31
+
+  block ^lor_short_30:
     store i64 1, $lor__3
-    jump ^lor_end_28
+    jump ^lor_end_31
 
-  block ^lor_end_28:
-    %t93 = load i64 $lor__3
-    %t94 = convert trunc i32 i64 %t93
-    return i32 %t94
+  block ^lor_end_31:
+    %t96 = load i64 $lor__3
+    %t97 = convert trunc i32 i64 %t96
+    return i32 %t97
 }
-function @Source__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZN6Sourcecv5ValueIS0_EEv, inline_hint=yes] {
+function @ReferenceResult__operatorT(%this : ptr [object_bytes=4]) -> i32 [binding=strong, object=_ZN15ReferenceResultcvT_IiEEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = binary add i32 %t3, 1
+    return i32 %t4
+}
+function @Source__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZN6SourcecvT_I5ValueEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -229,7 +252,7 @@ function @Source__operatorT(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=w
     call void @Value__Value__aggregate(%t1, %t4)
     return obj<4x4> $retobj__1
 }
-function @Source__operatorT__ov2(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK6Sourcecv5ValueIS0_EEv, inline_hint=yes] {
+function @Source__operatorT__ov2(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK6SourcecvT_I5ValueEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 
@@ -243,7 +266,7 @@ function @Source__operatorT__ov2(%this : ptr [object_bytes=4]) -> obj<4x4> [bind
     call void @Value__Value__aggregate(%t1, %t5)
     return obj<4x4> $retobj__1
 }
-function @Source__operatorT__ov3(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN6SourcecviIiEEv, inline_hint=yes] {
+function @Source__operatorT__ov3(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN6SourcecvT_IiEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -253,7 +276,7 @@ function @Source__operatorT__ov3(%this : ptr [object_bytes=4]) -> i32 [binding=w
     %t3 = load i32 %t2
     return i32 %t3
 }
-function @Source__operatorT__ov6(%this : ptr [object_bytes=4]) -> i64 [binding=weak, object=_ZNK6SourcecvlIlEEv, inline_hint=yes] {
+function @Source__operatorT__ov6(%this : ptr [object_bytes=4]) -> i64 [binding=weak, object=_ZNK6SourcecvT_IlEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -265,7 +288,7 @@ function @Source__operatorT__ov6(%this : ptr [object_bytes=4]) -> i64 [binding=w
     %t5 = convert sext i64 i32 %t4
     return i64 %t5
 }
-function @Source__operatorT__ov7(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN6SourcecvKiIS0_EEv, inline_hint=yes] {
+function @Source__operatorT__ov7(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN6SourcecvT_IKiEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -287,7 +310,7 @@ function @explicit_convert(%source : ptr [pass=by_address, object_bytes=4]) -> o
     copyobj 4x4 %t3, %t1
     return obj<4x4> $retobj__1
 }
-function @Address__operatorT_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN7AddresscvPiIiEEv, inline_hint=yes] {
+function @Address__operatorT_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN7AddresscvPT_IiEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -296,7 +319,7 @@ function @Address__operatorT_(%this : ptr [object_bytes=4]) -> ptr [binding=weak
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @Reference__operatorT_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN9ReferencecvRiIiEEv, inline_hint=yes] {
+function @Reference__operatorT_(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN9ReferencecvRT_IiEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -305,7 +328,7 @@ function @Reference__operatorT_(%this : ptr [object_bytes=4]) -> ptr [binding=we
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @ReferenceResult__operatorT(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN15ReferenceResultcvRiIS0_EEv, inline_hint=yes] {
+function @ReferenceResult__operatorT__ov2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN15ReferenceResultcvT_IRiEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -314,14 +337,14 @@ function @ReferenceResult__operatorT(%this : ptr [object_bytes=4]) -> ptr [bindi
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
-function @Base__operatorT(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK4BasecviIiEEv, inline_hint=yes] {
+function @Base__operatorT(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK4BasecvT_IiEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return i32 19
 }
-function @Derived__operatorT(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK7DerivedcviIiEEv, inline_hint=yes] {
+function @Derived__operatorT(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK7DerivedcvT_IiEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

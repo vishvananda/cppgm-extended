@@ -68,7 +68,7 @@ function @make_result__ov2() -> obj<4x4> [binding=weak, object=_Z11make_resultIK
     copyobj 4x4 %t3, %t1
     return obj<4x4> $retobj__1
 }
-function @source__operatorType(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK6sourcecv6resultIiEIS1_EEv, inline_hint=yes] {
+function @source__operatorType(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK6sourcecvT_I6resultIiEEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 

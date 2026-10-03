@@ -67,7 +67,7 @@ function @leaf__result_char___error(%this : ptr [object_bytes=4]) -> obj<4x4> [b
     call void @leaf____cppgm_class_template_identity_0_1_0__error_result__error_result__aggregate(%t1, %t4)
     return obj<4x4> $retobj__1
 }
-function @leaf__result_char___error_result__operatorresult_U_(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE12error_resultcvNS0_IiEEIiEEv, inline_hint=yes] {
+function @leaf__result_char___error_result__operatorresult_U_(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE12error_resultcvNS0_IT_EEIiEEv, inline_hint=yes] {
   slot $this : ptr
   slot $retobj__1 : obj<4x4>
 

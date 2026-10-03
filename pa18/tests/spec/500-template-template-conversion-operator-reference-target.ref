@@ -188,7 +188,7 @@ function @string_like_char__traits___string_like_char__traits_(%this : ptr [obje
     store i8 0, %t12
     return void
 }
-function @string_like_char__traits___operatorView_CharT_Traits_(%ret : ptr [pass=indirect_result, object_bytes=16], %this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZNK11string_likeIc6traitsEcv4viewIcS0_EI4viewEEv, inline_hint=yes] {
+function @string_like_char__traits___operatorView_CharT_Traits_(%ret : ptr [pass=indirect_result, object_bytes=16], %this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZNK11string_likeIc6traitsEcvT_IcS0_EI4viewEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

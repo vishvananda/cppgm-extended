@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $value
     return i32 0
 }
-function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK17basic_string_viewIcEcv12basic_stringIc11char_traits9allocatorEIS3_EEv] {
+function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK17basic_string_viewIcEcv12basic_stringIc11char_traitsT_EI9allocatorEEv] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 

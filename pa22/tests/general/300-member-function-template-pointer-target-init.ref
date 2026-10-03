@@ -1,5 +1,8 @@
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $setter : i128
+  slot $value : obj<4x4>
+  slot $converter : i128
+  slot $lor__1 : i64
 
   block ^entry:
     %t1 = addr @member_template_pointer_target__C__set
@@ -7,9 +10,51 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = convert zext i128 i64 %t2
     store i128 %t3, $setter
     %t4 = load i128 $setter
-    return i32 0
+    %t5 = addr $value
+    %t6 = addr $value
+    %t7 = index i8 [projection=field] %t6, 0
+    store i32 7, %t7
+    %t8 = addr @member_template_pointer_target__C__operatorT
+    %t9 = copy i64 %t8
+    %t10 = convert zext i128 i64 %t9
+    store i128 %t10, $converter
+    %t11 = addr $value
+    %t12 = load i128 $converter
+    %t13 = convert trunc i64 i128 %t12
+    %t14 = copy ptr %t13
+    %t15 = call i32 %t14(%t11) as (%arg0 : ptr [object_bytes=4]) -> i32
+    %t16 = cmp ne i32 %t15, 8
+    branch %t16, ^lor_short_2, ^lor_rhs_1
+
+  block ^lor_rhs_1:
+    %t17 = addr $value
+    %t18 = call i32 @member_template_pointer_target__convert(%t17)
+    %t19 = cmp ne i32 %t18, 8
+    %t20 = cmp ne i64 %t19, 0
+    store i64 %t20, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_short_2:
+    store i64 1, $lor__1
+    jump ^lor_end_3
+
+  block ^lor_end_3:
+    %t21 = load i64 $lor__1
+    %t22 = convert trunc i32 i64 %t21
+    return i32 %t22
 }
-function @member_template_pointer_target__C__set(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN30member_template_pointer_target1C3setIiEEvT_, inline_hint=yes] {
+function @member_template_pointer_target__C__operatorT(%this : ptr [object_bytes=4]) -> i32 [binding=strong, object=_ZN30member_template_pointer_target1CcvT_IiEEv] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = binary add i32 %t3, 1
+    return i32 %t4
+}
+function @member_template_pointer_target__C__set(%this : ptr [object_bytes=4], %__param1 : i32) -> void [binding=weak, object=_ZN30member_template_pointer_target1C3setIiEEvT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -17,4 +62,14 @@ function @member_template_pointer_target__C__set(%this : ptr [object_bytes=1], %
     store ptr %this, $this
     store i32 %__param1, $__param1
     return void
+}
+function @member_template_pointer_target__convert(%value : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN30member_template_pointer_target7convertIXadL_ZNS_1CcvT_IiEEvEEEEiRS1_] {
+  slot $value : ptr
+
+  block ^entry:
+    store ptr %value, $value
+    %t1 = load ptr $value
+    %t2 = addr @member_template_pointer_target__C__operatorT
+    %t3 = call i32 %t2(%t1) as (%arg0 : ptr [object_bytes=4]) -> i32
+    return i32 %t3
 }

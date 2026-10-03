@@ -31,6 +31,8 @@ struct ReferenceResult {
     template<class T> operator T() { return number; }
 };
 
+template<> ReferenceResult::operator int() { return number + 1; }
+
 template<class T> T explicit_convert(const Source& source) {
     return source.operator T();
 }
@@ -59,6 +61,7 @@ int main() {
     int& result_reference = result.operator int&();
     result_reference = 101;
     if (result.number != 101) return 6;
+    if (result.operator int() != 102) return 7;
     Derived derived;
     return derived.Base::operator int() != 19 || derived.operator int() != 23;
 }

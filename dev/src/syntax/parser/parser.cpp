@@ -1482,9 +1482,13 @@ NodeId SyntaxParser::ParsePrimaryExpression()
 		else
 		{
 			NodeId structure = kNoNode;
-			if (!ParseName(&name, true, true, true, &structure)) return kNoNode;
+			NodeId conversion_type = kNoNode;
+			if (!ParseName(&name, true, true, true, &structure, 0,
+				&conversion_type)) return kNoNode;
 			const NodeId expression =
 				MakeStructuredNode("id-expression", name, structure);
+			if (conversion_type != kNoNode)
+				arena_.Add(expression, conversion_type);
 			arena_.SetTokenRange(expression, first, position_);
 			return expression;
 		}
