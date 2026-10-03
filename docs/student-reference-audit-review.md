@@ -219,7 +219,7 @@ The recent discovery inventory is not all C++11:
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Done for the frozen student finding in the accompanying checkpoint: ordinary pointer/reference-only declarations use the existing specifier identity path, preventing premature class-template instantiation. Both original programs pass all routes; concrete object definitions still require completion. Reuse one existing fixture in its owning PA14:300 cluster, retire the duplicate PA18 control and regenerate only its owning reference. Strict 6119/6119, full compiler checks, placement and final Alpha gates pass. Broader declaration deferral is not part of this frozen repair. |
 | TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Reviewed: no additional required fix or fixture. Instantiating the mismatched member rejects with conflicting function return type at O0/O2 and in PA14 LowIR, while the matching definition passes; both strict C++11 hosts agree. The unused form remains a diagnostic-timing difference under N3485 14.6/8, not a mandatory rejection oracle. Fourteen new observations and contract review are recorded below. |
 | NEW-ARRAY-DTOR-ACCESS | Check destructor accessibility when constructing a class array with new | v4codex PA30 source200 | Done in the accompanying performance-approved checkpoint: use the indexed destructor binding and naming/object-class access check before trivial destruction is elided. Promote the private-array negative, add one protected-base-object negative and retain the existing scalar/own-array positive in PA12/400. Demanded scratch boundaries pass ours and Clang 22/22; three GCC-disputed cases stay scratch evidence. PA12 298/298, strict 6108/6108 in one line, all required compiler checks and global Alpha gates pass. N3485 5.3.4/17 and 11.4/1 supply the rule. |
-| TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
+| TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Done in the accompanying checkpoint: qualified type/template lookup records candidate failure for inaccessible declarations. Shared class completion suspends the enclosing deduction context so errors in a class-instantiation side effect remain hard errors. Combine both original fallbacks in one existing PA18 fixture, retire two controls and add one independent hard-error negative. Strict 6120/6120, all compiler checks and the final Alpha instruction/memory screen plus focused timing confirmation pass. |
 | ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Done: typed ordinary-string token category and retained message range enforce PA15 semantics while preserving PA5 generic-literal AST acceptance. Promote two unchanged independent controls; no new source fixture or record field. Adjacent literal kinds use one guarded range check. All 49 focused outcomes and eight required final validation groups pass; strict 6114/6114 prints one line. Final 288-observation screen/confirmation passes instruction/RSS/equality gates; confirmed virtual-class cycles increase 3.49%, explicitly retained. A 72-compile profile found no actionable new hotspot. First-candidate evidence and final source/image/results remain in static-assert-message/. |
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Done: add the missing member-pointer predicate to ApplyContextualBool, reusing typed ApplyMemberPointerTarget folding (N3485 4.12/1). Extend the existing PA22 contextual-bool fixture with data/function nonnull and null assertions; remove the superseded opt-in control. All 48 focused outcomes and eight final qualification groups pass; strict 6114/6114 stays one line. The expanded 240-observation final screen includes 3000 accepted contextual conversions and passes instruction/RSS/equality gates with no timing confirmation indicated. Preserve the first shared-classifier candidate and its confirmed 2.69% cycle cost; the final patch avoids that additional call. No new source fixture. Artifacts in constant-member-pointer-bool/. |
 | CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Done: BuildConstexprObjectElement reuses NormalizeWideConstant with the typed BindingLayoutFact width after declared-type conversion. Skip full-width and bool values; retain signed values. Three assertions extend the existing PA16 aggregate fixture and the superseded opt-in control is removed. All 42 focused outcomes and eight final qualification groups pass; affected 876/876, strict 6114/6114 prints one line. The 240-observation screen includes targeted bit-field constants and ordinary aggregates; instruction/RSS/equality gates pass with no timing confirmation indicated (maximum instruction ratio 1.003711, RSS 1.0). No new source fixture. Artifacts in constant-bitfield-width/. |
@@ -6037,3 +6037,41 @@ or frozen discovery family is added. This completion record covers the original
 student pointer-declaration finding, not general class-declaration conformance.
 Remaining frozen compiler families: 17, plus six reviews; final fixture pruning
 and combined student-export/harness/quiet-output validation remain pending.
+
+
+## Private alias substitution — 2026-10-03
+
+Fix both original TMPL-ACCESS-SFINAE controls. Inaccessible qualified type and
+alias-template lookup records failure in the existing immediate substitution
+context. Move the existing suspension of an enclosing deduction state from
+EnsureClassDefinition into the shared class-completion owner, after its cache
+return. Eager completion now obeys the same boundary: errors in the selected
+class body remain hard errors, while partial selection creates its own contexts.
+No new compiler payload, source or owner method is introduced.
+
+Combine the overload fallback and erased partial-specialization access obligation
+in the existing PA18 detector fixture, preserving its public-alias positive.
+Remove both superseded controls. Add one independent rejection fixture because
+the first candidate incorrectly accepted the demonstrated class-body side
+effect; it must not select a fallback. Generate only the owning positive reference
+and the new rejection reference/status. Fresh Clang confirms the fallback symbol.
+All added source behavior is C++11 and belongs to PA18 substitution completion.
+
+Forty-two agreed O0/O2 compilations, thirty successful executions and twenty-four
+executions across direct/object/host/text routes pass. Eight additional fixture
+host checks agree. PA18 passes 428/428; strict 6120/6120 prints only its final
+line. Debug-info, backend variants, self-host through PA5, all nine architecture
+targets, file and placement checks pass; 37 existing file warnings remain.
+
+Alpha independently verifies 288 screen observations plus one focused
+48-observation timing confirmation, with unscaled counters, RSS, successful
+statuses and equal outputs. Maximum screen instruction median is 1.000001680;
+maximum RSS ratio is 1.0. The initial copy-templates calibrated cycle median
+1.010303488 becomes 1.000733536 on confirmation; retain the interval and all
+observations without claiming timing neutrality. Final SHA256:
+`b764e3354e82fbd95551062f05d37b3cbb7f4be42be809d2a7f1ebaed4828bdf`.
+Evidence: `/tmp/cppgm-v4-audit-review/private-alias-substitution/`. The strict
+check is in early-strict.log and the other final checks in validation/; no binary
+or fixture changed between them. Remaining frozen compiler families: 16, plus
+six reviews; final fixture pruning and combined export/harness/quiet-output
+validation remain pending.

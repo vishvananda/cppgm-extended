@@ -371,8 +371,15 @@ LookupResult Analyzer::LookupStructuredName(NodeId syntax,
 		if (argument_list == kNoNode &&
 			found.type_declaration != kNoBinding &&
 			!CanAccessMember(found.type_declaration, found.naming_class))
+		{
+			if (CandidateSubstitutionActive())
+			{
+				RecordCandidateSubstitutionFailure();
+				return LookupResult();
+			}
 			ThrowSemanticError("inaccessible qualified type: " +
 				program_->names.Get(component));
+		}
 
 		if (argument_list != kNoNode && !terminal_template)
 		{
@@ -382,7 +389,14 @@ LookupResult Analyzer::LookupStructuredName(NodeId syntax,
 				argument_syntax.push_back(arena_->EdgeChild(edge));
 			if (found.type_declaration != kNoBinding &&
 				!CanAccessMember(found.type_declaration, found.naming_class))
+			{
+				if (CandidateSubstitutionActive())
+				{
+					RecordCandidateSubstitutionFailure();
+					return LookupResult();
+				}
 				ThrowSemanticError("inaccessible template type");
+			}
 			const std::size_t alias =
 				FindAliasTemplateIndex(found, component);
 			if (alias != NoTemplatePattern())
@@ -1629,6 +1643,11 @@ void Analyzer::CompleteClassTemplateSpecialization(std::size_t index,
 	if (class_template_specialization_states_[binding] != 0 &&
 		class_template_specialization_states_[binding] !=
 			kClassTemplateCompletionPendingDefinition) return;
+	// N3485 14.8.2/8: errors in a class specialization's body are outside
+	// an enclosing deduction's immediate context. Partial selection establishes
+	// its own substitution contexts; completing the selected body does not.
+	ScopedValueRestore<std::vector<std::uint8_t> > suspended(
+		&candidate_substitution_failures_, std::vector<std::uint8_t>());
 
 	// Pattern storage is stable across re-entrant publication of nested
 	// templates, so replay borrows the one published pattern rather than copying
@@ -1813,12 +1832,6 @@ void Analyzer::EnsureClassDefinition(TypeId type)
 			count > program_->template_arguments.size() - first)
 			ThrowInternalCompilerError("class specialization arguments are truncated");
 		const std::vector<TemplateArgument> arguments = StoredTemplateArguments(first, count);
-		// N3485 14.8.2/8: instantiating a class template specialization is not
-		// in the immediate context of a deduction, so a candidate substitution
-		// in progress neither excuses an error here nor gets to poison this
-		// analysis with a failure it has already recorded.  Suspend it for the
-		// duration; without this every consumer of the resulting empty type
-		// has to guard against a failure that was never about it.
 		// An explicit specialization owns its member declarations, and defining
 		// it already ran them.  Completing it again from the template machinery
 		// adds every member a second time -- libc++'s `__bitset<0, 0>` declares
@@ -1826,9 +1839,6 @@ void Analyzer::EnsureClassDefinition(TypeId type)
 		// first.  The other two completion sites already refuse this.
 		if (!program_->entities[entity].explicit_template_specialization)
 		{
-			ScopedValueRestore<std::vector<std::uint8_t> > suspended(
-				&candidate_substitution_failures_,
-				std::vector<std::uint8_t>());
 			CompleteClassTemplateSpecialization(index, declaration, arguments);
 		}
 		return;
