@@ -102,7 +102,8 @@ protected:
 			return derived.LowerIncrement(record, children[0], false);
 		if (operation == OP_LNOT)
 		{
-			const Operand value = derived.LowerValue(children[0]);
+			const Operand value = derived.MemberPointerTruthOperand(children[0],
+				derived.LowerValue(children[0]));
 			const Operand result = derived.Temp(LowI64());
 			Instruction compare(Instruction::CMP);
 			compare.dest = result.id;

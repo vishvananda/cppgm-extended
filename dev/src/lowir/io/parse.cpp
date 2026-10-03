@@ -1382,13 +1382,22 @@ private:
   void validate_operand(const Operand & operand,
                         const TypeIndex & values,
                         const TypeIndex & slots,
-                        bool allow_label = false) const
+                        bool allow_label = false,
+                        const LowType * expected = 0) const
   {
     const std::string & spelling = operand_spelling(operand);
-    if(operand.kind == Operand::OP_TEMP && !values.count(spelling))
-      ThrowLowirInputError("undefined temporary: " + spelling);
-    if(operand.kind == Operand::OP_SLOT && !slots.count(spelling))
-      ThrowLowirInputError("undefined slot: " + spelling);
+    if(operand.kind == Operand::OP_TEMP || operand.kind == Operand::OP_SLOT) {
+      const TypeIndex & index = operand.kind == Operand::OP_TEMP ? values : slots;
+      const TypeIndex::const_iterator found = index.find(spelling);
+      if(found == index.end())
+        ThrowLowirInputError(operand.kind == Operand::OP_TEMP ?
+          "undefined temporary: " + spelling : "undefined slot: " + spelling);
+      // Existing scalar truth/selector comparisons use register-width values.
+      // A wide member-pointer carrier requires explicit target-word extraction.
+      if(expected && integer_width(*found->second) > 64 &&
+         !same_lowir_type(*found->second, *expected))
+        ThrowLowirInputError("comparison operand type mismatch: " + spelling);
+    }
     if(operand.kind == Operand::OP_GLOBAL && !top_symbols_.count(spelling))
       ThrowLowirInputError("undefined top-level symbol: " + spelling);
     if(operand.kind == Operand::OP_LABEL && !allow_label)
@@ -1472,7 +1481,8 @@ private:
     const Operand * operands[] = {&ins.first, &ins.second, &ins.third};
     for(std::size_t i = 0; i < 3; ++i)
       if(operands[i]->has_spelling) validate_operand(*operands[i], values, slots,
-        ins.kind == Instruction::IK_EH_TRY || ins.kind == Instruction::IK_EH_CLEANUP);
+        ins.kind == Instruction::IK_EH_TRY || ins.kind == Instruction::IK_EH_CLEANUP,
+        ins.kind == Instruction::IK_CMP && i < 2 ? &ins.type : 0);
     for(std::size_t i = 0; i < ins.args.size(); ++i)
       validate_operand(ins.args[i], values, slots);
   }

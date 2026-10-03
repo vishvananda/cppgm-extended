@@ -72,8 +72,9 @@ function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [bindi
 
   block ^land_rhs_7:
     %t3 = load i128 $f
-    %t4 = cmp ne i64 %t3, 0
-    store i64 %t4, $land__3
+    %t4 = convert trunc i64 i128 %t3
+    %t5 = cmp ne i64 %t4, 0
+    store i64 %t5, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -81,15 +82,15 @@ function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [bindi
     jump ^land_end_9
 
   block ^land_end_9:
-    %t5 = load i64 $land__3
-    branch %t5, ^land_rhs_4, ^land_short_5
+    %t6 = load i64 $land__3
+    branch %t6, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t6 = addr $bound
-    %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load ptr %t7
-    %t9 = cmp ne ptr %t8, 0
-    store i64 %t9, $land__2
+    %t7 = addr $bound
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = load ptr %t8
+    %t10 = cmp ne ptr %t9, 0
+    store i64 %t10, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -97,8 +98,8 @@ function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [bindi
     jump ^land_end_6
 
   block ^land_end_6:
-    %t10 = load i64 $land__2
-    branch %t10, ^cond_then_1, ^cond_else_2
+    %t11 = load i64 $land__2
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 7, $cond__1
@@ -109,8 +110,8 @@ function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [bindi
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load i32 $cond__1
-    return i32 %t11
+    %t12 = load i32 $cond__1
+    return i32 %t12
 }
 function @boost__reference_wrapper_Stream___reference_wrapper_Stream_(%this : ptr [object_bytes=8], %t : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost17reference_wrapperI6StreamEC1ERS1_, inline_hint=yes] {
   slot $this : ptr

@@ -25,6 +25,18 @@ class MemberPointerLowering :
 	public MemberFunctionPointerLowering<Derived>
 {
 protected:
+	Operand MemberPointerTruthOperand(std::uint32_t node, const Operand& value)
+	{
+		if (value.type.kind != LOW_I128) return value;
+		Derived& derived = static_cast<Derived&>(*this);
+		const TypeRecord& source = derived.program_.types.Get(
+			derived.program_.types.RemoveTopCv(
+				derived.RemoveReference(derived.arena_.nodes[node].type)));
+		return source.kind == TYPE_MEMBER_POINTER &&
+			derived.program_.types.IsFunction(source.child) ?
+			derived.Convert(value, LowU64(), false) : value;
+	}
+
 	Operand MemberPointerObject(const DumpNode& application,
 		const NodeChildren& children)
 	{

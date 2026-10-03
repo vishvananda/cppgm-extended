@@ -46,7 +46,8 @@ function @mem_fn(%pmf : i128) -> i32 [binding=weak, object=_Z6mem_fnIv6LoggerJR6
   block ^entry:
     store i128 %pmf, $pmf
     %t1 = load i128 $pmf
-    branch %t1, ^cond_then_1, ^cond_else_2
+    %t2 = convert trunc i64 i128 %t1
+    branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 7, $cond__1
@@ -57,6 +58,6 @@ function @mem_fn(%pmf : i128) -> i32 [binding=weak, object=_Z6mem_fnIv6LoggerJR6
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t2 = load i32 $cond__1
-    return i32 %t2
+    %t3 = load i32 $cond__1
+    return i32 %t3
 }

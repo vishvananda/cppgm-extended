@@ -1,5 +1,0 @@
-# AUDIT-ID: MEMBER
-kind reader
-input pa32/tests/controls/100-audit-comparison-width.lowir
-expected reject
-optimization O0

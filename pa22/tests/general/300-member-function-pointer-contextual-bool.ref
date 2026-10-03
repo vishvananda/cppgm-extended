@@ -7,8 +7,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = convert zext i128 i64 %t2
     store i128 %t3, $member
     %t4 = load i128 $member
-    %t5 = cmp eq i128 %t4, 0
-    branch %t5, ^if_then_1, ^if_else_2
+    %t5 = convert trunc i64 i128 %t4
+    %t6 = cmp eq i64 %t5, 0
+    branch %t6, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     return i32 1
@@ -18,8 +19,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     store i128 0, $member
-    %t6 = load i128 $member
-    branch %t6, ^if_then_4, ^if_else_5
+    %t7 = load i128 $member
+    %t8 = convert trunc i64 i128 %t7
+    branch %t8, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     return i32 2

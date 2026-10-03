@@ -111,10 +111,10 @@ protected:
 			const TypeId source_type = derived.program_.types.RemoveTopCv(record.type);
 			const TypeRecord& source = derived.program_.types.Get(source_type);
 			if (source.kind == TYPE_MEMBER_POINTER)
-				return derived.LowerValue(node);
+				return derived.MemberPointerTruthOperand(node, derived.LowerValue(node));
 			return derived.LowerBooleanConversion(node, LowU8());
 		}
-		Operand value = derived.LowerValue(node);
+		Operand value = derived.MemberPointerTruthOperand(node, derived.LowerValue(node));
 		if (derived.IsBooleanType(record.type) || !IsFloating(value.type))
 			return value;
 		const Operand result = derived.Temp(LowI64());

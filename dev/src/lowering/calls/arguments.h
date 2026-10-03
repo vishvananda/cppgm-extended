@@ -1031,13 +1031,7 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const Operand value = derived.LowerValue(node);
-		Operand truth_value = value;
-		const TypeId source_type = derived.program_.types.RemoveTopCv(
-			derived.arena_.nodes[node].type);
-		const TypeRecord& source = derived.program_.types.Get(source_type);
-		if (source.kind == TYPE_MEMBER_POINTER &&
-			derived.program_.types.IsFunction(source.child))
-			truth_value = derived.Convert(value, LowU64(), false);
+		const Operand truth_value = derived.MemberPointerTruthOperand(node, value);
 		const Operand boolean = derived.Temp(LowI64());
 		Instruction compare(Instruction::CMP);
 		compare.dest = boolean.id;
