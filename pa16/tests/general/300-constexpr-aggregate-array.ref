@@ -2,6 +2,11 @@ global @p [binding=internal, object=_Z1p] = {
   i32 3
   i32 4
 }
+global @bits [binding=internal, object=_Z4bits] = {
+  u32 29
+  u8 1
+  zero 3
+}
 global @arr [binding=strong, object=_Z3arr] = {
   i32 10
   i32 20

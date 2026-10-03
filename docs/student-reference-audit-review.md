@@ -83,7 +83,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **33 compiler issue families** remain
+Remaining-work count on 2026-10-03: **32 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
 **Six further reviews** have no established
@@ -197,7 +197,7 @@ The recent discovery inventory is not all C++11:
 | TMPL-ACCESS-SFINAE | Treat inaccessible dependent aliases in an immediate substitution context as candidate failure | v4codex PA29 controls189 and PA30 source197 | Open, independently reproduced: both the C++11 overload fallback and partial-specialization/private-alias fallback reject with hard access errors here; Clang/GCC execute successfully at O0/O2. The corresponding ambiguous partial-specialization rejection and ordinary alias-order positive already pass. |
 | ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Done: typed ordinary-string token category and retained message range enforce PA15 semantics while preserving PA5 generic-literal AST acceptance. Promote two unchanged independent controls; no new source fixture or record field. Adjacent literal kinds use one guarded range check. All 49 focused outcomes and eight required final validation groups pass; strict 6114/6114 prints one line. Final 288-observation screen/confirmation passes instruction/RSS/equality gates; confirmed virtual-class cycles increase 3.49%, explicitly retained. A 72-compile profile found no actionable new hotspot. First-candidate evidence and final source/image/results remain in static-assert-message/. |
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Done: add the missing member-pointer predicate to ApplyContextualBool, reusing typed ApplyMemberPointerTarget folding (N3485 4.12/1). Extend the existing PA22 contextual-bool fixture with data/function nonnull and null assertions; remove the superseded opt-in control. All 48 focused outcomes and eight final qualification groups pass; strict 6114/6114 stays one line. The expanded 240-observation final screen includes 3000 accepted contextual conversions and passes instruction/RSS/equality gates with no timing confirmation indicated. Preserve the first shared-classifier candidate and its confirmed 2.69% cycle cost; the final patch avoids that additional call. No new source fixture. Artifacts in constant-member-pointer-bool/. |
-| CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Open, independently reduced: a two-bit unsigned field initialized with 5 must read as 1 in its constexpr boolean conversion. The template static assertion fails here and passes Clang/GCC in C++11 at O0/O2. Entry and candidate retain the same failure. |
+| CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Done: BuildConstexprObjectElement reuses NormalizeWideConstant with the typed BindingLayoutFact width after declared-type conversion. Skip full-width and bool values; retain signed values. Three assertions extend the existing PA16 aggregate fixture and the superseded opt-in control is removed. All 42 focused outcomes and eight final qualification groups pass; affected 876/876, strict 6114/6114 prints one line. The 240-observation screen includes targeted bit-field constants and ordinary aggregates; instruction/RSS/equality gates pass with no timing confirmation indicated (maximum instruction ratio 1.003711, RSS 1.0). No new source fixture. Artifacts in constant-bitfield-width/. |
 | EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Open, independently reproduced: private conversion is accepted and invalid immediate conditions cause a hard error instead of selecting the fallback; Clang/GCC corroborate in C++11 extension mode. This C++20 feature is necessary for the supported libc++ profile: release/21.x __utility/pair.h lines 140/147/162 use conditional explicit in the C++11 constructor branch. Frozen header SHA and observations are recorded below. Deduction-guide controls are excluded from this row without their own header dependency. |
 | EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Done in the accompanying performance-approved checkpoint: deduplicate adjusted TypeIds and compare declarations as sets while retaining first-declaration order. The one positive is promoted to PA6/300 and its temporary control removed; the distinct-set negative remains. Nine scratch boundaries pass ours and Clang; GCC's adjusted-array/function disagreement is retained. PA6 112/112, strict report, every required compiler check and the final combined 4800-observation global performance gate pass. Earlier two failed cycle gates remain recorded. N3485 15.4/2,3 supplies the rule. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
@@ -5446,3 +5446,24 @@ the additional call, with no change to constant-folding representation. Image:
 All raw inputs, source patches, commands and qualification results are retained
 in `constant-member-pointer-bool/`. Remaining: 33 compiler families and six
 reviews. Final fixture minimization and combined export remain pending.
+
+
+### Completed constant bit-field width conversion — 2026-10-03
+
+Constant object elements now apply the recorded stored field width after the
+existing declared-type conversion. Reuse the wide scalar normalizer for narrow
+fields; full-width and bool values retain their previous conversion. N3485 9.6
+provides the field-width and bool-preservation boundaries; PA11's existing
+width-masked storage and Clang/GCC agree on the targeted unsigned truncation.
+Three assertions extend the existing PA16 aggregate fixture; the superseded
+opt-in control is removed. No source fixture or record field is added. All
+42 focused outcomes and eight required qualification groups pass; affected
+876/876, strict 6114/6114 in one line, placement/review/hygiene zero. The
+240-observation performance screen independently passes instruction/RSS, equal
+objects and unscaled counters. It includes the affected constant-field path and
+ordinary aggregates; maximum instruction ratio is 1.003711, RSS 1.0, with no
+timing confirmation indicated. Image:
+`99b837c84360a172f42d1fd50a55ca5ba2195d2c43b3fcbcec7fb78707eab7d4`.
+Source, frozen inputs, commands and raw qualification results remain in
+`constant-bitfield-width/`. Remaining: 32 compiler families and six reviews.
+Final fixture minimization and combined student-export validation remain pending.

@@ -491,6 +491,13 @@ bool Analyzer::BuildConstexprObjectElement(TypeId type,
 				value.type, type, ExpressionScalar(value));
 		}
 		else scalar = NormalizeScalarConstant(type, scalar);
+		if (member != kNoBinding && program_->bindings[member].bit_field)
+		{
+			const std::size_t width = program_->BindingLayout(
+				program_->bindings[member]).bit_width;
+			if (width < IntegralWidth(type))
+				scalar = NormalizeWideConstant(scalar, width, IsUnsignedIntegral(type));
+		}
 		*result = ConstexprObjectElement(member, scalar);
 		return true;
 	}
