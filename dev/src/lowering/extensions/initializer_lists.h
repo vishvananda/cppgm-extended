@@ -185,12 +185,13 @@ protected:
 				derived.Emit(Instruction(Instruction::EH_END));
 				derived.EmitJump(end);
 				derived.SelectBlock(dispatch);
+				const bool routes_to_try = derived.BeginExceptionTryCleanupDispatch();
 				const InitializerListElementAddresses* addresses =
 					InitializerListElementAddressPlan(backing);
 				for (std::size_t built = i; built != 0; --built)
 					derived.EmitDestructorCall(
 						destructor, (*addresses)[built - 1]);
-				derived.FinishConstructionArrayCleanup();
+				derived.FinishConstructionArrayCleanup(routes_to_try);
 				derived.SelectBlock(end);
 			}
 			return true;
@@ -242,6 +243,14 @@ protected:
 		if (destructor == kNoBinding) return true;
 		derived.EmitJump(continuation);
 		derived.SelectBlock(cleanup);
+		const bool routes_to_try = derived.BeginExceptionTryCleanupDispatch();
+		const BlockId condition = routes_to_try ? derived.AddBlock(
+			derived.NewLabel("initlist_constructor_cleanup_condition")) : cleanup;
+		if (routes_to_try)
+		{
+			derived.EmitJump(condition);
+			derived.SelectBlock(condition);
+		}
 		const BlockId cleanup_body = derived.AddBlock(
 			derived.NewLabel("initlist_constructor_cleanup_body"));
 		const BlockId resume = derived.AddBlock(
@@ -286,9 +295,9 @@ protected:
 		}
 		derived.EmitDestructorCall(destructor,
 			derived.IndexAddress(LowI8(), base, displacement, true));
-		derived.EmitJump(cleanup);
+		derived.EmitJump(condition);
 		derived.SelectBlock(resume);
-		derived.FinishConstructionArrayCleanup();
+		derived.FinishConstructionArrayCleanup(routes_to_try);
 		derived.SelectBlock(continuation);
 		return true;
 	}

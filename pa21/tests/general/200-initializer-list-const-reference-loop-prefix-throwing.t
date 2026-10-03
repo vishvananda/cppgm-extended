@@ -29,7 +29,14 @@ IL copy(IL x) { if(alive!=3) throw 77; return x; }
 const IL& borrow(const IL& x) { if(alive!=3) throw 77; return x; }
 IL local() { IL x={4,5}; return x; }
 void stop() { checkpoint(); }
-int test(){S earlier(9); {const IL& xs={1,2,3,4,5,6,7,8,10,11,12,13}; if(alive!=13||xs.size()!=12)return 2;} if(alive!=1)return 3;return 0;}
+int test() {
+ try {
+  S earlier(9);
+  {const IL& xs={1,2,3,4,5,6,7,8,10,11,12,13}; if(alive!=13||xs.size()!=12)return 2;}
+  if(alive!=1)return 3;
+  return 0;
+ } catch(int e) { return e==77 ? 77 : 0; }
+}
 int main() {
  for(int p=0;p<2;++p) for(int f=0;f<15;++f) {
   reset(p,f); int status=0;

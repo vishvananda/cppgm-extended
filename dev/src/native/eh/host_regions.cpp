@@ -440,6 +440,13 @@ HostEhRegionPlan analyze_host_eh_regions(
   const auto merge_control_flow_edge =
       [&](std::size_t source, std::size_t target, std::size_t state,
           std::vector<std::size_t> * pending) {
+    // A cleanup continuation can enter the currently active landing directly
+    // after an inner partial-construction frame has been retired. Give that
+    // edge the same consumed-region ownership as an exceptional landing edge.
+    if(cleanup_landing_blocks[target] && state != 0 &&
+       !states.Consumed(state) && states.Active(state) != 0 &&
+       states.ActiveLandingBlock(state) == target + 1)
+      state = states.Consume(state);
     if(catch_dispatch_blocks[source]) {
       if(catch_entry_states[target] == unknown)
         catch_entry_states[target] = state;

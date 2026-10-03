@@ -241,99 +241,298 @@ function @stop() -> void [binding=strong, object=_Z4stopv] {
 }
 function @test() -> i32 [binding=strong, object=_Z4testv] {
   slot $earlier : obj<4x4>
+  slot $call__1 : i32
+  slot $first : obj<4x4>
+  slot $second : obj<4x4>
   slot $xs : obj<16x8>
-  slot $initlist__1 : obj<8x4>
-  slot $call__2 : i64
-  slot $cleanup_return__3 : i32
+  slot $initlist__2 : obj<8x4>
+  slot $call__3 : i64
+  slot $xs__shadow2 : obj<16x8>
+  slot $initlist__4 : obj<8x4>
+  slot $call__5 : i64
+  slot $catch__6 : ptr
+  slot $e : i32
+  slot $cond__7 : i32
 
   block ^entry:
+    eh_try ^catch_dispatch_1
     %t1 = addr $earlier
     call void @S__S(%t1, 9)
-    %t2 = addr $xs
-    %t3 = addr $initlist__1
-    eh_try ^cleanup_action_2
-    call void @S__S(%t3, 1)
-    eh_try ^call_unwind_dispatch_3
-    %t4 = index i8 [projection=array_element] %t3, 4
-    call void @S__S(%t4, 2)
+    eh_try ^call_unwind_dispatch_9
+    %t2 = call i32 @pick()
+    store i32 %t2, $call__1
+    %t3 = load i32 $call__1
     eh_end
-    jump ^call_unwind_end_4
+    jump ^call_unwind_end_10
 
-  block ^call_unwind_dispatch_3:
-    call void @S___S(%t3)
+  block ^cleanup_resume_7:
     eh_end
     eh_end
-    jump ^cleanup_action_2
+    jump ^catch_entry_2
 
-  block ^call_unwind_end_4:
-    eh_end
-    jump ^call_unwind_end_5
-
-  block ^cleanup_resume_1:
-    resume
-
-  block ^cleanup_action_2:
-    %t5 = addr $earlier
-    call void @S___S(%t5)
-    jump ^cleanup_resume_1
-
-  block ^call_unwind_end_5:
-    eh_try ^cleanup_action_6
-    store ptr %t3, %t2
-    %t6 = index i8 %t2, 8
-    store i64 2, %t6
-    eh_end
-    jump ^call_unwind_end_7
-
-  block ^cleanup_action_6:
+  block ^cleanup_action_8:
+    %t4 = addr $earlier
     call void @S___S(%t4)
-    call void @S___S(%t3)
-    jump ^cleanup_action_2
+    jump ^cleanup_resume_7
 
-  block ^call_unwind_end_7:
-    eh_try ^cleanup_resume_1
-    %t7 = load i32 @alive
-    %t8 = cmp ne i32 %t7, 3
+  block ^call_unwind_dispatch_9:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    jump ^cleanup_action_8
+
+  block ^call_unwind_end_10:
+    branch %t3, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    %t5 = addr $first
+    eh_try ^call_unwind_dispatch_9
+    call void @S__S(%t5, 1)
     eh_end
-    branch %t8, ^if_then_8, ^lor_rhs_11
-
-  block ^lor_rhs_11:
-    eh_try ^cleanup_resume_1
-    %t9 = addr $xs
-    %t10 = call i64 @std__initializer_list_S___size(%t9)
-    store i64 %t10, $call__2
-    %t11 = load i64 $call__2
-    %t12 = convert sext i64 i32 2
-    %t13 = cmp ne i64 %t11, %t12
+    %t6 = addr $second
+    eh_try ^call_unwind_dispatch_12
+    call void @S__S(%t6, 2)
     eh_end
-    branch %t13, ^if_then_8, ^if_else_9
+    jump ^call_unwind_end_13
 
-  block ^if_then_8:
-    store i32 2, $cleanup_return__3
-    jump ^return_cleanup_action_14
+  block ^cleanup_action_11:
+    %t7 = addr $first
+    call void @S___S(%t7)
+    jump ^cleanup_action_8
 
-  block ^return_cleanup_terminal_12:
-    return i32 $cleanup_return__3
+  block ^call_unwind_dispatch_12:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    jump ^cleanup_action_11
 
-  block ^return_cleanup_action_13:
-    %t14 = addr $earlier
-    call void @S___S(%t14)
-    jump ^return_cleanup_terminal_12
+  block ^call_unwind_end_13:
+    %t8 = addr $xs
+    %t9 = addr $initlist__2
+    eh_try ^call_unwind_dispatch_15
+    %t10 = addr $first
+    call void @S__S__ov2(%t9, %t10)
+    eh_try ^call_unwind_dispatch_16
+    %t11 = index i8 [projection=array_element] %t9, 4
+    %t12 = addr $second
+    call void @S__S__ov2(%t11, %t12)
+    eh_end
+    jump ^call_unwind_end_17
 
-  block ^return_cleanup_action_14:
-    call void @S___S(%t4)
-    call void @S___S(%t3)
-    jump ^return_cleanup_action_13
+  block ^call_unwind_dispatch_16:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    call void @S___S(%t9)
+    eh_end
+    jump ^call_unwind_dispatch_15
 
-  block ^if_else_9:
-    jump ^if_end_10
+  block ^call_unwind_end_17:
+    eh_end
+    jump ^call_unwind_end_18
 
-  block ^if_end_10:
-    eh_try ^cleanup_action_6
+  block ^cleanup_action_14:
+    %t13 = addr $second
+    call void @S___S(%t13)
+    jump ^cleanup_action_11
+
+  block ^call_unwind_dispatch_15:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    jump ^cleanup_action_14
+
+  block ^call_unwind_end_18:
+    eh_try ^call_unwind_dispatch_20
+    store ptr %t9, %t8
+    %t14 = index i8 %t8, 8
+    store i64 2, %t14
+    eh_end
+    jump ^call_unwind_end_21
+
+  block ^cleanup_action_19:
+    call void @S___S(%t11)
+    call void @S___S(%t9)
+    jump ^cleanup_action_14
+
+  block ^call_unwind_dispatch_20:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    jump ^cleanup_action_19
+
+  block ^call_unwind_end_21:
+    eh_try ^call_unwind_dispatch_25
+    %t15 = load i32 @alive
+    %t16 = cmp ne i32 %t15, 5
+    eh_end
+    jump ^call_unwind_end_27
+
+  block ^call_unwind_dispatch_25:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    jump ^cleanup_resume_7
+
+  block ^call_unwind_end_27:
+    branch %t16, ^if_then_22, ^lor_rhs_26
+
+  block ^lor_rhs_26:
+    eh_try ^call_unwind_dispatch_25
+    %t17 = addr $xs
+    %t18 = call i64 @std__initializer_list_S___size(%t17)
+    store i64 %t18, $call__3
+    %t19 = load i64 $call__3
+    %t20 = convert sext i64 i32 2
+    %t21 = cmp ne i64 %t19, %t20
+    eh_end
+    branch %t21, ^if_then_22, ^if_else_23
+
+  block ^if_then_22:
+    call void @S___S(%t11)
+    call void @S___S(%t9)
+    %t22 = addr $second
+    call void @S___S(%t22)
+    %t23 = addr $first
+    call void @S___S(%t23)
+    %t24 = addr $earlier
+    call void @S___S(%t24)
+    eh_end
+    return i32 2
+
+  block ^if_else_23:
+    jump ^if_end_24
+
+  block ^if_end_24:
+    eh_try ^call_unwind_dispatch_20
     call void @stop()
     eh_end
-    store i32 0, $cleanup_return__3
-    jump ^return_cleanup_action_14
+    call void @S___S(%t11)
+    call void @S___S(%t9)
+    %t25 = addr $second
+    call void @S___S(%t25)
+    %t26 = addr $first
+    call void @S___S(%t26)
+    jump ^if_end_6
+
+  block ^if_else_5:
+    %t27 = addr $xs__shadow2
+    %t28 = addr $initlist__4
+    eh_try ^call_unwind_dispatch_9
+    call void @S__S(%t28, 1)
+    eh_try ^call_unwind_dispatch_28
+    %t29 = index i8 [projection=array_element] %t28, 4
+    call void @S__S(%t29, 2)
+    eh_end
+    jump ^call_unwind_end_29
+
+  block ^call_unwind_dispatch_28:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    call void @S___S(%t28)
+    eh_end
+    jump ^call_unwind_dispatch_9
+
+  block ^call_unwind_end_29:
+    eh_end
+    eh_try ^call_unwind_dispatch_31
+    store ptr %t28, %t27
+    %t30 = index i8 %t27, 8
+    store i64 2, %t30
+    eh_end
+    jump ^call_unwind_end_32
+
+  block ^cleanup_action_30:
+    call void @S___S(%t29)
+    call void @S___S(%t28)
+    jump ^cleanup_action_8
+
+  block ^call_unwind_dispatch_31:
+    eh_catch @__external_rtti__int, 1
+    eh_cleanup
+    jump ^cleanup_action_30
+
+  block ^call_unwind_end_32:
+    eh_try ^call_unwind_dispatch_25
+    %t31 = load i32 @alive
+    %t32 = cmp ne i32 %t31, 3
+    eh_end
+    branch %t32, ^if_then_33, ^lor_rhs_36
+
+  block ^lor_rhs_36:
+    eh_try ^call_unwind_dispatch_25
+    %t33 = addr $xs__shadow2
+    %t34 = call i64 @std__initializer_list_S___size(%t33)
+    store i64 %t34, $call__5
+    %t35 = load i64 $call__5
+    %t36 = convert sext i64 i32 2
+    %t37 = cmp ne i64 %t35, %t36
+    eh_end
+    branch %t37, ^if_then_33, ^if_else_34
+
+  block ^if_then_33:
+    call void @S___S(%t29)
+    call void @S___S(%t28)
+    %t38 = addr $earlier
+    call void @S___S(%t38)
+    eh_end
+    return i32 2
+
+  block ^if_else_34:
+    jump ^if_end_35
+
+  block ^if_end_35:
+    eh_try ^call_unwind_dispatch_31
+    call void @stop()
+    eh_end
+    call void @S___S(%t29)
+    call void @S___S(%t28)
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t39 = addr $earlier
+    call void @S___S(%t39)
+    eh_end
+    return i32 0
+
+  block ^catch_dispatch_1:
+    eh_catch @__external_rtti__int, 1
+    jump ^catch_entry_2
+
+  block ^catch_entry_2:
+    %t40 = exception ptr
+    %t41 = exception_selector i32
+    %t42 = cmp eq i32 %t41, 1
+    branch %t42, ^catch_body_37, ^catch_next_38
+
+  block ^catch_body_37:
+    %t43 = call ptr @__external_runtime____cxa_begin_catch(%t40)
+    store ptr %t43, $catch__6
+    eh_cleanup ^catch_cleanup_39
+    %t44 = load i32 %t43
+    store i32 %t44, $e
+    %t45 = load i32 $e
+    %t46 = cmp eq i32 %t45, 77
+    branch %t46, ^cond_then_40, ^cond_else_41
+
+  block ^cond_then_40:
+    store i32 77, $cond__7
+    jump ^cond_end_42
+
+  block ^cond_else_41:
+    store i32 0, $cond__7
+    jump ^cond_end_42
+
+  block ^cond_end_42:
+    %t47 = load i32 $cond__7
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    return i32 %t47
+
+  block ^catch_cleanup_39:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_38:
+    resume
+
+  block ^try_end_3:
+    return i32 0
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : i32
@@ -510,6 +709,32 @@ function @S___S(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, 
     call void @cppgm_call_terminate(%t10)
     return void
 }
+function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=4], %s : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN1SC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $s : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %s, $s
+    %t1 = load ptr $s
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load i32 %t2
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    store i32 %t3, %t5
+    call void @checkpoint()
+    %t6 = load i32 @alive
+    %t7 = binary add i32 %t6, 1
+    store i32 %t7, @alive
+    %t8 = load i32 @made
+    %t9 = binary add i32 %t8, 1
+    store i32 %t9, @made
+    %t10 = load ptr $this
+    %t11 = index i8 [projection=field] %t10, 0
+    %t12 = load i32 %t11
+    call void @record(%t12)
+    return void
+}
 function @std__initializer_list_S___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI1SE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
@@ -522,3 +747,4 @@ function @std__initializer_list_S___size(%this : ptr [object_bytes=16]) -> i64 [
 }
 alias object _ZN1SC2Ei = @S__S
 alias object _ZN1SD2Ev = @S___S
+alias object _ZN1SC2ERKS_ = @S__S__ov2

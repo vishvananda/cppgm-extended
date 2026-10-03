@@ -247,20 +247,26 @@ protected:
 		return result;
 	}
 
-	void FinishConstructionArrayCleanup()
+	void FinishConstructionArrayCleanup(bool routes_to_try = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		// Resume continues at a caller frame. An inner array landing must
 		// explicitly enter the remaining cleanup in this constructor first.
 		const ir::BlockId remaining = derived.full_expression_cleanup_dispatch_ != ir::kNoLowId ?
 			derived.full_expression_cleanup_dispatch_ : derived.constructor_body_cleanup_target_;
-		if (remaining == ir::kNoLowId) derived.EmitExceptionResume();
+		if (remaining == ir::kNoLowId)
+		{
+			if (routes_to_try) derived.FinishExceptionCleanupDispatch(true);
+			else derived.EmitExceptionResume();
+		}
 		else
 		{
-			// Retire the consumed partial-array frame and the enclosing
-			// protected frame whose landing continuation is entered directly.
+			// A backing-array landing enters a still-protected expression
+			// continuation, which retires its own frame after cleanup.
 			derived.Emit(ir::Instruction(ir::Instruction::EH_END));
-			derived.Emit(ir::Instruction(ir::Instruction::EH_END));
+			if (!routes_to_try ||
+				remaining != derived.full_expression_cleanup_dispatch_)
+				derived.Emit(ir::Instruction(ir::Instruction::EH_END));
 			derived.EmitJump(remaining);
 		}
 	}

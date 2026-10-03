@@ -179,7 +179,7 @@ The recent discovery inventory is not all C++11:
 | REF-POINTER-QUAL | Require valid qualification and reference compatibility when referent pointer types differ | REF-ARRAY-CV preparation controls | Done in the accompanying performance-approved checkpoint: enforce cv subset, atomic parity and intermediate const while distinguishing direct reference compatibility from pointer-prvalue conversion temporaries. Mutable/volatile/deep-pointer negatives and valid const/deep-pointer boundaries pass. Already supported host-agreed aliases remain preserved; no new CWG2352/330 aliasing oracle is imposed. The full boundary matrix, strict report, required checks and global performance gate pass. Bit-field materialization remains separate. |
 | REF-BASE-CATEGORY | Reject a related derived lvalue bound to a base rvalue reference | Reference qualification boundary controls | Done in the accompanying performance-approved checkpoint: reject the lvalue category before accepting the related derived-to-base reference conversion, per N3485 8.5.3/5. Base xvalue and const-volatile base lvalue positives remain. Full boundary/regression controls, strict report, all required compiler checks and global performance gate pass. |
 | REF-BITFIELD | Copy a bit-field for const-reference binding and reject mutable or volatile lvalue-reference binding | Reference qualification boundary controls | Done. Use the existing typed binding bit-field fact after overload selection: non-volatile const lvalue references copy through the scalar temporary path; mutable/volatile bindings reject. Extend the existing PA11 bit-field aggregate test for local and argument snapshots and promote two independent negatives, with the mutable case also checking overload selection. Remove three duplicate opt-in controls. Strict 6118/6118 and all required checks pass; final Alpha gates pass. The disputed rvalue-reference cast control remains held without a mandatory oracle. |
-| EH-LOCAL-ARRAY-CATCH | Reach a handler in the current function after partial initializer-list backing construction | AUTO-CONST-REF fault boundary | Open, independently reproduced: a throw from the second backing-element constructor or copy constructor terminates instead of reaching the same-function int handler. Both unchanged a3aaf2015 entry and deduction candidate fail with explicit reference types; Clang/GCC execute successfully in C++11 at O0/O2. Frozen inputs and sixteen explicit-type observations are in auto-const-reference/fault-controls/explicit-final-controls.json. The earlier caller-handler prefix controls remain unchanged. Review the partial-array landing and native handler search without attributing this preexisting gap to auto deduction. |
+| EH-LOCAL-ARRAY-CATCH | Reach a handler in the current function after partial initializer-list backing construction | AUTO-CONST-REF fault boundary | Done in this checkpoint: both frozen explicit-type reducers pass standalone and host-object routes at O0/O2. Local catch clauses, retained expression-frame ownership and narrowly matched direct host-landing consumption fix the inline and compact-loop paths. Reuse two existing PA21 fixtures and retire the duplicate control. All 136 final runtime observations, strict 6121/6121, required compiler checks and the 288-observation Alpha screen pass; no timing confirmation is triggered. |
 | INIT-LIST-STATIC | Keep a local-static initializer-list value's backing array alive after initialization | REF-INIT-LIST storage controls | Done: persistent backing and cleanup now work through direct native, compiler-object and host-object routes at O0/O2, including shutdown and failed-initialization retry. Native atexit callbacks drain in LIFO order before the shutdown hook and preserve the entry result. Extend existing PA21/PA24 fixtures; remove the opt-in duplicate. Strict 6118/6118, all required checks including variants and Alpha instruction/RSS/equality gates pass. |
 | REF-VOLATILE | Reject an rvalue bound to a const-volatile lvalue reference | REF-INIT-LIST negative boundary | Done in the accompanying performance-approved checkpoint: temporary lvalue-reference binding requires const without volatile, including normalized array element cv. The independent scalar/class/array negatives and valid lvalue controls pass; full compiler checks and global performance gate pass. |
 | REF-BRACE | Initialize a local reference from a braced class temporary | Additional EH-REF-INIT controls | Done: reference-related single elements bind directly; other class lists create a separate temporary through existing materialization. Reuse prepared typed elements. Extend the existing PA12 constructor-argument lifetime fixture; remove the opt-in duplicate. Original, alias, conversion, aggregate, derived and rejection boundaries pass 48 focused checks at O0/O2. PA12 298/298, strict 6118/6118, all required checks and Alpha instruction/RSS/equality gates pass. |
@@ -6227,3 +6227,44 @@ Evidence: `/tmp/cppgm-v4-audit-review/failed-new-deallocation/`.
 Remaining frozen compiler families: 12, plus six reviews. Final fixture pruning
 and combined student export/harness validation remain pending. Next is
 EH-LOCAL-ARRAY-CATCH, using the two frozen explicit-type backing-array reducers.
+
+
+## EH-LOCAL-ARRAY-CATCH checkpoint — 2026-10-03
+
+Both unchanged explicit-type backing-array reducers still terminate on the host
+route and crash standalone with the committed entry compiler; fresh Clang/GCC
+C++11 runs pass at O0/O2. Partial backing-array landings must include the local
+handler clauses and preserve the enclosing full-expression frame until its
+continuation finishes. Retain the existing caller-frame behavior when no local
+source try exists. The compact array path emits catch clauses once before its
+cleanup loop, preserving bounded cleanup IR.
+
+Host EH analysis gives a direct edge into the active cleanup landing the same
+consumed-region ownership as an exceptional landing edge. Match the active
+landing's block index exactly; different regions still undergo the existing
+state checks. The initial index/label mismatch and intermediate host diagnostics
+are retained. No ABI spelling or semantic payload change.
+
+Reuse the existing value-list fixture for same-function construction and copy
+failures, and the existing twelve-element fixture for compact-loop failures.
+The previously duplicate choice now exercises copying independently. Retire
+the opt-in local-handler control; no fixture added. Exact ref-test regenerates
+only the two changed fixture references. Eighty-four runtime observations pass
+across both compiler routes and strict C++11 hosts, including no-prior-object,
+inline/compact and previous caller-handler controls; host fixture traces agree.
+The standalone adaptations remove only unavailable printf calls. Fifty-two
+failed-new boundary checks also remain passing.
+
+PA21 passes 209/209. Full strict make test-report passes 6121/6121 with exactly
+one output line. Debug-info, variants, self-host through PA5, all nine
+architecture checks, file and placement audits pass; the 37 existing file
+warnings remain. Independently verify all 288 Alpha observations, unscaled
+counters, RSS, zero statuses and equal output hashes. Maximum instruction median
+is 1.000020554, RSS ratio is 1.0, and maximum calibrated cycles is 1.005428876;
+all instruction/RSS gates pass and no timing confirmation is triggered.
+Final compiler SHA256:
+`b45431a59f486a926f964ac27359dd605f1a8c32e3cf771056d14ed1b73207b3`.
+Evidence: `/tmp/cppgm-v4-audit-review/local-backing-array-catch/`.
+Remaining frozen compiler families: 11, plus six reviews. Final fixture pruning
+and combined export/harness validation remain pending. Next is EH-UNWIND-DTOR,
+using its frozen ordinary-object and reference-initializer controls.
