@@ -31,7 +31,7 @@ function @lib__ptr_int__long_int__unsigned_long_int__0___ptr_int__long_int__unsi
     store ptr %this, $this
     return void
 }
-function @lib__static_pointer_cast(%r : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN3lib19static_pointer_castIilmLm0EvEENS_3ptrIT_T0_T1_XT2_EEERKNS1_IT3_S3_S4_Lm0EEE] {
+function @lib__static_pointer_cast(%r : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZN3lib19static_pointer_castIilmLm0EvEENS_3ptrIT_T0_T1_XT2_EEERKNS1_IT3_S3_S4_XT2_EEE] {
   slot $r : ptr
   slot $retobj__1 : obj<1x1>
 

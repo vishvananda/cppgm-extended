@@ -9,6 +9,7 @@ AbiExpressionOperationKind abi_expression_operation_kind(
   const std::string & word)
 {
   if(word == "de") return ABI_EXPRESSION_OPERATION_DEREFERENCE;
+  if(word == "pl") return ABI_EXPRESSION_OPERATION_ADD;
   if(word == "mi") return ABI_EXPRESSION_OPERATION_SUBTRACT;
   if(word == "dt") return ABI_EXPRESSION_OPERATION_MEMBER;
   if(word == "pt") return ABI_EXPRESSION_OPERATION_INDIRECT_MEMBER;
@@ -20,7 +21,7 @@ AbiExpressionOperationKind abi_expression_operation_kind(
 
 const char * abi_expression_operation_code(AbiExpressionOperationKind kind)
 {
-  static const char * codes[] = {nullptr, "de", "mi", "dt", "pt", "lt", "eq", "sZ"};
+  static const char * codes[] = {nullptr, "de", "mi", "dt", "pt", "lt", "eq", "pl", "sZ"};
   static_assert(sizeof(codes) / sizeof(codes[0]) ==
                   ABI_EXPRESSION_OPERATION_SIZEOF_PACK + 1,
                 "ABI expression operation table is incomplete");

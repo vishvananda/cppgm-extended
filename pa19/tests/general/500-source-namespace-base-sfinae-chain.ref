@@ -30,7 +30,7 @@ function @outer__token_iterator_base_int__char__pointer_to_const_char__int___app
     call void @boost__nfp__opt_assign(%t2, %t3, $argobj__1)
     return void
 }
-function @boost__nfp__opt_assign(%__param0 : ptr [pass=by_address, object_bytes=8], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : obj<1x1>) -> void [binding=internal, object=_ZN5boost3nfp10opt_assignImNS0_23named_parameter_combineINS0_15named_parameterIKiN5outer12_GLOBAL__N_13maxERS4_EENS2_INS3_IPKcNS6_4keptESB_EENS3_ISB_NS6_7droppedESB_EEEEEENS0_13typed_keywordImS7_EEEENS_11enable_if_cIXsrNS0_9has_paramIT0_T1_EEE5valueEvE4typeERT_RKSL_SM_] {
+function @boost__nfp__opt_assign(%__param0 : ptr [pass=by_address, object_bytes=8], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : obj<1x1>) -> void [binding=internal, object=_ZN5boost3nfp10opt_assignImNS0_23named_parameter_combineINS0_15named_parameterIKiN5outer12_GLOBAL__N_13maxERS4_EENS2_INS3_IPKcNS6_4keptESB_EENS3_ISB_NS6_7droppedESB_EEEEEENS0_13typed_keywordImS7_EEEENS_11enable_if_cIXsr9has_paramIT0_T1_EE5valueEvE4typeERT_RKSL_SM_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
   slot $__param2 : obj<1x1>

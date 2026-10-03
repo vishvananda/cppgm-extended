@@ -1,5 +1,5 @@
 declare function @check(%arg0 : obj<1x1>) -> void [binding=strong, object=_Z5check1XILi5EE]
-declare function @f(%arg0 : obj<1x1>, %arg1 : obj<1x1>) -> obj<1x1> [binding=weak, object=_Z1fILi1ELi4EE1XILi5EES0_ILi0EES0_ILi0EE]
+declare function @f(%arg0 : obj<1x1>, %arg1 : obj<1x1>) -> obj<1x1> [binding=weak, object=_Z1fILi1ELi4EE1XIXplT_T0_EES0_IXT_EES0_IXT0_EE]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $argobj__1 : obj<1x1>

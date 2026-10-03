@@ -195,7 +195,7 @@ The recent discovery inventory is not all C++11:
 | MANGLE-RESULT | Dependent decltype result forms retain expression identity and unparenthesized id category | Template result identity host-symbol controls | Done: retain id/member-access decltype category and unqualified named dependent call arguments in existing typed recipe payloads. Fresh Clang/GCC symbols agree at O0/O2, including parenthesized, member, nested, multiple-argument and ADL controls. Extend existing PA9 and PA14 fixtures and retire the opt-in duplicate; one other reference changes only two object names. Payload sizes are unchanged. Strict 6119/6119, all required checks and Alpha gates pass. |
 | MANGLE-PACK | Preserve the declared expansion in function-template parameter name facts | Defaulted-pack Clang object controls / v4codex correction91 | Done: retain written type/value expansions, transformed pointer packs and primary pack grouping in typed recipes; stop default completion at unresolved expansions. Fresh Clang/GCC symbols agree for the original reducer and reused PA19 fixtures at O0/O2. Preserve Clang template-parameter annotation spelling. Extend two existing fixtures and retire the opt-in duplicate. PA19 428/428, strict 6119/6119, all required checks and Alpha gates pass. Non-final function argument-list partitions remain MANGLE. No encoder change. |
 | MANGLE-BOUND | ABI spelling for a template bound using sizeof an adjusted parameter | Additional PARAM-ADJUST Clang comparison | Needs contract review: Clang spells RAszfL0p__i; GCC and ours spell RA8_i. The parameter type is fixed after adjustment. No encoder or old oracle change made; retain host and typed-name evidence. |
-| MANGLE | ABI substitution state, function-pack partitions and remaining dependent-expression names | v4codex group 13 / declared-pack boundary checks | In progress: fix PA9 entity-address state, canonical RTTI template-name identity, dependent template-prefix substitutions, non-final/multiple pack partitions (including member-pointer arguments and local contexts), retained integral result arguments and nested template owners. Fresh Clang/GCC checks preserve previously matching function-template names; the source member-address path already matched and stays correct. Reuse five required fixtures and retire the two opt-in controls. Remaining existing dependent-expression result spellings are tracked separately within this family; no new required fixture files. Strict 6119/6119, all required checks and Alpha instruction/RSS gates pass; evidence in abi-substitutions-and-partitions/. |
+| MANGLE | ABI substitution state, function-pack partitions and remaining dependent-expression names | v4codex group 13 / declared-pack boundary checks | In progress: fix PA9 entity-address state, canonical RTTI template-name identity, dependent template-prefix substitutions, non-final/multiple pack partitions (including member-pointer arguments and local contexts), retained integral result arguments and nested template owners. Fresh Clang/GCC checks preserve previously matching function-template names; the source member-address path already matched and stays correct. Reuse five required fixtures and retire the two opt-in controls. Qualified subsequent checkpoints retain integral expressions, dependent member/alias types, qualified member template annotations and integral formal parameters; latest strict 6126/6126, all required checks and Alpha instruction/RSS gates pass. Remaining result calls/casts, default arguments and inherited CI2 spellings are tracked below; no new required fixture files. Latest evidence in dependent-call-recipes/. |
 | ABI-GLOBAL | Use the raw ABI name for an ordinary external global-namespace variable | v4codex PA27 overlay145 | Done. Fresh Clang O0/O2 checks and mixed links in both directions establish `g`; the typed ABI variable target now preserves that raw name. Existing PA9/PA27 tests carry the regression, and related LowIR/hosted inspection references were regenerated and independently checked. Strict 6116/6116, required checks and Alpha instruction/memory gates pass. |
 | INPUTS | Define PA13/23 object lifetime/value inputs and PA18/19 reference backing objects | v4codex fixture review | Done: PA13 lifetime and PA18/19 backing objects corrected; PA19 pack count corrected in the deduction checkpoint; PA23 forwarding now explicitly initializes all most-derived virtual scalars and checks their defined values. Reuse existing fixtures and retire duplicate controls. |
 | ARG-REF | Allocate object backing separately from a lifetime-extended local reference slot | Argon 1 | Done: af1b1204c; separate storage and scope lifetime; strict 5835/5835, full checks and equivalent-output ABBA pass. |
@@ -6767,3 +6767,75 @@ remaining declared value-parameter/alias spellings; reuse the existing sources.
 After compiler fixes, finish fixture pruning (including duplicated PA18/PA19
 controls and the previously noted PA23 contract review) and the combined
 export/harness/quiet-output validation. No student export is regenerated here.
+
+## MANGLE qualified member annotations checkpoint — 2026-10-03
+
+Freshly compile the frozen 42-source inventory with strict C++11 Clang, GCC
+and the entry compiler. Address ordinary dependent integral formal parameters
+(`flag<B>`), template arguments on qualified member expression names
+(`gate<B>::no<const Args&...>()`), and the written unqualified alias owner in
+Clang template-parameter declaration annotations (`accepts<Args&&...>::value`).
+Use the existing PA18/PA19 fixtures; no new fixture files or persistent fields.
+GCC omits the Clang declaration annotation, so compare the annotation with
+Clang rather than require both hosts to agree. The distinct inherited-constructor
+CI2 entity spelling and dependent result calls/casts remain open. Evidence:
+`/tmp/cppgm-v4-audit-review/dependent-call-recipes/`. Functional, full strict and
+Alpha qualification remain pending; do not treat this checkpoint as completion.
+
+The selected member annotation/value-parameter fixes match fresh Clang. Also
+retain dependent addition in the existing PA18 default-deduction fixture.
+The 144 strict C++11 O0/O2 host/entry/candidate compile, link and run observations
+of six existing owning sources pass. Recheck 42 frozen sources without losing
+a prior Clang match. Review 55 sources exposed by strict comparison, consuming
+the saved fresh host objects and 116 additional candidate/host observations:
+all changes are object metadata. Some pre-existing fixtures use hosted
+extensions; their fresh C++11 host warnings are retained, with no new language
+feature or fixture added here. Generate 53 changed references through exact
+owning ref-test selections. No fixture source files change.
+
+The strict preflight exposes a genuine PA27 regression: the shared encoder
+previously excluded the complete Tn annotation type from substitution state.
+An extra qualifier-owner substitution masks that omission in the old name.
+Use the same IsSame/MakeTransparent guard in a scratch return-type comparison:
+fresh Clang requires the complete annotation entry, but no qualifier-owner
+entry in either context. Register the complete Tn type, and preserve the
+existing PA27 expected symbol and inspection plan. Both contexts now match
+Clang, and the qualified-member PA9 fact adapter emits the exact fresh Clang
+invoke symbol. Retain all preliminary binaries and failed strict logs, including
+the context probe; do not qualify the binary that failed PA27.
+
+These existing sources still have separate complete-symbol differences.
+Their newly repaired formal/annotation portions do not make their result/default
+recipes complete; keep them open within MANGLE (and the already open linkage
+work where relevant), rather than claim full Clang agreement:
+
+- `pa15/tests/spec/100-rvalue-pointer-derived-template-call.t`
+- `pa18/tests/general/200-defaulted-partial-specialization-substitution.t`
+- `pa18/tests/spec/300-dependent-result-defaulted-nontype-declaring-scope.t`
+- `pa18/tests/spec/300-function-result-defaulted-nontype-value-kind.t`
+- `pa18/tests/spec/500-member-alias-pack-owner-sfinae.t`
+- `pa19/tests/general/300-explicit-template-call-dependent-alias-sfinae-overload.t`
+- `pa19/tests/general/500-evaluated-dependent-nttp-alias-value.t`
+- `pa19/tests/spec/300-explicit-template-call-dependent-alias-sfinae-overload.t`
+
+The frozen async-initiate result calls/casts, PA22 qualified member-pointer
+result expression, and the inherited CI2 constructor entity spelling remain
+open as previously recorded. Seven compiler families and seven reviews remain.
+Resolve the encoder file limit by moving the unchanged expression record and
+inline equality into the existing ABI graph argument header; keep the hash in
+its original owner. All 42 frozen pre/post-layout objects are byte-identical.
+No new source files, payload fields, source reparsing or special-case spellings.
+Final strict report passes 6126/6126 with exactly one output line. Debug-info,
+backend variants, self-host through PA5, all nine architecture audits, file
+(37 existing warnings), and placement with --fail-on-early pass. Final SHA256:
+`a0536833e846413dfd858fe6b4800f0ab809261d01bc3e1a9417adc5ceed7faf`.
+Independently verify all 288 final Alpha observations against raw unscaled
+counters, RSS, zero statuses and equal output hashes. Maximum instruction
+median is 1.000448161 and RSS median 1.000054098, within the unchanged gates.
+No calibrated cycle median exceeds 1.01, so no confirmation is needed. Retain
+all timing intervals and avoid a timing-neutrality claim. This screen uses
+the strict-passed final binary; preliminary binaries and logs remain separate.
+No student export is regenerated here. The remaining MANGLE calls/casts,
+result/default-argument recipes and inherited spelling still require work;
+then finish the other compiler families/reviews, fixture pruning and the
+combined export/harness/quiet-report checks.

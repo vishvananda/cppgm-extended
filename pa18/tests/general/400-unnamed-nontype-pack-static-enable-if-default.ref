@@ -7,11 +7,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $b
     return i32 0
 }
-function @Box_int___Box_int___ov3(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIiEC1I5checkIiELi0EEEv, inline_hint=yes] {
+function @Box_int___Box_int___ov3(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIiEC1I5checkIiETnN9enable_ifIXclsrT_2okEEiE4typeELi0EEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     return void
 }
-alias object _ZN3BoxIiEC2I5checkIiELi0EEEv = @Box_int___Box_int___ov3
+alias object _ZN3BoxIiEC2I5checkIiETnN9enable_ifIXclsrT_2okEEiE4typeELi0EEEv = @Box_int___Box_int___ov3

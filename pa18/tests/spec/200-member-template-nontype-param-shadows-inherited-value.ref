@@ -33,7 +33,7 @@ function @detail__expression_detail____cppgm_class_template_identity_2_2_0___get
     %t3 = call i64 @detail__expression_detail____cppgm_class_template_identity_2_2_0___get_width___ov2(%t1, $argobj__1)
     return i64 %t3
 }
-function @detail__expression_detail____cppgm_class_template_identity_2_2_0___get_width___ov2(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> i64 [binding=weak, object=_ZNK6detail10expressionINS_7matcherI6traitsEEE10get_width_ILm1EEEmN4mpl_6size_tILm0EEE, inline_hint=yes] {
+function @detail__expression_detail____cppgm_class_template_identity_2_2_0___get_width___ov2(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> i64 [binding=weak, object=_ZNK6detail10expressionINS_7matcherI6traitsEEE10get_width_ILm1EEEmN4mpl_6size_tIXT_EEE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 

@@ -1280,7 +1280,16 @@ public:
 			target.type = MakeFunctionTemplateAbiType(source.type, recipe);
 			target.type.suppress_template_prefix_substitution = true;
 			target.index = ResolveName(source.name) + 1;
-			target.close_member_owner = true;
+			const FunctionTemplateAbiTypeKind owner =
+				program_.function_template_abi_types[source.type].kind;
+			target.close_member_owner = owner == FUNCTION_TEMPLATE_ABI_TYPE_WRITTEN_QUALIFIER ||
+				owner == FUNCTION_TEMPLATE_ABI_TYPE_TEMPLATE_SPECIALIZATION;
+			if (source.argument_begin > program_.function_template_abi_arguments.size() ||
+				source.argument_count > program_.function_template_abi_arguments.size() - source.argument_begin)
+				ThrowLoweringInternal("retained dependent member argument range is invalid");
+			for (std::size_t i = 0; i < source.argument_count; ++i)
+				target.argument_refs.push_resolved(AddFunctionTemplateAbiArgument(
+					program_.function_template_abi_arguments[source.argument_begin + i], recipe));
 		}
 		else if (source.kind ==
 			FUNCTION_TEMPLATE_ABI_EXPRESSION_OBJECT_MEMBER)
@@ -1343,7 +1352,9 @@ public:
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_BINARY)
 		{
 			target.kind = ABI_EXPRESSION_BINARY;
-			if (source.operation == OPERATOR_MINUS)
+			if (source.operation == OPERATOR_PLUS)
+				target.operation = ABI_EXPRESSION_OPERATION_ADD;
+			else if (source.operation == OPERATOR_MINUS)
 				target.operation = ABI_EXPRESSION_OPERATION_SUBTRACT;
 			else if (source.operation == OPERATOR_EQUAL)
 				target.operation = ABI_EXPRESSION_OPERATION_EQUAL;
@@ -1468,7 +1479,8 @@ public:
 						source.argument_begin + i], recipe));
 			return result;
 		}
-		if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_TEMPLATE_SPECIALIZATION)
+		if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_TEMPLATE_SPECIALIZATION ||
+			source.kind == FUNCTION_TEMPLATE_ABI_TYPE_WRITTEN_QUALIFIER)
 		{
 			if (source.entity == kNoEntity ||
 				source.entity >= program_.entities.size() ||
@@ -1479,11 +1491,14 @@ public:
 						source.argument_begin)
 				ThrowLoweringInternal(
 					"function template ABI specialization is invalid");
-			result.kind = source.child == kNoFunctionTemplateAbiType ?
-				ABI_TYPE_TEMPLATE_SPECIALIZATION :
-				ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION;
+			result.kind = source.kind == FUNCTION_TEMPLATE_ABI_TYPE_WRITTEN_QUALIFIER &&
+				source.argument_count == 0 ? ABI_TYPE_NAMED : source.child == kNoFunctionTemplateAbiType ?
+				ABI_TYPE_TEMPLATE_SPECIALIZATION : ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION;
 			const EntityRecord& entity = program_.entities[source.entity];
-			if (source.child == kNoFunctionTemplateAbiType)
+			if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_WRITTEN_QUALIFIER)
+				result.index = context_->resolve_path(
+					std::vector<std::size_t>(1, ResolveName(source.name))) + 1;
+			else if (source.child == kNoFunctionTemplateAbiType)
 				result.index = ResolvePath(
 					entity.owner, entity.identity_name) + 1;
 			else

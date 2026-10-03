@@ -35,7 +35,7 @@ function @key_first__second__third___key_first__second__third___ov5(%this : ptr 
     call void @tuple_like_first__second__third___tuple_like_first__second__third___ov4__base_entry(%t2, %t3, %t4, %t5)
     return void
 }
-function @tuple_like_first__second__third___tuple_like_first__second__third___ov4__base_entry(%this : ptr [object_bytes=1], %args : ptr [pass=by_address, object_bytes=1], %args__pack2 : ptr [pass=by_address, object_bytes=1], %args__pack3 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEEC2IJRS0_RS1_RS2_ETnN9enable_ifIXsrNS3_7acceptsIDpOT_EEE5valueEiE4typeELi0EEESC_, object_root=yes, inline_hint=yes] {
+function @tuple_like_first__second__third___tuple_like_first__second__third___ov4__base_entry(%this : ptr [object_bytes=1], %args : ptr [pass=by_address, object_bytes=1], %args__pack2 : ptr [pass=by_address, object_bytes=1], %args__pack3 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN10tuple_likeIJ5first6second5thirdEEC2IJRS0_RS1_RS2_ETnN9enable_ifIXsr7acceptsIDpOT_EE5valueEiE4typeELi0EEESB_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $args : ptr
   slot $args__pack2 : ptr

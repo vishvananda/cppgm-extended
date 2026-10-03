@@ -162,6 +162,11 @@ member access and emits `Dt`; `decltype <expr-ref>` emits `DT`. The dependent
 expression form `source-name <identifier>` retains an unqualified name, such as
 the callee of `decltype(selected(value))`.
 
+`member <type-ref> <yes|no> <identifier> [<argument-ref>...]` retains a
+qualified dependent name, including a member template's argument list. Use
+`yes` for a written qualifier level closed by `E`; use `no` for an unresolved
+type owner such as `T_`. A qualified call wraps this expression in `call`.
+
 - `let-type <id> ...`: a type fact
 - `let-arg <id> ...`: a template-argument fact
 - `let-expr <id> ...`: a dependent-expression fact

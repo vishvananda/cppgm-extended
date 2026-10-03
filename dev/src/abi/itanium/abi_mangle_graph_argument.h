@@ -1,6 +1,7 @@
 #pragma once
 
-// Canonical template-argument records used by the numeric ABI mangling graph.
+// Canonical template-argument and dependent-expression records used by the
+// numeric ABI mangling graph.
 
 #include "abi/itanium/abi_mangle_facts.h"
 
@@ -9,6 +10,40 @@
 
 namespace abi_mangle {
 namespace detail {
+
+struct ExpressionNode
+{
+  AbiExpressionKind kind = ABI_EXPRESSION_LITERAL;
+  std::size_t symbol = ABI_NO_RESOLVED_REFERENCE;
+  std::size_t op = ABI_NO_RESOLVED_REFERENCE;
+  std::size_t type = ABI_NO_RESOLVED_REFERENCE;
+  std::size_t value_type = ABI_NO_RESOLVED_REFERENCE;
+  std::size_t entity = ABI_NO_RESOLVED_REFERENCE;
+  std::size_t index = 0;
+  long long value = 0;
+  bool close_member_owner = false;
+  bool address_of = false;
+  bool entity_resolved = false;
+  bool uses_case_facts = false;
+  AbiExpressionOperationKind operation = ABI_EXPRESSION_OPERATION_TEXT;
+  std::vector<std::size_t> expressions;
+  std::vector<std::size_t> arguments;
+  std::vector<std::size_t> types;
+
+  bool operator==(const ExpressionNode & other) const
+  {
+    return kind == other.kind && symbol == other.symbol && op == other.op && type == other.type
+           && value_type == other.value_type && entity == other.entity
+           && index == other.index && value == other.value
+           && close_member_owner == other.close_member_owner
+           && address_of == other.address_of
+           && entity_resolved == other.entity_resolved
+           && operation == other.operation
+           && expressions == other.expressions
+           && arguments == other.arguments && types == other.types;
+  }
+};
+
 
 struct ArgumentNode
 {

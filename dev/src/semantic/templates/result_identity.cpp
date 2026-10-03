@@ -299,6 +299,23 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 				return true;
 			}
 		}
+		if (reference.environment &&
+			arena_->IsTag(reference.node, ::cppgm::syntax::STAG_TYPE_SPECIFIER_SEQ))
+		{
+			bool fundamental = arena_->FirstEdge(reference.node) != kNoEdge;
+			for (std::uint32_t edge = arena_->FirstEdge(reference.node);
+				edge != kNoEdge; edge = arena_->NextEdge(edge))
+				fundamental = fundamental && arena_->IsTag(arena_->EdgeChild(edge),
+					::cppgm::syntax::STAG_TYPE_SPECIFIER);
+			if (fundamental)
+			{
+				const TypeId type = BuildIdentityOnlySpecifiers(reference.node,
+					reference.scope, std::string(), false).type;
+				if (type == kNoType) return false;
+				atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_TYPE, type));
+				return true;
+			}
+		}
 		if (!reference.environment &&
 			arena_->IsTag(reference.node, ::cppgm::syntax::STAG_TYPE_ID) &&
 			!arena_->HasDescendantTag(reference.node, ::cppgm::syntax::STAG_PARAMETER_PACK) &&

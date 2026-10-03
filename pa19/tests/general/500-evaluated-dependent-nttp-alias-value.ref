@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @tuple_lvalue_reference_to_const_int___tuple_lvalue_reference_to_const_int___ov3(%t1, %t2)
     return i32 0
 }
-function @tuple_lvalue_reference_to_const_int___tuple_lvalue_reference_to_const_int___ov3(%this : ptr [object_bytes=1], %elements : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5tupleIJRKiEEC1ILb1ELb1EEES1_, inline_hint=yes] {
+function @tuple_lvalue_reference_to_const_int___tuple_lvalue_reference_to_const_int___ov3(%this : ptr [object_bytes=1], %elements : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5tupleIJRKiEEC1ILb1ETnN9enable_ifIXclsr3tccIXT_EEE13constructibleIDpRKS1_EEEbE4typeELb1EEES1_, inline_hint=yes] {
   slot $this : ptr
   slot $elements : ptr
 
@@ -18,4 +18,4 @@ function @tuple_lvalue_reference_to_const_int___tuple_lvalue_reference_to_const_
     store ptr %elements, $elements
     return void
 }
-alias object _ZN5tupleIJRKiEEC2ILb1ELb1EEES1_ = @tuple_lvalue_reference_to_const_int___tuple_lvalue_reference_to_const_int___ov3
+alias object _ZN5tupleIJRKiEEC2ILb1ETnN9enable_ifIXclsr3tccIXT_EEE13constructibleIDpRKS1_EEEbE4typeELb1EEES1_ = @tuple_lvalue_reference_to_const_int___tuple_lvalue_reference_to_const_int___ov3

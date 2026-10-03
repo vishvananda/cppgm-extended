@@ -691,11 +691,12 @@ AbiDependentExpression parse_expression(const vector<string> & words)
     expression.kind = ABI_EXPRESSION_SIZEOF_TYPE;
     expression.type = compact_type(words[3]);
   } else if(form == "member") {
-    require(words.size() == 6, "member expression has invalid operands");
+    require(words.size() >= 6, "member expression has invalid operands");
     expression.kind = ABI_EXPRESSION_MEMBER;
     expression.type = compact_type(words[3]);
     expression.close_member_owner = parse_yes_no(words[4]);
     expression.text = words[5];
+    append_reference_names(&expression.argument_refs, words, 6);
   } else if(form == "object-member") {
     require(words.size() >= 6, "object member expression has invalid operands");
     expression.kind = ABI_EXPRESSION_OBJECT_MEMBER;
@@ -1145,8 +1146,8 @@ string definition_text(const AbiDefinitionRecord & definition)
       return result;
     } else if(expression.kind == ABI_EXPRESSION_SIZEOF_TYPE) return result + "sizeof-type " + type_text(expression.type);
     else if(expression.kind == ABI_EXPRESSION_MEMBER) {
-      return result + "member " + type_text(expression.type) + " "
-             + bool_text(expression.close_member_owner) + " " + expression.text;
+      result += "member " + type_text(expression.type) + " "
+                + bool_text(expression.close_member_owner) + " " + expression.text;
     } else if(expression.kind == ABI_EXPRESSION_OBJECT_MEMBER) {
       result += "object-member " + expression.op;
     } else if(expression.kind == ABI_EXPRESSION_ENTITY) return result + "entity-reference " + expression.entity_ref;
@@ -1154,6 +1155,7 @@ string definition_text(const AbiDefinitionRecord & definition)
     for(const string & child : expression.expression_refs.names()) result += " " + child;
     if(expression.kind == ABI_EXPRESSION_OBJECT_MEMBER) result += " " + expression.text;
     if(expression.kind == ABI_EXPRESSION_TEMPLATE_ID
+       || expression.kind == ABI_EXPRESSION_MEMBER
        || expression.kind == ABI_EXPRESSION_OBJECT_MEMBER) {
       for(const string & argument : expression.argument_refs.names()) result += " " + argument;
     }

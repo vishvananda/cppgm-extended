@@ -23,7 +23,7 @@ function @Handler_void__pointer_to_function_of__int__returning_void__int___call(
     call void @N__invoke_r(%t1, %t2)
     return void
 }
-function @N__invoke_r(%f : ptr, %a : i32) -> void [binding=weak, object=_ZN1N8invoke_rIvPFviEiEENS_9enable_ifIXsrNS_7is_voidIT_EEE5valueES4_E4typeET0_T1_] {
+function @N__invoke_r(%f : ptr, %a : i32) -> void [binding=weak, object=_ZN1N8invoke_rIvPFviEiEENS_9enable_ifIXsr7is_voidIT_EE5valueES4_E4typeET0_T1_] {
   slot $f : ptr
   slot $a : i32
 

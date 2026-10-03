@@ -16,7 +16,7 @@ function @allocator_int___allocate(%this : ptr [object_bytes=1]) -> i32 [binding
     %t2 = call i32 @traits___cppgm_class_template_identity_1_1_0___max_size(%t1)
     return i32 %t2
 }
-function @traits___cppgm_class_template_identity_1_1_0___max_size(%a : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6traitsI9allocatorIiEE8max_sizeIS1_Li0EEEiRKS1_, inline_hint=yes] {
+function @traits___cppgm_class_template_identity_1_1_0___max_size(%a : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN6traitsI9allocatorIiEE8max_sizeIS1_TnN9enable_ifIXsr12has_max_sizeIKT_EE5valueEiE4typeELi0EEEiRKS1_, inline_hint=yes] {
   slot $a : ptr
 
   block ^entry:

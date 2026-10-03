@@ -43,6 +43,7 @@ using detail::SubstitutionKind;
 using detail::SubstitutionKey;
 using detail::SubstitutionTable;
 using detail::ArgumentNode;
+using detail::ExpressionNode;
 using detail::TypeNode;
 using detail::argument_node_hash;
 using detail::has_resolved_type_substitution;
@@ -189,38 +190,6 @@ private:
   std::unordered_map<PathNode, size_t, PathHash> indexes_;
 };
 
-struct ExpressionNode
-{
-  AbiExpressionKind kind = ABI_EXPRESSION_LITERAL;
-  size_t symbol = NO_ID;
-  size_t op = NO_ID;
-  size_t type = NO_ID;
-  size_t value_type = NO_ID;
-  size_t entity = NO_ID;
-  size_t index = 0;
-  long long value = 0;
-  bool close_member_owner = false;
-  bool address_of = false;
-  bool entity_resolved = false;
-  bool uses_case_facts = false;
-  AbiExpressionOperationKind operation = ABI_EXPRESSION_OPERATION_TEXT;
-  vector<size_t> expressions;
-  vector<size_t> arguments;
-  vector<size_t> types;
-
-  bool operator==(const ExpressionNode & other) const
-  {
-    return kind == other.kind && symbol == other.symbol && op == other.op && type == other.type
-           && value_type == other.value_type && entity == other.entity
-           && index == other.index && value == other.value
-           && close_member_owner == other.close_member_owner
-           && address_of == other.address_of
-           && entity_resolved == other.entity_resolved
-           && operation == other.operation
-           && expressions == other.expressions
-           && arguments == other.arguments && types == other.types;
-  }
-};
 
 size_t expression_hash(const ExpressionNode & expression)
 {
@@ -1719,7 +1688,7 @@ private:
         return;
       case ABI_TEMPLATE_ARGUMENT_DEPENDENT_VALUE:
         output_ += "Tn";
-        encode_type(argument.type, false);
+        encode_type(argument.type);
         output_ += 'L'; encode_type(argument.value_type);
         output_ += integral_value(argument.value_type, argument.value) + 'E';
         return;
@@ -1944,9 +1913,14 @@ private:
       case ABI_EXPRESSION_SIZEOF_TYPE:
         output_ += "st"; encode_type(expression.type); return;
       case ABI_EXPRESSION_MEMBER:
-        output_ += "sr"; encode_type(expression.type);
-        if(expression.close_member_owner) output_ += 'E';
+        output_ += "sr";
+        if(expression.close_member_owner) {
+          encode_unresolved_qualifier(expression.type); output_ += 'E';
+        } else encode_type(expression.type);
         output_ += source_name(graph_.strings.get(expression.symbol));
+        if(!expression.arguments.empty()) {
+          output_ += 'I'; encode_arguments(expression.arguments); output_ += 'E';
+        }
         return;
       case ABI_EXPRESSION_OBJECT_MEMBER:
         emit_expression_operation(expression, expression.op);
@@ -1964,6 +1938,23 @@ private:
       default: break;
     }
     ThrowAbiInternal("unsupported ABI dependent expression kind");
+  }
+
+  void encode_unresolved_qualifier(size_t id)
+  {
+    const TypeNode & type = graph_.type(id);
+    if(type.kind != ABI_TYPE_NAMED && type.kind != ABI_TYPE_TEMPLATE_SPECIALIZATION) {
+      encode_type(id);
+      return;
+    }
+    // Qualifier levels retain source names rather than namespace/type
+    // substitutions, including the written std spelling.
+    for(size_t component : graph_.paths.components(type.path))
+      output_ += source_name(graph_.strings.get(component));
+    emit_tags(type.tags);
+    if(type.kind == ABI_TYPE_TEMPLATE_SPECIALIZATION) {
+      output_ += 'I'; encode_arguments(type.arguments); output_ += 'E';
+    }
   }
 
   void encode_entity_reference(const string & id)
