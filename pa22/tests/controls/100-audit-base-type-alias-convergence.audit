@@ -1,8 +1,0 @@
-# AUDIT-ID: LOOKUP-BASE-ALIAS
-# N3485 10.2/3,6,7 merges the designated types, not typedef identities.
-# Clang accepts; GCC disagrees with the independently reviewed C++11 rule.
-# Reuse the existing input; correct and move its required fixture with the fix.
-kind source
-input pa30/tests/compile/400-base-same-type-alias-ambiguous-bad.t
-expected compile
-optimization O0 O2

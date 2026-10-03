@@ -1914,8 +1914,7 @@ LookupResult Program::DirectLookup(ScopeId scope, NameId name,
 }
 
 bool Program::MergeLookup(LookupResult* result,
-	const LookupResult& candidate, bool tolerate_ambiguity,
-	bool merge_equivalent_namespace_types) const
+	const LookupResult& candidate, bool tolerate_ambiguity) const
 {
 	if (candidate.Empty()) return true;
 	if (result->Empty())
@@ -1923,11 +1922,10 @@ bool Program::MergeLookup(LookupResult* result,
 		*result = candidate;
 		return true;
 	}
+	// Class lookup compares designated types, including typedefs (10.2/3).
+	// Retain the declaration representative for the later access check.
 	if (result->name_space != candidate.name_space ||
-		result->type != candidate.type ||
-		(result->type_declaration_canonical !=
-			candidate.type_declaration_canonical &&
-			(!merge_equivalent_namespace_types || result->type == kNoType)))
+		result->type != candidate.type)
 	{
 		if (tolerate_ambiguity) return false;
 		ThrowSemanticError("ambiguous PA6 lookup");
@@ -2050,8 +2048,7 @@ LookupResult Program::LookupGraphCandidate(ScopeId scope, NameId name,
 		const LookupResult direct = DirectLookup(current, name, kind);
 		if (!direct.Empty())
 		{
-			if (!MergeLookup(&result, direct, ambiguous != 0,
-				naming_class == kNoEntity))
+			if (!MergeLookup(&result, direct, ambiguous != 0))
 			{
 				*ambiguous = true;
 				return LookupResult();
@@ -2186,7 +2183,7 @@ LookupResult Program::LookupUnqualifiedCandidate(ScopeId scope, NameId name,
 				lookup_pending_targets_[pending], name, kind,
 				ambiguous ? &graph_ambiguous : 0);
 			if (graph_ambiguous || !MergeLookup(&result, candidate,
-				ambiguous != 0, true))
+				ambiguous != 0))
 			{
 				*ambiguous = true;
 				return LookupResult();

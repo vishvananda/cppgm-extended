@@ -83,9 +83,10 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-03: **37 compiler issue families** remain
+Remaining-work count on 2026-10-03: **36 compiler issue families** remain
 open or in progress. LOOKUP-NAMESPACE-MIXED is completed under the updated
-instruction/memory qualification policy. **Six further reviews** have no established
+instruction/memory qualification policy. LOOKUP-BASE-ALIAS is also completed.
+**Six further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT and ROUND.
 ATTR-NORETURN variable appertainment is now confirmed required work. These are tracker
@@ -188,7 +189,7 @@ The recent discovery inventory is not all C++11:
 | LOOKUP-RESTORE | Restore genuine namespace type/value ambiguity coverage lost during early consolidation | Namespace reference review | Done in the accompanying test-only checkpoint: distinct-type PA6 and original distinct-variable PA7 negatives have exact generated references and pass their owning checks. Strict 6103/6103 prints one line; PA6/PA7 placement scans 297 inputs with zero findings, and the standard full placement audit remains clean. No compiler change. The valid same-int PA6 oracle correction remains LOOKUP-NAMESPACE. |
 | LOOKUP-NAMESPACE | Converge namespace typedefs and aliases naming the same type or namespace | v4codex PA30 implementation197 / PA6 reference correction | Done in the accompanying checkpoint: enable existing canonical-type equivalence when merging namespace graph/import results; preserve direct lookup and class-base rules. All 72 core observations pass at O0/O2 and in both dump modes, including distinct-entity negatives. The reviewed composite replaces the wrong PA6 same-int rejection in PA6/200 and its temporary control is removed; ours and both hosts pass. PA6 112/112, strict 6109/6109 in one line, all required local groups and all frozen incremental Alpha gates pass against approved 8a6bcd105. All 2880 observations retain equal objects and unscaled counters. Independent mixed type/value and class-base alias rows remain open. N3485 7.1.3 and 7.3.4 support this correction. |
 | LOOKUP-NAMESPACE-MIXED | Diagnose a type and value found through different namespace imports without hiding either | LOOKUP-NAMESPACE boundary controls | Done in this compiler checkpoint: typed ordinary/type-name lookup diagnoses imported type/value conflicts while preserving local hiding, injected constructor names and restricted elaborated lookup. Reuse the existing PA6 typedef/value and PA7 class/value expression controls as required negatives; exact ref-test generates their references. All 184 focused outcomes and affected suites pass, strict 6111/6111 prints one line, debug-info/self-host PA5/all nine architecture targets/file/placement pass. The 384-observation screen plus 384-observation focused confirmation pass instruction/RSS gates, object equality and unscaled-counter verification (maximum instructions 1.000289, median RSS ratios 1.0). Confirmed namespace/auto-alias calibrated cycle costs around 1–1.6% remain explicit diagnostics under the updated policy; no timing-neutrality claim. Full immutable patch, binary and raw observations are retained in namespace-mixed-lookup/. Historical cycle-gate failures remain unchanged. |
-| LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Open, independently reproduced: Clang accepts, GCC and ours reject the original PA30 input and expanded fundamental/class/dependent-alias reducer. N3485 10.2/3 replaces type declarations by designated types; the equal declaration sets merge under /6 and /7 yields a valid type. This C++11 proof supports correcting the old rejection despite GCC's disagreement. Preserve distinct types/values/templates and inaccessible-alias rejections when fixing the shared merge owner. PA22/100 now has an opt-in compile control reusing the existing PA30 input; correct and move that fixture with the fix rather than adding a duplicate source. |
+| LOOKUP-BASE-ALIAS | Converge same-type typedef lookup through unrelated class bases | v4codex implementation197 / active audit198 correction | Done in this compiler checkpoint: compare canonical designated types in the existing merge owner, preserving the declaration representative for access checks. All 20 focused outcomes pass, including fundamental/class/dependent-alias runtime input and distinct type/value/template/private-access boundaries. Move the unchanged erroneous PA30 rejection fixture to PA22/100; exact ref-test generates successful LowIR/status references, and redundant opt-in metadata is removed. No new source fixture. N3485 10.2/3,6,7 supplies the C++11 proof despite GCC disagreement; mixed-access base-order observations remain scratch evidence. Affected suites 1590/1590, strict 6111/6111 in one line, debug/self-host PA5/all nine architecture checks/file/placement pass. All 192 frozen performance observations pass instruction/RSS/equality/unscaled-counter checks, with no timing signal requiring confirmation. Candidate and full raw results are retained in base-alias-convergence/. |
 | LOOKUP-TAG | Keep hidden friend class tags out of ordinary lookup and honor a new nested class forward declaration | v4codex PA30 source195 controls | Open, independently reproduced: hidden-friend.reject.cpp and nonfriend-shadow.reject.cpp are accepted here at O0/O2 and rejected by Clang/GCC in C++11. The positive friend/qualified-parameter and parser-boundary composites already pass all three compilers. |
 | TMPL-LATE-TYPE | Retain dependent member-type queries until the selected class definition is available | v4codex PA29 controls189/defined-conversions.cpp | Open, independently reproduced: the valid C++11 composite rejects at the dependent traits<T>::int_type declaration here and runs successfully with Clang/GCC at O0/O2. A forward-declared primary is defined before the member is demanded; the dormant invalid body must stay undemanded. |
 | TMPL-MEMBER-MATCH | Review inherited return-type aliases when matching an out-of-class member definition | v4codex PA30 source199 | Reviewed: no additional required fix or fixture. Instantiating the mismatched member rejects with conflicting function return type at O0/O2 and in PA14 LowIR, while the matching definition passes; both strict C++11 hosts agree. The unused form remains a diagnostic-timing difference under N3485 14.6/8, not a mandatory rejection oracle. Fourteen new observations and contract review are recorded below. |
@@ -5372,3 +5373,19 @@ performance studies and the independent review are in
 reported separately from instruction/memory qualification. Remaining count: 37
 compiler families and six reviews. Base-alias convergence is next; final global
 fixture minimization and combined student export remain pending.
+
+
+### Completed same-type base-alias lookup — 2026-10-03
+
+The merge now applies designated-type equality to class lookup as well as
+namespace lookup, with ordinary identities, distinct template markers and access
+representatives preserved. The existing PA30 fixture is corrected and moved to
+PA22 without changing its input; no duplicate source remains. All eight final
+validation groups pass; strict remains 6111/6111 in one line and placement has
+zero early/review/hygiene findings. The 192-observation screen passes instruction
+and RSS gates with equal objects and independently verified unscaled counters;
+no timing confirmation is indicated. Image
+`612e1d10f669773ab111885729240ef9347454cd6ddad34b1fc8665e64daebb1`,
+source patch, commands and observations are retained in `base-alias-convergence/`.
+Remaining: 36 compiler families and six reviews; final fixture minimization and
+combined export remain pending.

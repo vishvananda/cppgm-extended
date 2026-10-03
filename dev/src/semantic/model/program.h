@@ -1010,8 +1010,7 @@ private:
 	LookupResult DirectLookup(ScopeId scope, NameId name,
 		LookupKind kind) const;
 	bool MergeLookup(LookupResult* result,
-		const LookupResult& candidate, bool tolerate_ambiguity = false,
-		bool merge_equivalent_namespace_types = false) const;
+		const LookupResult& candidate, bool tolerate_ambiguity = false) const;
 	LookupResult LookupGraph(ScopeId scope, NameId name, LookupKind kind);
 	LookupResult LookupGraphCandidate(ScopeId scope, NameId name,
 		LookupKind kind, bool* ambiguous);
