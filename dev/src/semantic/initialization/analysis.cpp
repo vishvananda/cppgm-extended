@@ -1136,10 +1136,12 @@ void Analyzer::AddConstructorMemberActions(
 	constructor_initializer_touched_.clear();
 	const std::size_t base_count =
 		program_->entities[entity].direct_base_count;
-	std::vector<NodeId> base_initializers(base_count, kNoNode);
-	std::vector<ScopeId> base_initializer_scopes(base_count, function_scope);
-	std::vector<std::uint8_t> base_initializer_seen(base_count, 0);
-	std::vector<std::uint8_t> base_initializer_expanded(base_count, 0);
+	const std::size_t initializer_slots = base_count +
+		program_->entities[entity].virtual_base_count;
+	std::vector<NodeId> base_initializers(initializer_slots, kNoNode);
+	std::vector<ScopeId> base_initializer_scopes(initializer_slots, function_scope);
+	std::vector<std::uint8_t> base_initializer_seen(initializer_slots, 0);
+	std::vector<std::uint8_t> base_initializer_expanded(initializer_slots, 0);
 	std::vector<NodeId> initializer_syntax;
 	std::vector<ScopeId> initializer_scopes;
 	std::vector<std::uint8_t> initializer_expanded;
@@ -1264,14 +1266,20 @@ void Analyzer::AddConstructorMemberActions(
 				ThrowSemanticError(
 					"constructor initializer target is not a data member");
 			const EntityId target_base = EntityOf(target_type.type);
-			std::size_t base_ordinal = base_count;
+			std::size_t base_ordinal = initializer_slots;
 			for (std::size_t i = 0; i < base_count; ++i)
 				if (program_->DirectBase(entity, i).entity == target_base)
 				{
 					base_ordinal = i;
 					break;
 				}
-			if (base_ordinal == base_count)
+			if (base_ordinal == initializer_slots)
+			{
+				std::uint32_t virtual_ordinal = 0;
+				if (program_->FindVirtualBase(entity, target_base, 0, &virtual_ordinal))
+					base_ordinal = base_count + virtual_ordinal;
+			}
+			if (base_ordinal == initializer_slots)
 				ThrowSemanticError(
 					"unknown constructor member initializer");
 			if (target_type.type_declaration != kNoBinding &&

@@ -6540,3 +6540,37 @@ qualification lane `construction-tables/`.
 VBASE remains open for nonpolymorphic layout/projection, indirect initialization
 and RTTI flags. Eight compiler families and six further reviews remain; final
 pruning and combined export validation remain deferred.
+
+## VBASE indirect initialization checkpoint — 2026-10-03
+
+Use canonical direct/virtual initializer slots with the existing indexed
+FindVirtualBase query. Preserve parsed initializer nodes, lexical scopes and
+pack facts for indirect virtual bases; forward them to the existing complete-
+object initialization actions. Base entries continue to skip shared-base
+initialization. Unknown indirect nonvirtual targets and duplicate virtual
+initializers reject. No new semantic representation or ABI encoding change.
+
+Rewrite the existing PA23 forwarding fixture to initialize A/B/C explicitly
+and initialize every scalar in its input object; remove the duplicate opt-in
+control. This preserves template/prvalue/hidden-address forwarding coverage
+while removing the prior indeterminate-value result. All 30 collected focused
+observations pass: the original shared-copy and defined-forwarding controls,
+the actual rewritten fixture, and two demanded rejection checks, using strict
+C++11 Clang/GCC and host/native candidate routes at O0/O2. The first unused
+negative constructors were not demanded here; retain that initial evidence,
+then demand construction with valid default bases to verify the intended
+diagnostics (unknown initializer / duplicate base initializer). No new required
+fixture is added. Full strict report passes 6126/6126 with exactly one output
+line. Debug-info, backend variants, self-host through PA5, all nine architecture
+audits, file and placement checks pass (37 existing file warnings). Final
+compiler SHA256:
+`63a906afdb954347ac07a254cb378ffcff38ec01492a6d231cd7625f70f54954`.
+Independently verify all 288 Alpha observations against raw unscaled counters,
+RSS, zero statuses and equal object hashes. Maximum instruction median is
+1.000004400; all RSS medians are 1.0. No calibrated cycle median exceeds the
+1.01 diagnostic confirmation threshold; retain all intervals and observations.
+Evidence: `/tmp/cppgm-v4-audit-review/virtual-base-reconciliation/indirect-initialization/`.
+
+VBASE remains open for nonpolymorphic layout/projection and RTTI flags, plus
+the reserved null-placement contract review. Eight compiler families and six
+further reviews remain; final pruning and combined export validation are deferred.

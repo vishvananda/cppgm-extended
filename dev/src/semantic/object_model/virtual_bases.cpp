@@ -168,8 +168,15 @@ void Analyzer::AddVirtualBaseInitializationActions(EntityId entity,
 			AddBaseInitializationAction(entity, direct_ordinal,
 				initializers[direct_ordinal], initializer_scopes[direct_ordinal],
 				body, initializer_expanded[direct_ordinal] != 0);
-		else AddBaseInitializationActionAt(entity, layout.entity,
-			layout.offset, kNoNode, function_scope, body);
+		else
+		{
+			const std::size_t initializer_ordinal =
+				owner.direct_base_count + virtual_ordinal;
+			AddBaseInitializationActionAt(entity, layout.entity,
+				layout.offset, initializers[initializer_ordinal],
+				initializer_scopes[initializer_ordinal], body,
+				initializer_expanded[initializer_ordinal] != 0);
+		}
 	}
 }
 

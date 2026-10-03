@@ -2,6 +2,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $d : obj<16x4>
   slot $w : obj<16x4>
   slot $cond__1 : i32
+  slot $land__2 : i64
+  slot $land__3 : i64
 
   block ^entry:
     %t1 = addr $d
@@ -10,18 +12,62 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 %t2, 4
     %t4 = index i8 [projection=field] %t3, 0
     store i32 7, %t4
-    %t5 = addr $w
-    %t6 = addr $d
-    %t7 = addr $d
-    %t8 = index i8 %t7, 4
-    %t9 = index i8 [projection=field] %t8, 0
-    call void @make_wrap(%t5, %t6, %t9)
-    %t10 = addr $w
-    %t11 = index i8 %t10, 4
-    %t12 = index i8 [projection=field] %t11, 0
-    %t13 = load i32 %t12
-    %t14 = cmp eq i32 %t13, 7
-    branch %t14, ^cond_then_1, ^cond_else_2
+    %t5 = addr $d
+    %t6 = index i8 %t5, 8
+    %t7 = index i8 [projection=field] %t6, 0
+    store i32 8, %t7
+    %t8 = addr $d
+    %t9 = index i8 %t8, 12
+    %t10 = index i8 [projection=field] %t9, 0
+    store i32 9, %t10
+    %t11 = addr $w
+    %t12 = addr $d
+    %t13 = addr $d
+    %t14 = index i8 %t13, 4
+    %t15 = index i8 [projection=field] %t14, 0
+    call void @make_wrap(%t11, %t12, %t15)
+    %t16 = addr $w
+    %t17 = index i8 %t16, 4
+    %t18 = index i8 [projection=field] %t17, 0
+    %t19 = load i32 %t18
+    %t20 = cmp eq i32 %t19, 7
+    branch %t20, ^land_rhs_7, ^land_short_8
+
+  block ^land_rhs_7:
+    %t21 = addr $w
+    %t22 = index i8 %t21, 8
+    %t23 = index i8 [projection=field] %t22, 0
+    %t24 = load i32 %t23
+    %t25 = cmp eq i32 %t24, 8
+    %t26 = cmp ne i64 %t25, 0
+    store i64 %t26, $land__3
+    jump ^land_end_9
+
+  block ^land_short_8:
+    store i64 0, $land__3
+    jump ^land_end_9
+
+  block ^land_end_9:
+    %t27 = load i64 $land__3
+    branch %t27, ^land_rhs_4, ^land_short_5
+
+  block ^land_rhs_4:
+    %t28 = addr $w
+    %t29 = index i8 %t28, 12
+    %t30 = index i8 [projection=field] %t29, 0
+    %t31 = load i32 %t30
+    %t32 = cmp eq i32 %t31, 9
+    %t33 = cmp ne i64 %t32, 0
+    store i64 %t33, $land__2
+    jump ^land_end_6
+
+  block ^land_short_5:
+    store i64 0, $land__2
+    jump ^land_end_6
+
+  block ^land_end_6:
+    %t34 = load i64 $land__2
+    branch %t34, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -32,14 +78,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load i32 $cond__1
-    return i32 %t15
+    %t35 = load i32 $cond__1
+    return i32 %t35
 }
-function @D__D(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
+function @D__D(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 %t1, 4
+    call void @A__A__base_entry(%t2, 0)
+    %t3 = load ptr $this
+    %t4 = index i8 %t3, 8
+    call void @B__B__base_entry(%t4, 0)
+    %t5 = load ptr $this
+    %t6 = index i8 %t5, 12
+    call void @C__C__base_entry(%t6, 0)
     return void
 }
 function @make_wrap(%ret : ptr [pass=indirect_result, object_bytes=16], %e : ptr [pass=by_address, object_bytes=16], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z9make_wrapI1DE1WIT_ERKS2_RKi] {
@@ -54,25 +109,122 @@ function @make_wrap(%ret : ptr [pass=indirect_result, object_bytes=16], %e : ptr
     call void @W_D___W_D_(%ret, %t1, %t2)
     return void
 }
-function @W_D___W_D_(%this : ptr [object_bytes=16], %e : ptr [pass=by_address, object_bytes=16], %__param2 : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1WI1DEC1ERKS0_RKi, inline_hint=yes] {
+function @A__A__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1AC2Ei, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @A__A(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1AC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @B__B__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1BC2Ei, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @B__B(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1BC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @C__C__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1CC2Ei, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @C__C(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1CC1Ei, inline_hint=yes] {
+  slot $this : ptr
+  slot $value : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %value, $value
+    %t1 = load i32 $value
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @W_D___W_D_(%this : ptr [object_bytes=16], %e : ptr [pass=by_address, object_bytes=16], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1WI1DEC1ERKS0_RKi, inline_hint=yes] {
   slot $this : ptr
   slot $e : ptr
-  slot $__param2 : ptr
+  slot $loc : ptr
 
   block ^entry:
     store ptr %this, $this
     store ptr %e, $e
-    store ptr %__param2, $__param2
+    store ptr %loc, $loc
     %t1 = load ptr $this
-    %t2 = index i8 %t1, 0
-    %t3 = load ptr $e
-    %t4 = load ptr $this
-    %t5 = index i8 %t4, 4
-    %t6 = load ptr $this
-    %t7 = index i8 %t6, 8
-    %t8 = load ptr $this
-    %t9 = index i8 %t8, 12
-    call void @D__D__base_entry(%t2, %t3, %t5, %t7, %t9)
+    %t2 = index i8 %t1, 4
+    %t3 = load ptr $loc
+    %t4 = load i32 %t3
+    call void @A__A__base_entry(%t2, %t4)
+    %t5 = load ptr $this
+    %t6 = index i8 %t5, 8
+    %t7 = load ptr $e
+    %t8 = index i8 %t7, 8
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = load i32 %t9
+    call void @B__B__base_entry(%t6, %t10)
+    %t11 = load ptr $this
+    %t12 = index i8 %t11, 12
+    %t13 = load ptr $e
+    %t14 = index i8 %t13, 12
+    %t15 = index i8 [projection=field] %t14, 0
+    %t16 = load i32 %t15
+    call void @C__C__base_entry(%t12, %t16)
+    %t17 = load ptr $this
+    %t18 = index i8 %t17, 0
+    %t19 = load ptr $e
+    %t20 = load ptr $this
+    %t21 = index i8 %t20, 4
+    %t22 = load ptr $this
+    %t23 = index i8 %t22, 8
+    %t24 = load ptr $this
+    %t25 = index i8 %t24, 12
+    call void @D__D__base_entry(%t18, %t19, %t21, %t23, %t25)
     return void
 }
 function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16], %__vbptr0 : ptr, %__vbptr1 : ptr, %__vbptr2 : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC2ERKS_, object_root=yes, inline_hint=yes] {
