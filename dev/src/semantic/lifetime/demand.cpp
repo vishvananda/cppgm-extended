@@ -166,7 +166,7 @@ void Analyzer::DemandRuntimeDefinition(BindingId binding)
 		 program_->bindings[binding].destructor) &&
 		program_->bindings[binding].member_owner != kNoEntity &&
 		program_->entities[program_->bindings[binding].member_owner].
-			polymorphic_class)
+			dynamic_class)
 		MarkVtableDemand(program_->bindings[binding].member_owner);
 	if (binding < constructor_base_entry_by_binding_.size())
 	{

@@ -6574,3 +6574,53 @@ Evidence: `/tmp/cppgm-v4-audit-review/virtual-base-reconciliation/indirect-initi
 VBASE remains open for nonpolymorphic layout/projection and RTTI flags, plus
 the reserved null-placement contract review. Eight compiler families and six
 further reviews remain; final pruning and combined export validation are deferred.
+
+## VBASE nonpolymorphic table ownership checkpoint — 2026-10-03
+
+The frozen reference reducer and proposed strengthened PA23 virtual-inheritance
+fields fixture return one with the entry compiler in host/native routes at
+O0/O2; fresh strict C++11 Clang/GCC observations all return zero. Clang's fresh
+record-layout dump shows B's table pointer despite B having no virtual functions.
+Publish a separate dynamic-class layout fact from typed base edges and virtual
+slots. Reuse table views, construction tables and runtime base projection for
+these classes, retaining polymorphic_class for language traits and RTTI queries.
+The entity record remains 208 bytes before/after with the host toolchain.
+Reuse the existing owning field fixture with a sibling guard and reference
+reader; no new required fixture. Reuse existing nested VTT slices when a
+complete constructor initializes an indirect virtual base that needs a table.
+Reference/pointer uses project through tables; typed named complete objects
+and temporaries retain static offsets. The initial full report exposed an
+unnecessary runtime projection in the lifecycle optimizer fixture. The static
+path fixes it and improves its O1 use_derived body from five instructions to
+return 7; the existing quality envelope remains unchanged.
+
+All 32 focused observations and eight mixed Clang/GCC reader/caller observations
+pass for the final binary. Collect 252 entry, candidate and strict-host checks
+of the 21 changed PA23 fixtures at O0/O2: four declaration-only/unlinked fixtures
+are compile-only checks; give the lifecycle fixture a scratch main to demand
+use_derived and compare its runtime result. All host oracles agree and every
+candidate check matches. Retain the initial link attempts separately; missing
+main/external definitions do not indicate source or host bugs. Generate all
+21 PA23 references and the one PA32 lifecycle regression reference through
+owning wrappers. No mangling encoder or ABI spelling changes.
+
+Full strict report passes 6126/6126 with exactly one output line. Debug-info,
+backend variants, self-host through PA5, all nine architecture audits, file
+and placement checks pass (37 existing file warnings). Extract the existing
+base-fact initialization loop into its owning module to respect the 240-line
+function limit; keep the semantic owner ledger current. Final compiler SHA256:
+`142313f6158595950160aa7cc67369a6207d06ded911afe63ae0a591daf58f23`.
+Independently verify all 288 Alpha screen and 48 focused confirmation observations
+against raw unscaled counters, RSS, zero statuses and equal object hashes.
+Maximum instruction median is 1.000364488 and RSS median 1.000053600. Reference-
+alias confirmation calibrated cycles are 1.007131607 (95% interval
+[0.992128869, 1.018852009]); retain timing uncertainty, with no further repeat.
+Evidence:
+`/tmp/cppgm-v4-audit-review/virtual-base-reconciliation/nonpoly-tables/`.
+
+VBASE remains open for RTTI flags and the reserved null-placement contract
+review. Fresh Clang IR confirms Repeated flags 1 and Diamond flags 2; our
+descriptor flags remain zero. The names and direct-base descriptor rows match
+Clang. Keep this existing frozen finding next in sequence. Eight compiler
+families and six further reviews remain, followed by final pruning and
+combined student-export validation.

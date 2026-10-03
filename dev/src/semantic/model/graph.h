@@ -1184,6 +1184,11 @@ struct ClassPolymorphismFacts
 
 	ClassPolymorphismFacts()
 		: address_point(16), complete(false), vtable_demanded(false) {}
+
+	bool HasObjectTable() const
+	{
+		return !slots.empty() || !views.empty() || !virtual_base_offsets.empty();
+	}
 };
 
 struct TemplateParameter

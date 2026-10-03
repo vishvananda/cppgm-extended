@@ -83,21 +83,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     call void @D__D(%t1)
     %t2 = addr $d
-    %t3 = load ptr %t2
-    %t4 = index i8 %t3, -24
-    %t5 = load i64 %t4
-    %t6 = index i8 %t2, %t5
-    %t7 = index i8 %t6, 0
-    %t8 = index i8 [projection=field] %t7, 0
-    store i32 7, %t8
-    %t9 = addr $d
-    %t10 = index i8 %t9, 0
-    store ptr %t10, $p
-    %t11 = load ptr $p
-    %t12 = call i32 @read(%t11)
-    %t13 = cmp ne i32 %t12, 7
-    %t14 = convert trunc i32 i64 %t13
-    return i32 %t14
+    %t3 = index i8 %t2, 8
+    %t4 = index i8 [projection=field] %t3, 0
+    store i32 7, %t4
+    %t5 = addr $d
+    %t6 = index i8 %t5, 0
+    store ptr %t6, $p
+    %t7 = load ptr $p
+    %t8 = call i32 @read(%t7)
+    %t9 = cmp ne i32 %t8, 7
+    %t10 = convert trunc i32 i64 %t9
+    return i32 %t10
 }
 function @B__anchor(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1B6anchorEv, inline_hint=yes] {
   slot $this : ptr

@@ -1312,7 +1312,7 @@ void Analyzer::AddConstructorMemberActions(
 			base_initializer_scopes[base_ordinal], body,
 			base_initializer_expanded[base_ordinal] != 0);
 	}
-	if (program_->entities[entity].polymorphic_class)
+	if (program_->entities[entity].dynamic_class)
 		dump_.Add(body, MakeDump(DUMP_VPTR_INITIALIZATION_ACTION,
 			program_->entities[entity].type));
 	if (program_->entities[entity].flavor == NAMED_UNION)

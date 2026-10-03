@@ -1,7 +1,120 @@
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+
+global @__typeinfo_name__struct_B [binding=weak, object=_ZTS1B] = {
+  i8 49
+  i8 66
+  i8 0
+}
+global @__rtti_struct_B [binding=weak, object=_ZTI1B] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_B
+}
+global @__typeinfo_name__struct_H [binding=weak, object=_ZTS1H] = {
+  i8 49
+  i8 72
+  i8 0
+}
+global @__rtti_struct_H [binding=weak, object=_ZTI1H] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_H
+  i32 0
+  i32 1
+  ptr addr @__rtti_struct_B
+  i64 -6141
+}
+global @__typeinfo_name__struct_E [binding=weak, object=_ZTS1E] = {
+  i8 49
+  i8 69
+  i8 0
+}
+global @__rtti_struct_E [binding=weak, object=_ZTI1E] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_E
+  i32 0
+  i32 1
+  ptr addr @__rtti_struct_H
+  i64 -8189
+}
+global @__typeinfo_name__struct_W [binding=weak, object=_ZTS1W] = {
+  i8 49
+  i8 87
+  i8 0
+}
+global @__rtti_struct_W [binding=weak, object=_ZTI1W] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_W
+  ptr addr @__rtti_struct_E
+}
+global @H__vtable [binding=weak, object=_ZTV1H] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_H
+}
+global @H____vtt [binding=weak, object=_ZTT1H, object_root=yes] = {
+  ptr addr @H__vtable + 24
+}
+global @E__vtable [binding=weak, object=_ZTV1E] = {
+  i64 8
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct_E
+}
+global @E____view__H__8__vtable [binding=internal, object=@E____view__H__8__vtable] = {
+  i64 8
+  i64 -8
+  ptr addr @__rtti_struct_E
+}
+global @E____construction__H__8__s0__vtable [binding=internal, object=@E____construction__H__8__s0__vtable] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_H
+}
+global @E____vtt [binding=weak, object=_ZTT1E, object_root=yes] = {
+  ptr addr @E__vtable + 32
+  ptr addr @E____construction__H__8__s0__vtable + 24
+  ptr addr @E____view__H__8__vtable + 24
+}
+global @W__vtable [binding=weak, object=_ZTV1W] = {
+  i64 8
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct_W
+}
+global @W____view__H__8__vtable [binding=internal, object=@W____view__H__8__vtable] = {
+  i64 8
+  i64 -8
+  ptr addr @__rtti_struct_W
+}
+global @W____construction__E__0__s0__vtable [binding=internal, object=@W____construction__E__0__s0__vtable] = {
+  i64 8
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct_E
+}
+global @W____construction__H__8__s0__vtable [binding=internal, object=@W____construction__H__8__s0__vtable] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_H
+}
+global @W____construction__E__0__s1__vtable [binding=internal, object=@W____construction__E__0__s1__vtable] = {
+  i64 8
+  i64 -8
+  ptr addr @__rtti_struct_E
+}
+global @W____vtt [binding=weak, object=_ZTT1W, object_root=yes] = {
+  ptr addr @W__vtable + 32
+  ptr addr @W____construction__E__0__s0__vtable + 32
+  ptr addr @W____construction__H__8__s0__vtable + 24
+  ptr addr @W____construction__E__0__s1__vtable + 24
+  ptr addr @W____view__H__8__vtable + 24
+}
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $e : obj<8x4>
+  slot $e : obj<24x8>
   slot $b : ptr
-  slot $w : obj<12x4>
+  slot $w : obj<24x8>
   slot $wb : ptr
   slot $cond__1 : i32
 
@@ -9,7 +122,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $e
     call void @E__E(%t1)
     %t2 = addr $e
-    %t3 = index i8 %t2, 4
+    %t3 = index i8 %t2, 16
     store ptr %t3, $b
     %t4 = load ptr $b
     %t5 = index i8 [projection=field] %t4, 0
@@ -18,7 +131,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $e
     call void @W__W(%t6, %t7)
     %t8 = addr $w
-    %t9 = index i8 %t8, 8
+    %t9 = index i8 %t8, 16
     store ptr %t9, $wb
     %t10 = load ptr $wb
     %t11 = index i8 [projection=field] %t10, 0
@@ -41,22 +154,37 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = load i32 $cond__1
     return i32 %t17
 }
-function @E__E(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1EC1Ev, inline_hint=yes] {
+function @E__E(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1EC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 %t1, 1
-    %t3 = load ptr $this
-    %t4 = index i8 %t3, 4
-    call void @H__H__base_entry(%t2, %t4)
+    %t2 = index i8 %t1, 8
+    %t3 = addr @E____vtt
+    %t4 = index i8 %t3, 8
     %t5 = load ptr $this
-    %t6 = index i8 %t5, 4
-    call void @B__B__base_entry(%t6)
+    %t6 = index i8 %t5, 16
+    call void @H__H__base_entry(%t2, %t4, %t6)
+    %t7 = load ptr $this
+    %t8 = index i8 %t7, 16
+    call void @B__B__base_entry(%t8)
+    %t9 = load ptr $this
+    %t10 = addr @E__vtable
+    %t11 = index i8 %t10, 32
+    store ptr %t11, %t9
+    %t12 = load ptr $this
+    %t13 = load ptr %t12
+    %t14 = index i8 %t13, -32
+    %t15 = load i64 %t14
+    %t16 = index i8 %t12, %t15
+    %t17 = index i8 %t16, 0
+    %t18 = addr @E____view__H__8__vtable
+    %t19 = index i8 %t18, 24
+    store ptr %t19, %t17
     return void
 }
-function @W__W(%this : ptr [object_bytes=12], %e : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN1WC1ERK1E, inline_hint=yes] {
+function @W__W(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, object_bytes=24]) -> void [binding=weak, object=_ZN1WC1ERK1E, inline_hint=yes] {
   slot $this : ptr
   slot $e : ptr
 
@@ -64,36 +192,64 @@ function @W__W(%this : ptr [object_bytes=12], %e : ptr [pass=by_address, object_
     store ptr %this, $this
     store ptr %e, $e
     %t1 = load ptr $this
-    %t2 = index i8 %t1, 4
-    %t3 = load ptr $this
-    %t4 = index i8 %t3, 8
-    call void @H__H__base_entry(%t2, %t4)
+    %t2 = index i8 %t1, 8
+    %t3 = addr @W____vtt
+    %t4 = index i8 %t3, 16
     %t5 = load ptr $this
-    %t6 = index i8 %t5, 8
-    call void @B__B__base_entry(%t6)
+    %t6 = index i8 %t5, 16
+    call void @H__H__base_entry(%t2, %t4, %t6)
     %t7 = load ptr $this
-    %t8 = index i8 %t7, 0
-    %t9 = load ptr $e
-    %t10 = load ptr $this
-    %t11 = index i8 %t10, 4
-    %t12 = load ptr $this
-    %t13 = index i8 %t12, 8
-    call void @E__E__base_entry(%t8, %t9, %t11, %t13)
+    %t8 = index i8 %t7, 16
+    call void @B__B__base_entry(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 %t9, 0
+    %t11 = addr @W____vtt
+    %t12 = index i8 %t11, 8
+    %t13 = load ptr $e
     %t14 = load ptr $this
-    %t15 = load ptr $e
-    %t16 = index i8 %t15, 4
-    %t17 = load ptr $this
-    %t18 = index i8 %t17, 4
-    %t19 = load ptr $this
-    %t20 = index i8 %t19, 8
-    call void @W__copy_from__ov2(%t14, %t16, %t18, %t20)
+    %t15 = index i8 %t14, 8
+    %t16 = load ptr $this
+    %t17 = index i8 %t16, 16
+    call void @E__E__base_entry(%t10, %t12, %t13, %t15, %t17)
+    %t18 = load ptr $this
+    %t19 = addr @W__vtable
+    %t20 = index i8 %t19, 32
+    store ptr %t20, %t18
+    %t21 = load ptr $this
+    %t22 = load ptr %t21
+    %t23 = index i8 %t22, -32
+    %t24 = load i64 %t23
+    %t25 = index i8 %t21, %t24
+    %t26 = index i8 %t25, 0
+    %t27 = addr @W____view__H__8__vtable
+    %t28 = index i8 %t27, 24
+    store ptr %t28, %t26
+    %t29 = load ptr $this
+    %t30 = load ptr $e
+    %t31 = load ptr %t30
+    %t32 = index i8 %t31, -32
+    %t33 = load i64 %t32
+    %t34 = index i8 %t30, %t33
+    %t35 = index i8 %t34, 8
+    %t36 = load ptr %t29
+    %t37 = index i8 %t36, -32
+    %t38 = load i64 %t37
+    %t39 = index i8 %t29, %t38
+    %t40 = load ptr %t29
+    %t41 = index i8 %t40, -24
+    %t42 = load i64 %t41
+    %t43 = index i8 %t29, %t42
+    call void @W__copy_from__ov2(%t29, %t35, %t39, %t43)
     return void
 }
-function @H__H__base_entry(%this : ptr [object_bytes=8], %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1HC2Ev, object_root=yes, inline_hint=yes] {
+function @H__H__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1HC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = load ptr %__vtt
+    store ptr %t2, %t1
     return void
 }
 function @B__B__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
@@ -116,7 +272,7 @@ function @B__B(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1B
     store i32 7, %t2
     return void
 }
-function @E__E__base_entry(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8], %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN1EC2ERKS_, object_root=yes, inline_hint=yes] {
+function @E__E__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt : ptr, %other : ptr [pass=by_address, alias=noalias, object_bytes=24], %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN1EC2ERKS_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -125,19 +281,19 @@ function @E__E__base_entry(%this : ptr [alias=noalias, object_bytes=8], %other :
     store ptr %other, $other
     return void
 }
-function @W__copy_from__ov2(%this : ptr [object_bytes=12], %p : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN1W9copy_fromEPK1B, inline_hint=yes] {
+function @W__copy_from__ov2(%this : ptr [object_bytes=24], %p : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN1W9copy_fromEPK1B, inline_hint=yes] {
   slot $this : ptr
   slot $p : ptr
 
   block ^entry:
     store ptr %this, $this
     store ptr %p, $p
-    %t1 = index i8 %__vbptr0, 4
+    %t1 = index i8 %__vbptr0, 8
     %t2 = load ptr $p
     %t3 = call ptr @B__operator_(%t1, %t2)
     return void
 }
-function @H__H__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8], %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1HC2ERKS_, inline_hint=yes] {
+function @H__H__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=16], %__vtt : ptr, %other : ptr [pass=by_address, alias=noalias, object_bytes=16], %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1HC2ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

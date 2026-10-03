@@ -1,5 +1,63 @@
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+
+global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
+  i8 49
+  i8 65
+  i8 0
+}
+global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_A
+}
+global @__typeinfo_name__struct_B [binding=weak, object=_ZTS1B] = {
+  i8 49
+  i8 66
+  i8 0
+}
+global @__rtti_struct_B [binding=weak, object=_ZTI1B] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_B
+}
+global @__typeinfo_name__struct_C [binding=weak, object=_ZTS1C] = {
+  i8 49
+  i8 67
+  i8 0
+}
+global @__rtti_struct_C [binding=weak, object=_ZTI1C] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_C
+}
+global @__typeinfo_name__struct_D [binding=weak, object=_ZTS1D] = {
+  i8 49
+  i8 68
+  i8 0
+}
+global @__rtti_struct_D [binding=weak, object=_ZTI1D] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_D
+  i32 0
+  i32 3
+  ptr addr @__rtti_struct_A
+  i64 -10237
+  ptr addr @__rtti_struct_B
+  i64 -8189
+  ptr addr @__rtti_struct_C
+  i64 -6141
+}
+global @D__vtable [binding=weak, object=_ZTV1D] = {
+  i64 8
+  i64 12
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct_D
+}
+global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
+  ptr addr @D__vtable + 40
+}
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $d : obj<16x4>
+  slot $d : obj<24x8>
   slot $cond__1 : i32
   slot $refarg__2 : i32
 
@@ -7,19 +65,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     call void @D__D(%t1)
     %t2 = addr $d
-    %t3 = index i8 %t2, 4
+    %t3 = index i8 %t2, 8
     %t4 = index i8 [projection=field] %t3, 0
     store i32 5, %t4
     %t5 = addr $d
     store i32 1, $refarg__2
     %t6 = addr $refarg__2
     %t7 = call ptr @operator__(%t5, %t6)
-    %t8 = index i8 %t7, 4
-    %t9 = index i8 %t8, 0
-    %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load i32 %t10
-    %t12 = cmp eq i32 %t11, 5
-    branch %t12, ^cond_then_1, ^cond_else_2
+    %t8 = load ptr %t7
+    %t9 = index i8 %t8, -40
+    %t10 = load i64 %t9
+    %t11 = index i8 %t7, %t10
+    %t12 = index i8 %t11, 0
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load i32 %t13
+    %t15 = cmp eq i32 %t14, 5
+    branch %t15, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store i32 0, $cond__1
@@ -30,17 +91,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__1
-    return i32 %t13
+    %t16 = load i32 $cond__1
+    return i32 %t16
 }
-function @D__D(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
+function @D__D(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @D__vtable
+    %t3 = index i8 %t2, 40
+    store ptr %t3, %t1
     return void
 }
-function @operator__(%x : ptr [pass=by_address, object_bytes=16], %v : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZlsI1DiERKT_S3_RKT0_] {
+function @operator__(%x : ptr [pass=by_address, object_bytes=24], %v : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZlsI1DiERKT_S3_RKT0_] {
   slot $x : ptr
   slot $v : ptr
 
@@ -52,7 +117,7 @@ function @operator__(%x : ptr [pass=by_address, object_bytes=16], %v : ptr [pass
     %t3 = call ptr @set_info(%t1, %t2)
     return ptr %t3
 }
-function @set_info(%x : ptr [pass=by_address, object_bytes=16], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z8set_infoI1DiERKT_S3_RKT0_] {
+function @set_info(%x : ptr [pass=by_address, object_bytes=24], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z8set_infoI1DiERKT_S3_RKT0_] {
   slot $x : ptr
   slot $__param1 : ptr
 
@@ -60,9 +125,13 @@ function @set_info(%x : ptr [pass=by_address, object_bytes=16], %__param1 : ptr 
     store ptr %x, $x
     store ptr %__param1, $__param1
     %t1 = load ptr $x
-    %t2 = index i8 %t1, 4
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
-    %t5 = load ptr $x
-    return ptr %t5
+    %t2 = load ptr %t1
+    %t3 = index i8 %t2, -40
+    %t4 = load i64 %t3
+    %t5 = index i8 %t1, %t4
+    %t6 = index i8 %t5, 0
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = load i32 %t7
+    %t9 = load ptr $x
+    return ptr %t9
 }

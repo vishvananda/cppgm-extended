@@ -489,6 +489,8 @@ struct EntityRecord
 		object_alignment, nonvirtual_alignment, natural_alignment,
 		requested_alignment, packing_alignment, direct_base_offset;
 	AccessKind base_access;
+	// dynamic_class includes virtual-base tables; polymorphic_class requires
+	// virtual functions and controls language traits and dynamic type queries.
 	bool complete, layout_complete, has_user_declared_constructor,
 		has_user_provided_constructor, default_constructible,
 		trivial_default_constructor, has_user_declared_destructor,
@@ -496,7 +498,7 @@ struct EntityRecord
 		has_direct_base, is_aggregate, empty_class,
 		indirect_class_value_abi, indirect_class_result_abi,
 		indirect_class_parameter_abi,
-		polymorphic_class, abstract_class, final_class;
+		dynamic_class, polymorphic_class, abstract_class, final_class;
 	bool nonlinear_base_graph;
 	bool has_nonzero_base_subobject_offset;
 	bool has_volatile_subobject, has_union_subobject;

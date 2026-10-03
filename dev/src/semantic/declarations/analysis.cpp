@@ -662,7 +662,7 @@ void Analyzer::InitializeImplicitBaseConstructorFacts(EntityId entity)
 {
 	EntityRecord& owner = program_->entities[entity];
 	owner.default_constructible = true;
-	owner.trivial_default_constructor = !owner.polymorphic_class;
+	owner.trivial_default_constructor = !owner.dynamic_class;
 	for (std::size_t base_index = 0;
 		base_index < owner.direct_base_count; ++base_index)
 	{
@@ -703,14 +703,14 @@ void Analyzer::CompleteClassLayout(EntityId entity)
 		BeginClassZeroOffsetSubobjects(entity);
 	const bool is_union = owner.flavor == NAMED_UNION;
 	bool empty_class = ClassBasesAreEmpty(entity);
-	if (owner.polymorphic_class)
+	if (owner.dynamic_class)
 	{
 		empty_class = false;
 		natural_alignment = std::max<std::size_t>(natural_alignment, 8);
 		alignment = std::max<std::size_t>(alignment,
 			packing_alignment == 0 ? 8 : std::min<std::size_t>(8,
 				packing_alignment));
-		if (!base || !base->polymorphic_class) size = std::max<std::size_t>(size, 8);
+		if (!base || !base->dynamic_class) size = std::max<std::size_t>(size, 8);
 	}
 	const bool defaulted_destructor = ClassDestructorIsDefaulted(owner);
 	const bool implicit_default_constructor =

@@ -1,13 +1,76 @@
-function @read(%a : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z4readR1A] {
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+
+global @__typeinfo_name__struct_V [binding=weak, object=_ZTS1V] = {
+  i8 49
+  i8 86
+  i8 0
+}
+global @__rtti_struct_V [binding=weak, object=_ZTI1V] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_V
+}
+global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
+  i8 49
+  i8 65
+  i8 0
+}
+global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_A
+  i32 0
+  i32 1
+  ptr addr @__rtti_struct_V
+  i64 -6141
+}
+global @__typeinfo_name__struct_D [binding=weak, object=_ZTS1D] = {
+  i8 49
+  i8 68
+  i8 0
+}
+global @__rtti_struct_D [binding=weak, object=_ZTI1D] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_D
+  ptr addr @__rtti_struct_A
+}
+global @A__vtable [binding=weak, object=_ZTV1A] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_A
+}
+global @A____vtt [binding=weak, object=_ZTT1A, object_root=yes] = {
+  ptr addr @A__vtable + 24
+}
+global @D__vtable [binding=weak, object=_ZTV1D] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_D
+}
+global @D____construction__A__0__s0__vtable [binding=internal, object=@D____construction__A__0__s0__vtable] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_A
+}
+global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
+  ptr addr @D__vtable + 24
+  ptr addr @D____construction__A__0__s0__vtable + 24
+}
+
+function @read(%a : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=strong, object=_Z4readR1A] {
   slot $a : ptr
 
   block ^entry:
     store ptr %a, $a
     %t1 = load ptr $a
-    %t2 = index i8 %t1, 4
-    %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
-    return i32 %t4
+    %t2 = load ptr %t1
+    %t3 = index i8 %t2, -24
+    %t4 = load i64 %t3
+    %t5 = index i8 %t1, %t4
+    %t6 = index i8 %t5, 0
+    %t7 = index i8 [projection=field] %t6, 0
+    %t8 = load i32 %t7
+    return i32 %t8
 }
 function @read__ov2(%__param0 : i32) -> i32 [binding=strong, object=_Z4readi] {
   slot $__param0 : i32
@@ -29,7 +92,7 @@ function @poison(%__param0 : i32, %p : ptr) -> void [binding=strong, object=_Z6p
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $d : obj<8x4>
+  slot $d : obj<16x8>
   slot $other : obj<4x4>
   slot $cond__1 : i32
 
@@ -39,7 +102,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $other
     call void @V__V(%t2)
     %t3 = addr $d
-    %t4 = index i8 %t3, 4
+    %t4 = index i8 %t3, 8
     %t5 = index i8 [projection=field] %t4, 0
     store i32 7, %t5
     %t6 = addr $other
@@ -62,19 +125,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = load i32 $cond__1
     return i32 %t11
 }
-function @D__D(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
+function @D__D(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 %t1, 4
+    %t2 = index i8 %t1, 8
     call void @V__V__base_entry(%t2)
     %t3 = load ptr $this
     %t4 = index i8 %t3, 0
-    %t5 = load ptr $this
-    %t6 = index i8 %t5, 4
-    call void @A__A__base_entry(%t4, %t6)
+    %t5 = addr @D____vtt
+    %t6 = index i8 %t5, 8
+    %t7 = load ptr $this
+    %t8 = index i8 %t7, 8
+    call void @A__A__base_entry(%t4, %t6, %t8)
+    %t9 = load ptr $this
+    %t10 = addr @D__vtable
+    %t11 = index i8 %t10, 24
+    store ptr %t11, %t9
     return void
 }
 function @V__V__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1VC2Ev, object_root=yes, inline_hint=yes] {
@@ -97,20 +166,27 @@ function @V__V(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1V
     store i32 0, %t2
     return void
 }
-function @A__A__base_entry(%this : ptr [object_bytes=8], %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1AC2Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store ptr %this, $this
-    return void
-}
-function @A__A(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1AC1Ev, inline_hint=yes] {
+function @A__A__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN1AC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 %t1, 4
+    %t2 = load ptr %__vtt
+    store ptr %t2, %t1
+    return void
+}
+function @A__A(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1AC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = index i8 %t1, 8
     call void @V__V__base_entry(%t2)
+    %t3 = load ptr $this
+    %t4 = addr @A__vtable
+    %t5 = index i8 %t4, 24
+    store ptr %t5, %t3
     return void
 }

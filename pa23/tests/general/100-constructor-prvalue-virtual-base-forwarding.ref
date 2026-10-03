@@ -1,6 +1,97 @@
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____si_class_type_info [role=rtti_si, binding=strong, object=_ZTVN10__cxxabiv120__si_class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
+
+global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
+  i8 49
+  i8 65
+  i8 0
+}
+global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_A
+}
+global @__typeinfo_name__struct_B [binding=weak, object=_ZTS1B] = {
+  i8 49
+  i8 66
+  i8 0
+}
+global @__rtti_struct_B [binding=weak, object=_ZTI1B] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_B
+}
+global @__typeinfo_name__struct_C [binding=weak, object=_ZTS1C] = {
+  i8 49
+  i8 67
+  i8 0
+}
+global @__rtti_struct_C [binding=weak, object=_ZTI1C] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_C
+}
+global @__typeinfo_name__struct_D [binding=weak, object=_ZTS1D] = {
+  i8 49
+  i8 68
+  i8 0
+}
+global @__rtti_struct_D [binding=weak, object=_ZTI1D] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_D
+  i32 0
+  i32 3
+  ptr addr @__rtti_struct_A
+  i64 -10237
+  ptr addr @__rtti_struct_B
+  i64 -8189
+  ptr addr @__rtti_struct_C
+  i64 -6141
+}
+global @__typeinfo_name__struct___cppgm_class_template_identity_0_1_0 [binding=weak, object=_ZTS1WI1DE] = {
+  i8 49
+  i8 87
+  i8 73
+  i8 49
+  i8 68
+  i8 69
+  i8 0
+}
+global @__rtti_struct___cppgm_class_template_identity_0_1_0 [binding=weak, object=_ZTI1WI1DE] = {
+  ptr addr @__external_rtti_vtable____si_class_type_info + 16
+  ptr addr @__typeinfo_name__struct___cppgm_class_template_identity_0_1_0
+  ptr addr @__rtti_struct_D
+}
+global @D__vtable [binding=weak, object=_ZTV1D] = {
+  i64 8
+  i64 12
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct_D
+}
+global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
+  ptr addr @D__vtable + 40
+}
+global @__cppgm_class_template_identity_0_1_0__vtable [binding=weak, object=_ZTV1WI1DE] = {
+  i64 8
+  i64 12
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct___cppgm_class_template_identity_0_1_0
+}
+global @__cppgm_class_template_identity_0_1_0____construction__D__0__s0__vtable [binding=internal, object=@__cppgm_class_template_identity_0_1_0____construction__D__0__s0__vtable] = {
+  i64 8
+  i64 12
+  i64 16
+  i64 0
+  ptr addr @__rtti_struct_D
+}
+global @__cppgm_class_template_identity_0_1_0____vtt [binding=weak, object=_ZTT1WI1DE, object_root=yes] = {
+  ptr addr @__cppgm_class_template_identity_0_1_0__vtable + 40
+  ptr addr @__cppgm_class_template_identity_0_1_0____construction__D__0__s0__vtable + 40
+}
+
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $d : obj<16x4>
-  slot $w : obj<16x4>
+  slot $d : obj<24x8>
+  slot $w : obj<24x8>
   slot $cond__1 : i32
   slot $land__2 : i64
   slot $land__3 : i64
@@ -9,25 +100,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     call void @D__D(%t1)
     %t2 = addr $d
-    %t3 = index i8 %t2, 4
+    %t3 = index i8 %t2, 8
     %t4 = index i8 [projection=field] %t3, 0
     store i32 7, %t4
     %t5 = addr $d
-    %t6 = index i8 %t5, 8
+    %t6 = index i8 %t5, 12
     %t7 = index i8 [projection=field] %t6, 0
     store i32 8, %t7
     %t8 = addr $d
-    %t9 = index i8 %t8, 12
+    %t9 = index i8 %t8, 16
     %t10 = index i8 [projection=field] %t9, 0
     store i32 9, %t10
     %t11 = addr $w
     %t12 = addr $d
     %t13 = addr $d
-    %t14 = index i8 %t13, 4
+    %t14 = index i8 %t13, 8
     %t15 = index i8 [projection=field] %t14, 0
     call void @make_wrap(%t11, %t12, %t15)
     %t16 = addr $w
-    %t17 = index i8 %t16, 4
+    %t17 = index i8 %t16, 8
     %t18 = index i8 [projection=field] %t17, 0
     %t19 = load i32 %t18
     %t20 = cmp eq i32 %t19, 7
@@ -35,7 +126,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_7:
     %t21 = addr $w
-    %t22 = index i8 %t21, 8
+    %t22 = index i8 %t21, 12
     %t23 = index i8 [projection=field] %t22, 0
     %t24 = load i32 %t23
     %t25 = cmp eq i32 %t24, 8
@@ -53,7 +144,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t28 = addr $w
-    %t29 = index i8 %t28, 12
+    %t29 = index i8 %t28, 16
     %t30 = index i8 [projection=field] %t29, 0
     %t31 = load i32 %t30
     %t32 = cmp eq i32 %t31, 9
@@ -81,23 +172,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t35 = load i32 $cond__1
     return i32 %t35
 }
-function @D__D(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
+function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store ptr %this, $this
     %t1 = load ptr $this
-    %t2 = index i8 %t1, 4
+    %t2 = index i8 %t1, 8
     call void @A__A__base_entry(%t2, 0)
     %t3 = load ptr $this
-    %t4 = index i8 %t3, 8
+    %t4 = index i8 %t3, 12
     call void @B__B__base_entry(%t4, 0)
     %t5 = load ptr $this
-    %t6 = index i8 %t5, 12
+    %t6 = index i8 %t5, 16
     call void @C__C__base_entry(%t6, 0)
+    %t7 = load ptr $this
+    %t8 = addr @D__vtable
+    %t9 = index i8 %t8, 40
+    store ptr %t9, %t7
     return void
 }
-function @make_wrap(%ret : ptr [pass=indirect_result, object_bytes=16], %e : ptr [pass=by_address, object_bytes=16], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z9make_wrapI1DE1WIT_ERKS2_RKi] {
+function @make_wrap(%ret : ptr [pass=indirect_result, object_bytes=24], %e : ptr [pass=by_address, object_bytes=24], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z9make_wrapI1DE1WIT_ERKS2_RKi] {
   slot $e : ptr
   slot $loc : ptr
 
@@ -187,7 +282,7 @@ function @C__C(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak
     store i32 %t1, %t3
     return void
 }
-function @W_D___W_D_(%this : ptr [object_bytes=16], %e : ptr [pass=by_address, object_bytes=16], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1WI1DEC1ERKS0_RKi, inline_hint=yes] {
+function @W_D___W_D_(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, object_bytes=24], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1WI1DEC1ERKS0_RKi, inline_hint=yes] {
   slot $this : ptr
   slot $e : ptr
   slot $loc : ptr
@@ -197,37 +292,51 @@ function @W_D___W_D_(%this : ptr [object_bytes=16], %e : ptr [pass=by_address, o
     store ptr %e, $e
     store ptr %loc, $loc
     %t1 = load ptr $this
-    %t2 = index i8 %t1, 4
+    %t2 = index i8 %t1, 8
     %t3 = load ptr $loc
     %t4 = load i32 %t3
     call void @A__A__base_entry(%t2, %t4)
     %t5 = load ptr $this
-    %t6 = index i8 %t5, 8
+    %t6 = index i8 %t5, 12
     %t7 = load ptr $e
-    %t8 = index i8 %t7, 8
-    %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load i32 %t9
-    call void @B__B__base_entry(%t6, %t10)
-    %t11 = load ptr $this
-    %t12 = index i8 %t11, 12
-    %t13 = load ptr $e
-    %t14 = index i8 %t13, 12
-    %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
-    call void @C__C__base_entry(%t12, %t16)
-    %t17 = load ptr $this
-    %t18 = index i8 %t17, 0
-    %t19 = load ptr $e
-    %t20 = load ptr $this
-    %t21 = index i8 %t20, 4
-    %t22 = load ptr $this
-    %t23 = index i8 %t22, 8
-    %t24 = load ptr $this
-    %t25 = index i8 %t24, 12
-    call void @D__D__base_entry(%t18, %t19, %t21, %t23, %t25)
+    %t8 = load ptr %t7
+    %t9 = index i8 %t8, -32
+    %t10 = load i64 %t9
+    %t11 = index i8 %t7, %t10
+    %t12 = index i8 %t11, 0
+    %t13 = index i8 [projection=field] %t12, 0
+    %t14 = load i32 %t13
+    call void @B__B__base_entry(%t6, %t14)
+    %t15 = load ptr $this
+    %t16 = index i8 %t15, 16
+    %t17 = load ptr $e
+    %t18 = load ptr %t17
+    %t19 = index i8 %t18, -24
+    %t20 = load i64 %t19
+    %t21 = index i8 %t17, %t20
+    %t22 = index i8 %t21, 0
+    %t23 = index i8 [projection=field] %t22, 0
+    %t24 = load i32 %t23
+    call void @C__C__base_entry(%t16, %t24)
+    %t25 = load ptr $this
+    %t26 = index i8 %t25, 0
+    %t27 = addr @__cppgm_class_template_identity_0_1_0____vtt
+    %t28 = index i8 %t27, 8
+    %t29 = load ptr $e
+    %t30 = load ptr $this
+    %t31 = index i8 %t30, 8
+    %t32 = load ptr $this
+    %t33 = index i8 %t32, 12
+    %t34 = load ptr $this
+    %t35 = index i8 %t34, 16
+    call void @D__D__base_entry(%t26, %t28, %t29, %t31, %t33, %t35)
+    %t36 = load ptr $this
+    %t37 = addr @__cppgm_class_template_identity_0_1_0__vtable
+    %t38 = index i8 %t37, 40
+    store ptr %t38, %t36
     return void
 }
-function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16], %__vbptr0 : ptr, %__vbptr1 : ptr, %__vbptr2 : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC2ERKS_, object_root=yes, inline_hint=yes] {
+function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt : ptr, %other : ptr [pass=by_address, alias=noalias, object_bytes=24], %__vbptr0 : ptr, %__vbptr1 : ptr, %__vbptr2 : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC2ERKS_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

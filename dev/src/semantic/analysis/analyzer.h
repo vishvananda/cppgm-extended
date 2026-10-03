@@ -1462,6 +1462,7 @@ private:
 	void ConfigureVirtualFunction(BindingId binding, const SpecInfo& spec,
 		NodeId declarator, NodeId initializer);
 	void CompleteClassPolymorphism(EntityId entity);
+	std::size_t InitializeClassPolymorphismBases(EntityId entity);
 	void RecordVirtualExceptionOverride(EntityId entity, BindingId function,
 		BindingId base);
 	void CompleteVirtualExceptionOverrides(EntityId entity, EntityId enclosing);

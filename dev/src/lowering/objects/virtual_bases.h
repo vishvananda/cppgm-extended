@@ -206,7 +206,7 @@ protected:
 			return false;
 		const ClassPolymorphismFacts& facts =
 			derived.graph_.class_polymorphism[function.member_owner];
-		return !facts.slots.empty() || !facts.views.empty();
+		return facts.HasObjectTable();
 	}
 
 	bool OmitsCopySourceVirtualBases(BindingId binding, TypeId type) const
@@ -868,6 +868,25 @@ protected:
 		return Operand(current_construction_vtt_, LowPtr());
 	}
 
+	std::uint64_t ConstructionVttOffset(EntityId owner, EntityId base) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		if (owner == base) return 0;
+		const std::uint64_t missing = std::numeric_limits<std::uint64_t>::max();
+		const std::vector<std::uint64_t>& offsets =
+			derived.polymorphism_.class_construction_vtt_offsets[owner];
+		for (std::size_t ordinal = 0; ordinal < offsets.size(); ++ordinal)
+		{
+			if (offsets[ordinal] == missing) continue;
+			const EntityId child = derived.program_.DirectBase(owner, ordinal).entity;
+			if (child == base) return offsets[ordinal];
+			if (!derived.program_.IsBaseOf(base, child)) continue;
+			const std::uint64_t nested = ConstructionVttOffset(child, base);
+			if (nested != missing) return offsets[ordinal] + nested;
+		}
+		return missing;
+	}
+
 	Operand ConstructionVttArgument(EntityId complete, EntityId base)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
@@ -885,18 +904,7 @@ protected:
 			(complete >= derived.polymorphism_.class_vtt_symbols.size() ||
 			 derived.polymorphism_.class_vtt_symbols[complete] == kNoLowId))
 			ThrowLoweringInternal("complete constructor has no VTT symbol");
-		std::uint64_t offset = std::numeric_limits<std::uint64_t>::max();
-		const EntityRecord& owner_record = derived.program_.entities[owner];
-		for (std::size_t ordinal = 0;
-			ordinal < owner_record.direct_base_count; ++ordinal)
-			if (derived.program_.DirectBase(owner, ordinal).entity == base &&
-				ordinal < derived.polymorphism_.class_construction_vtt_offsets[
-					owner].size())
-			{
-				offset = derived.polymorphism_.class_construction_vtt_offsets[
-					owner][ordinal];
-				break;
-			}
+		const std::uint64_t offset = ConstructionVttOffset(owner, base);
 		if (offset == std::numeric_limits<std::uint64_t>::max())
 			ThrowLoweringInternal("base constructor has no construction VTT slice");
 		if (complete == kNoEntity)
@@ -926,8 +934,7 @@ protected:
 			owner < derived.graph_.class_polymorphism.size() &&
 			virtual_base_ordinal < derived.graph_.class_polymorphism[
 				owner].virtual_base_offsets.size() &&
-			(!derived.graph_.class_polymorphism[owner].slots.empty() ||
-			 !derived.graph_.class_polymorphism[owner].views.empty());
+			derived.graph_.class_polymorphism[owner].HasObjectTable();
 		const std::int64_t row = has_polymorphic_row ?
 			-static_cast<std::int64_t>(
 				derived.graph_.class_polymorphism[owner].address_point) +
@@ -991,12 +998,19 @@ protected:
 		const Operand& view, EntityId target, Operand* address)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		const DumpNode& source = derived.arena_.nodes[expression];
+		// A named complete object has a fixed layout. Reference and pointer
+		// bindings still need the table of the actual containing object.
+		if (source.kind == DUMP_TEMPORARY_OBJECT ||
+			(source.kind == DUMP_ID_EXPRESSION && source.binding != kNoBinding &&
+			 derived.program_.types.Get(derived.program_.types.RemoveTopCv(
+				derived.program_.bindings[source.binding].type)).kind == TYPE_NAMED))
+			return false;
 		const EntityId owner = derived.BaseEntityForType(
 			derived.arena_.nodes[expression].type);
 		if (owner == kNoEntity ||
 			owner >= derived.graph_.class_polymorphism.size() ||
-			(derived.graph_.class_polymorphism[owner].slots.empty() &&
-			 derived.graph_.class_polymorphism[owner].views.empty())) return false;
+			!derived.graph_.class_polymorphism[owner].HasObjectTable()) return false;
 		EntityId anchor = kNoEntity;
 		std::uint64_t relative_offset = 0;
 		if (!VirtualBasePathAnchor(
@@ -1007,7 +1021,6 @@ protected:
 		{
 			if (derived.program_.VirtualBase(owner, ordinal).entity != anchor)
 				continue;
-			const DumpNode& source = derived.arena_.nodes[expression];
 			const bool nullable = derived.program_.types.Get(
 				derived.program_.types.RemoveTopCv(source.type)).kind == TYPE_POINTER &&
 				!(source.kind == DUMP_ID_EXPRESSION &&
@@ -1073,8 +1086,7 @@ protected:
 			 defined_reference_call));
 		if (!known_complete_object ||
 			(owner < derived.graph_.class_polymorphism.size() &&
-			(!derived.graph_.class_polymorphism[owner].slots.empty() ||
-			 !derived.graph_.class_polymorphism[owner].views.empty()) &&
+			derived.graph_.class_polymorphism[owner].HasObjectTable() &&
 			ordinal < derived.graph_.class_polymorphism[
 				owner].virtual_base_offsets.size()))
 			return RuntimeVirtualBaseAddress(view, owner, ordinal);

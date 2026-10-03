@@ -674,6 +674,7 @@ dev/src/semantic/object_model/polymorphic_layout.cpp	BeginPolymorphicVirtualView
 dev/src/semantic/object_model/polymorphic_layout.cpp	CompleteClassPolymorphism	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	FinalizeClassPolymorphismViews	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	InitializeClassBaseLayout	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
+dev/src/semantic/object_model/polymorphic_layout.cpp	InitializeClassPolymorphismBases	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	MergeSharedVirtualView	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	PreferredClassLayoutBaseOrdinal	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	PublishVirtualBaseStats	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep

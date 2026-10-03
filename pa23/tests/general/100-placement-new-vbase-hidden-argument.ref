@@ -1,14 +1,48 @@
-declare function @operatornew__ov2(%arg0 : i64, %arg1 : ptr) -> ptr [unwind=no, binding=strong, object=_ZnwmPv]
-declare function @B__B(%arg0 : ptr [alias=noalias, object_bytes=2], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=2]) -> void [binding=strong, object=_ZN1BC1ERS_]
+declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
+declare global @__external_rtti_vtable____vmi_class_type_info [role=rtti_vmi, binding=strong, object=_ZTVN10__cxxabiv121__vmi_class_type_infoE]
 
-function @make(%address : ptr, %value : ptr [pass=by_address, object_bytes=2]) -> void [binding=strong, object=_Z4makePvR1B] {
+declare function @operatornew__ov2(%arg0 : i64, %arg1 : ptr) -> ptr [unwind=no, binding=strong, object=_ZnwmPv]
+declare function @B__B(%arg0 : ptr [alias=noalias, object_bytes=16], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [binding=strong, object=_ZN1BC1ERS_]
+
+global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
+  i8 49
+  i8 65
+  i8 0
+}
+global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_A
+}
+global @__typeinfo_name__struct_B [binding=weak, object=_ZTS1B] = {
+  i8 49
+  i8 66
+  i8 0
+}
+global @__rtti_struct_B [binding=weak, object=_ZTI1B] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_B
+  i32 0
+  i32 1
+  ptr addr @__rtti_struct_A
+  i64 -6141
+}
+global @B__vtable [binding=weak, object=_ZTV1B] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_B
+}
+global @B____vtt [binding=weak, object=_ZTT1B, object_root=yes] = {
+  ptr addr @B__vtable + 24
+}
+
+function @make(%address : ptr, %value : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z4makePvR1B] {
   slot $address : ptr
   slot $value : ptr
 
   block ^entry:
     store ptr %address, $address
     store ptr %value, $value
-    %t1 = convert sext i64 i32 2
+    %t1 = convert sext i64 i32 16
     %t2 = load ptr $address
     %t3 = call ptr @operatornew__ov2(%t1, %t2)
     %t4 = load ptr $value

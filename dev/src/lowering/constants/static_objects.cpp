@@ -105,7 +105,7 @@ bool StaticInitializerLowering::AppendConstantObject(std::uint32_t object,
 		return true;
 	}
 	if (type.kind != TYPE_NAMED ||
-		program_.entities[type.entity].polymorphic_class) return false;
+		program_.entities[type.entity].dynamic_class) return false;
 	const EntityRecord& entity = program_.entities[type.entity];
 	if (entity.direct_base_count > value.element_count) return false;
 	const std::size_t member_count = value.element_count - entity.direct_base_count;

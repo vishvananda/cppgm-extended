@@ -238,8 +238,8 @@ const EntityRecord* Analyzer::InitializeClassBaseLayout(
 		}
 		if (!edge.virtual_base && !base->empty_class)
 		{
-			if (primary == base && owner.polymorphic_class &&
-				!base->polymorphic_class)
+			if (primary == base && owner.dynamic_class &&
+				!base->dynamic_class)
 				offset = AlignClassBase(std::max<std::size_t>(*size, 8),
 					effective_base_alignment);
 			else offset = AlignClassBase(*size, effective_base_alignment);
@@ -273,6 +273,30 @@ const EntityRecord* Analyzer::InitializeClassBaseLayout(
 	return primary;
 }
 
+std::size_t Analyzer::InitializeClassPolymorphismBases(EntityId entity)
+{
+	EntityRecord& owner = program_->entities[entity];
+	std::size_t primary = owner.direct_base_count;
+	for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
+	{
+		const DirectBaseEdge& edge = program_->DirectBase(entity, ordinal);
+		if (edge.entity >= class_polymorphism_.size() ||
+			!class_polymorphism_[edge.entity].complete)
+			ThrowInternalCompilerError(
+				"base polymorphism facts are incomplete: " +
+				program_->names.Get(owner.identity_name) + " derives from " +
+				program_->names.Get(program_->entities[edge.entity].identity_name));
+		if (!edge.virtual_base && primary == owner.direct_base_count &&
+			program_->entities[edge.entity].dynamic_class)
+			primary = ordinal;
+		owner.dynamic_class = owner.dynamic_class || edge.virtual_base ||
+			program_->entities[edge.entity].dynamic_class;
+		owner.polymorphic_class = owner.polymorphic_class ||
+			program_->entities[edge.entity].polymorphic_class;
+	}
+	return primary;
+}
+
 void Analyzer::CompleteClassPolymorphism(EntityId entity)
 {
 	if (class_polymorphism_.size() <= entity)
@@ -297,21 +321,7 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 	if (facts.complete) return;
 	BeginPolymorphicVirtualViewIndex(facts);
 	EntityRecord& owner = program_->entities[entity];
-	std::size_t primary = owner.direct_base_count;
-	for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
-	{
-		const DirectBaseEdge& edge = program_->DirectBase(entity, ordinal);
-		if (edge.entity >= class_polymorphism_.size() ||
-			!class_polymorphism_[edge.entity].complete)
-			ThrowInternalCompilerError(
-				"base polymorphism facts are incomplete: " +
-				program_->names.Get(owner.identity_name) + " derives from " +
-				program_->names.Get(program_->entities[edge.entity].identity_name));
-		if (!edge.virtual_base && primary == owner.direct_base_count &&
-			(!class_polymorphism_[edge.entity].slots.empty() ||
-			 !class_polymorphism_[edge.entity].views.empty()))
-			primary = ordinal;
-	}
+	const std::size_t primary = InitializeClassPolymorphismBases(entity);
 	if (primary != owner.direct_base_count)
 	{
 		const EntityId base = program_->DirectBase(entity, primary).entity;
@@ -335,9 +345,9 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 		const DirectBaseEdge& edge = program_->DirectBase(entity, ordinal);
 		const ClassPolymorphismFacts& inherited =
 			class_polymorphism_[edge.entity];
-		if (inherited.slots.empty() && inherited.views.empty()) continue;
-		// A secondary polymorphic base owns a physical address point even
-		// when all of its virtual functions live in a shared virtual base.
+		if (!inherited.HasObjectTable()) continue;
+		// A secondary dynamic base owns a physical address point even
+		// when it has no virtual function slots of its own.
 		// Keep that physical view distinct from the inherited virtual view.
 		{
 			PolymorphicViewFact view(edge.entity,
@@ -345,7 +355,7 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 			view.slots = inherited.slots;
 			AppendPolymorphicView(&facts, view);
 		}
-		if (!inherited.slots.empty())
+		if (!inherited.primary_ancestors.empty())
 		{
 			for (std::size_t i = 0; i < inherited.primary_ancestors.size(); ++i)
 			{
@@ -481,7 +491,8 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 		}
 	}
 
-	owner.polymorphic_class = !facts.slots.empty() || !facts.views.empty();
+	owner.polymorphic_class = owner.polymorphic_class || !facts.slots.empty();
+	owner.dynamic_class = owner.dynamic_class || owner.polymorphic_class;
 	if (owner.polymorphic_class) ++polymorphic_classes_;
 	owner.abstract_class = false;
 	if (virtual_slot_by_binding_.size() < program_->bindings.size())

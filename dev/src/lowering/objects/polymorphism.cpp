@@ -1174,7 +1174,7 @@ private:
 			program_.entities[edge.entity].virtual_base_count == 0) return false;
 		const ClassPolymorphismFacts& facts =
 			graph_.class_polymorphism[edge.entity];
-		return !facts.slots.empty() || !facts.views.empty();
+		return facts.HasObjectTable();
 	}
 
 	SymbolId RegisterConstructionVtable(EntityId complete, EntityId base,
@@ -1337,7 +1337,7 @@ private:
 			const ClassPolymorphismFacts& facts =
 				graph_.class_polymorphism[entity];
 			if (!facts.vtable_demanded ||
-				(facts.slots.empty() && facts.views.empty())) continue;
+				!facts.HasObjectTable()) continue;
 			const bool external = VtableIsExternal(entity);
 			if (!external)
 				DemandRtti(program_.entities[entity].type);
@@ -1903,7 +1903,7 @@ private:
 			const ClassPolymorphismFacts& facts =
 				graph_.class_polymorphism[entity];
 			if (!facts.vtable_demanded ||
-				(facts.slots.empty() && facts.views.empty())) continue;
+				!facts.HasObjectTable()) continue;
 			if (entity < state_.class_vtable_external.size() &&
 				state_.class_vtable_external[entity]) continue;
 			EmitVtableView(entity, entity,
