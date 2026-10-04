@@ -447,6 +447,7 @@ dev/src/semantic/extensions/hosted_traits.cpp	BuiltinConstructionIsTrivial	1	dev
 dev/src/semantic/extensions/hosted_traits.cpp	BuiltinConversionIsNonthrowing	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
 dev/src/semantic/extensions/hosted_traits.cpp	BuiltinConversionIsUsable	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
 dev/src/semantic/extensions/hosted_traits.cpp	BuiltinDefaultConstructionIsNonthrowing	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
+dev/src/semantic/extensions/hosted_traits.cpp	BuiltinDefaultsAreNonthrowing	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
 dev/src/semantic/extensions/hosted_traits.cpp	EvaluateBuiltinAssignability	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
 dev/src/semantic/extensions/hosted_traits.cpp	EvaluateBuiltinConstructibility	1	dev/src/semantic/extensions/hosted_traits.cpp	keep
 dev/src/semantic/extensions/hosted_traits.cpp	EvaluateBuiltinConvertibility	1	dev/src/semantic/extensions/hosted_traits.cpp	keep

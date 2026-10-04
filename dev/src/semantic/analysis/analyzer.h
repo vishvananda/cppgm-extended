@@ -1009,11 +1009,11 @@ private:
 		std::vector<CallConversionFact>* argument_conversions);
 	bool EvaluateBuiltinConvertibility(TypeId source, TypeId target);
 	bool BuiltinConversionIsUsable(const CallConversionFact& conversion) const;
-	bool BuiltinConversionIsNonthrowing(
-		const CallConversionFact& conversion);
+	bool BuiltinConversionIsNonthrowing(const CallConversionFact& conversion);
 	bool BuiltinConstructionIsNonthrowing(TypeId target, BindingId selected,
 		const std::vector<CallConversionFact>& argument_conversions);
 	bool BuiltinDefaultConstructionIsNonthrowing(EntityId entity);
+	bool BuiltinDefaultsAreNonthrowing(BindingId selected, std::size_t supplied);
 	bool BuiltinConstructionIsTrivial(TypeId target, BindingId selected,
 		const std::vector<CallConversionFact>& argument_conversions) const;
 	bool EvaluateBuiltinAssignability(TypeId target, TypeId source,

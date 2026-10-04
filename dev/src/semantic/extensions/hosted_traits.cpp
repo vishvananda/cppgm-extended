@@ -1,5 +1,6 @@
 #include "semantic/analysis/analyzer.h"
 #include "support/exceptions.h"
+#include "support/scoped_state.h"
 
 #include <string>
 #include <vector>
@@ -68,7 +69,8 @@ bool Analyzer::BuiltinConversionIsNonthrowing(
 	for (std::size_t i = 0; i < sizeof(bindings) / sizeof(bindings[0]); ++i)
 		if (bindings[i] != kNoBinding &&
 			!FunctionIsNonthrowing(bindings[i])) return false;
-	return true;
+	return conversion.constructor == kNoBinding ||
+		BuiltinDefaultsAreNonthrowing(conversion.constructor, 1);
 }
 
 bool Analyzer::EvaluateBuiltinConstructibility(
@@ -185,6 +187,25 @@ bool Analyzer::EvaluateBuiltinConvertibility(
 		construction, &selected, &argument_conversions);
 }
 
+bool Analyzer::BuiltinDefaultsAreNonthrowing(BindingId selected,
+	std::size_t supplied)
+{
+	const std::size_t count = GetFunction(selected).parameters.size();
+	if (supplied >= count) return true;
+	ScopedCounterIncrement unevaluated(&unevaluated_depth_);
+	ScopedCounterIncrement suppressed(&constant_evaluation_suppressed_depth_);
+	for (std::size_t i = supplied; i < count; ++i)
+	{
+		const ParameterInfo parameter = GetFunction(selected).parameters[i];
+		if (parameter.default_argument == kNoNode) return false;
+		ExpressionInfo value = AnalyzeExpression(parameter.default_argument,
+			parameter.default_scope, parameter.function_type);
+		value = ApplyCallArgument(value, parameter.function_type);
+		if (!InitializationActionsAreNonthrowing(value.node)) return false;
+	}
+	return true;
+}
+
 bool Analyzer::BuiltinDefaultConstructionIsNonthrowing(EntityId entity)
 {
 	const std::vector<BindingId>& candidates = ConstructorCandidates(entity);
@@ -204,9 +225,10 @@ bool Analyzer::BuiltinDefaultConstructionIsNonthrowing(EntityId entity)
 		selected = candidates[i];
 	}
 	if (selected == kNoBinding) return false;
-	const FunctionInfo& constructor = GetFunction(selected);
-	if (!constructor.implicit_constructor && !constructor.defaulted_constructor)
-		return FunctionIsNonthrowing(selected);
+	const bool synthesized = GetFunction(selected).implicit_constructor ||
+		GetFunction(selected).defaulted_constructor;
+	if (!BuiltinDefaultsAreNonthrowing(selected, 0)) return false;
+	if (!synthesized) return FunctionIsNonthrowing(selected);
 	const EntityRecord& owner = program_->entities[entity];
 	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
 		if (!BuiltinDefaultConstructionIsNonthrowing(
@@ -239,8 +261,10 @@ bool Analyzer::BuiltinConstructionIsNonthrowing(TypeId target,
 		if (!BuiltinConversionIsNonthrowing(argument_conversions[i])) return false;
 	if (selected == kNoBinding) return true;
 	const FunctionInfo& function = GetFunction(selected);
-	if (!function.constructor || !function.parameters.empty())
-		return FunctionIsNonthrowing(selected);
+	if (!function.constructor) return FunctionIsNonthrowing(selected);
+	if (!function.parameters.empty())
+		return FunctionIsNonthrowing(selected) &&
+			BuiltinDefaultsAreNonthrowing(selected, argument_conversions.size());
 	while (program_->types.Get(target).kind == TYPE_ARRAY)
 		target = program_->types.Get(target).child;
 	const EntityId entity = EntityOf(target);

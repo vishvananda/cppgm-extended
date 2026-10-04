@@ -4,14 +4,15 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **2 compiler fixes remain** after final contract review:
-used constructor-default arguments in nothrow traits and cleanup of an
-abandoned returned object. The frozen BACKEND findings are all qualified,
+Current status: **1 compiler fix remains** after final contract review:
+cleanup of an abandoned returned object. Used constructor defaults in nothrow
+traits are qualified below. The frozen BACKEND findings are all qualified,
 including stack alignment in b3bee2e8a. Five other reviews require no compiler
 change; their reasoning is recorded below. Strict 6135/6135 prints one line,
 and required checks and Alpha instruction/RSS gates pass. Positive timing
 confirmations remain recorded: conditional explicit multi-pack 2.32% and
-native rethrow reference-aliases 1.06%. Final fixture pruning and combined
+native rethrow reference-aliases 1.06%, plus constructor-default trait
+confirmations of 1.15–2.36%. Final fixture pruning and combined
 student export/harness validation remain pending.
 
 ## Strategy review after a70d1174b — 2026-10-03
@@ -115,9 +116,9 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **2 compiler fixes** remain after
-contract review: INHERITED-DEFAULT-EXCEPT (used defaults in nothrow traits)
-and EH-RESULT-CLEANUP (abandoned return-object destruction). The five other
+Remaining-work count on 2026-10-04: **1 compiler fix** remains after
+contract review: EH-RESULT-CLEANUP (abandoned return-object destruction).
+INHERITED-DEFAULT-EXCEPT is qualified below. The five other
 reviews require no compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 MANGLE-BOUND, ROUND and VBASE-NULL. Previously confirmed compiler families
 are qualified, including BACKEND.
@@ -242,7 +243,7 @@ The recent discovery inventory is not all C++11:
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Done: retained validation treats the terminal T as a constructor name, preserving ordinary parameter shadowing checks. Extend the existing PA14 inherited-constructor fixture in cluster 300; remove the duplicate control. Strict 6120/6120, required audits and qualification, fresh C++11 hosts and Alpha performance gates pass. Ordinary using B::T and typename disagreements remain held. |
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Done: selected inherited-constructor trait queries validate default construction of other subobjects using typed member facts and existing constructor selection. Extend the existing PA29 fixture; remove the duplicate control. Original and private/reference/throwing boundaries agree with fresh strict C++11 hosts. Strict 6120/6120, required qualification/audits and Alpha instruction/RSS gates pass. |
 | INHERITED-ZERO | Review zero-argument inherited construction and default-argument exception traits | v4codex PA31 source205/206 | Zero-candidate review complete: P0136R1/N4429 establish the adopted C++11 defect-resolution basis. Six fresh host-agreed runtime observations already pass here for ordinary zero-argument availability, member initialization and local hiding; eighteen access/deletion/member negatives also agree. No new zero-availability fix or fixture is needed. Dependent using and parameterized viability remain separate open rows. The throwing-default/nothrow disagreement is preserved in INHERITED-DEFAULT-EXCEPT; no oracle is imposed for it. |
-| INHERITED-DEFAULT-EXCEPT | Review throwing defaults on a zero-argument inherited constructor and the corresponding nothrow trait | Existing INHERITED-ZERO exception review, isolated source206 | Confirmed remaining nothrow-trait fix: ordinary constructor with a used throwing default also exposes the omission here, while Clang/GCC correctly reject a true nothrow claim for that ordinary case. C++11 function arguments and CWG 1351/P0136R1 include used defaults in potential exceptions. Clang source explicitly records its missing default-argument analysis for implicit exception specifications. Preserve our passing inherited-default propagation; do not impose host termination as an oracle. Reuse an existing PA29 trait fixture. |
+| INHERITED-DEFAULT-EXCEPT | Review throwing defaults on a zero-argument inherited constructor and the corresponding nothrow trait | Existing INHERITED-ZERO exception review, isolated source206 | Done: analyze only used constructor defaults in explicit unevaluated trait queries, using recorded scopes and typed parameter targets. Ordinary, inherited, implicit subobject and converting-constructor routes share the existing trait owner. The original inherited runtime keeps correct exception propagation. Extend one existing PA29 trait fixture; no new owning source or reference. Strict 6135/6135, all applicable compiler checks and 528 verified Alpha observations pass instruction/RSS/equality gates. Five positive timing confirmations (1.15–2.36%) are retained below. |
 | NOEXCEPT-LIST | Preserve constructor ownership facts across parameter template instantiation | v4codex PA31 source205 | Done. The shared failure also affects ordinary calls: a stale EntityRecord reference loses the user-provided-constructor fact when parameter template instantiation moves the entity vector. Reacquire by stable ID before publishing constructor facts. Reuse the PA21 private initializer-list argument fixture, including nonthrowing/throwing-element assertions and runtime class-list conversion; remove the redundant control. Strict 6116/6116 and all required checks pass; Alpha instruction/RSS gates pass. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Done: effect-free pointer walks require a proved odd byte stride; plain LowIR carries no C++ in-bounds promise. Include the typed element size in the stride proof. Existing course/regression references and the generated quality envelope now retain the backward even-stride loop, without changing source/status or adding fixtures. Sixty-four runtime and nine shape checks, strict 6120/6120, required qualification/audits and Alpha instruction/RSS gates pass. Combine the parity check into one branch after the first variant showed a confirmed timing cost. |
@@ -7403,3 +7404,57 @@ propagation of the inherited default-argument exception, repair the trait’s
 used-default analysis, and extend an existing PA29 trait fixture.
 The original student false-nothrow assertion is supported by this analysis;
 its disagreement with all three implementations was not grounds to dismiss it.
+
+### Used constructor defaults in nothrow traits — qualified, 2026-10-04
+
+The frozen inherited zero-argument trait returns true even though its used
+default calls a potentially throwing function. An ordinary noexcept
+constructor with the same default isolates the trait omission: entry rejects
+the correct false assertion, while Clang/GCC accept it. C++11 call argument
+evaluation and [CWG 1351](https://cplusplus.github.io/CWG/issues/1351.html)
+include used defaults; the already adopted P0136R1 preserves that obligation
+for inherited construction. The Clang implicit-specification FIXME explains
+why host agreement on the inherited case was not decisive. The student’s
+original false assertion is supported by the rule.
+
+Consume the selected constructor's recorded default nodes, scopes and typed
+parameter targets only for omitted arguments, under the existing unevaluated/
+constant-evaluation guards. Reuse initialization-action exception facts and
+argument conversion. Explicit arguments skip their unused defaults; recursive
+implicit subobject construction and converting constructors use the same
+helper. No persistent model growth, compilation-wide walk, function-body
+demand or ABI spelling changes. Extend the existing PA29/600 user-provided
+constructor trait fixture with ordinary/inherited used-default negatives and
+explicit-argument positives. No new owning source or reference change.
+
+All eight final focused O0/O2 executions pass, including the original inherited
+runtime and trait. Compiler SHA256:
+`92c62b33f67784535382e9079d5a69d1c64aadb092ac329fd6c312948acc5758`.
+The native binary is unchanged. Strict 6135/6135 prints exactly one line;
+debug-info, self-host PA5, all nine architecture targets, file and placement
+audits pass. Backend variants are not required for this semantic-only change.
+The corrected file audit retains the identical 37-warning log and analyzer.h
+remains at its 2400-line limit; the initial missing include and size failure
+are retained as unqualified trials.
+
+Alpha's 69 frozen inputs produce six identical raw object pairs without
+normalization. All 528 unscaled counter/RSS observations, statuses, hashes
+and paired medians are independently verified. Maximum screen instruction
+median is 1.000008835; all RSS medians are 1.0. Five timing signals receive
+one focused confirmation each. Retain both screens and confirmations,
+including these positive calibrated cycle costs:
+
+| Workload | Confirmation cycles | Bootstrap 95% interval |
+| --- | --- | --- |
+| reference-aliases | 1.023593282 | [1.008219533,1.034607046] |
+| copy-templates | 1.023300469 | [1.014058927,1.030491367] |
+| local-statics | 1.011746872 | [1.007120517,1.013986754] |
+| conversion-nontemplate | 1.011514268 | [1.006256216,1.017598322] |
+| multi-pack | 1.013032982 | [1.007021294,1.025408927] |
+
+Instruction/RSS gates pass; make no timing-neutrality claim and perform no
+additional confirmations to erase those costs. Evidence:
+`/tmp/cppgm-v4-audit-review/nothrow-constructor-defaults/qualified-proof.json`
+and `alpha:/tmp/cppgm-v4-audit-review-20261004-nothrow-constructor-defaults/`.
+One confirmed compiler fix remains: EH-RESULT-CLEANUP. Final fixture pruning
+and combined student export/harness validation remain pending.
