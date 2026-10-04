@@ -95,12 +95,14 @@ make check TEST='tests/o1/100-return-copy-coalesce.t'
 ```
 
 `make test` runs the O1, O2 and O3 MIR and behavior buckets, the native
-correctness controls, and two self-checking C++ programs under `tests/driver/`.
+correctness controls, and self-checking C++ programs under `tests/driver/`.
 The driver programs must exit zero and write no stdout at all three levels,
 when built directly, through PA25 compiler objects (`.obj`), and through PA26
-native objects (`.o`) linked with `CPPGM_HOST_CXX`.
-They exercise calls and a loop with volatile memory accesses; they do not
-require diagnostic counters or a particular backend design.
+native objects (`.o`) linked with `CPPGM_HOST_CXX`, and through the compiler's
+LowIR output passed to the student's `lowir2native`. This also checks that
+the two tools agree on the LowIR boundary. The programs check language and
+lifetime behavior; they do not require diagnostic counters or a particular
+backend design.
 
 `make test-debuginfo` runs `tests/debuginfo/o1`, `o2` and `o3`. Both targets
 must pass. Finish with `make test-report-through-pa33` from the repository root

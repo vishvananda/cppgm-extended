@@ -94,7 +94,9 @@ args = sys.argv[1:]
 out = pathlib.Path(args[args.index('-o') + 1])
 with open(os.environ['PA33_CALL_LOG'], 'a') as log:
     log.write(json.dumps(args) + '\\n')
-if '-c' in args:
+if '--emit-lowir' in args:
+    out.write_text(os.environ.get('PA33_LOWIR_BODY', 'serialized-lowir'))
+elif '-c' in args:
     out.write_text('object')
 else:
     out.write_text('#!/bin/sh\\n' + os.environ.get('PA33_PROGRAM_BODY', 'exit 0') + '\\n')
@@ -113,6 +115,41 @@ else:
             outputs = [Path(args[args.index('-o') + 1]).suffix
                        for args in calls if '-c' in args]
             self.assertCountEqual(outputs, ['.obj', '.o'] * 3)
+            # Use a separate backend and verify it consumes the compiler's
+            # LowIR, including rejection of malformed producer output.
+            backend = directory / 'backend'
+            backend_log = directory / 'backend-calls'
+            backend.write_text('''#!/usr/bin/env python3
+import json, os, pathlib, sys
+args = sys.argv[1:]
+with open(os.environ['PA33_NATIVE_LOG'], 'a') as log:
+    log.write(json.dumps(args) + '\\n')
+if pathlib.Path(args[-1]).read_text() != 'serialized-lowir':
+    sys.exit('invalid producer LowIR')
+out = pathlib.Path(args[args.index('-o') + 1])
+out.write_text('#!/bin/sh\\nexit 0\\n')
+out.chmod(0o755)
+''')
+            backend.chmod(0o755)
+            serialized_env = dict(env, PA33_NATIVE_LOG=str(backend_log))
+            serialized = command + [str(backend)]
+            result = subprocess.run(serialized, env=serialized_env,
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn('PASS (12/12)', result.stdout)
+            backend_calls = [json.loads(line) for line in backend_log.read_text().splitlines()]
+            self.assertEqual([args[0] for args in backend_calls], ['-O1', '-O2', '-O3'])
+            self.assertTrue(all(Path(args[-1]).suffix == '.lowir' for args in backend_calls))
+            result = subprocess.run(serialized,
+                                    env=dict(serialized_env, CPPGM_REPORT_QUIET='1'),
+                                    capture_output=True, text=True)
+            self.assertEqual((result.returncode, result.stdout, result.stderr), (0, '', ''))
+            result = subprocess.run(serialized,
+                                    env=dict(serialized_env, PA33_LOWIR_BODY='invalid'),
+                                    capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('lowir: compilation/link failed', result.stderr)
+            self.assertIn('invalid producer LowIR', result.stderr)
             for body in ('exit 1', 'echo wrong'):
                 result = subprocess.run(command, env=dict(env, PA33_PROGRAM_BODY=body),
                                         capture_output=True, text=True)

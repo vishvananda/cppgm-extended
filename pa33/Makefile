@@ -85,7 +85,7 @@ test-course: $(TEST_DEPS)
 	$(call run_native_bucket,$(BEHAVIOR_O1_TEST_ROOT),-O1)
 	$(call run_native_bucket,$(BEHAVIOR_O2_TEST_ROOT),-O2)
 	$(call run_native_bucket,$(BEHAVIOR_O3_TEST_ROOT),-O3)
-	@perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_DRIVER_APP) "$(DRIVER_TEST_ROOT)"
+	@perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_DRIVER_APP) "$(DRIVER_TEST_ROOT)" $(LOWIR2NATIVE_APP)
 	@if [ -d "$(NATIVE_CONTROL_TEST_ROOT)" ]; then \
 		perl ../scripts/check_pa24_native_contracts.pl $(LOWIR2NATIVE_APP) "$(NATIVE_CONTROL_TEST_ROOT)"; \
 	fi
@@ -126,7 +126,7 @@ esac
 
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
-	'$(DRIVER_TEST_ROOT)/*::perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_DRIVER_APP) {tests}' \
+	'$(DRIVER_TEST_ROOT)/*::perl ../scripts/check_cppgm_native_programs.pl $(CPPGM_DRIVER_APP) {tests} $(LOWIR2NATIVE_APP)' \
 	'$(NATIVE_CONTROL_TEST_ROOT)/*::perl ../scripts/check_pa24_native_contracts.pl $(LOWIR2NATIVE_APP) {tests}' \
 	'$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(BEHAVIOR_O1_TEST_ROOT)/*::CPPGM_APP_ARGS=-O1 scripts/run_all_tests.pl $(LOWIR2NATIVE_APP) check {tests}' \
 	'$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(BEHAVIOR_O2_TEST_ROOT)/*::CPPGM_APP_ARGS=-O2 scripts/run_all_tests.pl $(LOWIR2NATIVE_APP) check {tests}' \

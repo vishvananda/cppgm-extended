@@ -4,14 +4,14 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **1 confirmed compiler fix remains**: BACKEND-LOWIR-RTTI-ALIAS. The abandoned-return
-cleanup repair is qualified below; the five no-change contract reviews are closed. Final pruning identified a
-missed original two-tool standalone route; direct-driver qualification did not
-cover it. Strict 6135/6135 prints one line,
-and required checks and Alpha instruction/RSS gates pass. Positive timing
-confirmations remain recorded, including constructor-default traits at
-1.15–2.36% and return cleanup multi-pack at 1.37%. Fixture consolidation is qualified below. The serialized RTTI fix and
-combined student export/harness validation remain pending.
+Current status: **0 confirmed compiler fixes remain**. All frozen compiler
+families, including the original serialized standalone RTTI route, are now
+qualified. Final fixture consolidation removes 51 owning sources while
+preserving their distinct assertions. Strict 6084/6084 prints exactly one line;
+all required checks, full harness and Alpha instruction/RSS gates pass.
+Positive timing confirmations remain recorded, including constructor-default
+traits at 1.15–2.36%, return cleanup multi-pack at 1.37%, and serialized RTTI
+local-statics at 0.84%. The one combined student export validation is pending.
 
 ## Strategy review after a70d1174b — 2026-10-03
 
@@ -114,9 +114,8 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **1 confirmed compiler fix** remains:
-BACKEND-LOWIR-RTTI-ALIAS, the original serialized standalone route missed in
-direct-driver qualification. EH-RESULT-CLEANUP is qualified.
+Remaining-work count on 2026-10-04: **0 confirmed compiler fixes** remain.
+BACKEND-LOWIR-RTTI-ALIAS and EH-RESULT-CLEANUP are qualified below.
 INHERITED-DEFAULT-EXCEPT is qualified below. The five other
 reviews require no compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 MANGLE-BOUND, ROUND and VBASE-NULL. Previously confirmed compiler families
@@ -247,7 +246,7 @@ The recent discovery inventory is not all C++11:
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Done: effect-free pointer walks require a proved odd byte stride; plain LowIR carries no C++ in-bounds promise. Include the typed element size in the stride proof. Existing course/regression references and the generated quality envelope now retain the backward even-stride loop, without changing source/status or adding fixtures. Sixty-four runtime and nine shape checks, strict 6120/6120, required qualification/audits and Alpha instruction/RSS gates pass. Combine the parity check into one branch after the first variant showed a confirmed timing cost. |
 | TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. The final tests-only checkpoint replaces the PA6 class/value declaration control with a PA7 ordinary-expression rejection control, preserving the independent PA6 typedef/value control. Both hosts pass 4/4 and explicit placement is clean. At the definition checkpoint the namespace candidate was held for cycle gates. The completed LOOKUP-NAMESPACE-MIXED fix now promotes its two existing controls under the updated qualification policy; strict passes 6111/6111 in one line. Remaining compiler fixes, final course-fixture minimization/promotion and combined export stay open. |
-| BACKEND-LOWIR-RTTI-ALIAS | Use the actual RTTI definition for an external runtime declaration with the same object identity | Original standalone audit rechecked during final pruning | Confirmed open: original and consolidated handler sources fail C++ → LowIR → lowir2native at O0/O2 with duplicate object-symbol labels. Direct compiler-driver native runs pass; those did not cover the reported serialized route. Native runtime placeholders emit the same object label as an existing explicit global. Reuse typed object identities and actual definition storage; no ABI spelling or new language feature. |
+| BACKEND-LOWIR-RTTI-ALIAS | Use the actual RTTI definition for an external runtime declaration with the same object identity | Original standalone audit rechecked during final pruning | Done: runtime declarations reuse actual storage through typed object labels; equal-address presentation/object names coalesce while real duplicate storage is rejected. Both original standalone controls pass O0/O2. Existing PA33 driver programs now also traverse the two student tools, 120/120 checks without adding source fixtures. Strict 6084/6084, all required checks and full harness pass. All 432 verified Alpha observations pass instruction/RSS/raw-output gates; retain the 0.84% confirmed local-statics cycle cost. |
 | FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Qualified consolidation: 57 successful sources become six at unchanged earliest owners, retaining distinct assertions and factoring shared fault/trace harnesses. Two PA33 driver links and two optimized audit aliases each become one. All 36 focused strict C++11 Clang/GCC/solution O0/O2 executions pass; exact reference regeneration, strict 6084/6084 in one line and zero placement findings pass. Full input dispositions are linked below. The original standalone two-tool control still fails before consolidation; BACKEND-LOWIR-RTTI-ALIAS must be fixed before final export. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
@@ -7544,3 +7543,56 @@ its expected successful outcome. BACKEND-LOWIR-RTTI-ALIAS is one original compil
 bug still open, not a new speculative matrix. Its runtime declaration placeholder
 must alias the explicit global with the same typed object identity. Final export
 and combined harness validation follow that fix.
+
+### Serialized standalone RTTI aliases — qualified, 2026-10-04
+
+The previous BACKEND closure tested the direct compiler driver; it missed the
+original two-tool route. Both original standalone audit controls expose the
+same failure at O0/O2: a runtime RTTI declaration and explicit weak definition
+share an object identity, yet native emission allocates placeholder storage
+again. Preserve the original successful oracle and failed original/combined
+observations; this repair adds no language feature or ABI spelling.
+
+Native data emission now binds the runtime declaration's typed symbol to the
+already emitted object's storage. The existing typed label machinery retains
+both address and presentation bindings. Materialized names may coincide only
+when their addresses agree; genuinely distinct storage remains an error.
+Use existing dense object-label facts, with no extra source/definition walk
+or persistent model fields. Do not loosen duplicate definition checks.
+
+Both original controls pass all four O0/O2 serialized runs. Scratch boundaries
+accept equal-address names and reject both true duplicate object definitions
+and different-address name collisions. Reuse existing PA33 driver fixtures
+through an additional compiler-LowIR/backend route: **120/120** native checks,
+with no new owning source. The Makefile passes the student's lowir2native,
+and the shipped checker remains quiet. Its unit test uses a separate consumer,
+verifies actual producer-output consumption, rejects malformed output and
+checks empty successful stdout/stderr. The export unit now includes owning
+fixture targets in its isolated copy, matching actual export behavior.
+
+Final compiler/native SHA256:
+`4ab6122d92d6b09c9fd076969221881748f750b889e84dcd482cd32f02dbae16` /
+`261e34bc8aa5d8972370b6adc828af6f8848ef93d8731c0bb5ca4def98e3a3cd`.
+Strict **6084/6084** prints one line. Debug-info, backend variants, self-host
+PA5, all nine architecture targets, file and zero-finding placement audits
+pass; the complete harness passes. Preliminary code/images, the initial
+isolated-export unit failure and benchmark preparation errors remain retained
+as unqualified trials. No generated reference changes from this compiler fix.
+
+Alpha independently verifies every observation, counter scaling, RSS, status,
+output hash and paired median: 288 compiler screen observations, 96 focused
+timing confirmations, and 48 native-emission observations. The 69 compiler
+and six native input-manifest hashes verify; all six raw object pairs and the
+native raw executable pair are identical. No symbol normalization. Maximum
+compiler instruction median is 1.000000006, all RSS medians 1.0. The changed
+native runtime-data loop measures instruction median **1.000226722**, RSS
+**1.0**, calibrated cycles **1.000774301**, interval [0.985690624,1.071674624].
+
+Retain screens and their one confirmation each: copy-templates 1.014310960
+screen → **0.995847848**, interval [0.992217440,1.001733645]; local-statics
+1.014463715 screen → **1.008371412**, interval [1.001738018,1.014597843].
+Record that positive 0.84% local-statics cost; instruction/RSS gates pass,
+without a timing-neutrality claim or further retries. Evidence:
+`/tmp/cppgm-v4-audit-review/serialized-rtti-alias/qualified-proof.json` and
+`alpha:/tmp/cppgm-v4-audit-review-20261004-serialized-rtti-alias-final/`.
+Only the combined final student export/report validation remains.

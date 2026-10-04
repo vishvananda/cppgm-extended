@@ -395,3 +395,21 @@ Reviewed inputs since `fb15cd49e`; source bodies and frozen proofs are retained 
 | `pa9/tests/abi/600-template-param-template-type-substitution.t` | Retain boundary | Distinct observable language/property boundary; see its family in the unified tracker. |
 
 The additional PA28 return termination companion extends an existing driver. Its old ordinary double-fault property remains covered by the lexical-termination neighbor. The two optimized array audit aliases become one combined alias. The original standalone handler control points at the combined source; its pre-existing serialized RTTI failure is tracked as BACKEND-LOWIR-RTTI-ALIAS, rather than silently treated as a passing direct-driver result.
+
+## Companion and alias inputs
+
+| Input | Disposition | Purpose |
+| --- | --- | --- |
+| `pa25/tests/general/300-runtime-destructor-function-try-block.t.1` | Retain paired input | Companion/provider belongs to its host-runtime driver; preserves an ABI or runtime boundary. |
+| `pa27/tests/general/200-host-nontrivial-sixteen-byte-class-result.lib.provider.cpp` | Retain paired input | Companion/provider belongs to its host-runtime driver; preserves an ABI or runtime boundary. |
+| `pa27/tests/general/200-host-nontrivial-sixteen-byte-class-result.t.1` | Retain paired input | Companion/provider belongs to its host-runtime driver; preserves an ABI or runtime boundary. |
+| `pa28/tests/controls/100-audit-standalone-function-try.audit` | Retain paired input | Opt-in route to its recorded source; no additional fixture body. |
+| `pa28/tests/controls/100-audit-standalone-handler-forwarding.audit` | Retain paired input | Opt-in route to its recorded source; no additional fixture body. |
+| `pa28/tests/general/200-host-array-destructor-second-fault-terminate.t.1` | Retain paired input | Companion/provider belongs to its host-runtime driver; preserves an ABI or runtime boundary. |
+| `pa28/tests/general/200-host-eh-unwind-destructor-terminate.t.1` | Retain paired input | Companion/provider belongs to its host-runtime driver; preserves an ABI or runtime boundary. |
+| `pa28/tests/general/200-host-lexical-double-fault-termination.t.1` | Retain paired input | Companion/provider belongs to its host-runtime driver; preserves an ABI or runtime boundary. |
+| `pa29/tests/run/800-builtin-assume-aligned-two-arg.t.1` | Retain paired input | Companion/provider belongs to its host-runtime driver; preserves an ABI or runtime boundary. |
+| `pa32/tests/controls/500-audit-backward-loop-residues.audit` | Retain paired input | Opt-in route to its recorded source; no additional fixture body. |
+| `pa33/tests/controls/200-audit-optimized-copy-move.audit` | Retain paired input | Opt-in route to its recorded source; no additional fixture body. |
+
+The new serialized LowIR route in PA33 reuses every driver source through the two student tools; no extra owning source is added for the runtime alias repair.

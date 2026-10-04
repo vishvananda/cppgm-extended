@@ -83,6 +83,8 @@ public:
 	void alias(const std::string& name, lowir_model::SymbolId target);
 	void alias_object(lowir_model::StringId name,
 		lowir_model::SymbolId target);
+	void alias_symbol(lowir_model::SymbolId name,
+		lowir_model::StringId object);
 	void begin_function_blocks(std::size_t count);
 	lowir_model::LocalLabelId block_label(lowir_model::BlockId block) const;
 	std::size_t label_offset(lowir_model::LocalLabelId label) const;

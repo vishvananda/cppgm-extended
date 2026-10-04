@@ -105,6 +105,16 @@ class ExportedDevMakefileTests(unittest.TestCase):
                             ignore=shutil.ignore_patterns('*.my*', '*.check*', '*.ref.program'))
             shutil.copytree(REPO_ROOT / 'scripts', root / 'scripts', symlinks=True)
             shutil.copy(REPO_ROOT / 'Makefile', root / 'Makefile')
+            # Driver links now reuse fixtures from their earliest owning PA.
+            # Include those targets as the complete exporter does.
+            for path in (root / 'pa33/tests').rglob('*'):
+                if not path.is_symlink():
+                    continue
+                source = (REPO_ROOT / path.relative_to(root)).resolve(strict=True)
+                destination = root / source.relative_to(REPO_ROOT)
+                if not destination.exists():
+                    destination.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(source, destination)
             subprocess.run(['bash', '-c', script[start:end] + '\ndest="$1"\nprune_student_pa33',
                             'bash', str(root)], check=True)
             pa = root / 'pa33'

@@ -2307,6 +2307,13 @@ void emit_eh_data(CodeBuffer & out, const mir_model::MirProgram & program)
     out.label(kEhCaught); out.zeros(8);
   }
   for(std::size_t i = 0; i < program.runtime_data.size(); ++i) {
+    // An explicit definition supplies storage for declarations of the same
+    // object; a runtime placeholder must not shadow that RTTI descriptor.
+    if(out.has_object_label(program.runtime_data[i].object_symbol)) {
+      out.alias_symbol(program.runtime_data[i].symbol,
+                       program.runtime_data[i].object_symbol);
+      continue;
+    }
     out.align(16);
     out.label(program.runtime_data[i].symbol);
     if(program.runtime_data[i].object_symbol.valid())

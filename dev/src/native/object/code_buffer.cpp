@@ -282,6 +282,14 @@ void CodeBuffer::alias_object(lowir_model::StringId name,
 	if (stats_) ++stats_->code_buffer_object_labels;
 }
 
+void CodeBuffer::alias_symbol(lowir_model::SymbolId name,
+	lowir_model::StringId object)
+{
+	const std::size_t offset = object_label_offset(object);
+	label(name);
+	symbol_label_offsets_[static_cast<std::uint32_t>(name)] = offset;
+}
+
 void CodeBuffer::begin_function_blocks(std::size_t count)
 {
 	if (!local_fixups_.empty() || !short_relative_fixups_.empty() ||
@@ -950,7 +958,9 @@ CodeBuffer::materialized_labels() const
 			lowir_model::StringId(static_cast<std::uint32_t>(i)));
 		const std::string name = !raw.empty() && raw[0] == '@' ?
 			raw.substr(1) : raw;
-		if (!result.emplace(name, object_label_offsets_[i]).second)
+		const auto inserted = result.emplace(name, object_label_offsets_[i]);
+		// A presentation name and its object name can denote one definition.
+		if (!inserted.second && inserted.first->second != object_label_offsets_[i])
 			native_errors::ThrowSource("duplicate native symbol: " + name);
 	}
 	return result;
