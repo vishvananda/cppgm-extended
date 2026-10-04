@@ -5,6 +5,7 @@
 #include "lowering/objects/polymorphism.h"
 #include "lowering/support/errors.h"
 #include "semantic/presentation/lambdas.h"
+#include "support/containers/flat_hash_set.h"
 
 #include <limits>
 #include <memory>
@@ -1729,16 +1730,16 @@ public:
 	{
 		using namespace semantic;
 		std::vector<TypeId> pending(1, type);
-		std::vector<unsigned char> visited(program_.types.Size() + 1, 0);
+		detail::FlatHashSet<TypeId> visited;
+		const std::size_t type_limit = program_.types.Size() + 1;
 		while (!pending.empty())
 		{
 			const TypeId current = pending.back();
 			pending.pop_back();
-			if (current >= visited.size())
+			if (current >= type_limit)
 				ThrowLoweringInternal(
 					"function template ABI source type is invalid");
-			if (visited[current]) continue;
-			visited[current] = 1;
+			if (!visited.Insert(current)) continue;
 			std::size_t parameter = 0;
 			if (FunctionTemplateParameter(
 				current, function, &recipe, &parameter)) return true;

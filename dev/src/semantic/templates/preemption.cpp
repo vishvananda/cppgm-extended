@@ -1,5 +1,6 @@
 #include "semantic/analysis/analyzer.h"
 #include "support/exceptions.h"
+#include "support/containers/flat_hash_set.h"
 
 #include <limits>
 
@@ -23,16 +24,16 @@ bool TypesContainLocalContext(const Program& program,
 		if (arguments[argument - 1].kind == TEMPLATE_ARGUMENT_TYPE ||
 			arguments[argument - 1].kind == TEMPLATE_ARGUMENT_TEMPLATE)
 			push_type(arguments[argument - 1].type);
-	std::vector<unsigned char> visited(program.types.Size() + 1, 0);
+	detail::FlatHashSet<TypeId> visited;
+	const std::size_t type_limit = program.types.Size() + 1;
 	while (!pending.empty())
 	{
 		const TypeId type = pending.back();
 		pending.pop_back();
-		if (type >= visited.size())
+		if (type >= type_limit)
 			ThrowInternalCompilerError("template emission type identity is invalid: " +
-				std::to_string(type) + " >= " + std::to_string(visited.size()));
-		if (visited[type]) continue;
-		visited[type] = 1;
+				std::to_string(type) + " >= " + std::to_string(type_limit));
+		if (!visited.Insert(type)) continue;
 		const TypeRecord& record = program.types.Get(type);
 		if (record.kind == TYPE_NAMED)
 		{

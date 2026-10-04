@@ -26,11 +26,67 @@ failure is corrected without relaxing report-output assertions.
 
 ## v4.2 backend performance investigation — 2026-10-04
 
-Status: frozen-compile slowdown reproduced and amplified type-walk allocation
-isolated. A private output-identical probe recovers 2.80% runtime; production
-repair and full qualification remain the PERF-VISIT-FIX follow-up. The release itself is complete: both main branches were fast-forwarded
+Status: the production visitation repair is implemented on
+`fix/type-visit-allocation`; local qualification and Alpha measurements pass.
+The branch is submitted for PR CI; the final CI evidence belongs to its checks
+and PR validation record. The release itself is complete: both main branches were fast-forwarded
 and tagged v4.2 after main CI, inception and assignment publication passed.
 The released source is b4d107a1d; assignments are 32ffbc016.
+
+**PERF-VISIT-FIX:** both walkers now use a query-local flat hash set with
+16 inline slots and geometric contiguous growth. Storage scales with visited
+types; the small case makes no visitation allocation. Bounds, traversal order,
+cycle suppression, ordinary trait definitions and ABI decisions are preserved.
+A maintainer unit test covers forced collisions, growth, zero/maximum identities,
+independent query state and allocation bounds; it also passes as a cppgm++ O3
+object linked by the host. No language fixtures or references are added.
+Local qualification passes: strict **6084/6084** (one line), debug-info,
+backend variants, all architecture/file/placement checks, harness unit tests,
+self-host through PA5 and byte-identical cppgm++ inception. The initial local
+debug invocation hit concurrent Make build-stamp writes; the completed rerun
+uses the built tools. The strict report was repeated without other fixture
+runners because the first concurrent run's shared test counts were inflated.
+These are harness execution corrections, not compiler/reference changes.
+
+Production measurements compare unchanged v4.2 binaries against the final fix,
+using matched O3 GCC/complete self builds on the pinned frozen O0 input.
+All objects, including allocation-instrumented outputs, are byte-identical.
+Each producer has six pair-only blocks and six independent four-way blocks;
+retain every observation, including the slower four-way self block. Combining
+those twelve whole-block ratios gives:
+
+| Production comparison | Paired user-time change | 95% block-bootstrap interval |
+| --- | --- | --- |
+| Complete self, twelve retained blocks | **-5.179%** | **-5.853% to -2.744%** |
+| GCC host, twelve retained blocks | **-4.048%** | **-5.783% to -2.790%** |
+| Change in self/GCC ratio, six four-way blocks only | +2.032% | -3.608% to +5.540% (inconclusive) |
+
+The four-way batch alone is self -4.212% [-6.413%, +0.269%] and host
+-5.208% [-8.045%, -0.589%]. The absolute improvement is confirmed by the
+combined batches; do not claim a confirmed pure code-generation ratio gain.
+Three separate A/A blocks and four baseline-only runs per four-way block
+calibrate shared-host noise. All are retained, including a 7.85% A/A excursion.
+
+Host new requests fall **4,302,909,028 -> 2,421,421,218 bytes (-43.72%)**;
+self falls **4,283,907,871 -> 2,402,420,026 (-43.92%)**. New-call counts fall
+20,156 in each producer (about 0.17%); the production set avoids the probe's
+per-node allocation increase. These are cumulative C++ new bytes, not peak
+live memory. Peak RSS is roughly flat for self and about 1.2% lower for host.
+A separate one-block counter diagnostic reports self instructions -0.386%,
+cycles -3.280%; host instructions -0.769%, cycles -3.486%. Counter data is
+not the timing acceptance gate; every counter ran at 100%.
+
+Independent raw verification now covers **498 compiler measurements**, **54
+unscaled counter files** and **nine allocation-attribution runs**, including
+the production repair. Source/header manifests, immutable binary identities,
+raw times, object hashes and allocation site sums all verify; no site overflow.
+Proof is visit-fix-independent-verification.json; timings are in
+visit-fix-combined.json and visit-fix-paired/report.json. No references, language
+fixtures, ABI spellings, main branches, assignments publication or release tags
+change in this repair.
+
+Artifacts: /tmp/cppgm-type-visit-fix/ locally and the visit-fix-* directories in
+Alpha's /tmp/cppgm-backend-perf-v4.2/.
 
 Use the measurement contract in Alpha's cppgm-run-v4codex/backend-perf.md:
 O3 self and GCC producers compile the pinned semantic-overload source and its
@@ -43,8 +99,10 @@ The initial budget is three paired blocks, followed by confirmation if needed.
 Also cross-compile the fixed v4.1 compiler source with the v4.2 producer to
 separate changed compiler work from changed emitted code before bisecting.
 
-Artifacts and exact build commands: /tmp/cppgm-backend-perf-v4.2/ locally and
-on Alpha. Production tools, references and release tags remain untouched.
+Historical investigation artifacts and exact build commands are retained at
+/tmp/cppgm-backend-perf-v4.2/ locally and on Alpha. That checkpoint changed
+no production sources, references or release tags; production qualification is
+recorded above.
 
 
 Results so far (all source/closure/binary identities retained):
@@ -145,7 +203,7 @@ agrees with the report with zero overflow. Instrumented and uninstrumented
 objects agree for each revision, including the sparse probe. Proof is
 /tmp/cppgm-backend-perf-v4.2/alpha-results/independent-verification.json.
 
-Next work is **PERF-VISIT-FIX**: replace the full-program per-query bitmaps
+The investigation recommended **PERF-VISIT-FIX**, now implemented above: replace the full-program per-query bitmaps
 with compact typed visitation or safely reused workspace; keep ordinary
 hosted trait definitions and existing ABI facts. Qualify both host and complete
 self runtimes, output equality, memory, compiler checks and emitted names before
