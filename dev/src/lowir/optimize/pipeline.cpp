@@ -2081,6 +2081,7 @@ void optimize_function_bodies(
         &Stats::simplify_runs, &Stats::simplify_nanoseconds, &analysis,
         &simplify_arena);
       timed_dce(&function, boundaries, stats, &dce_scratch);
+      analysis.invalidate_values();
     }
     if(level >= 1 &&
        forward_staged_object_copies(&function, &analysis, stats)) {
@@ -2090,11 +2091,16 @@ void optimize_function_bodies(
       timed_dce(&function, boundaries, stats, &dce_scratch);
       timed_function_pass(remove_dead_slots, &function, stats,
         &Stats::slot_runs, &Stats::slot_nanoseconds, &analysis);
+      analysis.invalidate_values();
     }
-    if(level >= 1 && eliminate_fully_overwritten_zero_inits(&function, stats))
+    if(level >= 1 && eliminate_fully_overwritten_zero_inits(&function, stats)) {
       timed_dce(&function, boundaries, stats, &dce_scratch);
-    if(level >= 1 && coalesce_adjacent_scalar_copies(&function, stats))
+      analysis.invalidate_values();
+    }
+    if(level >= 1 && coalesce_adjacent_scalar_copies(&function, stats)) {
       timed_dce(&function, boundaries, stats, &dce_scratch);
+      analysis.invalidate_values();
+    }
     if(level >= 1)
       factor_scaled_index_multipliers(&function, &analysis, stats);
     if(level >= 1 && delete_effect_free_loops(&function, &analysis, stats)) {

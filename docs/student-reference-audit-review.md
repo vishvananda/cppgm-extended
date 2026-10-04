@@ -157,6 +157,7 @@ The recent discovery inventory is not all C++11:
 | CI-LIBCXX21-FIXED-CALL | Accept valid fixed calls in C++11 libc++ 21 templates | PR #62 / Ubuntu 26.04 clang+libc++ | Fixed: retained member-template validation freezes a namespace function before the current class is modeled. Honor the existing unmodeled-current-class guard for unqualified function lookup; explicit qualified validation remains unchanged. Extend existing PA17 complete-class fixture with a later private helper hiding a namespace overload. Baseline rejects, Clang/GCC C++11 O0/O2 and repaired compiler agree; actual libc++ 21 hosted fixture and pp_tokenizer self-compilation pass. Full qualification / PR rerun below. |
 | CI-VBASE-CONSTRUCTION | Initialize the vptr in implicit copy/move constructors of nonpolymorphic virtual-base classes | PR #62 / libc++ 18 tuple runtime | Fixed locally: exact old and new CI compilers emit identical crashing objects, demonstrating a preexisting defect. Change the synthesized-constructor vptr condition from polymorphic_class to dynamic_class, matching ordinary constructors. Extend the existing PA23 constructor control with empty virtual-base copy/move and regenerate only its reference plus the existing complete-constructor/VTT reference. Both owning controls, C++11 Clang/GCC O0/O2 and the actual libc++ 18 hosted fixture pass; final qualification / CI rerun below. |
 | CI-BULK-ADDRESS | Preserve scalar pointer uses after adjacent bulk initialization | PR #62 / GNU inception compiler crashes | Fixed: the adjacent zeroinit/copyobj shortcut defers a slot address even when later subtraction or comparison reads it as a scalar. Require a single use for that shortcut; the existing all-use safety facts still cover reusable deferred addresses. Extend the existing PA24 slot-address fixture with both subtraction operand orders and both comparison operand orders. Frozen baseline exits 1, repaired backend exits 0; no new fixture or ABI changes. |
+| CI-SCALED-INDEX | Invalidate cached value definitions after instruction-removing cleanup | PR #62 / Clang libc++ inception hangs | Fixed: scaled-index factoring uses stale definition locations after preceding cleanup moves instructions, rewriting the wrong multiply and leaving a byte index unscaled. Invalidate the existing value cache only on the four changing cleanup paths before factoring. Extend existing PA32/525 with a fully overwritten zero initializer and two scaled indices; frozen baseline computes -186 instead of 24, repaired optimizer computes 24. Actual nested-vector assignment LowIR now preserves its full 24-byte stride. |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and final combined export each print one success total with empty stderr. Final course 5719/5719 and injected backend/producer failures verify shipped behavior. |
 | HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in 2481b326d: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Final combined export passes 5719/5719 with empty stderr; student backend and producer failure injections remain visible. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
@@ -7884,3 +7885,57 @@ behavior, while export additionally compares every tracked example MIR.
 Regenerate the example with its exact owning ref-test and verify the existing
 control. No test input, bound or assertion changes. Subsequent qualification
 is tracked at PR #62 for the follow-up reference-only commit.
+
+
+## PR #62 Clang inception scale repair — 2026-10-04
+
+Both GNU inception jobs pass after the address repair. Clang self compilers
+instead loop in nested vector assignment while recompiling analyzer.cpp.
+Use the exact CI artifact in the matching libc++ 21 container; GDB repeatedly
+finds FunctionTemplateDeduction::operator= destroying a vector with a
+misaligned end pointer. Optimized LowIR multiplies the element count by 3
+but keeps an i8 byte index where its new object scale must be 8: the required
+24-byte stride becomes three bytes.
+
+Instruction-removing cleanup leaves FunctionAnalysis's cached ValueIndex
+definition locations stale. Scaled-index factoring then changes a different
+multiply than the one feeding its index. Invalidate that existing cache only
+on the four changed cleanup paths between address-phi forwarding and scaled
+index factoring; preserve reuse for unchanged functions. An unconditional
+invalidation confirmed the diagnosis but is replaced before final qualification
+with these mutation-boundary invalidations. No persistent model, source walk
+or speculative native fallback is added.
+
+Extend existing PA32/525's scaled-index family with a fully overwritten zero
+initializer before two adjacent multiplies. The 12-line reducer computes -186
+rather than 24 before repair. The full existing control rejects the frozen
+baseline and passes after repair. No new fixture or shape assertion. The actual
+Clang deduction assignment's previously unscaled index becomes obj<8x1>.
+
+A private GNU-host compiler built with the exact CI Clang 21 input-header
+profile rebuilds the solution against libc++ 21 without replacing qualified
+dev binaries. Its resulting self compiler completes the previously hanging
+source and passes a complete Clang inception rebuild. Independent comparison
+verifies all 236 objects and the compiler binary are identical. Evidence is
+in ci-pr62/validation-scale/clang-inception-proof.json; the exact branch's
+four-flavor CI will independently qualify the normal Clang-host path.
+
+Alpha's frozen baseline is 328a3a036b056142cb08cd1b320ca0d5bf2501b56a4ad01c3aab3f5b824e10b9
+and candidate is 2d171cfecb27e976845c2bf196b0c3dca233f5070fd0e439868d29cdf2266df1.
+All 288 observations preserve raw object equality. Independent recomputation
+verifies every counter, RSS observation and hash; maximum instruction ratio
+is 1.0000209256, median RSS ratios are 1.0, and all calibrated cycle signals
+are below the existing 1% confirmation threshold (maximum 0.731%). Retain
+all observations in ci-pr62/performance-scale-results/screen and Alpha's
+20261004-ci-pr62-scale. Required final qualification is recorded below.
+
+Final local qualification passes 6084/6084 (one report line), debug-info,
+complete backend variants, self-host through PA5, root GNU inception, all
+nine architecture audits, file audit and placement audit. Both local GNU
+and matching-header Clang inception proofs independently compare 236
+objects and the final binary. Alpha's instruction/memory gate passes as above.
+An isolated source snapshot containing the final compiler patch completes
+export regeneration and verifies all 18,969 tracked outputs, with no further
+reference changes; bundle/document/wrapper validation also passes. Its
+unpublished diagnostic manifest retains the snapshot's precommit source SHA;
+the final pushed commit's exact-source export is qualified by PR #62 CI.

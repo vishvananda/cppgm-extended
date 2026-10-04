@@ -43,6 +43,18 @@ function @factor_scaled_index(%index : i64) -> i64
     return i64 %value
 }
 
+function @factor_after_overwrite(%base : ptr, %index : i64, %other : i64) -> i64 [no_inline=yes, unwind=no] {
+  block ^entry:
+    zeroinit 8x8 %base
+    store i64 77, %base
+    %first = binary mul i64 %index, 24
+    %second = binary mul i64 %other, 24
+    %left = index i8 %base, %first
+    %right = index i8 %base, %second
+    %difference = binary sub ptr %right, %left
+    return i64 %difference
+}
+
 function @retain_multi_use_scale(%index : i64) -> i64
     [no_inline=yes, unwind=no] {
   slot $scaled_storage : obj<64x8>
@@ -119,10 +131,14 @@ function @retain_escaped_scalar_slot() -> i64
 }
 
 function @main() -> i64 [role=entry, unwind=no] {
+  slot $overwritten_storage : obj<64x8>
+
   block ^entry:
     %readonly = call i64 @fold_readonly()
     %strength = call i64 @strength_reduce()
     %factored = call i64 @factor_scaled_index(1)
+    %base = addr $overwritten_storage
+    %after_cleanup = call i64 @factor_after_overwrite(%base, 1, 2)
     %multi = call i64 @retain_multi_use_scale(1)
     %unfactorable = call i64 @retain_unfactorable_scale(1)
     %object = call i64 @promote_complete_object()
@@ -132,6 +148,7 @@ function @main() -> i64 [role=entry, unwind=no] {
     %bad1 = cmp ne i64 %strength, 24
     %bad5 = cmp ne i64 %factored, 91
     %bad6 = cmp ne i64 %multi, 24
+    %bad8 = cmp ne i64 %after_cleanup, 24
     %bad7 = cmp ne i64 %unfactorable, 73
     %bad2 = cmp ne i64 %object, 42
 	%bad3 = cmp ne i64 %scalar, 13
@@ -142,6 +159,7 @@ function @main() -> i64 [role=entry, unwind=no] {
 	%bad56 = binary or i64 %bad5, %bad6
 	%bad057 = binary or i64 %bad04, %bad56
 	%bad047 = binary or i64 %bad057, %bad4
-	%bad = binary or i64 %bad047, %bad7
+	%bad_old = binary or i64 %bad047, %bad7
+	%bad = binary or i64 %bad_old, %bad8
     return i64 %bad
 }
