@@ -34,6 +34,12 @@ protected:
   void plan_slots()
   {
     Derived & lowerer = static_cast<Derived &>(*this);
+    // The normal-edge graph cannot prove exclusion through an active unwind
+    // region. Keep those functions conservative until EH edges are explicit.
+    const std::vector<lowir_model::SlotId> object_owners =
+      lowerer.optimization_level_ > 0 && !lowerer.facts_.has_eh ?
+        lowerer.control_flow_.ExclusiveObjectSlotOwners(lowerer.source_) :
+        std::vector<lowir_model::SlotId>();
     for(std::size_t i = 0; i < lowerer.source_.slots.size(); ++i) {
       const lowir_model::SlotId slot = lowerer.source_.slots[i];
       const lowir_model::LowType & type =
@@ -46,12 +52,21 @@ protected:
         lowerer.discarded_slots_[slot] = 1;
         continue;
       }
-      lowerer.slot_offsets_[slot] = lowerer.allocate_frame_binding(
-        mir_model::MirFrameBinding::FB_SLOT,
+      const lowir_model::PresentationName name =
         lowerer.source_.slot_names[slot].valid() ?
           lowir_model::PresentationName::pooled(
             lowerer.source_.slot_names[slot]) :
-          lowir_model::PresentationName(), type);
+          lowir_model::PresentationName();
+      const lowir_model::SlotId owner = object_owners.empty() ?
+        lowir_model::SlotId() : object_owners[slot];
+      if(owner.valid() && owner != slot && lowerer.slot_offset_known_[owner]) {
+        lowerer.slot_offsets_[slot] = lowerer.slot_offsets_[owner];
+        lowerer.append_frame_binding(mir_model::MirFrameBinding::FB_SLOT,
+                                    name, type, lowerer.slot_offsets_[slot]);
+      } else {
+        lowerer.slot_offsets_[slot] = lowerer.allocate_frame_binding(
+          mir_model::MirFrameBinding::FB_SLOT, name, type);
+      }
       lowerer.slot_offset_known_[slot] = 1;
     }
   }

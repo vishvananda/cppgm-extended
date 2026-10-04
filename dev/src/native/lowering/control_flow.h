@@ -24,6 +24,10 @@ public:
 		std::size_t after_position, std::size_t* begin, std::size_t* end);
 	bool CyclicDefinitionDominatesUses(lowir_model::ValueId value,
 		std::size_t definition_position, std::size_t definition_block);
+	// For functions without EH, identify equal-shaped fixed object slots whose
+	// accesses cannot occur on the same CFG walk, including across loop turns.
+	std::vector<lowir_model::SlotId> ExclusiveObjectSlotOwners(
+		const lowir_model::LowirFunction& function) const;
 
 private:
 	struct ValueUseSite

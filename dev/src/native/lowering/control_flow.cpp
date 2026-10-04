@@ -185,6 +185,109 @@ void ControlFlowQueries::RecordUse(
 	use_sites_[operand.value].push_back(site);
 }
 
+std::vector<lowir_model::SlotId> ControlFlowQueries::ExclusiveObjectSlotOwners(
+	const lowir_model::LowirFunction& function) const
+{
+	// Bound the interference proof to one machine word per block and slot.
+	// Larger functions retain their original, separate object storage.
+	if (function.slots.size() < 2) return {};
+	std::vector<lowir_model::SlotId> candidates;
+	lowir_model::SlotId first;
+	for (std::size_t i = 0; i < function.slots.size(); ++i)
+	{
+		const lowir_model::SlotId slot = function.slots[i];
+		if (lowir_model::lowir_slot_type(function, slot).kind !=
+			lowir_model::LTK_OBJECT) continue;
+		if (!first.valid()) { first = slot; continue; }
+		if (candidates.empty()) candidates.push_back(first);
+		candidates.push_back(slot);
+		if (candidates.size() > 64) return {};
+	}
+	if (candidates.size() < 2) return {};
+	bool matching_shape = false;
+	for (std::size_t i = 1; i < candidates.size() && !matching_shape; ++i)
+		for (std::size_t j = 0; j < i; ++j)
+			if (lowir_model::lowir_slot_type(function, candidates[i]) ==
+				lowir_model::lowir_slot_type(function, candidates[j]))
+			{
+				matching_shape = true;
+				break;
+			}
+	if (!matching_shape) return {};
+
+	std::vector<std::uint64_t> slot_bits(function.slot_types.size(), 0);
+	for (std::size_t i = 0; i < candidates.size(); ++i)
+		slot_bits[candidates[i]] = std::uint64_t(1) << i;
+	std::vector<std::uint64_t> block_slots(function.blocks.size(), 0);
+	for (std::size_t block = 0; block < function.blocks.size(); ++block)
+	{
+		const auto note_slot = [&](const Operand& operand) {
+			if (operand.kind == Operand::OP_SLOT)
+				block_slots[block] |= slot_bits[operand.slot];
+		};
+		const std::vector<Instruction>& instructions =
+			function.blocks[block].instructions;
+		for (std::size_t i = 0; i < instructions.size(); ++i)
+		{
+			const Instruction& instruction = instructions[i];
+			// Include direct storage operands, not just address definitions.
+			note_slot(instruction.first);
+			note_slot(instruction.second);
+			note_slot(instruction.third);
+			for (std::size_t j = 0; j < instruction.args.size(); ++j)
+				note_slot(instruction.args[j]);
+		}
+	}
+
+	std::vector<std::uint64_t> conflicts(candidates.size(), 0);
+	std::vector<std::size_t> visited(function.blocks.size(), kNoBlock), work;
+	for (std::size_t slot = 0; slot < candidates.size(); ++slot)
+	{
+		const std::uint64_t bit = std::uint64_t(1) << slot;
+		for (std::size_t block = 0; block < block_slots.size(); ++block)
+			if (block_slots[block] & bit)
+			{
+				visited[block] = slot;
+				work.push_back(block);
+			}
+		while (!work.empty())
+		{
+			const std::size_t block = work.back();
+			work.pop_back();
+			conflicts[slot] |= block_slots[block];
+			for (std::size_t edge = 0; edge < successors_[block].size(); ++edge)
+			{
+				const std::size_t next = successors_[block][edge];
+				if (visited[next] == slot) continue;
+				visited[next] = slot;
+				work.push_back(next);
+			}
+		}
+	}
+
+	std::vector<lowir_model::SlotId> owners(function.slot_types.size());
+	std::vector<std::uint64_t> groups(candidates.size(), 0);
+	for (std::size_t slot = 0; slot < candidates.size(); ++slot)
+	{
+		std::uint64_t interfering = conflicts[slot];
+		for (std::size_t other = 0; other < candidates.size(); ++other)
+			if (conflicts[other] & (std::uint64_t(1) << slot))
+				interfering |= std::uint64_t(1) << other;
+		std::size_t owner = slot;
+		for (std::size_t other = 0; other < slot; ++other)
+			if (groups[other] && !(groups[other] & interfering) &&
+				lowir_model::lowir_slot_type(function, candidates[slot]) ==
+				lowir_model::lowir_slot_type(function, candidates[other]))
+			{
+				owner = other;
+				break;
+			}
+		groups[owner] |= std::uint64_t(1) << slot;
+		owners[candidates[slot]] = candidates[owner];
+	}
+	return owners;
+}
+
 void ControlFlowQueries::SelectBlock(std::size_t block)
 {
 	current_block_ = block;

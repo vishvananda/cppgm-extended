@@ -113,9 +113,9 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **6 compiler issue families** remain
+Remaining-work count on 2026-10-04: **5 compiler issue families** remain
 open or in progress. MEMBER and EH-UNWIND-DTOR are completed below. LOOKUP-NAMESPACE-MIXED is completed under the updated
-instruction/memory qualification policy. LOOKUP-BASE-ALIAS and MANGLE are also completed.
+instruction/memory qualification policy. LOOKUP-BASE-ALIAS, MANGLE and ARG-SLOTS are also completed.
 **Seven further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT, ROUND and VBASE-NULL.
@@ -212,7 +212,7 @@ The recent discovery inventory is not all C++11:
 | ARG-COND | Apply bidirectional class conversion rules to mixed-class conditional operands | Argon 4 | Done in d240819cf: direct binding then value fallback, base/cv constraints and implicit-candidate controls; strict 5846/5846, full checks and equal-output ABBA pass. COND-RESULT remains separate. |
 | COND-RESULT | Preserve const class conditional result types and copy glvalue class conditional results | Additional controls while fixing ARG-COND | Done in af5f041ed: const result facts, selected glvalue copying and scoped reference backing; strict 5849/5849, full checks and equal-output ABBA pass. |
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
-| ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Open optimization issue: independent defined reducer spans 1,639,824 bytes across 64 frames at -O1/-O2/-O3; GCC -O1 spans 103,824. Correct values/destructor counts; use a backend frame-size bound, not an arbitrary language stack budget. |
+| ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Done in this checkpoint: reuse native CFG successors for bounded, equal-shaped object exclusion; preserve loops, pairwise group conflicts and conservative EH storage. The original reducer spans 103,824 bytes at O1/O2/O3 with correct values and 64 destructors. Promote one existing PA33 control with one escaped-pointer loop boundary; strict 6127/6127 in one line, all required checks and 432 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain the positive diagnostic timing medians below. |
 | BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Open, independently reproduced: the entry and copy-cleanup candidates crash at O2 for the twelve-element move and trivial-copy-prefix array fixtures, in standalone and host-linked object routes. Clang/GCC pass; our O0 routes and corresponding external-companion forms pass. Retain frozen sources, binary hashes, host-link controls and debugger observations under synthesized-construction-prefix/. |
 | BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Open review: shared RTTI host-object route passes while standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations remain. Private-derived/base reducer already passes both. EH-UNWIND-DTOR fixes nested-outer-swallow, function-try-body-local and same-function dynamic rethrow at O0/O2 by resetting the native rethrow selector. The destructor-rethrow trace still returns 1 on the native route while both host-object routes pass. The independently reproduced 32-byte automatic-stack limitation also remains. Standalone shutdown registration is fixed in the native callback checkpoint. Keep these runtime routes separate from PA21 LowIR cleanup correctness; no ABI spelling change. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
@@ -6978,3 +6978,49 @@ no further timing runs or neutrality claim. Evidence, failed trials and final
 qualified-proof.json: `/tmp/cppgm-v4-audit-review/inherited-and-lambda-owners/`.
 Six compiler families and seven reviews remain; final pruning/export validation
 is still pending.
+
+### Disjoint fixed-object slots — qualified, 2026-10-04
+
+ARG-SLOTS reproduces with the immutable d7af3cdd0 compiler: the prepared PA33
+control has a 3200-byte frame against its 2048-byte bound. The original C++
+reducer retains correct values and 64 destructors but spans 1,639,824 bytes
+at O1/O2/O3. Reuse native ControlFlowQueries' successors to establish that
+all accesses to equal-shaped object slots are mutually exclusive on any
+CFG walk. A bounded 64-candidate mask avoids an unbounded interference table;
+functions with more candidates retain separate storage. Functions with EH
+retain separate storage because the normal graph does not expose every
+active unwind edge. Preserve individual MIR bindings at the shared offset.
+
+Promote the existing two-object control to PA33 tests/o1, adding one loop
+that visits both branches and observes the first object through a saved
+pointer after writing the second. No duplicate O2/O3 fixtures. Twenty-four
+entry/final O0..O3 controls verify the bound, loop preservation, pairwise
+three-object grouping, and conservative EH handling. Fresh strict C++11
+Clang/GCC objects corroborate the original reducer's defined results. The
+candidate reduces its O1/O2/O3 span to 103,824 bytes, matching GCC O1; Clang
+O1 uses 102,816. The O0 stack envelope is not an optimization requirement.
+Retain initial standalone-link observations that correctly reject the
+external printf symbol; qualification links compiler-produced objects with
+the host toolchain.
+
+Final candidate SHA256:
+`e6247a1257b88bc3e3fd244c9e41ee66dd387104a57535309f384b17ce396df5`.
+Strict 6127/6127 prints exactly one line. Debug-info, backend variants, self-host
+through PA5, all nine architecture audits, file audit (37 existing warnings)
+and placement with --fail-on-early pass. Alpha freezes the same 66 source
+inputs and three immutable binaries before counters; all six pre-screen
+objects are byte-identical. No ABI-name normalization is admitted in this
+study. All 432 observations independently verify raw counters, RSS, zero
+statuses and byte-identical objects. Maximum instruction median is 1.002053
+and maximum RSS median is 1.009003, within the unchanged gates. One timing
+confirmation per flagged workload gives calibrated cycles: copy templates
+1.012890, CI [0.984828, 1.017689]; local statics 1.010197,
+CI [1.006179, 1.018164]; multi-pack 1.014980,
+CI [1.009096, 1.017372]. Retain these positive timing costs and the initial
+screen observations; no further timing runs or neutrality claim. Evidence:
+`/tmp/cppgm-v4-audit-review/disjoint-object-slots/` and
+`alpha:/tmp/cppgm-v4-audit-review-20261004-disjoint-object-slots/`.
+Five compiler families and seven reviews remain. Final fixture pruning and
+student export stay deferred. Next is BACKEND-ARRAY-OPT: both unchanged full-TU
+array fixtures freshly reproduce an O2 crash on standalone and host-object
+routes, while all four O0 routes pass. No additional array fixtures needed.

@@ -1,0 +1,120 @@
+machine_ir x86_64 <host-target>
+
+startup
+    call @main [args=()]
+    mov rdi, rax
+    exit
+
+function @observe
+  abi
+    param %object -> rdi : ptr
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+
+  block ^entry
+    load.i32 rax, [rdi]
+    ret rax
+
+function @probe
+  abi
+    param %choice -> rdi : i32
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues direct
+    slot $left -> [rbp-<off0>] : obj<1600x4>
+    slot $right -> [rbp-<off0>] : obj<1600x4>
+
+  block ^entry
+    test.i64 rdi, rdi
+    je ^right
+
+  block ^left
+    store.i32 [rbp-<off0>], 7
+    lea rdi, [rbp-<off0>]
+    call @observe [args=(rdi)]
+    ret rax
+
+  block ^right
+    store.i32 [rbp-<off0>], 9
+    lea rdi, [rbp-<off0>]
+    call @observe [args=(rdi)]
+    ret rax
+
+function @loop_overlap
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer keep
+    epilogues direct
+    slot $first -> [rbp-<off0>] : obj<1600x4>
+    slot $second -> [rbp-<off1>] : obj<1600x4>
+    slot $saved -> [rbp-<off2>] : ptr
+    slot $iteration -> [rbp-<off3>] : i32
+
+  block ^entry
+    store.i32 [rbp-<off3>], 0
+
+  block ^dispatch
+    load.i32 r9, [rbp-<off3>]
+    test.i64 r9, r9
+    jne ^second
+
+  block ^first
+    store.i32 [rbp-<off0>], 7
+    lea rax, [rbp-<off0>]
+    store.ptr [rbp-<off2>], rax
+    store.i32 [rbp-<off3>], 1
+    jmp ^dispatch
+
+  block ^second
+    store.i32 [rbp-<off1>], 9
+    load.ptr r8, [rbp-<off2>]
+    load.i32 r9, [r8]
+    cmp.i32 r9, 7
+    setne rax
+    movzx rax, rax
+    ret rax
+
+function @main
+  abi
+    return i32 -> rax
+  frame
+    stack_size N
+    scratch_bytes 0
+    frame_pointer omit
+    epilogues direct
+    preserve <gpr0>
+
+  block ^entry
+    mov rdi, 1
+    call @probe [args=(rdi)]
+    mov <gpr0>, rax
+    sext.i32 <gpr0>
+    mov rdi, 0
+    call @probe [args=(rdi)]
+    mov r8, rax
+    sext.i32 r8
+    mov rdx, 7
+    cmp.i32 <gpr0>, rdx
+    setne <gpr0>
+    movzx <gpr0>, <gpr0>
+    mov rdx, 9
+    cmp.i32 r8, rdx
+    setne r8
+    movzx r8, r8
+    or <gpr0>, r8
+    sext.i32 <gpr0>
+    call @loop_overlap [args=()]
+    sext.i32 rax
+    or <gpr0>, rax
+    sext.i32 <gpr0>
+    ret <gpr0>
