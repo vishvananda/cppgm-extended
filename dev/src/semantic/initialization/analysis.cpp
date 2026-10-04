@@ -475,6 +475,7 @@ void Analyzer::AnalyzeReturnStatement(NodeId node, ScopeId scope,
 	const std::uint32_t statement = MakeDump(DUMP_RETURN_STATEMENT);
 	dump_.Add(output_parent, statement);
 	const NodeId expression = FirstSemanticChild(node);
+	bool class_return = false;
 	const bool placeholder_return = current_function_context_ != kNoBinding &&
 		GetFunction(current_function_context_).placeholder_return_kind !=
 			PLACEHOLDER_DECLARATOR_NONE;
@@ -498,7 +499,7 @@ void Analyzer::AnalyzeReturnStatement(NodeId node, ScopeId scope,
 			EffectiveType(current_return_type_));
 		const TypeRecord& returned_record = program_->types.Get(returned_object);
 		const TypeRecord& returned_top = program_->types.Get(current_return_type_);
-		const bool class_return = !IsVoid(current_return_type_) &&
+		class_return = !IsVoid(current_return_type_) &&
 			returned_top.kind != TYPE_LVALUE_REFERENCE &&
 			returned_top.kind != TYPE_RVALUE_REFERENCE &&
 			returned_record.kind == TYPE_NAMED &&
@@ -668,6 +669,23 @@ void Analyzer::AnalyzeReturnStatement(NodeId node, ScopeId scope,
 			StageExceptionalFullExpression(value.node, statement, scope);
 	}
 	AppendScopeDestructionActions(scope, statement);
+	// A completed result remains owned until return-time cleanup succeeds.
+	if (!class_return) return;
+	const EntityId entity = DestructedEntity(current_return_type_);
+	if (entity == kNoEntity || program_->entities[entity].trivial_destructor) return;
+	for (std::uint32_t edge = dump_.nodes[statement].first_edge;
+		edge != kNoDumpEdge; edge = dump_.edges[edge].next)
+	{
+		const DumpNode& action = dump_.nodes[dump_.edges[edge].child];
+		if (action.kind != DUMP_DESTRUCTOR_ACTION || action.unwind_only ||
+			FunctionIsNonthrowing(action.binding)) continue;
+		const BindingId destructor = DestructorForType(current_return_type_);
+		dump_.nodes[statement].selected_binding = destructor;
+		DemandFunction(destructor);
+		if (!FunctionIsNonthrowing(destructor))
+			dump_.construction_cleanup_may_throw = true;
+		break;
+	}
 }
 
 ExpressionInfo Analyzer::AnalyzeVariableInitializer(

@@ -7,6 +7,7 @@
 #include "lowering/ir/model.h"
 #include "semantic/model/graph.h"
 #include "lowering/objects/cleanup_continuations.h"
+#include "lowering/objects/construction_cleanup.h"
 
 #include <cstdint>
 
@@ -151,16 +152,17 @@ protected:
 		return tail;
 	}
 
-	void LowerLexicalDestructorAction(const DumpNode& action, std::size_t* closed = 0)
+	void LowerLexicalDestructorAction(const DumpNode& action, std::size_t* closed = 0,
+		const ConstructionCleanupStep* returned = 0)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (action.lexical_cleanup_plan == 0)
+		if (action.lexical_cleanup_plan == 0 && !returned)
 		{
 			derived.LowerDestructorAction(action);
 			return;
 		}
-		const LexicalCleanupPlan& plan =
-			derived.arena_.lexical_cleanup_plans[action.lexical_cleanup_plan - 1];
+		const std::uint32_t tail = action.lexical_cleanup_plan == 0 ? 0 :
+			derived.arena_.lexical_cleanup_plans[action.lexical_cleanup_plan - 1].tail;
 		const std::size_t depth = LexicalDestructorDepth(action);
 		const std::size_t active = derived.ActiveExceptionRegionCount();
 		if (depth > active) ThrowLoweringInternal("lexical destructor context exceeds active regions");
@@ -178,20 +180,28 @@ protected:
 		// objects, handler exits, or a body cleanup need an additional tail.
 		const bool body_tail = lexical_body_unwind_target_ != kNoLowId &&
 			depth == lexical_body_unwind_depth_;
-		if (!body_tail && (plan.tail == 0 ||
-			derived.arena_.lexical_cleanup_plans[plan.tail - 1].kind ==
+		if (!returned && !body_tail && (tail == 0 ||
+			derived.arena_.lexical_cleanup_plans[tail - 1].kind ==
 				LEXICAL_CLEANUP_TRY_EXIT))
 		{
 			derived.LowerDestructorAction(action);
 			return;
 		}
 		const BlockId original = derived.current_block_;
-		const BlockId unwind = LexicalUnwindCleanup(plan.tail, depth);
+		const BlockId unwind = LexicalUnwindCleanup(tail, depth);
 		const BlockId dispatch = derived.AddBlock(derived.NewLabel("lexical_cleanup_dispatch"));
 		derived.SelectBlock(dispatch);
 		derived.EmitLexicalCleanupClauses(depth);
 		derived.Emit(Instruction(Instruction::EH_CLEANUP));
 		derived.Emit(Instruction(Instruction::EH_END));
+		if (returned)
+		{
+			const bool may_throw = !derived.program_.bindings[returned->destructor].nonthrowing;
+			if (may_throw) derived.EmitEhTarget(Instruction::EH_TRY, LexicalCleanupTerminateBlock());
+			derived.LowerDestructorObject(returned->type, returned->destination,
+				returned->destructor, false, true);
+			if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
+		}
 		derived.EmitJump(unwind);
 		derived.SelectBlock(original);
 		derived.EmitEhTarget(Instruction::EH_TRY, dispatch);
@@ -497,11 +507,48 @@ protected:
 		}
 	}
 
+	void LowerConditionalReturn(std::uint32_t node, Operand* result_value)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (derived.current_indirect_result_)
+		{
+			const Operand destination(
+				static_cast<ParameterId>(0), LowPtr());
+			derived.LowerClassConditionalResult(
+				node, destination);
+		}
+		else if (derived.current_result_.kind == LOW_OBJECT)
+		{
+			const Operand slot(EnsureDirectReturnSlot(node),
+				derived.current_result_);
+			derived.LowerClassConditionalResult(node,
+				derived.AddressOfStorage(slot));
+			*result_value = slot;
+		}
+		else ThrowLoweringInternal(
+			"class conditional return has a non-object boundary");
+	}
+
+	ConstructionCleanupStep RetainReturnedObject(std::uint32_t return_node,
+		std::uint32_t value_node, const Operand& value)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const TypeId type = derived.arena_.nodes[value_node].type;
+		const BindingId destructor = derived.arena_.nodes[return_node].selected_binding;
+		const Operand address = derived.current_indirect_result_ ?
+			Operand(static_cast<ParameterId>(0), LowPtr()) : derived.AddressOfStorage(value);
+		derived.CompleteConstructionObject(0, type, destructor, address);
+		return ConstructionCleanupStep(0, kNoDumpEdge, type, destructor, address);
+	}
+
 	void LowerReturn(std::uint32_t return_node, const NodeChildren& children)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const bool has_value = !children.empty() &&
 			derived.arena_.nodes[children[0]].kind != DUMP_DESTRUCTOR_ACTION;
+		const bool protect_return = has_value &&
+			derived.arena_.nodes[return_node].selected_binding != kNoBinding &&
+			!derived.arena_.nodes[children[0]].direct_return_slot;
 		const std::size_t first_cleanup = has_value ? 1 : 0;
 		std::size_t full_expression_cleanup_end = first_cleanup;
 		NodeChildren full_expression_actions;
@@ -525,11 +572,13 @@ protected:
 			++full_expression_cleanup_end;
 		}
 		const bool managed_full_expression = conditional_full_expression ||
-			explicitly_managed_full_expression || lexical_unwind;
+			explicitly_managed_full_expression || lexical_unwind || protect_return;
 		if (managed_full_expression)
 			derived.BeginFullExpressionCleanup(full_expression_actions, 0,
 				has_value && derived.arena_.nodes[children[0]].kind ==
 					DUMP_CONDITIONAL_EXPRESSION);
+		if (protect_return)
+			derived.BeginConstructionCleanup(derived.arena_.nodes[return_node], true);
 		Operand result_value;
 		if (has_value)
 		{
@@ -567,25 +616,7 @@ protected:
 				DUMP_CONDITIONAL_EXPRESSION &&
 				!derived.current_result_reference_ &&
 				derived.IsClassObjectType(derived.arena_.nodes[children[0]].type))
-			{
-				if (derived.current_indirect_result_)
-				{
-					const Operand destination(
-						static_cast<ParameterId>(0), LowPtr());
-					derived.LowerClassConditionalResult(
-						children[0], destination);
-				}
-				else if (derived.current_result_.kind == LOW_OBJECT)
-				{
-					const Operand slot(EnsureDirectReturnSlot(children[0]),
-						derived.current_result_);
-					derived.LowerClassConditionalResult(children[0],
-						derived.AddressOfStorage(slot));
-					result_value = slot;
-				}
-				else ThrowLoweringInternal(
-					"class conditional return has a non-object boundary");
-			}
+				LowerConditionalReturn(children[0], &result_value);
 			else if (derived.arena_.nodes[children[0]].kind ==
 				DUMP_CLASS_VALUE_TRANSFER)
 			{
@@ -662,6 +693,9 @@ protected:
 			}
 		}
 		if (derived.CurrentBlock().terminated) return;
+		const ConstructionCleanupStep returned = protect_return ?
+			RetainReturnedObject(return_node, children[0], result_value) :
+			ConstructionCleanupStep(0, kNoDumpEdge, kNoType, kNoBinding, Operand());
 		const bool returns_value =
 			derived.current_result_.kind != LOW_VOID;
 		const bool share_lexical_cleanup =
@@ -706,7 +740,7 @@ protected:
 					derived.arena_.nodes[children[0]].binding)
 				continue;
 			LowerLexicalDestructorAction(derived.arena_.nodes[children[i]],
-				&closed_exception_handlers);
+				&closed_exception_handlers, protect_return ? &returned : 0);
 		}
 		derived.FinishExceptionControlExit(
 			closed_exception_handlers, exception_regions);

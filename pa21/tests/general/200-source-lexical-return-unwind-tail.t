@@ -75,9 +75,9 @@ int check() {
 }
 } // namespace case_1
 
-// nrvo-abandoned-return
+// Abandoned NRVO and prvalue/call/conditional results (CWG 2176).
 namespace case_2 {
-int live, drops, trace;
+int live, drops, trace, bad;
 struct R {
   R() { ++live; }
   R(R const &) { ++live; }
@@ -98,13 +98,34 @@ R f() {
   G g;
   return r;
 }
+struct Earlier {
+  ~Earlier() { if (live) bad = 1; }
+};
+R make() { return R(); }
+R value(int mode) {
+  Earlier earlier;
+  G g;
+  if (mode == 0) return R();
+  if (mode == 1) return make();
+  return mode == 2 ? R() : R();
+}
 int check() {
   try {
     R r = f();
     return 1;
   } catch (int v) {
-    return v != 7 || live || drops != 1 || trace != 21;
+    if (v != 7 || live || drops != 1 || trace != 21) return 1;
   }
+  for (int mode = 0; mode != 3; ++mode) {
+    drops = trace = bad = 0;
+    try {
+      R r = value(mode);
+      return 1;
+    } catch (int v) {
+      if (v != 7 || live || drops < 1 || bad) return 1;
+    }
+  }
+  return 0;
 }
 } // namespace case_2
 

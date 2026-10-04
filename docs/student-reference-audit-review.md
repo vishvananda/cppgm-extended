@@ -4,16 +4,13 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **1 compiler fix remains** after final contract review:
-cleanup of an abandoned returned object. Used constructor defaults in nothrow
-traits are qualified below. The frozen BACKEND findings are all qualified,
-including stack alignment in b3bee2e8a. Five other reviews require no compiler
-change; their reasoning is recorded below. Strict 6135/6135 prints one line,
+Current status: **0 confirmed compiler fixes remain**. The abandoned-return
+cleanup repair is qualified below; all frozen compiler families and the
+five no-change contract reviews are closed. Strict 6135/6135 prints one line,
 and required checks and Alpha instruction/RSS gates pass. Positive timing
-confirmations remain recorded: conditional explicit multi-pack 2.32% and
-native rethrow reference-aliases 1.06%, plus constructor-default trait
-confirmations of 1.15–2.36%. Final fixture pruning and combined
-student export/harness validation remain pending.
+confirmations remain recorded, including constructor-default traits at
+1.15–2.36% and return cleanup multi-pack at 1.37%. Final fixture pruning and
+combined student export/harness validation remain pending.
 
 ## Strategy review after a70d1174b — 2026-10-03
 
@@ -116,8 +113,8 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **1 compiler fix** remains after
-contract review: EH-RESULT-CLEANUP (abandoned return-object destruction).
+Remaining-work count on 2026-10-04: **0 confirmed compiler fixes** remain after
+qualification of EH-RESULT-CLEANUP (abandoned return-object destruction).
 INHERITED-DEFAULT-EXCEPT is qualified below. The five other
 reviews require no compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 MANGLE-BOUND, ROUND and VBASE-NULL. Previously confirmed compiler families
@@ -182,7 +179,7 @@ The recent discovery inventory is not all C++11:
 | EH-COND-THROW | Normalize a class conditional with a raw throw operand before destination lowering | Additional conditional aggregate boundary control | Done: materialized class prvalues use destination-ready arms; nonreturning arms retire their cleanup segments and staged throw sites restore enclosing cleanup after a split. Original reducer and thirteen agreed boundary programs pass at O0/O2; six PA21 fixtures, strict 5999/5999 and all required compiler audits/checks pass. Alpha instruction/RSS gates and an interleaved two-image cycle check pass. Extended synthesized-copy and reference-initializer failures remain separate rows. |
 | EH-CTOR-ARRAY-PREFIX | Retain earlier constructor subobjects after partial construction of a later loop-lowered member array | Expanded EH-SPECIAL-PREFIX controls | Done with EH-SPECIAL-PREFIX: partial-array cleanup explicitly enters the remaining constructor cleanup. Seven independently checked second-fault controls also cover scalar, inline-array, loop-array and completed-array unwind destruction; a second exception terminates immediately. The containing-constructor continuation has its own retired entry, shared by host-object and standalone paths. EH-CTOR-HANDLER also checks inline partial-array continuation through earlier subobjects. |
 | EH-REF-INIT | Retain enclosing object cleanup while initializing an automatic reference | Expanded EH-COND-THROW boundary controls | Done in accompanying checkpoint: all nine original reducers and 48 of 50 expanded programs pass at O0/O2; the two preexisting initialization-form failures are REF-BRACE and REF-BASE-COND. Thirteen C++11 PA21 fixtures pass both hosts and our compiler. Strict 6038/6038 and all eight required check groups pass; seventeen Alpha instruction/RSS gates and four focused raw/calibrated cycle gates pass with equal objects. Initializer-list backing and generic second-fault cleanup remain separately tracked. |
-| EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Confirmed remaining fix: the frozen prvalue/call/conditional return controls leak the initialized result when return-time local destruction throws. CWG 2176 is a correction to existing lifetime rules, not a new source feature. Admit this C++11 cleanup fix despite the matching Clang failure; reuse an owning PA21 return-cleanup fixture. |
+| EH-RESULT-CLEANUP | Destroy a non-NRVO returned object when later return-time destruction throws | Additional EH-CLEANUP result-ownership controls / CWG 2176 | Done: the frozen prvalue/call/conditional failures are repaired by retaining the completed result through return-time temporary and lexical cleanup. Reuse PA21 return cleanup, its PA33 driver link, and an existing PA28 termination fixture. CWG 2176 also specifies result-before-earlier-locals order; GCC cleans the result too late and Clang leaks it. Strict 6135/6135, all required checks, and 336 Alpha instruction/RSS/equality observations pass; retain the 1.37% confirmed multi-pack cycle cost below. |
 | REF-INIT-LIST | Give a reference-bound initializer-list backing array one lexical lifetime | Additional EH-REF-INIT boundary control | Done in accompanying checkpoint: normal list-object materialization and typed binding ownership prevent duplicate backing destruction and reference-slot corruption; partial-array landings retain earlier automatic cleanup. Sixteen C++11 PA21 fixtures and 36 agreed boundary programs pass ours/Clang/GCC at O0/O2, including twelve-element construction progress, borrowed/copy boundaries and static/global references. Strict 6054/6054 and all eight required check groups pass, with zero placement findings. Alpha instruction/RSS and raw/calibrated cycle gates pass across 2,016 equal-object observations. AUTO-CONST-REF, INIT-LIST-STATIC and REF-VOLATILE remain separate preexisting gaps; disputed value-copy/comma forms remain review evidence. |
 | AUTO-CONST-REF | Deduce const auto& from an rvalue without imposing an auto& lvalue constraint | REF-INIT-LIST boundary controls | Done in accompanying checkpoint: ordinary non-volatile const deduction, function cv handling, typed reference recipes and class-element copies retain C++11 behavior. Seventeen PA20/21 fixtures pass ours/Clang/GCC, including strict host C++11 checks; strict 6071/6071 and all required checks pass with zero placement/hygiene findings. Final Alpha instruction/RSS and eight focused raw/calibrated cycle gates pass across 4032 equal-object observations; 5312 earlier timing observations remain recorded. CONST-REF-STATIC-TEMP, REF-ARRAY-CV, REF-POINTER-QUAL and EH-LOCAL-ARRAY-CATCH remain independent owner gaps. |
 | CONST-REF-STATIC-TEMP | Give a constexpr reference an address fact for a static-storage temporary | AUTO-CONST-REF explicit-type boundary | Done: private unindexed backing storage supplies the existing constant address and static initialization paths. Extend the existing PA16 static-object reference fixture; remove the redundant control. Original scalar, aliases, distinct identities, local-static, floating and pointer boundaries pass at O0/O2; invalid automatic/runtime initializers still reject. Strict 6118/6118 and all required checks pass; 144 Alpha observations pass instruction/RSS/equality gates. |
@@ -7458,3 +7455,49 @@ additional confirmations to erase those costs. Evidence:
 and `alpha:/tmp/cppgm-v4-audit-review-20261004-nothrow-constructor-defaults/`.
 One confirmed compiler fix remains: EH-RESULT-CLEANUP. Final fixture pruning
 and combined student export/harness validation remain pending.
+
+### Abandoned returned-object cleanup — qualified, 2026-10-04
+
+The entry image reproduces all six frozen O0 native/host-object leaks for
+prvalue, call and conditional results. [CWG 2176](https://cplusplus.github.io/CWG/issues/2176.html)
+corrects existing lifetime rules: destroy the completed result if return-time
+temporary/local cleanup throws, before unwinding earlier locals. Clang leaks
+all three results. GCC destroys them after the earlier local, which violates
+the resolution's explicit order example. Those fresh host observations are
+retained; do not weaken the property to match either host.
+
+Publish the result destructor on the typed return node only for a nontrivial
+class return with potentially throwing post-result cleanup. Reuse completed
+construction-object ownership through full-expression destruction, then carry
+that typed obligation through existing lexical unwind tails. NRVO retains its
+existing ownership. A potentially throwing result destructor sets the existing
+construction-cleanup termination fact. No reparsing, speculative source work,
+new persistent fields, ABI spelling change or new compiler module.
+
+Extend the existing PA21 return fixture with the three result forms and
+result-before-earlier-local observations. Add one PA33 link for all nine native
+routes. Reuse PA28's unwind-termination fixture for the returned-object second
+fault; ordinary lexical double-fault termination stays covered by its existing
+neighbor. Only the owning PA21 reference is regenerated through exact ref-test.
+All 20 O0/O2 focused executions pass across native and host-object routes,
+including normal return, failed construction, throwing argument-temporary
+destruction and handler recovery. Four second-fault runs terminate, and the
+installed host terminate handler passes. Compiler SHA256:
+`9953499fa1e91c2cc32cdf763794543443eb6e90eeb9ce4055e4bfdfaa505a66`.
+
+Strict 6135/6135 prints exactly one line. Debug-info, backend variants (99/99
+native driver executions), self-host PA5, all nine architecture targets, file
+and placement audits pass. The file log retains the identical 37 warnings;
+placement reports zero findings. The first oversized-function trial and second
+candidate missing termination-helper demand remain explicitly unqualified.
+
+Alpha verifies 69 frozen inputs, six byte-identical raw object pairs and all
+336 unscaled instruction/cycle/branch/RSS observations. No symbol normalization.
+Maximum screen instruction median is 1.000002299 and RSS median 1.000054066.
+Multi-pack's 1.021324486 calibrated screen receives one confirmation:
+**1.013697050**, bootstrap 95% interval **[1.004938640,1.018557482]**.
+Retain that positive cycle cost; instruction/RSS gates pass, with no timing
+neutrality claim or further retries. Preliminary candidate observations remain
+separate. Evidence: `/tmp/cppgm-v4-audit-review/return-object-cleanup/qualified-proof.json`
+and `alpha:/tmp/cppgm-v4-audit-review-20261004-return-object-cleanup-final/`.
+Final fixture minimization and combined export/harness validation remain.

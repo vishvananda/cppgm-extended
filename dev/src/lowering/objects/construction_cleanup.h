@@ -112,10 +112,10 @@ protected:
 			action, semantic::kNoType, semantic::kNoBinding, ir::Operand()));
 	}
 
-	bool BeginConstructionCleanup(const semantic::DumpNode& recipe, bool allocation = false)
+	bool BeginConstructionCleanup(const semantic::DumpNode& recipe, bool force = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (!allocation && !construction_cleanup_active_ && (!recipe.contains_construction_cleanup ||
+		if (!force && !construction_cleanup_active_ && (!recipe.contains_construction_cleanup ||
 			recipe.value_constructor != semantic::kNoDumpEdge))
 			return false;
 		const bool owns_expression = !derived.full_expression_cleanup_active_;

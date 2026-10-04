@@ -1,1 +1,1 @@
-A destructor throwing during unwinding invokes the installed host terminate handler.
+A returned object's destructor throwing during abandoned-return cleanup invokes the installed host terminate handler.
