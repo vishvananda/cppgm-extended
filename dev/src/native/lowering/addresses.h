@@ -58,7 +58,11 @@ protected:
 	bool address_is_next_bulk_operand(const lowir_model::LowirBlock& block,
 		std::size_t instruction_index, lowir_model::ValueId destination) const
 	{
-		if (instruction_index + 1 >= block.instructions.size()) return false;
+		const Derived& derived = static_cast<const Derived&>(*this);
+		// Multiple uses require the all-use address facts checked by the caller;
+		// a following bulk operation alone cannot justify later scalar uses.
+		if (derived.facts_.uses[destination] != 1 ||
+			instruction_index + 1 >= block.instructions.size()) return false;
 		const lowir_model::Instruction& next =
 			block.instructions[instruction_index + 1];
 		if (next.kind == lowir_model::Instruction::IK_ZEROINIT)

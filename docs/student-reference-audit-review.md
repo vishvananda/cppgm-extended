@@ -156,6 +156,7 @@ The recent discovery inventory is not all C++11:
 | CI-GCC13-HEAP | Diagnose heap corruption during hosted pp_tokenizer self-compilation | PR #62 / Ubuntu 24.04 GCC 13 | Fixed: ASan identifies a one-based StringId indexed into a size-only bitmap in the O3 fast-path splitter. Allocate the missing slot, consistent with the other clone helpers. Extend existing PA32/544 with a highest-ID retained global and assert clone-name collision avoidance; baseline ASan fails, repaired fixture and original GCC 13 self-compile pass. Full qualification / PR rerun below. |
 | CI-LIBCXX21-FIXED-CALL | Accept valid fixed calls in C++11 libc++ 21 templates | PR #62 / Ubuntu 26.04 clang+libc++ | Fixed: retained member-template validation freezes a namespace function before the current class is modeled. Honor the existing unmodeled-current-class guard for unqualified function lookup; explicit qualified validation remains unchanged. Extend existing PA17 complete-class fixture with a later private helper hiding a namespace overload. Baseline rejects, Clang/GCC C++11 O0/O2 and repaired compiler agree; actual libc++ 21 hosted fixture and pp_tokenizer self-compilation pass. Full qualification / PR rerun below. |
 | CI-VBASE-CONSTRUCTION | Initialize the vptr in implicit copy/move constructors of nonpolymorphic virtual-base classes | PR #62 / libc++ 18 tuple runtime | Fixed locally: exact old and new CI compilers emit identical crashing objects, demonstrating a preexisting defect. Change the synthesized-constructor vptr condition from polymorphic_class to dynamic_class, matching ordinary constructors. Extend the existing PA23 constructor control with empty virtual-base copy/move and regenerate only its reference plus the existing complete-constructor/VTT reference. Both owning controls, C++11 Clang/GCC O0/O2 and the actual libc++ 18 hosted fixture pass; final qualification / CI rerun below. |
+| CI-BULK-ADDRESS | Preserve scalar pointer uses after adjacent bulk initialization | PR #62 / GNU inception compiler crashes | Fixed: the adjacent zeroinit/copyobj shortcut defers a slot address even when later subtraction or comparison reads it as a scalar. Require a single use for that shortcut; the existing all-use safety facts still cover reusable deferred addresses. Extend the existing PA24 slot-address fixture with both subtraction operand orders and both comparison operand orders. Frozen baseline exits 1, repaired backend exits 0; no new fixture or ABI changes. |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and final combined export each print one success total with empty stderr. Final course 5719/5719 and injected backend/producer failures verify shipped behavior. |
 | HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in 2481b326d: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Final combined export passes 5719/5719 with empty stderr; student backend and producer failure injections remain visible. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
@@ -7827,3 +7828,49 @@ recorded in ci-pr62/validation-vbase; the exact pushed commit's live matrix
 status is linked through PR #62. The previously qualified full harness and backend
 variants cover the unchanged harness/optimizer changes; this additional patch
 changes only the semantic constructor recipe.
+
+
+## PR #62 inception address repair — 2026-10-04
+
+The ordinary PR matrix passes all 18 jobs and the student export validation.
+Automatic GNU inception then crashes in the self-compiled compiler while
+compiling three semantic sources. GDB traces the crash to an enormous memmove
+length in lowir_floating_value_bits: pointer subtraction subtracts the bytes
+of the local native array instead of its address. The optimized LowIR is
+correct; native address selection defers the array address because the next
+instruction is a bulk initializer, overlooking later scalar uses.
+
+Require a single use for the adjacent zeroinit/copyobj shortcut, consistent
+with the adjacent load/store/index shortcuts. Existing all-use address facts
+still authorize safe repeated storage and call uses. This changes one typed
+use-count guard and adds no source walk or per-arithmetic materialization.
+Extend PA24's existing slot-address/stack-call control with bulk initialization
+followed by subtraction in both operand orders and pointer comparison in both
+operand orders. The frozen baseline exits 1; the repaired backend exits 0.
+Regenerate only that fixture's owning reference; no new fixture, ABI name,
+quality-bound relaxation or exception to an audit.
+
+The repaired self compiler compiles the previously crashing analyzer source.
+Root make inception then verifies all 236 rebuilt objects and the final
+compiler binary byte-for-byte. Evidence is in ci-pr62/validation-bulk,
+including an independent comparison in inception-proof.json. An early strict
+run overlapped the self-host ladder's shared test counter and reported 6101;
+that summary is unqualified. Final strict qualification must run after the
+other suites finish, with stdout and stderr captured separately.
+
+Alpha's frozen baseline is bc648b7acc34f58d40b49a4078b500d294072363e2fbf84301bf7138d4ba5880
+and candidate is 328a3a036b056142cb08cd1b320ca0d5bf2501b56a4ad01c3aab3f5b824e10b9.
+All 288 observations across six unchanged inputs produce identical raw objects.
+Independent recomputation verifies every counter, RSS observation and output
+hash. Maximum instruction ratio is 1.0000000137 and median RSS ratios are
+1.0; calibrated median cycle signals remain below the existing 1% confirmation
+threshold (maximum 0.892%). All observations and intervals are retained under
+ci-pr62/performance-bulk-results/screen and Alpha's 20261004-ci-pr62-bulk.
+
+Final qualification passes: affected PA24 fixture and all five variants of
+its generated program, full strict report 6084/6084 (one stdout line, empty
+stderr), debug-info, complete backend variants, self-host through PA5, all
+nine architecture audits, file audit and placement audit. Root inception
+also passes as recorded above. The pushed commit's complete four-flavor PR
+matrix, student export validation and automatic inception are tracked at
+PR #62; publishing and merging remain outside this task.
