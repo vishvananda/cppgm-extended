@@ -394,7 +394,7 @@ Reviewed inputs since `fb15cd49e`; source bodies and frozen proofs are retained 
 | `pa9/tests/abi/500-dependent-function-parameter-decltype-param.t` | Retain boundary | Distinct observable language/property boundary; see its family in the unified tracker. |
 | `pa9/tests/abi/600-template-param-template-type-substitution.t` | Retain boundary | Distinct observable language/property boundary; see its family in the unified tracker. |
 
-The additional PA28 return termination companion extends an existing driver. Its old ordinary double-fault property remains covered by the lexical-termination neighbor. The two optimized array audit aliases become one combined alias. The original standalone handler control points at the combined source; its pre-existing serialized RTTI failure is tracked as BACKEND-LOWIR-RTTI-ALIAS, rather than silently treated as a passing direct-driver result.
+The additional PA28 return termination companion extends an existing driver. Its old ordinary double-fault property remains covered by the lexical-termination neighbor. The two optimized array audit aliases become one combined alias. The original standalone handler control points at the combined source; its pre-existing serialized RTTI failure is fixed and independently qualified in a34bf7b16. Final export checks the two student-tool route, with no additional owning source body.
 
 ## Companion and alias inputs
 

@@ -11,7 +11,10 @@ preserving their distinct assertions. Strict 6084/6084 prints exactly one line;
 all required checks, full harness and Alpha instruction/RSS gates pass.
 Positive timing confirmations remain recorded, including constructor-default
 traits at 1.15–2.36%, return cleanup multi-pack at 1.37%, and serialized RTTI
-local-statics at 0.84%. The one combined student export validation is pending.
+local-statics at 0.84%. The combined student export validation is complete: 18,969 references verify,
+course 5719/5719 prints one line with empty stderr, all wrappers and scaffolds
+pass, and injected student-tool failures remain visible. Six stale generated
+examples are regenerated without changing inputs or quality bounds.
 
 ## Strategy review after a70d1174b — 2026-10-03
 
@@ -127,7 +130,7 @@ TMPL-FTRY, REF-BASE-COND, MANGLE-CONV, MANGLE-RESULT and MANGLE-PACK are also co
 families, not individual failing fixtures or a proven count of distinct root
 causes. INPUTS overlaps VBASE; closed reviews, fixture pruning and final export
 validation are excluded from the compiler issue count. The passing default
-report does not include all opt-in unresolved controls.
+report excludes held opt-in controls outside the admitted language/header scope.
 
 The recent discovery inventory is not all C++11:
 
@@ -141,8 +144,8 @@ The recent discovery inventory is not all C++11:
 
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
-| HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and isolated export each print one success total. Final combined export pending. |
-| HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in 2481b326d: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Full combined export remains deferred. |
+| HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and final combined export each print one success total with empty stderr. Final course 5719/5719 and injected backend/producer failures verify shipped behavior. |
+| HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in 2481b326d: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Final combined export passes 5719/5719 with empty stderr; student backend and producer failure injections remain visible. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
 | DETECT | Stop treating scalar-array copyobj as class transfer / ABI evidence | v4codex | Done: 550f44dc2 removes twenty scalar-array false positives. The static-declaration checkpoint uses parsed template headers for pointer/reference NTTPs, removing four more false positives while preserving actual pointer/reference/member/function NTTP controls. |
 | INIT-ADDR | Static namespace/local-reference and pointer initialization ordering | v4codex group 1 | Done: bc55d6227; five ordering reducers pass; full checks and ABBA pass. |
@@ -245,10 +248,10 @@ The recent discovery inventory is not all C++11:
 | NOEXCEPT-LIST | Preserve constructor ownership facts across parameter template instantiation | v4codex PA31 source205 | Done. The shared failure also affects ordinary calls: a stale EntityRecord reference loses the user-provided-constructor fact when parameter template instantiation moves the entity vector. Reacquire by stable ID before publishing constructor facts. Reuse the PA21 private initializer-list argument fixture, including nonthrowing/throwing-element assertions and runtime class-list conversion; remove the redundant control. Strict 6116/6116 and all required checks pass; Alpha instruction/RSS gates pass. |
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Done: effect-free pointer walks require a proved odd byte stride; plain LowIR carries no C++ in-bounds promise. Include the typed element size in the stride proof. Existing course/regression references and the generated quality envelope now retain the backward even-stride loop, without changing source/status or adding fixtures. Sixty-four runtime and nine shape checks, strict 6120/6120, required qualification/audits and Alpha instruction/RSS gates pass. Combine the parity check into one branch after the first variant showed a confirmed timing cost. |
-| TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. The final tests-only checkpoint replaces the PA6 class/value declaration control with a PA7 ordinary-expression rejection control, preserving the independent PA6 typedef/value control. Both hosts pass 4/4 and explicit placement is clean. At the definition checkpoint the namespace candidate was held for cycle gates. The completed LOOKUP-NAMESPACE-MIXED fix now promotes its two existing controls under the updated qualification policy; strict passes 6111/6111 in one line. Remaining compiler fixes, final course-fixture minimization/promotion and combined export stay open. |
+| TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. The final tests-only checkpoint replaces the PA6 class/value declaration control with a PA7 ordinary-expression rejection control, preserving the independent PA6 typedef/value control. Both hosts pass 4/4 and explicit placement is clean. At the definition checkpoint the namespace candidate was held for cycle gates. The completed LOOKUP-NAMESPACE-MIXED fix now promotes its two existing controls under the updated qualification policy; strict passes 6111/6111 in one line. That checkpoint is historical: the frozen compiler fixes, final fixture consolidation and combined export are now complete. |
 | BACKEND-LOWIR-RTTI-ALIAS | Use the actual RTTI definition for an external runtime declaration with the same object identity | Original standalone audit rechecked during final pruning | Done: runtime declarations reuse actual storage through typed object labels; equal-address presentation/object names coalesce while real duplicate storage is rejected. Both original standalone controls pass O0/O2. Existing PA33 driver programs now also traverse the two student tools, 120/120 checks without adding source fixtures. Strict 6084/6084, all required checks and full harness pass. All 432 verified Alpha observations pass instruction/RSS/raw-output gates; retain the 0.84% confirmed local-statics cycle cost. |
-| FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Qualified consolidation: 57 successful sources become six at unchanged earliest owners, retaining distinct assertions and factoring shared fault/trace harnesses. Two PA33 driver links and two optimized audit aliases each become one. All 36 focused strict C++11 Clang/GCC/solution O0/O2 executions pass; exact reference regeneration, strict 6084/6084 in one line and zero placement findings pass. Full input dispositions are linked below. The original standalone two-tool control still fails before consolidation; BACKEND-LOWIR-RTTI-ALIAS must be fixed before final export. |
-| EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
+| FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Qualified consolidation: 57 successful sources become six at unchanged earliest owners, retaining distinct assertions and factoring shared fault/trace harnesses. Two PA33 driver links and two optimized audit aliases each become one. All 36 focused strict C++11 Clang/GCC/solution O0/O2 executions pass; exact reference regeneration, strict 6084/6084 in one line and zero placement findings pass. Full input dispositions are linked below. The original serialized failure was separately corrected and qualified in a34bf7b16; both student tools are now exercised in the final export without adding fixture bodies. |
+| EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Done: final source implementation 81294943c; 18,969 generated references verify, all nine pinned binaries and every wrapper pass, scaffolds build and all fixture links resolve. Course 5719/5719 and restored unordered PA33 58/58 each print one line with empty stderr. Injected student backend and LowIR producer failures are visible; pinned references and tracked student sources remain unchanged. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
 | HARNESS-FILE | Stop counting an entire class as a function after an unrecognized constructor signature | Aggregate compiler validation | Done: both scans retire declaration-scope state before stripping an earlier inline body. A large-class control passes, a real oversized member still fails, and the full harness passes. ARCH-FUNCTION subsequently closes all eight genuine baseline size findings. |
 | ARCH-FUNCTION | Refactor eight existing oversized functions missed by stale file-audit signature state | HARNESS-FILE detection correction | Done: responsibilities extracted without changing references or relaxing the 240-line limit; slot visits use one typed worklist. Exact optimizer stats and 210 unchanged control observations; strict 5993/5993, debug-info, variants, self-host PA5 and every required audit pass. Twelve Alpha instruction/RSS gates pass with equal objects; checkpoint evidence below. |
@@ -7620,3 +7623,63 @@ export at its original reference-verification step using unchanged exporter
 function bodies; preserve the initial failure log and avoid rebuilding and
 regenerating an already validated reference set. Final student harness/output
 checks remain pending.
+
+
+## Final combined student export completed — 2026-10-04
+
+All frozen confirmed compiler families and admitted reviews are closed; no
+confirmed compiler fix remains. Final fixture consolidation removes 51 owning
+source files (57 into six), retaining distinct assertions, independent
+rejections and earliest feature ownership. Its original serialized RTTI
+control is now qualified through both tools by a34bf7b16.
+
+The final export pins implementation/reference commit
+`81294943c4adbde0253d11c34d6558305d1eb164`. The six reviewed stale reference
+examples are generated by their exact owning targets and match the frozen
+qualified compiler/native images. The resumed original exporter verifies
+18,969 tracked reference outputs, including 7,158 exit-status sidecars, and
+retains 507 Linux-generated diagnostic examples. It completes its script
+discovery and standalone model checks, packaging the nine tools with bundle
+SHA256 `c5bc25359a553f1084e4c1c7d4684806dba7fc7fd2b0e2126ac419cd6c6661e6`.
+
+Export validation builds the untouched student scaffolds, installs and checks
+the pinned bundle, and compares every shipped reference-wrapper invocation
+with its pinned tool. All fixture symlinks resolve; implementation source
+lists remain empty, and maintainer trackers, journals, audit prerequisites,
+seam tables and PA33 private regressions are excluded. The shipped PA33
+checker and both default/selected Makefile recipes pass the student compiler
+and student native backend, without reference-tool substitution in the recipes.
+
+For passing-harness validation only, copy the pinned implementations to the
+student app paths after the scaffold build; the student scaffold sources stay
+unchanged. Actual root `make test-report CXX=g++ CPPGM_HOST_CXX=g++` passes
+5719/5719 with exactly one stdout line and empty stderr. Replacing the student
+backend with a failing executable makes the real report fail and expose its
+error without successful-control summaries or audit/seam inventories. Its
+reference wrapper still succeeds. Separately reject only the student compiler's
+`--emit-lowir` option: the selected driver check reports failure specifically
+at the O1 LowIR route after the other routes succeed. Restore both apps, then
+run actual unordered PA33 reporting: 58/58, one stdout line, empty stderr.
+All pinned hashes and tracked student sources remain unchanged. One initial
+producer-injection harness trial lacked execute permission on the external
+backup; its logs are retained as unqualified, and the corrected trial verifies
+the intended producer failure. No implementation fix or fixture follows from it.
+
+The course total excludes the solution's regression lanes, explaining its
+difference from the source strict 6084/6084 total. A fresh source strict report after the six exact regenerations again passes
+6084/6084 with exactly one stdout line and empty stderr. The final implementation's
+required debug-info, backend variants, self-host through PA5, full harness,
+all architecture audits, file audit and placement audit already pass. Alpha
+instruction/RSS gates pass, with calibrated positive cycle confirmations
+retained explicitly: constructor-default traits 1.15–2.36%, return cleanup
+multi-pack 1.37%, and serialized RTTI local-statics 0.84%. These are recorded
+costs, not claims of timing neutrality.
+
+Evidence: `/tmp/cppgm-v4-audit-review/final-export-reference-review/`,
+`final-export-validation/`, `final-student-export.log`,
+`final-student-export-resume.log`, and the preserved original-exporter segment
+hashes in `resume_final_export.json`; combined verification is recorded in
+`final-export-qualified-proof.json`. The student checkout is
+`/tmp/cppgm-v4-audit-review/final-student-export`; the local bundle is
+`/tmp/cppgm-v4-audit-review/final-student-reference-binaries.tar.gz`.
+No publication or student-run mutation is performed.
