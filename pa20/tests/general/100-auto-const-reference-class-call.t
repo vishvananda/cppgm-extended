@@ -1,1 +1,0 @@
-int alive;struct S{int x;S(int v)noexcept:x(v){++alive;}S(const S&s)noexcept:x(s.x){++alive;}~S()noexcept{--alive;}};S get()noexcept{return S(3);}int main(){{const auto& s=get();if(alive!=1||s.x!=3)return 1;}return alive!=0;}

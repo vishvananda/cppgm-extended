@@ -4,12 +4,13 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **0 confirmed compiler fixes remain**. The abandoned-return
-cleanup repair is qualified below; all frozen compiler families and the
-five no-change contract reviews are closed. Strict 6135/6135 prints one line,
+Current status: **1 confirmed compiler fix remains**: BACKEND-LOWIR-RTTI-ALIAS. The abandoned-return
+cleanup repair is qualified below; the five no-change contract reviews are closed. Final pruning identified a
+missed original two-tool standalone route; direct-driver qualification did not
+cover it. Strict 6135/6135 prints one line,
 and required checks and Alpha instruction/RSS gates pass. Positive timing
 confirmations remain recorded, including constructor-default traits at
-1.15–2.36% and return cleanup multi-pack at 1.37%. Final fixture pruning and
+1.15–2.36% and return cleanup multi-pack at 1.37%. Fixture consolidation is qualified below. The serialized RTTI fix and
 combined student export/harness validation remain pending.
 
 ## Strategy review after a70d1174b — 2026-10-03
@@ -113,8 +114,9 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **0 confirmed compiler fixes** remain after
-qualification of EH-RESULT-CLEANUP (abandoned return-object destruction).
+Remaining-work count on 2026-10-04: **1 confirmed compiler fix** remains:
+BACKEND-LOWIR-RTTI-ALIAS, the original serialized standalone route missed in
+direct-driver qualification. EH-RESULT-CLEANUP is qualified.
 INHERITED-DEFAULT-EXCEPT is qualified below. The five other
 reviews require no compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 MANGLE-BOUND, ROUND and VBASE-NULL. Previously confirmed compiler families
@@ -245,7 +247,8 @@ The recent discovery inventory is not all C++11:
 | NEW-SPEC-REF | Review the PA30 replacement-new reference change against actual declarations | v4codex reference-correction201 | Done in accompanying test-only checkpoint. Clang explicitly implements named-bad_alloc acceptance as legacy compatibility, and selected libstdc++/libc++ C++11 declarations are unrestricted. The existing positive is replaced by unrestricted hosted replacement-new object emission; the independent wrong-spec negative remains. Exact ref-test generation, PA30 153/153, strict 6103/6103 in one line and placement/hygiene checks pass; the unchanged compiler entry also accepts it. No extra fixture or compiler rule is added. Combined export remains deferred. |
 | LOOP-PTR-FINITE | Preserve nontermination when an effect-free pointer loop has unproved equal residues | v4codex PA32 reference correction217, completed audit218 | Done: effect-free pointer walks require a proved odd byte stride; plain LowIR carries no C++ in-bounds promise. Include the typed element size in the stride proof. Existing course/regression references and the generated quality envelope now retain the backward even-stride loop, without changing source/status or adding fixtures. Sixty-four runtime and nine shape checks, strict 6120/6120, required qualification/audits and Alpha instruction/RSS gates pass. Combine the parity check into one branch after the first variant showed a confirmed timing cost. |
 | TEST-ADDITIONS | Complete admitted regression definitions separately from compiler fixes | User latest scope | Done for the admitted test-definition queue: thirty qualification fixtures committed in e4c80f69d, two additional passing default fixtures, and the opt-in definitions recorded in 4d375b564/6d18f7c04. At that definition checkpoint there were 56 controls covering forty-one families; 99 strict C++11 checks agreed per host, with the additional reused base-alias input exposing the documented GCC disagreement. The solution then passed 3/110 observations, exposing known failures. Subsequent approved fixes promote controls and remove their temporary copies: exception sets and private-array access in ed64e4b4b, and the standard noreturn argument rejection in the accompanying checkpoint. One independent protected-base-array access negative is added. The final tests-only checkpoint replaces the PA6 class/value declaration control with a PA7 ordinary-expression rejection control, preserving the independent PA6 typedef/value control. Both hosts pass 4/4 and explicit placement is clean. At the definition checkpoint the namespace candidate was held for cycle gates. The completed LOOKUP-NAMESPACE-MIXED fix now promotes its two existing controls under the updated qualification policy; strict passes 6111/6111 in one line. Remaining compiler fixes, final course-fixture minimization/promotion and combined export stay open. |
-| FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Pending final review after the outstanding fixes promote their controls; test definitions are complete. Inventory every added/rewritten fixture since fb15cd49e against retained coverage, including the final additions. Keep a fixture only for distinct required language/header behavior or an independently justified regression boundary; exploratory permutations and different implementation paths alone do not justify duplicates. Remove or combine overlapping fixtures while keeping independent rejection checks, earliest milestone ownership and useful failure identification. Regenerate changed references only through exact ref-test selections. Record the retain/combine/remove rationale and rerun affected suites, strict report and placement before final combined export validation. |
+| BACKEND-LOWIR-RTTI-ALIAS | Use the actual RTTI definition for an external runtime declaration with the same object identity | Original standalone audit rechecked during final pruning | Confirmed open: original and consolidated handler sources fail C++ → LowIR → lowir2native at O0/O2 with duplicate object-symbol labels. Direct compiler-driver native runs pass; those did not cover the reported serialized route. Native runtime placeholders emit the same object label as an existing explicit global. Reuse typed object identities and actual definition storage; no ABI spelling or new language feature. |
+| FIXTURE-REVIEW | Minimize added fixtures after the complete addition sequence | User final-review requirement | Qualified consolidation: 57 successful sources become six at unchanged earliest owners, retaining distinct assertions and factoring shared fault/trace harnesses. Two PA33 driver links and two optimized audit aliases each become one. All 36 focused strict C++11 Clang/GCC/solution O0/O2 executions pass; exact reference regeneration, strict 6084/6084 in one line and zero placement findings pass. Full input dispositions are linked below. The original standalone two-tool control still fails before consolidation; BACKEND-LOWIR-RTTI-ALIAS must be fixed before final export. |
 | EXPORT | Validate final combined shipped recipes, fixture discovery and quiet report | User | Pending until the fix sequence and final FIXTURE-REVIEW are complete; initial and INIT-ADDR exports already passed. |
 | HARNESS-AUDIT | Suppress an expected missing-history Git diagnostic in the rename-manifest audit | Aggregate compiler validation | Done: quiet baseline verification accepts only the expected missing-object status; genuine Git failures remain visible and fail the audit. Five focused controls and the full harness pass; successful audit stderr is empty. Strict 5993/5993 remains one final line. |
 | HARNESS-FILE | Stop counting an entire class as a function after an unrecognized constructor signature | Aggregate compiler validation | Done: both scans retire declaration-scope state before stripping an earlier inline body. A large-class control passes, a real oversized member still fails, and the full harness passes. ARCH-FUNCTION subsequently closes all eight genuine baseline size findings. |
@@ -7501,3 +7504,43 @@ neutrality claim or further retries. Preliminary candidate observations remain
 separate. Evidence: `/tmp/cppgm-v4-audit-review/return-object-cleanup/qualified-proof.json`
 and `alpha:/tmp/cppgm-v4-audit-review-20261004-return-object-cleanup-final/`.
 Final fixture minimization and combined export/harness validation remain.
+
+### Final fixture consolidation — qualified, 2026-10-04
+
+Review inventory covers every added/rewritten input since fb15cd49e, including
+companions and opt-in aliases. [Per-input dispositions](student-reference-fixture-review.md)
+retain independent rejection checks and distinct initialization/lookup/lifetime
+rules. Positive permutations share a fixture where their boundary assertions
+can remain independently observable. Class ownership, inline/loop array progress,
+copy/move operations and handler swallow/replace behavior preserve their original
+fault points and trace oracles; implementation-path differences alone are not
+the justification. No later-feature ownership is introduced.
+
+| Owner / purpose | Previous sources | Retained fixtures |
+| --- | --- | --- |
+| PA10/100 qualified lvalues | 9 | 1 |
+| PA10/200 array xvalues | 4 | 1 |
+| PA20/100 auto const-reference boundaries | 12 | 1 |
+| PA21/200 synthesized copy/move prefixes | 14 | 1 |
+| PA21/200 inner-handler construction | 11 | 1 |
+| PA21/200 aggregate prefixes | 7 | 1 |
+
+Remove 51 owning source files, one redundant PA33 link and one redundant audit
+alias. Keep the two distinct aggregate conditional/short-circuit trace checks,
+the separate function-try/local/member-template handler check, independent
+rejections, static/global initialization rules and hosted trait requirements.
+Shared harnesses also remove repeated support definitions. Preserve original
+source hashes and a mapping to each consolidated fixture, with all 36 strict
+C++11 Clang/GCC/solution O0/O2 outcomes passing. Exact selected ref-test commands
+regenerate the six owning references. Strict **6084/6084** prints exactly one
+line; placement has zero findings. No compiler code changes in this checkpoint.
+
+The opt-in standalone handler recheck exposed an error in the previous closure:
+its `C++ -> LowIR -> lowir2native` route fails with duplicate RTTI object labels
+both before and after consolidation. Direct native-driver success was insufficient
+for that original report. Retain the failed original/combined observations in
+`serialized-route-trial.json` and `updated-control-proof.json`; do not replace
+its expected successful outcome. BACKEND-LOWIR-RTTI-ALIAS is one original compiler
+bug still open, not a new speculative matrix. Its runtime declaration placeholder
+must alias the explicit global with the same typed object identity. Final export
+and combined harness validation follow that fix.

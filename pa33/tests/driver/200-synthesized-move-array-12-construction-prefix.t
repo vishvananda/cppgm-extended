@@ -1,1 +1,0 @@
-../../../pa21/tests/general/200-synthesized-move-array-12-construction-prefix.t

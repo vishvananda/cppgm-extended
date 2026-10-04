@@ -1,0 +1,3747 @@
+declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
+declare global @__external_rtti__int [role=rtti_data, binding=strong, object=_ZTIi]
+
+declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]
+declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
+declare function @__external_runtime____cxa_end_catch() -> void [role=eh_end_catch, linkage=c, binding=strong, object=__cxa_end_catch]
+declare function @__external_runtime____cxa_throw(%arg0 : ptr, %arg1 : ptr, %arg2 : ptr) -> void [return=noreturn, role=eh_throw, linkage=c, binding=strong, object=__cxa_throw]
+
+global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
+  i8 105
+  i8 0
+}
+global @__rtti_int [binding=weak, object=_ZTIi] = {
+  ptr addr @__external_rtti_vtable____fundamental_type_info + 16
+  ptr addr @__typeinfo_name__int
+}
+global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
+  zero 4
+}
+global @progress : i32 [binding=internal, object=progress] = zero
+global @limit : i32 [binding=internal, object=limit] = zero
+global @live : i32 [binding=internal, object=live] = zero
+global @trace_digest : u32 [binding=internal, object=trace_digest] = zero
+global @case_0__expected [binding=internal, object=_ZN6case_08expectedE] = {
+  u32 1988700000
+  u32 0
+  u32 32
+  u32 38048
+  u32 41611712
+  u32 2373708736
+  u32 4043241184
+}
+global @case_1__expected [binding=internal, object=_ZN6case_18expectedE] = {
+  u32 1988700000
+  u32 0
+  u32 32
+  u32 38048
+  u32 41611712
+  u32 2373708736
+  u32 4043241184
+}
+global @case_2__expected [binding=internal, object=_ZN6case_28expectedE] = {
+  u32 1378408384
+  u32 0
+  u32 32
+  u32 38048
+  u32 41611712
+  u32 2373708736
+  u32 2373708736
+  u32 4081190656
+  u32 4081190656
+  u32 4160949248
+  u32 4160949248
+  u32 1679950656
+  u32 1679950656
+  u32 149239104
+  u32 149239104
+  u32 2141989504
+  u32 2141989504
+  u32 3953503104
+  u32 3953503104
+  u32 101040320
+  u32 101040320
+  u32 3166417600
+  u32 3166417600
+  u32 2879916544
+  u32 2879916544
+  u32 3092418304
+  u32 3092418304
+  u32 404769344
+  u32 404769344
+  u32 151618624
+}
+global @case_3__expected [binding=internal, object=_ZN6case_38expectedE] = {
+  u32 4043241184
+  u32 0
+  u32 32
+  u32 38048
+  u32 41611712
+  u32 2373708736
+}
+global @case_4__expected [binding=internal, object=_ZN6case_48expectedE] = {
+  u32 1988700000
+  u32 0
+  u32 32
+  u32 38048
+  u32 41611712
+  u32 2373708736
+  u32 4043241184
+}
+global @case_5__expected [binding=internal, object=_ZN6case_58expectedE] = {
+  u32 4083490624
+  u32 0
+  u32 32
+  u32 38048
+  u32 41611712
+  u32 2373708736
+  u32 2373708736
+  u32 4083490624
+}
+global @case_6__expected [binding=internal, object=_ZN6case_68expectedE] = {
+  u32 4083490624
+  u32 0
+  u32 32
+  u32 38048
+  u32 41611712
+  u32 2373708736
+  u32 2373708736
+  u32 4081190656
+}
+
+function @next() -> i32 [binding=internal, object=_ZL4nextv] {
+  block ^entry:
+    %t1 = load i32 @progress
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @progress
+    %t3 = load i32 @limit
+    %t4 = cmp eq i32 %t2, %t3
+    branch %t4, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t5 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    %t6 = load i32 @progress
+    store i32 %t6, %t5
+    %t7 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t5, %t7, 0)
+    return i32 0
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t8 = load u32 @trace_digest
+    %t9 = binary mul u32 %t8, 33
+    %t10 = load i32 @progress
+    %t11 = copy u32 %t10
+    %t12 = binary add u32 %t9, %t11
+    store u32 %t12, @trace_digest
+    %t13 = load i32 @live
+    %t14 = binary add i32 %t13, 1
+    store i32 %t14, @live
+    %t15 = load i32 @progress
+    return i32 %t15
+}
+function @step_value() -> i32 [binding=strong, object=_Z10step_valuev] {
+  block ^entry:
+    %t1 = load i32 @progress
+    %t2 = binary add i32 %t1, 1
+    store i32 %t2, @progress
+    %t3 = load i32 @limit
+    %t4 = cmp eq i32 %t2, %t3
+    branch %t4, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    %t5 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    %t6 = load i32 @progress
+    store i32 %t6, %t5
+    %t7 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t5, %t7, 0)
+    return i32 0
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    return i32 10
+}
+function @read(%__param0 : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=strong, object=_Z4readRK1S] {
+  slot $__param0 : ptr
+
+  block ^entry:
+    store ptr %__param0, $__param0
+    %t1 = call i32 @step_value()
+    return i32 %t1
+}
+function @choice() -> i32 [binding=strong, object=_Z6choicev] {
+  block ^entry:
+    %t1 = load i32 @limit
+    %t2 = binary and i32 %t1, 1
+    return i32 %t2
+}
+function @case_0__probe() -> void [binding=strong, object=_ZN6case_05probeEv] {
+  slot $x : obj<4x4>
+  slot $h : obj<20x4>
+
+  block ^entry:
+    %t1 = addr $x
+    call void @S__S__ov2(%t1, 1)
+    %t2 = addr $h
+    %t3 = addr $x
+    eh_try ^cleanup_action_2
+    call void @case_0__H__H(%t2, %t3)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^cleanup_action_2:
+    %t4 = addr $x
+    call void @S___S(%t4)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
+    %t5 = addr $h
+    call void @case_0__H___H(%t5)
+    %t6 = addr $x
+    call void @S___S(%t6)
+    return void
+}
+function @case_0__maxstep() -> i32 [binding=strong, object=_ZN6case_07maxstepEv] {
+  block ^entry:
+    return i32 6
+}
+function @case_1__probe() -> void [binding=strong, object=_ZN6case_15probeEv] {
+  slot $x : obj<4x4>
+  slot $y : obj<4x4>
+  slot $z : obj<4x4>
+  slot $e : obj<12x4>
+
+  block ^entry:
+    %t1 = addr $x
+    call void @S__S__ov2(%t1, 1)
+    %t2 = addr $y
+    eh_try ^cleanup_action_2
+    call void @S__S__ov2(%t2, 2)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^cleanup_action_2:
+    %t3 = addr $x
+    call void @S___S(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
+    %t4 = addr $z
+    eh_try ^cleanup_action_4
+    call void @S__S__ov2(%t4, 3)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^cleanup_action_4:
+    %t5 = addr $y
+    call void @S___S(%t5)
+    jump ^cleanup_action_2
+
+  block ^call_unwind_end_5:
+    %t6 = addr $e
+    %t7 = addr $e
+    %t8 = index i8 [projection=field] %t7, 0
+    eh_try ^cleanup_action_6
+    %t9 = addr $x
+    call void @S__S__ov3(%t8, %t9)
+    eh_end
+    jump ^call_unwind_end_7
+
+  block ^cleanup_action_6:
+    %t10 = addr $z
+    call void @S___S(%t10)
+    jump ^cleanup_action_4
+
+  block ^call_unwind_end_7:
+    %t11 = addr $e
+    %t12 = index i8 [projection=field] %t11, 4
+    eh_try ^construction_cleanup_8
+    %t13 = addr $y
+    call void @S__S__ov3(%t12, %t13)
+    eh_end
+    jump ^call_unwind_end_9
+
+  block ^construction_cleanup_8:
+    call void @S___S(%t8)
+    jump ^cleanup_action_6
+
+  block ^call_unwind_end_9:
+    %t14 = addr $e
+    %t15 = index i8 [projection=field] %t14, 8
+    eh_try ^construction_cleanup_10
+    %t16 = addr $z
+    call void @S__S__ov3(%t15, %t16)
+    eh_end
+    jump ^call_unwind_end_11
+
+  block ^construction_cleanup_10:
+    call void @S___S(%t12)
+    jump ^construction_cleanup_8
+
+  block ^call_unwind_end_11:
+    %t17 = addr $e
+    %t18 = addr $e
+    call void @case_1__E_S____E(%t18)
+    %t19 = addr $z
+    call void @S___S(%t19)
+    %t20 = addr $y
+    call void @S___S(%t20)
+    %t21 = addr $x
+    call void @S___S(%t21)
+    return void
+}
+function @case_1__maxstep() -> i32 [binding=strong, object=_ZN6case_17maxstepEv] {
+  block ^entry:
+    return i32 6
+}
+function @case_2__probe() -> void [binding=strong, object=_ZN6case_25probeEv] {
+  slot $x : obj<4x4>
+  slot $y : obj<4x4>
+  slot $e : obj<60x4>
+  slot $cond__1 : i32
+  slot $call__2 : i32
+  slot $call__3 : i32
+  slot $arg__4 : obj<4x4>
+  slot $call__5 : i32
+  slot $arg__6 : obj<4x4>
+  slot $cond__7 : i32
+  slot $call__8 : i32
+  slot $call__9 : i32
+  slot $arg__10 : obj<4x4>
+  slot $call__11 : i32
+  slot $arg__12 : obj<4x4>
+  slot $cond__13 : i32
+  slot $call__14 : i32
+  slot $call__15 : i32
+  slot $arg__16 : obj<4x4>
+  slot $call__17 : i32
+  slot $arg__18 : obj<4x4>
+  slot $cond__19 : i32
+  slot $call__20 : i32
+  slot $call__21 : i32
+  slot $arg__22 : obj<4x4>
+  slot $call__23 : i32
+  slot $arg__24 : obj<4x4>
+  slot $cond__25 : i32
+  slot $call__26 : i32
+  slot $call__27 : i32
+  slot $arg__28 : obj<4x4>
+  slot $call__29 : i32
+  slot $arg__30 : obj<4x4>
+  slot $cond__31 : i32
+  slot $call__32 : i32
+  slot $call__33 : i32
+  slot $arg__34 : obj<4x4>
+  slot $call__35 : i32
+  slot $arg__36 : obj<4x4>
+  slot $cond__37 : i32
+  slot $call__38 : i32
+  slot $call__39 : i32
+  slot $arg__40 : obj<4x4>
+  slot $call__41 : i32
+  slot $arg__42 : obj<4x4>
+  slot $cond__43 : i32
+  slot $call__44 : i32
+  slot $call__45 : i32
+  slot $arg__46 : obj<4x4>
+  slot $call__47 : i32
+  slot $arg__48 : obj<4x4>
+  slot $cond__49 : i32
+  slot $call__50 : i32
+  slot $call__51 : i32
+  slot $arg__52 : obj<4x4>
+  slot $call__53 : i32
+  slot $arg__54 : obj<4x4>
+  slot $cond__55 : i32
+  slot $call__56 : i32
+  slot $call__57 : i32
+  slot $arg__58 : obj<4x4>
+  slot $call__59 : i32
+  slot $arg__60 : obj<4x4>
+  slot $cond__61 : i32
+  slot $call__62 : i32
+  slot $call__63 : i32
+  slot $arg__64 : obj<4x4>
+  slot $call__65 : i32
+  slot $arg__66 : obj<4x4>
+  slot $cond__67 : i32
+  slot $call__68 : i32
+  slot $call__69 : i32
+  slot $arg__70 : obj<4x4>
+  slot $call__71 : i32
+  slot $arg__72 : obj<4x4>
+  slot $call__73 : i32
+  slot $lifetime__74 : u8
+  slot $lifetime__75 : u8
+  slot $lifetime__76 : u8
+  slot $lifetime__77 : u8
+  slot $lifetime__78 : u8
+  slot $lifetime__79 : u8
+  slot $lifetime__80 : u8
+  slot $lifetime__81 : u8
+  slot $lifetime__82 : u8
+  slot $lifetime__83 : u8
+  slot $lifetime__84 : u8
+  slot $lifetime__85 : u8
+  slot $lifetime__86 : u8
+  slot $lifetime__87 : u8
+  slot $lifetime__88 : u8
+  slot $lifetime__89 : u8
+  slot $lifetime__90 : u8
+  slot $lifetime__91 : u8
+  slot $lifetime__92 : u8
+  slot $lifetime__93 : u8
+  slot $lifetime__94 : u8
+  slot $lifetime__95 : u8
+  slot $lifetime__96 : u8
+  slot $lifetime__97 : u8
+
+  block ^entry:
+    %t1 = addr $x
+    call void @S__S__ov2(%t1, 1)
+    %t2 = addr $y
+    eh_try ^cleanup_action_2
+    call void @S__S__ov2(%t2, 2)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^cleanup_action_2:
+    %t3 = addr $x
+    call void @S___S(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
+    store u8 0, $lifetime__74
+    store u8 0, $lifetime__75
+    store u8 0, $lifetime__76
+    store u8 0, $lifetime__77
+    store u8 0, $lifetime__78
+    store u8 0, $lifetime__79
+    store u8 0, $lifetime__80
+    store u8 0, $lifetime__81
+    store u8 0, $lifetime__82
+    store u8 0, $lifetime__83
+    store u8 0, $lifetime__84
+    store u8 0, $lifetime__85
+    store u8 0, $lifetime__86
+    store u8 0, $lifetime__87
+    store u8 0, $lifetime__88
+    store u8 0, $lifetime__89
+    store u8 0, $lifetime__90
+    store u8 0, $lifetime__91
+    store u8 0, $lifetime__92
+    store u8 0, $lifetime__93
+    store u8 0, $lifetime__94
+    store u8 0, $lifetime__95
+    store u8 0, $lifetime__96
+    store u8 0, $lifetime__97
+    %t54 = addr $e
+    %t55 = addr $e
+    %t56 = index i8 [projection=field] %t55, 0
+    eh_try ^cleanup_action_79
+    %t57 = addr $x
+    call void @S__S__ov3(%t56, %t57)
+    eh_end
+    jump ^call_unwind_end_80
+
+  block ^conditional_cleanup_resume_4:
+    resume
+
+  block ^conditional_cleanup_dispatch_5:
+    %t4 = addr $x
+    call void @S___S(%t4)
+    jump ^conditional_cleanup_resume_4
+
+  block ^conditional_cleanup_dispatch_6:
+    %t5 = addr $y
+    call void @S___S(%t5)
+    jump ^conditional_cleanup_dispatch_5
+
+  block ^conditional_cleanup_dispatch_7:
+    %t6 = load u8 $lifetime__97
+    branch %t6, ^conditional_temporary_destroy_8, ^conditional_temporary_done_9
+
+  block ^conditional_temporary_destroy_8:
+    store u8 0, $lifetime__97
+    %t7 = addr $arg__4
+    call void @S___S(%t7)
+    jump ^conditional_temporary_done_9
+
+  block ^conditional_temporary_done_9:
+    jump ^conditional_cleanup_dispatch_6
+
+  block ^conditional_cleanup_dispatch_10:
+    %t8 = load u8 $lifetime__96
+    branch %t8, ^conditional_temporary_destroy_11, ^conditional_temporary_done_12
+
+  block ^conditional_temporary_destroy_11:
+    store u8 0, $lifetime__96
+    %t9 = addr $arg__6
+    call void @S___S(%t9)
+    jump ^conditional_temporary_done_12
+
+  block ^conditional_temporary_done_12:
+    jump ^conditional_cleanup_dispatch_7
+
+  block ^conditional_cleanup_dispatch_13:
+    %t10 = load u8 $lifetime__95
+    branch %t10, ^conditional_temporary_destroy_14, ^conditional_temporary_done_15
+
+  block ^conditional_temporary_destroy_14:
+    store u8 0, $lifetime__95
+    %t11 = addr $arg__10
+    call void @S___S(%t11)
+    jump ^conditional_temporary_done_15
+
+  block ^conditional_temporary_done_15:
+    jump ^conditional_cleanup_dispatch_10
+
+  block ^conditional_cleanup_dispatch_16:
+    %t12 = load u8 $lifetime__94
+    branch %t12, ^conditional_temporary_destroy_17, ^conditional_temporary_done_18
+
+  block ^conditional_temporary_destroy_17:
+    store u8 0, $lifetime__94
+    %t13 = addr $arg__12
+    call void @S___S(%t13)
+    jump ^conditional_temporary_done_18
+
+  block ^conditional_temporary_done_18:
+    jump ^conditional_cleanup_dispatch_13
+
+  block ^conditional_cleanup_dispatch_19:
+    %t14 = load u8 $lifetime__93
+    branch %t14, ^conditional_temporary_destroy_20, ^conditional_temporary_done_21
+
+  block ^conditional_temporary_destroy_20:
+    store u8 0, $lifetime__93
+    %t15 = addr $arg__16
+    call void @S___S(%t15)
+    jump ^conditional_temporary_done_21
+
+  block ^conditional_temporary_done_21:
+    jump ^conditional_cleanup_dispatch_16
+
+  block ^conditional_cleanup_dispatch_22:
+    %t16 = load u8 $lifetime__92
+    branch %t16, ^conditional_temporary_destroy_23, ^conditional_temporary_done_24
+
+  block ^conditional_temporary_destroy_23:
+    store u8 0, $lifetime__92
+    %t17 = addr $arg__18
+    call void @S___S(%t17)
+    jump ^conditional_temporary_done_24
+
+  block ^conditional_temporary_done_24:
+    jump ^conditional_cleanup_dispatch_19
+
+  block ^conditional_cleanup_dispatch_25:
+    %t18 = load u8 $lifetime__91
+    branch %t18, ^conditional_temporary_destroy_26, ^conditional_temporary_done_27
+
+  block ^conditional_temporary_destroy_26:
+    store u8 0, $lifetime__91
+    %t19 = addr $arg__22
+    call void @S___S(%t19)
+    jump ^conditional_temporary_done_27
+
+  block ^conditional_temporary_done_27:
+    jump ^conditional_cleanup_dispatch_22
+
+  block ^conditional_cleanup_dispatch_28:
+    %t20 = load u8 $lifetime__90
+    branch %t20, ^conditional_temporary_destroy_29, ^conditional_temporary_done_30
+
+  block ^conditional_temporary_destroy_29:
+    store u8 0, $lifetime__90
+    %t21 = addr $arg__24
+    call void @S___S(%t21)
+    jump ^conditional_temporary_done_30
+
+  block ^conditional_temporary_done_30:
+    jump ^conditional_cleanup_dispatch_25
+
+  block ^conditional_cleanup_dispatch_31:
+    %t22 = load u8 $lifetime__89
+    branch %t22, ^conditional_temporary_destroy_32, ^conditional_temporary_done_33
+
+  block ^conditional_temporary_destroy_32:
+    store u8 0, $lifetime__89
+    %t23 = addr $arg__28
+    call void @S___S(%t23)
+    jump ^conditional_temporary_done_33
+
+  block ^conditional_temporary_done_33:
+    jump ^conditional_cleanup_dispatch_28
+
+  block ^conditional_cleanup_dispatch_34:
+    %t24 = load u8 $lifetime__88
+    branch %t24, ^conditional_temporary_destroy_35, ^conditional_temporary_done_36
+
+  block ^conditional_temporary_destroy_35:
+    store u8 0, $lifetime__88
+    %t25 = addr $arg__30
+    call void @S___S(%t25)
+    jump ^conditional_temporary_done_36
+
+  block ^conditional_temporary_done_36:
+    jump ^conditional_cleanup_dispatch_31
+
+  block ^conditional_cleanup_dispatch_37:
+    %t26 = load u8 $lifetime__87
+    branch %t26, ^conditional_temporary_destroy_38, ^conditional_temporary_done_39
+
+  block ^conditional_temporary_destroy_38:
+    store u8 0, $lifetime__87
+    %t27 = addr $arg__34
+    call void @S___S(%t27)
+    jump ^conditional_temporary_done_39
+
+  block ^conditional_temporary_done_39:
+    jump ^conditional_cleanup_dispatch_34
+
+  block ^conditional_cleanup_dispatch_40:
+    %t28 = load u8 $lifetime__86
+    branch %t28, ^conditional_temporary_destroy_41, ^conditional_temporary_done_42
+
+  block ^conditional_temporary_destroy_41:
+    store u8 0, $lifetime__86
+    %t29 = addr $arg__36
+    call void @S___S(%t29)
+    jump ^conditional_temporary_done_42
+
+  block ^conditional_temporary_done_42:
+    jump ^conditional_cleanup_dispatch_37
+
+  block ^conditional_cleanup_dispatch_43:
+    %t30 = load u8 $lifetime__85
+    branch %t30, ^conditional_temporary_destroy_44, ^conditional_temporary_done_45
+
+  block ^conditional_temporary_destroy_44:
+    store u8 0, $lifetime__85
+    %t31 = addr $arg__40
+    call void @S___S(%t31)
+    jump ^conditional_temporary_done_45
+
+  block ^conditional_temporary_done_45:
+    jump ^conditional_cleanup_dispatch_40
+
+  block ^conditional_cleanup_dispatch_46:
+    %t32 = load u8 $lifetime__84
+    branch %t32, ^conditional_temporary_destroy_47, ^conditional_temporary_done_48
+
+  block ^conditional_temporary_destroy_47:
+    store u8 0, $lifetime__84
+    %t33 = addr $arg__42
+    call void @S___S(%t33)
+    jump ^conditional_temporary_done_48
+
+  block ^conditional_temporary_done_48:
+    jump ^conditional_cleanup_dispatch_43
+
+  block ^conditional_cleanup_dispatch_49:
+    %t34 = load u8 $lifetime__83
+    branch %t34, ^conditional_temporary_destroy_50, ^conditional_temporary_done_51
+
+  block ^conditional_temporary_destroy_50:
+    store u8 0, $lifetime__83
+    %t35 = addr $arg__46
+    call void @S___S(%t35)
+    jump ^conditional_temporary_done_51
+
+  block ^conditional_temporary_done_51:
+    jump ^conditional_cleanup_dispatch_46
+
+  block ^conditional_cleanup_dispatch_52:
+    %t36 = load u8 $lifetime__82
+    branch %t36, ^conditional_temporary_destroy_53, ^conditional_temporary_done_54
+
+  block ^conditional_temporary_destroy_53:
+    store u8 0, $lifetime__82
+    %t37 = addr $arg__48
+    call void @S___S(%t37)
+    jump ^conditional_temporary_done_54
+
+  block ^conditional_temporary_done_54:
+    jump ^conditional_cleanup_dispatch_49
+
+  block ^conditional_cleanup_dispatch_55:
+    %t38 = load u8 $lifetime__81
+    branch %t38, ^conditional_temporary_destroy_56, ^conditional_temporary_done_57
+
+  block ^conditional_temporary_destroy_56:
+    store u8 0, $lifetime__81
+    %t39 = addr $arg__52
+    call void @S___S(%t39)
+    jump ^conditional_temporary_done_57
+
+  block ^conditional_temporary_done_57:
+    jump ^conditional_cleanup_dispatch_52
+
+  block ^conditional_cleanup_dispatch_58:
+    %t40 = load u8 $lifetime__80
+    branch %t40, ^conditional_temporary_destroy_59, ^conditional_temporary_done_60
+
+  block ^conditional_temporary_destroy_59:
+    store u8 0, $lifetime__80
+    %t41 = addr $arg__54
+    call void @S___S(%t41)
+    jump ^conditional_temporary_done_60
+
+  block ^conditional_temporary_done_60:
+    jump ^conditional_cleanup_dispatch_55
+
+  block ^conditional_cleanup_dispatch_61:
+    %t42 = load u8 $lifetime__79
+    branch %t42, ^conditional_temporary_destroy_62, ^conditional_temporary_done_63
+
+  block ^conditional_temporary_destroy_62:
+    store u8 0, $lifetime__79
+    %t43 = addr $arg__58
+    call void @S___S(%t43)
+    jump ^conditional_temporary_done_63
+
+  block ^conditional_temporary_done_63:
+    jump ^conditional_cleanup_dispatch_58
+
+  block ^conditional_cleanup_dispatch_64:
+    %t44 = load u8 $lifetime__78
+    branch %t44, ^conditional_temporary_destroy_65, ^conditional_temporary_done_66
+
+  block ^conditional_temporary_destroy_65:
+    store u8 0, $lifetime__78
+    %t45 = addr $arg__60
+    call void @S___S(%t45)
+    jump ^conditional_temporary_done_66
+
+  block ^conditional_temporary_done_66:
+    jump ^conditional_cleanup_dispatch_61
+
+  block ^conditional_cleanup_dispatch_67:
+    %t46 = load u8 $lifetime__77
+    branch %t46, ^conditional_temporary_destroy_68, ^conditional_temporary_done_69
+
+  block ^conditional_temporary_destroy_68:
+    store u8 0, $lifetime__77
+    %t47 = addr $arg__64
+    call void @S___S(%t47)
+    jump ^conditional_temporary_done_69
+
+  block ^conditional_temporary_done_69:
+    jump ^conditional_cleanup_dispatch_64
+
+  block ^conditional_cleanup_dispatch_70:
+    %t48 = load u8 $lifetime__76
+    branch %t48, ^conditional_temporary_destroy_71, ^conditional_temporary_done_72
+
+  block ^conditional_temporary_destroy_71:
+    store u8 0, $lifetime__76
+    %t49 = addr $arg__66
+    call void @S___S(%t49)
+    jump ^conditional_temporary_done_72
+
+  block ^conditional_temporary_done_72:
+    jump ^conditional_cleanup_dispatch_67
+
+  block ^conditional_cleanup_dispatch_73:
+    %t50 = load u8 $lifetime__75
+    branch %t50, ^conditional_temporary_destroy_74, ^conditional_temporary_done_75
+
+  block ^conditional_temporary_destroy_74:
+    store u8 0, $lifetime__75
+    %t51 = addr $arg__70
+    call void @S___S(%t51)
+    jump ^conditional_temporary_done_75
+
+  block ^conditional_temporary_done_75:
+    jump ^conditional_cleanup_dispatch_70
+
+  block ^conditional_cleanup_dispatch_76:
+    %t52 = load u8 $lifetime__74
+    branch %t52, ^conditional_temporary_destroy_77, ^conditional_temporary_done_78
+
+  block ^conditional_temporary_destroy_77:
+    store u8 0, $lifetime__74
+    %t53 = addr $arg__72
+    call void @S___S(%t53)
+    jump ^conditional_temporary_done_78
+
+  block ^conditional_temporary_done_78:
+    jump ^conditional_cleanup_dispatch_73
+
+  block ^cleanup_action_79:
+    %t58 = addr $y
+    call void @S___S(%t58)
+    jump ^cleanup_action_2
+
+  block ^call_unwind_end_80:
+    %t59 = addr $e
+    %t60 = index i8 [projection=field] %t59, 4
+    %t61 = index i32 [projection=array_element] %t60, 0
+    eh_try ^construction_cleanup_84
+    %t62 = call i32 @choice()
+    store i32 %t62, $call__2
+    %t63 = load i32 $call__2
+    eh_end
+    jump ^call_unwind_end_85
+
+  block ^construction_cleanup_84:
+    call void @S___S(%t56)
+    jump ^cleanup_action_79
+
+  block ^call_unwind_end_85:
+    branch %t63, ^cond_then_81, ^cond_else_82
+
+  block ^cond_then_81:
+    eh_try ^construction_cleanup_84
+    %t64 = addr $arg__4
+    call void @S__S__ov2(%t64, 0)
+    store u8 1, $lifetime__97
+    eh_end
+    eh_try ^construction_cleanup_86
+    %t65 = call i32 @read(%t64)
+    store i32 %t65, $call__3
+    %t66 = load i32 $call__3
+    store i32 %t66, $cond__1
+    eh_end
+    jump ^call_unwind_end_87
+
+  block ^construction_cleanup_86:
+    %t67 = load u8 $lifetime__97
+    branch %t67, ^conditional_temporary_destroy_88, ^conditional_temporary_done_89
+
+  block ^conditional_temporary_destroy_88:
+    store u8 0, $lifetime__97
+    %t68 = addr $arg__4
+    call void @S___S(%t68)
+    jump ^conditional_temporary_done_89
+
+  block ^conditional_temporary_done_89:
+    jump ^construction_cleanup_84
+
+  block ^call_unwind_end_87:
+    jump ^cond_end_83
+
+  block ^cond_else_82:
+    eh_try ^construction_cleanup_86
+    %t69 = addr $arg__6
+    call void @S__S__ov2(%t69, 100)
+    store u8 1, $lifetime__96
+    eh_end
+    eh_try ^construction_cleanup_90
+    %t70 = call i32 @read(%t69)
+    store i32 %t70, $call__5
+    %t71 = load i32 $call__5
+    store i32 %t71, $cond__1
+    eh_end
+    jump ^call_unwind_end_91
+
+  block ^construction_cleanup_90:
+    %t72 = load u8 $lifetime__96
+    branch %t72, ^conditional_temporary_destroy_92, ^conditional_temporary_done_93
+
+  block ^conditional_temporary_destroy_92:
+    store u8 0, $lifetime__96
+    %t73 = addr $arg__6
+    call void @S___S(%t73)
+    jump ^conditional_temporary_done_93
+
+  block ^conditional_temporary_done_93:
+    jump ^construction_cleanup_86
+
+  block ^call_unwind_end_91:
+    jump ^cond_end_83
+
+  block ^cond_end_83:
+    %t74 = load i32 $cond__1
+    store i32 %t74, %t61
+    %t75 = index i32 [projection=array_element] %t60, 1
+    eh_try ^construction_cleanup_90
+    %t76 = call i32 @choice()
+    store i32 %t76, $call__8
+    %t77 = load i32 $call__8
+    eh_end
+    branch %t77, ^cond_then_94, ^cond_else_95
+
+  block ^cond_then_94:
+    eh_try ^construction_cleanup_90
+    %t78 = addr $arg__10
+    call void @S__S__ov2(%t78, 1)
+    store u8 1, $lifetime__95
+    eh_end
+    eh_try ^construction_cleanup_97
+    %t79 = call i32 @read(%t78)
+    store i32 %t79, $call__9
+    %t80 = load i32 $call__9
+    store i32 %t80, $cond__7
+    eh_end
+    jump ^call_unwind_end_98
+
+  block ^construction_cleanup_97:
+    %t81 = load u8 $lifetime__95
+    branch %t81, ^conditional_temporary_destroy_99, ^conditional_temporary_done_100
+
+  block ^conditional_temporary_destroy_99:
+    store u8 0, $lifetime__95
+    %t82 = addr $arg__10
+    call void @S___S(%t82)
+    jump ^conditional_temporary_done_100
+
+  block ^conditional_temporary_done_100:
+    jump ^construction_cleanup_90
+
+  block ^call_unwind_end_98:
+    jump ^cond_end_96
+
+  block ^cond_else_95:
+    eh_try ^construction_cleanup_97
+    %t83 = addr $arg__12
+    call void @S__S__ov2(%t83, 101)
+    store u8 1, $lifetime__94
+    eh_end
+    eh_try ^construction_cleanup_101
+    %t84 = call i32 @read(%t83)
+    store i32 %t84, $call__11
+    %t85 = load i32 $call__11
+    store i32 %t85, $cond__7
+    eh_end
+    jump ^call_unwind_end_102
+
+  block ^construction_cleanup_101:
+    %t86 = load u8 $lifetime__94
+    branch %t86, ^conditional_temporary_destroy_103, ^conditional_temporary_done_104
+
+  block ^conditional_temporary_destroy_103:
+    store u8 0, $lifetime__94
+    %t87 = addr $arg__12
+    call void @S___S(%t87)
+    jump ^conditional_temporary_done_104
+
+  block ^conditional_temporary_done_104:
+    jump ^construction_cleanup_97
+
+  block ^call_unwind_end_102:
+    jump ^cond_end_96
+
+  block ^cond_end_96:
+    %t88 = load i32 $cond__7
+    store i32 %t88, %t75
+    %t89 = index i32 [projection=array_element] %t60, 2
+    eh_try ^construction_cleanup_101
+    %t90 = call i32 @choice()
+    store i32 %t90, $call__14
+    %t91 = load i32 $call__14
+    eh_end
+    branch %t91, ^cond_then_105, ^cond_else_106
+
+  block ^cond_then_105:
+    eh_try ^construction_cleanup_101
+    %t92 = addr $arg__16
+    call void @S__S__ov2(%t92, 2)
+    store u8 1, $lifetime__93
+    eh_end
+    eh_try ^construction_cleanup_108
+    %t93 = call i32 @read(%t92)
+    store i32 %t93, $call__15
+    %t94 = load i32 $call__15
+    store i32 %t94, $cond__13
+    eh_end
+    jump ^call_unwind_end_109
+
+  block ^construction_cleanup_108:
+    %t95 = load u8 $lifetime__93
+    branch %t95, ^conditional_temporary_destroy_110, ^conditional_temporary_done_111
+
+  block ^conditional_temporary_destroy_110:
+    store u8 0, $lifetime__93
+    %t96 = addr $arg__16
+    call void @S___S(%t96)
+    jump ^conditional_temporary_done_111
+
+  block ^conditional_temporary_done_111:
+    jump ^construction_cleanup_101
+
+  block ^call_unwind_end_109:
+    jump ^cond_end_107
+
+  block ^cond_else_106:
+    eh_try ^construction_cleanup_108
+    %t97 = addr $arg__18
+    call void @S__S__ov2(%t97, 102)
+    store u8 1, $lifetime__92
+    eh_end
+    eh_try ^construction_cleanup_112
+    %t98 = call i32 @read(%t97)
+    store i32 %t98, $call__17
+    %t99 = load i32 $call__17
+    store i32 %t99, $cond__13
+    eh_end
+    jump ^call_unwind_end_113
+
+  block ^construction_cleanup_112:
+    %t100 = load u8 $lifetime__92
+    branch %t100, ^conditional_temporary_destroy_114, ^conditional_temporary_done_115
+
+  block ^conditional_temporary_destroy_114:
+    store u8 0, $lifetime__92
+    %t101 = addr $arg__18
+    call void @S___S(%t101)
+    jump ^conditional_temporary_done_115
+
+  block ^conditional_temporary_done_115:
+    jump ^construction_cleanup_108
+
+  block ^call_unwind_end_113:
+    jump ^cond_end_107
+
+  block ^cond_end_107:
+    %t102 = load i32 $cond__13
+    store i32 %t102, %t89
+    %t103 = index i32 [projection=array_element] %t60, 3
+    eh_try ^construction_cleanup_112
+    %t104 = call i32 @choice()
+    store i32 %t104, $call__20
+    %t105 = load i32 $call__20
+    eh_end
+    branch %t105, ^cond_then_116, ^cond_else_117
+
+  block ^cond_then_116:
+    eh_try ^construction_cleanup_112
+    %t106 = addr $arg__22
+    call void @S__S__ov2(%t106, 3)
+    store u8 1, $lifetime__91
+    eh_end
+    eh_try ^construction_cleanup_119
+    %t107 = call i32 @read(%t106)
+    store i32 %t107, $call__21
+    %t108 = load i32 $call__21
+    store i32 %t108, $cond__19
+    eh_end
+    jump ^call_unwind_end_120
+
+  block ^construction_cleanup_119:
+    %t109 = load u8 $lifetime__91
+    branch %t109, ^conditional_temporary_destroy_121, ^conditional_temporary_done_122
+
+  block ^conditional_temporary_destroy_121:
+    store u8 0, $lifetime__91
+    %t110 = addr $arg__22
+    call void @S___S(%t110)
+    jump ^conditional_temporary_done_122
+
+  block ^conditional_temporary_done_122:
+    jump ^construction_cleanup_112
+
+  block ^call_unwind_end_120:
+    jump ^cond_end_118
+
+  block ^cond_else_117:
+    eh_try ^construction_cleanup_119
+    %t111 = addr $arg__24
+    call void @S__S__ov2(%t111, 103)
+    store u8 1, $lifetime__90
+    eh_end
+    eh_try ^construction_cleanup_123
+    %t112 = call i32 @read(%t111)
+    store i32 %t112, $call__23
+    %t113 = load i32 $call__23
+    store i32 %t113, $cond__19
+    eh_end
+    jump ^call_unwind_end_124
+
+  block ^construction_cleanup_123:
+    %t114 = load u8 $lifetime__90
+    branch %t114, ^conditional_temporary_destroy_125, ^conditional_temporary_done_126
+
+  block ^conditional_temporary_destroy_125:
+    store u8 0, $lifetime__90
+    %t115 = addr $arg__24
+    call void @S___S(%t115)
+    jump ^conditional_temporary_done_126
+
+  block ^conditional_temporary_done_126:
+    jump ^construction_cleanup_119
+
+  block ^call_unwind_end_124:
+    jump ^cond_end_118
+
+  block ^cond_end_118:
+    %t116 = load i32 $cond__19
+    store i32 %t116, %t103
+    %t117 = index i32 [projection=array_element] %t60, 4
+    eh_try ^construction_cleanup_123
+    %t118 = call i32 @choice()
+    store i32 %t118, $call__26
+    %t119 = load i32 $call__26
+    eh_end
+    branch %t119, ^cond_then_127, ^cond_else_128
+
+  block ^cond_then_127:
+    eh_try ^construction_cleanup_123
+    %t120 = addr $arg__28
+    call void @S__S__ov2(%t120, 4)
+    store u8 1, $lifetime__89
+    eh_end
+    eh_try ^construction_cleanup_130
+    %t121 = call i32 @read(%t120)
+    store i32 %t121, $call__27
+    %t122 = load i32 $call__27
+    store i32 %t122, $cond__25
+    eh_end
+    jump ^call_unwind_end_131
+
+  block ^construction_cleanup_130:
+    %t123 = load u8 $lifetime__89
+    branch %t123, ^conditional_temporary_destroy_132, ^conditional_temporary_done_133
+
+  block ^conditional_temporary_destroy_132:
+    store u8 0, $lifetime__89
+    %t124 = addr $arg__28
+    call void @S___S(%t124)
+    jump ^conditional_temporary_done_133
+
+  block ^conditional_temporary_done_133:
+    jump ^construction_cleanup_123
+
+  block ^call_unwind_end_131:
+    jump ^cond_end_129
+
+  block ^cond_else_128:
+    eh_try ^construction_cleanup_130
+    %t125 = addr $arg__30
+    call void @S__S__ov2(%t125, 104)
+    store u8 1, $lifetime__88
+    eh_end
+    eh_try ^construction_cleanup_134
+    %t126 = call i32 @read(%t125)
+    store i32 %t126, $call__29
+    %t127 = load i32 $call__29
+    store i32 %t127, $cond__25
+    eh_end
+    jump ^call_unwind_end_135
+
+  block ^construction_cleanup_134:
+    %t128 = load u8 $lifetime__88
+    branch %t128, ^conditional_temporary_destroy_136, ^conditional_temporary_done_137
+
+  block ^conditional_temporary_destroy_136:
+    store u8 0, $lifetime__88
+    %t129 = addr $arg__30
+    call void @S___S(%t129)
+    jump ^conditional_temporary_done_137
+
+  block ^conditional_temporary_done_137:
+    jump ^construction_cleanup_130
+
+  block ^call_unwind_end_135:
+    jump ^cond_end_129
+
+  block ^cond_end_129:
+    %t130 = load i32 $cond__25
+    store i32 %t130, %t117
+    %t131 = index i32 [projection=array_element] %t60, 5
+    eh_try ^construction_cleanup_134
+    %t132 = call i32 @choice()
+    store i32 %t132, $call__32
+    %t133 = load i32 $call__32
+    eh_end
+    branch %t133, ^cond_then_138, ^cond_else_139
+
+  block ^cond_then_138:
+    eh_try ^construction_cleanup_134
+    %t134 = addr $arg__34
+    call void @S__S__ov2(%t134, 5)
+    store u8 1, $lifetime__87
+    eh_end
+    eh_try ^construction_cleanup_141
+    %t135 = call i32 @read(%t134)
+    store i32 %t135, $call__33
+    %t136 = load i32 $call__33
+    store i32 %t136, $cond__31
+    eh_end
+    jump ^call_unwind_end_142
+
+  block ^construction_cleanup_141:
+    %t137 = load u8 $lifetime__87
+    branch %t137, ^conditional_temporary_destroy_143, ^conditional_temporary_done_144
+
+  block ^conditional_temporary_destroy_143:
+    store u8 0, $lifetime__87
+    %t138 = addr $arg__34
+    call void @S___S(%t138)
+    jump ^conditional_temporary_done_144
+
+  block ^conditional_temporary_done_144:
+    jump ^construction_cleanup_134
+
+  block ^call_unwind_end_142:
+    jump ^cond_end_140
+
+  block ^cond_else_139:
+    eh_try ^construction_cleanup_141
+    %t139 = addr $arg__36
+    call void @S__S__ov2(%t139, 105)
+    store u8 1, $lifetime__86
+    eh_end
+    eh_try ^construction_cleanup_145
+    %t140 = call i32 @read(%t139)
+    store i32 %t140, $call__35
+    %t141 = load i32 $call__35
+    store i32 %t141, $cond__31
+    eh_end
+    jump ^call_unwind_end_146
+
+  block ^construction_cleanup_145:
+    %t142 = load u8 $lifetime__86
+    branch %t142, ^conditional_temporary_destroy_147, ^conditional_temporary_done_148
+
+  block ^conditional_temporary_destroy_147:
+    store u8 0, $lifetime__86
+    %t143 = addr $arg__36
+    call void @S___S(%t143)
+    jump ^conditional_temporary_done_148
+
+  block ^conditional_temporary_done_148:
+    jump ^construction_cleanup_141
+
+  block ^call_unwind_end_146:
+    jump ^cond_end_140
+
+  block ^cond_end_140:
+    %t144 = load i32 $cond__31
+    store i32 %t144, %t131
+    %t145 = index i32 [projection=array_element] %t60, 6
+    eh_try ^construction_cleanup_145
+    %t146 = call i32 @choice()
+    store i32 %t146, $call__38
+    %t147 = load i32 $call__38
+    eh_end
+    branch %t147, ^cond_then_149, ^cond_else_150
+
+  block ^cond_then_149:
+    eh_try ^construction_cleanup_145
+    %t148 = addr $arg__40
+    call void @S__S__ov2(%t148, 6)
+    store u8 1, $lifetime__85
+    eh_end
+    eh_try ^construction_cleanup_152
+    %t149 = call i32 @read(%t148)
+    store i32 %t149, $call__39
+    %t150 = load i32 $call__39
+    store i32 %t150, $cond__37
+    eh_end
+    jump ^call_unwind_end_153
+
+  block ^construction_cleanup_152:
+    %t151 = load u8 $lifetime__85
+    branch %t151, ^conditional_temporary_destroy_154, ^conditional_temporary_done_155
+
+  block ^conditional_temporary_destroy_154:
+    store u8 0, $lifetime__85
+    %t152 = addr $arg__40
+    call void @S___S(%t152)
+    jump ^conditional_temporary_done_155
+
+  block ^conditional_temporary_done_155:
+    jump ^construction_cleanup_145
+
+  block ^call_unwind_end_153:
+    jump ^cond_end_151
+
+  block ^cond_else_150:
+    eh_try ^construction_cleanup_152
+    %t153 = addr $arg__42
+    call void @S__S__ov2(%t153, 106)
+    store u8 1, $lifetime__84
+    eh_end
+    eh_try ^construction_cleanup_156
+    %t154 = call i32 @read(%t153)
+    store i32 %t154, $call__41
+    %t155 = load i32 $call__41
+    store i32 %t155, $cond__37
+    eh_end
+    jump ^call_unwind_end_157
+
+  block ^construction_cleanup_156:
+    %t156 = load u8 $lifetime__84
+    branch %t156, ^conditional_temporary_destroy_158, ^conditional_temporary_done_159
+
+  block ^conditional_temporary_destroy_158:
+    store u8 0, $lifetime__84
+    %t157 = addr $arg__42
+    call void @S___S(%t157)
+    jump ^conditional_temporary_done_159
+
+  block ^conditional_temporary_done_159:
+    jump ^construction_cleanup_152
+
+  block ^call_unwind_end_157:
+    jump ^cond_end_151
+
+  block ^cond_end_151:
+    %t158 = load i32 $cond__37
+    store i32 %t158, %t145
+    %t159 = index i32 [projection=array_element] %t60, 7
+    eh_try ^construction_cleanup_156
+    %t160 = call i32 @choice()
+    store i32 %t160, $call__44
+    %t161 = load i32 $call__44
+    eh_end
+    branch %t161, ^cond_then_160, ^cond_else_161
+
+  block ^cond_then_160:
+    eh_try ^construction_cleanup_156
+    %t162 = addr $arg__46
+    call void @S__S__ov2(%t162, 7)
+    store u8 1, $lifetime__83
+    eh_end
+    eh_try ^construction_cleanup_163
+    %t163 = call i32 @read(%t162)
+    store i32 %t163, $call__45
+    %t164 = load i32 $call__45
+    store i32 %t164, $cond__43
+    eh_end
+    jump ^call_unwind_end_164
+
+  block ^construction_cleanup_163:
+    %t165 = load u8 $lifetime__83
+    branch %t165, ^conditional_temporary_destroy_165, ^conditional_temporary_done_166
+
+  block ^conditional_temporary_destroy_165:
+    store u8 0, $lifetime__83
+    %t166 = addr $arg__46
+    call void @S___S(%t166)
+    jump ^conditional_temporary_done_166
+
+  block ^conditional_temporary_done_166:
+    jump ^construction_cleanup_156
+
+  block ^call_unwind_end_164:
+    jump ^cond_end_162
+
+  block ^cond_else_161:
+    eh_try ^construction_cleanup_163
+    %t167 = addr $arg__48
+    call void @S__S__ov2(%t167, 107)
+    store u8 1, $lifetime__82
+    eh_end
+    eh_try ^construction_cleanup_167
+    %t168 = call i32 @read(%t167)
+    store i32 %t168, $call__47
+    %t169 = load i32 $call__47
+    store i32 %t169, $cond__43
+    eh_end
+    jump ^call_unwind_end_168
+
+  block ^construction_cleanup_167:
+    %t170 = load u8 $lifetime__82
+    branch %t170, ^conditional_temporary_destroy_169, ^conditional_temporary_done_170
+
+  block ^conditional_temporary_destroy_169:
+    store u8 0, $lifetime__82
+    %t171 = addr $arg__48
+    call void @S___S(%t171)
+    jump ^conditional_temporary_done_170
+
+  block ^conditional_temporary_done_170:
+    jump ^construction_cleanup_163
+
+  block ^call_unwind_end_168:
+    jump ^cond_end_162
+
+  block ^cond_end_162:
+    %t172 = load i32 $cond__43
+    store i32 %t172, %t159
+    %t173 = index i32 [projection=array_element] %t60, 8
+    eh_try ^construction_cleanup_167
+    %t174 = call i32 @choice()
+    store i32 %t174, $call__50
+    %t175 = load i32 $call__50
+    eh_end
+    branch %t175, ^cond_then_171, ^cond_else_172
+
+  block ^cond_then_171:
+    eh_try ^construction_cleanup_167
+    %t176 = addr $arg__52
+    call void @S__S__ov2(%t176, 8)
+    store u8 1, $lifetime__81
+    eh_end
+    eh_try ^construction_cleanup_174
+    %t177 = call i32 @read(%t176)
+    store i32 %t177, $call__51
+    %t178 = load i32 $call__51
+    store i32 %t178, $cond__49
+    eh_end
+    jump ^call_unwind_end_175
+
+  block ^construction_cleanup_174:
+    %t179 = load u8 $lifetime__81
+    branch %t179, ^conditional_temporary_destroy_176, ^conditional_temporary_done_177
+
+  block ^conditional_temporary_destroy_176:
+    store u8 0, $lifetime__81
+    %t180 = addr $arg__52
+    call void @S___S(%t180)
+    jump ^conditional_temporary_done_177
+
+  block ^conditional_temporary_done_177:
+    jump ^construction_cleanup_167
+
+  block ^call_unwind_end_175:
+    jump ^cond_end_173
+
+  block ^cond_else_172:
+    eh_try ^construction_cleanup_174
+    %t181 = addr $arg__54
+    call void @S__S__ov2(%t181, 108)
+    store u8 1, $lifetime__80
+    eh_end
+    eh_try ^construction_cleanup_178
+    %t182 = call i32 @read(%t181)
+    store i32 %t182, $call__53
+    %t183 = load i32 $call__53
+    store i32 %t183, $cond__49
+    eh_end
+    jump ^call_unwind_end_179
+
+  block ^construction_cleanup_178:
+    %t184 = load u8 $lifetime__80
+    branch %t184, ^conditional_temporary_destroy_180, ^conditional_temporary_done_181
+
+  block ^conditional_temporary_destroy_180:
+    store u8 0, $lifetime__80
+    %t185 = addr $arg__54
+    call void @S___S(%t185)
+    jump ^conditional_temporary_done_181
+
+  block ^conditional_temporary_done_181:
+    jump ^construction_cleanup_174
+
+  block ^call_unwind_end_179:
+    jump ^cond_end_173
+
+  block ^cond_end_173:
+    %t186 = load i32 $cond__49
+    store i32 %t186, %t173
+    %t187 = index i32 [projection=array_element] %t60, 9
+    eh_try ^construction_cleanup_178
+    %t188 = call i32 @choice()
+    store i32 %t188, $call__56
+    %t189 = load i32 $call__56
+    eh_end
+    branch %t189, ^cond_then_182, ^cond_else_183
+
+  block ^cond_then_182:
+    eh_try ^construction_cleanup_178
+    %t190 = addr $arg__58
+    call void @S__S__ov2(%t190, 9)
+    store u8 1, $lifetime__79
+    eh_end
+    eh_try ^construction_cleanup_185
+    %t191 = call i32 @read(%t190)
+    store i32 %t191, $call__57
+    %t192 = load i32 $call__57
+    store i32 %t192, $cond__55
+    eh_end
+    jump ^call_unwind_end_186
+
+  block ^construction_cleanup_185:
+    %t193 = load u8 $lifetime__79
+    branch %t193, ^conditional_temporary_destroy_187, ^conditional_temporary_done_188
+
+  block ^conditional_temporary_destroy_187:
+    store u8 0, $lifetime__79
+    %t194 = addr $arg__58
+    call void @S___S(%t194)
+    jump ^conditional_temporary_done_188
+
+  block ^conditional_temporary_done_188:
+    jump ^construction_cleanup_178
+
+  block ^call_unwind_end_186:
+    jump ^cond_end_184
+
+  block ^cond_else_183:
+    eh_try ^construction_cleanup_185
+    %t195 = addr $arg__60
+    call void @S__S__ov2(%t195, 109)
+    store u8 1, $lifetime__78
+    eh_end
+    eh_try ^construction_cleanup_189
+    %t196 = call i32 @read(%t195)
+    store i32 %t196, $call__59
+    %t197 = load i32 $call__59
+    store i32 %t197, $cond__55
+    eh_end
+    jump ^call_unwind_end_190
+
+  block ^construction_cleanup_189:
+    %t198 = load u8 $lifetime__78
+    branch %t198, ^conditional_temporary_destroy_191, ^conditional_temporary_done_192
+
+  block ^conditional_temporary_destroy_191:
+    store u8 0, $lifetime__78
+    %t199 = addr $arg__60
+    call void @S___S(%t199)
+    jump ^conditional_temporary_done_192
+
+  block ^conditional_temporary_done_192:
+    jump ^construction_cleanup_185
+
+  block ^call_unwind_end_190:
+    jump ^cond_end_184
+
+  block ^cond_end_184:
+    %t200 = load i32 $cond__55
+    store i32 %t200, %t187
+    %t201 = index i32 [projection=array_element] %t60, 10
+    eh_try ^construction_cleanup_189
+    %t202 = call i32 @choice()
+    store i32 %t202, $call__62
+    %t203 = load i32 $call__62
+    eh_end
+    branch %t203, ^cond_then_193, ^cond_else_194
+
+  block ^cond_then_193:
+    eh_try ^construction_cleanup_189
+    %t204 = addr $arg__64
+    call void @S__S__ov2(%t204, 10)
+    store u8 1, $lifetime__77
+    eh_end
+    eh_try ^construction_cleanup_196
+    %t205 = call i32 @read(%t204)
+    store i32 %t205, $call__63
+    %t206 = load i32 $call__63
+    store i32 %t206, $cond__61
+    eh_end
+    jump ^call_unwind_end_197
+
+  block ^construction_cleanup_196:
+    %t207 = load u8 $lifetime__77
+    branch %t207, ^conditional_temporary_destroy_198, ^conditional_temporary_done_199
+
+  block ^conditional_temporary_destroy_198:
+    store u8 0, $lifetime__77
+    %t208 = addr $arg__64
+    call void @S___S(%t208)
+    jump ^conditional_temporary_done_199
+
+  block ^conditional_temporary_done_199:
+    jump ^construction_cleanup_189
+
+  block ^call_unwind_end_197:
+    jump ^cond_end_195
+
+  block ^cond_else_194:
+    eh_try ^construction_cleanup_196
+    %t209 = addr $arg__66
+    call void @S__S__ov2(%t209, 110)
+    store u8 1, $lifetime__76
+    eh_end
+    eh_try ^construction_cleanup_200
+    %t210 = call i32 @read(%t209)
+    store i32 %t210, $call__65
+    %t211 = load i32 $call__65
+    store i32 %t211, $cond__61
+    eh_end
+    jump ^call_unwind_end_201
+
+  block ^construction_cleanup_200:
+    %t212 = load u8 $lifetime__76
+    branch %t212, ^conditional_temporary_destroy_202, ^conditional_temporary_done_203
+
+  block ^conditional_temporary_destroy_202:
+    store u8 0, $lifetime__76
+    %t213 = addr $arg__66
+    call void @S___S(%t213)
+    jump ^conditional_temporary_done_203
+
+  block ^conditional_temporary_done_203:
+    jump ^construction_cleanup_196
+
+  block ^call_unwind_end_201:
+    jump ^cond_end_195
+
+  block ^cond_end_195:
+    %t214 = load i32 $cond__61
+    store i32 %t214, %t201
+    %t215 = index i32 [projection=array_element] %t60, 11
+    eh_try ^construction_cleanup_200
+    %t216 = call i32 @choice()
+    store i32 %t216, $call__68
+    %t217 = load i32 $call__68
+    eh_end
+    branch %t217, ^cond_then_204, ^cond_else_205
+
+  block ^cond_then_204:
+    eh_try ^construction_cleanup_200
+    %t218 = addr $arg__70
+    call void @S__S__ov2(%t218, 11)
+    store u8 1, $lifetime__75
+    eh_end
+    eh_try ^construction_cleanup_207
+    %t219 = call i32 @read(%t218)
+    store i32 %t219, $call__69
+    %t220 = load i32 $call__69
+    store i32 %t220, $cond__67
+    eh_end
+    jump ^call_unwind_end_208
+
+  block ^construction_cleanup_207:
+    %t221 = load u8 $lifetime__75
+    branch %t221, ^conditional_temporary_destroy_209, ^conditional_temporary_done_210
+
+  block ^conditional_temporary_destroy_209:
+    store u8 0, $lifetime__75
+    %t222 = addr $arg__70
+    call void @S___S(%t222)
+    jump ^conditional_temporary_done_210
+
+  block ^conditional_temporary_done_210:
+    jump ^construction_cleanup_200
+
+  block ^call_unwind_end_208:
+    jump ^cond_end_206
+
+  block ^cond_else_205:
+    eh_try ^construction_cleanup_207
+    %t223 = addr $arg__72
+    call void @S__S__ov2(%t223, 111)
+    store u8 1, $lifetime__74
+    eh_end
+    eh_try ^construction_cleanup_211
+    %t224 = call i32 @read(%t223)
+    store i32 %t224, $call__71
+    %t225 = load i32 $call__71
+    store i32 %t225, $cond__67
+    eh_end
+    jump ^call_unwind_end_212
+
+  block ^construction_cleanup_211:
+    %t226 = load u8 $lifetime__74
+    branch %t226, ^conditional_temporary_destroy_213, ^conditional_temporary_done_214
+
+  block ^conditional_temporary_destroy_213:
+    store u8 0, $lifetime__74
+    %t227 = addr $arg__72
+    call void @S___S(%t227)
+    jump ^conditional_temporary_done_214
+
+  block ^conditional_temporary_done_214:
+    jump ^construction_cleanup_207
+
+  block ^call_unwind_end_212:
+    jump ^cond_end_206
+
+  block ^cond_end_206:
+    %t228 = load i32 $cond__67
+    store i32 %t228, %t215
+    %t229 = addr $e
+    %t230 = index i8 [projection=field] %t229, 52
+    eh_try ^construction_cleanup_211
+    %t231 = addr $y
+    call void @S__S__ov3(%t230, %t231)
+    eh_end
+    %t232 = addr $e
+    %t233 = index i8 [projection=field] %t232, 56
+    eh_try ^construction_cleanup_215
+    %t234 = call i32 @step_value()
+    store i32 %t234, $call__73
+    %t235 = load i32 $call__73
+    store i32 %t235, %t233
+    %t236 = addr $e
+    eh_end
+    jump ^call_unwind_end_216
+
+  block ^construction_cleanup_215:
+    call void @S___S(%t230)
+    jump ^construction_cleanup_211
+
+  block ^call_unwind_end_216:
+    eh_try ^construction_cleanup_217
+    %t237 = load u8 $lifetime__74
+    branch %t237, ^conditional_temporary_destroy_241, ^conditional_temporary_done_242
+
+  block ^conditional_temporary_destroy_241:
+    store u8 0, $lifetime__74
+    %t238 = addr $arg__72
+    call void @S___S(%t238)
+    jump ^conditional_temporary_done_242
+
+  block ^conditional_temporary_done_242:
+    eh_end
+    jump ^call_unwind_end_243
+
+  block ^construction_cleanup_217:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_218
+
+  block ^construction_cleanup_218:
+    %t239 = load u8 $lifetime__75
+    branch %t239, ^conditional_temporary_destroy_244, ^conditional_temporary_done_245
+
+  block ^conditional_temporary_destroy_244:
+    store u8 0, $lifetime__75
+    %t240 = addr $arg__70
+    call void @S___S(%t240)
+    jump ^conditional_temporary_done_245
+
+  block ^conditional_temporary_done_245:
+    jump ^construction_cleanup_219
+
+  block ^construction_cleanup_219:
+    %t241 = load u8 $lifetime__76
+    branch %t241, ^conditional_temporary_destroy_246, ^conditional_temporary_done_247
+
+  block ^conditional_temporary_destroy_246:
+    store u8 0, $lifetime__76
+    %t242 = addr $arg__66
+    call void @S___S(%t242)
+    jump ^conditional_temporary_done_247
+
+  block ^conditional_temporary_done_247:
+    jump ^construction_cleanup_220
+
+  block ^construction_cleanup_220:
+    %t243 = load u8 $lifetime__77
+    branch %t243, ^conditional_temporary_destroy_248, ^conditional_temporary_done_249
+
+  block ^conditional_temporary_destroy_248:
+    store u8 0, $lifetime__77
+    %t244 = addr $arg__64
+    call void @S___S(%t244)
+    jump ^conditional_temporary_done_249
+
+  block ^conditional_temporary_done_249:
+    jump ^construction_cleanup_221
+
+  block ^construction_cleanup_221:
+    %t245 = load u8 $lifetime__78
+    branch %t245, ^conditional_temporary_destroy_250, ^conditional_temporary_done_251
+
+  block ^conditional_temporary_destroy_250:
+    store u8 0, $lifetime__78
+    %t246 = addr $arg__60
+    call void @S___S(%t246)
+    jump ^conditional_temporary_done_251
+
+  block ^conditional_temporary_done_251:
+    jump ^construction_cleanup_222
+
+  block ^construction_cleanup_222:
+    %t247 = load u8 $lifetime__79
+    branch %t247, ^conditional_temporary_destroy_252, ^conditional_temporary_done_253
+
+  block ^conditional_temporary_destroy_252:
+    store u8 0, $lifetime__79
+    %t248 = addr $arg__58
+    call void @S___S(%t248)
+    jump ^conditional_temporary_done_253
+
+  block ^conditional_temporary_done_253:
+    jump ^construction_cleanup_223
+
+  block ^construction_cleanup_223:
+    %t249 = load u8 $lifetime__80
+    branch %t249, ^conditional_temporary_destroy_254, ^conditional_temporary_done_255
+
+  block ^conditional_temporary_destroy_254:
+    store u8 0, $lifetime__80
+    %t250 = addr $arg__54
+    call void @S___S(%t250)
+    jump ^conditional_temporary_done_255
+
+  block ^conditional_temporary_done_255:
+    jump ^construction_cleanup_224
+
+  block ^construction_cleanup_224:
+    %t251 = load u8 $lifetime__81
+    branch %t251, ^conditional_temporary_destroy_256, ^conditional_temporary_done_257
+
+  block ^conditional_temporary_destroy_256:
+    store u8 0, $lifetime__81
+    %t252 = addr $arg__52
+    call void @S___S(%t252)
+    jump ^conditional_temporary_done_257
+
+  block ^conditional_temporary_done_257:
+    jump ^construction_cleanup_225
+
+  block ^construction_cleanup_225:
+    %t253 = load u8 $lifetime__82
+    branch %t253, ^conditional_temporary_destroy_258, ^conditional_temporary_done_259
+
+  block ^conditional_temporary_destroy_258:
+    store u8 0, $lifetime__82
+    %t254 = addr $arg__48
+    call void @S___S(%t254)
+    jump ^conditional_temporary_done_259
+
+  block ^conditional_temporary_done_259:
+    jump ^construction_cleanup_226
+
+  block ^construction_cleanup_226:
+    %t255 = load u8 $lifetime__83
+    branch %t255, ^conditional_temporary_destroy_260, ^conditional_temporary_done_261
+
+  block ^conditional_temporary_destroy_260:
+    store u8 0, $lifetime__83
+    %t256 = addr $arg__46
+    call void @S___S(%t256)
+    jump ^conditional_temporary_done_261
+
+  block ^conditional_temporary_done_261:
+    jump ^construction_cleanup_227
+
+  block ^construction_cleanup_227:
+    %t257 = load u8 $lifetime__84
+    branch %t257, ^conditional_temporary_destroy_262, ^conditional_temporary_done_263
+
+  block ^conditional_temporary_destroy_262:
+    store u8 0, $lifetime__84
+    %t258 = addr $arg__42
+    call void @S___S(%t258)
+    jump ^conditional_temporary_done_263
+
+  block ^conditional_temporary_done_263:
+    jump ^construction_cleanup_228
+
+  block ^construction_cleanup_228:
+    %t259 = load u8 $lifetime__85
+    branch %t259, ^conditional_temporary_destroy_264, ^conditional_temporary_done_265
+
+  block ^conditional_temporary_destroy_264:
+    store u8 0, $lifetime__85
+    %t260 = addr $arg__40
+    call void @S___S(%t260)
+    jump ^conditional_temporary_done_265
+
+  block ^conditional_temporary_done_265:
+    jump ^construction_cleanup_229
+
+  block ^construction_cleanup_229:
+    %t261 = load u8 $lifetime__86
+    branch %t261, ^conditional_temporary_destroy_266, ^conditional_temporary_done_267
+
+  block ^conditional_temporary_destroy_266:
+    store u8 0, $lifetime__86
+    %t262 = addr $arg__36
+    call void @S___S(%t262)
+    jump ^conditional_temporary_done_267
+
+  block ^conditional_temporary_done_267:
+    jump ^construction_cleanup_230
+
+  block ^construction_cleanup_230:
+    %t263 = load u8 $lifetime__87
+    branch %t263, ^conditional_temporary_destroy_268, ^conditional_temporary_done_269
+
+  block ^conditional_temporary_destroy_268:
+    store u8 0, $lifetime__87
+    %t264 = addr $arg__34
+    call void @S___S(%t264)
+    jump ^conditional_temporary_done_269
+
+  block ^conditional_temporary_done_269:
+    jump ^construction_cleanup_231
+
+  block ^construction_cleanup_231:
+    %t265 = load u8 $lifetime__88
+    branch %t265, ^conditional_temporary_destroy_270, ^conditional_temporary_done_271
+
+  block ^conditional_temporary_destroy_270:
+    store u8 0, $lifetime__88
+    %t266 = addr $arg__30
+    call void @S___S(%t266)
+    jump ^conditional_temporary_done_271
+
+  block ^conditional_temporary_done_271:
+    jump ^construction_cleanup_232
+
+  block ^construction_cleanup_232:
+    %t267 = load u8 $lifetime__89
+    branch %t267, ^conditional_temporary_destroy_272, ^conditional_temporary_done_273
+
+  block ^conditional_temporary_destroy_272:
+    store u8 0, $lifetime__89
+    %t268 = addr $arg__28
+    call void @S___S(%t268)
+    jump ^conditional_temporary_done_273
+
+  block ^conditional_temporary_done_273:
+    jump ^construction_cleanup_233
+
+  block ^construction_cleanup_233:
+    %t269 = load u8 $lifetime__90
+    branch %t269, ^conditional_temporary_destroy_274, ^conditional_temporary_done_275
+
+  block ^conditional_temporary_destroy_274:
+    store u8 0, $lifetime__90
+    %t270 = addr $arg__24
+    call void @S___S(%t270)
+    jump ^conditional_temporary_done_275
+
+  block ^conditional_temporary_done_275:
+    jump ^construction_cleanup_234
+
+  block ^construction_cleanup_234:
+    %t271 = load u8 $lifetime__91
+    branch %t271, ^conditional_temporary_destroy_276, ^conditional_temporary_done_277
+
+  block ^conditional_temporary_destroy_276:
+    store u8 0, $lifetime__91
+    %t272 = addr $arg__22
+    call void @S___S(%t272)
+    jump ^conditional_temporary_done_277
+
+  block ^conditional_temporary_done_277:
+    jump ^construction_cleanup_235
+
+  block ^construction_cleanup_235:
+    %t273 = load u8 $lifetime__92
+    branch %t273, ^conditional_temporary_destroy_278, ^conditional_temporary_done_279
+
+  block ^conditional_temporary_destroy_278:
+    store u8 0, $lifetime__92
+    %t274 = addr $arg__18
+    call void @S___S(%t274)
+    jump ^conditional_temporary_done_279
+
+  block ^conditional_temporary_done_279:
+    jump ^construction_cleanup_236
+
+  block ^construction_cleanup_236:
+    %t275 = load u8 $lifetime__93
+    branch %t275, ^conditional_temporary_destroy_280, ^conditional_temporary_done_281
+
+  block ^conditional_temporary_destroy_280:
+    store u8 0, $lifetime__93
+    %t276 = addr $arg__16
+    call void @S___S(%t276)
+    jump ^conditional_temporary_done_281
+
+  block ^conditional_temporary_done_281:
+    jump ^construction_cleanup_237
+
+  block ^construction_cleanup_237:
+    %t277 = load u8 $lifetime__94
+    branch %t277, ^conditional_temporary_destroy_282, ^conditional_temporary_done_283
+
+  block ^conditional_temporary_destroy_282:
+    store u8 0, $lifetime__94
+    %t278 = addr $arg__12
+    call void @S___S(%t278)
+    jump ^conditional_temporary_done_283
+
+  block ^conditional_temporary_done_283:
+    jump ^construction_cleanup_238
+
+  block ^construction_cleanup_238:
+    %t279 = load u8 $lifetime__95
+    branch %t279, ^conditional_temporary_destroy_284, ^conditional_temporary_done_285
+
+  block ^conditional_temporary_destroy_284:
+    store u8 0, $lifetime__95
+    %t280 = addr $arg__10
+    call void @S___S(%t280)
+    jump ^conditional_temporary_done_285
+
+  block ^conditional_temporary_done_285:
+    jump ^construction_cleanup_239
+
+  block ^construction_cleanup_239:
+    %t281 = load u8 $lifetime__96
+    branch %t281, ^conditional_temporary_destroy_286, ^conditional_temporary_done_287
+
+  block ^conditional_temporary_destroy_286:
+    store u8 0, $lifetime__96
+    %t282 = addr $arg__6
+    call void @S___S(%t282)
+    jump ^conditional_temporary_done_287
+
+  block ^conditional_temporary_done_287:
+    jump ^construction_cleanup_240
+
+  block ^construction_cleanup_240:
+    %t283 = load u8 $lifetime__97
+    branch %t283, ^conditional_temporary_destroy_288, ^conditional_temporary_done_289
+
+  block ^conditional_temporary_destroy_288:
+    store u8 0, $lifetime__97
+    %t284 = addr $arg__4
+    call void @S___S(%t284)
+    jump ^conditional_temporary_done_289
+
+  block ^conditional_temporary_done_289:
+    jump ^cleanup_action_79
+
+  block ^call_unwind_end_243:
+    eh_try ^construction_cleanup_290
+    %t285 = load u8 $lifetime__75
+    branch %t285, ^conditional_temporary_destroy_291, ^conditional_temporary_done_292
+
+  block ^conditional_temporary_destroy_291:
+    store u8 0, $lifetime__75
+    %t286 = addr $arg__70
+    call void @S___S(%t286)
+    jump ^conditional_temporary_done_292
+
+  block ^conditional_temporary_done_292:
+    eh_end
+    jump ^call_unwind_end_293
+
+  block ^construction_cleanup_290:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_219
+
+  block ^call_unwind_end_293:
+    eh_try ^construction_cleanup_294
+    %t287 = load u8 $lifetime__76
+    branch %t287, ^conditional_temporary_destroy_295, ^conditional_temporary_done_296
+
+  block ^conditional_temporary_destroy_295:
+    store u8 0, $lifetime__76
+    %t288 = addr $arg__66
+    call void @S___S(%t288)
+    jump ^conditional_temporary_done_296
+
+  block ^conditional_temporary_done_296:
+    eh_end
+    jump ^call_unwind_end_297
+
+  block ^construction_cleanup_294:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_220
+
+  block ^call_unwind_end_297:
+    eh_try ^construction_cleanup_298
+    %t289 = load u8 $lifetime__77
+    branch %t289, ^conditional_temporary_destroy_299, ^conditional_temporary_done_300
+
+  block ^conditional_temporary_destroy_299:
+    store u8 0, $lifetime__77
+    %t290 = addr $arg__64
+    call void @S___S(%t290)
+    jump ^conditional_temporary_done_300
+
+  block ^conditional_temporary_done_300:
+    eh_end
+    jump ^call_unwind_end_301
+
+  block ^construction_cleanup_298:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_221
+
+  block ^call_unwind_end_301:
+    eh_try ^construction_cleanup_302
+    %t291 = load u8 $lifetime__78
+    branch %t291, ^conditional_temporary_destroy_303, ^conditional_temporary_done_304
+
+  block ^conditional_temporary_destroy_303:
+    store u8 0, $lifetime__78
+    %t292 = addr $arg__60
+    call void @S___S(%t292)
+    jump ^conditional_temporary_done_304
+
+  block ^conditional_temporary_done_304:
+    eh_end
+    jump ^call_unwind_end_305
+
+  block ^construction_cleanup_302:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_222
+
+  block ^call_unwind_end_305:
+    eh_try ^construction_cleanup_306
+    %t293 = load u8 $lifetime__79
+    branch %t293, ^conditional_temporary_destroy_307, ^conditional_temporary_done_308
+
+  block ^conditional_temporary_destroy_307:
+    store u8 0, $lifetime__79
+    %t294 = addr $arg__58
+    call void @S___S(%t294)
+    jump ^conditional_temporary_done_308
+
+  block ^conditional_temporary_done_308:
+    eh_end
+    jump ^call_unwind_end_309
+
+  block ^construction_cleanup_306:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_223
+
+  block ^call_unwind_end_309:
+    eh_try ^construction_cleanup_310
+    %t295 = load u8 $lifetime__80
+    branch %t295, ^conditional_temporary_destroy_311, ^conditional_temporary_done_312
+
+  block ^conditional_temporary_destroy_311:
+    store u8 0, $lifetime__80
+    %t296 = addr $arg__54
+    call void @S___S(%t296)
+    jump ^conditional_temporary_done_312
+
+  block ^conditional_temporary_done_312:
+    eh_end
+    jump ^call_unwind_end_313
+
+  block ^construction_cleanup_310:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_224
+
+  block ^call_unwind_end_313:
+    eh_try ^construction_cleanup_314
+    %t297 = load u8 $lifetime__81
+    branch %t297, ^conditional_temporary_destroy_315, ^conditional_temporary_done_316
+
+  block ^conditional_temporary_destroy_315:
+    store u8 0, $lifetime__81
+    %t298 = addr $arg__52
+    call void @S___S(%t298)
+    jump ^conditional_temporary_done_316
+
+  block ^conditional_temporary_done_316:
+    eh_end
+    jump ^call_unwind_end_317
+
+  block ^construction_cleanup_314:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_225
+
+  block ^call_unwind_end_317:
+    eh_try ^construction_cleanup_318
+    %t299 = load u8 $lifetime__82
+    branch %t299, ^conditional_temporary_destroy_319, ^conditional_temporary_done_320
+
+  block ^conditional_temporary_destroy_319:
+    store u8 0, $lifetime__82
+    %t300 = addr $arg__48
+    call void @S___S(%t300)
+    jump ^conditional_temporary_done_320
+
+  block ^conditional_temporary_done_320:
+    eh_end
+    jump ^call_unwind_end_321
+
+  block ^construction_cleanup_318:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_226
+
+  block ^call_unwind_end_321:
+    eh_try ^construction_cleanup_322
+    %t301 = load u8 $lifetime__83
+    branch %t301, ^conditional_temporary_destroy_323, ^conditional_temporary_done_324
+
+  block ^conditional_temporary_destroy_323:
+    store u8 0, $lifetime__83
+    %t302 = addr $arg__46
+    call void @S___S(%t302)
+    jump ^conditional_temporary_done_324
+
+  block ^conditional_temporary_done_324:
+    eh_end
+    jump ^call_unwind_end_325
+
+  block ^construction_cleanup_322:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_227
+
+  block ^call_unwind_end_325:
+    eh_try ^construction_cleanup_326
+    %t303 = load u8 $lifetime__84
+    branch %t303, ^conditional_temporary_destroy_327, ^conditional_temporary_done_328
+
+  block ^conditional_temporary_destroy_327:
+    store u8 0, $lifetime__84
+    %t304 = addr $arg__42
+    call void @S___S(%t304)
+    jump ^conditional_temporary_done_328
+
+  block ^conditional_temporary_done_328:
+    eh_end
+    jump ^call_unwind_end_329
+
+  block ^construction_cleanup_326:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_228
+
+  block ^call_unwind_end_329:
+    eh_try ^construction_cleanup_330
+    %t305 = load u8 $lifetime__85
+    branch %t305, ^conditional_temporary_destroy_331, ^conditional_temporary_done_332
+
+  block ^conditional_temporary_destroy_331:
+    store u8 0, $lifetime__85
+    %t306 = addr $arg__40
+    call void @S___S(%t306)
+    jump ^conditional_temporary_done_332
+
+  block ^conditional_temporary_done_332:
+    eh_end
+    jump ^call_unwind_end_333
+
+  block ^construction_cleanup_330:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_229
+
+  block ^call_unwind_end_333:
+    eh_try ^construction_cleanup_334
+    %t307 = load u8 $lifetime__86
+    branch %t307, ^conditional_temporary_destroy_335, ^conditional_temporary_done_336
+
+  block ^conditional_temporary_destroy_335:
+    store u8 0, $lifetime__86
+    %t308 = addr $arg__36
+    call void @S___S(%t308)
+    jump ^conditional_temporary_done_336
+
+  block ^conditional_temporary_done_336:
+    eh_end
+    jump ^call_unwind_end_337
+
+  block ^construction_cleanup_334:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_230
+
+  block ^call_unwind_end_337:
+    eh_try ^construction_cleanup_338
+    %t309 = load u8 $lifetime__87
+    branch %t309, ^conditional_temporary_destroy_339, ^conditional_temporary_done_340
+
+  block ^conditional_temporary_destroy_339:
+    store u8 0, $lifetime__87
+    %t310 = addr $arg__34
+    call void @S___S(%t310)
+    jump ^conditional_temporary_done_340
+
+  block ^conditional_temporary_done_340:
+    eh_end
+    jump ^call_unwind_end_341
+
+  block ^construction_cleanup_338:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_231
+
+  block ^call_unwind_end_341:
+    eh_try ^construction_cleanup_342
+    %t311 = load u8 $lifetime__88
+    branch %t311, ^conditional_temporary_destroy_343, ^conditional_temporary_done_344
+
+  block ^conditional_temporary_destroy_343:
+    store u8 0, $lifetime__88
+    %t312 = addr $arg__30
+    call void @S___S(%t312)
+    jump ^conditional_temporary_done_344
+
+  block ^conditional_temporary_done_344:
+    eh_end
+    jump ^call_unwind_end_345
+
+  block ^construction_cleanup_342:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_232
+
+  block ^call_unwind_end_345:
+    eh_try ^construction_cleanup_346
+    %t313 = load u8 $lifetime__89
+    branch %t313, ^conditional_temporary_destroy_347, ^conditional_temporary_done_348
+
+  block ^conditional_temporary_destroy_347:
+    store u8 0, $lifetime__89
+    %t314 = addr $arg__28
+    call void @S___S(%t314)
+    jump ^conditional_temporary_done_348
+
+  block ^conditional_temporary_done_348:
+    eh_end
+    jump ^call_unwind_end_349
+
+  block ^construction_cleanup_346:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_233
+
+  block ^call_unwind_end_349:
+    eh_try ^construction_cleanup_350
+    %t315 = load u8 $lifetime__90
+    branch %t315, ^conditional_temporary_destroy_351, ^conditional_temporary_done_352
+
+  block ^conditional_temporary_destroy_351:
+    store u8 0, $lifetime__90
+    %t316 = addr $arg__24
+    call void @S___S(%t316)
+    jump ^conditional_temporary_done_352
+
+  block ^conditional_temporary_done_352:
+    eh_end
+    jump ^call_unwind_end_353
+
+  block ^construction_cleanup_350:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_234
+
+  block ^call_unwind_end_353:
+    eh_try ^construction_cleanup_354
+    %t317 = load u8 $lifetime__91
+    branch %t317, ^conditional_temporary_destroy_355, ^conditional_temporary_done_356
+
+  block ^conditional_temporary_destroy_355:
+    store u8 0, $lifetime__91
+    %t318 = addr $arg__22
+    call void @S___S(%t318)
+    jump ^conditional_temporary_done_356
+
+  block ^conditional_temporary_done_356:
+    eh_end
+    jump ^call_unwind_end_357
+
+  block ^construction_cleanup_354:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_235
+
+  block ^call_unwind_end_357:
+    eh_try ^construction_cleanup_358
+    %t319 = load u8 $lifetime__92
+    branch %t319, ^conditional_temporary_destroy_359, ^conditional_temporary_done_360
+
+  block ^conditional_temporary_destroy_359:
+    store u8 0, $lifetime__92
+    %t320 = addr $arg__18
+    call void @S___S(%t320)
+    jump ^conditional_temporary_done_360
+
+  block ^conditional_temporary_done_360:
+    eh_end
+    jump ^call_unwind_end_361
+
+  block ^construction_cleanup_358:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_236
+
+  block ^call_unwind_end_361:
+    eh_try ^construction_cleanup_362
+    %t321 = load u8 $lifetime__93
+    branch %t321, ^conditional_temporary_destroy_363, ^conditional_temporary_done_364
+
+  block ^conditional_temporary_destroy_363:
+    store u8 0, $lifetime__93
+    %t322 = addr $arg__16
+    call void @S___S(%t322)
+    jump ^conditional_temporary_done_364
+
+  block ^conditional_temporary_done_364:
+    eh_end
+    jump ^call_unwind_end_365
+
+  block ^construction_cleanup_362:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_237
+
+  block ^call_unwind_end_365:
+    eh_try ^construction_cleanup_366
+    %t323 = load u8 $lifetime__94
+    branch %t323, ^conditional_temporary_destroy_367, ^conditional_temporary_done_368
+
+  block ^conditional_temporary_destroy_367:
+    store u8 0, $lifetime__94
+    %t324 = addr $arg__12
+    call void @S___S(%t324)
+    jump ^conditional_temporary_done_368
+
+  block ^conditional_temporary_done_368:
+    eh_end
+    jump ^call_unwind_end_369
+
+  block ^construction_cleanup_366:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_238
+
+  block ^call_unwind_end_369:
+    eh_try ^construction_cleanup_370
+    %t325 = load u8 $lifetime__95
+    branch %t325, ^conditional_temporary_destroy_371, ^conditional_temporary_done_372
+
+  block ^conditional_temporary_destroy_371:
+    store u8 0, $lifetime__95
+    %t326 = addr $arg__10
+    call void @S___S(%t326)
+    jump ^conditional_temporary_done_372
+
+  block ^conditional_temporary_done_372:
+    eh_end
+    jump ^call_unwind_end_373
+
+  block ^construction_cleanup_370:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_239
+
+  block ^call_unwind_end_373:
+    eh_try ^construction_cleanup_374
+    %t327 = load u8 $lifetime__96
+    branch %t327, ^conditional_temporary_destroy_375, ^conditional_temporary_done_376
+
+  block ^conditional_temporary_destroy_375:
+    store u8 0, $lifetime__96
+    %t328 = addr $arg__6
+    call void @S___S(%t328)
+    jump ^conditional_temporary_done_376
+
+  block ^conditional_temporary_done_376:
+    eh_end
+    jump ^call_unwind_end_377
+
+  block ^construction_cleanup_374:
+    call void @case_2__E_S____E(%t236)
+    jump ^construction_cleanup_240
+
+  block ^call_unwind_end_377:
+    eh_try ^construction_cleanup_378
+    %t329 = load u8 $lifetime__97
+    branch %t329, ^conditional_temporary_destroy_379, ^conditional_temporary_done_380
+
+  block ^conditional_temporary_destroy_379:
+    store u8 0, $lifetime__97
+    %t330 = addr $arg__4
+    call void @S___S(%t330)
+    jump ^conditional_temporary_done_380
+
+  block ^conditional_temporary_done_380:
+    eh_end
+    jump ^call_unwind_end_381
+
+  block ^construction_cleanup_378:
+    call void @case_2__E_S____E(%t236)
+    jump ^cleanup_action_79
+
+  block ^call_unwind_end_381:
+    %t331 = addr $e
+    call void @case_2__E_S____E(%t331)
+    %t332 = addr $y
+    call void @S___S(%t332)
+    %t333 = addr $x
+    call void @S___S(%t333)
+    return void
+}
+function @case_2__maxstep() -> i32 [binding=strong, object=_ZN6case_27maxstepEv] {
+  block ^entry:
+    return i32 29
+}
+function @case_3__probe() -> void [binding=strong, object=_ZN6case_35probeEv] {
+  slot $x : obj<4x4>
+  slot $e : obj<16x4>
+
+  block ^entry:
+    %t1 = addr $x
+    call void @S__S__ov2(%t1, 1)
+    %t2 = addr $e
+    %t3 = addr $e
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = addr $x
+    eh_try ^cleanup_action_2
+    call void @S__S__ov3(%t4, %t5)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^cleanup_action_2:
+    %t6 = addr $x
+    call void @S___S(%t6)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
+    %t7 = index i8 [projection=array_element] %t4, 4
+    %t8 = addr $x
+    eh_try ^construction_cleanup_4
+    call void @S__S__ov3(%t7, %t8)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^construction_cleanup_4:
+    call void @S___S(%t4)
+    jump ^cleanup_action_2
+
+  block ^call_unwind_end_5:
+    %t9 = index i8 [projection=array_element] %t4, 8
+    %t10 = addr $x
+    eh_try ^construction_cleanup_6
+    call void @S__S__ov3(%t9, %t10)
+    eh_end
+    jump ^call_unwind_end_7
+
+  block ^construction_cleanup_6:
+    %t11 = index i8 [projection=array_element] %t4, 4
+    call void @S___S(%t11)
+    %t12 = index i8 [projection=array_element] %t4, 0
+    call void @S___S(%t12)
+    jump ^cleanup_action_2
+
+  block ^call_unwind_end_7:
+    %t13 = index i8 [projection=array_element] %t9, 4
+    %t14 = addr $x
+    eh_try ^construction_cleanup_8
+    call void @S__S__ov3(%t13, %t14)
+    eh_end
+    jump ^call_unwind_end_9
+
+  block ^construction_cleanup_8:
+    call void @S___S(%t9)
+    jump ^construction_cleanup_6
+
+  block ^call_unwind_end_9:
+    %t15 = addr $e
+    %t16 = addr $e
+    call void @case_3__E_S____E(%t16)
+    %t17 = addr $x
+    call void @S___S(%t17)
+    return void
+}
+function @case_3__maxstep() -> i32 [binding=strong, object=_ZN6case_37maxstepEv] {
+  block ^entry:
+    return i32 5
+}
+function @case_4__probe() -> void [binding=strong, object=_ZN6case_45probeEv] {
+  slot $x : obj<4x4>
+  slot $y : obj<4x4>
+  slot $z : obj<4x4>
+  slot $e : obj<12x4>
+
+  block ^entry:
+    %t1 = addr $x
+    call void @S__S__ov2(%t1, 1)
+    %t2 = addr $y
+    eh_try ^cleanup_action_2
+    call void @S__S__ov2(%t2, 2)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^cleanup_action_2:
+    %t3 = addr $x
+    call void @S___S(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
+    %t4 = addr $z
+    eh_try ^cleanup_action_4
+    call void @S__S__ov2(%t4, 3)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^cleanup_action_4:
+    %t5 = addr $y
+    call void @S___S(%t5)
+    jump ^cleanup_action_2
+
+  block ^call_unwind_end_5:
+    %t6 = addr $e
+    %t7 = addr $e
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = index i8 [projection=field] %t8, 0
+    %t10 = addr $x
+    eh_try ^cleanup_action_6
+    call void @S__S__ov3(%t9, %t10)
+    eh_end
+    jump ^call_unwind_end_7
+
+  block ^cleanup_action_6:
+    %t11 = addr $z
+    call void @S___S(%t11)
+    jump ^cleanup_action_4
+
+  block ^call_unwind_end_7:
+    %t12 = index i8 [projection=array_element] %t9, 4
+    %t13 = addr $y
+    eh_try ^construction_cleanup_8
+    call void @S__S__ov3(%t12, %t13)
+    eh_end
+    jump ^call_unwind_end_9
+
+  block ^construction_cleanup_8:
+    call void @S___S(%t9)
+    jump ^cleanup_action_6
+
+  block ^call_unwind_end_9:
+    %t14 = addr $e
+    %t15 = index i8 [projection=field] %t14, 8
+    eh_try ^construction_cleanup_10
+    %t16 = addr $z
+    call void @S__S__ov3(%t15, %t16)
+    eh_end
+    jump ^call_unwind_end_11
+
+  block ^construction_cleanup_10:
+    call void @case_4__I___I(%t8)
+    jump ^cleanup_action_6
+
+  block ^call_unwind_end_11:
+    %t17 = addr $e
+    %t18 = addr $e
+    call void @case_4__E_S____E(%t18)
+    %t19 = addr $z
+    call void @S___S(%t19)
+    %t20 = addr $y
+    call void @S___S(%t20)
+    %t21 = addr $x
+    call void @S___S(%t21)
+    return void
+}
+function @case_4__maxstep() -> i32 [binding=strong, object=_ZN6case_47maxstepEv] {
+  block ^entry:
+    return i32 6
+}
+function @case_5__probe() -> void [binding=strong, object=_ZN6case_55probeEv] {
+  slot $x : obj<4x4>
+  slot $y : obj<4x4>
+
+  block ^entry:
+    %t1 = addr $x
+    call void @S__S__ov2(%t1, 1)
+    %t2 = addr $y
+    eh_try ^cleanup_action_2
+    call void @S__S__ov2(%t2, 2)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^cleanup_action_2:
+    %t3 = addr $x
+    call void @S___S(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
+    eh_try ^cleanup_action_4
+    %t4 = addr $x
+    %t5 = addr $y
+    call void @case_5__use(%t4, %t5)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^cleanup_action_4:
+    %t6 = addr $y
+    call void @S___S(%t6)
+    jump ^cleanup_action_2
+
+  block ^call_unwind_end_5:
+    %t7 = addr $y
+    call void @S___S(%t7)
+    %t8 = addr $x
+    call void @S___S(%t8)
+    return void
+}
+function @case_5__maxstep() -> i32 [binding=strong, object=_ZN6case_57maxstepEv] {
+  block ^entry:
+    return i32 7
+}
+function @case_6__probe() -> void [binding=strong, object=_ZN6case_65probeEv] {
+  slot $x : obj<4x4>
+  slot $y : obj<4x4>
+  slot $e : obj<16x4>
+  slot $call__1 : i32
+  slot $arg__2 : obj<4x4>
+  slot $call__3 : i32
+
+  block ^entry:
+    %t1 = addr $x
+    call void @S__S__ov2(%t1, 1)
+    %t2 = addr $y
+    eh_try ^cleanup_action_2
+    call void @S__S__ov2(%t2, 2)
+    eh_end
+    jump ^call_unwind_end_3
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^cleanup_action_2:
+    %t3 = addr $x
+    call void @S___S(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_3:
+    %t4 = addr $e
+    %t5 = addr $e
+    %t6 = index i8 [projection=field] %t5, 0
+    eh_try ^cleanup_action_4
+    %t7 = addr $x
+    call void @S__S__ov3(%t6, %t7)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^cleanup_action_4:
+    %t8 = addr $y
+    call void @S___S(%t8)
+    jump ^cleanup_action_2
+
+  block ^call_unwind_end_5:
+    %t9 = addr $e
+    %t10 = index i8 [projection=field] %t9, 4
+    eh_try ^construction_cleanup_6
+    %t11 = addr $arg__2
+    call void @S__S__ov2(%t11, 9)
+    eh_end
+    jump ^call_unwind_end_7
+
+  block ^construction_cleanup_6:
+    call void @S___S(%t6)
+    jump ^cleanup_action_4
+
+  block ^call_unwind_end_7:
+    eh_try ^construction_cleanup_8
+    %t12 = call i32 @read(%t11)
+    store i32 %t12, $call__1
+    %t13 = load i32 $call__1
+    store i32 %t13, %t10
+    %t14 = addr $e
+    %t15 = index i8 [projection=field] %t14, 8
+    %t16 = addr $y
+    call void @S__S__ov3(%t15, %t16)
+    eh_end
+    jump ^call_unwind_end_9
+
+  block ^construction_cleanup_8:
+    call void @S___S(%t11)
+    jump ^construction_cleanup_6
+
+  block ^call_unwind_end_9:
+    %t17 = addr $e
+    %t18 = index i8 [projection=field] %t17, 12
+    eh_try ^construction_cleanup_10
+    %t19 = call i32 @step_value()
+    store i32 %t19, $call__3
+    %t20 = load i32 $call__3
+    store i32 %t20, %t18
+    %t21 = addr $e
+    eh_end
+    jump ^call_unwind_end_11
+
+  block ^construction_cleanup_10:
+    call void @S___S(%t15)
+    jump ^construction_cleanup_8
+
+  block ^call_unwind_end_11:
+    eh_try ^construction_cleanup_12
+    call void @S___S(%t11)
+    eh_end
+    jump ^call_unwind_end_13
+
+  block ^construction_cleanup_12:
+    call void @case_6__E_S____E(%t21)
+    jump ^cleanup_action_4
+
+  block ^call_unwind_end_13:
+    %t22 = addr $e
+    call void @case_6__E_S____E(%t22)
+    %t23 = addr $y
+    call void @S___S(%t23)
+    %t24 = addr $x
+    call void @S___S(%t24)
+    return void
+}
+function @case_6__maxstep() -> i32 [binding=strong, object=_ZN6case_67maxstepEv] {
+  block ^entry:
+    return i32 7
+}
+function @run(%probe : ptr, %steps : i32, %expected : ptr) -> i32 [binding=strong, object=_Z3runPFvvEiPKj] {
+  slot $probe : ptr
+  slot $steps : i32
+  slot $expected : ptr
+  slot $caught : i32
+  slot $catch__1 : ptr
+  slot $n : i32
+  slot $cond__2 : i32
+
+  block ^entry:
+    store ptr %probe, $probe
+    store i32 %steps, $steps
+    store ptr %expected, $expected
+    store i32 0, @limit
+    jump ^for_cond_1
+
+  block ^for_cond_1:
+    %t1 = load i32 @limit
+    %t2 = load i32 $steps
+    %t3 = cmp le i32 %t1, %t2
+    branch %t3, ^for_body_2, ^for_end_4
+
+  block ^for_body_2:
+    store i32 0, @live
+    store i32 0, @progress
+    store u32 0, @trace_digest
+    store i32 0, $caught
+    eh_try ^catch_dispatch_5
+    %t4 = load ptr $probe
+    call void %t4() as () -> void
+    eh_end
+    jump ^try_end_7
+
+  block ^catch_dispatch_5:
+    eh_catch @__external_rtti__int, 1
+    jump ^catch_entry_6
+
+  block ^catch_entry_6:
+    %t5 = exception ptr
+    %t6 = exception_selector i32
+    %t7 = cmp eq i32 %t6, 1
+    branch %t7, ^catch_body_8, ^catch_next_9
+
+  block ^catch_body_8:
+    %t8 = call ptr @__external_runtime____cxa_begin_catch(%t5)
+    store ptr %t8, $catch__1
+    eh_cleanup ^catch_cleanup_10
+    %t9 = load i32 %t8
+    store i32 %t9, $n
+    %t10 = load i32 $n
+    store i32 %t10, $caught
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    jump ^try_end_7
+
+  block ^catch_cleanup_10:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_9:
+    resume
+
+  block ^try_end_7:
+    %t11 = load i32 @live
+    branch %t11, ^if_then_11, ^lor_rhs_14
+
+  block ^lor_rhs_14:
+    %t12 = load i32 $caught
+    %t13 = load i32 @limit
+    %t14 = cmp eq i32 %t13, 0
+    branch %t14, ^cond_then_15, ^cond_else_16
+
+  block ^cond_then_15:
+    store i32 0, $cond__2
+    jump ^cond_end_17
+
+  block ^cond_else_16:
+    %t15 = load i32 @limit
+    store i32 %t15, $cond__2
+    jump ^cond_end_17
+
+  block ^cond_end_17:
+    %t16 = load i32 $cond__2
+    %t17 = cmp ne i32 %t12, %t16
+    branch %t17, ^if_then_11, ^if_else_12
+
+  block ^if_then_11:
+    return i32 1
+
+  block ^if_else_12:
+    jump ^if_end_13
+
+  block ^if_end_13:
+    %t18 = load u32 @trace_digest
+    %t19 = load ptr $expected
+    %t20 = load i32 @limit
+    %t21 = index u32 [projection=array_element] %t19, %t20
+    %t22 = load u32 %t21
+    %t23 = cmp ne u32 %t18, %t22
+    branch %t23, ^if_then_18, ^if_else_19
+
+  block ^if_then_18:
+    return i32 2
+
+  block ^if_else_19:
+    jump ^if_end_20
+
+  block ^if_end_20:
+    jump ^for_iter_3
+
+  block ^for_iter_3:
+    %t24 = load i32 @limit
+    %t25 = binary add i32 %t24, 1
+    store i32 %t25, @limit
+    jump ^for_cond_1
+
+  block ^for_end_4:
+    return i32 0
+}
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  block ^entry:
+    %t1 = addr @case_0__probe
+    %t2 = call i32 @case_0__maxstep()
+    %t3 = addr @case_0__expected
+    %t4 = call i32 @run(%t1, %t2, %t3)
+    branch %t4, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 1
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t5 = addr @case_1__probe
+    %t6 = call i32 @case_1__maxstep()
+    %t7 = addr @case_1__expected
+    %t8 = call i32 @run(%t5, %t6, %t7)
+    branch %t8, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    return i32 2
+
+  block ^if_else_5:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t9 = addr @case_2__probe
+    %t10 = call i32 @case_2__maxstep()
+    %t11 = addr @case_2__expected
+    %t12 = call i32 @run(%t9, %t10, %t11)
+    branch %t12, ^if_then_7, ^if_else_8
+
+  block ^if_then_7:
+    return i32 3
+
+  block ^if_else_8:
+    jump ^if_end_9
+
+  block ^if_end_9:
+    %t13 = addr @case_3__probe
+    %t14 = call i32 @case_3__maxstep()
+    %t15 = addr @case_3__expected
+    %t16 = call i32 @run(%t13, %t14, %t15)
+    branch %t16, ^if_then_10, ^if_else_11
+
+  block ^if_then_10:
+    return i32 4
+
+  block ^if_else_11:
+    jump ^if_end_12
+
+  block ^if_end_12:
+    %t17 = addr @case_4__probe
+    %t18 = call i32 @case_4__maxstep()
+    %t19 = addr @case_4__expected
+    %t20 = call i32 @run(%t17, %t18, %t19)
+    branch %t20, ^if_then_13, ^if_else_14
+
+  block ^if_then_13:
+    return i32 5
+
+  block ^if_else_14:
+    jump ^if_end_15
+
+  block ^if_end_15:
+    %t21 = addr @case_5__probe
+    %t22 = call i32 @case_5__maxstep()
+    %t23 = addr @case_5__expected
+    %t24 = call i32 @run(%t21, %t22, %t23)
+    branch %t24, ^if_then_16, ^if_else_17
+
+  block ^if_then_16:
+    return i32 6
+
+  block ^if_else_17:
+    jump ^if_end_18
+
+  block ^if_end_18:
+    %t25 = addr @case_6__probe
+    %t26 = call i32 @case_6__maxstep()
+    %t27 = addr @case_6__expected
+    %t28 = call i32 @run(%t25, %t26, %t27)
+    branch %t28, ^if_then_19, ^if_else_20
+
+  block ^if_then_19:
+    return i32 7
+
+  block ^if_else_20:
+    jump ^if_end_21
+
+  block ^if_end_21:
+    return i32 0
+}
+function @S__S__base_entry(%this : ptr [object_bytes=4]) -> void [binding=strong, object=_ZN1SC2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = call i32 @next()
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @S__S(%this : ptr [object_bytes=4]) -> void [binding=strong, object=_ZN1SC1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = call i32 @next()
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @S__S__ov2__base_entry(%this : ptr [object_bytes=4], %__param1 : i32) -> void [binding=strong, object=_ZN1SC2Ei, object_root=yes] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    %t1 = call i32 @next()
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @S__S__ov2(%this : ptr [object_bytes=4], %__param1 : i32) -> void [binding=strong, object=_ZN1SC1Ei] {
+  slot $this : ptr
+  slot $__param1 : i32
+
+  block ^entry:
+    store ptr %this, $this
+    store i32 %__param1, $__param1
+    %t1 = call i32 @next()
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @S__S__ov3__base_entry(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=strong, object=_ZN1SC2ERKS_, object_root=yes] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    %t1 = call i32 @next()
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @S__S__ov3(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=strong, object=_ZN1SC1ERKS_] {
+  slot $this : ptr
+  slot $__param1 : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %__param1, $__param1
+    %t1 = call i32 @next()
+    %t2 = load ptr $this
+    %t3 = index i8 [projection=field] %t2, 0
+    store i32 %t1, %t3
+    return void
+}
+function @S___S__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN1SD2Ev, object_root=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load u32 @trace_digest
+    %t2 = binary mul u32 %t1, 33
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    %t6 = copy u32 %t5
+    %t7 = binary sub u32 %t2, %t6
+    store u32 %t7, @trace_digest
+    %t8 = load i32 @live
+    %t9 = binary sub i32 %t8, 1
+    store i32 %t9, @live
+    return void
+}
+function @S___S(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN1SD1Ev] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load u32 @trace_digest
+    %t2 = binary mul u32 %t1, 33
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    %t5 = load i32 %t4
+    %t6 = copy u32 %t5
+    %t7 = binary sub u32 %t2, %t6
+    store u32 %t7, @trace_digest
+    %t8 = load i32 @live
+    %t9 = binary sub i32 %t8, 1
+    store i32 %t9, @live
+    return void
+}
+function @case_0__H__H(%this : ptr [object_bytes=20], %x : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6case_01HC1ERK1S, inline_hint=yes] {
+  slot $this : ptr
+  slot $x : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %x, $x
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = load ptr $x
+    call void @S__S__ov3(%t2, %t3)
+    eh_cleanup ^constructor_cleanup_1
+    %t6 = load ptr $this
+    %t7 = index i8 [projection=field] %t6, 4
+    %t8 = load ptr $x
+    call void @S__S__ov3(%t7, %t8)
+    %t9 = index i8 [projection=array_element] %t7, 4
+    %t10 = load ptr $x
+    eh_try ^construction_cleanup_4
+    call void @S__S__ov3(%t9, %t10)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^constructor_cleanup_1:
+    eh_end
+    jump ^constructor_cleanup_entry_2
+
+  block ^constructor_cleanup_entry_2:
+    %t4 = load ptr $this
+    %t5 = index i8 [projection=field] %t4, 0
+    call void @S___S(%t5)
+    resume
+
+  block ^cleanup_resume_3:
+    eh_end
+    eh_end
+    jump ^constructor_cleanup_entry_2
+
+  block ^construction_cleanup_4:
+    call void @S___S(%t7)
+    jump ^cleanup_resume_3
+
+  block ^call_unwind_end_5:
+    %t11 = index i8 [projection=array_element] %t7, 8
+    %t12 = load ptr $x
+    eh_try ^construction_cleanup_6
+    call void @S__S__ov3(%t11, %t12)
+    eh_end
+    jump ^call_unwind_end_7
+
+  block ^construction_cleanup_6:
+    call void @S___S(%t9)
+    jump ^construction_cleanup_4
+
+  block ^call_unwind_end_7:
+    eh_end
+    eh_cleanup ^constructor_cleanup_8
+    %t25 = load ptr $this
+    %t26 = index i8 [projection=field] %t25, 16
+    %t27 = load ptr $x
+    call void @S__S__ov3(%t26, %t27)
+    eh_end
+    eh_cleanup ^constructor_cleanup_10
+    eh_end
+    return void
+
+  block ^constructor_cleanup_8:
+    eh_end
+    jump ^constructor_cleanup_entry_9
+
+  block ^constructor_cleanup_entry_9:
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=field] %t13, 4
+    %t15 = binary mul i64 2, 4
+    %t16 = index i8 [projection=array_element] %t14, %t15
+    call void @S___S(%t16)
+    %t17 = load ptr $this
+    %t18 = index i8 [projection=field] %t17, 4
+    %t19 = binary mul i64 1, 4
+    %t20 = index i8 [projection=array_element] %t18, %t19
+    call void @S___S(%t20)
+    %t21 = load ptr $this
+    %t22 = index i8 [projection=field] %t21, 4
+    %t23 = binary mul i64 0, 4
+    %t24 = index i8 [projection=array_element] %t22, %t23
+    call void @S___S(%t24)
+    jump ^constructor_cleanup_entry_2
+
+  block ^constructor_cleanup_10:
+    eh_end
+    jump ^constructor_cleanup_entry_11
+
+  block ^constructor_cleanup_entry_11:
+    %t28 = load ptr $this
+    %t29 = index i8 [projection=field] %t28, 16
+    call void @S___S(%t29)
+    jump ^constructor_cleanup_entry_9
+}
+function @case_0__H___H(%this : ptr [object_bytes=20]) -> void [unwind=no, binding=weak, object=_ZN6case_01HD1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 16
+    call void @S___S(%t2)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    %t5 = binary mul i64 2, 4
+    %t6 = index i8 [projection=array_element] %t4, %t5
+    call void @S___S(%t6)
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 4
+    %t9 = binary mul i64 1, 4
+    %t10 = index i8 [projection=array_element] %t8, %t9
+    call void @S___S(%t10)
+    %t11 = load ptr $this
+    %t12 = index i8 [projection=field] %t11, 4
+    %t13 = binary mul i64 0, 4
+    %t14 = index i8 [projection=array_element] %t12, %t13
+    call void @S___S(%t14)
+    %t15 = load ptr $this
+    %t16 = index i8 [projection=field] %t15, 0
+    call void @S___S(%t16)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    eh_cleanup ^destructor_suffix_cleanup_5
+    %t17 = load ptr $this
+    %t18 = index i8 [projection=field] %t17, 4
+    %t19 = binary mul i64 2, 4
+    %t20 = index i8 [projection=array_element] %t18, %t19
+    call void @S___S(%t20)
+    eh_end
+    jump ^destructor_suffix_next_6
+
+  block ^destructor_suffix_cleanup_5:
+    %t21 = load ptr $this
+    %t22 = index i8 [projection=field] %t21, 4
+    %t23 = binary mul i64 1, 4
+    %t24 = index i8 [projection=array_element] %t22, %t23
+    call void @S___S(%t24)
+    %t25 = load ptr $this
+    %t26 = index i8 [projection=field] %t25, 4
+    %t27 = binary mul i64 0, 4
+    %t28 = index i8 [projection=array_element] %t26, %t27
+    call void @S___S(%t28)
+    %t29 = load ptr $this
+    %t30 = index i8 [projection=field] %t29, 0
+    call void @S___S(%t30)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_6:
+    eh_cleanup ^destructor_suffix_cleanup_7
+    %t31 = load ptr $this
+    %t32 = index i8 [projection=field] %t31, 4
+    %t33 = binary mul i64 1, 4
+    %t34 = index i8 [projection=array_element] %t32, %t33
+    call void @S___S(%t34)
+    eh_end
+    jump ^destructor_suffix_next_8
+
+  block ^destructor_suffix_cleanup_7:
+    %t35 = load ptr $this
+    %t36 = index i8 [projection=field] %t35, 4
+    %t37 = binary mul i64 0, 4
+    %t38 = index i8 [projection=array_element] %t36, %t37
+    call void @S___S(%t38)
+    %t39 = load ptr $this
+    %t40 = index i8 [projection=field] %t39, 0
+    call void @S___S(%t40)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_8:
+    eh_cleanup ^destructor_suffix_cleanup_9
+    %t41 = load ptr $this
+    %t42 = index i8 [projection=field] %t41, 4
+    %t43 = binary mul i64 0, 4
+    %t44 = index i8 [projection=array_element] %t42, %t43
+    call void @S___S(%t44)
+    eh_end
+    jump ^destructor_suffix_next_10
+
+  block ^destructor_suffix_cleanup_9:
+    %t45 = load ptr $this
+    %t46 = index i8 [projection=field] %t45, 0
+    call void @S___S(%t46)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_10:
+    %t47 = load ptr $this
+    %t48 = index i8 [projection=field] %t47, 0
+    call void @S___S(%t48)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t49 = load ptr $this
+    %t50 = index i8 [projection=field] %t49, 16
+    call void @S___S(%t50)
+    %t51 = load ptr $this
+    %t52 = index i8 [projection=field] %t51, 4
+    %t53 = binary mul i64 2, 4
+    %t54 = index i8 [projection=array_element] %t52, %t53
+    call void @S___S(%t54)
+    %t55 = load ptr $this
+    %t56 = index i8 [projection=field] %t55, 4
+    %t57 = binary mul i64 1, 4
+    %t58 = index i8 [projection=array_element] %t56, %t57
+    call void @S___S(%t58)
+    %t59 = load ptr $this
+    %t60 = index i8 [projection=field] %t59, 4
+    %t61 = binary mul i64 0, 4
+    %t62 = index i8 [projection=array_element] %t60, %t61
+    call void @S___S(%t62)
+    %t63 = load ptr $this
+    %t64 = index i8 [projection=field] %t63, 0
+    call void @S___S(%t64)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @case_1__E_S____E(%this : ptr [object_bytes=12]) -> void [unwind=no, binding=weak, object=_ZN6case_11ED1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    call void @S___S(%t2)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 4
+    call void @S___S(%t4)
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    call void @S___S(%t6)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    eh_cleanup ^destructor_suffix_cleanup_5
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 4
+    call void @S___S(%t8)
+    eh_end
+    jump ^destructor_suffix_next_6
+
+  block ^destructor_suffix_cleanup_5:
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    call void @S___S(%t10)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_6:
+    %t11 = load ptr $this
+    %t12 = index i8 [projection=field] %t11, 0
+    call void @S___S(%t12)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=field] %t13, 8
+    call void @S___S(%t14)
+    %t15 = load ptr $this
+    %t16 = index i8 [projection=field] %t15, 4
+    call void @S___S(%t16)
+    %t17 = load ptr $this
+    %t18 = index i8 [projection=field] %t17, 0
+    call void @S___S(%t18)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @case_2__E_S____E(%this : ptr [object_bytes=60]) -> void [unwind=no, binding=weak, object=_ZN6case_21ED1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 52
+    call void @S___S(%t2)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @S___S(%t4)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    call void @S___S(%t6)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 52
+    call void @S___S(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    call void @S___S(%t10)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @case_3__E_S____E(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6case_31ED1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = binary mul i64 1, 8
+    %t4 = index i8 [projection=array_element] %t2, %t3
+    %t5 = index i8 [projection=array_element] %t4, 4
+    call void @S___S(%t5)
+    %t6 = index i8 [projection=array_element] %t4, 0
+    call void @S___S(%t6)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 0
+    %t9 = binary mul i64 0, 8
+    %t10 = index i8 [projection=array_element] %t8, %t9
+    %t11 = index i8 [projection=array_element] %t10, 4
+    call void @S___S(%t11)
+    %t12 = index i8 [projection=array_element] %t10, 0
+    call void @S___S(%t12)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = binary mul i64 0, 8
+    %t16 = index i8 [projection=array_element] %t14, %t15
+    %t17 = index i8 [projection=array_element] %t16, 4
+    call void @S___S(%t17)
+    %t18 = index i8 [projection=array_element] %t16, 0
+    call void @S___S(%t18)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t19 = load ptr $this
+    %t20 = index i8 [projection=field] %t19, 0
+    %t21 = binary mul i64 1, 8
+    %t22 = index i8 [projection=array_element] %t20, %t21
+    %t23 = index i8 [projection=array_element] %t22, 4
+    call void @S___S(%t23)
+    %t24 = index i8 [projection=array_element] %t22, 0
+    call void @S___S(%t24)
+    %t25 = load ptr $this
+    %t26 = index i8 [projection=field] %t25, 0
+    %t27 = binary mul i64 0, 8
+    %t28 = index i8 [projection=array_element] %t26, %t27
+    %t29 = index i8 [projection=array_element] %t28, 4
+    call void @S___S(%t29)
+    %t30 = index i8 [projection=array_element] %t28, 0
+    call void @S___S(%t30)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @case_4__E_S____E(%this : ptr [object_bytes=12]) -> void [unwind=no, binding=weak, object=_ZN6case_41ED1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    call void @S___S(%t2)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @case_4__I___I(%t4)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    call void @case_4__I___I(%t6)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 8
+    call void @S___S(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    call void @case_4__I___I(%t10)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @case_5__use(%x : ptr [pass=by_address, object_bytes=4], %y : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN6case_53useI1SEEvRKT_S4_] {
+  slot $x : ptr
+  slot $y : ptr
+  slot $e : obj<12x4>
+  slot $call__1 : i32
+  slot $arg__2 : obj<4x4>
+  slot $call__3 : i32
+
+  block ^entry:
+    store ptr %x, $x
+    store ptr %y, $y
+    eh_try ^cleanup_resume_1
+    %t1 = addr $e
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^call_unwind_end_2:
+    %t2 = addr $e
+    %t3 = index i8 [projection=field] %t2, 0
+    %t4 = load ptr $x
+    call void @S__S__ov3(%t3, %t4)
+    %t5 = addr $e
+    %t6 = index i8 [projection=field] %t5, 4
+    eh_try ^construction_cleanup_3
+    %t7 = addr $arg__2
+    call void @S__S__ov2(%t7, 9)
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^construction_cleanup_3:
+    call void @S___S(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_4:
+    eh_try ^construction_cleanup_5
+    %t8 = call i32 @read(%t7)
+    store i32 %t8, $call__1
+    %t9 = load i32 $call__1
+    store i32 %t9, %t6
+    %t10 = addr $e
+    %t11 = index i8 [projection=field] %t10, 8
+    %t12 = load ptr $y
+    call void @S__S__ov3(%t11, %t12)
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^construction_cleanup_5:
+    call void @S___S(%t7)
+    jump ^construction_cleanup_3
+
+  block ^call_unwind_end_6:
+    %t13 = addr $e
+    eh_try ^construction_cleanup_7
+    call void @S___S(%t7)
+    eh_end
+    jump ^call_unwind_end_8
+
+  block ^construction_cleanup_7:
+    call void @case_5__E_S____E(%t13)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_8:
+    eh_try ^cleanup_action_9
+    %t14 = call i32 @step_value()
+    store i32 %t14, $call__3
+    %t15 = load i32 $call__3
+    eh_end
+    jump ^call_unwind_end_10
+
+  block ^cleanup_action_9:
+    %t16 = addr $e
+    call void @case_5__E_S____E(%t16)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_10:
+    %t17 = addr $e
+    call void @case_5__E_S____E(%t17)
+    return void
+}
+function @case_6__E_S____E(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN6case_61ED1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    call void @S___S(%t2)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @S___S(%t4)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    call void @S___S(%t6)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 8
+    call void @S___S(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    call void @S___S(%t10)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @case_4__I___I(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN6case_41ID1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 0
+    %t3 = binary mul i64 1, 4
+    %t4 = index i8 [projection=array_element] %t2, %t3
+    call void @S___S(%t4)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    %t7 = binary mul i64 0, 4
+    %t8 = index i8 [projection=array_element] %t6, %t7
+    call void @S___S(%t8)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    %t11 = binary mul i64 0, 4
+    %t12 = index i8 [projection=array_element] %t10, %t11
+    call void @S___S(%t12)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t13 = load ptr $this
+    %t14 = index i8 [projection=field] %t13, 0
+    %t15 = binary mul i64 1, 4
+    %t16 = index i8 [projection=array_element] %t14, %t15
+    call void @S___S(%t16)
+    %t17 = load ptr $this
+    %t18 = index i8 [projection=field] %t17, 0
+    %t19 = binary mul i64 0, 4
+    %t20 = index i8 [projection=array_element] %t18, %t19
+    call void @S___S(%t20)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+function @case_5__E_S____E(%this : ptr [object_bytes=12]) -> void [unwind=no, binding=weak, object=_ZN6case_51EI1SED1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_cleanup ^destructor_cleanup_1
+    eh_end
+    eh_cleanup ^destructor_suffix_cleanup_3
+    %t1 = load ptr $this
+    %t2 = index i8 [projection=field] %t1, 8
+    call void @S___S(%t2)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t3 = load ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    call void @S___S(%t4)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t5 = load ptr $this
+    %t6 = index i8 [projection=field] %t5, 0
+    call void @S___S(%t6)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
+    %t7 = load ptr $this
+    %t8 = index i8 [projection=field] %t7, 8
+    call void @S___S(%t8)
+    %t9 = load ptr $this
+    %t10 = index i8 [projection=field] %t9, 0
+    call void @S___S(%t10)
+    eh_end
+    resume
+
+  block ^destructor_end_2:
+    return void
+}
+alias object _ZN6case_01HC2ERK1S = @case_0__H__H
+alias object _ZN6case_01HD2Ev = @case_0__H___H
+alias object _ZN6case_11ED2Ev = @case_1__E_S____E
+alias object _ZN6case_21ED2Ev = @case_2__E_S____E
+alias object _ZN6case_31ED2Ev = @case_3__E_S____E
+alias object _ZN6case_41ED2Ev = @case_4__E_S____E
+alias object _ZN6case_61ED2Ev = @case_6__E_S____E
+alias object _ZN6case_41ID2Ev = @case_4__I___I
+alias object _ZN6case_51EI1SED2Ev = @case_5__E_S____E
