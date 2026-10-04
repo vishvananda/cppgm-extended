@@ -4,13 +4,13 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **6 compiler families and 7 reviews remain**. MANGLE's frozen
-inherited-constructor and lambda/context cases now match fresh strict C++11
-Clang symbols, with no new fixture source files. Strict 6126/6126 prints one
-line; all required compiler checks and Alpha instruction/RSS gates pass.
-The timing confirmations and four verified hosted-header symbol renames are
-recorded below. Final fixture pruning and combined student export/harness
-validation remain deferred until compiler work is complete.
+Current status: **3 compiler families and 7 reviews remain**. FLOW-DEFINED
+now preserves valid non-void paths and nested goto labels. Its qualified
+compiler passes strict 6128/6128 with one output line, all required checks and
+Alpha instruction/RSS gates. The incorrect PA30 missing-return rejection
+oracle is retired; its defined execution is covered by the PA10 fixture.
+Final fixture pruning and combined student export/harness validation remain
+deferred until compiler work is complete.
 
 ## Strategy review after a70d1174b — 2026-10-03
 
@@ -113,7 +113,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **4 compiler issue families** remain
+Remaining-work count on 2026-10-04: **3 compiler issue families** remain
 open or in progress. MEMBER and EH-UNWIND-DTOR are completed below. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS, MANGLE, ARG-SLOTS and BACKEND-ARRAY-OPT are also completed.
 **Seven further reviews** have no established
@@ -235,7 +235,7 @@ The recent discovery inventory is not all C++11:
 | EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Open, independently reproduced: private conversion is accepted and invalid immediate conditions cause a hard error instead of selecting the fallback; Clang/GCC corroborate in C++11 extension mode. This C++20 feature is necessary for the supported libc++ profile: release/21.x __utility/pair.h lines 140/147/162 use conditional explicit in the C++11 constructor branch. Frozen header SHA and observations are recorded below. Deduction-guide controls are excluded from this row without their own header dependency. |
 | EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Done in the accompanying performance-approved checkpoint: deduplicate adjusted TypeIds and compare declarations as sets while retaining first-declaration order. The one positive is promoted to PA6/300 and its temporary control removed; the distinct-set negative remains. Nine scratch boundaries pass ours and Clang; GCC's adjusted-array/function disagreement is retained. PA6 112/112, strict report, every required compiler check and the final combined 4800-observation global performance gate pass. Earlier two failed cycle gates remain recorded. N3485 15.4/2,3 supplies the rule. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
-| FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Open: defined positive composites reject here with no-return or unbound-native-label errors while strict C++11 hosts accept. Reaching a non-void end is undefined behavior under N3485 6.6.3/2; host warnings for separate fallthrough negatives do not establish a missing diagnostic requirement. Reduce the genuine positive failures and review the course diagnostic policy separately. |
+| FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Done in this checkpoint: non-void fallthrough emits unreachable rather than requiring an unsupported diagnostic; semantic label presence retains nested statement containers after terminators. Two owning PA10/21 fixtures replace controls; PA33 links provide optimized native coverage. Retire the incorrect PA30 missing-return rejection and cover its defined returning path in PA10. Strict 6128/6128, all required checks and Alpha instruction/RSS gates pass; timing evidence retained below. |
 | ATTR-NORETURN | Diagnose standard noreturn argument and non-function target constraints | v4codex PA30 source201 | Done: argument rejection in 8a6bcd105; variable-target/provenance fix in this checkpoint. N3485 7.6.1/4 and 7.6.3/1 restrict the standard attribute to functions. Preserve GNU attribute provenance (including both namespace spellings), ignore unknown scoped attributes, and check resolved declarator types plus variable/member/parameter owners. Ours and Clang pass 28/28 focused outcomes; GCC invalid-target acceptance differences remain recorded. Add one PA29/500 variable negative and reuse the existing GNU-attribute fixture for an unknown-scoped-variable positive and existing noreturn runtime coverage. Affected 558/558, strict 6112/6112 in one line, debug/self-host PA5/all nine architecture checks/file/placement pass. The 192-observation screen plus 96-observation namespace timing confirmation pass instruction/RSS/equality/unscaled-counter checks: maximum instruction ratio 1.000729, median RSS ratios 1.0; combined namespace cycles median 1.004159 with interval [1.001728,1.010226], retained as diagnostic cost. Raw evidence is in noreturn-variable-appertainment/. |
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Done: retained validation treats the terminal T as a constructor name, preserving ordinary parameter shadowing checks. Extend the existing PA14 inherited-constructor fixture in cluster 300; remove the duplicate control. Strict 6120/6120, required audits and qualification, fresh C++11 hosts and Alpha performance gates pass. Ordinary using B::T and typename disagreements remain held. |
 | INHERITED-VALIDITY | Include other-subobject viability in inherited-constructor trait queries | v4codex PA31 source205 | Done: selected inherited-constructor trait queries validate default construction of other subobjects using typed member facts and existing constructor selection. Extend the existing PA29 fixture; remove the duplicate control. Original and private/reference/throwing boundaries agree with fresh strict C++11 hosts. Strict 6120/6120, required qualification/audits and Alpha instruction/RSS gates pass. |
@@ -7074,3 +7074,43 @@ combined export remain deferred. FLOW-DEFINED is next: both frozen PA10/PA21
 controls still reject with a no-return error, while fresh strict C++11
 Clang/GCC executions pass. Host warnings remain preserved; they do not
 establish a required diagnostic for undefined non-void fallthrough.
+
+### Defined non-void flow and nested labels — qualified, 2026-10-04
+
+FLOW-DEFINED's two frozen controls reject at entry with a no-return error;
+fresh strict C++11 Clang/GCC executions pass. N3485 6.6.3/2 makes evaluated
+non-void fallthrough undefined, rather than requiring a diagnostic. Emit an
+unreachable terminator for the syntactic end; retain existing main/void rules.
+The original student's composite separately loses a label inside an if after
+a goto. Publish label presence from the existing semantic label table and
+preserve statement containers after terminators only in label-bearing functions.
+No extra source walk; DumpNode remains 152 bytes, and functions without labels
+retain the existing pruning path. Regular, member, template and lambda cases
+pass alongside the original reducers: 54 fresh candidate/Clang/GCC O0/O2
+compile/run observations plus six observations of the final combined PA10 input.
+
+Two owning PA10/21 fixtures replace the prepared controls; keep loop permutations
+as scratch evidence. PA33 symlinks reuse their source for all nine optimized
+execution routes. The initial strict report found an inherited PA30 rejection
+fixture whose main only executes the returning path. Neither the owning handouts
+nor N3485 require its diagnostic. Preserve that input in scratch, retire its
+incorrect rejection oracle, and include its defined execution in the PA10 input.
+Generate references through exact ref-test selections, with no old reference churn.
+
+Candidate SHA256:
+`2890f7cc06ae604afd012f0eeaf9e3822860ddd6e661f9440bcc25958117beae`.
+Strict 6128/6128 prints exactly one line; debug-info, backend variants (including
+54/54 native driver executions), self-host through PA5, all nine architecture
+audits and placement pass. The file audit warning log is byte-identical to the
+previous qualified checkpoint. Alpha reuses the same 66 frozen source inputs and
+three immutable binaries; all six raw object outputs are byte-identical, without
+ABI normalization. All 336 observations independently verify unscaled counters,
+RSS, zero statuses and output hashes. Maximum instruction median is 1.000230;
+maximum RSS median is 1.000122. One local-statics timing confirmation gives
+calibrated cycles 1.004406, CI [1.002947, 1.018818]; retain it alongside the
+initial 1.016750 screen, without a neutrality claim or further timing repeats.
+Evidence: `/tmp/cppgm-v4-audit-review/defined-control-flow/` and
+`alpha:/tmp/cppgm-v4-audit-review-20261004-defined-control-flow/`.
+Three compiler families and seven reviews remain. Final fixture pruning and
+combined student export/harness validation remain deferred. EXPLICIT-CONTEXT
+is next, restricted to the established libc++ 21 C++11 header dependency.

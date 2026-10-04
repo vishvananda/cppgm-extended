@@ -2508,7 +2508,7 @@ void Analyzer::AnalyzeFunction(NodeId node, ScopeId scope,
 		CompletePlaceholderFunctionReturn(binding);
 		FinalizeNamedReturnSlot(output_node);
 	}
-	FinishFunctionControlFlowFacts();
+	dump_.nodes[output_node].body_contains_source_label = FinishFunctionControlFlowFacts();
 	dump_.nodes[output_node].type = member ?
 		AdaptMemberFunctionType(binding) : GetFunction(binding).type;
 	current_return_type_ = previous_return;

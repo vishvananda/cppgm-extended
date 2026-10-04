@@ -62,7 +62,7 @@ void Analyzer::BeginFunctionControlFlowFacts()
 	pending_control_flow_gotos_.clear();
 }
 
-void Analyzer::FinishFunctionControlFlowFacts()
+bool Analyzer::FinishFunctionControlFlowFacts()
 {
 	if (current_exception_control_context_ != 0 ||
 		exception_control_contexts_.empty())
@@ -71,6 +71,7 @@ void Analyzer::FinishFunctionControlFlowFacts()
 		ThrowSemanticError("goto names an undefined label");
 	if (function_control_flow_stack_.empty())
 		ThrowInternalCompilerError("semantic control-flow stack underflow");
+	const bool has_labels = !control_flow_labels_.empty();
 	FunctionControlFlowFactState saved =
 		std::move(function_control_flow_stack_.back());
 	function_control_flow_stack_.pop_back();
@@ -79,6 +80,7 @@ void Analyzer::FinishFunctionControlFlowFacts()
 	current_exception_body_cleanup_ = saved.body_cleanup;
 	control_flow_labels_.swap(saved.labels);
 	pending_control_flow_gotos_.swap(saved.pending_gotos);
+	return has_labels;
 }
 
 void Analyzer::PushExceptionControlContext(std::uint32_t region, ScopeId scope)

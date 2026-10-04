@@ -238,6 +238,7 @@ struct DumpNode
 	bool contains_construction_cleanup : 1;
 	bool synthesized_prefix_lifetime_only : 1;
 	bool body_contains_source_try : 1;
+	bool body_contains_source_label : 1;
 	FunctionTryBodyKind function_try_body;
 	// Packed SimpleTokenKind + 1 for operator expression nodes; 0 for none.
 	std::uint8_t operation_kind;
@@ -326,6 +327,7 @@ struct DumpNode
 		  construction_recipe(false), construction_nonthrowing(false),
 		  contains_construction_cleanup(false),
 		  synthesized_prefix_lifetime_only(false), body_contains_source_try(false),
+		  body_contains_source_label(false),
 		  function_try_body(FUNCTION_TRY_BODY_NONE),
 		  operation_kind(0),
 		  exception_control_exit_count(0) {}

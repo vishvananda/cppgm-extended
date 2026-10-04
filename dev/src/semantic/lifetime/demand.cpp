@@ -301,6 +301,8 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 	if (emit_definition &&
 		initial.retained_definition_semantics != kNoDumpEdge)
 	{
+		dump_.nodes[function].body_contains_source_label = dump_.nodes[
+			initial.retained_definition_semantics].body_contains_source_label;
 		for (std::uint32_t edge = dump_.nodes[
 			initial.retained_definition_semantics].first_edge;
 			edge != kNoDumpEdge; edge = dump_.edges[edge].next)
@@ -462,7 +464,7 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 			}
 		}
 		else dump_.Add(function, MakeDump(DUMP_COMPOUND_STATEMENT));
-		FinishFunctionControlFlowFacts();
+		dump_.nodes[function].body_contains_source_label = FinishFunctionControlFlowFacts();
 		FinalizeNamedReturnSlot(function);
 		current_return_type_ = previous_return;
 		current_class_context_ = previous_class;

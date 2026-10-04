@@ -821,6 +821,7 @@ private:
 	void ResetCommonFunctionLoweringState(Function* function)
 	{
 		function_ = function;
+		function_contains_source_label_ = false;
 		temp_counter_ = 0;
 		ResetFunctionSlots(); ResetControlFlowReachability();
 		ResetFullExpressionFunctionState();
@@ -907,6 +908,7 @@ private:
 			program_.names.Get(entry_binding.name) == "main";
 		FillBoundary(node, &result.parameters, &result.result, &result.variadic);
 		ResetCommonFunctionLoweringState(&result);
+		function_contains_source_label_ = record.body_contains_source_label;
 		current_result_ = result.result;
 		current_class_value_boundary_ = FunctionHasClassValueBoundary(record.type);
 		const TypeRecord& source_function = program_.types.Get(record.type); current_indirect_result_ = UsesIndirectClassResult(source_function.child);
@@ -973,7 +975,10 @@ private:
 					Operand(0, result.result);
 				Emit(instruction);
 			}
-			else ThrowLoweringSource("non-void function has no return");
+			// N3485 6.6.3/2 makes non-void fallthrough undefined, rather
+			// than ill-formed. Constant loops and nonthrowing try bodies
+			// can leave a syntactic end block that never executes.
+			else Emit(Instruction(Instruction::UNREACHABLE));
 		}
 		FinishFunctionExceptionBoundary();
 		if (stats_)
@@ -1062,6 +1067,7 @@ private:
 	std::vector<std::uint8_t> local_static_emitted_;
 	std::vector<std::uint32_t> local_static_finalizers_;
 	Function* function_;
+	bool function_contains_source_label_ = false;
 	BlockId current_block_;
 	LowType current_result_;
 	bool current_result_reference_, current_indirect_result_;

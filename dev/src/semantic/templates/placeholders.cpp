@@ -393,7 +393,7 @@ void Analyzer::AnalyzeRetainedPlaceholderFunctionBody(
 		};
 		ScopedCleanup<decltype(fail_body)> body_failure(fail_body);
 		AnalyzeCompound(requested.definition_body, function_scope, detached);
-		FinishFunctionControlFlowFacts();
+		dump_.nodes[detached].body_contains_source_label = FinishFunctionControlFlowFacts();
 		CompletePlaceholderFunctionReturn(function);
 		const FunctionInfo& completed = GetFunction(function);
 		const bool declared_constexpr = completed.constexpr_function ||

@@ -1781,7 +1781,7 @@ private:
 	void AppendScopeDestructionActions(ScopeId scope,
 		std::uint32_t output_parent, ScopeId stop_exclusive = kNoScope);
 	void BeginFunctionControlFlowFacts();
-	void FinishFunctionControlFlowFacts();
+	bool FinishFunctionControlFlowFacts();
 	void PushExceptionControlContext(std::uint32_t region = kNoDumpEdge, ScopeId scope = kNoScope);
 	void PopExceptionControlContext();
 	void RegisterControlFlowLabel(NameId name, ScopeId scope);

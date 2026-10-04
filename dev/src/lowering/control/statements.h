@@ -1393,12 +1393,18 @@ protected:
 				child_kind != DUMP_DEFAULT_STATEMENT &&
 				child_kind != DUMP_LABELED_STATEMENT)
 			{
-				// The statement is unreachable -- a `break` after a noreturn
-				// call, say -- but a case, default or goto label later in
-				// the same sequence is still a target, so only this one is
-				// skipped and the walk goes on.
-				derived.PushStatementSequence(derived.arena_.edges[task.node].next);
-				return;
+				const bool container = child_kind == DUMP_COMPOUND_STATEMENT ||
+					child_kind == DUMP_IF_STATEMENT || child_kind == DUMP_WHILE_STATEMENT ||
+					child_kind == DUMP_DO_STATEMENT || child_kind == DUMP_FOR_STATEMENT ||
+					child_kind == DUMP_SWITCH_STATEMENT || child_kind == DUMP_TRY_STATEMENT;
+				if (!derived.function_contains_source_label_ || !container)
+				{
+					derived.PushStatementSequence(derived.arena_.edges[task.node].next);
+					return;
+				}
+				// A goto may enter a label nested in a later statement, even
+				// when ordinary entry into that statement is unreachable.
+				derived.SelectBlock(derived.AddBlock(derived.NewLabel("unreachable")));
 			}
 			derived.PushStatementSequence(derived.arena_.edges[task.node].next);
 			derived.PushStatementNode(child);
