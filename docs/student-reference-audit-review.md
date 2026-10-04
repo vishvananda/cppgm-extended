@@ -114,8 +114,8 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **2 compiler issue families** remain
-open or in progress. MEMBER and EH-UNWIND-DTOR are completed below. LOOKUP-NAMESPACE-MIXED is completed under the updated
+Remaining-work count on 2026-10-04: **0 confirmed compiler issue families** remain
+open or in progress; the seven contract reviews below still need final dispositions. MEMBER and EH-UNWIND-DTOR are completed below. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS, MANGLE, ARG-SLOTS and BACKEND-ARRAY-OPT are also completed.
 **Seven further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
@@ -215,7 +215,7 @@ The recent discovery inventory is not all C++11:
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Done in this checkpoint: reuse native CFG successors for bounded, equal-shaped object exclusion; preserve loops, pairwise group conflicts and conservative EH storage. The original reducer spans 103,824 bytes at O1/O2/O3 with correct values and 64 destructors. Promote one existing PA33 control with one escaped-pointer loop boundary; strict 6127/6127 in one line, all required checks and 432 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain the positive diagnostic timing medians below. |
 | BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Done in this checkpoint: preserve handler inputs across cold throwing calls independently of presentation order; refresh shared-storage/address lifetimes. Both existing PA21 programs pass at O1/O2/O3 on standalone, compiler-object and host-native routes through PA33 source symlinks. No copied fixture bodies or changed references. Strict 6127/6127 in one line, all required checks and 384 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain positive timing medians below. |
-| BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Partly done: duplicate RTTI labels no longer reproduce; frozen virtual-diamond/ambiguous RTTI searches and destructor dynamic-rethrow lifetimes are qualified below. A signed count in the existing private exception header retains objects across rethrow and nested catches; source/host ABI models are unchanged. Remaining: 32-byte automatic alignment intermittently fails on native and host-object routes at O0/O2. Frozen baseline evidence is in backend-frozen-final/. |
+| BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Done for frozen confirmed failures: duplicate RTTI labels no longer reproduce; virtual-diamond/ambiguous RTTI searches, destructor dynamic-rethrow lifetimes and automatic stack alignment are qualified below. Preserve the ABI frame in rbp and reserve an aligned callee-saved local base only for alignment above 16 bytes. Extend the existing PA11 alignment fixture and reuse it through one PA33 driver symlink. Strict 6135/6135, required compiler checks and all 336 Alpha observations pass instruction/RSS and raw-output gates. No ABI spelling change. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
@@ -7315,3 +7315,47 @@ claiming neutrality or running more confirmations. Evidence:
 `alpha:/tmp/cppgm-v4-audit-review-20261004-native-rethrow-lifetime/`.
 One confirmed BACKEND failure (automatic alignment) and seven reviews remain.
 Final fixture pruning and combined student export/harness validation stay pending.
+
+### Native automatic stack alignment — qualified, 2026-10-04
+
+The frozen 32-byte automatic-object reducer intermittently fails on both
+native and host-object routes at O0/O2. Layout aligns local offsets but the
+ABI frame base itself only guarantees 16-byte alignment. Consume alignment
+in the existing typed storage-facts loops, reserve callee-saved r12 for an
+aligned local base when necessary, and retain rbp for incoming stack arguments
+and unwind metadata. Frame allocation aligns the start of each object,
+including spans smaller than their requested alignment. Encoding, frame
+optimization and teardown preserve that distinction. Ordinary frames retain
+their original output. The native Function model gains one size_t; there is
+no additional source walk, public ABI or spelling change. N3485 3.11 and
+7.6.2 require the requested supported alignment.
+
+Extend PA11/300's existing alignas layout fixture with automatic storage and
+a seven-scalar-argument call; C-style pointer/integer casts are already within
+PA10. Reuse this source via one PA33 driver symlink, adding no owning source
+fixture. Regenerate only its LowIR reference. The original reducer passes all
+64 candidate executions. The owning fixture and separate 64-byte alignment/
+exception-cleanup preservation control pass 128 executions across native,
+host-object and strict C++11 Clang/GCC O0/O3 checks. All nine new driver routes
+pass. Preserve the first failed build and its mislabeled baseline-only probe
+as explicitly unqualified evidence in first-proof-status.json.
+
+Compiler SHA256:
+`1291b7eb890a2c3b37880a30a221dfd1fd86bf15ac3b45b982e488a50ac09704`;
+native SHA256:
+`0191f16444c7304dd63bf2359f81f38777ab82d8d684ba85fa1f5de083c5dbcc`.
+Strict 6135/6135 prints exactly one line. Debug-info, backend variants (90/90
+native executions), self-host PA5, all nine architecture targets, file and
+placement audits pass. The 37-warning file log is byte-identical to the prior
+qualified checkpoint; changed native files remain within their limits.
+
+Alpha's 69 frozen inputs produce six byte-identical raw object pairs without
+normalization. All 336 raw unscaled counter/RSS observations, statuses, hashes
+and paired medians are independently verified. Maximum instruction median
+is 1.000117989 and RSS median is 1.000054069. One copy-template timing
+confirmation gives calibrated cycles 1.005803442, CI [0.988621753,1.032942896],
+retaining the initial 1.012055225 screen; make no neutrality claim or further
+runs. Evidence: `/tmp/cppgm-v4-audit-review/native-stack-alignment/qualified-proof.json`
+and `alpha:/tmp/cppgm-v4-audit-review-20261004-native-stack-alignment/`.
+All previously confirmed compiler families are now qualified. Seven contract
+reviews, fixture pruning and combined student export/harness validation remain.

@@ -40,6 +40,7 @@ MemoryAddress prepare_memory_address(
 {
   MemoryAddress address;
   if(operand.kind == mir_model::MirOperand::OP_FRAME) {
+    address.base = frame_base_register(function, operand.offset);
     address.displacement = actual_frame_offset(function, operand.offset);
   } else if(operand.kind == mir_model::MirOperand::OP_DEREF) {
     address.base = operand.reg;

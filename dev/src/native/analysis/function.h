@@ -127,6 +127,7 @@ struct StorageFacts
   // LowIR parameter ordinal.
   std::vector<std::size_t> parameter_selected_uses;
   std::vector<unsigned char> dead_store_slots;
+  std::size_t frame_alignment = 16;
   bool has_promoted_parameter_slots = false;
 
   bool has(lowir_model::ValueId value, ValueFlag flag) const

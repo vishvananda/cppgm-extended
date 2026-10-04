@@ -803,6 +803,8 @@ bool can_recolor_register(const MirFunction & function,
                           const Liveness & liveness,
                           X64Register source, X64Register destination)
 {
+  if(function.frame_alignment > 16 &&
+     (source == XR_R12 || destination == XR_R12)) return false;
   if(debug_ranges_use_register(function, source)) return false;
   bool source_seen = false;
   for(std::size_t block_index = 0;
@@ -2180,7 +2182,7 @@ std::size_t align_up(std::size_t value, std::size_t alignment)
 void finalize_frame(MirFunction & function, Stats * stats)
 {
   if(has_implicit_callee_saved_use(function)) return;
-  RegisterMask referenced = 0;
+  RegisterMask referenced = function.frame_alignment > 16 ? gpr_bit(XR_R12) : 0;
   for(std::size_t i = 0; i < function.blocks.size(); ++i)
     for(std::size_t j = 0; j < function.blocks[i].instructions.size(); ++j)
       for(std::size_t k = 0;
@@ -2204,7 +2206,7 @@ void finalize_frame(MirFunction & function, Stats * stats)
 void select_frame_pointer_policy(MirFunction & function, Stats * stats)
 {
   function.omit_frame_pointer = false;
-  if(function.has_dynamic_stack || function.host_eh_enabled ||
+  if(function.frame_alignment > 16 || function.has_dynamic_stack || function.host_eh_enabled ||
      function.scratch_bytes != 0 || !function.debug_variables.empty()) return;
 
   bool has_call = false;

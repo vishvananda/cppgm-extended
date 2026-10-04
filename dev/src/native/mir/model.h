@@ -458,6 +458,8 @@ struct Function
   std::size_t stack_frame_bytes = 0;
   std::size_t stack_floor_bytes = 0;
   std::size_t stack_size = 0;
+  // Overaligned local storage uses preserved r12; rbp keeps the ABI frame.
+  std::size_t frame_alignment = 16;
   std::size_t scratch_bytes = 0;
   bool has_dynamic_stack = false;
   // O1+ may omit rbp when final MIR contains no frame operand or implicit

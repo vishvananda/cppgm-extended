@@ -7,6 +7,12 @@
 
 namespace lowir_native {
 
+inline X64Register frame_base_register(const mir_model::MirFunction & function,
+                                      long long offset)
+{
+  return offset <= 0 && function.frame_alignment > 16 ? XR_R12 : XR_RBP;
+}
+
 long long actual_frame_offset(const mir_model::MirFunction & function,
                               long long abstract_offset);
 void emit_address_load(elf_detail::CodeBuffer & out,

@@ -15,8 +15,8 @@ inline long long append_binding(
     const lowir_model::LowType & type)
 {
   if(frame_bytes == 0 && cppgm_variant::selected("frame-pad")) frame_bytes = 16;
-  frame_bytes = selection::align_up(frame_bytes, type.alignment);
-  frame_bytes += abi::frame_storage_size(type);
+  frame_bytes = selection::align_up(
+    frame_bytes + abi::frame_storage_size(type), type.alignment);
   mir_model::MirFrameBinding binding;
   binding.kind = kind;
   binding.name = name;

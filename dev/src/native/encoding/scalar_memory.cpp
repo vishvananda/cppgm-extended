@@ -10,7 +10,7 @@ namespace lowir_native {
 long long actual_frame_offset(const mir_model::MirFunction & function,
                               long long abstract_offset)
 {
-  if(abstract_offset >= 0) return abstract_offset;
+  if(abstract_offset >= 0 || function.frame_alignment > 16) return abstract_offset;
   return abstract_offset -
     static_cast<long long>(function.callee_saved_regs.size() * 8);
 }
@@ -35,7 +35,7 @@ void emit_address_load(elf_detail::CodeBuffer & out,
       emit_load(out, destination, XR_R11, 0, width);
     }
   } else if(address.kind == mir_model::MirOperand::OP_FRAME) {
-    emit_load(out, destination, XR_RBP,
+    emit_load(out, destination, frame_base_register(function, address.offset),
               actual_frame_offset(function, address.offset), width);
   } else native_errors::ThrowInternal("unsupported native load address");
 }
@@ -98,7 +98,7 @@ void emit_address_normalized_load(
         out, destination, XR_R11, 0, width, sign_extend);
     }
   } else if(address.kind == mir_model::MirOperand::OP_FRAME) {
-    emit_normalized_load(out, destination, XR_RBP,
+    emit_normalized_load(out, destination, frame_base_register(function, address.offset),
       actual_frame_offset(function, address.offset), width, sign_extend);
   } else native_errors::ThrowInternal("unsupported normalized native load address");
 }
@@ -130,7 +130,7 @@ void emit_address_store(elf_detail::CodeBuffer & out,
       emit_store(out, XR_R11, 0, source, width);
     }
   } else if(address.kind == mir_model::MirOperand::OP_FRAME) {
-    emit_store(out, XR_RBP, actual_frame_offset(function, address.offset),
+    emit_store(out, frame_base_register(function, address.offset), actual_frame_offset(function, address.offset),
                source, width);
   } else native_errors::ThrowInternal("unsupported native store address");
 }
@@ -175,7 +175,7 @@ void emit_address_immediate_store(
     emit_symbol_move(out, XR_R11, address.symbol, address.address_binding);
     emit_immediate_store(out, XR_R11, 0, value, width);
   } else if(address.kind == mir_model::MirOperand::OP_FRAME) {
-    emit_immediate_store(out, XR_RBP,
+    emit_immediate_store(out, frame_base_register(function, address.offset),
       actual_frame_offset(function, address.offset), value, width);
   } else native_errors::ThrowInternal("unsupported native immediate-store address");
 }
@@ -214,7 +214,7 @@ bool emit_small_copy_bytes(
     if(operand.kind != mir_model::MirOperand::OP_FRAME || !function)
       native_errors::ThrowInternal(
         "small native copy requires register or frame operands");
-    return XR_RBP;
+    return frame_base_register(*function, operand.offset);
   };
   const auto side_offset = [&](const mir_model::MirOperand & operand) {
     return operand.kind == mir_model::MirOperand::OP_FRAME ?
@@ -291,7 +291,7 @@ bool emit_preserving_dynamic_copy(
       remap_saved_parameter(instruction.operands[index]);
     if(instruction.copy_address_operand_mask & (1u << index)) {
       if(operand.kind == mir_model::MirOperand::OP_FRAME)
-        emit_lea(out, destination, XR_RBP,
+        emit_lea(out, destination, frame_base_register(*function, operand.offset),
                  actual_frame_offset(*function, operand.offset));
       else if(operand.kind == mir_model::MirOperand::OP_DEREF) {
         if(operand.has_index)

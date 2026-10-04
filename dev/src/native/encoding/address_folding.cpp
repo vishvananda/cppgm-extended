@@ -77,7 +77,7 @@ bool emit_folded_store(
   long long offset = address.offset;
   X64Register base = address.reg;
   if(address.kind == MirOperand::OP_FRAME) {
-    base = XR_RBP;
+    base = frame_base_register(function, offset);
     offset = actual_frame_offset(function, offset);
   } else if(address.kind == MirOperand::OP_GLOBAL) {
     if(source == XR_R11) return false;

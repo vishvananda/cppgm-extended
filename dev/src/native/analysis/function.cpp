@@ -994,6 +994,8 @@ static void initialize_storage_facts(
   facts->dead_store_slots.assign(function.slot_names.size(), 0);
   value_parameters->assign(function.value_names.size(), no_index);
   for(std::size_t parameter = 0; parameter < function.params.size(); ++parameter) {
+    facts->frame_alignment = std::max<std::size_t>(facts->frame_alignment,
+      function.params[parameter].type.alignment);
     (*value_parameters)[function.params[parameter].value] = parameter;
     facts->parameter_selected_uses[parameter] =
       function_facts.uses[function.params[parameter].value];
@@ -1022,6 +1024,7 @@ StorageFacts analyze_storage(
     const lowir_model::SlotId slot_id = function.slots[s];
     const lowir_model::LowType & slot_type =
       lowir_model::lowir_slot_type(function, slot_id);
+    facts.frame_alignment = std::max<std::size_t>(facts.frame_alignment, slot_type.alignment);
     if(slot_type.kind == lowir_model::LTK_OBJECT) {
       const lowir_model::ValueId parameter_value =
         function.slot_parameter_values[slot_id];

@@ -136,6 +136,8 @@ public:
         });
     if(facts_.has_i128_atomic) registers_.reserve(XR_RBX);
     storage_facts_ = analyze_storage(source_, facts_, tls_wrappers_);
+    target_.frame_alignment = storage_facts_.frame_alignment;
+    if(target_.frame_alignment > 16) registers_.reserve(XR_R12);
     compute_location_timeline(source_, facts_, optimization_level_, stats_);
     build_planned_release_schedule();
     slot_offsets_.resize(source_.slot_names.size(), 0);

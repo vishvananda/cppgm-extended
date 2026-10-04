@@ -82,40 +82,9 @@ std::vector<unsigned char> ordinary_host_block_entries(
   }
   return result;
 }
-void emit_function_prologue(CodeBuffer & out, const mir_model::MirFunction & function)
-{
-  if(!function.omit_frame_pointer) {
-    emit_push(out, XR_RBP);
-    emit_register_move(out, XR_RBP, XR_RSP);
-  }
-  for(std::size_t i = 0; i < function.callee_saved_regs.size(); ++i)
-    emit_push(out, function.callee_saved_regs[i]);
-  emit_stack_adjust(out, true,
-                    static_cast<unsigned>(
-                      epilogue_detail::function_stack_adjustment(function)));
-}
-void emit_function_teardown(CodeBuffer & out,
-                            const mir_model::MirFunction & function)
-{
-  if(function.omit_frame_pointer) {
-    emit_stack_adjust(out, false,
-      static_cast<unsigned>(
-        epilogue_detail::function_stack_adjustment(function)));
-  } else if(function.has_dynamic_stack) {
-    emit_register_move(out, XR_RSP, XR_RBP);
-    emit_stack_adjust(out, true,
-      static_cast<unsigned>(function.callee_saved_regs.size() * 8));
-  } else
-    emit_stack_adjust(out, false,
-                      static_cast<unsigned>(
-                        epilogue_detail::function_stack_adjustment(function)));
-  for(std::size_t i = function.callee_saved_regs.size(); i != 0; --i)
-    emit_pop(out, function.callee_saved_regs[i - 1]);
-  if(!function.omit_frame_pointer) emit_pop(out, XR_RBP);
-}
 void emit_function_return(CodeBuffer & out, const mir_model::MirFunction & function)
 {
-  emit_function_teardown(out, function);
+  epilogue_detail::emit_teardown(out, function);
   out.byte(0xc3);
 }
 void require_operands(const mir_model::MirInstruction & instruction,
@@ -145,7 +114,7 @@ void float_address(CodeBuffer & out, const mir_model::MirOperand & address,
     base = address.reg;
     displacement = address.offset;
   } else if(address.kind == mir_model::MirOperand::OP_FRAME) {
-    base = XR_RBP;
+    base = frame_base_register(function, address.offset);
     displacement = actual_frame_offset(function, address.offset);
   } else if(address.kind == mir_model::MirOperand::OP_GLOBAL) {
     emit_symbol_move(out, XR_R11, address.symbol,
@@ -1455,7 +1424,8 @@ void emit_instruction(CodeBuffer & out, const mir_model::MirInstruction & instru
     if(!function) native_errors::ThrowInternal("lea outside function");
     require_operands(instruction, 2);
     if(instruction.operands[1].kind == mir_model::MirOperand::OP_FRAME) {
-      emit_lea(out, require_register(instruction.operands[0]), XR_RBP,
+      emit_lea(out, require_register(instruction.operands[0]),
+               frame_base_register(*function, instruction.operands[1].offset),
                actual_frame_offset(*function, instruction.operands[1].offset));
       return;
     }
@@ -1665,7 +1635,7 @@ void emit_instruction(CodeBuffer & out, const mir_model::MirInstruction & instru
     require_operands(instruction, 1);
     if(instruction.operands[0].kind != mir_model::MirOperand::OP_SYMBOL)
       native_errors::ThrowInternal("sibling call target is not a symbol");
-    emit_function_teardown(out, *function);
+    epilogue_detail::emit_teardown(out, *function);
     out.byte(0xe9);
     out.relative32(instruction.operands[0].symbol);
     return;
@@ -1914,7 +1884,7 @@ void emit_prepared_function(
   out.label(function.symbol);
   if(function.object_symbol.valid()) out.label_object(function.object_symbol);
   out.begin_function_blocks(function.block_labels.size());
-  emit_function_prologue(out, function);
+  epilogue_detail::emit_prologue(out, function);
   const epilogue_detail::Plan epilogue_plan =
     epilogue_detail::make_plan(function);
   if(stats) {
@@ -2429,7 +2399,10 @@ void emit_host_instruction(
      instruction.opcode ==
        mir_model::MirInstruction::MI_LOAD_EXCEPTION_SELECTOR) {
     require_operands(instruction, 1);
-    emit_load(out, require_register(instruction.operands[0]), XR_RBP,
+    emit_load(out, require_register(instruction.operands[0]),
+      frame_base_register(function,
+        instruction.opcode == mir_model::MirInstruction::MI_LOAD_EXCEPTION ?
+        function.host_eh_exception_offset : function.host_eh_selector_offset),
       actual_frame_offset(function,
         instruction.opcode == mir_model::MirInstruction::MI_LOAD_EXCEPTION ?
         function.host_eh_exception_offset : function.host_eh_selector_offset),
@@ -2442,7 +2415,7 @@ void emit_host_instruction(
       emit_unconditional_jump(out, shared_resume);
       return;
     }
-    emit_load(out, XR_RDI, XR_RBP,
+    emit_load(out, XR_RDI, frame_base_register(function, function.host_eh_exception_offset),
       actual_frame_offset(function, function.host_eh_exception_offset), 64);
     const std::size_t start = out.size();
     out.byte(0xe8);
@@ -2479,7 +2452,7 @@ void emit_host_resume_terminal(CodeBuffer & out,
                                const mir_model::MirFunction & function,
                                HostFunctionLayout & layout)
 {
-  emit_load(out, XR_RDI, XR_RBP,
+  emit_load(out, XR_RDI, frame_base_register(function, function.host_eh_exception_offset),
     actual_frame_offset(function, function.host_eh_exception_offset), 64);
   const std::size_t start = out.size();
   out.byte(0xe8);
@@ -2541,7 +2514,7 @@ HostFunctionLayout emit_prepared_host_function(
     if(!function.host_eh_clauses[block].empty() &&
        block < ordinary_entries.size() && ordinary_entries[block])
       landing_entries[block] = out.internal_label("host_eh_landing_entry");
-  emit_function_prologue(out, function);
+  epilogue_detail::emit_prologue(out, function);
   const epilogue_detail::Plan epilogue_plan =
     epilogue_detail::make_plan(function);
   if(stats) {
@@ -2565,10 +2538,10 @@ HostFunctionLayout emit_prepared_host_function(
        !function.host_eh_clauses[block_id].empty() &&
        (block_id >= landing_entries.size() ||
         !landing_entries[block_id].valid())) {
-      emit_store(out, XR_RBP,
+      emit_store(out, frame_base_register(function, function.host_eh_exception_offset),
         actual_frame_offset(function, function.host_eh_exception_offset),
         XR_RAX, 64);
-      emit_store(out, XR_RBP,
+      emit_store(out, frame_base_register(function, function.host_eh_selector_offset),
         actual_frame_offset(function, function.host_eh_selector_offset),
         XR_RDX, 64);
     }
@@ -2609,10 +2582,10 @@ HostFunctionLayout emit_prepared_host_function(
   for(std::size_t block = 0; block < landing_entries.size(); ++block) {
     if(!landing_entries[block].valid()) continue;
     out.label(landing_entries[block]);
-    emit_store(out, XR_RBP,
+    emit_store(out, frame_base_register(function, function.host_eh_exception_offset),
       actual_frame_offset(function, function.host_eh_exception_offset),
       XR_RAX, 64);
-    emit_store(out, XR_RBP,
+    emit_store(out, frame_base_register(function, function.host_eh_selector_offset),
       actual_frame_offset(function, function.host_eh_selector_offset),
       XR_RDX, 64);
     emit_unconditional_jump(out,

@@ -5,6 +5,7 @@
 #include <cstddef>
 
 namespace lowir_native {
+namespace elf_detail { class CodeBuffer; }
 namespace epilogue_detail {
 
 struct Plan
@@ -21,6 +22,10 @@ bool is_return(const mir_model::MirInstruction & instruction);
 std::size_t function_stack_adjustment(
     const mir_model::MirFunction & function);
 Plan make_plan(const mir_model::MirFunction & function);
+void emit_prologue(elf_detail::CodeBuffer & out,
+                   const mir_model::MirFunction & function);
+void emit_teardown(elf_detail::CodeBuffer & out,
+                   const mir_model::MirFunction & function);
 
 }  // namespace epilogue_detail
 }  // namespace lowir_native
