@@ -16,6 +16,13 @@ course 5719/5719 prints one line with empty stderr, all wrappers and scaffolds
 pass, and injected student-tool failures remain visible. Six stale generated
 examples are regenerated without changing inputs or quality bounds.
 
+The subsequent push/CI request is tracked in draft PR #62. Its first full
+matrix exposes two additional environment-specific compiler failures: a heap
+corruption on GCC 13 hosted self-compilation and libc++ 21 fixed-call
+validation failures. The frozen student/Argon queue remains complete; these
+new CI reproductions are under investigation. The Make 4.3 harness failure
+is corrected without relaxing report-output assertions.
+
 ## Strategy review after a70d1174b — 2026-10-03
 
 Implementation paused at the user's request after a70d1174b and resumed
@@ -144,6 +151,9 @@ The recent discovery inventory is not all C++11:
 
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
+| CI-MAKE-ENV | Isolate scratch top-level report invocations from the parent Make environment | PR #62 / GNU Make 4.3 | Fixed: clear MAKEFLAGS, MFLAGS, MAKELEVEL and MAKEOVERRIDES in the report-test subprocess. Exact GNU Make 4.3 reproduction fails six assertions before the correction and all seven tests pass afterward; the full harness passes under Make 4.3. No production Makefile, shipped file or assertion changes. |
+| CI-GCC13-HEAP | Diagnose heap corruption during hosted pp_tokenizer self-compilation | PR #62 / Ubuntu 24.04 GCC 13 | Open: reproduce with the CI-built compiler and matching GCC 13 headers. The same binary passes with the local GCC 15 headers. An isolated ASan build is running to identify the invalid access. |
+| CI-LIBCXX21-FIXED-CALL | Accept valid fixed calls in C++11 libc++ 21 templates | PR #62 / Ubuntu 26.04 clang+libc++ | Open: matching CI image/artifact rejects bare string/vector/functional/sstream/map includes with no viable nondependent call. Base type_traits/new/exception/stdexcept/memory/utility includes pass. Required existing hosted fixtures and self-hosting expose this; no newer feature or speculative fixture scope is admitted. |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and final combined export each print one success total with empty stderr. Final course 5719/5719 and injected backend/producer failures verify shipped behavior. |
 | HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in 2481b326d: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Final combined export passes 5719/5719 with empty stderr; student backend and producer failure injections remain visible. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
@@ -7683,3 +7693,27 @@ hashes in `resume_final_export.json`; combined verification is recorded in
 `/tmp/cppgm-v4-audit-review/final-student-export`; the local bundle is
 `/tmp/cppgm-v4-audit-review/final-student-reference-binaries.tar.gz`.
 No publication or student-run mutation is performed.
+
+
+## PR #62 first CI matrix — 2026-10-04
+
+Push branch `fix/student-audit-regressions` and open draft PR
+https://github.com/vishvananda/cppgm-extended/pull/62 to trigger pull-request
+CI without publishing the student export. Tests run 37182303367 completes
+with five failed jobs: source harness, GCC 13 self-host, and libc++ 21 report,
+debug-info and self-host. The latter three share fixed-call rejection. All
+four host builds, placement, the other three strict reports, the other three
+debug suites, and the other two self-host variants pass. Export-validation
+run 37182303451 passes. The exact fresh-client reference validator also
+passes locally (53 documents, 42 wrappers).
+
+CI-MAKE-ENV: the test helper resets MAKEFLAGS while retaining MAKELEVEL from
+the parent `make test-harness`. GNU Make 4.3 emits recursive directory messages
+before reading the scratch Makefile; local GNU Make 4.4.1 does not expose the
+same failure. Build GNU Make 4.3 in scratch to reproduce six failed assertions
+with MAKELEVEL=1, then clear the four inherited Make control variables so the
+scratch report is a fresh top-level invocation. The unchanged seven report
+tests and complete harness pass under Make 4.3. Compiler/runtime behavior and
+student export files are unchanged. Raw CI logs and reproductions are in
+`/tmp/cppgm-v4-audit-review/ci-pr62/`. The two compiler CI failures remain open
+under their own unified rows; do not weaken requirements or disable matrix jobs.

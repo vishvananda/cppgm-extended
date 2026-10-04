@@ -75,7 +75,10 @@ class TestReportOutputTests(unittest.TestCase):
                 ("\t@echo seams failure diagnostic >&2; exit 1\n" if failure == "seams" else "")
             )
             environment = os.environ.copy()
-            environment.pop("MAKEFLAGS", None)
+            # Each scratch report starts a fresh top-level make, even when
+            # the harness itself was launched by make.
+            for variable in ("MAKEFLAGS", "MFLAGS", "MAKELEVEL", "MAKEOVERRIDES"):
+                environment.pop(variable, None)
             result = subprocess.run(
                 ["make", *(["-j1"] if low_jobs else []), target,
                  "DEFAULT_BUILD_JOBS=" + ("2" if low_jobs else "1"),
