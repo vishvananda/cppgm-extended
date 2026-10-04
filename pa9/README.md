@@ -255,6 +255,12 @@ explicit names such as `unary-plus`, `binary-plus`, `unary-minus`,
 `binary-minus`, `bit-and`, and `multiply` may be used when the shape should be
 unambiguous.
 
+Inherited constructors use `terminal constructor-inherited-complete <base-type>`
+or `terminal constructor-inherited-base <base-type>`. The base type identifies
+where the constructor was originally declared, including through multiple
+levels of inheritance. Encode its class name, retaining substitutions for
+name prefixes and template arguments without adding a complete-type entry.
+
 Literal operators are written as `operator-terminal literal <suffix>`, where
 `<suffix>` is the unencoded suffix source name such as `_digits`. Conversion
 operators remain separate `conversion-terminal <type>` facts. The conversion

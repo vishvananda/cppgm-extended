@@ -32,7 +32,7 @@ function @LambdaBox_int___run(%this : ptr [object_bytes=1], %args : ptr [pass=by
     %t5 = load i32 $value
     return i32 %t5
 }
-function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> void [binding=internal, object=_ZSt6helperIZN9LambdaBoxIiE3runEOiEUlvE_ZNS1_3runES2_EUlvE0_EvbT_T0_] {
+function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> void [binding=internal, object=_ZSt6helperIZN9LambdaBoxIiE3runIJiEEEiDpOT_EUlvE_ZNS2_IJiEEEiS5_EUlvE0_EvbT_T0_] {
   slot $cond : u8
   slot $if_fn : obj<8x8>
   slot $else_fn : obj<8x8>
@@ -59,7 +59,7 @@ function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> voi
   block ^if_end_3:
     return void
 }
-function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t80_80__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZN9LambdaBoxIiE3runEOiENKUlvE_clEv, inline_hint=yes] {
+function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t80_80__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_ENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -70,7 +70,7 @@ function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template
     store i32 1, %t3
     return void
 }
-function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t90_90_n1__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZN9LambdaBoxIiE3runEOiENKUlvE0_clEv, inline_hint=yes] {
+function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t90_90_n1__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_ENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

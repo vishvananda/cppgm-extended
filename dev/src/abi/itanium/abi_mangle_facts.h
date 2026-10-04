@@ -248,6 +248,7 @@ struct AbiType
   // Local presentation kinds store their semantic ordinal here. Other kinds
   // retain the resolved expression or substitution identity documented by
   // their kind.
+  // A template parameter uses this slot for its enclosing template depth.
   std::size_t resolved_expression = ABI_NO_RESOLVED_REFERENCE;
   std::size_t resolved_context = ABI_NO_RESOLVED_REFERENCE;
   std::size_t resolved_context_identity = ABI_NO_RESOLVED_REFERENCE;

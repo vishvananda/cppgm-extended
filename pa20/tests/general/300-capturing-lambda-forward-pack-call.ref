@@ -64,7 +64,7 @@ function @std__forward__ov3(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [
     %t1 = load ptr $t
     return ptr %t1
 }
-function @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t168_174__operator__(%this : ptr [object_bytes=8], %args2 : ptr [pass=by_address, object_bytes=4], %args2__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=internal, object=_ZZ3runIJRiRmEEiDpOT_S4_ENKUlS0_S1_E_clES0_S1_, inline_hint=yes] {
+function @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t168_174__operator__(%this : ptr [object_bytes=8], %args2 : ptr [pass=by_address, object_bytes=4], %args2__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=internal, object=_ZZ3runIJRiRmEEiDpOT_ENKUlS0_S1_E_clES0_S1_, inline_hint=yes] {
   slot $this : ptr
   slot $args2 : ptr
   slot $args2__pack2 : ptr

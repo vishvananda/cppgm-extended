@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $value
     return i32 0
 }
-function @key_first__second__third___key_first__second__third___ov5(%this : ptr [object_bytes=1], %args : ptr [pass=by_address, object_bytes=1], %args__pack2 : ptr [pass=by_address, object_bytes=1], %args__pack3 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3keyIJ5first6second5thirdEEC1ERS0_RS1_RS2_, inline_hint=yes] {
+function @key_first__second__third___key_first__second__third___ov5(%this : ptr [object_bytes=1], %args : ptr [pass=by_address, object_bytes=1], %args__pack2 : ptr [pass=by_address, object_bytes=1], %args__pack3 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3keyIJ5first6second5thirdEECI110tuple_likeIJS0_S1_S2_EEIJRS0_RS1_RS2_ETnN9enable_ifIXsr7acceptsIDpOT_EE5valueEiE4typeELi0EEESB_, inline_hint=yes] {
   slot $this : ptr
   slot $args : ptr
   slot $args__pack2 : ptr
@@ -69,4 +69,4 @@ function @tuple_like_first__second__third___tuple_like_first__second__third___ba
     store ptr %__param4, $__param4
     return void
 }
-alias object _ZN3keyIJ5first6second5thirdEEC2ERS0_RS1_RS2_ = @key_first__second__third___key_first__second__third___ov5
+alias object _ZN3keyIJ5first6second5thirdEECI210tuple_likeIJS0_S1_S2_EEIJRS0_RS1_RS2_ETnN9enable_ifIXsr7acceptsIDpOT_EE5valueEiE4typeELi0EEESB_ = @key_first__second__third___key_first__second__third___ov5

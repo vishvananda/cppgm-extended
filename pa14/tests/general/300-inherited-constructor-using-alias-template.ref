@@ -31,7 +31,7 @@ function @YHolder_YTraits___YHolder_YTraits_(%this : ptr [object_bytes=1], %t : 
     call void @YDerived_YTraits___YDerived_YTraits_(%t2, %t3)
     return void
 }
-function @DirectDerived_IntBase___DirectDerived_IntBase_(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN13DirectDerivedI7IntBaseEC1Ei, inline_hint=yes] {
+function @DirectDerived_IntBase___DirectDerived_IntBase_(%this : ptr [object_bytes=4], %n : i32) -> void [binding=weak, object=_ZN13DirectDerivedI7IntBaseECI17IntBaseEi, inline_hint=yes] {
   slot $this : ptr
   slot $n : i32
 
@@ -44,7 +44,7 @@ function @DirectDerived_IntBase___DirectDerived_IntBase_(%this : ptr [object_byt
     call void @IntBase__IntBase__base_entry(%t2, %t3)
     return void
 }
-function @YDerived_YTraits___YDerived_YTraits_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8YDerivedI7YTraitsEC1ERKS0_, inline_hint=yes] {
+function @YDerived_YTraits___YDerived_YTraits_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8YDerivedI7YTraitsECI15YBaseIS0_EERKS0_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -80,5 +80,5 @@ function @YBase_YTraits___YBase_YTraits___base_entry(%this : ptr [object_bytes=1
     return void
 }
 alias object _ZN7YHolderI7YTraitsEC2ERKS0_ = @YHolder_YTraits___YHolder_YTraits_
-alias object _ZN13DirectDerivedI7IntBaseEC2Ei = @DirectDerived_IntBase___DirectDerived_IntBase_
-alias object _ZN8YDerivedI7YTraitsEC2ERKS0_ = @YDerived_YTraits___YDerived_YTraits_
+alias object _ZN13DirectDerivedI7IntBaseECI27IntBaseEi = @DirectDerived_IntBase___DirectDerived_IntBase_
+alias object _ZN8YDerivedI7YTraitsECI25YBaseIS0_EERKS0_ = @YDerived_YTraits___YDerived_YTraits_

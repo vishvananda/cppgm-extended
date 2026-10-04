@@ -842,11 +842,16 @@ AbiFunctionRecord parse_function_record(const vector<string> & words)
     record.kind = ABI_FUNCTION_RECORD_TERMINAL_SOURCE;
     record.name = words[1];
   } else if(form == "terminal") {
-    require(words.size() == 2, "terminal takes one semantic terminal");
+    require(words.size() >= 2, "terminal needs a semantic terminal");
     record.kind = ABI_FUNCTION_RECORD_TERMINAL;
     record.terminal = words[1];
     require(abi_find_terminal_kind(record.terminal, &record.terminal_code),
             "unknown ABI terminal '" + record.terminal + "'");
+    const bool inherited = record.terminal_code == ABI_TERMINAL_INHERITED_CONSTRUCTOR_COMPLETE ||
+                           record.terminal_code == ABI_TERMINAL_INHERITED_CONSTRUCTOR_BASE;
+    require(inherited ? words.size() >= 3 : words.size() == 2,
+            "inherited constructor terminal needs its original base type");
+    if(inherited) record.type = parse_type(words, 2);
   } else if(form == "variadic") {
     require(words.size() == 1, "variadic takes no operands");
     record.kind = ABI_FUNCTION_RECORD_VARIADIC;
@@ -1292,7 +1297,13 @@ string function_record_text(const AbiFunctionRecord & function)
     return result;
   }
   if(function.kind == ABI_FUNCTION_RECORD_TERMINAL_SOURCE) return "terminal-source " + function.name;
-  if(function.kind == ABI_FUNCTION_RECORD_TERMINAL) return "terminal " + function.terminal;
+  if(function.kind == ABI_FUNCTION_RECORD_TERMINAL) {
+    string result = "terminal " + function.terminal;
+    if(function.terminal_code == ABI_TERMINAL_INHERITED_CONSTRUCTOR_COMPLETE ||
+       function.terminal_code == ABI_TERMINAL_INHERITED_CONSTRUCTOR_BASE)
+      result += " " + type_text(function.type);
+    return result;
+  }
   if(function.kind == ABI_FUNCTION_RECORD_VARIADIC) return "variadic";
   if(function.kind == ABI_FUNCTION_RECORD_ABI_TAG) return "abi-tag " + function.name;
   if(function.kind == ABI_FUNCTION_RECORD_COMPONENT_ABI_TAG) {

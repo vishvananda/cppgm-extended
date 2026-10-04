@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @derived__derived(%t1, 1)
     return i32 0
 }
-function @derived__derived(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN7derivedC1Ei, inline_hint=yes] {
+function @derived__derived(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN7derivedCI14baseEi, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
 
@@ -28,4 +28,4 @@ function @base__base__base_entry(%this : ptr [object_bytes=1], %__param1 : i32) 
     store i32 %__param1, $__param1
     return void
 }
-alias object _ZN7derivedC2Ei = @derived__derived
+alias object _ZN7derivedCI24baseEi = @derived__derived

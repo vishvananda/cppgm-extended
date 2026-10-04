@@ -323,6 +323,7 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 		closure.lambda_token_first = arena_->TokenFirst(node);
 		closure.lambda_token_last = arena_->TokenLast(node);
 		closure.lambda_ordinal = ordinal;
+		closure.lambda_abi_ordinal = ordinal;
 		closure.destructible = true;
 		closure.trivial_destructor = true;
 		const TypeId closure_type = closure.type;
@@ -445,6 +446,19 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 		parameter_types.reserve(call_parameters.size());
 		for (std::size_t i = 0; i < call_parameters.size(); ++i)
 			parameter_types.push_back(call_parameters[i].function_type);
+		if (enclosing != kNoBinding)
+		{
+			const TypeId signature = program_->types.Function(
+				program_->types.Fundamental(FUND_VOID), parameter_types, variadic_call);
+			const std::uint64_t signature_key =
+				(static_cast<std::uint64_t>(enclosing) << 32) | signature;
+			CompactIndexSequence& occurrences =
+				lambda_signature_occurrences_.Ensure(signature_key);
+			if (occurrences.Size() >= kNoEntity)
+				ThrowSemanticResourceLimit("too many lambda ABI signature occurrences");
+			closure.lambda_abi_ordinal = static_cast<std::uint32_t>(occurrences.Size());
+			occurrences.Push(entity);
+		}
 		const TypeId call_type = program_->types.Function(result_type,
 			parameter_types, variadic_call,
 			mutable_call ? CV_NONE : CV_CONST);

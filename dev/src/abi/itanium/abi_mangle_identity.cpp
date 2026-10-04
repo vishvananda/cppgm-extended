@@ -41,6 +41,8 @@ bool abi_find_terminal_kind(const std::string & word,
   } entries[] = {
     {"constructor-complete", ABI_TERMINAL_CONSTRUCTOR_COMPLETE},
     {"constructor-base", ABI_TERMINAL_CONSTRUCTOR_BASE},
+    {"constructor-inherited-complete", ABI_TERMINAL_INHERITED_CONSTRUCTOR_COMPLETE},
+    {"constructor-inherited-base", ABI_TERMINAL_INHERITED_CONSTRUCTOR_BASE},
     {"destructor-deleting", ABI_TERMINAL_DESTRUCTOR_DELETING},
     {"destructor-complete", ABI_TERMINAL_DESTRUCTOR_COMPLETE},
     {"destructor-base", ABI_TERMINAL_DESTRUCTOR_BASE},
@@ -114,7 +116,7 @@ const char * abi_terminal_code(AbiTerminalKind kind, bool member,
                                std::size_t parameter_count)
 {
   static const char * codes[] = {
-    nullptr, "C1", "C2", "D0", "D1", "D2", nullptr,
+    nullptr, "C1", "C2", "CI1", "CI2", "D0", "D1", "D2", nullptr,
     nullptr, nullptr, "ps", "pl", "ng", "mi", "ad", "de",
     "nw", "na", "dl", "da", "ml", "dv", "rm", "an", "or",
     "eo", "co", "aS", "pL", "mI", "mL", "dV", "rM", "aN", "oR",

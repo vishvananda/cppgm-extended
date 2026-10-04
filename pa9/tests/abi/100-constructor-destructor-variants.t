@@ -29,3 +29,17 @@ function encoding
 name-source Cursor Cursor
 name-source  -
 terminal destructor-base
+
+case inherited_ctor_complete
+function encoding
+name-source Derived Derived
+name-source  -
+terminal constructor-inherited-complete named:Base
+param int
+
+case inherited_ctor_base
+function encoding
+name-source Derived Derived
+name-source  -
+terminal constructor-inherited-base named:Base
+param int

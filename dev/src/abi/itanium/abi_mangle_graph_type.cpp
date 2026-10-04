@@ -5,18 +5,6 @@
 
 namespace abi_mangle {
 namespace detail {
-namespace {
-
-template<class T>
-std::size_t vector_hash(std::size_t seed, const std::vector<T> & values)
-{
-  for(const T & value : values)
-    seed = mix_hash(seed, std::hash<T>()(value));
-  return seed;
-}
-
-}  // namespace
-
 bool TypeNode::operator==(const TypeNode & other) const
 {
   return kind == other.kind && builtin_type == other.builtin_type
@@ -76,6 +64,7 @@ bool has_resolved_type_substitution(const AbiType & type)
 {
   return type.resolved_expression != ABI_NO_RESOLVED_REFERENCE &&
     (type.kind == ABI_TYPE_RESOLVED ||
+     type.kind == ABI_TYPE_TEMPLATE_PARAMETER ||
      type.kind == ABI_TYPE_TEMPLATE_SPECIALIZATION ||
      type.kind == ABI_TYPE_STD_TEMPLATE_SPECIALIZATION);
 }

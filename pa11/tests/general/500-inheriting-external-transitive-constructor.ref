@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Hard__Hard(%t6, %t7)
     return i32 0
 }
-function @Soft__Soft__base_entry(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4SoftC2ERKN11LibraryBase5TokenE, object_root=yes, inline_hint=yes] {
+function @Soft__Soft__base_entry(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4SoftCI211LibraryBaseERKN11LibraryBase5TokenE, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $token : ptr
 
@@ -31,7 +31,7 @@ function @Soft__Soft__base_entry(%this : ptr [object_bytes=1], %token : ptr [pas
     call void @LibraryBase__LibraryBase__base_entry(%t2, %t3)
     return void
 }
-function @Soft__Soft(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4SoftC1ERKN11LibraryBase5TokenE, inline_hint=yes] {
+function @Soft__Soft(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4SoftCI111LibraryBaseERKN11LibraryBase5TokenE, inline_hint=yes] {
   slot $this : ptr
   slot $token : ptr
 
@@ -44,7 +44,7 @@ function @Soft__Soft(%this : ptr [object_bytes=1], %token : ptr [pass=by_address
     call void @LibraryBase__LibraryBase__base_entry(%t2, %t3)
     return void
 }
-function @Hard__Hard(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4HardC1ERKN11LibraryBase5TokenE, inline_hint=yes] {
+function @Hard__Hard(%this : ptr [object_bytes=1], %token : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4HardCI111LibraryBaseERKN11LibraryBase5TokenE, inline_hint=yes] {
   slot $this : ptr
   slot $token : ptr
 
@@ -57,4 +57,4 @@ function @Hard__Hard(%this : ptr [object_bytes=1], %token : ptr [pass=by_address
     call void @Soft__Soft__base_entry(%t2, %t3)
     return void
 }
-alias object _ZN4HardC2ERKN11LibraryBase5TokenE = @Hard__Hard
+alias object _ZN4HardCI211LibraryBaseERKN11LibraryBase5TokenE = @Hard__Hard

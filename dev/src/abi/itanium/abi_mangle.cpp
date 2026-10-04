@@ -48,6 +48,7 @@ using detail::TypeNode;
 using detail::argument_node_hash;
 using detail::has_resolved_type_substitution;
 using detail::mix_hash;
+using detail::vector_hash;
 using detail::type_node_hash;
 
 const size_t NO_ID = std::numeric_limits<size_t>::max();
@@ -55,13 +56,6 @@ const size_t NO_ID = std::numeric_limits<size_t>::max();
 void require(bool condition, const string & message)
 {
   if(!condition) ThrowAbiInternal(message);
-}
-
-template<class T>
-size_t vector_hash(size_t seed, const vector<T> & values)
-{
-  for(const T & value : values) seed = mix_hash(seed, std::hash<T>()(value));
-  return seed;
 }
 
 class StringPool
@@ -1101,31 +1095,18 @@ private:
     bool variadic = false;
   };
 
-  SubstitutionKey local_lambda_key(const string & context,
-                                   const string & discriminator)
+  template<class Context, class Ordinal>
+  SubstitutionKey local_lambda_key(const Context & context, const Ordinal & ordinal,
+                                   const vector<size_t> & signature)
   {
-    return SubstitutionKey{SUBSTITUTION_LOCAL_LAMBDA,
-      graph_.strings.intern(context), graph_.strings.intern(discriminator)};
+    return substitutions_.composite_key(
+      SubstitutionKey{lambda_key_kind(ordinal), lambda_key_id(context), lambda_key_id(ordinal)},
+      signature);
   }
-
-  SubstitutionKey local_lambda_key(size_t context,
-                                   const string & discriminator)
-  {
-    return SubstitutionKey{SUBSTITUTION_LOCAL_LAMBDA,
-      context, graph_.strings.intern(discriminator)};
-  }
-
-  SubstitutionKey local_lambda_key(const string & context, size_t ordinal)
-  {
-    return SubstitutionKey{SUBSTITUTION_LOCAL_LAMBDA_ORDINAL,
-      graph_.strings.intern(context), ordinal};
-  }
-
-  SubstitutionKey local_lambda_key(size_t context, size_t ordinal)
-  {
-    return SubstitutionKey{SUBSTITUTION_LOCAL_LAMBDA_ORDINAL,
-      context, ordinal};
-  }
+  size_t lambda_key_id(size_t value) { return value; }
+  size_t lambda_key_id(const string & value) { return graph_.strings.intern(value); }
+  SubstitutionKind lambda_key_kind(size_t) { return SUBSTITUTION_LOCAL_LAMBDA_ORDINAL; }
+  SubstitutionKind lambda_key_kind(const string &) { return SUBSTITUTION_LOCAL_LAMBDA; }
 
   FunctionFacts collect_function_facts(const vector<const AbiFunctionRecord *> & records)
   {
@@ -1330,18 +1311,21 @@ private:
                                          ABI_LOCAL_PRESENTATION_TEXT ?
                                         local_lambda_key(type.context_identity,
                                           graph_.strings.get(
-                                            type.discriminator)) :
+                                            type.discriminator), type.children) :
                                         local_lambda_key(type.context_identity,
-                                          type.discriminator)) :
+                                          type.discriminator, type.children)) :
                                       (type.local_presentation ==
                                          ABI_LOCAL_PRESENTATION_TEXT ?
                                         local_lambda_key(
                                           graph_.strings.get(type.context),
                                           graph_.strings.get(
-                                            type.discriminator)) :
+                                            type.discriminator), type.children) :
                                         local_lambda_key(
                                           graph_.strings.get(type.context),
-                                          type.discriminator)))
+                                          type.discriminator, type.children)))
+                                    : type.kind == ABI_TYPE_TEMPLATE_PARAMETER
+                                    ? SubstitutionKey{SUBSTITUTION_TEMPLATE_PARAMETER, type.index,
+                                        type.substitution == NO_ID ? 0 : type.substitution}
                                     : type.substitution != NO_ID
                                     ? SubstitutionKey{
                                         type.substitution_resolved ?
@@ -1350,8 +1334,6 @@ private:
                                         type.substitution}
                                     : type.kind == ABI_TYPE_NAMED && type.tags.empty()
                                     ? SubstitutionKey{SUBSTITUTION_PATH, type.path}
-                                    : type.kind == ABI_TYPE_TEMPLATE_PARAMETER
-                                    ? SubstitutionKey{SUBSTITUTION_TEMPLATE_PARAMETER, type.index}
                                     : SubstitutionKey{SUBSTITUTION_TYPE, id};
       if(substitutions_.emit_if_known(key, output_)) break;
 
@@ -1564,7 +1546,10 @@ private:
   void encode_prefix_type(size_t id)
   {
     const TypeNode & type = graph_.type(id);
-    const SubstitutionKey key = type.substitution != NO_ID
+    const SubstitutionKey key = type.kind == ABI_TYPE_TEMPLATE_PARAMETER
+                                  ? SubstitutionKey{SUBSTITUTION_TEMPLATE_PARAMETER, type.index,
+                                      type.substitution == NO_ID ? 0 : type.substitution}
+                                  : type.substitution != NO_ID
                                   ? SubstitutionKey{
                                       type.substitution_resolved ?
                                         SUBSTITUTION_RESOLVED :
@@ -1572,8 +1557,6 @@ private:
                                       type.substitution}
                                   : type.kind == ABI_TYPE_NAMED && type.tags.empty()
                                   ? SubstitutionKey{SUBSTITUTION_PATH, type.path}
-                                  : type.kind == ABI_TYPE_TEMPLATE_PARAMETER
-                                  ? SubstitutionKey{SUBSTITUTION_TEMPLATE_PARAMETER, type.index}
                                   : SubstitutionKey{SUBSTITUTION_TYPE, id};
     if(substitutions_.emit_if_known(key, output_)) return;
     if(type.kind == ABI_TYPE_NAMED) {
@@ -2034,16 +2017,11 @@ private:
     encode_path_function(target, facts, internal);
   }
 
-  void encode_path_function(const AbiFunctionTarget & target, const FunctionFacts & facts,
-                            bool internal)
+  vector<size_t> function_template_arguments(const AbiFunctionTarget & target,
+                                             const FunctionFacts & facts,
+                                             vector<size_t> * operand_parameters = nullptr)
   {
-    const size_t path = target.resolved_path != ABI_NO_RESOLVED_REFERENCE ?
-      graph_.path(target.resolved_path) :
-      graph_.paths.intern(
-        target.qualified_name,
-        stats_ ? &stats_->text_function_path_components : nullptr);
     vector<size_t> template_arguments;
-    vector<size_t> operand_parameters;
     for(const AbiFunctionPathOperand & operand : target.path_operands) {
       if(operand.kind == ABI_FUNCTION_PATH_TEMPLATE_ARGUMENT) {
         if(operand.resolved_argument != ABI_NO_RESOLVED_REFERENCE) {
@@ -2055,12 +2033,27 @@ private:
           AbiType type;
           type.kind = ABI_TYPE_NAME_OR_REFERENCE;
           type.name = operand.argument_ref;
-          operand_parameters.push_back(graph_.resolve_type(type));
+          require(operand_parameters != nullptr, "member template argument is not a typed fact");
+          operand_parameters->push_back(graph_.resolve_type(type));
         }
       }
     }
     template_arguments.insert(template_arguments.end(), facts.template_arguments.begin(),
                               facts.template_arguments.end());
+    return template_arguments;
+  }
+
+  void encode_path_function(const AbiFunctionTarget & target, const FunctionFacts & facts,
+                            bool internal)
+  {
+    const size_t path = target.resolved_path != ABI_NO_RESOLVED_REFERENCE ?
+      graph_.path(target.resolved_path) :
+      graph_.paths.intern(
+        target.qualified_name,
+        stats_ ? &stats_->text_function_path_components : nullptr);
+    vector<size_t> operand_parameters;
+    const vector<size_t> template_arguments =
+      function_template_arguments(target, facts, &operand_parameters);
     vector<size_t> parameters;
     parameters.insert(parameters.end(), operand_parameters.begin(), operand_parameters.end());
     for(const AbiType & type : target.signature_parameter_types) {
@@ -2080,25 +2073,23 @@ private:
   void encode_member_function(const AbiFunctionTarget & target,
                               const FunctionFacts & facts)
   {
+    const vector<size_t> template_arguments = function_template_arguments(target, facts);
+    const size_t path = !template_arguments.empty() ?
+      (target.resolved_path != ABI_NO_RESOLVED_REFERENCE ? graph_.path(target.resolved_path) :
+       graph_.paths.intern(target.qualified_name,
+         stats_ ? &stats_->text_function_path_components : nullptr)) : NO_ID;
+    const SubstitutionKey prefix = function_template_prefix_key(path, facts);
     output_ += 'N';
     emit_qualifiers(facts.qualifiers);
-    encode_prefix_type(graph_.resolve_type(target.owner_type));
-    if(facts.terminal) {
-      emit_function_terminal(nullptr, facts, true, facts.parameters.size());
-    } else {
-      output_ += source_name(target_source_name(target));
-      emit_tags(facts.tags);
+    if(template_arguments.empty() || !substitutions_.emit_if_known(prefix, output_)) {
+      encode_prefix_type(graph_.resolve_type(target.owner_type));
+      if(facts.terminal) emit_function_terminal(nullptr, facts, true, facts.parameters.size());
+      else { output_ += source_name(target_source_name(target)); emit_tags(facts.tags); }
     }
-    if(!facts.template_arguments.empty()) {
-      const size_t path = target.resolved_path != ABI_NO_RESOLVED_REFERENCE ?
-        graph_.path(target.resolved_path) :
-        graph_.paths.intern(
-          target.qualified_name,
-          stats_ ? &stats_->text_function_path_components : nullptr);
-      encode_function_template_arguments(path, facts, facts.template_arguments);
-    }
+    if(!template_arguments.empty())
+      encode_function_template_arguments(path, facts, template_arguments);
     output_ += 'E';
-    if(!facts.template_arguments.empty()
+    if(!template_arguments.empty()
        && (target.has_result_type || !facts.result_types.empty())
        && !(facts.terminal
             && facts.terminal->kind == ABI_FUNCTION_RECORD_CONVERSION_TERMINAL)) {
@@ -2140,33 +2131,43 @@ private:
     const bool std_unscoped = facts.qualifiers.empty() && components.size() == 2
                               && graph_.strings.get(components[0]) == "std";
     if(components.size() == 1 || std_unscoped) {
-      if(std_unscoped) output_ += "St";
-      if(internal) output_ += 'L';
-      emit_function_terminal(has_custom_terminal ? nullptr : &components.back(), facts,
-                             components.size() > 1, parameter_count);
+      if(template_arguments.empty() || !substitutions_.emit_if_known(
+           function_template_prefix_key(path, facts), output_)) {
+        if(std_unscoped) output_ += "St";
+        if(internal) output_ += 'L';
+        emit_function_terminal(has_custom_terminal ? nullptr : &components.back(), facts,
+                               components.size() > 1, parameter_count);
+      }
       encode_function_template_arguments(path, facts, template_arguments);
     } else {
       output_ += 'N';
       emit_qualifiers(facts.qualifiers);
-      encode_path_prefix(components, prefixes, components.size() - 1);
-      if(internal) output_ += 'L';
-      emit_function_terminal(has_custom_terminal ? nullptr : &components.back(), facts,
-                             true, parameter_count);
+      if(template_arguments.empty() || !substitutions_.emit_if_known(
+           function_template_prefix_key(path, facts), output_)) {
+        encode_path_prefix(components, prefixes, components.size() - 1);
+        if(internal) output_ += 'L';
+        emit_function_terminal(has_custom_terminal ? nullptr : &components.back(), facts,
+                               true, parameter_count);
+      }
       encode_function_template_arguments(path, facts, template_arguments);
       output_ += 'E';
     }
+  }
+
+  SubstitutionKey function_template_prefix_key(size_t path, const FunctionFacts & facts)
+  {
+    return SubstitutionKey{facts.template_prefix != NO_ID ? SUBSTITUTION_EXPLICIT :
+      SUBSTITUTION_FUNCTION_TEMPLATE_PREFIX, facts.template_prefix != NO_ID ? facts.template_prefix : path};
   }
 
   void encode_function_template_arguments(size_t path, const FunctionFacts & facts,
                                           const vector<size_t> & template_arguments)
   {
     if(template_arguments.empty()) return;
-    const size_t key_id = facts.template_prefix != NO_ID ? facts.template_prefix
-                                                          : path;
-    const SubstitutionKind key_kind = facts.template_prefix != NO_ID
-                                        ? SUBSTITUTION_EXPLICIT
-                                        : SUBSTITUTION_FUNCTION_TEMPLATE_PREFIX;
-    substitutions_.add(SubstitutionKey{key_kind, key_id});
+    const AbiTerminalKind terminal = facts.terminal ? facts.terminal->terminal_code : ABI_TERMINAL_NONE;
+    if(terminal != ABI_TERMINAL_INHERITED_CONSTRUCTOR_COMPLETE &&
+       terminal != ABI_TERMINAL_INHERITED_CONSTRUCTOR_BASE)
+      substitutions_.add(function_template_prefix_key(path, facts));
     output_ += 'I'; encode_arguments(template_arguments); output_ += 'E';
   }
 
@@ -2181,8 +2182,16 @@ private:
       if(terminal.kind == ABI_FUNCTION_RECORD_TERMINAL_SOURCE) {
         output_ += source_name(component_name(terminal));
       } else if(terminal.kind == ABI_FUNCTION_RECORD_TERMINAL) {
-        output_ += semantic_terminal(resolved_terminal(
-          terminal.terminal_code, terminal.terminal));
+        const AbiTerminalKind kind = resolved_terminal(terminal.terminal_code, terminal.terminal);
+        output_ += semantic_terminal(kind);
+        if(kind == ABI_TERMINAL_INHERITED_CONSTRUCTOR_COMPLETE ||
+           kind == ABI_TERMINAL_INHERITED_CONSTRUCTOR_BASE) {
+          const size_t base = graph_.resolve_type(terminal.type);
+          const TypeNode & type = graph_.type(base);
+          if(type.kind == ABI_TYPE_NAMED)
+            encode_path_name(type.path, type.tags, false, vector<AbiFunctionQualifier>());
+          else encode_new_type(base, type);
+        }
       } else if(terminal.kind == ABI_FUNCTION_RECORD_OPERATOR_TERMINAL) {
         emit_operator_terminal(terminal, member, parameter_count);
       } else if(terminal.kind == ABI_FUNCTION_RECORD_CONVERSION_TERMINAL) {
@@ -2286,7 +2295,11 @@ private:
       graph_.append_argument_refs(final->argument_refs, &arguments);
     }
     if(arguments.empty()) return;
-    if(facts.template_prefix != NO_ID) {
+    if(facts.terminal &&
+       (facts.terminal->terminal_code == ABI_TERMINAL_INHERITED_CONSTRUCTOR_COMPLETE ||
+        facts.terminal->terminal_code == ABI_TERMINAL_INHERITED_CONSTRUCTOR_BASE)) {
+      // The inherited template arguments follow CI<base>, without a new prefix.
+    } else if(facts.template_prefix != NO_ID) {
       substitutions_.add(SubstitutionKey{SUBSTITUTION_EXPLICIT, facts.template_prefix});
     } else if(final && final->has_resolved_name_component()) {
       substitutions_.add(SubstitutionKey{
@@ -2405,14 +2418,14 @@ private:
         substitutions_.add(
           target.resolved_context != ABI_NO_RESOLVED_REFERENCE ?
             local_lambda_key(target.resolved_context_identity,
-                             target.discriminator) :
-            local_lambda_key(target.context_ref, target.discriminator));
+                             target.discriminator, signature) :
+            local_lambda_key(target.context_ref, target.discriminator, signature));
       else
         substitutions_.add(
           target.resolved_context != ABI_NO_RESOLVED_REFERENCE ?
             local_lambda_key(target.resolved_context_identity,
-                             target.resolved_path) :
-            local_lambda_key(target.context_ref, target.resolved_path));
+                             target.resolved_path, signature) :
+            local_lambda_key(target.context_ref, target.resolved_path, signature));
     } else {
       if(target.local_presentation ==
          ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA)
@@ -2469,13 +2482,13 @@ private:
         substitutions_.add(
           local.resolved_context != ABI_NO_RESOLVED_REFERENCE ?
             local_lambda_key(local.resolved_context_identity,
-                             local.discriminator) :
-            local_lambda_key(local.context_ref, local.discriminator));
+                             local.discriminator, signature) :
+            local_lambda_key(local.context_ref, local.discriminator, signature));
       else
         substitutions_.add(
           local.resolved_context != ABI_NO_RESOLVED_REFERENCE ?
-            local_lambda_key(local.resolved_context_identity, ordinal) :
-            local_lambda_key(local.context_ref, ordinal));
+            local_lambda_key(local.resolved_context_identity, ordinal, signature) :
+            local_lambda_key(local.context_ref, ordinal, signature));
     }
     const string & local_name = local.type.index != 0 ?
       graph_.strings.get(local.type.index - 1) : local.name;
@@ -2565,14 +2578,14 @@ private:
       if(stable.local_presentation == ABI_LOCAL_PRESENTATION_TEXT)
         substitutions_.add(stable.context_resolved ?
           local_lambda_key(stable.context_identity,
-            graph_.strings.get(stable.discriminator)) :
+            graph_.strings.get(stable.discriminator), stable.children) :
           local_lambda_key(graph_.strings.get(stable.context),
-            graph_.strings.get(stable.discriminator)));
+            graph_.strings.get(stable.discriminator), stable.children));
       else
         substitutions_.add(stable.context_resolved ?
-          local_lambda_key(stable.context_identity, stable.discriminator) :
+          local_lambda_key(stable.context_identity, stable.discriminator, stable.children) :
           local_lambda_key(graph_.strings.get(stable.context),
-            stable.discriminator));
+            stable.discriminator, stable.children));
     } else if(stable.local_presentation ==
               ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA) {
       append_generated_lambda_source(output_, stable.discriminator);

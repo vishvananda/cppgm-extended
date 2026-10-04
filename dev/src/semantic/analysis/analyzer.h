@@ -2145,7 +2145,7 @@ private:
 	FunctionTemplateResultIdentityTable function_template_result_identities_;
 	TemplateSpecializationTable template_instantiations_;
 	TemplateSpecializationTable function_template_default_requests_;
-	IndexedSequenceTable lambda_closure_index_;
+	IndexedSequenceTable lambda_closure_index_, lambda_signature_occurrences_;
 	semantic::LambdaCaptureUseTable lambda_capture_uses_;
 	std::vector<LambdaClosureFact> lambda_closures_;
 	std::vector<LambdaCaptureFact> lambda_captures_;

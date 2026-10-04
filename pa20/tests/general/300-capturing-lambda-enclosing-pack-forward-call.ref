@@ -99,7 +99,7 @@ function @std__forward(%t : ptr [pass=by_address, object_bytes=4]) -> ptr [bindi
     %t1 = load ptr $t
     return ptr %t1
 }
-function @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t166_166__operator__(%this : ptr [object_bytes=16]) -> i32 [binding=internal, object=_ZZ3runIJRiRmEEiDpOT_S4_ENKUlvE_clEv, inline_hint=yes] {
+function @__lambda_run__lvalue_reference_to_int__lvalue_reference_to_unsigned_long_int_t166_166__operator__(%this : ptr [object_bytes=16]) -> i32 [binding=internal, object=_ZZ3runIJRiRmEEiDpOT_ENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

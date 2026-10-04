@@ -141,7 +141,7 @@ function @Analyzer__lookup_qualified_generic__ov2(%this : ptr [object_bytes=8], 
     %t12 = call obj<1x1> @cpp_scope_lookup__lookup_qualified__ov2(%t4, %t5, %t6, %t10, %t11)
     return obj<1x1> $retobj__1
 }
-function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %resolve_unqualified_qualifier : ptr [pass=by_address, object_bytes=16], %resolve_direct_qualifier : ptr [pass=by_address, object_bytes=1], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=internal, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1AE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_aERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS6_24lookup_qualified_genericIS4_SE_EESF_S8_SB_SI_EUlS8_SD_E0_SE_EESF_RSG_SB_RKT1_RKT2_RKT3_] {
+function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %resolve_unqualified_qualifier : ptr [pass=by_address, object_bytes=16], %resolve_direct_qualifier : ptr [pass=by_address, object_bytes=1], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=internal, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1AE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_aERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS7_IS4_SE_EESF_S8_SB_SI_EUlS8_SD_E_SE_EESF_RSG_SB_RKT1_RKT2_RKT3_] {
   slot $root : ptr
   slot $qualified : ptr
   slot $resolve_unqualified_qualifier : ptr
@@ -267,7 +267,7 @@ function @cpp_scope_lookup__lookup_qualified(%root : ptr [pass=by_address, objec
     %t51 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_a_t347_361__operator__(%t46, %t47, %t50)
     return obj<1x1> $retobj__1
 }
-function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %resolve_unqualified_qualifier : ptr [pass=by_address, object_bytes=16], %resolve_direct_qualifier : ptr [pass=by_address, object_bytes=1], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=internal, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1BE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_bERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS6_24lookup_qualified_genericIS4_SE_EESF_S8_SB_SI_EUlS8_SD_E0_SE_EESF_RSG_SB_RKT1_RKT2_RKT3_] {
+function @cpp_scope_lookup__lookup_qualified__ov2(%root : ptr [pass=by_address, object_bytes=8], %qualified : ptr [pass=by_address, object_bytes=24], %resolve_unqualified_qualifier : ptr [pass=by_address, object_bytes=16], %resolve_direct_qualifier : ptr [pass=by_address, object_bytes=1], %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=internal, object=_ZN16cpp_scope_lookup16lookup_qualifiedI3VecIP1BE5ScopeZN8Analyzer24lookup_qualified_genericIS4_ZNS6_8lookup_bERS5_RK13QualifiedNameEUlS8_PKcE_EET_S8_SB_RKT0_EUlSD_E_ZNS7_IS4_SE_EESF_S8_SB_SI_EUlS8_SD_E_SE_EESF_RSG_SB_RKT1_RKT2_RKT3_] {
   slot $root : ptr
   slot $qualified : ptr
   slot $resolve_unqualified_qualifier : ptr
@@ -426,7 +426,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_
     %t3 = load ptr %t2
     return ptr %t3
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_0_0__class_Analyzer____lambda_Analyzer__lookup_a_t347_361_t291_303_n1__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> ptr [binding=internal, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E0_clES6_SB_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_0_0__class_Analyzer____lambda_Analyzer__lookup_a_t347_361_t291_303_n1__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> ptr [binding=internal, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1AEZNS_8lookup_aER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_, inline_hint=yes] {
   slot $this : ptr
   slot $target : ptr
   slot $__param2 : ptr
@@ -471,7 +471,7 @@ function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_
     %t3 = load ptr %t2
     return ptr %t3
 }
-function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_1_0__class_Analyzer____lambda_Analyzer__lookup_b_t408_422_t291_303_n1__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> ptr [binding=internal, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E0_clES6_SB_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_qualified_generic__struct___cppgm_class_template_identity_0_1_0__class_Analyzer____lambda_Analyzer__lookup_b_t408_422_t291_303_n1__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=8], %__param2 : ptr) -> ptr [binding=internal, object=_ZZN8Analyzer24lookup_qualified_genericI3VecIP1BEZNS_8lookup_bER5ScopeRK13QualifiedNameEUlS6_PKcE_EET_S6_S9_RKT0_ENKUlS6_SB_E_clES6_SB_, inline_hint=yes] {
   slot $this : ptr
   slot $target : ptr
   slot $__param2 : ptr

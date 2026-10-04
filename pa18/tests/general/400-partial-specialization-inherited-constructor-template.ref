@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @op_impl__work__handler__void_int____run(%t8)
     return i32 0
 }
-function @op_impl__work__handler__void_int____op_impl__work__handler___ov4(%this : ptr [object_bytes=3], %impl : ptr [pass=by_address, object_bytes=1], %work : ptr [pass=by_address, object_bytes=1], %handler : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN2opI4impl4work7handlerJFviEEEC1EOS0_OS1_OS2_, inline_hint=yes] {
+function @op_impl__work__handler__void_int____op_impl__work__handler___ov4(%this : ptr [object_bytes=3], %impl : ptr [pass=by_address, object_bytes=1], %work : ptr [pass=by_address, object_bytes=1], %handler : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN2opI4impl4work7handlerJFviEEECI1S_IS0_S1_S2_JEEIS0_S1_S2_EEOT_OT0_OT1_, inline_hint=yes] {
   slot $this : ptr
   slot $impl : ptr
   slot $work : ptr
@@ -76,4 +76,4 @@ function @impl__operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=b
     store ptr %__param1, $__param1
     return void
 }
-alias object _ZN2opI4impl4work7handlerJFviEEEC2EOS0_OS1_OS2_ = @op_impl__work__handler__void_int____op_impl__work__handler___ov4
+alias object _ZN2opI4impl4work7handlerJFviEEECI2S_IS0_S1_S2_JEEIS0_S1_S2_EEOT_OT0_OT1_ = @op_impl__work__handler__void_int____op_impl__work__handler___ov4

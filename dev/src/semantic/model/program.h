@@ -476,8 +476,13 @@ struct EntityRecord
 	EntityId direct_base, enclosing_class;
 	BindingId local_context, lambda_call_operator;
 	TemplateArgumentListId template_argument_list;
-	std::uint32_t template_argument_begin, template_argument_count,
-		template_argument_pack_begin;
+	std::uint32_t template_argument_begin, template_argument_count;
+	// Class specializations and lambda closures use disjoint identity facts.
+	union
+	{
+		std::uint32_t template_argument_pack_begin;
+		std::uint32_t lambda_abi_ordinal;
+	};
 	std::uint32_t direct_base_begin, direct_base_count,
 		virtual_base_begin, virtual_base_count;
 	std::uint32_t abi_tag_begin, abi_tag_count;

@@ -41,7 +41,7 @@ function @arg__arg(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak
     store i32 %t1, %t3
     return void
 }
-function @derived_int___derived_int___ov3(%this : ptr [object_bytes=4], %u : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7derivedIiEC1EO3arg, inline_hint=yes] {
+function @derived_int___derived_int___ov3(%this : ptr [object_bytes=4], %u : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7derivedIiECI14baseIiEI3argEEOT_, inline_hint=yes] {
   slot $this : ptr
   slot $u : ptr
 
@@ -70,4 +70,4 @@ function @base_int___base_int___ov3__base_entry(%this : ptr [object_bytes=4], %u
     return void
 }
 alias object _ZN3argC2Ei = @arg__arg
-alias object _ZN7derivedIiEC2EO3arg = @derived_int___derived_int___ov3
+alias object _ZN7derivedIiECI24baseIiEI3argEEOT_ = @derived_int___derived_int___ov3

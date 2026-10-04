@@ -279,6 +279,18 @@ void Analyzer::EmitDemandedFunction(BindingId binding)
 	const std::uint32_t function = MakeDump(emit_definition ?
 		DUMP_FUNCTION_DEFINITION : DUMP_FUNCTION_DECLARATION,
 		output_type, VALUE_NONE, 0, initial.binding);
+	// The ABI terminal names the class where the inherited constructor was
+	// originally declared, while body construction keeps its direct base link.
+	BindingId origin = initial.inherited_constructor_source;
+	for (std::size_t depth = 0; origin != kNoBinding; ++depth)
+	{
+		if (depth >= program_->bindings.size())
+			ThrowInternalCompilerError("inherited constructor origin cycle");
+		const BindingId next = GetFunction(origin).inherited_constructor_source;
+		if (next == kNoBinding) break;
+		origin = next;
+	}
+	dump_.nodes[function].selected_binding = origin;
 	dump_.Add(root_, function);
 	if (!emit_definition && (retain_lowering_facts_ || member ||
 		program_->bindings[binding].explicit_instantiation_suppressed))

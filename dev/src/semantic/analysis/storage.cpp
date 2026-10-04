@@ -246,6 +246,7 @@ std::size_t Analyzer::TemplateStorageBytes() const
 		template_instantiations_.StorageBytes() +
 		function_template_default_requests_.StorageBytes() +
 		lambda_closure_index_.StorageBytes() +
+		lambda_signature_occurrences_.StorageBytes() +
 		lambda_capture_uses_.StorageBytes() +
 		lambda_closures_.capacity() * sizeof(LambdaClosureFact) +
 		lambda_captures_.capacity() * sizeof(LambdaCaptureFact) +

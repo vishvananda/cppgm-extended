@@ -5,17 +5,6 @@
 
 namespace abi_mangle {
 namespace detail {
-namespace {
-
-std::size_t vector_hash(
-  std::size_t seed, const std::vector<std::size_t> & values)
-{
-  for(std::size_t value : values) seed = mix_hash(seed, value);
-  return seed;
-}
-
-}  // namespace
-
 bool ArgumentNode::operator==(const ArgumentNode & other) const
 {
   return kind == other.kind && type == other.type &&

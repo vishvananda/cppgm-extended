@@ -154,6 +154,8 @@ struct DumpNode
 	hosted_builtin::VectorIntrinsicKind hosted_vector_intrinsic;
 	hosted_builtin::AtomicIntrinsicKind hosted_atomic_intrinsic;
 	NameId text;
+	// On a function emission node, selected_binding is the original inherited
+	// constructor; construction/destruction actions retain their selected call.
 	BindingId binding, object_binding, selected_binding;
 	std::int64_t constant_value;
 	std::uint64_t constant_high;
