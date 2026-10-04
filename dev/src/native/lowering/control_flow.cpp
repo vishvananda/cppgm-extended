@@ -1,6 +1,8 @@
 #include "native/lowering/control_flow.h"
+#include "native/analysis/function.h"
 
 #include <algorithm>
+#include <queue>
 
 namespace lowir_native
 {
@@ -286,6 +288,61 @@ std::vector<lowir_model::SlotId> ControlFlowQueries::ExclusiveObjectSlotOwners(
 		owners[candidates[slot]] = candidates[owner];
 	}
 	return owners;
+}
+
+bool ControlFlowQueries::PreserveUnwindValues(FunctionFacts& facts,
+	const lowir_model::LowirFunction& function) const
+{
+	if (!facts.has_eh || facts.calls.empty()) return false;
+	// A cold throwing call may follow its landing pad in presentation order.
+	// Linear intervals alone then miss the call crossed by a handler's input.
+	// Propagate the latest installation position from every landing target;
+	// a max-priority walk settles each reachable block once, in O(IR log IR).
+	std::priority_queue<std::pair<std::size_t, std::size_t> > work;
+	std::vector<std::size_t> blocks(function.next_block_id, kNoBlock);
+	for (std::size_t block = 0; block < function.blocks.size(); ++block)
+		blocks[function.blocks[block].id] = block;
+	std::size_t position = 0;
+	for (std::size_t block = 0; block < function.blocks.size(); ++block)
+		for (std::size_t i = 0;
+			i < function.blocks[block].instructions.size(); ++i, ++position)
+		{
+			const Instruction& instruction = function.blocks[block].instructions[i];
+			if (instruction.kind != Instruction::IK_EH_TRY &&
+				instruction.kind != Instruction::IK_EH_CLEANUP) continue;
+			if (instruction.first.kind != Operand::OP_LABEL ||
+				instruction.first.block >= blocks.size()) continue;
+			const std::size_t landing = blocks[instruction.first.block];
+			if (landing != kNoBlock) work.push(std::make_pair(position + 1, landing));
+		}
+	std::vector<std::size_t> installed_before(function.blocks.size(), 0);
+	while (!work.empty())
+	{
+		const std::pair<std::size_t, std::size_t> entry = work.top();
+		work.pop();
+		if (installed_before[entry.second]) continue;
+		installed_before[entry.second] = entry.first;
+		for (std::size_t edge = 0; edge < successors_[entry.second].size(); ++edge)
+		{
+			const std::size_t next = successors_[entry.second][edge];
+			if (!installed_before[next]) work.push(std::make_pair(entry.first, next));
+		}
+	}
+	bool changed = false;
+	for (std::size_t value = 0; value < use_sites_.size(); ++value)
+		for (std::size_t use = 0; use < use_sites_[value].size(); ++use)
+			if (facts.definition[value] <
+				installed_before[use_sites_[value][use].block])
+			{
+				facts.mark(lowir_model::ValueId(static_cast<std::uint32_t>(value)),
+					FunctionFacts::VF_LIVE_ACROSS_CALL);
+				// Cold blocks can allocate other homes before transferring into
+				// this landing. Retain its input storage through the entire walk.
+				facts.last_use[value] = position;
+				changed = true;
+				break;
+			}
+	return changed;
 }
 
 void ControlFlowQueries::SelectBlock(std::size_t block)

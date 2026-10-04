@@ -716,6 +716,27 @@ bool register_was_clobbered_before(const FunctionFacts & facts,
     facts.first_register_clobber[index] < position;
 }
 
+void preserve_unwind_storage(FunctionFacts & facts,
+                            const lowir_model::LowirFunction & function,
+                            int optimization_level)
+{
+  extend_shared_storage_liveness(facts, function, optimization_level);
+  std::size_t function_end = 0;
+  for(std::size_t block = 0; block < function.blocks.size(); ++block)
+    function_end += function.blocks[block].instructions.size();
+  const unsigned call_clobbers = register_mask(XR_RAX) |
+    register_mask(XR_RCX) | register_mask(XR_RDX) | register_mask(XR_RSI) |
+    register_mask(XR_RDI) | register_mask(XR_R8) | register_mask(XR_R9) |
+    register_mask(XR_R10) | register_mask(XR_R11);
+  for(std::size_t raw = 0; raw < facts.last_use.size(); ++raw)
+    if(facts.last_use[raw] == function_end ||
+       facts.shared_storage_last_use[raw] == function_end) {
+      const lowir_model::ValueId value(static_cast<std::uint32_t>(raw));
+      facts.mark(value, FunctionFacts::VF_LIVE_ACROSS_CALL);
+      facts.live_across_clobbers[raw] |= call_clobbers;
+    }
+}
+
 FunctionFacts analyze_function(const lowir_model::LowirFunction & function,
                                Stats * stats, int optimization_level,
                                lowir_model::SymbolId memcpy_symbol)

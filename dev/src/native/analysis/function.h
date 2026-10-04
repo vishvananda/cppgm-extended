@@ -150,6 +150,10 @@ FunctionFacts analyze_function(const lowir_model::LowirFunction & function,
                                int optimization_level = 0,
                                lowir_model::SymbolId memcpy_symbol =
                                  lowir_model::SymbolId());
+// Refresh shared frame/address homes after CFG unwind uses extend lifetimes.
+void preserve_unwind_storage(FunctionFacts & facts,
+                            const lowir_model::LowirFunction & function,
+                            int optimization_level);
 StorageFacts analyze_storage(
     const lowir_model::LowirFunction & function,
     const FunctionFacts & function_facts,

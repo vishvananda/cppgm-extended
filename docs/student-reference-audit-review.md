@@ -113,9 +113,9 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **5 compiler issue families** remain
+Remaining-work count on 2026-10-04: **4 compiler issue families** remain
 open or in progress. MEMBER and EH-UNWIND-DTOR are completed below. LOOKUP-NAMESPACE-MIXED is completed under the updated
-instruction/memory qualification policy. LOOKUP-BASE-ALIAS, MANGLE and ARG-SLOTS are also completed.
+instruction/memory qualification policy. LOOKUP-BASE-ALIAS, MANGLE, ARG-SLOTS and BACKEND-ARRAY-OPT are also completed.
 **Seven further reviews** have no established
 required compiler change: EH-AGG-NESTED, EH-AGG-TEMP-DTOR,
 EH-RESULT-CLEANUP, MANGLE-BOUND, INHERITED-DEFAULT-EXCEPT, ROUND and VBASE-NULL.
@@ -213,7 +213,7 @@ The recent discovery inventory is not all C++11:
 | COND-RESULT | Preserve const class conditional result types and copy glvalue class conditional results | Additional controls while fixing ARG-COND | Done in af5f041ed: const result facts, selected glvalue copying and scoped reference backing; strict 5849/5849, full checks and equal-output ABBA pass. |
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Done in this checkpoint: reuse native CFG successors for bounded, equal-shaped object exclusion; preserve loops, pairwise group conflicts and conservative EH storage. The original reducer spans 103,824 bytes at O1/O2/O3 with correct values and 64 destructors. Promote one existing PA33 control with one escaped-pointer loop boundary; strict 6127/6127 in one line, all required checks and 432 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain the positive diagnostic timing medians below. |
-| BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Open, independently reproduced: the entry and copy-cleanup candidates crash at O2 for the twelve-element move and trivial-copy-prefix array fixtures, in standalone and host-linked object routes. Clang/GCC pass; our O0 routes and corresponding external-companion forms pass. Retain frozen sources, binary hashes, host-link controls and debugger observations under synthesized-construction-prefix/. |
+| BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Done in this checkpoint: preserve handler inputs across cold throwing calls independently of presentation order; refresh shared-storage/address lifetimes. Both existing PA21 programs pass at O1/O2/O3 on standalone, compiler-object and host-native routes through PA33 source symlinks. No copied fixture bodies or changed references. Strict 6127/6127 in one line, all required checks and 384 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain positive timing medians below. |
 | BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Open review: shared RTTI host-object route passes while standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations remain. Private-derived/base reducer already passes both. EH-UNWIND-DTOR fixes nested-outer-swallow, function-try-body-local and same-function dynamic rethrow at O0/O2 by resetting the native rethrow selector. The destructor-rethrow trace still returns 1 on the native route while both host-object routes pass. The independently reproduced 32-byte automatic-stack limitation also remains. Standalone shutdown registration is fixed in the native callback checkpoint. Keep these runtime routes separate from PA21 LowIR cleanup correctness; no ABI spelling change. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
@@ -7024,3 +7024,53 @@ Five compiler families and seven reviews remain. Final fixture pruning and
 student export stay deferred. Next is BACKEND-ARRAY-OPT: both unchanged full-TU
 array fixtures freshly reproduce an O2 crash on standalone and host-object
 routes, while all four O0 routes pass. No additional array fixtures needed.
+
+### Optimized array cleanup — qualified, 2026-10-04
+
+BACKEND-ARRAY-OPT freshly reproduces both unchanged PA21 full-TU fixtures:
+the twelve-element move and trivial-copy-prefix arrays crash at O2 on both
+standalone and host-object routes; all four O0 routes pass. The debugger
+shows E::E's cleanup reading through r8=8, where its incoming object pointer
+should survive. Optimized LowIR puts the throwing calls after the landing
+blocks in presentation order, outside the linear last-use interval.
+
+Reuse native ControlFlowQueries' successors and indexed use sites to propagate
+the latest EH installation position from landing targets. A max-priority walk
+settles each reachable block once, with O(IR log IR) time and O(IR) storage.
+Values defined before that installation and used along a handler path cross
+calls independently of layout. Retain their homes through cold block emission,
+and refresh the existing shared-storage/address lifetime analysis so copied
+homes and replayed indexes inherit that retention. No CFG rebuild, source
+reparsing or persistent per-value/per-block liveness matrix.
+
+Both original O2 routes now pass. Twelve fresh candidate/Clang/GCC O0/O2
+host-object executions agree. PA33's existing native driver harness discovers
+two symlinks to the PA21 sources and passes 36/36 executions at O1/O2/O3 on
+standalone, compiler-object and host-native-object routes. Keep source ownership
+in PA21; the PA33 links provide optimized native execution coverage without
+duplicating the programs or changing their LowIR references. The export's
+tracked-path rsync -a preserves these links and includes their PA21 targets;
+final exported discovery remains part of the deferred combined validation.
+
+Candidate SHA256:
+`5ad5b1c8a9c57e120bf93c1ed4a4d01b9220b744d19539cf6eb5a028ae13cf38`.
+Strict 6127/6127 prints one line. All six unchanged Alpha pre-screen objects
+are byte-identical. The initial setup rejected a stale manifest-directory
+reference before any counters; preserve that failed script/log, correct the
+directory and freeze the same 66 source inputs and three immutable binaries.
+Debug-info, backend variants, self-host through PA5, all nine architecture
+audits and placement with --fail-on-early pass. The file audit matches the
+previous qualified warning log byte for byte. All 384 Alpha observations
+independently verify unscaled counters, RSS, zero statuses and byte-identical
+objects. Maximum instruction median is 1.000098; all RSS medians are 1.0.
+One confirmation per flagged workload gives calibrated cycles: local statics
+1.010811, CI [1.001357, 1.017873]; multi-pack 1.013952,
+CI [1.013099, 1.019401]. Retain both positive timing costs and the initial
+screen; no neutrality claim or further timing runs. Evidence:
+`/tmp/cppgm-v4-audit-review/optimized-array-cleanup/` and
+`alpha:/tmp/cppgm-v4-audit-review-20261004-optimized-array-cleanup/`.
+Four compiler families and seven reviews remain. Final fixture pruning and
+combined export remain deferred. FLOW-DEFINED is next: both frozen PA10/PA21
+controls still reject with a no-return error, while fresh strict C++11
+Clang/GCC executions pass. Host warnings remain preserved; they do not
+establish a required diagnostic for undefined non-void fallthrough.

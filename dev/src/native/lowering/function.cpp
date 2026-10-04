@@ -110,6 +110,8 @@ public:
       xmms_(decisions), live_locations_(stats), generated_frame_names_(source),
       position_(0)
   {
+    if(control_flow_.PreserveUnwindValues(facts_, source_))
+      analysis::preserve_unwind_storage(facts_, source_, optimization_level_);
     values_.resize(source_.value_names.size());
     value_known_.assign(source_.value_names.size(), 0);
     cyclic_register_assumed_.assign(source_.value_names.size(), 0);

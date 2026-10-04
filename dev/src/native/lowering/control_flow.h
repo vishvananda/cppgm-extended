@@ -11,6 +11,8 @@ namespace lowir_native
 namespace analysis
 {
 
+struct FunctionFacts;
+
 class ControlFlowQueries
 {
 public:
@@ -27,6 +29,8 @@ public:
 	// For functions without EH, identify equal-shaped fixed object slots whose
 	// accesses cannot occur on the same CFG walk, including across loop turns.
 	std::vector<lowir_model::SlotId> ExclusiveObjectSlotOwners(
+		const lowir_model::LowirFunction& function) const;
+	bool PreserveUnwindValues(FunctionFacts& facts,
 		const lowir_model::LowirFunction& function) const;
 
 private:

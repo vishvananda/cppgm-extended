@@ -1,0 +1,1 @@
+../../../pa21/tests/general/200-synthesized-copy-trivial-copy-array-prefix-construction-prefix.t
