@@ -229,6 +229,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__6 : i64
   slot $lor__7 : i64
   slot $lor__8 : i64
+  slot $lor__9 : i64
+  slot $tmpobj__10 : obj<1x1>
 
   block ^entry:
     store i32 0, $bound
@@ -440,13 +442,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^for_end_4:
     %t70 = load i32 @bad
-    branch %t70, ^lor_short_46, ^lor_rhs_45
+    branch %t70, ^lor_short_49, ^lor_rhs_48
+
+  block ^lor_rhs_48:
+    %t71 = addr $tmpobj__10
+    zeroinit 1x1 %t71
+    %t72 = call i32 @Local__get(%t71)
+    %t73 = cmp ne i32 %t72, 7
+    %t74 = cmp ne i64 %t73, 0
+    store i64 %t74, $lor__9
+    jump ^lor_end_50
+
+  block ^lor_short_49:
+    store i64 1, $lor__9
+    jump ^lor_end_50
+
+  block ^lor_end_50:
+    %t75 = load i64 $lor__9
+    branch %t75, ^lor_short_46, ^lor_rhs_45
 
   block ^lor_rhs_45:
-    %t71 = call i32 @template_probe(0)
-    %t72 = cmp ne i32 %t71, 7
-    %t73 = cmp ne i64 %t72, 0
-    store i64 %t73, $lor__8
+    %t76 = call i32 @template_probe(0)
+    %t77 = cmp ne i32 %t76, 7
+    %t78 = cmp ne i64 %t77, 0
+    store i64 %t78, $lor__8
     jump ^lor_end_47
 
   block ^lor_short_46:
@@ -454,14 +473,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_47
 
   block ^lor_end_47:
-    %t74 = load i64 $lor__8
-    branch %t74, ^lor_short_43, ^lor_rhs_42
+    %t79 = load i64 $lor__8
+    branch %t79, ^lor_short_43, ^lor_rhs_42
 
   block ^lor_rhs_42:
-    %t75 = load i32 @template_drops
-    %t76 = cmp ne i32 %t75, 2
-    %t77 = cmp ne i64 %t76, 0
-    store i64 %t77, $lor__7
+    %t80 = load i32 @template_drops
+    %t81 = cmp ne i32 %t80, 2
+    %t82 = cmp ne i64 %t81, 0
+    store i64 %t82, $lor__7
     jump ^lor_end_44
 
   block ^lor_short_43:
@@ -469,14 +488,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_44
 
   block ^lor_end_44:
-    %t78 = load i64 $lor__7
-    branch %t78, ^lor_short_40, ^lor_rhs_39
+    %t83 = load i64 $lor__7
+    branch %t83, ^lor_short_40, ^lor_rhs_39
 
   block ^lor_rhs_39:
-    %t79 = load i32 @template_trace
-    %t80 = cmp ne i32 %t79, 21
-    %t81 = cmp ne i64 %t80, 0
-    store i64 %t81, $lor__6
+    %t84 = load i32 @template_trace
+    %t85 = cmp ne i32 %t84, 21
+    %t86 = cmp ne i64 %t85, 0
+    store i64 %t86, $lor__6
     jump ^lor_end_41
 
   block ^lor_short_40:
@@ -484,8 +503,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^lor_end_41
 
   block ^lor_end_41:
-    %t82 = load i64 $lor__6
-    branch %t82, ^cond_then_36, ^cond_else_37
+    %t87 = load i64 $lor__6
+    branch %t87, ^cond_then_36, ^cond_else_37
 
   block ^cond_then_36:
     store i32 10, $cond__5
@@ -496,8 +515,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_38
 
   block ^cond_end_38:
-    %t83 = load i32 $cond__5
-    return i32 %t83
+    %t88 = load i32 $cond__5
+    return i32 %t88
 }
 function @H__H(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN1HC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -795,6 +814,47 @@ function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=strong
     %t10 = binary sub i32 %t9, 1
     store i32 %t10, @live
     return void
+}
+function @Local__get(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ4mainEN5Local3getEv, prefer_local=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    eh_try ^catch_dispatch_1
+    %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
+    store i32 1, %t1
+    %t2 = addr @__external_rtti__int
+    call void @__external_runtime____cxa_throw(%t1, %t2, 0)
+    eh_end
+    return i32 0
+
+  block ^catch_dispatch_1:
+    eh_catch @__external_rtti__int, 1
+    jump ^catch_entry_2
+
+  block ^catch_entry_2:
+    %t3 = exception ptr
+    %t4 = exception_selector i32
+    %t5 = cmp eq i32 %t4, 1
+    branch %t5, ^catch_body_4, ^catch_next_5
+
+  block ^catch_body_4:
+    %t6 = call ptr @__external_runtime____cxa_begin_catch(%t3)
+    eh_cleanup ^catch_cleanup_6
+    eh_end
+    call void @__external_runtime____cxa_end_catch()
+    return i32 7
+
+  block ^catch_cleanup_6:
+    call void @__external_runtime____cxa_end_catch()
+    eh_end
+    resume
+
+  block ^catch_next_5:
+    resume
+
+  block ^try_end_3:
+    return i32 0
 }
 function @template_probe(%__param0 : i32) -> i32 [binding=weak, object=_Z14template_probeIiEiT_] {
   slot $__param0 : i32

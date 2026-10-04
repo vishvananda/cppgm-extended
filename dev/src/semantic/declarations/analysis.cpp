@@ -2139,6 +2139,7 @@ std::vector<ParameterInfo> Analyzer::BuildParameters(NodeId node,
 				default_expression = FirstSemanticChild(default_expression);
 			result.back().default_argument = default_expression;
 			result.back().default_scope = parameter_scope;
+			ValidateDefaultArgumentContext(default_expression, parameter_scope, declared);
 		}
 	}
 	if (result.size() == 1 && result[0].name == 0 &&

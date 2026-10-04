@@ -81,6 +81,8 @@ bool Analyzer::HasTargetTypedSpecializedMemberImmediate(
 ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 	ScopeId scope, TypeId target)
 {
+	if (unevaluated_depth_ != 0)
+		return CandidateExpressionFailure("lambda expression in an unevaluated operand");
 	++lambda_closure_requests_;
 	const NodeId introducer = FindChild(node, ::cppgm::syntax::STAG_LAMBDA_INTRODUCER);
 	if (introducer == kNoNode)
@@ -220,6 +222,11 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 				found_index < found.OrdinaryCount(); ++found_index)
 			{
 				const BindingId binding = found.OrdinaryAt(found_index);
+				if (automatic_capture(binding) && !LocalClassObjectUseIsValid(
+					binding, scope, !lambda_capture_uses_.IsExplicitAt(capture_uses, i) ||
+						!by_reference))
+					return CandidateExpressionFailure(
+						"local class lambda captures an enclosing automatic object");
 				if (automatic_capture(binding))
 					append_capture(binding, 0, by_reference);
 				const BindingRecord& record = program_->bindings[binding];

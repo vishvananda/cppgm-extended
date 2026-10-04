@@ -522,10 +522,21 @@ void Analyzer::ValidateOrdinaryMemberFunctionBodies(EntityId entity)
 		class_template_pattern_by_entity_[entity] != kNoDumpEdge)
 		return;
 	if (entity >= entity_member_functions_.size()) return;
+	ScopeId owner = program_->ParentScope(program_->entities[entity].member_scope);
+	for (; owner != kNoScope && program_->KindOfScope(owner) != SCOPE_FUNCTION &&
+		program_->KindOfScope(owner) != SCOPE_NAMESPACE; owner = program_->ParentScope(owner)) {}
+	const bool local_class = owner != kNoScope &&
+		program_->KindOfScope(owner) == SCOPE_FUNCTION;
 	const std::size_t function_count = entity_member_functions_[entity].size();
 	for (std::size_t i = 0; i < function_count; ++i)
-		ValidateOrdinaryMemberFunctionBody(
-			entity_member_functions_[entity][i]);
+	{
+		const BindingId function = entity_member_functions_[entity][i];
+		const FunctionInfo& info = GetFunction(function);
+		if (local_class && info.defined && info.definition_body != kNoNode &&
+			!info.constructor && !info.destructor)
+			AnalyzeRetainedPlaceholderFunctionBody(function, true);
+		else ValidateOrdinaryMemberFunctionBody(function);
+	}
 }
 
 ExpressionInfo Analyzer::AnalyzeClassFunctionalCast(TypeId cast_type,

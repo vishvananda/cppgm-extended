@@ -35,7 +35,6 @@ enum GeneratedLibraryName
 	GENERATED_LIBRARY_TYPE_INFO,
 	GENERATED_LIBRARY_INITIALIZER_LIST
 };
-
 bool StringLiteralTokenEnd(const std::string& spelling, std::size_t* end);
 bool TemplateArgumentsNeedInternalEmission(const Program& program,
 	const std::vector<TemplateArgument>& arguments);
@@ -507,7 +506,7 @@ private:
 	void PublishPlaceholderFunctionReturn(
 		BindingId function, const ExpressionInfo* expression);
 	void CompletePlaceholderFunctionReturn(BindingId function);
-	void AnalyzeRetainedPlaceholderFunctionBody(BindingId function);
+	void AnalyzeRetainedPlaceholderFunctionBody(BindingId function, bool ordinary = false);
 	TypeId BuildArrayDeclaratorType(NodeId suffix, TypeId element,
 		ScopeId scope,
 		const std::unordered_set<NameId>* template_parameter_names);
@@ -675,6 +674,8 @@ private:
 	BindingId CandidateOverloadFailure(const char* message);
 	ExpressionInfo CandidateExpressionFailure(const char* message);
 	ExpressionInfo MaterializeVariadicCallArgument(ExpressionInfo argument);
+	bool LocalClassObjectUseIsValid(BindingId binding, ScopeId scope, bool constant_use) const;
+	void ValidateDefaultArgumentContext(NodeId expression, ScopeId scope, TypeId target);
 	TypeId BuildCanonicalTemplateTypeArgument(NodeId type_id,
 		ScopeId source_scope,
 		const std::unordered_set<NameId>* dependent_names);
@@ -683,7 +684,6 @@ private:
 	// arguments rather than being non-constant: it reads a variable template
 	// specialization that has no value yet, or was built from one.
 	bool IsDependentValueExpression(const ExpressionInfo& expression) const;
-
 	// A retained dependent argument stands in for a value that is not known
 	// until instantiation.  It is not convertible to anything and must be
 	// carried through unchanged.

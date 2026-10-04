@@ -23,10 +23,10 @@ struct TemplateGuard{int id;template<class T>TemplateGuard(T n)try:id(n){}catch(
 template<class T>int template_probe(T);
 template<class T>int template_probe(T)try{TemplateGuard first(1),second(2);return 8;}
 catch(int n){return n;}
-int main(){int bound=0;for(limit=0;limit<=bound+1;++limit){progress=live=count=seen=0;int caught=0;
+int main(){struct Local{int get()try{throw 1;}catch(int){return 7;}};int bound=0;for(limit=0;limit<=bound+1;++limit){progress=live=count=seen=0;int caught=0;
 try{construction_probe();}catch(int n){caught=n;}
 if(limit==0)bound=progress;int expected=limit>0 && limit<=bound?(seen?limit:limit):0;
 if(live || caught!=expected)++bad;
 unsigned long long hash=0;for(int i=0;i<count;++i)hash=hash*131+static_cast<unsigned long long>(trace[i]+100000);
 if(limit>=static_cast<int>(sizeof(expected_trace)/sizeof(expected_trace[0])) || hash!=expected_trace[limit] || count!=expected_count[limit])++bad;
-}return bad||template_probe(0)!=7||template_drops!=2||template_trace!=21?10:0;}
+}return bad||Local().get()!=7||template_probe(0)!=7||template_drops!=2||template_trace!=21?10:0;}

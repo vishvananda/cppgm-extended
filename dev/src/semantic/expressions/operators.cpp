@@ -279,7 +279,11 @@ ExpressionInfo Analyzer::AnalyzeUnary(NodeId node, ScopeId scope, TypeId target,
 		address_target != kNoType && IsMemberPointer(address_target);
 	if (op == OP_AMP && operand.binding != kNoBinding &&
 		!member_pointer_address)
+	{
+		if (!LocalClassObjectUseIsValid(operand.binding, scope, false))
+			return CandidateExpressionFailure("local class odr-uses an enclosing automatic object");
 		EnsureStaticMemberStorage(operand.binding, true);
+	}
 	if (op == OP_AMP && operand.binding != kNoBinding &&
 		program_->bindings[operand.binding].bit_field)
 		ThrowSemanticError("address-of bit-field unsupported");

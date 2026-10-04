@@ -49,6 +49,7 @@ dev/src/semantic/analysis/capacity.cpp	PublishBindingPopulationStats	1	dev/src/s
 dev/src/semantic/analysis/capacity.cpp	PublishPresentationPopulationStats	1	dev/src/semantic/analysis/capacity.cpp	keep
 dev/src/semantic/analysis/capacity.cpp	ReserveSemanticCapacity	1	dev/src/semantic/analysis/capacity.cpp	keep
 dev/src/semantic/analysis/name_resolution.cpp	GeneratedLibraryPath	1	dev/src/semantic/analysis/name_resolution.cpp	keep
+dev/src/semantic/analysis/name_resolution.cpp	LocalClassObjectUseIsValid	1	dev/src/semantic/analysis/name_resolution.cpp	keep
 dev/src/semantic/analysis/name_resolution.cpp	LookupSpelling	1	dev/src/semantic/analysis/name_resolution.cpp	keep
 dev/src/semantic/analysis/name_resolution.cpp	LookupSyntaxName	1	dev/src/semantic/analysis/name_resolution.cpp	keep
 dev/src/semantic/analysis/name_resolution.cpp	ParseNamePath	1	dev/src/semantic/analysis/name_resolution.cpp	keep
@@ -57,6 +58,7 @@ dev/src/semantic/analysis/name_resolution.cpp	ResolveScopePath	1	dev/src/semanti
 dev/src/semantic/analysis/name_resolution.cpp	ResolveScopeSpelling	1	dev/src/semantic/analysis/name_resolution.cpp	keep
 dev/src/semantic/analysis/name_resolution.cpp	StructuredNamePath	1	dev/src/semantic/analysis/name_resolution.cpp	keep
 dev/src/semantic/analysis/name_resolution.cpp	SyntaxNamePath	1	dev/src/semantic/analysis/name_resolution.cpp	keep
+dev/src/semantic/analysis/name_resolution.cpp	ValidateDefaultArgumentContext	1	dev/src/semantic/analysis/name_resolution.cpp	keep
 dev/src/semantic/analysis/scope.cpp	DisplayName	1	dev/src/semantic/analysis/scope.cpp	keep
 dev/src/semantic/analysis/scope.cpp	HasInternalLinkageScope	1	dev/src/semantic/analysis/scope.cpp	keep
 dev/src/semantic/analysis/scope.cpp	InitializeInitializerListLifetimeScope	1	dev/src/semantic/analysis/scope.cpp	keep

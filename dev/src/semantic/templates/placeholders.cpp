@@ -317,11 +317,11 @@ void Analyzer::CompletePlaceholderFunctionReturn(BindingId function)
 }
 
 void Analyzer::AnalyzeRetainedPlaceholderFunctionBody(
-	BindingId function)
+	BindingId function, bool ordinary)
 {
 	function = program_->bindings[function].canonical;
 	FunctionInfo& requested = GetMutableFunction(function);
-	if (requested.placeholder_return_kind == PLACEHOLDER_DECLARATOR_NONE)
+	if (!ordinary && requested.placeholder_return_kind == PLACEHOLDER_DECLARATOR_NONE)
 		return;
 	if (requested.placeholder_body_state == PLACEHOLDER_BODY_SUCCEEDED ||
 		requested.retained_definition_semantics != kNoDumpEdge)
@@ -366,6 +366,7 @@ void Analyzer::AnalyzeRetainedPlaceholderFunctionBody(
 		const ParameterInfo& parameter = requested.parameters[i];
 		const BindingId parameter_binding = program_->AddBinding(function_scope,
 			BIND_PARAMETER, parameter.name, ParameterBindingType(parameter));
+		RecordSourceTypeOverride(parameter_binding, parameter.declared_type);
 		BindFunctionParameterPackElement(
 			function_scope, parameter.pack_name, parameter_binding);
 		dump_.Add(detached, MakeDump(DUMP_PARAMETER,
@@ -378,6 +379,7 @@ void Analyzer::AnalyzeRetainedPlaceholderFunctionBody(
 
 	{
 		ScopedValueRestore<TypeId> return_context(&current_return_type_,
+			ordinary ? program_->types.Get(requested.type).child :
 			requested.placeholder_return_deduced ?
 				requested.placeholder_return_type : kNoType);
 		ScopedValueRestore<EntityId> class_context(&current_class_context_,
@@ -392,7 +394,17 @@ void Analyzer::AnalyzeRetainedPlaceholderFunctionBody(
 				PLACEHOLDER_BODY_FAILED;
 		};
 		ScopedCleanup<decltype(fail_body)> body_failure(fail_body);
-		AnalyzeCompound(requested.definition_body, function_scope, detached);
+		std::uint32_t region;
+		const std::uint32_t parent = BeginFunctionTryRegion(
+			detached, requested.function_try_block, &region);
+		if (region != kNoDumpEdge) PushExceptionControlContext(region, function_scope);
+		AnalyzeCompound(requested.definition_body, function_scope, parent);
+		if (region != kNoDumpEdge)
+		{
+			PopExceptionControlContext();
+			AnalyzeFunctionTryHandlers(requested.function_try_block,
+				function_scope, region, FUNCTION_TRY_BODY_ORDINARY);
+		}
 		dump_.nodes[detached].body_contains_source_label = FinishFunctionControlFlowFacts();
 		CompletePlaceholderFunctionReturn(function);
 		const FunctionInfo& completed = GetFunction(function);

@@ -4,9 +4,10 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **2 compiler families and 7 reviews remain**. FLOW-DEFINED
-and EXPLICIT-CONTEXT are qualified. Strict 6128/6128 prints one line; all
-required checks and Alpha instruction/RSS gates pass. Conditional explicit's
+Current status: **1 compiler family and 7 reviews remain**. LOCAL-ODR
+is now qualified alongside FLOW-DEFINED and EXPLICIT-CONTEXT. Strict
+6135/6135 prints one line; all required checks and Alpha instruction/RSS
+gates pass. Conditional explicit's
 multi-pack timing confirmation shows a 2.32% cycle cost, retained below.
 Final fixture pruning and combined student export/harness validation remain
 deferred until compiler work is complete.
@@ -233,7 +234,7 @@ The recent discovery inventory is not all C++11:
 | CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Done: BuildConstexprObjectElement reuses NormalizeWideConstant with the typed BindingLayoutFact width after declared-type conversion. Skip full-width and bool values; retain signed values. Three assertions extend the existing PA16 aggregate fixture and the superseded opt-in control is removed. All 42 focused outcomes and eight final qualification groups pass; affected 876/876, strict 6114/6114 prints one line. The 240-observation screen includes targeted bit-field constants and ordinary aggregates; instruction/RSS/equality gates pass with no timing confirmation indicated (maximum instruction ratio 1.003711, RSS 1.0). No new source fixture. Artifacts in constant-bitfield-width/. |
 | EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Done in this checkpoint: validate the condition in declarator substitution before constructor registration; preserve access failure and invalid-conversion substitution results. Share existing variadic class materialization with constructor paths so the original ellipsis fallback executes. Extend the existing PA29 fixture, retire both controls and reuse its source through a PA33 native driver link. Strict 6128/6128, all required checks and Alpha instruction/RSS gates pass; multi-pack timing cost retained below. Scope stays limited to the documented libc++ 21 C++11 constructor dependency; no deduction-guide additions. |
 | EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Done in the accompanying performance-approved checkpoint: deduplicate adjusted TypeIds and compare declarations as sets while retaining first-declaration order. The one positive is promoted to PA6/300 and its temporary control removed; the distinct-set negative remains. Nine scratch boundaries pass ours and Clang; GCC's adjusted-array/function disagreement is retained. PA6 112/112, strict report, every required compiler check and the final combined 4800-observation global performance gate pass. Earlier two failed cycle gates remain recorded. N3485 15.4/2,3 supplies the rule. |
-| LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
+| LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Done in this checkpoint: retain typed ordinary local-class bodies, reject outer automatic-object uses and invalid default/capture contexts, and enforce the C++11 unevaluated-lambda restriction. All 13 frozen negatives reject and all six positives compile at O0/O2. Seven independent owning negatives replace three controls; extend two existing positives, including local-class function-try preservation. Strict 6135/6135, all required checks and 288 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Disputed constant-default/explicit constant-capture cases remain held. |
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Done in this checkpoint: non-void fallthrough emits unreachable rather than requiring an unsupported diagnostic; semantic label presence retains nested statement containers after terminators. Two owning PA10/21 fixtures replace controls; PA33 links provide optimized native coverage. Retire the incorrect PA30 missing-return rejection and cover its defined returning path in PA10. Strict 6128/6128, all required checks and Alpha instruction/RSS gates pass; timing evidence retained below. |
 | ATTR-NORETURN | Diagnose standard noreturn argument and non-function target constraints | v4codex PA30 source201 | Done: argument rejection in 8a6bcd105; variable-target/provenance fix in this checkpoint. N3485 7.6.1/4 and 7.6.3/1 restrict the standard attribute to functions. Preserve GNU attribute provenance (including both namespace spellings), ignore unknown scoped attributes, and check resolved declarator types plus variable/member/parameter owners. Ours and Clang pass 28/28 focused outcomes; GCC invalid-target acceptance differences remain recorded. Add one PA29/500 variable negative and reuse the existing GNU-attribute fixture for an unknown-scoped-variable positive and existing noreturn runtime coverage. Affected 558/558, strict 6112/6112 in one line, debug/self-host PA5/all nine architecture checks/file/placement pass. The 192-observation screen plus 96-observation namespace timing confirmation pass instruction/RSS/equality/unscaled-counter checks: maximum instruction ratio 1.000729, median RSS ratios 1.0; combined namespace cycles median 1.004159 with interval [1.001728,1.010226], retained as diagnostic cost. Raw evidence is in noreturn-variable-appertainment/. |
 | INHERITED-DEPENDENT | Recognize using T::T as a dependent inherited-constructor declaration | v4codex PA31 source205 | Done: retained validation treats the terminal T as a constructor name, preserving ordinary parameter shadowing checks. Extend the existing PA14 inherited-constructor fixture in cluster 300; remove the duplicate control. Strict 6120/6120, required audits and qualification, fresh C++11 hosts and Alpha performance gates pass. Ordinary using B::T and typename disagreements remain held. |
@@ -7165,3 +7166,56 @@ Two compiler families and seven reviews remain. LOCAL-ODR is next; preserve
 valid constant/unevaluated uses and hold the previously disputed capture cases.
 Final fixture pruning and combined student export/harness validation remain
 deferred until compiler work is complete.
+
+### Local-class automatic use and default contexts — qualified, 2026-10-04
+
+All thirteen frozen invalid controls were accepted at entry while strict C++11
+Clang/GCC rejected them. The six valid controls compiled on all three. Apply
+N3485 9.8/1 and 3.2 through existing typed binding/scope facts: ordinary local-class
+member bodies are analyzed and retained even when unused, and later demand
+reuses those facts. Constants used as values and unevaluated operands remain
+valid; address-taking and reference binding require storage and reject. Lambda
+capture checks reuse the existing capture-use table. Default declarations check
+unqualified names and captures under 8.3.6/7,8; 5.1.2/2 forbids unevaluated lambdas.
+Preserve existing valid unevaluated defaults and hold the frozen host-disputed
+constant-default and explicit constant-capture observations.
+
+Promote three existing controls and add four independent negatives: ordinary
+local use, constant address, constant reference and local default in PA11/100;
+default-this and unevaluated lambda in PA20/200; broader default capture in
+PA21/100. Other permutations stay in scratch. Extend the existing PA11 constant
+fixture with permitted constant/global/parameter/member-local/sizeof uses.
+Extend the existing PA21 function-try fixture to preserve local-class handlers
+through retained-body emission. Regenerate only these two successful references
+and exact failure sidecars. No new PA33 driver or copied fixture bodies.
+
+The third candidate introduces two regex failures by instantiating qualified
+names during default-context checks. Unqualified lookup fixes them. A separate
+preservation check shows the fourth candidate dropped local function-try
+handlers; retain the same typed region/handlers and source parameter types as
+ordinary body demand. Both introduced failures and their corrections remain
+in scratch. The initial positive fixture accidentally uses a PA16 local static;
+replace it with a namespace object, preserving the PA11 ownership. No placement
+exception or changed regex oracle.
+
+Final SHA256:
+`7d45576df54bd75b8d742c1f7cb7e569a61cae67fd60b1c628b8694882f8ef4e`.
+All thirteen frozen negatives reject and all six positives compile at O0/O2.
+Thirty-six final runtime observations across our host-object route and strict
+Clang/GCC pass, including the two extended owning fixtures and function-try
+preservation. All eighteen final owning compile observations pass. Strict
+6135/6135 prints exactly one line; debug-info, backend variants, self-host PA5,
+all nine architecture targets, file and placement audits pass. The file audit's
+37 warnings are byte-identical to the preceding final qualified audit.
+
+Alpha retains the same 66 frozen sources and three immutable binaries; all six
+raw object pairs are byte-identical without normalization. Independent checks
+verify all 288 unscaled counter/RSS observations, zero statuses, hashes and
+paired medians. Maximum instruction median is 1.000347370; maximum RSS median
+is 1.000054072. No calibrated cycle median triggers the declared confirmation
+threshold; retain every cycle observation without claiming timing neutrality.
+Evidence: `/tmp/cppgm-v4-audit-review/local-outer-odr/qualified-proof.json` and
+`alpha:/tmp/cppgm-v4-audit-review-20261004-local-outer-odr-final/`.
+One compiler family (BACKEND) and seven reviews remain. Final fixture pruning
+and combined student export/harness validation remain deferred until compiler
+work and the frozen reviews are complete.

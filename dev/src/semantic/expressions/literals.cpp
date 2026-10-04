@@ -810,6 +810,9 @@ ExpressionInfo Analyzer::AnalyzeNamedValue(
 	}
 	if (binding.kind != BIND_VARIABLE && binding.kind != BIND_PARAMETER)
 		return CandidateExpressionFailure("name does not denote a value");
+	if (!LocalClassObjectUseIsValid(found.ordinary, scope,
+		target == kNoType || !program_->types.IsReference(target)))
+		return CandidateExpressionFailure("local class odr-uses an enclosing automatic object");
 	if (!CanAccessMember(found.ordinary, found.naming_class))
 		return CandidateExpressionFailure("inaccessible member object");
 	MarkClassTemplateSpecializationUse(binding.member_owner);
