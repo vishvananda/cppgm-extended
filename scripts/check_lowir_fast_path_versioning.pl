@@ -125,6 +125,8 @@ for my $test (@tests)
 	die "$test: O3 wrapper must have one shared slow transfer\n"
 		if scalar(@wrapper_calls) != 1 || $wrapper_calls[0] eq 'observe';
 	my $slow_target = $wrapper_calls[0];
+	die "$test: slow clone collided with the retained global name\n"
+		if $slow_target eq '__o3fastslow0';
 	my $slow = $records{O3}->{$slow_target} //
 		die "$test: O3 wrapper's slow target $slow_target has no definition\n";
 	die "$test: complete slow body did not retain all four observable arms\n"

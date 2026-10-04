@@ -20,8 +20,9 @@ The subsequent push/CI request is tracked in draft PR #62. Its first full
 matrix exposes two additional environment-specific compiler failures: a heap
 corruption on GCC 13 hosted self-compilation and libc++ 21 fixed-call
 validation failures. The frozen student/Argon queue remains complete; these
-new CI reproductions are under investigation. The Make 4.3 harness failure
-is corrected without relaxing report-output assertions.
+Both CI root causes have narrow repairs and existing-fixture regressions,
+with full qualification and the CI rerun recorded below. The Make 4.3 harness
+failure is corrected without relaxing report-output assertions.
 
 ## Strategy review after a70d1174b — 2026-10-03
 
@@ -152,8 +153,8 @@ The recent discovery inventory is not all C++11:
 | ID | Work item | Discovery | Status / checkpoint |
 | --- | --- | --- | --- |
 | CI-MAKE-ENV | Isolate scratch top-level report invocations from the parent Make environment | PR #62 / GNU Make 4.3 | Fixed: clear MAKEFLAGS, MFLAGS, MAKELEVEL and MAKEOVERRIDES in the report-test subprocess. Exact GNU Make 4.3 reproduction fails six assertions before the correction and all seven tests pass afterward; the full harness passes under Make 4.3. No production Makefile, shipped file or assertion changes. |
-| CI-GCC13-HEAP | Diagnose heap corruption during hosted pp_tokenizer self-compilation | PR #62 / Ubuntu 24.04 GCC 13 | Open: reproduce with the CI-built compiler and matching GCC 13 headers. The same binary passes with the local GCC 15 headers. An isolated ASan build is running to identify the invalid access. |
-| CI-LIBCXX21-FIXED-CALL | Accept valid fixed calls in C++11 libc++ 21 templates | PR #62 / Ubuntu 26.04 clang+libc++ | Open: matching CI image/artifact rejects bare string/vector/functional/sstream/map includes with no viable nondependent call. Base type_traits/new/exception/stdexcept/memory/utility includes pass. Required existing hosted fixtures and self-hosting expose this; no newer feature or speculative fixture scope is admitted. |
+| CI-GCC13-HEAP | Diagnose heap corruption during hosted pp_tokenizer self-compilation | PR #62 / Ubuntu 24.04 GCC 13 | Fixed: ASan identifies a one-based StringId indexed into a size-only bitmap in the O3 fast-path splitter. Allocate the missing slot, consistent with the other clone helpers. Extend existing PA32/544 with a highest-ID retained global and assert clone-name collision avoidance; baseline ASan fails, repaired fixture and original GCC 13 self-compile pass. Full qualification / PR rerun below. |
+| CI-LIBCXX21-FIXED-CALL | Accept valid fixed calls in C++11 libc++ 21 templates | PR #62 / Ubuntu 26.04 clang+libc++ | Fixed: retained member-template validation freezes a namespace function before the current class is modeled. Honor the existing unmodeled-current-class guard for unqualified function lookup; explicit qualified validation remains unchanged. Extend existing PA17 complete-class fixture with a later private helper hiding a namespace overload. Baseline rejects, Clang/GCC C++11 O0/O2 and repaired compiler agree; actual libc++ 21 hosted fixture and pp_tokenizer self-compilation pass. Full qualification / PR rerun below. |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and final combined export each print one success total with empty stderr. Final course 5719/5719 and injected backend/producer failures verify shipped behavior. |
 | HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in 2481b326d: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Final combined export passes 5719/5719 with empty stderr; student backend and producer failure injections remain visible. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
@@ -7717,3 +7718,62 @@ tests and complete harness pass under Make 4.3. Compiler/runtime behavior and
 student export files are unchanged. Raw CI logs and reproductions are in
 `/tmp/cppgm-v4-audit-review/ci-pr62/`. The two compiler CI failures remain open
 under their own unified rows; do not weaken requirements or disable matrix jobs.
+
+
+## PR #62 compiler repairs and qualification — 2026-10-04
+
+CI-GCC13-HEAP is a one-byte bitmap bound defect in
+`split_o3_fast_function_path`: StringPool IDs are one-based, while its `size()`
+excludes the sentinel. The splitter indexed `used_names[size()]` when the
+last interned spelling belonged to a retained global. An isolated GCC 13
+AddressSanitizer build reproduces both the original hosted pp_tokenizer
+self-compilation failure and the existing PA32/544 control extended with a
+last-interned global. Allocate `size() + 1`, as the other clone-name helpers
+already do. Both reproductions then pass ASan; the existing structural checker
+also verifies that the generated slow clone avoids the retained global name.
+
+CI-LIBCXX21-FIXED-CALL is premature namespace lookup in retained member
+template validation. In libc++ 21's basic_string member template, an
+unqualified zero-argument `__throw_out_of_range()` denotes a later-declared
+private static member; validation instead freezes namespace
+`std::__throw_out_of_range(const char*)` and rejects its missing argument.
+Use the existing unmodeled-current-class predicate before publishing that
+unqualified ordinary-function call set. Concrete member lookup resolves it
+when the owner is available; explicitly qualified calls retain their checks.
+The actual failing PA30 hosted-string fixture and original pp_tokenizer
+self-compilation pass with the matching libc++ 21 headers after repair.
+
+Reuse the existing PA17 complete-class member-template control, replacing its
+constant return with a later private noexcept helper that hides a namespace
+overload. The unchanged baseline rejects this C++11 program; Clang and GCC
+agree at O0/O2, as does the repaired compiler. Its reference comes only from
+its exact owning ref-test target. No new source fixtures, ABI encoder changes,
+newer language features or exception-audit allowances are introduced.
+
+Alpha compares frozen baseline 4ab6122d92d6b09c9fd076969221881748f750b889e84dcd482cd32f02dbae16
+with candidate 59b7d66522f5b8d76d044fce79b272de91516edf92a779cddecd8a1914bec850.
+All 288 observations of the six unchanged inputs and 48 observations of the
+existing O3 fast-path input pass instruction/RSS gates and raw object equality.
+The O3 input is separately ASan-verified on the baseline; the crashing new
+edge case is never used to measure baseline throughput. Counters are unscaled,
+with pinned execution and interleaved A/A calibration. Maximum instruction
+ratio is 1.0000002575; all median RSS ratios are 1.0. Calibrated cycle medians
+range from 0.9984 to 1.0089; none triggers the documented confirmation policy.
+Every observation and independent recomputation remain under
+`/tmp/cppgm-v4-audit-review/ci-pr62/`, with Alpha inputs in the corresponding
+20261004-ci-pr62 and 20261004-ci-pr62-o3 directories.
+
+Local qualification passes both affected controls, strict 6084/6084 with one
+success line, the full harness, debug-info, backend variants, self-host through
+PA5, all nine architecture audits, the file audit and placement audit. The
+seven output tests separately pass with inherited MAKELEVEL=1 under GNU Make
+4.3. Two initial full-harness orchestration attempts wrongly inherited strict
+LowIR comparison or a command-line OBJ override; retain their unqualified
+logs, remove those external overrides for the harness's intentional comparison
+and isolation tests, and rerun successfully without changing assertions.
+All final compiler/native image hashes still match the measured frozen images.
+
+Push the repaired compiler and Make helper together for the complete PR
+matrix, including student export validation and the automatic four-flavor
+inception comparison. PR #62 is the authoritative live status for the exact
+pushed commit. Publication and merging are outside this push-and-CI request.

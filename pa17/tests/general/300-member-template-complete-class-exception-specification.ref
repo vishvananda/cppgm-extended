@@ -26,5 +26,10 @@ function @holder__current_size(%this : ptr [object_bytes=1]) -> i32 [unwind=no, 
 
   block ^entry:
     store ptr %this, $this
+    %t1 = call i32 @holder__probe()
+    return i32 %t1
+}
+function @holder__probe() -> i32 [unwind=no, binding=weak, object=_ZN6holder5probeEv, inline_hint=yes] {
+  block ^entry:
     return i32 7
 }

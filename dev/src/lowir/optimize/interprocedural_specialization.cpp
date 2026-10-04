@@ -2289,7 +2289,7 @@ std::size_t split_o3_fast_function_path(
   }
   if(best.function == InlineCallGraph::no_function()) return 0;
 
-  std::vector<unsigned char> used_names(program.strings.size(), 0);
+  std::vector<unsigned char> used_names(program.strings.size() + 1, 0);
   for(std::size_t symbol = 0; symbol < program.symbol_names.size(); ++symbol)
     used_names[program.symbol_names[symbol]] = 1;
   std::size_t ordinal = 0;

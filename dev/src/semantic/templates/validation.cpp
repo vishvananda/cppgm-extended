@@ -1229,6 +1229,7 @@ void RetainedTemplateValidator::VisitIdExpression(NodeId node,
 	if (ordinary.ordinary != kNoBinding)
 	{
 		if (unknown_callee && !HasUnmodeledFixedBase(scope) &&
+			!HasUnmodeledCurrentClass(scope) &&
 			analyzer_.program_->bindings[ordinary.ordinary].kind == BIND_FUNCTION)
 			analyzer_.RecordRetainedCallLookup(node,
 				scopes_[scope].semantic_scope, spelling, true);

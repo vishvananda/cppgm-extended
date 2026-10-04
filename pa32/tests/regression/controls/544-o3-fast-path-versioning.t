@@ -574,3 +574,5 @@ function @main() -> i32 [role=entry, unwind=no] {
     %bad = binary or i32 %bad3, %bad2
     return i32 %bad
 }
+
+global @__o3fastslow0 : i64 [binding=strong] = 0
