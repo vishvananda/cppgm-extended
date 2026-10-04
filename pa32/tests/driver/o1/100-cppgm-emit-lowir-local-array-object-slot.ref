@@ -1,16 +1,17 @@
+global @__constexpr_template__1 [storage=readonly, binding=internal] = {
+  i8 0
+  i8 0
+  i8 0
+  i8 0
+}
+
 function @f(%i : i32) -> i32 [binding=strong, object=_Z1fi] {
   slot $ascii : obj<4x1>
 
   block ^entry:
     %t1 = addr $ascii
-    store i8 0, %t1
-    %t2 = index i8 %t1, 1
-    store i8 0, %t2
-    %t3 = index i8 %t1, 2
-    store i8 0, %t3
-    %t4 = index i8 %t1, 3
-    store i8 0, %t4
-    %t7 = index i8 [projection=array_element] %t1, %i
-    store i8 42, %t7
+    copyobj 4x1 @__constexpr_template__1, %t1
+    %t4 = index i8 [projection=array_element] %t1, %i
+    store i8 42, %t4
     return i32 42
 }

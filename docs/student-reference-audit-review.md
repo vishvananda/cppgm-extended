@@ -7596,3 +7596,27 @@ without a timing-neutrality claim or further retries. Evidence:
 `/tmp/cppgm-v4-audit-review/serialized-rtti-alias/qualified-proof.json` and
 `alpha:/tmp/cppgm-v4-audit-review-20261004-serialized-rtti-alias-final/`.
 Only the combined final student export/report validation remains.
+
+
+## Final export reference review — 2026-10-04
+
+The single combined export regenerated all source references and identified six
+stale tracked examples, with no new compiler defect. Four PA32 course-driver
+LowIR examples still predate the readonly array-initialization template,
+ABI-GLOBAL raw external names, and VBASE layout/table fixes. The source report
+uses separate PA32 regression examples; export verification also checks these
+course examples. Fresh Clang and GCC objects confirm the two global names
+(`cleanup_count` and `observed`) before regeneration. Two PA33 EH executable
+sidecars retain the earlier native runtime; both old and new programs exit zero.
+
+Regenerate only those six through the owning `ref-test TEST=...` targets.
+All six selected checks pass their unchanged behavior/quality contracts.
+The portable export build produces byte-identical LowIR and native programs
+to the frozen qualified compiler/native images. No inputs, status expectations,
+quality bounds, ABI encoder or compiler implementation changes. Exact commands,
+original outputs, host symbols and results are retained in
+`/tmp/cppgm-v4-audit-review/final-export-reference-review/`. Resume the existing
+export at its original reference-verification step using unchanged exporter
+function bodies; preserve the initial failure log and avoid rebuilding and
+regenerating an already validated reference set. Final student harness/output
+checks remain pending.
