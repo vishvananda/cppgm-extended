@@ -19,22 +19,20 @@ function @select_local_address
 
   block ^entry
     mov r8, rdi
-    lea rdi, [rbp-8]
-    zero_bytes 8x8, rdi
-    store.i64 [rbp-8], 77
+    lea r9, [rbp-8]
+    zero_bytes 8x8, r9
+    store.i64 [r9], 77
     mov rax, r8
     cmp.i64 rax, 0
     jne ^left
     jmp ^right
 
   block ^left
-    lea r11, [rbp-8]
-    store.ptr [rbp-16], r11
+    store.ptr [rbp-16], r9
     jmp ^join
 
   block ^right
-    lea r11, [rbp-8]
-    store.ptr [rbp-16], r11
+    store.ptr [rbp-16], r9
     jmp ^join
 
   block ^join

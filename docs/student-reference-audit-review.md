@@ -7874,3 +7874,13 @@ nine architecture audits, file audit and placement audit. Root inception
 also passes as recorded above. The pushed commit's complete four-flavor PR
 matrix, student export validation and automatic inception are tracked at
 PR #62; publishing and merging remain outside this task.
+
+
+The 991c0f204 PR matrix passes all 18 jobs. Export validation identifies exactly
+one additional changed example: PA24/900 phi-frame-address-rematerialization.
+Its retained register address removes two redundant LEAs on incoming edges;
+program behavior and fixture input are unchanged. Strict report compares its
+behavior, while export additionally compares every tracked example MIR.
+Regenerate the example with its exact owning ref-test and verify the existing
+control. No test input, bound or assertion changes. Subsequent qualification
+is tracked at PR #62 for the follow-up reference-only commit.
