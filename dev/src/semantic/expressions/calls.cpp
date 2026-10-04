@@ -92,6 +92,16 @@ ExpressionInfo Analyzer::CandidateExpressionFailure(
 	ThrowSemanticError(message);
 }
 
+ExpressionInfo Analyzer::MaterializeVariadicCallArgument(ExpressionInfo argument)
+{
+	if (!IsClassObjectType(argument.type)) return argument;
+	if (dump_.nodes[argument.node].kind != DUMP_TEMPORARY_OBJECT)
+		argument = MaterializeTemporary(argument);
+	dump_.nodes[argument.node].argument_materialization = true;
+	dump_.nodes[argument.node].variadic_class_argument = true;
+	return argument;
+}
+
 std::uint8_t Analyzer::ArrayElementCv(TypeId type) const
 {
 	const TypeRecord* record = &program_->types.Get(type);

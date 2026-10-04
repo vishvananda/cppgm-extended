@@ -4,11 +4,10 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **3 compiler families and 7 reviews remain**. FLOW-DEFINED
-now preserves valid non-void paths and nested goto labels. Its qualified
-compiler passes strict 6128/6128 with one output line, all required checks and
-Alpha instruction/RSS gates. The incorrect PA30 missing-return rejection
-oracle is retired; its defined execution is covered by the PA10 fixture.
+Current status: **2 compiler families and 7 reviews remain**. FLOW-DEFINED
+and EXPLICIT-CONTEXT are qualified. Strict 6128/6128 prints one line; all
+required checks and Alpha instruction/RSS gates pass. Conditional explicit's
+multi-pack timing confirmation shows a 2.32% cycle cost, retained below.
 Final fixture pruning and combined student export/harness validation remain
 deferred until compiler work is complete.
 
@@ -113,7 +112,7 @@ Their already supported boundaries are retained as regression observations;
 the required qualification fixtures below exercise C++11 const safety and
 ordinary initialization without imposing a new aliasing expectation.
 
-Remaining-work count on 2026-10-04: **3 compiler issue families** remain
+Remaining-work count on 2026-10-04: **2 compiler issue families** remain
 open or in progress. MEMBER and EH-UNWIND-DTOR are completed below. LOOKUP-NAMESPACE-MIXED is completed under the updated
 instruction/memory qualification policy. LOOKUP-BASE-ALIAS, MANGLE, ARG-SLOTS and BACKEND-ARRAY-OPT are also completed.
 **Seven further reviews** have no established
@@ -232,7 +231,7 @@ The recent discovery inventory is not all C++11:
 | ASSERT-MESSAGE | Reject non-string and user-defined-literal static_assert messages | v4codex PA29 controls189 | Done: typed ordinary-string token category and retained message range enforce PA15 semantics while preserving PA5 generic-literal AST acceptance. Promote two unchanged independent controls; no new source fixture or record field. Adjacent literal kinds use one guarded range check. All 49 focused outcomes and eight required final validation groups pass; strict 6114/6114 prints one line. Final 288-observation screen/confirmation passes instruction/RSS/equality gates; confirmed virtual-class cycles increase 3.49%, explicitly retained. A 72-compile profile found no actionable new hotspot. First-candidate evidence and final source/image/results remain in static-assert-message/. |
 | CONST-MEMBER-BOOL | Evaluate a nonnull member pointer as a constant boolean | v4codex PA29 assertion-context.cpp | Done: add the missing member-pointer predicate to ApplyContextualBool, reusing typed ApplyMemberPointerTarget folding (N3485 4.12/1). Extend the existing PA22 contextual-bool fixture with data/function nonnull and null assertions; remove the superseded opt-in control. All 48 focused outcomes and eight final qualification groups pass; strict 6114/6114 stays one line. The expanded 240-observation final screen includes 3000 accepted contextual conversions and passes instruction/RSS/equality gates with no timing confirmation indicated. Preserve the first shared-classifier candidate and its confirmed 2.69% cycle cost; the final patch avoids that additional call. No new source fixture. Artifacts in constant-member-pointer-bool/. |
 | CONST-BITFIELD | Apply bit-field width conversion during constant aggregate initialization | v4codex PA29 controls190/fixed-lists.cpp | Done: BuildConstexprObjectElement reuses NormalizeWideConstant with the typed BindingLayoutFact width after declared-type conversion. Skip full-width and bool values; retain signed values. Three assertions extend the existing PA16 aggregate fixture and the superseded opt-in control is removed. All 42 focused outcomes and eight final qualification groups pass; affected 876/876, strict 6114/6114 prints one line. The 240-observation screen includes targeted bit-field constants and ordinary aggregates; instruction/RSS/equality gates pass with no timing confirmation indicated (maximum instruction ratio 1.003711, RSS 1.0). No new source fixture. Artifacts in constant-bitfield-width/. |
-| EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Open, independently reproduced: private conversion is accepted and invalid immediate conditions cause a hard error instead of selecting the fallback; Clang/GCC corroborate in C++11 extension mode. This C++20 feature is necessary for the supported libc++ profile: release/21.x __utility/pair.h lines 140/147/162 use conditional explicit in the C++11 constructor branch. Frozen header SHA and observations are recorded below. Deduction-guide controls are excluded from this row without their own header dependency. |
+| EXPLICIT-CONTEXT | Validate access and substitution in a conditional constructor explicit-specifier | v4codex PA29 controls189 / hosted-header dependency | Done in this checkpoint: validate the condition in declarator substitution before constructor registration; preserve access failure and invalid-conversion substitution results. Share existing variadic class materialization with constructor paths so the original ellipsis fallback executes. Extend the existing PA29 fixture, retire both controls and reuse its source through a PA33 native driver link. Strict 6128/6128, all required checks and Alpha instruction/RSS gates pass; multi-pack timing cost retained below. Scope stays limited to the documented libc++ 21 C++11 constructor dependency; no deduction-guide additions. |
 | EH-SPEC-SET | Compare dynamic exception specifications as sets of adjusted types | v4codex PA30 source201 | Done in the accompanying performance-approved checkpoint: deduplicate adjusted TypeIds and compare declarations as sets while retaining first-declaration order. The one positive is promoted to PA6/300 and its temporary control removed; the distinct-set negative remains. Nine scratch boundaries pass ours and Clang; GCC's adjusted-array/function disagreement is retained. PA6 112/112, strict report, every required compiler check and the final combined 4800-observation global performance gate pass. Earlier two failed cycle gates remain recorded. N3485 15.4/2,3 supplies the rule. |
 | LOCAL-ODR | Reject automatic outer-local odr-use across an ordinary local-class member and invalid default/capture contexts | v4codex PA30 source201 | Open: 13 strict-host-agreed rejection controls are accepted here, including parameters, array access, address/reference binding, discarded use, volatile constants and captures/default arguments. Entry and candidate compile statuses agree. Keep valid constant and unevaluated uses separate; Clang/GCC-disputed constant-default and explicit constant-capture cases are held. Review owning class/default/lambda contracts before selecting minimal independent negatives. |
 | FLOW-DEFINED | Preserve valid constant-loop, unreachable-handler and label control flow | v4codex PA30 source201 | Done in this checkpoint: non-void fallthrough emits unreachable rather than requiring an unsupported diagnostic; semantic label presence retains nested statement containers after terminators. Two owning PA10/21 fixtures replace controls; PA33 links provide optimized native coverage. Retire the incorrect PA30 missing-return rejection and cover its defined returning path in PA10. Strict 6128/6128, all required checks and Alpha instruction/RSS gates pass; timing evidence retained below. |
@@ -7114,3 +7113,55 @@ Evidence: `/tmp/cppgm-v4-audit-review/defined-control-flow/` and
 Three compiler families and seven reviews remain. Final fixture pruning and
 combined student export/harness validation remain deferred. EXPLICIT-CONTEXT
 is next, restricted to the established libc++ 21 C++11 header dependency.
+
+### Conditional explicit immediate context — qualified, 2026-10-04
+
+Both original controls freshly reproduce: a private constexpr bool conversion
+is accepted, and a missing conversion causes a hard error despite an ellipsis
+fallback. Clang/GCC agree on the opposite outcomes in their C++11 extension
+mode. Admission remains solely the previously frozen libc++ 21 pair constructor
+dependency; conditional explicit is not claimed as an ordinary C++11 feature.
+
+Form the explicit condition during the existing specialization declarator work,
+in the declaring class context and before publishing a constructor. A failed
+immediate condition cannot leave a registered overload. Propagate existing typed
+candidate-failure results for invalid conversions and failed constant conditions.
+The first patch rejects the private case but reaches an additional lowering
+failure in the original fallback: constructor calls lacked the ordinary-call
+materialization fact for a variadic class argument. Share that existing operation
+across ordinary calls, direct constructors and converting constructors; consume
+its typed fact in constructor argument lowering. No additional source walk or
+persistent model growth; the semantic owner ledger records the shared helper.
+
+Extend the existing PA29 conditional-explicit fixture with constexpr assertions
+for missing/private-condition fallback and a public valid condition, plus
+ordinary main executions. No new owning fixture source or reference changes.
+Retire the two opt-in controls, preserving their original inputs in scratch.
+A PA33 symlink reuses the owning source for all nine optimized native routes.
+The final twelve frozen-control plus six owning-fixture O0/O2 observations agree
+with Clang/GCC; earlier intermediate observations and diagnostics are retained.
+
+Candidate SHA256:
+`0c5e4b17eb910b9f659e433adf9c40e368071a5e7a381301750c70a587988ceb`.
+Strict 6128/6128 prints one line; debug-info, backend variants (including 63/63
+native driver executions), self-host through PA5 and all nine architecture
+audits pass. The first file audit detects a 241-line function against its
+240-line limit. Remove one blank line; the rebuilt compiler has the identical
+SHA, retaining prior functional and performance evidence. Final file and placement
+audits pass; the warning log matches the preceding checkpoint byte for byte.
+Keep the initial failed audit alongside the successful correction.
+
+Alpha reuses the same 66 frozen sources and three immutable binaries, verifies
+all six byte-identical raw object outputs and retains all 384 observations.
+Independent verification confirms unscaled counters, RSS, zero statuses and
+output hashes. Maximum instruction median is 1.000054; all RSS medians are at
+most 1.0. One timing confirmation per flagged workload gives calibrated cycles:
+copy templates 1.000025, CI [0.980193, 1.005626]; multi-pack 1.023172,
+CI [1.011896, 1.044184]. Preserve the multi-pack cost and both initial screens;
+no further timing runs or neutrality claim. Evidence:
+`/tmp/cppgm-v4-audit-review/conditional-explicit-context/` and
+`alpha:/tmp/cppgm-v4-audit-review-20261004-conditional-explicit-context/`.
+Two compiler families and seven reviews remain. LOCAL-ODR is next; preserve
+valid constant/unevaluated uses and hold the previously disputed capture cases.
+Final fixture pruning and combined student export/harness validation remain
+deferred until compiler work is complete.

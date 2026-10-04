@@ -1616,7 +1616,7 @@ ScopeId Analyzer::BindFunctionTemplateArguments(
 
 DeclaratorInfo Analyzer::BuildFunctionTemplateSpecializationDeclarator(
 	const FunctionTemplatePattern& pattern, ScopeId template_scope,
-	SpecInfo* spec, EntityId* member_owner)
+	SpecInfo* spec, EntityId* member_owner, bool* explicit_by_specifier)
 {
 	*member_owner = program_->EntityForScope(pattern.owner);
 	const EntityId semantic_owner = *member_owner != kNoEntity ?
@@ -1657,6 +1657,14 @@ DeclaratorInfo Analyzer::BuildFunctionTemplateSpecializationDeclarator(
 		}
 		else *spec = BuildSpecifiers(pattern.specifiers, template_scope,
 			std::string(), true);
+		// Form the condition before publishing the constructor. A failed
+		// immediate context must not leave an overload in the member table.
+		if (explicit_by_specifier && pattern.constructor_template &&
+			!pattern.explicit_specifier &&
+			pattern.explicit_specifier_syntax != kNoNode &&
+			!CandidateSubstitutionFailed())
+			*explicit_by_specifier = EvaluateExplicitSpecifier(
+				pattern.explicit_specifier_syntax, template_scope);
 		if (spec->type == kNoType && CandidateSubstitutionActive() &&
 			!CandidateSubstitutionFailed())
 			RecordCandidateSubstitutionFailure();
@@ -1841,20 +1849,13 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 
 void Analyzer::PublishFunctionTemplateSpecialMemberRole(
 	const FunctionTemplatePattern& pattern, BindingId binding,
-	EntityId member_owner, TypeId function_type, ScopeId template_scope)
+	EntityId member_owner, TypeId function_type, bool explicit_by_specifier)
 {
 	if (!pattern.constructor_template && !pattern.conversion_template) return;
 	if (member_owner == kNoEntity)
 		ThrowInternalCompilerError(pattern.constructor_template ?
 			"constructor template has no class owner" :
 			"conversion function template has no class owner");
-	// Evaluate the explicit specifier before taking references into the
-	// binding and function tables: the evaluation can add records to both.
-	const bool explicit_by_specifier = pattern.constructor_template &&
-		!pattern.explicit_specifier &&
-		pattern.explicit_specifier_syntax != kNoNode &&
-		EvaluateExplicitSpecifier(
-			pattern.explicit_specifier_syntax, template_scope);
 	BindingRecord& record = program_->bindings[binding];
 	FunctionInfo& function = GetMutableFunction(binding);
 	function.member_owner = program_->entities[member_owner].type;
@@ -2152,7 +2153,6 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 			request_key, TEMPLATE_REQUEST_IN_PROGRESS);
 		++function_template_default_materializations_;
 	}
-
 	std::vector<TemplateArgument> completed;
 	if (!MaterializeFunctionTemplateDefaults(
 		pattern, arguments, parameter_offsets, &completed))
@@ -2184,8 +2184,9 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 		fail_default_request);
 	template_scope = BindFunctionTemplateArguments(
 		pattern, completed, parameter_offsets);
+	bool explicit_by_specifier = false;
 	parsed = BuildFunctionTemplateSpecializationDeclarator(
-		pattern, template_scope, &spec, &member_owner);
+		pattern, template_scope, &spec, &member_owner, &explicit_by_specifier);
 	default_failure.Release();
 	if (CandidateSubstitutionFailed() || parsed.type == kNoType)
 	{
@@ -2255,7 +2256,7 @@ BindingId Analyzer::InstantiateFunctionTemplate(std::size_t index,
 	BindFunctionTemplateSpecializationMember(binding, member_owner, pattern,
 		spec);
 	PublishFunctionTemplateSpecialMemberRole(
-		pattern, binding, member_owner, parsed.type, template_scope);
+		pattern, binding, member_owner, parsed.type, explicit_by_specifier);
 	if (binding_record.template_argument_count == 0)
 		StoreTemplateArguments(completed,
 			&binding_record.template_argument_list,

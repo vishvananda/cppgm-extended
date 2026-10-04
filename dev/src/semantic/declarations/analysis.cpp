@@ -1432,13 +1432,21 @@ bool Analyzer::EvaluateExplicitSpecifier(NodeId specifier, ScopeId scope)
 			&constant_evaluation_suppressed_depth_, 0);
 		ScopedCounterIncrement required(&constant_expression_required_depth_);
 		condition = AnalyzeExpression(condition_syntax, scope);
-		condition = ApplyContextualBool(condition);
+		if (condition.type != kNoType) condition = ApplyContextualBool(condition);
 	}
+	if (CandidateSubstitutionFailed()) return false;
 	// A dependent condition has no type here; the specialization answers it.
 	if (condition.type == kNoType) return false;
 	if (!IsIntegral(condition.type, true) || !condition.constant)
+	{
+		if (CandidateSubstitutionActive())
+		{
+			RecordCandidateSubstitutionFailure();
+			return false;
+		}
 		ThrowSemanticError(
 			"explicit-specifier requires a constant boolean condition");
+	}
 	return condition.value != 0;
 }
 

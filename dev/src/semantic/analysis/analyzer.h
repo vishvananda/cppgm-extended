@@ -674,6 +674,7 @@ private:
 	ExpressionInfo CandidateSubstitutionFailure();
 	BindingId CandidateOverloadFailure(const char* message);
 	ExpressionInfo CandidateExpressionFailure(const char* message);
+	ExpressionInfo MaterializeVariadicCallArgument(ExpressionInfo argument);
 	TypeId BuildCanonicalTemplateTypeArgument(NodeId type_id,
 		ScopeId source_scope,
 		const std::unordered_set<NameId>* dependent_names);
@@ -887,7 +888,7 @@ private:
 		const std::vector<std::uint32_t>& parameter_offsets);
 	DeclaratorInfo BuildFunctionTemplateSpecializationDeclarator(
 		const FunctionTemplatePattern& pattern, ScopeId template_scope,
-		SpecInfo* spec, EntityId* member_owner);
+		SpecInfo* spec, EntityId* member_owner, bool* explicit_by_specifier = 0);
 	bool EquivalentExpandedFunctionTemplateResults(
 		const FunctionTemplatePattern& left,
 		const FunctionTemplatePattern& right);
@@ -897,8 +898,7 @@ private:
 		FunctionTemplatePattern* pattern, const DeclaratorInfo& declarator);
 	void PublishFunctionTemplateSpecialMemberRole(
 		const FunctionTemplatePattern& pattern, BindingId binding,
-		EntityId member_owner, TypeId function_type,
-		ScopeId template_scope);
+		EntityId member_owner, TypeId function_type, bool explicit_by_specifier);
 	bool BuildFunctionTemplateArgumentOffsets(
 		const std::vector<TemplateParameter>& parameters,
 		std::size_t argument_count,

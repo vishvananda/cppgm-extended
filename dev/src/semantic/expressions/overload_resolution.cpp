@@ -1380,7 +1380,7 @@ ExpressionInfo Analyzer::ApplyExplicitConversion(
 		ConvertingFunction(value, target, true);
 	if (conversion.rank == CONVERSION_INVALID ||
 		conversion.conversion_function == kNoBinding)
-		ThrowSemanticError("invalid explicit conversion");
+		return CandidateExpressionFailure("invalid explicit conversion");
 	ObjectConversionFact object_conversion;
 	object_conversion.rank = conversion.conversion_object_rank;
 	object_conversion.base_projection_count =
@@ -1521,7 +1521,7 @@ ExpressionInfo Analyzer::BuildConvertingArgument(
 		// An ellipsis-only constructor is a converting constructor.  Its
 		// source argument has no parameter target, just as for any other
 		// variadic tail argument.
-		dump_.Add(action, source.node);
+		dump_.Add(action, MaterializeVariadicCallArgument(source).node);
 	}
 	else
 	{

@@ -1184,13 +1184,7 @@ ExpressionInfo Analyzer::BuildResolvedCall(BindingId selected,
 			if (CandidateSubstitutionFailed()) return ExpressionInfo();
 			constexpr_arguments.push_back(argument);
 		}
-		else if (IsClassObjectType(argument.type))
-		{
-			if (dump_.nodes[argument.node].kind != DUMP_TEMPORARY_OBJECT)
-				argument = MaterializeTemporary(argument);
-			dump_.nodes[argument.node].argument_materialization = true;
-			dump_.nodes[argument.node].variadic_class_argument = true;
-		}
+		else argument = MaterializeVariadicCallArgument(argument);
 		dump_.Add(call, argument.node);
 		if (a < function_type.parameter_count &&
 			IsClassObjectType(parameters[a]) &&

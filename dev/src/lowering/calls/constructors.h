@@ -235,7 +235,9 @@ protected:
 			const bool reference = parameter < function_type.parameter_count &&
 				derived.IsReferenceType(parameters[parameter]);
 			references.Push(reference ? 1 : 0);
-			if (reference)
+			if (derived.arena_.nodes[children[i]].variadic_class_argument)
+				arguments.Push(derived.LowerStorage(children[i]));
+			else if (reference)
 			{
 				const DumpNode& argument = derived.arena_.nodes[children[i]];
 				if (argument.kind == DUMP_TEMPORARY_OBJECT)

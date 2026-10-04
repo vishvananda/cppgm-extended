@@ -1259,6 +1259,7 @@ std::uint32_t Analyzer::BuildConstructorAction(TypeId type,
 					a < selected_conversions.size() ?
 						&selected_conversions[a] : 0);
 		}
+		else argument = MaterializeVariadicCallArgument(argument);
 		dump_.Add(action, argument.node);
 		if (a < function_type.parameter_count)
 			constexpr_arguments.push_back(argument);

@@ -297,6 +297,7 @@ dev/src/semantic/expressions/calls.cpp	FunctionCandidates	2	dev/src/semantic/exp
 dev/src/semantic/expressions/calls.cpp	FunctionCandidates	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	FunctionSet	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	HidesSiblingSpecializationMember	1	dev/src/semantic/expressions/calls.cpp	keep
+dev/src/semantic/expressions/calls.cpp	MaterializeVariadicCallArgument	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	MemberCandidateSelectionRank	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	MemberOwnerReachableFromContext	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	OwnerAndNamingTypes	1	dev/src/semantic/expressions/calls.cpp	keep

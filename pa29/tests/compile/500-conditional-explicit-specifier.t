@@ -20,4 +20,26 @@ guarded from_long() { return 7L; }
 
 spaced from_attributed() { return 7; }
 
-int main() { return 0; }
+// Invalid immediate conditions discard the constructor before publication.
+struct Missing {};
+struct PublicCondition {
+  constexpr explicit operator bool() const { return true; }
+};
+class PrivateCondition {
+  constexpr explicit operator bool() const { return true; }
+};
+struct selected_constructor {
+  int choice;
+  template<class T>
+  explicit(T{}) constexpr selected_constructor(T) : choice(1) {}
+  constexpr selected_constructor(...) : choice(2) {}
+};
+static_assert(selected_constructor(Missing{}).choice == 2, "missing conversion fallback");
+static_assert(selected_constructor(PrivateCondition{}).choice == 2, "access fallback");
+static_assert(selected_constructor(PublicCondition{}).choice == 1, "valid condition");
+
+int main() {
+  selected_constructor missing(Missing{}), private_condition(PrivateCondition{});
+  selected_constructor valid(PublicCondition{});
+  return missing.choice != 2 || private_condition.choice != 2 || valid.choice != 1;
+}
