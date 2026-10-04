@@ -1284,6 +1284,9 @@ void emit_eh_catch(CodeBuffer & out,
     emit_stack_adjust(out, false, 8);
     emit_test_register(out, XR_RAX);
     emit_condition_jump(out, XC_E, done);
+    emit_immediate_move(out, XR_RCX, UINT64_MAX);
+    emit_register_alu(out, 0x39, XR_RAX, XR_RCX);
+    emit_condition_jump(out, XC_E, done);
   } else {
     emit_symbol_move(out, XR_R11, kEhValue);
     emit_load(out, XR_RAX, XR_R11, 0, 64);
@@ -2069,6 +2072,8 @@ void emit_dynamic_cast_find(
     out.internal_label("dynamic_cast_skip");
   const lowir_model::LocalLabelId record =
     out.internal_label("dynamic_cast_record");
+  const lowir_model::LocalLabelId candidate =
+    out.internal_label("dynamic_cast_candidate");
   const lowir_model::LocalLabelId done =
     out.internal_label("dynamic_cast_done");
   const lowir_model::LocalLabelId ambiguous =
@@ -2138,9 +2143,11 @@ void emit_dynamic_cast_find(
   emit_condition_jump(out, XC_E, ambiguous);
   emit_test_register(out, XR_RAX); emit_condition_jump(out, XC_E, skip);
   emit_load(out, XR_RCX, XR_RBP, -48, 64);
-  emit_test_register(out, XR_RCX); emit_condition_jump(out, XC_E, record);
+  emit_test_register(out, XR_RCX); emit_condition_jump(out, XC_E, candidate);
   emit_register_alu(out, 0x39, XR_RCX, XR_RAX);
   emit_condition_jump(out, XC_NE, ambiguous);
+  out.label(candidate);
+  emit_store(out, XR_RBP, -48, XR_RAX, 64);
   out.label(skip);
   emit_immediate_alu(out, XR_R14, 0, 16);
   emit_immediate_alu(out, XR_R15, 5, 1);

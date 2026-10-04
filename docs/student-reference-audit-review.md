@@ -4,11 +4,12 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **1 compiler family and 7 reviews remain**. LOCAL-ODR
-is now qualified alongside FLOW-DEFINED and EXPLICIT-CONTEXT. Strict
+Current status: **1 compiler family and 7 reviews remain**. BACKEND has
+two confirmed runtime defects left: automatic stack alignment and destructor
+rethrow lifetime. Its frozen RTTI search defects are qualified. Strict
 6135/6135 prints one line; all required checks and Alpha instruction/RSS
-gates pass. Conditional explicit's
-multi-pack timing confirmation shows a 2.32% cycle cost, retained below.
+gates pass. Conditional explicit's multi-pack timing confirmation shows
+a 2.32% cycle cost, retained below.
 Final fixture pruning and combined student export/harness validation remain
 deferred until compiler work is complete.
 
@@ -214,7 +215,7 @@ The recent discovery inventory is not all C++11:
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Done in this checkpoint: reuse native CFG successors for bounded, equal-shaped object exclusion; preserve loops, pairwise group conflicts and conservative EH storage. The original reducer spans 103,824 bytes at O1/O2/O3 with correct values and 64 destructors. Promote one existing PA33 control with one escaped-pointer loop boundary; strict 6127/6127 in one line, all required checks and 432 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain the positive diagnostic timing medians below. |
 | BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Done in this checkpoint: preserve handler inputs across cold throwing calls independently of presentation order; refresh shared-storage/address lifetimes. Both existing PA21 programs pass at O1/O2/O3 on standalone, compiler-object and host-native routes through PA33 source symlinks. No copied fixture bodies or changed references. Strict 6127/6127 in one line, all required checks and 384 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain positive timing medians below. |
-| BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Open review: shared RTTI host-object route passes while standalone duplicate RTTI/native-label and freestanding dynamic_cast limitations remain. Private-derived/base reducer already passes both. EH-UNWIND-DTOR fixes nested-outer-swallow, function-try-body-local and same-function dynamic rethrow at O0/O2 by resetting the native rethrow selector. The destructor-rethrow trace still returns 1 on the native route while both host-object routes pass. The independently reproduced 32-byte automatic-stack limitation also remains. Standalone shutdown registration is fixed in the native callback checkpoint. Keep these runtime routes separate from PA21 LowIR cleanup correctness; no ABI spelling change. |
+| BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Partly done: duplicate native RTTI labels no longer reproduce; the frozen virtual-diamond cast and ambiguous base searches are fixed in the qualified native RTTI checkpoint below. Remaining: destructor dynamic-rethrow destroys the exception object before the outer handler on the native route, and 32-byte automatic alignment intermittently fails on native and host-object routes at O0/O2. Fresh immutable inputs and baseline observations are in backend-frozen-final/. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
@@ -7219,3 +7220,47 @@ Evidence: `/tmp/cppgm-v4-audit-review/local-outer-odr/qualified-proof.json` and
 One compiler family (BACKEND) and seven reviews remain. Final fixture pruning
 and combined student export/harness validation remain deferred until compiler
 work and the frozen reviews are complete.
+
+### Native RTTI subobject search — qualified, 2026-10-04
+
+Fresh frozen observations narrow BACKEND: scalar RTTI and shared-RTTI duplicate
+labels no longer reproduce. The shared virtual-diamond program still returns
+1 natively at O0/O2 while host objects pass. An isolated result identifies the
+cast rather than typeid comparison. The remaining destructor-rethrow and
+32-byte automatic alignment failures are retained without changing their oracles.
+
+The native RTTI recursion stores the complete-object address after finding a
+base candidate, then exits before inspecting other branches. Store the returned
+subobject address and continue the public-base scan. Repeated paths to one
+shared virtual subobject remain valid; distinct matching subobjects yield the
+existing ambiguity sentinel. Exception-catch selection must reject that sentinel
+as well as null; the scratch ambiguous-base catch demonstrates the old failure
+against Clang/GCC. Apply N3485 5.2.7 and 15.3. No ABI spelling, descriptor layout,
+parser, semantic model or owner interface changes.
+
+Extend the existing PA23/100 sibling-cast fixture with actual non-primary
+pointer equality, the original shared virtual-base cast, ambiguous-target null
+and ambiguous-base catch miss. Reuse it through one PA33 native-driver symlink;
+no copied body or new owning source. Regenerate only its LowIR reference because
+the source assertions changed, with no reference changes from the native patch
+alone. Twenty-four frozen/owning checks pass at O0/O2, including strict C++11
+Clang/GCC owning executions; all nine optimized driver routes pass.
+
+Compiler SHA256:
+`0c886243f6185cbc6bedbb7cbb44d7b4b08dbb44bcb0beb95eabbbb21baa5efb`;
+native SHA256:
+`6feea479d459cf8fcd94cfb668aefa28f28b9064e0274af11764cbce4a135dd8`.
+Strict 6135/6135 prints exactly one line. Debug-info, backend variants (72/72
+native executions), self-host PA5, all nine architecture targets, file and
+placement audits pass. The file audit retains the identical 37 warning log.
+Alpha's 69 frozen inputs produce six byte-identical raw object pairs without
+normalization. All 336 unscaled counter/RSS observations, statuses, hashes and
+paired medians are independently verified; instruction/RSS gates pass. The
+reference-alias screen triggers one focused timing confirmation: calibrated
+cycles 1.004398499, CI [0.978806381, 1.012364032], alongside the initial
+1.010694190 screen. Retain both without a neutrality claim or further runs.
+Evidence: `/tmp/cppgm-v4-audit-review/native-rtti-search/qualified-proof.json`,
+`/tmp/cppgm-v4-audit-review/backend-frozen-final/` and
+`alpha:/tmp/cppgm-v4-audit-review-20261004-native-rtti-search/`.
+Two concrete BACKEND failures and seven reviews remain. Final fixture pruning
+and combined student export/harness validation stay deferred.
