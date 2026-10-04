@@ -279,6 +279,13 @@ function @E__E__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt 
   block ^entry:
     store ptr %this, $this
     store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = load ptr %__vtt
+    store ptr %t2, %t1
+    %t3 = index i8 %__vbptr0, 0
+    %t4 = index i8 %__vtt, 16
+    %t5 = load ptr %t4
+    store ptr %t5, %t3
     return void
 }
 function @W__copy_from__ov2(%this : ptr [object_bytes=24], %p : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN1W9copy_fromEPK1B, inline_hint=yes] {
@@ -300,6 +307,9 @@ function @H__H__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=16], %
   block ^entry:
     store ptr %this, $this
     store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = load ptr %__vtt
+    store ptr %t2, %t1
     return void
 }
 function @B__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN1BaSERKS_, inline_hint=yes] {

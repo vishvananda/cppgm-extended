@@ -155,6 +155,7 @@ The recent discovery inventory is not all C++11:
 | CI-MAKE-ENV | Isolate scratch top-level report invocations from the parent Make environment | PR #62 / GNU Make 4.3 | Fixed: clear MAKEFLAGS, MFLAGS, MAKELEVEL and MAKEOVERRIDES in the report-test subprocess. Exact GNU Make 4.3 reproduction fails six assertions before the correction and all seven tests pass afterward; the full harness passes under Make 4.3. No production Makefile, shipped file or assertion changes. |
 | CI-GCC13-HEAP | Diagnose heap corruption during hosted pp_tokenizer self-compilation | PR #62 / Ubuntu 24.04 GCC 13 | Fixed: ASan identifies a one-based StringId indexed into a size-only bitmap in the O3 fast-path splitter. Allocate the missing slot, consistent with the other clone helpers. Extend existing PA32/544 with a highest-ID retained global and assert clone-name collision avoidance; baseline ASan fails, repaired fixture and original GCC 13 self-compile pass. Full qualification / PR rerun below. |
 | CI-LIBCXX21-FIXED-CALL | Accept valid fixed calls in C++11 libc++ 21 templates | PR #62 / Ubuntu 26.04 clang+libc++ | Fixed: retained member-template validation freezes a namespace function before the current class is modeled. Honor the existing unmodeled-current-class guard for unqualified function lookup; explicit qualified validation remains unchanged. Extend existing PA17 complete-class fixture with a later private helper hiding a namespace overload. Baseline rejects, Clang/GCC C++11 O0/O2 and repaired compiler agree; actual libc++ 21 hosted fixture and pp_tokenizer self-compilation pass. Full qualification / PR rerun below. |
+| CI-VBASE-CONSTRUCTION | Initialize the vptr in implicit copy/move constructors of nonpolymorphic virtual-base classes | PR #62 / libc++ 18 tuple runtime | Fixed locally: exact old and new CI compilers emit identical crashing objects, demonstrating a preexisting defect. Change the synthesized-constructor vptr condition from polymorphic_class to dynamic_class, matching ordinary constructors. Extend the existing PA23 constructor control with empty virtual-base copy/move and regenerate only its reference plus the existing complete-constructor/VTT reference. Both owning controls, C++11 Clang/GCC O0/O2 and the actual libc++ 18 hosted fixture pass; final qualification / CI rerun below. |
 | HARNESS | Quiet successful test-report output, expose failures, propagate export recipes | User | Done: fb15cd49e; source and final combined export each print one success total with empty stderr. Final course 5719/5719 and injected backend/producer failures verify shipped behavior. |
 | HARNESS-FAIL | Suppress successful focused-control summaries when another check in the assignment fails | Conversion-selection strict-report trial | Done in 2481b326d: the report exports its quiet setting to all 39 focused-control producers. Source and sanitized student Makefile tests expose real failures and suppress neighboring successes in both output orders. Strict 5969/5969 remains one line; harness and producer syntax checks pass. Final combined export passes 5719/5719 with empty stderr; student backend and producer failure injections remain visible. |
 | PLACE | Remove numbered-fixture host exemption; rewrite PA26/27 hosted-header fixtures; keep unique PA31 hosted coverage | User / v4codex | Done: fb15cd49e; default numbered fixtures are student-compiled. |
@@ -7777,3 +7778,52 @@ Push the repaired compiler and Make helper together for the complete PR
 matrix, including student export validation and the automatic four-flavor
 inception comparison. PR #62 is the authoritative live status for the exact
 pushed commit. Publication and merging are outside this push-and-CI request.
+
+
+## PR #62 virtual-base construction repair — 2026-10-04
+
+The second matrix passes source/placement audits, all four builds, all four
+debug-info suites, all four self-host-through-PA5 suites, three strict reports
+and student export validation. Only libc++ 18's strict report fails, at the
+existing PA31 tuple/contained-virtual-base runtime smoke test. The exact old
+and new CI artifacts produce byte-identical objects for that input; both
+crash when run independently. It is a preexisting uninitialized-vptr defect,
+not an output change from the two earlier repairs.
+
+An empty class with a virtual base is dynamic even when it is not polymorphic.
+Ordinary constructors already use `dynamic_class` to initialize its vptr;
+synthesized copy/move constructors instead test `polymorphic_class` and emit
+an empty body. A pointer-to-member invocation that needs the virtual-base
+offset dereferences that uninitialized vptr. Use the same existing dynamic
+flag in synthesized constructors. The minimal baseline crashes at O0; the
+repair and Clang/GCC pass at O0/O2. The actual failing libc++ 18 fixture also
+passes after repair against the exact matching CI header profile.
+
+Extend the existing PA23/100 constructor/prvalue/virtual-base forwarding
+fixture with empty virtual-base copy and move construction followed by the
+base member call. No new fixture files or ABI spelling changes. Fresh Clang
+objects confirm the added constructor, member and vtable names. Exactly two
+references are regenerated by their owning ref-test selections: the extended
+control and the existing complete-constructor/reference-virtual-base control.
+The latter gains only the missing VTT-derived vptr initialization instructions.
+An initial reference scan overlapped a diagnostic ASan binary build and is
+explicitly unqualified; restore the frozen normal compiler, then the clean
+scan identifies only that reviewed second reference (6083/6084).
+
+Alpha's frozen baseline is 59b7d66522f5b8d76d044fce79b272de91516edf92a779cddecd8a1914bec850
+and candidate is bc648b7acc34f58d40b49a4078b500d294072363e2fbf84301bf7138d4ba5880.
+All 288 screen observations and 96 focused confirmation observations have
+identical raw objects, unscaled counters, instruction ratios at most
+1.0000000138 and median RSS ratios 1.0. The screen multi-pack calibrated
+cycle signal is 1.19%; the single prespecified 12-block confirmation is
+0.51% (95% bootstrap interval 0.05–1.70%), below the documented 1% signal
+threshold. Retain both observations without claiming timing neutrality.
+Evidence and independent recomputation are in ci-pr62/performance-vbase-results,
+with frozen Alpha inputs under 20261004-ci-pr62-vbase.
+
+The final strict report passes 6084/6084 and prints one success line. Required
+debug-info, self-host, architecture, file and placement qualification is
+recorded in ci-pr62/validation-vbase; the exact pushed commit's live matrix
+status is linked through PR #62. The previously qualified full harness and backend
+variants cover the unchanged harness/optimizer changes; this additional patch
+changes only the semantic constructor recipe.

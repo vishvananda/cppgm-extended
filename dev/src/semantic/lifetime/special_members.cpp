@@ -1263,7 +1263,7 @@ void Analyzer::AddSynthesizedConstructorBody(
 	const std::uint32_t statement = MakeDump(DUMP_EXPRESSION_STATEMENT);
 	dump_.Add(statement, construction);
 	dump_.Add(body, statement);
-	if (owner.polymorphic_class)
+	if (owner.dynamic_class)
 		dump_.Add(body, MakeDump(DUMP_VPTR_INITIALIZATION_ACTION, owner.type));
 	++expression_count_;
 }

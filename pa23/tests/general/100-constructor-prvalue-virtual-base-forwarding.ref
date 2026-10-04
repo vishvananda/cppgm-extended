@@ -46,6 +46,48 @@ global @__rtti_struct_D [binding=weak, object=_ZTI1D] = {
   ptr addr @__rtti_struct_C
   i64 -6141
 }
+global @__typeinfo_name__struct_EmptyRoot [binding=weak, object=_ZTS9EmptyRoot] = {
+  i8 57
+  i8 69
+  i8 109
+  i8 112
+  i8 116
+  i8 121
+  i8 82
+  i8 111
+  i8 111
+  i8 116
+  i8 0
+}
+global @__rtti_struct_EmptyRoot [binding=weak, object=_ZTI9EmptyRoot] = {
+  ptr addr @__external_rtti_vtable____class_type_info + 16
+  ptr addr @__typeinfo_name__struct_EmptyRoot
+}
+global @__typeinfo_name__struct_EmptyDerived [binding=weak, object=_ZTS12EmptyDerived] = {
+  i8 49
+  i8 50
+  i8 69
+  i8 109
+  i8 112
+  i8 116
+  i8 121
+  i8 68
+  i8 101
+  i8 114
+  i8 105
+  i8 118
+  i8 101
+  i8 100
+  i8 0
+}
+global @__rtti_struct_EmptyDerived [binding=weak, object=_ZTI12EmptyDerived] = {
+  ptr addr @__external_rtti_vtable____vmi_class_type_info + 16
+  ptr addr @__typeinfo_name__struct_EmptyDerived
+  i32 0
+  i32 1
+  ptr addr @__rtti_struct_EmptyRoot
+  i64 -6141
+}
 global @__typeinfo_name__struct___cppgm_class_template_identity_0_1_0 [binding=weak, object=_ZTS1WI1DE] = {
   i8 49
   i8 87
@@ -70,6 +112,14 @@ global @D__vtable [binding=weak, object=_ZTV1D] = {
 global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D__vtable + 40
 }
+global @EmptyDerived__vtable [binding=weak, object=_ZTV12EmptyDerived] = {
+  i64 8
+  i64 0
+  ptr addr @__rtti_struct_EmptyDerived
+}
+global @EmptyDerived____vtt [binding=weak, object=_ZTT12EmptyDerived, object_root=yes] = {
+  ptr addr @EmptyDerived__vtable + 24
+}
 global @__cppgm_class_template_identity_0_1_0__vtable [binding=weak, object=_ZTV1WI1DE] = {
   i64 8
   i64 12
@@ -90,6 +140,9 @@ global @__cppgm_class_template_identity_0_1_0____vtt [binding=weak, object=_ZTT1
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $source : obj<16x8>
+  slot $copy : obj<16x8>
+  slot $moved : obj<16x8>
   slot $d : obj<24x8>
   slot $w : obj<24x8>
   slot $cond__1 : i32
@@ -97,80 +150,160 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $land__3 : i64
 
   block ^entry:
-    %t1 = addr $d
-    call void @D__D(%t1)
-    %t2 = addr $d
-    %t3 = index i8 %t2, 8
-    %t4 = index i8 [projection=field] %t3, 0
-    store i32 7, %t4
-    %t5 = addr $d
-    %t6 = index i8 %t5, 12
-    %t7 = index i8 [projection=field] %t6, 0
-    store i32 8, %t7
-    %t8 = addr $d
-    %t9 = index i8 %t8, 16
-    %t10 = index i8 [projection=field] %t9, 0
-    store i32 9, %t10
-    %t11 = addr $w
-    %t12 = addr $d
-    %t13 = addr $d
-    %t14 = index i8 %t13, 8
-    %t15 = index i8 [projection=field] %t14, 0
-    call void @make_wrap(%t11, %t12, %t15)
-    %t16 = addr $w
-    %t17 = index i8 %t16, 8
-    %t18 = index i8 [projection=field] %t17, 0
-    %t19 = load i32 %t18
-    %t20 = cmp eq i32 %t19, 7
-    branch %t20, ^land_rhs_7, ^land_short_8
+    %t1 = addr $source
+    call void @EmptyDerived__EmptyDerived(%t1)
+    %t2 = addr $copy
+    %t3 = addr $source
+    call void @EmptyDerived__EmptyDerived__sym2(%t2, %t3)
+    %t4 = addr $moved
+    %t5 = addr $source
+    call void @EmptyDerived__EmptyDerived__ov2(%t4, %t5)
+    %t6 = addr $copy
+    %t7 = load ptr %t6
+    %t8 = index i8 %t7, -24
+    %t9 = load i64 %t8
+    %t10 = index i8 %t6, %t9
+    %t11 = index i8 %t10, 0
+    %t12 = call i32 @EmptyRoot__value(%t11)
+    %t13 = cmp ne i32 %t12, 7
+    branch %t13, ^if_then_1, ^lor_rhs_4
 
-  block ^land_rhs_7:
-    %t21 = addr $w
-    %t22 = index i8 %t21, 12
-    %t23 = index i8 [projection=field] %t22, 0
-    %t24 = load i32 %t23
-    %t25 = cmp eq i32 %t24, 8
-    %t26 = cmp ne i64 %t25, 0
-    store i64 %t26, $land__3
-    jump ^land_end_9
+  block ^lor_rhs_4:
+    %t14 = addr $moved
+    %t15 = load ptr %t14
+    %t16 = index i8 %t15, -24
+    %t17 = load i64 %t16
+    %t18 = index i8 %t14, %t17
+    %t19 = index i8 %t18, 0
+    %t20 = call i32 @EmptyRoot__value(%t19)
+    %t21 = cmp ne i32 %t20, 7
+    branch %t21, ^if_then_1, ^if_else_2
 
-  block ^land_short_8:
+  block ^if_then_1:
+    return i32 2
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t22 = addr $d
+    call void @D__D(%t22)
+    %t23 = addr $d
+    %t24 = index i8 %t23, 8
+    %t25 = index i8 [projection=field] %t24, 0
+    store i32 7, %t25
+    %t26 = addr $d
+    %t27 = index i8 %t26, 12
+    %t28 = index i8 [projection=field] %t27, 0
+    store i32 8, %t28
+    %t29 = addr $d
+    %t30 = index i8 %t29, 16
+    %t31 = index i8 [projection=field] %t30, 0
+    store i32 9, %t31
+    %t32 = addr $w
+    %t33 = addr $d
+    %t34 = addr $d
+    %t35 = index i8 %t34, 8
+    %t36 = index i8 [projection=field] %t35, 0
+    call void @make_wrap(%t32, %t33, %t36)
+    %t37 = addr $w
+    %t38 = index i8 %t37, 8
+    %t39 = index i8 [projection=field] %t38, 0
+    %t40 = load i32 %t39
+    %t41 = cmp eq i32 %t40, 7
+    branch %t41, ^land_rhs_11, ^land_short_12
+
+  block ^land_rhs_11:
+    %t42 = addr $w
+    %t43 = index i8 %t42, 12
+    %t44 = index i8 [projection=field] %t43, 0
+    %t45 = load i32 %t44
+    %t46 = cmp eq i32 %t45, 8
+    %t47 = cmp ne i64 %t46, 0
+    store i64 %t47, $land__3
+    jump ^land_end_13
+
+  block ^land_short_12:
     store i64 0, $land__3
-    jump ^land_end_9
+    jump ^land_end_13
 
-  block ^land_end_9:
-    %t27 = load i64 $land__3
-    branch %t27, ^land_rhs_4, ^land_short_5
+  block ^land_end_13:
+    %t48 = load i64 $land__3
+    branch %t48, ^land_rhs_8, ^land_short_9
 
-  block ^land_rhs_4:
-    %t28 = addr $w
-    %t29 = index i8 %t28, 16
-    %t30 = index i8 [projection=field] %t29, 0
-    %t31 = load i32 %t30
-    %t32 = cmp eq i32 %t31, 9
-    %t33 = cmp ne i64 %t32, 0
-    store i64 %t33, $land__2
-    jump ^land_end_6
+  block ^land_rhs_8:
+    %t49 = addr $w
+    %t50 = index i8 %t49, 16
+    %t51 = index i8 [projection=field] %t50, 0
+    %t52 = load i32 %t51
+    %t53 = cmp eq i32 %t52, 9
+    %t54 = cmp ne i64 %t53, 0
+    store i64 %t54, $land__2
+    jump ^land_end_10
 
-  block ^land_short_5:
+  block ^land_short_9:
     store i64 0, $land__2
-    jump ^land_end_6
+    jump ^land_end_10
 
-  block ^land_end_6:
-    %t34 = load i64 $land__2
-    branch %t34, ^cond_then_1, ^cond_else_2
+  block ^land_end_10:
+    %t55 = load i64 $land__2
+    branch %t55, ^cond_then_5, ^cond_else_6
 
-  block ^cond_then_1:
+  block ^cond_then_5:
     store i32 0, $cond__1
-    jump ^cond_end_3
+    jump ^cond_end_7
 
-  block ^cond_else_2:
+  block ^cond_else_6:
     store i32 1, $cond__1
-    jump ^cond_end_3
+    jump ^cond_end_7
 
-  block ^cond_end_3:
-    %t35 = load i32 $cond__1
-    return i32 %t35
+  block ^cond_end_7:
+    %t56 = load i32 $cond__1
+    return i32 %t56
+}
+function @EmptyDerived__EmptyDerived(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    %t1 = load ptr $this
+    %t2 = addr @EmptyDerived__vtable
+    %t3 = index i8 %t2, 24
+    store ptr %t3, %t1
+    return void
+}
+function @EmptyDerived__EmptyDerived__sym2(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1ERKS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = addr @EmptyDerived__vtable
+    %t3 = index i8 %t2, 24
+    store ptr %t3, %t1
+    return void
+}
+function @EmptyDerived__EmptyDerived__ov2(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1EOS_, inline_hint=yes] {
+  slot $this : ptr
+  slot $other : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = addr @EmptyDerived__vtable
+    %t3 = index i8 %t2, 24
+    store ptr %t3, %t1
+    return void
+}
+function @EmptyRoot__value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN9EmptyRoot5valueEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store ptr %this, $this
+    return i32 7
 }
 function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -343,5 +476,8 @@ function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt 
   block ^entry:
     store ptr %this, $this
     store ptr %other, $other
+    %t1 = load ptr $this
+    %t2 = load ptr %__vtt
+    store ptr %t2, %t1
     return void
 }
