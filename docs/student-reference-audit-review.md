@@ -4,7 +4,7 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
-Current status: **0 confirmed compiler fixes remain**. All frozen compiler
+Current status: **0 confirmed compiler correctness fixes remain**. All frozen compiler
 families, including the original serialized standalone RTTI route, are now
 qualified. Final fixture consolidation removes 51 owning sources while
 preserving their distinct assertions. Strict 6084/6084 prints exactly one line;
@@ -23,6 +23,142 @@ validation failures. The frozen student/Argon queue remains complete; these
 Both CI root causes have narrow repairs and existing-fixture regressions,
 with full qualification and the CI rerun recorded below. The Make 4.3 harness
 failure is corrected without relaxing report-output assertions.
+
+## v4.2 backend performance investigation — 2026-10-04
+
+Status: investigating the user-reported approximately 5% backend loss after
+v4.2. The release itself is complete: both main branches were fast-forwarded
+and tagged v4.2 after main CI, inception and assignment publication passed.
+The released source is b4d107a1d; assignments are 32ffbc016.
+
+Use the measurement contract in Alpha's cppgm-run-v4codex/backend-perf.md:
+O3 self and GCC producers compile the pinned semantic-overload source and its
+51-header closure at O0. Compare v4.1 (3299e7ff3) with v4.2. Retain absolute
+self and host runtimes alongside the paired change in the self/host ratio.
+This investigation uses matched jemalloc allocation in both producers. Timing
+and hardware-counter measurements are separate, serial, pinned to CPU 8 with
+ASLR disabled; preserve all observations and same-revision output equality.
+The initial budget is three paired blocks, followed by confirmation if needed.
+Also cross-compile the fixed v4.1 compiler source with the v4.2 producer to
+separate changed compiler work from changed emitted code before bisecting.
+
+Artifacts and exact build commands: /tmp/cppgm-backend-perf-v4.2/ locally and
+on Alpha. Production tools, references and release tags remain untouched.
+
+
+Results so far (all source/closure/binary identities retained):
+
+| Comparison | Paired user-time change | 95% block-bootstrap interval | Status |
+| --- | --- | --- | --- |
+| v4.1 to v4.2 complete self, six fresh blocks | +3.604% | +2.876% to +6.835% | Positive six-block result; later epoch controls remain necessary |
+| v4.1 to v4.2 GCC host, same four-way blocks | +2.998% | +0.643% to +6.129% | Compiler-work slowdown is also present in the host |
+| Change in paired self/GCC ratio | +1.922% | -1.309% to +2.942% | Inconclusive; do not call this a confirmed 5% emitted-code loss |
+| Same fixed v4.1 compiler source, built by v4.2 versus v4.1 producers, three diagnostic blocks | -0.325% | -2.532% to +2.222% | Does not reproduce the reported 5% loss; instruction/cycle changes are +0.451%/+0.438% |
+| Midpoint ed64e4b4b versus v4.1 self, three blocks | +2.941% | +0.317% to +3.767% | Loss already present halfway through the fixes |
+| Adjacent 6953bb174 versus 89a33c0a8 self, six blocks | +3.130% | +0.858% to +6.671% | Positive first batch; independent batch later flat |
+| Adjacent 52a570e26 versus 8054936ac self, six blocks | +1.186% | -3.194% to +2.207% | Timing remains inconclusive after ten blocks |
+
+The first three-block endpoint timing is retained, including its inconclusive
++5.832% backend-ratio screen and the wide interval. The six fresh blocks are a
+separate confirmation, not an exclusion of those observations. A/A controls
+include one 9.33% excursion; no sample is removed. Counters are diagnostic,
+not acceptance substitutes: endpoint instructions increase 1.96% for self and
+1.62% for the GCC host, while the absolute self runtime increases materially.
+Every same-revision seed/self output is byte-identical. Different revisions
+are required to be individually deterministic, allowing legitimate changed
+references and ABI recipes.
+
+Direct C++ allocation interposition supplies a stronger mechanism than RSS:
+new requests rise from 3,539,683,371 to 4,283,907,871 bytes in self (+21.02%),
+while new calls rise from 12,091,482 to 12,272,941 (+1.50%). Host requests rise
+from 3,560,873,093 to 4,302,909,028 (+20.84%). These are cumulative requested
+bytes, not peak live memory or all malloc traffic. Allocation instrumentation
+is diagnostic only; its objects match uninstrumented outputs and its callsite
+counts cover all recorded requests with zero overflow.
+
+Two adjacent-commit mechanisms are isolated:
+
+- **PERF-TRAIT-WORK (6953bb174):** ordinary hosted trait definitions replace
+  fabricated template-name behavior, as required by spec.md. Canonical types
+  rise from 108,162 to 114,518 and scopes from 266,186 to 273,152 on the frozen
+  source. New requested host bytes rise 161,925,337 (+4.56%). The existing
+  TypesContainLocalContext traversal alone rises from 900,217,880 to
+  1,021,779,479 requested bytes. Preserve correct ordinary template semantics;
+  optimize repeated type-graph traversal rather than restore shortcuts.
+- **PERF-ABI-VISITS (52a570e26):** required dependent-member ABI handling adds
+  UsesFunctionTemplateParameter queries to named-class fact construction.
+  Its existing per-query full-type visited bitmap creates 843,191,040 bytes
+  after the change versus 253,071,876 before it; allocation requests increase
+  from 4,418 to 14,720. Total host requested bytes rise 591,871,972 (+16.02%),
+  almost entirely this bitmap. RSS is essentially flat because the buffers
+  are transient. The next narrow fix should use compact query-local visitation
+  or safely scoped reusable traversal storage, preserving every ABI fact and
+  spelling. No Itanium spelling or compiler behavior is changed here.
+
+Independent adjacent-commit confirmations do **not** establish those first
+batch runtime shares. The additional three trait blocks are 1.00000
+[0.99314, 1.00348]; all nine trait blocks give 1.01192 [1.00000, 1.05119].
+Four additional ABI blocks give 0.99307 [0.98830, 1.03111]; all ten give
+1.00083 [0.99055, 1.02030]. Keep these flat/negative observations. The
+allocation cliffs are directly attributed, but do not call them independently
+confirmed 3% and 1% runtime losses or add their separately measured medians.
+A private sparse-visitation probe tests the avoidable whole-type bitmap cost;
+it is outside the repository's working source and is not a shipped fix.
+
+The complete endpoint budget is now ten retained four-way blocks across the
+initial, six-block confirmation and final single-block epoch. Combined paired
+self time is 1.03604 [1.02728, 1.06735], host time is 1.02040
+[1.00718, 1.04839], and paired backend-ratio change is 1.01922
+[0.99154, 1.03915]. The frozen compile therefore supplies a reliable absolute
+self-workload loss, while a 5% pure code-generation loss remains unconfirmed.
+
+The private probe uses query-local unordered sets in the two bitmap walkers.
+It preserves the entire frozen O0 object exactly, including all ABI names.
+Host requested allocation bytes fall from 4,302,909,028 to 2,425,053,572
+(-43.64%), with new calls up 0.81%. Its initial six-block self timing is
+0.98686 [0.96510, 1.00510]; four additional blocks are included in the final result below.
+This prototype is a memory-mechanism control, not an accepted compiler repair:
+node allocations can offset the cheaper graph-sized storage. A production
+implementation should prefer compact typed visitation and pass all required
+compiler/performance checks before it is retained.
+
+The sparse-visitation confirmation gives 0.94944 [0.90021, 0.97444];
+all ten paired blocks give 0.97199 [0.94903, 0.99199], or **2.80% faster**
+with a 95% interval of 0.80–5.10% faster. The noisy 0.90021 and 0.92934
+blocks are retained. This is evidence that per-query bitmap storage is a
+runtime contributor, not just an allocation-count curiosity. It does not
+assign the entire release loss to one commit. The prototype has not received
+full compiler qualification, so it is not accepted or shipped. No references,
+fixtures, ABI spellings or release tags changed.
+
+The early 89a33c0a8 checkpoint versus v4.1 is 0.97346 [0.96966, 0.98361]
+in three diagnostic blocks: the early fixes were faster on this workload.
+Thus monotonic commit bisection by a fixed runtime threshold is insufficient;
+retain both coarse checkpoints and the adjacent-commit allocation evidence.
+
+Independent raw verification covers **344 compiler measurements**, **42
+counter files at 100% running**, all immutable binary identities, the pinned
+source/header epoch, and seven allocation-attribution runs. Every timing value
+and output hash is checked against its raw file; every allocation site sum
+agrees with the report with zero overflow. Instrumented and uninstrumented
+objects agree for each revision, including the sparse probe. Proof is
+/tmp/cppgm-backend-perf-v4.2/alpha-results/independent-verification.json.
+
+Next work is **PERF-VISIT-FIX**: replace the full-program per-query bitmaps
+with compact typed visitation or safely reused workspace; keep ordinary
+hosted trait definitions and existing ABI facts. Qualify both host and complete
+self runtimes, output equality, memory, compiler checks and emitted names before
+retaining the implementation. There is no new language-fixture requirement
+for a storage-only optimization. The private unordered-set implementation is
+a mechanism probe, not a recommendation to incur one allocation per node.
+
+The earlier correction gates mostly used the smaller frozen recog source and
+focused reducers with host-built compilers. They did not measure this complete
+self/GCC workload for every correction, and peak RSS did not expose cumulative
+transient bitmap traffic. Keep paired frozen O0 self runtime, paired self/GCC
+ratio, absolute GCC time, A/A calibration and allocation diagnostics together
+as the standing regression indicator; an instruction-only threshold is
+insufficient for this class of regression.
 
 ## Strategy review after a70d1174b — 2026-10-03
 
