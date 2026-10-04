@@ -5,11 +5,11 @@ Maintainer evidence from the read-only review of `~/work/v4codex` on 2026-09-30.
 The existing fixture/harness work is committed as `fb15cd49e` on `fix/student-audit-regressions`. Placement detection is corrected in `550f44dc2`: all twenty scalar-array false positives disappear, with genuine class-transfer detection retained. Static pointer/reference initialization is fixed by the accompanying compiler checkpoint. Constant class-object initialization is completed by the next compiler checkpoint; the other open work is recorded in the unified table.
 
 Current status: **1 compiler family and 7 reviews remain**. BACKEND has
-two confirmed runtime defects left: automatic stack alignment and destructor
-rethrow lifetime. Its frozen RTTI search defects are qualified. Strict
-6135/6135 prints one line; all required checks and Alpha instruction/RSS
-gates pass. Conditional explicit's multi-pack timing confirmation shows
-a 2.32% cycle cost, retained below.
+one confirmed runtime defect left: 32-byte automatic stack alignment. Its
+RTTI search and rethrow-lifetime fixes are qualified. Strict 6135/6135 prints
+one line; all required checks and Alpha instruction/RSS gates pass. Positive
+timing confirmations remain recorded: conditional explicit multi-pack 2.32%
+and native rethrow reference-aliases 1.06%.
 Final fixture pruning and combined student export/harness validation remain
 deferred until compiler work is complete.
 
@@ -215,7 +215,7 @@ The recent discovery inventory is not all C++11:
 | ARG-ARRAY | Construct aggregate member arrays of nontrivial class elements | Argon 5 | Done: edd6b2121 with AGG-DEST; final-address class-array construction, local/static/nested lifetime and identity controls pass. |
 | ARG-SLOTS | Share stack space for mutually exclusive large temporary lifetimes | Argon 6 | Done in this checkpoint: reuse native CFG successors for bounded, equal-shaped object exclusion; preserve loops, pairwise group conflicts and conservative EH storage. The original reducer spans 103,824 bytes at O1/O2/O3 with correct values and 64 destructors. Promote one existing PA33 control with one escaped-pointer loop boundary; strict 6127/6127 in one line, all required checks and 432 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain the positive diagnostic timing medians below. |
 | BACKEND-ARRAY-OPT | Keep optimized array cleanup frames valid when helper bodies are defined in the same translation unit | Self-contained EH-SPECIAL-PREFIX fixture controls | Done in this checkpoint: preserve handler inputs across cold throwing calls independently of presentation order; refresh shared-storage/address lifetimes. Both existing PA21 programs pass at O1/O2/O3 on standalone, compiler-object and host-native routes through PA33 source symlinks. No copied fixture bodies or changed references. Strict 6127/6127 in one line, all required checks and 384 independently verified Alpha observations pass instruction/RSS gates and raw object equality. Retain positive timing medians below. |
-| BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Partly done: duplicate native RTTI labels no longer reproduce; the frozen virtual-diamond cast and ambiguous base searches are fixed in the qualified native RTTI checkpoint below. Remaining: destructor dynamic-rethrow destroys the exception object before the outer handler on the native route, and 32-byte automatic alignment intermittently fails on native and host-object routes at O0/O2. Fresh immutable inputs and baseline observations are in backend-frozen-final/. |
+| BACKEND | Standalone RTTI, handler/runtime and automatic-stack limitations | v4codex backend observations and later frozen reducers | Partly done: duplicate RTTI labels no longer reproduce; frozen virtual-diamond/ambiguous RTTI searches and destructor dynamic-rethrow lifetimes are qualified below. A signed count in the existing private exception header retains objects across rethrow and nested catches; source/host ABI models are unchanged. Remaining: 32-byte automatic alignment intermittently fails on native and host-object routes at O0/O2. Frozen baseline evidence is in backend-frozen-final/. |
 | ROUND | Excess-precision differences | v4codex PA25 | Review only: no proven oracle bug; preserve references unless course policy requires a change. |
 | DIALECT | Multi-block-inline note using cmp slt instead of contracted cmp lt | Argon post-run note | No compiler fix established: corrected spelling reportedly passes. |
 | HOST-TRIVIAL | Verify the deleted-copy triviality oracle and declaration-property semantics | v4codex PA29 handoff156 question | Done in 89a33c0a8: source assertions corrected, deleted/member/overload facts queried and cached; strict 5851/5851, full checks and equal-output ABBA pass. Viability and ABI classification stay separate. |
@@ -7264,3 +7264,54 @@ Evidence: `/tmp/cppgm-v4-audit-review/native-rtti-search/qualified-proof.json`,
 `alpha:/tmp/cppgm-v4-audit-review-20261004-native-rtti-search/`.
 Two concrete BACKEND failures and seven reviews remain. Final fixture pruning
 and combined student export/harness validation stay deferred.
+
+### Native rethrow exception-object lifetime — qualified, 2026-10-04
+
+The frozen destructor-rethrow program still fails at O0/O2 after the RTTI
+checkpoint. Isolated fields show the outer handler receives live=0, trace=219
+and two local destructor calls: the exception destructor runs while leaving
+the inner handler. The existing PA21 nested-handler lifetime fixture also
+fails natively on its Error rethrow branch. Both host-object routes pass.
+N3485 15.1/4 retains the same exception object until the last active handler
+exits without rethrowing; 15.1/8 specifies operandless throw.
+
+Use the previously reserved final word of the unchanged 32-byte private
+exception header as a signed handler count. Entering a handler increments
+ownership, repeated catches of the same object avoid a self-link, rethrow marks
+transfer, and leaving a transferring handler preserves the exception object.
+The final ordinary handler exit destroys it once. A null active object takes
+the existing unhandled termination path instead of dereferencing null; the
+associated default no-handler program changes from SIGSEGV to exit 134. No
+parser, semantic model, public ABI, spelling or header-size changes.
+
+Extend the existing PA21/200 nested-handler lifetime fixture with the frozen
+return-path destructor rethrow and a nested same-object catch that must leave
+the outer handler's object alive. Reuse that source via one PA33 native-driver
+symlink. Retire the previously covered scalar dynamic-rethrow control after
+fresh independent checks; add no owning fixture source. Regenerate only the
+extended LowIR reference. Twenty-four original/owning native and strict C++11
+Clang/GCC observations pass at O0/O2; eight old/new host-object executions
+also pass and yield four byte-identical A/B pairs. All nine new driver routes
+pass, along with the existing scalar rethrow preservation check.
+
+Compiler SHA256:
+`161f2c0fb65acc3c733dbace0fee8a448f101ae2c15233631179a2c0a3f29e0d`;
+native SHA256:
+`6db981c5eef07bae16be91173098a2a31afec37edf1c079b759b3ade8a22e84c`.
+Strict 6135/6135 prints exactly one line. Debug-info, backend variants (81/81
+native executions), self-host PA5, all nine architecture targets, file and
+placement audits pass. The file audit retains the identical 37 warning log;
+the modified native file remains within its 3000-line limit at 2986 lines.
+
+Alpha's 69 frozen inputs yield six byte-identical raw object pairs without
+normalization. All 336 unscaled counter/RSS observations, statuses, hashes
+and paired medians are independently verified; maximum instruction median
+is 1.000039034 and RSS medians are 1.0. One reference-alias timing confirmation
+gives calibrated cycles 1.010580148, CI [1.000600234, 1.036388544], retaining
+the initial 1.019773924 screen. Record that positive 1.06% cost rather than
+claiming neutrality or running more confirmations. Evidence:
+`/tmp/cppgm-v4-audit-review/native-rethrow-lifetime/qualified-proof.json`,
+`/tmp/cppgm-v4-audit-review/backend-frozen-final/` and
+`alpha:/tmp/cppgm-v4-audit-review-20261004-native-rethrow-lifetime/`.
+One confirmed BACKEND failure (automatic alignment) and seven reviews remain.
+Final fixture pruning and combined student export/harness validation stay pending.

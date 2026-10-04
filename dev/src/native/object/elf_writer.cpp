@@ -2198,10 +2198,23 @@ void emit_abort_runtime(CodeBuffer & out)
 
 void emit_eh_begin_catch(CodeBuffer & out)
 {
+  const auto linked = out.internal_label("eh_begin_catch_linked");
+  const auto increment = out.internal_label("eh_begin_catch_increment");
   emit_symbol_move(out, XR_R11, kEhCaught);
   emit_load(out, XR_RAX, XR_R11, 0, 64);
+  emit_register_alu(out, 0x39, XR_RAX, XR_RDI);
+  emit_condition_jump(out, XC_E, linked);
   emit_store(out, XR_RDI, -16, XR_RAX, 64);
   emit_store(out, XR_R11, 0, XR_RDI, 64);
+  out.label(linked);
+  // The private header's final word counts handlers; negative means rethrow.
+  emit_load(out, XR_RCX, XR_RDI, -8, 64);
+  emit_test_register(out, XR_RCX); emit_condition_jump(out, XC_GE, increment);
+  emit_rex(out, true, XR_RCX, XR_RCX); out.byte(0xf7);
+  emit_modrm(out, 3, 3, XR_RCX);
+  out.label(increment);
+  emit_immediate_alu(out, XR_RCX, 0, 1);
+  emit_store(out, XR_RDI, -8, XR_RCX, 64);
   emit_symbol_move(out, XR_R11, kEhAdjusted);
   emit_load(out, XR_RAX, XR_R11, 0, 64);
   out.byte(0xc3);
@@ -2210,12 +2223,23 @@ void emit_eh_begin_catch(CodeBuffer & out)
 void emit_eh_end_catch(CodeBuffer & out)
 {
   const std::string done = ".__cppgm_eh_end_catch_done";
+  const auto rethrow = out.internal_label("eh_end_catch_rethrow");
+  const auto updated = out.internal_label("eh_end_catch_updated");
   emit_symbol_move(out, XR_R11, kEhCaught);
   emit_load(out, XR_RAX, XR_R11, 0, 64);
   emit_test_register(out, XR_RAX);
   emit_condition_jump(out, XC_E, done);
+  emit_load(out, XR_RCX, XR_RAX, -8, 64);
+  emit_register_move(out, XR_RDX, XR_RCX);
+  emit_test_register(out, XR_RCX); emit_condition_jump(out, XC_L, rethrow);
+  emit_immediate_alu(out, XR_RCX, 5, 1);
+  emit_unconditional_jump(out, updated);
+  out.label(rethrow); emit_immediate_alu(out, XR_RCX, 0, 1);
+  out.label(updated); emit_store(out, XR_RAX, -8, XR_RCX, 64);
+  emit_test_register(out, XR_RCX); emit_condition_jump(out, XC_NE, done);
   emit_load(out, XR_RCX, XR_RAX, -16, 64);
   emit_store(out, XR_R11, 0, XR_RCX, 64);
+  emit_test_register(out, XR_RDX); emit_condition_jump(out, XC_L, done);
   emit_load(out, XR_RCX, XR_RAX, -32, 64);
   emit_test_register(out, XR_RCX);
   emit_condition_jump(out, XC_E, done);
@@ -2247,6 +2271,12 @@ void emit_eh_rethrow(CodeBuffer & out)
 {
   emit_symbol_move(out, XR_R11, kEhCaught);
   emit_load(out, XR_RDI, XR_R11, 0, 64);
+  emit_test_register(out, XR_RDI);
+  emit_condition_jump(out, XC_E, ".__cppgm_eh_unhandled");
+  emit_load(out, XR_RCX, XR_RDI, -8, 64);
+  emit_rex(out, true, XR_RCX, XR_RCX); out.byte(0xf7);
+  emit_modrm(out, 3, 3, XR_RCX);
+  emit_store(out, XR_RDI, -8, XR_RCX, 64);
   emit_symbol_move(out, XR_R11, kEhValue);
   emit_store(out, XR_R11, 0, XR_RDI, 64);
   emit_symbol_move(out, XR_R11, kEhAdjusted);
