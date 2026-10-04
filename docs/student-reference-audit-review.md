@@ -26,8 +26,9 @@ failure is corrected without relaxing report-output assertions.
 
 ## v4.2 backend performance investigation — 2026-10-04
 
-Status: investigating the user-reported approximately 5% backend loss after
-v4.2. The release itself is complete: both main branches were fast-forwarded
+Status: frozen-compile slowdown reproduced and amplified type-walk allocation
+isolated. A private output-identical probe recovers 2.80% runtime; production
+repair and full qualification remain the PERF-VISIT-FIX follow-up. The release itself is complete: both main branches were fast-forwarded
 and tagged v4.2 after main CI, inception and assignment publication passed.
 The released source is b4d107a1d; assignments are 32ffbc016.
 
