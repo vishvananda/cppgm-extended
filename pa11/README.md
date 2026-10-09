@@ -253,6 +253,10 @@ PA11 supports the following in addition to the PA10 procedural subset:
 - ordinary non-template non-member function calls found through associated-namespace lookup /
   hidden-friend ADL when the arguments stay within the supported class subset
 - in-class member-function definitions
+- an elaborated-type-specifier that first names a class in a member's
+  declaration declares it in the enclosing namespace (3.3.2p7), and a
+  non-static data member may be named without an object in an unevaluated
+  operand (`sizeof(Holder::pair)`, 5.1.1p13)
 - out-of-class definitions for ordinary non-static member functions when the parser accepts
   them as ordinary qualified function definitions, including a leading return type that
   names a private nested type in the member's class context

@@ -986,10 +986,15 @@ ExpressionInfo Analyzer::AnalyzeImplicitDataMember(
 	// declared lvalue type, but does not require a runtime implicit object.  Keep
 	// the canonical member binding as the expression fact; no lowering can be
 	// demanded for this operand.
-	if (unevaluated_depth_ != 0 && current_class_context_ != kNoEntity &&
-		binding.member_owner != kNoEntity &&
-		program_->IsBaseOf(binding.member_owner, current_class_context_))
+	// 5.1.1p13 allows one outside any member function too
+	// (`decltype(Holder::pair)`).
+	if (unevaluated_depth_ != 0 && binding.member_owner != kNoEntity &&
+		((current_class_context_ != kNoEntity &&
+		  program_->IsBaseOf(binding.member_owner, current_class_context_)) ||
+		 program_->LookupName(scope, program_->names.Intern("this"), LOOKUP_ORDINARY).ordinary == kNoBinding))
 	{
+		if (!CanAccessMember(member_binding, naming_class))
+			ThrowSemanticError("inaccessible implicit data member");
 		ExpressionInfo result;
 		result.node = MakeDump(DUMP_MEMBER_EXPRESSION, binding.type,
 			VALUE_LVALUE, binding.name, member_binding);

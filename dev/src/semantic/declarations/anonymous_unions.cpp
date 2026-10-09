@@ -45,7 +45,9 @@ void Analyzer::AnalyzeDeclaratorlessSimpleDeclaration(
 		program_->entities[entity].flavor == NAMED_UNION;
 	if (anonymous_union)
 	{
-		if (!local && spec.storage_class != STORAGE_CLASS_STATIC)
+		// 9.5p5: one of an unnamed namespace need not be static.
+		if (!local && spec.storage_class != STORAGE_CLASS_STATIC &&
+			!program_->HasInternalLinkageScope(scope))
 			ThrowSemanticError(
 				"namespace anonymous union must be static");
 		DeclareAnonymousUnionObject(class_specifier, scope, output_parent,

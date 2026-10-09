@@ -1946,11 +1946,12 @@ void Analyzer::AnalyzeDeclaration(NodeId node, ScopeId scope,
 		if (arena_->Payload(node).empty() && entity != kNoEntity &&
 			program_->entities[entity].flavor == NAMED_UNION)
 		{
-			if (!local)
+			// 9.5p5: only one of a named or the global namespace must be static.
+			if (!local && !program_->HasInternalLinkageScope(scope))
 				ThrowSemanticError(
 					"namespace anonymous union must be static");
 			DeclareAnonymousUnionObject(node, scope, output_parent, type,
-				true, STORAGE_CLASS_NONE);
+				local, STORAGE_CLASS_NONE);
 		}
 		return;
 	}

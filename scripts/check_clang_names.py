@@ -73,11 +73,6 @@ RESIDUAL = 'instantiation-dependent signature'
 # Documented differences: (fixture path relative to the repository root,
 # reference name) -> reason. Keep this list short and explained.
 DOCUMENTED = {
-    ('pa11/tests/general/200-elaborated-member-forward-type.t',
-     '_ZN5Outer3setEPNS_6HiddenE'):
-        'semantic: an elaborated-type-specifier in a member declaration '
-        'declares the class in the enclosing namespace (3.3.2p7); the '
-        'course declares it in the class',
 }
 
 

@@ -30,44 +30,23 @@ OperatorKind ClassifyOperator(const std::string& name,
 {
 	if (name.compare(0, 8, "operator") != 0) return OPERATOR_NONE;
 	const std::string operation = name.substr(8);
-	if (operation == "+") return OPERATOR_PLUS;
-	if (operation == "-") return OPERATOR_MINUS;
-	if (operation == "*") return OPERATOR_STAR;
-	if (operation == "&") return OPERATOR_AMPERSAND;
-	if (operation == "/") return OPERATOR_DIVIDE;
-	if (operation == "%") return OPERATOR_REMAINDER;
-	if (operation == "|") return OPERATOR_BIT_OR;
-	if (operation == "^") return OPERATOR_BIT_XOR;
-	if (operation == "=") return OPERATOR_ASSIGN;
-	if (operation == "+=") return OPERATOR_PLUS_ASSIGN;
-	if (operation == "-=") return OPERATOR_MINUS_ASSIGN;
-	if (operation == "*=") return OPERATOR_MULTIPLY_ASSIGN;
-	if (operation == "/=") return OPERATOR_DIVIDE_ASSIGN;
-	if (operation == "%=") return OPERATOR_REMAINDER_ASSIGN;
-	if (operation == "&=") return OPERATOR_AND_ASSIGN;
-	if (operation == "|=") return OPERATOR_OR_ASSIGN;
-	if (operation == "^=") return OPERATOR_XOR_ASSIGN;
-	if (operation == "<<") return OPERATOR_LEFT_SHIFT;
-	if (operation == ">>") return OPERATOR_RIGHT_SHIFT;
-	if (operation == "<<=") return OPERATOR_LEFT_SHIFT_ASSIGN;
-	if (operation == ">>=") return OPERATOR_RIGHT_SHIFT_ASSIGN;
-	if (operation == "==") return OPERATOR_EQUAL;
-	if (operation == "!=") return OPERATOR_NOT_EQUAL;
-	if (operation == "<") return OPERATOR_LESS;
-	if (operation == ">") return OPERATOR_GREATER;
-	if (operation == "<=") return OPERATOR_LESS_EQUAL;
-	if (operation == ">=") return OPERATOR_GREATER_EQUAL;
-	if (operation == "!") return OPERATOR_LOGICAL_NOT;
-	if (operation == "~") return OPERATOR_COMPLEMENT;
-	if (operation == "&&") return OPERATOR_LOGICAL_AND;
-	if (operation == "||") return OPERATOR_LOGICAL_OR;
-	if (operation == "++") return OPERATOR_INCREMENT;
-	if (operation == "--") return OPERATOR_DECREMENT;
-	if (operation == ",") return OPERATOR_COMMA;
-	if (operation == "->*") return OPERATOR_MEMBER_POINTER;
-	if (operation == "->") return OPERATOR_ARROW;
-	if (operation == "()") return OPERATOR_CALL;
-	if (operation == "[]") return OPERATOR_INDEX;
+	static const struct { const char* spelling; OperatorKind kind; } operators[] = {
+		{"+", OPERATOR_PLUS}, {"-", OPERATOR_MINUS}, {"*", OPERATOR_STAR},
+		{"&", OPERATOR_AMPERSAND}, {"/", OPERATOR_DIVIDE}, {"%", OPERATOR_REMAINDER},
+		{"|", OPERATOR_BIT_OR}, {"^", OPERATOR_BIT_XOR}, {"=", OPERATOR_ASSIGN},
+		{"+=", OPERATOR_PLUS_ASSIGN}, {"-=", OPERATOR_MINUS_ASSIGN}, {"*=", OPERATOR_MULTIPLY_ASSIGN},
+		{"/=", OPERATOR_DIVIDE_ASSIGN}, {"%=", OPERATOR_REMAINDER_ASSIGN}, {"&=", OPERATOR_AND_ASSIGN},
+		{"|=", OPERATOR_OR_ASSIGN}, {"^=", OPERATOR_XOR_ASSIGN}, {"<<", OPERATOR_LEFT_SHIFT},
+		{">>", OPERATOR_RIGHT_SHIFT}, {"<<=", OPERATOR_LEFT_SHIFT_ASSIGN}, {">>=", OPERATOR_RIGHT_SHIFT_ASSIGN},
+		{"==", OPERATOR_EQUAL}, {"!=", OPERATOR_NOT_EQUAL}, {"<", OPERATOR_LESS},
+		{">", OPERATOR_GREATER}, {"<=", OPERATOR_LESS_EQUAL}, {">=", OPERATOR_GREATER_EQUAL},
+		{"!", OPERATOR_LOGICAL_NOT}, {"~", OPERATOR_COMPLEMENT}, {"&&", OPERATOR_LOGICAL_AND},
+		{"||", OPERATOR_LOGICAL_OR}, {"++", OPERATOR_INCREMENT}, {"--", OPERATOR_DECREMENT},
+		{",", OPERATOR_COMMA}, {"->*", OPERATOR_MEMBER_POINTER}, {"->", OPERATOR_ARROW},
+		{"()", OPERATOR_CALL}, {"[]", OPERATOR_INDEX},
+	};
+	for (std::size_t i = 0; i < sizeof(operators) / sizeof(operators[0]); ++i)
+		if (operation == operators[i].spelling) return operators[i].kind;
 	if (operation == " new" || operation == "new") return OPERATOR_NEW;
 	if (operation == " new[]" || operation == "new[]")
 		return OPERATOR_NEW_ARRAY;
@@ -171,7 +150,7 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 	const NameId name = path.Last();
 	const NameId lookup_name = specialization_lookup_name == 0 ?
 		name : specialization_lookup_name;
-	const ScopeId owner = specialization_owner == kNoScope ?
+	ScopeId owner = specialization_owner == kNoScope ?
 		ResolveOwner(scope, path) : specialization_owner;
 	if (owner == kNoScope) ThrowSemanticError("class owner not found");
 	// A generated anonymous/local identity names a fresh entity: it never
@@ -186,6 +165,22 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 	if (!generated_identity && old.type == kNoType && elaborated &&
 		!path.global && path.Size() == 1)
 		old = program_->LookupDirect(owner, lookup_name, LOOKUP_TAG_IDENTITY);
+	// 3.3.2p7: an elaborated-type-specifier that declares its name in a
+	// declaration's specifiers or parameters declares it in the smallest
+	// enclosing namespace or block scope, not in a class.
+	if (!generated_identity && old.type == kNoType && elaborated && !hidden_friend_declaration &&
+		!path.global && path.Size() == 1 && specialization_owner == kNoScope)
+	{
+		ScopeId enclosing = owner;
+		while (enclosing != kNoScope && program_->KindOfScope(enclosing) != SCOPE_NAMESPACE &&
+			program_->KindOfScope(enclosing) != SCOPE_BLOCK)
+			enclosing = program_->ParentScope(enclosing);
+		if (enclosing != kNoScope && enclosing != owner)
+		{
+			owner = enclosing;
+			old = program_->LookupDirect(owner, lookup_name, LOOKUP_TAG_IDENTITY);
+		}
+	}
 	EntityId entity = kNoEntity;
 	bool created_entity = false;
 	// Repeated analysis of one generated-identity node (the class-template

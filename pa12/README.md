@@ -359,7 +359,8 @@ PA12 supports the following in addition to the PA11 subset:
   class subset, including block-scope anonymous-member injection and an
   explicit variant initializer taking precedence over another variant's
   default member initializer; at most one variant may have a default member
-  initializer
+  initializer; a namespace-scope anonymous union must be `static` in a named
+  or the global namespace but not in an unnamed one (9.5p5)
 - conditional class-value cases in the supported copy/move subset, including
   cv-combined glvalue operands, lvalue/prvalue conversion, and destruction of a
   containing branch temporary only after its selected member result has been
