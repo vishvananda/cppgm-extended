@@ -243,8 +243,10 @@ on functions and global roles on globals.
 
 The `rtti_pointer` role identifies the vtable of the runtime's pointer
 type-information class. A pointer exception is caught by value: a standalone
-backend recognizes thrown pointer types through it, so that `eh_begin_catch`
-yields the thrown pointer rather than the address of the exception object.
+backend recognizes pointer types through it when it matches handlers
+(qualification, base and `void*` conversions, 15.3p3), so that
+`eh_begin_catch` yields the converted pointer rather than the address of the
+exception object.
 
 The `terminate` role identifies the C++ termination runtime used at a
 non-throwing function boundary. A standalone backend may provide this runtime

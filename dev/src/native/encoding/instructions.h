@@ -131,6 +131,14 @@ void emit_unconditional_jump(elf_detail::CodeBuffer & out,
                              const std::string & target);
 void emit_unconditional_jump(elf_detail::CodeBuffer & out,
                              lowir_model::LocalLabelId target);
+// 64-bit `cmp reg, imm8`, `op reg, imm8` (extension /0 add .. /7 cmp) and
+// `test reg, imm32`.
+void emit_compare_immediate(elf_detail::CodeBuffer & out, X64Register reg,
+                            unsigned value);
+void emit_immediate_alu(elf_detail::CodeBuffer & out, X64Register reg,
+                        unsigned extension, unsigned value);
+void emit_test_immediate(elf_detail::CodeBuffer & out, X64Register reg,
+                         unsigned value);
 std::size_t emit_constant_division(
     elf_detail::CodeBuffer & out,
     const std::vector<mir_model::MirInstruction> & instructions,

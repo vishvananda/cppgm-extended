@@ -20,6 +20,17 @@ using namespace semantic;
 using namespace semantic;
 using namespace lowering::ir;
 
+// Itanium 2.9.5p6: __si_class_type_info describes exactly one public,
+// non-virtual base at offset zero; anything else is __vmi_class_type_info,
+// whose base flags state access for dynamic_cast and handler matching.
+static bool SingleInheritanceRtti(const semantic::Program& program, EntityId entity)
+{
+	if (program.entities[entity].direct_base_count != 1) return false;
+	const DirectBaseEdge& base = program.DirectBase(entity, 0);
+	return !base.virtual_base && base.offset == 0 &&
+		base.access == ACCESS_PUBLIC;
+}
+
 PolymorphismLoweringState::PolymorphismLoweringState()
 	: pure_virtual_symbol(kNoLowId), rtti_class_symbol(kNoLowId),
 	  rtti_si_symbol(kNoLowId), rtti_vmi_symbol(kNoLowId),
@@ -1356,9 +1367,7 @@ private:
 		{
 			if (!state_.class_rtti_demanded[entity]) continue;
 			const EntityRecord& record = program_.entities[entity];
-			const bool single = record.direct_base_count == 1 &&
-				!program_.DirectBase(entity, 0).virtual_base &&
-				program_.DirectBase(entity, 0).offset == 0;
+			const bool single = SingleInheritanceRtti(program_, entity);
 			need_root_rtti = need_root_rtti || record.direct_base_count == 0;
 			need_si_rtti = need_si_rtti || single;
 			need_vmi_rtti = need_vmi_rtti ||
@@ -1841,9 +1850,7 @@ private:
 			Global rtti;
 			rtti.symbol = state_.class_rtti_symbols[entity];
 			rtti.initializer_kind = Global::STRUCTURED_VALUE;
-			const bool single = record.direct_base_count == 1 &&
-				!program_.DirectBase(entity, 0).virtual_base &&
-				program_.DirectBase(entity, 0).offset == 0;
+			const bool single = SingleInheritanceRtti(program_, entity);
 			if (record.direct_base_count == 0)
 				AddAddressItem(&rtti, state_.rtti_class_symbol, 16);
 			else if (single)

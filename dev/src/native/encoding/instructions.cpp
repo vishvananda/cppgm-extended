@@ -1245,4 +1245,29 @@ void emit_unconditional_jump(CodeBuffer & out,
   out.relative32(target);
 }
 
+void emit_compare_immediate(CodeBuffer & out, X64Register reg, unsigned value)
+{
+  emit_rex(out, true, XR_RAX, reg);
+  out.byte(0x83);
+  emit_modrm(out, 3, 7, reg);
+  out.byte(value);
+}
+
+void emit_immediate_alu(CodeBuffer & out, X64Register reg,
+                        unsigned extension, unsigned value)
+{
+  emit_rex(out, true, static_cast<X64Register>(extension), reg);
+  out.byte(0x83);
+  emit_modrm(out, 3, extension, reg);
+  out.byte(value);
+}
+
+void emit_test_immediate(CodeBuffer & out, X64Register reg, unsigned value)
+{
+  emit_rex(out, true, XR_RAX, reg);
+  out.byte(0xf7);
+  emit_modrm(out, 3, 0, reg);
+  out.little(value, 4);
+}
+
 }  // namespace lowir_native

@@ -224,8 +224,13 @@ To complete PA21, implement these goals:
    temporaries and remove them from later unwind snapshots. A temporary from an
    untaken throw branch must not appear in a sibling call's cleanup path.
    A pointer exception is caught by value (the runtime's begin-catch result is
-   the thrown pointer), so a handler declared as a reference to a pointer binds
-   to a copy of the caught pointer.
+   the thrown pointer, converted to the handler's type), so a handler declared
+   as a reference to a pointer binds to a copy of the caught pointer. A
+   pointer handler also matches a qualification conversion, a conversion to
+   an unambiguous public base at the first level, an object pointer as cv
+   `void*`, and `std::nullptr_t` (15.3p3); a class's type_info describes a
+   single base with `__si_class_type_info` only when that base is public,
+   non-virtual and at offset zero.
    Operandless `throw;` rethrows the dynamically handled exception, including
    from a called function or destructor. With no active exception it terminates
    at runtime; it does not require a lexical enclosing handler.

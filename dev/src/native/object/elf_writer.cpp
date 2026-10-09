@@ -8,6 +8,7 @@
 #include "native/analysis/data_layout.h"
 #include "native/eh/references.h"
 #include "native/eh/lowering.h"
+#include "native/eh/catch_matching.h"
 #include "native/frame/epilogue.h"
 #include "native/eh/host_regions.h"
 #include "native/encoding/integers.h"
@@ -1128,31 +1129,6 @@ bool emit_shared_return(
   return true;
 }
 
-void emit_compare_immediate(CodeBuffer & out, X64Register reg, unsigned value)
-{
-  emit_rex(out, true, XR_RAX, reg);
-  out.byte(0x83);
-  emit_modrm(out, 3, 7, reg);
-  out.byte(value);
-}
-
-void emit_immediate_alu(CodeBuffer & out, X64Register reg,
-                        unsigned extension, unsigned value)
-{
-  emit_rex(out, true, static_cast<X64Register>(extension), reg);
-  out.byte(0x83);
-  emit_modrm(out, 3, extension, reg);
-  out.byte(value);
-}
-
-void emit_test_immediate(CodeBuffer & out, X64Register reg, unsigned value)
-{
-  emit_rex(out, true, XR_RAX, reg);
-  out.byte(0xf7);
-  emit_modrm(out, 3, 0, reg);
-  out.little(value, 4);
-}
-
 void emit_indirect_transfer(CodeBuffer & out, X64Register reg, bool call)
 {
   emit_rex(out, true, call ? XR_RDX : XR_RSP, reg);
@@ -1232,40 +1208,22 @@ void emit_eh_catch(CodeBuffer & out,
   emit_load(out, XR_RAX, XR_R11, 0, 64);
   emit_test_register(out, XR_RAX);
   emit_condition_jump(out, XC_NE, done);
-  lowir_model::LocalLabelId exact;
-  const lowir_model::LocalLabelId selected =
-    out.internal_label("eh_catch_selected");
   if(instruction.operands.size() == 2) {
-    exact = out.internal_label("eh_catch_exact");
-    emit_symbol_move(out, XR_RAX, instruction.operands[1].symbol,
+    emit_symbol_move(out, XR_RSI, instruction.operands[1].symbol,
                      instruction.operands[1].address_binding);
     emit_symbol_move(out, XR_R11, kEhType);
-    emit_load(out, XR_RCX, XR_R11, 0, 64);
-    emit_register_alu(out, 0x39, XR_RCX, XR_RAX);
-    emit_condition_jump(out, XC_E, exact);
-    emit_symbol_move(out, XR_R11, kEhValue);
     emit_load(out, XR_RDI, XR_R11, 0, 64);
-    emit_register_move(out, XR_RSI, XR_RCX);
-    emit_register_move(out, XR_RDX, XR_RAX);
+    emit_symbol_move(out, XR_R11, kEhValue);
+    emit_load(out, XR_RDX, XR_R11, 0, 64);
     emit_stack_adjust(out, true, 8);
-    out.byte(0xe8); out.relative32(".__cppgm_dynamic_cast_find");
+    out.byte(0xe8); out.relative32(eh::kCatchMatcher);
     emit_stack_adjust(out, false, 8);
-    emit_test_register(out, XR_RAX);
-    emit_condition_jump(out, XC_E, done);
-    emit_immediate_move(out, XR_RCX, UINT64_MAX);
-    emit_register_alu(out, 0x39, XR_RAX, XR_RCX);
+    emit_test_register(out, XR_RDX);
     emit_condition_jump(out, XC_E, done);
   } else {
     emit_symbol_move(out, XR_R11, kEhValue);
     emit_load(out, XR_RAX, XR_R11, 0, 64);
   }
-  if(exact.valid()) {
-    emit_unconditional_jump(out, selected);
-    out.label(exact);
-    emit_symbol_move(out, XR_R11, kEhValue);
-    emit_load(out, XR_RAX, XR_R11, 0, 64);
-  }
-  out.label(selected);
   emit_symbol_move(out, XR_R11, kEhAdjusted);
   emit_store(out, XR_R11, 0, XR_RAX, 64);
   emit_symbol_move(out, XR_R11, kEhSelector);
@@ -2173,7 +2131,7 @@ void emit_abort_runtime(CodeBuffer & out)
   out.byte(0x0f); out.byte(0x05);
 }
 
-void emit_eh_begin_catch(CodeBuffer & out, lowir_model::SymbolId pointer_type)
+void emit_eh_begin_catch(CodeBuffer & out)
 {
   const auto linked = out.internal_label("eh_begin_catch_linked");
   const auto increment = out.internal_label("eh_begin_catch_increment");
@@ -2193,17 +2151,7 @@ void emit_eh_begin_catch(CodeBuffer & out, lowir_model::SymbolId pointer_type)
   emit_immediate_alu(out, XR_RCX, 0, 1);
   emit_store(out, XR_RDI, -8, XR_RCX, 64);
   emit_symbol_move(out, XR_R11, kEhAdjusted);
-  emit_load(out, XR_RAX, XR_R11, 0, 64);
-  if(pointer_type.valid()) { // Itanium 2.5.3: a thrown pointer is caught by value
-    const auto done = out.internal_label("eh_begin_catch_done");
-    emit_symbol_move(out, XR_R11, kEhType); emit_load(out, XR_RCX, XR_R11, 0, 64);
-    emit_test_register(out, XR_RCX); emit_condition_jump(out, XC_E, done);
-    emit_load(out, XR_RCX, XR_RCX, 0, 64);
-    emit_symbol_move(out, XR_RDX, pointer_type, mir_model::MirOperand::ADDRESS_PREEMPTIBLE);
-    emit_lea(out, XR_RDX, XR_RDX, 16); emit_register_alu(out, 0x39, XR_RCX, XR_RDX);
-    emit_condition_jump(out, XC_NE, done); emit_load(out, XR_RAX, XR_RAX, 0, 64);
-    out.label(done);
-  }
+  emit_load(out, XR_RAX, XR_R11, 0, 64); // the matcher's adjusted value
   out.byte(0xc3);
 }
 
@@ -2283,6 +2231,7 @@ void emit_eh_runtime(CodeBuffer & out, const mir_model::MirProgram & program)
     emit_eh_dispatch(out);
     emit_eh_resume(out, program.runtime_functions);
     emit_dynamic_cast_find(out, program.runtime_data);
+    eh::emit_catch_matcher(out, program.runtime_data);
   }
   for(std::size_t i = 0; i < program.runtime_functions.size(); ++i) {
     const mir_model::MirRuntimeFunction & runtime = program.runtime_functions[i];
@@ -2290,8 +2239,7 @@ void emit_eh_runtime(CodeBuffer & out, const mir_model::MirProgram & program)
     emit_runtime_labels(out, runtime);
     switch(runtime.kind) {
     case mir_model::RuntimeFunction::RF_EH_ALLOCATE: emit_eh_allocate(out); break;
-    case mir_model::RuntimeFunction::RF_EH_BEGIN_CATCH: emit_eh_begin_catch(out,
-      eh::runtime_data_symbol(program.runtime_data, mir_model::RuntimeData::RD_RTTI_POINTER)); break;
+    case mir_model::RuntimeFunction::RF_EH_BEGIN_CATCH: emit_eh_begin_catch(out); break;
     case mir_model::RuntimeFunction::RF_EH_END_CATCH: emit_eh_end_catch(out); break;
     case mir_model::RuntimeFunction::RF_EH_RETHROW: emit_eh_rethrow(out); break;
     case mir_model::RuntimeFunction::RF_EH_THROW: emit_eh_throw_runtime(out); break;
@@ -2339,7 +2287,8 @@ void emit_eh_data(CodeBuffer & out, const mir_model::MirProgram & program)
     out.label(program.runtime_data[i].symbol);
     if(program.runtime_data[i].object_symbol.valid())
       out.label_object(program.runtime_data[i].object_symbol);
-    out.zeros(32);
+    eh::emit_runtime_data_placeholder(out, program.runtime_data[i].object_symbol.valid() ?
+      out.strings().get(program.runtime_data[i].object_symbol) : std::string());
   }
 }
 

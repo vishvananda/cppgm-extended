@@ -292,7 +292,8 @@ To complete PA25, implement these goals:
 8. Source-driven runtime-program validation without host-library dependence.
    Exceptions in that runtime follow the Itanium model the host runtime
    implements; in particular a pointer exception is caught by value, so a
-   pointer handler receives the thrown pointer itself. The runtime also
+   pointer handler receives the thrown pointer, after any qualification,
+   public-base or `void*` conversion the handler's type requires. The runtime also
    provides `__dso_handle` and `__cxa_thread_atexit`, so the main thread's
    `thread_local` objects are destroyed at exit, before process-exit
    destructors, as the host C library does.
