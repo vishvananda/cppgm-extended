@@ -81,3 +81,29 @@ portable reference before packaging the student repository.
 CI also installs the bundle in a fresh client and exercises every exported
 reference wrapper. Publication repeats this check against the uploaded release
 URL before pushing the student repository.
+
+## Symbol names
+
+The course names C++ entities as clang names them: clang is the oracle for
+every mangled name, internal ones included, and GCC only a cross-check.
+LowIR comparison relaxes `object=` spellings, so a wrong name fails no LowIR
+fixture; check them against clang after changing ABI naming:
+
+```sh
+python3 scripts/check_clang_names.py --jobs 8
+python3 scripts/check_clang_names.py --verbose --strict pa20 pa21
+```
+
+The maintainer script compiles each C++ LowIR fixture's source with clang
+(`-std=c++11 -O0`, `--clang` or `CLANG` selects the compiler) and compares
+every symbol of the reference with clang's: a name spelled differently from
+clang's name for the same entity is reported (an internal-linkage marker, a
+closure or unnamed type, a local entity, an external name, or a LowIR
+spelling standing for a C++ entity). Which constructor and destructor entries
+a unit emits (C1/C2, CI1/CI2, D0/D1/D2) is an emission choice and is not
+judged, nor is a symbol clang does not emit. The script exits 1 when a
+mismatch is neither listed with its reason in the script's `DOCUMENTED`
+table nor a known residual: a signature whose clang spelling mangles an
+instantiation-dependent expression (decltype, an expression template
+argument or array bound) that the course does not retain yet. `--strict`
+fails on the residuals too and `--verbose` lists them.
