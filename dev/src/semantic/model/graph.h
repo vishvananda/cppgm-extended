@@ -1673,7 +1673,9 @@ struct LocalStaticObjectAction
 // The explicit parameters correspond to the member prefix ending at the last
 // non-omitted initializer.  `members` retains the complete declaration-order
 // plan so lowering can zero-initialize an omitted trailing scalar/array tail;
-// the hidden object parameter is already present in function_type.
+// the hidden object parameter is already present in function_type. No member
+// has class type, so a helper constructs and destroys no class object and
+// owns none of its arguments.
 struct AggregateHelperInfo
 {
 	EntityId entity;
@@ -1681,23 +1683,14 @@ struct AggregateHelperInfo
 	TypeId function_type;
 	std::uint32_t parameter_member_count;
 	std::vector<BindingId> members;
-	std::vector<BindingId> member_constructors;
-	std::vector<BindingId> member_destructors;
-	std::vector<std::uint8_t> trivial_member_constructors;
 
 	AggregateHelperInfo(EntityId entity_value, TypeId object_type_value,
 		TypeId function_type_value, std::uint32_t parameter_member_count_value,
-		const std::vector<BindingId>& members_value,
-		const std::vector<BindingId>& member_constructors_value,
-		const std::vector<BindingId>& member_destructors_value,
-		const std::vector<std::uint8_t>& trivial_member_constructors_value)
+		const std::vector<BindingId>& members_value)
 		: entity(entity_value), object_type(object_type_value),
 		  function_type(function_type_value),
 		  parameter_member_count(parameter_member_count_value),
-		  members(members_value),
-		  member_constructors(member_constructors_value),
-		  member_destructors(member_destructors_value),
-		  trivial_member_constructors(trivial_member_constructors_value) {}
+		  members(members_value) {}
 };
 
 // Borrowed, translation-unit-local view of the canonical PA7 graph.  The

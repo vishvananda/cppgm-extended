@@ -459,11 +459,7 @@ std::size_t Analyzer::ClassRecordStorageBytes() const
 	for (std::size_t i = 0; i < scope_lifetimes_.size(); ++i)
 		bytes += scope_lifetimes_[i].capacity() * sizeof(LifetimeObligation);
 	for (std::size_t i = 0; i < aggregate_helpers_.size(); ++i)
-		bytes += aggregate_helpers_[i].members.capacity() * sizeof(BindingId) +
-			aggregate_helpers_[i].member_constructors.capacity() *
-				sizeof(BindingId) +
-			aggregate_helpers_[i].trivial_member_constructors.capacity() *
-				sizeof(std::uint8_t);
+		bytes += aggregate_helpers_[i].members.capacity() * sizeof(BindingId);
 	return bytes;
 }
 

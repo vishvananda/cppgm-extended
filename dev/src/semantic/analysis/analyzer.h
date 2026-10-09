@@ -1413,10 +1413,7 @@ private:
 	std::uint32_t AggregateHelperIdentity(EntityId entity, TypeId type,
 		std::size_t parameter_member_count,
 		const std::vector<TypeId>& parameter_types,
-		const std::vector<BindingId>& members,
-		const std::vector<BindingId>& member_constructors,
-		const std::vector<BindingId>& member_destructors,
-		const std::vector<std::uint8_t>& trivial_member_constructors);
+		const std::vector<BindingId>& members);
 	ExpressionInfo AnalyzeNewExpression(NodeId node, ScopeId scope, TypeId target);
 	ExpressionInfo AnalyzeArrayNewExpression(NodeId node, NodeId type_node,
 		ScopeId scope, TypeId target);

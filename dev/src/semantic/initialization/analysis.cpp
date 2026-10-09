@@ -1722,10 +1722,7 @@ ExpressionInfo Analyzer::AnalyzeAggregateElement(TypeId type,
 std::uint32_t Analyzer::AggregateHelperIdentity(EntityId entity, TypeId type,
 	std::size_t parameter_member_count,
 	const std::vector<TypeId>& parameter_types,
-	const std::vector<BindingId>& members,
-	const std::vector<BindingId>& member_constructors,
-	const std::vector<BindingId>& member_destructors,
-	const std::vector<std::uint8_t>& trivial_member_constructors)
+	const std::vector<BindingId>& members)
 {
 	const EntityRecord& owner = program_->entities[entity];
 	std::vector<TypeId> boundary_types;
@@ -1746,8 +1743,7 @@ std::uint32_t Analyzer::AggregateHelperIdentity(EntityId entity, TypeId type,
 		helper = static_cast<std::uint32_t>(aggregate_helpers_.size());
 		aggregate_helpers_.push_back(AggregateHelperInfo(
 			entity, type, function_type,
-			static_cast<std::uint32_t>(parameter_member_count), members,
-			member_constructors, member_destructors, trivial_member_constructors));
+			static_cast<std::uint32_t>(parameter_member_count), members));
 		aggregate_helper_index_.Insert(key,
 			static_cast<BindingId>(helper));
 		const std::uint32_t previous =
@@ -1763,13 +1759,7 @@ std::uint32_t Analyzer::AggregateHelperIdentity(EntityId entity, TypeId type,
 		if (helper >= aggregate_helpers_.size() ||
 			aggregate_helpers_[helper].parameter_member_count !=
 				parameter_member_count ||
-			aggregate_helpers_[helper].members != members ||
-			aggregate_helpers_[helper].member_constructors !=
-				member_constructors ||
-			aggregate_helpers_[helper].member_destructors !=
-				member_destructors ||
-			aggregate_helpers_[helper].trivial_member_constructors !=
-				trivial_member_constructors)
+			aggregate_helpers_[helper].members != members)
 			ThrowInternalCompilerError("aggregate helper identity collision");
 	}
 	return helper;
@@ -1811,11 +1801,7 @@ std::uint32_t Analyzer::BuildAggregateConstructionAction(TypeId type,
 		const DumpNode& action = dump_.nodes[actions[i]];
 		if (action.kind != DUMP_INITIALIZER_ACTION || action.binding == kNoBinding)
 			ThrowInternalCompilerError("aggregate helper has invalid member action");
-		const BindingId member_destructor = DestructorForType(action.type);
-		const bool direct_omitted_class = action.value_initialization &&
-			member_destructor != kNoBinding &&
-			!IsElidableAutomaticDestructor(member_destructor);
-		if (action.first_edge != kNoDumpEdge && !direct_omitted_class)
+		if (action.first_edge != kNoDumpEdge)
 		{
 			if (dump_.edges[action.first_edge].next != kNoDumpEdge)
 				ThrowInternalCompilerError("aggregate helper member has multiple values");
@@ -1831,6 +1817,7 @@ std::uint32_t Analyzer::BuildAggregateConstructionAction(TypeId type,
 		// Class members must consume their original initialization actions at
 		// the destination. Passing staged values through a helper introduces
 		// extra transfers, and relocating an array breaks element identity.
+		// So a helper has no class member and owns none of its arguments.
 		if (element_kind != TYPE_LVALUE_REFERENCE &&
 			element_kind != TYPE_RVALUE_REFERENCE &&
 			IsClassEntity(*program_, EntityOf(element)))
@@ -1841,9 +1828,6 @@ std::uint32_t Analyzer::BuildAggregateConstructionAction(TypeId type,
 			"aggregate helper parameter prefix is too large");
 	std::vector<std::uint32_t> values;
 	std::vector<BindingId> members;
-	std::vector<BindingId> member_constructors;
-	std::vector<BindingId> member_destructors;
-	std::vector<std::uint8_t> trivial_member_constructors;
 	std::vector<TypeId> parameter_types;
 	const auto make_zero_value = [this](TypeId value_type) -> std::uint32_t
 	{
@@ -1861,9 +1845,6 @@ std::uint32_t Analyzer::BuildAggregateConstructionAction(TypeId type,
 	{
 		const DumpNode& action = dump_.nodes[actions[i]];
 		const TypeKind kind = program_->types.Get(program_->types.RemoveTopCv(action.type)).kind;
-		const bool class_member = kind != TYPE_LVALUE_REFERENCE &&
-			kind != TYPE_RVALUE_REFERENCE &&
-			IsClassEntity(*program_, EntityOf(action.type));
 		if (kind == TYPE_ARRAY && allow_array_members)
 		{
 			if (action.first_edge == kNoDumpEdge)
@@ -1887,68 +1868,9 @@ std::uint32_t Analyzer::BuildAggregateConstructionAction(TypeId type,
 			if (action.first_edge != kNoDumpEdge)
 				value = dump_.edges[action.first_edge].child;
 			else value = make_zero_value(action.type);
-			const TypeId adjusted = AdjustParameterType(action.type);
-			parameter_types.push_back(adjusted);
-			ExpressionInfo argument;
-			argument.node = value;
-			argument.type = dump_.nodes[value].type;
-			argument.category = dump_.nodes[value].category;
-			argument.binding = dump_.nodes[value].binding;
-			if (class_member)
-			{
-				argument.type = action.type;
-				argument.category = VALUE_PRVALUE;
-			}
-			values.push_back(class_member ?
-				ApplyCallArgument(argument, adjusted).node : value);
+			parameter_types.push_back(AdjustParameterType(action.type));
+			values.push_back(value);
 		}
-		BindingId constructor = kNoBinding, destructor = kNoBinding;
-		if (class_member)
-		{
-			const EntityId member_entity = EntityOf(action.type);
-			const BindingId member_destructor =
-				DestructorForType(action.type);
-			const bool direct_omitted_class = action.value_initialization &&
-				member_destructor != kNoBinding &&
-				!IsElidableAutomaticDestructor(member_destructor);
-			constructor = direct_omitted_class &&
-				action.first_edge != kNoDumpEdge ?
-				dump_.nodes[dump_.edges[action.first_edge].child].binding :
-				ConstructorForSubobject(
-					action.type, SPECIAL_MEMBER_MOVE_CONSTRUCTOR);
-			if (constructor == kNoBinding ||
-				GetFunction(constructor).deleted_constructor ||
-				GetFunction(constructor).deleted_special_member)
-				ThrowSemanticError(
-					"aggregate member has no usable value constructor");
-			if (!GetFunction(constructor).trivial_special_member)
-			{
-				if (!GetFunction(constructor).defined)
-					GetMutableFunction(constructor).deferred = true;
-				DemandFunction(constructor);
-				// The helper's call to this constructor is written during
-				// lowering, so no call in the graph names it and it would be
-				// left without a symbol however often it is demanded.  Name it
-				// here, where the decision to call it is made.
-				MakeDump(DUMP_CALLEE, program_->bindings[constructor].type,
-					VALUE_NONE, 0, constructor);
-			}
-			if (!program_->entities[member_entity].trivial_destructor)
-			{
-				destructor = DestructorForType(action.type);
-				if (destructor == kNoBinding || GetFunction(destructor).deleted_destructor ||
-					!CanAccessMember(destructor, member_entity))
-					ThrowSemanticError(
-						"aggregate member is not destructible");
-				if (!GetFunction(destructor).defined)
-					GetMutableFunction(destructor).deferred = true;
-				DemandFunction(destructor);
-			}
-		}
-		member_constructors.push_back(constructor);
-		member_destructors.push_back(destructor);
-		trivial_member_constructors.push_back(constructor != kNoBinding &&
-			GetFunction(constructor).trivial_special_member ? 1 : 0);
 	}
 	if (members.empty()) return aggregate_list;
 	if (entity >= widest_aggregate_helper_by_entity_.size())
@@ -1959,10 +1881,7 @@ std::uint32_t Analyzer::BuildAggregateConstructionAction(TypeId type,
 		if (widest >= aggregate_helpers_.size())
 			ThrowInternalCompilerError("aggregate helper owner index is invalid");
 		const AggregateHelperInfo& prior = aggregate_helpers_[widest];
-		if (prior.members != members ||
-			prior.member_constructors != member_constructors ||
-			prior.member_destructors != member_destructors ||
-			prior.trivial_member_constructors != trivial_member_constructors)
+		if (prior.members != members)
 			ThrowInternalCompilerError("aggregate helper owner plan changed");
 		if (prior.parameter_member_count > parameter_member_count)
 		{
@@ -1982,8 +1901,7 @@ std::uint32_t Analyzer::BuildAggregateConstructionAction(TypeId type,
 		}
 	}
 	const std::uint32_t helper = AggregateHelperIdentity(entity, type,
-		parameter_member_count, parameter_types, members, member_constructors,
-		member_destructors, trivial_member_constructors);
+		parameter_member_count, parameter_types, members);
 	const std::uint32_t call = MakeDump(
 		DUMP_AGGREGATE_CONSTRUCTION_ACTION, type, VALUE_NONE);
 	dump_.nodes[call].aggregate_helper = helper;
