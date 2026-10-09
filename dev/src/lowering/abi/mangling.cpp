@@ -2460,7 +2460,6 @@ void AppendLocalFunctionOwner(const semantic::Program& program,
 		ABI_LOCAL_PRESENTATION_NAME_ORDINAL;
 	local.function.type.resolved_expression = owner.lambda_closure ? 0 :
 		owner.local_name_ordinal;
-	local.function.discriminator_after_terminal = !owner.unnamed_class;
 	AppendTypedFact(fact_case, &local);
 	AppendComponentAbiTagFacts(program, owner, context, fact_case);
 }

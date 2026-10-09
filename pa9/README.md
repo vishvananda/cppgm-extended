@@ -233,7 +233,12 @@ followed by normalized component lines. Template-id components use
 `function-template-arg <arg-ref>`, with `function-template-prefix <key>` when
 the function-template prefix is substitutable; local entities use
 `local-context ...` or `lambda-context ...` followed by the same terminal,
-qualifier, result, and parameter lines as ordinary functions.
+qualifier, result, and parameter lines as ordinary functions. A local entity's
+discriminator (the occurrence operand of `local-context`) follows its whole
+entity name, after a member terminal: the destructor of a function's third
+local class `Local` is `...EN5LocalD1E_1v`, not `...EN5Local_1D1Ev`. A member
+template used as a template-template argument is one substitution candidate,
+entered after its owner specialization, so a repeated use is that substitution.
 
 Namespace-scope lambda closure types use
 `type namespace-lambda <source-name> [namespace-qualifier...]`. Their call

@@ -1773,25 +1773,20 @@ private:
 
   void encode_member_template_argument(const ArgumentNode & argument)
   {
-    output_ += 'N';
-    const TypeNode & owner = graph_.type(argument.owner_type);
-    if(owner.kind == ABI_TYPE_TEMPLATE_SPECIALIZATION) {
-      const vector<size_t> components = graph_.paths.components(owner.path);
-      const vector<size_t> prefixes = graph_.paths.prefixes(owner.path);
-      encode_template_prefix(owner.path, components, prefixes, owner.tags);
-      output_ += 'I'; encode_arguments(owner.arguments); output_ += 'E';
-    } else {
-      encode_prefix_type(argument.owner_type);
-    }
+    // A member template named as a template-template argument is one
+    // <template-prefix> candidate (Itanium 5.1.10): a repeated use is its
+    // substitution alone, and its first use enters the owner specialization
+    // and then the member template itself.
     const SubstitutionKey member_key{
       argument.substitution != NO_ID && argument.substitution_resolved ?
         SUBSTITUTION_RESOLVED : SUBSTITUTION_EXPLICIT,
       argument.substitution != NO_ID ? argument.substitution : argument.name
     };
-    if(!substitutions_.emit_if_known(member_key, output_)) {
-      output_ += source_name(graph_.strings.get(argument.name));
-      substitutions_.add(member_key);
-    }
+    if(substitutions_.emit_if_known(member_key, output_)) return;
+    output_ += 'N';
+    encode_prefix_type(argument.owner_type);
+    output_ += source_name(graph_.strings.get(argument.name));
+    substitutions_.add(member_key);
     output_ += 'E';
   }
 
@@ -2501,9 +2496,6 @@ private:
     } else if(!facts.lambda) {
       output_ += source_name(local_name);
       emit_tags(component_tags(facts, &local));
-      if(!local.discriminator_after_terminal)
-        output_ += text_presentation ? discriminator(local.discriminator) :
-          local_discriminator(ordinal);
     }
     if(facts.terminal) {
       emit_function_terminal(nullptr, facts, true, facts.parameters.size());
@@ -2517,7 +2509,10 @@ private:
       output_ += 'I'; encode_arguments(facts.template_arguments); output_ += 'E';
     }
     output_ += 'E';
-    if(local.discriminator_after_terminal)
+    // Itanium 5.1.6: a local name's discriminator follows the whole entity
+    // name, so a member of the second local class `Local` is
+    // `Z<encoding>EN5Local3runE_0`, not `N5Local_03runE`.
+    if(!facts.lambda && !local_name.empty())
       output_ += text_presentation ? discriminator(local.discriminator) :
         local_discriminator(ordinal);
     if(!facts.template_arguments.empty() && !facts.result_types.empty())
