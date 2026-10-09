@@ -157,7 +157,10 @@ protected:
 		else if (record.kind == DUMP_LITERAL)
 		{
 			const LowType type = derived.LowerType(record.type);
-			if (record.null_member_pointer_constant ||
+			if (record.null_member_pointer_constant &&
+				derived.program_.IsDataMemberPointer(record.type))
+				result = Operand(-1, type);
+			else if (record.null_member_pointer_constant ||
 				(type.kind == LOW_PTR && record.constant &&
 				 record.constant_value == 0 && record.value_initialization))
 				result = Operand::NullPointer(type);
@@ -291,7 +294,8 @@ protected:
 			result = derived.LowerConditional(node, record, children);
 		else if (record.kind == DUMP_BRACED_INIT_LIST)
 		{
-			if (children.empty()) result = Operand(0, derived.LowerType(record.type));
+			if (children.empty())
+				result = derived.ZeroScalarValue(record.type, derived.LowerType(record.type));
 			else if (children.size() == 1) result = derived.LowerValue(children[0],
 				derived.LowerExpressionType(record.type));
 			else ThrowLoweringSource("scalar initializer has excess elements");

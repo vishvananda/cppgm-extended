@@ -37,7 +37,6 @@ function @member_base_record__int__record__id___operator__(%this : ptr [object_b
     store typed ptr %this, $this
     store typed ptr %x, $x
     %t1 = load typed ptr $x
-    %t2 = binary sub i64 1, 1
-    %t3 = index i8 [projection=field] %t1, %t2
-    return ptr %t3
+    %t2 = index i8 [projection=field] %t1, 0
+    return ptr %t2
 }

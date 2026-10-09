@@ -487,11 +487,7 @@ protected:
 			if (!values.empty())
 				store.first = derived.Convert(
 					derived.LowerValue(values[0]), store.type);
-			else if (store.type.kind == LOW_PTR)
-				store.first = Operand::NullPointer(store.type);
-			else if (IsFloating(store.type))
-				store.first = derived.FloatingOperand("0.0", store.type);
-			else store.first = Operand(0, store.type);
+			else store.first = derived.ZeroScalarValue(action.type, store.type);
 		}
 		store.second = destination;
 		if (derived.program_.bindings[action.binding].bit_field)
@@ -647,11 +643,7 @@ protected:
 					ThrowLoweringInternal(
 						"scalar brace initialization has many values");
 				if (values.empty())
-					store.first = store.type.kind == LOW_PTR ?
-						Operand::NullPointer(store.type) :
-						IsFloating(store.type) ?
-						derived.FloatingOperand("0.0", store.type) :
-						Operand(0, store.type);
+					store.first = derived.ZeroScalarValue(action.type, store.type);
 				else
 				{
 					const Operand initial = derived.LowerValue(values[0]);

@@ -180,6 +180,13 @@ To complete PA22, implement these goals:
    adjustment so `.*` and `->*` lower through the correct object address.
    Their contextual conversion to `bool` must distinguish a non-null target from a null
    member pointer without treating the adjustment word as an independent truth value.
+   A data member pointer uses the Itanium C++ ABI representation (2.3), so its values
+   cross object boundaries with host-compiled code: the member's byte offset in its
+   class (`&S::m` is 0 for a first member), and -1 for null. Null constants,
+   value-initialization and zero-initialization of objects that contain data member
+   pointers (static storage included) produce -1; a base-to-derived or derived-to-base
+   conversion adjusts only a non-null value; comparison with null and contextual
+   conversion to `bool` test against -1; `.*` and `->*` add the offset unchanged.
 
 5. Remaining single-vptr RTTI case.
    `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI

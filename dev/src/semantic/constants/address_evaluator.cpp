@@ -369,8 +369,9 @@ bool Analyzer::ExpressionTruth(
 {
 	const TypeRecord type = program_->types.Get(program_->types.RemoveTopCv(
 		EffectiveType(expression.type)));
+	// A null member pointer names no member.
 	if (type.kind == TYPE_MEMBER_POINTER)
-		return expression.binding != kNoBinding || expression.value != 0;
+		return expression.binding != kNoBinding;
 	const ConstexprAddressValue* address =
 		ConstexprAddressAt(ExpressionAddress(expression));
 	return address ? address->kind != CONSTEXPR_ADDRESS_NULL :

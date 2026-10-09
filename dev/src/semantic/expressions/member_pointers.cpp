@@ -156,8 +156,7 @@ bool Analyzer::ApplyMemberPointerTarget(
 	if (from.kind == TYPE_MEMBER_POINTER &&
 		target == program_->types.Fundamental(FUND_BOOL) && value->constant)
 		SetExpressionScalar(value, ConstexprScalarValue(
-			static_cast<std::int64_t>(
-				value->binding != kNoBinding || value->value != 0)));
+			static_cast<std::int64_t>(value->binding != kNoBinding)));
 	if (to.kind != TYPE_MEMBER_POINTER) return false;
 	if (value->integer_literal_zero || IsNullptr(source))
 	{
@@ -168,8 +167,10 @@ bool Analyzer::ApplyMemberPointerTarget(
 		dump_.nodes[value->node].category = VALUE_PRVALUE;
 		dump_.nodes[value->node].null_member_pointer_constant =
 			IsNullptr(source);
-		SetExpressionScalar(value, ConstexprScalarValue(
-			kNoBinding, static_cast<std::int64_t>(0)));
+		// Itanium C++ ABI 2.3: a null data member pointer is -1, a null
+		// member function pointer has a null function word.
+		SetExpressionScalar(value, ConstexprScalarValue(kNoBinding,
+			static_cast<std::int64_t>(program_->types.IsFunction(to.child) ? 0 : -1)));
 		return true;
 	}
 	if (from.kind != TYPE_MEMBER_POINTER) return false;
@@ -265,15 +266,15 @@ bool Analyzer::FormMemberPointerAddress(
 	if (adjustment > static_cast<std::uint64_t>(
 			std::numeric_limits<std::int64_t>::max()) ||
 		member_offset > static_cast<std::uint64_t>(
-			std::numeric_limits<std::int64_t>::max()) - adjustment -
-			(member.non_static_data_member ? 1 : 0))
+			std::numeric_limits<std::int64_t>::max()) - adjustment)
 		ThrowSemanticResourceLimit("member pointer offset is too large");
 	*result_type = shape;
 	*constant = true;
 	*selected = member.canonical;
-	*scalar = ConstexprScalarValue(*selected, member.non_static_data_member ?
-		static_cast<std::int64_t>(adjustment + member_offset + 1) :
-		static_cast<std::int64_t>(adjustment));
+	// Itanium C++ ABI 2.3: a data member pointer is the member's byte offset
+	// in the class; a member function pointer's constant is its adjustment.
+	*scalar = ConstexprScalarValue(*selected,
+		static_cast<std::int64_t>(adjustment + member_offset));
 	return true;
 }
 
@@ -457,12 +458,13 @@ bool Analyzer::TryAnalyzeMemberPointerApplication(
 				const ConstexprObjectElement* element =
 					ConstexprClassMemberAt(object_value, selected);
 				if (element) SetExpressionObjectElement(result, *element);
-				if (has_pointer_value && pointer_value.integral > 0 &&
+				if (has_pointer_value &&
+					pointer_value.member_pointer != kNoBinding &&
 					object_address != kNoConstexprAddress)
 				{
 					const std::uint32_t member_address = OffsetConstexprAddress(
 						object_address,
-						pointer_value.integral - 1, true,
+						pointer_value.integral, true,
 						static_cast<std::int64_t>(program_->SizeOf(
 							EffectiveType(member.type))));
 					if (member_address != kNoConstexprAddress)

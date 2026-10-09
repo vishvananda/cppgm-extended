@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $tmpobj__2
     %t6 = addr $argobj__3
     %t7 = addr $_1
-    %t8 = const i64 1
+    %t8 = const i64 0
     %t9 = call obj<8x8> @operator___($argobj__3, %t8)
     copyobj 8x8 %t9, %t5
     %t10 = addr $s
@@ -63,8 +63,7 @@ function @DataMemberLambda__operator__(%this : ptr [object_bytes=8], %object : p
     %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed i64 %t3
-    %t5 = binary sub i64 %t4, 1
-    %t6 = index i8 [projection=field] %t1, %t5
-    %t7 = load typed i32 %t6
-    return i32 %t7
+    %t5 = index i8 [projection=field] %t1, %t4
+    %t6 = load typed i32 %t5
+    return i32 %t6
 }

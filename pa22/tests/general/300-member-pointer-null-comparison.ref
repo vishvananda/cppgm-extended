@@ -6,14 +6,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     store typed i128 nullptr, $fn
-    store typed i64 nullptr, $field
+    store typed i64 -1, $field
     %t1 = load typed i128 $fn
     %t2 = cmp eq i128 %t1, nullptr
     branch %t2, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t3 = load typed i64 $field
-    %t4 = cmp eq i64 %t3, nullptr
+    %t4 = cmp eq i64 %t3, -1
     %t5 = cmp ne i64 %t4, 0
     store typed i64 %t5, $land__2
     jump ^land_end_6

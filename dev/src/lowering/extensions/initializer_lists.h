@@ -468,9 +468,7 @@ protected:
 		Instruction store(Instruction::STORE);
 		store.type = derived.LowerExpressionType(type);
 		store.volatile_access = derived.TypeIsVolatile(type);
-		store.first = store.type.kind == LOW_PTR ?
-			Operand::NullPointer(store.type) : IsFloating(store.type) ?
-			derived.FloatingOperand("0.0", store.type) : Operand(0, store.type);
+		store.first = derived.ZeroScalarValue(type, store.type);
 		store.second = destination;
 		derived.Emit(store);
 	}

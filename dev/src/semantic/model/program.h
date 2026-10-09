@@ -462,6 +462,18 @@ struct VirtualBaseLayout
 		: entity(entity_), offset(offset_) {}
 };
 
+// Data member pointers inside an object that zero-initialization sets to
+// null, which the Itanium C++ ABI (2.3) represents as -1: `count` of them,
+// `stride` bytes apart, the first at `offset`.
+struct NullMemberPointerRun
+{
+	std::uint64_t offset, stride, count;
+
+	NullMemberPointerRun(std::uint64_t offset_ = 0, std::uint64_t stride_ = 8,
+		std::uint64_t count_ = 1)
+		: offset(offset_), stride(stride_), count(count_) {}
+};
+
 enum EntityEmissionNameForm : std::uint8_t
 {
 	ENTITY_EMISSION_TERMINAL,
@@ -523,6 +535,9 @@ struct EntityRecord
 	// describe (st0, a whole xmm).
 	std::uint8_t sysv_quarters;
 	bool sysv_memory, sysv_unmodeled;
+	// The null data member pointers of the class's non-virtual part, a span
+	// of Program::null_member_pointer_runs.
+	std::uint32_t null_member_pointer_begin, null_member_pointer_count;
 	union
 	{
 		std::uint32_t local_name_ordinal;
@@ -944,6 +959,11 @@ public:
 	NameId EmissionNameOfScope(ScopeId scope) const;
 	EntityId EntityForScope(ScopeId scope) const;
 	std::size_t SizeOf(TypeId type) const;
+	bool IsDataMemberPointer(TypeId type) const;
+	// The null data member pointers of a complete object of `type`, `base`
+	// bytes into the enclosing object.
+	void AppendNullMemberPointerRuns(TypeId type, std::uint64_t base,
+		std::vector<NullMemberPointerRun>* runs) const;
 	std::size_t AlignOf(TypeId type) const;
 	// Itanium C++ ABI 2.7: an array cookie occupies max(sizeof(size_t),
 	// alignof(element)) bytes; the count is in its last eight.
@@ -970,6 +990,7 @@ public:
 	std::vector<EntityRecord> entities;
 	std::vector<DirectBaseEdge> direct_bases;
 	std::vector<VirtualBaseLayout> virtual_bases;
+	std::vector<NullMemberPointerRun> null_member_pointer_runs;
 	std::vector<NameId> abi_tags;
 	std::vector<BindingRecord> bindings;
 	std::vector<TypeId> function_exception_types;

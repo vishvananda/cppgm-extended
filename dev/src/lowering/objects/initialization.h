@@ -231,8 +231,116 @@ protected:
 		return derived.program_.entities[record.entity].trivial_default_constructor;
 	}
 
+	// The zero-initialized value of a scalar of `type` (8.5p5): a null
+	// pointer, 0.0, -1 for a null data member pointer (Itanium C++ ABI 2.3),
+	// otherwise zero.
+	Operand ZeroScalarValue(TypeId type, const LowType& low)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (low.kind == LOW_PTR) return Operand::NullPointer(low);
+		if (IsFloating(low)) return derived.FloatingOperand("0.0", low);
+		return Operand(derived.program_.IsDataMemberPointer(type) ? -1 : 0, low);
+	}
+
+	// Zero-initialization (8.5p5): zero bits, except that a null data member
+	// pointer is -1 (Itanium C++ ABI 2.3).
 	void EmitZeroInitialization(TypeId type, const Operand& destination,
 		BindingId member = kNoBinding)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		EmitZeroBits(type, destination, member);
+		std::vector<NullMemberPointerRun> runs;
+		derived.program_.AppendNullMemberPointerRuns(type, 0, &runs);
+		EmitNullMemberPointerRuns(runs, destination);
+	}
+
+	void EmitNullMemberPointerRuns(const std::vector<NullMemberPointerRun>& runs,
+		const Operand& destination)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		for (std::size_t i = 0; i < runs.size(); ++i)
+		{
+			const NullMemberPointerRun& run = runs[i];
+			if (run.count <= 16)
+			{
+				for (std::uint64_t at = 0; at < run.count; ++at)
+				{
+					Instruction store(Instruction::STORE);
+					store.type = LowI64();
+					store.first = Operand(-1, LowI64());
+					store.second = derived.IndexAddress(LowI8(), destination,
+						Operand(static_cast<std::int64_t>(run.offset + at * run.stride),
+							LowI64()), false);
+					derived.Emit(store);
+				}
+				continue;
+			}
+			EmitNullMemberPointerLoop(run, destination,
+				Operand(static_cast<std::int64_t>(run.count), LowI64()));
+		}
+	}
+
+	// Stores -1 into `count` data member pointers `run.stride` bytes apart.
+	void EmitNullMemberPointerLoop(const NullMemberPointerRun& run,
+		const Operand& destination, const Operand& count)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const Operand index(derived.CreateGeneratedSlot(
+			"null_member_index", LowI64()), LowI64());
+		const BlockId condition = derived.AddBlock(derived.NewLabel("null_member_cond"));
+		const BlockId body = derived.AddBlock(derived.NewLabel("null_member_body"));
+		const BlockId end = derived.AddBlock(derived.NewLabel("null_member_end"));
+		Instruction initialize(Instruction::STORE);
+		initialize.type = LowI64();
+		initialize.first = Operand(0, LowI64());
+		initialize.second = index;
+		derived.Emit(initialize);
+		derived.EmitJump(condition);
+		derived.SelectBlock(condition);
+		const Operand current = derived.LoadStorage(index, LowI64());
+		const Operand more = derived.Temp(LowI64());
+		Instruction compare(Instruction::CMP);
+		compare.dest = more.id;
+		compare.op = LOW_OP_ULT;
+		compare.type = LowI64();
+		compare.first = current;
+		compare.second = count;
+		derived.Emit(compare);
+		derived.EmitBranch(more, body, end);
+		derived.SelectBlock(body);
+		const Operand scaled = derived.Temp(LowI64());
+		Instruction scale(Instruction::BINARY);
+		scale.dest = scaled.id;
+		scale.op = LOW_OP_MUL;
+		scale.type = LowI64();
+		scale.first = current;
+		scale.second = Operand(static_cast<std::int64_t>(run.stride), LowI64());
+		derived.Emit(scale);
+		const Operand element = derived.IndexAddress(LowI8(), destination, scaled, false);
+		Instruction store(Instruction::STORE);
+		store.type = LowI64();
+		store.first = Operand(-1, LowI64());
+		store.second = run.offset == 0 ? element : derived.IndexAddress(LowI8(),
+			element, Operand(static_cast<std::int64_t>(run.offset), LowI64()), false);
+		derived.Emit(store);
+		const Operand next = derived.Temp(LowI64());
+		Instruction increment(Instruction::BINARY);
+		increment.dest = next.id;
+		increment.op = LOW_OP_ADD;
+		increment.type = LowI64();
+		increment.first = current;
+		increment.second = Operand(1, LowI64());
+		derived.Emit(increment);
+		Instruction save(Instruction::STORE);
+		save.type = LowI64();
+		save.first = next;
+		save.second = index;
+		derived.Emit(save);
+		derived.EmitJump(condition);
+		derived.SelectBlock(end);
+	}
+
+	void EmitZeroBits(TypeId type, const Operand& destination, BindingId member)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (member != kNoBinding &&
@@ -1044,11 +1152,7 @@ protected:
 				{
 					store.type = derived.LowerExpressionType(action.type);
 					store.first = values.empty() ?
-						(store.type.kind == LOW_PTR ?
-							Operand::NullPointer(store.type) :
-						 IsFloating(store.type) ?
-							derived.FloatingOperand("0.0", store.type) :
-							Operand(0, store.type)) :
+						ZeroScalarValue(action.type, store.type) :
 						derived.LowerConvertedValue(values[0], store.type, false);
 				}
 				Operand destination = derived.AddressOfStorage(derived.StorageFor(object,
@@ -1321,12 +1425,9 @@ protected:
 				store.first = derived.LowerConvertedValue(values[0], store.type, IsInteger(source) &&
 					IsInteger(store.type) && source.is_signed == store.type.is_signed);
 			}
-			else if (store.type.kind == LOW_PTR)
-				store.first = Operand::NullPointer(store.type);
-			else if (IsFloating(store.type))
-				store.first = derived.FloatingOperand("0.0", store.type);
-			else if (IsInteger(store.type))
-				store.first = Operand(0, store.type);
+			else if (store.type.kind == LOW_PTR || IsFloating(store.type) ||
+				IsInteger(store.type))
+				store.first = ZeroScalarValue(action.type, store.type);
 			else ThrowLoweringSource(
 				"aggregate leaf requires unsupported construction");
 		}

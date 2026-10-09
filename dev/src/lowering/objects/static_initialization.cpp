@@ -288,6 +288,39 @@ void StaticInitializerLowering::AppendZero(std::size_t bytes,
 	items->push_back(zero);
 }
 
+// A zero-initialized object of `type` (8.5p5): zero bytes, except that each
+// null data member pointer is -1 (Itanium C++ ABI 2.3).
+void StaticInitializerLowering::AppendZeroObject(TypeId type,
+	std::vector<Global::DataItem>* items)
+{
+	std::vector<NullMemberPointerRun> runs;
+	program_.AppendNullMemberPointerRuns(type, 0, &runs);
+	const std::size_t size = program_.SizeOf(type);
+	if (runs.empty())
+	{
+		AppendZero(size, items);
+		return;
+	}
+	std::vector<std::uint64_t> offsets;
+	for (std::size_t i = 0; i < runs.size(); ++i)
+		for (std::uint64_t at = 0; at < runs[i].count; ++at)
+			offsets.push_back(runs[i].offset + at * runs[i].stride);
+	std::sort(offsets.begin(), offsets.end());
+	std::uint64_t cursor = 0;
+	for (std::size_t i = 0; i < offsets.size(); ++i)
+	{
+		AppendZero(static_cast<std::size_t>(offsets[i] - cursor), items);
+		Global::DataItem null;
+		null.kind = Global::DataItem::INTEGER_ITEM;
+		null.type = LowI64();
+		null.integer_value = -1;
+		null.integer_high = ~std::uint64_t(0);
+		items->push_back(null);
+		cursor = offsets[i] + 8;
+	}
+	AppendZero(size - static_cast<std::size_t>(cursor), items);
+}
+
 bool StaticInitializerLowering::AppendValue(TypeId type, std::uint32_t node,
 	std::vector<Global::DataItem>* items,
 	const std::vector<std::pair<BindingId, std::uint32_t> >* substitutions,
@@ -315,9 +348,9 @@ bool StaticInitializerLowering::AppendValue(TypeId type, std::uint32_t node,
 				const LowType element = types_.LowerExpression(type_record.child);
 				const TypeRecord& child = program_.types.Get(
 					types_.RemoveTopQualifiers(type_record.child));
-				if (child.kind == TYPE_ARRAY ||
-					types_.IsClassObject(type_record.child) || element.kind == LOW_PTR)
-					AppendZero(program_.SizeOf(type_record.child), items);
+				if (child.kind == TYPE_ARRAY || types_.IsClassObject(type_record.child) ||
+					element.kind == LOW_PTR || program_.IsDataMemberPointer(type_record.child))
+					AppendZeroObject(type_record.child, items);
 				else
 				{
 					Global::DataItem zero;
@@ -381,7 +414,7 @@ bool StaticInitializerLowering::AppendValue(TypeId type, std::uint32_t node,
 						&zero.integer_high);
 					items->push_back(zero);
 				}
-				else AppendZero(program_.SizeOf(action.type), items);
+				else AppendZeroObject(action.type, items);
 			}
 			else if (values.size() != 1 ||
 				!AppendValue(action.type, values[0], items, substitutions, false))
@@ -401,7 +434,7 @@ bool StaticInitializerLowering::AppendValue(TypeId type, std::uint32_t node,
 		const NodeChildren values = Children(node);
 		if (values.empty())
 		{
-			AppendZero(program_.SizeOf(type), items);
+			AppendZeroObject(type, items);
 			return true;
 		}
 		if (values.size() != 1) return false;
@@ -573,7 +606,7 @@ bool StaticInitializerLowering::AppendConstructorValue(TypeId type,
 		if (layout.member_offset < cursor) return false;
 		AppendZero(static_cast<std::size_t>(layout.member_offset) - cursor, items);
 		const NodeChildren values = Children(actions[i]);
-		if (values.empty()) AppendZero(program_.SizeOf(member_action.type), items);
+		if (values.empty()) AppendZeroObject(member_action.type, items);
 		else if (values.size() != 1 ||
 			!AppendValue(member_action.type, values[0], items, &substitutions))
 			return false;
@@ -596,14 +629,14 @@ void StaticInitializerLowering::SetZero(TypeId type, Global* global)
 	}
 	const TypeRecord& record = program_.types.Get(types_.ExpressionObject(type));
 	if (record.kind != TYPE_ARRAY && !types_.IsClassObject(type) &&
-		global->type.kind != LOW_OBJECT)
+		global->type.kind != LOW_OBJECT && !program_.IsDataMemberPointer(type))
 	{
 		global->initializer_kind = Global::ZERO;
 		return;
 	}
 	global->initializer_kind = Global::STRUCTURED_VALUE;
 	global->items.clear();
-	AppendZero(program_.SizeOf(type), &global->items);
+	AppendZeroObject(type, &global->items);
 }
 
 bool StaticInitializerLowering::LowerConstantObject(TypeId type,

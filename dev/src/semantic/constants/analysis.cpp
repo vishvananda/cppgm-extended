@@ -191,9 +191,10 @@ void Analyzer::RecordExpressionFacts(const ExpressionInfo& value)
 		value.constexpr_object == kNoConstexprObject &&
 		(value.constexpr_address == kNoConstexprAddress || null_address))
 	{
-		node.constant_value = null_address ? 0 : value.value;
-		node.constant_high = null_address ? 0 :
-			ExpressionScalar(value).integral_high;
+		const ConstexprScalarValue scalar = ExpressionScalar(value);
+		node.constant_value = null_address ? 0 :
+			IsMemberPointer(value.type) ? scalar.integral : value.value;
+		node.constant_high = null_address ? 0 : scalar.integral_high;
 	}
 }
 

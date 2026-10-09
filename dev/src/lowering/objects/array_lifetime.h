@@ -830,6 +830,11 @@ protected:
 			derived.Emit(remaining);
 			EmitArrayZeroInitialization(list, derived.IndexAddress(LowI8(),
 				user_pointer, Operand(listed_bytes, LowI64()), false), tail_size);
+			if (ArrayElementHasNullMemberPointers(record))
+				EmitArrayNullMemberPointers(record, user_pointer,
+					listed_bytes / static_cast<std::int64_t>(
+						derived.program_.SizeOf(record.operand_type)),
+					EmitArrayCount(record, byte_size));
 			if (construction != kNoDumpEdge)
 				EmitArrayTailConstruction(record, construction, user_pointer,
 					listed_bytes / static_cast<std::int64_t>(
@@ -840,6 +845,65 @@ protected:
 		derived.PauseFullExpressionCleanupSegment();
 		derived.RetainConstructionTemporaries(previous);
 		if (owns_cleanup) derived.CompleteFullExpressionCleanup();
+	}
+
+	// Zero-initialized elements [first, count) of a new array hold null data
+	// member pointers, which are -1 (Itanium C++ ABI 2.3), not zero bits.
+	bool ArrayElementHasNullMemberPointers(const DumpNode& record) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		std::vector<NullMemberPointerRun> runs;
+		derived.program_.AppendNullMemberPointerRuns(record.operand_type, 0, &runs);
+		return !runs.empty();
+	}
+
+	void EmitArrayNullMemberPointers(const DumpNode& record,
+		const Operand& user_pointer, std::int64_t first, const Operand& count)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		std::vector<NullMemberPointerRun> runs;
+		derived.program_.AppendNullMemberPointerRuns(record.operand_type, 0, &runs);
+		if (runs.empty()) return;
+		const Operand index(derived.CreateGeneratedSlot(
+			"null_member_element", LowI64()), LowI64());
+		const BlockId condition = derived.AddBlock(derived.NewLabel("null_member_cond"));
+		const BlockId body = derived.AddBlock(derived.NewLabel("null_member_body"));
+		const BlockId end = derived.AddBlock(derived.NewLabel("null_member_end"));
+		Instruction initialize(Instruction::STORE);
+		initialize.type = LowI64();
+		initialize.first = Operand(first, LowI64());
+		initialize.second = index;
+		derived.Emit(initialize);
+		derived.EmitJump(condition);
+		derived.SelectBlock(condition);
+		const Operand current = derived.LoadStorage(index, LowI64());
+		const Operand more = derived.Temp(LowI64());
+		Instruction compare(Instruction::CMP);
+		compare.dest = more.id;
+		compare.op = LOW_OP_ULT;
+		compare.type = LowI64();
+		compare.first = current;
+		compare.second = count;
+		derived.Emit(compare);
+		derived.EmitBranch(more, body, end);
+		derived.SelectBlock(body);
+		derived.EmitNullMemberPointerRuns(runs,
+			ArrayElement(record, user_pointer, current));
+		const Operand next = derived.Temp(LowI64());
+		Instruction increment(Instruction::BINARY);
+		increment.dest = next.id;
+		increment.op = LOW_OP_ADD;
+		increment.type = LowI64();
+		increment.first = current;
+		increment.second = Operand(1, LowI64());
+		derived.Emit(increment);
+		Instruction save(Instruction::STORE);
+		save.type = LowI64();
+		save.first = next;
+		save.second = index;
+		derived.Emit(save);
+		derived.EmitJump(condition);
+		derived.SelectBlock(end);
 	}
 
 	// Default-constructs elements [first, count) of a new array whose earlier
@@ -1022,6 +1086,9 @@ protected:
 				derived.Emit(subtract);
 			}
 			EmitArrayZeroInitialization(children[0], user_pointer, data_size);
+			if (ArrayElementHasNullMemberPointers(record))
+				EmitArrayNullMemberPointers(record, user_pointer, 0,
+					EmitArrayCount(record, byte_size));
 		}
 		if (list != kNoDumpEdge)
 			EmitArrayListInitialization(node, record, list, construction,

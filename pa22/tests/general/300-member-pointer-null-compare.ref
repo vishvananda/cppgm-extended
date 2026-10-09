@@ -15,10 +15,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    store typed i64 0, $data_ptr
+    store typed i64 -1, $data_ptr
     store typed i128 0, $function_ptr
     %t1 = load typed i64 $data_ptr
-    %t2 = cmp ne i64 %t1, 0
+    %t2 = cmp ne i64 %t1, -1
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

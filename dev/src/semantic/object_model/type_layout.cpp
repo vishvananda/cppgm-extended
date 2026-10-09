@@ -118,6 +118,69 @@ std::size_t Program::ArrayCookieSize(TypeId element) const
 	return alignment > 8 ? alignment : 8;
 }
 
+bool Program::IsDataMemberPointer(TypeId type) const
+{
+	const TypeRecord& record = types.Get(types.RemoveTopCv(type));
+	return record.kind == TYPE_MEMBER_POINTER && !types.IsFunction(record.child);
+}
+
+void Program::AppendNullMemberPointerRuns(TypeId type, std::uint64_t base,
+	std::vector<NullMemberPointerRun>* runs) const
+{
+	type = types.RemoveTopCv(type);
+	const TypeRecord& record = types.Get(type);
+	if (record.kind == TYPE_MEMBER_POINTER)
+	{
+		if (!types.IsFunction(record.child))
+			runs->push_back(NullMemberPointerRun(base));
+		return;
+	}
+	if (record.kind == TYPE_ARRAY)
+	{
+		if (record.bound == 0) return;
+		std::vector<NullMemberPointerRun> element;
+		AppendNullMemberPointerRuns(record.child, 0, &element);
+		if (element.empty()) return;
+		const std::uint64_t size = SizeOf(record.child);
+		bool single = true;
+		for (std::size_t i = 0; i < element.size(); ++i)
+			single = single && element[i].count == 1;
+		if (single)
+		{
+			for (std::size_t i = 0; i < element.size(); ++i)
+				runs->push_back(NullMemberPointerRun(base + element[i].offset,
+					size, record.bound));
+			return;
+		}
+		for (std::uint64_t at = 0; at < record.bound; ++at)
+			for (std::size_t i = 0; i < element.size(); ++i)
+				runs->push_back(NullMemberPointerRun(
+					base + at * size + element[i].offset,
+					element[i].stride, element[i].count));
+		return;
+	}
+	if (record.kind != TYPE_NAMED || record.entity >= entities.size()) return;
+	const EntityRecord& entity = entities[record.entity];
+	if (!IsClassNamedFlavor(entity.flavor) || !entity.layout_complete) return;
+	const auto append_part = [this, runs](const EntityRecord& part,
+		std::uint64_t at)
+	{
+		for (std::uint32_t i = 0; i < part.null_member_pointer_count; ++i)
+		{
+			NullMemberPointerRun run =
+				null_member_pointer_runs[part.null_member_pointer_begin + i];
+			run.offset += at;
+			runs->push_back(run);
+		}
+	};
+	append_part(entity, base);
+	for (std::size_t i = 0; i < entity.virtual_base_count; ++i)
+	{
+		const VirtualBaseLayout& layout = VirtualBase(record.entity, i);
+		append_part(entities[layout.entity], base + layout.offset);
+	}
+}
+
 std::size_t Program::AlignOf(TypeId type) const
 {
 	const TypeRecord* record = &types.Get(type);

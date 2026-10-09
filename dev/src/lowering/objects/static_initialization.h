@@ -61,6 +61,8 @@ private:
 		std::vector<lowering::ir::Global::DataItem>* items);
 	void AppendZero(std::size_t bytes,
 		std::vector<lowering::ir::Global::DataItem>* items);
+	void AppendZeroObject(semantic::TypeId type,
+		std::vector<lowering::ir::Global::DataItem>* items);
 	bool AppendValue(semantic::TypeId type, std::uint32_t node,
 		std::vector<lowering::ir::Global::DataItem>* items,
 		const std::vector<std::pair<semantic::BindingId, std::uint32_t> >*

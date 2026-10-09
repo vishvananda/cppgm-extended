@@ -41,8 +41,10 @@ bool IsConstexprClassEntity(const Program& program, EntityId entity)
 ConstexprScalarValue Analyzer::ExpressionScalar(
 	const ExpressionInfo& value) const
 {
+	// A null member pointer names no member (Itanium 2.3: -1 for data).
 	if (IsMemberPointer(value.type))
-		return ConstexprScalarValue(value.binding, value.value);
+		return ConstexprScalarValue(value.binding, value.binding == kNoBinding &&
+			program_->IsDataMemberPointer(value.type) ? -1 : value.value);
 	if (value.floating_constant)
 		return ConstexprScalarValue(value.floating_value);
 	if (value.integral_high_valid)
@@ -793,7 +795,7 @@ ExpressionInfo Analyzer::MaterializeConstexprObject(
 bool Analyzer::ScalarTruth(const ConstexprScalarValue& value) const
 {
 	if (value.kind == CONSTEXPR_SCALAR_MEMBER_POINTER)
-		return value.member_pointer != kNoBinding || value.integral != 0;
+		return value.member_pointer != kNoBinding;
 	return value.kind == CONSTEXPR_SCALAR_FLOATING ?
 		value.floating != 0.0L :
 		value.integral != 0 || value.integral_high != 0;

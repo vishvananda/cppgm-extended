@@ -194,6 +194,48 @@ void ClassifySysvClassLayout(Program& program, EntityId entity,
 	classified.sysv_quarters = memory || unmodeled ? 0 : quarters;
 }
 
+// The null data member pointers of a completed class's non-virtual part
+// (EntityRecord::null_member_pointer_*): its non-virtual bases and data
+// members, only the first member of a union (zero-initialization, 8.5p5).
+void RecordNullMemberPointerRuns(Program& program, EntityId entity,
+	const std::vector<ClassLayoutMember>* members)
+{
+	std::vector<NullMemberPointerRun> runs;
+	const EntityRecord& owner = program.entities[entity];
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& base = program.DirectBase(entity, i);
+		if (base.virtual_base) continue;
+		const EntityRecord& part = program.entities[base.entity];
+		for (std::uint32_t r = 0; r < part.null_member_pointer_count; ++r)
+		{
+			NullMemberPointerRun run = program.null_member_pointer_runs[
+				part.null_member_pointer_begin + r];
+			run.offset += base.offset;
+			runs.push_back(run);
+		}
+	}
+	for (std::size_t i = 0; members && i < members->size(); ++i)
+	{
+		const ClassLayoutMember& member = (*members)[i];
+		if (member.binding == kNoBinding || member.bit_field ||
+			!program.bindings[member.binding].non_static_data_member)
+			continue;
+		program.AppendNullMemberPointerRuns(member.type, program.BindingLayout(
+			program.bindings[member.binding]).member_offset, &runs);
+		if (owner.flavor == NAMED_UNION) break;
+	}
+	if (program.null_member_pointer_runs.size() + runs.size() >
+		std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("too many null member pointer facts");
+	EntityRecord& recorded = program.entities[entity];
+	recorded.null_member_pointer_begin =
+		static_cast<std::uint32_t>(program.null_member_pointer_runs.size());
+	recorded.null_member_pointer_count = static_cast<std::uint32_t>(runs.size());
+	program.null_member_pointer_runs.insert(
+		program.null_member_pointer_runs.end(), runs.begin(), runs.end());
+}
+
 }
 
 void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
@@ -262,8 +304,12 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 	owner.empty_class = *empty_class;
 	owner.layout_complete = true;
 	if (dependent_shape_completion_depth_ == 0)
-		ClassifySysvClassLayout(*program_, entity, entity < entity_layout_members_.size() ?
-			&entity_layout_members_[entity] : 0);
+	{
+		const std::vector<ClassLayoutMember>* members =
+			entity < entity_layout_members_.size() ? &entity_layout_members_[entity] : 0;
+		ClassifySysvClassLayout(*program_, entity, members);
+		RecordNullMemberPointerRuns(*program_, entity, members);
+	}
 }
 
 void Analyzer::AddVirtualBaseInitializationActions(EntityId entity,

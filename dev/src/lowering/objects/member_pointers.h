@@ -25,16 +25,29 @@ class MemberPointerLowering :
 	public MemberFunctionPointerLowering<Derived>
 {
 protected:
+	// An operand that is zero exactly when the member pointer is null
+	// (Itanium C++ ABI 2.3): a data member pointer is null at -1, so its
+	// truth is value + 1; a member function pointer is null when its
+	// function word is.
 	Operand MemberPointerTruthOperand(std::uint32_t node, const Operand& value)
 	{
-		if (value.type.kind != LOW_I128) return value;
 		Derived& derived = static_cast<Derived&>(*this);
 		const TypeRecord& source = derived.program_.types.Get(
 			derived.program_.types.RemoveTopCv(
 				derived.RemoveReference(derived.arena_.nodes[node].type)));
-		return source.kind == TYPE_MEMBER_POINTER &&
-			derived.program_.types.IsFunction(source.child) ?
-			derived.Convert(value, LowU64(), false) : value;
+		if (source.kind != TYPE_MEMBER_POINTER) return value;
+		if (derived.program_.types.IsFunction(source.child))
+			return value.type.kind == LOW_I128 ?
+				derived.Convert(value, LowU64(), false) : value;
+		const Operand truth = derived.Temp(value.type);
+		Instruction add(Instruction::BINARY);
+		add.dest = truth.id;
+		add.op = LOW_OP_ADD;
+		add.type = value.type;
+		add.first = value;
+		add.second = Operand(1, value.type);
+		derived.Emit(add);
+		return truth;
 	}
 
 	Operand MemberPointerObject(const DumpNode& application,
@@ -78,13 +91,14 @@ protected:
 		const Operand value = derived.LowerValue(children[0], value_type);
 		const Operand low_word = function_member ?
 			derived.Convert(value, LowU64(), false) : value;
+		// Only a non-null value is adjusted (a null data member pointer is -1).
 		const Operand nonnull = derived.Temp(LowI64());
 		Instruction compare(Instruction::CMP);
 		compare.dest = nonnull.id;
 		compare.op = LOW_OP_NE;
 		compare.type = low_word.type;
 		compare.first = low_word;
-		compare.second = Operand(0, low_word.type);
+		compare.second = Operand(function_member ? 0 : -1, low_word.type);
 		derived.Emit(compare);
 		const Operand widened = derived.Convert(nonnull, LowI64(), false);
 		const Operand adjustment = derived.Temp(LowI64());
@@ -129,15 +143,8 @@ protected:
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const Operand object = MemberPointerObject(application, children);
-		const Operand encoded = derived.LowerValue(children[1], LowI64());
-		const Operand displacement = derived.Temp(LowI64());
-		Instruction subtract(Instruction::BINARY);
-		subtract.dest = displacement.id;
-		subtract.op = LOW_OP_SUB;
-		subtract.type = LowI64();
-		subtract.first = encoded;
-		subtract.second = Operand(1, LowI64());
-		derived.Emit(subtract);
+		// A data member pointer is the member's byte offset.
+		const Operand displacement = derived.LowerValue(children[1], LowI64());
 		const Operand result = derived.Temp(LowPtr());
 		Instruction index(Instruction::INDEX);
 		index.dest = result.id;

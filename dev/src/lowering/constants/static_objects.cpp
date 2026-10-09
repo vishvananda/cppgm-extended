@@ -42,6 +42,14 @@ bool StaticInitializerLowering::AppendConstantElement(TypeId type,
 	}
 	Global::DataItem item;
 	item.type = types_.LowerStorage(type);
+	// A null data member pointer is -1 (Itanium C++ ABI 2.3).
+	if (program_.IsDataMemberPointer(type) &&
+		(element.scalar.kind != CONSTEXPR_SCALAR_MEMBER_POINTER ||
+		 element.scalar.member_pointer == kNoBinding))
+	{
+		AppendZeroObject(type, items);
+		return true;
+	}
 	if (element.scalar.kind == CONSTEXPR_SCALAR_FLOATING)
 	{
 		char buffer[128];
