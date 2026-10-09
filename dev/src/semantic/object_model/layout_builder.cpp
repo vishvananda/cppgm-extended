@@ -311,7 +311,7 @@ void BitFieldLayout::Add(BindingId binding, std::uint64_t bit,
 	field.bit = bit;
 	field.value_width = value_width;
 	field.storage_bytes = storage_bytes;
-	field.unit_begin = field.unit_bytes = 0;
+	field.unit_begin = field.unit_bytes = field.split_bytes = 0;
 	field.packed = packed;
 	field.shared = false;
 	fields_.push_back(field);
@@ -336,6 +336,16 @@ void BitFieldLayout::AssignFields(const Run& run, std::size_t first,
 		if (!NarrowStorageWindow(begin, end, lo, hi,
 			&field.unit_begin, &field.unit_bytes))
 		{
+			// A packed field no access within the class holds is read and
+			// written piecewise as the bytes it spans (as g++ does).
+			if (field.packed && end - begin <= 8)
+			{
+				field.unit_begin = begin;
+				field.unit_bytes = 8;
+				field.split_bytes = end - begin;
+				field.shared = true;
+				continue;
+			}
 			if (field.packed)
 				ThrowSemanticError("packed bit-field has no storage unit in its class");
 			field.unit_bytes = field.storage_bytes;
@@ -443,6 +453,7 @@ void BitFieldLayout::Assign(Program* program, std::uint64_t open_limit)
 			field.bit - 8 * field.unit_begin);
 		layout.bit_storage_bits = static_cast<std::uint32_t>(8 * field.unit_bytes);
 		layout.bit_storage_shared = field.shared;
+		layout.bit_storage_split = static_cast<std::uint32_t>(field.split_bytes);
 	}
 	Clear();
 }

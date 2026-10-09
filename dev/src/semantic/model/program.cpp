@@ -760,7 +760,7 @@ BindingRecord::BindingRecord()
 BindingLayoutFact::BindingLayoutFact()
 	: member_offset(0), requested_alignment(0), bit_offset(0), bit_width(0),
 	  bit_storage_bits(0), member_ordinal(kNoBinding),
-	  bit_storage_shared(false)
+	  bit_storage_shared(false), bit_storage_split(0)
 {
 }
 

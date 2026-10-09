@@ -118,7 +118,7 @@ private:
 	{
 		BindingId binding;
 		std::uint64_t bit, value_width, storage_bytes;
-		std::uint64_t unit_begin, unit_bytes;
+		std::uint64_t unit_begin, unit_bytes, split_bytes;
 		bool packed, shared;
 	};
 	struct Run

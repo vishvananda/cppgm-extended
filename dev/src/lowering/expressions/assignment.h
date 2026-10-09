@@ -68,6 +68,8 @@ public:
 		const LowType access = BitFieldAccessType(field);
 		const std::size_t unit =
 			derived.program_.BindingLayout(field).bit_storage_bits;
+		if (derived.program_.BindingLayout(field).bit_storage_split != 0)
+			return storage.is_signed ? LowI64() : LowU64();
 		if (unit == 0 || unit == storage.width)
 			return storage.width == access.width ? access : storage;
 		if (unit == access.width) return access;
@@ -156,14 +158,82 @@ public:
 			derived.TypeIsVolatile(derived.program_.bindings[binding].type);
 	}
 
+	// The naturally sized pieces of a split unit's bytes, lowest first.
+	static std::size_t SplitPieces(std::uint32_t bytes, std::uint32_t* offsets,
+		std::uint32_t* widths)
+	{
+		std::size_t count = 0;
+		for (std::uint32_t at = 0; at < bytes; ++count)
+		{
+			std::uint32_t width = 8;
+			while (width > bytes - at) width /= 2;
+			offsets[count] = at;
+			widths[count] = width;
+			at += width;
+		}
+		return count;
+	}
+
+	// A bit-field's storage unit, a split one assembled from its pieces.
+	Operand LoadBitFieldUnit(BindingId binding, const Operand& storage,
+		const LowType& type)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const BindingRecord& field = derived.program_.bindings[binding];
+		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
+		const bool is_volatile = BitFieldAccessIsVolatile(binding);
+		if (layout.bit_storage_split == 0)
+			return derived.LoadStorage(storage, type, is_volatile);
+		std::uint32_t offsets[4], widths[4];
+		const std::size_t count =
+			SplitPieces(layout.bit_storage_split, offsets, widths);
+		Operand unit;
+		for (std::size_t i = 0; i < count; ++i)
+		{
+			const LowType piece_type = widths[i] == 1 ? LowU8() :
+				widths[i] == 2 ? LowU16() : widths[i] == 4 ? LowU32() : LowU64();
+			const Operand address = offsets[i] == 0 ? storage :
+				derived.IndexAddress(LowI8(), storage,
+					Operand(static_cast<std::int64_t>(offsets[i]), LowI64()), false);
+			Operand piece = derived.Convert(
+				derived.LoadStorage(address, piece_type, is_volatile), type, false);
+			if (offsets[i] != 0)
+			{
+				const Operand shifted = derived.Temp(type);
+				Instruction shift(Instruction::BINARY);
+				shift.dest = shifted.id;
+				shift.op = LOW_OP_SHL;
+				shift.type = type;
+				shift.first = piece;
+				shift.second = Operand(static_cast<std::int64_t>(8 * offsets[i]), type);
+				derived.Emit(shift);
+				piece = shifted;
+			}
+			if (i == 0)
+			{
+				unit = piece;
+				continue;
+			}
+			const Operand combined = derived.Temp(type);
+			Instruction combine(Instruction::BINARY);
+			combine.dest = combined.id;
+			combine.op = LOW_OP_OR;
+			combine.type = type;
+			combine.first = unit;
+			combine.second = piece;
+			derived.Emit(combine);
+			unit = combined;
+		}
+		return unit;
+	}
+
 	Operand LoadBitField(BindingId binding, const Operand& storage)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const BindingRecord& field = derived.program_.bindings[binding];
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
 		const LowType type = BitFieldMemoryType(field);
-		Operand value = derived.LoadStorage(storage, type,
-			BitFieldAccessIsVolatile(binding));
+		Operand value = LoadBitFieldUnit(binding, storage, type);
 		if (layout.bit_offset != 0)
 		{
 			const Operand shifted = derived.Temp(type);
@@ -223,8 +293,7 @@ public:
 		Derived& derived = static_cast<Derived&>(*this);
 		const BindingRecord& field = derived.program_.bindings[binding];
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
-		const Operand old = derived.LoadStorage(storage, type,
-			BitFieldAccessIsVolatile(binding));
+		const Operand old = LoadBitFieldUnit(binding, storage, type);
 		const std::uint64_t unit_mask = layout.bit_storage_bits == 64 ?
 			~std::uint64_t(0) :
 			(std::uint64_t(1) << layout.bit_storage_bits) - 1;
@@ -268,12 +337,47 @@ public:
 		const Operand& storage)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		Instruction store(Instruction::STORE);
-		store.type = type;
-		store.volatile_access = BitFieldAccessIsVolatile(binding);
-		store.first = value;
-		store.second = storage;
-		derived.Emit(store);
+		const bool is_volatile = BitFieldAccessIsVolatile(binding);
+		const std::uint32_t split = derived.program_.BindingLayout(
+			derived.program_.bindings[binding]).bit_storage_split;
+		if (split == 0)
+		{
+			Instruction store(Instruction::STORE);
+			store.type = type;
+			store.volatile_access = is_volatile;
+			store.first = value;
+			store.second = storage;
+			derived.Emit(store);
+			return;
+		}
+		// A split unit is stored piecewise, each piece its own bytes.
+		std::uint32_t offsets[4], widths[4];
+		const std::size_t count = SplitPieces(split, offsets, widths);
+		for (std::size_t i = 0; i < count; ++i)
+		{
+			Operand piece = value;
+			if (offsets[i] != 0)
+			{
+				piece = derived.Temp(type);
+				Instruction shift(Instruction::BINARY);
+				shift.dest = piece.id;
+				shift.op = LOW_OP_USHR;
+				shift.type = type;
+				shift.first = value;
+				shift.second = Operand(static_cast<std::int64_t>(8 * offsets[i]), type);
+				derived.Emit(shift);
+			}
+			const LowType piece_type = widths[i] == 1 ? LowU8() :
+				widths[i] == 2 ? LowU16() : widths[i] == 4 ? LowU32() : LowU64();
+			Instruction store(Instruction::STORE);
+			store.type = piece_type;
+			store.volatile_access = is_volatile;
+			store.first = derived.Convert(piece, piece_type, false);
+			store.second = offsets[i] == 0 ? storage : derived.IndexAddress(LowI8(),
+				storage, Operand(static_cast<std::int64_t>(offsets[i]), LowI64()),
+				false);
+			derived.Emit(store);
+		}
 	}
 
 	Operand CommitBitFieldStore(BindingId binding, const Operand& storage,

@@ -390,7 +390,10 @@ Useful intermediate representations include:
   of the fields' declared types nest, so the largest ones partition the run; a
   unit that would reach bytes outside the run (another member, or tail padding
   a derived class may reuse) can be narrowed to the narrowest integer that
-  holds its fields, and reads and writes then use that unit
+  holds its fields, and reads and writes then use that unit; a packed
+  (`#pragma pack`) bit-field that no single 1-, 2-, 4- or 8-byte access within
+  its class holds is read and written piecewise, as naturally sized pieces of
+  the bytes it spans, as g++ does
 - resolved member expressions and method calls over the same call-semantics IR shape used by
   PA7/PA10
 - explicit constructor/destructor actions attached to declarations or generated function bodies
