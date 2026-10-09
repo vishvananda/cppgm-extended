@@ -3,23 +3,23 @@ function @accept(%d : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=str
   slot $cond__1 : i32
 
   block ^entry:
-    store ptr %d, $d
-    %t1 = load ptr $d
+    store typed ptr %d, $d
+    %t1 = load typed ptr $d
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     %t4 = cmp eq i64 %t3, 8
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -39,12 +39,12 @@ function @duration_int____cppgm_class_template_identity_0_3_0___duration_int____
   slot $r : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %r, $r
-    %t1 = load i32 $r
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %r, $r
+    %t1 = load typed i32 $r
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @duration_long_int____cppgm_class_template_identity_0_0_0___duration_int____cppgm_class_template_identity_0_3_0___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN8durationIl3tagILi1EEEC1IiS0_ILi2EEEERKS_IT_T0_E, inline_hint=yes] {
@@ -52,15 +52,15 @@ function @duration_long_int____cppgm_class_template_identity_0_0_0___duration_in
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     %t4 = convert sext i64 i32 %t3
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    store i64 %t4, %t6
+    store typed i64 %t4, %t6
     return void
 }
 alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int____cppgm_class_template_identity_0_3_0___duration_int____cppgm_class_template_identity_0_3_0_

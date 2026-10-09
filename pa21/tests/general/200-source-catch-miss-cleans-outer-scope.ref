@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $guard
     eh_try ^catch_dispatch_4
     %t2 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t2
+    store typed i32 7, %t2
     %t3 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t2, %t3, 0)
     eh_end
@@ -100,20 +100,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^catch_body_10:
     %t15 = call ptr @__external_runtime____cxa_begin_catch(%t12)
     eh_cleanup ^catch_cleanup_12
-    %t16 = load i32 @destroyed
+    %t16 = load typed i32 @destroyed
     %t17 = cmp eq i32 %t16, 1
     branch %t17, ^cond_then_13, ^cond_else_14
 
   block ^cond_then_13:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_15
 
   block ^cond_else_14:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_15
 
   block ^cond_end_15:
-    %t18 = load i32 $cond__1
+    %t18 = load typed i32 $cond__1
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 %t18
@@ -133,10 +133,10 @@ function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, bindin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
     return void
 }
 alias object _ZN5GuardD2Ev = @Guard___Guard

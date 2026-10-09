@@ -2,8 +2,8 @@ function @finite(%value : f80) -> i32 [binding=strong, object=_Z6finitee] {
   slot $value : f80
 
   block ^entry:
-    store f80 %value, $value
-    %t1 = load f80 $value
+    store typed f80 %value, $value
+    %t1 = load typed f80 $value
     %t2 = cmp ne f80 %t1, %t1
     %t3 = convert trunc i32 i64 %t2
     %t4 = binary sub i32 1, %t3
@@ -21,8 +21,8 @@ function @infinite(%value : f80) -> i32 [binding=strong, object=_Z8infinitee] {
   slot $value : f80
 
   block ^entry:
-    store f80 %value, $value
-    %t1 = load f80 $value
+    store typed f80 %value, $value
+    %t1 = load typed f80 $value
     %t2 = unary neg f80 INFINITYL
     %t3 = cmp eq f80 %t1, INFINITYL
     %t4 = convert trunc i32 i64 %t3
@@ -35,8 +35,8 @@ function @normal(%value : f80) -> i32 [binding=strong, object=_Z6normale] {
   slot $value : f80
 
   block ^entry:
-    store f80 %value, $value
-    %t1 = load f80 $value
+    store typed f80 %value, $value
+    %t1 = load typed f80 $value
     %t2 = unary neg f80 3.36210314311209350626267781732175260e-4932L
     %t3 = cmp ge f80 %t1, 3.36210314311209350626267781732175260e-4932L
     %t4 = convert trunc i32 i64 %t3
@@ -61,8 +61,8 @@ function @classify(%value : f80) -> i32 [binding=strong, object=_Z8classifye] {
   slot $value : f80
 
   block ^entry:
-    store f80 %value, $value
-    %t1 = load f80 $value
+    store typed f80 %value, $value
+    %t1 = load typed f80 $value
     %t2 = cmp ne f80 %t1, %t1
     %t3 = convert trunc i32 i64 %t2
     %t4 = unary neg f80 INFINITYL

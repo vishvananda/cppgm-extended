@@ -39,8 +39,8 @@ function @is_finite(%value : f32) -> u8 [binding=weak, object=_Z9is_finiteIfEbT_
   slot $value : f32
 
   block ^entry:
-    store f32 %value, $value
-    %t1 = load f32 $value
+    store typed f32 %value, $value
+    %t1 = load typed f32 $value
     %t2 = convert fpext f64 f32 %t1
     %t3 = cmp ne f64 %t2, %t2
     %t4 = convert trunc i32 i64 %t3
@@ -61,8 +61,8 @@ function @is_finite__ov2(%value : f64) -> u8 [binding=weak, object=_Z9is_finiteI
   slot $value : f64
 
   block ^entry:
-    store f64 %value, $value
-    %t1 = load f64 $value
+    store typed f64 %value, $value
+    %t1 = load typed f64 $value
     %t2 = cmp ne f64 %t1, %t1
     %t3 = convert trunc i32 i64 %t2
     %t4 = binary sub i32 1, %t3
@@ -82,9 +82,9 @@ function @widen(%value : i32) -> i64 [binding=weak, object=_Z5widenIiElT_] {
   slot $value : i32
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = binary mul i32 %t1, 2
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = binary mul nowrap i32 %t1, 2
     %t3 = convert sext i64 i32 %t2
     return i64 %t3
 }

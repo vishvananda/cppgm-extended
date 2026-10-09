@@ -58,54 +58,54 @@ function @use_derived() -> i32 [binding=strong, object=_Z11use_derivedv] {
     %t2 = addr $value
     %t3 = index i8 %t2, 8
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     return i32 %t5
 }
 function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 8
     call void @VirtualBase__VirtualBase__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @Derived__vtable
     %t5 = index i8 %t4, 24
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @Derived___Derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN7DerivedD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Derived___Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @VirtualBase__VirtualBase__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN11VirtualBaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
+    store typed i32 7, %t2
     return void
 }
 function @VirtualBase__VirtualBase(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN11VirtualBaseC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
+    store typed i32 7, %t2
     return void
 }

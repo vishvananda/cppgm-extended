@@ -25,47 +25,47 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = convert sext i32 i8 %t14
     %t16 = cmp eq i32 %t15, 122
     %t17 = cmp ne i64 %t16, 0
-    store i64 %t17, $land__2
+    store typed i64 %t17, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t18 = load i64 $land__2
+    %t18 = load typed i64 $land__2
     branch %t18, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load i32 $cond__1
+    %t19 = load typed i32 $cond__1
     return i32 %t19
 }
 function @Buffer__Buffer(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6BufferC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = index i8 [projection=array_element] %t2, 0
     store i8 0, %t3
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = index i8 [projection=array_element] %t5, 1
     store i8 0, %t6
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 2
     %t9 = index i8 [projection=array_element] %t8, 0
     store i8 122, %t9
-    %t10 = load ptr $this
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 2
     %t12 = index i8 [projection=array_element] %t11, 1
     store i8 0, %t12
@@ -76,11 +76,11 @@ function @Buffer__operator____ov2(%this : ptr [object_bytes=4], %i : i32) -> ptr
   slot $i : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %i, $i
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %i, $i
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 $i
+    %t3 = load typed i32 $i
     %t4 = index i8 [projection=array_element] %t2, %t3
     return ptr %t4
 }
@@ -89,10 +89,10 @@ function @fill(%p : ptr, %value : i8) -> i32 [binding=weak, object=_Z4fillIcEiPT
   slot $value : i8
 
   block ^entry:
-    store ptr %p, $p
+    store typed ptr %p, $p
     store i8 %value, $value
     %t1 = load i8 $value
-    %t2 = load ptr $p
+    %t2 = load typed ptr $p
     %t3 = index i8 [projection=array_element] %t2, 0
     store i8 %t1, %t3
     return i32 0

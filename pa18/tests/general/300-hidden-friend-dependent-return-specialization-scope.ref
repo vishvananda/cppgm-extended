@@ -13,23 +13,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch 1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__2
+    store typed i32 0, $cond__2
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__2
+    store typed i32 1, $cond__2
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__2
+    %t5 = load typed i32 $cond__2
     return i32 %t5
 }
-function @any_completion_executor__any_completion_executor__ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN23any_completion_executorC1I15any_io_executorvEET_, inline_hint=yes] {
+function @any_completion_executor__any_completion_executor__ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN23any_completion_executorC1I15any_io_executorvEET_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN23any_completion_executorC2I15any_io_executorvEET_ = @any_completion_executor__any_completion_executor__ov3

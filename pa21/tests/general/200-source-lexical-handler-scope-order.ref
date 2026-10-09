@@ -261,7 +261,7 @@ function @case_0__f() -> void [binding=strong, object=_ZN6case_01fEv] {
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_6
-    store i32 0, @case_0__trace
+    store typed i32 0, @case_0__trace
     %t8 = addr $a
     call void @case_0__G__G(%t8, 1, 1)
     %t9 = addr $b
@@ -376,70 +376,70 @@ function @case_0__check() -> i32 [binding=strong, object=_ZN6case_05checkEv] {
 
   block ^catch_body_4:
     %t4 = call ptr @__external_runtime____cxa_begin_catch(%t1)
-    store ptr %t4, $catch__1
+    store typed ptr %t4, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t5 = load i32 %t4
-    store i32 %t5, $n
-    %t6 = load i32 $n
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, $n
+    %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t8 = load i32 @case_0__live
+    %t8 = load typed i32 @case_0__live
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__5
+    store typed i64 %t9, $lor__5
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t10 = load i64 $lor__5
+    %t10 = load typed i64 $lor__5
     branch %t10, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t11 = load i32 @case_0__bad
+    %t11 = load typed i32 @case_0__bad
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $lor__4
+    store typed i64 %t12, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t13 = load i64 $lor__4
+    %t13 = load typed i64 $lor__4
     branch %t13, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t14 = load i32 @case_0__drops
+    %t14 = load typed i32 @case_0__drops
     %t15 = cmp ne i32 %t14, 2
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__3
+    store typed i64 %t16, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t17 = load i64 $lor__3
+    %t17 = load typed i64 $lor__3
     branch %t17, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load i32 @case_0__trace
+    %t18 = load typed i32 @case_0__trace
     %t19 = cmp ne i32 %t18, 219
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load i64 $lor__2
+    %t21 = load typed i64 $lor__2
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -483,7 +483,7 @@ function @case_1__f() -> void [binding=strong, object=_ZN6case_11fEv] {
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_6
-    store i32 0, @case_1__trace
+    store typed i32 0, @case_1__trace
     %t8 = addr $a
     call void @case_1__G__G(%t8, 1, 1)
     %t9 = addr $b
@@ -598,70 +598,70 @@ function @case_1__check() -> i32 [binding=strong, object=_ZN6case_15checkEv] {
 
   block ^catch_body_4:
     %t4 = call ptr @__external_runtime____cxa_begin_catch(%t1)
-    store ptr %t4, $catch__1
+    store typed ptr %t4, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t5 = load i32 %t4
-    store i32 %t5, $n
-    %t6 = load i32 $n
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, $n
+    %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t8 = load i32 @case_1__live
+    %t8 = load typed i32 @case_1__live
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__5
+    store typed i64 %t9, $lor__5
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t10 = load i64 $lor__5
+    %t10 = load typed i64 $lor__5
     branch %t10, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t11 = load i32 @case_1__bad
+    %t11 = load typed i32 @case_1__bad
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $lor__4
+    store typed i64 %t12, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t13 = load i64 $lor__4
+    %t13 = load typed i64 $lor__4
     branch %t13, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t14 = load i32 @case_1__drops
+    %t14 = load typed i32 @case_1__drops
     %t15 = cmp ne i32 %t14, 2
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__3
+    store typed i64 %t16, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t17 = load i64 $lor__3
+    %t17 = load typed i64 $lor__3
     branch %t17, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load i32 @case_1__trace
+    %t18 = load typed i32 @case_1__trace
     %t19 = cmp ne i32 %t18, 219
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load i64 $lor__2
+    %t21 = load typed i64 $lor__2
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -708,7 +708,7 @@ function @case_2__f() -> void [binding=strong, object=_ZN6case_21fEv] {
   block ^catch_body_7:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_9
-    store i32 0, @case_2__trace
+    store typed i32 0, @case_2__trace
     %t8 = addr $a
     call void @case_2__G__G(%t8, 1, 1)
     %t9 = addr $b
@@ -829,70 +829,70 @@ function @case_2__check() -> i32 [binding=strong, object=_ZN6case_25checkEv] {
 
   block ^catch_body_4:
     %t4 = call ptr @__external_runtime____cxa_begin_catch(%t1)
-    store ptr %t4, $catch__1
+    store typed ptr %t4, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t5 = load i32 %t4
-    store i32 %t5, $n
-    %t6 = load i32 $n
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, $n
+    %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t8 = load i32 @case_2__live
+    %t8 = load typed i32 @case_2__live
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__5
+    store typed i64 %t9, $lor__5
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t10 = load i64 $lor__5
+    %t10 = load typed i64 $lor__5
     branch %t10, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t11 = load i32 @case_2__bad
+    %t11 = load typed i32 @case_2__bad
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $lor__4
+    store typed i64 %t12, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t13 = load i64 $lor__4
+    %t13 = load typed i64 $lor__4
     branch %t13, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t14 = load i32 @case_2__drops
+    %t14 = load typed i32 @case_2__drops
     %t15 = cmp ne i32 %t14, 2
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__3
+    store typed i64 %t16, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t17 = load i64 $lor__3
+    %t17 = load typed i64 $lor__3
     branch %t17, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load i32 @case_2__trace
+    %t18 = load typed i32 @case_2__trace
     %t19 = cmp ne i32 %t18, 219
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load i64 $lor__2
+    %t21 = load typed i64 $lor__2
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -915,11 +915,11 @@ function @case_3__f() -> void [binding=strong, object=_ZN6case_31fEv] {
   slot $b : obj<8x4>
 
   block ^entry:
-    store i32 0, $i
+    store typed i32 0, $i
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t1 = load i32 $i
+    %t1 = load typed i32 $i
     %t2 = cmp ne i32 %t1, 1
     branch %t2, ^for_body_2, ^for_end_4
 
@@ -946,7 +946,7 @@ function @case_3__f() -> void [binding=strong, object=_ZN6case_31fEv] {
   block ^catch_body_8:
     %t9 = call ptr @__external_runtime____cxa_begin_catch(%t6)
     eh_cleanup ^catch_cleanup_10
-    store i32 0, @case_3__trace
+    store typed i32 0, @case_3__trace
     %t10 = addr $a
     call void @case_3__G__G(%t10, 1, 1)
     %t11 = addr $b
@@ -1036,9 +1036,9 @@ function @case_3__f() -> void [binding=strong, object=_ZN6case_31fEv] {
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t18 = load i32 $i
-    %t19 = binary add i32 %t18, 1
-    store i32 %t19, $i
+    %t18 = load typed i32 $i
+    %t19 = binary add nowrap i32 %t18, 1
+    store typed i32 %t19, $i
     jump ^for_cond_1
 
   block ^for_end_4:
@@ -1070,70 +1070,70 @@ function @case_3__check() -> i32 [binding=strong, object=_ZN6case_35checkEv] {
 
   block ^catch_body_4:
     %t4 = call ptr @__external_runtime____cxa_begin_catch(%t1)
-    store ptr %t4, $catch__1
+    store typed ptr %t4, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t5 = load i32 %t4
-    store i32 %t5, $n
-    %t6 = load i32 $n
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, $n
+    %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t8 = load i32 @case_3__live
+    %t8 = load typed i32 @case_3__live
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__5
+    store typed i64 %t9, $lor__5
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t10 = load i64 $lor__5
+    %t10 = load typed i64 $lor__5
     branch %t10, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t11 = load i32 @case_3__bad
+    %t11 = load typed i32 @case_3__bad
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $lor__4
+    store typed i64 %t12, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t13 = load i64 $lor__4
+    %t13 = load typed i64 $lor__4
     branch %t13, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t14 = load i32 @case_3__drops
+    %t14 = load typed i32 @case_3__drops
     %t15 = cmp ne i32 %t14, 2
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__3
+    store typed i64 %t16, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t17 = load i64 $lor__3
+    %t17 = load typed i64 $lor__3
     branch %t17, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load i32 @case_3__trace
+    %t18 = load typed i32 @case_3__trace
     %t19 = cmp ne i32 %t18, 219
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load i64 $lor__2
+    %t21 = load typed i64 $lor__2
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -1177,7 +1177,7 @@ function @case_4__f() -> void [binding=strong, object=_ZN6case_41fEv] {
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_6
-    store i32 0, @case_4__trace
+    store typed i32 0, @case_4__trace
     %t8 = addr $a
     call void @case_4__G__G(%t8, 1, 1)
     %t9 = addr $b
@@ -1295,70 +1295,70 @@ function @case_4__check() -> i32 [binding=strong, object=_ZN6case_45checkEv] {
 
   block ^catch_body_4:
     %t4 = call ptr @__external_runtime____cxa_begin_catch(%t1)
-    store ptr %t4, $catch__1
+    store typed ptr %t4, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t5 = load i32 %t4
-    store i32 %t5, $n
-    %t6 = load i32 $n
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, $n
+    %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t8 = load i32 @case_4__live
+    %t8 = load typed i32 @case_4__live
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__5
+    store typed i64 %t9, $lor__5
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t10 = load i64 $lor__5
+    %t10 = load typed i64 $lor__5
     branch %t10, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t11 = load i32 @case_4__bad
+    %t11 = load typed i32 @case_4__bad
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $lor__4
+    store typed i64 %t12, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t13 = load i64 $lor__4
+    %t13 = load typed i64 $lor__4
     branch %t13, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t14 = load i32 @case_4__drops
+    %t14 = load typed i32 @case_4__drops
     %t15 = cmp ne i32 %t14, 2
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__3
+    store typed i64 %t16, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t17 = load i64 $lor__3
+    %t17 = load typed i64 $lor__3
     branch %t17, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load i32 @case_4__trace
+    %t18 = load typed i32 @case_4__trace
     %t19 = cmp ne i32 %t18, 219
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load i64 $lor__2
+    %t21 = load typed i64 $lor__2
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -1402,7 +1402,7 @@ function @case_5__f() -> void [binding=strong, object=_ZN6case_51fEv] {
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_6
-    store i32 0, @case_5__trace
+    store typed i32 0, @case_5__trace
     %t8 = addr $a
     call void @case_5__G__G(%t8, 1, 1)
     jump ^do_body_7
@@ -1526,70 +1526,70 @@ function @case_5__check() -> i32 [binding=strong, object=_ZN6case_55checkEv] {
 
   block ^catch_body_4:
     %t4 = call ptr @__external_runtime____cxa_begin_catch(%t1)
-    store ptr %t4, $catch__1
+    store typed ptr %t4, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t5 = load i32 %t4
-    store i32 %t5, $n
-    %t6 = load i32 $n
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, $n
+    %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t8 = load i32 @case_5__live
+    %t8 = load typed i32 @case_5__live
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__5
+    store typed i64 %t9, $lor__5
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t10 = load i64 $lor__5
+    %t10 = load typed i64 $lor__5
     branch %t10, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t11 = load i32 @case_5__bad
+    %t11 = load typed i32 @case_5__bad
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $lor__4
+    store typed i64 %t12, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t13 = load i64 $lor__4
+    %t13 = load typed i64 $lor__4
     branch %t13, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t14 = load i32 @case_5__drops
+    %t14 = load typed i32 @case_5__drops
     %t15 = cmp ne i32 %t14, 2
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__3
+    store typed i64 %t16, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t17 = load i64 $lor__3
+    %t17 = load typed i64 $lor__3
     branch %t17, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load i32 @case_5__trace
+    %t18 = load typed i32 @case_5__trace
     %t19 = cmp ne i32 %t18, 219
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load i64 $lor__2
+    %t21 = load typed i64 $lor__2
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -1634,14 +1634,14 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_6
-    store i32 0, @case_6__trace
+    store typed i32 0, @case_6__trace
     %t8 = addr $a
     call void @case_6__G__G(%t8, 1, 1)
-    store i32 0, $i
+    store typed i32 0, $i
     jump ^for_cond_7
 
   block ^for_cond_7:
-    %t9 = load i32 $i
+    %t9 = load typed i32 $i
     %t10 = cmp ne i32 %t9, 1
     branch %t10, ^for_body_8, ^for_end_10
 
@@ -1711,9 +1711,9 @@ function @case_6__f() -> void [binding=strong, object=_ZN6case_61fEv] {
     jump ^lexical_unwind_17
 
   block ^for_iter_9:
-    %t17 = load i32 $i
-    %t18 = binary add i32 %t17, 1
-    store i32 %t18, $i
+    %t17 = load typed i32 $i
+    %t18 = binary add nowrap i32 %t17, 1
+    store typed i32 %t18, $i
     jump ^for_cond_7
 
   block ^for_end_10:
@@ -1767,70 +1767,70 @@ function @case_6__check() -> i32 [binding=strong, object=_ZN6case_65checkEv] {
 
   block ^catch_body_4:
     %t4 = call ptr @__external_runtime____cxa_begin_catch(%t1)
-    store ptr %t4, $catch__1
+    store typed ptr %t4, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t5 = load i32 %t4
-    store i32 %t5, $n
-    %t6 = load i32 $n
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, $n
+    %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t8 = load i32 @case_6__live
+    %t8 = load typed i32 @case_6__live
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__5
+    store typed i64 %t9, $lor__5
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t10 = load i64 $lor__5
+    %t10 = load typed i64 $lor__5
     branch %t10, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t11 = load i32 @case_6__bad
+    %t11 = load typed i32 @case_6__bad
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $lor__4
+    store typed i64 %t12, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t13 = load i64 $lor__4
+    %t13 = load typed i64 $lor__4
     branch %t13, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t14 = load i32 @case_6__drops
+    %t14 = load typed i32 @case_6__drops
     %t15 = cmp ne i32 %t14, 2
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__3
+    store typed i64 %t16, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t17 = load i64 $lor__3
+    %t17 = load typed i64 $lor__3
     branch %t17, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load i32 @case_6__trace
+    %t18 = load typed i32 @case_6__trace
     %t19 = cmp ne i32 %t18, 219
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load i64 $lor__2
+    %t21 = load typed i64 $lor__2
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -1874,7 +1874,7 @@ function @case_7__f() -> void [binding=strong, object=_ZN6case_71fEv] {
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_6
-    store i32 0, @case_7__trace
+    store typed i32 0, @case_7__trace
     %t8 = addr $a
     call void @case_7__G__G(%t8, 1, 1)
     %t9 = addr $b
@@ -1992,70 +1992,70 @@ function @case_7__check() -> i32 [binding=strong, object=_ZN6case_75checkEv] {
 
   block ^catch_body_4:
     %t4 = call ptr @__external_runtime____cxa_begin_catch(%t1)
-    store ptr %t4, $catch__1
+    store typed ptr %t4, $catch__1
     eh_cleanup ^catch_cleanup_6
-    %t5 = load i32 %t4
-    store i32 %t5, $n
-    %t6 = load i32 $n
+    %t5 = load typed i32 %t4
+    store typed i32 %t5, $n
+    %t6 = load typed i32 $n
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t8 = load i32 @case_7__live
+    %t8 = load typed i32 @case_7__live
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__5
+    store typed i64 %t9, $lor__5
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t10 = load i64 $lor__5
+    %t10 = load typed i64 $lor__5
     branch %t10, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t11 = load i32 @case_7__bad
+    %t11 = load typed i32 @case_7__bad
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $lor__4
+    store typed i64 %t12, $lor__4
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t13 = load i64 $lor__4
+    %t13 = load typed i64 $lor__4
     branch %t13, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t14 = load i32 @case_7__drops
+    %t14 = load typed i32 @case_7__drops
     %t15 = cmp ne i32 %t14, 2
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__3
+    store typed i64 %t16, $lor__3
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t17 = load i64 $lor__3
+    %t17 = load typed i64 $lor__3
     branch %t17, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t18 = load i32 @case_7__trace
+    %t18 = load typed i32 @case_7__trace
     %t19 = cmp ne i32 %t18, 219
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $lor__2
+    store typed i64 %t20, $lor__2
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t21 = load i64 $lor__2
+    %t21 = load typed i64 $lor__2
     %t22 = convert trunc i32 i64 %t21
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -2160,24 +2160,24 @@ function @case_0__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_0__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @case_0__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_0__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @case_0__live
     return void
 }
 function @case_0__E___E(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6case_01ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_0__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @case_0__live
-    %t3 = load i32 @case_0__trace
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 9
-    store i32 %t5, @case_0__trace
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_0__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @case_0__live
+    %t3 = load typed i32 @case_0__trace
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @case_0__trace
     return void
 }
 function @case_0__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void [binding=weak, object=_ZN6case_01GC1Eii, inline_hint=yes] {
@@ -2186,62 +2186,62 @@ function @case_0__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
   slot $e : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    store i32 %e, $e
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    store typed i32 %e, $e
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $e
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $e
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @case_0__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6case_01GD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_0__live
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_0__live
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @case_0__bad
+    store typed i32 1, @case_0__bad
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t6 = load i32 @case_0__drops
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @case_0__drops
-    %t8 = load i32 @case_0__trace
-    %t9 = binary mul i32 %t8, 10
-    %t10 = load ptr $this
+    %t6 = load typed i32 @case_0__drops
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @case_0__drops
+    %t8 = load typed i32 @case_0__trace
+    %t9 = binary mul nowrap i32 %t8, 10
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    store i32 %t13, @case_0__trace
-    %t14 = load ptr $this
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    store typed i32 %t13, @case_0__trace
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_7, ^if_else_5
 
   block ^land_rhs_7:
-    %t18 = load i32 @case_0__should_throw
+    %t18 = load typed i32 @case_0__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t19
+    store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     return void
@@ -2256,24 +2256,24 @@ function @case_1__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_1__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @case_1__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_1__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @case_1__live
     return void
 }
 function @case_1__E___E(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6case_11ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_1__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @case_1__live
-    %t3 = load i32 @case_1__trace
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 9
-    store i32 %t5, @case_1__trace
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_1__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @case_1__live
+    %t3 = load typed i32 @case_1__trace
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @case_1__trace
     return void
 }
 function @case_1__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void [binding=weak, object=_ZN6case_11GC1Eii, inline_hint=yes] {
@@ -2282,62 +2282,62 @@ function @case_1__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
   slot $e : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    store i32 %e, $e
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    store typed i32 %e, $e
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $e
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $e
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @case_1__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6case_11GD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_1__live
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_1__live
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @case_1__bad
+    store typed i32 1, @case_1__bad
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t6 = load i32 @case_1__drops
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @case_1__drops
-    %t8 = load i32 @case_1__trace
-    %t9 = binary mul i32 %t8, 10
-    %t10 = load ptr $this
+    %t6 = load typed i32 @case_1__drops
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @case_1__drops
+    %t8 = load typed i32 @case_1__trace
+    %t9 = binary mul nowrap i32 %t8, 10
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    store i32 %t13, @case_1__trace
-    %t14 = load ptr $this
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    store typed i32 %t13, @case_1__trace
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_7, ^if_else_5
 
   block ^land_rhs_7:
-    %t18 = load i32 @case_1__should_throw
+    %t18 = load typed i32 @case_1__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t19
+    store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     return void
@@ -2352,24 +2352,24 @@ function @case_2__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_2__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @case_2__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_2__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @case_2__live
     return void
 }
 function @case_2__E___E(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6case_21ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_2__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @case_2__live
-    %t3 = load i32 @case_2__trace
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 9
-    store i32 %t5, @case_2__trace
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_2__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @case_2__live
+    %t3 = load typed i32 @case_2__trace
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @case_2__trace
     return void
 }
 function @case_2__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void [binding=weak, object=_ZN6case_21GC1Eii, inline_hint=yes] {
@@ -2378,62 +2378,62 @@ function @case_2__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
   slot $e : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    store i32 %e, $e
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    store typed i32 %e, $e
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $e
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $e
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @case_2__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6case_21GD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_2__live
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_2__live
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @case_2__bad
+    store typed i32 1, @case_2__bad
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t6 = load i32 @case_2__drops
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @case_2__drops
-    %t8 = load i32 @case_2__trace
-    %t9 = binary mul i32 %t8, 10
-    %t10 = load ptr $this
+    %t6 = load typed i32 @case_2__drops
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @case_2__drops
+    %t8 = load typed i32 @case_2__trace
+    %t9 = binary mul nowrap i32 %t8, 10
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    store i32 %t13, @case_2__trace
-    %t14 = load ptr $this
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    store typed i32 %t13, @case_2__trace
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_7, ^if_else_5
 
   block ^land_rhs_7:
-    %t18 = load i32 @case_2__should_throw
+    %t18 = load typed i32 @case_2__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t19
+    store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     return void
@@ -2448,24 +2448,24 @@ function @case_3__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_3__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @case_3__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_3__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @case_3__live
     return void
 }
 function @case_3__E___E(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6case_31ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_3__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @case_3__live
-    %t3 = load i32 @case_3__trace
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 9
-    store i32 %t5, @case_3__trace
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_3__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @case_3__live
+    %t3 = load typed i32 @case_3__trace
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @case_3__trace
     return void
 }
 function @case_3__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void [binding=weak, object=_ZN6case_31GC1Eii, inline_hint=yes] {
@@ -2474,62 +2474,62 @@ function @case_3__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
   slot $e : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    store i32 %e, $e
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    store typed i32 %e, $e
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $e
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $e
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @case_3__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6case_31GD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_3__live
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_3__live
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @case_3__bad
+    store typed i32 1, @case_3__bad
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t6 = load i32 @case_3__drops
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @case_3__drops
-    %t8 = load i32 @case_3__trace
-    %t9 = binary mul i32 %t8, 10
-    %t10 = load ptr $this
+    %t6 = load typed i32 @case_3__drops
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @case_3__drops
+    %t8 = load typed i32 @case_3__trace
+    %t9 = binary mul nowrap i32 %t8, 10
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    store i32 %t13, @case_3__trace
-    %t14 = load ptr $this
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    store typed i32 %t13, @case_3__trace
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_7, ^if_else_5
 
   block ^land_rhs_7:
-    %t18 = load i32 @case_3__should_throw
+    %t18 = load typed i32 @case_3__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t19
+    store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     return void
@@ -2544,24 +2544,24 @@ function @case_4__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_4__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @case_4__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_4__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @case_4__live
     return void
 }
 function @case_4__E___E(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6case_41ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_4__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @case_4__live
-    %t3 = load i32 @case_4__trace
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 9
-    store i32 %t5, @case_4__trace
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_4__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @case_4__live
+    %t3 = load typed i32 @case_4__trace
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @case_4__trace
     return void
 }
 function @case_4__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void [binding=weak, object=_ZN6case_41GC1Eii, inline_hint=yes] {
@@ -2570,62 +2570,62 @@ function @case_4__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
   slot $e : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    store i32 %e, $e
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    store typed i32 %e, $e
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $e
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $e
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @case_4__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6case_41GD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_4__live
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_4__live
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @case_4__bad
+    store typed i32 1, @case_4__bad
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t6 = load i32 @case_4__drops
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @case_4__drops
-    %t8 = load i32 @case_4__trace
-    %t9 = binary mul i32 %t8, 10
-    %t10 = load ptr $this
+    %t6 = load typed i32 @case_4__drops
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @case_4__drops
+    %t8 = load typed i32 @case_4__trace
+    %t9 = binary mul nowrap i32 %t8, 10
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    store i32 %t13, @case_4__trace
-    %t14 = load ptr $this
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    store typed i32 %t13, @case_4__trace
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_7, ^if_else_5
 
   block ^land_rhs_7:
-    %t18 = load i32 @case_4__should_throw
+    %t18 = load typed i32 @case_4__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t19
+    store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     return void
@@ -2640,24 +2640,24 @@ function @case_5__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_5__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @case_5__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_5__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @case_5__live
     return void
 }
 function @case_5__E___E(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6case_51ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_5__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @case_5__live
-    %t3 = load i32 @case_5__trace
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 9
-    store i32 %t5, @case_5__trace
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_5__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @case_5__live
+    %t3 = load typed i32 @case_5__trace
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @case_5__trace
     return void
 }
 function @case_5__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void [binding=weak, object=_ZN6case_51GC1Eii, inline_hint=yes] {
@@ -2666,62 +2666,62 @@ function @case_5__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
   slot $e : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    store i32 %e, $e
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    store typed i32 %e, $e
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $e
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $e
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @case_5__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6case_51GD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_5__live
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_5__live
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @case_5__bad
+    store typed i32 1, @case_5__bad
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t6 = load i32 @case_5__drops
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @case_5__drops
-    %t8 = load i32 @case_5__trace
-    %t9 = binary mul i32 %t8, 10
-    %t10 = load ptr $this
+    %t6 = load typed i32 @case_5__drops
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @case_5__drops
+    %t8 = load typed i32 @case_5__trace
+    %t9 = binary mul nowrap i32 %t8, 10
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    store i32 %t13, @case_5__trace
-    %t14 = load ptr $this
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    store typed i32 %t13, @case_5__trace
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_7, ^if_else_5
 
   block ^land_rhs_7:
-    %t18 = load i32 @case_5__should_throw
+    %t18 = load typed i32 @case_5__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t19
+    store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     return void
@@ -2736,24 +2736,24 @@ function @case_6__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_6__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @case_6__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_6__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @case_6__live
     return void
 }
 function @case_6__E___E(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6case_61ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_6__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @case_6__live
-    %t3 = load i32 @case_6__trace
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 9
-    store i32 %t5, @case_6__trace
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_6__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @case_6__live
+    %t3 = load typed i32 @case_6__trace
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @case_6__trace
     return void
 }
 function @case_6__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void [binding=weak, object=_ZN6case_61GC1Eii, inline_hint=yes] {
@@ -2762,62 +2762,62 @@ function @case_6__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
   slot $e : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    store i32 %e, $e
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    store typed i32 %e, $e
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $e
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $e
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @case_6__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6case_61GD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_6__live
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_6__live
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @case_6__bad
+    store typed i32 1, @case_6__bad
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t6 = load i32 @case_6__drops
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @case_6__drops
-    %t8 = load i32 @case_6__trace
-    %t9 = binary mul i32 %t8, 10
-    %t10 = load ptr $this
+    %t6 = load typed i32 @case_6__drops
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @case_6__drops
+    %t8 = load typed i32 @case_6__trace
+    %t9 = binary mul nowrap i32 %t8, 10
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    store i32 %t13, @case_6__trace
-    %t14 = load ptr $this
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    store typed i32 %t13, @case_6__trace
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_7, ^if_else_5
 
   block ^land_rhs_7:
-    %t18 = load i32 @case_6__should_throw
+    %t18 = load typed i32 @case_6__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t19
+    store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     return void
@@ -2832,24 +2832,24 @@ function @case_7__E__E(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_7__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @case_7__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_7__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @case_7__live
     return void
 }
 function @case_7__E___E(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6case_71ED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_7__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @case_7__live
-    %t3 = load i32 @case_7__trace
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 9
-    store i32 %t5, @case_7__trace
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_7__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @case_7__live
+    %t3 = load typed i32 @case_7__trace
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 9
+    store typed i32 %t5, @case_7__trace
     return void
 }
 function @case_7__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void [binding=weak, object=_ZN6case_71GC1Eii, inline_hint=yes] {
@@ -2858,62 +2858,62 @@ function @case_7__G__G(%this : ptr [object_bytes=8], %n : i32, %e : i32) -> void
   slot $e : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    store i32 %e, $e
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    store typed i32 %e, $e
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $e
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $e
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @case_7__G___G(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6case_71GD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @case_7__live
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed i32 @case_7__live
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 4
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp ne i32 %t1, %t4
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @case_7__bad
+    store typed i32 1, @case_7__bad
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t6 = load i32 @case_7__drops
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @case_7__drops
-    %t8 = load i32 @case_7__trace
-    %t9 = binary mul i32 %t8, 10
-    %t10 = load ptr $this
+    %t6 = load typed i32 @case_7__drops
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @case_7__drops
+    %t8 = load typed i32 @case_7__trace
+    %t9 = binary mul nowrap i32 %t8, 10
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t9, %t12
-    store i32 %t13, @case_7__trace
-    %t14 = load ptr $this
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t9, %t12
+    store typed i32 %t13, @case_7__trace
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 2
     branch %t17, ^land_rhs_7, ^if_else_5
 
   block ^land_rhs_7:
-    %t18 = load i32 @case_7__should_throw
+    %t18 = load typed i32 @case_7__should_throw
     branch %t18, ^if_then_4, ^if_else_5
 
   block ^if_then_4:
     %t19 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t19
+    store typed i32 7, %t19
     %t20 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t19, %t20, 0)
     return void

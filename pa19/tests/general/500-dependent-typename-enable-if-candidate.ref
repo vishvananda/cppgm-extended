@@ -15,11 +15,11 @@ function @outer(%p : ptr, %u : ptr [pass=by_address, object_bytes=8]) -> i32 [bi
   slot $u : ptr
 
   block ^entry:
-    store ptr %p, $p
-    store ptr %u, $u
-    %t1 = load ptr $p
+    store typed ptr %p, $p
+    store typed ptr %u, $u
+    %t1 = load typed ptr $p
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $u
+    %t3 = load typed ptr $u
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = call i32 @helper(%t2, %t4)
     return i32 %t5
@@ -29,10 +29,10 @@ function @helper(%p : ptr, %u : ptr [pass=by_address, object_bytes=4]) -> i32 [b
   slot $u : ptr
 
   block ^entry:
-    store ptr %p, $p
-    store ptr %u, $u
-    %t1 = load ptr $p
-    %t2 = load ptr $u
-    %t3 = load i32 %t2
+    store typed ptr %p, $p
+    store typed ptr %u, $u
+    %t1 = load typed ptr $p
+    %t2 = load typed ptr $u
+    %t3 = load typed i32 %t2
     return i32 3
 }

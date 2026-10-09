@@ -311,28 +311,28 @@ function @read(%out : ptr) -> i32 [binding=strong, object=_Z4readP7OStream] {
   slot $basecast__1 : ptr
 
   block ^entry:
-    store ptr %out, $out
-    %t1 = load ptr $out
+    store typed ptr %out, $out
+    %t1 = load typed ptr $out
     %t2 = cmp eq ptr %t1, 0
     branch %t2, ^basecast_null_1, ^basecast_adjust_2
 
   block ^basecast_null_1:
-    store ptr 0, $basecast__1
+    store typed ptr 0, $basecast__1
     jump ^basecast_end_3
 
   block ^basecast_adjust_2:
-    %t3 = load ptr %t1
+    %t3 = load typed ptr %t1
     %t4 = index i8 %t3, -32
-    %t5 = load i64 %t4
+    %t5 = load typed i64 %t4
     %t6 = index i8 %t1, %t5
     %t7 = index i8 %t6, 8
-    store ptr %t7, $basecast__1
+    store typed ptr %t7, $basecast__1
     jump ^basecast_end_3
 
   block ^basecast_end_3:
-    %t8 = load ptr $basecast__1
+    %t8 = load typed ptr $basecast__1
     %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load i32 %t9
+    %t10 = load typed i32 %t9
     return i32 %t10
 }
 function @call(%ptr : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z4callRKP12StringStream] {
@@ -340,23 +340,23 @@ function @call(%ptr : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=str
   slot $basecast__1 : ptr
 
   block ^entry:
-    store ptr %ptr, $ptr
-    %t1 = load ptr $ptr
-    %t2 = load ptr %t1
+    store typed ptr %ptr, $ptr
+    %t1 = load typed ptr $ptr
+    %t2 = load typed ptr %t1
     %t3 = cmp eq ptr %t2, 0
     branch %t3, ^basecast_null_1, ^basecast_adjust_2
 
   block ^basecast_null_1:
-    store ptr 0, $basecast__1
+    store typed ptr 0, $basecast__1
     jump ^basecast_end_3
 
   block ^basecast_adjust_2:
     %t4 = index i8 %t2, 8
-    store ptr %t4, $basecast__1
+    store typed ptr %t4, $basecast__1
     jump ^basecast_end_3
 
   block ^basecast_end_3:
-    %t5 = load ptr $basecast__1
+    %t5 = load typed ptr $basecast__1
     %t6 = call i32 @read(%t5)
     return i32 %t6
 }
@@ -369,135 +369,135 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $stream
     call void @StringStream__StringStream(%t1)
     %t2 = addr $stream
-    store ptr %t2, $ptr
+    store typed ptr %t2, $ptr
     %t3 = addr $ptr
     %t4 = call i32 @call(%t3)
     %t5 = cmp eq i32 %t4, 7
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load i32 $cond__1
+    %t6 = load typed i32 $cond__1
     return i32 %t6
 }
 function @StringStream__StringStream(%this : ptr [object_bytes=32]) -> void [binding=weak, object=_ZN12StringStreamC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 16
     %t3 = addr @StringStream____vtt
     %t4 = index i8 %t3, 24
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 %t5, 24
     call void @BasicIOS__BasicIOS__base_entry(%t2, %t4, %t6)
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 %t7, 0
     %t9 = addr @StringStream____vtt
     %t10 = index i8 %t9, 8
-    %t11 = load ptr $this
+    %t11 = load typed ptr $this
     %t12 = index i8 %t11, 16
-    %t13 = load ptr $this
+    %t13 = load typed ptr $this
     %t14 = index i8 %t13, 24
     call void @IOStream__IOStream__base_entry(%t8, %t10, %t12, %t14)
-    %t15 = load ptr $this
+    %t15 = load typed ptr $this
     %t16 = addr @StringStream__vtable
     %t17 = index i8 %t16, 32
-    store ptr %t17, %t15
-    %t18 = load ptr $this
+    store typed ptr %t17, %t15
+    %t18 = load typed ptr $this
     %t19 = index i8 %t18, 8
     %t20 = addr @StringStream____view__OStream__8__vtable
     %t21 = index i8 %t20, 32
-    store ptr %t21, %t19
-    %t22 = load ptr $this
-    %t23 = load ptr %t22
+    store typed ptr %t21, %t19
+    %t22 = load typed ptr $this
+    %t23 = load typed ptr %t22
     %t24 = index i8 %t23, -32
-    %t25 = load i64 %t24
+    %t25 = load typed i64 %t24
     %t26 = index i8 %t22, %t25
     %t27 = index i8 %t26, 0
     %t28 = addr @StringStream____view__BasicIOS__16__vtable
     %t29 = index i8 %t28, 24
-    store ptr %t29, %t27
-    %t30 = load ptr $this
-    %t31 = load ptr %t30
+    store typed ptr %t29, %t27
+    %t30 = load typed ptr $this
+    %t31 = load typed ptr %t30
     %t32 = index i8 %t31, -32
-    %t33 = load i64 %t32
+    %t33 = load typed i64 %t32
     %t34 = index i8 %t30, %t33
     %t35 = index i8 %t34, 8
     %t36 = index i8 [projection=field] %t35, 0
-    store i32 7, %t36
+    store typed i32 7, %t36
     return void
 }
 function @BasicIOS__BasicIOS__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN8BasicIOSC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     return void
 }
 function @IOStream__IOStream__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN8IOStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = index i8 %__vtt, 8
     call void @IStream__IStream__base_entry(%t2, %t3, %__vbptr0, %__vbptr1)
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 %t4, 8
     %t6 = index i8 %__vtt, 32
     call void @OStream__OStream__base_entry(%t5, %t6, %__vbptr0, %__vbptr1)
-    %t7 = load ptr $this
-    %t8 = load ptr %__vtt
-    store ptr %t8, %t7
-    %t9 = load ptr $this
+    %t7 = load typed ptr $this
+    %t8 = load typed ptr %__vtt
+    store typed ptr %t8, %t7
+    %t9 = load typed ptr $this
     %t10 = index i8 %t9, 8
     %t11 = index i8 %__vtt, 56
-    %t12 = load ptr %t11
-    store ptr %t12, %t10
+    %t12 = load typed ptr %t11
+    store typed ptr %t12, %t10
     %t13 = index i8 %__vbptr0, 0
     %t14 = index i8 %__vtt, 64
-    %t15 = load ptr %t14
-    store ptr %t15, %t13
+    %t15 = load typed ptr %t14
+    store typed ptr %t15, %t13
     return void
 }
 function @IStream__IStream__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7IStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     %t3 = index i8 %__vbptr0, 0
     %t4 = index i8 %__vtt, 16
-    %t5 = load ptr %t4
-    store ptr %t5, %t3
+    %t5 = load typed ptr %t4
+    store typed ptr %t5, %t3
     return void
 }
 function @OStream__OStream__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7OStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     %t3 = index i8 %__vbptr0, 0
     %t4 = index i8 %__vtt, 16
-    %t5 = load ptr %t4
-    store ptr %t5, %t3
+    %t5 = load typed ptr %t4
+    store typed ptr %t5, %t3
     return void
 }

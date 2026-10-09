@@ -9,20 +9,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i32 @run()
     %t2 = call i32 @run__ov2()
-    %t3 = binary add i32 %t1, %t2
+    %t3 = binary add nowrap i32 %t1, %t2
     %t4 = cmp eq i32 %t3, 6
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @run() -> i32 [binding=weak, object=_Z3runIiEiv] {
@@ -36,7 +36,7 @@ function @run() -> i32 [binding=weak, object=_Z3runIiEiv] {
     %t4 = call i32 @__lambda_run__int_t15_19__operator__(%t3)
     %t5 = addr $second
     %t6 = call i32 @__lambda_run__int_t36_40_n1__operator__(%t5)
-    %t7 = binary add i32 %t4, %t6
+    %t7 = binary add nowrap i32 %t4, %t6
     return i32 %t7
 }
 function @run__ov2() -> i32 [binding=weak, object=_Z3runIcEiv] {
@@ -50,38 +50,38 @@ function @run__ov2() -> i32 [binding=weak, object=_Z3runIcEiv] {
     %t4 = call i32 @__lambda_run__char_t15_19__operator__(%t3)
     %t5 = addr $second
     %t6 = call i32 @__lambda_run__char_t36_40_n1__operator__(%t5)
-    %t7 = binary add i32 %t4, %t6
+    %t7 = binary add nowrap i32 %t4, %t6
     return i32 %t7
 }
 function @__lambda_run__int_t15_19__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runIiEivENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @__local_static____lambda_run__int_t15_19__operator____decl0__value
+    store typed ptr %this, $this
+    %t1 = load typed i32 @__local_static____lambda_run__int_t15_19__operator____decl0__value
     return i32 %t1
 }
 function @__lambda_run__int_t36_40_n1__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runIiEivENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @__local_static____lambda_run__int_t36_40_n1__operator____decl0__value
+    store typed ptr %this, $this
+    %t1 = load typed i32 @__local_static____lambda_run__int_t36_40_n1__operator____decl0__value
     return i32 %t1
 }
 function @__lambda_run__char_t15_19__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runIcEivENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @__local_static____lambda_run__char_t15_19__operator____decl0__value
+    store typed ptr %this, $this
+    %t1 = load typed i32 @__local_static____lambda_run__char_t15_19__operator____decl0__value
     return i32 %t1
 }
 function @__lambda_run__char_t36_40_n1__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runIcEivENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @__local_static____lambda_run__char_t36_40_n1__operator____decl0__value
+    store typed ptr %this, $this
+    %t1 = load typed i32 @__local_static____lambda_run__char_t36_40_n1__operator____decl0__value
     return i32 %t1
 }

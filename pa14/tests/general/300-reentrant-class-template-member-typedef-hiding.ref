@@ -1,4 +1,4 @@
-global @values [binding=strong] = {
+global @values : obj<24x8> [binding=strong] = {
   zero 24
 }
 

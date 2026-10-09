@@ -6,10 +6,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $object
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 0, %t4
+    store typed i32 0, %t4
     %t5 = addr $object
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     return i32 %t8
 }

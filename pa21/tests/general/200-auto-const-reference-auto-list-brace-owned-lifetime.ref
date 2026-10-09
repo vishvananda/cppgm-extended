@@ -31,12 +31,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^call_unwind_end_2:
-    store ptr %t4, %t3
+    store typed ptr %t4, %t3
     %t8 = index i8 %t3, 8
-    store i64 2, %t8
-    store ptr %t3, $xs
+    store typed i64 2, %t8
+    store typed ptr %t3, $xs
     eh_try ^cleanup_resume_6
-    %t9 = load i32 @alive
+    %t9 = load typed i32 @alive
     %t10 = cmp ne i32 %t9, 4
     eh_end
     jump ^call_unwind_end_8
@@ -49,10 +49,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_7:
     eh_try ^cleanup_resume_6
-    %t11 = load ptr $xs
+    %t11 = load typed ptr $xs
     %t12 = call i64 @std__initializer_list_S___size(%t11)
-    store i64 %t12, $call__4
-    %t13 = load i64 $call__4
+    store typed i64 %t12, $call__4
+    %t13 = load typed i64 $call__4
     %t14 = convert sext i64 i32 2
     %t15 = cmp ne i64 %t13, %t14
     eh_end
@@ -73,7 +73,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_5:
     call void @S___S(%t6)
     call void @S___S(%t4)
-    %t18 = load i32 @alive
+    %t18 = load typed i32 @alive
     %t19 = cmp ne i32 %t18, 2
     branch %t19, ^if_then_9, ^if_else_10
 
@@ -92,7 +92,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S___S(%t22)
     %t23 = addr $first
     call void @S___S(%t23)
-    %t24 = load i32 @alive
+    %t24 = load typed i32 @alive
     %t25 = cmp ne i32 %t24, 0
     %t26 = convert trunc i32 i64 %t25
     return i32 %t26
@@ -102,25 +102,25 @@ function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [unwind=no, bindi
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 @alive
-    %t5 = binary add i32 %t4, 1
-    store i32 %t5, @alive
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 @alive
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @alive
     return void
 }
 function @S___S(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN1SD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @alive
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @alive
+    store typed ptr %this, $this
+    %t1 = load typed i32 @alive
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @alive
     return void
 }
 function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=4], %s : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN1SC1ERKS_, inline_hint=yes] {
@@ -128,27 +128,27 @@ function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=4], %s : ptr [pass=
   slot $s : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %s, $s
-    %t1 = load ptr $s
+    store typed ptr %this, $this
+    store typed ptr %s, $s
+    %t1 = load typed ptr $s
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load i32 @alive
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @alive
+    store typed i32 %t3, %t5
+    %t6 = load typed i32 @alive
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @alive
     return void
 }
 function @std__initializer_list_S___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI1SE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     return i64 %t3
 }
 alias object _ZN1SC2Ei = @S__S

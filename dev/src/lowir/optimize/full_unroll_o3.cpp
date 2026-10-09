@@ -272,7 +272,8 @@ bool linear_body_path(const Function & function,
        graph.successors[block].size() != 1) return false;
     for(std::size_t index = 0; index + 1 < instructions.size(); ++index) {
       if(stats) ++stats->o3_unroll_instruction_visits;
-      if(instructions[index].kind >= Instruction::IK_EH_TRY) return false;
+      if(instructions[index].kind >= Instruction::IK_EH_TRY &&
+         instructions[index].kind != Instruction::IK_SELECT) return false;
     }
     block = graph.successors[block][0];
   }

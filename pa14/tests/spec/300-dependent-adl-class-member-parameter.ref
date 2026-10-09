@@ -2,7 +2,7 @@ function @user__num_vertices(%__param0 : ptr [pass=by_address, object_bytes=1]) 
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 7
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -18,20 +18,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @lib__vertex_list_graph_user__graph___const_constraints(%t3, %t4)
     %t5 = addr $check
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load i32 %t6
+    %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 7
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     return i32 %t9
 }
 function @lib__vertex_list_graph_user__graph___const_constraints(%this : ptr [object_bytes=4], %cg : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3lib17vertex_list_graphIN4user5graphEE17const_constraintsERKS2_, inline_hint=yes] {
@@ -39,12 +39,12 @@ function @lib__vertex_list_graph_user__graph___const_constraints(%this : ptr [ob
   slot $cg : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %cg, $cg
-    %t1 = load ptr $cg
+    store typed ptr %this, $this
+    store typed ptr %cg, $cg
+    %t1 = load typed ptr $cg
     %t2 = call i32 @user__num_vertices(%t1)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 %t2, %t4
+    store typed i32 %t2, %t4
     return void
 }

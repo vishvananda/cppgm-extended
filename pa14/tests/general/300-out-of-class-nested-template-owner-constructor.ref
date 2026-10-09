@@ -12,9 +12,9 @@ function @outer_int___inner__inner(%this : ptr [object_bytes=1], %x : i32, %y : 
   slot $y : f64
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    store f64 %y, $y
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    store typed f64 %y, $y
     return void
 }
 alias object _ZN5outerIiE5innerC2Eid = @outer_int___inner__inner

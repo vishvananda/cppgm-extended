@@ -3,8 +3,8 @@ function @execute(%__param0 : ptr [pass=by_address, object_bytes=4], %__param1 :
   slot $__param1 : i64
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store i64 %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed i64 %__param1, $__param1
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -15,8 +15,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $p_mut
     call void @ReadonlyProperty__ReadonlyProperty(%t1)
     %t2 = addr $p_mut
-    store ptr %t2, $p
-    %t3 = load ptr $p
+    store typed ptr %t2, $p
+    %t3 = load typed ptr $p
     %t4 = index i8 %t3, 0
     %t5 = call ptr @PropertyBase__operatorconstFunction_(%t4)
     %t6 = convert sext i64 i32 0
@@ -27,8 +27,8 @@ function @ReadonlyProperty__ReadonlyProperty(%this : ptr [object_bytes=4]) -> vo
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @PropertyBase__PropertyBase__base_entry(%t2)
     return void
@@ -37,8 +37,8 @@ function @PropertyBase__operatorconstFunction_(%this : ptr [object_bytes=4]) -> 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
@@ -46,8 +46,8 @@ function @PropertyBase__PropertyBase__base_entry(%this : ptr [object_bytes=4]) -
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @Function__Function(%t2)
     return void
@@ -56,10 +56,10 @@ function @Function__Function(%this : ptr [object_bytes=4]) -> void [binding=weak
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 alias object _ZN16ReadonlyPropertyC2Ev = @ReadonlyProperty__ReadonlyProperty

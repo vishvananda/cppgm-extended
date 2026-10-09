@@ -4,9 +4,9 @@ function @call_target(%value : i32) -> void [binding=strong, object=_Z11call_tar
   slot $value : i32
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr @target
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr @target
     call void %t2(%t1) as (%arg0 : i32) -> void
     return void
 }

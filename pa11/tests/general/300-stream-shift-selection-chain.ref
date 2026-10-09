@@ -16,17 +16,17 @@ function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 
   slot $__param1 : i8
 
   block ^entry:
-    store ptr %stream, $stream
+    store typed ptr %stream, $stream
     store i8 %__param1, $__param1
-    %t1 = load ptr $stream
+    %t1 = load typed ptr $stream
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 3
-    %t6 = load ptr $stream
+    %t3 = load typed i32 %t2
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 3
+    %t6 = load typed ptr $stream
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 %t5, %t7
-    %t8 = load ptr $stream
+    store typed i32 %t5, %t7
+    %t8 = load typed ptr $stream
     return ptr %t8
 }
 function @operator____ov2(%stream : ptr [pass=by_address, object_bytes=4], %__param1 : ptr) -> ptr [binding=strong, object=_ZlsR6StreamPKc] {
@@ -34,33 +34,33 @@ function @operator____ov2(%stream : ptr [pass=by_address, object_bytes=4], %__pa
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %stream, $stream
-    store ptr %__param1, $__param1
-    %t1 = load ptr $stream
+    store typed ptr %stream, $stream
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $stream
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 4
-    %t6 = load ptr $stream
+    %t3 = load typed i32 %t2
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 4
+    %t6 = load typed ptr $stream
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 %t5, %t7
-    %t8 = load ptr $stream
+    store typed i32 %t5, %t7
+    %t8 = load typed ptr $stream
     return ptr %t8
 }
 function @manip(%stream : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_Z5manipR6Stream] {
   slot $stream : ptr
 
   block ^entry:
-    store ptr %stream, $stream
-    %t1 = load ptr $stream
+    store typed ptr %stream, $stream
+    %t1 = load typed ptr $stream
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 5
-    %t6 = load ptr $stream
+    %t3 = load typed i32 %t2
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 5
+    %t6 = load typed ptr $stream
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 %t5, %t7
-    %t8 = load ptr $stream
+    store typed i32 %t5, %t7
+    %t8 = load typed ptr $stream
     return ptr %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -73,35 +73,35 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $stream
     store i8 120, $ch
     %t2 = addr @__strlit__1
-    store ptr %t2, $text
+    store typed ptr %t2, $text
     %t3 = addr $stream
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 0, %t4
+    store typed i32 0, %t4
     %t5 = addr $stream
     %t6 = load i8 $ch
     %t7 = call ptr @operator__(%t5, %t6)
     %t8 = addr @__strlit__2
     %t9 = call ptr @operator____ov2(%t7, %t8)
-    %t10 = load ptr $text
+    %t10 = load typed ptr $text
     %t11 = call ptr @operator____ov2(%t9, %t10)
     %t12 = addr @manip
     %t13 = call ptr @Stream__operator____ov3(%t11, %t12)
     %t14 = addr $stream
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp eq i32 %t16, 3445
     branch %t17, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t18 = load i32 $cond__1
+    %t18 = load typed i32 $cond__1
     return i32 %t18
 }
 function @Stream__operator____ov3(%this : ptr [object_bytes=4], %pf : ptr) -> ptr [binding=weak, object=_ZN6StreamlsEPFRS_S0_E, inline_hint=yes] {
@@ -109,10 +109,10 @@ function @Stream__operator____ov3(%this : ptr [object_bytes=4], %pf : ptr) -> pt
   slot $pf : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %pf, $pf
-    %t1 = load ptr $this
-    %t2 = load ptr $pf
+    store typed ptr %this, $this
+    store typed ptr %pf, $pf
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $pf
     %t3 = call ptr %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=4]) -> ptr
     return ptr %t3
 }

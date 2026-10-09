@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<4x4> @holder_tag__char___call()
     copyobj 4x4 %t2, %t1
     %t3 = index i8 [projection=field] %t1, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     return i32 %t4
 }
 function @holder_tag__char___call() -> obj<4x4> [binding=weak, object=_ZN6holderI3tagcE4callEv, inline_hint=yes] {
@@ -26,7 +26,7 @@ function @holder_tag__char___value() -> obj<4x4> [binding=weak, object=_ZN6holde
     %t1 = addr $out
     %t2 = addr $out
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 0, %t3
+    store typed i32 0, %t3
     %t4 = addr $retobj__1
     %t5 = addr $out
     copyobj 4x4 %t5, %t4

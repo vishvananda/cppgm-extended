@@ -22,7 +22,7 @@ global @cleanup_count : i32 [binding=strong] = zero
 function @fail() -> void [binding=strong, object=_Z4failv, no_inline=yes] {
   block ^entry:
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t1
+    store typed i32 7, %t1
     %t2 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t1, %t2, 0)
     return void
@@ -33,18 +33,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^call_unwind_dispatch_6
     call void @fail()
     eh_end
-    %__o1inl1__t1 = load i32 @cleanup_count
-    %__o1inl1__t2 = binary add i32 %__o1inl1__t1, 1
-    store i32 %__o1inl1__t2, @cleanup_count
+    %__o1inl1__t1 = load typed i32 @cleanup_count
+    %__o1inl1__t2 = binary add nowrap i32 %__o1inl1__t1, 1
+    store typed i32 %__o1inl1__t2, @cleanup_count
     eh_end
     return i32 2
 
   block ^call_unwind_dispatch_6:
     eh_catch @__external_rtti__int, 1
     eh_cleanup
-    %__o1inl0__t1 = load i32 @cleanup_count
-    %__o1inl0__t2 = binary add i32 %__o1inl0__t1, 1
-    store i32 %__o1inl0__t2, @cleanup_count
+    %__o1inl0__t1 = load typed i32 @cleanup_count
+    %__o1inl0__t2 = binary add nowrap i32 %__o1inl0__t1, 1
+    store typed i32 %__o1inl0__t2, @cleanup_count
     eh_end
     eh_end
     jump ^catch_entry_2
@@ -62,12 +62,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^catch_body_8:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_10
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     %t10 = cmp eq i32 %t8, 7
     branch %t10, ^land_rhs_14, ^land_short_15
 
   block ^land_rhs_14:
-    %t11 = load i32 @cleanup_count
+    %t11 = load typed i32 @cleanup_count
     %t12 = cmp eq i32 %t11, 1
     jump ^land_end_16
 

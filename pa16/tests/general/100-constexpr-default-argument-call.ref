@@ -2,8 +2,8 @@ function @f(%x : i32) -> i32 [binding=strong, object=_Z1fi] {
   slot $x : i32
 
   block ^entry:
-    store i32 %x, $x
-    %t1 = load i32 $x
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
     return i32 %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -16,9 +16,9 @@ function @twice(%x : i32) -> i32 [binding=weak, object=_Z5twicei, inline_hint=ye
   slot $x : i32
 
   block ^entry:
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = load i32 $x
-    %t3 = binary add i32 %t1, %t2
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = load typed i32 $x
+    %t3 = binary add nowrap i32 %t1, %t2
     return i32 %t3
 }

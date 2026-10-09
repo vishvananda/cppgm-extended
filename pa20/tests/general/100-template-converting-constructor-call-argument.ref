@@ -2,7 +2,7 @@ function @sleep_for(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -21,7 +21,7 @@ function @duration_long_long_int__milli___duration_typename___retained_template_
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @duration_long_long_int__nano___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8durationIx4nanoEC1Ix5milliEERKS_IT_T0_E, inline_hint=yes] {
@@ -29,8 +29,8 @@ function @duration_long_long_int__nano___duration_typename___retained_template_p
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN8durationIx5milliEC2Ev = @duration_long_long_int__milli___duration_typename___retained_template_parameter_shape_0__typename___retained_template_parameter_shape_1_

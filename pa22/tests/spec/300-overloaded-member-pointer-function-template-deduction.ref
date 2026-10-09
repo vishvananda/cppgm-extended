@@ -23,15 +23,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }
 function @boost__ref(%t : ptr [pass=by_address, object_bytes=1]) -> obj<8x8> [binding=weak, object=_ZN5boost3refI6StreamEENS_17reference_wrapperIT_EERS3_] {
@@ -39,9 +39,9 @@ function @boost__ref(%t : ptr [pass=by_address, object_bytes=1]) -> obj<8x8> [bi
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %t, $t
+    store typed ptr %t, $t
     %t1 = addr $retobj__1
-    %t2 = load ptr $t
+    %t2 = load typed ptr $t
     call void @boost__reference_wrapper_Stream___reference_wrapper_Stream_(%t1, %t2)
     return obj<8x8> $retobj__1
 }
@@ -50,8 +50,8 @@ function @Logger__set_stream(%this : ptr [object_bytes=1], %__param1 : ptr [pass
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [binding=weak, object=_ZN5boost4bindIv6LoggerR6StreamPS1_NS_17reference_wrapperIS2_EEEEiMT0_FT_T1_ET2_T3_] {
@@ -63,54 +63,54 @@ function @boost__bind(%f : i128, %object : ptr, %bound : obj<8x8>) -> i32 [bindi
   slot $land__3 : i64
 
   block ^entry:
-    store i128 %f, $f
-    store ptr %object, $object
+    store typed i128 %f, $f
+    store typed ptr %object, $object
     %t1 = addr $bound
     copyobj 8x8 %bound, %t1
-    %t2 = load ptr $object
+    %t2 = load typed ptr $object
     branch %t2, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t3 = load i128 $f
+    %t3 = load typed i128 $f
     %t4 = convert trunc i64 i128 %t3
     %t5 = cmp ne i64 %t4, 0
-    store i64 %t5, $land__3
+    store typed i64 %t5, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_9
 
   block ^land_end_9:
-    %t6 = load i64 $land__3
+    %t6 = load typed i64 $land__3
     branch %t6, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t7 = addr $bound
     %t8 = index i8 [projection=field] %t7, 0
-    %t9 = load ptr %t8
+    %t9 = load typed ptr %t8
     %t10 = cmp ne ptr %t9, 0
-    store i64 %t10, $land__2
+    store typed i64 %t10, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t11 = load i64 $land__2
+    %t11 = load typed i64 $land__2
     branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 7, $cond__1
+    store typed i32 7, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load i32 $cond__1
+    %t12 = load typed i32 $cond__1
     return i32 %t12
 }
 function @boost__reference_wrapper_Stream___reference_wrapper_Stream_(%this : ptr [object_bytes=8], %t : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost17reference_wrapperI6StreamEC1ERS1_, inline_hint=yes] {
@@ -118,12 +118,12 @@ function @boost__reference_wrapper_Stream___reference_wrapper_Stream_(%this : pt
   slot $t : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %t, $t
-    %t1 = load ptr $t
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %t, $t
+    %t1 = load typed ptr $t
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 alias object _ZN5boost17reference_wrapperI6StreamEC2ERS1_ = @boost__reference_wrapper_Stream___reference_wrapper_Stream_

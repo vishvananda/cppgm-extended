@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @f
-    store i32 0, $refarg__1
+    store typed i32 0, $refarg__1
     %t2 = addr $refarg__1
     %t3 = call i32 @S_lvalue_reference_to_function_of____returning_int___g(%t1, %t2)
     return i32 %t3
@@ -17,7 +17,7 @@ function @S_lvalue_reference_to_function_of____returning_int___g(%t : ptr [pass=
   slot $u : ptr
 
   block ^entry:
-    store ptr %t, $t
-    store ptr %u, $u
+    store typed ptr %t, $t
+    store typed ptr %u, $u
     return i32 0
 }

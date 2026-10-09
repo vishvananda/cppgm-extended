@@ -13,8 +13,8 @@ function @get(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=we
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = call ptr @unsafe_get(%t1)
     return ptr %t2
 }
@@ -22,7 +22,7 @@ function @unsafe_get(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [bin
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     return ptr %t1
 }

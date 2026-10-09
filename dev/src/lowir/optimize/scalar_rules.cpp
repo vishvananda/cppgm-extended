@@ -92,6 +92,7 @@ bool factor_scaled_index_multipliers(
       multiply.second = constant;
       multiply.second.int_value = static_cast<long long>(multiplier);
       multiply.second.has_spelling = false;
+      lowir_model::drop_instruction_facts(multiply);   // a different product
       if(multiplier == 1) {
         multiply.kind = Instruction::IK_COPY;
         multiply.second = Operand();
@@ -115,7 +116,7 @@ ReadonlyGlobalIndex::ReadonlyGlobalIndex(
   if(!populate) return;
   for(std::size_t i = 0; i < program.globals.size(); ++i) {
     const lowir_model::GlobalDefinition & global = program.globals[i];
-    if(global.structured ||
+    if(global.structured || global.metadata.replaceable ||
        global.storage != lowir_model::GSM_READONLY ||
        global.init_kind != lowir_model::GlobalDefinition::INIT_INTEGER ||
        global.init_operand.kind != Operand::OP_INTEGER) continue;

@@ -7,8 +7,8 @@ function @a__b__f(%value : i32) -> i32 [binding=weak, object=_ZN1a1b1fIiEEiT_] {
   slot $value : i32
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
     %t2 = call i32 @a__b__f__ov2(%t1, 0)
     return i32 %t2
 }
@@ -17,7 +17,7 @@ function @a__b__f__ov2(%__param0 : i32, %__param1 : i32) -> i32 [binding=weak, o
   slot $__param1 : i32
 
   block ^entry:
-    store i32 %__param0, $__param0
-    store i32 %__param1, $__param1
+    store typed i32 %__param0, $__param0
+    store typed i32 %__param1, $__param1
     return i32 0
 }

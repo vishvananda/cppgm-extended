@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $supplied
     %t2 = addr $fallback
-    store i32 0, $predecessor_value
+    store typed i32 0, $predecessor_value
     %t3 = addr $pack
     %t4 = addr $arg__1
     %t5 = addr $supplied
@@ -41,22 +41,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = call obj<8x8> @keyword_weight_tag___operator_(%t12, %t13)
     copyobj 8x8 %t14, %t11
     %t15 = call ptr @arg_list___cppgm_class_template_identity_2_5_0____cppgm_class_template_identity_3_7_0___operator____ov3(%t10, %t11)
-    store ptr %t15, $selected
+    store typed ptr %t15, $selected
     %t16 = const i64 1
     %t17 = const i64 1
     %t18 = cmp eq i64 %t16, %t17
     branch %t18, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__6
+    store typed i32 0, $cond__6
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__6
+    store typed i32 1, $cond__6
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load i32 $cond__6
+    %t19 = load typed i32 $cond__6
     return i32 %t19
 }
 function @tagged_argument_weight_tag__supplied_map___tagged_argument_predecessor_tag__int_(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN15tagged_argumentI10weight_tag12supplied_mapEC1ERKS1_, inline_hint=yes] {
@@ -64,12 +64,12 @@ function @tagged_argument_weight_tag__supplied_map___tagged_argument_predecessor
   slot $v : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %v, $v
-    %t1 = load ptr $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %v, $v
+    %t1 = load typed ptr $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @tagged_argument_predecessor_tag__int___tagged_argument_predecessor_tag__int_(%this : ptr [object_bytes=8], %v : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN15tagged_argumentI15predecessor_tagiEC1ERKi, inline_hint=yes] {
@@ -77,12 +77,12 @@ function @tagged_argument_predecessor_tag__int___tagged_argument_predecessor_tag
   slot $v : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %v, $v
-    %t1 = load ptr $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %v, $v
+    %t1 = load typed ptr $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @arg_list___cppgm_class_template_identity_2_6_0__empty_arg_list___arg_list___cppgm_class_template_identity_2_5_0____cppgm_class_template_identity_3_7_0_(%this : ptr [object_bytes=8], %tagged : ptr [pass=by_address, object_bytes=8], %next : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8arg_listI15tagged_argumentI15predecessor_tagiE14empty_arg_listEC1ERKS2_RKS3_, inline_hint=yes] {
@@ -91,14 +91,14 @@ function @arg_list___cppgm_class_template_identity_2_6_0__empty_arg_list___arg_l
   slot $next : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %tagged, $tagged
-    store ptr %next, $next
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %tagged, $tagged
+    store typed ptr %next, $next
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load ptr $tagged
+    %t5 = load typed ptr $tagged
     copyobj 8x8 %t5, %t4
     return void
 }
@@ -108,16 +108,16 @@ function @arg_list___cppgm_class_template_identity_2_5_0____cppgm_class_template
   slot $next : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %tagged, $tagged
-    store ptr %next, $next
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %tagged, $tagged
+    store typed ptr %next, $next
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $next
+    %t3 = load typed ptr $next
     copyobj 8x8 %t3, %t2
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 8
-    %t6 = load ptr $tagged
+    %t6 = load typed ptr $tagged
     copyobj 8x8 %t6, %t5
     return void
 }
@@ -127,10 +127,10 @@ function @keyword_weight_tag___operator_(%this : ptr [object_bytes=1], %d : ptr 
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %d, $d
+    store typed ptr %this, $this
+    store typed ptr %d, $d
     %t1 = addr $retobj__1
-    %t2 = load ptr $d
+    %t2 = load typed ptr $d
     call void @default__weight_tag__default_map___default__predecessor_tag__default_map_(%t1, %t2)
     return obj<8x8> $retobj__1
 }
@@ -139,9 +139,9 @@ function @arg_list___cppgm_class_template_identity_2_5_0____cppgm_class_template
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 8
     %t3 = call ptr @tagged_argument_weight_tag__supplied_map___get_value(%t2)
     return ptr %t3
@@ -151,22 +151,22 @@ function @default__weight_tag__default_map___default__predecessor_tag__default_m
   slot $v : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %v, $v
-    %t1 = load ptr $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %v, $v
+    %t1 = load typed ptr $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @tagged_argument_weight_tag__supplied_map___get_value(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK15tagged_argumentI10weight_tag12supplied_mapE9get_valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     return ptr %t3
 }
 alias object _ZN15tagged_argumentI10weight_tag12supplied_mapEC2ERKS1_ = @tagged_argument_weight_tag__supplied_map___tagged_argument_predecessor_tag__int_

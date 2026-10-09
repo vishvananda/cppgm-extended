@@ -69,8 +69,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $object
     call void @leaf__leaf(%t1)
     %t2 = addr $object
-    %t3 = load ptr %t2
-    %t4 = load ptr %t3
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr %t3
     %t5 = call ptr %t4(%t2) as (%arg0 : ptr [object_bytes=8]) -> ptr
     %t6 = index i8 [projection=array_element] %t5, 0
     %t7 = load i8 %t6
@@ -79,22 +79,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }
 function @leaf__what(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK4leaf4whatEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr @__strlit__1
     return ptr %t1
 }
@@ -102,39 +102,39 @@ function @leaf__leaf(%this : ptr [object_bytes=8]) -> void [binding=weak, object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @mid__mid__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @leaf__vtable
     %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @mid__mid__base_entry(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN3midC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @base__base__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @mid__vtable
     %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4baseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN4leafC2Ev = @leaf__leaf

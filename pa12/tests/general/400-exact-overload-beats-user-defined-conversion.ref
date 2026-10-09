@@ -16,8 +16,8 @@ function @pick(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : pt
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return i32 1
 }
 function @pick__ov2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr) -> i32 [binding=strong, object=_Z4pickRK10StringLikePKc] {
@@ -25,8 +25,8 @@ function @pick__ov2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return i32 0
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -46,8 +46,8 @@ function @StringLike__StringLike(%this : ptr [object_bytes=1], %__param1 : ptr) 
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN10StringLikeC2EPKc = @StringLike__StringLike

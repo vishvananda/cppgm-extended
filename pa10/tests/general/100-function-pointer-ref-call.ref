@@ -2,17 +2,17 @@ function @g(%x : i32) -> i32 [binding=strong, object=_Z1gi] {
   slot $x : i32
 
   block ^entry:
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = binary add i32 %t1, 1
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }
 function @call(%fp : ptr) -> i32 [binding=strong, object=_Z4callPFiiE] {
   slot $fp : ptr
 
   block ^entry:
-    store ptr %fp, $fp
-    %t1 = load ptr $fp
+    store typed ptr %fp, $fp
+    %t1 = load typed ptr $fp
     %t2 = call i32 %t1(4) as (%arg0 : i32) -> i32
     return i32 %t2
 }
@@ -21,10 +21,10 @@ function @invoke(%rf : ptr [pass=by_address], %x : i32) -> i32 [binding=strong, 
   slot $x : i32
 
   block ^entry:
-    store ptr %rf, $rf
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = load ptr $rf
+    store typed ptr %rf, $rf
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = load typed ptr $rf
     %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
     return i32 %t3
 }
@@ -34,6 +34,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @call(%t1)
     %t3 = addr @g
     %t4 = call i32 @invoke(%t3, 1)
-    %t5 = binary add i32 %t2, %t4
+    %t5 = binary add nowrap i32 %t2, %t4
     return i32 %t5
 }

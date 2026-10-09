@@ -10,15 +10,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @N__Holder_int___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1N6HolderIiE3runEv] {
@@ -27,11 +27,11 @@ function @N__Holder_int___run(%this : ptr [object_bytes=1]) -> i32 [binding=weak
   slot $refarg__2 : i32
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    store i32 1, $refarg__1
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    store typed i32 1, $refarg__1
     %t2 = addr $refarg__1
-    store i32 2, $refarg__2
+    store typed i32 2, $refarg__2
     %t3 = addr $refarg__2
     %t4 = call i32 @N__Holder_int___make(%t1, 3, %t2, %t3)
     return i32 %t4
@@ -43,11 +43,11 @@ function @N__Holder_int___make(%this : ptr [object_bytes=1], %h : i32, %args : p
   slot $args__pack2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %h, $h
-    store ptr %args, $args
-    store ptr %args__pack2, $args__pack2
-    %t1 = load i32 $h
+    store typed ptr %this, $this
+    store typed i32 %h, $h
+    store typed ptr %args, $args
+    store typed ptr %args__pack2, $args__pack2
+    %t1 = load typed i32 $h
     %t2 = const i64 2
     %t3 = convert sext i64 i32 %t1
     %t4 = binary add i64 %t3, %t2

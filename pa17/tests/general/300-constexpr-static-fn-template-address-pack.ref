@@ -10,15 +10,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t2 = load i32 $cond__1
+    %t2 = load typed i32 $cond__1
     return i32 %t2
 }
 function @table__table(%this : ptr [object_bytes=8], %first : ptr) -> void [binding=weak, object=_ZN5tableC1EPFvvE, inline_hint=yes] {
@@ -26,12 +26,12 @@ function @table__table(%this : ptr [object_bytes=8], %first : ptr) -> void [bind
   slot $first : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %first, $first
-    %t1 = load ptr $first
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %first, $first
+    %t1 = load typed ptr $first
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @slot_void_____impl() -> void [binding=weak, object=_ZN4slotIFvvEE4implIiEEvv, inline_hint=yes] {

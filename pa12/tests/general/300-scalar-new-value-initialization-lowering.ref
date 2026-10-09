@@ -4,6 +4,6 @@ function @make_value() -> ptr [binding=strong, object=_Z10make_valuev] {
   block ^entry:
     %t1 = convert sext i64 i32 4
     %t2 = call ptr @operatornew(%t1)
-    store u32 0, %t2
+    store typed u32 0, %t2
     return ptr %t2
 }

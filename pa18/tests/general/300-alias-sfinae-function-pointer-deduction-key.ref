@@ -53,7 +53,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call i32 @test_trait_impl(%t1, 0, 0)
     %t3 = addr @__strlit__2
     %t4 = call i32 @test_trait_impl__ov2(%t3, 0, 0)
-    %t5 = binary add i32 %t2, %t4
+    %t5 = binary add nowrap i32 %t2, %t4
     return i32 %t5
 }
 function @test_trait_impl(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_Z15test_trait_implIN6traits6detail15has_descriptionI2E1vEEEiPKcPFvT_Eb] {
@@ -63,8 +63,8 @@ function @test_trait_impl(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i
   slot $cond__1 : i32
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     store u8 %expected, $expected
     %t1 = load u8 $expected
     %t2 = convert zext i32 u8 %t1
@@ -72,15 +72,15 @@ function @test_trait_impl(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t4 = load i32 $cond__1
+    %t4 = load typed i32 $cond__1
     return i32 %t4
 }
 function @test_trait_impl__ov2(%__param0 : ptr, %__param1 : ptr, %expected : u8) -> i32 [binding=weak, object=_Z15test_trait_implIN6traits6detail15has_descriptionI2E2vEEEiPKcPFvT_Eb] {
@@ -90,8 +90,8 @@ function @test_trait_impl__ov2(%__param0 : ptr, %__param1 : ptr, %expected : u8)
   slot $cond__1 : i32
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     store u8 %expected, $expected
     %t1 = load u8 $expected
     %t2 = convert zext i32 u8 %t1
@@ -99,14 +99,14 @@ function @test_trait_impl__ov2(%__param0 : ptr, %__param1 : ptr, %expected : u8)
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t4 = load i32 $cond__1
+    %t4 = load typed i32 $cond__1
     return i32 %t4
 }

@@ -41,15 +41,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t13, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__2
+    store typed i32 0, $cond__2
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__2
+    store typed i32 1, $cond__2
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load i32 $cond__2
+    %t14 = load typed i32 $cond__2
     return i32 %t14
 }
 function @Payload__operator___ov2(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [unwind=no, binding=weak, object=_ZN7PayloadaSEOS_, inline_hint=yes] {
@@ -57,11 +57,11 @@ function @Payload__operator___ov2(%this : ptr [object_bytes=8], %other : ptr [pa
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
     copyobj 8x8 %t2, %t1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     return ptr %t3
 }

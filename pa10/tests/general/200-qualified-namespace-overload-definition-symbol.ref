@@ -3,21 +3,21 @@ function @N__f(%x : f32) -> i32 [unwind=no, binding=strong, object=_ZN1N1fEf] {
   slot $cond__1 : i32
 
   block ^entry:
-    store f32 %x, $x
-    %t1 = load f32 $x
+    store typed f32 %x, $x
+    %t1 = load typed f32 $x
     %t2 = cmp eq f32 %t1, 1.0f
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @N__f__ov2(%x : f64) -> i32 [unwind=no, binding=strong, object=_ZN1N1fEd] {
@@ -25,21 +25,21 @@ function @N__f__ov2(%x : f64) -> i32 [unwind=no, binding=strong, object=_ZN1N1fE
   slot $cond__1 : i32
 
   block ^entry:
-    store f64 %x, $x
-    %t1 = load f64 $x
+    store typed f64 %x, $x
+    %t1 = load typed f64 $x
     %t2 = cmp eq f64 %t1, 1.0
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 2, $cond__1
+    store typed i32 2, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -51,14 +51,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }

@@ -17,7 +17,7 @@ function @operator_(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return i32 0
 }

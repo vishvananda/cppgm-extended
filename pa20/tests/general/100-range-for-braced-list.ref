@@ -11,36 +11,36 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $x : i32
 
   block ^entry:
-    store i32 0, $s
+    store typed i32 0, $s
     %t1 = addr $__range1
     copyobj 12x4 @__constexpr_template__1, %t1
-    store i32 0, $__idx2
+    store typed i32 0, $__idx2
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t2 = load i32 $__idx2
+    %t2 = load typed i32 $__idx2
     %t3 = cmp lt i32 %t2, 3
     branch %t3, ^for_body_2, ^for_end_4
 
   block ^for_body_2:
     %t4 = addr $__range1
-    %t5 = load i32 $__idx2
+    %t5 = load typed i32 $__idx2
     %t6 = index i32 [projection=array_element] %t4, %t5
-    %t7 = load i32 %t6
-    store i32 %t7, $x
-    %t8 = load i32 $s
-    %t9 = load i32 $x
-    %t10 = binary add i32 %t8, %t9
-    store i32 %t10, $s
+    %t7 = load typed i32 %t6
+    store typed i32 %t7, $x
+    %t8 = load typed i32 $s
+    %t9 = load typed i32 $x
+    %t10 = binary add nowrap i32 %t8, %t9
+    store typed i32 %t10, $s
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t11 = load i32 $__idx2
-    %t12 = binary add i32 %t11, 1
-    store i32 %t12, $__idx2
+    %t11 = load typed i32 $__idx2
+    %t12 = binary add nowrap i32 %t11, 1
+    store typed i32 %t12, $__idx2
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t13 = load i32 $s
+    %t13 = load typed i32 $s
     return i32 %t13
 }

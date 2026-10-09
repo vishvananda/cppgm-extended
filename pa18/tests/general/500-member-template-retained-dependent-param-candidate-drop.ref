@@ -17,12 +17,12 @@ function @run_insert(%s : ptr [pass=by_address, object_bytes=1]) -> i32 [binding
   slot $argobj__3 : obj<1x1>
 
   block ^entry:
-    store ptr %s, $s
+    store typed ptr %s, $s
     %t1 = addr $first
     %t2 = addr $last
-    store ptr 0, $p
-    %t3 = load ptr $s
-    %t4 = load ptr $p
+    store typed ptr 0, $p
+    %t3 = load typed ptr $s
+    %t4 = load typed ptr $p
     %t5 = addr $argobj__2
     %t6 = addr $first
     %t7 = addr $argobj__3
@@ -32,18 +32,18 @@ function @run_insert(%s : ptr [pass=by_address, object_bytes=1]) -> i32 [binding
     branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load i32 $cond__1
+    %t11 = load typed i32 $cond__1
     return i32 %t11
 }
-function @string_like_char___insert(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertI14input_iteratorEEPcPKcT_S6_PN9enable_ifIXsr17is_input_iteratorIS6_EE5valueEvE4typeE] {
+function @string_like_char___insert(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : obj<1x1> [classes=none], %__param3 : obj<1x1> [classes=none], %__param4 : ptr) -> ptr [binding=weak, object=_ZN11string_likeIcE6insertI14input_iteratorEEPcPKcT_S6_PN9enable_ifIXsr17is_input_iteratorIS6_EE5valueEvE4typeE] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : obj<1x1>
@@ -51,8 +51,8 @@ function @string_like_char___insert(%this : ptr [object_bytes=1], %__param1 : pt
   slot $__param4 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param4, $__param4
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param4, $__param4
     return ptr 0
 }

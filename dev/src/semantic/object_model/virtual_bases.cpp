@@ -72,6 +72,130 @@ void Analyzer::CollectVirtualBaseLayouts(EntityId entity,
 	}
 }
 
+namespace
+{
+
+// Merges a class (1 INTEGER, 2 SSE) into the four-byte quarters that bytes
+// [first, last) of a 16-byte object touch; INTEGER wins (psABI 3.2.3).
+void MergeSysvQuarters(std::uint8_t* quarters, std::uint64_t first,
+	std::uint64_t last, std::uint8_t sysv_class)
+{
+	for (std::uint64_t quarter = first / 4; quarter < 4 && quarter * 4 < last;
+		++quarter)
+	{
+		const unsigned shift = static_cast<unsigned>(quarter * 2);
+		const std::uint8_t current = (*quarters >> shift) & 3;
+		const std::uint8_t merged = current == 1 ? 1 :
+			current == 0 ? sysv_class : (sysv_class == 1 ? 1 : current);
+		*quarters = static_cast<std::uint8_t>(
+			(*quarters & ~(3u << shift)) | (merged << shift));
+	}
+}
+
+// The SysV classes of one member at an offset within a class (psABI 3.2.3).
+void ClassifySysvMember(const Program& program, TypeId type,
+	std::uint64_t offset, std::uint8_t* quarters, bool* memory, bool* unmodeled)
+{
+	type = program.types.RemoveTopCv(type);
+	const TypeRecord& record = program.types.Get(type);
+	const std::uint64_t size = program.SizeOf(type);
+	if (size == 0) return;
+	if (offset + size > 16 || offset % program.AlignOf(type) != 0)
+	{
+		*memory = true;
+		return;
+	}
+	std::uint8_t sysv_class = 1;
+	if (record.kind == TYPE_FUNDAMENTAL)
+	{
+		switch (record.fundamental)
+		{
+		case FUND_FLOAT: case FUND_DOUBLE: case FUND_FLOAT16:
+		case FUND_FLOAT32: case FUND_FLOAT32X: case FUND_FLOAT64:
+			sysv_class = 2;
+			break;
+		case FUND_LONG_DOUBLE: case FUND_FLOAT64X: case FUND_STDFLOAT128:
+		case FUND_FLOAT128:
+			*unmodeled = true;
+			return;
+		default:
+			break;
+		}
+	}
+	else if (record.kind == TYPE_COMPLEX || record.kind == TYPE_ARRAY)
+	{
+		const std::uint64_t element = program.SizeOf(record.child);
+		for (std::uint64_t at = 0; element != 0 && at < size; at += element)
+			ClassifySysvMember(program, record.child, offset + at, quarters,
+				memory, unmodeled);
+		return;
+	}
+	else if (record.kind == TYPE_VECTOR)
+	{
+		if (size > 8) *unmodeled = true;
+		sysv_class = 2;
+	}
+	else if (record.kind == TYPE_NAMED && record.entity < program.entities.size() &&
+		IsClassNamedFlavor(program.entities[record.entity].flavor))
+	{
+		const EntityRecord& member = program.entities[record.entity];
+		if (!member.layout_complete || member.sysv_memory)
+		{
+			*memory = true;
+			return;
+		}
+		if (member.sysv_unmodeled) *unmodeled = true;
+		for (unsigned quarter = 0; quarter < 4; ++quarter)
+		{
+			const std::uint8_t inner = (member.sysv_quarters >> (quarter * 2)) & 3;
+			if (inner != 0)
+				MergeSysvQuarters(quarters, offset + quarter * 4,
+					offset + quarter * 4 + 4, inner);
+		}
+		return;
+	}
+	MergeSysvQuarters(quarters, offset, offset + size, sysv_class);
+}
+
+// The SysV classes of a completed class layout (EntityRecord::sysv_quarters).
+void ClassifySysvClassLayout(Program& program, EntityId entity,
+	const std::vector<ClassLayoutMember>* members)
+{
+	EntityRecord& owner = program.entities[entity];
+	std::uint8_t quarters = 0;
+	bool memory = owner.object_size > 16 || owner.dynamic_class ||
+		owner.virtual_base_count != 0;
+	bool unmodeled = false;
+	for (std::size_t i = 0; !memory && i < owner.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& base = program.DirectBase(entity, i);
+		ClassifySysvMember(program, program.entities[base.entity].type,
+			base.offset, &quarters, &memory, &unmodeled);
+	}
+	for (std::size_t i = 0; !memory && members && i < members->size(); ++i)
+	{
+		const ClassLayoutMember& member = (*members)[i];
+		if (member.binding == kNoBinding ||
+			!program.bindings[member.binding].non_static_data_member)
+			continue;
+		const std::uint64_t offset = program.BindingLayout(
+			program.bindings[member.binding]).member_offset;
+		// A bit-field's storage unit holds integers.
+		if (member.bit_field)
+			MergeSysvQuarters(&quarters, offset,
+				offset + program.SizeOf(member.type), 1);
+		else
+			ClassifySysvMember(program, member.type, offset, &quarters,
+				&memory, &unmodeled);
+	}
+	EntityRecord& classified = program.entities[entity];
+	classified.sysv_memory = memory;
+	classified.sysv_unmodeled = !memory && unmodeled;
+	classified.sysv_quarters = memory || unmodeled ? 0 : quarters;
+}
+
+}
+
 void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 	std::size_t packing_alignment, std::size_t* size,
 	std::size_t* alignment, std::size_t* natural_alignment, bool* empty_class)
@@ -137,6 +261,9 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 	owner.natural_alignment = *natural_alignment;
 	owner.empty_class = *empty_class;
 	owner.layout_complete = true;
+	if (dependent_shape_completion_depth_ == 0)
+		ClassifySysvClassLayout(*program_, entity, entity < entity_layout_members_.size() ?
+			&entity_layout_members_[entity] : 0);
 }
 
 void Analyzer::AddVirtualBaseInitializationActions(EntityId entity,

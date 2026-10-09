@@ -80,6 +80,8 @@ void write_parameter_metadata(std::ostream & out, const ParameterMetadata & valu
   if(value.alias == PALM_NOALIAS) metadata.item("alias", "noalias");
   if(value.object_bytes)
     metadata.item("object_bytes", std::to_string(value.object_bytes));
+  if(value.classes)
+    metadata.item("classes", object_classes_text(value.classes));
   metadata.finish();
 }
 
@@ -127,6 +129,8 @@ void write_boundary_metadata(MetadataWriter & metadata,
   case CQM_DEFAULT: break;
   case CQM_STABLE_PREFIX: metadata.item("query", "stable_prefix"); break;
   }
+  if(value.result_classes)
+    metadata.item("result_classes", object_classes_text(value.result_classes));
 }
 
 void write_symbol_metadata(MetadataWriter & metadata,
@@ -139,6 +143,7 @@ void write_symbol_metadata(MetadataWriter & metadata,
   if(value.binding == SBM_INTERNAL) metadata.item("binding", "internal");
   else if(value.binding == SBM_STRONG) metadata.item("binding", "strong");
   else if(value.binding == SBM_WEAK) metadata.item("binding", "weak");
+  metadata.flag("replaceable", value.replaceable);
   if(value.object_symbol.valid())
     metadata.item("object", program.strings.get(value.object_symbol));
   if(value.tls_for_symbol_id.valid())
@@ -289,14 +294,14 @@ void write_instruction(std::ostream & out, const Instruction & ins,
   case Instruction::IK_LOAD:
     write_result(out, ins, program, function);
     out << (ins.volatile_access ? " = load volatile " : " = load ")
-        << lowir_type_text(ins.type) << ' ';
+        << (ins.typed_access ? "typed " : "") << lowir_type_text(ins.type) << ' ';
     write_operand(out, ins.first, program, function); break;
   case Instruction::IK_ATOMIC_LOAD:
     write_result(out, ins, program, function); out << " = atomic_load " << lowir_type_text(ins.type) << ' ';
     write_operand(out, ins.first, program, function); out << ", "; write_operand(out, ins.args.at(0), program, function); break;
   case Instruction::IK_STORE:
     out << (ins.volatile_access ? "store volatile " : "store ")
-        << lowir_type_text(ins.type) << ' ';
+        << (ins.typed_access ? "typed " : "") << lowir_type_text(ins.type) << ' ';
     write_operand(out, ins.first, program, function);
     out << ", "; write_operand(out, ins.second, program, function, &ins.type); break;
   case Instruction::IK_ATOMIC_STORE:
@@ -319,8 +324,13 @@ void write_instruction(std::ostream & out, const Instruction & ins,
   case Instruction::IK_BINARY:
   case Instruction::IK_CMP:
     write_result(out, ins, program, function); out << (ins.kind == Instruction::IK_BINARY ? " = binary " : " = cmp ")
-        << ins.op << ' ' << lowir_type_text(ins.type) << ' ';
+        << ins.op << (ins.kind == Instruction::IK_BINARY && ins.no_wrap ? " nowrap " : " ")
+        << (ins.kind == Instruction::IK_BINARY && ins.exact ? "exact " : "") << lowir_type_text(ins.type) << ' ';
     write_operand(out, ins.first, program, function, &ins.type); out << ", "; write_operand(out, ins.second, program, function, &ins.type); break;
+  case Instruction::IK_SELECT:
+    write_result(out, ins, program, function); out << " = select " << lowir_type_text(ins.type) << ' ';
+    write_operand(out, ins.first, program, function); out << ", "; write_operand(out, ins.second, program, function, &ins.type);
+    out << ", "; write_operand(out, ins.third, program, function, &ins.type); break;
   case Instruction::IK_CONVERT:
     write_result(out, ins, program, function); out << " = convert " << ins.op << ' ' << lowir_type_text(ins.type) << ' '
         << lowir_type_text(ins.source_type) << ' '; write_operand(out, ins.first, program, function); break;

@@ -19,14 +19,14 @@ function @interpreter__register_function(%this : ptr [object_bytes=1], %f : ptr)
   slot $refarg__1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %f, $f
+    store typed ptr %this, $this
+    store typed ptr %f, $f
     %t1 = addr @interpreter__invoker_pointer_to_function_of____returning_void__int__long_int___apply
-    store ptr %t1, $p
-    %t2 = load ptr $f
-    store i32 0, $refarg__1
+    store typed ptr %t1, $p
+    %t2 = load typed ptr $f
+    store typed i32 0, $refarg__1
     %t3 = addr $refarg__1
-    %t4 = load ptr $p
+    %t4 = load typed ptr $p
     call void %t4(%t2, %t3) as (%arg0 : ptr, %arg1 : ptr [pass=by_address, object_bytes=4]) -> void
     return void
 }
@@ -35,10 +35,10 @@ function @interpreter__invoker_pointer_to_function_of____returning_void__int__lo
   slot $args : ptr
 
   block ^entry:
-    store ptr %f, $f
-    store ptr %args, $args
-    %t1 = load ptr $f
-    %t2 = load ptr $args
+    store typed ptr %f, $f
+    store typed ptr %args, $args
+    %t1 = load typed ptr $f
+    %t2 = load typed ptr $args
     call void @interpreter__invoker_pointer_to_function_of____returning_void__long_int__long_int___apply(%t1, %t2)
     return void
 }
@@ -47,7 +47,7 @@ function @interpreter__invoker_pointer_to_function_of____returning_void__long_in
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return void
 }

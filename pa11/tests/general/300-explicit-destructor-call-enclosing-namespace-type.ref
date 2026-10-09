@@ -2,8 +2,8 @@ function @destroy(%h : ptr) -> void [binding=strong, object=_Z7destroyPN2ns4json
   slot $h : ptr
 
   block ^entry:
-    store ptr %h, $h
-    %t1 = load ptr $h
+    store typed ptr %h, $h
+    %t1 = load typed ptr $h
     call void @ns__json__detail__holder___holder(%t1)
     return void
 }
@@ -16,12 +16,12 @@ function @ns__json__detail__holder___holder(%this : ptr [object_bytes=8]) -> voi
   slot $p : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    store ptr %t3, $p
-    %t4 = load ptr $p
+    %t3 = load typed ptr %t2
+    store typed ptr %t3, $p
+    %t4 = load typed ptr $p
     %t5 = binary mul i64 0, 4
     %t6 = index i8 [projection=array_element] %t4, %t5
     call void @ns__json__value___value(%t6)
@@ -31,14 +31,14 @@ function @ns__json__value___value__base_entry(%this : ptr [object_bytes=4]) -> v
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @ns__json__value___value(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN2ns4json5valueD1Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN2ns4json6detail6holderD2Ev = @ns__json__detail__holder___holder

@@ -2,8 +2,8 @@ function @addr(%b : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak,
   slot $b : ptr
 
   block ^entry:
-    store ptr %b, $b
-    %t1 = load ptr $b
+    store typed ptr %b, $b
+    %t1 = load typed ptr $b
     return ptr %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -27,8 +27,8 @@ function @get(%o : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, 
   slot $o : ptr
 
   block ^entry:
-    store ptr %o, $o
-    %t1 = load ptr $o
+    store typed ptr %o, $o
+    %t1 = load typed ptr $o
     %t2 = binary sub i64 1, 1
     %t3 = index i8 [projection=field] %t1, %t2
     %t4 = index i8 %t3, 0

@@ -8,20 +8,20 @@ function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i3
   slot $n : i64
 
   block ^entry:
-    store ptr %lhs, $lhs
-    store ptr %rhs, $rhs
-    store i64 %n, $n
+    store typed ptr %lhs, $lhs
+    store typed ptr %rhs, $rhs
+    store typed i64 %n, $n
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t1 = load i64 $n
+    %t1 = load typed i64 $n
     branch %t1, ^for_body_2, ^for_end_4
 
   block ^for_body_2:
-    %t2 = load ptr $lhs
-    %t3 = load u16 %t2
-    %t4 = load ptr $rhs
-    %t5 = load u16 %t4
+    %t2 = load typed ptr $lhs
+    %t3 = load typed u16 %t2
+    %t4 = load typed ptr $rhs
+    %t5 = load typed u16 %t4
     %t6 = call u8 @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%t3, %t5)
     branch %t6, ^if_then_5, ^if_else_6
 
@@ -33,10 +33,10 @@ function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i3
     jump ^if_end_7
 
   block ^if_end_7:
-    %t8 = load ptr $rhs
-    %t9 = load u16 %t8
-    %t10 = load ptr $lhs
-    %t11 = load u16 %t10
+    %t8 = load typed ptr $rhs
+    %t9 = load typed u16 %t8
+    %t10 = load typed ptr $lhs
+    %t11 = load typed u16 %t10
     %t12 = call u8 @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%t9, %t11)
     branch %t12, ^if_then_8, ^if_else_9
 
@@ -50,17 +50,17 @@ function @lib__traits_char16_t___compare(%lhs : ptr, %rhs : ptr, %n : i64) -> i3
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t13 = load i64 $n
+    %t13 = load typed i64 $n
     %t14 = binary sub i64 %t13, 1
-    store i64 %t14, $n
-    %t15 = load ptr $lhs
+    store typed i64 %t14, $n
+    %t15 = load typed ptr $lhs
     %t16 = binary mul i64 1, 2
     %t17 = index i8 %t15, %t16
-    store ptr %t17, $lhs
-    %t18 = load ptr $rhs
+    store typed ptr %t17, $lhs
+    %t18 = load typed ptr $rhs
     %t19 = binary mul i64 1, 2
     %t20 = index i8 %t18, %t19
-    store ptr %t20, $rhs
+    store typed ptr %t20, $rhs
     jump ^for_cond_1
 
   block ^for_end_4:
@@ -86,10 +86,10 @@ function @lib__traits_base_char16_t__unsigned_short_int__65535___lt(%lhs : u16, 
   slot $rhs : u16
 
   block ^entry:
-    store u16 %lhs, $lhs
-    store u16 %rhs, $rhs
-    %t1 = load u16 $lhs
-    %t2 = load u16 $rhs
+    store typed u16 %lhs, $lhs
+    store typed u16 %rhs, $rhs
+    %t1 = load typed u16 $lhs
+    %t2 = load typed u16 $rhs
     %t3 = convert zext i32 u16 %t1
     %t4 = convert zext i32 u16 %t2
     %t5 = cmp lt i32 %t3, %t4

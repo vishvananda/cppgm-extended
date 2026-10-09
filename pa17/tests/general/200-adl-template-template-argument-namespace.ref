@@ -1,4 +1,4 @@
-function @N__adl_probe(%__param0 : obj<1x1>) -> i32 [binding=strong, object=_ZN1N9adl_probeE4WrapINS_5AllocEE] {
+function @N__adl_probe(%__param0 : obj<1x1> [classes=none]) -> i32 [binding=strong, object=_ZN1N9adl_probeE4WrapINS_5AllocEE] {
   slot $__param0 : obj<1x1>
 
   block ^entry:

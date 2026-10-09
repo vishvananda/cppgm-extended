@@ -5,9 +5,9 @@ global @__cppgm_class_template_identity_0_0_0__instance : ptr [binding=weak, obj
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = load ptr @__cppgm_class_template_identity_0_0_0__instance
+    %t1 = load typed ptr @__cppgm_class_template_identity_0_0_0__instance
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     %t4 = cmp ne i32 %t3, 7
     %t5 = convert trunc i32 i64 %t4
     return i32 %t5
@@ -20,6 +20,6 @@ function @get() -> ptr [binding=weak, object=_Z3getI5valueERT_v] {
 function @__cppgm_init() -> void [role=init, binding=internal] {
   block ^entry:
     %t1 = call ptr @get()
-    store ptr %t1, @__cppgm_class_template_identity_0_0_0__instance
+    store typed ptr %t1, @__cppgm_class_template_identity_0_0_0__instance
     return void
 }

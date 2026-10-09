@@ -1,4 +1,4 @@
-global @check [binding=strong] = {
+global @check : obj<4x4> [binding=strong] = {
   zero 4
 }
 

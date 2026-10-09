@@ -81,72 +81,72 @@ function @Derived__f(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 41
 }
 function @Derived__g(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK7Derived1gEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 17
 }
 function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @Left__Left__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 8
     call void @Right__Right__base_entry(%t4)
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = addr @Derived__vtable
     %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
-    %t8 = load ptr $this
+    store typed ptr %t7, %t5
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 8
     %t10 = addr @Derived____view__Right__8__vtable
     %t11 = index i8 %t10, 16
-    store ptr %t11, %t9
+    store typed ptr %t11, %t9
     return void
 }
 function @Left__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN4Left1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }
 function @Left__Left__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4LeftC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Left__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Right__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK5Right1gEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 2
 }
 function @Right__Right__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5RightC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Right__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @_Derived__g__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_NK7Derived1gEv] {

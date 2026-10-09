@@ -9,13 +9,13 @@ function @aligned_call(%a : i32, %b : i32, %c : i32, %d : i32, %e : i32, %f : i3
   slot $local : obj<32x32>
 
   block ^entry:
-    store i32 %a, $a
-    store i32 %b, $b
-    store i32 %c, $c
-    store i32 %d, $d
-    store i32 %e, $e
-    store i32 %f, $f
-    store i32 %g, $g
+    store typed i32 %a, $a
+    store typed i32 %b, $b
+    store typed i32 %c, $c
+    store typed i32 %d, $d
+    store typed i32 %e, $e
+    store typed i32 %f, $f
+    store typed i32 %g, $g
     %t1 = addr $local
     %t2 = addr $local
     %t3 = index i8 [projection=field] %t2, 0
@@ -43,19 +43,19 @@ function @aligned_call(%a : i32, %b : i32, %c : i32, %d : i32, %e : i32, %f : i3
     jump ^if_end_3
 
   block ^if_end_3:
-    %t15 = load i32 $a
-    %t16 = load i32 $b
-    %t17 = binary add i32 %t15, %t16
-    %t18 = load i32 $c
-    %t19 = binary add i32 %t17, %t18
-    %t20 = load i32 $d
-    %t21 = binary add i32 %t19, %t20
-    %t22 = load i32 $e
-    %t23 = binary add i32 %t21, %t22
-    %t24 = load i32 $f
-    %t25 = binary add i32 %t23, %t24
-    %t26 = load i32 $g
-    %t27 = binary add i32 %t25, %t26
+    %t15 = load typed i32 $a
+    %t16 = load typed i32 $b
+    %t17 = binary add nowrap i32 %t15, %t16
+    %t18 = load typed i32 $c
+    %t19 = binary add nowrap i32 %t17, %t18
+    %t20 = load typed i32 $d
+    %t21 = binary add nowrap i32 %t19, %t20
+    %t22 = load typed i32 $e
+    %t23 = binary add nowrap i32 %t21, %t22
+    %t24 = load typed i32 $f
+    %t25 = binary add nowrap i32 %t23, %t24
+    %t26 = load typed i32 $g
+    %t27 = binary add nowrap i32 %t25, %t26
     return i32 %t27
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

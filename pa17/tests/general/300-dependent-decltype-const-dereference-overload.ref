@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 1x1 %t2
     %t3 = addr $b
     %t4 = call ptr @deref__operator__(%t2, %t3)
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     return i32 %t5
 }
 function @deref__operator__(%this : ptr [object_bytes=1], %r : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZNK5derefclI3boxIiEEEDTdefp_ERKT_, inline_hint=yes] {
@@ -18,9 +18,9 @@ function @deref__operator__(%this : ptr [object_bytes=1], %r : ptr [pass=by_addr
   slot $r : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %r, $r
-    %t1 = load ptr $r
+    store typed ptr %this, $this
+    store typed ptr %r, $r
+    %t1 = load typed ptr $r
     %t2 = call ptr @box_int___operator___ov2(%t1)
     return ptr %t2
 }

@@ -3,12 +3,12 @@ function @h(%x : i32, %y : i8) -> i32 [binding=strong, object=_Z1hic] {
   slot $y : i8
 
   block ^entry:
-    store i32 %x, $x
+    store typed i32 %x, $x
     store i8 %y, $y
-    %t1 = load i32 $x
+    %t1 = load typed i32 $x
     %t2 = load i8 $y
     %t3 = convert sext i32 i8 %t2
-    %t4 = binary add i32 %t1, %t3
+    %t4 = binary add nowrap i32 %t1, %t3
     return i32 %t4
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -23,9 +23,9 @@ function @g(%args : i32, %args__pack2 : i8) -> i32 [binding=weak, object=_Z1gIJi
   slot $args__pack2 : i8
 
   block ^entry:
-    store i32 %args, $args
+    store typed i32 %args, $args
     store i8 %args__pack2, $args__pack2
-    %t1 = load i32 $args
+    %t1 = load typed i32 $args
     %t2 = load i8 $args__pack2
     %t3 = call i32 @h(%t1, %t2)
     return i32 %t3

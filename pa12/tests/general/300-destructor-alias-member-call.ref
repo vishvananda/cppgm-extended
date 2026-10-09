@@ -12,40 +12,40 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $buf
     %t3 = call ptr @operatornew__ov2(%t1, %t2)
     call void @S__S(%t3)
-    store ptr %t3, $p
-    %t4 = load ptr $p
+    store typed ptr %t3, $p
+    %t4 = load typed ptr $p
     call void @S___S(%t4)
-    %t5 = load i32 @gx
+    %t5 = load typed i32 @gx
     %t6 = cmp eq i32 %t5, 1
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @S__S(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1SC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @S___S(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1SD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @gx
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @gx
+    store typed ptr %this, $this
+    %t1 = load typed i32 @gx
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @gx
     return void
 }
 alias object _ZN1SC2Ev = @S__S

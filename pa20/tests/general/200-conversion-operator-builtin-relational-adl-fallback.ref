@@ -13,6 +13,6 @@ function @n__number__operatorint(%this : ptr [object_bytes=1]) -> i32 [binding=w
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }

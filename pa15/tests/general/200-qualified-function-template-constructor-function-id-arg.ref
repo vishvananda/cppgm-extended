@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $mtx
-    store i32 0, $h
+    store typed i32 0, $h
     %t2 = addr $h
     %t3 = addr $argobj__1
     %t4 = addr @qft_ctor_arg__lock_and_sleep
@@ -19,10 +19,10 @@ function @qft_ctor_arg__lock_and_sleep(%arg : ptr, %mtx : ptr [pass=by_address, 
   slot $mtx : ptr
 
   block ^entry:
-    store ptr %arg, $arg
-    store ptr %mtx, $mtx
-    %t1 = load ptr $arg
-    %t2 = load ptr $mtx
+    store typed ptr %arg, $arg
+    store typed ptr %mtx, $mtx
+    %t1 = load typed ptr $arg
+    %t2 = load typed ptr $mtx
     return void
 }
 function @qft_ctor_arg__adapter_mutex_type___adapter_mutex_type_(%this : ptr [object_bytes=24], %func : ptr, %arg : ptr, %object : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN12qft_ctor_arg7adapterI10mutex_typeEC1EPFvPvRS1_ES3_S4_, inline_hint=yes] {
@@ -32,22 +32,22 @@ function @qft_ctor_arg__adapter_mutex_type___adapter_mutex_type_(%this : ptr [ob
   slot $object : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %func, $func
-    store ptr %arg, $arg
-    store ptr %object, $object
-    %t1 = load ptr $func
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %func, $func
+    store typed ptr %arg, $arg
+    store typed ptr %object, $object
+    %t1 = load typed ptr $func
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $arg
-    %t5 = load ptr $this
+    store typed ptr %t1, %t3
+    %t4 = load typed ptr $arg
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 8
-    store ptr %t4, %t6
-    %t7 = load ptr $object
-    %t8 = load ptr $this
+    store typed ptr %t4, %t6
+    %t7 = load typed ptr $object
+    %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 16
-    store ptr %t7, %t9
+    store typed ptr %t7, %t9
     return void
 }
 function @qft_ctor_arg__launch(%h : ptr [pass=by_address, object_bytes=4], %f : obj<24x8>) -> i32 [binding=weak, object=_ZN12qft_ctor_arg6launchINS_7adapterI10mutex_typeEEEEiRiT_] {
@@ -55,11 +55,11 @@ function @qft_ctor_arg__launch(%h : ptr [pass=by_address, object_bytes=4], %f : 
   slot $f : obj<24x8>
 
   block ^entry:
-    store ptr %h, $h
+    store typed ptr %h, $h
     %t1 = addr $f
     copyobj 24x8 %f, %t1
-    %t2 = load ptr $h
-    %t3 = load i32 %t2
+    %t2 = load typed ptr $h
+    %t3 = load typed i32 %t2
     %t4 = addr $f
     call void @qft_ctor_arg__adapter_mutex_type___operator__(%t4)
     return i32 0
@@ -68,16 +68,16 @@ function @qft_ctor_arg__adapter_mutex_type___operator__(%this : ptr [object_byte
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load ptr %t2
-    %t4 = load ptr $this
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 16
-    %t6 = load ptr %t5
-    %t7 = load ptr $this
+    %t6 = load typed ptr %t5
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 0
-    %t9 = load ptr %t8
+    %t9 = load typed ptr %t8
     call void %t9(%t3, %t6) as (%arg0 : ptr, %arg1 : ptr [pass=by_address, object_bytes=1]) -> void
     return void
 }

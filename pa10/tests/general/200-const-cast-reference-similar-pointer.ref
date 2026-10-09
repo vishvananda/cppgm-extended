@@ -13,11 +13,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $text
     copyobj 2x1 @__constexpr_template__1, %t1
     %t2 = addr $text
-    store ptr %t2, $value
+    store typed ptr %t2, $value
     %t3 = addr $value
-    store ptr %t3, $view
-    %t4 = load ptr $view
-    %t5 = load ptr %t4
+    store typed ptr %t3, $view
+    %t4 = load typed ptr $view
+    %t5 = load typed ptr %t4
     %t6 = index i8 [projection=array_element] %t5, 0
     %t7 = load i8 %t6
     %t8 = convert sext i32 i8 %t7
@@ -25,14 +25,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }

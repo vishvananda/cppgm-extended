@@ -69,7 +69,9 @@ The `.ref.mir` and `.ref.cmir` files are examples, not optimized-output oracles.
 These bounds provide a deterministic, lightweight code-quality bar. They are
 not measurements of execution time: fewer static instructions do not always
 mean faster code. No timing threshold, Cachegrind installation or allocator
-statistics are required to complete PA33.
+statistics are required to complete PA33. Execution time is still what the
+bar stands for: PA34 builds the compiler with itself, so the code this backend
+generates becomes the compiler's own speed.
 
 For a failed expectation, inspect the reported predicate or run:
 
@@ -117,5 +119,9 @@ cases and applies bounds only where an expectation is supplied.
 
 PA33 does not require a new LowIR optimizer, source-language changes,
 interprocedural machine optimization, instruction scheduling or vectorization.
-A bounded allocator and a small set of well-justified improvements are enough
-if they meet the supplied predicates and preserve earlier contracts.
+What it requires is meeting the supplied predicates while preserving earlier
+contracts. The predicates reward keeping values in registers over their whole
+live ranges, across calls (in callee-saved registers) and around loops, more
+than local rewrites of a conservative frame form; a liveness-based allocator
+over the PA24 machine IR is the direct way to meet them, and the one later
+work keeps improving.

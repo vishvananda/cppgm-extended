@@ -7,15 +7,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $x
     %t2 = addr $x
     %t3 = call i32 @X__g(%t2)
-    %t4 = binary sub i32 %t3, 4
+    %t4 = binary sub nowrap i32 %t3, 4
     return i32 %t4
 }
 function @X__g(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1X1gEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @N__K
-    %t2 = binary add i32 %t1, 1
+    store typed ptr %this, $this
+    %t1 = load typed i32 @N__K
+    %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }

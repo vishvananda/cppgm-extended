@@ -7,7 +7,7 @@ function @f(%x : i32) -> i32 [binding=weak, object=_Z1fIJEEii] {
   slot $x : i32
 
   block ^entry:
-    store i32 %x, $x
-    %t1 = load i32 $x
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
     return i32 %t1
 }

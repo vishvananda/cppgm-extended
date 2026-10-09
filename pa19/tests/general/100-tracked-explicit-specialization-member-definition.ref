@@ -24,11 +24,11 @@ function @S_char___assign(%a : ptr [pass=by_address, object_bytes=1], %b : ptr [
   slot $b : ptr
 
   block ^entry:
-    store ptr %a, $a
-    store ptr %b, $b
-    %t1 = load ptr $b
+    store typed ptr %a, $a
+    store typed ptr %b, $b
+    %t1 = load typed ptr $b
     %t2 = load i8 %t1
-    %t3 = load ptr $a
+    %t3 = load typed ptr $a
     store i8 %t2, %t3
     return void
 }

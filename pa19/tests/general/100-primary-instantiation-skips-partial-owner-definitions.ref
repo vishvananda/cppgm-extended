@@ -12,6 +12,6 @@ function @box_int__int___f(%this : ptr [object_bytes=1]) -> void [binding=weak, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

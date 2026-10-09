@@ -627,6 +627,7 @@ lowering::ir::Program lowering::BuildProgram(const std::vector<lowering::Source>
 	lowering::presentation::OrderSpecialMemberFamilies(&program);
 	lowering::inline_policy::RewriteProgram(
 		&program, stats, prune_unreachable_weak_functions);
+	lowering::ir::StateTypedAccesses(&program);
 	if (stats)
 		stats->lowering_nanoseconds += static_cast<std::uint64_t>(
 			std::chrono::duration_cast<std::chrono::nanoseconds>(

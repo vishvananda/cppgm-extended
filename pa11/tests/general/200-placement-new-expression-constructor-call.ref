@@ -10,8 +10,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $buf
     %t3 = call ptr @operatornew__ov2(%t1, %t2)
     call void @S__S(%t3, 7)
-    store ptr %t3, $p
-    %t4 = load ptr $p
+    store typed ptr %t3, $p
+    %t4 = load typed ptr $p
     %t5 = cmp eq ptr %t4, 0
     %t6 = convert trunc i32 i64 %t5
     return i32 %t6

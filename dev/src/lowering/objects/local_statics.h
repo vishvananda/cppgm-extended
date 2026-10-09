@@ -211,6 +211,7 @@ protected:
 						"__cppgm_tls_wrapper__" + guard_name,
 						std::string(), guard_symbol, true);
 			}
+			derived.StateStructuredGlobalAlignment(&global);
 			derived.output_.globals.push_back(global);
 			if (derived.output_.host_object_emission && dynamic &&
 				action.destructor != kNoDumpEdge)

@@ -29,9 +29,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1, ^delete_nonnull_1, ^delete_end_2
 
   block ^delete_nonnull_1:
-    %t2 = load ptr 0
+    %t2 = load typed ptr 0
     %t3 = index i8 %t2, 8
-    %t4 = load ptr %t3
+    %t4 = load typed ptr %t3
     call void %t4(0) as (%arg0 : ptr) -> void
     jump ^delete_end_2
 
@@ -42,19 +42,19 @@ function @object___object__deleting_entry(%this : ptr) -> void [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @object__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     call void @object__operatordelete(%t4, 8)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     call void @object__operatordelete(%t5, 8)
     eh_end
     resume
@@ -66,11 +66,11 @@ function @object___object(%this : ptr [object_bytes=8]) -> void [unwind=no, bind
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @object__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN6objectD2Ev = @object___object

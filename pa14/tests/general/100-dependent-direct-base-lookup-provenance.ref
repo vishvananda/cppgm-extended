@@ -15,7 +15,7 @@ function @derived___cppgm_class_template_identity_0_0_0___run(%this : ptr [objec
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = call i32 @select()
     return i32 %t1
 }

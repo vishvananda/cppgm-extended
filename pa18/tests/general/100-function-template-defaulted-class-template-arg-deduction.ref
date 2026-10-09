@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $arg
     %t2 = addr $arg
     %t3 = index i8 [projection=field] %t2, 0
-    store i64 7, %t3
+    store typed i64 7, %t3
     %t4 = addr $argobj__2
     %t5 = addr $arg
     copyobj 8x8 %t5, %t4
@@ -16,15 +16,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t7, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t8 = load i32 $cond__1
+    %t8 = load typed i32 $cond__1
     return i32 %t8
 }
 function @unwrap(%arg : obj<8x8>) -> i64 [binding=weak, object=_Z6unwrapIlET_3BoxIS0_iE] {
@@ -35,6 +35,6 @@ function @unwrap(%arg : obj<8x8>) -> i64 [binding=weak, object=_Z6unwrapIlET_3Bo
     copyobj 8x8 %arg, %t1
     %t2 = addr $arg
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i64 %t3
+    %t4 = load typed i64 %t3
     return i64 %t4
 }

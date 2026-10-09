@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $token
     %t3 = addr $stream
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 0, %t4
+    store typed i32 0, %t4
     %t5 = addr $stream
     %t6 = addr $token
     %t7 = call ptr @operator__(%t5, %t6)
@@ -44,8 +44,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t35 = call ptr @operator__(%t33, %t34)
     %t36 = addr $token
     %t37 = call ptr @operator__(%t35, %t36)
-    store ptr %t37, $p
-    %t38 = load ptr $p
+    store typed ptr %t37, $p
+    %t38 = load typed ptr $p
     %t39 = addr $stream
     %t40 = cmp eq ptr %t38, %t39
     branch %t40, ^land_rhs_4, ^land_short_5
@@ -53,30 +53,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t41 = addr $stream
     %t42 = index i8 [projection=field] %t41, 0
-    %t43 = load i32 %t42
+    %t43 = load typed i32 %t42
     %t44 = cmp eq i32 %t43, 16
     %t45 = cmp ne i64 %t44, 0
-    store i64 %t45, $land__2
+    store typed i64 %t45, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t46 = load i64 $land__2
+    %t46 = load typed i64 $land__2
     branch %t46, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t47 = load i32 $cond__1
+    %t47 = load typed i32 $cond__1
     return i32 %t47
 }
 function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_ZlsI5TokenER6StreamS2_RKT_] {
@@ -84,15 +84,15 @@ function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %stream, $stream
-    store ptr %__param1, $__param1
-    %t1 = load ptr $stream
+    store typed ptr %stream, $stream
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $stream
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary add i32 %t3, 1
-    %t5 = load ptr $stream
+    %t3 = load typed i32 %t2
+    %t4 = binary add nowrap i32 %t3, 1
+    %t5 = load typed ptr $stream
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
-    %t7 = load ptr $stream
+    store typed i32 %t4, %t6
+    %t7 = load typed ptr $stream
     return ptr %t7
 }

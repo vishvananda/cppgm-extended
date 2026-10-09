@@ -13,8 +13,8 @@ function @YP___YP(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 9, @gx
+    store typed ptr %this, $this
+    store typed i32 9, @gx
     return void
 }
 alias object _ZN2YPD2Ev = @YP___YP

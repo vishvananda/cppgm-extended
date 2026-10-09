@@ -32,6 +32,42 @@ protected:
 		return call;
 	}
 
+	// The SysV classes of an indirect call's direct object arguments and
+	// result, which its signature states; a virtual call names a signature
+	// only when its boundary states classes.
+	void StateCallClasses(lowering::ir::Instruction* call,
+		const semantic::DumpNode& record, semantic::TypeId function_type_id,
+		bool indirect_result, std::size_t first_source_argument)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const semantic::TypeRecord& function_type =
+			derived.program_.types.Get(function_type_id);
+		const semantic::TypeId* parameters =
+			derived.program_.types.Parameters(function_type_id);
+		call->result_classes = indirect_result ? 0 :
+			lowering::abi::SysvObjectClasses(derived.program_,
+				function_type.child, true);
+		bool stated = call->result_classes != 0;
+		// call_argument_classes stays short until some argument states classes.
+		std::vector<std::uint8_t>& classes = derived.output_.call_argument_classes;
+		for (std::size_t i = first_source_argument; i < call->extra_count; ++i)
+		{
+			const std::size_t parameter = i - first_source_argument;
+			if (parameter >= function_type.parameter_count ||
+				derived.IsReferenceType(parameters[parameter]) ||
+				derived.UsesIndirectClassParameter(parameters[parameter]))
+				continue;
+			const std::uint8_t stated_classes = lowering::abi::SysvObjectClasses(
+				derived.program_, parameters[parameter]);
+			if (stated_classes == 0) continue;
+			if (classes.size() < call->extra_first + call->extra_count)
+				classes.resize(call->extra_first + call->extra_count, 0);
+			classes[call->extra_first + i] = stated_classes;
+			stated = true;
+		}
+		if (record.virtual_call && stated) call->indirect = true;
+	}
+
 	lowering::ir::Operand LowerCall(std::uint32_t node,
 		const semantic::DumpNode& record,
 		const lowering::support::NodeChildren& children,
@@ -253,6 +289,7 @@ protected:
 				derived.LowerValue(children[0], LowPtr());
 		derived.AttachCallArguments(&call, arguments, argument_references,
 			&argument_object_bytes);
+		StateCallClasses(&call, record, function_type_id, indirect_result, lowered_argument_begin);
 		if (call.type.kind == LOW_VOID)
 		{
 			derived.Emit(call);

@@ -18,11 +18,11 @@ function @use(%args : ptr [pass=by_address, object_bytes=1]) -> void [binding=we
   slot $value : i32
 
   block ^entry:
-    store ptr %args, $args
+    store typed ptr %args, $args
     %t1 = addr @extract
-    %t2 = load ptr $args
+    %t2 = load typed ptr $args
     %t3 = call i32 @extractor_requested_feature___operator__(%t1, %t2)
-    store i32 %t3, $value
-    %t4 = load i32 $value
+    store typed i32 %t3, $value
+    %t4 = load typed i32 $value
     return void
 }

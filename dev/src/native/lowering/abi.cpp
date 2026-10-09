@@ -27,6 +27,12 @@ const lowir_model::LowType & object_chunk_type(std::size_t remaining)
   return lowir_model::builtin_lowir_type(lowir_model::LTK_I64);
 }
 
+const lowir_model::LowType & object_sse_chunk_type(std::size_t remaining)
+{
+  return lowir_model::builtin_lowir_type(remaining <= 4 ?
+    lowir_model::LTK_F32 : lowir_model::LTK_F64);
+}
+
 std::size_t frame_storage_size(const lowir_model::LowType & type)
 {
   if(type.kind != lowir_model::LTK_OBJECT) return type.storage_size;
@@ -107,17 +113,36 @@ Plan classify(const std::vector<lowir_model::LowirParameter> & parameters)
       continue;
     }
     if(type.kind == lowir_model::LTK_OBJECT) {
+      // Each eightbyte in the register file its class names (psABI 3.2.3;
+      // INTEGER when the parameter states no classes), or the whole object
+      // on the stack when it is MEMORY or the registers run out.
+      const std::uint8_t classes = parameters[i].metadata.classes;
       const std::size_t chunks = (type.storage_size + 7) / 8;
-      const std::size_t available_gprs = gpr_index < 6 ? 6 - gpr_index : 0;
-      const bool in_registers = type.storage_size <= 16 && chunks <= available_gprs;
+      std::size_t gprs = 0, xmms = 0;
+      for(std::size_t chunk = 0; chunk < chunks && chunk < 2; ++chunk) {
+        const unsigned eightbyte = lowir_model::object_eightbyte_class(classes, chunk);
+        if(eightbyte == 2) ++gprs;
+        else if(eightbyte == 3) ++xmms;
+      }
+      const bool in_registers = type.storage_size <= 16 &&
+        classes != lowir_model::kObjectClassesMemory &&
+        gpr_index + gprs <= 6 && xmm_index + xmms <= 8;
       if(in_registers) {
         for(std::size_t chunk = 0; chunk < chunks; ++chunk) {
+          const unsigned eightbyte = lowir_model::object_eightbyte_class(classes, chunk);
+          if(eightbyte == 1) continue;
           Piece piece;
           piece.parameter_index = i;
           piece.chunk_offset = chunk * 8;
-          piece.type = object_chunk_type(type.storage_size - piece.chunk_offset);
-          piece.location = PL_GPR;
-          piece.reg = argument_register(gpr_index++);
+          if(eightbyte == 3) {
+            piece.type = object_sse_chunk_type(type.storage_size - piece.chunk_offset);
+            piece.location = PL_XMM;
+            piece.xmm = static_cast<XmmRegister>(xmm_index++);
+          } else {
+            piece.type = object_chunk_type(type.storage_size - piece.chunk_offset);
+            piece.location = PL_GPR;
+            piece.reg = argument_register(gpr_index++);
+          }
           plan.pieces.push_back(piece);
         }
       } else {

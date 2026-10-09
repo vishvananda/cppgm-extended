@@ -3,18 +3,18 @@ function @operator__(%s : ptr [pass=by_address, object_bytes=4], %operation : ob
   slot $operation : obj<4x4>
 
   block ^entry:
-    store ptr %s, $s
+    store typed ptr %s, $s
     %t1 = addr $operation
     copyobj 4x4 %operation, %t1
-    %t2 = load ptr $s
+    %t2 = load typed ptr $s
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = addr $operation
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load i32 %t6
-    %t8 = binary add i32 %t4, %t7
-    store i32 %t8, %t3
-    %t9 = load ptr $s
+    %t7 = load typed i32 %t6
+    %t8 = binary add nowrap i32 %t4, %t7
+    store typed i32 %t8, %t3
+    %t9 = load typed ptr $s
     return ptr %t9
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $s
     %t2 = addr $s
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 0, %t3
+    store typed i32 0, %t3
     %t4 = addr $o
     call void @op_t__op_t__ov2(%t4, 1)
     %t5 = addr $s
@@ -37,20 +37,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = call ptr @operator__(%t5, $argobj__1)
     %t9 = addr $s
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load i32 %t10
+    %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 1
     branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__2
+    store typed i32 0, $cond__2
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__2
+    store typed i32 1, $cond__2
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__2
+    %t13 = load typed i32 $cond__2
     return i32 %t13
 }
 function @op_t__op_t__ov2(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN4op_tC1ENS_4KindE, inline_hint=yes] {
@@ -58,12 +58,12 @@ function @op_t__op_t__ov2(%this : ptr [object_bytes=4], %value : i32) -> void [b
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN4op_tC2ENS_4KindE = @op_t__op_t__ov2

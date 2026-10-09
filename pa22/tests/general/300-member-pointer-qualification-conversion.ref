@@ -3,7 +3,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = const i64 1
-    store i64 %t1, $cpm
-    %t2 = load i64 $cpm
+    store typed i64 %t1, $cpm
+    %t2 = load typed i64 $cpm
     return i32 0
 }

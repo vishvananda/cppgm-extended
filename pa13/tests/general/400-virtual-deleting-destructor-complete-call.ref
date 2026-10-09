@@ -28,31 +28,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1, ^delete_nonnull_1, ^delete_end_2
 
   block ^delete_nonnull_1:
-    %t2 = load ptr 0
+    %t2 = load typed ptr 0
     %t3 = index i8 %t2, 8
-    %t4 = load ptr %t3
+    %t4 = load typed ptr %t3
     call void %t4(0) as (%arg0 : ptr) -> void
     jump ^delete_end_2
 
   block ^delete_end_2:
-    %t5 = load i32 @observed
+    %t5 = load typed i32 @observed
     return i32 %t5
 }
 function @base___base__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN4baseD0Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     call void @base___base(%t1)
     eh_end
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     call void @operatordelete(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     call void @operatordelete(%t3)
     eh_end
     resume
@@ -64,21 +64,21 @@ function @base___base(%this : ptr [object_bytes=16]) -> void [unwind=no, binding
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
-    store i32 2, @observed
+    store typed ptr %t3, %t1
+    store typed i32 2, @observed
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 8
     call void @member___member(%t5)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 [projection=field] %t6, 8
     call void @member___member(%t7)
     eh_end
@@ -91,8 +91,8 @@ function @member___member(%this : ptr [object_bytes=1]) -> void [unwind=no, bind
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 1, @observed
+    store typed ptr %this, $this
+    store typed i32 1, @observed
     return void
 }
 alias object _ZN4baseD2Ev = @base___base

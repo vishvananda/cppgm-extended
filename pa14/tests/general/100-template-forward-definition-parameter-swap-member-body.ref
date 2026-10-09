@@ -12,9 +12,9 @@ function @chainbuf_int__input__public____underflow(%this : ptr [object_bytes=1])
   slot $t : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $t
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     call void @chainbuf_int__input__public____sentry__sentry(%t1, %t2)
     return i32 0
 }
@@ -23,12 +23,12 @@ function @chainbuf_int__input__public____sentry__sentry(%this : ptr [object_byte
   slot $buf : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %buf, $buf
-    %t1 = load ptr $buf
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %buf, $buf
+    %t1 = load typed ptr $buf
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 alias object _ZN8chainbufIi5input7public_E6sentryC2EPS2_ = @chainbuf_int__input__public____sentry__sentry

@@ -125,6 +125,9 @@ struct FunctionBoundaryMetadata
   CallUnwindMode unwind = CUM_DEFAULT;
   CallReturnMode returns = CRM_DEFAULT;
   CallQueryMode query = CQM_DEFAULT;
+  // `result_classes=...`: the SysV classes of a direct object result
+  // (lowir.md "Object ABI Conventions"); 0 states none.
+  unsigned char result_classes = 0;
 };
 
 struct ExportedSymbol

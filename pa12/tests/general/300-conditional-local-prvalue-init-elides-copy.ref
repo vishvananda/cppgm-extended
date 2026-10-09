@@ -37,14 +37,14 @@ function @S__S__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, bin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @S__S(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SC1Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @S__S__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SC2ERKS_, object_root=yes] {
@@ -52,8 +52,8 @@ function @S__S__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=1], %__
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SC1ERKS_] {
@@ -61,21 +61,21 @@ function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @S___S__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SD2Ev, object_root=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @S___S(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN1SD1Ev, object_root=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

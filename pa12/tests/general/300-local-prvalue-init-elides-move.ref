@@ -15,13 +15,13 @@ function @S__S__base_entry(%this : ptr [object_bytes=1]) -> void [binding=strong
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @S__S(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN1SC1Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

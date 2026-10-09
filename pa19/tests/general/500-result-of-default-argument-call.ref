@@ -4,8 +4,8 @@ function @use(%value : ptr [pass=by_address, object_bytes=1]) -> void [binding=s
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     call void @B_H___operator__(%t1)
     return void
 }

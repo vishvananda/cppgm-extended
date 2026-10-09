@@ -11,60 +11,60 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $values
-    store ptr %t1, $p
+    store typed ptr %t1, $p
     %t2 = addr $p
-    store ptr %t2, $paddr
-    %t3 = load ptr $p
+    store typed ptr %t2, $paddr
+    %t3 = load typed ptr $p
     %t4 = binary mul i64 1, 4
     %t5 = index i8 %t3, %t4
-    store ptr %t5, $p
+    store typed ptr %t5, $p
     %t6 = addr $p
-    %t7 = load ptr $paddr
+    %t7 = load typed ptr $paddr
     %t8 = cmp eq ptr %t6, %t7
     %t9 = convert trunc i32 i64 %t8
-    store i32 %t9, $ok_inc
+    store typed i32 %t9, $ok_inc
     %t10 = addr $values
     %t11 = binary mul i64 2, 4
     %t12 = index i8 %t10, %t11
-    store ptr %t12, $q
+    store typed ptr %t12, $q
     %t13 = addr $q
-    store ptr %t13, $qaddr
-    %t14 = load ptr $q
+    store typed ptr %t13, $qaddr
+    %t14 = load typed ptr $q
     %t15 = binary mul i64 1, 4
     %t16 = binary sub i64 0, %t15
     %t17 = index i8 %t14, %t16
-    store ptr %t17, $q
+    store typed ptr %t17, $q
     %t18 = addr $q
-    %t19 = load ptr $qaddr
+    %t19 = load typed ptr $qaddr
     %t20 = cmp eq ptr %t18, %t19
     %t21 = convert trunc i32 i64 %t20
-    store i32 %t21, $ok_dec
-    %t22 = load i32 $ok_inc
+    store typed i32 %t21, $ok_dec
+    %t22 = load typed i32 $ok_inc
     branch %t22, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t23 = load i32 $ok_dec
+    %t23 = load typed i32 $ok_dec
     %t24 = cmp ne i64 %t23, 0
-    store i64 %t24, $land__2
+    store typed i64 %t24, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t25 = load i64 $land__2
+    %t25 = load typed i64 $land__2
     branch %t25, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t26 = load i32 $cond__1
+    %t26 = load typed i32 $cond__1
     return i32 %t26
 }

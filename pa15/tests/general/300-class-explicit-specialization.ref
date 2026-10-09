@@ -11,6 +11,6 @@ function @Box_int___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 2
 }

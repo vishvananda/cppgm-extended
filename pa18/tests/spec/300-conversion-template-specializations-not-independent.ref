@@ -8,32 +8,32 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $x
     %t2 = addr $x
     %t3 = call ptr @source__operatorT_(%t2)
-    store ptr %t3, $first
+    store typed ptr %t3, $first
     %t4 = addr $x
     %t5 = call ptr @source__operatorT___ov2(%t4)
-    store ptr %t5, $second
-    %t6 = load ptr $first
-    %t7 = load ptr $second
+    store typed ptr %t5, $second
+    %t6 = load typed ptr $first
+    %t7 = load typed ptr $second
     %t8 = cmp eq ptr %t6, %t7
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     return i32 %t9
 }
 function @source__operatorT_(%this : ptr [object_bytes=1]) -> ptr [binding=weak, object=_ZNK6sourcecvPT_I5valueEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = copy ptr nullptr
     return ptr %t1
 }
@@ -41,7 +41,7 @@ function @source__operatorT___ov2(%this : ptr [object_bytes=1]) -> ptr [binding=
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = copy ptr nullptr
     return ptr %t1
 }

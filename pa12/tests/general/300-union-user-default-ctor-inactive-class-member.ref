@@ -11,14 +11,14 @@ function @Storage__Storage(%this : ptr [object_bytes=1]) -> void [binding=weak, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Storage___Storage(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7StorageD1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN7StorageC2Ev = @Storage__Storage

@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $token
     %t2 = addr $token
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 7, %t3
+    store typed i32 7, %t3
     %t4 = addr $soft
     %t5 = addr $token
     call void @Soft__Soft(%t4, %t5)
@@ -23,11 +23,11 @@ function @Soft__Soft__base_entry(%this : ptr [object_bytes=1], %token : ptr [pas
   slot $token : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %token, $token
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %token, $token
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $token
+    %t3 = load typed ptr $token
     call void @LibraryBase__LibraryBase__base_entry(%t2, %t3)
     return void
 }
@@ -36,11 +36,11 @@ function @Soft__Soft(%this : ptr [object_bytes=1], %token : ptr [pass=by_address
   slot $token : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %token, $token
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %token, $token
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $token
+    %t3 = load typed ptr $token
     call void @LibraryBase__LibraryBase__base_entry(%t2, %t3)
     return void
 }
@@ -49,11 +49,11 @@ function @Hard__Hard(%this : ptr [object_bytes=1], %token : ptr [pass=by_address
   slot $token : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %token, $token
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %token, $token
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $token
+    %t3 = load typed ptr $token
     call void @Soft__Soft__base_entry(%t2, %t3)
     return void
 }

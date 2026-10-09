@@ -15,7 +15,7 @@ function @target_protocol___call(%this : ptr [object_bytes=1], %__param1 : ptr [
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return i32 0
 }

@@ -18,8 +18,8 @@ function @Wrapped__Wrapped(%this : ptr [object_bytes=1], %__param1 : ptr [pass=b
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN7WrappedC2ERK1V = @Wrapped__Wrapped

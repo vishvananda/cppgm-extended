@@ -2,7 +2,7 @@ function @g() -> i32 [binding=strong, object=_Z1gv] {
   block ^entry:
     %t1 = call i32 @Box_int___f()
     %t2 = call i32 @Box_int___f__ov2()
-    %t3 = binary add i32 %t1, %t2
+    %t3 = binary add nowrap i32 %t1, %t2
     return i32 %t3
 }
 function @Box_int___f() -> i32 [binding=weak, object=_ZN3BoxIiE1fIcEEiv, inline_hint=yes] {

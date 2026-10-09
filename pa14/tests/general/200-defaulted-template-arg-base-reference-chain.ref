@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Chain_char____cppgm_class_template_identity_0_0_0__void___Chain_char____cppgm_class_template_identity_0_0_0__void___ov3(%t2, 5, %t3)
     %t4 = addr $second
     %t5 = index i8 [projection=field] %t4, 4
-    %t6 = load i32 %t5
+    %t6 = load typed i32 %t5
     return i32 %t6
 }
 function @Chain_int__Empty__void___Chain_char____cppgm_class_template_identity_0_0_0__void_(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN5ChainIi5EmptyvEC1Ei, inline_hint=yes] {
@@ -18,12 +18,12 @@ function @Chain_int__Empty__void___Chain_char____cppgm_class_template_identity_0
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @Chain_char____cppgm_class_template_identity_0_0_0__void___Chain_char____cppgm_class_template_identity_0_0_0__void___ov3(%this : ptr [object_bytes=8], %v : i32, %tail : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5ChainIcS_Ii5EmptyvEvEC1EiRKS1_, inline_hint=yes] {
@@ -32,17 +32,17 @@ function @Chain_char____cppgm_class_template_identity_0_0_0__void___Chain_char__
   slot $tail : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    store ptr %tail, $tail
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    store typed ptr %tail, $tail
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $tail
+    %t3 = load typed ptr $tail
     call void @Chain_int__Empty__void___Chain_char____cppgm_class_template_identity_0_0_0__void___ov2__base_entry(%t2, %t3)
-    %t4 = load i32 $v
-    %t5 = load ptr $this
+    %t4 = load typed i32 $v
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @Chain_int__Empty__void___Chain_char____cppgm_class_template_identity_0_0_0__void___ov2__base_entry(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5ChainIi5EmptyvEC2ERKS1_, object_root=yes, inline_hint=yes] {
@@ -50,17 +50,17 @@ function @Chain_int__Empty__void___Chain_char____cppgm_class_template_identity_0
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $other
+    %t3 = load typed ptr $other
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
-    %t6 = binary add i32 %t5, 1
-    %t7 = load ptr $this
+    %t5 = load typed i32 %t4
+    %t6 = binary add nowrap i32 %t5, 1
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 0
-    store i32 %t6, %t8
+    store typed i32 %t6, %t8
     return void
 }
 function @Chain_int__Empty__void___Chain_char____cppgm_class_template_identity_0_0_0__void___ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5ChainIi5EmptyvEC1ERKS1_, inline_hint=yes] {
@@ -68,17 +68,17 @@ function @Chain_int__Empty__void___Chain_char____cppgm_class_template_identity_0
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $other
+    %t3 = load typed ptr $other
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
-    %t6 = binary add i32 %t5, 1
-    %t7 = load ptr $this
+    %t5 = load typed i32 %t4
+    %t6 = binary add nowrap i32 %t5, 1
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 0
-    store i32 %t6, %t8
+    store typed i32 %t6, %t8
     return void
 }
 alias object _ZN5ChainIi5EmptyvEC2Ei = @Chain_int__Empty__void___Chain_char____cppgm_class_template_identity_0_0_0__void_

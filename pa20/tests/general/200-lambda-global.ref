@@ -12,7 +12,7 @@ function @__0__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=strong, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {

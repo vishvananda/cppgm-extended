@@ -7,15 +7,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @host__run() -> i32 [binding=weak, object=_ZN4host3runEv, inline_hint=yes] {
@@ -23,12 +23,12 @@ function @host__run() -> i32 [binding=weak, object=_ZN4host3runEv, inline_hint=y
   slot $argobj__1 : obj<8x8>
 
   block ^entry:
-    store i32 0, $value
+    store typed i32 0, $value
     %t1 = addr $argobj__1
     %t2 = addr $value
     call void @host__shadow_maker__shadow_maker(%t1, %t2)
     call void @invoke($argobj__1)
-    %t3 = load i32 $value
+    %t3 = load typed i32 $value
     return i32 %t3
 }
 function @host__shadow_maker__shadow_maker(%this : ptr [object_bytes=8], %p : ptr) -> void [binding=weak, object=_ZN4host12shadow_makerC1EPi, inline_hint=yes] {
@@ -36,12 +36,12 @@ function @host__shadow_maker__shadow_maker(%this : ptr [object_bytes=8], %p : pt
   slot $p : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %p, $p
-    %t1 = load ptr $p
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @invoke(%f : obj<8x8>) -> void [binding=weak, object=_Z6invokeIN4host12shadow_makerEEvT_] {
@@ -58,11 +58,11 @@ function @host__shadow_maker__operator__(%this : ptr [object_bytes=8]) -> void [
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    store i32 17, %t3
+    %t3 = load typed ptr %t2
+    store typed i32 17, %t3
     return void
 }
 alias object _ZN4host12shadow_makerC2EPi = @host__shadow_maker__shadow_maker

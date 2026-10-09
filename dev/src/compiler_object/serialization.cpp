@@ -23,7 +23,7 @@ namespace
 {
 
 const char kMagic[] = "CPPGMOBJ";
-const std::uint32_t kVersion = 6;
+const std::uint32_t kVersion = 7;
 const std::uint64_t kMaxObjectElements = UINT64_C(1) << 28;
 
 class BinaryWriter
@@ -362,6 +362,7 @@ void WriteSymbolMetadata(BinaryWriter& out,
 	out.Bool(value.force_inline);
 	out.Bool(value.inline_hint);
 	out.Bool(value.no_inline);
+	out.Bool(value.replaceable);
 }
 
 lowir_model::SymbolMetadata ReadSymbolMetadata(
@@ -385,6 +386,7 @@ lowir_model::SymbolMetadata ReadSymbolMetadata(
 	value.force_inline = in.Bool();
 	value.inline_hint = in.Bool();
 	value.no_inline = in.Bool();
+	value.replaceable = in.Bool();
 	return value;
 }
 
@@ -396,6 +398,7 @@ void WriteBoundary(BinaryWriter& out,
 	WriteEnum(out, value.unwind);
 	WriteEnum(out, value.returns);
 	WriteEnum(out, value.query);
+	out.Byte(value.result_classes);
 }
 
 lowir_model::FunctionBoundaryMetadata ReadBoundary(BinaryReader& in)
@@ -406,6 +409,7 @@ lowir_model::FunctionBoundaryMetadata ReadBoundary(BinaryReader& in)
 	value.unwind = ReadEnum<lowir_model::CallUnwindMode>(in);
 	value.returns = ReadEnum<lowir_model::CallReturnMode>(in);
 	value.query = ReadEnum<lowir_model::CallQueryMode>(in);
+	value.result_classes = in.Byte();
 	return value;
 }
 
@@ -417,6 +421,7 @@ void WriteParameter(BinaryWriter& out, const lowir_model::Parameter& value,
 	WriteEnum(out, value.metadata.passing);
 	WriteEnum(out, value.metadata.alias);
 	out.U64(value.metadata.object_bytes);
+	out.Byte(value.metadata.classes);
 }
 
 lowir_model::Parameter ReadParameter(BinaryReader& in,
@@ -428,6 +433,7 @@ lowir_model::Parameter ReadParameter(BinaryReader& in,
 	value.metadata.passing = ReadEnum<lowir_model::ParamPassingMode>(in);
 	value.metadata.alias = ReadEnum<lowir_model::ParamAliasMode>(in);
 	value.metadata.object_bytes = in.U64();
+	value.metadata.classes = in.Byte();
 	return value;
 }
 
@@ -494,6 +500,10 @@ void WriteInstruction(BinaryWriter& out, const lowir_model::Instruction& value,
 	out.Bool(value.call_returns_void);
 	out.Bool(value.has_call_signature);
 	out.Bool(value.copy_elision_candidate);
+	out.Bool(value.volatile_access);
+	out.Bool(value.typed_access);
+	out.Bool(value.no_wrap);
+	out.Bool(value.exact);
 	WriteParameters(out, value.call_params, program);
 	WriteType(out, value.call_return_type);
 	WriteBoundary(out, value.call_boundary);
@@ -536,6 +546,10 @@ lowir_model::Instruction ReadInstruction(BinaryReader& in,
 	value.call_returns_void = in.Bool();
 	value.has_call_signature = in.Bool();
 	value.copy_elision_candidate = in.Bool();
+	value.volatile_access = in.Bool();
+	value.typed_access = in.Bool();
+	value.no_wrap = in.Bool();
+	value.exact = in.Bool();
 	value.call_params = ReadParameters(in, program.strings);
 	value.call_return_type = ReadType(in);
 	value.call_boundary = ReadBoundary(in);

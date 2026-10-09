@@ -10,15 +10,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @outer_int__long_int___inner__operator__(%this : ptr [object_bytes=1], %other : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=strong, object=_ZNK5outerIJilEE5innereqERKS1_] {
@@ -26,10 +26,10 @@ function @outer_int__long_int___inner__operator__(%this : ptr [object_bytes=1], 
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
     %t3 = cmp eq ptr %t1, %t2
     %t4 = convert trunc u8 i64 %t3
     return u8 %t4

@@ -11,6 +11,6 @@ function @boost__asio__v1__execution__pick(%__param0 : ptr [pass=by_address, obj
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 0
 }

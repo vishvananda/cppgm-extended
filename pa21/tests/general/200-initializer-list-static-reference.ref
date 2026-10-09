@@ -5,7 +5,7 @@ global @__local_static__get__held__tokens167_175__guard : i64 [binding=internal]
 global @__cppgm_initlist_backing_1 [binding=internal] = {
   zero 8
 }
-global @__local_static__get_value__held__tokens189_196 [binding=internal] = {
+global @__local_static__get_value__held__tokens189_196 : obj<16x8> [binding=internal] = {
   zero 16
 }
 global @__local_static__get_value__held__tokens189_196__guard : i64 [binding=internal] = zero
@@ -30,7 +30,7 @@ function @get() -> ptr [binding=strong, object=_Z3getv] {
   slot $tmpobj__2 : obj<16x8>
 
   block ^entry:
-    %t1 = load i64 @__local_static__get__held__tokens167_175__guard
+    %t1 = load typed i64 @__local_static__get__held__tokens167_175__guard
     %t2 = cmp ne i64 %t1, 0
     branch %t2, ^local_static_ready_1, ^local_static_init_2
 
@@ -50,22 +50,22 @@ function @get() -> ptr [binding=strong, object=_Z3getv] {
     resume
 
   block ^call_unwind_end_4:
-    store ptr %t5, %t4
+    store typed ptr %t5, %t4
     %t7 = index i8 %t4, 8
-    store i64 2, %t7
-    store ptr %t4, %t3
-    store i64 1, @__local_static__get__held__tokens167_175__guard
+    store typed i64 2, %t7
+    store typed ptr %t4, %t3
+    store typed i64 1, @__local_static__get__held__tokens167_175__guard
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t8 = load ptr @__local_static__get__held__tokens167_175
+    %t8 = load typed ptr @__local_static__get__held__tokens167_175
     return ptr %t8
 }
 function @get_value() -> ptr [binding=strong, object=_Z9get_valuev] {
   slot $initlist__1 : obj<8x4>
 
   block ^entry:
-    %t1 = load i64 @__local_static__get_value__held__tokens189_196__guard
+    %t1 = load typed i64 @__local_static__get_value__held__tokens189_196__guard
     %t2 = cmp ne i64 %t1, 0
     branch %t2, ^local_static_ready_1, ^local_static_init_2
 
@@ -85,9 +85,9 @@ function @get_value() -> ptr [binding=strong, object=_Z9get_valuev] {
 
   block ^call_unwind_end_4:
     eh_try ^call_unwind_dispatch_5
-    store ptr %t4, %t3
+    store typed ptr %t4, %t3
     %t6 = index i8 %t3, 8
-    store i64 2, %t6
+    store typed i64 2, %t6
     eh_end
     jump ^call_unwind_end_6
 
@@ -96,7 +96,7 @@ function @get_value() -> ptr [binding=strong, object=_Z9get_valuev] {
 
   block ^call_unwind_end_6:
     %t7 = call i32 @__cppgm_runtime_atexit(@__cppgm_local_static_destructor____local_static__get_value__held__tokens189_196)
-    store i64 1, @__local_static__get_value__held__tokens189_196__guard
+    store typed i64 1, @__local_static__get_value__held__tokens189_196__guard
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
@@ -115,36 +115,36 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call ptr @get()
-    store ptr %t1, $held
-    %t2 = load i32 @alive
+    store typed ptr %t1, $held
+    %t2 = load typed i32 @alive
     %t3 = cmp ne i32 %t2, 2
     branch %t3, ^if_then_1, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t4 = load ptr $held
+    %t4 = load typed ptr $held
     %t5 = call i64 @std__initializer_list_S___size(%t4)
     %t6 = convert sext i64 i32 2
     %t7 = cmp ne i64 %t5, %t6
     branch %t7, ^if_then_1, ^lor_rhs_6
 
   block ^lor_rhs_6:
-    %t8 = load ptr $held
+    %t8 = load typed ptr $held
     %t9 = call ptr @std__initializer_list_S___begin(%t8)
     %t10 = binary mul i64 0, 4
     %t11 = index i8 [projection=array_element] %t9, %t10
     %t12 = index i8 [projection=field] %t11, 0
-    %t13 = load i32 %t12
+    %t13 = load typed i32 %t12
     %t14 = cmp ne i32 %t13, 1
     branch %t14, ^if_then_1, ^lor_rhs_5
 
   block ^lor_rhs_5:
-    %t15 = load ptr $held
+    %t15 = load typed ptr $held
     %t16 = call ptr @get()
     %t17 = cmp ne ptr %t15, %t16
     branch %t17, ^if_then_1, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t18 = load i32 @made
+    %t18 = load typed i32 @made
     %t19 = cmp ne i32 %t18, 2
     branch %t19, ^if_then_1, ^if_else_2
 
@@ -156,112 +156,112 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     %t20 = call ptr @get_value()
-    store ptr %t20, $value
-    %t21 = load i32 @alive
+    store typed ptr %t20, $value
+    %t21 = load typed i32 @alive
     %t22 = cmp ne i32 %t21, 4
     branch %t22, ^lor_short_24, ^lor_rhs_23
 
   block ^lor_rhs_23:
-    %t23 = load ptr $value
+    %t23 = load typed ptr $value
     %t24 = call i64 @std__initializer_list_S___size(%t23)
     %t25 = convert sext i64 i32 2
     %t26 = cmp ne i64 %t24, %t25
     %t27 = cmp ne i64 %t26, 0
-    store i64 %t27, $lor__6
+    store typed i64 %t27, $lor__6
     jump ^lor_end_25
 
   block ^lor_short_24:
-    store i64 1, $lor__6
+    store typed i64 1, $lor__6
     jump ^lor_end_25
 
   block ^lor_end_25:
-    %t28 = load i64 $lor__6
+    %t28 = load typed i64 $lor__6
     branch %t28, ^lor_short_21, ^lor_rhs_20
 
   block ^lor_rhs_20:
-    %t29 = load ptr $value
+    %t29 = load typed ptr $value
     %t30 = call ptr @std__initializer_list_S___begin(%t29)
     %t31 = binary mul i64 0, 4
     %t32 = index i8 [projection=array_element] %t30, %t31
     %t33 = index i8 [projection=field] %t32, 0
-    %t34 = load i32 %t33
+    %t34 = load typed i32 %t33
     %t35 = cmp ne i32 %t34, 3
     %t36 = cmp ne i64 %t35, 0
-    store i64 %t36, $lor__5
+    store typed i64 %t36, $lor__5
     jump ^lor_end_22
 
   block ^lor_short_21:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_22
 
   block ^lor_end_22:
-    %t37 = load i64 $lor__5
+    %t37 = load typed i64 $lor__5
     branch %t37, ^lor_short_18, ^lor_rhs_17
 
   block ^lor_rhs_17:
-    %t38 = load ptr $value
+    %t38 = load typed ptr $value
     %t39 = call ptr @std__initializer_list_S___begin(%t38)
     %t40 = binary mul i64 1, 4
     %t41 = index i8 [projection=array_element] %t39, %t40
     %t42 = index i8 [projection=field] %t41, 0
-    %t43 = load i32 %t42
+    %t43 = load typed i32 %t42
     %t44 = cmp ne i32 %t43, 4
     %t45 = cmp ne i64 %t44, 0
-    store i64 %t45, $lor__4
+    store typed i64 %t45, $lor__4
     jump ^lor_end_19
 
   block ^lor_short_18:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_19
 
   block ^lor_end_19:
-    %t46 = load i64 $lor__4
+    %t46 = load typed i64 $lor__4
     branch %t46, ^lor_short_15, ^lor_rhs_14
 
   block ^lor_rhs_14:
-    %t47 = load ptr $value
+    %t47 = load typed ptr $value
     %t48 = call ptr @get_value()
     %t49 = cmp ne ptr %t47, %t48
     %t50 = cmp ne i64 %t49, 0
-    store i64 %t50, $lor__3
+    store typed i64 %t50, $lor__3
     jump ^lor_end_16
 
   block ^lor_short_15:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_16
 
   block ^lor_end_16:
-    %t51 = load i64 $lor__3
+    %t51 = load typed i64 $lor__3
     branch %t51, ^lor_short_12, ^lor_rhs_11
 
   block ^lor_rhs_11:
-    %t52 = load i32 @made
+    %t52 = load typed i32 @made
     %t53 = cmp ne i32 %t52, 4
     %t54 = cmp ne i64 %t53, 0
-    store i64 %t54, $lor__2
+    store typed i64 %t54, $lor__2
     jump ^lor_end_13
 
   block ^lor_short_12:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_13
 
   block ^lor_end_13:
-    %t55 = load i64 $lor__2
+    %t55 = load typed i64 $lor__2
     branch %t55, ^lor_short_9, ^lor_rhs_8
 
   block ^lor_rhs_8:
-    %t56 = load i32 @destroyed
+    %t56 = load typed i32 @destroyed
     %t57 = cmp ne i32 %t56, 0
     %t58 = cmp ne i64 %t57, 0
-    store i64 %t58, $lor__1
+    store typed i64 %t58, $lor__1
     jump ^lor_end_10
 
   block ^lor_short_9:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_10
 
   block ^lor_end_10:
-    %t59 = load i64 $lor__1
+    %t59 = load typed i64 $lor__1
     %t60 = convert trunc i32 i64 %t59
     return i32 %t60
 }
@@ -270,51 +270,51 @@ function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [unwind=no, bindi
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 @alive
-    %t5 = binary add i32 %t4, 1
-    store i32 %t5, @alive
-    %t6 = load i32 @made
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @made
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 @alive
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @alive
+    %t6 = load typed i32 @made
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @made
     return void
 }
 function @S___S(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN1SD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @alive
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @alive
-    %t3 = load i32 @destroyed
-    %t4 = binary add i32 %t3, 1
-    store i32 %t4, @destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @alive
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @alive
+    %t3 = load typed i32 @destroyed
+    %t4 = binary add nowrap i32 %t3, 1
+    store typed i32 %t4, @destroyed
     return void
 }
 function @std__initializer_list_S___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI1SE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     return i64 %t3
 }
 function @std__initializer_list_S___begin(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZNKSt16initializer_listI1SE5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     return ptr %t3
 }
 alias object _ZN1SC2Ei = @S__S

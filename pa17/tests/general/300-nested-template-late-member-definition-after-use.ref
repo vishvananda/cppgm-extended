@@ -11,6 +11,6 @@ function @outer_int___inner_long_int___call(%this : ptr [object_bytes=1]) -> voi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

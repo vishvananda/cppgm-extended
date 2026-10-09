@@ -15,7 +15,7 @@ function @O__G__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = call ptr @__cppgm_tls_wrapper__O__n()
     call void @V__clear(%t1)
     return i32 0
@@ -24,6 +24,6 @@ function @V__clear(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

@@ -37,6 +37,49 @@ template <class Derived>
 class IntegerLowering
 {
 protected:
+  // `select t c, a, b`: c, a and b into r10, r11 and the destination; the
+  // destination keeps b unless c is nonzero, when cmovne takes a.
+  void emit_select(const lowir_model::Instruction & instruction,
+                   std::vector<mir_model::MirInstruction> & out)
+  {
+    using namespace build;
+    using mir_model::MirInstruction;
+    using mir_model::MirOperand;
+    Derived & lowerer = static_cast<Derived &>(*this);
+    const lowir_model::LowType & type = instruction.type;
+    if(!selection::is_integer_or_pointer(type) || wide::is_integer(type))
+      native_errors::ThrowLowirInput(
+        "select requires an integer or pointer type of at most 64 bits");
+    MirOperand pressure_home;
+    X64Register result = XR_RSP;
+    if(!lowerer.try_allocate_result(instruction.dest, out, &result)) {
+      pressure_home = lowerer.allocate_temp_home(instruction.dest, type);
+      result = XR_RAX;
+    }
+    const MirOperand destination = reg_operand(result);
+    lowerer.move_value_to_register(out, XR_R10, lowerer.resolve(instruction.first),
+                                   lowerer.operand_type(instruction.first));
+    lowerer.move_value_to_register(out, XR_R11, lowerer.resolve(instruction.second), type);
+    lowerer.move_value_to_register(out, result, lowerer.resolve(instruction.third), type);
+    MirInstruction test = machine_instruction(MirInstruction::MI_CMP,
+                                              lowerer.operand_type(instruction.first));
+    append_operand(test, reg_operand(XR_R10));
+    append_operand(test, immediate(0));
+    out.push_back(test);
+    MirInstruction choose = machine_instruction(MirInstruction::MI_CMOV, type);
+    choose.condition = XC_NE;
+    append_operand(choose, destination);
+    append_operand(choose, reg_operand(XR_R11));
+    out.push_back(choose);
+    lowerer.consume(instruction.first);
+    lowerer.consume(instruction.second);
+    lowerer.consume(instruction.third);
+    if(pressure_home.kind == MirOperand::OP_FRAME)
+      append_store(out, pressure_home, destination, type);
+    lowerer.define(instruction.dest, type,
+                   pressure_home.kind == MirOperand::OP_FRAME ? pressure_home : destination);
+  }
+
   void emit_shift(const lowir_model::Instruction & instruction,
                   const mir_model::MirOperand & destination,
                   const mir_model::MirOperand & right,

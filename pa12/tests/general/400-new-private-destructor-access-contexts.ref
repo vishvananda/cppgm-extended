@@ -11,14 +11,14 @@ function @Hidden__create_array() -> ptr [binding=weak, object=_ZN6Hidden12create
     %t2 = call ptr @operatornew__(%t1)
     %t3 = index i8 %t2, 8
     %t4 = const i64 2
-    store i64 %t4, %t2
+    store typed i64 %t4, %t2
     return ptr %t3
 }
 function @Hidden___Hidden(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6HiddenD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Hidden__Hidden__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
@@ -26,12 +26,12 @@ function @Hidden__Hidden__aggregate(%this : ptr, %value : i32) -> void [unwind=n
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN6HiddenD2Ev = @Hidden___Hidden

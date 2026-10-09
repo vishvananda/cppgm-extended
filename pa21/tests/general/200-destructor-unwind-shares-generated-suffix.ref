@@ -57,20 +57,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^catch_body_4:
     %t6 = call ptr @__external_runtime____cxa_begin_catch(%t3)
     eh_cleanup ^catch_cleanup_6
-    %t7 = load i32 @order
+    %t7 = load typed i32 @order
     %t8 = cmp eq i32 %t7, 4321
     branch %t8, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_9
 
   block ^cond_else_8:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 %t9
@@ -90,22 +90,22 @@ function @Owner___Owner(%this : ptr [object_bytes=3]) -> void [binding=weak, obj
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    store i32 4, @order
+    store typed i32 4, @order
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 2
     call void @Throwing___Throwing(%t2)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 1
     call void @Second___Second(%t4)
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     call void @First___First(%t6)
     eh_end
@@ -113,35 +113,35 @@ function @Owner___Owner(%this : ptr [object_bytes=3]) -> void [binding=weak, obj
 
   block ^destructor_suffix_next_4:
     eh_cleanup ^destructor_suffix_cleanup_5
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 1
     call void @Second___Second(%t8)
     eh_end
     jump ^destructor_suffix_next_6
 
   block ^destructor_suffix_cleanup_5:
-    %t9 = load ptr $this
+    %t9 = load typed ptr $this
     %t10 = index i8 [projection=field] %t9, 0
     call void @First___First(%t10)
     eh_end
     resume
 
   block ^destructor_suffix_next_6:
-    %t11 = load ptr $this
+    %t11 = load typed ptr $this
     %t12 = index i8 [projection=field] %t11, 0
     call void @First___First(%t12)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     eh_try ^lexical_cleanup_terminate_7
-    %t14 = load ptr $this
+    %t14 = load typed ptr $this
     %t15 = index i8 [projection=field] %t14, 2
     call void @Throwing___Throwing(%t15)
     eh_end
-    %t16 = load ptr $this
+    %t16 = load typed ptr $this
     %t17 = index i8 [projection=field] %t16, 1
     call void @Second___Second(%t17)
-    %t18 = load ptr $this
+    %t18 = load typed ptr $this
     %t19 = index i8 [projection=field] %t18, 0
     call void @First___First(%t19)
     eh_end
@@ -160,11 +160,11 @@ function @Throwing___Throwing(%this : ptr [object_bytes=1]) -> void [binding=wea
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @order
-    %t2 = binary mul i32 %t1, 10
-    %t3 = binary add i32 %t2, 3
-    store i32 %t3, @order
+    store typed ptr %this, $this
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 3
+    store typed i32 %t3, @order
     %t4 = call ptr @__external_runtime____cxa_allocate_exception(1)
     %t5 = addr @__rtti_struct_failure
     call void @__external_runtime____cxa_throw(%t4, %t5, 0)
@@ -174,22 +174,22 @@ function @Second___Second(%this : ptr [object_bytes=1]) -> void [unwind=no, bind
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @order
-    %t2 = binary mul i32 %t1, 10
-    %t3 = binary add i32 %t2, 2
-    store i32 %t3, @order
+    store typed ptr %this, $this
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 2
+    store typed i32 %t3, @order
     return void
 }
 function @First___First(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5FirstD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @order
-    %t2 = binary mul i32 %t1, 10
-    %t3 = binary add i32 %t2, 1
-    store i32 %t3, @order
+    store typed ptr %this, $this
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 1
+    store typed i32 %t3, @order
     return void
 }
 alias object _ZN5OwnerD2Ev = @Owner___Owner

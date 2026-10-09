@@ -2,8 +2,8 @@ function @cast_fn(%fp : ptr) -> i64 [binding=strong, object=_Z7cast_fnPFiiPKviE]
   slot $fp : ptr
 
   block ^entry:
-    store ptr %fp, $fp
-    %t1 = load ptr $fp
+    store typed ptr %fp, $fp
+    %t1 = load typed ptr $fp
     %t2 = copy i64 %t1
     return i64 %t2
 }

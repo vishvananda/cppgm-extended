@@ -35,8 +35,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $d
     call void @YD__YD(%t1)
     %t2 = addr $d
-    %t3 = load ptr %t2
-    %t4 = load ptr %t3
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr %t3
     %t5 = call i32 %t4(%t2) as (%arg0 : ptr [object_bytes=8]) -> i32
     return i32 %t5
 }
@@ -44,18 +44,18 @@ function @YD__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2Y
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 2
 }
 function @YD__YD(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @YD__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN2YDC2Ev = @YD__YD

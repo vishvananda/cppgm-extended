@@ -145,6 +145,8 @@ protected:
 		index.first = object;
 		index.second = displacement;
 		index.projection = INDEX_PROJECTION_FIELD;
+		index.untyped = derived.IsUnionEntity(
+			derived.BaseEntityForType(derived.arena_.nodes[children[0]].type));
 		derived.Emit(index);
 		return result;
 	}

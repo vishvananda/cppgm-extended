@@ -13,27 +13,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call ptr @locate()
-    store ptr %t1, $node
-    %t2 = load ptr $node
+    store typed ptr %t1, $node
+    %t2 = load typed ptr $node
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    %t3 = load ptr $node
+    %t3 = load typed ptr $node
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_6
 
   block ^cond_else_5:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_6
 
   block ^cond_end_6:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 
   block ^if_else_2:

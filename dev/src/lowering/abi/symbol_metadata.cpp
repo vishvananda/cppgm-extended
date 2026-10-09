@@ -96,6 +96,36 @@ void ApplyBuiltinParameterAliasMetadata(lowering::ir::Parameter* parameter,
 	}
 }
 
+std::uint8_t SysvObjectClasses(const semantic::Program& program,
+	semantic::TypeId type, bool result)
+{
+	using namespace semantic;
+	if (type == kNoType) return 0;
+	const TypeRecord& record = program.types.Get(program.types.RemoveTopCv(type));
+	if (record.kind != TYPE_NAMED || record.entity >= program.entities.size())
+		return 0;
+	const EntityRecord& entity = program.entities[record.entity];
+	if (!IsClassNamedFlavor(entity.flavor) || !entity.layout_complete ||
+		entity.object_size == 0 || entity.object_size > 16)
+		return 0;
+	// lowir_model::kObjectClassesMemory.
+	if (entity.sysv_memory || entity.sysv_unmodeled) return result ? 0 : 0x80;
+	std::uint8_t classes = 0;
+	bool stated = false;
+	for (unsigned eightbyte = 0; eightbyte < (entity.object_size + 7) / 8;
+		++eightbyte)
+	{
+		const unsigned low = (entity.sysv_quarters >> (eightbyte * 4)) & 3;
+		const unsigned high = (entity.sysv_quarters >> (eightbyte * 4 + 2)) & 3;
+		// 1 none, 2 integer, 3 sse; INTEGER wins a merge.
+		const unsigned code = low == 1 || high == 1 ? 2 :
+			low == 2 || high == 2 ? 3 : 1;
+		stated = stated || code != 2;
+		classes = static_cast<std::uint8_t>(classes | (code << (eightbyte * 2)));
+	}
+	return stated ? classes : 0;
+}
+
 }  // namespace abi
 }  // namespace lowering
 }  // namespace cppgm

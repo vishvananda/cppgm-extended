@@ -21,27 +21,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = convert sext i64 i32 %t9
     %t12 = cmp eq i64 %t11, %t10
     %t13 = cmp ne i64 %t12, 0
-    store i64 %t13, $land__2
+    store typed i64 %t13, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t14 = load i64 $land__2
+    %t14 = load typed i64 $land__2
     branch %t14, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load i32 $cond__1
+    %t15 = load typed i32 $cond__1
     return i32 %t15
 }
 function @Use_n__A___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3UseIN1n1AEE4sizeEv, inline_hint=yes] {
@@ -49,7 +49,7 @@ function @Use_n__A___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, ob
   slot $box : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $box
     %t2 = const i64 4
     %t3 = convert trunc i32 i64 %t2
@@ -60,7 +60,7 @@ function @Use_n__B___size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, ob
   slot $box : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $box
     %t2 = const i64 8
     %t3 = convert trunc i32 i64 %t2

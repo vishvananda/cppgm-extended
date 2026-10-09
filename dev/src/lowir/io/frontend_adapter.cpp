@@ -287,6 +287,7 @@ void AdaptParameterFacts(const Parameter& source,
 	if (source.alias == Parameter::ALIAS_NOALIAS)
 		target->metadata.alias = lowir_model::PALM_NOALIAS;
 	target->metadata.object_bytes = source.object_bytes;
+	target->metadata.classes = source.classes;
 }
 
 std::vector<lowir_model::Parameter> AdaptParameters(
@@ -383,6 +384,7 @@ void AdaptSymbolFacts(const Symbol& source,
 	if (source.c_linkage) symbol->linkage = lowir_model::LLM_C;
 	symbol->binding = source.internal_linkage ? lowir_model::SBM_INTERNAL :
 		source.weak_linkage ? lowir_model::SBM_WEAK : lowir_model::SBM_STRONG;
+	symbol->replaceable = source.weak_linkage && source.replaceable;
 	symbol->object_symbol = source.object_name;
 	symbol->section_name = source.section_name;
 	symbol->keep_internal_alias = false;
@@ -454,6 +456,8 @@ lowir_model::LowOperation AdaptOperation(LowOperation source)
 		lowir_model::LowOperation::LOP_NEG,
 		lowir_model::LowOperation::LOP_BITNOT,
 		lowir_model::LowOperation::LOP_BSWAP,
+		lowir_model::LowOperation::LOP_CTZ,
+		lowir_model::LowOperation::LOP_CLZ,
 		lowir_model::LowOperation::LOP_ADD,
 		lowir_model::LowOperation::LOP_SUB,
 		lowir_model::LowOperation::LOP_MUL,
@@ -535,6 +539,9 @@ void AdaptInstruction(const Instruction& source,
 		target.source_type = AdaptType(source.source_type);
 	target.op = AdaptOperation(source.op);
 	target.volatile_access = source.volatile_access;
+	target.typed_access = source.typed_access;
+	target.no_wrap = source.no_wrap;
+	target.exact = source.exact;
 	target.copy_elision_candidate = source.copy_elision_candidate;
 	AdaptOperand(source.first, program, function, values, literals, telemetry,
 		&target.first);
@@ -579,6 +586,7 @@ void AdaptInstruction(const Instruction& source,
 		break;
 	case Instruction::INDEX: target.kind = lowir_model::Instruction::IK_INDEX; break;
 	case Instruction::UNARY: target.kind = lowir_model::Instruction::IK_UNARY; break;
+	case Instruction::SELECT: target.kind = lowir_model::Instruction::IK_SELECT; break;
 	case Instruction::BINARY: target.kind = lowir_model::Instruction::IK_BINARY; break;
 	case Instruction::CMP: target.kind = lowir_model::Instruction::IK_CMP; break;
 	case Instruction::CONVERT: target.kind = lowir_model::Instruction::IK_CONVERT; break;
@@ -637,6 +645,7 @@ void AdaptInstruction(const Instruction& source,
 		{
 			target.has_call_signature = true;
 			target.call_return_type = AdaptType(source.type);
+			target.call_boundary.result_classes = source.result_classes;
 			target.call_params.resize(source.extra_count);
 			for (std::size_t i = 0; i < source.extra_count; ++i)
 			{
@@ -653,6 +662,10 @@ void AdaptInstruction(const Instruction& source,
 					program.call_argument_object_bytes.size())
 					parameter.metadata.object_bytes =
 						program.call_argument_object_bytes[source.extra_first + i];
+				if (source.extra_first + i <
+					program.call_argument_classes.size())
+					parameter.metadata.classes =
+						program.call_argument_classes[source.extra_first + i];
 				if (source.extra_first + i <
 					program.call_argument_references.size())
 				{
@@ -884,6 +897,7 @@ lowir_model::LowirProgram AdaptTypedLowirForBackend(
 		result.return_type = AdaptType(item.result);
 		result.boundary.arity = item.variadic ? lowir_model::CAM_VARIADIC :
 			lowir_model::CAM_FIXED;
+		result.boundary.result_classes = item.result_classes;
 		AdaptSymbolFacts(symbol, &result.metadata, &result.boundary);
 		if (symbol.tls_for_symbol != kNoLowId)
 		{
@@ -1005,6 +1019,7 @@ lowir_model::LowirProgram AdaptTypedLowirForBackend(
 		result.return_type = AdaptType(item.result);
 		result.boundary.arity = item.variadic ? lowir_model::CAM_VARIADIC :
 			lowir_model::CAM_FIXED;
+		result.boundary.result_classes = item.result_classes;
 		AdaptSymbolFacts(symbol, &result.metadata, &result.boundary);
 		if (item.entry)
 		{

@@ -2,8 +2,8 @@ function @forward_box(%ret : ptr [pass=indirect_result, object_bytes=8], %value 
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     call void @Box__Box__ov2(%ret, %t1)
     return void
 }
@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $copy : obj<8x8>
 
   block ^entry:
-    store i32 1, $x
+    store typed i32 1, $x
     %t1 = addr $source
     %t2 = addr $x
     call void @Box__Box(%t1, %t2)
@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @forward_box(%t3, %t4)
     %t5 = addr $source
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load ptr %t6
+    %t7 = load typed ptr %t6
     %t8 = addr $x
     %t9 = cmp ne ptr %t7, %t8
     branch %t9, ^if_then_1, ^if_else_2
@@ -36,7 +36,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_3:
     %t10 = addr $copy
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load ptr %t11
+    %t12 = load typed ptr %t11
     %t13 = addr $x
     %t14 = cmp ne ptr %t12, %t13
     branch %t14, ^if_then_4, ^if_else_5
@@ -55,14 +55,14 @@ function @Box__Box__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : pt
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $this
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store ptr %t3, %t5
+    store typed ptr %t3, %t5
     return void
 }
 function @Box__Box(%this : ptr [object_bytes=8], %value : ptr) -> void [binding=weak, object=_ZN3BoxC1EPi, inline_hint=yes] {
@@ -70,12 +70,12 @@ function @Box__Box(%this : ptr [object_bytes=8], %value : ptr) -> void [binding=
   slot $value : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 alias object _ZN3BoxC2ERKS_ = @Box__Box__ov2

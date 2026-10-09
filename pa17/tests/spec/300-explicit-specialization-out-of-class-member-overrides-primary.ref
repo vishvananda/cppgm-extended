@@ -8,20 +8,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x4 %t2, %t1
     %t3 = addr $d
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @traits__identity_element_lib__date___value() -> obj<4x4> [binding=weak, object=_ZN6traits16identity_elementIN3lib4dateEE5valueEv, inline_hint=yes] {
@@ -37,12 +37,12 @@ function @lib__date__date(%this : ptr [object_bytes=4], %v_in : i32) -> void [bi
   slot $v_in : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v_in, $v_in
-    %t1 = load i32 $v_in
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v_in, $v_in
+    %t1 = load typed i32 $v_in
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN3lib4dateC2Ei = @lib__date__date

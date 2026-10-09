@@ -15,7 +15,7 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @__local_static__read_static__value__tokens129_141 [binding=internal] = {
+global @__local_static__read_static__value__tokens129_141 : obj<4x4> [binding=internal] = {
   zero 4
 }
 global @__local_static__read_static__value__tokens129_141__guard : i64 [binding=internal] = zero
@@ -27,11 +27,11 @@ function @read_static(%live_count : ptr) -> i32 [binding=strong, object=_Z11read
   slot $arg__2 : obj<4x4>
 
   block ^entry:
-    store ptr %live_count, $live_count
+    store typed ptr %live_count, $live_count
     %t1 = addr $live
-    %t2 = load ptr $live_count
+    %t2 = load typed ptr $live_count
     call void @Live__Live(%t1, %t2)
-    %t3 = load i64 @__local_static__read_static__value__tokens129_141__guard
+    %t3 = load typed i64 @__local_static__read_static__value__tokens129_141__guard
     %t4 = cmp ne i64 %t3, 0
     branch %t4, ^local_static_ready_1, ^local_static_init_2
 
@@ -75,13 +75,13 @@ function @read_static(%live_count : ptr) -> i32 [binding=strong, object=_Z11read
     jump ^cleanup_action_6
 
   block ^call_unwind_end_9:
-    store i64 1, @__local_static__read_static__value__tokens129_141__guard
+    store typed i64 1, @__local_static__read_static__value__tokens129_141__guard
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
     %t9 = addr @__local_static__read_static__value__tokens129_141
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load i32 %t10
+    %t11 = load typed i32 %t10
     %t12 = addr $live
     call void @Live___Live(%t12)
     return i32 %t11
@@ -90,14 +90,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $live_count : i32
 
   block ^entry:
-    store i32 0, $live_count
+    store typed i32 0, $live_count
     %t1 = addr $live_count
     %t2 = call i32 @read_static(%t1)
     %t3 = cmp ne i32 %t2, 3
     branch %t3, ^if_then_1, ^lor_rhs_4
 
   block ^lor_rhs_4:
-    %t4 = load i32 $live_count
+    %t4 = load typed i32 $live_count
     %t5 = cmp ne i32 %t4, 0
     branch %t5, ^if_then_1, ^if_else_2
 
@@ -114,7 +114,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t8, ^if_then_5, ^lor_rhs_8
 
   block ^lor_rhs_8:
-    %t9 = load i32 $live_count
+    %t9 = load typed i32 $live_count
     %t10 = cmp ne i32 %t9, 0
     branch %t10, ^if_then_5, ^if_else_6
 
@@ -132,31 +132,31 @@ function @Live__Live(%this : ptr [object_bytes=8], %value : ptr) -> void [bindin
   slot $value : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $this
+    store typed ptr %t1, %t3
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load ptr %t5
-    %t7 = load i32 %t6
-    %t8 = binary add i32 %t7, 1
-    store i32 %t8, %t6
+    %t6 = load typed ptr %t5
+    %t7 = load typed i32 %t6
+    %t8 = binary add nowrap i32 %t7, 1
+    store typed i32 %t8, %t6
     return void
 }
 function @Live___Live(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4LiveD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load i32 %t3
-    %t5 = binary sub i32 %t4, 1
-    store i32 %t5, %t3
+    %t3 = load typed ptr %t2
+    %t4 = load typed i32 %t3
+    %t5 = binary sub nowrap i32 %t4, 1
+    store typed i32 %t5, %t3
     return void
 }
 function @Temporary__Temporary(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN9TemporaryC1Ei, inline_hint=yes] {
@@ -164,20 +164,20 @@ function @Temporary__Temporary(%this : ptr [object_bytes=4], %input : i32) -> vo
   slot $input : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $input
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $input
     %t5 = cmp lt i32 %t4, 0
     branch %t5, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t6 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    %t7 = load i32 $input
-    store i32 %t7, %t6
+    %t7 = load typed i32 $input
+    store typed i32 %t7, %t6
     %t8 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t6, %t8, 0)
     return void
@@ -194,31 +194,31 @@ function @StaticValue__StaticValue(%this : ptr [object_bytes=4], %left : ptr [pa
   slot $right : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %left, $left
-    store ptr %right, $right
-    %t1 = load ptr $left
+    store typed ptr %this, $this
+    store typed ptr %left, $left
+    store typed ptr %right, $right
+    %t1 = load typed ptr $left
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $right
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $right
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
-    %t7 = binary add i32 %t3, %t6
-    %t8 = load ptr $this
+    %t6 = load typed i32 %t5
+    %t7 = binary add nowrap i32 %t3, %t6
+    %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 0
-    store i32 %t7, %t9
-    %t10 = load ptr $this
+    store typed i32 %t7, %t9
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
+    %t12 = load typed i32 %t11
     %t13 = cmp lt i32 %t12, 0
     branch %t13, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t14 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    %t15 = load ptr $this
+    %t15 = load typed ptr $this
     %t16 = index i8 [projection=field] %t15, 0
-    %t17 = load i32 %t16
-    store i32 %t17, %t14
+    %t17 = load typed i32 %t16
+    store typed i32 %t17, %t14
     %t18 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t14, %t18, 0)
     return void
@@ -233,7 +233,7 @@ function @Temporary___Temporary(%this : ptr [object_bytes=4]) -> void [unwind=no
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN4LiveC2EPi = @Live__Live

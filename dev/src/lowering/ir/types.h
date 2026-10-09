@@ -181,6 +181,8 @@ enum LowOperation : std::uint8_t
 	LOW_OP_NEG,
 	LOW_OP_BITNOT,
 	LOW_OP_BSWAP,
+	LOW_OP_CTZ,
+	LOW_OP_CLZ,
 	LOW_OP_ADD,
 	LOW_OP_SUB,
 	LOW_OP_MUL,
@@ -270,7 +272,10 @@ struct Instruction
 		SWITCH,
 		RETURN_VALUE,
 		RETURN_VOID,
-		UNREACHABLE
+		UNREACHABLE,
+		// `select type first, second, third`: second when the integer first
+		// is nonzero, third otherwise.
+		SELECT
 	};
 	LowType type;
 	LowType source_type;
@@ -295,6 +300,20 @@ struct Instruction
 	// Serialized source-language permission for a later LowIR copy-elision
 	// pass.  It never changes the ordinary O0 meaning of the call.
 	bool copy_elision_candidate;
+	// Instruction facts (lowir.md "Instruction Facts").  Lowering states
+	// `nowrap` and `exact` where it builds the operation; `typed` is decided
+	// for every load and store once a function is complete
+	// (StateTypedAccesses), from its type and `untyped`.
+	bool typed_access;
+	bool no_wrap;
+	bool exact;
+	// On a load or store: the access does not go through an object of its
+	// type (a bit-field's storage unit).  On an index or copy: the address
+	// designates storage reached through a union member, so the loads and
+	// stores through it, and through addresses derived from it, are untyped.
+	bool untyped;
+	// On an indirect call: the SysV classes of its direct object result.
+	std::uint8_t result_classes;
 
 	explicit Instruction(Kind kind_value)
 		: dest(kNoLowId), extra_first(kNoLowId), extra_count(0),
@@ -302,8 +321,19 @@ struct Instruction
 		  target(kNoLowId), alternate(kNoLowId), kind(kind_value),
 		  op(LOW_OP_NONE), projection(INDEX_PROJECTION_NONE), atomic_order(0),
 		  atomic_failure_order(0), indirect(false), volatile_access(false),
-		  copy_elision_candidate(false) {}
+		  copy_elision_candidate(false), typed_access(false), no_wrap(false),
+		  exact(false), untyped(false), result_classes(0) {}
 };
+
+// `nowrap` (lowir.md "Instruction Facts") on the add, sub or mul of
+// source arithmetic at signed int or long, whose overflow is undefined
+// (5p4).  Narrower operands were promoted first; a shift stays unmarked, as
+// GCC and clang define a signed left shift that overflows.
+inline bool SignedArithmeticNoWrap(LowOperation op, const LowType& type)
+{
+	return (op == LOW_OP_ADD || op == LOW_OP_SUB || op == LOW_OP_MUL) &&
+		type.is_signed && (type.kind == LOW_I32 || type.kind == LOW_I64);
+}
 
 inline bool IsTerminator(const Instruction& instruction)
 {
@@ -350,10 +380,13 @@ struct Parameter
 	lowir_model::StringId name;
 	LowType type;
 	std::size_t object_bytes;
+	// SysV classes of a direct object parameter (lowir_model::ParameterMetadata
+	// ::classes); 0 states none.
+	std::uint8_t classes;
 	bool reference, indirect_result, by_address;
 
-	Parameter() : alias(ALIAS_DEFAULT), object_bytes(0), reference(false), indirect_result(false),
-		by_address(false) {}
+	Parameter() : alias(ALIAS_DEFAULT), object_bytes(0), classes(0),
+		reference(false), indirect_result(false), by_address(false) {}
 };
 
 struct Slot
@@ -369,6 +402,8 @@ struct Function
 {
 	SymbolId symbol;
 	LowType result;
+	// SysV classes of a direct object result; 0 states none.
+	std::uint8_t result_classes;
 	std::vector<Parameter> parameters;
 	std::vector<Slot> slots;
 	std::vector<Block> blocks;
@@ -382,7 +417,7 @@ struct Function
 	bool finalizer;
 	bool variadic;
 
-	Function() : symbol(kNoLowId), temporary_limit(0), entry(false),
+	Function() : symbol(kNoLowId), result_classes(0), temporary_limit(0), entry(false),
 		initializer(false), finalizer(false), variadic(false) {}
 };
 
@@ -390,10 +425,11 @@ struct FunctionDeclaration
 {
 	SymbolId symbol;
 	LowType result;
+	std::uint8_t result_classes;
 	std::vector<Parameter> parameters;
 	bool variadic;
 
-	FunctionDeclaration() : symbol(kNoLowId), variadic(false) {}
+	FunctionDeclaration() : symbol(kNoLowId), result_classes(0), variadic(false) {}
 };
 
 struct GlobalDeclaration
@@ -494,6 +530,9 @@ struct Symbol
 	bool c_linkage;
 	bool internal_linkage;
 	bool weak_linkage;
+	// A GNU weak definition (BindingRecord::weak_symbol): weak_linkage, and
+	// LowIR `replaceable=yes`.
+	bool replaceable;
 	bool prefer_local_object_binding;
 	bool keep_internal_object_alias;
 	bool nonthrowing;
@@ -519,7 +558,8 @@ struct Symbol
 		  runtime_role(RUNTIME_ROLE_NONE), name(name_value),
 		  object_name(object_name_value),
 		  c_linkage(c_linkage_value), internal_linkage(internal_linkage_value),
-		  weak_linkage(false), prefer_local_object_binding(false),
+		  weak_linkage(false), replaceable(false),
+		  prefer_local_object_binding(false),
 		  keep_internal_object_alias(true),
 		  nonthrowing(nonthrowing_value), noreturn(false),
 		  thread_local_storage(false),

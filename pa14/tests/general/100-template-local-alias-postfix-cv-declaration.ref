@@ -8,13 +8,13 @@ function @f(%t : i32) -> i32 [binding=weak, object=_Z1fIiEiT_] {
   slot $x : i32
 
   block ^entry:
-    store i32 %t, $t
+    store typed i32 %t, $t
     jump ^if_then_1
 
   block ^if_then_1:
-    %t1 = load i32 $t
-    store i32 %t1, $x
-    %t2 = load i32 $x
+    %t1 = load typed i32 $t
+    store typed i32 %t1, $x
+    %t2 = load typed i32 $x
     return i32 %t2
 
   block ^if_else_2:

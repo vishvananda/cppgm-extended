@@ -1271,7 +1271,10 @@ enum FunctionControlAttribute : std::uint8_t
 	// A member carrying this attribute is not covered by an explicit
 	// instantiation of its class, so every translation unit that uses it
 	// instantiates and emits its own copy.
-	FUNCTION_CONTROL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION = 64
+	FUNCTION_CONTROL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION = 64,
+	// __attribute__((weak)): a replaceable definition (BindingRecord::
+	// weak_symbol), as on a variable.
+	FUNCTION_CONTROL_WEAK = 128
 };
 
 struct FunctionTemplatePattern

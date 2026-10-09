@@ -4,7 +4,7 @@ function @S__g(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN
   slot $argobj__1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $f
     %t2 = addr $argobj__1
     call void @__cppgm_class_template_2_0__function_S__G_(%t1, $argobj__1)
@@ -19,13 +19,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @S__g(%t2)
     return i32 0
 }
-function @__cppgm_class_template_2_0__function_S__G_(%this : ptr [object_bytes=1], %f : obj<1x1>) -> void [binding=internal, object=_ZN8functionIZN1S1gEvE1GEC1EZNS0_1gEvE1G, object_root=yes, inline_hint=yes] {
+function @__cppgm_class_template_2_0__function_S__G_(%this : ptr [object_bytes=1], %f : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN8functionIZN1S1gEvE1GEC1EZNS0_1gEvE1G, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $f : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = addr $f
     %t4 = call ptr @move(%t3)
@@ -36,8 +36,8 @@ function @move(%t : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=inter
   slot $t : ptr
 
   block ^entry:
-    store ptr %t, $t
-    %t1 = load ptr $t
+    store typed ptr %t, $t
+    %t1 = load typed ptr $t
     return ptr %t1
 }
 function @value_func__value_func__ov3(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN10value_funcC1IZN1S1gEvE1GEEOT_, object_root=yes, inline_hint=yes] {
@@ -46,10 +46,10 @@ function @value_func__value_func__ov3(%this : ptr [object_bytes=1], %p : ptr [pa
   slot $s : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %p, $p
+    store typed ptr %this, $this
+    store typed ptr %p, $p
     %t1 = addr $s
-    %t2 = load ptr $p
+    %t2 = load typed ptr $p
     %t3 = call ptr @move(%t2)
     call void @__cppgm_class_template_1_0__stored_S__G_(%t1, %t3)
     return void
@@ -59,8 +59,8 @@ function @__cppgm_class_template_1_0__stored_S__G_(%this : ptr [object_bytes=1],
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN8functionIZN1S1gEvE1GEC2EZNS0_1gEvE1G = @__cppgm_class_template_2_0__function_S__G_

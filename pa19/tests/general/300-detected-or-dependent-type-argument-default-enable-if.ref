@@ -9,11 +9,11 @@ function @distance_like(%first : i32, %last : i32) -> i64 [binding=weak, object=
   slot $last : i32
 
   block ^entry:
-    store i32 %first, $first
-    store i32 %last, $last
-    %t1 = load i32 $last
-    %t2 = load i32 $first
-    %t3 = binary sub i32 %t1, %t2
+    store typed i32 %first, $first
+    store typed i32 %last, $last
+    %t1 = load typed i32 $last
+    %t2 = load typed i32 $first
+    %t3 = binary sub nowrap i32 %t1, %t2
     %t4 = convert sext i64 i32 %t3
     return i64 %t4
 }

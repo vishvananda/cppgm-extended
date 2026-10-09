@@ -2,7 +2,7 @@ function @f() -> ptr [binding=strong, object=_Z1fv] {
   slot $retref__1 : i32
 
   block ^entry:
-    store i32 0, $retref__1
+    store typed i32 0, $retref__1
     %t1 = addr $retref__1
     return ptr %t1
 }

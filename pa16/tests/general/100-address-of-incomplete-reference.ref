@@ -4,8 +4,8 @@ function @relay(%value : ptr [pass=by_address]) -> void [binding=strong, object=
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     call void @consume(%t1)
     return void
 }

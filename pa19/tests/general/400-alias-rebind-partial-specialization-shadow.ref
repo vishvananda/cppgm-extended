@@ -10,15 +10,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $ia
     call void @std__allocator_pointer_to_void___allocator_pointer_to_void___ov4(%t2, %t3)
     %t4 = addr $ra
-    store ptr %t4, $pva
-    %t5 = load ptr $pva
+    store typed ptr %t4, $pva
+    %t5 = load typed ptr $pva
     return i32 0
 }
 function @std__allocator_int___allocator_pointer_to_void_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZNSaIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @std__allocator_pointer_to_void___allocator_pointer_to_void___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZNSaIPvEC1IiEERKSaIT_E, inline_hint=yes] {
@@ -26,8 +26,8 @@ function @std__allocator_pointer_to_void___allocator_pointer_to_void___ov4(%this
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZNSaIiEC2Ev = @std__allocator_int___allocator_pointer_to_void_

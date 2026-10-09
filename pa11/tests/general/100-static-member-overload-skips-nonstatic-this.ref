@@ -7,23 +7,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @C__capacity(%x : u32) -> u32 [binding=weak, object=_ZN1C8capacityEj, inline_hint=yes] {
   slot $x : u32
 
   block ^entry:
-    store u32 %x, $x
-    %t1 = load u32 $x
+    store typed u32 %x, $x
+    %t1 = load typed u32 $x
     %t2 = call u32 @C__used__ov2(%t1)
     return u32 %t2
 }
@@ -31,7 +31,7 @@ function @C__used__ov2(%x : u32) -> u32 [binding=weak, object=_ZN1C4usedEj, inli
   slot $x : u32
 
   block ^entry:
-    store u32 %x, $x
-    %t1 = load u32 $x
+    store typed u32 %x, $x
+    %t1 = load typed u32 $x
     return u32 %t1
 }

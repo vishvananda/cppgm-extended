@@ -31,45 +31,45 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = addr $result
     return i32 0
 }
-function @comma_base_first___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK10comma_baseI5firstEcmI6secondEE7combineIT_S0_ERKS5_, inline_hint=yes] {
+function @comma_base_first___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK10comma_baseI5firstEcmI6secondEE7combineIT_S0_ERKS5_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %np, $np
+    store typed ptr %this, $this
+    store typed ptr %np, $np
     %t1 = addr $retobj__1
-    %t2 = load ptr $np
-    %t3 = load ptr $this
+    %t2 = load typed ptr $np
+    %t3 = load typed ptr $this
     call void @combine_second__first___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
 }
-function @comma_base___cppgm_class_template_identity_0_2_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<2x1> [binding=weak, object=_ZNK10comma_baseI7combineI6second5firstEEcmI5thirdEES0_IT_S3_ERKS7_, inline_hint=yes] {
+function @comma_base___cppgm_class_template_identity_0_2_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<2x1> [result_classes=none, binding=weak, object=_ZNK10comma_baseI7combineI6second5firstEEcmI5thirdEES0_IT_S3_ERKS7_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<2x1>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %np, $np
+    store typed ptr %this, $this
+    store typed ptr %np, $np
     %t1 = addr $retobj__1
-    %t2 = load ptr $np
-    %t3 = load ptr $this
+    %t2 = load typed ptr $np
+    %t3 = load typed ptr $this
     call void @combine_third____cppgm_class_template_identity_0_2_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%t1, %t2, %t3)
     return obj<2x1> $retobj__1
 }
-function @comma_base___cppgm_class_template_identity_0_3_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<3x1> [binding=weak, object=_ZNK10comma_baseI7combineI5thirdS0_I6second5firstEEEcmI6fourthEES0_IT_S5_ERKS9_, inline_hint=yes] {
+function @comma_base___cppgm_class_template_identity_0_3_0___operator_(%this : ptr [object_bytes=1], %np : ptr [pass=by_address, object_bytes=1]) -> obj<3x1> [result_classes=none, binding=weak, object=_ZNK10comma_baseI7combineI5thirdS0_I6second5firstEEEcmI6fourthEES0_IT_S5_ERKS9_, inline_hint=yes] {
   slot $this : ptr
   slot $np : ptr
   slot $retobj__1 : obj<3x1>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %np, $np
+    store typed ptr %this, $this
+    store typed ptr %np, $np
     %t1 = addr $retobj__1
-    %t2 = load ptr $np
-    %t3 = load ptr $this
+    %t2 = load typed ptr $np
+    %t3 = load typed ptr $this
     call void @combine_fourth____cppgm_class_template_identity_0_3_0___combine_typename___retained_template_parameter_shape_0____cppgm_class_template_identity_0_4_0_(%t1, %t2, %t3)
     return obj<3x1> $retobj__1
 }
@@ -79,12 +79,12 @@ function @combine_second__first___combine_typename___retained_template_parameter
   slot $rest : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %np, $np
-    store ptr %rest, $rest
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %np, $np
+    store typed ptr %rest, $rest
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     return void
 }
@@ -94,14 +94,14 @@ function @combine_third____cppgm_class_template_identity_0_2_0___combine_typenam
   slot $rest : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %np, $np
-    store ptr %rest, $rest
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %np, $np
+    store typed ptr %rest, $rest
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $rest
+    %t3 = load typed ptr $rest
     copyobj 1x1 %t3, %t2
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 1
     return void
 }
@@ -111,14 +111,14 @@ function @combine_fourth____cppgm_class_template_identity_0_3_0___combine_typena
   slot $rest : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %np, $np
-    store ptr %rest, $rest
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %np, $np
+    store typed ptr %rest, $rest
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $rest
+    %t3 = load typed ptr $rest
     copyobj 2x1 %t3, %t2
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 2
     return void
 }

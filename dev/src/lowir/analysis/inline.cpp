@@ -197,6 +197,7 @@ bool partial_prefix_instruction(const Instruction & instruction,
   case Instruction::IK_UNARY:
   case Instruction::IK_BINARY:
   case Instruction::IK_CMP:
+  case Instruction::IK_SELECT:
   case Instruction::IK_CONVERT:
   case Instruction::IK_JUMP:
   case Instruction::IK_BRANCH:
@@ -399,6 +400,7 @@ void collect_retained_inline_census(
     const bool discardable = !graph.non_call_use[i] &&
       (function.metadata.binding == lowir_model::SBM_INTERNAL ||
        function.metadata.binding == lowir_model::SBM_WEAK) &&
+      !function.metadata.replaceable &&
       !function.metadata.object_output_root &&
       !function.metadata.keep_internal_alias &&
       function.metadata.role == lowir_model::SR_NONE &&
@@ -439,7 +441,7 @@ void collect_retained_inline_census(
       instructions;
 
     if(uses < 2 || !leaf || has_eh || graph.recursive[i] ||
-       function.metadata.no_inline ||
+       function.metadata.no_inline || function.metadata.replaceable ||
        function.boundary.arity == lowir_model::CAM_VARIADIC)
       continue;
     const std::size_t per_call_growth = instructions > 2 ?
@@ -499,7 +501,7 @@ void collect_partial_inline_census(
           ++stats->partial_inline_census_reject_recursive;
           continue;
         }
-        if(callee.metadata.no_inline) {
+        if(callee.metadata.no_inline || callee.metadata.replaceable) {
           ++stats->partial_inline_census_reject_no_inline;
           continue;
         }

@@ -11,10 +11,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     copyobj 8x4 @__constexpr_template__1, %t1
     %t2 = addr $a
-    store ptr %t2, $p
-    %t3 = load ptr $p
+    store typed ptr %t2, $p
+    %t3 = load typed ptr $p
     %t4 = index i32 [projection=array_element] %t3, 1
-    %t5 = load i32 %t4
-    %t6 = binary sub i32 %t5, 4
+    %t5 = load typed i32 %t4
+    %t6 = binary sub nowrap i32 %t5, 4
     return i32 %t6
 }

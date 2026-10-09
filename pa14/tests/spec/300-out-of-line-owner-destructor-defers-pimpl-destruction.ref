@@ -13,30 +13,30 @@ function @owner__owner__base_entry(%this : ptr [object_bytes=1]) -> void [bindin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @owner__owner(%this : ptr [object_bytes=1]) -> void [binding=strong, object=_ZN5ownerC1Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @owner___owner__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5ownerD2Ev, object_root=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
     eh_end
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @holder_owner__implementation____holder(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @holder_owner__implementation____holder(%t4)
     eh_end
@@ -49,16 +49,16 @@ function @owner___owner(%this : ptr [object_bytes=1]) -> void [unwind=no, bindin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
     eh_end
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @holder_owner__implementation____holder(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @holder_owner__implementation____holder(%t4)
     eh_end
@@ -71,7 +71,7 @@ function @holder_owner__implementation____holder(%this : ptr [object_bytes=1]) -
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = const i64 1
     return void
 }

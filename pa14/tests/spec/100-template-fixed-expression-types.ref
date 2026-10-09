@@ -13,14 +13,14 @@ function @take_unsigned(%__param0 : i64) -> i32 [binding=strong, object=_Z13take
   slot $__param0 : i64
 
   block ^entry:
-    store i64 %__param0, $__param0
+    store typed i64 %__param0, $__param0
     return i32 0
 }
 function @take_pointer(%__param0 : ptr) -> i32 [binding=strong, object=_Z12take_pointerPi] {
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 0
 }
 function @array_reference() -> ptr [binding=strong, object=_Z15array_referencev] {
@@ -133,7 +133,7 @@ function @fixed_calls() -> i32 [binding=weak, object=_Z11fixed_callsIiEiv] {
   block ^if_end_6:
     %t10 = call ptr @array_reference()
     %t11 = index i32 [projection=array_element] %t10, 0
-    %t12 = load i32 %t11
+    %t12 = load typed i32 %t11
     %t13 = cmp ne i32 %t12, 7
     %t14 = convert trunc i32 i64 %t13
     return i32 %t14
@@ -172,7 +172,7 @@ function @fixed_calls__ov2() -> i32 [binding=weak, object=_Z11fixed_callsIlEiv] 
   block ^if_end_6:
     %t10 = call ptr @array_reference()
     %t11 = index i32 [projection=array_element] %t10, 0
-    %t12 = load i32 %t11
+    %t12 = load typed i32 %t11
     %t13 = cmp ne i32 %t12, 7
     %t14 = convert trunc i32 i64 %t13
     return i32 %t14
@@ -181,9 +181,9 @@ function @dependent_operand(%value : ptr) -> i32 [binding=weak, object=_Z17depen
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = load i32 %t1
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
+    %t2 = load typed i32 %t1
     %t3 = const i64 8
     %t4 = convert sext i64 i32 %t2
     %t5 = binary add i64 %t4, %t3
@@ -210,7 +210,7 @@ function @shorted(%array : ptr [pass=by_address, object_bytes=12]) -> i32 [bindi
   slot $array : ptr
 
   block ^entry:
-    store ptr %array, $array
+    store typed ptr %array, $array
     %t1 = const i64 12
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2

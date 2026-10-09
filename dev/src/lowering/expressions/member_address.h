@@ -76,6 +76,10 @@ protected:
 			static_cast<std::int64_t>(
 				derived.program_.BindingLayout(member).member_offset), LowI64());
 		index.projection = INDEX_PROJECTION_FIELD;
+		// A union member's storage, or a bit-field's storage unit, is not
+		// accessed through an object of the access's type.
+		index.untyped = derived.IsUnionEntity(member.member_owner) ||
+			member.bit_field;
 		derived.Emit(index);
 		return derived.IsReferenceType(member.type) ?
 			derived.LoadStorage(result, LowPtr()) : result;

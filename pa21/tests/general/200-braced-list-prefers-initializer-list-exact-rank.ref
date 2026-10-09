@@ -14,23 +14,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i8 50, %t5
     %t6 = index i8 %t4, 2
     store i8 51, %t6
-    store ptr %t4, %t3
+    store typed ptr %t4, %t3
     %t7 = index i8 %t3, 8
-    store i64 3, %t7
+    store typed i64 3, %t7
     %t8 = call i32 @value__assign__ov2(%t2, $argobj__2)
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }
 function @value__assign__ov2(%this : ptr [object_bytes=1], %__param1 : obj<16x8>) -> i32 [binding=weak, object=_ZN5value6assignESt16initializer_listIcE, inline_hint=yes] {
@@ -38,7 +38,7 @@ function @value__assign__ov2(%this : ptr [object_bytes=1], %__param1 : obj<16x8>
   slot $__param1 : obj<16x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $__param1
     copyobj 16x8 %__param1, %t1
     return i32 2

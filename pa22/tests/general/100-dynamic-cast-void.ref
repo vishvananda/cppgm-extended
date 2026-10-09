@@ -51,29 +51,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @YD__YD(%t1)
     %t2 = addr $d
     %t3 = index i8 %t2, 0
-    store ptr %t3, $b
-    %t4 = load ptr $b
-    store ptr 0, $dyn_cast__1
+    store typed ptr %t3, $b
+    %t4 = load typed ptr $b
+    store typed ptr 0, $dyn_cast__1
     %t5 = cmp eq ptr %t4, 0
     branch %t5, ^dyn_cast_end_2, ^dyn_cast_scan_1
 
   block ^dyn_cast_scan_1:
-    %t6 = load ptr %t4
+    %t6 = load typed ptr %t4
     %t7 = index i8 %t6, -16
-    %t8 = load i64 %t7
+    %t8 = load typed i64 %t7
     %t9 = index i8 %t4, %t8
-    store ptr %t9, $dyn_cast__1
+    store typed ptr %t9, $dyn_cast__1
     jump ^dyn_cast_end_2
 
   block ^block_3:
     %t10 = addr @__rtti_class_YB
     %t11 = addr @__external_rtti__void
     %t12 = call ptr @__external_runtime____dynamic_cast(%t4, %t10, %t11, -2)
-    store ptr %t12, $dyn_cast__1
+    store typed ptr %t12, $dyn_cast__1
     jump ^dyn_cast_end_2
 
   block ^dyn_cast_end_2:
-    %t13 = load ptr $dyn_cast__1
+    %t13 = load typed ptr $dyn_cast__1
     %t14 = cmp ne ptr %t13, 0
     %t15 = convert trunc i32 i64 %t14
     %t16 = addr $d
@@ -84,27 +84,27 @@ function @YD__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2Y
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 2
 }
 function @YD___YD__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YDD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @YD__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 %t4, 0
     call void @YB___YB__base_entry(%t5)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
     call void @YB___YB__base_entry(%t7)
     eh_end
@@ -117,36 +117,36 @@ function @YD___YD__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @YD__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 %t4, 0
     call void @YB___YB__base_entry(%t5)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     call void @operatordelete(%t6)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     call void @operatordelete(%t7)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t8 = load ptr $this
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 0
     call void @YB___YB__base_entry(%t9)
-    %t10 = load ptr $this
+    %t10 = load typed ptr $this
     call void @operatordelete(%t10)
     eh_end
     resume
@@ -158,20 +158,20 @@ function @YD___YD(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @YD__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 %t4, 0
     call void @YB___YB__base_entry(%t5)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
     call void @YB___YB__base_entry(%t7)
     eh_end
@@ -184,20 +184,20 @@ function @YD__YD(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @YB__YB__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = addr @YD__vtable
     %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
+    store typed ptr %t7, %t5
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
     call void @YB___YB__base_entry(%t4)
     eh_end
@@ -207,37 +207,37 @@ function @YB__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2Y
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }
 function @YB___YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YBD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @YB__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @YB___YB__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN2YBD0Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @YB__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     call void @operatordelete(%t4)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     call void @operatordelete(%t5)
     eh_end
     resume
@@ -249,22 +249,22 @@ function @YB___YB(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @YB__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @YB__YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YBC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @YB__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN2YDC2Ev = @YD__YD

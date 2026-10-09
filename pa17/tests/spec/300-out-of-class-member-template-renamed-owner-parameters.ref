@@ -4,12 +4,12 @@ function @g(%q : ptr [pass=by_address, object_bytes=1], %d : ptr [pass=by_addres
   slot $i : ptr
 
   block ^entry:
-    store ptr %q, $q
-    store ptr %d, $d
-    store ptr %i, $i
-    %t1 = load ptr $q
-    %t2 = load ptr $d
-    %t3 = load ptr $i
+    store typed ptr %q, $q
+    store typed ptr %d, $d
+    store typed ptr %i, $i
+    %t1 = load typed ptr $q
+    %t2 = load typed ptr $d
+    %t3 = load typed ptr $i
     call void @Q_int___f(%t1, %t2, %t3)
     return void
 }
@@ -19,8 +19,8 @@ function @Q_int___f(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_addre
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return void
 }

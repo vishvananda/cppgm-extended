@@ -10,27 +10,27 @@ function @f(%x : i32) -> void [binding=weak, object=_Z1fIiEvT_] {
   slot $cond__1 : u8
 
   block ^entry:
-    store i32 %x, $x
-    %t1 = load i32 $x
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
     %t2 = convert sext i64 i32 %t1
-    store i64 %t2, $b
-    store i64 0, $i
+    store typed i64 %t2, $b
+    store typed i64 0, $i
     jump ^for_cond_1
 
   block ^for_cond_1:
     branch 1, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
-    %t3 = load i64 $i
-    %t4 = load i64 $b
+    %t3 = load typed i64 $i
+    %t4 = load typed i64 $b
     %t5 = cmp lt i64 %t3, %t4
     %t6 = convert trunc u8 i64 %t5
     store u8 %t6, $cond__1
     jump ^cond_end_7
 
   block ^cond_else_6:
-    %t7 = load i64 $i
-    %t8 = load i64 $b
+    %t7 = load typed i64 $i
+    %t8 = load typed i64 $b
     %t9 = cmp gt i64 %t7, %t8
     %t10 = convert trunc u8 i64 %t9
     store u8 %t10, $cond__1
@@ -44,9 +44,9 @@ function @f(%x : i32) -> void [binding=weak, object=_Z1fIiEvT_] {
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t12 = load i64 $i
-    %t13 = binary add i64 %t12, 1
-    store i64 %t13, $i
+    %t12 = load typed i64 $i
+    %t13 = binary add nowrap i64 %t12, 1
+    store typed i64 %t13, $i
     jump ^for_cond_1
 
   block ^for_end_4:

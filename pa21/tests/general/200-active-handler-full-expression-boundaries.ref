@@ -44,14 +44,14 @@ function @use(%__param0 : ptr [pass=by_address, object_bytes=1], %fail : u8) -> 
   slot $fail : u8
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     store u8 %fail, $fail
     %t1 = load u8 $fail
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t2 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t2
+    store typed i32 7, %t2
     %t3 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t2, %t3, 0)
     return i32 0
@@ -77,7 +77,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
   slot $arg__10 : obj<1x1>
 
   block ^entry:
-    store i32 %mode, $mode
+    store typed i32 %mode, $mode
     eh_try ^catch_dispatch_1
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(1)
     call void @Error__Error(%t1)
@@ -100,7 +100,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
     eh_cleanup ^catch_cleanup_6
-    %t8 = load i32 $mode
+    %t8 = load typed i32 $mode
     %t9 = cmp eq i32 %t8, 0
     branch %t9, ^if_then_7, ^if_else_8
 
@@ -126,8 +126,8 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
   block ^call_unwind_end_13:
     eh_try ^call_unwind_dispatch_15
     %t11 = call i32 @use(%t10, 1)
-    store i32 %t11, $call__1
-    %t12 = load i32 $call__1
+    store typed i32 %t11, $call__1
+    %t12 = load typed i32 $call__1
     call void @Argument___Argument(%t10)
     eh_end
     jump ^call_unwind_end_16
@@ -148,7 +148,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^if_end_9
 
   block ^if_end_9:
-    %t13 = load i32 $mode
+    %t13 = load typed i32 $mode
     %t14 = cmp eq i32 %t13, 1
     branch %t14, ^if_then_17, ^if_else_18
 
@@ -159,8 +159,8 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     eh_end
     eh_try ^call_unwind_dispatch_21
     %t16 = call i32 @use(%t15, 1)
-    store i32 %t16, $call__2
-    %t17 = load i32 $call__2
+    store typed i32 %t16, $call__2
+    %t17 = load typed i32 $call__2
     call void @Argument___Argument(%t15)
     eh_end
     jump ^call_unwind_end_22
@@ -181,7 +181,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^if_end_19
 
   block ^if_end_19:
-    %t18 = load i32 $mode
+    %t18 = load typed i32 $mode
     %t19 = cmp eq i32 %t18, 2
     branch %t19, ^if_then_23, ^if_else_24
 
@@ -192,9 +192,9 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     eh_end
     eh_try ^call_unwind_dispatch_27
     %t21 = call i32 @use(%t20, 1)
-    store i32 %t21, $call__4
-    %t22 = load i32 $call__4
-    store i32 %t22, $result
+    store typed i32 %t21, $call__4
+    %t22 = load typed i32 $call__4
+    store typed i32 %t22, $result
     call void @Argument___Argument(%t20)
     eh_end
     jump ^call_unwind_end_28
@@ -207,7 +207,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^cleanup_action_26
 
   block ^call_unwind_end_28:
-    %t23 = load i32 $result
+    %t23 = load typed i32 $result
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 %t23
@@ -216,7 +216,7 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     jump ^if_end_25
 
   block ^if_end_25:
-    %t24 = load i32 $mode
+    %t24 = load typed i32 $mode
     %t25 = cmp eq i32 %t24, 3
     branch %t25, ^if_then_29, ^if_else_30
 
@@ -227,8 +227,8 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     eh_end
     eh_try ^call_unwind_dispatch_36
     %t27 = call i32 @use(%t26, 1)
-    store i32 %t27, $call__6
-    %t28 = load i32 $call__6
+    store typed i32 %t27, $call__6
+    %t28 = load typed i32 $call__6
     eh_end
     jump ^call_unwind_end_37
 
@@ -273,8 +273,8 @@ function @probe(%mode : i32) -> i32 [binding=strong, object=_Z5probei] {
     eh_end
     eh_try ^call_unwind_dispatch_41
     %t30 = call i32 @use(%t29, 0)
-    store i32 %t30, $call__8
-    %t31 = load i32 $call__8
+    store typed i32 %t30, $call__8
+    %t31 = load typed i32 $call__8
     call void @Argument___Argument(%t29)
     eh_end
     jump ^call_unwind_end_42
@@ -308,23 +308,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $number : i32
 
   block ^entry:
-    store i32 0, $mode
+    store typed i32 0, $mode
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t1 = load i32 $mode
+    %t1 = load typed i32 $mode
     %t2 = cmp ne i32 %t1, 5
     branch %t2, ^for_body_2, ^for_end_4
 
   block ^for_body_2:
-    store i32 0, @drops
+    store typed i32 0, @drops
     eh_try ^catch_dispatch_5
-    %t3 = load i32 $mode
+    %t3 = load typed i32 $mode
     %t4 = call i32 @probe(%t3)
     branch %t4, ^if_then_8, ^lor_rhs_11
 
   block ^lor_rhs_11:
-    %t5 = load i32 $mode
+    %t5 = load typed i32 $mode
     %t6 = cmp ne i32 %t5, 4
     branch %t6, ^if_then_8, ^if_else_9
 
@@ -351,16 +351,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_body_12:
     %t10 = call ptr @__external_runtime____cxa_begin_catch(%t7)
-    store ptr %t10, $catch__1
+    store typed ptr %t10, $catch__1
     eh_cleanup ^catch_cleanup_14
-    %t11 = load i32 %t10
-    store i32 %t11, $number
-    %t12 = load i32 $number
+    %t11 = load typed i32 %t10
+    store typed i32 %t11, $number
+    %t12 = load typed i32 $number
     %t13 = cmp ne i32 %t12, 7
     branch %t13, ^if_then_15, ^lor_rhs_18
 
   block ^lor_rhs_18:
-    %t14 = load i32 $mode
+    %t14 = load typed i32 $mode
     %t15 = cmp eq i32 %t14, 4
     branch %t15, ^if_then_15, ^if_else_16
 
@@ -386,20 +386,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^try_end_7:
-    %t16 = load i32 @exceptions
+    %t16 = load typed i32 @exceptions
     branch %t16, ^if_then_19, ^lor_rhs_24
 
   block ^lor_rhs_24:
-    %t17 = load i32 @arguments
+    %t17 = load typed i32 @arguments
     branch %t17, ^if_then_19, ^lor_rhs_23
 
   block ^lor_rhs_23:
-    %t18 = load i32 @drops
+    %t18 = load typed i32 @drops
     %t19 = cmp ne i32 %t18, 1
     branch %t19, ^if_then_19, ^lor_rhs_22
 
   block ^lor_rhs_22:
-    %t20 = load i32 @bad
+    %t20 = load typed i32 @bad
     branch %t20, ^if_then_19, ^if_else_20
 
   block ^if_then_19:
@@ -412,9 +412,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t21 = load i32 $mode
-    %t22 = binary add i32 %t21, 1
-    store i32 %t22, $mode
+    %t21 = load typed i32 $mode
+    %t22 = binary add nowrap i32 %t21, 1
+    store typed i32 %t22, $mode
     jump ^for_cond_1
 
   block ^for_end_4:
@@ -424,20 +424,20 @@ function @Error__Error(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @exceptions
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @exceptions
+    store typed ptr %this, $this
+    %t1 = load typed i32 @exceptions
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @exceptions
     return void
 }
 function @Error___Error(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5ErrorD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @exceptions
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @exceptions
+    store typed ptr %this, $this
+    %t1 = load typed i32 @exceptions
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @exceptions
     return void
 }
 function @Argument__Argument(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN8ArgumentC1Ei, inline_hint=yes] {
@@ -445,30 +445,30 @@ function @Argument__Argument(%this : ptr [object_bytes=1], %__param1 : i32) -> v
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    %t1 = load i32 @arguments
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @arguments
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed i32 @arguments
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @arguments
     return void
 }
 function @Argument___Argument(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN8ArgumentD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @arguments
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @arguments
-    %t3 = load i32 @drops
-    %t4 = binary add i32 %t3, 1
-    store i32 %t4, @drops
-    %t5 = load i32 @exceptions
+    store typed ptr %this, $this
+    %t1 = load typed i32 @arguments
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @arguments
+    %t3 = load typed i32 @drops
+    %t4 = binary add nowrap i32 %t3, 1
+    store typed i32 %t4, @drops
+    %t5 = load typed i32 @exceptions
     %t6 = cmp ne i32 %t5, 1
     branch %t6, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    store i32 1, @bad
+    store typed i32 1, @bad
     jump ^if_end_3
 
   block ^if_else_2:

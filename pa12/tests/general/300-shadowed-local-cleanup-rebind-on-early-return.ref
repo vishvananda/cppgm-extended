@@ -25,14 +25,14 @@ function @Guard__Guard(%this : ptr [object_bytes=1]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN5GuardC2Ev = @Guard__Guard

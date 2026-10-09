@@ -1,4 +1,4 @@
-function @accept(%__param0 : obj<1x1>) -> void [binding=strong, object=_Z6accept3BoxIPK4Node4WrapIKS2_EE] {
+function @accept(%__param0 : obj<1x1> [classes=none]) -> void [binding=strong, object=_Z6accept3BoxIPK4Node4WrapIKS2_EE] {
   slot $__param0 : obj<1x1>
 
   block ^entry:

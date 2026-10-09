@@ -20,15 +20,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @read_digits__ov2()
     %t4 = cmp ne i32 %t3, 53
     %t5 = cmp ne i64 %t4, 0
-    store i64 %t5, $lor__1
+    store typed i64 %t5, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t6 = load i64 $lor__1
+    %t6 = load typed i64 $lor__1
     %t7 = convert trunc i32 i64 %t6
     return i32 %t7
 }
@@ -59,15 +59,15 @@ function @read_digits() -> i32 [binding=weak, object=_Z11read_digitsILi2EEiv] {
     %t13 = convert sext i32 i8 %t11
     %t14 = cmp eq i32 %t12, %t13
     %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $land__2
+    store typed i64 %t15, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t16 = load i64 $land__2
+    %t16 = load typed i64 $land__2
     branch %t16, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -75,15 +75,15 @@ function @read_digits() -> i32 [binding=weak, object=_Z11read_digitsILi2EEiv] {
     %t18 = index i8 [projection=array_element] %t17, 2
     %t19 = load i8 %t18
     %t20 = convert sext i32 i8 %t19
-    store i32 %t20, $cond__1
+    store typed i32 %t20, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t21 = load i32 $cond__1
+    %t21 = load typed i32 $cond__1
     return i32 %t21
 }
 function @read_digits__ov2() -> i32 [binding=weak, object=_Z11read_digitsILi5EEiv] {
@@ -113,15 +113,15 @@ function @read_digits__ov2() -> i32 [binding=weak, object=_Z11read_digitsILi5EEi
     %t13 = convert sext i32 i8 %t11
     %t14 = cmp eq i32 %t12, %t13
     %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $land__2
+    store typed i64 %t15, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t16 = load i64 $land__2
+    %t16 = load typed i64 $land__2
     branch %t16, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
@@ -129,14 +129,14 @@ function @read_digits__ov2() -> i32 [binding=weak, object=_Z11read_digitsILi5EEi
     %t18 = index i8 [projection=array_element] %t17, 5
     %t19 = load i8 %t18
     %t20 = convert sext i32 i8 %t19
-    store i32 %t20, $cond__1
+    store typed i32 %t20, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t21 = load i32 $cond__1
+    %t21 = load typed i32 $cond__1
     return i32 %t21
 }

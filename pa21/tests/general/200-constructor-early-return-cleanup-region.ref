@@ -25,16 +25,16 @@ function @check(%populate : u8, %expected_constructed : i32) -> i32 [binding=str
 
   block ^entry:
     store u8 %populate, $populate
-    store i32 %expected_constructed, $expected_constructed
-    store i32 0, @constructed
-    store i32 0, @destroyed
+    store typed i32 %expected_constructed, $expected_constructed
+    store typed i32 0, @constructed
+    store typed i32 0, @destroyed
     %t1 = addr $holder
     %t2 = load u8 $populate
     call void @Holder__Holder(%t1, 7, %t2)
     %t3 = addr $holder
     call void @Holder___Holder(%t3)
-    %t4 = load i32 @constructed
-    %t5 = load i32 $expected_constructed
+    %t4 = load typed i32 @constructed
+    %t5 = load typed i32 $expected_constructed
     %t6 = cmp ne i32 %t4, %t5
     branch %t6, ^if_then_1, ^if_else_2
 
@@ -45,7 +45,7 @@ function @check(%populate : u8, %expected_constructed : i32) -> i32 [binding=str
     jump ^if_end_3
 
   block ^if_end_3:
-    %t7 = load i32 @destroyed
+    %t7 = load typed i32 @destroyed
     %t8 = cmp ne i32 %t7, 2
     branch %t8, ^if_then_4, ^if_else_5
 
@@ -90,18 +90,18 @@ function @Holder__Holder(%this : ptr [object_bytes=2], %seed : i32, %populate : 
   slot $populate : u8
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %seed, $seed
+    store typed ptr %this, $this
+    store typed i32 %seed, $seed
     store u8 %populate, $populate
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 $seed
+    %t3 = load typed i32 $seed
     call void @Member__Member(%t2, %t3)
     eh_cleanup ^constructor_cleanup_1
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 [projection=field] %t6, 1
-    %t8 = load i32 $seed
-    %t9 = binary add i32 %t8, 1
+    %t8 = load typed i32 $seed
+    %t9 = binary add nowrap i32 %t8, 1
     call void @Member__Member(%t7, %t9)
     eh_end
     eh_cleanup ^constructor_cleanup_2
@@ -110,14 +110,14 @@ function @Holder__Holder(%this : ptr [object_bytes=2], %seed : i32, %populate : 
     branch %t13, ^if_then_3, ^if_else_4
 
   block ^constructor_cleanup_1:
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     call void @Member___Member(%t5)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
-    %t10 = load ptr $this
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 1
     call void @Member___Member(%t11)
     jump ^constructor_cleanup_1
@@ -130,13 +130,13 @@ function @Holder__Holder(%this : ptr [object_bytes=2], %seed : i32, %populate : 
     jump ^if_end_5
 
   block ^if_end_5:
-    %t14 = load i32 $seed
+    %t14 = load typed i32 $seed
     %t15 = cmp eq i32 %t14, 4321
     branch %t15, ^if_then_6, ^if_else_7
 
   block ^if_then_6:
     %t16 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 6, %t16
+    store typed i32 6, %t16
     %t17 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t16, %t17, 0)
     return void
@@ -145,9 +145,9 @@ function @Holder__Holder(%this : ptr [object_bytes=2], %seed : i32, %populate : 
     jump ^if_end_8
 
   block ^if_end_8:
-    %t18 = load i32 @constructed
-    %t19 = binary add i32 %t18, 100
-    store i32 %t19, @constructed
+    %t18 = load typed i32 @constructed
+    %t19 = binary add nowrap i32 %t18, 100
+    store typed i32 %t19, @constructed
     eh_end
     return void
 }
@@ -155,34 +155,34 @@ function @Holder___Holder(%this : ptr [object_bytes=2]) -> void [unwind=no, bind
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 1
     call void @Member___Member(%t2)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @Member___Member(%t4)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     call void @Member___Member(%t6)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 1
     call void @Member___Member(%t8)
-    %t9 = load ptr $this
+    %t9 = load typed ptr $this
     %t10 = index i8 [projection=field] %t9, 0
     call void @Member___Member(%t10)
     eh_end
@@ -196,15 +196,15 @@ function @Member__Member(%this : ptr [object_bytes=1], %seed : i32) -> void [bin
   slot $seed : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %seed, $seed
-    %t1 = load i32 $seed
+    store typed ptr %this, $this
+    store typed i32 %seed, $seed
+    %t1 = load typed i32 $seed
     %t2 = cmp eq i32 %t1, 1234
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t3 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 5, %t3
+    store typed i32 5, %t3
     %t4 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t3, %t4, 0)
     return void
@@ -213,19 +213,19 @@ function @Member__Member(%this : ptr [object_bytes=1], %seed : i32) -> void [bin
     jump ^if_end_3
 
   block ^if_end_3:
-    %t5 = load i32 @constructed
-    %t6 = binary add i32 %t5, 1
-    store i32 %t6, @constructed
+    %t5 = load typed i32 @constructed
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, @constructed
     return void
 }
 function @Member___Member(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6MemberD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
     return void
 }
 alias object _ZN6HolderC2Eib = @Holder__Holder

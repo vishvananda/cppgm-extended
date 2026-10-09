@@ -112,20 +112,20 @@ function @pa13_reentrant_override_derived___pa13_reentrant_override_derived__bas
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @pa13_reentrant_override_derived__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 %t4, 0
     call void @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entry(%t5)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
     call void @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entry(%t7)
     eh_end
@@ -138,36 +138,36 @@ function @pa13_reentrant_override_derived___pa13_reentrant_override_derived__del
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @pa13_reentrant_override_derived__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 %t4, 0
     call void @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entry(%t5)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     call void @operatordelete(%t6)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     call void @operatordelete(%t7)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t8 = load ptr $this
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 0
     call void @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entry(%t9)
-    %t10 = load ptr $this
+    %t10 = load typed ptr $this
     call void @operatordelete(%t10)
     eh_end
     resume
@@ -179,20 +179,20 @@ function @pa13_reentrant_override_derived___pa13_reentrant_override_derived(%thi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @pa13_reentrant_override_derived__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 %t4, 0
     call void @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entry(%t5)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
     call void @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entry(%t7)
     eh_end
@@ -208,30 +208,30 @@ function @pa13_reentrant_override_derived__start(%this : ptr [object_bytes=16], 
   slot $__param3 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
-    store i32 %__param3, $__param3
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
+    store typed i32 %__param3, $__param3
     return void
 }
 function @pa13_reentrant_override_derived__pa13_reentrant_override_derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN31pa13_reentrant_override_derivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @pa13_reentrant_override_base__pa13_reentrant_override_base__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = addr @pa13_reentrant_override_derived__vtable
     %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
+    store typed ptr %t7, %t5
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
     call void @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entry(%t4)
     eh_end
@@ -241,30 +241,30 @@ function @pa13_reentrant_override_base___pa13_reentrant_override_base__base_entr
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @pa13_reentrant_override_base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @pa13_reentrant_override_base___pa13_reentrant_override_base__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN28pa13_reentrant_override_baseD0Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @pa13_reentrant_override_base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     call void @operatordelete(%t4)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     call void @operatordelete(%t5)
     eh_end
     resume
@@ -276,22 +276,22 @@ function @pa13_reentrant_override_base___pa13_reentrant_override_base(%this : pt
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @pa13_reentrant_override_base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @pa13_reentrant_override_base__pa13_reentrant_override_base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN28pa13_reentrant_override_baseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @pa13_reentrant_override_base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN31pa13_reentrant_override_derivedC2Ev = @pa13_reentrant_override_derived__pa13_reentrant_override_derived

@@ -160,7 +160,7 @@ private:
 		{
 			const Function& function = program_.functions[i];
 			const Symbol& symbol = program_.symbols[function.symbol];
-			if (!symbol.weak_linkage &&
+			if ((!symbol.weak_linkage || symbol.replaceable) &&
 				(!symbol.internal_linkage || retain_internal_roots_))
 				MarkSymbol(function.symbol, symbol.internal_linkage ?
 					RETENTION_CONSERVATIVE_FALLBACK :

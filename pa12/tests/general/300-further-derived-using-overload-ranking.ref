@@ -11,15 +11,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load i32 $cond__1
+    %t6 = load typed i32 $cond__1
     return i32 %t6
 }
 function @Base__pick(%this : ptr [object_bytes=1], %value : i32) -> i32 [binding=weak, object=_ZN4Base4pickEi, inline_hint=yes] {
@@ -27,9 +27,9 @@ function @Base__pick(%this : ptr [object_bytes=1], %value : i32) -> i32 [binding
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = binary add i32 %t1, 1
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }

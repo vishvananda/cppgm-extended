@@ -5,9 +5,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call i32 @basic_tests___cppgm_class_template_identity_0_0_0___run_tests()
-    store i32 %t1, $result
-    %t2 = load i32 $result
-    %t3 = binary sub i32 %t2, 17
+    store typed i32 %t1, $result
+    %t2 = load typed i32 $result
+    %t3 = binary sub nowrap i32 %t2, 17
     return i32 %t3
 }
 function @basic_tests___cppgm_class_template_identity_0_0_0___run_tests() -> i32 [binding=weak, object=_ZN11basic_testsI9basic_anyILi8ELi8EEE9run_testsEv, inline_hint=yes] {
@@ -25,24 +25,24 @@ function @basic_tests___cppgm_class_template_identity_0_0_0___run_tests() -> i32
     %t4 = addr $first
     call void @basic_tests___cppgm_class_template_identity_0_0_0___copy_counter__copy_counter__ov2(%t3, %t4)
     %t5 = call i32 @basic_tests___cppgm_class_template_identity_0_0_0___copy_counter__get_count()
-    store i32 %t5, $observed
-    %t6 = load i32 $observed
-    %t7 = binary add i32 %t6, 8
-    %t8 = binary add i32 %t7, 8
+    store typed i32 %t5, $observed
+    %t6 = load typed i32 $observed
+    %t7 = binary add nowrap i32 %t6, 8
+    %t8 = binary add nowrap i32 %t7, 8
     return i32 %t8
 }
 function @basic_any_8__8___basic_any_8__8_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN9basic_anyILi8ELi8EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @basic_tests___cppgm_class_template_identity_0_0_0___copy_counter__copy_counter(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN11basic_testsI9basic_anyILi8ELi8EEE12copy_counterC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @basic_tests___cppgm_class_template_identity_0_0_0___copy_counter__copy_counter__ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN11basic_testsI9basic_anyILi8ELi8EEE12copy_counterC1ERKS3_, inline_hint=yes] {
@@ -50,16 +50,16 @@ function @basic_tests___cppgm_class_template_identity_0_0_0___copy_counter__copy
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load i32 @__cppgm_class_template_identity_1_1_0__copy_counter__count
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @__cppgm_class_template_identity_1_1_0__copy_counter__count
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed i32 @__cppgm_class_template_identity_1_1_0__copy_counter__count
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @__cppgm_class_template_identity_1_1_0__copy_counter__count
     return void
 }
 function @basic_tests___cppgm_class_template_identity_0_0_0___copy_counter__get_count() -> i32 [binding=weak, object=_ZN11basic_testsI9basic_anyILi8ELi8EEE12copy_counter9get_countEv, inline_hint=yes] {
   block ^entry:
-    %t1 = load i32 @__cppgm_class_template_identity_1_1_0__copy_counter__count
+    %t1 = load typed i32 @__cppgm_class_template_identity_1_1_0__copy_counter__count
     return i32 %t1
 }
 alias object _ZN9basic_anyILi8ELi8EEC2Ev = @basic_any_8__8___basic_any_8__8_

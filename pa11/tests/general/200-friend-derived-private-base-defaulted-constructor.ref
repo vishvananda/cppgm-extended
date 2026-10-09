@@ -9,6 +9,6 @@ function @B__B__base_entry(%this : ptr [object_bytes=1]) -> void [binding=weak, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

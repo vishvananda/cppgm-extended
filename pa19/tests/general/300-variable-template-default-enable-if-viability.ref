@@ -11,8 +11,8 @@ function @max_size_select(%a : ptr [pass=by_address, object_bytes=1]) -> i32 [bi
   slot $a : ptr
 
   block ^entry:
-    store ptr %a, $a
-    %t1 = load ptr $a
+    store typed ptr %a, $a
+    %t1 = load typed ptr $a
     %t2 = call i32 @Alloc__max_size(%t1)
     return i32 %t2
 }
@@ -20,6 +20,6 @@ function @Alloc__max_size(%this : ptr [object_bytes=1]) -> i32 [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }

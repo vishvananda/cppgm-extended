@@ -20,7 +20,7 @@ function @local__call(%this : ptr [object_bytes=1]) -> i32 [binding=internal, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = call i32 @select()
     return i32 %t1
 }

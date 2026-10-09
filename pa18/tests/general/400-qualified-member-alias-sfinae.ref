@@ -14,8 +14,8 @@ function @box_int___insert(%this : ptr [object_bytes=1], %__param1 : i32, %__par
   slot $__param2 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    store i32 %__param2, $__param2
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    store typed i32 %__param2, $__param2
     return i8 7
 }

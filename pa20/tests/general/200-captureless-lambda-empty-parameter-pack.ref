@@ -17,7 +17,7 @@ function @__lambda_count_lambda_parameters_t16_21__operator__(%this : ptr [objec
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = const i64 0
     return i64 %t1
 }

@@ -8,8 +8,8 @@ function @Graph__search(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_a
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return i32 7
 }

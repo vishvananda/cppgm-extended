@@ -22,6 +22,6 @@ function @Base__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return u8 1
 }

@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $s
     %t3 = addr $s
     %t4 = call i32 @S__f(%t2, %t3)
-    %t5 = binary sub i32 %t4, 7
+    %t5 = binary sub nowrap i32 %t4, 7
     return i32 %t5
 }
 function @S__f(%this : ptr [object_bytes=1], %s : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK1S1fERS_, inline_hint=yes] {
@@ -14,9 +14,9 @@ function @S__f(%this : ptr [object_bytes=1], %s : ptr [pass=by_address, object_b
   slot $s : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %s, $s
-    %t1 = load ptr $s
+    store typed ptr %this, $this
+    store typed ptr %s, $s
+    %t1 = load typed ptr $s
     %t2 = addr @__lambda_S__f_t29_36
     %t3 = call i32 %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=1]) -> i32
     return i32 %t3
@@ -25,8 +25,8 @@ function @__lambda_S__f_t29_36(%x : ptr [pass=by_address, object_bytes=1]) -> i3
   slot $x : ptr
 
   block ^entry:
-    store ptr %x, $x
-    %t1 = load ptr $x
+    store typed ptr %x, $x
+    %t1 = load typed ptr $x
     %t2 = call i32 @S__hidden(%t1)
     return i32 %t2
 }
@@ -34,6 +34,6 @@ function @S__hidden(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }

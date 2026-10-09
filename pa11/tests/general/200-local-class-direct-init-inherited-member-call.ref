@@ -13,35 +13,35 @@ function @Owner__run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
   slot $cond__1 : i32
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $box
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 %t2, 0
     %t4 = call i32 @Base__make_value(%t3)
     call void @Box__Box(%t1, %t4)
     %t5 = addr $box
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load i32 %t6
+    %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 7
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     return i32 %t9
 }
 function @Base__make_value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN4Base10make_valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }
 function @Box__Box(%this : ptr [object_bytes=4], %init : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
@@ -49,12 +49,12 @@ function @Box__Box(%this : ptr [object_bytes=4], %init : i32) -> void [binding=w
   slot $init : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %init, $init
-    %t1 = load i32 $init
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %init, $init
+    %t1 = load typed i32 $init
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN3BoxC2Ei = @Box__Box

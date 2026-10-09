@@ -13,8 +13,8 @@ function @Box_int___Box_char_(%this : ptr [object_bytes=1]) -> void [binding=wea
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @Box_int___Tag__Tag(%t2)
     eh_cleanup ^constructor_cleanup_1
@@ -22,7 +22,7 @@ function @Box_int___Box_char_(%this : ptr [object_bytes=1]) -> void [binding=wea
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @Box_int___Tag___Tag(%t4)
     eh_end
@@ -32,15 +32,15 @@ function @Box_int____Box(%this : ptr [object_bytes=1]) -> void [unwind=no, bindi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box_char___Box_char_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIcEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @Box_char___Tag__Tag(%t2)
     eh_cleanup ^constructor_cleanup_1
@@ -48,7 +48,7 @@ function @Box_char___Box_char_(%this : ptr [object_bytes=1]) -> void [binding=we
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @Box_char___Tag___Tag(%t4)
     eh_end
@@ -58,35 +58,35 @@ function @Box_char____Box(%this : ptr [object_bytes=1]) -> void [unwind=no, bind
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box_int___Tag__Tag(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIiE3TagC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box_int___Tag___Tag(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIiE3TagD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box_char___Tag__Tag(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN3BoxIcE3TagC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box_char___Tag___Tag(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN3BoxIcE3TagD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN3BoxIiEC2Ev = @Box_int___Box_char_

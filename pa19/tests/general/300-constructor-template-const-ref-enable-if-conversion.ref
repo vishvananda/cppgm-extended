@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $src
-    store i64 7, $refarg__1
+    store typed i64 7, $refarg__1
     %t2 = addr $refarg__1
     call void @duration_like_long_long_int___duration_like_int___ov3(%t1, %t2)
     %t3 = addr $dst
@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @duration_like_int___duration_like_int___ov3(%t3, %t4)
     %t5 = addr $dst
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load i32 %t6
+    %t7 = load typed i32 %t6
     return i32 %t7
 }
 function @duration_like_long_long_int___duration_like_int___ov3(%this : ptr [object_bytes=8], %r : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN13duration_likeIxEC1IxTnN9enable_ifIXsr14is_convertibleIRKT_xEE5valueEiE4typeELi0EEES5_, inline_hint=yes] {
@@ -21,13 +21,13 @@ function @duration_like_long_long_int___duration_like_int___ov3(%this : ptr [obj
   slot $r : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %r, $r
-    %t1 = load ptr $r
-    %t2 = load i64 %t1
-    %t3 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %r, $r
+    %t1 = load typed ptr $r
+    %t2 = load typed i64 %t1
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
-    store i64 %t2, %t4
+    store typed i64 %t2, %t4
     return void
 }
 function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxLi0EEERKS_IT_E, inline_hint=yes] {
@@ -35,15 +35,15 @@ function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     %t4 = convert trunc i32 i64 %t3
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 alias object _ZN13duration_likeIxEC2IxTnN9enable_ifIXsr14is_convertibleIRKT_xEE5valueEiE4typeELi0EEES5_ = @duration_like_long_long_int___duration_like_int___ov3

@@ -164,8 +164,9 @@ The course solution’s `-O1` includes these semantic-preserving pass families w
   the inline limits; the cold instructions and their effects are still cloned
   when the call is inlined, and equivalent work on a returning path is charged
   normally
-- a separate definition-removing path for a weak or internal function that
-  has exactly one direct call and no address, relocation, structured-data,
+- a separate definition-removing path for a weak (but not `replaceable`) or
+  internal function that has exactly one direct call and no address,
+  relocation, structured-data,
   alias, lifecycle, object-root, or other non-call use; this path may admit a
   body of at most 512 instructions, uses a 1,024-instruction budget per
   caller,
@@ -271,8 +272,10 @@ The course solution’s `-O1` includes these semantic-preserving pass families w
   the stored value
 - removal, after inlining, of unreachable weak or internal function
   definitions, while retaining externally visible strong definitions,
-  `object_root=yes` definitions, lifecycle roots, and definitions referenced
-  by calls, addresses, relocations, or structured object data
+  `replaceable=yes` (GNU weak) definitions, `object_root=yes` definitions,
+  lifecycle roots, and definitions referenced by calls, addresses,
+  relocations, or structured object data; a `replaceable=yes` callee is never
+  inlined or specialized, since another object's definition may replace it
 - after all O1 inlining and pruning decisions are complete, reuse of a
   dominating nonvolatile scalar load in an explicitly `inline_hint=yes`
   definition when it reads the same typed location and no intervening store,

@@ -12,26 +12,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load i32 $cond__1
+    %t6 = load typed i32 $cond__1
     return i32 %t6
 }
-function @box_int___pick__ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : obj<1x1>) -> i32 [binding=weak, object=_ZN3boxIiE4pickIPcEEiT_S3_11forward_tag] {
+function @box_int___pick__ov2(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : ptr, %__param3 : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_ZN3boxIiE4pickIPcEEiT_S3_11forward_tag] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr
   slot $__param3 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return i32 2
 }

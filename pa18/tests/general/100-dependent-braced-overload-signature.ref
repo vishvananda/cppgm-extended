@@ -8,7 +8,7 @@ function @invoke_probe() -> i32 [binding=strong, object=_Z12invoke_probev] {
   slot $refarg__1 : i32
 
   block ^entry:
-    store i32 0, $refarg__1
+    store typed i32 0, $refarg__1
     %t1 = addr $refarg__1
     %t2 = call i32 @Probe__test__ov2(%t1, 0)
     return i32 %t2
@@ -18,7 +18,7 @@ function @Probe__test__ov2(%__param0 : ptr [pass=by_address, object_bytes=4], %_
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return i32 1
 }

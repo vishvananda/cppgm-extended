@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__2 : i32
 
   block ^entry:
-    store i32 7, $value
+    store typed i32 7, $value
     %t1 = addr $arg
     %t2 = addr $tmpobj__1
     zeroinit 1x1 %t2
@@ -14,22 +14,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 8x8 %t4, %t1
     %t5 = addr $arg
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load ptr %t6
-    store i32 3, %t7
-    %t8 = load i32 $value
+    %t7 = load typed ptr %t6
+    store typed i32 3, %t7
+    %t8 = load typed i32 $value
     %t9 = cmp eq i32 %t8, 3
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__2
+    store typed i32 0, $cond__2
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__2
+    store typed i32 1, $cond__2
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__2
+    %t10 = load typed i32 $cond__2
     return i32 %t10
 }
 function @keyword__operator___ov3(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> obj<8x8> [binding=weak, object=_ZNK7keywordaSIiEEN14lazy_enable_ifI9true_type15tagged_argumentI9graph_tagRT_EE4typeES6_, inline_hint=yes] {
@@ -38,10 +38,10 @@ function @keyword__operator___ov3(%this : ptr [object_bytes=1], %value : ptr [pa
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
+    store typed ptr %this, $this
+    store typed ptr %value, $value
     %t1 = addr $retobj__1
-    %t2 = load ptr $value
+    %t2 = load typed ptr $value
     call void @tagged_argument_graph_tag__lvalue_reference_to_int___tagged_argument_graph_tag__lvalue_reference_to_int_(%t1, %t2)
     return obj<8x8> $retobj__1
 }
@@ -50,12 +50,12 @@ function @tagged_argument_graph_tag__lvalue_reference_to_int___tagged_argument_g
   slot $x : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %x, $x
-    %t1 = load ptr $x
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %x, $x
+    %t1 = load typed ptr $x
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 alias object _ZN15tagged_argumentI9graph_tagRiEC2ES1_ = @tagged_argument_graph_tag__lvalue_reference_to_int___tagged_argument_graph_tag__lvalue_reference_to_int_

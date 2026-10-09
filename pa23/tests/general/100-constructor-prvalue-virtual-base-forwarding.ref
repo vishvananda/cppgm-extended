@@ -159,9 +159,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $source
     call void @EmptyDerived__EmptyDerived__ov2(%t4, %t5)
     %t6 = addr $copy
-    %t7 = load ptr %t6
+    %t7 = load typed ptr %t6
     %t8 = index i8 %t7, -24
-    %t9 = load i64 %t8
+    %t9 = load typed i64 %t8
     %t10 = index i8 %t6, %t9
     %t11 = index i8 %t10, 0
     %t12 = call i32 @EmptyRoot__value(%t11)
@@ -170,9 +170,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_4:
     %t14 = addr $moved
-    %t15 = load ptr %t14
+    %t15 = load typed ptr %t14
     %t16 = index i8 %t15, -24
-    %t17 = load i64 %t16
+    %t17 = load typed i64 %t16
     %t18 = index i8 %t14, %t17
     %t19 = index i8 %t18, 0
     %t20 = call i32 @EmptyRoot__value(%t19)
@@ -191,15 +191,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t23 = addr $d
     %t24 = index i8 %t23, 8
     %t25 = index i8 [projection=field] %t24, 0
-    store i32 7, %t25
+    store typed i32 7, %t25
     %t26 = addr $d
     %t27 = index i8 %t26, 12
     %t28 = index i8 [projection=field] %t27, 0
-    store i32 8, %t28
+    store typed i32 8, %t28
     %t29 = addr $d
     %t30 = index i8 %t29, 16
     %t31 = index i8 [projection=field] %t30, 0
-    store i32 9, %t31
+    store typed i32 9, %t31
     %t32 = addr $w
     %t33 = addr $d
     %t34 = addr $d
@@ -209,7 +209,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t37 = addr $w
     %t38 = index i8 %t37, 8
     %t39 = index i8 [projection=field] %t38, 0
-    %t40 = load i32 %t39
+    %t40 = load typed i32 %t39
     %t41 = cmp eq i32 %t40, 7
     branch %t41, ^land_rhs_11, ^land_short_12
 
@@ -217,59 +217,59 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t42 = addr $w
     %t43 = index i8 %t42, 12
     %t44 = index i8 [projection=field] %t43, 0
-    %t45 = load i32 %t44
+    %t45 = load typed i32 %t44
     %t46 = cmp eq i32 %t45, 8
     %t47 = cmp ne i64 %t46, 0
-    store i64 %t47, $land__3
+    store typed i64 %t47, $land__3
     jump ^land_end_13
 
   block ^land_short_12:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_13
 
   block ^land_end_13:
-    %t48 = load i64 $land__3
+    %t48 = load typed i64 $land__3
     branch %t48, ^land_rhs_8, ^land_short_9
 
   block ^land_rhs_8:
     %t49 = addr $w
     %t50 = index i8 %t49, 16
     %t51 = index i8 [projection=field] %t50, 0
-    %t52 = load i32 %t51
+    %t52 = load typed i32 %t51
     %t53 = cmp eq i32 %t52, 9
     %t54 = cmp ne i64 %t53, 0
-    store i64 %t54, $land__2
+    store typed i64 %t54, $land__2
     jump ^land_end_10
 
   block ^land_short_9:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_10
 
   block ^land_end_10:
-    %t55 = load i64 $land__2
+    %t55 = load typed i64 $land__2
     branch %t55, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_7
 
   block ^cond_else_6:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t56 = load i32 $cond__1
+    %t56 = load typed i32 $cond__1
     return i32 %t56
 }
 function @EmptyDerived__EmptyDerived(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @EmptyDerived__vtable
     %t3 = index i8 %t2, 24
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @EmptyDerived__EmptyDerived__sym2(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1ERKS_, inline_hint=yes] {
@@ -277,12 +277,12 @@ function @EmptyDerived__EmptyDerived__sym2(%this : ptr [alias=noalias, object_by
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = addr @EmptyDerived__vtable
     %t3 = index i8 %t2, 24
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @EmptyDerived__EmptyDerived__ov2(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1EOS_, inline_hint=yes] {
@@ -290,39 +290,39 @@ function @EmptyDerived__EmptyDerived__ov2(%this : ptr [alias=noalias, object_byt
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = addr @EmptyDerived__vtable
     %t3 = index i8 %t2, 24
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @EmptyRoot__value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN9EmptyRoot5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }
 function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 8
     call void @A__A__base_entry(%t2, 0)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 12
     call void @B__B__base_entry(%t4, 0)
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 %t5, 16
     call void @C__C__base_entry(%t6, 0)
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = addr @D__vtable
     %t9 = index i8 %t8, 40
-    store ptr %t9, %t7
+    store typed ptr %t9, %t7
     return void
 }
 function @make_wrap(%ret : ptr [pass=indirect_result, object_bytes=24], %e : ptr [pass=by_address, object_bytes=24], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_Z9make_wrapI1DE1WIT_ERKS2_RKi] {
@@ -330,10 +330,10 @@ function @make_wrap(%ret : ptr [pass=indirect_result, object_bytes=24], %e : ptr
   slot $loc : ptr
 
   block ^entry:
-    store ptr %e, $e
-    store ptr %loc, $loc
-    %t1 = load ptr $e
-    %t2 = load ptr $loc
+    store typed ptr %e, $e
+    store typed ptr %loc, $loc
+    %t1 = load typed ptr $e
+    %t2 = load typed ptr $loc
     call void @W_D___W_D_(%ret, %t1, %t2)
     return void
 }
@@ -342,12 +342,12 @@ function @A__A__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @A__A(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1AC1Ei, inline_hint=yes] {
@@ -355,12 +355,12 @@ function @A__A(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @B__B__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1BC2Ei, object_root=yes, inline_hint=yes] {
@@ -368,12 +368,12 @@ function @B__B__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @B__B(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1BC1Ei, inline_hint=yes] {
@@ -381,12 +381,12 @@ function @B__B(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @C__C__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1CC2Ei, object_root=yes, inline_hint=yes] {
@@ -394,12 +394,12 @@ function @C__C__base_entry(%this : ptr [object_bytes=4], %value : i32) -> void [
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @C__C(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak, object=_ZN1CC1Ei, inline_hint=yes] {
@@ -407,12 +407,12 @@ function @C__C(%this : ptr [object_bytes=4], %value : i32) -> void [binding=weak
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @W_D___W_D_(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, object_bytes=24], %loc : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN1WI1DEC1ERKS0_RKi, inline_hint=yes] {
@@ -421,52 +421,52 @@ function @W_D___W_D_(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, o
   slot $loc : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %e, $e
-    store ptr %loc, $loc
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %e, $e
+    store typed ptr %loc, $loc
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 8
-    %t3 = load ptr $loc
-    %t4 = load i32 %t3
+    %t3 = load typed ptr $loc
+    %t4 = load typed i32 %t3
     call void @A__A__base_entry(%t2, %t4)
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 %t5, 12
-    %t7 = load ptr $e
-    %t8 = load ptr %t7
+    %t7 = load typed ptr $e
+    %t8 = load typed ptr %t7
     %t9 = index i8 %t8, -32
-    %t10 = load i64 %t9
+    %t10 = load typed i64 %t9
     %t11 = index i8 %t7, %t10
     %t12 = index i8 %t11, 0
     %t13 = index i8 [projection=field] %t12, 0
-    %t14 = load i32 %t13
+    %t14 = load typed i32 %t13
     call void @B__B__base_entry(%t6, %t14)
-    %t15 = load ptr $this
+    %t15 = load typed ptr $this
     %t16 = index i8 %t15, 16
-    %t17 = load ptr $e
-    %t18 = load ptr %t17
+    %t17 = load typed ptr $e
+    %t18 = load typed ptr %t17
     %t19 = index i8 %t18, -24
-    %t20 = load i64 %t19
+    %t20 = load typed i64 %t19
     %t21 = index i8 %t17, %t20
     %t22 = index i8 %t21, 0
     %t23 = index i8 [projection=field] %t22, 0
-    %t24 = load i32 %t23
+    %t24 = load typed i32 %t23
     call void @C__C__base_entry(%t16, %t24)
-    %t25 = load ptr $this
+    %t25 = load typed ptr $this
     %t26 = index i8 %t25, 0
     %t27 = addr @__cppgm_class_template_identity_0_1_0____vtt
     %t28 = index i8 %t27, 8
-    %t29 = load ptr $e
-    %t30 = load ptr $this
+    %t29 = load typed ptr $e
+    %t30 = load typed ptr $this
     %t31 = index i8 %t30, 8
-    %t32 = load ptr $this
+    %t32 = load typed ptr $this
     %t33 = index i8 %t32, 12
-    %t34 = load ptr $this
+    %t34 = load typed ptr $this
     %t35 = index i8 %t34, 16
     call void @D__D__base_entry(%t26, %t28, %t29, %t31, %t33, %t35)
-    %t36 = load ptr $this
+    %t36 = load typed ptr $this
     %t37 = addr @__cppgm_class_template_identity_0_1_0__vtable
     %t38 = index i8 %t37, 40
-    store ptr %t38, %t36
+    store typed ptr %t38, %t36
     return void
 }
 function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt : ptr, %other : ptr [pass=by_address, alias=noalias, object_bytes=24], %__vbptr0 : ptr, %__vbptr1 : ptr, %__vbptr2 : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC2ERKS_, object_root=yes, inline_hint=yes] {
@@ -474,10 +474,10 @@ function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt 
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     return void
 }

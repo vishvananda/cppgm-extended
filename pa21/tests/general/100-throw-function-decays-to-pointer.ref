@@ -38,7 +38,7 @@ global @called : i32 [binding=strong] = zero
 
 function @f() -> void [binding=strong, object=_Z1fv] {
   block ^entry:
-    store i32 1, @called
+    store typed i32 1, @called
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -49,7 +49,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^catch_dispatch_1
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(8)
     %t2 = addr @f
-    store ptr %t2, %t1
+    store typed ptr %t2, %t1
     %t3 = addr @__rtti_type_PFvvE
     call void @__external_runtime____cxa_throw(%t1, %t3, 0)
     eh_end
@@ -67,10 +67,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_body_4:
     %t7 = call ptr @__external_runtime____cxa_begin_catch(%t4)
-    store ptr %t7, $catch__1
+    store typed ptr %t7, $catch__1
     eh_cleanup ^catch_cleanup_6
-    store ptr %t7, $p
-    %t8 = load ptr $p
+    store typed ptr %t7, $p
+    %t8 = load typed ptr $p
     call void %t8() as () -> void
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -85,7 +85,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^try_end_3:
-    %t9 = load i32 @called
+    %t9 = load typed i32 @called
     %t10 = cmp eq i32 %t9, 0
     %t11 = convert trunc i32 i64 %t10
     return i32 %t11

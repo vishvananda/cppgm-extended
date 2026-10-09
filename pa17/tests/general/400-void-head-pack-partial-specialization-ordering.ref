@@ -5,12 +5,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $q : ptr
 
   block ^entry:
-    store ptr 0, $p
-    store ptr 0, $q
-    %t1 = load ptr $p
+    store typed ptr 0, $p
+    store typed ptr 0, $q
+    %t1 = load typed ptr $p
     %t2 = call i32 @expect(%t1)
-    %t3 = load ptr $q
+    %t3 = load typed ptr $q
     %t4 = call i32 @expect(%t3)
-    %t5 = binary add i32 %t2, %t4
+    %t5 = binary add nowrap i32 %t2, %t4
     return i32 %t5
 }

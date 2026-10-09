@@ -46,23 +46,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $control
     call void @Control_int___Policy_2___Control_int___Policy_2_(%t1)
     %t2 = addr $control
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     %t4 = index i8 %t3, 16
-    %t5 = load ptr %t4
+    %t5 = load typed ptr %t4
     %t6 = call i32 %t5(%t2) as (%arg0 : ptr [object_bytes=8]) -> i32
     %t7 = cmp eq i32 %t6, 2
     branch %t7, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t8 = load i32 $cond__1
+    %t8 = load typed i32 $cond__1
     %t9 = addr $control
     call void @Control_int___Policy_2____Control(%t9)
     return i32 %t8
@@ -71,30 +71,30 @@ function @Control_int___Policy_2____Control__base_entry(%this : ptr [object_byte
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @__cppgm_class_template_identity_0_0_0___Control__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7ControlIiL6Policy2EED0Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     call void @operatordelete(%t4)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     call void @operatordelete(%t5)
     eh_end
     resume
@@ -106,29 +106,29 @@ function @Control_int___Policy_2____Control(%this : ptr [object_bytes=8]) -> voi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Control_int___Policy_2___value(%this : ptr [object_bytes=8]) -> i32 [unwind=no, binding=weak, object=_ZN7ControlIiL6Policy2EE5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 2
 }
 function @Control_int___Policy_2___Control_int___Policy_2_(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN7ControlIiL6Policy2EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN7ControlIiL6Policy2EEC2Ev = @Control_int___Policy_2___Control_int___Policy_2_

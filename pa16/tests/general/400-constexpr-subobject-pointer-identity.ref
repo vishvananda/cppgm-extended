@@ -7,11 +7,11 @@ function @check() -> void [binding=strong, object=_Z5checkv] {
     %t2 = addr $values
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i32 [projection=array_element] %t3, 0
-    store i32 3, %t4
+    store typed i32 3, %t4
     %t5 = addr $values
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = index i32 [projection=array_element] %t6, 1
-    store i32 5, %t7
+    store typed i32 5, %t7
     %t8 = addr $copied
     %t9 = addr $values
     copyobj 8x4 %t9, %t8

@@ -4,8 +4,8 @@ function @value() -> i32 [binding=strong, object=_Z5valuev] {
 
   block ^entry:
     %t1 = addr $source
-    store i32 0, $result
-    %t2 = load i32 $result
+    store typed i32 0, $result
+    %t2 = load typed i32 $result
     return i32 %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

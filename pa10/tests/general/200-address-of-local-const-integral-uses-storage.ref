@@ -3,10 +3,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $q : ptr
 
   block ^entry:
-    store i32 7, $p
+    store typed i32 7, $p
     %t1 = addr $p
-    store ptr %t1, $q
-    %t2 = load ptr $q
-    %t3 = load i32 %t2
+    store typed ptr %t1, $q
+    %t2 = load typed ptr $q
+    %t3 = load typed i32 %t2
     return i32 %t3
 }

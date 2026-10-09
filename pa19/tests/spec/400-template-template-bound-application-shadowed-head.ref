@@ -17,7 +17,7 @@ function @library__detail__tn_holder___cppgm_class_template_identity_0_1_0___typ
     %t3 = addr $tn
     return i32 0
 }
-function @library__detail__class_template_name() -> obj<1x1> [binding=weak, object=_ZN7library6detail19class_template_nameI4hashIiclEEENS0_4textEv] {
+function @library__detail__class_template_name() -> obj<1x1> [result_classes=none, binding=weak, object=_ZN7library6detail19class_template_nameI4hashIiclEEENS0_4textEv] {
   slot $retobj__1 : obj<1x1>
 
   block ^entry:

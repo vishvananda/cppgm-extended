@@ -119,15 +119,15 @@ function @boost__exception_detail__get_diagnostic_information(%c : ptr, %header 
   slot $di : ptr
 
   block ^entry:
-    store ptr %c, $c
-    store ptr %header, $header
-    %t1 = load ptr $c
-    %t2 = load ptr $header
-    %t3 = load ptr %t1
-    %t4 = load ptr %t3
+    store typed ptr %c, $c
+    store typed ptr %header, $header
+    %t1 = load typed ptr $c
+    %t2 = load typed ptr $header
+    %t3 = load typed ptr %t1
+    %t4 = load typed ptr %t3
     %t5 = call ptr %t4(%t1, %t2) as (%arg0 : ptr [object_bytes=8], %arg1 : ptr) -> ptr
-    store ptr %t5, $di
-    %t6 = load ptr $di
+    store typed ptr %t5, $di
+    %t6 = load typed ptr $di
     return ptr %t6
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -143,15 +143,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @boost__exception_detail__impl__diagnostic_information(%this : ptr [object_bytes=8], %__param1 : ptr) -> ptr [binding=weak, object=_ZNK5boost16exception_detail4impl22diagnostic_informationEPKc, inline_hint=yes] {
@@ -159,8 +159,8 @@ function @boost__exception_detail__impl__diagnostic_information(%this : ptr [obj
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     %t1 = addr @__strlit__1
     return ptr %t1
 }
@@ -168,25 +168,25 @@ function @boost__exception_detail__impl__impl(%this : ptr [object_bytes=8]) -> v
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @boost__exception_detail__error_info_container__error_info_container__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @boost__exception_detail__impl__vtable
     %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @boost__exception_detail__error_info_container__error_info_container__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5boost16exception_detail20error_info_containerC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @boost__exception_detail__error_info_container__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN5boost16exception_detail4implC2Ev = @boost__exception_detail__impl__impl

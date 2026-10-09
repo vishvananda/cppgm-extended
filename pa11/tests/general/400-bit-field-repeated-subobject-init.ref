@@ -46,6 +46,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t38 = copy u32 %t37
     %t39 = copy i32 %t31
     %t40 = copy i32 %t38
-    %t41 = binary add i32 %t39, %t40
+    %t41 = binary add nowrap i32 %t39, %t40
     return i32 %t41
 }

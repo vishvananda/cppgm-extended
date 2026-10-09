@@ -2,8 +2,8 @@ function @f(%x : i32) -> i32 [binding=strong, object=_Z1f1E] {
   slot $x : i32
 
   block ^entry:
-    store i32 %x, $x
-    %t1 = load i32 $x
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
     %t2 = cmp eq i32 %t1, 0
     %t3 = convert trunc i32 i64 %t2
     return i32 %t3

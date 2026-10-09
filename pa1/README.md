@@ -480,6 +480,21 @@ Usually you will need to match the longest token (some exceptions are comments, 
 
 To emit a token there is an interface provided in the skeleton code called `IPPTokenStream`.  It has one function for each token type.  In most cases you will need to store and then UTF-8 encode the code point sequence corresponding to the token to pass to the data argument.  The token data is expected to have the translation tasks applied (for one example _line splicing_), but not the literal tasks (for example decoding `simple-escape-sequences` is not required at this stage) (which occur later in translation phase 7 and is not part of this assignment).
 
+#### Later scale
+
+The pipeline above is the clearest way to get every translation rule right,
+and it is a fine way to finish PA1. Later assignments lex all of the host's
+standard library headers for every translation unit, and PA34 compiles the
+compiler itself: millions of bytes per compile. There, a pipeline that
+handles one code point at a time through several state machines, or stores
+a record for every character, becomes the compiler's largest cost. What
+scales is to read each file into one buffer; to scan the common case, plain
+ASCII with no trigraph, line splice or universal character name, directly
+in that buffer, falling back to the full translation only for the bytes that
+need it; to produce tokens on demand rather than storing them; and to intern
+each identifier's spelling once, as it is lexed. None of this changes PA1's
+output, so it can come later, but it is easier to leave room for now.
+
 ### Self-Tokenizing (Optional/Ungraded)
 
 To get into the self-hosting spirit of things, once you have completed this assignment run your `pptoken` application using your `pptoken.cpp` source file as input:

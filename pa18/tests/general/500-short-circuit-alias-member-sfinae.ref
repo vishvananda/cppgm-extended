@@ -11,6 +11,6 @@ function @probe(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [bindi
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 0
 }

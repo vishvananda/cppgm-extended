@@ -184,7 +184,9 @@ void WriteInstruction(std::ostream& output, const Instruction& instruction,
 		WriteOperand(output, instruction.first, program, function);
 		break;
 	case Instruction::LOAD:
-		output << "%t" << instruction.dest << " = load ";
+		output << "%t" << instruction.dest << " = load "
+			<< (instruction.volatile_access ? "volatile " : "")
+			<< (instruction.typed_access ? "typed " : "");
 		WriteType(output, instruction.type);
 		output << ' ';
 		WriteOperand(output, instruction.first, program, function);
@@ -197,7 +199,8 @@ void WriteInstruction(std::ostream& output, const Instruction& instruction,
 		output << ", " << static_cast<unsigned>(instruction.atomic_order);
 		break;
 	case Instruction::STORE:
-		output << "store ";
+		output << "store " << (instruction.volatile_access ? "volatile " : "")
+			<< (instruction.typed_access ? "typed " : "");
 		WriteType(output, instruction.type);
 		output << ' ';
 		WriteOperand(output, instruction.first, program, function);
@@ -259,12 +262,24 @@ void WriteInstruction(std::ostream& output, const Instruction& instruction,
 		break;
 	case Instruction::BINARY:
 		output << "%t" << instruction.dest << " = binary "
-			<< LowOperationText(instruction.op) << ' ';
+			<< LowOperationText(instruction.op) << ' '
+			<< (instruction.no_wrap ? "nowrap " : "")
+			<< (instruction.exact ? "exact " : "");
 		WriteType(output, instruction.type);
 		output << ' ';
 		WriteOperand(output, instruction.first, program, function);
 		output << ", ";
 		WriteOperand(output, instruction.second, program, function);
+		break;
+	case Instruction::SELECT:
+		output << "%t" << instruction.dest << " = select ";
+		WriteType(output, instruction.type);
+		output << ' ';
+		WriteOperand(output, instruction.first, program, function);
+		output << ", ";
+		WriteOperand(output, instruction.second, program, function);
+		output << ", ";
+		WriteOperand(output, instruction.third, program, function);
 		break;
 	case Instruction::CMP:
 		output << "%t" << instruction.dest << " = cmp "

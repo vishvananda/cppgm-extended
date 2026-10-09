@@ -8,6 +8,6 @@ function @f(%__param0 : i32) -> u8 [binding=weak, object=_Z1fIiLPv0EEbi] {
   slot $__param0 : i32
 
   block ^entry:
-    store i32 %__param0, $__param0
+    store typed i32 %__param0, $__param0
     return u8 0
 }

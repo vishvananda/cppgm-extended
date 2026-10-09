@@ -2,7 +2,7 @@ function @deleter(%__param0 : ptr) -> void [binding=strong, object=_Z7deleterPv]
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return void
 }
 function @f() -> void [binding=strong, object=_Z1fv] {
@@ -12,7 +12,7 @@ function @f() -> void [binding=strong, object=_Z1fv] {
   block ^entry:
     %t1 = addr $s
     %t2 = addr @deleter
-    store ptr %t2, $refarg__1
+    store typed ptr %t2, $refarg__1
     %t3 = addr $refarg__1
     call void @S_pointer_to_function_of__pointer_to_void__returning_void___S_pointer_to_function_of__pointer_to_void__returning_void___ov3(%t1, 0, %t3)
     return void
@@ -28,9 +28,9 @@ function @S_pointer_to_function_of__pointer_to_void__returning_void___S_pointer_
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return void
 }
 alias object _ZN1SIPFvPvEEC2ILb1EiEEiOS2_ = @S_pointer_to_function_of__pointer_to_void__returning_void___S_pointer_to_function_of__pointer_to_void__returning_void___ov3

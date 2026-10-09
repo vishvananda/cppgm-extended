@@ -2,7 +2,7 @@ global @live : i32 [binding=strong] = zero
 global @__cppgm_initlist_backing_1 [binding=internal] = {
   zero 8
 }
-global @values [binding=strong] = {
+global @values : obj<16x8> [binding=strong] = {
   zero 16
 }
 
@@ -11,7 +11,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__2 : i64
 
   block ^entry:
-    %t1 = load i32 @live
+    %t1 = load typed i32 @live
     %t2 = cmp ne i32 %t1, 2
     branch %t2, ^lor_short_5, ^lor_rhs_4
 
@@ -21,18 +21,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary mul i64 0, 4
     %t6 = index i8 [projection=array_element] %t4, %t5
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     %t9 = cmp ne i32 %t8, 1
     %t10 = cmp ne i64 %t9, 0
-    store i64 %t10, $lor__2
+    store typed i64 %t10, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t11 = load i64 $lor__2
+    %t11 = load typed i64 $lor__2
     branch %t11, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
@@ -41,18 +41,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = binary mul i64 1, 4
     %t15 = index i8 [projection=array_element] %t13, %t14
     %t16 = index i8 [projection=field] %t15, 0
-    %t17 = load i32 %t16
+    %t17 = load typed i32 %t16
     %t18 = cmp ne i32 %t17, 2
     %t19 = cmp ne i64 %t18, 0
-    store i64 %t19, $lor__1
+    store typed i64 %t19, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t20 = load i64 $lor__1
+    %t20 = load typed i64 $lor__1
     %t21 = convert trunc i32 i64 %t20
     return i32 %t21
 }
@@ -61,35 +61,35 @@ function @item__item(%this : ptr [object_bytes=4], %x : i32) -> void [binding=we
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 @live
-    %t5 = binary add i32 %t4, 1
-    store i32 %t5, @live
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 @live
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @live
     return void
 }
 function @item___item(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4itemD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @live
     return void
 }
 function @std__initializer_list_item___begin(%this : ptr [object_bytes=16]) -> ptr [binding=weak, object=_ZNKSt16initializer_listI4itemE5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     return ptr %t3
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
@@ -109,9 +109,9 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
 
   block ^call_unwind_end_2:
     eh_try ^call_unwind_dispatch_3
-    store ptr %t2, %t1
+    store typed ptr %t2, %t1
     %t4 = index i8 %t1, 8
-    store i64 2, %t4
+    store typed i64 2, %t4
     eh_end
     jump ^call_unwind_end_4
 

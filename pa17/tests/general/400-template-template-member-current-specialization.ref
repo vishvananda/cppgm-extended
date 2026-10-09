@@ -17,7 +17,7 @@ function @Box_int__int__template_parameter_LayoutImpl___f(%this : ptr [object_by
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }

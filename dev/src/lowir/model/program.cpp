@@ -22,6 +22,8 @@ LowOperation::Kind operation_kind(const std::string & text)
     {"not", LowOperation::LOP_NOT},
     {"bitnot", LowOperation::LOP_BITNOT},
     {"bswap", LowOperation::LOP_BSWAP},
+    {"ctz", LowOperation::LOP_CTZ},
+    {"clz", LowOperation::LOP_CLZ},
     {"add", LowOperation::LOP_ADD},
     {"sub", LowOperation::LOP_SUB},
     {"mul", LowOperation::LOP_MUL},
@@ -86,6 +88,8 @@ const char * lowir_operation_text(LowOperation operation)
   case LowOperation::LOP_NOT: return "not";
   case LowOperation::LOP_BITNOT: return "bitnot";
   case LowOperation::LOP_BSWAP: return "bswap";
+  case LowOperation::LOP_CTZ: return "ctz";
+  case LowOperation::LOP_CLZ: return "clz";
   case LowOperation::LOP_ADD: return "add";
   case LowOperation::LOP_SUB: return "sub";
   case LowOperation::LOP_MUL: return "mul";
@@ -120,6 +124,40 @@ const char * lowir_operation_text(LowOperation operation)
   case LowOperation::LOP_FPEXT: return "fpext";
   }
   ThrowLowirInternalError("invalid compact LowIR operation identity");
+}
+
+std::string object_classes_text(std::uint8_t classes)
+{
+  static const char * const names[] = {"", "none", "integer", "sse"};
+  if(classes == kObjectClassesMemory) return "memory";
+  std::string result = names[classes & 3];
+  if((classes >> 2) & 3) result += std::string("_") + names[(classes >> 2) & 3];
+  return result;
+}
+
+bool parse_object_classes(const std::string & text, std::size_t bytes,
+                          std::uint8_t * classes)
+{
+  if(text == "memory") {
+    *classes = kObjectClassesMemory;
+    return bytes != 0 && bytes <= 16;
+  }
+  static const char * const names[] = {"none", "integer", "sse"};
+  std::uint8_t result = 0;
+  std::size_t eightbyte = 0, begin = 0;
+  while(begin <= text.size()) {
+    const std::size_t end = std::min(text.find('_', begin), text.size());
+    const std::string name = text.substr(begin, end - begin);
+    unsigned value = 0;
+    for(unsigned i = 0; i < 3; ++i)
+      if(name == names[i]) value = i + 1;
+    if(value == 0 || eightbyte >= 2) return false;
+    result = static_cast<std::uint8_t>(result | (value << (2 * eightbyte++)));
+    begin = end + 1;
+  }
+  if(eightbyte != (bytes + 7) / 8) return false;
+  *classes = result;
+  return true;
 }
 
 bool operator==(LowOperation left, LowOperation right)

@@ -8,23 +8,23 @@ function @take(%t : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=stron
   slot $cond__1 : i32
 
   block ^entry:
-    store ptr %t, $t
-    %t1 = load ptr $t
+    store typed ptr %t, $t
+    %t1 = load typed ptr $t
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     %t4 = cmp eq i32 %t3, 5
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -44,10 +44,10 @@ function @Alloc__Alloc(%this : ptr [object_bytes=4]) -> void [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 5, %t2
+    store typed i32 5, %t2
     return void
 }
 function @Text__Text__ov2(%this : ptr [object_bytes=4], %p : ptr, %a : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN4TextC1EPKcRK5Alloc, inline_hint=yes] {
@@ -57,10 +57,10 @@ function @Text__Text__ov2(%this : ptr [object_bytes=4], %p : ptr, %a : ptr [pass
   slot $cond__1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %p, $p
-    store ptr %a, $a
-    %t1 = load ptr $p
+    store typed ptr %this, $this
+    store typed ptr %p, $p
+    store typed ptr %a, $a
+    %t1 = load typed ptr $p
     %t2 = index i8 [projection=array_element] %t1, 0
     %t3 = load i8 %t2
     %t4 = convert sext i32 i8 %t3
@@ -68,21 +68,21 @@ function @Text__Text__ov2(%this : ptr [object_bytes=4], %p : ptr, %a : ptr [pass
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    %t6 = load ptr $a
+    %t6 = load typed ptr $a
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
-    store i32 %t8, $cond__1
+    %t8 = load typed i32 %t7
+    store typed i32 %t8, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 3, $cond__1
+    store typed i32 3, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
-    %t10 = load ptr $this
+    %t9 = load typed i32 $cond__1
+    %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 0
-    store i32 %t9, %t11
+    store typed i32 %t9, %t11
     return void
 }
 alias object _ZN5AllocC2Ev = @Alloc__Alloc

@@ -14,15 +14,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @Owner_int___member(%this : ptr [object_bytes=1], %__param1 : i32) -> i32 [binding=weak, object=_ZN5OwnerIiE6memberIiEEiT_] {
@@ -30,7 +30,7 @@ function @Owner_int___member(%this : ptr [object_bytes=1], %__param1 : i32) -> i
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return i32 2
 }

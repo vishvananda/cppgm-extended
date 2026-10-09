@@ -43,8 +43,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^call_unwind_end_3:
     eh_try ^cleanup_action_4
     %t7 = call ptr @Text__operator_(%t3, %t4)
-    store ptr %t7, $call__1
-    %t8 = load ptr $call__1
+    store typed ptr %t7, $call__1
+    %t8 = load typed ptr $call__1
     call void @Text___Text(%t4)
     eh_end
     jump ^call_unwind_end_5
@@ -75,15 +75,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t13, ^cond_then_6, ^cond_else_7
 
   block ^cond_then_6:
-    store i32 0, $cond__3
+    store typed i32 0, $cond__3
     jump ^cond_end_8
 
   block ^cond_else_7:
-    store i32 1, $cond__3
+    store typed i32 1, $cond__3
     jump ^cond_end_8
 
   block ^cond_end_8:
-    %t14 = load i32 $cond__3
+    %t14 = load typed i32 $cond__3
     call void @Text___Text(%t9)
     %t15 = addr $box
     call void @Box___Box(%t15)

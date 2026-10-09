@@ -401,53 +401,53 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_end
     %t60 = addr $left
     %t61 = index i8 [projection=field] %t60, 0
-    %t62 = load i32 %t61
+    %t62 = load typed i32 %t61
     %t63 = cmp ne i32 %t62, 7
     branch %t63, ^if_then_65, ^lor_rhs_74
 
   block ^lor_rhs_74:
     %t64 = addr $right
     %t65 = index i8 [projection=field] %t64, 0
-    %t66 = load i32 %t65
+    %t66 = load typed i32 %t65
     %t67 = cmp ne i32 %t66, 15
     branch %t67, ^if_then_65, ^lor_rhs_73
 
   block ^lor_rhs_73:
     %t68 = addr $reversed
     %t69 = index i8 [projection=field] %t68, 0
-    %t70 = load i32 %t69
+    %t70 = load typed i32 %t69
     %t71 = cmp ne i32 %t70, 18
     branch %t71, ^if_then_65, ^lor_rhs_72
 
   block ^lor_rhs_72:
     %t72 = addr $constant
     %t73 = index i8 [projection=field] %t72, 0
-    %t74 = load i32 %t73
+    %t74 = load typed i32 %t73
     %t75 = cmp ne i32 %t74, 12
     branch %t75, ^if_then_65, ^lor_rhs_71
 
   block ^lor_rhs_71:
-    %t76 = load i32 @tracker_alive
+    %t76 = load typed i32 @tracker_alive
     %t77 = cmp ne i32 %t76, 0
     branch %t77, ^if_then_65, ^lor_rhs_70
 
   block ^lor_rhs_70:
-    %t78 = load i32 @box_alive
+    %t78 = load typed i32 @box_alive
     %t79 = cmp ne i32 %t78, 6
     branch %t79, ^if_then_65, ^lor_rhs_69
 
   block ^lor_rhs_69:
-    %t80 = load i32 @conversions
+    %t80 = load typed i32 @conversions
     %t81 = cmp ne i32 %t80, 3
     branch %t81, ^if_then_65, ^lor_rhs_68
 
   block ^lor_rhs_68:
-    %t82 = load i32 @invalid_lifetimes
+    %t82 = load typed i32 @invalid_lifetimes
     %t83 = cmp ne i32 %t82, 0
     branch %t83, ^if_then_65, ^if_else_66
 
   block ^if_then_65:
-    store i32 1, $cleanup_return__10
+    store typed i32 1, $cleanup_return__10
     jump ^return_cleanup_action_81
 
   block ^return_cleanup_terminal_75:
@@ -491,16 +491,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t91 = addr $existing
     %t92 = addr $reference
     %t93 = index i8 [projection=field] %t92, 0
-    store ptr %t91, %t93
+    store typed ptr %t91, %t93
     branch 1, ^condaddr_then_82, ^condaddr_else_83
 
   block ^condaddr_then_82:
     eh_try ^cleanup_action_86
     %t94 = addr $reference
     %t95 = call ptr @Reference__operatorBox_(%t94)
-    store ptr %t95, $call__9
-    %t96 = load ptr $call__9
-    store ptr %t96, $condaddr__19
+    store typed ptr %t95, $call__9
+    %t96 = load typed ptr $call__9
+    store typed ptr %t96, $condaddr__19
     eh_end
     jump ^call_unwind_end_87
 
@@ -519,16 +519,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condaddr_else_83:
     %t99 = addr $existing
-    store ptr %t99, $condaddr__19
+    store typed ptr %t99, $condaddr__19
     jump ^condaddr_end_84
 
   block ^condaddr_end_84:
-    %t100 = load ptr $condaddr__19
-    store ptr %t100, $selected
-    %t101 = load ptr $selected
+    %t100 = load typed ptr $condaddr__19
+    store typed ptr %t100, $selected
+    %t101 = load typed ptr $selected
     %t102 = index i8 [projection=field] %t101, 0
-    store i32 9, %t102
-    %t103 = load ptr $selected
+    store typed i32 9, %t102
+    %t103 = load typed ptr $selected
     %t104 = addr $existing
     %t105 = cmp ne ptr %t103, %t104
     branch %t105, ^if_then_88, ^lor_rhs_92
@@ -536,17 +536,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_92:
     %t106 = addr $existing
     %t107 = index i8 [projection=field] %t106, 0
-    %t108 = load i32 %t107
+    %t108 = load typed i32 %t107
     %t109 = cmp ne i32 %t108, 9
     branch %t109, ^if_then_88, ^lor_rhs_91
 
   block ^lor_rhs_91:
-    %t110 = load i32 @conversions
+    %t110 = load typed i32 @conversions
     %t111 = cmp ne i32 %t110, 3
     branch %t111, ^if_then_88, ^if_else_89
 
   block ^if_then_88:
-    store i32 2, $cleanup_return__10
+    store typed i32 2, $cleanup_return__10
     jump ^return_cleanup_action_81
 
   block ^if_else_89:
@@ -583,28 +583,28 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condaddr_then_95:
     %t121 = addr $base
-    store ptr %t121, $condaddr__20
+    store typed ptr %t121, $condaddr__20
     jump ^condaddr_end_97
 
   block ^condaddr_else_96:
     %t122 = addr $derived
     %t123 = index i8 %t122, 0
-    store ptr %t123, $condaddr__20
+    store typed ptr %t123, $condaddr__20
     jump ^condaddr_end_97
 
   block ^condaddr_end_97:
-    %t124 = load ptr $condaddr__20
-    store ptr %t124, $selected__shadow2
-    %t125 = load ptr $selected__shadow2
+    %t124 = load typed ptr $condaddr__20
+    store typed ptr %t124, $selected__shadow2
+    %t125 = load typed ptr $selected__shadow2
     %t126 = addr $derived
     %t127 = index i8 %t126, 0
     %t128 = cmp ne ptr %t125, %t127
     branch %t128, ^if_then_98, ^lor_rhs_101
 
   block ^lor_rhs_101:
-    %t129 = load ptr $selected__shadow2
+    %t129 = load typed ptr $selected__shadow2
     %t130 = index i8 [projection=field] %t129, 0
-    %t131 = load i32 %t130
+    %t131 = load typed i32 %t130
     %t132 = cmp ne i32 %t131, 11
     branch %t132, ^if_then_98, ^if_else_99
 
@@ -623,38 +623,38 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Derived___Derived(%t135)
     %t136 = addr $base
     call void @Box___Box(%t136)
-    %t137 = load i32 @tracker_alive
+    %t137 = load typed i32 @tracker_alive
     %t138 = cmp ne i32 %t137, 0
     branch %t138, ^lor_short_106, ^lor_rhs_105
 
   block ^lor_rhs_105:
-    %t139 = load i32 @box_alive
+    %t139 = load typed i32 @box_alive
     %t140 = cmp ne i32 %t139, 0
     %t141 = cmp ne i64 %t140, 0
-    store i64 %t141, $lor__22
+    store typed i64 %t141, $lor__22
     jump ^lor_end_107
 
   block ^lor_short_106:
-    store i64 1, $lor__22
+    store typed i64 1, $lor__22
     jump ^lor_end_107
 
   block ^lor_end_107:
-    %t142 = load i64 $lor__22
+    %t142 = load typed i64 $lor__22
     branch %t142, ^lor_short_103, ^lor_rhs_102
 
   block ^lor_rhs_102:
-    %t143 = load i32 @invalid_lifetimes
+    %t143 = load typed i32 @invalid_lifetimes
     %t144 = cmp ne i32 %t143, 0
     %t145 = cmp ne i64 %t144, 0
-    store i64 %t145, $lor__21
+    store typed i64 %t145, $lor__21
     jump ^lor_end_104
 
   block ^lor_short_103:
-    store i64 1, $lor__21
+    store typed i64 1, $lor__21
     jump ^lor_end_104
 
   block ^lor_end_104:
-    %t146 = load i64 $lor__21
+    %t146 = load typed i64 $lor__21
     %t147 = convert trunc i32 i64 %t146
     return i32 %t147
 }
@@ -663,15 +663,15 @@ function @Box__Box__base_entry(%this : ptr [object_bytes=4], %input : i32) -> vo
   slot $input : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 @box_alive
-    %t5 = binary add i32 %t4, 1
-    store i32 %t5, @box_alive
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 @box_alive
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @box_alive
     return void
 }
 function @Box__Box(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
@@ -679,25 +679,25 @@ function @Box__Box(%this : ptr [object_bytes=4], %input : i32) -> void [binding=
   slot $input : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 @box_alive
-    %t5 = binary add i32 %t4, 1
-    store i32 %t5, @box_alive
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 @box_alive
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @box_alive
     return void
 }
 function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @box_alive
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @box_alive
+    store typed ptr %this, $this
+    %t1 = load typed i32 @box_alive
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @box_alive
     return void
 }
 function @Tracker__Tracker(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN7TrackerC1Ei, inline_hint=yes] {
@@ -705,15 +705,15 @@ function @Tracker__Tracker(%this : ptr [object_bytes=4], %input : i32) -> void [
   slot $input : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 @tracker_alive
-    %t5 = binary add i32 %t4, 1
-    store i32 %t5, @tracker_alive
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 @tracker_alive
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @tracker_alive
     return void
 }
 function @Box__Box__ov2(%this : ptr [object_bytes=4], %input : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1ERK7Tracker, inline_hint=yes] {
@@ -721,45 +721,45 @@ function @Box__Box__ov2(%this : ptr [object_bytes=4], %input : ptr [pass=by_addr
   slot $input : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %input, $input
-    %t1 = load ptr $input
+    store typed ptr %this, $this
+    store typed ptr %input, $input
+    %t1 = load typed ptr $input
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary add i32 %t3, 10
-    %t5 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = binary add nowrap i32 %t3, 10
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
-    %t7 = load i32 @tracker_alive
+    store typed i32 %t4, %t6
+    %t7 = load typed i32 @tracker_alive
     %t8 = cmp ne i32 %t7, 1
     branch %t8, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    %t9 = load i32 @invalid_lifetimes
-    %t10 = binary add i32 %t9, 1
-    store i32 %t10, @invalid_lifetimes
+    %t9 = load typed i32 @invalid_lifetimes
+    %t10 = binary add nowrap i32 %t9, 1
+    store typed i32 %t10, @invalid_lifetimes
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t11 = load i32 @box_alive
-    %t12 = binary add i32 %t11, 1
-    store i32 %t12, @box_alive
-    %t13 = load i32 @conversions
-    %t14 = binary add i32 %t13, 1
-    store i32 %t14, @conversions
+    %t11 = load typed i32 @box_alive
+    %t12 = binary add nowrap i32 %t11, 1
+    store typed i32 %t12, @box_alive
+    %t13 = load typed i32 @conversions
+    %t14 = binary add nowrap i32 %t13, 1
+    store typed i32 %t14, @conversions
     return void
 }
 function @Tracker___Tracker(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN7TrackerD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @tracker_alive
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @tracker_alive
+    store typed ptr %this, $this
+    %t1 = load typed i32 @tracker_alive
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @tracker_alive
     return void
 }
 function @Box__Box__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1ERKS_, inline_hint=yes] {
@@ -767,35 +767,35 @@ function @Box__Box__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : pt
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load i32 @box_alive
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @box_alive
+    store typed i32 %t3, %t5
+    %t6 = load typed i32 @box_alive
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @box_alive
     return void
 }
 function @Reference__operatorBox_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN9ReferencecvR3BoxEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     return ptr %t3
 }
 function @Derived__Derived(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @Box__Box__base_entry(%t2, 11)
     eh_cleanup ^constructor_cleanup_1
@@ -803,7 +803,7 @@ function @Derived__Derived(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
     call void @Box___Box(%t4)
     eh_end
@@ -813,16 +813,16 @@ function @Derived___Derived(%this : ptr [object_bytes=4]) -> void [unwind=no, bi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
     eh_end
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @Box___Box(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
     call void @Box___Box(%t4)
     eh_end

@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_end_2:
     call void @result_int____result(%t1)
-    %t2 = load i32 @count
+    %t2 = load typed i32 @count
     return i32 %t2
 }
 function @make(%ret : ptr [pass=indirect_result, object_bytes=1]) -> void [binding=weak, object=_Z4makeIiE6resultIT_Ev] {
@@ -27,16 +27,16 @@ function @result_int____result(%this : ptr [object_bytes=1]) -> void [unwind=no,
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
     eh_end
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @value_int____value(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @value_int____value(%t4)
     eh_end
@@ -49,18 +49,18 @@ function @value_int___value_int_(%this : ptr [object_bytes=1]) -> void [binding=
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @count
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @count
+    store typed ptr %this, $this
+    %t1 = load typed i32 @count
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @count
     return void
 }
 function @result_int___result_int_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN6resultIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @value_int___value_int_(%t2)
     eh_cleanup ^constructor_cleanup_1
@@ -68,7 +68,7 @@ function @result_int___result_int_(%this : ptr [object_bytes=1]) -> void [bindin
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @value_int____value(%t4)
     eh_end
@@ -78,10 +78,10 @@ function @value_int____value(%this : ptr [object_bytes=1]) -> void [unwind=no, b
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @count
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @count
+    store typed ptr %this, $this
+    %t1 = load typed i32 @count
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @count
     return void
 }
 alias object _ZN6resultIiED2Ev = @result_int____result

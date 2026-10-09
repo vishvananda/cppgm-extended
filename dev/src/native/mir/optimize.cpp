@@ -132,6 +132,9 @@ bool is_read_write_destination(MirInstruction::Opcode opcode)
   case MirInstruction::MI_NEG:
   case MirInstruction::MI_NOT:
   case MirInstruction::MI_BSWAP:
+  case MirInstruction::MI_BSF:
+  case MirInstruction::MI_BSR:
+  case MirInstruction::MI_CMOV:
   case MirInstruction::MI_SEXT:
   case MirInstruction::MI_ZEXT:
   case MirInstruction::MI_SHL_CL:
@@ -260,6 +263,8 @@ RegisterMask instruction_uses(
     // physical live-ins to the call instruction.
     uses |= exact_call_arguments && instruction.call_argument_registers_known ?
       instruction.call_argument_register_mask : kCallArguments;
+    // A variadic call reads its vector-register count from al (psABI 3.5.7).
+    if(instruction.call_variadic) uses |= gpr_bit(XR_RAX);
     break;
   case MirInstruction::MI_COPY_BYTES:
     if(!instruction.byte_count && instruction.operands.empty())
@@ -275,8 +280,9 @@ RegisterMask instruction_uses(
       gpr_bit(XR_R13) | gpr_bit(XR_R14) | gpr_bit(XR_R15);
     break;
   case MirInstruction::MI_RET:
+    // An object result may also return SSE eightbytes in xmm0 and xmm1.
     if(instruction.operands.empty())
-      uses |= gpr_bit(XR_RAX) | gpr_bit(XR_RDX);
+      uses |= gpr_bit(XR_RAX) | gpr_bit(XR_RDX) | xmm_bit(XMM_0) | xmm_bit(XMM_1);
     break;
   case MirInstruction::MI_EXIT:
     uses |= gpr_bit(XR_RDI);

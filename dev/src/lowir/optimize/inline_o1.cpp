@@ -298,6 +298,7 @@ O3LoopPrioritySelection select_o3_loop_priority_call(
        instructions > kO3LoopPriorityInstructionLimit ||
        !callee_function.metadata.inline_hint ||
        callee_function.metadata.no_inline ||
+       callee_function.metadata.replaceable ||
        callee_function.boundary.arity == lowir_model::CAM_VARIADIC ||
        (callee_function.metadata.binding != lowir_model::SBM_INTERNAL &&
         callee_function.metadata.binding != lowir_model::SBM_WEAK))
@@ -714,6 +715,7 @@ public:
         !call_graph_.non_call_use[i] &&
         (function.metadata.binding == lowir_model::SBM_INTERNAL ||
          function.metadata.binding == lowir_model::SBM_WEAK) &&
+        !function.metadata.replaceable &&
         !function.metadata.object_output_root &&
         !function.metadata.keep_internal_alias &&
         function.metadata.role == lowir_model::SR_NONE &&
@@ -960,7 +962,9 @@ private:
       return false;
     }
     const Function & callee_function = program_.functions[target];
-    if(callee_function.metadata.no_inline) {
+    // A replaceable definition may not be the one the call reaches.
+    if(callee_function.metadata.no_inline ||
+       callee_function.metadata.replaceable) {
       if(record_stats && stats_) ++stats_->inline_reject_no_inline;
       if(record_stats && stats_ && definition_removing_only_ &&
          single_call_discardable_[target])
@@ -1838,7 +1842,8 @@ private:
     if(call.copy_elision_candidate) return false;
     if(call_graph_.recursive[target] || target == caller) return false;
     const Function & callee_function = program_.functions[target];
-    if(callee_function.metadata.no_inline) return false;
+    if(callee_function.metadata.no_inline ||
+       callee_function.metadata.replaceable) return false;
     if(loop_inline_shapes_[target] &&
        !callee_function.metadata.inline_hint &&
        !callee_function.metadata.force_inline) return false;

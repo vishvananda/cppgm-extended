@@ -271,6 +271,11 @@ struct Instruction
     MI_NEG,
     MI_NOT,
     MI_BSWAP,
+    // Bit scans in place (`bsf r, r`, `bsr r, r`): LowIR ctz, and clz with a
+    // following xor by the width less one.  A zero operand leaves the result
+    // unspecified, as LowIR allows.
+    MI_BSF,
+    MI_BSR,
     // MI_CMP may name one memory operand when the other operand is encodable.
     MI_CMP,
     MI_TEST,
@@ -279,6 +284,10 @@ struct Instruction
     // the ABI return carrier while its compare operands retain their selected
     // source locations.
     MI_SETCC,
+    // `cmov<condition> destination, source` (64-bit form): LowIR select, the
+    // destination holding the value for a zero condition and taking the source
+    // when the preceding compare sets the condition.
+    MI_CMOV,
     // MI_MOVZX defines a complete zero-valued or one-valued GPR result. A
     // following narrow integer consumer needs no second normalization.
     MI_MOVZX,

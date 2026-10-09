@@ -448,6 +448,8 @@ protected:
 				LOW_OP_NONE;
 			if (instruction.op == LOW_OP_NONE)
 				ThrowLoweringSource("unsupported binary operator");
+			instruction.no_wrap =
+				SignedArithmeticNoWrap(instruction.op, operand_type);
 		}
 		derived.Emit(instruction);
 		return result;
@@ -497,6 +499,7 @@ protected:
 			divide.second =
 				Operand(static_cast<std::int64_t>(element_size), LowI64());
 		}
+		divide.exact = true;
 		derived.Emit(divide);
 		return result;
 	}
@@ -561,6 +564,7 @@ protected:
 			binary.dest = new_value.id;
 			binary.op = op == OP_INC ? LOW_OP_ADD : LOW_OP_SUB;
 			binary.type = type;
+			binary.no_wrap = SignedArithmeticNoWrap(binary.op, type);
 			binary.first = old_value;
 			binary.second = Operand(1, type);
 			derived.Emit(binary);

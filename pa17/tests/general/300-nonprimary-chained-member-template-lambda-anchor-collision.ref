@@ -24,8 +24,8 @@ function @nonprimary_chained_lambda__run() -> i32 [binding=weak, object=_ZN25non
     %t4 = addr $arg__5
     eh_try ^cleanup_action_3
     %t5 = call i32 @nonprimary_chained_lambda__second_void___postcondition(%t1, %t4)
-    store i32 %t5, $call__1
-    %t6 = load i32 $call__1
+    store typed i32 %t5, $call__1
+    %t6 = load typed i32 $call__1
     call void @nonprimary_chained_lambda__second_void____second(%t1)
     eh_end
     jump ^call_unwind_end_4
@@ -47,37 +47,37 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t3 = load i32 @nonprimary_chained_lambda__side_effect
+    %t3 = load typed i32 @nonprimary_chained_lambda__side_effect
     %t4 = cmp eq i32 %t3, 2
     %t5 = cmp ne i64 %t4, 0
-    store i64 %t5, $land__2
+    store typed i64 %t5, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t6 = load i64 $land__2
+    %t6 = load typed i64 $land__2
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @nonprimary_chained_lambda__second_void____second(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN25nonprimary_chained_lambda6secondIvED1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @nonprimary_chained_lambda__second_void___postcondition(%this : ptr [object_bytes=1], %f : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=internal, object=_ZN25nonprimary_chained_lambda6secondIvE13postconditionIZNS_3runEvEUlvE0_EEiRKT_, inline_hint=yes] {
@@ -85,9 +85,9 @@ function @nonprimary_chained_lambda__second_void___postcondition(%this : ptr [ob
   slot $f : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %f, $f
-    %t1 = load ptr $f
+    store typed ptr %this, $this
+    store typed ptr %f, $f
+    %t1 = load typed ptr $f
     call void @nonprimary_chained_lambda____lambda_nonprimary_chained_lambda__run_t114_114_n1__operator__(%t1)
     return i32 0
 }
@@ -96,16 +96,16 @@ function @nonprimary_chained_lambda__first_void___old(%ret : ptr [pass=indirect_
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @nonprimary_chained_lambda____lambda_nonprimary_chained_lambda__run_t114_114_n1__operator__(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZZN25nonprimary_chained_lambda3runEvENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 2, @nonprimary_chained_lambda__side_effect
+    store typed ptr %this, $this
+    store typed i32 2, @nonprimary_chained_lambda__side_effect
     return void
 }
 alias object _ZN25nonprimary_chained_lambda6secondIvED2Ev = @nonprimary_chained_lambda__second_void____second

@@ -4,7 +4,7 @@ global @__constexpr_template__1 [storage=readonly, binding=internal] = {
   i8 97
 }
 
-function @count_chars(%first : ptr, %last : ptr, %value : ptr [pass=by_address, object_bytes=1], %project : obj<1x1>) -> i64 [binding=strong, object=_Z11count_charsPcS_RKc8identity] {
+function @count_chars(%first : ptr, %last : ptr, %value : ptr [pass=by_address, object_bytes=1], %project : obj<1x1> [classes=none]) -> i64 [binding=strong, object=_Z11count_charsPcS_RKc8identity] {
   slot $first : ptr
   slot $last : ptr
   slot $value : ptr
@@ -12,24 +12,24 @@ function @count_chars(%first : ptr, %last : ptr, %value : ptr [pass=by_address, 
   slot $result : i64
 
   block ^entry:
-    store ptr %first, $first
-    store ptr %last, $last
-    store ptr %value, $value
-    store i64 0, $result
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    store typed ptr %value, $value
+    store typed i64 0, $result
     jump ^for_cond_1
 
   block ^for_cond_1:
-    %t1 = load ptr $first
-    %t2 = load ptr $last
+    %t1 = load typed ptr $first
+    %t2 = load typed ptr $last
     %t3 = cmp ne ptr %t1, %t2
     branch %t3, ^for_body_2, ^for_end_4
 
   block ^for_body_2:
     %t4 = addr $project
-    %t5 = load ptr $first
+    %t5 = load typed ptr $first
     %t6 = call ptr @invoke__ov2(%t4, %t5)
     %t7 = load i8 %t6
-    %t8 = load ptr $value
+    %t8 = load typed ptr $value
     %t9 = load i8 %t8
     %t10 = convert sext i32 i8 %t7
     %t11 = convert sext i32 i8 %t9
@@ -37,9 +37,9 @@ function @count_chars(%first : ptr, %last : ptr, %value : ptr [pass=by_address, 
     branch %t12, ^if_then_5, ^if_else_6
 
   block ^if_then_5:
-    %t13 = load i64 $result
-    %t14 = binary add i64 %t13, 1
-    store i64 %t14, $result
+    %t13 = load typed i64 $result
+    %t14 = binary add nowrap i64 %t13, 1
+    store typed i64 %t14, $result
     jump ^if_end_7
 
   block ^if_else_6:
@@ -49,13 +49,13 @@ function @count_chars(%first : ptr, %last : ptr, %value : ptr [pass=by_address, 
     jump ^for_iter_3
 
   block ^for_iter_3:
-    %t15 = load ptr $first
+    %t15 = load typed ptr $first
     %t16 = index i8 %t15, 1
-    store ptr %t16, $first
+    store typed ptr %t16, $first
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t17 = load i64 $result
+    %t17 = load typed i64 $result
     return i64 %t17
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -77,15 +77,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }
 function @invoke__ov2(%function : ptr [pass=by_address, object_bytes=1], %argument : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak, object=_Z6invokeIR8identityRcEDTclscT_fp_scT0_fp0_EEOS3_OS4_] {
@@ -93,10 +93,10 @@ function @invoke__ov2(%function : ptr [pass=by_address, object_bytes=1], %argume
   slot $argument : ptr
 
   block ^entry:
-    store ptr %function, $function
-    store ptr %argument, $argument
-    %t1 = load ptr $function
-    %t2 = load ptr $argument
+    store typed ptr %function, $function
+    store typed ptr %argument, $argument
+    %t1 = load typed ptr $function
+    %t2 = load typed ptr $argument
     %t3 = call ptr @identity__operator__(%t1, %t2)
     return ptr %t3
 }
@@ -105,9 +105,9 @@ function @identity__operator__(%this : ptr [object_bytes=1], %value : ptr [pass=
   slot $value : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %this, $this
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = call ptr @forward_like(%t1)
     return ptr %t2
 }
@@ -115,7 +115,7 @@ function @forward_like(%value : ptr [pass=by_address, object_bytes=1]) -> ptr [b
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     return ptr %t1
 }

@@ -13,6 +13,6 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     %t3 = convert zext i128 i64 %t2
     %t4 = addr @x
     %t5 = call i32 @pick(%t3, %t4)
-    store i32 %t5, @selected
+    store typed i32 %t5, @selected
     return void
 }

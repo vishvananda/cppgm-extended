@@ -6,15 +6,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t2 = load i32 $cond__1
+    %t2 = load typed i32 $cond__1
     return i32 %t2
 }
 function @boost__container__test__test_emplace() -> u8 [binding=weak, object=_ZN5boost9container4test12test_emplaceI1VEEbv] {
@@ -42,9 +42,9 @@ function @boost__container__test__test_expected_container(%__param0 : ptr [pass=
   slot $__param3 : u32
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
-    store u32 %__param2, $__param2
-    store u32 %__param3, $__param3
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
+    store typed u32 %__param2, $__param2
+    store typed u32 %__param3, $__param3
     return u8 1
 }

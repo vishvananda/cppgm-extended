@@ -18,38 +18,38 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $value
     %t9 = index i8 %t8, 0
     %t10 = index i8 [projection=field] %t9, 8
-    %t11 = load i64 %t10
+    %t11 = load typed i64 %t10
     %t12 = cmp eq i64 %t11, 0
     %t13 = cmp ne i64 %t12, 0
-    store i64 %t13, $land__2
+    store typed i64 %t13, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t14 = load i64 $land__2
+    %t14 = load typed i64 $land__2
     branch %t14, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load i32 $cond__1
+    %t15 = load typed i32 $cond__1
     return i32 %t15
 }
 function @YValue__YValue(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN6YValueC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     zeroinit 16x8 %t2
     return void

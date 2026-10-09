@@ -11,22 +11,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $values
     %t2 = addr $values
     %t3 = call ptr @pointer()
-    store ptr %t3, $refarg__2
+    store typed ptr %t3, $refarg__2
     %t4 = addr $refarg__2
     %t5 = call i32 @Values__operator____ov2(%t2, %t4)
     %t6 = cmp eq i32 %t5, 2
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @Values__operator____ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN6ValuesixEOPK6Entity, inline_hint=yes] {
@@ -34,7 +34,7 @@ function @Values__operator____ov2(%this : ptr [object_bytes=1], %__param1 : ptr 
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return i32 2
 }

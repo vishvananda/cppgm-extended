@@ -5,8 +5,8 @@ function @get(%ret : ptr [pass=indirect_result, object_bytes=4], %source : ptr [
   slot $source : ptr
 
   block ^entry:
-    store ptr %source, $source
-    %t1 = load ptr $source
+    store typed ptr %source, $source
+    %t1 = load typed ptr $source
     %t2 = call ptr @my_move(%t1)
     call void @Box__Box__ov3(%ret, %t2)
     return void
@@ -27,75 +27,75 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @get(%t2, %t3)
     %t4 = addr $result
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
+    %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 7
     branch %t7, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
     %t8 = addr $source
     %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load i32 %t9
+    %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 0
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $land__4
+    store typed i64 %t12, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
-    store i64 0, $land__4
+    store typed i64 0, $land__4
     jump ^land_end_12
 
   block ^land_end_12:
-    %t13 = load i64 $land__4
+    %t13 = load typed i64 $land__4
     branch %t13, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t14 = load i32 @moves
+    %t14 = load typed i32 @moves
     %t15 = cmp eq i32 %t14, 1
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $land__3
+    store typed i64 %t16, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_9
 
   block ^land_end_9:
-    %t17 = load i64 $land__3
+    %t17 = load typed i64 $land__3
     branch %t17, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t18 = load i32 @copies
+    %t18 = load typed i32 @copies
     %t19 = cmp eq i32 %t18, 0
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $land__2
+    store typed i64 %t20, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t21 = load i64 $land__2
+    %t21 = load typed i64 $land__2
     branch %t21, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load i32 $cond__1
+    %t22 = load typed i32 $cond__1
     return i32 %t22
 }
 function @my_move(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z7my_moveI3BoxEOT_RS1_] {
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     return ptr %t1
 }
 function @Box__Box__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1EOS_, inline_hint=yes] {
@@ -103,27 +103,27 @@ function @Box__Box__ov3(%this : ptr [alias=noalias, object_bytes=4], %other : pt
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load i32 @moves
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @moves
-    %t8 = load ptr $other
+    store typed i32 %t3, %t5
+    %t6 = load typed i32 @moves
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @moves
+    %t8 = load typed ptr $other
     %t9 = index i8 [projection=field] %t8, 0
-    store i32 0, %t9
+    store typed i32 0, %t9
     return void
 }
 function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxD1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box__Box(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
@@ -131,12 +131,12 @@ function @Box__Box(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN3BoxC2EOS_ = @Box__Box__ov3

@@ -3,9 +3,9 @@ function @observe(%value : ptr [pass=by_address, object_bytes=4], %x : ptr [pass
   slot $x : ptr
 
   block ^entry:
-    store ptr %value, $value
-    store ptr %x, $x
-    %t1 = load ptr $x
+    store typed ptr %value, $value
+    store typed ptr %x, $x
+    %t1 = load typed ptr $x
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = unary neg i32 1
     %t4 = binary and i32 %t3, 7
@@ -15,8 +15,8 @@ function @observe(%value : ptr [pass=by_address, object_bytes=4], %x : ptr [pass
     %t8 = binary and i32 %t7, 4294967288
     %t9 = binary or i32 %t8, %t4
     store i32 %t9, %t2
-    %t10 = load ptr $value
-    %t11 = load i32 %t10
+    %t10 = load typed ptr $value
+    %t11 = load typed i32 %t10
     return i32 %t11
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -38,9 +38,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = binary and i32 %t7, 7
     %t9 = binary shl i32 %t8, 29
     %t10 = binary shr i32 %t9, 29
-    store i32 %t10, $tmpref__1
+    store typed i32 %t10, $tmpref__1
     %t11 = addr $tmpref__1
-    store ptr %t11, $snapshot
+    store typed ptr %t11, $snapshot
     %t12 = addr $x
     %t13 = index i8 [projection=field] %t12, 0
     %t14 = unary neg i32 1
@@ -51,8 +51,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = binary and i32 %t18, 4294967288
     %t20 = binary or i32 %t19, %t15
     store i32 %t20, %t13
-    %t21 = load ptr $snapshot
-    %t22 = load i32 %t21
+    %t21 = load typed ptr $snapshot
+    %t22 = load typed i32 %t21
     %t23 = cmp ne i32 %t22, 3
     branch %t23, ^if_then_1, ^lor_rhs_4
 
@@ -89,7 +89,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t43 = binary and i32 %t42, 7
     %t44 = binary shl i32 %t43, 29
     %t45 = binary shr i32 %t44, 29
-    store i32 %t45, $refarg__3
+    store typed i32 %t45, $refarg__3
     %t46 = addr $refarg__3
     %t47 = addr $x
     %t48 = call i32 @observe(%t46, %t47)
@@ -106,15 +106,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t56 = unary neg i32 1
     %t57 = cmp ne i32 %t55, %t56
     %t58 = cmp ne i64 %t57, 0
-    store i64 %t58, $lor__2
+    store typed i64 %t58, $lor__2
     jump ^lor_end_7
 
   block ^lor_short_6:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_7
 
   block ^lor_end_7:
-    %t59 = load i64 $lor__2
+    %t59 = load typed i64 $lor__2
     %t60 = convert trunc i32 i64 %t59
     return i32 %t60
 }

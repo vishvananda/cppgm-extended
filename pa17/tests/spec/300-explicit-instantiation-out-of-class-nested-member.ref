@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = call obj<4x4> @adaptor_int___range_false___begin(%t3)
     copyobj 4x4 %t6, %t2
     %t7 = index i8 [projection=field] %t2, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     return i32 %t8
 }
 function @adaptor_int___data(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK7adaptorIiE4dataEv, object_root=yes] {
@@ -21,7 +21,7 @@ function @adaptor_int___data(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
     return obj<4x4> $retobj__1
 }
@@ -30,7 +30,7 @@ function @adaptor_int___range_false___begin(%this : ptr [object_bytes=4]) -> obj
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
     call void @adaptor_int___range_false___iterator__iterator(%t1)
     return obj<4x4> $retobj__1
@@ -39,10 +39,10 @@ function @adaptor_int___range_false___iterator__iterator(%this : ptr [object_byt
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 alias object _ZN7adaptorIiE5rangeILb0EE8iteratorC2Ev = @adaptor_int___range_false___iterator__iterator

@@ -6,8 +6,8 @@ function @run(%kind : i32) -> void [binding=strong, object=_Z3runi] {
   slot $call__1 : u8
 
   block ^entry:
-    store i32 %kind, $kind
-    %t1 = load i32 $kind
+    store typed i32 %kind, $kind
+    %t1 = load typed i32 $kind
     %t2 = cmp eq i32 %t1, 1
     branch %t2, ^if_then_1, ^if_else_2
 
@@ -54,7 +54,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     call void @run(0)
-    %t1 = load i32 @destroyed
+    %t1 = load typed i32 @destroyed
     %t2 = cmp ne i32 %t1, 0
     branch %t2, ^if_then_1, ^if_else_2
 
@@ -66,20 +66,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     call void @run(1)
-    %t3 = load i32 @destroyed
+    %t3 = load typed i32 @destroyed
     %t4 = cmp eq i32 %t3, 1
     branch %t4, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_6
 
   block ^cond_else_5:
-    store i32 2, $cond__1
+    store typed i32 2, $cond__1
     jump ^cond_end_6
 
   block ^cond_end_6:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @probe__probe(%this : ptr [object_bytes=1], %input : u8) -> void [binding=weak, object=_ZN5probeC1Eb, inline_hint=yes] {
@@ -87,10 +87,10 @@ function @probe__probe(%this : ptr [object_bytes=1], %input : u8) -> void [bindi
   slot $input : u8
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     store u8 %input, $input
     %t1 = load u8 $input
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store u8 %t1, %t3
     return void
@@ -99,8 +99,8 @@ function @probe__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak,
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load u8 %t2
     return u8 %t3
@@ -109,10 +109,10 @@ function @probe___probe(%this : ptr [object_bytes=1]) -> void [unwind=no, bindin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
     return void
 }
 alias object _ZN5probeC2Eb = @probe__probe

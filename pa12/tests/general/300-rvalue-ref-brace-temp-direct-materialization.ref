@@ -12,7 +12,7 @@ function @assign_from_empty_braces() -> i32 [binding=strong, object=_Z24assign_f
     %t5 = addr $box
     %t6 = index i8 %t5, 0
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     return i32 %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -24,23 +24,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @Base__Base__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
@@ -48,7 +48,7 @@ function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
     call void @Base___Base(%t4)
     eh_end
@@ -58,7 +58,7 @@ function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=we
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN3BoxaSEOS_, inline_hint=yes] {
@@ -66,31 +66,31 @@ function @Box__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $__param1
+    %t3 = load typed ptr $__param1
     %t4 = index i8 %t3, 0
     %t5 = call ptr @Base__operator_(%t2, %t4)
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     return ptr %t6
 }
 function @Base__Base__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
+    store typed i32 7, %t2
     return void
 }
 function @Base___Base(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Base__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN4BaseaSEOS_, inline_hint=yes] {
@@ -98,18 +98,18 @@ function @Base__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_ad
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load ptr $other
+    store typed i32 %t3, %t5
+    %t6 = load typed ptr $other
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 0, %t7
-    %t8 = load ptr $this
+    store typed i32 0, %t7
+    %t8 = load typed ptr $this
     return ptr %t8
 }
 alias object _ZN3BoxC2Ev = @Box__Box

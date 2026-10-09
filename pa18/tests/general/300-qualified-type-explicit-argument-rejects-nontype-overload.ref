@@ -7,8 +7,8 @@ function @n__op__g(%a : i32) -> void [binding=weak, object=_ZN1n2op1gIiEEvT_] {
   slot $a : i32
 
   block ^entry:
-    store i32 %a, $a
-    %t1 = load i32 $a
+    store typed i32 %a, $a
+    %t1 = load typed i32 $a
     call void @n__f(%t1)
     return void
 }
@@ -16,6 +16,6 @@ function @n__f(%__param0 : i32) -> void [binding=weak, object=_ZN1n1fIiNS_1OEEEv
   slot $__param0 : i32
 
   block ^entry:
-    store i32 %__param0, $__param0
+    store typed i32 %__param0, $__param0
     return void
 }

@@ -19,18 +19,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^condaddr_then_1:
     %t3 = addr $a
-    store ptr %t3, $condaddr__1
+    store typed ptr %t3, $condaddr__1
     jump ^condaddr_end_3
 
   block ^condaddr_else_2:
     %t4 = addr $b
-    store ptr %t4, $condaddr__1
+    store typed ptr %t4, $condaddr__1
     jump ^condaddr_end_3
 
   block ^condaddr_end_3:
-    %t5 = load ptr $condaddr__1
+    %t5 = load typed ptr $condaddr__1
     %t6 = index i32 [projection=array_element] %t5, 0
-    %t7 = load i32 %t6
-    %t8 = binary sub i32 %t7, 3
+    %t7 = load typed i32 %t6
+    %t8 = binary sub nowrap i32 %t7, 3
     return i32 %t8
 }

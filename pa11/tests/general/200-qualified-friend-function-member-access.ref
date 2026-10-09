@@ -3,14 +3,14 @@ function @N__eq(%a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_ad
   slot $b : ptr
 
   block ^entry:
-    store ptr %a, $a
-    store ptr %b, $b
-    %t1 = load ptr $a
+    store typed ptr %a, $a
+    store typed ptr %b, $b
+    %t1 = load typed ptr $a
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $b
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $b
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
+    %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t3, %t6
     %t8 = convert trunc i32 i64 %t7
     return i32 %t8
@@ -29,15 +29,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t4 = load i32 $cond__1
+    %t4 = load typed i32 $cond__1
     return i32 %t4
 }
 function @N__X__X(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak, object=_ZN1N1XC1Ei, inline_hint=yes] {
@@ -45,12 +45,12 @@ function @N__X__X(%this : ptr [object_bytes=4], %x : i32) -> void [binding=weak,
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN1N1XC2Ei = @N__X__X

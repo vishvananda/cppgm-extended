@@ -65,6 +65,8 @@ struct LowOperation
     LOP_NOT,
     LOP_BITNOT,
     LOP_BSWAP,
+    LOP_CTZ,
+    LOP_CLZ,
     LOP_ADD,
     LOP_SUB,
     LOP_MUL,
@@ -222,8 +224,30 @@ struct SymbolMetadata
   bool force_inline = false;
   bool inline_hint = false;
   bool no_inline = false;
+  // `replaceable=yes` with binding=weak: a GNU weak definition, which a
+  // strong definition elsewhere replaces at link time, unlike the identical
+  // copies of a vague-linkage one.  Nothing may inline, specialize or
+  // discard it, or read its initializer as the value.
+  bool replaceable = false;
   bool inferred_legacy_role = false;
 };
+
+// The SysV x86-64 classes of a direct object parameter or result
+// (lowir.md "Object ABI Conventions"): two bits for each eightbyte, the
+// first in the low bits (1 none, 2 integer, 3 sse), or
+// kObjectClassesMemory.  0 states nothing: every eightbyte is INTEGER.
+const std::uint8_t kObjectClassesMemory = 0x80;
+// The spelling of nonzero classes: `sse`, `integer_sse`, `memory`, ...
+std::string object_classes_text(std::uint8_t classes);
+// Parses a spelling for an object of `bytes` bytes; false when invalid.
+bool parse_object_classes(const std::string & text, std::size_t bytes,
+                          std::uint8_t * classes);
+// The class of eightbyte `index` (1 none, 2 integer, 3 sse); INTEGER when
+// the classes state nothing.
+inline unsigned object_eightbyte_class(std::uint8_t classes, std::size_t index)
+{
+  return classes == 0 ? 2u : (classes >> (2 * index)) & 3u;
+}
 
 struct ParameterMetadata
 {
@@ -233,6 +257,8 @@ struct ParameterMetadata
   // Calls may retain the pointer, but accesses based on it remain within
   // [pointer, pointer + object_bytes).
   std::size_t object_bytes = 0;
+  // `classes=...` on a direct object parameter (object_classes_text).
+  std::uint8_t classes = 0;
 };
 
 struct Parameter
@@ -351,7 +377,10 @@ struct Instruction
     // instruction identities remain stable.  args stores alternating
     // OP_LABEL/typed-value operands.
     IK_PHI,
-    IK_UNREACHABLE
+    IK_UNREACHABLE,
+    // `select <type> <cond>, <a>, <b>`: first is the condition, second and
+    // third the values chosen when it is nonzero and when it is zero.
+    IK_SELECT
   } kind = IK_CONST;
 
   ValueId dest;
@@ -363,6 +392,14 @@ struct Instruction
   // A volatile access is observable behavior: passes may not remove, merge,
   // reorder, or forward it, and its storage may not be promoted away.
   bool volatile_access = false;
+  // Instruction facts (lowir.md "Instruction Facts"): `typed` on a load or
+  // store, `nowrap` and `exact` on a binary operation.  Each holds every
+  // time the instruction runs; a pass that moves the instruction to where it
+  // may run when it did not, or rewrites it into a different computation,
+  // clears them (drop_instruction_facts).
+  bool typed_access = false;
+  bool no_wrap = false;
+  bool exact = false;
   // The source producer has established that this direct copy/move
   // construction may be omitted under the source-language copy-elision
   // rules.  Omission is conservative; O0 executes the ordinary call.
@@ -381,6 +418,13 @@ struct Instruction
   FunctionBoundaryMetadata call_boundary;
   InstructionDebugLocation debug_location;
 };
+
+inline void drop_instruction_facts(Instruction & instruction)
+{
+  instruction.typed_access = false;
+  instruction.no_wrap = false;
+  instruction.exact = false;
+}
 
 struct Block
 {

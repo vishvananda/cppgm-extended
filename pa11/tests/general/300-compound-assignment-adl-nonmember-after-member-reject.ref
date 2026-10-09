@@ -3,12 +3,12 @@ function @boost__operator__(%target : ptr [pass=by_address, object_bytes=4], %__
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %target, $target
-    store ptr %__param1, $__param1
-    %t1 = load ptr $target
+    store typed ptr %target, $target
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $target
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    %t3 = load ptr $target
+    store typed i32 7, %t2
+    %t3 = load typed ptr $target
     return ptr %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -27,28 +27,28 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $h
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load i32 %t9
+    %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 7
     branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load i32 $cond__1
+    %t12 = load typed i32 $cond__1
     return i32 %t12
 }
 function @Holder__Holder(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @lib__String__String(%t2)
     return void
@@ -57,10 +57,10 @@ function @lib__String__String(%this : ptr [object_bytes=4]) -> void [binding=wea
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 alias object _ZN6HolderC2Ev = @Holder__Holder

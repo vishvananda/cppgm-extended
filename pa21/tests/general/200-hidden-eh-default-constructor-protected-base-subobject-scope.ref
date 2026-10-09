@@ -15,8 +15,8 @@ function @maker__maker(%this : ptr [object_bytes=1]) -> void [unwind=no, binding
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @service_maker__service_maker__base_entry(%t2)
     return void
@@ -26,11 +26,11 @@ function @io_context__io_context(%this : ptr [object_bytes=1], %initial : ptr [p
   slot $initial : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %initial, $initial
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %initial, $initial
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $initial
+    %t3 = load typed ptr $initial
     call void @context__context__base_entry(%t2, %t3)
     return void
 }
@@ -38,15 +38,15 @@ function @maker___maker(%this : ptr [object_bytes=1]) -> void [unwind=no, bindin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @service_maker__service_maker__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN13service_makerC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @noncopyable__noncopyable__base_entry(%t2)
     return void
@@ -56,9 +56,9 @@ function @context__context__base_entry(%this : ptr [object_bytes=1], %initial : 
   slot $initial : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %initial, $initial
-    %t1 = load ptr $initial
+    store typed ptr %this, $this
+    store typed ptr %initial, $initial
+    %t1 = load typed ptr $initial
     call void @service_maker__make(%t1)
     return void
 }
@@ -66,14 +66,14 @@ function @noncopyable__noncopyable__base_entry(%this : ptr [object_bytes=1]) -> 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @service_maker__make(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZNK13service_maker4makeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN5makerC2Ev = @maker__maker

@@ -6,39 +6,39 @@ function @poll(%port : ptr, %device : ptr [pass=by_address, object_bytes=8]) -> 
   slot $indirect : ptr
 
   block ^entry:
-    store ptr %port, $port
-    store ptr %device, $device
+    store typed ptr %port, $port
+    store typed ptr %device, $device
     store volatile i32 0, $gate
     store volatile i32 1, $gate
     %t1 = load volatile i32 $gate
-    %t2 = binary add i32 %t1, 2
+    %t2 = binary add nowrap i32 %t1, 2
     store volatile i32 %t2, $gate
     %t3 = load volatile i32 $gate
-    %t4 = binary add i32 %t3, 1
+    %t4 = binary add nowrap i32 %t3, 1
     store volatile i32 %t4, $gate
-    %t5 = load ptr $port
+    %t5 = load typed ptr $port
     %t6 = load volatile i32 %t5
-    store i32 %t6, $sampled
-    %t7 = load i32 $sampled
-    %t8 = load ptr $device
+    store typed i32 %t6, $sampled
+    %t7 = load typed i32 $sampled
+    %t8 = load typed ptr $device
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load volatile i32 %t9
-    %t11 = binary add i32 %t7, %t10
-    store i32 %t11, $sampled
-    %t12 = load i32 $sampled
-    %t13 = load ptr $device
+    %t11 = binary add nowrap i32 %t7, %t10
+    store typed i32 %t11, $sampled
+    %t12 = load typed i32 $sampled
+    %t13 = load typed ptr $device
     %t14 = index i8 [projection=field] %t13, 0
     store volatile i32 %t12, %t14
-    %t15 = load i32 $sampled
-    %t16 = load ptr $device
+    %t15 = load typed i32 $sampled
+    %t16 = load typed ptr $device
     %t17 = index i8 [projection=field] %t16, 4
-    store i32 %t15, %t17
+    store typed i32 %t15, %t17
     %t18 = addr $gate
-    store ptr %t18, $indirect
-    %t19 = load ptr $indirect
+    store typed ptr %t18, $indirect
+    %t19 = load typed ptr $indirect
     %t20 = load volatile i32 %t19
     %t21 = load volatile i32 $gate
-    %t22 = binary add i32 %t20, %t21
+    %t22 = binary add nowrap i32 %t20, %t21
     return i32 %t22
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -54,7 +54,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store volatile i32 0, %t3
     %t4 = addr $device
     %t5 = index i8 [projection=field] %t4, 4
-    store i32 0, %t5
+    store typed i32 0, %t5
     %t6 = addr $devices
     call void @Device__Device__aggregate(%t6, 0, 0)
     %t7 = index i8 %t6, 8
@@ -127,11 +127,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_3
 
   block ^if_end_3:
-    store i32 5, $port
+    store typed i32 5, $port
     %t48 = addr $port
     %t49 = addr $device
     %t50 = call i32 @poll(%t48, %t49)
-    %t51 = binary sub i32 %t50, 14
+    %t51 = binary sub nowrap i32 %t50, 14
     return i32 %t51
 }
 function @Device__Device__aggregate(%this : ptr, %status : i32, %data : i32) -> void [unwind=no, binding=internal] {
@@ -140,16 +140,16 @@ function @Device__Device__aggregate(%this : ptr, %status : i32, %data : i32) -> 
   slot $data : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %status, $status
-    store i32 %data, $data
-    %t1 = load i32 $status
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %status, $status
+    store typed i32 %data, $data
+    %t1 = load typed i32 $status
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store volatile i32 %t1, %t3
-    %t4 = load i32 $data
-    %t5 = load ptr $this
+    %t4 = load typed i32 $data
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }

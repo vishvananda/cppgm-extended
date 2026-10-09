@@ -22,7 +22,7 @@ function @n__inner__run() -> i32 [binding=strong, object=_ZN1n5inner3runEv] {
     %t1 = addr $a
     %t2 = addr $a
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 0, %t3
+    store typed i32 0, %t3
     %t4 = addr $argobj__1
     %t5 = addr $a
     copyobj 4x4 %t5, %t4
@@ -32,6 +32,6 @@ function @n__inner__run() -> i32 [binding=strong, object=_ZN1n5inner3runEv] {
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i32 @n__inner__run()
-    %t2 = binary sub i32 %t1, 1
+    %t2 = binary sub nowrap i32 %t1, 1
     return i32 %t2
 }

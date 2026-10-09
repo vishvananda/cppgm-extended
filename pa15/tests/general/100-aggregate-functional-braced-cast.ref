@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<1x1> @make()
     return i32 0
 }
-function @make() -> obj<1x1> [binding=weak, object=_Z4makeI5arrayI4itemLi2EEE6resultIT_Ev] {
+function @make() -> obj<1x1> [result_classes=none, binding=weak, object=_Z4makeI5arrayI4itemLi2EEE6resultIT_Ev] {
   slot $retobj__1 : obj<1x1>
   slot $argobj__2 : obj<1x1>
   slot $arg__3 : obj<2x1>
@@ -27,18 +27,18 @@ function @item__item(%this : ptr [object_bytes=1], %__param1 : i32) -> void [bin
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return void
 }
-function @result___cppgm_class_template_identity_1_1_0___result___cppgm_class_template_identity_1_1_0_(%this : ptr [object_bytes=1], %__param1 : obj<1x1>, %__param2 : ptr [pass=by_address, object_bytes=2]) -> void [binding=weak, object=_ZN6resultI5arrayI4itemLi2EEEC1E3tagOS2_, inline_hint=yes] {
+function @result___cppgm_class_template_identity_1_1_0___result___cppgm_class_template_identity_1_1_0_(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none], %__param2 : ptr [pass=by_address, object_bytes=2]) -> void [binding=weak, object=_ZN6resultI5arrayI4itemLi2EEEC1E3tagOS2_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param2, $__param2
     return void
 }
 alias object _ZN4itemC2Ei = @item__item

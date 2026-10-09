@@ -37,26 +37,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = convert sext i32 i8 %t23
     %t25 = cmp eq i32 %t24, 0
     %t26 = cmp ne i64 %t25, 0
-    store i64 %t26, $land__2
+    store typed i64 %t26, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t27 = load i64 $land__2
+    %t27 = load typed i64 $land__2
     branch %t27, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t28 = load i32 $cond__1
+    %t28 = load typed i32 $cond__1
     return i32 %t28
 }

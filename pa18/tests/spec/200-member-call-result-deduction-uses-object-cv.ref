@@ -7,8 +7,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $holder
     %t2 = addr $holder
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 1, %t3
-    store i32 2, $other
+    store typed i32 1, %t3
+    store typed i32 2, $other
     %t4 = addr $holder
     %t5 = call ptr @Holder__get__ov2(%t4)
     %t6 = addr $other
@@ -17,23 +17,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     return i32 %t9
 }
 function @Holder__get__ov2(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN6Holder3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
@@ -42,7 +42,7 @@ function @same_mutable(%__param0 : ptr [pass=by_address, object_bytes=4], %__par
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return i32 1
 }

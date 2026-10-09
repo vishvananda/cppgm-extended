@@ -18,9 +18,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @sink(4)
     %t2 = load u8 @value
     %t3 = convert zext i32 u8 %t2
-    %t4 = binary add i32 %t1, %t3
+    %t4 = binary add nowrap i32 %t1, %t3
     %t5 = load u8 $local
     %t6 = convert zext i32 u8 %t5
-    %t7 = binary add i32 %t4, %t6
+    %t7 = binary add nowrap i32 %t4, %t6
     return i32 %t7
 }

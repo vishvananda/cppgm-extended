@@ -25,20 +25,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x4 %t2, %t1
     %t3 = addr $value
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 9
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @leaf__result_char___result_typename___retained_template_parameter_shape_0_(%this : ptr [object_bytes=4], %input : i32) -> void [binding=weak, object=_ZN4leaf6resultIcEC1Ei, inline_hint=yes] {
@@ -46,12 +46,12 @@ function @leaf__result_char___result_typename___retained_template_parameter_shap
   slot $input : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @leaf__result_char___error(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK4leaf6resultIcE5errorEv, inline_hint=yes] {
@@ -59,11 +59,11 @@ function @leaf__result_char___error(%this : ptr [object_bytes=4]) -> obj<4x4> [b
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     call void @leaf____cppgm_class_template_identity_0_1_0__error_result__error_result__aggregate(%t1, %t4)
     return obj<4x4> $retobj__1
 }
@@ -72,11 +72,11 @@ function @leaf__result_char___error_result__operatorresult_U_(%this : ptr [objec
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     call void @leaf__result_int___result_typename___retained_template_parameter_shape_0_(%t1, %t4)
     return obj<4x4> $retobj__1
 }
@@ -85,12 +85,12 @@ function @leaf__result_int___result_typename___retained_template_parameter_shape
   slot $input : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @leaf____cppgm_class_template_identity_0_1_0__error_result__error_result__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
@@ -98,12 +98,12 @@ function @leaf____cppgm_class_template_identity_0_1_0__error_result__error_resul
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN4leaf6resultIcEC2Ei = @leaf__result_char___result_typename___retained_template_parameter_shape_0_

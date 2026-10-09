@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Box_int___reset(3)
     %t1 = call u8 @Box_int___read()
     %t2 = convert zext i32 u8 %t1
-    %t3 = binary sub i32 %t2, 3
+    %t3 = binary sub nowrap i32 %t2, 3
     return i32 %t3
 }
 function @Box_int___reset(%v : u8) -> void [binding=weak, object=_ZN3BoxIiE5resetEh, inline_hint=yes] {

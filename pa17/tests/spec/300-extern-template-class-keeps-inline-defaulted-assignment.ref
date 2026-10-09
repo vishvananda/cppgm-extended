@@ -3,10 +3,10 @@ function @assign(%target : ptr [pass=by_address, object_bytes=1], %source : ptr 
   slot $source : ptr
 
   block ^entry:
-    store ptr %target, $target
-    store ptr %source, $source
-    %t1 = load ptr $target
-    %t2 = load ptr $source
+    store typed ptr %target, $target
+    store typed ptr %source, $source
+    %t1 = load typed ptr $target
+    %t2 = load typed ptr $source
     %t3 = call ptr @empty_allocator_char___operator_(%t1, %t2)
     return void
 }
@@ -27,8 +27,8 @@ function @empty_allocator_char___operator_(%this : ptr [object_bytes=1], %__para
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
     return ptr %t1
 }

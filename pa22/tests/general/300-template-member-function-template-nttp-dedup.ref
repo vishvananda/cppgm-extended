@@ -14,9 +14,9 @@ function @f__on(%this : ptr [object_bytes=1], %__param1 : i8) -> void [binding=w
   slot $__param1 : i8
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     store i8 %__param1, $__param1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     call void @f__push(%t1, 120)
     return void
 }
@@ -25,9 +25,9 @@ function @f__push(%this : ptr [object_bytes=1], %c : i8) -> void [binding=weak, 
   slot $c : i8
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     store i8 %c, $c
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = load i8 $c
     call void @machine_f___push(%t2, %t3)
@@ -38,9 +38,9 @@ function @machine_f___row_0__int__0__f__on___execute(%d : ptr [pass=by_address, 
   slot $event : i8
 
   block ^entry:
-    store ptr %d, $d
+    store typed ptr %d, $d
     store i8 %event, $event
-    %t1 = load ptr $d
+    %t1 = load typed ptr $d
     %t2 = load i8 $event
     %t3 = addr @f__on
     call void %t3(%t1, %t2) as (%arg0 : ptr [object_bytes=1], %arg1 : i8) -> void
@@ -51,9 +51,9 @@ function @machine_f___row_0__int__0__f__push___execute(%d : ptr [pass=by_address
   slot $event : i8
 
   block ^entry:
-    store ptr %d, $d
+    store typed ptr %d, $d
     store i8 %event, $event
-    %t1 = load ptr $d
+    %t1 = load typed ptr $d
     %t2 = load i8 $event
     %t3 = addr @f__push
     call void %t3(%t1, %t2) as (%arg0 : ptr [object_bytes=1], %arg1 : i8) -> void
@@ -64,7 +64,7 @@ function @machine_f___push(%this : ptr [object_bytes=1], %__param1 : i8) -> void
   slot $__param1 : i8
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     store i8 %__param1, $__param1
     return void
 }

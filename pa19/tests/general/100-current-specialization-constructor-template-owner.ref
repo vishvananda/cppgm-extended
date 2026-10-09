@@ -8,19 +8,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 8x8 %t2, %t1
     %t3 = addr $h
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load ptr %t4
+    %t5 = load typed ptr %t4
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load i32 $cond__1
+    %t6 = load typed i32 $cond__1
     return i32 %t6
 }
 function @holder_int___make(%p : ptr) -> obj<8x8> [binding=weak, object=_ZN6holderIiE4makeIiEES0_PT_, inline_hint=yes] {
@@ -28,9 +28,9 @@ function @holder_int___make(%p : ptr) -> obj<8x8> [binding=weak, object=_ZN6hold
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %p, $p
+    store typed ptr %p, $p
     %t1 = addr $retobj__1
-    %t2 = load ptr $p
+    %t2 = load typed ptr $p
     call void @holder_int___holder_int___ov3(%t1, %t2)
     return obj<8x8> $retobj__1
 }
@@ -39,12 +39,12 @@ function @holder_int___holder_int___ov3(%this : ptr [object_bytes=8], %p : ptr) 
   slot $p : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %p, $p
-    %t1 = load ptr $p
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 alias object _ZN6holderIiEC2IiEEPT_ = @holder_int___holder_int___ov3

@@ -25,15 +25,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Empty__Empty(%t5, %t6, %t8)
     %t10 = addr $holder
     %t11 = index i8 [projection=field] %t10, 4
-    store i32 7, %t11
-    %t12 = load i32 @alive
+    store typed i32 7, %t11
+    %t12 = load typed i32 @alive
     %t13 = cmp ne i32 %t12, 2
     branch %t13, ^if_then_1, ^lor_rhs_4
 
   block ^lor_rhs_4:
     %t14 = addr $holder
     %t15 = index i8 [projection=field] %t14, 4
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 7
     branch %t17, ^if_then_1, ^if_else_2
 
@@ -52,40 +52,40 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Token___Token(%t20)
     %t21 = addr $first
     call void @Token___Token(%t21)
-    %t22 = load i32 @alive
+    %t22 = load typed i32 @alive
     %t23 = cmp eq i32 %t22, 0
     branch %t23, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
-    store i32 0, $cond__3
+    store typed i32 0, $cond__3
     jump ^cond_end_7
 
   block ^cond_else_6:
-    store i32 2, $cond__3
+    store typed i32 2, $cond__3
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t24 = load i32 $cond__3
+    %t24 = load typed i32 $cond__3
     return i32 %t24
 }
 function @Token__Token(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5TokenC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @alive
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @alive
+    store typed ptr %this, $this
+    %t1 = load typed i32 @alive
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @alive
     return void
 }
 function @Token___Token(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5TokenD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @alive
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @alive
+    store typed ptr %this, $this
+    %t1 = load typed i32 @alive
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @alive
     return void
 }
 function @Token__Token__ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5TokenC1ERKS_, inline_hint=yes] {
@@ -93,11 +93,11 @@ function @Token__Token__ov2(%this : ptr [alias=noalias, object_bytes=1], %__para
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load i32 @alive
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @alive
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed i32 @alive
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @alive
     return void
 }
 function @Empty__Empty(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5EmptyC1E5TokenS0_, inline_hint=yes] {
@@ -106,7 +106,7 @@ function @Empty__Empty(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_ad
   slot $__param2 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     call void @Token___Token(%__param2)
     call void @Token___Token(%__param1)
     return void

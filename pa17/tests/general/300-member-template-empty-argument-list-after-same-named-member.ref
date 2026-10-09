@@ -44,15 +44,15 @@ function @pair_like_int__long_int___check_args__enable_explicit_default() -> u8 
     %t2 = call u8 @pair_like_int__long_int___check_args__enable_implicit_default()
     %t3 = cmp eq u8 %t2, 0
     %t4 = cmp ne i64 %t3, 0
-    store i64 %t4, $land__1
+    store typed i64 %t4, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
-    store i64 0, $land__1
+    store typed i64 0, $land__1
     jump ^land_end_3
 
   block ^land_end_3:
-    %t5 = load i64 $land__1
+    %t5 = load typed i64 $land__1
     %t6 = convert trunc u8 i64 %t5
     return u8 %t6
 }

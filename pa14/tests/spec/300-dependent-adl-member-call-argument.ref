@@ -9,7 +9,7 @@ function @user__find(%first : obj<4x4>, %__param1 : obj<4x4>, %__param2 : i32) -
     copyobj 4x4 %first, %t1
     %t2 = addr $__param1
     copyobj 4x4 %__param1, %t2
-    store i32 %__param2, $__param2
+    store typed i32 %__param2, $__param2
     %t3 = addr $retobj__1
     %t4 = addr $first
     copyobj 4x4 %t4, %t3
@@ -27,15 +27,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @check_int___run(%this : ptr [object_bytes=1], %needle : i32) -> i32 [binding=weak, object=_ZN5checkIiE3runEi, inline_hint=yes] {
@@ -46,27 +46,27 @@ function @check_int___run(%this : ptr [object_bytes=1], %needle : i32) -> i32 [b
   slot $argobj__2 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %needle, $needle
+    store typed ptr %this, $this
+    store typed i32 %needle, $needle
     %t1 = addr $it
     %t2 = addr $argobj__1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = call obj<4x4> @user__list_like__begin(%t5)
     copyobj 4x4 %t6, %t2
     %t7 = addr $argobj__2
-    %t8 = load ptr $this
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 0
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = call obj<4x4> @user__list_like__end(%t10)
     copyobj 4x4 %t11, %t7
-    %t12 = load i32 $needle
+    %t12 = load typed i32 $needle
     %t13 = call obj<4x4> @user__find($argobj__1, $argobj__2, %t12)
     copyobj 4x4 %t13, %t1
     %t14 = addr $it
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     return i32 %t16
 }
 function @user__list_like__begin(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZN4user9list_like5beginEv, inline_hint=yes] {
@@ -75,11 +75,11 @@ function @user__list_like__begin(%this : ptr [object_bytes=1]) -> obj<4x4> [bind
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $result
     %t2 = addr $result
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 7, %t3
+    store typed i32 7, %t3
     %t4 = addr $retobj__1
     %t5 = addr $result
     copyobj 4x4 %t5, %t4
@@ -91,11 +91,11 @@ function @user__list_like__end(%this : ptr [object_bytes=1]) -> obj<4x4> [bindin
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $result
     %t2 = addr $result
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 9, %t3
+    store typed i32 9, %t3
     %t4 = addr $retobj__1
     %t5 = addr $result
     copyobj 4x4 %t5, %t4

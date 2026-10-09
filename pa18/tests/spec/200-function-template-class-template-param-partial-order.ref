@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $g
-    store i32 0, $s
+    store typed i32 0, $s
     %t2 = addr $p
     %t3 = addr $d
     %t4 = addr $w
@@ -32,7 +32,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = addr $params
     %t10 = addr $result
     %t11 = addr $g
-    %t12 = load i32 $s
+    %t12 = load typed i32 $s
     %t13 = addr $argobj__1
     %t14 = addr $p
     %t15 = addr $argobj__2
@@ -56,18 +56,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t31, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__8
+    store typed i32 0, $cond__8
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__8
+    store typed i32 1, $cond__8
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t32 = load i32 $cond__8
+    %t32 = load typed i32 $cond__8
     return i32 %t32
 }
-function @dijkstra_shortest_paths(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i32, %__param2 : obj<1x1>, %__param3 : obj<1x1>, %__param4 : obj<1x1>, %__param5 : obj<1x1>, %__param6 : obj<1x1>, %__param7 : obj<1x1>, %__param8 : i32, %__param9 : i32, %__param10 : obj<1x1>, %__param11 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_Z23dijkstra_shortest_pathsI5graph7visitor4pred4dist6weight5index7compare7combineiiiiiE12named_choiceRKT_N12graph_traitsIS9_E17vertex_descriptorET1_T2_T3_T4_T5_T6_T7_T8_T0_RK12named_paramsIT9_TA_TB_E] {
+function @dijkstra_shortest_paths(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i32, %__param2 : obj<1x1> [classes=none], %__param3 : obj<1x1> [classes=none], %__param4 : obj<1x1> [classes=none], %__param5 : obj<1x1> [classes=none], %__param6 : obj<1x1> [classes=none], %__param7 : obj<1x1> [classes=none], %__param8 : i32, %__param9 : i32, %__param10 : obj<1x1> [classes=none], %__param11 : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [binding=weak, object=_Z23dijkstra_shortest_pathsI5graph7visitor4pred4dist6weight5index7compare7combineiiiiiE12named_choiceRKT_N12graph_traitsIS9_E17vertex_descriptorET1_T2_T3_T4_T5_T6_T7_T8_T0_RK12named_paramsIT9_TA_TB_E] {
   slot $__param0 : ptr
   slot $__param1 : i32
   slot $__param2 : obj<1x1>
@@ -83,11 +83,11 @@ function @dijkstra_shortest_paths(%__param0 : ptr [pass=by_address, object_bytes
   slot $retobj__1 : obj<1x1>
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store i32 %__param1, $__param1
-    store i32 %__param8, $__param8
-    store i32 %__param9, $__param9
-    store ptr %__param11, $__param11
+    store typed ptr %__param0, $__param0
+    store typed i32 %__param1, $__param1
+    store typed i32 %__param8, $__param8
+    store typed i32 %__param9, $__param9
+    store typed ptr %__param11, $__param11
     %t1 = addr $retobj__1
     return obj<1x1> $retobj__1
 }

@@ -17,9 +17,9 @@ function @unsigned_empty_functional_cast_call_arg__take(%value : u32, %__param1 
   slot $__param1 : ptr
 
   block ^entry:
-    store u32 %value, $value
-    store ptr %__param1, $__param1
-    %t1 = load u32 $value
+    store typed u32 %value, $value
+    store typed ptr %__param1, $__param1
+    %t1 = load typed u32 $value
     return u32 %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

@@ -5,10 +5,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $box
     %t2 = addr $box
-    store i32 0, $refarg__1
+    store typed i32 0, $refarg__1
     %t3 = addr $refarg__1
     %t4 = call i32 @LambdaBox_int___run(%t2, %t3)
-    %t5 = binary sub i32 %t4, 1
+    %t5 = binary sub nowrap i32 %t4, 1
     return i32 %t5
 }
 function @LambdaBox_int___run(%this : ptr [object_bytes=1], %args : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZN9LambdaBoxIiE3runIJiEEEiDpOT_, inline_hint=yes] {
@@ -19,17 +19,17 @@ function @LambdaBox_int___run(%this : ptr [object_bytes=1], %args : ptr [pass=by
   slot $argobj__2 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %args, $args
-    store i32 0, $value
+    store typed ptr %this, $this
+    store typed ptr %args, $args
+    store typed i32 0, $value
     %t1 = addr $argobj__1
     %t2 = addr $value
-    store ptr %t2, %t1
+    store typed ptr %t2, %t1
     %t3 = addr $argobj__2
     %t4 = addr $value
-    store ptr %t4, %t3
+    store typed ptr %t4, %t3
     call void @std__helper(1, $argobj__1, $argobj__2)
-    %t5 = load i32 $value
+    %t5 = load typed i32 $value
     return i32 %t5
 }
 function @std__helper(%cond : u8, %if_fn : obj<8x8>, %else_fn : obj<8x8>) -> void [binding=internal, object=_ZSt6helperIZN9LambdaBoxIiE3runIJiEEEiDpOT_EUlvE_ZNS2_IJiEEEiS5_EUlvE0_EvbT_T0_] {
@@ -63,21 +63,21 @@ function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    store i32 1, %t3
+    %t3 = load typed ptr %t2
+    store typed i32 1, %t3
     return void
 }
 function @__cppgm_class_template_identity_0_0_0____lambda___cppgm_class_template_identity_0_0_0__run__int_t90_90_n1__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZN9LambdaBoxIiE3runIJiEEEiDpOT_ENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    store i32 2, %t3
+    %t3 = load typed ptr %t2
+    store typed i32 2, %t3
     return void
 }

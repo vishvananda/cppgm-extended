@@ -11,15 +11,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @service__make(%value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN7service4makeIK6objectEEiRT_, inline_hint=yes] {
@@ -27,9 +27,9 @@ function @service__make(%value : ptr [pass=by_address, object_bytes=1]) -> i32 [
   slot $tmpobj__1 : obj<1x1>
 
   block ^entry:
-    store ptr %value, $value
+    store typed ptr %value, $value
     %t1 = addr $tmpobj__1
-    %t2 = load ptr $value
+    %t2 = load typed ptr $value
     call void @service__wrapper_object_const__void___wrapper_object_const__void_(%t1, %t2)
     %t3 = call i32 @service__wrapper_object_const__void___get(%t1)
     return i32 %t3
@@ -39,15 +39,15 @@ function @service__wrapper_object_const__void___wrapper_object_const__void_(%thi
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @service__wrapper_object_const__void___get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK7service7wrapperIK6objectvE3getEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }
 alias object _ZN7service7wrapperIK6objectvEC2ERS2_ = @service__wrapper_object_const__void___wrapper_object_const__void_

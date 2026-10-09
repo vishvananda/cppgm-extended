@@ -5,7 +5,7 @@ global @X__n : i32 [storage=thread_local, binding=strong, object=_ZN1X1nE] = 1
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call ptr @__cppgm_tls_wrapper__X__n()
-    %t2 = load i32 %t1
-    %t3 = binary sub i32 %t2, 1
+    %t2 = load typed i32 %t1
+    %t3 = binary sub nowrap i32 %t2, 1
     return i32 %t3
 }

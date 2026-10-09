@@ -137,13 +137,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Combined__Combined(%t1)
     %t2 = addr $combined
     %t3 = index i8 %t2, 0
-    %t4 = load ptr %t3
-    %t5 = load ptr %t4
+    %t4 = load typed ptr %t3
+    %t5 = load typed ptr %t4
     call void %t5(%t3) as (%arg0 : ptr [object_bytes=8]) -> void
     %t6 = addr $combined
     %t7 = index i8 %t6, 8
-    %t8 = load ptr %t7
-    %t9 = load ptr %t8
+    %t8 = load typed ptr %t7
+    %t9 = load typed ptr %t8
     call void %t9(%t7) as (%arg0 : ptr [object_bytes=8]) -> void
     return i32 0
 }
@@ -151,86 +151,86 @@ function @Derived1__f(%this : ptr [object_bytes=8]) -> void [binding=weak, objec
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Derived2__f(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8Derived21fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Combined__Combined(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN8CombinedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @Derived1__Derived1__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 8
     call void @Derived2__Derived2__base_entry(%t4)
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = addr @Combined__vtable
     %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
-    %t8 = load ptr $this
+    store typed ptr %t7, %t5
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 8
     %t10 = addr @Combined____view__Derived2__8__vtable
     %t11 = index i8 %t10, 16
-    store ptr %t11, %t9
+    store typed ptr %t11, %t9
     return void
 }
 function @Derived1__Derived1__base_entry(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8Derived1C2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @Abstract__Abstract__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @Derived1__vtable
     %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @Derived2__Derived2__base_entry(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN8Derived2C2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @Abstract2__Abstract2__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @Derived2__vtable
     %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @Abstract__Abstract__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN8AbstractC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Abstract__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Abstract2__Abstract2__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN9Abstract2C2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Abstract2__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN8CombinedC2Ev = @Combined__Combined

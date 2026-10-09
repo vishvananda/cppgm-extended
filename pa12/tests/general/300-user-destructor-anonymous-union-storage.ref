@@ -10,14 +10,14 @@ function @holder__holder(%this : ptr [object_bytes=1]) -> void [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @holder___holder(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6holderD1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN6holderC2Ev = @holder__holder

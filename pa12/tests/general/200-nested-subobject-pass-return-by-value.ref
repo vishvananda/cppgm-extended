@@ -7,10 +7,10 @@ function @make() -> obj<8x4> [binding=strong, object=_Z4makev] {
     %t2 = addr $o
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 7, %t4
+    store typed i32 7, %t4
     %t5 = addr $o
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 3, %t6
+    store typed i32 3, %t6
     %t7 = addr $retobj__1
     %t8 = addr $o
     copyobj 8x4 %t8, %t7
@@ -25,7 +25,7 @@ function @read(%o : obj<8x4>) -> i32 [binding=strong, object=_Z4read5Outer] {
     %t2 = addr $o
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     return i32 %t5
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -36,6 +36,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<8x4> @make()
     copyobj 8x4 %t2, %t1
     %t3 = call i32 @read($argobj__1)
-    %t4 = binary sub i32 %t3, 7
+    %t4 = binary sub nowrap i32 %t3, 7
     return i32 %t4
 }

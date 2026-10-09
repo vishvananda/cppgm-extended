@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $copy : obj<16x8>
 
   block ^entry:
-    store i32 7, $value
+    store typed i32 7, $value
     %t1 = addr $source
     %t2 = addr $value
     %t3 = addr $value
@@ -14,9 +14,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 16x8 %t5, %t4
     %t6 = addr $copy
     %t7 = index i8 [projection=field] %t6, 8
-    %t8 = load ptr %t7
-    %t9 = load i32 %t8
-    %t10 = binary sub i32 %t9, 7
+    %t8 = load typed ptr %t7
+    %t9 = load typed i32 %t8
+    %t10 = binary sub nowrap i32 %t9, 7
     return i32 %t10
 }
 function @RefPair_int___RefPair_int_(%this : ptr [object_bytes=16], %first_value : ptr, %second_value : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN7RefPairIiEC1EPiRi, inline_hint=yes] {
@@ -25,17 +25,17 @@ function @RefPair_int___RefPair_int_(%this : ptr [object_bytes=16], %first_value
   slot $second_value : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %first_value, $first_value
-    store ptr %second_value, $second_value
-    %t1 = load ptr $first_value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %first_value, $first_value
+    store typed ptr %second_value, $second_value
+    %t1 = load typed ptr $first_value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $second_value
-    %t5 = load ptr $this
+    store typed ptr %t1, %t3
+    %t4 = load typed ptr $second_value
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 8
-    store ptr %t4, %t6
+    store typed ptr %t4, %t6
     return void
 }
 alias object _ZN7RefPairIiEC2EPiRi = @RefPair_int___RefPair_int_

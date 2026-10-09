@@ -6,14 +6,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $h
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 99, %t4
+    store typed i32 99, %t4
     %t5 = addr $h
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 1, %t6
+    store typed i32 1, %t6
     %t7 = addr $h
     %t8 = index i8 [projection=field] %t7, 0
     %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load i32 %t9
-    %t11 = binary sub i32 %t10, 99
+    %t10 = load typed i32 %t9
+    %t11 = binary sub nowrap i32 %t10, 99
     return i32 %t11
 }

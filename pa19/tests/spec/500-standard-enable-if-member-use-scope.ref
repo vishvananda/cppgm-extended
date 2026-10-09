@@ -7,15 +7,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @outer__call() -> i32 [binding=weak, object=_ZN5outer4callIiEEiv] {
@@ -25,7 +25,7 @@ function @outer__call() -> i32 [binding=weak, object=_ZN5outer4callIiEEiv] {
   block ^entry:
     %t1 = addr $enc
     %t2 = addr $enc
-    store i32 0, $refarg__1
+    store typed i32 0, $refarg__1
     %t3 = addr $refarg__1
     %t4 = call i32 @outer__helpers__serialize(%t2, %t3)
     return i32 %t4
@@ -35,7 +35,7 @@ function @outer__helpers__serialize(%__param0 : ptr [pass=by_address, object_byt
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return i32 7
 }

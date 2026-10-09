@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Item__Item(%t1)
     %t2 = addr $a
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 7, %t3
+    store typed i32 7, %t3
     %t4 = addr $b
     call void @Item__Item(%t4)
     %t5 = addr $a
@@ -15,17 +15,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = call ptr @Item__operator_(%t5, %t6)
     %t8 = addr $a
     %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load i32 %t9
+    %t10 = load typed i32 %t9
     return i32 %t10
 }
 function @Item__Item(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4ItemC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 function @Item__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN4ItemaSERKS_, inline_hint=yes] {
@@ -33,12 +33,12 @@ function @Item__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
-    %t2 = load ptr $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $__param1
     copyobj 4x4 %t2, %t1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     return ptr %t3
 }
 alias object _ZN4ItemC2Ev = @Item__Item

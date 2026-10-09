@@ -7,15 +7,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @check() -> i32 [binding=weak, object=_Z5checkIiEiv] {
@@ -29,26 +29,26 @@ function @check() -> i32 [binding=weak, object=_Z5checkIiEiv] {
     %t4 = call i32 @direct_wrapper_int___iterator__read(%t3)
     %t5 = addr $inherited
     %t6 = call i32 @inherited_wrapper_int___iterator__read(%t5)
-    %t7 = binary add i32 %t4, %t6
+    %t7 = binary add nowrap i32 %t4, %t6
     return i32 %t7
 }
 function @direct_wrapper_int___iterator__read(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN14direct_wrapperIiE8iterator4readEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }
 function @inherited_wrapper_int___iterator__read(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN17inherited_wrapperIiE8iterator4readEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 5, %t2
-    %t3 = load ptr $this
+    store typed i32 5, %t2
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     return i32 %t5
 }

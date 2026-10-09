@@ -12,15 +12,15 @@ function @Text__take(%this : ptr [object_bytes=1], %out : ptr, %n : i64, %pos : 
   slot $pos : i64
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %out, $out
-    store i64 %n, $n
-    store i64 %pos, $pos
-    %t1 = load ptr $out
+    store typed ptr %this, $this
+    store typed ptr %out, $out
+    store typed i64 %n, $n
+    store typed i64 %pos, $pos
+    %t1 = load typed ptr $out
     %t2 = index i8 [projection=array_element] %t1, 0
     store i8 120, %t2
-    %t3 = load i64 $n
-    %t4 = load i64 $pos
+    %t3 = load typed i64 $n
+    %t4 = load typed i64 $pos
     %t5 = binary add i64 %t3, %t4
     %t6 = convert trunc i32 i64 %t5
     return i32 %t6
@@ -43,14 +43,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     return i32 %t9
 }

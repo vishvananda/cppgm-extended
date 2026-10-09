@@ -12,22 +12,22 @@ function @get_table() -> ptr [binding=strong, object=_Z9get_tablev] {
 }
 function @read_table() -> i32 [binding=strong, object=_Z10read_tablev] {
   block ^entry:
-    %t1 = load i64 @__local_static__read_table__decl0__table__guard
+    %t1 = load typed i64 @__local_static__read_table__decl0__table__guard
     %t2 = cmp ne i64 %t1, 0
     branch %t2, ^local_static_ready_1, ^local_static_init_2
 
   block ^local_static_init_2:
     %t3 = addr @__local_static__read_table__decl0__table
     %t4 = call ptr @get_table()
-    store ptr %t4, %t3
-    store i64 1, @__local_static__read_table__decl0__table__guard
+    store typed ptr %t4, %t3
+    store typed i64 1, @__local_static__read_table__decl0__table__guard
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
-    %t5 = load ptr @__local_static__read_table__decl0__table
+    %t5 = load typed ptr @__local_static__read_table__decl0__table
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = index i32 [projection=array_element] %t6, 1
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     return i32 %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -39,14 +39,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }

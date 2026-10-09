@@ -17,19 +17,19 @@ function @Bits__Bits(%this : ptr [object_bytes=4]) -> void [binding=weak, object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = binary and u32 1, 1
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     store u32 %t1, %t3
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = load u32 %t5
     %t7 = binary and u32 %t6, 4294967289
     %t8 = binary and u32 3, 2
     %t9 = binary shl u32 %t8, 1
     %t10 = binary or u32 %t7, %t9
-    %t11 = load ptr $this
+    %t11 = load typed ptr $this
     %t12 = index i8 [projection=field] %t11, 0
     store u32 %t10, %t12
     return void
@@ -39,15 +39,15 @@ function @Bits__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_ad
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load u32 %t2
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     store u32 %t3, %t5
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     return ptr %t6
 }
 alias object _ZN4BitsC2Ev = @Bits__Bits

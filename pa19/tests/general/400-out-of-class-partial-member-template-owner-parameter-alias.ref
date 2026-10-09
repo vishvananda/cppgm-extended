@@ -10,54 +10,54 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $land__2 : i64
 
   block ^entry:
-    store i32 0, $value
+    store typed i32 0, $value
     %t1 = addr $value
-    store ptr %t1, $const_value
+    store typed ptr %t1, $const_value
     %t2 = addr $value
     %t3 = call ptr @traits_lvalue_reference_to_const_int__false___check__ov2(%t2)
-    store ptr %t3, $direct
-    %t4 = load ptr $const_value
+    store typed ptr %t3, $direct
+    %t4 = load typed ptr $const_value
     %t5 = call ptr @traits_lvalue_reference_to_const_int__false___check(%t4)
-    store ptr %t5, $const_direct
-    %t6 = load ptr $direct
-    %t7 = load i32 %t6
+    store typed ptr %t5, $const_direct
+    %t6 = load typed ptr $direct
+    %t7 = load typed i32 %t6
     %t8 = cmp eq i32 %t7, 7
     branch %t8, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t9 = load ptr $const_direct
-    %t10 = load i32 %t9
+    %t9 = load typed ptr $const_direct
+    %t10 = load typed i32 %t9
     %t11 = cmp eq i32 %t10, 7
     %t12 = cmp ne i64 %t11, 0
-    store i64 %t12, $land__2
+    store typed i64 %t12, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t13 = load i64 $land__2
+    %t13 = load typed i64 $land__2
     branch %t13, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load i32 $cond__1
+    %t14 = load typed i32 $cond__1
     return i32 %t14
 }
 function @traits_lvalue_reference_to_const_int__false___check__ov2(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN6traitsIRKiLb0EE5checkIiEEPiRT_] {
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = call ptr @peek__ov2(%t1)
     return ptr %t2
 }
@@ -65,8 +65,8 @@ function @traits_lvalue_reference_to_const_int__false___check(%value : ptr [pass
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = call ptr @peek(%t1)
     return ptr %t2
 }
@@ -74,7 +74,7 @@ function @peek__ov2(%__param0 : ptr [pass=by_address, object_bytes=4]) -> ptr [b
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     %t1 = addr @__local_static__function_symbol_5f5a347065656b4969694550545f5254305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32373a3132
     return ptr %t1
 }
@@ -82,7 +82,7 @@ function @peek(%__param0 : ptr [pass=by_address, object_bytes=4]) -> ptr [bindin
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     %t1 = addr @__local_static__function_symbol_5f5a347065656b49696945504b545f524b54305f__value__source2061742074657374732f67656e6572616c2f3430302d6f75742d6f662d636c6173732d7061727469616c2d6d656d6265722d74656d706c6174652d6f776e65722d706172616d657465722d616c6961732e743a32303a3132
     return ptr %t1
 }

@@ -40,12 +40,12 @@ function @make(%address : ptr, %value : ptr [pass=by_address, object_bytes=16]) 
   slot $value : ptr
 
   block ^entry:
-    store ptr %address, $address
-    store ptr %value, $value
+    store typed ptr %address, $address
+    store typed ptr %value, $value
     %t1 = convert sext i64 i32 16
-    %t2 = load ptr $address
+    %t2 = load typed ptr $address
     %t3 = call ptr @operatornew__ov2(%t1, %t2)
-    %t4 = load ptr $value
+    %t4 = load typed ptr $value
     call void @B__B(%t3, %t4)
     return void
 }

@@ -6,7 +6,7 @@ function @n__id(%x : obj<4x4>) -> i32 [binding=strong, object=_ZN1n2idENS_5token
     copyobj 4x4 %x, %t1
     %t2 = addr $x
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     return i32 %t4
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -23,12 +23,12 @@ function @n__token__token(%this : ptr [object_bytes=4], %x : i32) -> void [bindi
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN1n5tokenC2Ei = @n__token__token

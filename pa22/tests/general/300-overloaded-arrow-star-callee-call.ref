@@ -1,16 +1,16 @@
-function @operator___(%__param0 : obj<1x1>, %member : i64) -> obj<8x8> [binding=strong, object=_Zpm11PlaceholderM1Si] {
+function @operator___(%__param0 : obj<1x1> [classes=none], %member : i64) -> obj<8x8> [binding=strong, object=_Zpm11PlaceholderM1Si] {
   slot $__param0 : obj<1x1>
   slot $member : i64
   slot $result : obj<8x8>
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store i64 %member, $member
+    store typed i64 %member, $member
     %t1 = addr $result
-    %t2 = load i64 $member
+    %t2 = load typed i64 $member
     %t3 = addr $result
     %t4 = index i8 [projection=field] %t3, 0
-    store i64 %t2, %t4
+    store typed i64 %t2, %t4
     %t5 = addr $retobj__1
     %t6 = addr $result
     copyobj 8x8 %t6, %t5
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $s
     %t2 = addr $s
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 7, %t3
+    store typed i32 7, %t3
     %t4 = addr $_1
     %t5 = addr $tmpobj__2
     %t6 = addr $argobj__3
@@ -41,15 +41,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__1
+    %t13 = load typed i32 $cond__1
     return i32 %t13
 }
 function @DataMemberLambda__operator__(%this : ptr [object_bytes=8], %object : ptr) -> i32 [binding=weak, object=_ZNK16DataMemberLambdaclEP1S, inline_hint=yes] {
@@ -57,14 +57,14 @@ function @DataMemberLambda__operator__(%this : ptr [object_bytes=8], %object : p
   slot $object : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %object, $object
-    %t1 = load ptr $object
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %object, $object
+    %t1 = load typed ptr $object
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i64 %t3
+    %t4 = load typed i64 %t3
     %t5 = binary sub i64 %t4, 1
     %t6 = index i8 [projection=field] %t1, %t5
-    %t7 = load i32 %t6
+    %t7 = load typed i32 %t6
     return i32 %t7
 }

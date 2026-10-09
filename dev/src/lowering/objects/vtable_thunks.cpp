@@ -1,5 +1,6 @@
 #include "lowering/objects/polymorphism.h"
 
+#include "lowering/abi/symbol_metadata.h"
 #include "lowering/presentation/local_names.h"
 #include "lowering/core/source_types.h"
 #include "lowering/support/errors.h"
@@ -35,13 +36,16 @@ public:
 
 private:
 	void AddParameter(Function* function, std::uint32_t ordinal,
-		const LowType& type, bool reference)
+		const LowType& type, bool reference,
+		TypeId source = kNoType)
 	{
 		Parameter parameter;
 		parameter.name = lowering::presentation::InternOrdinalName(
 			output_, "arg", 3, ordinal);
 		parameter.type = type;
 		parameter.reference = reference;
+		if (type.kind == LOW_OBJECT)
+			parameter.classes = lowering::abi::SysvObjectClasses(program_, source);
 		function->parameters.push_back(parameter);
 	}
 
@@ -79,12 +83,15 @@ private:
 		Function function;
 		function.symbol = thunk.symbol;
 		function.result = source_types_.Lower(type.child);
+		if (function.result.kind == LOW_OBJECT)
+			function.result_classes =
+				lowering::abi::SysvObjectClasses(program_, type.child, true);
 		function.variadic = type.variadic;
 		AddParameter(&function, 0, LowPtr(), false);
 		for (std::size_t i = 0; i < type.parameter_count; ++i)
 			AddParameter(&function, static_cast<std::uint32_t>(i + 1),
 				source_types_.Lower(parameters[i]),
-				source_types_.IsReference(parameters[i]));
+				source_types_.IsReference(parameters[i]), parameters[i]);
 		function.blocks.push_back(lowering::presentation::MakePresentedBlock(
 			output_, &function,
 			lowering::presentation::ExactBlockPresentation(output_, "entry")));

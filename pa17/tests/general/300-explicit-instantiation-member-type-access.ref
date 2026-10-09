@@ -11,7 +11,7 @@ function @storage_char___analyze(%this : ptr [object_bytes=1], %__param1 : i8) -
   slot $__param1 : i8
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     store i8 %__param1, $__param1
     return ptr 0
 }

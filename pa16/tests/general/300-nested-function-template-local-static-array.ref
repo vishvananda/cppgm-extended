@@ -35,13 +35,13 @@ function @value() -> i32 [binding=weak, object=_Z5valueILi1EEiv] {
   block ^entry:
     %t1 = addr @__local_static__function_symbol_5f5a3576616c7565494c693145456976__decl0__data
     %t2 = index i32 [projection=array_element] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     return i32 %t3
 }
 function @value__ov2() -> i32 [binding=weak, object=_Z5valueILi2EEiv] {
   block ^entry:
     %t1 = addr @__local_static__function_symbol_5f5a3576616c7565494c693245456976__decl0__data
     %t2 = index i32 [projection=array_element] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     return i32 %t3
 }

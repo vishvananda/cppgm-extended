@@ -57,14 +57,14 @@ for my $test (@tests)
 			$test, $lowir, 'power_two_difference');
 		die "$test: power-of-two pointer difference did not use an " .
 			"arithmetic right shift\n"
-			if $power_two !~ /^\s+%\w+ = binary shr i64 %\w+, 3$/m;
+			if $power_two !~ /^\s+%\w+ = binary shr exact i64 %\w+, 3$/m;
 		die "$test: power-of-two pointer difference retained division\n"
-			if $power_two =~ /^\s+%\w+ = binary div i64 /m;
+			if $power_two =~ /^\s+%\w+ = binary div(?: exact)? i64 /m;
 
 		my $general = function_body($test, $lowir, 'general_difference');
 		die "$test: non-power-of-two pointer difference did not retain " .
 			"signed division by its element size\n"
-			if $general !~ /^\s+%\w+ = binary div i64 %\w+, 3$/m;
+			if $general !~ /^\s+%\w+ = binary div exact i64 %\w+, 3$/m;
 		next;
 	}
 	if ($test =~ /readonly-scalar-storage/) {
@@ -110,7 +110,7 @@ for my $test (@tests)
 			if $member !~ /^\s+%\w+ = load volatile i32 %\w+$/m ||
 			   $member !~ /^\s+store volatile i32 [^,]+, %\w+$/m;
 		die "$test: ordinary neighboring member store became volatile\n"
-			if $member !~ /^\s+store i32 [^,]+, %\w+$/m;
+			if $member !~ /^\s+store typed i32 [^,]+, %\w+$/m;
 		next;
 	}
 	if ($test =~ /builtin-memory-alias-boundaries/) {

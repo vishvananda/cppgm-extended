@@ -11,26 +11,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @item__item(%t3, 1, 2)
     %t4 = index i8 [projection=array_element] %t3, 8
     call void @item__item(%t4, 3, 4)
-    store ptr %t3, %t2
+    store typed ptr %t3, %t2
     %t5 = index i8 %t2, 8
-    store i64 2, %t5
+    store typed i64 2, %t5
     call void @Box__Box__ov3(%t1, $argobj__1)
     %t6 = addr $box
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 1
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__3
+    store typed i32 0, $cond__3
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__3
+    store typed i32 1, $cond__3
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__3
+    %t10 = load typed i32 $cond__3
     return i32 %t10
 }
 function @item__item(%this : ptr [object_bytes=8], %k : i32, %v : i32) -> void [binding=weak, object=_ZN4itemC1Eii, inline_hint=yes] {
@@ -39,17 +39,17 @@ function @item__item(%this : ptr [object_bytes=8], %k : i32, %v : i32) -> void [
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %k, $k
-    store i32 %v, $v
-    %t1 = load i32 $k
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %k, $k
+    store typed i32 %v, $v
+    %t1 = load typed i32 $k
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $v
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $v
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @Box__Box__ov3(%this : ptr [object_bytes=4], %__param1 : obj<16x8>) -> void [binding=weak, object=_ZN3BoxC1ESt16initializer_listI4itemE, inline_hint=yes] {
@@ -57,12 +57,12 @@ function @Box__Box__ov3(%this : ptr [object_bytes=4], %__param1 : obj<16x8>) -> 
   slot $__param1 : obj<16x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $__param1
     copyobj 16x8 %__param1, %t1
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 1, %t3
+    store typed i32 1, %t3
     return void
 }
 alias object _ZN4itemC2Eii = @item__item

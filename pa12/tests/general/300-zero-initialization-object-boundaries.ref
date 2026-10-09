@@ -21,18 +21,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = addr $volatile_value
     %t9 = index i8 %t8, 0
     %t10 = index i8 [projection=field] %t9, 8
-    %t11 = load i64 %t10
+    %t11 = load typed i64 %t10
     %t12 = cmp eq i64 %t11, 0
     %t13 = cmp ne i64 %t12, 0
-    store i64 %t13, $land__3
+    store typed i64 %t13, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_9
 
   block ^land_end_9:
-    %t14 = load i64 $land__3
+    %t14 = load typed i64 $land__3
     branch %t14, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
@@ -42,51 +42,51 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t18 = load i64 %t17
     %t19 = cmp eq i64 %t18, 0
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $land__2
+    store typed i64 %t20, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t21 = load i64 $land__2
+    %t21 = load typed i64 $land__2
     branch %t21, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load i32 $cond__1
+    %t22 = load typed i32 $cond__1
     return i32 %t22
 }
 function @YVolatileValue__YVolatileValue(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN14YVolatileValueC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    store i64 0, %t2
+    store typed i64 0, %t2
     %t3 = index i8 %t2, 8
-    store i64 0, %t3
+    store typed i64 0, %t3
     return void
 }
 function @YChoiceOwner__YChoiceOwner(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN12YChoiceOwnerC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i64 0, %t2
+    store typed i64 0, %t2
     %t3 = index i8 %t2, 8
-    store i64 0, %t3
+    store typed i64 0, %t3
     return void
 }
 alias object _ZN14YVolatileValueC2Ev = @YVolatileValue__YVolatileValue

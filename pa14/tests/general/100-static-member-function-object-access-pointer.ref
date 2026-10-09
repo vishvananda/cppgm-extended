@@ -10,15 +10,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @stream__xalloc() -> i32 [binding=weak, object=_ZN6stream6xallocEv, inline_hint=yes] {
@@ -29,8 +29,8 @@ function @get_xalloc_index(%xalloc : ptr) -> i32 [binding=weak, object=_Z16get_x
   slot $xalloc : ptr
 
   block ^entry:
-    store ptr %xalloc, $xalloc
-    %t1 = load ptr $xalloc
+    store typed ptr %xalloc, $xalloc
+    %t1 = load typed ptr $xalloc
     %t2 = call i32 %t1() as () -> i32
     return i32 %t2
 }

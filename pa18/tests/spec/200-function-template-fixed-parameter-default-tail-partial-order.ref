@@ -10,13 +10,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $g
     %t2 = addr $r
     %t3 = convert sext i64 i32 1
-    store i64 %t3, $n_vertices
+    store typed i64 %t3, $n_vertices
     %t4 = convert sext i64 i32 2
-    store i64 %t4, $n_edges
+    store typed i64 %t4, $n_edges
     %t5 = addr $result
     %t6 = addr $g
-    %t7 = load i64 $n_vertices
-    %t8 = load i64 $n_edges
+    %t7 = load typed i64 $n_vertices
+    %t8 = load typed i64 $n_edges
     %t9 = addr $r
     %t10 = call obj<1x1> @generate_random_graph(%t6, %t7, %t8, %t9, 1, 1)
     copyobj 1x1 %t10, %t5
@@ -26,15 +26,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t13, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load i32 $cond__1
+    %t14 = load typed i32 $cond__1
     return i32 %t14
 }
 function @generate_random_graph(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : i64, %__param2 : i64, %__param3 : ptr [pass=by_address, object_bytes=1], %__param4 : u8, %__param5 : u8) -> obj<1x1> [binding=weak, object=_Z21generate_random_graphI5graph3rngE12fixed_choiceRT_N12graph_traitsIS3_E18vertices_size_typeES7_RT0_bb] {
@@ -47,10 +47,10 @@ function @generate_random_graph(%__param0 : ptr [pass=by_address, object_bytes=1
   slot $retobj__1 : obj<1x1>
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store i64 %__param1, $__param1
-    store i64 %__param2, $__param2
-    store ptr %__param3, $__param3
+    store typed ptr %__param0, $__param0
+    store typed i64 %__param1, $__param1
+    store typed i64 %__param2, $__param2
+    store typed ptr %__param3, $__param3
     store u8 %__param4, $__param4
     store u8 %__param5, $__param5
     %t1 = addr $retobj__1

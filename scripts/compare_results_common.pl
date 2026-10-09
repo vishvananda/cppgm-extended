@@ -786,6 +786,11 @@ sub parse_lowir_parameter_metadata_suffix
 				if $value !~ /^[1-9][0-9]*$/;
 			$metadata{object_bytes} = $value;
 		}
+		elsif ($key eq 'classes')
+		{
+			return (0, "invalid parameter classes '$value'")
+				if $value !~ /^(?:memory|(?:none|integer|sse)(?:_(?:none|integer|sse))?)$/;
+		}
 		else
 		{
 			return (0, "unknown parameter metadata key '$key'");
@@ -863,6 +868,11 @@ sub parse_lowir_symbol_metadata_suffix
 				return (0, "unknown object_root mode '$value'")
 					if $value !~ /^(?:yes|no)$/;
 				$metadata{object_root} = $value;
+			}
+			elsif ($key eq 'replaceable')
+			{
+				return (0, "unknown replaceable mode '$value'")
+					if $value ne 'yes';
 			}
 			else
 			{
@@ -1001,6 +1011,16 @@ sub parse_lowir_function_metadata_suffix
 				return (0, "unknown no_inline mode '$value'")
 					unless $value eq 'yes' || $value eq 'no';
 				$metadata{no_inline} = $value;
+			}
+			elsif ($key eq 'replaceable')
+			{
+				return (0, "unknown replaceable mode '$value'")
+					if $value ne 'yes';
+			}
+			elsif ($key eq 'result_classes')
+			{
+				return (0, "invalid result classes '$value'")
+					if $value !~ /^(?:memory|(?:none|integer|sse)(?:_(?:none|integer|sse))?)$/;
 			}
 			else
 			{
@@ -1241,13 +1261,13 @@ sub validate_lowir_instruction
 		$state->{temps}{$1} = 'ptr';
 		return 0;
 	}
-	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*load\s+([A-Za-z0-9_]+)\s+(.+)$/)
+	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*load\s+(?:volatile\s+)?(?:typed\s+)?([A-Za-z0-9_]+)\s+(.+)$/)
 	{
 		validate_lowir_storage_operand($3, $2, $state, $errors, "$context load");
 		$state->{temps}{$1} = $2;
 		return 0;
 	}
-	if ($line =~ /^store\s+([A-Za-z0-9_]+)\s+(.+?),\s+(.+)$/)
+	if ($line =~ /^store\s+(?:volatile\s+)?(?:typed\s+)?([A-Za-z0-9_]+)\s+(.+?),\s+(.+)$/)
 	{
 		validate_lowir_value_operand_type($2, $1, $state, $errors, "$context store");
 		validate_lowir_storage_operand($3, $1, $state, $errors, "$context store");
@@ -1319,11 +1339,19 @@ sub validate_lowir_instruction
 		$state->{temps}{$1} = $3;
 		return 0;
 	}
-	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*binary\s+([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)\s+(.+?),\s+(.+)$/)
+	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*binary\s+([A-Za-z0-9_]+)(?:\s+nowrap)?(?:\s+exact)?\s+([A-Za-z0-9_]+)\s+(.+?),\s+(.+)$/)
 	{
 		validate_lowir_value_operand_type($4, $3, $state, $errors, "$context binary");
 		validate_lowir_value_operand_type($5, $3, $state, $errors, "$context binary");
 		$state->{temps}{$1} = $3;
+		return 0;
+	}
+	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*select\s+([A-Za-z0-9_]+)\s+(.+?),\s+(.+?),\s+(.+)$/)
+	{
+		validate_lowir_operand($3, $state, $errors, "$context select");
+		validate_lowir_value_operand_type($4, $2, $state, $errors, "$context select");
+		validate_lowir_value_operand_type($5, $2, $state, $errors, "$context select");
+		$state->{temps}{$1} = $2;
 		return 0;
 	}
 	if ($line =~ /^%([A-Za-z0-9_]+)\s*=\s*cmp\s+([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)\s+(.+?),\s+(.+)$/)
@@ -2353,8 +2381,8 @@ sub lowir_metadata_item_ignored_for_compare
 	# Validate full metadata, but do not make early source-to-LowIR oracles depend
 	# on later object/export policy or optional optimizer/provenance annotations.
 	return 1 if $key eq 'role' && $value =~ /^(?:allocate_memory|free_memory|terminate|pure_virtual|dynamic_cast|bad_cast|bad_typeid|rtti_class|rtti_si|rtti_vmi|rtti_data)$/;
-	return 1 if $key =~ /^(?:linkage|binding|object|tls_for|keep_alias|prefer_local|trivial_lifecycle|force_inline|inline_hint|no_inline)$/;
-	return 1 if $key =~ /^(?:effects|unwind|return|capture|access|alias|object_bytes|projection)$/;
+	return 1 if $key =~ /^(?:linkage|binding|replaceable|object|tls_for|keep_alias|prefer_local|trivial_lifecycle|force_inline|inline_hint|no_inline)$/;
+	return 1 if $key =~ /^(?:effects|unwind|return|capture|access|alias|object_bytes|projection|classes|result_classes)$/;
 	return 1 if $key eq 'pass' && $value eq 'decay';
 	return 1 if $key eq 'storage' && $value =~ /^(?:readonly|writable)$/;
 	return 0;
@@ -2727,7 +2755,7 @@ sub canonical_lowir_literal
 # line names one; undef for positions typed elsewhere (call arguments,
 # `index` offsets, atomic orderings, spans and addends).
 my $LOWIR_TYPE = qr/(?:[A-Za-z0-9_]+|obj<\d+x\d+>)/;
-my $LOWIR_TYPED_INSTRUCTION = qr/^\s*(?:%[A-Za-z0-9_<>]+\s*=\s*)?(?:const|copy|phi|store(?:\s+volatile)?|return|unary\s+\w+|binary\s+\w+|cmp\s+\w+|atomic_\w+|va_arg)\s+($LOWIR_TYPE)(?:\s|$)/;
+my $LOWIR_TYPED_INSTRUCTION = qr/^\s*(?:%[A-Za-z0-9_<>]+\s*=\s*)?(?:const|copy|phi|store(?:\s+volatile)?(?:\s+typed)?|return|unary\s+\w+|binary\s+\w+(?:\s+nowrap)?(?:\s+exact)?|cmp\s+\w+|select|atomic_\w+|va_arg)\s+($LOWIR_TYPE)(?:\s|$)/;
 my $LOWIR_TYPED_CONVERT = qr/^\s*%[A-Za-z0-9_<>]+\s*=\s*convert\s+\w+\s+$LOWIR_TYPE\s+($LOWIR_TYPE)\s/;
 my $LOWIR_TYPED_GLOBAL = qr/^global @[A-Za-z0-9_<>]+(?:\s+readonly)?\s*:\s*($LOWIR_TYPE)/;
 my $LOWIR_TYPED_DATA_ITEM = qr/^\s+($LOWIR_TYPE)\s+-?\S+\s*$/;
@@ -2772,7 +2800,7 @@ sub lowir_commutative_operand_order
 
 # `eq`, `ne`, `add`, `mul`, `and`, `or` and `xor` read the same with their
 # operands exchanged: temporaries before literals, then by text.
-my $LOWIR_COMMUTATIVE = qr/^([ \t]*%[A-Za-z0-9_<>]+[ \t]*=[ \t]*(?:binary[ \t]+(?:add|mul|and|or|xor)|cmp[ \t]+(?:eq|ne))[ \t]+$LOWIR_TYPE[ \t]+)([^\s,]+),[ \t]*([^\s,]+)((?:[ \t]+\S[^\n]*)?)$/m;
+my $LOWIR_COMMUTATIVE = qr/^([ \t]*%[A-Za-z0-9_<>]+[ \t]*=[ \t]*(?:binary[ \t]+(?:add|mul|and|or|xor)(?:[ \t]+nowrap)?|cmp[ \t]+(?:eq|ne))[ \t]+$LOWIR_TYPE[ \t]+)([^\s,]+),[ \t]*([^\s,]+)((?:[ \t]+\S[^\n]*)?)$/m;
 
 sub canonicalize_lowir_commutative_operands_for_compare
 {
@@ -3544,7 +3572,7 @@ sub canonicalize_lowir_tls_accesses_for_compare
 	for my $global (keys(%tls_globals))
 	{
 		my $address = '%__compare_tls_address_' . $global;
-		$data =~ s/^(\s*)(%[A-Za-z0-9_]+\s*=\s*load\s+([^\s]+)\s+)\@\Q$global\E\s*$/
+		$data =~ s/^(\s*)(%[A-Za-z0-9_]+\s*=\s*load\s+(?:volatile\s+)?(?:typed\s+)?([^\s]+)\s+)\@\Q$global\E\s*$/
 			$1 . $address . ' = addr @' . $global . "\n" .
 			$1 . $2 . $address/gem;
 	}

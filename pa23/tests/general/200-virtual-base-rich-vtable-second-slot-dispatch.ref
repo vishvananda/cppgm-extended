@@ -59,11 +59,11 @@ function @call_second(%value : ptr [pass=by_address, object_bytes=16]) -> i32 [b
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = load ptr %t1
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
+    %t2 = load typed ptr %t1
     %t3 = index i8 %t2, 8
-    %t4 = load ptr %t3
+    %t4 = load typed ptr %t3
     %t5 = call i32 %t4(%t1) as (%arg0 : ptr [object_bytes=16]) -> i32
     return i32 %t5
 }
@@ -71,20 +71,20 @@ function @derived__first(%this : ptr [object_bytes=16]) -> i32 [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 2
 }
 function @derived__second(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN7derived6secondEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 3
 }
 function @root__anchor(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN4root6anchorEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }

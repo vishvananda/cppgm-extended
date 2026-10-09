@@ -7,7 +7,7 @@ function @choose(%value : u32) -> void [binding=weak, object=_Z6chooseIjEvT_] {
   slot $value : u32
 
   block ^entry:
-    store u32 %value, $value
-    %t1 = load u32 $value
+    store typed u32 %value, $value
+    %t1 = load typed u32 $value
     return void
 }

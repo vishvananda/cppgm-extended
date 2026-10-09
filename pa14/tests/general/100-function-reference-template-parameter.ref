@@ -2,9 +2,9 @@ function @inc(%value : i32) -> i32 [binding=strong, object=_Z3inci] {
   slot $value : i32
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = binary add i32 %t1, 1
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -20,10 +20,10 @@ function @apply(%value : i32, %fn : ptr [pass=by_address]) -> i32 [binding=weak,
   slot $fn : ptr
 
   block ^entry:
-    store i32 %value, $value
-    store ptr %fn, $fn
-    %t1 = load i32 $value
-    %t2 = load ptr $fn
+    store typed i32 %value, $value
+    store typed ptr %fn, $fn
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $fn
     %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
     return i32 %t3
 }

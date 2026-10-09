@@ -22,7 +22,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     eh_try ^catch_dispatch_1
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t1
+    store typed i32 7, %t1
     %t2 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t1, %t2, 0)
     eh_end

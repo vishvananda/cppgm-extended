@@ -7,20 +7,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = addr $storage
     %t2 = call ptr @construct_at(%t1)
-    store ptr %t2, $box
-    %t3 = load ptr $box
+    store typed ptr %t2, $box
+    %t3 = load typed ptr $box
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
-    %t6 = binary sub i32 %t5, 7
+    %t5 = load typed i32 %t4
+    %t6 = binary sub nowrap i32 %t5, 7
     return i32 %t6
 }
 function @construct_at(%ptr : ptr) -> ptr [binding=weak, object=_Z12construct_atI3BoxJEPS0_EPT_S3_DpOT0_] {
   slot $ptr : ptr
 
   block ^entry:
-    store ptr %ptr, $ptr
+    store typed ptr %ptr, $ptr
     %t1 = convert sext i64 i32 4
-    %t2 = load ptr $ptr
+    %t2 = load typed ptr $ptr
     %t3 = call ptr @operatornew__ov2(%t1, %t2)
     call void @Box__Box(%t3)
     return ptr %t3
@@ -29,10 +29,10 @@ function @Box__Box(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
+    store typed i32 7, %t2
     return void
 }
 alias object _ZN3BoxC2Ev = @Box__Box

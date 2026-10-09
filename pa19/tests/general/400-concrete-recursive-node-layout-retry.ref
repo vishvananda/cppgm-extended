@@ -18,8 +18,8 @@ function @boost__container__c_recursive_slist___m_fn2(%this : ptr [object_bytes=
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @boost__container__de_boost__container____cppgm_class_template_identity_3_8_0__boost____cppgm_class_template_identity_36_78_0___m_fn5(%t2)
     return void
@@ -29,13 +29,13 @@ function @boost__container__de_boost__container____cppgm_class_template_identity
   slot $dh : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = call ptr @boost__container__de_boost__container____cppgm_class_template_identity_3_8_0__boost____cppgm_class_template_identity_36_78_0___m_fn1(%t1)
-    store ptr %t2, $dh
+    store typed ptr %t2, $dh
     %t3 = convert sext i64 i32 4
     %t4 = call ptr @operatornew(%t3)
-    %t5 = load ptr $dh
+    %t5 = load typed ptr $dh
     call void @boost__container__base_node_recursive_slist___base_node_recursive_slist___ov3(%t4, %t5)
     return void
 }

@@ -4,16 +4,16 @@ function @use(%p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong
   slot $fy : obj<1x1>
 
   block ^entry:
-    store ptr %p, $p
+    store typed ptr %p, $p
     %t1 = addr $fx
     %t2 = addr $fy
     %t3 = addr $fx
-    %t4 = load ptr $p
+    %t4 = load typed ptr $p
     %t5 = call i32 @foo_pair__x___bar(%t3, %t4)
     %t6 = addr $fy
-    %t7 = load ptr $p
+    %t7 = load typed ptr $p
     %t8 = call i32 @foo_pair__y___bar(%t6, %t7)
-    %t9 = binary add i32 %t5, %t8
+    %t9 = binary add nowrap i32 %t5, %t8
     return i32 %t9
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -25,12 +25,12 @@ function @foo_pair__x___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_addr
   slot $p : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %p, $p
-    %t1 = load ptr $p
+    store typed ptr %this, $this
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
     %t2 = binary sub i64 1, 1
     %t3 = index i8 [projection=field] %t1, %t2
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     return i32 %t4
 }
 function @foo_pair__y___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3fooIXadL_ZN4pair1yEEEE3barERS0_, inline_hint=yes] {
@@ -38,11 +38,11 @@ function @foo_pair__y___bar(%this : ptr [object_bytes=1], %p : ptr [pass=by_addr
   slot $p : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %p, $p
-    %t1 = load ptr $p
+    store typed ptr %this, $this
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
     %t2 = binary sub i64 5, 1
     %t3 = index i8 [projection=field] %t1, %t2
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     return i32 %t4
 }

@@ -9,10 +9,10 @@ function @model__operator__(%left : obj<8x8>, %right : obj<8x8>) -> u8 [binding=
     copyobj 8x8 %right, %t2
     %t3 = addr $left
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load ptr %t4
+    %t5 = load typed ptr %t4
     %t6 = addr $right
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load ptr %t7
+    %t8 = load typed ptr %t7
     %t9 = cmp ne ptr %t5, %t8
     %t10 = convert trunc u8 i64 %t9
     return u8 %t10
@@ -23,13 +23,13 @@ function @model__begin(%value : ptr [pass=by_address, object_bytes=8]) -> obj<8x
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %value, $value
+    store typed ptr %value, $value
     %t1 = addr $result
-    %t2 = load ptr $value
+    %t2 = load typed ptr $value
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = addr $result
     %t5 = index i8 [projection=field] %t4, 0
-    store ptr %t3, %t5
+    store typed ptr %t3, %t5
     %t6 = addr $retobj__1
     %t7 = addr $result
     copyobj 8x8 %t7, %t6
@@ -41,15 +41,15 @@ function @model__end(%value : ptr [pass=by_address, object_bytes=8]) -> obj<8x8>
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %value, $value
+    store typed ptr %value, $value
     %t1 = addr $result
-    %t2 = load ptr $value
+    %t2 = load typed ptr $value
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = binary mul i64 2, 4
     %t5 = index i8 %t3, %t4
     %t6 = addr $result
     %t7 = index i8 [projection=field] %t6, 0
-    store ptr %t5, %t7
+    store typed ptr %t5, %t7
     %t8 = addr $retobj__1
     %t9 = addr $result
     copyobj 8x8 %t9, %t8
@@ -72,13 +72,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $values
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i32 [projection=array_element] %t3, 0
-    store i32 3, %t4
+    store typed i32 3, %t4
     %t5 = addr $values
     %t6 = index i8 [projection=field] %t5, 0
     %t7 = index i32 [projection=array_element] %t6, 1
-    store i32 4, %t7
-    store i32 0, $end
-    store i32 0, $total
+    store typed i32 4, %t7
+    store typed i32 0, $end
+    store typed i32 0, $total
     %t8 = addr $__begin1
     %t9 = addr $values
     %t10 = call obj<8x8> @model__begin(%t9)
@@ -102,11 +102,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^for_body_2:
     %t19 = addr $__begin1
     %t20 = call i32 @model__iterator__operator_(%t19)
-    store i32 %t20, $value
-    %t21 = load i32 $total
-    %t22 = load i32 $value
-    %t23 = binary add i32 %t21, %t22
-    store i32 %t23, $total
+    store typed i32 %t20, $value
+    %t21 = load typed i32 $total
+    %t22 = load typed i32 $value
+    %t23 = binary add nowrap i32 %t21, %t22
+    store typed i32 %t23, $total
     jump ^for_iter_3
 
   block ^for_iter_3:
@@ -115,59 +115,59 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_cond_1
 
   block ^for_end_4:
-    %t26 = load i32 $total
+    %t26 = load typed i32 $total
     %t27 = cmp eq i32 %t26, 7
     branch %t27, ^land_rhs_8, ^land_short_9
 
   block ^land_rhs_8:
-    %t28 = load i32 $end
+    %t28 = load typed i32 $end
     %t29 = cmp eq i32 %t28, 0
     %t30 = cmp ne i64 %t29, 0
-    store i64 %t30, $land__4
+    store typed i64 %t30, $land__4
     jump ^land_end_10
 
   block ^land_short_9:
-    store i64 0, $land__4
+    store typed i64 0, $land__4
     jump ^land_end_10
 
   block ^land_end_10:
-    %t31 = load i64 $land__4
+    %t31 = load typed i64 $land__4
     branch %t31, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
-    store i32 0, $cond__3
+    store typed i32 0, $cond__3
     jump ^cond_end_7
 
   block ^cond_else_6:
-    store i32 1, $cond__3
+    store typed i32 1, $cond__3
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t32 = load i32 $cond__3
+    %t32 = load typed i32 $cond__3
     return i32 %t32
 }
 function @model__iterator__operator_(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK5model8iteratordeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load i32 %t3
+    %t3 = load typed ptr %t2
+    %t4 = load typed i32 %t3
     return i32 %t4
 }
 function @model__iterator__operator__(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZN5model8iteratorppEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     %t4 = binary mul i64 1, 4
     %t5 = index i8 %t3, %t4
-    store ptr %t5, %t2
-    %t6 = load ptr $this
+    store typed ptr %t5, %t2
+    %t6 = load typed ptr $this
     return ptr %t6
 }

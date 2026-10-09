@@ -6,7 +6,7 @@ function @id(%y : obj<4x4>) -> i32 [binding=strong, object=_Z2id1Y] {
     copyobj 4x4 %y, %t1
     %t2 = addr $y
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     return i32 %t4
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $a
     %t2 = addr $a
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 8, %t3
+    store typed i32 8, %t3
     %t4 = addr $argobj__1
     %t5 = addr $a
     copyobj 4x4 %t5, %t4

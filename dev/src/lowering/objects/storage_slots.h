@@ -89,6 +89,21 @@ protected:
 			record.storage_alignment);
 	}
 
+	// A structured global's items imply only their own alignment: one whose
+	// type requires more (an alignas on the type, or on a member) states its
+	// storage type (lowir.md, structured globals).
+	static void StateStructuredGlobalAlignment(Global* global)
+	{
+		if (global->initializer_kind != Global::STRUCTURED_VALUE ||
+			global->explicit_storage_alignment ||
+			global->type.kind != LOW_OBJECT) return;
+		std::uint32_t implied = 1;
+		for (std::size_t i = 0; i < global->items.size(); ++i)
+			if (global->items[i].kind != Global::DataItem::ZERO_ITEM)
+				implied = std::max(implied, global->items[i].type.alignment);
+		global->explicit_storage_alignment = global->type.alignment > implied;
+	}
+
 	bool SetExplicitVariableZero(const DumpNode& record, Global* global) const
 	{
 		if (record.storage_size == 0) return false;

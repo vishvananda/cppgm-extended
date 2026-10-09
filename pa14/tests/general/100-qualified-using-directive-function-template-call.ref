@@ -10,23 +10,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @lib__algorithm__call_begin(%range : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN3lib9algorithm10call_beginI10range_likeEEiRT_] {
   slot $range : ptr
 
   block ^entry:
-    store ptr %range, $range
-    %t1 = load ptr $range
+    store typed ptr %range, $range
+    %t1 = load typed ptr $range
     %t2 = call i32 @lib__range_adl_barrier__begin(%t1)
     return i32 %t2
 }
@@ -34,8 +34,8 @@ function @lib__range_adl_barrier__begin(%range : ptr [pass=by_address, object_by
   slot $range : ptr
 
   block ^entry:
-    store ptr %range, $range
-    %t1 = load ptr $range
+    store typed ptr %range, $range
+    %t1 = load typed ptr $range
     %t2 = call i32 @range_like__begin(%t1)
     return i32 %t2
 }
@@ -43,6 +43,6 @@ function @range_like__begin(%this : ptr [object_bytes=1]) -> i32 [binding=weak, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }

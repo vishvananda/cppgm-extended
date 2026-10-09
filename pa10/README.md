@@ -139,8 +139,8 @@ absorbs, and what it does not, is one list in `../pa8/lowir.md` ("What The
 Comparison Absorbs And What It Enforces"). Read it before the first failing
 fixture. In short, the comparison ignores names, order and layout, reads a
 literal by its value, and lets the operands of a commutative operation
-appear in either order; and it enforces three conventions the course fixes
-in words rather than absorbing:
+appear in either order; and it enforces the conventions the course fixes
+in words rather than absorbing, chief among them:
 
 - Branch sense follows the source: a conditional branch tests the value the
   source wrote, in the source's sense (`!=` is `cmp ne`, `!x` is
@@ -153,10 +153,23 @@ in words rather than absorbing:
   assignment before the address of its left, and where the language leaves
   the order open, left to right (operands, call arguments, and the loads
   each needs).
+- Instruction facts are part of the instruction (`../pa8/lowir.md`,
+  "Instruction Facts"): every non-volatile load and store of a pointer, a
+  floating type or an integer wider than a byte is `typed` unless it goes
+  through a union member or a bit-field's storage unit; the `add`, `sub` and
+  `mul` of signed `int` and `long` source arithmetic (and of `++`, `--` and
+  the compound assignments) are `nowrap`; and the division of a pointer
+  difference by its element size is `exact`.
 
-A fixture that fails on one of those three is telling you which convention
+A fixture that fails on one of these is telling you which convention
 your output departs from; the canonical diff the harness writes beside the
 output shows where.
+
+The facts are what later stages may rely on: PA32's optimizer can assume a
+typed store does not change a typed load of another type, and PA24's
+backend can skip renormalizing a result that does not wrap. Stating them now
+costs one flag per instruction; deriving them again after lowering is not
+possible.
 
 For supported scalar conversions, PA10 may canonicalize widened integral immediates directly
 to their final LowIR literal value instead of spelling those same conversions through
@@ -304,8 +317,9 @@ This PA10 milestone supports the following:
   pointer values, pointer compound assignment with element-size scaling, and
   pointer differences measured in elements; because the byte difference of
   two pointers into the same array is exactly divisible by the element size,
-  a positive power-of-two size may be lowered as an arithmetic right shift,
-  while other element sizes retain signed division
+  a positive power-of-two size is lowered as an arithmetic right shift,
+  while other element sizes retain signed division; either way the division
+  is `exact`
 - array-to-pointer and function-to-pointer decay produce an ordinary LowIR
   `ptr` using the existing address, index, parameter, or `copy ptr` operations;
   do not add a decay-specific unary operation or parameter-passing annotation
@@ -398,3 +412,13 @@ It is useful for the lowering layer to derive result types from the LowIR
 operation as it creates a temporary. In particular, keeping the canonical
 `i64` comparison result there avoids duplicating result-type decisions at
 each later use.
+
+The LowIR this assignment emits is the optimizer's input at PA32, which is
+why its shape is simple rather than efficient. Every local lives in a slot
+and every use loads it: PA32 promotes slots to values, so there is no need to
+avoid the loads here. `unreachable` states a fact the optimizer uses to
+delete code after a call that does not return; it is not a trap to execute.
+The instruction facts (Instruction Facts in `../pa8/lowir.md`) are the
+semantic facts the optimizer cannot recover from LowIR alone: C++'s type-based
+aliasing and its undefined signed overflow. State them where the rules say,
+even though nothing before PA32 reads them.

@@ -10,6 +10,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i32 @cheap()
     %t2 = call i32 @general()
-    %t3 = binary add i32 %t1, %t2
+    %t3 = binary add nowrap i32 %t1, %t2
     return i32 %t3
 }

@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     store i8 0, $both_small
     %t1 = convert sitofp f64 i32 0
-    store f64 %t1, $one_large
+    store typed f64 %t1, $one_large
     %t2 = const i64 1
     %t3 = convert sext i64 i32 1
     %t4 = cmp eq i64 %t2, %t3
@@ -18,26 +18,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = const i64 8
     %t7 = cmp eq i64 %t5, %t6
     %t8 = cmp ne i64 %t7, 0
-    store i64 %t8, $land__2
+    store typed i64 %t8, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t9 = load i64 $land__2
+    %t9 = load typed i64 $land__2
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }

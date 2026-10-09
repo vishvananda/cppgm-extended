@@ -1,11 +1,11 @@
 global @copies : i32 [binding=strong] = 0
-global @a [binding=internal, object=a] = {
+global @a : obj<4x4> [binding=internal, object=a] = {
   zero 4
 }
-global @b [binding=internal, object=b] = {
+global @b : obj<4x4> [binding=internal, object=b] = {
   zero 4
 }
-global @table [binding=strong] = {
+global @table : obj<8x4> [binding=strong] = {
   zero 8
 }
 
@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 [projection=array_element] %t1, %t2
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
+    %t6 = load typed i32 %t5
     %t7 = cmp eq i32 %t6, 3
     branch %t7, ^land_rhs_7, ^land_short_8
 
@@ -30,45 +30,45 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = index i8 [projection=array_element] %t8, %t9
     %t11 = index i8 [projection=field] %t10, 0
     %t12 = index i8 [projection=field] %t11, 0
-    %t13 = load i32 %t12
+    %t13 = load typed i32 %t12
     %t14 = cmp eq i32 %t13, 4
     %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $land__3
+    store typed i64 %t15, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_9
 
   block ^land_end_9:
-    %t16 = load i64 $land__3
+    %t16 = load typed i64 $land__3
     branch %t16, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t17 = load i32 @copies
+    %t17 = load typed i32 @copies
     %t18 = cmp eq i32 %t17, 2
     %t19 = cmp ne i64 %t18, 0
-    store i64 %t19, $land__2
+    store typed i64 %t19, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t20 = load i64 $land__2
+    %t20 = load typed i64 $land__2
     branch %t20, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t21 = load i32 $cond__1
+    %t21 = load typed i32 $cond__1
     return i32 %t21
 }
 function @Counted__Counted(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN7CountedC1Ei, inline_hint=yes] {
@@ -76,12 +76,12 @@ function @Counted__Counted(%this : ptr [object_bytes=4], %v : i32) -> void [bind
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @Holder__Holder(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN6HolderC1ERKS_, inline_hint=yes] {
@@ -89,11 +89,11 @@ function @Holder__Holder(%this : ptr [alias=noalias, object_bytes=4], %other : p
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $other
+    %t3 = load typed ptr $other
     %t4 = index i8 [projection=field] %t3, 0
     call void @Counted__Counted__ov2(%t2, %t4)
     return void
@@ -103,17 +103,17 @@ function @Counted__Counted__ov2(%this : ptr [alias=noalias, object_bytes=4], %ot
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load i32 @copies
-    %t7 = binary add i32 %t6, 1
-    store i32 %t7, @copies
+    store typed i32 %t3, %t5
+    %t6 = load typed i32 @copies
+    %t7 = binary add nowrap i32 %t6, 1
+    store typed i32 %t7, @copies
     return void
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {

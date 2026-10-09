@@ -11,7 +11,7 @@ function @local_use__run(%this : ptr [object_bytes=1]) -> void [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = const i64 1
     return void
 }

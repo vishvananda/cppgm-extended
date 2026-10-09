@@ -27,15 +27,15 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
   slot $call__10 : u8
 
   block ^entry:
-    store ptr %cursor, $cursor
-    store ptr %macroizer, $macroizer
-    %t1 = load ptr $cursor
+    store typed ptr %cursor, $cursor
+    store typed ptr %macroizer, $macroizer
+    %t1 = load typed ptr $cursor
     %t2 = call u8 @complete(%t1)
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t3 = index i8 [projection=field] %ret, 0
-    store i32 5, %t3
+    store typed i32 5, %t3
     %t4 = index i8 [projection=field] %ret, 4
     call void @Payload__Payload(%t4)
     return void
@@ -50,7 +50,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
     jump ^do_body_4
 
   block ^do_body_4:
-    %t6 = load i32 @g_runtime_branch
+    %t6 = load typed i32 @g_runtime_branch
     %t7 = cmp eq i32 %t6, 1
     branch %t7, ^if_then_7, ^if_else_8
 
@@ -58,7 +58,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
     eh_try ^cleanup_action_11
     %t8 = addr $token
     %t9 = addr $arg__2
-    %t10 = load ptr $cursor
+    %t10 = load typed ptr $cursor
     call void @Cursor__get(%t9, %t10)
     eh_end
     jump ^call_unwind_end_12
@@ -74,8 +74,8 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
   block ^call_unwind_end_12:
     eh_try ^cleanup_action_13
     %t12 = call ptr @Tok__operator___ov2(%t8, %t9)
-    store ptr %t12, $call__1
-    %t13 = load ptr $call__1
+    store typed ptr %t12, $call__1
+    %t13 = load typed ptr $call__1
     call void @Tok___Tok(%t9)
     eh_end
     jump ^call_unwind_end_14
@@ -88,7 +88,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
     eh_try ^cleanup_action_11
     %t14 = addr $token
     %t15 = index i8 [projection=field] %t14, 0
-    %t16 = load i32 %t15
+    %t16 = load typed i32 %t15
     %t17 = addr $token
     %t18 = index i8 [projection=field] %t17, 4
     %t19 = call u8 @process(%t16, %t18, 0)
@@ -100,7 +100,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
 
   block ^if_else_8:
     eh_try ^cleanup_action_11
-    %t21 = load ptr $macroizer
+    %t21 = load typed ptr $macroizer
     %t22 = call u8 @Macroizer__active(%t21)
     store u8 %t22, $call__4
     %t23 = load u8 $call__4
@@ -111,13 +111,13 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
     eh_try ^cleanup_action_11
     %t24 = addr $token
     %t25 = addr $arg__6
-    %t26 = load ptr $macroizer
+    %t26 = load typed ptr $macroizer
     call void @Macroizer__get(%t25, %t26)
     eh_end
     eh_try ^cleanup_action_18
     %t27 = call ptr @Tok__operator___ov2(%t24, %t25)
-    store ptr %t27, $call__5
-    %t28 = load ptr $call__5
+    store typed ptr %t27, $call__5
+    %t28 = load typed ptr $call__5
     call void @Tok___Tok(%t25)
     eh_end
     jump ^call_unwind_end_19
@@ -129,7 +129,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
   block ^call_unwind_end_19:
     %t29 = addr $token
     %t30 = index i8 [projection=field] %t29, 0
-    %t31 = load i32 %t30
+    %t31 = load typed i32 %t30
     %t32 = cmp eq i32 %t31, 5
     branch %t32, ^if_then_20, ^if_else_21
 
@@ -143,7 +143,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
     eh_try ^cleanup_action_11
     %t33 = addr $token
     %t34 = index i8 [projection=field] %t33, 0
-    %t35 = load i32 %t34
+    %t35 = load typed i32 %t34
     %t36 = addr $token
     %t37 = index i8 [projection=field] %t36, 4
     %t38 = call u8 @process(%t35, %t37, 0)
@@ -157,13 +157,13 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
     eh_try ^cleanup_action_11
     %t40 = addr $token
     %t41 = addr $arg__9
-    %t42 = load ptr $cursor
+    %t42 = load typed ptr $cursor
     call void @Cursor__get(%t41, %t42)
     eh_end
     eh_try ^cleanup_action_23
     %t43 = call ptr @Tok__operator___ov2(%t40, %t41)
-    store ptr %t43, $call__8
-    %t44 = load ptr $call__8
+    store typed ptr %t43, $call__8
+    %t44 = load typed ptr $call__8
     call void @Tok___Tok(%t41)
     eh_end
     jump ^call_unwind_end_24
@@ -176,7 +176,7 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
     eh_try ^cleanup_action_11
     %t45 = addr $token
     %t46 = index i8 [projection=field] %t45, 0
-    %t47 = load i32 %t46
+    %t47 = load typed i32 %t46
     %t48 = addr $token
     %t49 = index i8 [projection=field] %t48, 4
     %t50 = call u8 @process(%t47, %t49, 1)
@@ -201,14 +201,14 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
   block ^do_end_6:
     %t55 = addr $token
     %t56 = index i8 [projection=field] %t55, 0
-    %t57 = load i32 %t56
+    %t57 = load typed i32 %t56
     %t58 = cmp eq i32 %t57, 1
     branch %t58, ^if_then_25, ^if_else_26
 
   block ^if_then_25:
     %t59 = addr $token
     %t60 = index i8 [projection=field] %t59, 0
-    store i32 0, %t60
+    store typed i32 0, %t60
     jump ^if_end_27
 
   block ^if_else_26:
@@ -225,8 +225,8 @@ function @Tok__Tok(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 4
     call void @Payload__Payload(%t2)
     eh_cleanup ^constructor_cleanup_1
@@ -234,7 +234,7 @@ function @Tok__Tok(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 4
     call void @Payload___Payload(%t4)
     eh_end
@@ -244,16 +244,16 @@ function @Tok___Tok(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=we
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
     eh_end
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 4
     call void @Payload___Payload(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 4
     call void @Payload___Payload(%t4)
     eh_end
@@ -267,17 +267,17 @@ function @Tok__operator___ov2(%this : ptr [object_bytes=8], %other : ptr [pass=b
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
     copyobj 4x4 %t2, %t1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 4
-    %t5 = load ptr $other
+    %t5 = load typed ptr $other
     %t6 = index i8 [projection=field] %t5, 4
     %t7 = call ptr @Payload__operator_(%t4, %t6)
-    %t8 = load ptr $this
+    %t8 = load typed ptr $this
     return ptr %t8
 }
 function @Tok__Tok__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN3TokC1EOS_, inline_hint=yes] {
@@ -285,14 +285,14 @@ function @Tok__Tok__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : pt
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
     copyobj 4x4 %t2, %t1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 4
-    %t5 = load ptr $other
+    %t5 = load typed ptr $other
     %t6 = index i8 [projection=field] %t5, 4
     call void @Payload__Payload__ov2(%t4, %t6)
     return void

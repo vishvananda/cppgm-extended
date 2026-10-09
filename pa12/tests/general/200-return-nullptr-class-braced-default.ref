@@ -36,30 +36,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 4x4 %t2, %t1
     %t3 = addr $v
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @storage_ptr__storage_ptr(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN11storage_ptrC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
+    store typed i32 7, %t2
     return void
 }
 function @value__value(%this : ptr [object_bytes=4], %__param1 : i64, %sp : obj<4x4>) -> void [binding=weak, object=_ZN5valueC1EDn11storage_ptr, inline_hint=yes] {
@@ -68,16 +68,16 @@ function @value__value(%this : ptr [object_bytes=4], %__param1 : i64, %sp : obj<
   slot $sp : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i64 %__param1, $__param1
     %t1 = addr $sp
     copyobj 4x4 %sp, %t1
     %t2 = addr $sp
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
-    %t5 = load ptr $this
+    %t4 = load typed i32 %t3
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 alias object _ZN11storage_ptrC2Ev = @storage_ptr__storage_ptr

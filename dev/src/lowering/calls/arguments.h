@@ -97,25 +97,24 @@ protected:
 	{
 		if (operation == hosted_builtin::INTEGER_OPERATION_POPCOUNT)
 			return LowerIntegerIntrinsicPopcount(value, type);
-		if (operation == hosted_builtin::INTEGER_OPERATION_CTZ)
+		// LowIR's bit scans, whose result for 0 is unspecified as the
+		// builtins' is undefined.  A narrower operand is zero-extended to 32
+		// bits, its leading zeros counted less the extension's.
+		Derived& derived = static_cast<Derived&>(*this);
+		const bool trailing = operation == hosted_builtin::INTEGER_OPERATION_CTZ;
+		LowType scan_type = type;
+		if (type.width < 32)
 		{
-			const Operand negated = EmitIntegerIntrinsicUnary(
-				LOW_OP_NEG, value, type);
-			value = EmitIntegerIntrinsicBinary(
-				LOW_OP_AND, value, negated, type);
-			value = EmitIntegerIntrinsicBinary(
-				LOW_OP_SUB, value, Operand(1, type), type);
-			return LowerIntegerIntrinsicPopcount(value, type);
+			value = derived.Convert(value, LowU32());
+			scan_type = LowU32();
 		}
-		for (std::uint16_t shift = 1; shift < type.width; shift *= 2)
-		{
-			const Operand shifted = EmitIntegerIntrinsicBinary(
-				LOW_OP_USHR, value, Operand(shift, type), type);
-			value = EmitIntegerIntrinsicBinary(
-				LOW_OP_OR, value, shifted, type);
-		}
-		value = EmitIntegerIntrinsicUnary(LOW_OP_BITNOT, value, type);
-		return LowerIntegerIntrinsicPopcount(value, type);
+		Operand count = derived.Convert(EmitIntegerIntrinsicUnary(
+			trailing ? LOW_OP_CTZ : LOW_OP_CLZ, value, scan_type), LowI32());
+		if (!trailing && type.width < 32)
+			count = EmitIntegerIntrinsicBinary(LOW_OP_SUB, count,
+				Operand(static_cast<std::int64_t>(32 - type.width), LowI32()),
+				LowI32());
+		return count;
 	}
 
 	bool TryLowerIntegerIntrinsicCall(const DumpNode& record,
@@ -160,6 +159,8 @@ protected:
 		if (intrinsic.kind == hosted_builtin::INTEGER_INTRINSIC_CLZG ||
 			intrinsic.kind == hosted_builtin::INTEGER_INTRINSIC_CTZG)
 		{
+			// The count of a nonzero operand, else the fallback: both are
+			// computed (a scan of zero only leaves its result unspecified).
 			const Operand nonzero = derived.Temp(LowI64());
 			Instruction compare(Instruction::CMP);
 			compare.dest = nonzero.id;
@@ -168,17 +169,17 @@ protected:
 			compare.first = value;
 			compare.second = Operand(0, type);
 			derived.Emit(compare);
-			const Operand selected = derived.Convert(nonzero, LowI32());
-			const Operand unselected = EmitIntegerIntrinsicBinary(LOW_OP_SUB,
-				Operand(1, LowI32()), selected, LowI32());
-			count = EmitIntegerIntrinsicBinary(LOW_OP_MUL,
-				count, selected, LowI32());
 			const Operand fallback = derived.LowerValue(
 				children[2], LowI32());
-			const Operand zero = EmitIntegerIntrinsicBinary(LOW_OP_MUL,
-				fallback, unselected, LowI32());
-			count = EmitIntegerIntrinsicBinary(
-				LOW_OP_ADD, count, zero, LowI32());
+			const Operand chosen = derived.Temp(LowI32());
+			Instruction select(Instruction::SELECT);
+			select.dest = chosen.id;
+			select.type = LowI32();
+			select.first = nonzero;
+			select.second = count;
+			select.third = fallback;
+			derived.Emit(select);
+			count = chosen;
 		}
 		*result = derived.Convert(count, derived.LowerType(record.type));
 		return true;

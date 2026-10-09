@@ -5,24 +5,24 @@ function @run(%items : ptr, %count : i32) -> i32 [binding=strong, object=_Z3runP
   slot $outer : obj<16x8>
 
   block ^entry:
-    store ptr %items, $items
-    store i32 %count, $count
-    %t1 = load ptr $items
-    store ptr %t1, $parameter
+    store typed ptr %items, $items
+    store typed i32 %count, $count
+    %t1 = load typed ptr $items
+    store typed ptr %t1, $parameter
     %t2 = addr $outer
-    %t3 = load ptr $items
-    store ptr %t3, %t2
+    %t3 = load typed ptr $items
+    store typed ptr %t3, %t2
     %t4 = index i8 [projection=field] %t2, 8
-    %t5 = load i32 $count
-    store i32 %t5, %t4
+    %t5 = load typed i32 $count
+    store typed i32 %t5, %t4
     %t6 = addr $outer
     %t7 = call i32 @__lambda_run_t34_38__operator__(%t6)
-    %t8 = load ptr $parameter
+    %t8 = load typed ptr $parameter
     %t9 = binary mul i64 0, 4
     %t10 = index i8 [projection=array_element] %t8, %t9
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t7, %t12
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t7, %t12
     return i32 %t13
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -40,15 +40,15 @@ function @__lambda_run_t34_38__operator__(%this : ptr [object_bytes=16]) -> i32 
   slot $match : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $match
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 8
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     %t4 = addr $match
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load ptr %t6
+    %t7 = load typed ptr %t6
     %t8 = call i32 @__lambda_run_t34_38____lambda_nested_t45_53__operator__(%t4, %t7)
     return i32 %t8
 }
@@ -58,21 +58,21 @@ function @__lambda_run_t34_38____lambda_nested_t45_53__operator__(%this : ptr [o
   slot $parameter : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %source, $source
-    %t1 = load ptr $source
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %source, $source
+    %t1 = load typed ptr $source
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load ptr %t3
-    %t5 = load i32 %t4
-    %t6 = binary sub i32 %t5, 1
+    %t4 = load typed ptr %t3
+    %t5 = load typed i32 %t4
+    %t6 = binary sub nowrap i32 %t5, 1
     %t7 = convert sext i64 i32 %t6
     %t8 = binary mul i64 %t7, 4
     %t9 = index i8 [projection=array_element] %t1, %t8
-    store ptr %t9, $parameter
-    %t10 = load ptr $parameter
+    store typed ptr %t9, $parameter
+    %t10 = load typed ptr $parameter
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
+    %t12 = load typed i32 %t11
     return i32 %t12
 }
 function @Item__Item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
@@ -80,11 +80,11 @@ function @Item__Item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, b
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }

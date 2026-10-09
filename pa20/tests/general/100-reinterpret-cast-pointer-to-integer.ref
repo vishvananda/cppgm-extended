@@ -2,8 +2,8 @@ function @f(%p : ptr) -> i64 [binding=strong, object=_Z1fPKc] {
   slot $p : ptr
 
   block ^entry:
-    store ptr %p, $p
-    %t1 = load ptr $p
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
     %t2 = copy i64 %t1
     return i64 %t2
 }

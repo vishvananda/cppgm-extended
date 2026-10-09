@@ -15,11 +15,11 @@ function @async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class
   slot $h : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %h, $h
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $h
+    %t3 = load typed ptr $h
     call void @promise_async_result_void___cppgm_class_template_identity_1_2_0___allocator___promise_async_result_void___cppgm_class_template_identity_1_2_0___allocator___base_entry(%t2, %t3)
     return void
 }
@@ -28,8 +28,8 @@ function @promise_async_result_void___cppgm_class_template_identity_1_2_0___allo
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN12async_resultI12use_future_tI9allocatorEFv5tupleIJ10error_codeEEEEC2ER15promise_handlerIS6_S1_E = @async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class_template_identity_1_2_0____async_result___cppgm_class_template_identity_2_1_0__void___cppgm_class_template_identity_1_2_0__

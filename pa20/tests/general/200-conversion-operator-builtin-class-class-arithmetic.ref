@@ -9,14 +9,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @number__operatorint(%t3)
     %t5 = addr $b
     %t6 = call i32 @number__operatorint(%t5)
-    %t7 = binary add i32 %t4, %t6
-    %t8 = binary sub i32 %t7, 14
+    %t7 = binary add nowrap i32 %t4, %t6
+    %t8 = binary sub nowrap i32 %t7, 14
     return i32 %t8
 }
 function @number__operatorint(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK6numbercviEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }

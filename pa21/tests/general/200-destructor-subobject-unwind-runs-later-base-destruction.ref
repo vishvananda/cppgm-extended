@@ -57,20 +57,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^catch_body_4:
     %t6 = call ptr @__external_runtime____cxa_begin_catch(%t3)
     eh_cleanup ^catch_cleanup_6
-    %t7 = load i32 @order
+    %t7 = load typed i32 @order
     %t8 = cmp eq i32 %t7, 312
     branch %t8, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_9
 
   block ^cond_else_8:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 %t9
@@ -90,40 +90,40 @@ function @Derived___Derived(%this : ptr [object_bytes=1]) -> void [binding=weak,
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load i32 @order
-    %t2 = binary mul i32 %t1, 10
-    %t3 = binary add i32 %t2, 3
-    store i32 %t3, @order
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 3
+    store typed i32 %t3, @order
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     call void @Member___Member(%t5)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
     call void @Base___Base(%t7)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
-    %t8 = load ptr $this
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 0
     call void @Base___Base(%t9)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     eh_try ^lexical_cleanup_terminate_5
-    %t11 = load ptr $this
+    %t11 = load typed ptr $this
     %t12 = index i8 [projection=field] %t11, 0
     call void @Member___Member(%t12)
     eh_end
-    %t13 = load ptr $this
+    %t13 = load typed ptr $this
     %t14 = index i8 %t13, 0
     call void @Base___Base(%t14)
     eh_end
@@ -142,11 +142,11 @@ function @Member___Member(%this : ptr [object_bytes=1]) -> void [binding=weak, o
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @order
-    %t2 = binary mul i32 %t1, 10
-    %t3 = binary add i32 %t2, 1
-    store i32 %t3, @order
+    store typed ptr %this, $this
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 1
+    store typed i32 %t3, @order
     %t4 = call ptr @__external_runtime____cxa_allocate_exception(1)
     %t5 = addr @__rtti_struct_failure
     call void @__external_runtime____cxa_throw(%t4, %t5, 0)
@@ -156,11 +156,11 @@ function @Base___Base(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @order
-    %t2 = binary mul i32 %t1, 10
-    %t3 = binary add i32 %t2, 2
-    store i32 %t3, @order
+    store typed ptr %this, $this
+    %t1 = load typed i32 @order
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = binary add nowrap i32 %t2, 2
+    store typed i32 %t3, @order
     return void
 }
 alias object _ZN7DerivedD2Ev = @Derived___Derived

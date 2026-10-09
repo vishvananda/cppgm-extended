@@ -16,8 +16,8 @@ function @duration_int____cppgm_class_template_identity_0_0_0___duration_long_in
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return void
 }
 function @duration_long_int____cppgm_class_template_identity_0_3_0___duration_long_int____cppgm_class_template_identity_0_3_0___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN8durationIl3tagILi1EEEC1IiS0_ILi2EEEERKS_IT_T0_E, inline_hint=yes] {
@@ -25,8 +25,8 @@ function @duration_long_int____cppgm_class_template_identity_0_3_0___duration_lo
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN8durationIi3tagILi2EEEC2Ei = @duration_int____cppgm_class_template_identity_0_0_0___duration_long_int____cppgm_class_template_identity_0_3_0_

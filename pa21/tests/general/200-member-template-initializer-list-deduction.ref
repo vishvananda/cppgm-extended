@@ -17,29 +17,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @item__item__aggregate(%t4, 1)
     %t5 = index i8 [projection=array_element] %t4, 4
     call void @item__item__aggregate(%t5, 2)
-    store ptr %t4, %t3
+    store typed ptr %t4, %t3
     %t6 = index i8 %t3, 8
-    store i64 2, %t6
-    store i32 7, $refarg__3
+    store typed i64 2, %t6
+    store typed i32 7, $refarg__3
     %t7 = addr $refarg__3
     %t8 = call ptr @any_like__emplace__ov2(%t2, $argobj__1, %t7)
-    store ptr %t8, $ref
-    %t9 = load ptr $ref
+    store typed ptr %t8, $ref
+    %t9 = load typed ptr $ref
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load i32 %t10
+    %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 2
     branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__4
+    store typed i32 0, $cond__4
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__4
+    store typed i32 1, $cond__4
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__4
+    %t13 = load typed i32 $cond__4
     return i32 %t13
 }
 function @any_like__emplace__ov2(%this : ptr [object_bytes=8], %il : obj<16x8>, %args : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN8any_like7emplaceI7payload4itemJiEEERT_St16initializer_listIT0_EDpOT1_, inline_hint=yes] {
@@ -50,16 +50,16 @@ function @any_like__emplace__ov2(%this : ptr [object_bytes=8], %il : obj<16x8>, 
   slot $argobj__1 : obj<16x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $il
     copyobj 16x8 %il, %t1
-    store ptr %args, $args
+    store typed ptr %args, $args
     %t2 = convert sext i64 i32 4
     %t3 = call ptr @operatornew(%t2)
     %t4 = addr $argobj__1
     %t5 = addr $il
     copyobj 16x8 %t5, %t4
-    %t6 = load ptr $args
+    %t6 = load typed ptr $args
     eh_try ^construction_cleanup_2
     call void @any_like__holder_payload___holder_payload___ov4(%t3, $argobj__1, %t6)
     eh_end
@@ -73,12 +73,12 @@ function @any_like__emplace__ov2(%this : ptr [object_bytes=8], %il : obj<16x8>, 
     jump ^cleanup_resume_1
 
   block ^call_unwind_end_3:
-    store ptr %t3, $raw
-    %t7 = load ptr $raw
-    %t8 = load ptr $this
+    store typed ptr %t3, $raw
+    %t7 = load typed ptr $raw
+    %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 0
-    store ptr %t7, %t9
-    %t10 = load ptr $raw
+    store typed ptr %t7, %t9
+    %t10 = load typed ptr $raw
     %t11 = index i8 [projection=field] %t10, 0
     return ptr %t11
 }
@@ -89,17 +89,17 @@ function @any_like__holder_payload___holder_payload___ov4(%this : ptr [object_by
   slot $argobj__1 : obj<16x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $il
     copyobj 16x8 %il, %t1
-    store ptr %args, $args
-    %t2 = load ptr $this
+    store typed ptr %args, $args
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = addr $argobj__1
     %t5 = addr $il
     copyobj 16x8 %t5, %t4
-    %t6 = load ptr $args
-    %t7 = load i32 %t6
+    %t6 = load typed ptr $args
+    %t7 = load typed i32 %t6
     call void @payload__payload__ov2(%t3, $argobj__1, %t7)
     return void
 }
@@ -109,26 +109,26 @@ function @payload__payload__ov2(%this : ptr [object_bytes=4], %list : obj<16x8>,
   slot $__param2 : i32
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $list
     copyobj 16x8 %list, %t1
-    store i32 %__param2, $__param2
+    store typed i32 %__param2, $__param2
     %t2 = addr $list
     %t3 = call i64 @std__initializer_list_item___size(%t2)
     %t4 = convert trunc i32 i64 %t3
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 function @std__initializer_list_item___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI4itemE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     return i64 %t3
 }
 function @item__item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, binding=internal] {
@@ -136,12 +136,12 @@ function @item__item__aggregate(%this : ptr, %value : i32) -> void [unwind=no, b
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN8any_like6holderI7payloadEC2I4itemJRiEEESt16initializer_listIT_EDpOT0_ = @any_like__holder_payload___holder_payload___ov4

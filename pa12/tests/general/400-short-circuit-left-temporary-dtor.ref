@@ -9,13 +9,13 @@ function @operator__(%__param0 : ptr [pass=by_address, object_bytes=1], %__param
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return u8 1
 }
 function @use_after() -> u8 [binding=strong, object=_Z9use_afterv] {
   block ^entry:
-    %t1 = load i32 @destroyed
+    %t1 = load typed i32 @destroyed
     %t2 = cmp eq i32 %t1, 0
     %t3 = convert trunc u8 i64 %t2
     return u8 %t3
@@ -66,15 +66,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^lor_rhs_4:
     %t7 = cmp ne i64 0, 0
-    store i64 %t7, $lor__1
+    store typed i64 %t7, $lor__1
     jump ^lor_end_6
 
   block ^lor_short_5:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t8 = load i64 $lor__1
+    %t8 = load typed i64 $lor__1
     branch %t8, ^cond_true_cleanup_12, ^cond_false_cleanup_13
 
   block ^cond_true_cleanup_12:
@@ -92,12 +92,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_3
 
   block ^if_end_3:
-    %t9 = load i32 @destroyed
+    %t9 = load typed i32 @destroyed
     %t10 = cmp ne i32 %t9, 1
     branch %t10, ^if_then_14, ^if_else_15
 
   block ^if_then_14:
-    store i32 1, $cleanup_return__8
+    store typed i32 1, $cleanup_return__8
     jump ^return_cleanup_action_18
 
   block ^return_cleanup_terminal_17:
@@ -112,7 +112,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_16
 
   block ^if_end_16:
-    store i32 0, @destroyed
+    store typed i32 0, @destroyed
     eh_try ^cleanup_action_8
     %t12 = addr $value
     %t13 = addr $arg__6
@@ -138,16 +138,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store u8 %t16, $call__7
     %t17 = load u8 $call__7
     %t18 = cmp ne i64 %t17, 0
-    store i64 %t18, $land__4
+    store typed i64 %t18, $land__4
     eh_end
     jump ^land_end_24
 
   block ^land_short_23:
-    store i64 0, $land__4
+    store typed i64 0, $land__4
     jump ^land_end_24
 
   block ^land_end_24:
-    %t19 = load i64 $land__4
+    %t19 = load typed i64 $land__4
     branch %t19, ^cond_true_cleanup_27, ^cond_false_cleanup_28
 
   block ^cond_true_cleanup_27:
@@ -165,31 +165,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_21
 
   block ^if_end_21:
-    %t20 = load i32 @destroyed
+    %t20 = load typed i32 @destroyed
     %t21 = cmp eq i32 %t20, 1
     branch %t21, ^cond_then_29, ^cond_else_30
 
   block ^cond_then_29:
-    store i32 0, $cond__9
+    store typed i32 0, $cond__9
     jump ^cond_end_31
 
   block ^cond_else_30:
-    store i32 2, $cond__9
+    store typed i32 2, $cond__9
     jump ^cond_end_31
 
   block ^cond_end_31:
-    %t22 = load i32 $cond__9
-    store i32 %t22, $cleanup_return__8
+    %t22 = load typed i32 $cond__9
+    store typed i32 %t22, $cleanup_return__8
     jump ^return_cleanup_action_18
 }
 function @object___object(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6objectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
     return void
 }
 alias object _ZN6objectD2Ev = @object___object

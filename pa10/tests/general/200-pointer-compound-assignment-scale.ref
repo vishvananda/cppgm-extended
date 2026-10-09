@@ -4,15 +4,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $xs
-    store ptr %t1, $p
-    %t2 = load ptr $p
+    store typed ptr %t1, $p
+    %t2 = load typed ptr $p
     %t3 = binary mul i64 2, 4
     %t4 = index i8 %t2, %t3
-    store ptr %t4, $p
-    %t5 = load ptr $p
+    store typed ptr %t4, $p
+    %t5 = load typed ptr $p
     %t6 = binary mul i64 1, 4
     %t7 = binary sub i64 0, %t6
     %t8 = index i8 %t5, %t7
-    store ptr %t8, $p
+    store typed ptr %t8, $p
     return i32 0
 }

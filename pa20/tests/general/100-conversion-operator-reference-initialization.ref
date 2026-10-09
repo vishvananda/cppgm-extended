@@ -34,10 +34,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Wrapper__Wrapper(%t2, %t3)
     %t4 = addr $wrapper
     %t5 = call ptr @Wrapper__operatorconstBase_(%t4)
-    store ptr %t5, $ref
-    %t6 = load ptr $ref
-    %t7 = load ptr %t6
-    %t8 = load ptr %t7
+    store typed ptr %t5, $ref
+    %t6 = load typed ptr $ref
+    %t7 = load typed ptr %t6
+    %t8 = load typed ptr %t7
     %t9 = call i32 %t8(%t6) as (%arg0 : ptr [object_bytes=8]) -> i32
     %t10 = cmp ne i32 %t9, 7
     branch %t10, ^if_then_1, ^if_else_2
@@ -52,25 +52,25 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t11 = addr $wrappers
     %t12 = addr $base
     call void @Wrapper__Wrapper(%t11, %t12)
-    store i32 0, $__idx1
+    store typed i32 0, $__idx1
     jump ^for_cond_4
 
   block ^for_cond_4:
-    %t13 = load i32 $__idx1
+    %t13 = load typed i32 $__idx1
     %t14 = cmp lt i32 %t13, 1
     branch %t14, ^for_body_5, ^for_end_7
 
   block ^for_body_5:
     %t15 = addr $wrappers
-    %t16 = load i32 $__idx1
+    %t16 = load typed i32 $__idx1
     %t17 = convert sext i64 i32 %t16
     %t18 = binary mul i64 %t17, 8
     %t19 = index i8 [projection=array_element] %t15, %t18
     %t20 = call ptr @Wrapper__operatorconstBase_(%t19)
-    store ptr %t20, $item
-    %t21 = load ptr $item
-    %t22 = load ptr %t21
-    %t23 = load ptr %t22
+    store typed ptr %t20, $item
+    %t21 = load typed ptr $item
+    %t22 = load typed ptr %t21
+    %t23 = load typed ptr %t22
     %t24 = call i32 %t23(%t21) as (%arg0 : ptr [object_bytes=8]) -> i32
     %t25 = cmp ne i32 %t24, 7
     branch %t25, ^if_then_8, ^if_else_9
@@ -85,9 +85,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_iter_6
 
   block ^for_iter_6:
-    %t26 = load i32 $__idx1
-    %t27 = binary add i32 %t26, 1
-    store i32 %t27, $__idx1
+    %t26 = load typed i32 $__idx1
+    %t27 = binary add nowrap i32 %t26, 1
+    store typed i32 %t27, $__idx1
     jump ^for_cond_4
 
   block ^for_end_7:
@@ -97,18 +97,18 @@ function @Base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 7
 }
 function @Base__Base(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4BaseC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Wrapper__Wrapper(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN7WrapperC1ER4Base, inline_hint=yes] {
@@ -116,22 +116,22 @@ function @Wrapper__Wrapper(%this : ptr [object_bytes=8], %value : ptr [pass=by_a
   slot $value : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @Wrapper__operatorconstBase_(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK7WrappercvRK4BaseEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     return ptr %t3
 }
 alias object _ZN4BaseC2Ev = @Base__Base

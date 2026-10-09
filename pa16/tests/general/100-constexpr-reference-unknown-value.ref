@@ -10,8 +10,8 @@ function @compare(%a : i32, %b : i32) -> u8 [binding=strong, object=_Z7compareii
   slot $result : u8
 
   block ^entry:
-    store i32 %a, $a
-    store i32 %b, $b
+    store typed i32 %a, $a
+    store typed i32 %b, $b
     %t1 = addr $a
     %t2 = addr $b
     %t3 = call u8 @equal(%t1, %t2)
@@ -26,9 +26,9 @@ function @compare_call() -> u8 [binding=strong, object=_Z12compare_callv] {
 
   block ^entry:
     %t1 = unary neg i32 1
-    store i32 %t1, $expected
+    store typed i32 %t1, $expected
     %t2 = call i32 @get()
-    store i32 %t2, $refarg__1
+    store typed i32 %t2, $refarg__1
     %t3 = addr $refarg__1
     %t4 = addr $expected
     %t5 = call u8 @equal(%t3, %t4)
@@ -59,15 +59,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_7
 
   block ^cond_else_6:
-    store i32 2, $cond__1
+    store typed i32 2, $cond__1
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @equal(%a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_address, object_bytes=4]) -> u8 [binding=weak, object=_Z5equalRKiS0_, inline_hint=yes] {
@@ -75,12 +75,12 @@ function @equal(%a : ptr [pass=by_address, object_bytes=4], %b : ptr [pass=by_ad
   slot $b : ptr
 
   block ^entry:
-    store ptr %a, $a
-    store ptr %b, $b
-    %t1 = load ptr $a
-    %t2 = load i32 %t1
-    %t3 = load ptr $b
-    %t4 = load i32 %t3
+    store typed ptr %a, $a
+    store typed ptr %b, $b
+    %t1 = load typed ptr $a
+    %t2 = load typed i32 %t1
+    %t3 = load typed ptr $b
+    %t4 = load typed i32 %t3
     %t5 = cmp eq i32 %t2, %t4
     %t6 = convert trunc u8 i64 %t5
     return u8 %t6

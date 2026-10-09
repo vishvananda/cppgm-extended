@@ -3,7 +3,7 @@ global @__cppgm_class_template_identity_0_0_0__data : i32 [binding=weak, object=
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i32 @pool_int___nested__run()
-    %t2 = binary sub i32 %t1, 7
+    %t2 = binary sub nowrap i32 %t1, 7
     return i32 %t2
 }
 function @pool_int___nested__run() -> i32 [binding=weak, object=_ZN4poolIiE6nested3runEv, inline_hint=yes] {
@@ -13,6 +13,6 @@ function @pool_int___nested__run() -> i32 [binding=weak, object=_ZN4poolIiE6nest
 }
 function @pool_int___get() -> i32 [binding=weak, object=_ZN4poolIiE3getEv, inline_hint=yes] {
   block ^entry:
-    %t1 = load i32 @__cppgm_class_template_identity_0_0_0__data
+    %t1 = load typed i32 @__cppgm_class_template_identity_0_0_0__data
     return i32 %t1
 }

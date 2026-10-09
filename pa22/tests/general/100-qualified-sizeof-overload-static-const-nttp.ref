@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $value
     %t3 = addr $composite_value
     %t4 = addr $composite_value
-    store ptr %t4, $composite_ref
-    %t5 = load ptr $composite_ref
+    store typed ptr %t4, $composite_ref
+    %t5 = load typed ptr $composite_ref
     return i32 0
 }

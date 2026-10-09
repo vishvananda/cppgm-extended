@@ -45,6 +45,8 @@ MODES = [
     ('R14-branch-negate', 'convention', 'Branch sense follows the source'),
     ('R8-copy-elision', 'convention', 'A retype is a `copy`'),
     ('R7-pure-swap', 'convention', "Instructions follow the source's evaluation order"),
+    ('R21-drop-facts', 'convention', 'Instruction facts are part of the instruction'),
+    ('R22-global-storage-type', 'convention', 'A structured global states its storage type'),
 ]
 
 PURE = ('addr', 'const', 'index', 'binary', 'cmp', 'convert', 'copy')
@@ -57,7 +59,8 @@ LITERAL_BEFORE = r'(?<=[\s,(\[:])'
 LITERAL_AFTER = r'(?=[\s,:)\]]|$)'
 TYPED_LINE = re.compile(
     r'^\s*(?:%[A-Za-z0-9_]+\s*=\s*)?'
-    r'(?:const|copy|phi|store(?:\s+volatile)?|return|unary\s+\w+|binary\s+\w+|cmp\s+\w+|atomic_\w+)'
+    r'(?:const|copy|phi|store(?:\s+volatile)?(?:\s+typed)?|return|unary\s+\w+|'
+    r'binary\s+\w+(?:\s+nowrap)?(?:\s+exact)?|cmp\s+\w+|select|atomic_\w+)'
     r'\s+([A-Za-z0-9_]+)\b')
 
 
@@ -199,7 +202,7 @@ def rewrite(mode, text):
     if mode == 'R10-default-metadata':  # spell the default unwind mode in a second group
         return re.sub(r'^(function @(?![^\n]*\bunwind=)[^\n]*?)( \{)$', r'\1 [unwind=may]\2', text, flags=re.M)
     if mode == 'R11-hex-literal':       # spell stored integer zeros in hex
-        return map_functions(text, lambda fn: re.sub(r'(store (?:i|u)(?:8|16|32|64) )0,', r'\g<1>0x0,', fn))
+        return map_functions(text, lambda fn: re.sub(r'(store (?:typed )?(?:i|u)(?:8|16|32|64) )0,', r'\g<1>0x0,', fn))
     if mode == 'R12-indent':            # six-space instruction indentation
         return re.sub(r'^    (\S)', r'      \1', text, flags=re.M)
     if mode == 'R13-blank-lines':       # no blank lines inside functions
@@ -221,7 +224,12 @@ def rewrite(mode, text):
     if mode == 'R16-literal-spelling':  # every literal in another spelling of its value
         return '\n'.join(respell_literals(l) for l in text.split('\n'))
     if mode == 'R17-binary-commute':    # swap the operands of every commutative binary
-        return re.sub(r'(= binary (?:add|mul|and|or|xor) \S+ )([^,\n]+), ([^\n]+)$', r'\1\3, \2', text, flags=re.M)
+        return re.sub(r'(= binary (?:add|mul|and|or|xor)(?: nowrap)? \S+ )([^,\n]+), ([^\n]+)$', r'\1\3, \2', text, flags=re.M)
+    if mode == 'R21-drop-facts':        # drop every instruction fact
+        return re.sub(r'(= load(?: volatile)?| store(?: volatile)?|^    store(?: volatile)?) typed ',
+                      r'\1 ', re.sub(r'(= binary \w+) (?:nowrap |exact )+', r'\1 ', text), flags=re.M)
+    if mode == 'R22-global-storage-type':  # drop structured globals' storage types
+        return re.sub(r'^(global @\S+) : obj<\d+x\d+>( \[[^\]]*\])? = \{$', r'\1\2 = {', text, flags=re.M)
     if mode == 'R20-param-names':       # rename parameters
         def f(fn):
             header_end = fn.index('\n')

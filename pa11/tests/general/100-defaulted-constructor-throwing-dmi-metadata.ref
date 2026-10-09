@@ -12,11 +12,11 @@ function @Y__Y(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN1Y
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = call i32 @may_throw()
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN1YC2Ev = @Y__Y

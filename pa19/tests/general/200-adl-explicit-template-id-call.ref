@@ -16,7 +16,7 @@ function @holder__key_extractors(%this : ptr [object_bytes=1]) -> obj<8x4> [bind
   slot $retobj__1 : obj<8x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
     call void @tuples____cppgm_class_template_identity_0_1_0__tuple__aggregate(%t1, 1, 2)
     return obj<8x4> $retobj__1
@@ -25,7 +25,7 @@ function @tuples__get(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 0
 }
 function @tuples____cppgm_class_template_identity_0_1_0__tuple__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
@@ -34,16 +34,16 @@ function @tuples____cppgm_class_template_identity_0_1_0__tuple__aggregate(%this 
   slot $second : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %first, $first
-    store i32 %second, $second
-    %t1 = load i32 $first
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %first, $first
+    store typed i32 %second, $second
+    %t1 = load typed i32 $first
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $second
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $second
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }

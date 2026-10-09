@@ -5,10 +5,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    store i32 0, $x
+    store typed i32 0, $x
     %t1 = addr $x
-    store ptr %t1, $p
-    %t2 = load ptr $p
+    store typed ptr %t1, $p
+    %t2 = load typed ptr $p
     %t3 = cmp ne ptr %t2, 0
     %t4 = convert trunc u8 i64 %t3
     store u8 %t4, $b
@@ -18,16 +18,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t7, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
     %t8 = load u8 $b
     %t9 = convert zext i32 u8 %t8
-    store i32 %t9, $cond__1
+    store typed i32 %t9, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }

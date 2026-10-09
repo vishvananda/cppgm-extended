@@ -9,8 +9,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call obj<4x4> @duration_like_int___cast(%t2)
     copyobj 4x4 %t3, %t1
     %t4 = index i8 [projection=field] %t1, 0
-    %t5 = load i32 %t4
-    %t6 = binary sub i32 %t5, 7
+    %t5 = load typed i32 %t4
+    %t6 = binary sub nowrap i32 %t5, 7
     return i32 %t6
 }
 function @duration_like_int___cast(%other : ptr [pass=by_address, object_bytes=8]) -> obj<4x4> [binding=weak, object=_ZN13duration_likeIiE4castIxEES0_RKS_IT_E, inline_hint=yes] {
@@ -18,9 +18,9 @@ function @duration_like_int___cast(%other : ptr [pass=by_address, object_bytes=8
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %other, $other
+    store typed ptr %other, $other
     %t1 = addr $retobj__1
-    %t2 = load ptr $other
+    %t2 = load typed ptr $other
     call void @duration_like_int___duration_like_int___ov4(%t1, %t2)
     return obj<4x4> $retobj__1
 }
@@ -29,15 +29,15 @@ function @duration_like_int___duration_like_int___ov4(%this : ptr [object_bytes=
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     %t4 = convert trunc i32 i64 %t3
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }
 alias object _ZN13duration_likeIiEC2IxvEERKS_IT_E = @duration_like_int___duration_like_int___ov4

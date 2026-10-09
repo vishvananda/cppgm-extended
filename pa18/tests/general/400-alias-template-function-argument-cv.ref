@@ -9,16 +9,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $value
     return i32 0
 }
-function @function_box_int_lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0__lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0____function_box_int_lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0__lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0____ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=weak, object=_ZN12function_boxIFiRK5tokenIcES3_EEC1I8callableEET_, inline_hint=yes] {
+function @function_box_int_lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0__lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0____function_box_int_lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0__lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0____ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN12function_boxIFiRK5tokenIcES3_EEC1I8callableEET_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $invoker : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr @handler_int_lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0__lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0___callable___invoke
-    store ptr %t1, $invoker
-    %t2 = load ptr $invoker
+    store typed ptr %t1, $invoker
+    %t2 = load typed ptr $invoker
     return void
 }
 function @handler_int_lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0__lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0___callable___invoke(%__param0 : ptr [pass=by_address], %__param1 : ptr [pass=by_address]) -> i32 [binding=weak, object=_ZN7handlerIFiRK5tokenIcES3_E8callableE6invokeES3_S3_, inline_hint=yes] {
@@ -26,8 +26,8 @@ function @handler_int_lvalue_reference_to_const_struct___cppgm_class_template_id
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return i32 11
 }
 alias object _ZN12function_boxIFiRK5tokenIcES3_EEC2I8callableEET_ = @function_box_int_lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0__lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0____function_box_int_lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0__lvalue_reference_to_const_struct___cppgm_class_template_identity_3_0_0____ov3

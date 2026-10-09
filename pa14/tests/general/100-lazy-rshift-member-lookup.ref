@@ -5,10 +5,10 @@ function @use(%stream : ptr [pass=by_address, object_bytes=1], %value : ptr [pas
   slot $value : ptr
 
   block ^entry:
-    store ptr %stream, $stream
-    store ptr %value, $value
-    %t1 = load ptr $stream
-    %t2 = load ptr $value
+    store typed ptr %stream, $stream
+    store typed ptr %value, $value
+    %t1 = load typed ptr $stream
+    %t2 = load typed ptr $value
     %t3 = call ptr @input_int___operator__(%t1, %t2)
     return void
 }
@@ -17,11 +17,11 @@ function @input_int___operator__(%this : ptr [object_bytes=1], %v : ptr [pass=by
   slot $v : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %v, $v
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %v, $v
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $v
+    %t3 = load typed ptr $v
     %t4 = call ptr @input_base__operator__(%t2, %t3)
     return ptr %t4
 }

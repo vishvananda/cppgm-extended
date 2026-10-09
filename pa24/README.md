@@ -334,7 +334,11 @@ PA10-PA23, including:
   - hidden destination-pointer returns
   - lowered object parameters carried as `ptr`
 - direct one- and two-eightbyte object parameters and results in the supported
-  x86-64 ABI, including padded homes for partial second eightbytes
+  x86-64 ABI, including padded homes for partial second eightbytes, with each
+  eightbyte in a GPR or an XMM register (or nowhere) as the parameter's
+  `classes` or the function's `result_classes` metadata states, and the whole
+  object on the stack for `classes=memory` or when its registers run out
+- `select`, as a conditional move or branches, and the `ctz` and `clz` bit scans
 - supported variadic calls and `va_start` register-save state for GPR and XMM
   arguments, including the caller-provided vector-register count
 - structured vtable/global table data emitted by source-to-LowIR lowering
@@ -486,7 +490,7 @@ To complete PA24, implement these goals:
    later scalar operand in the high-half register must first receive another
    stable location.
 
-9. Implement call-boundary correctness without requiring a clever allocator.
+9. Implement call-boundary correctness before any allocation cleverness.
    PA24 must respect the native calling convention for direct calls, indirect calls,
    mixed GPR/XMM arguments, variadic register-save state, stack arguments, scalar and
    direct-object returned values, and values that remain live across calls. The tests
@@ -724,7 +728,13 @@ The intended next stages are:
 So PA24 should leave behind:
 
 - a stable `LowIR -> native` lowering boundary
-- a stable `LowIR -> machine IR` boundary that later optimization passes can target
+- a stable `LowIR -> machine IR` boundary that later optimization passes can target:
+  instruction selection kept separate from register assignment and frame placement,
+  over a machine IR whose instructions state their defined, used and clobbered
+  registers, so that PA33 can add a liveness-based allocator and machine-IR passes
+  without rewriting the selector. The conservative placement PA24 uses is one policy
+  over that IR; selection that places values in frame homes as it goes is the shape
+  that later has to be taken apart
 - reusable target-specific code/data emission layers
 - a backend test corpus that already catches the basic execution-level
   arithmetic and conversion bugs before the source-driven toolchain stages

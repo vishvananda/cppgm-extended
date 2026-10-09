@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $impl
     %t3 = addr $impl
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 7, %t4
+    store typed i32 7, %t4
     %t5 = addr $h
     %t6 = addr $svc
     %t7 = addr $impl
@@ -19,15 +19,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load i32 $cond__1
+    %t11 = load typed i32 $cond__1
     return i32 %t11
 }
 function @service_mutex_type___receive(%this : ptr [object_bytes=1], %impl : ptr [pass=by_address, object_bytes=4], %handler : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN7serviceI10mutex_typeE7receiveI6traitsJFviEER7handlerEEiRNS1_19implementation_typeIT_JDpT0_EEEOT1_] {
@@ -36,21 +36,21 @@ function @service_mutex_type___receive(%this : ptr [object_bytes=1], %impl : ptr
   slot $handler : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %impl, $impl
-    store ptr %handler, $handler
-    %t1 = load ptr $impl
+    store typed ptr %this, $this
+    store typed ptr %impl, $impl
+    store typed ptr %handler, $handler
+    %t1 = load typed ptr $impl
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $handler
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $handler
     %t5 = call i32 @handler__operator__(%t4)
-    %t6 = binary add i32 %t3, %t5
+    %t6 = binary add nowrap i32 %t3, %t5
     return i32 %t6
 }
 function @handler__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN7handlerclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 5
 }

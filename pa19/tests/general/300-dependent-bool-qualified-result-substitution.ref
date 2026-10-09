@@ -5,13 +5,13 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
 
   block ^entry:
     %t1 = addr $p
-    store i32 7, $value
+    store typed i32 7, $value
     %t2 = addr $p
     %t3 = addr $value
     %t4 = call ptr @mu(%t2, %t3)
-    store ptr %t4, $result
-    %t5 = load ptr $result
-    %t6 = load i32 %t5
+    store typed ptr %t4, $result
+    %t5 = load typed ptr $result
+    %t6 = load typed i32 %t5
     return i32 %t6
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -23,15 +23,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @mu(%__param0 : ptr [pass=by_address, object_bytes=1], %value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_Z2muI11placeholderILi1EEiEN10mu_return2IXltLi0Esr14is_placeholderIT_EE5valueES3_T0_E4typeERS3_RS4_] {
@@ -39,8 +39,8 @@ function @mu(%__param0 : ptr [pass=by_address, object_bytes=1], %value : ptr [pa
   slot $value : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %__param0, $__param0
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     return ptr %t1
 }

@@ -115,8 +115,9 @@ private:
 		for (std::size_t i = 0; i < program_.functions.size(); ++i)
 		{
 			const Function& function = program_.functions[i];
-			if (function.metadata.binding != SBM_WEAK &&
-				function.metadata.binding != SBM_INTERNAL)
+			if ((function.metadata.binding != SBM_WEAK &&
+					function.metadata.binding != SBM_INTERNAL) ||
+				function.metadata.replaceable)
 				MarkSymbol(function.symbol, RETENTION_EXTERNAL_STRONG);
 			if (function.metadata.object_output_root)
 				MarkSymbol(function.symbol, RETENTION_OBJECT_OUTPUT_ROOT);

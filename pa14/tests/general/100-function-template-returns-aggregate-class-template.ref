@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $land__2 : i64
 
   block ^entry:
-    store i32 7, $value
+    store typed i32 7, $value
     %t1 = addr $result
     %t2 = addr $value
     %t3 = convert sext i64 i32 1
@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 16x8 %t4, %t1
     %t5 = addr $result
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load ptr %t6
+    %t7 = load typed ptr %t6
     %t8 = addr $value
     %t9 = cmp eq ptr %t7, %t8
     branch %t9, ^land_rhs_4, ^land_short_5
@@ -21,31 +21,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t10 = addr $result
     %t11 = index i8 [projection=field] %t10, 8
-    %t12 = load i64 %t11
+    %t12 = load typed i64 %t11
     %t13 = convert sext i64 i32 1
     %t14 = cmp eq i64 %t12, %t13
     %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $land__2
+    store typed i64 %t15, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t16 = load i64 $land__2
+    %t16 = load typed i64 $land__2
     branch %t16, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t17 = load i32 $cond__1
+    %t17 = load typed i32 $cond__1
     return i32 %t17
 }
 function @allocate_at_least(%ptr : ptr, %n : i64) -> obj<16x8> [binding=weak, object=_Z17allocate_at_leastIiE17allocation_resultIT_EPS1_m] {
@@ -54,11 +54,11 @@ function @allocate_at_least(%ptr : ptr, %n : i64) -> obj<16x8> [binding=weak, ob
   slot $retobj__1 : obj<16x8>
 
   block ^entry:
-    store ptr %ptr, $ptr
-    store i64 %n, $n
+    store typed ptr %ptr, $ptr
+    store typed i64 %n, $n
     %t1 = addr $retobj__1
-    %t2 = load ptr $ptr
-    %t3 = load i64 $n
+    %t2 = load typed ptr $ptr
+    %t3 = load typed i64 $n
     call void @__cppgm_class_template_identity_0_1_0__allocation_result__aggregate(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
@@ -68,16 +68,16 @@ function @__cppgm_class_template_identity_0_1_0__allocation_result__aggregate(%t
   slot $count : i64
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %ptr, $ptr
-    store i64 %count, $count
-    %t1 = load ptr $ptr
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %ptr, $ptr
+    store typed i64 %count, $count
+    %t1 = load typed ptr $ptr
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load i64 $count
-    %t5 = load ptr $this
+    store typed ptr %t1, %t3
+    %t4 = load typed i64 $count
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 8
-    store i64 %t4, %t6
+    store typed i64 %t4, %t6
     return void
 }

@@ -131,10 +131,10 @@ global @Object____vtt [binding=weak, object=_ZTT6Object, object_root=yes] = {
   ptr addr @Object____construction__Base__0__s1__vtable + 24
   ptr addr @Object____view__Virtual__32__vtable + 24
 }
-global @object [binding=strong] = {
+global @object : obj<48x8> [binding=strong] = {
   zero 48
 }
-global @objects [binding=strong] = {
+global @objects : obj<96x8> [binding=strong] = {
   zero 96
 }
 global @reference : ptr [binding=strong] = addr @object + 32
@@ -157,159 +157,159 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $lor__7 : i64
 
   block ^entry:
-    %t1 = load ptr @reference
+    %t1 = load typed ptr @reference
     %t2 = index i8 [projection=field] %t1, 8
-    store i32 7, %t2
-    %t3 = load ptr @array_reference
+    store typed i32 7, %t2
+    %t3 = load typed ptr @array_reference
     %t4 = index i8 [projection=field] %t3, 8
-    store i32 11, %t4
+    store typed i32 11, %t4
     %t5 = addr @object
-    %t6 = load ptr %t5
+    %t6 = load typed ptr %t5
     %t7 = index i8 %t6, -24
-    %t8 = load i64 %t7
+    %t8 = load typed i64 %t7
     %t9 = index i8 %t5, %t8
     %t10 = index i8 %t9, 0
-    store ptr %t10, $expected
+    store typed ptr %t10, $expected
     %t11 = addr @object
     %t12 = index i8 %t11, 32
     %t13 = index i8 [projection=field] %t12, 8
-    %t14 = load i32 %t13
+    %t14 = load typed i32 %t13
     %t15 = cmp ne i32 %t14, 7
     branch %t15, ^lor_short_20, ^lor_rhs_19
 
   block ^lor_rhs_19:
-    %t16 = load ptr @pointer
-    %t17 = load ptr $expected
+    %t16 = load typed ptr @pointer
+    %t17 = load typed ptr $expected
     %t18 = cmp ne ptr %t16, %t17
     %t19 = cmp ne i64 %t18, 0
-    store i64 %t19, $lor__7
+    store typed i64 %t19, $lor__7
     jump ^lor_end_21
 
   block ^lor_short_20:
-    store i64 1, $lor__7
+    store typed i64 1, $lor__7
     jump ^lor_end_21
 
   block ^lor_end_21:
-    %t20 = load i64 $lor__7
+    %t20 = load typed i64 $lor__7
     branch %t20, ^lor_short_17, ^lor_rhs_16
 
   block ^lor_rhs_16:
-    %t21 = load ptr @explicit_pointer
-    %t22 = load ptr $expected
+    %t21 = load typed ptr @explicit_pointer
+    %t22 = load typed ptr $expected
     %t23 = cmp ne ptr %t21, %t22
     %t24 = cmp ne i64 %t23, 0
-    store i64 %t24, $lor__6
+    store typed i64 %t24, $lor__6
     jump ^lor_end_18
 
   block ^lor_short_17:
-    store i64 1, $lor__6
+    store typed i64 1, $lor__6
     jump ^lor_end_18
 
   block ^lor_end_18:
-    %t25 = load i64 $lor__6
+    %t25 = load typed i64 $lor__6
     branch %t25, ^lor_short_14, ^lor_rhs_13
 
   block ^lor_rhs_13:
-    %t26 = load ptr @alias_reference
-    %t27 = load ptr $expected
+    %t26 = load typed ptr @alias_reference
+    %t27 = load typed ptr $expected
     %t28 = cmp ne ptr %t26, %t27
     %t29 = cmp ne i64 %t28, 0
-    store i64 %t29, $lor__5
+    store typed i64 %t29, $lor__5
     jump ^lor_end_15
 
   block ^lor_short_14:
-    store i64 1, $lor__5
+    store typed i64 1, $lor__5
     jump ^lor_end_15
 
   block ^lor_end_15:
-    %t30 = load i64 $lor__5
+    %t30 = load typed i64 $lor__5
     branch %t30, ^lor_short_11, ^lor_rhs_10
 
   block ^lor_rhs_10:
-    %t31 = load ptr @alias_pointer
-    %t32 = load ptr $expected
+    %t31 = load typed ptr @alias_pointer
+    %t32 = load typed ptr $expected
     %t33 = cmp ne ptr %t31, %t32
     %t34 = cmp ne i64 %t33, 0
-    store i64 %t34, $lor__4
+    store typed i64 %t34, $lor__4
     jump ^lor_end_12
 
   block ^lor_short_11:
-    store i64 1, $lor__4
+    store typed i64 1, $lor__4
     jump ^lor_end_12
 
   block ^lor_end_12:
-    %t35 = load i64 $lor__4
+    %t35 = load typed i64 $lor__4
     branch %t35, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
     %t36 = addr @objects
     %t37 = binary mul i64 1, 48
     %t38 = index i8 [projection=array_element] %t36, %t37
-    %t39 = load ptr %t38
+    %t39 = load typed ptr %t38
     %t40 = index i8 %t39, -24
-    %t41 = load i64 %t40
+    %t41 = load typed i64 %t40
     %t42 = index i8 %t38, %t41
     %t43 = index i8 %t42, 0
     %t44 = index i8 [projection=field] %t43, 8
-    %t45 = load i32 %t44
+    %t45 = load typed i32 %t44
     %t46 = cmp ne i32 %t45, 11
     %t47 = cmp ne i64 %t46, 0
-    store i64 %t47, $lor__3
+    store typed i64 %t47, $lor__3
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t48 = load i64 $lor__3
+    %t48 = load typed i64 $lor__3
     branch %t48, ^lor_short_5, ^lor_rhs_4
 
   block ^lor_rhs_4:
     %t49 = addr @objects
     %t50 = binary mul i64 0, 48
     %t51 = index i8 [projection=array_element] %t49, %t50
-    %t52 = load ptr %t51
+    %t52 = load typed ptr %t51
     %t53 = index i8 %t52, -24
-    %t54 = load i64 %t53
+    %t54 = load typed i64 %t53
     %t55 = index i8 %t51, %t54
     %t56 = index i8 %t55, 0
     %t57 = index i8 [projection=field] %t56, 8
-    %t58 = load i32 %t57
+    %t58 = load typed i32 %t57
     %t59 = cmp ne i32 %t58, 0
     %t60 = cmp ne i64 %t59, 0
-    store i64 %t60, $lor__2
+    store typed i64 %t60, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t61 = load i64 $lor__2
+    %t61 = load typed i64 $lor__2
     branch %t61, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
-    %t62 = load ptr @array_reference
+    %t62 = load typed ptr @array_reference
     %t63 = addr @objects
     %t64 = binary mul i64 1, 48
     %t65 = index i8 [projection=array_element] %t63, %t64
-    %t66 = load ptr %t65
+    %t66 = load typed ptr %t65
     %t67 = index i8 %t66, -24
-    %t68 = load i64 %t67
+    %t68 = load typed i64 %t67
     %t69 = index i8 %t65, %t68
     %t70 = index i8 %t69, 0
     %t71 = cmp ne ptr %t62, %t70
     %t72 = cmp ne i64 %t71, 0
-    store i64 %t72, $lor__1
+    store typed i64 %t72, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t73 = load i64 $lor__1
+    %t73 = load typed i64 $lor__1
     %t74 = convert trunc i32 i64 %t73
     return i32 %t74
 }
@@ -317,17 +317,17 @@ function @Object___Object__deleting_entry(%this : ptr) -> void [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     call void @Object___Object(%t1)
     eh_end
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     call void @operatordelete(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     call void @operatordelete(%t3)
     eh_end
     resume
@@ -339,55 +339,55 @@ function @Object___Object(%this : ptr [object_bytes=48]) -> void [unwind=no, bin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @Object__vtable
     %t3 = index i8 %t2, 24
-    store ptr %t3, %t1
-    %t4 = load ptr $this
-    %t5 = load ptr %t4
+    store typed ptr %t3, %t1
+    %t4 = load typed ptr $this
+    %t5 = load typed ptr %t4
     %t6 = index i8 %t5, -24
-    %t7 = load i64 %t6
+    %t7 = load typed i64 %t6
     %t8 = index i8 %t4, %t7
     %t9 = index i8 %t8, 0
     %t10 = addr @Object____view__Virtual__32__vtable
     %t11 = index i8 %t10, 24
-    store ptr %t11, %t9
+    store typed ptr %t11, %t9
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t12 = load ptr $this
+    %t12 = load typed ptr $this
     %t13 = index i8 %t12, 0
     %t14 = addr @Object____vtt
     %t15 = index i8 %t14, 8
-    %t16 = load ptr $this
+    %t16 = load typed ptr $this
     %t17 = index i8 %t16, 32
     call void @Base___Base__base_entry(%t13, %t15, %t17)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t18 = load ptr $this
+    %t18 = load typed ptr $this
     %t19 = index i8 %t18, 32
     call void @Virtual___Virtual__base_entry(%t19)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
-    %t20 = load ptr $this
+    %t20 = load typed ptr $this
     %t21 = index i8 %t20, 32
     call void @Virtual___Virtual__base_entry(%t21)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t22 = load ptr $this
+    %t22 = load typed ptr $this
     %t23 = index i8 %t22, 0
     %t24 = addr @Object____vtt
     %t25 = index i8 %t24, 8
-    %t26 = load ptr $this
+    %t26 = load typed ptr $this
     %t27 = index i8 %t26, 32
     call void @Base___Base__base_entry(%t23, %t25, %t27)
-    %t28 = load ptr $this
+    %t28 = load typed ptr $this
     %t29 = index i8 %t28, 32
     call void @Virtual___Virtual__base_entry(%t29)
     eh_end
@@ -400,49 +400,49 @@ function @Object__Object(%this : ptr [object_bytes=48]) -> void [binding=weak, o
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 32
     call void @Virtual__Virtual__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 %t5, 0
     %t7 = addr @Object____vtt
     %t8 = index i8 %t7, 8
-    %t9 = load ptr $this
+    %t9 = load typed ptr $this
     %t10 = index i8 %t9, 32
     call void @Base__Base__base_entry(%t6, %t8, %t10)
     eh_end
     eh_cleanup ^constructor_cleanup_2
-    %t17 = load ptr $this
+    %t17 = load typed ptr $this
     %t18 = addr @Object__vtable
     %t19 = index i8 %t18, 24
-    store ptr %t19, %t17
-    %t20 = load ptr $this
-    %t21 = load ptr %t20
+    store typed ptr %t19, %t17
+    %t20 = load typed ptr $this
+    %t21 = load typed ptr %t20
     %t22 = index i8 %t21, -24
-    %t23 = load i64 %t22
+    %t23 = load typed i64 %t22
     %t24 = index i8 %t20, %t23
     %t25 = index i8 %t24, 0
     %t26 = addr @Object____view__Virtual__32__vtable
     %t27 = index i8 %t26, 24
-    store ptr %t27, %t25
+    store typed ptr %t27, %t25
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 32
     call void @Virtual___Virtual__base_entry(%t4)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
-    %t11 = load ptr $this
+    %t11 = load typed ptr $this
     %t12 = index i8 %t11, 0
     %t13 = addr @Object____vtt
     %t14 = index i8 %t13, 8
-    %t15 = load ptr $this
+    %t15 = load typed ptr $this
     %t16 = index i8 %t15, 32
     call void @Base___Base__base_entry(%t12, %t14, %t16)
     jump ^constructor_cleanup_1
@@ -451,23 +451,23 @@ function @Base___Base__base_entry(%this : ptr [object_bytes=40], %__vtt : ptr, %
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     %t3 = index i8 %__vbptr0, 0
     %t4 = index i8 %__vtt, 8
-    %t5 = load ptr %t4
-    store ptr %t5, %t3
+    %t5 = load typed ptr %t4
+    store typed ptr %t5, %t3
     eh_end
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 %t6, 0
     call void @Primary___Primary__base_entry(%t7)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t8 = load ptr $this
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 0
     call void @Primary___Primary__base_entry(%t9)
     eh_end
@@ -480,17 +480,17 @@ function @Base___Base__deleting_entry(%this : ptr) -> void [binding=weak, object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     call void @Base___Base(%t1)
     eh_end
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     call void @operatordelete(%t2)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     call void @operatordelete(%t3)
     eh_end
     resume
@@ -502,47 +502,47 @@ function @Base___Base(%this : ptr [object_bytes=40]) -> void [unwind=no, binding
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @Base__vtable
     %t3 = index i8 %t2, 24
-    store ptr %t3, %t1
-    %t4 = load ptr $this
-    %t5 = load ptr %t4
+    store typed ptr %t3, %t1
+    %t4 = load typed ptr $this
+    %t5 = load typed ptr %t4
     %t6 = index i8 %t5, -24
-    %t7 = load i64 %t6
+    %t7 = load typed i64 %t6
     %t8 = index i8 %t4, %t7
     %t9 = index i8 %t8, 0
     %t10 = addr @Base____view__Virtual__24__vtable
     %t11 = index i8 %t10, 24
-    store ptr %t11, %t9
+    store typed ptr %t11, %t9
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t12 = load ptr $this
+    %t12 = load typed ptr $this
     %t13 = index i8 %t12, 0
     call void @Primary___Primary__base_entry(%t13)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t14 = load ptr $this
+    %t14 = load typed ptr $this
     %t15 = index i8 %t14, 24
     call void @Virtual___Virtual__base_entry(%t15)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
-    %t16 = load ptr $this
+    %t16 = load typed ptr $this
     %t17 = index i8 %t16, 24
     call void @Virtual___Virtual__base_entry(%t17)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t18 = load ptr $this
+    %t18 = load typed ptr $this
     %t19 = index i8 %t18, 0
     call void @Primary___Primary__base_entry(%t19)
-    %t20 = load ptr $this
+    %t20 = load typed ptr $this
     %t21 = index i8 %t20, 24
     call void @Virtual___Virtual__base_entry(%t21)
     eh_end
@@ -555,30 +555,30 @@ function @Virtual___Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Virtual__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Virtual___Virtual__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7VirtualD0Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @Virtual__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     call void @operatordelete(%t4)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     call void @operatordelete(%t5)
     eh_end
     resume
@@ -590,45 +590,45 @@ function @Virtual___Virtual(%this : ptr [object_bytes=16]) -> void [unwind=no, b
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Virtual__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Virtual__Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7VirtualC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Virtual__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Base__Base__base_entry(%this : ptr [object_bytes=40], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @Primary__Primary__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
-    %t5 = load ptr $this
-    %t6 = load ptr %__vtt
-    store ptr %t6, %t5
+    %t5 = load typed ptr $this
+    %t6 = load typed ptr %__vtt
+    store typed ptr %t6, %t5
     %t7 = index i8 %__vbptr0, 0
     %t8 = index i8 %__vtt, 8
-    %t9 = load ptr %t8
-    store ptr %t9, %t7
+    %t9 = load typed ptr %t8
+    store typed ptr %t9, %t7
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
     call void @Primary___Primary__base_entry(%t4)
     eh_end
@@ -638,30 +638,30 @@ function @Primary___Primary__base_entry(%this : ptr [object_bytes=16]) -> void [
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Primary__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Primary___Primary__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN7PrimaryD0Ev] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr @Primary__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     eh_end
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     call void @operatordelete(%t4)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     call void @operatordelete(%t5)
     eh_end
     resume
@@ -673,22 +673,22 @@ function @Primary___Primary(%this : ptr [object_bytes=16]) -> void [unwind=no, b
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Primary__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @Primary__Primary__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7PrimaryC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @Primary__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @_Base___Base__deleting_entry__vtable_return_adjust__this_neg24__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn24_N4BaseD0Ev] {
@@ -741,26 +741,26 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     resume
 
   block ^call_unwind_end_2:
-    %t11 = load ptr @base_pointer
+    %t11 = load typed ptr @base_pointer
     %t12 = cmp eq ptr %t11, 0
     branch %t12, ^basecast_null_3, ^basecast_adjust_4
 
   block ^basecast_null_3:
-    store ptr 0, $basecast__1
+    store typed ptr 0, $basecast__1
     jump ^basecast_end_5
 
   block ^basecast_adjust_4:
-    %t13 = load ptr %t11
+    %t13 = load typed ptr %t11
     %t14 = index i8 %t13, -24
-    %t15 = load i64 %t14
+    %t15 = load typed i64 %t14
     %t16 = index i8 %t11, %t15
     %t17 = index i8 %t16, 0
-    store ptr %t17, $basecast__1
+    store typed ptr %t17, $basecast__1
     jump ^basecast_end_5
 
   block ^basecast_end_5:
-    %t18 = load ptr $basecast__1
-    store ptr %t18, @alias_pointer
+    %t18 = load typed ptr $basecast__1
+    store typed ptr %t18, @alias_pointer
     return void
 }
 function @__cppgm_fini() -> void [role=fini, binding=internal] {

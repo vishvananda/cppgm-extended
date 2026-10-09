@@ -8,10 +8,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @value__value(%t3, 1, 2)
     %t4 = addr $x
     %t5 = index i8 [projection=field] %t4, 4
-    store i32 0, %t5
+    store typed i32 0, %t5
     %t6 = addr $x
     %t7 = index i8 [projection=field] %t6, 4
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     return i32 %t8
 }
 function @value__value(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32) -> void [binding=weak, object=_ZN5valueC1Eii, inline_hint=yes] {
@@ -20,9 +20,9 @@ function @value__value(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 
   slot $__param2 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    store i32 %__param2, $__param2
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    store typed i32 %__param2, $__param2
     return void
 }
 alias object _ZN5valueC2Eii = @value__value

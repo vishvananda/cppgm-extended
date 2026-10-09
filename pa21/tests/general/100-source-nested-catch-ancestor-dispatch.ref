@@ -45,7 +45,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^catch_dispatch_4
     eh_try ^catch_dispatch_7
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t1
+    store typed i32 7, %t1
     %t2 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t1, %t2, 0)
     eh_end
@@ -134,11 +134,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_body_16:
     %t14 = call ptr @__external_runtime____cxa_begin_catch(%t11)
-    store ptr %t14, $catch__1
+    store typed ptr %t14, $catch__1
     eh_cleanup ^catch_cleanup_18
-    %t15 = load i32 %t14
-    store i32 %t15, $value
-    %t16 = load i32 $value
+    %t15 = load typed i32 %t14
+    store typed i32 %t15, $value
+    %t16 = load typed i32 $value
     %t17 = cmp ne i32 %t16, 7
     %t18 = convert trunc i32 i64 %t17
     eh_end

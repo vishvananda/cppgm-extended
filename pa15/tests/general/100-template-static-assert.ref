@@ -13,7 +13,7 @@ function @Box_4___get(%this : ptr [object_bytes=16]) -> i32 [binding=weak, objec
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = const i64 16
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2

@@ -2,8 +2,8 @@ function @use(%value : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=str
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = call u8 @equal(%t1)
     return u8 %t2
 }
@@ -12,17 +12,17 @@ function @equal(%value : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=w
   slot $argobj__1 : obj<1x1>
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = addr $argobj__1
     %t3 = call u8 @holder_int___visit(%t1, $argobj__1)
     return u8 %t3
 }
-function @holder_int___visit(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> u8 [binding=internal, object=_ZNK6holderIiE5visitIZ5equalRKS0_EUlPiE_EEbT_, inline_hint=yes] {
+function @holder_int___visit(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> u8 [binding=internal, object=_ZNK6holderIiE5visitIZ5equalRKS0_EUlPiE_EEbT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return u8 1
 }

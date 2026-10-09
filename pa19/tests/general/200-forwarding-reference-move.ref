@@ -2,10 +2,10 @@ function @f(%p : ptr) -> ptr [binding=strong, object=_Z1fPKDs] {
   slot $p : ptr
 
   block ^entry:
-    store ptr %p, $p
+    store typed ptr %p, $p
     %t1 = addr $p
     %t2 = call ptr @mv(%t1)
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     return ptr %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -16,7 +16,7 @@ function @mv(%t : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, o
   slot $t : ptr
 
   block ^entry:
-    store ptr %t, $t
-    %t1 = load ptr $t
+    store typed ptr %t, $t
+    %t1 = load typed ptr $t
     return ptr %t1
 }

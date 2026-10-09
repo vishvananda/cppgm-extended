@@ -11,6 +11,6 @@ function @box_int__float___subset(%this : ptr [object_bytes=1]) -> void [binding
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

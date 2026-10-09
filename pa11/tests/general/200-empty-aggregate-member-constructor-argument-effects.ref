@@ -2,9 +2,9 @@ global @calls : i32 [binding=strong] = zero
 
 function @next() -> i32 [unwind=no, binding=strong, object=_Z4nextv] {
   block ^entry:
-    %t1 = load i32 @calls
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @calls
+    %t1 = load typed i32 @calls
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @calls
     return i32 %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -21,38 +21,38 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Empty__Empty(%t3, %t4, %t5)
     %t6 = addr $holder
     %t7 = index i8 [projection=field] %t6, 4
-    store i32 7, %t7
-    %t8 = load i32 @calls
+    store typed i32 7, %t7
+    %t8 = load typed i32 @calls
     %t9 = cmp eq i32 %t8, 2
     branch %t9, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t10 = addr $holder
     %t11 = index i8 [projection=field] %t10, 4
-    %t12 = load i32 %t11
+    %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
     %t14 = cmp ne i64 %t13, 0
-    store i64 %t14, $land__2
+    store typed i64 %t14, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t15 = load i64 $land__2
+    %t15 = load typed i64 $land__2
     branch %t15, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t16 = load i32 $cond__1
+    %t16 = load typed i32 $cond__1
     return i32 %t16
 }
 function @Empty__Empty(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32) -> void [unwind=no, binding=weak, object=_ZN5EmptyC1Eii, inline_hint=yes] {
@@ -61,9 +61,9 @@ function @Empty__Empty(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 
   slot $__param2 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    store i32 %__param2, $__param2
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    store typed i32 %__param2, $__param2
     return void
 }
 alias object _ZN5EmptyC2Eii = @Empty__Empty

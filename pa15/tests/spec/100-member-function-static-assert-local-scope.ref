@@ -13,7 +13,7 @@ function @test_suite__run(%this : ptr [object_bytes=1]) -> void [binding=weak, o
   slot $value_result : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $object
     %t2 = addr $value_result
     %t3 = addr $value_result

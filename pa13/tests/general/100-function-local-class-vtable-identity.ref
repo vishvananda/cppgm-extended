@@ -85,10 +85,10 @@ function @first() -> i32 [binding=strong, object=_Z5firstv] {
     call void @local__local(%t1)
     %t2 = addr $object
     %t3 = index i8 %t2, 0
-    store ptr %t3, $polymorphic
-    %t4 = load ptr $polymorphic
-    %t5 = load ptr %t4
-    %t6 = load ptr %t5
+    store typed ptr %t3, $polymorphic
+    %t4 = load typed ptr $polymorphic
+    %t5 = load typed ptr %t4
+    %t6 = load typed ptr %t5
     %t7 = call i32 %t6(%t4) as (%arg0 : ptr [object_bytes=8]) -> i32
     return i32 %t7
 }
@@ -101,10 +101,10 @@ function @second() -> i32 [binding=strong, object=_Z6secondv] {
     call void @local__local__sym2(%t1)
     %t2 = addr $object
     %t3 = index i8 %t2, 0
-    store ptr %t3, $polymorphic
-    %t4 = load ptr $polymorphic
-    %t5 = load ptr %t4
-    %t6 = load ptr %t5
+    store typed ptr %t3, $polymorphic
+    %t4 = load typed ptr $polymorphic
+    %t5 = load typed ptr %t4
+    %t6 = load typed ptr %t5
     %t7 = call i32 %t6(%t4) as (%arg0 : ptr [object_bytes=8]) -> i32
     return i32 %t7
 }
@@ -121,87 +121,87 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = call i32 @second()
     %t4 = cmp eq i32 %t3, 2
     %t5 = cmp ne i64 %t4, 0
-    store i64 %t5, $land__2
+    store typed i64 %t5, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t6 = load i64 $land__2
+    %t6 = load typed i64 $land__2
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @local__value(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ5firstvENK5local5valueEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }
 function @local__local(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZ5firstvEN5localC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @base__base__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @__vtable_type_Z5firstvE5local
     %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @base__value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZNK4base5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 0
 }
 function @local__value__sym2(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ6secondvENK5local5valueEv, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 2
 }
 function @local__local__sym2(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZ6secondvEN5localC1Ev, prefer_local=yes, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @base__base__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @__vtable_type_Z6secondvE5local
     %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN4baseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZZ5firstvEN5localC2Ev = @local__local

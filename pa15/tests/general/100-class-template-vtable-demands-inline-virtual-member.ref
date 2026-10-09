@@ -31,7 +31,7 @@ function @box_int___value(%this : ptr [object_bytes=8]) -> i32 [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = const i64 4
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
@@ -40,11 +40,11 @@ function @box_int___box_int_(%this : ptr [object_bytes=8]) -> void [unwind=no, b
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @__cppgm_class_template_identity_0_0_0__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN3boxIiEC2Ev = @box_int___box_int_

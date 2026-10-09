@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = binary and i32 %t15, 3
     %t17 = copy u32 %t16
     %t18 = copy i32 %t17
-    %t19 = binary add i32 %t18, 1
+    %t19 = binary add nowrap i32 %t18, 1
     %t20 = addr $bits
     %t21 = index i8 [projection=field] %t20, 0
     %t22 = binary and i32 %t19, 3
@@ -41,7 +41,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t32 = binary and i32 %t31, 3
     %t33 = copy u32 %t32
     %t34 = copy i32 %t33
-    %t35 = binary add i32 %t34, 1
+    %t35 = binary add nowrap i32 %t34, 1
     %t36 = binary and i32 %t35, 3
     %t37 = copy u32 %t36
     %t38 = binary shl i32 %t36, 1
@@ -68,26 +68,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t55 = copy i32 %t54
     %t56 = cmp eq i32 %t55, 3
     %t57 = cmp ne i64 %t56, 0
-    store i64 %t57, $land__2
+    store typed i64 %t57, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t58 = load i64 $land__2
+    %t58 = load typed i64 $land__2
     branch %t58, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t59 = load i32 $cond__1
+    %t59 = load typed i32 $cond__1
     return i32 %t59
 }

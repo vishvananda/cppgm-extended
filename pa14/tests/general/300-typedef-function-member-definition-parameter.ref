@@ -12,9 +12,9 @@ function @X_int___f(%this : ptr [object_bytes=1], %x : i32) -> void [binding=wea
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:

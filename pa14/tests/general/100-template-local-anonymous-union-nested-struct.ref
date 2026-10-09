@@ -7,10 +7,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $p
     %t2 = addr $p
     %t3 = index i8 [projection=field] %t2, 0
-    store i64 0, %t3
+    store typed i64 0, %t3
     %t4 = addr $p
     %t5 = index i8 [projection=field] %t4, 8
-    store i64 0, %t5
+    store typed i64 0, %t5
     %t6 = addr $h
     %t7 = addr $h
     %t8 = addr $argobj__1
@@ -25,7 +25,7 @@ function @H_P___f(%this : ptr [object_bytes=1], %v : obj<16x8>) -> i32 [binding=
   slot $__u : obj<16x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $v
     copyobj 16x8 %v, %t1
     %t2 = addr $__u
@@ -40,11 +40,11 @@ function @P__operator_(%this : ptr [object_bytes=16], %other : ptr [pass=by_addr
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
     copyobj 16x8 %t2, %t1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     return ptr %t3
 }

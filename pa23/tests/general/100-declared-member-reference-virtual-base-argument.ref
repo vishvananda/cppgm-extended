@@ -64,14 +64,14 @@ function @OStream__OStream(%this : ptr [object_bytes=16]) -> void [binding=weak,
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 8
     call void @IOS__IOS__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @OStream__vtable
     %t5 = index i8 %t4, 24
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @Holder__Holder(%this : ptr [object_bytes=8], %os : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZN6HolderC1ER7OStream, inline_hint=yes] {
@@ -79,42 +79,42 @@ function @Holder__Holder(%this : ptr [object_bytes=8], %os : ptr [pass=by_addres
   slot $os : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %os, $os
-    %t1 = load ptr $os
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %os, $os
+    %t1 = load typed ptr $os
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @Holder__ref(%this : ptr [object_bytes=8]) -> ptr [binding=weak, object=_ZNK6Holder3refEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     return ptr %t3
 }
 function @IOS__IOS__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3IOSC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 function @IOS__IOS(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3IOSC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 alias object _ZN6HolderC2ER7OStream = @Holder__Holder

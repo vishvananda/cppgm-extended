@@ -10,15 +10,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $value
     %t3 = addr $out
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 0, %t4
+    store typed i32 0, %t4
     %t5 = addr $value
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 7, %t6
+    store typed i32 7, %t6
     %t7 = addr $out
     %t8 = addr $value
     %t9 = call ptr @sink_int___operator____ov2(%t7, %t8)
-    store ptr %t9, $selected
-    %t10 = load ptr $selected
+    store typed ptr %t9, $selected
+    %t10 = load typed ptr $selected
     %t11 = addr $out
     %t12 = cmp eq ptr %t10, %t11
     branch %t12, ^land_rhs_4, ^land_short_5
@@ -26,30 +26,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t13 = addr $out
     %t14 = index i8 [projection=field] %t13, 0
-    %t15 = load i32 %t14
+    %t15 = load typed i32 %t14
     %t16 = cmp eq i32 %t15, 7
     %t17 = cmp ne i64 %t16, 0
-    store i64 %t17, $land__2
+    store typed i64 %t17, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t18 = load i64 $land__2
+    %t18 = load typed i64 $land__2
     branch %t18, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load i32 $cond__1
+    %t19 = load typed i32 $cond__1
     return i32 %t19
 }
 function @sink_int___operator____ov2(%this : ptr [object_bytes=4], %value : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN4sinkIiElsI7payloadEERS0_RKT_, inline_hint=yes] {
@@ -57,18 +57,18 @@ function @sink_int___operator____ov2(%this : ptr [object_bytes=4], %value : ptr 
   slot $value : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %value, $value
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $value
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $value
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
-    %t7 = binary add i32 %t3, %t6
-    %t8 = load ptr $this
+    %t6 = load typed i32 %t5
+    %t7 = binary add nowrap i32 %t3, %t6
+    %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 0
-    store i32 %t7, %t9
-    %t10 = load ptr $this
+    store typed i32 %t7, %t9
+    %t10 = load typed ptr $this
     return ptr %t10
 }

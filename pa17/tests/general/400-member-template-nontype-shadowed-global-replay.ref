@@ -7,16 +7,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $arg__2 : obj<16x8>
 
   block ^entry:
-    store ptr 0, $first
-    store ptr 0, $last
+    store typed ptr 0, $first
+    store typed ptr 0, $last
     %t1 = addr $tmpobj__1
     %t2 = addr $first
     %t3 = addr $last
     %t4 = call obj<16x8> @boost__tuples__tie(%t2, %t3)
     copyobj 16x8 %t4, %t1
     %t5 = addr $arg__2
-    %t6 = load ptr $first
-    %t7 = load ptr $last
+    %t6 = load typed ptr $first
+    %t7 = load typed ptr $last
     %t8 = call obj<16x8> @std__make_pair(%t6, %t7)
     copyobj 16x8 %t8, %t5
     %t9 = call ptr @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0___operator___ov3(%t1, %t5)
@@ -28,11 +28,11 @@ function @boost__tuples__tie(%t0 : ptr [pass=by_address, object_bytes=8], %t1 : 
   slot $retobj__1 : obj<16x8>
 
   block ^entry:
-    store ptr %t0, $t0
-    store ptr %t1, $t1
+    store typed ptr %t0, $t0
+    store typed ptr %t1, $t1
     %t2 = addr $retobj__1
-    %t3 = load ptr $t0
-    %t4 = load ptr $t1
+    %t3 = load typed ptr $t0
+    %t4 = load typed ptr $t1
     call void @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0___tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0_(%t2, %t3, %t4)
     return obj<16x8> $retobj__1
 }
@@ -42,11 +42,11 @@ function @std__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=
   slot $retobj__1 : obj<16x8>
 
   block ^entry:
-    store ptr %a, $a
-    store ptr %b, $b
+    store typed ptr %a, $a
+    store typed ptr %b, $b
     %t1 = addr $retobj__1
-    %t2 = load ptr $a
-    %t3 = load ptr $b
+    %t2 = load typed ptr $a
+    %t3 = load typed ptr $b
     call void @std__pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__pointer_to_struct_std____cppgm_class_template_identity_0_1_0___pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__pointer_to_struct_std____cppgm_class_template_identity_0_1_0_(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
@@ -55,26 +55,26 @@ function @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppg
   slot $pair : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %pair, $pair
-    %t1 = load ptr $pair
+    store typed ptr %this, $this
+    store typed ptr %pair, $pair
+    %t1 = load typed ptr $pair
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $this
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 %t4, 0
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load ptr %t6
-    store ptr %t3, %t7
-    %t8 = load ptr $pair
+    %t7 = load typed ptr %t6
+    store typed ptr %t3, %t7
+    %t8 = load typed ptr $pair
     %t9 = index i8 [projection=field] %t8, 8
-    %t10 = load ptr %t9
-    %t11 = load ptr $this
+    %t10 = load typed ptr %t9
+    %t11 = load typed ptr $this
     %t12 = index i8 %t11, 0
     %t13 = index i8 [projection=field] %t12, 8
     %t14 = index i8 [projection=field] %t13, 0
-    %t15 = load ptr %t14
-    store ptr %t10, %t15
-    %t16 = load ptr $this
+    %t15 = load typed ptr %t14
+    store typed ptr %t10, %t15
+    %t16 = load typed ptr $this
     return ptr %t16
 }
 function @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0___tuple_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0_(%this : ptr [object_bytes=16], %t0 : ptr [pass=by_address, object_bytes=8], %t1 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN5boost6tuples5tupleIRPSt4pairImmES5_EC1ES5_S5_, inline_hint=yes] {
@@ -85,14 +85,14 @@ function @boost__tuples__tuple_lvalue_reference_to_pointer_to_struct_std____cppg
   slot $arg__2 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %t0, $t0
-    store ptr %t1, $t1
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %t0, $t0
+    store typed ptr %t1, $t1
+    %t2 = load typed ptr $this
     %t3 = index i8 %t2, 0
-    %t4 = load ptr $t0
+    %t4 = load typed ptr $t0
     %t5 = addr $arg__1
-    %t6 = load ptr $t1
+    %t6 = load typed ptr $t1
     %t7 = addr $arg__2
     call void @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples__null_type___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0_(%t5, %t6, %t7)
     call void @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___base_entry(%t3, %t4, %t5)
@@ -104,17 +104,17 @@ function @std__pair_pointer_to_struct_std____cppgm_class_template_identity_0_1_0
   slot $b : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %a, $a
-    store ptr %b, $b
-    %t1 = load ptr $a
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %a, $a
+    store typed ptr %b, $b
+    %t1 = load typed ptr $a
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $b
-    %t5 = load ptr $this
+    store typed ptr %t1, %t3
+    %t4 = load typed ptr $b
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 8
-    store ptr %t4, %t6
+    store typed ptr %t4, %t6
     return void
 }
 function @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples__null_type___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0_(%this : ptr [object_bytes=8], %h : ptr [pass=by_address, object_bytes=8], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS0_9null_typeEEC1ES5_RKS6_, inline_hint=yes] {
@@ -123,13 +123,13 @@ function @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    store ptr %__param2, $__param2
-    %t1 = load ptr $h
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %h, $h
+    store typed ptr %__param2, $__param2
+    %t1 = load typed ptr $h
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___cons_lvalue_reference_to_pointer_to_struct_std____cppgm_class_template_identity_0_1_0__boost__tuples____cppgm_class_template_identity_1_7_0___base_entry(%this : ptr [object_bytes=16], %h : ptr [pass=by_address, object_bytes=8], %t : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN5boost6tuples4consIRPSt4pairImmENS1_IS5_NS0_9null_typeEEEEC2ES5_RKS7_, object_root=yes, inline_hint=yes] {
@@ -138,16 +138,16 @@ function @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm
   slot $t : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    store ptr %t, $t
-    %t1 = load ptr $h
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %h, $h
+    store typed ptr %t, $t
+    %t1 = load typed ptr $h
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $this
+    store typed ptr %t1, %t3
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 8
-    %t6 = load ptr $t
+    %t6 = load typed ptr $t
     copyobj 8x8 %t6, %t5
     return void
 }
@@ -157,16 +157,16 @@ function @boost__tuples__cons_lvalue_reference_to_pointer_to_struct_std____cppgm
   slot $t : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    store ptr %t, $t
-    %t1 = load ptr $h
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %h, $h
+    store typed ptr %t, $t
+    %t1 = load typed ptr $h
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
-    %t4 = load ptr $this
+    store typed ptr %t1, %t3
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 8
-    %t6 = load ptr $t
+    %t6 = load typed ptr $t
     copyobj 8x8 %t6, %t5
     return void
 }

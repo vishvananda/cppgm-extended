@@ -2,7 +2,7 @@ function @f(%x : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, 
   slot $x : ptr
 
   block ^entry:
-    store ptr %x, $x
-    %t1 = load ptr $x
+    store typed ptr %x, $x
+    %t1 = load typed ptr $x
     return ptr %t1
 }

@@ -3,8 +3,8 @@ function @make_float_zero() -> f32 [binding=strong, object=_Z15make_float_zerov]
 
   block ^entry:
     %t1 = convert sitofp f32 i32 0
-    store f32 %t1, $value
-    %t2 = load f32 $value
+    store typed f32 %t1, $value
+    %t2 = load typed f32 $value
     return f32 %t2
 }
 function @make_double_one() -> f64 [binding=strong, object=_Z15make_double_onev] {
@@ -12,8 +12,8 @@ function @make_double_one() -> f64 [binding=strong, object=_Z15make_double_onev]
 
   block ^entry:
     %t1 = convert sitofp f64 i32 1
-    store f64 %t1, $value
-    %t2 = load f64 $value
+    store typed f64 %t1, $value
+    %t2 = load typed f64 $value
     return f64 %t2
 }
 function @make_long_double_two() -> f80 [binding=strong, object=_Z20make_long_double_twov] {
@@ -21,7 +21,7 @@ function @make_long_double_two() -> f80 [binding=strong, object=_Z20make_long_do
 
   block ^entry:
     %t1 = convert sitofp f80 i32 2
-    store f80 %t1, $value
-    %t2 = load f80 $value
+    store typed f80 %t1, $value
+    %t2 = load typed f80 $value
     return f80 %t2
 }

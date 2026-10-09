@@ -3,16 +3,16 @@ function @operator__(%stream : ptr [pass=by_address, object_bytes=4], %__param1 
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %stream, $stream
-    store ptr %__param1, $__param1
-    %t1 = load ptr $stream
+    store typed ptr %stream, $stream
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $stream
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary add i32 %t3, 1
-    %t5 = load ptr $stream
+    %t3 = load typed i32 %t2
+    %t4 = binary add nowrap i32 %t3, 1
+    %t5 = load typed ptr $stream
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
-    %t7 = load ptr $stream
+    store typed i32 %t4, %t6
+    %t7 = load typed ptr $stream
     return ptr %t7
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $token
     %t3 = addr $stream
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 0, %t4
+    store typed i32 0, %t4
     %t5 = addr $stream
     %t6 = addr $token
     %t7 = call ptr @operator__(%t5, %t6)
@@ -413,8 +413,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t387 = addr $token
     %t388 = call ptr @operator__(%t386, %t387)
     %t389 = call ptr @Stream__operator__(%t388, 1)
-    store ptr %t389, $p
-    %t390 = load ptr $p
+    store typed ptr %t389, $p
+    %t390 = load typed ptr $p
     %t391 = addr $stream
     %t392 = cmp eq ptr %t390, %t391
     branch %t392, ^land_rhs_4, ^land_short_5
@@ -422,30 +422,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^land_rhs_4:
     %t393 = addr $stream
     %t394 = index i8 [projection=field] %t393, 0
-    %t395 = load i32 %t394
+    %t395 = load typed i32 %t394
     %t396 = cmp eq i32 %t395, 256
     %t397 = cmp ne i64 %t396, 0
-    store i64 %t397, $land__2
+    store typed i64 %t397, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t398 = load i64 $land__2
+    %t398 = load typed i64 $land__2
     branch %t398, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t399 = load i32 $cond__1
+    %t399 = load typed i32 $cond__1
     return i32 %t399
 }
 function @Stream__operator__(%this : ptr [object_bytes=4], %__param1 : i64) -> ptr [binding=weak, object=_ZN6StreamlsEm, inline_hint=yes] {
@@ -453,15 +453,15 @@ function @Stream__operator__(%this : ptr [object_bytes=4], %__param1 : i64) -> p
   slot $__param1 : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %__param1, $__param1
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %__param1, $__param1
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary add i32 %t3, 1
-    %t5 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = binary add nowrap i32 %t3, 1
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
-    %t7 = load ptr $this
+    store typed i32 %t4, %t6
+    %t7 = load typed ptr $this
     return ptr %t7
 }

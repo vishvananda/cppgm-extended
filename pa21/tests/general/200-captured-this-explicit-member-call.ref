@@ -12,10 +12,10 @@ function @Analyzer__f(%this : ptr [object_bytes=1]) -> void [binding=weak, objec
   slot $reg : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $reg
-    %t2 = load ptr $this
-    store ptr %t2, %t1
+    %t2 = load typed ptr $this
+    store typed ptr %t2, %t1
     %t3 = addr $reg
     call void @Analyzer____lambda_Analyzer__f_t20_22__operator__(%t3)
     return void
@@ -24,17 +24,17 @@ function @Analyzer__register_builtin_function(%this : ptr [object_bytes=1]) -> v
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Analyzer____lambda_Analyzer__f_t20_22__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZZN8Analyzer1fEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     call void @Analyzer__register_builtin_function(%t3)
     return void
 }

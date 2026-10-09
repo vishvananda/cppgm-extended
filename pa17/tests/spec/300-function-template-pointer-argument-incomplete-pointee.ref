@@ -7,6 +7,6 @@ function @call__execute(%__param0 : ptr) -> void [binding=weak, object=_ZN4call7
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return void
 }

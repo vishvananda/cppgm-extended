@@ -512,6 +512,15 @@ struct EntityRecord
 	bool explicit_template_specialization;
 	bool class_template_presentation;
 	bool unnamed_class, lambda_closure;
+	// The SysV x86-64 classes (psABI 3.2.3) of the first 16 bytes of a
+	// class's layout, two bits for each four bytes: 0 no class, 1 INTEGER,
+	// 2 SSE.  sysv_memory: the class is passed and returned in memory
+	// (larger than 16 bytes, a misaligned member, a dynamic class).
+	// sysv_unmodeled: it has an x87 or 16-byte vector member, which the
+	// psABI passes in memory but returns in registers this model does not
+	// describe (st0, a whole xmm).
+	std::uint8_t sysv_quarters;
+	bool sysv_memory, sysv_unmodeled;
 	union
 	{
 		std::uint32_t local_name_ordinal;

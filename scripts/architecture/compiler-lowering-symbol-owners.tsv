@@ -86,6 +86,7 @@ method	dev/src/lowering/core/program_lowerer.cpp	IsComplexObjectType	1	dev/src/l
 method	dev/src/lowering/core/program_lowerer.cpp	IsFunctionType	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	IsPointerLikeType	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	IsReferenceType	1	dev/src/lowering/core/program_lowerer.cpp	keep
+method	dev/src/lowering/core/program_lowerer.cpp	IsUnionEntity	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	Lower	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	LowerBoundaryResult	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	LowerDeclaration	1	dev/src/lowering/core/program_lowerer.cpp	keep

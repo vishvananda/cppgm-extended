@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    store i32 0, $refarg__1
+    store typed i32 0, $refarg__1
     %t2 = addr $refarg__1
     %t3 = call obj<4x4> @N__forward_as_tuple(%t2)
     copyobj 4x4 %t3, %t1
@@ -16,7 +16,7 @@ function @N__forward_as_tuple(%__param0 : ptr [pass=by_address, object_bytes=4])
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     %t1 = addr $retobj__1
     return obj<4x4> $retobj__1
 }

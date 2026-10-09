@@ -11,9 +11,9 @@ function @Table_Traits___Table_Traits_(%this : ptr [object_bytes=1], %__param1 :
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @AllocBox___cppgm_class_template_identity_2_3_0___AllocBox___cppgm_class_template_identity_2_3_0___base_entry(%t2)
     return void
@@ -22,8 +22,8 @@ function @AllocBox___cppgm_class_template_identity_2_3_0___AllocBox___cppgm_clas
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @Holder___cppgm_class_template_identity_2_3_0___Holder___cppgm_class_template_identity_2_3_0_(%t2)
     return void
@@ -32,7 +32,7 @@ function @Holder___cppgm_class_template_identity_2_3_0___Holder___cppgm_class_te
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN5TableI6TraitsEC2Ei = @Table_Traits___Table_Traits_

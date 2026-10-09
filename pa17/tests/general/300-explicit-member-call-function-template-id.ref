@@ -12,8 +12,8 @@ function @manip(%x : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak
   slot $x : ptr
 
   block ^entry:
-    store ptr %x, $x
-    %t1 = load ptr $x
+    store typed ptr %x, $x
+    %t1 = load typed ptr $x
     return ptr %t1
 }
 function @Sink__operator__(%this : ptr [object_bytes=1], %pf : ptr) -> ptr [binding=weak, object=_ZN4SinklsEPFRS_S0_E, inline_hint=yes] {
@@ -21,10 +21,10 @@ function @Sink__operator__(%this : ptr [object_bytes=1], %pf : ptr) -> ptr [bind
   slot $pf : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %pf, $pf
-    %t1 = load ptr $this
-    %t2 = load ptr $pf
+    store typed ptr %this, $this
+    store typed ptr %pf, $pf
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $pf
     %t3 = call ptr %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=1]) -> ptr
     return ptr %t3
 }

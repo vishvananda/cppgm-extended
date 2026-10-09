@@ -13,8 +13,8 @@ function @bitset_64___bitset_64_(%this : ptr [object_bytes=4]) -> void [binding=
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @bitset_base_1__64___bitset_base_1__64___base_entry(%t2)
     return void
@@ -24,31 +24,31 @@ function @bitset_64___operator__(%this : ptr [object_bytes=4], %rhs : ptr [pass=
   slot $rhs : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %rhs, $rhs
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %rhs, $rhs
+    %t1 = load typed ptr $this
     return ptr %t1
 }
 function @bitset_base_1__64___bitset_base_1__64___base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN11bitset_baseILm1ELm64EEC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = index i32 [projection=array_element] %t2, 0
-    store i32 0, %t3
+    store typed i32 0, %t3
     return void
 }
 function @bitset_base_1__64___bitset_base_1__64_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN11bitset_baseILm1ELm64EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = index i32 [projection=array_element] %t2, 0
-    store i32 0, %t3
+    store typed i32 0, %t3
     return void
 }
 alias object _ZN6bitsetILm64EEC2Ev = @bitset_64___bitset_64_

@@ -1,4 +1,4 @@
-function @f(%elapsed : obj<1x1>) -> u8 [binding=strong, object=_Z1fN1s1i1c8durationIxNS1_4nanoEEE] {
+function @f(%elapsed : obj<1x1> [classes=none]) -> u8 [binding=strong, object=_Z1fN1s1i1c8durationIxNS1_4nanoEEE] {
   slot $elapsed : obj<1x1>
   slot $arg__1 : obj<1x1>
 
@@ -20,15 +20,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }
 function @s__i__c__duration_long_long_int__s__i__c__milli___duration_typename___retained_template_parameter_shape_2__typename___retained_template_parameter_shape_3___ov2(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN1s1i1c8durationIxNS1_5milliEEC1Ei, inline_hint=yes] {
@@ -36,8 +36,8 @@ function @s__i__c__duration_long_long_int__s__i__c__milli___duration_typename___
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return void
 }
 function @s__i__c__greater(%a : ptr [pass=by_address, object_bytes=1], %b : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN1s1i1c7greaterIxNS1_4nanoExNS1_5milliEEEbRKNS1_8durationIT_T0_EERKNS5_IT1_T2_EE] {
@@ -45,10 +45,10 @@ function @s__i__c__greater(%a : ptr [pass=by_address, object_bytes=1], %b : ptr 
   slot $b : ptr
 
   block ^entry:
-    store ptr %a, $a
-    store ptr %b, $b
-    %t1 = load ptr $b
-    %t2 = load ptr $a
+    store typed ptr %a, $a
+    store typed ptr %b, $b
+    %t1 = load typed ptr $b
+    %t2 = load typed ptr $a
     %t3 = call u8 @s__i__c__less(%t1, %t2)
     return u8 %t3
 }
@@ -56,7 +56,7 @@ function @s__i__c__duration_long_long_int__s__i__c__nano___duration_typename___r
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @s__i__c__less(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN1s1i1c4lessIxNS1_5milliExNS1_4nanoEEEbRKNS1_8durationIT_T0_EERKNS5_IT1_T2_EE] {
@@ -64,8 +64,8 @@ function @s__i__c__less(%__param0 : ptr [pass=by_address, object_bytes=1], %__pa
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return u8 1
 }
 alias object _ZN1s1i1c8durationIxNS1_5milliEEC2Ei = @s__i__c__duration_long_long_int__s__i__c__milli___duration_typename___retained_template_parameter_shape_2__typename___retained_template_parameter_shape_3___ov2

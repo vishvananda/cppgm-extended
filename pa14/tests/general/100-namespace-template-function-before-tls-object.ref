@@ -7,14 +7,14 @@ global @__cppgm_tls_guard__ns__helper : i64 [storage=thread_local, binding=inter
 
 function @__cppgm_tls_init__ns__helper() -> void [binding=internal] {
   block ^entry:
-    %t1 = load i64 @__cppgm_tls_guard__ns__helper
+    %t1 = load typed i64 @__cppgm_tls_guard__ns__helper
     %t2 = cmp ne i64 %t1, 0
     branch %t2, ^local_static_ctor_done_2, ^local_static_ctor_run_1
 
   block ^local_static_ctor_run_1:
     %t3 = addr @ns__helper
     call void @ns__Helper_int___Helper_int_(%t3)
-    store i64 1, @__cppgm_tls_guard__ns__helper
+    store typed i64 1, @__cppgm_tls_guard__ns__helper
     jump ^local_static_ctor_done_2
 
   block ^local_static_ctor_done_2:
@@ -40,15 +40,15 @@ function @ns__force(%value : i32) -> i32 [binding=weak, object=_ZN2ns5forceIiEEi
   slot $value : i32
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
     return i32 %t1
 }
 function @ns__Helper_int___Helper_int_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN2ns6HelperIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN2ns6HelperIiEC2Ev = @ns__Helper_int___Helper_int_

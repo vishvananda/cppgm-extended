@@ -2797,7 +2797,11 @@ bool SyntaxParser::ParseLeadingAttribute(std::vector<NodeId>* attributes)
 NodeId SyntaxParser::ParseDeclaration(bool in_class)
 {
 	std::vector<NodeId> attributes;
-	while (ParseLeadingAttribute(&attributes) || MatchHostedExtensionMarker()) {}
+	// A leading alignment-specifier (7.6.2) appertains to the declared
+	// entities; semantic analysis reads it as the variable's alignment.
+	while ((At(KW_ALIGNAS) &&
+			(attributes.push_back(ParseAlignmentSpecifier()), true)) ||
+		ParseLeadingAttribute(&attributes) || MatchHostedExtensionMarker()) {}
 	const NodeId declaration = ParseDeclarationCore(in_class);
 	if (declaration != kNoNode)
 		for (std::size_t i = 0; i < attributes.size(); ++i)

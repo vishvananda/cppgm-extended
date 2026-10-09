@@ -27,37 +27,37 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     zeroinit 1x1 %t5
     %t6 = addr $arg__6
     zeroinit 1x1 %t6
-    %t7 = load ptr @paired_address
+    %t7 = load typed ptr @paired_address
     %t8 = call i32 %t7(%t5, %t6) as (%arg0 : ptr [pass=by_address, object_bytes=1], %arg1 : ptr [pass=by_address, object_bytes=1]) -> i32
     %t9 = cmp ne i32 %t8, 3
     %t10 = cmp ne i64 %t9, 0
-    store i64 %t10, $lor__2
+    store typed i64 %t10, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t11 = load i64 $lor__2
+    %t11 = load typed i64 $lor__2
     branch %t11, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
     %t12 = addr $arg__7
     zeroinit 1x1 %t12
-    %t13 = load ptr @pointed_address
+    %t13 = load typed ptr @pointed_address
     %t14 = call i32 %t13(%t12) as (%arg0 : ptr [pass=by_address, object_bytes=1]) -> i32
     %t15 = cmp ne i32 %t14, 3
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $lor__1
+    store typed i64 %t16, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t17 = load i64 $lor__1
+    %t17 = load typed i64 $lor__1
     %t18 = convert trunc i32 i64 %t17
     return i32 %t18
 }
@@ -66,8 +66,8 @@ function @paired(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : 
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     %t1 = const i64 3
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
@@ -76,7 +76,7 @@ function @pointed(%__param0 : ptr [pass=by_address, object_bytes=1]) -> i32 [bin
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     %t1 = const i64 3
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2

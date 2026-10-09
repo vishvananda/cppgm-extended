@@ -11,7 +11,7 @@ function @Candidate___Candidate(%this : ptr [object_bytes=1]) -> void [unwind=no
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @__lambda_main_t22_24__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
@@ -19,7 +19,7 @@ function @__lambda_main_t22_24__operator__(%this : ptr [object_bytes=1]) -> i32 
   slot $candidate : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $candidate
     return i32 0
 }

@@ -14,20 +14,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Scoped__Scoped(%t3, %t4, %t6)
     %t7 = addr $scoped
     %t8 = index i8 [projection=field] %t7, 0
-    %t9 = load i32 %t8
+    %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 7
     branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load i32 $cond__1
+    %t11 = load typed i32 $cond__1
     return i32 %t11
 }
 function @Scoped__Scoped(%this : ptr [object_bytes=4], %node : ptr, %alloc : ptr) -> void [binding=weak, object=_ZN6ScopedC1EP4NodeP9AllocBase, inline_hint=yes] {
@@ -36,14 +36,14 @@ function @Scoped__Scoped(%this : ptr [object_bytes=4], %node : ptr, %alloc : ptr
   slot $alloc : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %node, $node
-    store ptr %alloc, $alloc
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %node, $node
+    store typed ptr %alloc, $alloc
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    %t3 = load ptr $node
-    %t4 = load ptr $alloc
+    store typed i32 7, %t2
+    %t3 = load typed ptr $node
+    %t4 = load typed ptr $alloc
     return void
 }
 alias object _ZN6ScopedC2EP4NodeP9AllocBase = @Scoped__Scoped

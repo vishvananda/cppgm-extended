@@ -306,6 +306,13 @@ private:
 		const TypeRecord& record = program_.types.Get(type);
 		return record.kind == TYPE_NAMED ? record.entity : kNoEntity;
 	}
+	// Whether an entity is a union, an anonymous union's included: its
+	// members' projections are `untyped` (9.5 lets a union pun its members).
+	bool IsUnionEntity(EntityId entity) const
+	{
+		return entity != kNoEntity && entity < program_.entities.size() &&
+			program_.entities[entity].flavor == NAMED_UNION;
+	}
 	EntityId BaseEntityForType(TypeId type) const
 	{
 		if (type == kNoType)
@@ -494,6 +501,7 @@ private:
 				canonical_binding.noreturn_function;
 			symbol.weak_linkage |=
 				weak_linkage && !prefer_local && !symbol.internal_linkage;
+			symbol.replaceable |= canonical_binding.weak_symbol;
 			symbol.prefer_local_object_binding |= prefer_local;
 			if (!symbol.section_name.valid() &&
 				canonical_binding.object_section_name != 0)
@@ -538,6 +546,7 @@ private:
 		output_.symbols.back().source_type = source_type;
 		output_.symbols.back().weak_linkage =
 			weak_linkage && !prefer_local && !internal;
+		output_.symbols.back().replaceable = canonical_binding.weak_symbol;
 		output_.symbols.back().prefer_local_object_binding = prefer_local;
 		if (canonical_binding.object_section_name != 0)
 			output_.symbols.back().section_name = output_.strings.intern(
@@ -730,7 +739,7 @@ private:
 		FunctionDeclaration declaration;
 		declaration.symbol = function_symbols_[record.binding];
 		FillBoundary(node, &declaration.parameters, &declaration.result,
-			&declaration.variadic, true);
+			&declaration.result_classes, &declaration.variadic, true);
 		return declaration;
 	}
 	GlobalDeclaration LowerGlobalDeclaration(std::uint32_t node) const
@@ -804,6 +813,7 @@ private:
 			(qualified.cv & (CV_VOLATILE | CV_ATOMIC)) == 0 &&
 			global.type.kind != LOW_OBJECT)
 			global.storage = Global::STORAGE_READONLY;
+		StateStructuredGlobalAlignment(&global);
 		if (stats_) ++stats_->globals;
 		return global;
 	}
@@ -906,7 +916,8 @@ private:
 			program_.bindings[program_.bindings[record.binding].canonical];
 		result.entry = entry_binding.owner == program_.GlobalScope() &&
 			program_.names.Get(entry_binding.name) == "main";
-		FillBoundary(node, &result.parameters, &result.result, &result.variadic);
+		FillBoundary(node, &result.parameters, &result.result,
+			&result.result_classes, &result.variadic);
 		ResetCommonFunctionLoweringState(&result);
 		function_contains_source_label_ = record.body_contains_source_label;
 		current_result_ = result.result;

@@ -882,6 +882,7 @@ std::size_t specialize_interprocedural_arguments(
       &agreements[first] : 0;
     const bool discardable_weak =
       target.metadata.binding == lowir_model::SBM_WEAK &&
+      !target.metadata.replaceable &&
       !call_graph.recursive[function] && !target.metadata.no_inline &&
       uniform_parameter_controls_cfg(
         target, function_agreements, parameter_count);

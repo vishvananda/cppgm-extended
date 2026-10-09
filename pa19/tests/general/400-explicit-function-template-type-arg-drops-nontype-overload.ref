@@ -8,27 +8,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $f
     %t2 = addr $f
     %t3 = call i32 @foo__bar(%t2)
-    store i32 %t3, $a
+    store typed i32 %t3, $a
     %t4 = addr $f
     %t5 = call i32 @foo__bar__ov2(%t4)
-    store i32 %t5, $b
-    %t6 = load i32 $a
+    store typed i32 %t5, $b
+    %t6 = load typed i32 $a
     %t7 = cmp ne i32 %t6, 0
     branch %t7, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
-    %t8 = load i32 $b
+    %t8 = load typed i32 $b
     %t9 = cmp ne i32 %t8, 1
     %t10 = cmp ne i64 %t9, 0
-    store i64 %t10, $lor__1
+    store typed i64 %t10, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t11 = load i64 $lor__1
+    %t11 = load typed i64 $lor__1
     %t12 = convert trunc i32 i64 %t11
     return i32 %t12
 }
@@ -36,13 +36,13 @@ function @foo__bar(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_Z
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 0
 }
 function @foo__bar__ov2(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN3foo3barILi2EEEiv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }

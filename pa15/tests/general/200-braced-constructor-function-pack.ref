@@ -9,11 +9,11 @@ function @build_box(%values : i32, %values__pack2 : i32) -> void [binding=weak, 
   slot $value : obj<1x1>
 
   block ^entry:
-    store i32 %values, $values
-    store i32 %values__pack2, $values__pack2
+    store typed i32 %values, $values
+    store typed i32 %values__pack2, $values__pack2
     %t1 = addr $value
-    %t2 = load i32 $values
-    %t3 = load i32 $values__pack2
+    %t2 = load typed i32 $values
+    %t3 = load typed i32 $values__pack2
     call void @box__box(%t1, 0, %t2, %t3)
     %t4 = addr $value
     return void
@@ -25,10 +25,10 @@ function @box__box(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i3
   slot $__param3 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    store i32 %__param2, $__param2
-    store i32 %__param3, $__param3
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    store typed i32 %__param2, $__param2
+    store typed i32 %__param3, $__param3
     return void
 }
 alias object _ZN3boxC2Eiii = @box__box

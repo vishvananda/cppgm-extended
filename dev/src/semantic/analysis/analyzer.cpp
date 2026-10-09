@@ -2230,7 +2230,7 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 		parsed.type = program_->bindings[binding].type;
 		PublishVariableDeclarationFacts(binding, declaration_scope,
 			parsed.name, parsed.type, spec, local);
-		ApplyVariableObjectAttributes(node, binding);
+		ApplyVariableObjectAttributes(node, binding, item);
 		const bool static_constant_definition = !specialization_declaration &&
 			IsStaticConstantDefinition(binding, initializer_node);
 		const bool constexpr_class_default =

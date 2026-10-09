@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $land__3 : i64
 
   block ^entry:
-    store i32 0, $saw_live
+    store typed i32 0, $saw_live
     %t1 = addr $current
     call void @Guard__Guard(%t1)
     jump ^for_cond_1
@@ -20,88 +20,88 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t3, ^for_body_2, ^for_end_4
 
   block ^for_body_2:
-    %t4 = load i32 @live
-    store i32 %t4, $saw_live
+    %t4 = load typed i32 @live
+    store typed i32 %t4, $saw_live
     jump ^for_iter_3
 
   block ^for_iter_3:
-    store i32 0, @live
+    store typed i32 0, @live
     jump ^for_cond_1
 
   block ^for_end_4:
     %t5 = addr $current
     call void @Guard___Guard(%t5)
-    %t6 = load i32 $saw_live
+    %t6 = load typed i32 $saw_live
     %t7 = cmp eq i32 %t6, 1
     branch %t7, ^land_rhs_11, ^land_short_12
 
   block ^land_rhs_11:
-    %t8 = load i32 @live
+    %t8 = load typed i32 @live
     %t9 = cmp eq i32 %t8, 0
     %t10 = cmp ne i64 %t9, 0
-    store i64 %t10, $land__3
+    store typed i64 %t10, $land__3
     jump ^land_end_13
 
   block ^land_short_12:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_13
 
   block ^land_end_13:
-    %t11 = load i64 $land__3
+    %t11 = load typed i64 $land__3
     branch %t11, ^land_rhs_8, ^land_short_9
 
   block ^land_rhs_8:
-    %t12 = load i32 @destroyed
+    %t12 = load typed i32 @destroyed
     %t13 = cmp eq i32 %t12, 1
     %t14 = cmp ne i64 %t13, 0
-    store i64 %t14, $land__2
+    store typed i64 %t14, $land__2
     jump ^land_end_10
 
   block ^land_short_9:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_10
 
   block ^land_end_10:
-    %t15 = load i64 $land__2
+    %t15 = load typed i64 $land__2
     branch %t15, ^cond_then_5, ^cond_else_6
 
   block ^cond_then_5:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_7
 
   block ^cond_else_6:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_7
 
   block ^cond_end_7:
-    %t16 = load i32 $cond__1
+    %t16 = load typed i32 $cond__1
     return i32 %t16
 }
 function @Guard__Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 1, @live
+    store typed ptr %this, $this
+    store typed i32 1, @live
     return void
 }
 function @Guard___Guard(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5GuardD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 0, @live
-    %t1 = load i32 @destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @destroyed
+    store typed ptr %this, $this
+    store typed i32 0, @live
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
     return void
 }
 function @Guard__operatorbool(%this : ptr [object_bytes=1]) -> u8 [unwind=no, binding=weak, object=_ZNK5GuardcvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @live
     %t2 = cmp ne i32 %t1, 0
     %t3 = convert trunc u8 i64 %t2
     return u8 %t3

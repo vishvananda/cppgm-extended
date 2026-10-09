@@ -4,22 +4,22 @@ global @counter : i32 [binding=strong] = 0
 
 function @init_value() -> i32 [binding=strong, object=_Z10init_valuev] {
   block ^entry:
-    %t1 = load i32 @counter
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @counter
+    %t1 = load typed i32 @counter
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @counter
     return i32 7
 }
 function @get_value() -> ptr [binding=strong, object=_Z9get_valuev] {
   block ^entry:
-    %t1 = load i64 @__local_static__get_value__decl0__value__guard
+    %t1 = load typed i64 @__local_static__get_value__decl0__value__guard
     %t2 = cmp ne i64 %t1, 0
     branch %t2, ^local_static_ready_1, ^local_static_init_2
 
   block ^local_static_init_2:
     %t3 = addr @__local_static__get_value__decl0__value
     %t4 = call i32 @init_value()
-    store i32 %t4, %t3
-    store i64 1, @__local_static__get_value__decl0__value__guard
+    store typed i32 %t4, %t3
+    store typed i64 1, @__local_static__get_value__decl0__value__guard
     jump ^local_static_ready_1
 
   block ^local_static_ready_1:
@@ -31,7 +31,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call ptr @get_value()
-    %t2 = load i32 %t1
+    %t2 = load typed i32 %t1
     %t3 = cmp ne i32 %t2, 7
     branch %t3, ^if_then_1, ^if_else_2
 
@@ -43,7 +43,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     %t4 = call ptr @get_value()
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp ne i32 %t5, 7
     branch %t6, ^if_then_4, ^if_else_5
 
@@ -54,20 +54,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_6
 
   block ^if_end_6:
-    %t7 = load i32 @counter
+    %t7 = load typed i32 @counter
     %t8 = cmp eq i32 %t7, 1
     branch %t8, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_9
 
   block ^cond_else_8:
-    %t9 = load i32 @counter
-    store i32 %t9, $cond__1
+    %t9 = load typed i32 @counter
+    store typed i32 %t9, $cond__1
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }

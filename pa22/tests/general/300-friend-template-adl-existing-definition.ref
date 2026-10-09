@@ -9,13 +9,13 @@ function @ns__make(%w : ptr [pass=by_address, object_bytes=16]) -> void [binding
   slot $arg__2 : obj<4x4>
 
   block ^entry:
-    store ptr %w, $w
-    %t1 = load ptr $w
+    store typed ptr %w, $w
+    %t1 = load typed ptr $w
     %t2 = addr $arg__1
     %t3 = addr @__strlit__1
     call void @ns__error_info_ns__detail__file_tag__pointer_to_const_char___error_info_ns__detail__line_tag__int_(%t2, %t3)
     %t4 = call ptr @ns__detail__set_info(%t1, %t2)
-    %t5 = load ptr $w
+    %t5 = load typed ptr $w
     %t6 = addr $arg__2
     call void @ns__error_info_ns__detail__line_tag__int___error_info_ns__detail__line_tag__int_(%t6, 7)
     %t7 = call ptr @ns__detail__set_info__ov2(%t5, %t6)
@@ -35,12 +35,12 @@ function @ns__error_info_ns__detail__file_tag__pointer_to_const_char___error_inf
   slot $v : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %v, $v
-    %t1 = load ptr $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %v, $v
+    %t1 = load typed ptr $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @ns__detail__set_info(%x : ptr [pass=by_address, object_bytes=16], %y : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN2ns6detail8set_infoINS_7wrapperEEERKT_S5_RKNS_10error_infoINS0_8file_tagEPKcEE] {
@@ -48,16 +48,16 @@ function @ns__detail__set_info(%x : ptr [pass=by_address, object_bytes=16], %y :
   slot $y : ptr
 
   block ^entry:
-    store ptr %x, $x
-    store ptr %y, $y
-    %t1 = load ptr $y
+    store typed ptr %x, $x
+    store typed ptr %y, $y
+    %t1 = load typed ptr $y
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $x
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $x
     %t5 = index i8 %t4, 0
     %t6 = index i8 [projection=field] %t5, 0
-    store ptr %t3, %t6
-    %t7 = load ptr $x
+    store typed ptr %t3, %t6
+    %t7 = load typed ptr $x
     return ptr %t7
 }
 function @ns__error_info_ns__detail__line_tag__int___error_info_ns__detail__line_tag__int_(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN2ns10error_infoINS_6detail8line_tagEiEC1Ei, inline_hint=yes] {
@@ -65,12 +65,12 @@ function @ns__error_info_ns__detail__line_tag__int___error_info_ns__detail__line
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @ns__detail__set_info__ov2(%x : ptr [pass=by_address, object_bytes=16], %y : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=weak, object=_ZN2ns6detail8set_infoINS_7wrapperEEERKT_S5_RKNS_10error_infoINS0_8line_tagEiEE] {
@@ -78,16 +78,16 @@ function @ns__detail__set_info__ov2(%x : ptr [pass=by_address, object_bytes=16],
   slot $y : ptr
 
   block ^entry:
-    store ptr %x, $x
-    store ptr %y, $y
-    %t1 = load ptr $y
+    store typed ptr %x, $x
+    store typed ptr %y, $y
+    %t1 = load typed ptr $y
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $x
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $x
     %t5 = index i8 %t4, 0
     %t6 = index i8 [projection=field] %t5, 8
-    store i32 %t3, %t6
-    %t7 = load ptr $x
+    store typed i32 %t3, %t6
+    %t7 = load typed ptr $x
     return ptr %t7
 }
 alias object _ZN2ns10error_infoINS_6detail8file_tagEPKcEC2ES4_ = @ns__error_info_ns__detail__file_tag__pointer_to_const_char___error_info_ns__detail__line_tag__int_

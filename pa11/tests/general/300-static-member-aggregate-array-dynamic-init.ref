@@ -1,4 +1,4 @@
-global @holder__values [binding=strong, object=_ZN6holder6valuesE] = {
+global @holder__values : obj<16x4> [binding=strong, object=_ZN6holder6valuesE] = {
   zero 16
 }
 
@@ -17,7 +17,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = binary mul i64 0, 8
     %t3 = index i8 [projection=array_element] %t1, %t2
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^land_rhs_10, ^land_short_11
 
@@ -26,18 +26,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = binary mul i64 0, 8
     %t9 = index i8 [projection=array_element] %t7, %t8
     %t10 = index i8 [projection=field] %t9, 4
-    %t11 = load i32 %t10
+    %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 1
     %t13 = cmp ne i64 %t12, 0
-    store i64 %t13, $land__4
+    store typed i64 %t13, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
-    store i64 0, $land__4
+    store typed i64 0, $land__4
     jump ^land_end_12
 
   block ^land_end_12:
-    %t14 = load i64 $land__4
+    %t14 = load typed i64 $land__4
     branch %t14, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
@@ -45,18 +45,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t16 = binary mul i64 1, 8
     %t17 = index i8 [projection=array_element] %t15, %t16
     %t18 = index i8 [projection=field] %t17, 0
-    %t19 = load i32 %t18
+    %t19 = load typed i32 %t18
     %t20 = cmp eq i32 %t19, 2
     %t21 = cmp ne i64 %t20, 0
-    store i64 %t21, $land__3
+    store typed i64 %t21, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_9
 
   block ^land_end_9:
-    %t22 = load i64 $land__3
+    %t22 = load typed i64 $land__3
     branch %t22, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
@@ -64,30 +64,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t24 = binary mul i64 1, 8
     %t25 = index i8 [projection=array_element] %t23, %t24
     %t26 = index i8 [projection=field] %t25, 4
-    %t27 = load i32 %t26
+    %t27 = load typed i32 %t26
     %t28 = cmp eq i32 %t27, 3
     %t29 = cmp ne i64 %t28, 0
-    store i64 %t29, $land__2
+    store typed i64 %t29, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t30 = load i64 $land__2
+    %t30 = load typed i64 $land__2
     branch %t30, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t31 = load i32 $cond__1
+    %t31 = load typed i32 $cond__1
     return i32 %t31
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {
@@ -97,21 +97,21 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     %t3 = binary mul i64 0, 8
     %t4 = index i8 [projection=array_element] %t2, %t3
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t1, %t5
+    store typed i32 %t1, %t5
     %t6 = addr @holder__values
     %t7 = binary mul i64 0, 8
     %t8 = index i8 [projection=array_element] %t6, %t7
     %t9 = index i8 [projection=field] %t8, 4
-    store i32 1, %t9
+    store typed i32 1, %t9
     %t10 = addr @holder__values
     %t11 = binary mul i64 1, 8
     %t12 = index i8 [projection=array_element] %t10, %t11
     %t13 = index i8 [projection=field] %t12, 0
-    store i32 2, %t13
+    store typed i32 2, %t13
     %t14 = addr @holder__values
     %t15 = binary mul i64 1, 8
     %t16 = index i8 [projection=array_element] %t14, %t15
     %t17 = index i8 [projection=field] %t16, 4
-    store i32 3, %t17
+    store typed i32 3, %t17
     return void
 }

@@ -17,27 +17,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = addr $p
     %t8 = call u8 @equal__ov2(%t6, %t7)
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $land__2
+    store typed i64 %t9, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t10 = load i64 $land__2
+    %t10 = load typed i64 $land__2
     branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load i32 $cond__1
+    %t11 = load typed i32 $cond__1
     return i32 %t11
 }
 function @equal(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_Z5equalI4path6sourceEbRKT_RKT0_] {
@@ -45,8 +45,8 @@ function @equal(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : p
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return u8 1
 }
 function @equal__ov2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_Z5equalI6source4pathEbRKT_RKT0_] {
@@ -54,7 +54,7 @@ function @equal__ov2(%__param0 : ptr [pass=by_address, object_bytes=1], %__param
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return u8 1
 }

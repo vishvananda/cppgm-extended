@@ -3,7 +3,7 @@ function @explicit_specialization_member_emits_char___value(%this : ptr [object_
   slot $__param1 : i8
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     store i8 %__param1, $__param1
     return void
 }

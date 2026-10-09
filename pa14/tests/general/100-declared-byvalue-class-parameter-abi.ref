@@ -8,16 +8,16 @@ function @wrapper(%services : ptr [pass=by_address, object_bytes=4], %raw_scope 
   slot $argobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %services, $services
-    store ptr %raw_scope, $raw_scope
-    store ptr %type, $type
-    store ptr %out, $out
-    %t1 = load ptr $services
+    store typed ptr %services, $services
+    store typed ptr %raw_scope, $raw_scope
+    store typed ptr %type, $type
+    store typed ptr %out, $out
+    %t1 = load typed ptr $services
     %t2 = addr $argobj__1
-    %t3 = load ptr $raw_scope
+    %t3 = load typed ptr $raw_scope
     call void @api__Handle__Handle__ov2(%t2, %t3)
-    %t4 = load ptr $type
-    %t5 = load ptr $out
+    %t4 = load typed ptr $type
+    %t5 = load typed ptr $out
     %t6 = call u8 @dep__resolve(%t1, $argobj__1, %t4, %t5)
     return u8 %t6
 }
@@ -26,12 +26,12 @@ function @api__Handle__Handle__ov2(%this : ptr [object_bytes=8], %scope_in : ptr
   slot $scope_in : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %scope_in, $scope_in
-    %t1 = load ptr $scope_in
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %scope_in, $scope_in
+    %t1 = load typed ptr $scope_in
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 alias object _ZN3api6HandleC2ER5Scope = @api__Handle__Handle__ov2

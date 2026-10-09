@@ -9,21 +9,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t4 = load i32 $cond__1
+    %t4 = load typed i32 $cond__1
     return i32 %t4
 }
 function @json__equal(%__param0 : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN4json5equalINS_6stringEEENSt9enable_ifIXsr21string_and_stringlikeIT_EE5valueEbE4typeERKS3_] {
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return u8 1
 }

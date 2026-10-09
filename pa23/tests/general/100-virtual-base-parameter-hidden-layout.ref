@@ -98,15 +98,15 @@ function @read_b(%b : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=st
   slot $b : ptr
 
   block ^entry:
-    store ptr %b, $b
-    %t1 = load ptr $b
-    %t2 = load ptr %t1
+    store typed ptr %b, $b
+    %t1 = load typed ptr $b
+    %t2 = load typed ptr %t1
     %t3 = index i8 %t2, -24
-    %t4 = load i64 %t3
+    %t4 = load typed i64 %t3
     %t5 = index i8 %t1, %t4
     %t6 = index i8 %t5, 0
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     return i32 %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -118,60 +118,60 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $d
     %t3 = index i8 %t2, 16
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 7, %t4
+    store typed i32 7, %t4
     %t5 = addr $d
     %t6 = index i8 %t5, 0
     %t7 = call i32 @read_b(%t6)
-    %t8 = binary sub i32 %t7, 7
+    %t8 = binary sub nowrap i32 %t7, 7
     return i32 %t8
 }
 function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = addr @D____vtt
     %t4 = index i8 %t3, 8
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 %t5, 16
     call void @B__B__base_entry(%t2, %t4, %t6)
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 %t7, 8
     %t9 = addr @D____vtt
     %t10 = index i8 %t9, 16
-    %t11 = load ptr $this
+    %t11 = load typed ptr $this
     %t12 = index i8 %t11, 16
     call void @C__C__base_entry(%t8, %t10, %t12)
-    %t13 = load ptr $this
+    %t13 = load typed ptr $this
     %t14 = addr @D__vtable
     %t15 = index i8 %t14, 24
-    store ptr %t15, %t13
-    %t16 = load ptr $this
+    store typed ptr %t15, %t13
+    %t16 = load typed ptr $this
     %t17 = index i8 %t16, 8
     %t18 = addr @D____view__C__8__vtable
     %t19 = index i8 %t18, 24
-    store ptr %t19, %t17
+    store typed ptr %t19, %t17
     return void
 }
 function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     return void
 }
 function @C__C__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1CC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     return void
 }

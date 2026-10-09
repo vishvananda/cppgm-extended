@@ -27,14 +27,14 @@ function @use(%__param0 : ptr [pass=by_address, object_bytes=4], %fail : u8) -> 
   slot $fail : u8
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     store u8 %fail, $fail
     %t1 = load u8 $fail
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t2 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t2
+    store typed i32 7, %t2
     %t3 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t2, %t3, 0)
     return i32 0
@@ -50,14 +50,14 @@ function @use__ov2(%__param0 : ptr [pass=by_address, object_bytes=4], %fail : u8
   slot $fail : u8
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     store u8 %fail, $fail
     %t1 = load u8 $fail
     branch %t1, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t2 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t2
+    store typed i32 7, %t2
     %t3 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t2, %t3, 0)
     return i32 0
@@ -70,10 +70,10 @@ function @use__ov2(%__param0 : ptr [pass=by_address, object_bytes=4], %fail : u8
 }
 function @reset() -> void [binding=strong, object=_Z5resetv] {
   block ^entry:
-    store i32 0, @invalid_destructions
-    store i32 0, @right_destructions
-    store i32 0, @left_destructions
-    store i32 0, @constructions
+    store typed i32 0, @invalid_destructions
+    store typed i32 0, @right_destructions
+    store typed i32 0, @left_destructions
+    store typed i32 0, @constructions
     return void
 }
 function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=strong, object=_Z8exercisebbb] {
@@ -117,8 +117,8 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     store u8 %fail, $fail
     store u8 %same_type, $same_type
     call void @reset()
-    store i32 0, $result
-    store i32 0, $caught
+    store typed i32 0, $result
+    store typed i32 0, $caught
     eh_try ^catch_dispatch_1
     %t1 = load u8 $same_type
     branch %t1, ^if_then_4, ^if_else_5
@@ -176,9 +176,9 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     eh_try ^conditional_cleanup_landing_7
     %t8 = load u8 $fail
     %t9 = call i32 @use(%t7, %t8)
-    store i32 %t9, $call__2
-    %t10 = load i32 $call__2
-    store i32 %t10, $cond__1
+    store typed i32 %t9, $call__2
+    %t10 = load typed i32 $call__2
+    store typed i32 %t10, $cond__1
     eh_end
     jump ^cond_end_17
 
@@ -191,15 +191,15 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     eh_try ^conditional_cleanup_landing_7
     %t12 = load u8 $fail
     %t13 = call i32 @use(%t11, %t12)
-    store i32 %t13, $call__3
-    %t14 = load i32 $call__3
-    store i32 %t14, $cond__1
+    store typed i32 %t13, $call__3
+    %t14 = load typed i32 $call__3
+    store typed i32 %t14, $cond__1
     eh_end
     jump ^cond_end_17
 
   block ^cond_end_17:
-    %t15 = load i32 $cond__1
-    store i32 %t15, $result
+    %t15 = load typed i32 $cond__1
+    store typed i32 %t15, $result
     %t16 = load u8 $lifetime__8
     branch %t16, ^conditional_temporary_destroy_18, ^conditional_temporary_done_19
 
@@ -275,9 +275,9 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     eh_try ^conditional_cleanup_landing_22
     %t26 = load u8 $fail
     %t27 = call i32 @use(%t25, %t26)
-    store i32 %t27, $call__5
-    %t28 = load i32 $call__5
-    store i32 %t28, $cond__4
+    store typed i32 %t27, $call__5
+    %t28 = load typed i32 $call__5
+    store typed i32 %t28, $cond__4
     eh_end
     jump ^cond_end_32
 
@@ -290,15 +290,15 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     eh_try ^conditional_cleanup_landing_22
     %t30 = load u8 $fail
     %t31 = call i32 @use__ov2(%t29, %t30)
-    store i32 %t31, $call__6
-    %t32 = load i32 $call__6
-    store i32 %t32, $cond__4
+    store typed i32 %t31, $call__6
+    %t32 = load typed i32 $call__6
+    store typed i32 %t32, $cond__4
     eh_end
     jump ^cond_end_32
 
   block ^cond_end_32:
-    %t33 = load i32 $cond__4
-    store i32 %t33, $result
+    %t33 = load typed i32 $cond__4
+    store typed i32 %t33, $result
     %t34 = load u8 $lifetime__12
     branch %t34, ^conditional_temporary_destroy_33, ^conditional_temporary_done_34
 
@@ -337,12 +337,12 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
 
   block ^catch_body_37:
     %t41 = call ptr @__external_runtime____cxa_begin_catch(%t38)
-    store ptr %t41, $catch__7
+    store typed ptr %t41, $catch__7
     eh_cleanup ^catch_cleanup_39
-    %t42 = load i32 %t41
-    store i32 %t42, $error
-    %t43 = load i32 $error
-    store i32 %t43, $caught
+    %t42 = load typed i32 %t41
+    store typed i32 %t42, $error
+    %t43 = load typed i32 $error
+    store typed i32 %t43, $caught
     eh_end
     call void @__external_runtime____cxa_end_catch()
     jump ^try_end_3
@@ -356,144 +356,144 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
     resume
 
   block ^try_end_3:
-    %t44 = load i32 @constructions
+    %t44 = load typed i32 @constructions
     %t45 = cmp ne i32 %t44, 1
     branch %t45, ^lor_short_53, ^lor_rhs_52
 
   block ^lor_rhs_52:
-    %t46 = load i32 @invalid_destructions
+    %t46 = load typed i32 @invalid_destructions
     %t47 = cmp ne i32 %t46, 0
     %t48 = cmp ne i64 %t47, 0
-    store i64 %t48, $lor__20
+    store typed i64 %t48, $lor__20
     jump ^lor_end_54
 
   block ^lor_short_53:
-    store i64 1, $lor__20
+    store typed i64 1, $lor__20
     jump ^lor_end_54
 
   block ^lor_end_54:
-    %t49 = load i64 $lor__20
+    %t49 = load typed i64 $lor__20
     branch %t49, ^lor_short_50, ^lor_rhs_49
 
   block ^lor_rhs_49:
-    %t50 = load i32 @left_destructions
+    %t50 = load typed i32 @left_destructions
     %t51 = load u8 $first
     branch %t51, ^lor_short_59, ^lor_rhs_58
 
   block ^lor_rhs_58:
     %t52 = load u8 $same_type
     %t53 = cmp ne i64 %t52, 0
-    store i64 %t53, $lor__22
+    store typed i64 %t53, $lor__22
     jump ^lor_end_60
 
   block ^lor_short_59:
-    store i64 1, $lor__22
+    store typed i64 1, $lor__22
     jump ^lor_end_60
 
   block ^lor_end_60:
-    %t54 = load i64 $lor__22
+    %t54 = load typed i64 $lor__22
     branch %t54, ^cond_then_55, ^cond_else_56
 
   block ^cond_then_55:
-    store i32 1, $cond__21
+    store typed i32 1, $cond__21
     jump ^cond_end_57
 
   block ^cond_else_56:
-    store i32 0, $cond__21
+    store typed i32 0, $cond__21
     jump ^cond_end_57
 
   block ^cond_end_57:
-    %t55 = load i32 $cond__21
+    %t55 = load typed i32 $cond__21
     %t56 = cmp ne i32 %t50, %t55
     %t57 = cmp ne i64 %t56, 0
-    store i64 %t57, $lor__19
+    store typed i64 %t57, $lor__19
     jump ^lor_end_51
 
   block ^lor_short_50:
-    store i64 1, $lor__19
+    store typed i64 1, $lor__19
     jump ^lor_end_51
 
   block ^lor_end_51:
-    %t58 = load i64 $lor__19
+    %t58 = load typed i64 $lor__19
     branch %t58, ^lor_short_47, ^lor_rhs_46
 
   block ^lor_rhs_46:
-    %t59 = load i32 @right_destructions
+    %t59 = load typed i32 @right_destructions
     %t60 = load u8 $first
     branch %t60, ^lor_short_65, ^lor_rhs_64
 
   block ^lor_rhs_64:
     %t61 = load u8 $same_type
     %t62 = cmp ne i64 %t61, 0
-    store i64 %t62, $lor__24
+    store typed i64 %t62, $lor__24
     jump ^lor_end_66
 
   block ^lor_short_65:
-    store i64 1, $lor__24
+    store typed i64 1, $lor__24
     jump ^lor_end_66
 
   block ^lor_end_66:
-    %t63 = load i64 $lor__24
+    %t63 = load typed i64 $lor__24
     branch %t63, ^cond_then_61, ^cond_else_62
 
   block ^cond_then_61:
-    store i32 0, $cond__23
+    store typed i32 0, $cond__23
     jump ^cond_end_63
 
   block ^cond_else_62:
-    store i32 1, $cond__23
+    store typed i32 1, $cond__23
     jump ^cond_end_63
 
   block ^cond_end_63:
-    %t64 = load i32 $cond__23
+    %t64 = load typed i32 $cond__23
     %t65 = cmp ne i32 %t59, %t64
     %t66 = cmp ne i64 %t65, 0
-    store i64 %t66, $lor__18
+    store typed i64 %t66, $lor__18
     jump ^lor_end_48
 
   block ^lor_short_47:
-    store i64 1, $lor__18
+    store typed i64 1, $lor__18
     jump ^lor_end_48
 
   block ^lor_end_48:
-    %t67 = load i64 $lor__18
+    %t67 = load typed i64 $lor__18
     branch %t67, ^lor_short_44, ^lor_rhs_43
 
   block ^lor_rhs_43:
-    %t68 = load i32 $caught
+    %t68 = load typed i32 $caught
     %t69 = load u8 $fail
     branch %t69, ^cond_then_67, ^cond_else_68
 
   block ^cond_then_67:
-    store i32 7, $cond__25
+    store typed i32 7, $cond__25
     jump ^cond_end_69
 
   block ^cond_else_68:
-    store i32 0, $cond__25
+    store typed i32 0, $cond__25
     jump ^cond_end_69
 
   block ^cond_end_69:
-    %t70 = load i32 $cond__25
+    %t70 = load typed i32 $cond__25
     %t71 = cmp ne i32 %t68, %t70
     %t72 = cmp ne i64 %t71, 0
-    store i64 %t72, $lor__17
+    store typed i64 %t72, $lor__17
     jump ^lor_end_45
 
   block ^lor_short_44:
-    store i64 1, $lor__17
+    store typed i64 1, $lor__17
     jump ^lor_end_45
 
   block ^lor_end_45:
-    %t73 = load i64 $lor__17
+    %t73 = load typed i64 $lor__17
     branch %t73, ^lor_short_41, ^lor_rhs_40
 
   block ^lor_rhs_40:
-    %t74 = load i32 $result
+    %t74 = load typed i32 $result
     %t75 = load u8 $fail
     branch %t75, ^cond_then_70, ^cond_else_71
 
   block ^cond_then_70:
-    store i32 0, $cond__26
+    store typed i32 0, $cond__26
     jump ^cond_end_72
 
   block ^cond_else_71:
@@ -503,43 +503,43 @@ function @exercise(%first : u8, %fail : u8, %same_type : u8) -> i32 [binding=str
   block ^lor_rhs_76:
     %t77 = load u8 $same_type
     %t78 = cmp ne i64 %t77, 0
-    store i64 %t78, $lor__28
+    store typed i64 %t78, $lor__28
     jump ^lor_end_78
 
   block ^lor_short_77:
-    store i64 1, $lor__28
+    store typed i64 1, $lor__28
     jump ^lor_end_78
 
   block ^lor_end_78:
-    %t79 = load i64 $lor__28
+    %t79 = load typed i64 $lor__28
     branch %t79, ^cond_then_73, ^cond_else_74
 
   block ^cond_then_73:
-    store i32 1, $cond__27
+    store typed i32 1, $cond__27
     jump ^cond_end_75
 
   block ^cond_else_74:
-    store i32 2, $cond__27
+    store typed i32 2, $cond__27
     jump ^cond_end_75
 
   block ^cond_end_75:
-    %t80 = load i32 $cond__27
-    store i32 %t80, $cond__26
+    %t80 = load typed i32 $cond__27
+    store typed i32 %t80, $cond__26
     jump ^cond_end_72
 
   block ^cond_end_72:
-    %t81 = load i32 $cond__26
+    %t81 = load typed i32 $cond__26
     %t82 = cmp ne i32 %t74, %t81
     %t83 = cmp ne i64 %t82, 0
-    store i64 %t83, $lor__16
+    store typed i64 %t83, $lor__16
     jump ^lor_end_42
 
   block ^lor_short_41:
-    store i64 1, $lor__16
+    store typed i64 1, $lor__16
     jump ^lor_end_42
 
   block ^lor_end_42:
-    %t84 = load i64 $lor__16
+    %t84 = load typed i64 $lor__16
     %t85 = convert trunc i32 i64 %t84
     return i32 %t85
 }
@@ -582,9 +582,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^call_unwind_end_9:
     eh_try ^call_unwind_dispatch_11
     %t3 = call i32 @use(%t2, 0)
-    store i32 %t3, $call__2
-    %t4 = load i32 $call__2
-    store i32 %t4, $cond__1
+    store typed i32 %t3, $call__2
+    %t4 = load typed i32 $call__2
+    store typed i32 %t4, $cond__1
     call void @Left___Left(%t2)
     eh_end
     jump ^call_unwind_end_12
@@ -608,9 +608,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_end
     eh_try ^call_unwind_dispatch_14
     %t6 = call i32 @use__ov2(%t5, 1)
-    store i32 %t6, $call__4
-    %t7 = load i32 $call__4
-    store i32 %t7, $cond__1
+    store typed i32 %t6, $call__4
+    %t7 = load typed i32 $call__4
+    store typed i32 %t7, $cond__1
     call void @Right___Right(%t5)
     eh_end
     jump ^call_unwind_end_15
@@ -628,9 +628,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_6
 
   block ^cond_end_6:
-    %t8 = load i32 $cond__1
-    store i32 %t8, $result
-    %t9 = load i32 $result
+    %t8 = load typed i32 $cond__1
+    store typed i32 %t8, $result
+    %t9 = load typed i32 $result
     eh_end
     jump ^try_end_3
 
@@ -660,22 +660,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^try_end_3:
-    %t14 = load i32 @constructions
+    %t14 = load typed i32 @constructions
     %t15 = cmp ne i32 %t14, 1
     branch %t15, ^if_then_19, ^lor_rhs_24
 
   block ^lor_rhs_24:
-    %t16 = load i32 @left_destructions
+    %t16 = load typed i32 @left_destructions
     %t17 = cmp ne i32 %t16, 0
     branch %t17, ^if_then_19, ^lor_rhs_23
 
   block ^lor_rhs_23:
-    %t18 = load i32 @right_destructions
+    %t18 = load typed i32 @right_destructions
     %t19 = cmp ne i32 %t18, 1
     branch %t19, ^if_then_19, ^lor_rhs_22
 
   block ^lor_rhs_22:
-    %t20 = load i32 @invalid_destructions
+    %t20 = load typed i32 @invalid_destructions
     %t21 = cmp ne i32 %t20, 0
     branch %t21, ^if_then_19, ^if_else_20
 
@@ -686,40 +686,40 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_21
 
   block ^if_end_21:
-    store i32 0, $side
+    store typed i32 0, $side
     jump ^for_cond_25
 
   block ^for_cond_25:
-    %t22 = load i32 $side
+    %t22 = load typed i32 $side
     %t23 = cmp ne i32 %t22, 2
     branch %t23, ^for_body_26, ^for_end_28
 
   block ^for_body_26:
-    store i32 0, $fail
+    store typed i32 0, $fail
     jump ^for_cond_29
 
   block ^for_cond_29:
-    %t24 = load i32 $fail
+    %t24 = load typed i32 $fail
     %t25 = cmp ne i32 %t24, 2
     branch %t25, ^for_body_30, ^for_end_32
 
   block ^for_body_30:
-    store i32 0, $same
+    store typed i32 0, $same
     jump ^for_cond_33
 
   block ^for_cond_33:
-    %t26 = load i32 $same
+    %t26 = load typed i32 $same
     %t27 = cmp ne i32 %t26, 2
     branch %t27, ^for_body_34, ^for_end_36
 
   block ^for_body_34:
-    %t28 = load i32 $side
+    %t28 = load typed i32 $side
     %t29 = cmp ne i32 %t28, 0
     %t30 = convert trunc u8 i64 %t29
-    %t31 = load i32 $fail
+    %t31 = load typed i32 $fail
     %t32 = cmp ne i32 %t31, 0
     %t33 = convert trunc u8 i64 %t32
-    %t34 = load i32 $same
+    %t34 = load typed i32 $same
     %t35 = cmp ne i32 %t34, 0
     %t36 = convert trunc u8 i64 %t35
     %t37 = call i32 @exercise(%t30, %t33, %t36)
@@ -735,27 +735,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^for_iter_35
 
   block ^for_iter_35:
-    %t38 = load i32 $same
-    %t39 = binary add i32 %t38, 1
-    store i32 %t39, $same
+    %t38 = load typed i32 $same
+    %t39 = binary add nowrap i32 %t38, 1
+    store typed i32 %t39, $same
     jump ^for_cond_33
 
   block ^for_end_36:
     jump ^for_iter_31
 
   block ^for_iter_31:
-    %t40 = load i32 $fail
-    %t41 = binary add i32 %t40, 1
-    store i32 %t41, $fail
+    %t40 = load typed i32 $fail
+    %t41 = binary add nowrap i32 %t40, 1
+    store typed i32 %t41, $fail
     jump ^for_cond_29
 
   block ^for_end_32:
     jump ^for_iter_27
 
   block ^for_iter_27:
-    %t42 = load i32 $side
-    %t43 = binary add i32 %t42, 1
-    store i32 %t43, $side
+    %t42 = load typed i32 $side
+    %t43 = binary add nowrap i32 %t42, 1
+    store typed i32 %t43, $side
     jump ^for_cond_25
 
   block ^for_end_28:
@@ -765,78 +765,78 @@ function @Left__Left(%this : ptr [object_bytes=4]) -> void [binding=weak, object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
-    %t3 = load i32 @constructions
-    %t4 = binary add i32 %t3, 1
-    store i32 %t4, @constructions
+    store typed i32 7, %t2
+    %t3 = load typed i32 @constructions
+    %t4 = binary add nowrap i32 %t3, 1
+    store typed i32 %t4, @constructions
     return void
 }
 function @Left___Left(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4LeftD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     %t4 = cmp ne i32 %t3, 7
     branch %t4, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    %t5 = load i32 @invalid_destructions
-    %t6 = binary add i32 %t5, 1
-    store i32 %t6, @invalid_destructions
+    %t5 = load typed i32 @invalid_destructions
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, @invalid_destructions
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t7 = load i32 @left_destructions
-    %t8 = binary add i32 %t7, 1
-    store i32 %t8, @left_destructions
+    %t7 = load typed i32 @left_destructions
+    %t8 = binary add nowrap i32 %t7, 1
+    store typed i32 %t8, @left_destructions
     return void
 }
 function @Right__Right(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5RightC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 9, %t2
-    %t3 = load i32 @constructions
-    %t4 = binary add i32 %t3, 1
-    store i32 %t4, @constructions
+    store typed i32 9, %t2
+    %t3 = load typed i32 @constructions
+    %t4 = binary add nowrap i32 %t3, 1
+    store typed i32 %t4, @constructions
     return void
 }
 function @Right___Right(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5RightD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     %t4 = cmp ne i32 %t3, 9
     branch %t4, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    %t5 = load i32 @invalid_destructions
-    %t6 = binary add i32 %t5, 1
-    store i32 %t6, @invalid_destructions
+    %t5 = load typed i32 @invalid_destructions
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, @invalid_destructions
     jump ^if_end_3
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t7 = load i32 @right_destructions
-    %t8 = binary add i32 %t7, 1
-    store i32 %t8, @right_destructions
+    %t7 = load typed i32 @right_destructions
+    %t8 = binary add nowrap i32 %t7, 1
+    store typed i32 %t8, @right_destructions
     return void
 }
 alias object _ZN4LeftC2Ev = @Left__Left

@@ -11,8 +11,8 @@ function @Function_void_int____Function_void_int____ov3(%this : ptr [object_byte
   slot $f : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %f, $f
+    store typed ptr %this, $this
+    store typed i32 %f, $f
     return void
 }
 alias object _ZN8FunctionIFviEEC2IivEET_ = @Function_void_int____Function_void_int____ov3

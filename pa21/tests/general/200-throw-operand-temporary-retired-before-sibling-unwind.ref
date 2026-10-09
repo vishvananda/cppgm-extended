@@ -36,7 +36,7 @@ global @__ehobj_struct_Error [binding=internal, object=@__ehobj_struct_Error] = 
 }
 global @temporary_destructions : i32 [binding=strong] = zero
 global @scope_destructions : i32 [binding=strong] = zero
-global @source [binding=strong] = {
+global @source : obj<4x4> [binding=strong] = {
   zero 4
 }
 global @__strlit__1 [storage=readonly, binding=internal] = {
@@ -54,19 +54,19 @@ function @operator_(%ret : ptr [pass=indirect_result, object_bytes=4], %__param0
   slot $right : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %right, $right
-    %t1 = load ptr $right
+    store typed ptr %__param0, $__param0
+    store typed ptr %right, $right
+    %t1 = load typed ptr $right
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary add i32 %t3, 1
+    %t3 = load typed i32 %t2
+    %t4 = binary add nowrap i32 %t3, 1
     call void @Text__Text(%ret, %t4)
     return void
 }
 function @raise_later() -> void [binding=strong, object=_Z11raise_laterv] {
   block ^entry:
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t1
+    store typed i32 7, %t1
     %t2 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t1, %t2, 0)
     return void
@@ -86,7 +86,7 @@ function @exercise(%take_throw : u8) -> void [binding=strong, object=_Z8exercise
   block ^if_then_1:
     eh_try ^cleanup_action_5
     %t3 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store ptr %t3, $throw_alloc__1
+    store typed ptr %t3, $throw_alloc__1
     eh_end
     jump ^throw_alloc_unwind_end_6
 
@@ -99,7 +99,7 @@ function @exercise(%take_throw : u8) -> void [binding=strong, object=_Z8exercise
     jump ^cleanup_resume_4
 
   block ^throw_alloc_unwind_end_6:
-    %t5 = load ptr $throw_alloc__1
+    %t5 = load typed ptr $throw_alloc__1
     eh_try ^cleanup_action_5
     %t6 = addr $arg__2
     %t7 = addr @__strlit__1
@@ -170,23 +170,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^try_end_3:
-    %t5 = load i32 @temporary_destructions
+    %t5 = load typed i32 @temporary_destructions
     %t6 = cmp ne i32 %t5, 0
     branch %t6, ^lor_short_8, ^lor_rhs_7
 
   block ^lor_rhs_7:
-    %t7 = load i32 @scope_destructions
+    %t7 = load typed i32 @scope_destructions
     %t8 = cmp ne i32 %t7, 1
     %t9 = cmp ne i64 %t8, 0
-    store i64 %t9, $lor__1
+    store typed i64 %t9, $lor__1
     jump ^lor_end_9
 
   block ^lor_short_8:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_9
 
   block ^lor_end_9:
-    %t10 = load i64 $lor__1
+    %t10 = load typed i64 $lor__1
     %t11 = convert trunc i32 i64 %t10
     return i32 %t11
 }
@@ -195,32 +195,32 @@ function @Text__Text(%this : ptr [object_bytes=4], %input : i32) -> void [bindin
   slot $input : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @Text___Text(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN4TextD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @temporary_destructions
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @temporary_destructions
+    store typed ptr %this, $this
+    %t1 = load typed i32 @temporary_destructions
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @temporary_destructions
     return void
 }
 function @Scope___Scope(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5ScopeD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @scope_destructions
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @scope_destructions
+    store typed ptr %this, $this
+    %t1 = load typed i32 @scope_destructions
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @scope_destructions
     return void
 }
 function @Error__Error(%this : ptr [object_bytes=4], %text : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN5ErrorC1ERK4Text, inline_hint=yes] {
@@ -228,21 +228,21 @@ function @Error__Error(%this : ptr [object_bytes=4], %text : ptr [pass=by_addres
   slot $text : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %text, $text
-    %t1 = load ptr $text
+    store typed ptr %this, $this
+    store typed ptr %text, $text
+    %t1 = load typed ptr $text
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
+    store typed i32 %t3, %t5
     return void
 }
 function @Error___Error(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN5ErrorD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @__cppgm_init() -> void [role=init, binding=internal] {

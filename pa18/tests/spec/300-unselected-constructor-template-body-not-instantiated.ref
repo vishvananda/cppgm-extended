@@ -6,7 +6,7 @@ function @consume(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [bi
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -23,14 +23,14 @@ function @target__target(%this : ptr [object_bytes=1]) -> void [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @source__operatorconsttarget_(%this : ptr [object_bytes=1]) -> ptr [binding=strong, object=_ZNK6sourcecvRK6targetEv] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr @stored_target
     return ptr %t1
 }

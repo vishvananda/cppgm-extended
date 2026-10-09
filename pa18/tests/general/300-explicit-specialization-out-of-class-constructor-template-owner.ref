@@ -2,9 +2,9 @@ function @explicit_specialization_constructor_owner__target(%value : ptr [pass=b
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
-    store i32 7, %t1
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
+    store typed i32 7, %t1
     return void
 }
 function @explicit_specialization_constructor_owner__run() -> i32 [binding=strong, object=_ZN41explicit_specialization_constructor_owner3runEv] {
@@ -17,20 +17,20 @@ function @explicit_specialization_constructor_owner__run() -> i32 [binding=stron
     call void @explicit_specialization_constructor_owner__box_void___box__ov3(%t1, %t2)
     %t3 = addr $value
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -44,19 +44,19 @@ function @explicit_specialization_constructor_owner__box_void___box__ov3(%this :
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %fn, $fn
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %fn, $fn
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
-    store i32 0, $value
+    store typed i32 0, %t2
+    store typed i32 0, $value
     %t3 = addr $value
-    %t4 = load ptr $fn
+    %t4 = load typed ptr $fn
     call void %t4(%t3) as (%arg0 : ptr [pass=by_address, object_bytes=4]) -> void
-    %t5 = load i32 $value
-    %t6 = load ptr $this
+    %t5 = load typed i32 $value
+    %t6 = load typed ptr $this
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 %t5, %t7
+    store typed i32 %t5, %t7
     return void
 }
 alias object _ZN41explicit_specialization_constructor_owner3boxIvEC2IRFvRiEEEOT_ = @explicit_specialization_constructor_owner__box_void___box__ov3

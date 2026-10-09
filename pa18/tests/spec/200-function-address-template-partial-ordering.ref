@@ -4,9 +4,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : i32
 
   block ^entry:
-    store i32 0, $value
+    store typed i32 0, $value
     %t1 = addr $value
-    %t2 = load ptr @selected
+    %t2 = load typed ptr @selected
     %t3 = call i32 %t2(%t1) as (%arg0 : ptr) -> i32
     return i32 %t3
 }
@@ -14,6 +14,6 @@ function @inspect__ov2(%__param0 : ptr) -> i32 [binding=weak, object=_Z7inspectI
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 0
 }

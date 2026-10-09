@@ -13,15 +13,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t4 = load i32 $cond__1
+    %t4 = load typed i32 $cond__1
     return i32 %t4
 }
 function @member_template_cast_arg__check_stream(%tests : ptr [pass=by_address, object_bytes=1]) -> u8 [binding=weak, object=_ZN24member_template_cast_arg12check_streamINS_6streamEEEbRNS_5suiteE] {
@@ -31,36 +31,36 @@ function @member_template_cast_arg__check_stream(%tests : ptr [pass=by_address, 
   slot $refarg__3 : i128
 
   block ^entry:
-    store ptr %tests, $tests
-    %t1 = load ptr $tests
+    store typed ptr %tests, $tests
+    %t1 = load typed ptr $tests
     %t2 = addr @member_template_cast_arg__stream__read_some
     %t3 = copy i64 %t2
     %t4 = convert zext i128 i64 %t3
-    store i128 %t4, $refarg__2
+    store typed i128 %t4, $refarg__2
     %t5 = addr $refarg__2
     %t6 = addr @__strlit__1
     %t7 = call u8 @member_template_cast_arg__suite__expect(%t1, %t5, %t6, 0)
     branch %t7, ^land_rhs_1, ^land_short_2
 
   block ^land_rhs_1:
-    %t8 = load ptr $tests
+    %t8 = load typed ptr $tests
     %t9 = addr @member_template_cast_arg__stream__read_some__ov2
     %t10 = copy i64 %t9
     %t11 = convert zext i128 i64 %t10
-    store i128 %t11, $refarg__3
+    store typed i128 %t11, $refarg__3
     %t12 = addr $refarg__3
     %t13 = addr @__strlit__1
     %t14 = call u8 @member_template_cast_arg__suite__expect__ov2(%t8, %t12, %t13, 0)
     %t15 = cmp ne i64 %t14, 0
-    store i64 %t15, $land__1
+    store typed i64 %t15, $land__1
     jump ^land_end_3
 
   block ^land_short_2:
-    store i64 0, $land__1
+    store typed i64 0, $land__1
     jump ^land_end_3
 
   block ^land_end_3:
-    %t16 = load i64 $land__1
+    %t16 = load typed i64 $land__1
     %t17 = convert trunc u8 i64 %t16
     return u8 %t17
 }
@@ -69,11 +69,11 @@ function @member_template_cast_arg__stream__read_some(%this : ptr [object_bytes=
   slot $buffer : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %buffer, $buffer
-    %t1 = load ptr $buffer
+    store typed ptr %this, $this
+    store typed ptr %buffer, $buffer
+    %t1 = load typed ptr $buffer
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     return i32 %t3
 }
 function @member_template_cast_arg__suite__expect(%this : ptr [object_bytes=1], %condition : ptr [pass=by_address, object_bytes=16], %__param2 : ptr, %__param3 : i32) -> u8 [binding=weak, object=_ZN24member_template_cast_arg5suite6expectIMNS_6streamEFiRKNS_6bufferEEEEbRKT_PKci, inline_hint=yes] {
@@ -83,12 +83,12 @@ function @member_template_cast_arg__suite__expect(%this : ptr [object_bytes=1], 
   slot $__param3 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %condition, $condition
-    store ptr %__param2, $__param2
-    store i32 %__param3, $__param3
-    %t1 = load ptr $condition
-    %t2 = load i128 %t1
+    store typed ptr %this, $this
+    store typed ptr %condition, $condition
+    store typed ptr %__param2, $__param2
+    store typed i32 %__param3, $__param3
+    %t1 = load typed ptr $condition
+    %t2 = load typed i128 %t1
     %t3 = cmp ne i128 %t2, 0
     %t4 = convert trunc u8 i64 %t3
     return u8 %t4
@@ -99,13 +99,13 @@ function @member_template_cast_arg__stream__read_some__ov2(%this : ptr [object_b
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %buffer, $buffer
-    store ptr %__param2, $__param2
-    %t1 = load ptr $buffer
+    store typed ptr %this, $this
+    store typed ptr %buffer, $buffer
+    store typed ptr %__param2, $__param2
+    %t1 = load typed ptr $buffer
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary add i32 %t3, 1
+    %t3 = load typed i32 %t2
+    %t4 = binary add nowrap i32 %t3, 1
     return i32 %t4
 }
 function @member_template_cast_arg__suite__expect__ov2(%this : ptr [object_bytes=1], %condition : ptr [pass=by_address, object_bytes=16], %__param2 : ptr, %__param3 : i32) -> u8 [binding=weak, object=_ZN24member_template_cast_arg5suite6expectIMNS_6streamEFiRKNS_6bufferERNS_10error_codeEEEEbRKT_PKci, inline_hint=yes] {
@@ -115,12 +115,12 @@ function @member_template_cast_arg__suite__expect__ov2(%this : ptr [object_bytes
   slot $__param3 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %condition, $condition
-    store ptr %__param2, $__param2
-    store i32 %__param3, $__param3
-    %t1 = load ptr $condition
-    %t2 = load i128 %t1
+    store typed ptr %this, $this
+    store typed ptr %condition, $condition
+    store typed ptr %__param2, $__param2
+    store typed i32 %__param3, $__param3
+    %t1 = load typed ptr $condition
+    %t2 = load typed i128 %t1
     %t3 = cmp ne i128 %t2, 0
     %t4 = convert trunc u8 i64 %t3
     return u8 %t4

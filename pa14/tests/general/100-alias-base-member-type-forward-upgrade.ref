@@ -12,8 +12,8 @@ function @Derived__f(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=wea
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
     return i32 %t1
 }

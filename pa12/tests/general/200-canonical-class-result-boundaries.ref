@@ -5,9 +5,9 @@ function @make_small(%x : i32) -> obj<4x4> [binding=strong, object=_Z10make_smal
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store i32 %x, $x
+    store typed i32 %x, $x
     %t1 = addr $retobj__1
-    %t2 = load i32 $x
+    %t2 = load typed i32 $x
     call void @Small__Small(%t1, %t2)
     return obj<4x4> $retobj__1
 }
@@ -20,8 +20,8 @@ function @make_sixteen(%ret : ptr [pass=indirect_result, object_bytes=16], %x : 
   slot $x : i64
 
   block ^entry:
-    store i64 %x, $x
-    %t1 = load i64 $x
+    store typed i64 %x, $x
+    %t1 = load typed i64 $x
     call void @Sixteen__Sixteen(%ret, %t1)
     return void
 }
@@ -37,13 +37,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @make_small
-    store ptr %t1, $small
+    store typed ptr %t1, $small
     %t2 = addr $tmpobj__1
-    %t3 = load ptr $small
+    %t3 = load typed ptr $small
     %t4 = call obj<4x4> %t3(7) as (%arg0 : i32) -> obj<4x4>
     copyobj 4x4 %t4, %t2
     %t5 = index i8 [projection=field] %t2, 0
-    %t6 = load i32 %t5
+    %t6 = load typed i32 %t5
     %t7 = cmp ne i32 %t6, 7
     branch %t7, ^if_then_1, ^lor_rhs_4
 
@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = call obj<4x4> @make_small(9)
     copyobj 4x4 %t9, %t8
     %t10 = index i8 [projection=field] %t8, 0
-    %t11 = load i32 %t10
+    %t11 = load typed i32 %t10
     %t12 = cmp ne i32 %t11, 9
     branch %t12, ^if_then_1, ^if_else_2
 
@@ -64,10 +64,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_3:
     %t13 = addr @make_empty
-    store ptr %t13, $empty
+    store typed ptr %t13, $empty
     eh_try ^cleanup_resume_5
     %t14 = addr $discard__3
-    %t15 = load ptr $empty
+    %t15 = load typed ptr $empty
     call void %t15(%t14) as (%arg0 : ptr [pass=indirect_result, object_bytes=1]) -> void
     eh_end
     jump ^call_unwind_end_6
@@ -86,7 +86,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cleanup_resume_5
 
   block ^call_unwind_end_8:
-    %t16 = load i32 @destroyed
+    %t16 = load typed i32 @destroyed
     %t17 = cmp ne i32 %t16, 1
     branch %t17, ^if_then_9, ^if_else_10
 
@@ -111,7 +111,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cleanup_resume_5
 
   block ^call_unwind_end_13:
-    %t19 = load i32 @destroyed
+    %t19 = load typed i32 @destroyed
     %t20 = cmp ne i32 %t19, 2
     branch %t20, ^if_then_14, ^if_else_15
 
@@ -123,20 +123,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^if_end_16:
     %t21 = addr @make_sixteen
-    store ptr %t21, $sixteen
+    store typed ptr %t21, $sixteen
     %t22 = addr $value
-    %t23 = load ptr $sixteen
+    %t23 = load typed ptr $sixteen
     call void %t23(%t22, 31) as (%arg0 : ptr [pass=indirect_result, object_bytes=16], %arg1 : i64) -> void
     %t24 = addr $value
     %t25 = index i8 [projection=field] %t24, 0
-    %t26 = load i64 %t25
+    %t26 = load typed i64 %t25
     %t27 = cmp ne i64 %t26, 31
     branch %t27, ^if_then_17, ^lor_rhs_20
 
   block ^lor_rhs_20:
     %t28 = addr $value
     %t29 = index i8 [projection=field] %t28, 8
-    %t30 = load i64 %t29
+    %t30 = load typed i64 %t29
     %t31 = cmp ne i64 %t30, 42
     branch %t31, ^if_then_17, ^if_else_18
 
@@ -151,7 +151,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_19:
     %t33 = addr $value
     call void @Sixteen___Sixteen(%t33)
-    %t34 = load i32 @destroyed
+    %t34 = load typed i32 @destroyed
     %t35 = cmp ne i32 %t34, 3
     %t36 = convert trunc i32 i64 %t35
     return i32 %t36
@@ -161,19 +161,19 @@ function @Small__Small(%this : ptr [object_bytes=4], %x : i32) -> void [binding=
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @Empty__Empty(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5EmptyC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Sixteen__Sixteen(%this : ptr [object_bytes=16], %x : i64) -> void [binding=weak, object=_ZN7SixteenC1Ex, inline_hint=yes] {
@@ -181,35 +181,35 @@ function @Sixteen__Sixteen(%this : ptr [object_bytes=16], %x : i64) -> void [bin
   slot $x : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %x, $x
-    %t1 = load i64 $x
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %x, $x
+    %t1 = load typed i64 $x
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i64 %t1, %t3
-    %t4 = load ptr $this
+    store typed i64 %t1, %t3
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 8
-    store i64 42, %t5
+    store typed i64 42, %t5
     return void
 }
 function @Empty___Empty(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN5EmptyD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
     return void
 }
 function @Sixteen___Sixteen(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7SixteenD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
     return void
 }
 alias object _ZN5SmallC2Ei = @Small__Small

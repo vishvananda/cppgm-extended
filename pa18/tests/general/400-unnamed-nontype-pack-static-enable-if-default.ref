@@ -11,7 +11,7 @@ function @Box_int___Box_int___ov3(%this : ptr [object_bytes=1]) -> void [binding
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN3BoxIiEC2I5checkIiETnN9enable_ifIXclsrT_2okEEiE4typeELi0EEEv = @Box_int___Box_int___ov3

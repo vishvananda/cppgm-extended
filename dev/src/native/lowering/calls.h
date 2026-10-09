@@ -133,6 +133,74 @@ protected:
     return true;
   }
 
+  // An object's SSE eightbytes load from its storage after every other
+  // argument move: their sources are memory, so no other move reads the
+  // registers they fill.
+  void emit_object_xmm_arguments(const lowir_model::Instruction & instruction,
+                                 const abi::Plan & plan,
+                                 const std::vector<std::size_t> & pieces,
+                                 std::vector<mir_model::MirInstruction> & out)
+  {
+    using namespace build;
+    Derived & lowerer = static_cast<Derived &>(*this);
+    for(std::size_t i = 0; i < pieces.size(); ++i) {
+      const abi::Piece & piece = plan.pieces[pieces[i]];
+      const lowir_model::Operand & argument = instruction.args[piece.parameter_index];
+      mir_model::MirOperand storage;
+      if(!direct_object_chunk_storage(argument, piece.chunk_offset, &storage)) {
+        lowerer.emit_operand_address(out, XR_R11, argument);
+        storage = dereference(XR_R11, static_cast<long long>(piece.chunk_offset));
+      }
+      lowerer.uses_scalar_float_ = true;
+      append_float_move(out, xmm_operand(piece.xmm), storage, piece.type);
+    }
+  }
+
+  // A direct object result's eightbytes from their return registers: INTEGER
+  // ones in rax then rdx, SSE ones in xmm0 then xmm1 (psABI 3.2.3).
+  void store_object_return_registers(const lowir_model::LowType & type,
+                                     std::uint8_t classes,
+                                     const lowir_model::Operand * destination,
+                                     const mir_model::MirOperand * home,
+                                     std::vector<mir_model::MirInstruction> & out)
+  {
+    using namespace build;
+    Derived & lowerer = static_cast<Derived &>(*this);
+    if(type.storage_size > 16 || classes == lowir_model::kObjectClassesMemory)
+      native_errors::ThrowSource("direct object return exceeds two SysV eightbytes");
+    mir_model::MirOperand direct_storage;
+    const bool direct = destination ?
+      direct_object_chunk_storage(*destination, 0, &direct_storage) : true;
+    if(!destination) direct_storage = *home;
+    if(!direct) lowerer.emit_operand_address(out, XR_R11, *destination);
+    const std::size_t chunks = (type.storage_size + 7) / 8;
+    std::size_t gprs = 0, xmms = 0;
+    for(std::size_t chunk = 0; chunk < chunks; ++chunk) {
+      const unsigned eightbyte = lowir_model::object_eightbyte_class(classes, chunk);
+      if(eightbyte == 1) continue;
+      mir_model::MirOperand storage = direct ? direct_storage : dereference(XR_R11);
+      storage.offset += static_cast<long long>(chunk * 8);
+      if(eightbyte == 3) {
+        lowerer.uses_scalar_float_ = true;
+        append_float_move(out, storage, xmm_operand(xmms++ ? XMM_1 : XMM_0),
+                          abi::object_sse_chunk_type(type.storage_size - chunk * 8));
+      } else
+        append_store(out, storage, reg_operand(gprs++ ? XR_RDX : XR_RAX),
+                     abi::object_chunk_type(type.storage_size - chunk * 8));
+    }
+  }
+
+  std::uint8_t call_result_classes(const lowir_model::Instruction & instruction) const
+  {
+    const Derived & lowerer = static_cast<const Derived &>(*this);
+    if(instruction.has_call_signature)
+      return instruction.call_boundary.result_classes;
+    if(instruction.first.kind != lowir_model::Operand::OP_GLOBAL) return 0;
+    const abi::FunctionSignature & found =
+      lowerer.signatures_[instruction.first.symbol];
+    return found.boundary ? found.boundary->result_classes : 0;
+  }
+
   bool direct_object_chunk_storage(const lowir_model::Operand & operand,
                                    std::size_t chunk_offset,
                                    mir_model::MirOperand * result) const

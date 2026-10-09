@@ -3,10 +3,10 @@ global @destroyed : i32 [binding=strong] = 0
 
 function @observed() -> i32 [unwind=no, binding=strong, object=_Z8observedv] {
   block ^entry:
-    %t1 = load i32 @constructed
-    %t2 = binary mul i32 %t1, 10
-    %t3 = load i32 @destroyed
-    %t4 = binary add i32 %t2, %t3
+    %t1 = load typed i32 @constructed
+    %t2 = binary mul nowrap i32 %t1, 10
+    %t3 = load typed i32 @destroyed
+    %t4 = binary add nowrap i32 %t2, %t3
     return i32 %t4
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -57,35 +57,35 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t22, ^cond_then_4, ^cond_else_5
 
   block ^cond_then_4:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_6
 
   block ^cond_else_5:
-    store i32 2, $cond__1
+    store typed i32 2, $cond__1
     jump ^cond_end_6
 
   block ^cond_end_6:
-    %t23 = load i32 $cond__1
+    %t23 = load typed i32 $cond__1
     return i32 %t23
 }
 function @Element___Element(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7ElementD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @destroyed
     return void
 }
 function @Element__Element(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN7ElementC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @constructed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @constructed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @constructed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @constructed
     return void
 }
 alias object _ZN7ElementD2Ev = @Element___Element

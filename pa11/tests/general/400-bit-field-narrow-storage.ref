@@ -41,11 +41,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t33 = binary and u8 %t32, 7
     %t34 = convert zext i32 u8 %t28
     %t35 = convert zext i32 u8 %t33
-    %t36 = binary add i32 %t34, %t35
+    %t36 = binary add nowrap i32 %t34, %t35
     %t37 = addr $bits
     %t38 = index i8 [projection=field] %t37, 1
     %t39 = load u8 %t38
     %t40 = convert zext i32 u8 %t39
-    %t41 = binary add i32 %t36, %t40
+    %t41 = binary add nowrap i32 %t36, %t40
     return i32 %t41
 }

@@ -14,15 +14,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @friend_inherited_property__friend_inherited_property(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN25friend_inherited_propertyC1Ei, inline_hint=yes] {
@@ -30,11 +30,11 @@ function @friend_inherited_property__friend_inherited_property(%this : ptr [obje
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load i32 $v
+    %t3 = load typed i32 $v
     call void @friend_inherited_base__friend_inherited_base__base_entry(%t2, %t3)
     return void
 }
@@ -43,18 +43,18 @@ function @friend_inherited_reader__read(%this : ptr [object_bytes=1], %p : ptr [
   slot $p : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %p, $p
-    %t1 = load ptr $p
+    store typed ptr %this, $this
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
     %t2 = index i8 %t1, 0
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
-    %t5 = binary add i32 %t4, 1
-    store i32 %t5, %t3
-    %t6 = load ptr $p
+    %t4 = load typed i32 %t3
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, %t3
+    %t6 = load typed ptr $p
     %t7 = index i8 %t6, 0
     %t8 = index i8 [projection=field] %t7, 0
-    %t9 = load i32 %t8
+    %t9 = load typed i32 %t8
     return i32 %t9
 }
 function @friend_inherited_base__friend_inherited_base__base_entry(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN21friend_inherited_baseC2Ei, object_root=yes, inline_hint=yes] {
@@ -62,12 +62,12 @@ function @friend_inherited_base__friend_inherited_base__base_entry(%this : ptr [
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN25friend_inherited_propertyC2Ei = @friend_inherited_property__friend_inherited_property

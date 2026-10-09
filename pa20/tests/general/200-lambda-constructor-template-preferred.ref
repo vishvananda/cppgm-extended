@@ -9,33 +9,33 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Sink__Sink__ov3(%t1, $argobj__1)
     %t3 = addr $sink
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 7
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__2
+    store typed i32 0, $cond__2
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__2
+    store typed i32 1, $cond__2
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__2
+    %t7 = load typed i32 $cond__2
     return i32 %t7
 }
-function @Sink__Sink__ov3(%this : ptr [object_bytes=4], %f : obj<1x1>) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_0EET_, object_root=yes, inline_hint=yes] {
+function @Sink__Sink__ov3(%this : ptr [object_bytes=4], %f : obj<1x1> [classes=none]) -> void [binding=internal, object=_ZN4SinkC1IZ4mainE3$_0EET_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $f : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $f
     %t2 = call i32 @__lambda_main_t66_70__operator__(%t1, 6)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 %t2, %t4
+    store typed i32 %t2, %t4
     return void
 }
 function @__lambda_main_t66_70__operator__(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEi, prefer_local=yes, inline_hint=yes] {
@@ -43,10 +43,10 @@ function @__lambda_main_t66_70__operator__(%this : ptr [object_bytes=1], %x : i3
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = binary add i32 %t1, 1
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }
 alias object _ZN4SinkC2IZ4mainE3$_0EET_ = @Sink__Sink__ov3

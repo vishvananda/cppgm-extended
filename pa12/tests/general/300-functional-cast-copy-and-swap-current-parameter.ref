@@ -13,20 +13,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = call ptr @value__operator_(%t3, %t4)
     %t6 = addr $left
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i64 %t7
+    %t8 = load typed i64 %t7
     %t9 = cmp eq i64 %t8, 2
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }
 function @value__value(%this : ptr [object_bytes=8], %input : i64) -> void [binding=weak, object=_ZN5valueC1El, inline_hint=yes] {
@@ -34,12 +34,12 @@ function @value__value(%this : ptr [object_bytes=8], %input : i64) -> void [bind
   slot $input : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %input, $input
-    %t1 = load i64 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %input, $input
+    %t1 = load typed i64 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i64 %t1, %t3
+    store typed i64 %t1, %t3
     return void
 }
 function @value__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN5valueaSERKS_, inline_hint=yes] {
@@ -48,14 +48,14 @@ function @value__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_a
   slot $tmpobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
     %t1 = addr $tmpobj__1
-    %t2 = load ptr $other
+    %t2 = load typed ptr $other
     call void @value__value__ov2(%t1, %t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     call void @value__swap(%t1, %t3)
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     return ptr %t4
 }
 function @value__value__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN5valueC1ERKS_, inline_hint=yes] {
@@ -63,14 +63,14 @@ function @value__value__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i64 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i64 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i64 %t3, %t5
+    store typed i64 %t3, %t5
     return void
 }
 function @value__swap(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN5value4swapERS_, inline_hint=yes] {
@@ -79,22 +79,22 @@ function @value__swap(%this : ptr [object_bytes=8], %other : ptr [pass=by_addres
   slot $saved : i64
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i64 %t2
-    store i64 %t3, $saved
-    %t4 = load ptr $other
+    %t3 = load typed i64 %t2
+    store typed i64 %t3, $saved
+    %t4 = load typed ptr $other
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i64 %t5
-    %t7 = load ptr $this
+    %t6 = load typed i64 %t5
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 0
-    store i64 %t6, %t8
-    %t9 = load i64 $saved
-    %t10 = load ptr $other
+    store typed i64 %t6, %t8
+    %t9 = load typed i64 $saved
+    %t10 = load typed ptr $other
     %t11 = index i8 [projection=field] %t10, 0
-    store i64 %t9, %t11
+    store typed i64 %t9, %t11
     return void
 }
 alias object _ZN5valueC2El = @value__value

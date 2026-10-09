@@ -2,8 +2,8 @@ function @g(%box : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=strong
   slot $box : ptr
 
   block ^entry:
-    store ptr %box, $box
-    %t1 = load ptr $box
+    store typed ptr %box, $box
+    %t1 = load typed ptr $box
     %t2 = call ptr @lookup(%t1)
     return ptr %t2
 }
@@ -15,6 +15,6 @@ function @lookup(%box : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=w
   slot $box : ptr
 
   block ^entry:
-    store ptr %box, $box
+    store typed ptr %box, $box
     return ptr 0
 }

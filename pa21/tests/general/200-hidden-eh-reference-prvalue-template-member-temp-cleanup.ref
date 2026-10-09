@@ -25,44 +25,44 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^call_unwind_end_2:
-    %t7 = load i32 @Iterator__destroyed
+    %t7 = load typed i32 @Iterator__destroyed
     %t8 = cmp gt i32 %t7, 0
     branch %t8, ^cond_then_3, ^cond_else_4
 
   block ^cond_then_3:
-    store i32 0, $cond__3
+    store typed i32 0, $cond__3
     jump ^cond_end_5
 
   block ^cond_else_4:
-    store i32 1, $cond__3
+    store typed i32 1, $cond__3
     jump ^cond_end_5
 
   block ^cond_end_5:
-    %t9 = load i32 $cond__3
+    %t9 = load typed i32 $cond__3
     return i32 %t9
 }
 function @Buffer__Buffer(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6BufferC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 function @Buffer__begin(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6Buffer5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Buffer__end(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6Buffer3endEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Buffer__assign(%this : ptr [object_bytes=4], %first : ptr [pass=by_address, object_bytes=1], %last : ptr [pass=by_address, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN6Buffer6assignI8IteratorEEvT_S2_, inline_hint=yes] {
@@ -72,11 +72,11 @@ function @Buffer__assign(%this : ptr [object_bytes=4], %first : ptr [pass=by_add
   slot $arg__1 : obj<16x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_try ^cleanup_resume_1
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = addr $arg__1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @make_assign_range(%t2, %first, %last, %t4)
     eh_end
@@ -105,10 +105,10 @@ function @Iterator___Iterator(%this : ptr [object_bytes=1]) -> void [unwind=no, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @Iterator__destroyed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @Iterator__destroyed
+    store typed ptr %this, $this
+    %t1 = load typed i32 @Iterator__destroyed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @Iterator__destroyed
     return void
 }
 function @make_assign_range(%ret : ptr [pass=indirect_result, object_bytes=16], %first : ptr [pass=by_address, object_bytes=1], %last : ptr [pass=by_address, object_bytes=1], %alloc : ptr [pass=by_address, object_bytes=4]) -> void [unwind=no, binding=weak, object=_Z17make_assign_rangeI8IteratoriE11AssignRangeIT_T0_ERKS2_S6_RS3_] {
@@ -117,12 +117,12 @@ function @make_assign_range(%ret : ptr [pass=indirect_result, object_bytes=16], 
   slot $alloc : ptr
 
   block ^entry:
-    store ptr %first, $first
-    store ptr %last, $last
-    store ptr %alloc, $alloc
-    %t1 = load ptr $first
-    %t2 = load ptr $last
-    %t3 = load ptr $alloc
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    store typed ptr %alloc, $alloc
+    %t1 = load typed ptr $first
+    %t2 = load typed ptr $last
+    %t3 = load typed ptr $alloc
     call void @AssignRange_Iterator__int___AssignRange_Iterator__int_(%ret, %t1, %t2, %t3)
     return void
 }
@@ -133,11 +133,11 @@ function @Buffer__assign_n(%this : ptr [object_bytes=4], %__param1 : i32, %__par
   slot $fnc : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    store i32 %__param2, $__param2
-    store ptr %fnc, $fnc
-    %t1 = load ptr $fnc
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    store typed i32 %__param2, $__param2
+    store typed ptr %fnc, $fnc
+    %t1 = load typed ptr $fnc
     call void @AssignRange_Iterator__int___operator__(%t1, 0)
     return void
 }
@@ -145,34 +145,34 @@ function @AssignRange_Iterator__int____AssignRange(%this : ptr [object_bytes=16]
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_cleanup ^destructor_cleanup_1
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t1 = load ptr $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 1
     call void @Iterator___Iterator(%t2)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
     call void @Iterator___Iterator(%t4)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
     call void @Iterator___Iterator(%t6)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 1
     call void @Iterator___Iterator(%t8)
-    %t9 = load ptr $this
+    %t9 = load typed ptr $this
     %t10 = index i8 [projection=field] %t9, 0
     call void @Iterator___Iterator(%t10)
     eh_end
@@ -188,22 +188,22 @@ function @AssignRange_Iterator__int___AssignRange_Iterator__int_(%this : ptr [ob
   slot $a : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %f, $f
-    store ptr %l, $l
-    store ptr %a, $a
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %f, $f
+    store typed ptr %l, $l
+    store typed ptr %a, $a
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $f
+    %t3 = load typed ptr $f
     call void @Iterator__Iterator(%t2, %t3)
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 1
-    %t6 = load ptr $l
+    %t6 = load typed ptr $l
     call void @Iterator__Iterator(%t5, %t6)
-    %t7 = load ptr $a
-    %t8 = load ptr $this
+    %t7 = load typed ptr $a
+    %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 8
-    store ptr %t7, %t9
+    store typed ptr %t7, %t9
     return void
 }
 function @AssignRange_Iterator__int___operator__(%this : ptr [object_bytes=16], %__param1 : ptr) -> void [unwind=no, binding=weak, object=_ZNK11AssignRangeI8IteratoriEclEPi, inline_hint=yes] {
@@ -211,8 +211,8 @@ function @AssignRange_Iterator__int___operator__(%this : ptr [object_bytes=16], 
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @Iterator__Iterator(%this : ptr [alias=noalias, object_bytes=1], %other : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN8IteratorC1ERKS_, inline_hint=yes] {
@@ -220,8 +220,8 @@ function @Iterator__Iterator(%this : ptr [alias=noalias, object_bytes=1], %other
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
     return void
 }
 alias object _ZN6BufferC2Ev = @Buffer__Buffer

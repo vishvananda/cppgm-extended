@@ -12,10 +12,10 @@ function @A__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1A1
   slot $outer : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $outer
-    %t2 = load ptr $this
-    store ptr %t2, %t1
+    %t2 = load typed ptr $this
+    store typed ptr %t2, %t1
     %t3 = addr $outer
     %t4 = call i32 @A____lambda_A__f_t56_60__operator__(%t3)
     return i32 %t4
@@ -25,12 +25,12 @@ function @A____lambda_A__f_t56_60__operator__(%this : ptr [object_bytes=8]) -> i
   slot $inner : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $inner
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load ptr %t3
-    store ptr %t4, %t1
+    %t4 = load typed ptr %t3
+    store typed ptr %t4, %t1
     %t5 = addr $inner
     %t6 = call i32 @A____lambda_A__f_t56_60____lambda_nested_t67_71__operator__(%t5)
     return i32 %t6
@@ -40,15 +40,15 @@ function @A____lambda_A__f_t56_60____lambda_nested_t67_71__operator__(%this : pt
   slot $tmpobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $tmpobj__1
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load ptr %t3
+    %t4 = load typed ptr %t3
     %t5 = call obj<4x4> @A__make_e(%t4)
     copyobj 4x4 %t5, %t1
     %t6 = index i8 [projection=field] %t1, 0
-    %t7 = load i32 %t6
+    %t7 = load typed i32 %t6
     return i32 %t7
 }
 function @A__make_e(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZN1A6make_eEv, inline_hint=yes] {
@@ -56,7 +56,7 @@ function @A__make_e(%this : ptr [object_bytes=1]) -> obj<4x4> [binding=weak, obj
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
     call void @E__E__ov2(%t1, 1)
     return obj<4x4> $retobj__1
@@ -66,12 +66,12 @@ function @E__E__ov2(%this : ptr [object_bytes=4], %v : i32) -> void [binding=wea
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN1EC2Ei = @E__E__ov2

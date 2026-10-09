@@ -347,7 +347,7 @@ private:
       const std::string & key = items[i].first;
       const std::string & value = items[i].second;
       if(key == "arity" || key == "effects" || key == "unwind" ||
-         key == "return" || key == "query") {
+         key == "return" || key == "query" || key == "result_classes") {
         if(!boundary) ThrowLowirInputError("function metadata on non-function");
         if(call_signature && key == "query")
           ThrowLowirInputError("query metadata requires a direct function");
@@ -361,6 +361,8 @@ private:
         apply_symbol_item(key, value, symbol, boundary != 0);
       }
     }
+    if(symbol.replaceable && symbol.binding != SBM_WEAK)
+      ThrowLowirInputError("replaceable metadata requires binding=weak");
   }
 
   void apply_boundary_item(const std::string & key, const std::string & value,
@@ -382,6 +384,13 @@ private:
     } else if(key == "query") {
       if(value == "stable_prefix") out.query = CQM_STABLE_PREFIX;
       else ThrowLowirInputError("invalid query metadata");
+    } else if(key == "result_classes") {
+      // Checked against the result type once the boundary is complete.
+      std::uint8_t classes = 0;
+      if(!parse_object_classes(value, value == "memory" ? 16 :
+           (std::count(value.begin(), value.end(), '_') + 1) * 8, &classes))
+        ThrowLowirInputError("invalid result_classes metadata");
+      out.result_classes = classes;
     }
   }
 
@@ -425,7 +434,7 @@ private:
     } else if(key == "no_inline") {
       if(!function_symbol) ThrowLowirInputError("no_inline metadata requires a function");
       out.no_inline = yes_flag(value);
-    }
+    } else if(key == "replaceable") out.replaceable = yes_flag(value);
     else ThrowLowirInputError("unknown symbol metadata: " + key);
   }
 
@@ -492,6 +501,12 @@ private:
       else ThrowLowirInputError("invalid parameter pass metadata");
     } else if(key == "alias" && value == "noalias") out.alias = PALM_NOALIAS;
     else if(key == "object_bytes") out.object_bytes = parse_positive_size(value);
+    else if(key == "classes") {
+      // Checked against the parameter type in validate_parameters.
+      if(!parse_object_classes(value, value == "memory" ? 16 :
+           (std::count(value.begin(), value.end(), '_') + 1) * 8, &out.classes))
+        ThrowLowirInputError("invalid parameter classes metadata");
+    }
     else ThrowLowirInputError("invalid parameter metadata");
   }
 
@@ -727,6 +742,7 @@ private:
       out.first = operand();
     } else if(op == "load") {
       out.volatile_access = accept("volatile");
+      out.typed_access = accept("typed");
       parse_typed_unary(out, Instruction::IK_LOAD);
     }
     else if(op == "atomic_load") {
@@ -736,6 +752,7 @@ private:
     else if(op == "unary") parse_unary(out);
     else if(op == "binary") parse_binary(out, Instruction::IK_BINARY);
     else if(op == "cmp") parse_binary(out, Instruction::IK_CMP);
+    else if(op == "select") parse_select(out);
 	else if(op == "convert") parse_convert(out);
 	else if(op == "stack_alloc") {
 	  out.kind = Instruction::IK_STACK_ALLOC;
@@ -807,10 +824,23 @@ private:
   {
     out.kind = kind;
     out.op = parse_lowir_operation(take());
+    if(kind == Instruction::IK_BINARY) {
+      out.no_wrap = accept("nowrap");
+      out.exact = accept("exact");
+    }
     out.type = type();
     out.first = operand();
     expect(",");
     out.second = operand();
+  }
+
+  void parse_select(Instruction & out)
+  {
+    out.kind = Instruction::IK_SELECT;
+    out.type = type();
+    out.first = operand();
+    expect(","); out.second = operand();
+    expect(","); out.third = operand();
   }
 
   void parse_convert(Instruction & out)
@@ -881,6 +911,7 @@ private:
     if(op == "store") {
       out.kind = Instruction::IK_STORE;
       out.volatile_access = accept("volatile");
+      out.typed_access = accept("typed");
       out.type = type(); out.first = operand();
       expect(","); out.second = operand();
     } else if(op == "atomic_store") {
@@ -997,6 +1028,8 @@ public:
                           program_.function_declarations[i].return_type);
       validate_query_boundary(program_.function_declarations[i].params,
           program_.function_declarations[i].return_type,
+          program_.function_declarations[i].boundary);
+      validate_result_classes(program_.function_declarations[i].return_type,
           program_.function_declarations[i].boundary);
     }
     for(std::size_t i = 0; i < program_.functions.size(); ++i)
@@ -1154,10 +1187,38 @@ private:
         ThrowLowirInputError("alias metadata requires ptr");
       if(param.metadata.object_bytes && !pointer)
         ThrowLowirInputError("object_bytes metadata requires ptr");
+      if(param.metadata.classes &&
+         !classes_fit(param.metadata.classes, param.type))
+        ThrowLowirInputError("classes metadata requires a direct object "
+                             "of matching size");
       if(param.metadata.passing == PPM_INDIRECT_RESULT &&
          (i != 0 || result.kind != LTK_VOID))
         ThrowLowirInputError("invalid indirect result parameter");
     }
+  }
+
+  // Classes describe a direct object of at most two eightbytes, one class
+  // for each (or `memory`).
+  static bool classes_fit(std::uint8_t classes, const LowType & type)
+  {
+    if(type.kind != LTK_OBJECT || type.storage_size == 0 ||
+       type.storage_size > 16) return false;
+    if(classes == kObjectClassesMemory) return true;
+    const unsigned first = classes & 3, second = (classes >> 2) & 3;
+    return (classes >> 4) == 0 && first != 0 &&
+      (type.storage_size > 8 ? second != 0 : second == 0);
+  }
+
+
+  void validate_result_classes(const LowType & result,
+                               const FunctionBoundaryMetadata & boundary)
+  {
+    if(boundary.result_classes == kObjectClassesMemory)
+      ThrowLowirInputError("a memory-class result is returned through an "
+                           "indirect_result parameter");
+    if(boundary.result_classes && !classes_fit(boundary.result_classes, result))
+      ThrowLowirInputError("result_classes metadata requires a direct object "
+                           "result of matching size");
   }
 
   bool integer_query_type(const LowType & type) const
@@ -1186,6 +1247,7 @@ private:
     validate_parameters(function.params, function.return_type);
     validate_query_boundary(
       function.params, function.return_type, function.boundary);
+    validate_result_classes(function.return_type, function.boundary);
     if(function.blocks.empty()) ThrowLowirInputError("function has no blocks");
     TypeIndex values;
     TypeIndex all_values;
@@ -1493,11 +1555,42 @@ private:
       if(ins.op.kind == LowOperation::LOP_BSWAP && ins.type.kind != LTK_I16 && ins.type.kind != LTK_U16 &&
          ins.type.kind != LTK_I32 && ins.type.kind != LTK_U32 &&
          ins.type.kind != LTK_I64) ThrowLowirInputError("invalid bswap type");
+      if((ins.op.kind == LowOperation::LOP_CTZ || ins.op.kind == LowOperation::LOP_CLZ) &&
+         ins.type.kind != LTK_I32 && ins.type.kind != LTK_U32 && ins.type.kind != LTK_I64)
+        ThrowLowirInputError("invalid ctz/clz type");
     }
+    if(ins.kind == Instruction::IK_SELECT && ins.type.kind != LTK_PTR &&
+       (!integer_width(ins.type) || integer_width(ins.type) > 64))
+      ThrowLowirInputError("invalid select type");
+    validate_facts(ins);
     if(ins.kind == Instruction::IK_CONVERT) validate_conversion(ins);
     if((ins.kind == Instruction::IK_COPYOBJ || ins.kind == Instruction::IK_ZEROINIT) &&
        (!ins.byte_count || !is_power_of_two(ins.byte_alignment)))
       ThrowLowirInputError("invalid bulk-memory span");
+  }
+
+  // Where the instruction facts may stand (lowir.md "Instruction Facts"):
+  // the parser accepts the keywords in their positions, the operation and
+  // type decide whether they mean anything there.
+  void validate_facts(const Instruction & ins)
+  {
+    const LowOperation::Kind op = ins.op.kind;
+    const bool integer = integer_width(ins.type) != 0 && ins.type.kind != LTK_I1;
+    if(ins.no_wrap && !(integer && (op == LowOperation::LOP_ADD ||
+         op == LowOperation::LOP_SUB || op == LowOperation::LOP_MUL ||
+         op == LowOperation::LOP_SHL)))
+      ThrowLowirInputError("nowrap requires an integer add, sub, mul or shl");
+    if(ins.exact && !(integer && (op == LowOperation::LOP_DIV ||
+         op == LowOperation::LOP_UDIV || op == LowOperation::LOP_SHR ||
+         op == LowOperation::LOP_USHR)))
+      ThrowLowirInputError("exact requires an integer div, udiv, shr or ushr");
+    if(ins.typed_access) {
+      const LowTypeKind kind = ins.type.kind;
+      if(kind == LTK_VOID || kind == LTK_I1 || kind == LTK_I8 ||
+         kind == LTK_U8 || kind == LTK_OBJECT)
+        ThrowLowirInputError(
+          "typed requires a load or store wider than a byte, not an object");
+    }
   }
 
   void validate_conversion(const Instruction & ins)
@@ -1534,6 +1627,7 @@ private:
       validate_parameters(ins.call_params, ins.call_return_type);
       validate_query_boundary(
         ins.call_params, ins.call_return_type, ins.call_boundary);
+      validate_result_classes(ins.call_return_type, ins.call_boundary);
       if(!same_lowir_type(ins.call_return_type, ins.type))
         ThrowLowirInputError("call signature return mismatch");
       validate_arity(ins.args.size(), ins.call_params.size(), ins.call_boundary.arity);
@@ -1639,6 +1733,11 @@ void assign_instruction_literal_types(Program & program, Instruction & ins)
   case Instruction::IK_STACK_ALLOC:
   case Instruction::IK_BRANCH:
     assign_literal_type(program, ins.first, i64);
+    break;
+  case Instruction::IK_SELECT:
+    assign_literal_type(program, ins.first, i64);
+    assign_literal_type(program, ins.second, ins.type);
+    assign_literal_type(program, ins.third, ins.type);
     break;
   case Instruction::IK_RETURN:
   case Instruction::IK_THROW:

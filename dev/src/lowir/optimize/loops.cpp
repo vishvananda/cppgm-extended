@@ -678,6 +678,8 @@ bool hoist_loop_invariants(lowir_model::Program * program,
         function->blocks[location.block].instructions[location.instruction];
       definition_block[ins.dest] = loop.preheader;
       moved.push_back(std::move(ins));
+      // The preheader runs it even when the loop body would not have.
+      lowir_model::drop_instruction_facts(moved.back());
     }
     for(std::size_t member = 0; member < loop.blocks.size(); ++member) {
       const std::size_t block = loop.blocks[member];

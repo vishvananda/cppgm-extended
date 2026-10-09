@@ -1,4 +1,4 @@
-function @consume(%__param0 : obj<1x1>) -> i32 [binding=strong, object=_Z7consume17integral_constantILb1EE] {
+function @consume(%__param0 : obj<1x1> [classes=none]) -> i32 [binding=strong, object=_Z7consume17integral_constantILb1EE] {
   slot $__param0 : obj<1x1>
 
   block ^entry:

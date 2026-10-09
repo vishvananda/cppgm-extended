@@ -20,16 +20,16 @@ function @example__interpreter__register_function(%this : ptr [object_bytes=1], 
   slot $refarg__1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %f, $f
+    store typed ptr %this, $this
+    store typed ptr %f, $f
     %t1 = addr @example__interpreter__invoker_pointer_to_function_of____returning_void__example__interpreter__first__example__interpreter__last___apply
-    store ptr %t1, $p
+    store typed ptr %t1, $p
     %t2 = addr $state
-    %t3 = load ptr $f
+    %t3 = load typed ptr $f
     %t4 = addr $state
-    store i32 0, $refarg__1
+    store typed i32 0, $refarg__1
     %t5 = addr $refarg__1
-    %t6 = load ptr $p
+    %t6 = load typed ptr $p
     call void %t6(%t3, %t4, %t5) as (%arg0 : ptr, %arg1 : ptr [pass=by_address, object_bytes=1], %arg2 : ptr [pass=by_address, object_bytes=4]) -> void
     return void
 }
@@ -39,12 +39,12 @@ function @example__interpreter__invoker_pointer_to_function_of____returning_void
   slot $args : ptr
 
   block ^entry:
-    store ptr %f, $f
-    store ptr %p, $p
-    store ptr %args, $args
-    %t1 = load ptr $f
-    %t2 = load ptr $p
-    %t3 = load ptr $args
+    store typed ptr %f, $f
+    store typed ptr %p, $p
+    store typed ptr %args, $args
+    %t1 = load typed ptr $f
+    %t2 = load typed ptr $p
+    %t3 = load typed ptr $args
     call void @example__interpreter__invoker_pointer_to_function_of____returning_void__example__interpreter__last__example__interpreter__last___apply(%t1, %t2, %t3)
     return void
 }
@@ -54,8 +54,8 @@ function @example__interpreter__invoker_pointer_to_function_of____returning_void
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return void
 }

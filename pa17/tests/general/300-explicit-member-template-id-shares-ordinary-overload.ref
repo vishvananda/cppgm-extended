@@ -3,8 +3,8 @@ function @S__choose(%this : ptr [object_bytes=1], %__param1 : ptr) -> i32 [bindi
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return i32 7
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -20,8 +20,8 @@ function @S__run(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = call i32 @S__choose__ov2(%t1, 0)
     return i32 %t2
 }
@@ -30,8 +30,8 @@ function @S__choose__ov2(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
     return i32 %t1
 }

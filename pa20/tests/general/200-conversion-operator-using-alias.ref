@@ -2,8 +2,8 @@ function @use(%value : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=st
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = index i8 %t1, 0
     %t3 = call i8 @AtomicBase_char___operatorint_type(%t2)
     %t4 = convert sext i32 i8 %t3
@@ -13,6 +13,6 @@ function @AtomicBase_char___operatorint_type(%this : ptr [object_bytes=1]) -> i8
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i8 7
 }

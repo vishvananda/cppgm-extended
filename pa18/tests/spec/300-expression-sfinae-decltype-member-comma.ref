@@ -19,27 +19,27 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = call u8 @has_value__ov3(%t7, 0)
     %t9 = cmp eq u8 %t8, 0
     %t10 = cmp ne i64 %t9, 0
-    store i64 %t10, $land__2
+    store typed i64 %t10, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t11 = load i64 $land__2
+    %t11 = load typed i64 $land__2
     branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load i32 $cond__1
+    %t12 = load typed i32 $cond__1
     return i32 %t12
 }
 function @has_value(%value : ptr [pass=by_address, object_bytes=1], %__param1 : i32) -> u8 [binding=weak, object=_Z9has_valueI7presentEbRKT_i] {
@@ -47,9 +47,9 @@ function @has_value(%value : ptr [pass=by_address, object_bytes=1], %__param1 : 
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %value, $value
-    store i32 %__param1, $__param1
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $value
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = load u8 %t2
     return u8 %t3
@@ -59,7 +59,7 @@ function @has_value__ov3(%__param0 : ptr [pass=by_address, object_bytes=1], %__p
   slot $__param1 : i64
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store i64 %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed i64 %__param1, $__param1
     return u8 0
 }

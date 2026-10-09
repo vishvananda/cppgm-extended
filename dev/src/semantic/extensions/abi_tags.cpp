@@ -89,6 +89,8 @@ std::uint8_t DirectFunctionControlAttributeMask(
 			result |= FUNCTION_CONTROL_PURE;
 		else if (spelling == "const" || spelling == "__const__")
 			result |= FUNCTION_CONTROL_CONST;
+		else if (spelling == "weak" || spelling == "__weak__")
+			result |= FUNCTION_CONTROL_WEAK;
 		else if (spelling == "exclude_from_explicit_instantiation" ||
 			spelling == "__exclude_from_explicit_instantiation__")
 			result |= FUNCTION_CONTROL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION;
@@ -228,6 +230,8 @@ void ApplyFunctionControlAttributes(Program* program,
 		record.force_inline = canonical.force_inline = true;
 	if ((attributes & FUNCTION_CONTROL_NO_INLINE) != 0)
 		record.no_inline = canonical.no_inline = true;
+	if ((attributes & FUNCTION_CONTROL_WEAK) != 0)
+		record.weak_symbol = canonical.weak_symbol = true;
 	if ((attributes & FUNCTION_CONTROL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION) != 0)
 		record.excluded_from_explicit_instantiation =
 			canonical.excluded_from_explicit_instantiation = true;

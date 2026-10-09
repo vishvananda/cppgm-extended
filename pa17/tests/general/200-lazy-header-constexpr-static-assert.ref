@@ -12,10 +12,10 @@ function @S__g(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1S
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = const i64 1
     %t2 = convert trunc i32 i64 %t1
-    store i32 %t2, $x
-    %t3 = load i32 $x
+    store typed i32 %t2, $x
+    %t3 = load typed i32 $x
     return void
 }

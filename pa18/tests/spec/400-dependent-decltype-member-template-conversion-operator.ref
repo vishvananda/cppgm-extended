@@ -1,4 +1,4 @@
-function @convert(%value : obj<1x1>) -> i32 [binding=strong, object=_Z7convert9json_like] {
+function @convert(%value : obj<1x1> [classes=none]) -> i32 [binding=strong, object=_Z7convert9json_like] {
   slot $value : obj<1x1>
 
   block ^entry:
@@ -20,23 +20,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load i32 $cond__1
+    %t6 = load typed i32 $cond__1
     return i32 %t6
 }
 function @json_like__operatorV(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZNK9json_likecvT_I10value_kindTnN9enable_ifIXsr7has_getIRKS_S0_EE5valueEiE4typeELi0EEEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = call i32 @json_like__get(%t1)
     return i32 %t2
 }
@@ -44,6 +44,6 @@ function @json_like__get(%this : ptr [object_bytes=1]) -> i32 [binding=weak, obj
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 0
 }

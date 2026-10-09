@@ -9,9 +9,9 @@ function @f(%x : ptr [pass=by_address, object_bytes=1]) -> void [binding=strong,
   slot $a : obj<1x1>
 
   block ^entry:
-    store ptr %x, $x
+    store typed ptr %x, $x
     %t1 = addr $a
-    %t2 = load ptr $x
+    %t2 = load typed ptr $x
     call void @A_int___A_int_(%t1, %t2)
     return void
 }

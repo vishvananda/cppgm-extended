@@ -15,13 +15,13 @@ function @Iter__Iter(%this : ptr [object_bytes=8], %node : ptr) -> void [binding
   slot $node : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %node, $node
-    %t1 = load ptr $node
+    store typed ptr %this, $this
+    store typed ptr %node, $node
+    %t1 = load typed ptr $node
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 0
-    store ptr %t2, %t4
+    store typed ptr %t2, %t4
     return void
 }
 alias object _ZN4IterC2EP4Node = @Iter__Iter

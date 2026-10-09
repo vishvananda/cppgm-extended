@@ -2,7 +2,7 @@ function @choose(%__param0 : ptr) -> i32 [binding=strong, object=_Z6chooseP10no_
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -24,16 +24,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $arg__1
     call void @has_default__has_default(%t5)
     call void @box_has_default___box_has_default___ov2(%t4, 1, %t5)
-    store ptr 0, $without_default
-    store ptr 0, $with_default
-    %t6 = load ptr $without_default
+    store typed ptr 0, $without_default
+    store typed ptr 0, $with_default
+    %t6 = load typed ptr $without_default
     %t7 = call i32 @choose(%t6)
-    %t8 = load ptr $with_default
+    %t8 = load typed ptr $with_default
     %t9 = addr $argobj__2
     call void @has_default__has_default(%t9)
     %t10 = call i32 @choose__ov3(%t8, $argobj__2)
-    %t11 = binary add i32 %t7, %t10
-    %t12 = binary sub i32 %t11, 3
+    %t11 = binary add nowrap i32 %t7, %t10
+    %t12 = binary sub nowrap i32 %t11, 3
     return i32 %t12
 }
 function @no_default__no_default(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN10no_defaultC1Ei, inline_hint=yes] {
@@ -41,8 +41,8 @@ function @no_default__no_default(%this : ptr [object_bytes=1], %__param1 : i32) 
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return void
 }
 function @box_no_default___box_has_default_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3boxI10no_defaultEC1ERKS0_, inline_hint=yes] {
@@ -50,15 +50,15 @@ function @box_no_default___box_has_default_(%this : ptr [object_bytes=1], %__par
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @has_default__has_default(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN11has_defaultC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @box_has_default___box_has_default___ov2(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN3boxI11has_defaultEC1EiRKS0_, inline_hint=yes] {
@@ -67,17 +67,17 @@ function @box_has_default___box_has_default___ov2(%this : ptr [object_bytes=1], 
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return void
 }
-function @choose__ov3(%__param0 : ptr, %__param1 : obj<1x1>) -> i32 [binding=weak, object=_Z6chooseI11has_defaultEiPT_S1_] {
+function @choose__ov3(%__param0 : ptr, %__param1 : obj<1x1> [classes=none]) -> i32 [binding=weak, object=_Z6chooseI11has_defaultEiPT_S1_] {
   slot $__param0 : ptr
   slot $__param1 : obj<1x1>
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 1
 }
 alias object _ZN10no_defaultC2Ei = @no_default__no_default

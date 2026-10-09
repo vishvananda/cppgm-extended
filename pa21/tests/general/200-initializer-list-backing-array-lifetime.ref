@@ -6,7 +6,7 @@ function @observe(%__param0 : obj<16x8>) -> i32 [binding=strong, object=_Z7obser
   block ^entry:
     %t1 = addr $__param0
     copyobj 16x8 %__param0, %t1
-    %t2 = load i32 @Item__live
+    %t2 = load typed i32 @Item__live
     return i32 %t2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -54,12 +54,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_end_9:
     eh_try ^cleanup_action_10
-    store ptr %t2, %t1
+    store typed ptr %t2, %t1
     %t5 = index i8 %t1, 8
-    store i64 3, %t5
+    store typed i64 3, %t5
     %t6 = call i32 @observe($argobj__2)
-    store i32 %t6, $call__1
-    %t7 = load i32 $call__1
+    store typed i32 %t6, $call__1
+    %t7 = load typed i32 $call__1
     %t8 = cmp ne i32 %t7, 3
     eh_end
     jump ^call_unwind_end_11
@@ -92,7 +92,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_3
 
   block ^if_end_3:
-    %t9 = load i32 @Item__live
+    %t9 = load typed i32 @Item__live
     %t10 = cmp ne i32 %t9, 0
     branch %t10, ^if_then_14, ^if_else_15
 
@@ -118,9 +118,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_end_18:
     eh_try ^cleanup_action_19
-    store ptr %t12, %t11
+    store typed ptr %t12, %t11
     %t14 = index i8 %t11, 8
-    store i64 2, %t14
+    store typed i64 2, %t14
     eh_end
     jump ^call_unwind_end_20
 
@@ -133,15 +133,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^cleanup_resume_4
     %t15 = addr $held
     %t16 = call i64 @std__initializer_list_Item___size(%t15)
-    store i64 %t16, $call__5
-    %t17 = load i64 $call__5
+    store typed i64 %t16, $call__5
+    %t17 = load typed i64 $call__5
     %t18 = convert sext i64 i32 2
     %t19 = cmp ne i64 %t17, %t18
     eh_end
     branch %t19, ^if_then_21, ^lor_rhs_24
 
   block ^lor_rhs_24:
-    %t20 = load i32 @Item__live
+    %t20 = load typed i32 @Item__live
     %t21 = cmp ne i32 %t20, 2
     branch %t21, ^if_then_21, ^if_else_22
 
@@ -156,20 +156,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_23:
     call void @Item___Item(%t13)
     call void @Item___Item(%t12)
-    %t22 = load i32 @Item__live
+    %t22 = load typed i32 @Item__live
     %t23 = cmp eq i32 %t22, 0
     branch %t23, ^cond_then_25, ^cond_else_26
 
   block ^cond_then_25:
-    store i32 0, $cond__6
+    store typed i32 0, $cond__6
     jump ^cond_end_27
 
   block ^cond_else_26:
-    store i32 4, $cond__6
+    store typed i32 4, $cond__6
     jump ^cond_end_27
 
   block ^cond_end_27:
-    %t24 = load i32 $cond__6
+    %t24 = load typed i32 $cond__6
     return i32 %t24
 }
 function @Item__Item(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN4ItemC1Ei, inline_hint=yes] {
@@ -177,31 +177,31 @@ function @Item__Item(%this : ptr [object_bytes=1], %__param1 : i32) -> void [bin
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    %t1 = load i32 @Item__live
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @Item__live
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed i32 @Item__live
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @Item__live
     return void
 }
 function @Item___Item(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN4ItemD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @Item__live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @Item__live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @Item__live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @Item__live
     return void
 }
 function @std__initializer_list_Item___size(%this : ptr [object_bytes=16]) -> i64 [binding=weak, object=_ZNKSt16initializer_listI4ItemE4sizeEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 8
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     return i64 %t3
 }
 alias object _ZN4ItemC2Ei = @Item__Item

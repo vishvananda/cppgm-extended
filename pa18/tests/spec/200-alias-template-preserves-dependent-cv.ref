@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @accept($argobj__1)
     return i32 0
 }
-function @accept(%__param0 : obj<1x1>) -> void [binding=weak, object=_Z6acceptIiEv3boxI4pairIiKT_EE] {
+function @accept(%__param0 : obj<1x1> [classes=none]) -> void [binding=weak, object=_Z6acceptIiEv3boxI4pairIiKT_EE] {
   slot $__param0 : obj<1x1>
 
   block ^entry:

@@ -15,15 +15,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     return i32 %t9
 }
 function @box_char___init(%this : ptr [object_bytes=1], %__param1 : ptr, %__param2 : i64) -> void [binding=weak, object=_ZN3boxIcE4initEPKcm, object_root=yes] {
@@ -32,9 +32,9 @@ function @box_char___init(%this : ptr [object_bytes=1], %__param1 : ptr, %__para
   slot $__param2 : i64
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store i64 %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed i64 %__param2, $__param2
     return void
 }
 function @box_char___first(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i8 [binding=weak, object=_ZNK3boxIcE5firstERKS0_, object_root=yes] {
@@ -42,7 +42,7 @@ function @box_char___first(%this : ptr [object_bytes=1], %__param1 : ptr [pass=b
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return i8 0
 }

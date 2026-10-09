@@ -199,6 +199,28 @@ To evaluate one sidecar by hand:
 $ perl ../scripts/expect_ir.pl tests/o1/x.my tests/o1/x.ref.expect
 ```
 
+### Design Notes (Non-Normative)
+
+The fixtures are small; the optimizer's real input is PA34's self-build of
+the whole compiler, where functions are large, calls sit inside loops and
+most bodies have cleanups. A few principles matter there more than any one
+pass:
+
+- Run the passes over each function repeatedly, to a fixed point or a
+  budget, rather than once over the program. Inlining exposes constants that
+  folding removes, which exposes branches that simplification removes, which
+  shrinks callers below the inlining threshold.
+- Count what every admission rule excludes. A rule that skips a function
+  for its size, its exception handling or a call in a loop costs nothing on
+  the fixtures and may exclude most of a real program; know the fraction.
+- Keep facts that cost nothing to keep. `typed`, `nowrap` and `exact` come
+  from the lowering (`../pa8/lowir.md`, "Instruction Facts"); an optimizer
+  that preserves them through copies and drops them where it speculates can
+  use `typed` to keep a value in a register across a store of another type.
+- When an optimization makes the output slower because the backend lowers
+  the result badly, fix the backend. Withholding the optimization leaves both
+  problems in place.
+
 ### Design example
 
 [Design notes](design-notes.md) describe the course solution’s passes and

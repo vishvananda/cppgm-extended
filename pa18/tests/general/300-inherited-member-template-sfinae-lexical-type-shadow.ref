@@ -12,17 +12,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $node
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = index i8 [projection=field] %t4, 8
-    store i64 %t2, %t5
+    store typed i64 %t2, %t5
     %t6 = addr $value
     %t7 = convert sext i64 i32 2
     %t8 = addr $value
     %t9 = index i8 [projection=field] %t8, 8
-    store i64 %t7, %t9
+    store typed i64 %t7, %t9
     %t10 = addr $values
     %t11 = addr $node
     %t12 = call ptr @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value(%t11)
     %t13 = index i8 [projection=field] %t12, 8
-    %t14 = load i64 %t13
+    %t14 = load typed i64 %t13
     %t15 = convert sext i64 i32 1
     %t16 = cmp eq i64 %t14, %t15
     branch %t16, ^land_rhs_4, ^land_short_5
@@ -34,52 +34,52 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = call obj<16x8> @lib__v1__table_lib__v1____cppgm_class_template_identity_2_5_0__lib__v1____cppgm_class_template_identity_8_4_0___assign(%t18, %t19)
     copyobj 16x8 %t20, %t17
     %t21 = index i8 [projection=field] %t17, 8
-    %t22 = load i64 %t21
+    %t22 = load typed i64 %t21
     %t23 = convert sext i64 i32 2
     %t24 = cmp eq i64 %t22, %t23
     %t25 = cmp ne i64 %t24, 0
-    store i64 %t25, $land__2
+    store typed i64 %t25, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t26 = load i64 $land__2
+    %t26 = load typed i64 $land__2
     branch %t26, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t27 = load i32 $cond__1
+    %t27 = load typed i32 $cond__1
     return i32 %t27
 }
 function @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value(%value : ptr [pass=by_address, object_bytes=16]) -> ptr [binding=weak, object=_ZN3lib2v115key_value_typesINS0_10node_valueINS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEEE11__get_valueIS9_TnNS0_9enable_ifIXsr7is_sameIT_S9_EE5valueEiE4typeELi0EEERKNS0_4pairIKS8_mEERSD_, inline_hint=yes] {
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = call ptr @lib__v1__node_value_lib__v1____cppgm_class_template_identity_5_2_0__unsigned_long_int_____get_value(%t1)
     return ptr %t2
 }
-function @lib__v1__table_lib__v1____cppgm_class_template_identity_2_5_0__lib__v1____cppgm_class_template_identity_8_4_0___assign(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=16]) -> obj<16x8> [binding=weak, object=_ZN3lib2v15tableINS0_4pairIKNS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEENS0_10node_typesINS0_10node_valueIS8_mEEEEE6assignERSA_, inline_hint=yes] {
+function @lib__v1__table_lib__v1____cppgm_class_template_identity_2_5_0__lib__v1____cppgm_class_template_identity_8_4_0___assign(%this : ptr [object_bytes=1], %value : ptr [pass=by_address, object_bytes=16]) -> obj<16x8> [result_classes=none_integer, binding=weak, object=_ZN3lib2v15tableINS0_4pairIKNS0_12basic_stringIcNS0_11char_traitsIcEENS0_9allocatorIcEEEEmEENS0_10node_typesINS0_10node_valueIS8_mEEEEE6assignERSA_, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $retobj__1 : obj<16x8>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
+    store typed ptr %this, $this
+    store typed ptr %value, $value
     %t1 = addr $retobj__1
-    %t2 = load ptr $value
+    %t2 = load typed ptr $value
     %t3 = call ptr @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_0_____get_value__ov2(%t2)
     copyobj 16x8 %t3, %t1
     return obj<16x8> $retobj__1
@@ -88,8 +88,8 @@ function @lib__v1__node_value_lib__v1____cppgm_class_template_identity_5_2_0__un
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
@@ -97,7 +97,7 @@ function @lib__v1__key_value_types_lib__v1____cppgm_class_template_identity_6_3_
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     return ptr %t1
 }

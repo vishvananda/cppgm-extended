@@ -966,6 +966,20 @@ void emit_bswap(CodeBuffer & out, const mir_model::MirInstruction & instruction)
   out.byte(0xc8 + (static_cast<unsigned>(destination) & 7));
 }
 
+// `bsf`/`bsr r, r` (0F BC/BD /r) in place, or REX.W `cmov<cc> r, source`
+// (0F 40+cc /r).
+void emit_register_pair_op(CodeBuffer & out, const mir_model::MirInstruction & instruction,
+                           unsigned opcode, bool wide)
+{
+  require_operands(instruction, opcode == 0x40 ? 2 : 1);
+  const X64Register reg = require_register(instruction.operands[0]);
+  const X64Register rm = require_register(instruction.operands.back());
+  emit_rex(out, wide, reg, rm);
+  out.byte(0x0f);
+  out.byte(opcode == 0x40 ? opcode + static_cast<unsigned>(instruction.condition) : opcode);
+  emit_modrm(out, 3, reg, rm);
+}
+
 void emit_divide(CodeBuffer & out, const mir_model::MirInstruction & instruction,
                  unsigned extension)
 {
@@ -1574,6 +1588,14 @@ void emit_instruction(CodeBuffer & out, const mir_model::MirInstruction & instru
     return;
   case mir_model::MirInstruction::MI_BSWAP:
     emit_bswap(out, instruction);
+    return;
+  case mir_model::MirInstruction::MI_BSF:
+  case mir_model::MirInstruction::MI_BSR:
+    emit_register_pair_op(out, instruction, instruction.opcode ==
+      mir_model::MirInstruction::MI_BSF ? 0xbc : 0xbd, type_width(instruction.type) == 64);
+    return;
+  case mir_model::MirInstruction::MI_CMOV:
+    emit_register_pair_op(out, instruction, 0x40, true);
     return;
   case mir_model::MirInstruction::MI_CQO:
     require_operands(instruction, 0);

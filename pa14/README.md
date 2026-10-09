@@ -339,3 +339,11 @@ Useful intermediate representations include:
   - collecting template declarations
   - deducing or resolving template arguments
   - instantiating ordinary specialized declarations
+
+Instantiation decides much of the front end's speed on real code, where one
+header instantiates thousands of specializations. Cloning a demanded
+dependent body and checking the clone is a sound way to instantiate; so is
+sharing the non-dependent parts between instantiations, provided a shared
+node costs the same to read as an ordinary one. What does not scale is
+re-parsing or replaying source text per instantiation, or reaching every
+shared node through an extra lookup on each read.

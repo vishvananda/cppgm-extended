@@ -53,15 +53,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t3, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t4 = load i32 $cond__1
+    %t4 = load typed i32 $cond__1
     return i32 %t4
 }
 function @LambdaRttiHost__capture(%this : ptr [object_bytes=1], %base : i32) -> ptr [binding=weak, object=_ZN14LambdaRttiHost7captureEi, inline_hint=yes] {
@@ -70,11 +70,11 @@ function @LambdaRttiHost__capture(%this : ptr [object_bytes=1], %base : i32) -> 
   slot $add : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %base, $base
+    store typed ptr %this, $this
+    store typed i32 %base, $base
     %t1 = addr $add
-    %t2 = load i32 $base
-    store i32 %t2, %t1
+    %t2 = load typed i32 $base
+    store typed i32 %t2, %t1
     %t3 = addr @__rtti_class_LambdaRttiHost____lambda_LambdaRttiHost__capture_t25_29
     return ptr %t3
 }

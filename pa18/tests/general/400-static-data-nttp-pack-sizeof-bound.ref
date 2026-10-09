@@ -9,6 +9,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = index u8 [projection=array_element] %t1, 1
     %t3 = load u8 %t2
     %t4 = convert zext i32 u8 %t3
-    %t5 = binary sub i32 %t4, 7
+    %t5 = binary sub nowrap i32 %t4, 7
     return i32 %t5
 }

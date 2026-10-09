@@ -1,4 +1,4 @@
-global @k [binding=strong] = {
+global @k : obj<4x4> [binding=strong] = {
   zero 4
 }
 

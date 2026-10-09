@@ -47,7 +47,7 @@ function @D__id(%this : ptr [object_bytes=16]) -> i32 [binding=strong, object=_Z
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }
 function @_D__tag__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> i32 [binding=strong, object=_ZThn8_N1D3tagEv] {

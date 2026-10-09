@@ -19,41 +19,41 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Box__Box__ov2(%t7, %t8)
     %t9 = addr $moved
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load i32 %t10
+    %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 9
     branch %t12, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t13 = load i32 $cond__1
+    %t13 = load typed i32 $cond__1
     return i32 %t13
 }
 function @Empty__Empty__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5EmptyC2Ev, object_root=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Empty___Empty__base_entry(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5EmptyD2Ev, object_root=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Empty___Empty(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=strong, object=_ZN5EmptyD1Ev, object_root=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box__Box__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=4], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxC2EOS_, object_root=yes] {
@@ -61,10 +61,10 @@ function @Box__Box__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=4],
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
-    %t2 = load ptr $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $__param1
     copyobj 4x4 %t2, %t1
     return void
 }
@@ -73,10 +73,10 @@ function @Box__Box__ov2(%this : ptr [alias=noalias, object_bytes=4], %__param1 :
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
-    %t2 = load ptr $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $__param1
     copyobj 4x4 %t2, %t1
     return void
 }
@@ -84,14 +84,14 @@ function @Box___Box__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxD1Ev, object_root=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Box__Box(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3BoxC1Ei, inline_hint=yes] {
@@ -99,12 +99,12 @@ function @Box__Box(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @Box__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=strong, object=_ZN3BoxaSEOS_] {
@@ -112,12 +112,12 @@ function @Box__operator_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
-    %t2 = load ptr $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $__param1
     copyobj 4x4 %t2, %t1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     return ptr %t3
 }
 alias object _ZN3BoxC2Ei = @Box__Box

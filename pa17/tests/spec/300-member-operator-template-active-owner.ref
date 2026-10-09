@@ -20,23 +20,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     return i32 %t9
 }
 function @active_owner_case__buffer_active_owner_case__item__active_owner_case____cppgm_class_template_identity_3_0_0___begin(%ret : ptr [pass=indirect_result, object_bytes=8], %this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN17active_owner_case6bufferINS_4itemENS_9allocatorIS1_EEE5beginEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov3(%ret, %t2)
     return void
@@ -46,11 +46,11 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
   slot $n : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %n, $n
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %n, $n
+    %t1 = load typed ptr $this
     call void @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov2(%ret, %t1)
-    %t2 = load i64 $n
+    %t2 = load typed i64 $n
     %t3 = call ptr @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___operator__(%ret, %t2)
     return void
 }
@@ -59,14 +59,14 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $this
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store ptr %t3, %t5
+    store typed ptr %t3, %t5
     return void
 }
 function @active_owner_case__buffer_active_owner_case__item__active_owner_case____cppgm_class_template_identity_3_0_0___rotate(%this : ptr [object_bytes=16], %next : obj<8x8>) -> i64 [binding=weak, object=_ZN17active_owner_case6bufferINS_4itemENS_9allocatorIS1_EEE6rotateENS_4iterIS4_NS_12const_traitsIS3_EEEE, inline_hint=yes] {
@@ -75,12 +75,12 @@ function @active_owner_case__buffer_active_owner_case__item__active_owner_case__
   slot $arg__1 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $next
     copyobj 8x8 %next, %t1
     %t2 = addr $next
     %t3 = addr $arg__1
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     call void @active_owner_case__buffer_active_owner_case__item__active_owner_case____cppgm_class_template_identity_3_0_0___begin(%t3, %t4)
     %t5 = call i64 @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_1_2_0___operator_(%t2, %t3)
     return i64 %t5
@@ -90,12 +90,12 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
   slot $value : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    %t1 = load ptr $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEC1ERKS8_, inline_hint=yes] {
@@ -103,14 +103,14 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $this
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store ptr %t3, %t5
+    store typed ptr %t3, %t5
     return void
 }
 function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_0_2_0___operator__(%this : ptr [object_bytes=8], %n : i64) -> ptr [binding=weak, object=_ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_15nonconst_traitsIS4_EEEpLEl, inline_hint=yes] {
@@ -118,18 +118,18 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
   slot $n : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %n, $n
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %n, $n
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load i64 $n
+    %t3 = load typed ptr %t2
+    %t4 = load typed i64 $n
     %t5 = binary mul i64 %t4, 4
     %t6 = index i8 %t3, %t5
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 0
-    store ptr %t6, %t8
-    %t9 = load ptr $this
+    store typed ptr %t6, %t8
+    %t9 = load typed ptr $this
     return ptr %t9
 }
 function @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_1_2_0___operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> i64 [binding=weak, object=_ZNK17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_12const_traitsIS4_EEEmiINS_15nonconst_traitsIS4_EEEElRKNS0_IS5_T_EE, inline_hint=yes] {
@@ -137,16 +137,16 @@ function @active_owner_case__iter_active_owner_case____cppgm_class_template_iden
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $other
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $other
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load ptr %t5
+    %t6 = load typed ptr %t5
     %t7 = binary sub ptr %t3, %t6
-    %t8 = binary shr i64 %t7, 2
+    %t8 = binary shr exact i64 %t7, 2
     return i64 %t8
 }
 alias object _ZN17active_owner_case4iterINS_6bufferINS_4itemENS_9allocatorIS2_EEEENS_12const_traitsIS4_EEEC2ERKNS0_IS5_NS_15nonconst_traitsIS4_EEEE = @active_owner_case__iter_active_owner_case____cppgm_class_template_identity_4_1_0__active_owner_case____cppgm_class_template_identity_1_2_0___iter_active_owner_case____cppgm_class_template_identity_4_1_0__typename___retained_template_parameter_shape_0___ov2

@@ -12,8 +12,8 @@ function @S__g(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1S
   slot $arg__1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = addr $arg__1
     %t4 = call ptr @function_void_int____operator___ov3(%t2, %t3)
@@ -24,8 +24,8 @@ function @function_void_int____operator___ov3(%this : ptr [object_bytes=1], %__p
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
     return ptr %t1
 }

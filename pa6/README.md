@@ -329,6 +329,13 @@ Keep native image construction and later initialization lowering outside the PA6
 core. Those ideas become useful again later, but this assignment should leave
 behind a reusable scope/type model.
 
+Keep names structured and interned. Lookup runs for every name in every
+template instantiation; a qualified name kept as its components' interned
+identities is compared and hashed cheaply, while a name rebuilt as text and
+hashed on each lookup repeats that work millions of times on real headers.
+The same holds for types: give each canonical type a compact identity so
+that type equality is an identity comparison.
+
 ### Multi-file test groups
 
 For a root `name.t`, companions such as `name.t2` are additional primary

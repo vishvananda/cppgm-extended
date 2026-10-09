@@ -21,30 +21,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = call ptr @rule__operator___ov3(%t3, %t4)
     %t10 = addr $tag
     %t11 = index i8 [projection=field] %t10, 0
-    %t12 = load i32 %t11
+    %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 7
     branch %t13, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__3
+    store typed i32 0, $cond__3
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__3
+    store typed i32 1, $cond__3
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t14 = load i32 $cond__3
+    %t14 = load typed i32 $cond__3
     return i32 %t14
 }
 function @rule__rule(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4ruleC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 function @parser_base_rule___operator__(%this : ptr [object_bytes=1], %action : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK11parser_baseI4ruleEixI6actionEE13parser_actionIS0_T_ERKS5_, inline_hint=yes] {
@@ -53,11 +53,11 @@ function @parser_base_rule___operator__(%this : ptr [object_bytes=1], %action : 
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %action, $action
+    store typed ptr %this, $this
+    store typed ptr %action, $action
     %t1 = addr $retobj__1
-    %t2 = load ptr $this
-    %t3 = load ptr $action
+    %t2 = load typed ptr $this
+    %t3 = load typed ptr $action
     call void @parser_action_rule__action___parser_action_rule__action_(%t1, %t2, %t3)
     return obj<4x4> $retobj__1
 }
@@ -66,15 +66,15 @@ function @rule__operator___ov3(%this : ptr [object_bytes=4], %parser : ptr [pass
   slot $parser : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %parser, $parser
-    %t1 = load ptr $parser
+    store typed ptr %this, $this
+    store typed ptr %parser, $parser
+    %t1 = load typed ptr $parser
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load ptr $this
+    store typed i32 %t3, %t5
+    %t6 = load typed ptr $this
     return ptr %t6
 }
 function @parser_action_rule__action___parser_action_rule__action_(%this : ptr [object_bytes=4], %__param1 : ptr [pass=by_address, object_bytes=4], %__param2 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN13parser_actionI4rule6actionEC1ERKS0_RKS1_, inline_hint=yes] {
@@ -83,12 +83,12 @@ function @parser_action_rule__action___parser_action_rule__action_(%this : ptr [
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
+    store typed i32 7, %t2
     return void
 }
 alias object _ZN4ruleC2Ev = @rule__rule

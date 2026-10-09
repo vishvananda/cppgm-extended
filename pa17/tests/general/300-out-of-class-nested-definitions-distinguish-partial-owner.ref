@@ -11,8 +11,8 @@ function @A_lvalue_reference_to_int___B__B__ov3(%this : ptr [object_bytes=1], %_
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return void
 }
 alias object _ZN1AIRiE1BC2IiEET_ = @A_lvalue_reference_to_int___B__B__ov3

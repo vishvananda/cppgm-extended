@@ -1,6 +1,7 @@
 #include "lowering/objects/polymorphism.h"
 
 #include "lowering/abi/mangling.h"
+#include "lowering/abi/symbol_metadata.h"
 #include "lowering/presentation/local_names.h"
 #include "lowering/abi/symbol_names.h"
 #include "lowering/core/source_types.h"
@@ -846,6 +847,9 @@ private:
 		const BindingRecord& binding = program_.bindings[prototype];
 		const TypeRecord& type = program_.types.Get(binding.type);
 		declaration.result = source_types_.Lower(type.child);
+		if (declaration.result.kind == LOW_OBJECT)
+			declaration.result_classes =
+				lowering::abi::SysvObjectClasses(program_, type.child, true);
 		Parameter object;
 		object.name = InternLocalName(output_, "arg0");
 		object.type = LowPtr();
@@ -858,6 +862,9 @@ private:
 				output_, "arg", 3, static_cast<std::uint32_t>(i + 1));
 			parameter.type = source_types_.Lower(parameters[i]);
 			parameter.reference = source_types_.IsReference(parameters[i]);
+			if (parameter.type.kind == LOW_OBJECT)
+				parameter.classes =
+					lowering::abi::SysvObjectClasses(program_, parameters[i]);
 			declaration.parameters.push_back(parameter);
 		}
 		declaration.variadic = type.variadic;

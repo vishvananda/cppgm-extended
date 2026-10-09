@@ -15,8 +15,8 @@ function @derived__derived(%this : ptr [object_bytes=1]) -> void [binding=weak, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @base_int___base_typename___retained_template_parameter_shape_0___base_entry(%t2)
     return void
@@ -26,11 +26,11 @@ function @derived__derived__ov2(%this : ptr [alias=noalias, object_bytes=1], %x 
   slot $x : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %x, $x
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %x, $x
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $x
+    %t3 = load typed ptr $x
     %t4 = index i8 %t3, 0
     call void @base_int___base_typename___retained_template_parameter_shape_0___ov2__base_entry(%t2, %t4)
     return void
@@ -39,14 +39,14 @@ function @base_int___base_typename___retained_template_parameter_shape_0___base_
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @base_int___base_typename___retained_template_parameter_shape_0_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4baseIiEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @base_int___base_typename___retained_template_parameter_shape_0___ov2__base_entry(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN4baseIiEC2ERKS0_, object_root=yes, inline_hint=yes] {
@@ -54,8 +54,8 @@ function @base_int___base_typename___retained_template_parameter_shape_0___ov2__
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @base_int___base_typename___retained_template_parameter_shape_0___ov2(%this : ptr [alias=noalias, object_bytes=1], %__param1 : ptr [pass=by_address, alias=noalias, object_bytes=1]) -> void [binding=weak, object=_ZN4baseIiEC1ERKS0_, inline_hint=yes] {
@@ -63,8 +63,8 @@ function @base_int___base_typename___retained_template_parameter_shape_0___ov2(%
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN7derivedC2Ev = @derived__derived

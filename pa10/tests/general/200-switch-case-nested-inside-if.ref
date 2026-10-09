@@ -3,16 +3,16 @@ function @run(%value : i32, %flag : u8) -> i32 [binding=strong, object=_Z3runib]
   slot $flag : u8
 
   block ^entry:
-    store i32 %value, $value
+    store typed i32 %value, $value
     store u8 %flag, $flag
     jump ^while_cond_1
 
   block ^while_cond_1:
-    %t1 = load i32 $value
+    %t1 = load typed i32 $value
     branch %t1, ^while_body_2, ^while_end_3
 
   block ^while_body_2:
-    %t2 = load i32 $value
+    %t2 = load typed i32 $value
     jump ^switch_dispatch_4
 
   block ^switch_dispatch_4:
@@ -52,14 +52,14 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t2, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t3 = load i32 $cond__1
+    %t3 = load typed i32 $cond__1
     return i32 %t3
 }

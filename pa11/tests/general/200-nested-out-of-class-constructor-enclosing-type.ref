@@ -11,19 +11,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @Outer__Buffer__Buffer(%t2, $argobj__1)
     return i32 0
 }
-function @Outer__Buffer__Buffer__base_entry(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=strong, object=_ZN5Outer6BufferC2ENS_5TokenE, object_root=yes] {
+function @Outer__Buffer__Buffer__base_entry(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> void [binding=strong, object=_ZN5Outer6BufferC2ENS_5TokenE, object_root=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
-function @Outer__Buffer__Buffer(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> void [binding=strong, object=_ZN5Outer6BufferC1ENS_5TokenE] {
+function @Outer__Buffer__Buffer(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> void [binding=strong, object=_ZN5Outer6BufferC1ENS_5TokenE] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

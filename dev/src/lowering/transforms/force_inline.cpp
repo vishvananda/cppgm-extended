@@ -408,6 +408,14 @@ private:
 				program_.call_argument_references[source.extra_first + i]);
 			program_.call_argument_object_bytes.push_back(
 				program_.call_argument_object_bytes[source.extra_first + i]);
+			if (source.extra_first + i < program_.call_argument_classes.size() &&
+				program_.call_argument_classes[source.extra_first + i] != 0)
+			{
+				program_.call_argument_classes.resize(
+					program_.call_arguments.size(), 0);
+				program_.call_argument_classes.back() =
+					program_.call_argument_classes[source.extra_first + i];
+			}
 		}
 	}
 

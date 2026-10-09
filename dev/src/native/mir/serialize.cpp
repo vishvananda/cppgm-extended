@@ -173,9 +173,12 @@ const char * opcode_name(Instruction::Opcode opcode)
   case Instruction::MI_NEG: return "neg";
   case Instruction::MI_NOT: return "not";
   case Instruction::MI_BSWAP: return "bswap";
+  case Instruction::MI_BSF: return "bsf";
+  case Instruction::MI_BSR: return "bsr";
   case Instruction::MI_CMP: return "cmp";
   case Instruction::MI_TEST: return "test";
   case Instruction::MI_SETCC: return "setcc";
+  case Instruction::MI_CMOV: return "cmov";
   case Instruction::MI_MOVZX: return "movzx";
   case Instruction::MI_SEXT: return "sext";
   case Instruction::MI_ZEXT: return "zext";
@@ -329,6 +332,11 @@ std::string instruction_text(const Instruction & instruction,
   }
   if(instruction.opcode == Instruction::MI_SETCC) {
     out << "set" << condition_suffix(instruction.condition);
+    render_operands(out, instruction, program, function);
+    return out.str();
+  }
+  if(instruction.opcode == Instruction::MI_CMOV) {
+    out << "cmov" << condition_suffix(instruction.condition);
     render_operands(out, instruction, program, function);
     return out.str();
   }

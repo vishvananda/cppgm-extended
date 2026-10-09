@@ -19,6 +19,16 @@ from C++, and PA24 will compile it to native code. Keep the model, reader,
 validator and writer in reusable modules under `dev/src/` so those assignments
 extend your work.
 
+Design the in-memory model for the optimizer that will edit it. PA32 rewrites
+one function at a time, many times over: it inserts, removes and replaces
+instructions and blocks, renames uses, and asks how many uses a value has. A
+model in which a function owns its instructions and blocks, where an edit
+touches only that function and use counts are cheap to keep current, serves
+all of that. A model that packs a whole program into flat append-only pools,
+or that can only be rebuilt from text, makes every later rewrite a rebuild.
+`dev/src/lowir_model.h` is a teaching shape for reading the format, not a
+recommendation for that design.
+
 ### Prerequisites and starter kit
 
 Complete the earlier syntax and semantic assignments. The useful prior ideas
@@ -82,9 +92,13 @@ The required representation includes the forms exercised by `tests/spec/`:
 - constants and copies, addresses and indexed addresses, memory operations,
   arithmetic/comparisons/conversions, direct and explicitly typed indirect calls;
 - jumps, branches, switches, phi values and terminators;
+- `select`, the `ctz` and `clz` unary operators, and the instruction facts
+  `typed`, `nowrap` and `exact` (`lowir.md`, "Instruction Facts");
 - the atomic and exception instruction records used by the fixtures;
 - the symbol, parameter, function, storage, projection and debug metadata used
-  by those fixtures, including the required placement and value constraints.
+  by those fixtures, including the required placement and value constraints,
+  among them the object ABI facts `classes`, `result_classes` and
+  `replaceable`.
 
 Use `lowir.md` for each field's type and meaning, and `pa8.gram` for syntax.
 The full format reference also documents later additions. A feature appearing

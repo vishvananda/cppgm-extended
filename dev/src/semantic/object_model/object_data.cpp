@@ -91,10 +91,25 @@ void Analyzer::CopyDeclaredExpressionLayout(const ExpressionInfo& source,
 }
 
 void Analyzer::ApplyVariableObjectAttributes(
-	NodeId declaration, BindingId binding)
+	NodeId declaration, BindingId binding, NodeId item)
 {
 	BindingRecord& record = program_->bindings[binding];
 	BindingRecord& canonical = program_->bindings[record.canonical];
+	// alignas or __attribute__((aligned)) on the declaration, its specifiers
+	// or this declarator (7.6.2): MakeVariableDeclarationDump raises the
+	// storage's alignment to it.
+	const NodeId specifiers =
+		FindChild(declaration, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ);
+	const NodeId declarator = item == kNoNode ? kNoNode :
+		FindChild(item, ::cppgm::syntax::STAG_DECLARATOR);
+	std::size_t requested = RequestedAlignment(declaration, record.owner);
+	const NodeId alignment_owners[] = {specifiers, item, declarator};
+	for (std::size_t i = 0; i < 3; ++i)
+		if (alignment_owners[i] != kNoNode)
+			requested = std::max(requested,
+				RequestedAlignment(alignment_owners[i], record.owner));
+	SetBindingRequestedAlignment(canonical, std::max(requested,
+		static_cast<std::size_t>(program_->BindingLayout(canonical).requested_alignment)));
 	for (std::uint32_t edge = arena_->FirstEdge(declaration); edge != kNoEdge;
 		edge = arena_->NextEdge(edge))
 	{
@@ -152,8 +167,13 @@ std::uint32_t Analyzer::MakeVariableDeclarationDump(
 		 direct_linkage_declaration_depth_ != 0);
 	const std::uint32_t variable = MakeDump(
 		DUMP_VARIABLE, type, VALUE_NONE, name, binding);
-	const std::size_t alignment = DeclaredTypeAlignment(
+	std::size_t alignment = DeclaredTypeAlignment(
 		type, BindingDeclaredTypeLayout(binding));
+	const std::size_t requested = local ? 0 : static_cast<std::size_t>(
+		program_->BindingLayout(program_->bindings[
+			program_->bindings[binding].canonical]).requested_alignment);
+	if (requested > std::max(alignment, program_->AlignOf(type)))
+		alignment = requested;
 	if (alignment != 0 && alignment != program_->AlignOf(type))
 	{
 		if (alignment > std::numeric_limits<std::uint32_t>::max())

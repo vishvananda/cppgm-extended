@@ -14,8 +14,8 @@ function @forever() -> i32 [binding=strong, object=_Z7foreverv] {
 }
 function @constant_return() -> i32 [binding=strong, object=_Z15constant_returnv] {
   block ^entry:
-    %t1 = binary add i32 1, 2
-    %t2 = binary mul i32 %t1, 3
+    %t1 = binary add nowrap i32 1, 2
+    %t2 = binary mul nowrap i32 %t1, 3
     %t3 = cmp eq i32 %t2, 9
     branch %t3, ^if_then_1, ^if_else_2
 
@@ -68,9 +68,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     %t1 = call i32 @constant_return()
     %t2 = call i32 @label_return()
-    %t3 = binary add i32 %t1, %t2
+    %t3 = binary add nowrap i32 %t1, %t2
     %t4 = call i32 @maybe_value(1)
-    %t5 = binary add i32 %t3, %t4
-    %t6 = binary sub i32 %t5, 10
+    %t5 = binary add nowrap i32 %t3, %t4
+    %t6 = binary sub nowrap i32 %t5, 10
     return i32 %t6
 }

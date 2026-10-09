@@ -26,9 +26,9 @@ function @pass(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding
   slot $arg__1 : obj<16x8>
 
   block ^entry:
-    store ptr %value, $value
+    store typed ptr %value, $value
     %t1 = addr $arg__1
-    %t2 = load ptr $value
+    %t2 = load typed ptr $value
     call void @C__C(%t1, %t2)
     call void @take(%t1)
     return void
@@ -38,27 +38,27 @@ function @C__C(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $other
+    %t3 = load typed ptr $other
     %t4 = index i8 %t3, 0
     call void @A__A__base_entry(%t2, %t4)
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 %t5, 8
-    %t7 = load ptr $other
+    %t7 = load typed ptr $other
     %t8 = index i8 %t7, 8
     call void @B__B__base_entry(%t6, %t8)
-    %t9 = load ptr $this
+    %t9 = load typed ptr $this
     %t10 = addr @__external_vtable__C
     %t11 = index i8 %t10, 16
-    store ptr %t11, %t9
-    %t12 = load ptr $this
+    store typed ptr %t11, %t9
+    %t12 = load typed ptr $this
     %t13 = index i8 %t12, 8
     %t14 = addr @__external_vtable__C
     %t15 = index i8 %t14, 48
-    store ptr %t15, %t13
+    store typed ptr %t15, %t13
     return void
 }
 function @A__A__base_entry(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1AC2ERKS_, object_root=yes, inline_hint=yes] {
@@ -66,12 +66,12 @@ function @A__A__base_entry(%this : ptr [alias=noalias, object_bytes=8], %other :
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = addr @A__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @B__B__base_entry(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1BC2ERKS_, object_root=yes, inline_hint=yes] {
@@ -79,12 +79,12 @@ function @B__B__base_entry(%this : ptr [alias=noalias, object_bytes=8], %other :
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
     %t2 = addr @__external_vtable__B
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN1CC2ERKS_ = @C__C

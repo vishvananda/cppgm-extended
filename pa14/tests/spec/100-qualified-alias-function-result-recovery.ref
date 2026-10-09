@@ -8,8 +8,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $p
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
-    %t7 = binary sub i32 %t6, 1
+    %t6 = load typed i32 %t5
+    %t7 = binary sub nowrap i32 %t6, 1
     return i32 %t7
 }
 function @api__make_pairish(%value : i32) -> obj<8x4> [binding=weak, object=_ZN3api12make_pairishIiEENS_4pairIKNS_4textIcEENS_3tagEEET_] {
@@ -18,8 +18,8 @@ function @api__make_pairish(%value : i32) -> obj<8x4> [binding=weak, object=_ZN3
   slot $argobj__2 : obj<4x4>
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
     %t2 = addr $retobj__1
     %t3 = addr $argobj__2
     call void @api__text_char___text_char_(%t3)
@@ -30,10 +30,10 @@ function @api__text_char___text_char_(%this : ptr [object_bytes=4]) -> void [bin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 1, %t2
+    store typed i32 1, %t2
     return void
 }
 function @api__pair_api____cppgm_class_template_identity_0_0_0_const__tag___pair_api____cppgm_class_template_identity_0_0_0_const__tag_(%this : ptr [object_bytes=8], %a : obj<4x4>, %b : i32) -> void [binding=weak, object=_ZN3api4pairIKNS_4textIcEENS_3tagEEC1ES2_S4_, inline_hint=yes] {
@@ -42,18 +42,18 @@ function @api__pair_api____cppgm_class_template_identity_0_0_0_const__tag___pair
   slot $b : i32
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $a
     copyobj 4x4 %a, %t1
-    store i32 %b, $b
-    %t2 = load ptr $this
+    store typed i32 %b, $b
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = addr $a
     copyobj 4x4 %t4, %t3
-    %t5 = load i32 $b
-    %t6 = load ptr $this
+    %t5 = load typed i32 $b
+    %t6 = load typed ptr $this
     %t7 = index i8 [projection=field] %t6, 4
-    store i32 %t5, %t7
+    store typed i32 %t5, %t7
     return void
 }
 alias object _ZN3api4textIcEC2Ev = @api__text_char___text_char_

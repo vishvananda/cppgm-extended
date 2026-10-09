@@ -2,6 +2,6 @@ global @__cppgm_class_template_identity_0_0_0__id : i32 [binding=weak, object=_Z
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = load i32 @__cppgm_class_template_identity_0_0_0__id
+    %t1 = load typed i32 @__cppgm_class_template_identity_0_0_0__id
     return i32 %t1
 }

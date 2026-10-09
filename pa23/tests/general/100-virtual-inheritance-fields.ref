@@ -102,15 +102,15 @@ function @read(%b : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=stro
   slot $b : ptr
 
   block ^entry:
-    store ptr %b, $b
-    %t1 = load ptr $b
-    %t2 = load ptr %t1
+    store typed ptr %b, $b
+    %t1 = load typed ptr $b
+    %t2 = load typed ptr %t1
     %t3 = index i8 %t2, -24
-    %t4 = load i64 %t3
+    %t4 = load typed i64 %t3
     %t5 = index i8 %t1, %t4
     %t6 = index i8 %t5, 0
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     return i32 %t8
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -124,15 +124,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $d
     %t3 = index i8 %t2, 8
     %t4 = index i8 [projection=field] %t3, 8
-    store i32 13, %t4
+    store typed i32 13, %t4
     %t5 = addr $d
     %t6 = index i8 %t5, 24
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 5, %t7
+    store typed i32 5, %t7
     %t8 = addr $d
     %t9 = index i8 %t8, 24
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load i32 %t10
+    %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 5
     branch %t12, ^land_rhs_4, ^land_short_5
 
@@ -142,76 +142,76 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t15 = call i32 @read(%t14)
     %t16 = cmp eq i32 %t15, 5
     %t17 = cmp ne i64 %t16, 0
-    store i64 %t17, $land__2
+    store typed i64 %t17, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t18 = load i64 $land__2
+    %t18 = load typed i64 $land__2
     branch %t18, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t19 = load i32 $cond__1
+    %t19 = load typed i32 $cond__1
     return i32 %t19
 }
 function @YD__YD(%this : ptr [object_bytes=32]) -> void [binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = addr @YD____vtt
     %t4 = index i8 %t3, 8
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = index i8 %t5, 24
     call void @YB__YB__base_entry(%t2, %t4, %t6)
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 %t7, 8
     %t9 = addr @YD____vtt
     %t10 = index i8 %t9, 16
-    %t11 = load ptr $this
+    %t11 = load typed ptr $this
     %t12 = index i8 %t11, 24
     call void @YC__YC__base_entry(%t8, %t10, %t12)
-    %t13 = load ptr $this
+    %t13 = load typed ptr $this
     %t14 = addr @YD__vtable
     %t15 = index i8 %t14, 24
-    store ptr %t15, %t13
-    %t16 = load ptr $this
+    store typed ptr %t15, %t13
+    %t16 = load typed ptr $this
     %t17 = index i8 %t16, 8
     %t18 = addr @YD____view__YC__8__vtable
     %t19 = index i8 %t18, 24
-    store ptr %t19, %t17
+    store typed ptr %t19, %t17
     return void
 }
 function @YB__YB__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN2YBC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     return void
 }
 function @YC__YC__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN2YCC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
-    %t2 = load ptr %__vtt
-    store ptr %t2, %t1
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %__vtt
+    store typed ptr %t2, %t1
     return void
 }

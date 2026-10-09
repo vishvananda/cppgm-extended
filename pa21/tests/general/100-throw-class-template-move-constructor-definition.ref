@@ -64,42 +64,42 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_body_4:
     %t8 = call ptr @__external_runtime____cxa_begin_catch(%t5)
-    store ptr %t8, $catch__1
+    store typed ptr %t8, $catch__1
     eh_cleanup ^catch_cleanup_6
-    store ptr %t8, $caught
-    %t9 = load ptr $caught
+    store typed ptr %t8, $caught
+    %t9 = load typed ptr $caught
     %t10 = index i8 [projection=field] %t9, 0
-    %t11 = load i32 %t10
+    %t11 = load typed i32 %t10
     %t12 = cmp eq i32 %t11, 7
     branch %t12, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
     %t13 = addr $source
     %t14 = index i8 [projection=field] %t13, 0
-    %t15 = load i32 %t14
+    %t15 = load typed i32 %t14
     %t16 = cmp eq i32 %t15, 0
     %t17 = cmp ne i64 %t16, 0
-    store i64 %t17, $land__3
+    store typed i64 %t17, $land__3
     jump ^land_end_12
 
   block ^land_short_11:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_12
 
   block ^land_end_12:
-    %t18 = load i64 $land__3
+    %t18 = load typed i64 $land__3
     branch %t18, ^cond_then_7, ^cond_else_8
 
   block ^cond_then_7:
-    store i32 0, $cond__2
+    store typed i32 0, $cond__2
     jump ^cond_end_9
 
   block ^cond_else_8:
-    store i32 1, $cond__2
+    store typed i32 1, $cond__2
     jump ^cond_end_9
 
   block ^cond_end_9:
-    %t19 = load i32 $cond__2
+    %t19 = load typed i32 $cond__2
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 %t19
@@ -120,12 +120,12 @@ function @thrown_value_int___thrown_value_int_(%this : ptr [object_bytes=4], %in
   slot $initial : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %initial, $initial
-    %t1 = load i32 $initial
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %initial, $initial
+    %t1 = load typed i32 $initial
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @thrown_value_int___thrown_value_int___ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN12thrown_valueIiEC1EOS0_, inline_hint=yes] {
@@ -133,17 +133,17 @@ function @thrown_value_int___thrown_value_int___ov2(%this : ptr [alias=noalias, 
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load ptr $other
+    store typed i32 %t3, %t5
+    %t6 = load typed ptr $other
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 0, %t7
+    store typed i32 0, %t7
     return void
 }
 alias object _ZN12thrown_valueIiEC2Ei = @thrown_value_int___thrown_value_int_

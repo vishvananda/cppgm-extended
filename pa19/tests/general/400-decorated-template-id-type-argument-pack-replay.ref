@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    store i32 0, $refarg__1
+    store typed i32 0, $refarg__1
     %t2 = addr $refarg__1
     %t3 = addr $value
     %t4 = call i32 @initiate__ov2(%t2, %t3)

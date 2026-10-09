@@ -263,6 +263,14 @@ The currently defined binding values are:
 language/backend-neutral ownership boundary that later object emission can interpret as local,
 ordinary external, or weak/coalescable.
 
+The `replaceable=yes` metadata flag, valid only with `binding=weak`, marks a GNU weak
+definition (`__attribute__((weak))` on a function or variable): a strong definition in
+another object replaces it at link time. A `binding=weak` definition without it has vague
+linkage (an inline function, a template instantiation), and every copy of it is equivalent.
+Nothing may inline, specialize or discard a replaceable definition, or read a replaceable
+variable's initializer as its value; object emission gives it a weak symbol. Omission means
+false; there is no `replaceable=no` spelling.
+
 The `object` metadata key carries an explicit backend/object symbol spelling for the top-level
 symbol. This is the textual carrier for cases where later object emission must use a concrete
 host/object name such as `puts`, `_ZTIi`, or a local mangled helper name.
@@ -404,7 +412,7 @@ Call signatures only accept call-boundary metadata such as `arity=...`, `effects
 `unwind=...`, and `return=...`. The `query=stable_prefix` promise requires a
 direct function declaration or definition so consumers have a stable query-family
 identity; it is not valid on an indirect call signature. Top-level symbol metadata such as `role=...`, `linkage=...`,
-`binding=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, `object_root=...`, and
+`binding=...`, `replaceable=...`, `object=...`, `keep_alias=...`, `prefer_local=...`, `object_root=...`, and
 `force_inline=...`, `inline_hint=...`, and
 `no_inline=...` are not valid on `as (...) -> ...`
 call signatures.
@@ -494,6 +502,12 @@ for example `global @aligned : obj<16x16> = { i32 7 }`. The type supplies
 the minimum alignment and storage span. Data items retain their own layout;
 remaining storage bytes are zero-filled. This permits an over-aligned scalar's
 storage to differ from its source-language size and canonical scalar type.
+
+The C++ lowering states the storage type of a structured global exactly when
+the object's alignment is greater than the largest alignment among its data
+items other than `zero`: an `alignas` or `__attribute__((aligned))` on the
+variable, its type or its class, and an object whose items are all `zero`.
+Without it the global would be aligned only as its items require.
 
 Where each `<data-item>` is one of:
 
@@ -768,6 +782,38 @@ These annotations describe the semantic call boundary, not the final host regist
 assignment. Host-specific coercions such as pair-in-register splitting remain backend work,
 not stable LowIR syntax.
 
+One host fact cannot be derived from `obj<NxA>` alone: which eightbytes of a direct object
+the x86-64 psABI (3.2.3) classifies SSE rather than INTEGER, which depends on the member
+types. A direct object parameter states it as `classes=...` parameter metadata, and a direct
+object result as `result_classes=...` function or call-signature metadata:
+
+```text
+function @scale(%p : obj<16x8> [classes=sse_integer], %k : f64) -> obj<16x8> [result_classes=sse_integer] {
+  ...
+}
+%r = call obj<16x8> %fp($pair, 2.0) as (%a0 : obj<16x8> [classes=sse_integer], %a1 : f64) -> obj<16x8> [result_classes=sse_integer]
+```
+
+The value names one class for each eightbyte, the first eightbyte first, joined by `_`:
+`integer`, `sse`, or `none` for an eightbyte that holds no member (padding, an empty class).
+Classes describe only a direct `obj<NxA>` parameter or result of at most 16 bytes, and name
+exactly its eightbytes. Without them every eightbyte is INTEGER, so the C++ lowering states
+them exactly when some eightbyte is SSE or `none`, or the object is `memory`; a larger direct
+object is always passed in memory. Arguments past a variadic function's fixed parameters
+state no classes.
+
+`memory`, valid only on a parameter, instead says the object is passed in memory: an object
+with a misaligned member, or with an x87 (`long double`) or 16-byte vector member. A result
+with a misaligned member is returned through a `pass=indirect_result` parameter instead of a
+direct result. The psABI returns an x87 or 16-byte vector member in `st0` or in a whole XMM
+register, which these classes do not describe, so such a result states no classes.
+
+The native backend places an INTEGER eightbyte in the next argument GPR (rax then rdx for a
+result), an SSE eightbyte in the next XMM register (xmm0 then xmm1 for a result), and nothing
+for a `none` eightbyte. An object whose eightbytes do not all fit in the remaining registers,
+or whose classes are `memory`, goes on the stack whole. Objects passed this way interoperate
+with GCC- and Clang-compiled code.
+
 PA8's reader/writer preserves the object-boundary forms exercised by its
 fixtures. Later C++ lowering creates these boundaries, and the native
 backend implements their calling convention.
@@ -866,9 +912,10 @@ instructions.
 
 A conditional scalar choice is represented with ordinary control flow: branch
 to the blocks that produce the alternative values, jump from those blocks to
-a merge block, and select the incoming value there with `phi`. This keeps the
-condition's control-flow relationship explicit and requires no separate
-branchless-choice instruction.
+a merge block, and select the incoming value there with `phi`. The C++
+lowering produces this form for every conditional the source writes. An
+optimizer may turn a choice whose arms only compute values into a `select`
+(Unary and Binary Operations below).
 
 ### Memory and Addressing
 
@@ -878,8 +925,10 @@ branchless-choice instruction.
 %t = addr $slot
 %t = load <type> <storage>
 %t = load volatile <type> <storage>
+%t = load [volatile] typed <type> <storage>
 store <type> <value>, <storage>
 store volatile <type> <value>, <storage>
+store [volatile] typed <type> <value>, <storage>
 %t = atomic_load <type> <ptr-value>, <order>
 atomic_store <type> <value>, <ptr-value>, <order>
 %t = atomic_exchange <type> <ptr-value>, <value>, <order>
@@ -903,6 +952,8 @@ the object-copy and zeroing transforms. When omitted, `index` means plain
 pointer arithmetic with no stronger optimization claim; already-lowered source
 origins such as base-subobject and reference-field selection have no separate
 LowIR spelling.
+
+`typed` is an instruction fact (see Instruction Facts below).
 
 `load volatile` and `store volatile` mark an observable access to a
 volatile-qualified object. Volatility is a property of the operation, not of
@@ -974,8 +1025,9 @@ is required.
 
 ```text
 %t = unary <op> <type> <value>
-%t = binary <op> <type> <lhs>, <rhs>
+%t = binary <op> [nowrap] [exact] <type> <lhs>, <rhs>
 %t = cmp <pred> <type> <lhs>, <rhs>
+%t = select <type> <cond>, <a>, <b>
 %t = convert <op> <dst-type> <src-type> <value>
 %t = atomic_add_fetch <type> <ptr-value>, <delta>, <order>
 atomic_thread_fence <order>
@@ -988,6 +1040,7 @@ Required PA8 unary operators:
 - `not`
 - `bitnot`
 - `bswap` for `i16`, `i32`, and `i64`
+- `ctz` and `clz` for `i32`, `u32`, and `i64`
 
 Required PA8 binary operators:
 
@@ -1032,6 +1085,17 @@ destination temporary is a canonical integer truth value and is materialized as
 do not allocate or propagate the destination temporary as `f80`, `ptr`, `i16`,
 or the other operand type.
 
+`nowrap` and `exact` are instruction facts (see Instruction Facts below).
+
+`select` is `<a>` when the integer `<cond>` is nonzero and `<b>` otherwise.
+`<type>` is the type of `<a>`, `<b>` and the result: an integer type no wider
+than 64 bits, or `ptr`. Both values are computed before the `select`, so it
+has no effect beyond its result. The C++ lowering produces it only to pick
+the fallback of GCC's `__builtin_clzg` and `__builtin_ctzg` for a zero
+operand. An optimizer may form it from a branch to arms that only compute
+values (if-conversion), and a backend may lower it to a conditional move
+(`cmov` on x86-64) or to branches.
+
 For integer operations where signedness changes the result, the plain forms remain the signed
 operations:
 
@@ -1063,6 +1127,18 @@ For native lowering, an implementation strategy is:
 - otherwise lower `i16` through a small shift/or sequence
 - keep the operation as a first-class LowIR unary op rather than expanding it during C++
   lowering, so later native/object backends can choose the best lowering directly
+
+`unary ctz` and `unary clz` count the zero bits below the lowest set bit and
+above the highest set bit, at the operand's width and in the operand's type
+(`ctz i32 8` is `3`, `clz i64 1` is `63`). For a zero operand the result is
+an unspecified value of the type, as GCC's `__builtin_ctz` and
+`__builtin_clz` are undefined there; the instruction has no other effect.
+The C++ lowering uses them for the GCC bit-scan builtins (`__builtin_ctz`,
+`__builtin_clzll`, `__builtin_ctzg` and the rest), widening an operand
+narrower than 32 bits to `u32` first and, for `clz`, subtracting the bits
+the widening added; `__builtin_clzg` and `__builtin_ctzg` then `select` their
+second operand for a zero operand. x86-64 lowers them to `bsf`, and to `bsr`
+followed by an `xor` with the width less one.
 
 Array-to-pointer and function-to-pointer decay use the ordinary pointer value
 produced by `addr`, `index`, a parameter, or `copy ptr`. There is no decay-specific
@@ -1252,6 +1328,75 @@ This reads the current exception payload into a temporary of the given lowered t
 In the PA17 subset, `<type>` must be non-`void` and is expected to be a scalar or `ptr`
 type already representable in LowIR.
 
+## Instruction Facts
+
+Three keywords state facts about an instruction:
+
+```text
+%v = load typed ptr %field
+store typed i32 %n, %count
+%t = binary add nowrap i32 %i, 1
+%q = binary div exact i64 %bytes, 12
+```
+
+- `typed`, on a `load` or `store` of a pointer, a floating type or an integer
+  wider than one byte: the access reads or writes an object of the access's
+  type through a glvalue of that type, in the sense of C++ [basic.lval]/10,
+  not through a union member, a bit-field's storage unit or a byte copy.
+  Two typed accesses whose types are incompatible therefore never access the
+  same bytes of one object: a consumer may assume that a typed store does not
+  change what a typed load of an incompatible type reads. Two pointers are
+  compatible, as are two values of one floating type and two integers of one
+  width (a signed and an unsigned integer of one width are compatible).
+- `nowrap`, on an integer `add`, `sub`, `mul` or `shl`: the exact result
+  (for `shl`, the operand times two to the count) is representable in the
+  operation's type at the type's signedness. `i8`, `i16`, `i32`, `i64` and
+  `i128` are signed; `u8`, `u16` and `u32` are unsigned.
+- `exact`, on an integer `div` or `udiv`: the dividend is a multiple of the
+  divisor; on `shr` or `ushr`: no set bit is shifted out.
+
+A fact holds every time its instruction runs. A program in which one does
+not hold has undefined behavior, which is what lets a consumer rely on it.
+The validator rejects a fact on any other instruction or type. The keywords
+follow `volatile` on loads and stores and the operation on `binary`, in the
+order shown.
+
+The C++ lowering (PA10 onward) states facts by these rules, and the
+comparison checks them as part of the instruction:
+
+- `typed` on every `load` and `store` whose type is `ptr`, a floating type or
+  an integer wider than one byte, unless the access is volatile, reads or
+  writes a bit-field's storage unit, or goes through an address computed from
+  a union member: a member of a union (an anonymous union's included) and
+  every `index` or `copy` of such an address. A pointer to a union member
+  that is stored and loaded again is an ordinary pointer, and accesses
+  through it are typed: GCC and clang allow punning through a union, not
+  through pointers into one.
+- `nowrap` on the `add`, `sub` and `mul` that compute the source's `+`, `-`
+  and `*`, the compound assignments `+=`, `-=` and `*=`, and the steps of
+  `++` and `--`, when the operation's type after the usual arithmetic
+  conversions is a signed `int`, `long` or `long long`: their overflow is
+  undefined (C++ 5p4). An unsigned or narrower operation (an `i16` step), a
+  shift (GCC and clang define a signed left shift that overflows), pointer
+  arithmetic, and the address, size and count computations the lowering adds
+  for its own purposes carry none.
+- `exact` on the division of a pointer difference by the element size, the
+  `shr` for a power of two and the `div` otherwise: the difference of two
+  pointers into one array is a multiple of the element size (5.7p6).
+
+Every reader accepts the facts and every writer prints those the program
+holds, so a program keeps them through serialization: an object compiled
+from emitted LowIR text is the object compiled directly (PA32's round trip).
+A consumer may ignore any fact, and an optimizer may drop one, since removing
+a fact never changes a program's meaning; an optimizer may also add a fact it
+proves. An optimizer that moves an instruction to where it may run when it
+did not before (out of a conditional block, out of a loop that may not run,
+into a branch's predecessor) drops its facts, and so does one that rewrites
+an instruction into a different computation. Copies that run under the same
+conditions as the original (inlining, unrolling, duplication along a path)
+keep them, and of two equal instructions merged into one, the survivor keeps
+its facts only if it ran wherever the other did.
+
 ## Structural Rules
 
 - Every temporary must be defined before it is used.
@@ -1300,7 +1445,8 @@ diff of code they did not write.
   visible are paired by their `role` and `object` metadata, then by shape,
   then by position.
 - The order of items inside a metadata group, and the metadata keys that
-  belong to later stages (`linkage`, `binding`, `object`, `effects`,
+  belong to later stages (`linkage`, `binding`, `replaceable`, `classes`,
+  `result_classes`, `object`, `effects`,
   `unwind`, `return`, `capture`, `access`, `alias`, the optimizer's
   `force_inline`, `inline_hint` and `no_inline`, and the few others that
   `lowir_metadata_item_ignored_for_compare` lists): they are validated but
@@ -1331,6 +1477,12 @@ follows them, and so must yours.
   declared type, a `nullptr` materialized as a `ptr` temporary) is written
   `copy <type> <value>`; it is not omitted and it is not written as
   `convert`.
+- Instruction facts are part of the instruction. `typed`, `nowrap` and
+  `exact` follow the production rules of Instruction Facts above; an output
+  that misses one, or states one the rules do not, differs from the
+  reference.
+- A structured global states its storage type exactly when its alignment is
+  greater than that of its items (Structured Global Data Initializers above).
 - Instructions follow the source's evaluation order. Where the source fixes
   the order, the LowIR follows it: the right operand of an assignment is
   evaluated before the address of its left operand. Where the language

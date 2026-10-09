@@ -3,7 +3,7 @@ global @__cppgm_class_template_identity_0_0_0____cppgm_class_template_identity_1
 
 function @read() -> i32 [binding=strong, object=_Z4readv] {
   block ^entry:
-    %t1 = load i32 @__cppgm_class_template_identity_0_0_0____cppgm_class_template_identity_1_1_0__value
+    %t1 = load typed i32 @__cppgm_class_template_identity_0_0_0____cppgm_class_template_identity_1_1_0__value
     return i32 %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $object
-    %t2 = load i32 @__cppgm_class_template_identity_0_1_0__first__value
+    %t2 = load typed i32 @__cppgm_class_template_identity_0_1_0__first__value
     %t3 = cmp ne i32 %t2, 3
     branch %t3, ^lor_short_5, ^lor_rhs_4
 
@@ -21,15 +21,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = call i32 @read()
     %t5 = cmp ne i32 %t4, 7
     %t6 = cmp ne i64 %t5, 0
-    store i64 %t6, $lor__2
+    store typed i64 %t6, $lor__2
     jump ^lor_end_6
 
   block ^lor_short_5:
-    store i64 1, $lor__2
+    store typed i64 1, $lor__2
     jump ^lor_end_6
 
   block ^lor_end_6:
-    %t7 = load i64 $lor__2
+    %t7 = load typed i64 $lor__2
     branch %t7, ^lor_short_2, ^lor_rhs_1
 
   block ^lor_rhs_1:
@@ -37,15 +37,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = convert sext i64 i32 0
     %t10 = cmp eq i64 %t8, %t9
     %t11 = cmp ne i64 %t10, 0
-    store i64 %t11, $lor__1
+    store typed i64 %t11, $lor__1
     jump ^lor_end_3
 
   block ^lor_short_2:
-    store i64 1, $lor__1
+    store typed i64 1, $lor__1
     jump ^lor_end_3
 
   block ^lor_end_3:
-    %t12 = load i64 $lor__1
+    %t12 = load typed i64 $lor__1
     %t13 = convert trunc i32 i64 %t12
     return i32 %t13
 }

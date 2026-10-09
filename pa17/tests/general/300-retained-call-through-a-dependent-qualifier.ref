@@ -18,22 +18,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary mul i64 2, 8
     %t6 = index i8 %t4, %t5
     %t7 = call ptr @algorithm_classic_policy___operator__(%t2, %t3, %t6)
-    store ptr %t7, $ea
+    store typed ptr %t7, $ea
     %t8 = addr $run
     %t9 = addr $b
     %t10 = addr $b
     %t11 = binary mul i64 2, 4
     %t12 = index i8 %t10, %t11
     %t13 = call ptr @algorithm_classic_policy___operator____ov2(%t8, %t9, %t12)
-    store ptr %t13, $eb
+    store typed ptr %t13, $eb
     %t14 = addr $run
     %t15 = addr $c
     %t16 = addr $c
     %t17 = binary mul i64 2, 8
     %t18 = index i8 %t16, %t17
     %t19 = call ptr @algorithm_classic_policy___operator____ov3(%t14, %t15, %t18)
-    store ptr %t19, $ec
-    %t20 = load ptr $ea
+    store typed ptr %t19, $ec
+    %t20 = load typed ptr $ea
     %t21 = addr $a
     %t22 = binary mul i64 2, 8
     %t23 = index i8 %t21, %t22
@@ -41,51 +41,51 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t24, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t25 = load ptr $eb
+    %t25 = load typed ptr $eb
     %t26 = addr $b
     %t27 = binary mul i64 2, 4
     %t28 = index i8 %t26, %t27
     %t29 = cmp eq ptr %t25, %t28
     %t30 = cmp ne i64 %t29, 0
-    store i64 %t30, $land__3
+    store typed i64 %t30, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_9
 
   block ^land_end_9:
-    %t31 = load i64 $land__3
+    %t31 = load typed i64 $land__3
     branch %t31, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t32 = load ptr $ec
+    %t32 = load typed ptr $ec
     %t33 = addr $c
     %t34 = binary mul i64 2, 8
     %t35 = index i8 %t33, %t34
     %t36 = cmp eq ptr %t32, %t35
     %t37 = cmp ne i64 %t36, 0
-    store i64 %t37, $land__2
+    store typed i64 %t37, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t38 = load i64 $land__2
+    %t38 = load typed i64 $land__2
     branch %t38, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t39 = load i32 $cond__1
+    %t39 = load typed i32 $cond__1
     return i32 %t39
 }
 function @algorithm_classic_policy___operator__(%this : ptr [object_bytes=1], %first : ptr, %last : ptr) -> ptr [binding=weak, object=_ZNK9algorithmI14classic_policyEclIPmEET_S4_S4_, inline_hint=yes] {
@@ -94,11 +94,11 @@ function @algorithm_classic_policy___operator__(%this : ptr [object_bytes=1], %f
   slot $last : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %first, $first
-    store ptr %last, $last
-    %t1 = load ptr $first
-    %t2 = load ptr $last
+    store typed ptr %this, $this
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    %t1 = load typed ptr $first
+    %t2 = load typed ptr $last
     %t3 = call ptr @ops_classic_policy___last_of(%t1, %t2)
     return ptr %t3
 }
@@ -108,11 +108,11 @@ function @algorithm_classic_policy___operator____ov2(%this : ptr [object_bytes=1
   slot $last : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %first, $first
-    store ptr %last, $last
-    %t1 = load ptr $first
-    %t2 = load ptr $last
+    store typed ptr %this, $this
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    %t1 = load typed ptr $first
+    %t2 = load typed ptr $last
     %t3 = call ptr @ops_classic_policy___last_of__ov2(%t1, %t2)
     return ptr %t3
 }
@@ -122,11 +122,11 @@ function @algorithm_classic_policy___operator____ov3(%this : ptr [object_bytes=1
   slot $last : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %first, $first
-    store ptr %last, $last
-    %t1 = load ptr $first
-    %t2 = load ptr $last
+    store typed ptr %this, $this
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    %t1 = load typed ptr $first
+    %t2 = load typed ptr $last
     %t3 = call ptr @ops_classic_policy___last_of__ov3(%t1, %t2)
     return ptr %t3
 }
@@ -135,9 +135,9 @@ function @ops_classic_policy___last_of(%__param0 : ptr, %last : ptr) -> ptr [bin
   slot $last : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %last, $last
-    %t1 = load ptr $last
+    store typed ptr %__param0, $__param0
+    store typed ptr %last, $last
+    %t1 = load typed ptr $last
     return ptr %t1
 }
 function @ops_classic_policy___last_of__ov2(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIP5tag_aEET_S5_S5_, inline_hint=yes] {
@@ -145,9 +145,9 @@ function @ops_classic_policy___last_of__ov2(%__param0 : ptr, %last : ptr) -> ptr
   slot $last : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %last, $last
-    %t1 = load ptr $last
+    store typed ptr %__param0, $__param0
+    store typed ptr %last, $last
+    %t1 = load typed ptr $last
     return ptr %t1
 }
 function @ops_classic_policy___last_of__ov3(%__param0 : ptr, %last : ptr) -> ptr [binding=weak, object=_ZN3opsI14classic_policyE7last_ofIP5tag_bEET_S5_S5_, inline_hint=yes] {
@@ -155,8 +155,8 @@ function @ops_classic_policy___last_of__ov3(%__param0 : ptr, %last : ptr) -> ptr
   slot $last : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %last, $last
-    %t1 = load ptr $last
+    store typed ptr %__param0, $__param0
+    store typed ptr %last, $last
+    %t1 = load typed ptr $last
     return ptr %t1
 }

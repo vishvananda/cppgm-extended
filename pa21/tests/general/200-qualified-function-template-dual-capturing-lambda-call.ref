@@ -5,7 +5,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $v
     %t2 = addr $v
     %t3 = call i32 @N__Vec__add(%t2, 1)
-    %t4 = binary sub i32 %t3, 8
+    %t4 = binary sub nowrap i32 %t3, 8
     return i32 %t4
 }
 function @N__Vec__add(%this : ptr [object_bytes=1], %cond : u8) -> i32 [binding=weak, object=_ZN1N3Vec3addEb, inline_hint=yes] {
@@ -16,16 +16,16 @@ function @N__Vec__add(%this : ptr [object_bytes=1], %cond : u8) -> i32 [binding=
   slot $argobj__2 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     store u8 %cond, $cond
-    store i32 7, $n
+    store typed i32 7, $n
     %t1 = load u8 $cond
     %t2 = addr $argobj__1
-    %t3 = load i32 $n
-    store i32 %t3, %t2
+    %t3 = load typed i32 $n
+    store typed i32 %t3, %t2
     %t4 = addr $argobj__2
-    %t5 = load i32 $n
-    store i32 %t5, %t4
+    %t5 = load typed i32 $n
+    store typed i32 %t5, %t4
     %t6 = call i32 @N__helper(%t1, $argobj__1, $argobj__2)
     return i32 %t6
 }
@@ -60,21 +60,21 @@ function @N__Vec____lambda_N__Vec__add_t66_66__operator__(%this : ptr [object_by
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary add i32 %t3, 1
+    %t3 = load typed i32 %t2
+    %t4 = binary add nowrap i32 %t3, 1
     return i32 %t4
 }
 function @N__Vec____lambda_N__Vec__add_t77_77_n1__operator__(%this : ptr [object_bytes=4]) -> i32 [binding=internal, object=_ZZN1N3Vec3addEbENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary sub i32 %t3, 1
+    %t3 = load typed i32 %t2
+    %t4 = binary sub nowrap i32 %t3, 1
     return i32 %t4
 }

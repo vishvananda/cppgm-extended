@@ -23,13 +23,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $f : obj<8x8>
 
   block ^entry:
-    store i32 1, $x
+    store typed i32 1, $x
     %t1 = addr $f
     %t2 = addr $x
-    store ptr %t2, %t1
+    store typed ptr %t2, %t1
     %t3 = addr $f
     %t4 = call i32 @__lambda_main_t16_20__operator__(%t3)
-    %t5 = binary sub i32 %t4, 8
+    %t5 = binary sub nowrap i32 %t4, 8
     return i32 %t5
 }
 function @__lambda_main_t16_20__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
@@ -38,10 +38,10 @@ function @__lambda_main_t16_20__operator__(%this : ptr [object_bytes=8]) -> i32 
   slot $error : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     eh_try ^catch_dispatch_1
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t1
+    store typed i32 7, %t1
     %t2 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t1, %t2, 0)
     eh_end
@@ -59,16 +59,16 @@ function @__lambda_main_t16_20__operator__(%this : ptr [object_bytes=8]) -> i32 
 
   block ^catch_body_4:
     %t6 = call ptr @__external_runtime____cxa_begin_catch(%t3)
-    store ptr %t6, $catch__1
+    store typed ptr %t6, $catch__1
     eh_cleanup ^catch_cleanup_6
-    store ptr %t6, $error
-    %t7 = load ptr $this
+    store typed ptr %t6, $error
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 0
-    %t9 = load ptr %t8
-    %t10 = load i32 %t9
-    %t11 = load ptr $error
-    %t12 = load i32 %t11
-    %t13 = binary add i32 %t10, %t12
+    %t9 = load typed ptr %t8
+    %t10 = load typed i32 %t9
+    %t11 = load typed ptr $error
+    %t12 = load typed i32 %t11
+    %t13 = binary add nowrap i32 %t10, %t12
     eh_end
     call void @__external_runtime____cxa_end_catch()
     return i32 %t13

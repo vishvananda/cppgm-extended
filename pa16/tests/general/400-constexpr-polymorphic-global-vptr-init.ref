@@ -48,43 +48,43 @@ function @object__get(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }
 function @object__object(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN6objectC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @base__base__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = addr @object__vtable
     %t5 = index i8 %t4, 16
-    store ptr %t5, %t3
+    store typed ptr %t5, %t3
     return void
 }
 function @base__base__base_entry(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4baseC2Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @base__base(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN4baseC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @base__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN6objectC2Ev = @object__object

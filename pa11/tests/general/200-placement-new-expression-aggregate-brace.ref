@@ -3,9 +3,9 @@ function @operatornew__ov2(%__param0 : i64, %p : ptr) -> ptr [unwind=no, binding
   slot $p : ptr
 
   block ^entry:
-    store i64 %__param0, $__param0
-    store ptr %p, $p
-    %t1 = load ptr $p
+    store typed i64 %__param0, $__param0
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
     return ptr %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -23,11 +23,11 @@ function @table__table__aggregate(%this : ptr, %size : u32) -> void [unwind=no, 
   slot $size : u32
 
   block ^entry:
-    store ptr %this, $this
-    store u32 %size, $size
-    %t1 = load u32 $size
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed u32 %size, $size
+    %t1 = load typed u32 $size
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store u32 %t1, %t3
+    store typed u32 %t1, %t3
     return void
 }

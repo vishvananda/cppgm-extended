@@ -3,8 +3,8 @@ function @operator_(%__param0 : ptr [pass=by_address, object_bytes=1], %__param1
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return i32 22
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -23,22 +23,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @Date__Date(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN4DateC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @Date__operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZNK4DatemiERK6Period, inline_hint=yes] {
@@ -46,8 +46,8 @@ function @Date__operator_(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return i32 11
 }
 alias object _ZN4DateC2Ev = @Date__Date

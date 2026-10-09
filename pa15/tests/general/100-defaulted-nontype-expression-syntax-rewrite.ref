@@ -27,7 +27,7 @@ function @holder_int__int___move_and_check(%this : ptr [object_bytes=1], %f : ob
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $f
     copyobj 8x8 %f, %t1
     %t2 = addr $l

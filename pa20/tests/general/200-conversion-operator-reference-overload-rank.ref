@@ -2,7 +2,7 @@ function @sink(%__param0 : ptr [pass=by_address, object_bytes=1]) -> void [bindi
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -23,20 +23,20 @@ function @Wrapper__Wrapper(%this : ptr [object_bytes=8], %c : ptr [pass=by_addre
   slot $c : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %c, $c
-    %t1 = load ptr $c
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %c, $c
+    %t1 = load typed ptr $c
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @Wrapper__call(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN7Wrapper4callEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = call ptr @Wrapper__operatorContext_(%t1)
     call void @sink(%t2)
     return void
@@ -45,10 +45,10 @@ function @Wrapper__operatorContext_(%this : ptr [object_bytes=8]) -> ptr [bindin
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     return ptr %t3
 }
 alias object _ZN7WrapperC2ER7Context = @Wrapper__Wrapper

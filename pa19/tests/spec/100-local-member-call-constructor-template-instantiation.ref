@@ -15,16 +15,16 @@ function @call_erase(%active : ptr [pass=by_address, object_bytes=1], %ai : i32)
   slot $argobj__3 : obj<8x8>
 
   block ^entry:
-    store ptr %active, $active
-    store i32 %ai, $ai
-    %t1 = load ptr $active
+    store typed ptr %active, $active
+    store typed i32 %ai, $ai
+    %t1 = load typed ptr $active
     %t2 = addr $argobj__1
     %t3 = addr $arg__2
     %t4 = addr $argobj__3
-    %t5 = load ptr $active
+    %t5 = load typed ptr $active
     %t6 = call obj<8x8> @__cppgm_class_template_2_1__begin(%t5)
     copyobj 8x8 %t6, %t4
-    %t7 = load i32 $ai
+    %t7 = load typed i32 $ai
     %t8 = call obj<8x8> @operator_($argobj__3, %t7)
     copyobj 8x8 %t8, %t3
     call void @__cppgm_class_template_1_2__wrap_pointer_to_const_struct_local___ov5(%t2, %t3)
@@ -36,7 +36,7 @@ function @__cppgm_class_template_2_1__begin(%this : ptr [object_bytes=1]) -> obj
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
     call void @__cppgm_class_template_1_1__wrap_pointer_to_const_struct_local_(%t1)
     return obj<8x8> $retobj__1
@@ -49,7 +49,7 @@ function @operator_(%it : obj<8x8>, %__param1 : i32) -> obj<8x8> [binding=intern
   block ^entry:
     %t1 = addr $it
     copyobj 8x8 %it, %t1
-    store i32 %__param1, $__param1
+    store typed i32 %__param1, $__param1
     %t2 = addr $retobj__1
     %t3 = addr $it
     copyobj 8x8 %t3, %t2
@@ -60,14 +60,14 @@ function @__cppgm_class_template_1_2__wrap_pointer_to_const_struct_local___ov5(%
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load ptr $this
+    %t3 = load typed ptr %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store ptr %t3, %t5
+    store typed ptr %t3, %t5
     return void
 }
 function @__cppgm_class_template_2_1__erase(%this : ptr [object_bytes=1], %__param1 : obj<8x8>) -> i32 [binding=internal, object=_ZN8mini_vecIZ4mainE5localE5eraseE4wrapIPKZ4mainE5localE, inline_hint=yes] {
@@ -75,7 +75,7 @@ function @__cppgm_class_template_2_1__erase(%this : ptr [object_bytes=1], %__par
   slot $__param1 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $__param1
     copyobj 8x8 %__param1, %t1
     return i32 0
@@ -84,10 +84,10 @@ function @__cppgm_class_template_1_1__wrap_pointer_to_const_struct_local_(%this 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store ptr 0, %t2
+    store typed ptr 0, %t2
     return void
 }
 alias object _ZN4wrapIPKZ4mainE5localEC2IPZ4mainE5localEERKS_IT_E = @__cppgm_class_template_1_2__wrap_pointer_to_const_struct_local___ov5

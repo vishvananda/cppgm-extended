@@ -3,15 +3,15 @@ function @operator__(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : ptr [p
   slot $rhs : ptr
 
   block ^entry:
-    store ptr %lhs, $lhs
-    store ptr %rhs, $rhs
-    %t1 = load ptr $lhs
+    store typed ptr %lhs, $lhs
+    store typed ptr %rhs, $rhs
+    %t1 = load typed ptr $lhs
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $rhs
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $rhs
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
-    %t7 = binary add i32 %t3, %t6
+    %t6 = load typed i32 %t5
+    %t7 = binary add nowrap i32 %t3, %t6
     %t8 = cmp eq i32 %t7, 3
     %t9 = convert trunc u8 i64 %t8
     return u8 %t9
@@ -21,15 +21,15 @@ function @operator____sym2(%lhs : ptr [pass=by_address, object_bytes=4], %rhs : 
   slot $rhs : ptr
 
   block ^entry:
-    store ptr %lhs, $lhs
-    store ptr %rhs, $rhs
-    %t1 = load ptr $lhs
+    store typed ptr %lhs, $lhs
+    store typed ptr %rhs, $rhs
+    %t1 = load typed ptr $lhs
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $rhs
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $rhs
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
-    %t7 = binary add i32 %t3, %t6
+    %t6 = load typed i32 %t5
+    %t7 = binary add nowrap i32 %t3, %t6
     %t8 = cmp eq i32 %t7, 4
     %t9 = convert trunc u8 i64 %t8
     return u8 %t9
@@ -47,13 +47,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $three
     %t4 = addr $one
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 1, %t5
+    store typed i32 1, %t5
     %t6 = addr $two
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 2, %t7
+    store typed i32 2, %t7
     %t8 = addr $three
     %t9 = index i8 [projection=field] %t8, 0
-    store i32 3, %t9
+    store typed i32 3, %t9
     %t10 = addr $one
     %t11 = addr $two
     %t12 = call u8 @operator__(%t10, %t11)
@@ -64,26 +64,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = addr $three
     %t15 = call u8 @operator____sym2(%t13, %t14)
     %t16 = cmp ne i64 %t15, 0
-    store i64 %t16, $land__2
+    store typed i64 %t16, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t17 = load i64 $land__2
+    %t17 = load typed i64 $land__2
     branch %t17, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t18 = load i32 $cond__1
+    %t18 = load typed i32 $cond__1
     return i32 %t18
 }

@@ -37,12 +37,12 @@ function @impl_double_tag__traits_double_tag____compute(%value : i32) -> obj<8x8
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
     %t2 = addr $result
     %t3 = addr $result
     %t4 = index i8 [projection=field] %t3, 0
-    store i64 0, %t4
+    store typed i64 0, %t4
     %t5 = addr $retobj__1
     %t6 = addr $result
     copyobj 8x8 %t6, %t5
@@ -54,12 +54,12 @@ function @impl_float_tag__traits_float_tag____compute(%value : i32) -> obj<4x4> 
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
     %t2 = addr $result
     %t3 = addr $result
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 0, %t4
+    store typed i32 0, %t4
     %t5 = addr $retobj__1
     %t6 = addr $result
     copyobj 4x4 %t6, %t5

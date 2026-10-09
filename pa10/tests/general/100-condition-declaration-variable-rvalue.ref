@@ -4,29 +4,29 @@ function @f(%p : ptr) -> i32 [binding=strong, object=_Z1fPKh] {
   slot $c : u8
 
   block ^entry:
-    store ptr %p, $p
-    store i32 0, $n
+    store typed ptr %p, $p
+    store typed i32 0, $n
     jump ^while_cond_1
 
   block ^while_cond_1:
-    %t1 = load ptr $p
+    %t1 = load typed ptr $p
     %t2 = index i8 %t1, 1
-    store ptr %t2, $p
+    store typed ptr %t2, $p
     %t3 = load u8 %t1
     store u8 %t3, $c
     %t4 = load u8 $c
     branch %t4, ^while_body_2, ^while_end_3
 
   block ^while_body_2:
-    %t5 = load i32 $n
+    %t5 = load typed i32 $n
     %t6 = load u8 $c
     %t7 = convert zext i32 u8 %t6
-    %t8 = binary add i32 %t5, %t7
-    store i32 %t8, $n
+    %t8 = binary add nowrap i32 %t5, %t7
+    store typed i32 %t8, $n
     jump ^while_cond_1
 
   block ^while_end_3:
-    %t9 = load i32 $n
+    %t9 = load typed i32 $n
     return i32 %t9
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {

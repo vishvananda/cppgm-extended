@@ -4,19 +4,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32
 
   block ^entry:
-    %t1 = load ptr @__cppgm_class_template_identity_1_0_0__value
+    %t1 = load typed ptr @__cppgm_class_template_identity_1_0_0__value
     branch %t1, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t2 = load i32 $cond__1
+    %t2 = load typed i32 $cond__1
     return i32 %t2
 }
 function @callable__f(%this : ptr [object_bytes=1], %__param1 : i64) -> void [binding=weak, object=_ZNK8callable1fIlEEvT_, inline_hint=yes] {
@@ -24,8 +24,8 @@ function @callable__f(%this : ptr [object_bytes=1], %__param1 : i64) -> void [bi
   slot $__param1 : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i64 %__param1, $__param1
     return void
 }
 function @member_callable___wrap__ov2(%__param0 : ptr, %__param1 : i64) -> void [binding=weak, object=_ZN6memberI8callableE4wrapIXadL_ZNKS0_1fIlEEvT_EElEEvPvT0_, inline_hint=yes] {
@@ -33,7 +33,7 @@ function @member_callable___wrap__ov2(%__param0 : ptr, %__param1 : i64) -> void 
   slot $__param1 : i64
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store i64 %__param1, $__param1
+    store typed ptr %__param0, $__param0
+    store typed i64 %__param1, $__param1
     return void
 }

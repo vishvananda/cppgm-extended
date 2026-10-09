@@ -13,8 +13,8 @@ function @const_method_array_member_reference__take(%value : ptr [pass=by_addres
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %value, $value
-    store ptr %__param1, $__param1
+    store typed ptr %value, $value
+    store typed ptr %__param1, $__param1
     return u32 0
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -31,8 +31,8 @@ function @const_method_array_member_reference__holder__check(%this : ptr [object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = addr @__strlit__1
     %t4 = call u32 @const_method_array_member_reference__take(%t2, %t3)

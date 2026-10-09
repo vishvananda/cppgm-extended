@@ -1,5 +1,5 @@
 declare function @source() -> ptr [binding=strong, object=_Z6sourcev]
-declare function @consume(%arg0 : obj<1x1>) -> void [binding=strong, object=_Z7consume5TableIiE]
+declare function @consume(%arg0 : obj<1x1> [classes=none]) -> void [binding=strong, object=_Z7consume5TableIiE]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $argobj__1 : obj<1x1>
@@ -20,15 +20,15 @@ function @Table_int___Table_int___ov3(%this : ptr [object_bytes=1], %first : ptr
   slot $hint : i64
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %first, $first
-    store ptr %last, $last
-    store i64 %hint, $hint
-    %t1 = load i64 $hint
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    store typed i64 %hint, $hint
+    %t1 = load typed i64 $hint
+    %t2 = load typed ptr $this
     %t3 = index i8 %t2, 0
-    %t4 = load ptr $first
-    %t5 = load ptr $last
+    %t4 = load typed ptr $first
+    %t5 = load typed ptr $last
     call void @InsertBase_int___insert__ov3(%t3, %t4, %t5)
     return void
 }
@@ -38,9 +38,9 @@ function @InsertBase_int___insert__ov3(%this : ptr [object_bytes=1], %__param1 :
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return void
 }
 alias object _ZN5TableIiEC2IPiEET_S3_m = @Table_int___Table_int___ov3

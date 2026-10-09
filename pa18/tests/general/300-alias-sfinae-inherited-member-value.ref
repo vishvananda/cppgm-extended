@@ -16,8 +16,8 @@ function @function_int_____function_int_____ov3(%this : ptr [object_bytes=1], %_
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN8functionIFivEEC2IRS0_vEEOT_ = @function_int_____function_int_____ov3

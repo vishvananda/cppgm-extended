@@ -21,7 +21,7 @@ function @Source__c_str(%this : ptr [object_bytes=1]) -> ptr [binding=weak, obje
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr @__strlit__1
     return ptr %t1
 }

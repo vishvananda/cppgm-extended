@@ -25,9 +25,9 @@ function @increment(%value : i32) -> i32 [binding=strong, object=_Z9incrementi] 
   slot $value : i32
 
   block ^entry:
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = binary add i32 %t1, 1
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }
 function @callback_size(%callback : ptr, %bytes : ptr [pass=by_address, object_bytes=32]) -> i32 [binding=strong, object=_Z13callback_sizePFiiERA8_i] {
@@ -35,9 +35,9 @@ function @callback_size(%callback : ptr, %bytes : ptr [pass=by_address, object_b
   slot $bytes : ptr
 
   block ^entry:
-    store ptr %callback, $callback
-    store ptr %bytes, $bytes
-    %t1 = load ptr $callback
+    store typed ptr %callback, $callback
+    store typed ptr %bytes, $bytes
+    %t1 = load typed ptr $callback
     %t2 = call i32 %t1(3) as (%arg0 : i32) -> i32
     %t3 = const i64 32
     %t4 = convert sext i64 i32 %t2
@@ -49,14 +49,14 @@ function @qualification(%__param0 : ptr) -> i32 [binding=strong, object=_Z13qual
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 1
 }
 function @qualification__ov2(%__param0 : ptr) -> i32 [binding=strong, object=_Z13qualificationPKi] {
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
+    store typed ptr %__param0, $__param0
     return i32 0
 }
 function @qualified(%value : i32, %bytes : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=strong, object=_Z9qualifiediRA4_i] {
@@ -64,8 +64,8 @@ function @qualified(%value : i32, %bytes : ptr [pass=by_address, object_bytes=16
   slot $bytes : ptr
 
   block ^entry:
-    store i32 %value, $value
-    store ptr %bytes, $bytes
+    store typed i32 %value, $value
+    store typed ptr %bytes, $bytes
     %t1 = addr $value
     %t2 = call i32 @qualification__ov2(%t1)
     return i32 %t2
@@ -123,11 +123,11 @@ function @adjusted(%array : ptr, %bytes : ptr [pass=by_address, object_bytes=32]
   slot $bytes : ptr
 
   block ^entry:
-    store ptr %array, $array
-    store ptr %bytes, $bytes
-    %t1 = load ptr $array
+    store typed ptr %array, $array
+    store typed ptr %bytes, $bytes
+    %t1 = load typed ptr $array
     %t2 = index i32 [projection=array_element] %t1, 0
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     %t4 = const i64 32
     %t5 = convert sext i64 i32 %t3
     %t6 = binary add i64 %t5, %t4

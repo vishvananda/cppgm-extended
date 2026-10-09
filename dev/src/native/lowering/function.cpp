@@ -1880,12 +1880,22 @@ private:
       MirInstruction::Opcode opcode = MirInstruction::MI_NEG;
       if(instruction.op.kind == LowOperation::LOP_BITNOT) opcode = MirInstruction::MI_NOT;
       else if(instruction.op.kind == LowOperation::LOP_BSWAP) opcode = MirInstruction::MI_BSWAP;
+      else if(instruction.op.kind == LowOperation::LOP_CTZ) opcode = MirInstruction::MI_BSF;
+      else if(instruction.op.kind == LowOperation::LOP_CLZ) opcode = MirInstruction::MI_BSR;
       else if(instruction.op.kind != LowOperation::LOP_NEG)
         native_errors::ThrowSource(std::string("integer unary operation is not implemented: ") +
                                  lowir_model::lowir_operation_text(instruction.op));
       MirInstruction operation = machine_instruction(opcode, instruction.type);
       append_operand(operation, destination);
       out.push_back(operation);
+      if(instruction.op.kind == LowOperation::LOP_CLZ) {
+        // The highest set bit's index, counted from the top: width - 1 - index.
+        MirInstruction flip = machine_instruction(MirInstruction::MI_XOR, instruction.type);
+        append_operand(flip, destination);
+        append_operand(flip, immediate(static_cast<long long>(
+          lowir_model::lowir_type_bit_width(instruction.type) - 1)));
+        out.push_back(flip);
+      }
       append_integer_normalization(out, instruction.type, destination);
     }
     consume(instruction.first, destination.reg);
@@ -2247,9 +2257,15 @@ private:
   {
     std::vector<GprMove> gpr_moves;
     std::vector<location_planning::ParallelXmmMove> xmm_moves;
+    std::vector<std::size_t> object_xmm_pieces;
     for(std::size_t i = 0; i < plan.pieces.size(); ++i) {
       const abi::Piece & piece = plan.pieces[i];
       const Operand & argument = instruction.args[piece.parameter_index];
+      if(piece.location == abi::PL_XMM &&
+         parameters[piece.parameter_index].type.kind == lowir_model::LTK_OBJECT) {
+        object_xmm_pieces.push_back(i);
+        continue;
+      }
       if(piece.location == abi::PL_GPR) {
         GprMove move;
         move.destination = piece.reg;
@@ -2343,6 +2359,7 @@ private:
            xmm_moves[i].source.xmm == saved)
           xmm_moves[i].source = scratch;
     }
+    emit_object_xmm_arguments(instruction, plan, object_xmm_pieces, out);
   }
   bool object_result_alias(const Instruction & instruction,
                            const lowir_model::LowirBlock & block,
@@ -2375,27 +2392,6 @@ private:
       }
     }
     return false;
-  }
-  void store_object_return_registers(const LowType & type,
-                                     const Operand * destination,
-                                     const MirOperand * home,
-                                     std::vector<MirInstruction> & out)
-  {
-    if(type.storage_size > 16)
-      native_errors::ThrowSource("direct object return exceeds two SysV eightbytes");
-    MirOperand direct_storage;
-    const bool direct = destination ?
-      direct_object_chunk_storage(*destination, 0, &direct_storage) : true;
-    if(!destination) direct_storage = *home;
-    if(!direct) emit_operand_address(out, XR_R11, *destination);
-    const std::size_t chunks = (type.storage_size + 7) / 8;
-    for(std::size_t chunk = 0; chunk < chunks; ++chunk) {
-      const LowType & chunk_type = abi::object_chunk_type(type.storage_size - chunk * 8);
-      MirOperand storage = direct ? direct_storage : dereference(XR_R11);
-      storage.offset += static_cast<long long>(chunk * 8);
-      append_store(out, storage,
-                   reg_operand(chunk ? XR_RDX : XR_RAX), chunk_type);
-    }
   }
   void define_object_result(lowir_model::ValueId value_id,
                             const LowType & type,
@@ -2513,6 +2509,7 @@ private:
       else home = allocate_temp_home(
         instruction.dest, instruction.type, THR_CALL_RESULT);
       store_object_return_registers(instruction.type,
+                                    call_result_classes(instruction),
                                     alias ? &alias_destination : 0,
                                     alias ? 0 : &home, out);
       define_object_result(instruction.dest, instruction.type,
@@ -2935,7 +2932,9 @@ private:
            block, instruction_index, instruction.dest, facts_))
         emit_direct_unary_not_branch(instruction, block.instructions[instruction_index + 1], out);
       else emit_unary_value(instruction, block, instruction_index, out);
-    } else if(instruction.kind == Instruction::IK_CONVERT)
+    } else if(instruction.kind == Instruction::IK_SELECT)
+      emit_select(instruction, out);
+    else if(instruction.kind == Instruction::IK_CONVERT)
       emit_convert(instruction, block, instruction_index, out);
     else if(instruction.kind == Instruction::IK_CALL)
       emit_call(instruction, block, instruction_index, out);

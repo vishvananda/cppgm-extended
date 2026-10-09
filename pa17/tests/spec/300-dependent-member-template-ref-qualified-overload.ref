@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $x
-    store i32 0, $v
+    store typed i32 0, $v
     %t2 = addr $x
     %t3 = addr $v
     %t4 = call i32 @g(%t2, %t3)
@@ -15,10 +15,10 @@ function @g(%x : ptr, %v : ptr [pass=by_address, object_bytes=4]) -> i32 [bindin
   slot $v : ptr
 
   block ^entry:
-    store ptr %x, $x
-    store ptr %v, $v
-    %t1 = load ptr $x
-    %t2 = load ptr $v
+    store typed ptr %x, $x
+    store typed ptr %v, $v
+    %t1 = load typed ptr $x
+    %t2 = load typed ptr $v
     %t3 = call i32 @X__f__ov2(%t1, %t2)
     return i32 %t3
 }
@@ -27,7 +27,7 @@ function @X__f__ov2(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_addre
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return i32 0
 }

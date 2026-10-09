@@ -2,9 +2,9 @@ function @current(%it : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=s
   slot $it : ptr
 
   block ^entry:
-    store ptr %it, $it
-    %t1 = load ptr $it
-    %t2 = load ptr %t1
+    store typed ptr %it, $it
+    %t1 = load typed ptr $it
+    %t2 = load typed ptr %t1
     return ptr %t2
 }
 function @copy_backward_like(%first : ptr, %last : ptr, %result : ptr) -> void [binding=strong, object=_Z18copy_backward_likeP4cellS0_S0_] {
@@ -14,30 +14,30 @@ function @copy_backward_like(%first : ptr, %last : ptr, %result : ptr) -> void [
   slot $last_iter : ptr
 
   block ^entry:
-    store ptr %first, $first
-    store ptr %last, $last
-    store ptr %result, $result
-    %t1 = load ptr $last
-    store ptr %t1, $last_iter
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    store typed ptr %result, $result
+    %t1 = load typed ptr $last
+    store typed ptr %t1, $last_iter
     jump ^while_cond_1
 
   block ^while_cond_1:
-    %t2 = load ptr $first
-    %t3 = load ptr $last_iter
+    %t2 = load typed ptr $first
+    %t3 = load typed ptr $last_iter
     %t4 = cmp ne ptr %t2, %t3
     branch %t4, ^while_body_2, ^while_end_3
 
   block ^while_body_2:
-    %t5 = load ptr $result
+    %t5 = load typed ptr $result
     %t6 = binary mul i64 1, 8
     %t7 = binary sub i64 0, %t6
     %t8 = index i8 %t5, %t7
-    store ptr %t8, $result
-    %t9 = load ptr $last_iter
+    store typed ptr %t8, $result
+    %t9 = load typed ptr $last_iter
     %t10 = binary mul i64 1, 8
     %t11 = binary sub i64 0, %t10
     %t12 = index i8 %t9, %t11
-    store ptr %t12, $last_iter
+    store typed ptr %t12, $last_iter
     %t13 = addr $last_iter
     %t14 = call ptr @current(%t13)
     %t15 = call ptr @cell__operator_(%t8, %t14)
@@ -74,40 +74,40 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t14 = addr $data
     %t15 = binary mul i64 1, 8
     %t16 = index i8 %t14, %t15
-    store ptr %t16, $p
-    %t17 = load ptr $p
+    store typed ptr %t16, $p
+    %t17 = load typed ptr $p
     %t18 = index i8 [projection=field] %t17, 0
-    %t19 = load i32 %t18
+    %t19 = load typed i32 %t18
     %t20 = cmp eq i32 %t19, 2
     branch %t20, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t21 = load ptr $p
+    %t21 = load typed ptr $p
     %t22 = index i8 [projection=field] %t21, 4
-    %t23 = load i32 %t22
+    %t23 = load typed i32 %t22
     %t24 = cmp eq i32 %t23, 2
     %t25 = cmp ne i64 %t24, 0
-    store i64 %t25, $land__2
+    store typed i64 %t25, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t26 = load i64 $land__2
+    %t26 = load typed i64 $land__2
     branch %t26, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t27 = load i32 $cond__1
+    %t27 = load typed i32 $cond__1
     return i32 %t27
 }
 function @cell__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_ZN4cellaSERKS_, inline_hint=yes] {
@@ -115,21 +115,21 @@ function @cell__operator_(%this : ptr [object_bytes=8], %other : ptr [pass=by_ad
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $other
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = load ptr $this
+    %t3 = load typed i32 %t2
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 %t3, %t5
-    %t6 = load ptr $other
+    store typed i32 %t3, %t5
+    %t6 = load typed ptr $other
     %t7 = index i8 [projection=field] %t6, 4
-    %t8 = load i32 %t7
-    %t9 = load ptr $this
+    %t8 = load typed i32 %t7
+    %t9 = load typed ptr $this
     %t10 = index i8 [projection=field] %t9, 4
-    store i32 %t8, %t10
-    %t11 = load ptr $this
+    store typed i32 %t8, %t10
+    %t11 = load typed ptr $this
     return ptr %t11
 }
 function @cell__cell__aggregate(%this : ptr, %first : i32, %second : i32) -> void [unwind=no, binding=internal] {
@@ -138,16 +138,16 @@ function @cell__cell__aggregate(%this : ptr, %first : i32, %second : i32) -> voi
   slot $second : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %first, $first
-    store i32 %second, $second
-    %t1 = load i32 $first
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %first, $first
+    store typed i32 %second, $second
+    %t1 = load typed i32 $first
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
-    %t4 = load i32 $second
-    %t5 = load ptr $this
+    store typed i32 %t1, %t3
+    %t4 = load typed i32 $second
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 4
-    store i32 %t4, %t6
+    store typed i32 %t4, %t6
     return void
 }

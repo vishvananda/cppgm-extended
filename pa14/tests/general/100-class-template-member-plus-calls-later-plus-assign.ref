@@ -25,11 +25,11 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = call obj<8x8> @Box_int___operator_(%t5, 4)
     copyobj 8x8 %t6, %t4
     %t7 = index i8 [projection=field] %t4, 0
-    %t8 = load ptr %t7
+    %t8 = load typed ptr %t7
     %t9 = addr $values
     %t10 = binary sub ptr %t8, %t9
-    %t11 = binary shr i64 %t10, 2
-    %t12 = binary sub i64 %t11, 4
+    %t11 = binary shr exact i64 %t10, 2
+    %t12 = binary sub nowrap i64 %t11, 4
     %t13 = convert trunc i32 i64 %t12
     return i32 %t13
 }
@@ -38,12 +38,12 @@ function @Box_int___Box_int_(%this : ptr [object_bytes=8], %x : ptr) -> void [bi
   slot $x : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %x, $x
-    %t1 = load ptr $x
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %x, $x
+    %t1 = load typed ptr $x
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store ptr %t1, %t3
+    store typed ptr %t1, %t3
     return void
 }
 function @Box_int___operator_(%this : ptr [object_bytes=8], %n : i64) -> obj<8x8> [binding=weak, object=_ZNK3BoxIiEplEl, inline_hint=yes] {
@@ -53,13 +53,13 @@ function @Box_int___operator_(%this : ptr [object_bytes=8], %n : i64) -> obj<8x8
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %n, $n
+    store typed ptr %this, $this
+    store typed i64 %n, $n
     %t1 = addr $w
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     copyobj 8x8 %t2, %t1
     %t3 = addr $w
-    %t4 = load i64 $n
+    %t4 = load typed i64 $n
     %t5 = call ptr @Box_int___operator__(%t3, %t4)
     %t6 = addr $retobj__1
     %t7 = addr $w
@@ -71,10 +71,10 @@ function @Box_int___Box_int___ov2(%this : ptr [alias=noalias, object_bytes=8], %
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
-    %t2 = load ptr $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $__param1
     copyobj 8x8 %t2, %t1
     return void
 }
@@ -83,16 +83,16 @@ function @Box_int___operator__(%this : ptr [object_bytes=8], %n : i64) -> ptr [b
   slot $n : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %n, $n
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %n, $n
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load i64 $n
+    %t3 = load typed ptr %t2
+    %t4 = load typed i64 $n
     %t5 = binary mul i64 %t4, 4
     %t6 = index i8 %t3, %t5
-    store ptr %t6, %t2
-    %t7 = load ptr $this
+    store typed ptr %t6, %t2
+    %t7 = load typed ptr $this
     return ptr %t7
 }
 alias object _ZN3BoxIiEC2EPi = @Box_int___Box_int_

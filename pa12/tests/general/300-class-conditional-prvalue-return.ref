@@ -27,8 +27,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<4x4> @make(1)
     copyobj 4x4 %t2, %t1
     %t3 = index i8 [projection=field] %t1, 0
-    %t4 = load i32 %t3
-    %t5 = binary sub i32 %t4, 1
+    %t4 = load typed i32 %t3
+    %t5 = binary sub nowrap i32 %t4, 1
     return i32 %t5
 }
 function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN1SC1Ei, inline_hint=yes] {
@@ -36,12 +36,12 @@ function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, ob
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN1SC2Ei = @S__S

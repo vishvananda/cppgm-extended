@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    store i32 5, $refarg__1
+    store typed i32 5, $refarg__1
     %t2 = addr $refarg__1
     call void @adaptor___cppgm_class_template_identity_2_0_0__1___adaptor___cppgm_class_template_identity_2_0_0__1___ov4(%t1, %t2)
     %t3 = addr $value
@@ -15,13 +15,13 @@ function @adaptor___cppgm_class_template_identity_2_0_0__1___adaptor___cppgm_cla
   slot $alloc : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %alloc, $alloc
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %alloc, $alloc
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $alloc
+    %t3 = load typed ptr $alloc
     %t4 = call ptr @std__forward(%t3)
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     call void @A_int___A_char___base_entry(%t2, %t5)
     return void
 }
@@ -29,8 +29,8 @@ function @std__forward(%value : ptr [pass=by_address, object_bytes=4]) -> ptr [b
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     return ptr %t1
 }
 function @A_int___A_char___base_entry(%this : ptr [object_bytes=1], %__param1 : i32) -> void [binding=weak, object=_ZN1AIiEC2Ei, object_root=yes, inline_hint=yes] {
@@ -38,8 +38,8 @@ function @A_int___A_char___base_entry(%this : ptr [object_bytes=1], %__param1 : 
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return void
 }
 alias object _ZN7adaptorI1AIiELm1EEC2IiEEOT_ = @adaptor___cppgm_class_template_identity_2_0_0__1___adaptor___cppgm_class_template_identity_2_0_0__1___ov4

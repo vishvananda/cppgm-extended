@@ -13,8 +13,8 @@ function @ns__tuple_pointer_to_int__int___tuple_pointer_to_int__int_(%this : ptr
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @ns__impl_0__pointer_to_int__int___impl_2___base_entry(%t2)
     return void
@@ -23,8 +23,8 @@ function @ns__helper(%object : ptr [pass=by_address, object_bytes=4]) -> ptr [bi
   slot $object : ptr
 
   block ^entry:
-    store ptr %object, $object
-    %t1 = load ptr $object
+    store typed ptr %object, $object
+    %t1 = load typed ptr $object
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
@@ -32,23 +32,23 @@ function @ns__impl_0__pointer_to_int__int___impl_2___base_entry(%this : ptr [obj
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @ns__impl_1__int___impl_2___base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 8
-    store ptr nullptr, %t4
+    store typed ptr nullptr, %t4
     return void
 }
 function @ns__impl_1__int___impl_2___base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN2ns4implILm1EJiEEC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 alias object _ZN2ns5tupleIJPiiEEC2Ev = @ns__tuple_pointer_to_int__int___tuple_pointer_to_int__int_

@@ -17,7 +17,7 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @storage [binding=strong] = {
+global @storage : obj<64x8> [binding=strong] = {
   zero 64
 }
 global @allocations : i32 [binding=strong] = zero
@@ -28,10 +28,10 @@ function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong,
   slot $arg0 : i64
 
   block ^entry:
-    store i64 %arg0, $arg0
-    %t1 = load i32 @allocations
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @allocations
+    store typed i64 %arg0, $arg0
+    %t1 = load typed i32 @allocations
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @allocations
     %t3 = addr @storage
     return ptr %t3
 }
@@ -39,14 +39,14 @@ function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, bind
   slot $arg0 : ptr
 
   block ^entry:
-    store ptr %arg0, $arg0
-    %t1 = load i32 @allocations
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @allocations
-    %t3 = load i32 @cleanup_order
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 1
-    store i32 %t5, @cleanup_order
+    store typed ptr %arg0, $arg0
+    %t1 = load typed i32 @allocations
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @allocations
+    %t3 = load typed i32 @cleanup_order
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 1
+    store typed i32 %t5, @cleanup_order
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -67,8 +67,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     eh_try ^call_unwind_dispatch_5
     %t1 = convert sext i64 i32 1
     %t2 = call ptr @operatornew(%t1)
-    store ptr %t2, $call__1
-    %t3 = load ptr $call__1
+    store typed ptr %t2, $call__1
+    %t3 = load typed ptr $call__1
     eh_end
     jump ^call_unwind_end_6
 
@@ -132,26 +132,26 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^catch_body_13:
     %t8 = call ptr @__external_runtime____cxa_begin_catch(%t5)
-    store ptr %t8, $catch__2
+    store typed ptr %t8, $catch__2
     eh_cleanup ^catch_cleanup_15
-    %t9 = load i32 %t8
-    store i32 %t9, $value
-    %t10 = load i32 $value
+    %t9 = load typed i32 %t8
+    store typed i32 %t9, $value
+    %t10 = load typed i32 $value
     %t11 = cmp ne i32 %t10, 7
     branch %t11, ^if_then_16, ^lor_rhs_21
 
   block ^lor_rhs_21:
-    %t12 = load i32 @allocations
+    %t12 = load typed i32 @allocations
     %t13 = cmp ne i32 %t12, 0
     branch %t13, ^if_then_16, ^lor_rhs_20
 
   block ^lor_rhs_20:
-    %t14 = load i32 @arguments_alive
+    %t14 = load typed i32 @arguments_alive
     %t15 = cmp ne i32 %t14, 0
     branch %t15, ^if_then_16, ^lor_rhs_19
 
   block ^lor_rhs_19:
-    %t16 = load i32 @cleanup_order
+    %t16 = load typed i32 @cleanup_order
     %t17 = cmp ne i32 %t16, 21
     branch %t17, ^if_then_16, ^if_else_17
 
@@ -247,7 +247,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^new_end_29
 
   block ^new_end_29:
-    store ptr %t21, $skipped
+    store typed ptr %t21, $skipped
     eh_try ^call_unwind_dispatch_40
     %t26 = load u8 $lifetime__5
     branch %t26, ^conditional_temporary_destroy_41, ^conditional_temporary_done_42
@@ -266,69 +266,69 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cleanup_action_31
 
   block ^call_unwind_end_43:
-    %t28 = load ptr $skipped
+    %t28 = load typed ptr $skipped
     %t29 = copy ptr nullptr
     %t30 = cmp ne ptr %t28, %t29
     branch %t30, ^lor_short_51, ^lor_rhs_50
 
   block ^lor_rhs_50:
-    %t31 = load i32 @allocations
+    %t31 = load typed i32 @allocations
     %t32 = cmp ne i32 %t31, 0
     %t33 = cmp ne i64 %t32, 0
-    store i64 %t33, $lor__8
+    store typed i64 %t33, $lor__8
     jump ^lor_end_52
 
   block ^lor_short_51:
-    store i64 1, $lor__8
+    store typed i64 1, $lor__8
     jump ^lor_end_52
 
   block ^lor_end_52:
-    %t34 = load i64 $lor__8
+    %t34 = load typed i64 $lor__8
     branch %t34, ^lor_short_48, ^lor_rhs_47
 
   block ^lor_rhs_47:
-    %t35 = load i32 @arguments_alive
+    %t35 = load typed i32 @arguments_alive
     %t36 = cmp ne i32 %t35, 0
     %t37 = cmp ne i64 %t36, 0
-    store i64 %t37, $lor__7
+    store typed i64 %t37, $lor__7
     jump ^lor_end_49
 
   block ^lor_short_48:
-    store i64 1, $lor__7
+    store typed i64 1, $lor__7
     jump ^lor_end_49
 
   block ^lor_end_49:
-    %t38 = load i64 $lor__7
+    %t38 = load typed i64 $lor__7
     branch %t38, ^lor_short_45, ^lor_rhs_44
 
   block ^lor_rhs_44:
-    %t39 = load i32 @cleanup_order
+    %t39 = load typed i32 @cleanup_order
     %t40 = cmp ne i32 %t39, 21
     branch %t40, ^land_rhs_53, ^land_short_54
 
   block ^land_rhs_53:
-    %t41 = load i32 @cleanup_order
+    %t41 = load typed i32 @cleanup_order
     %t42 = cmp ne i32 %t41, 212
     %t43 = cmp ne i64 %t42, 0
-    store i64 %t43, $land__9
+    store typed i64 %t43, $land__9
     jump ^land_end_55
 
   block ^land_short_54:
-    store i64 0, $land__9
+    store typed i64 0, $land__9
     jump ^land_end_55
 
   block ^land_end_55:
-    %t44 = load i64 $land__9
+    %t44 = load typed i64 $land__9
     %t45 = cmp ne i64 %t44, 0
-    store i64 %t45, $lor__6
+    store typed i64 %t45, $lor__6
     jump ^lor_end_46
 
   block ^lor_short_45:
-    store i64 1, $lor__6
+    store typed i64 1, $lor__6
     jump ^lor_end_46
 
   block ^lor_end_46:
-    %t46 = load i64 $lor__6
+    %t46 = load typed i64 $lor__6
     %t47 = convert trunc i32 i64 %t46
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -349,10 +349,10 @@ function @argument__argument(%this : ptr [object_bytes=1]) -> void [binding=weak
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @arguments_alive
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @arguments_alive
+    store typed ptr %this, $this
+    %t1 = load typed i32 @arguments_alive
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @arguments_alive
     return void
 }
 function @item__item(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN4itemC1ERK8argument, inline_hint=yes] {
@@ -360,10 +360,10 @@ function @item__item(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_addr
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 7, %t1
+    store typed i32 7, %t1
     %t2 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t1, %t2, 0)
     return void
@@ -372,21 +372,21 @@ function @argument___argument(%this : ptr [object_bytes=1]) -> void [unwind=no, 
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @arguments_alive
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @arguments_alive
-    %t3 = load i32 @cleanup_order
-    %t4 = binary mul i32 %t3, 10
-    %t5 = binary add i32 %t4, 2
-    store i32 %t5, @cleanup_order
+    store typed ptr %this, $this
+    %t1 = load typed i32 @arguments_alive
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @arguments_alive
+    %t3 = load typed i32 @cleanup_order
+    %t4 = binary mul nowrap i32 %t3, 10
+    %t5 = binary add nowrap i32 %t4, 2
+    store typed i32 %t5, @cleanup_order
     return void
 }
 function @nullable_item__operatornew(%__param0 : i64) -> ptr [unwind=no, binding=weak, object=_ZN13nullable_itemnwEm, inline_hint=yes] {
   slot $__param0 : i64
 
   block ^entry:
-    store i64 %__param0, $__param0
+    store typed i64 %__param0, $__param0
     %t1 = copy ptr nullptr
     return ptr %t1
 }
@@ -395,10 +395,10 @@ function @nullable_item__nullable_item(%this : ptr [object_bytes=1], %__param1 :
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     %t1 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 8, %t1
+    store typed i32 8, %t1
     %t2 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t1, %t2, 0)
     return void
@@ -407,8 +407,8 @@ function @nullable_item__operatordelete(%__param0 : ptr) -> void [unwind=no, bin
   slot $__param0 : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store i32 99, @cleanup_order
+    store typed ptr %__param0, $__param0
+    store typed i32 99, @cleanup_order
     return void
 }
 alias object _ZN8argumentC2Ev = @argument__argument

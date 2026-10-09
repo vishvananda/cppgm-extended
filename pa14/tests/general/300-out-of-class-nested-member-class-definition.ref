@@ -13,24 +13,24 @@ function @h(%os : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, o
   slot $cond__1 : i32
 
   block ^entry:
-    store ptr %os, $os
+    store typed ptr %os, $os
     %t1 = addr $s
-    %t2 = load ptr $os
+    %t2 = load typed ptr $os
     call void @O_int___S__S(%t1, %t2)
     %t3 = addr $s
     %t4 = call u8 @O_int___S__operatorbool(%t3)
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @O_int___S__S(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1OIiE1SC1ERS0_, inline_hint=yes] {
@@ -38,15 +38,15 @@ function @O_int___S__S(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_ad
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 function @O_int___S__operatorbool(%this : ptr [object_bytes=1]) -> u8 [binding=weak, object=_ZNK1OIiE1ScvbEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return u8 1
 }
 alias object _ZN1OIiE1SC2ERS0_ = @O_int___S__S

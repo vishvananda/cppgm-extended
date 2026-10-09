@@ -10,20 +10,20 @@ function @holder_int___holder_int_(%this : ptr [object_bytes=16]) -> void [bindi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr @holder_int___good
     %t2 = copy i64 %t1
     %t3 = convert zext i128 i64 %t2
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
-    store i128 %t3, %t5
+    store typed i128 %t3, %t5
     return void
 }
 function @holder_int___bad(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZNK6holderIiE3badEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = const i64 1
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
@@ -32,7 +32,7 @@ function @holder_int___good(%this : ptr [object_bytes=16]) -> i32 [binding=weak,
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 0
 }
 alias object _ZN6holderIiEC2Ev = @holder_int___holder_int_

@@ -5,7 +5,7 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 0
 }
 
-function @make_view() -> obj<1x1> [binding=strong, object=_Z9make_viewv] {
+function @make_view() -> obj<1x1> [result_classes=none, binding=strong, object=_Z9make_viewv] {
   slot $retobj__1 : obj<1x1>
 
   block ^entry:
@@ -24,16 +24,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $value
     return i32 0
 }
-function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this : ptr [object_bytes=1]) -> obj<1x1> [binding=weak, object=_ZNK17basic_string_viewIcEcv12basic_stringIc11char_traitsT_EI9allocatorEEv] {
+function @basic_string_view_char___operatorbasic_string_Ch_char_traits_A_(%this : ptr [object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK17basic_string_viewIcEcv12basic_stringIc11char_traitsT_EI9allocatorEEv] {
   slot $this : ptr
   slot $retobj__1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = call ptr @basic_string_view_char___data(%t2)
-    %t4 = load ptr $this
+    %t4 = load typed ptr $this
     %t5 = call i64 @basic_string_view_char___size(%t4)
     call void @basic_string_char__char_traits__allocator___basic_string_char__char_traits__allocator___ov2(%t1, %t3, %t5)
     return obj<1x1> $retobj__1
@@ -42,7 +42,7 @@ function @basic_string_view_char___data(%this : ptr [object_bytes=1]) -> ptr [bi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr @__strlit__1
     return ptr %t1
 }
@@ -50,7 +50,7 @@ function @basic_string_view_char___size(%this : ptr [object_bytes=1]) -> i64 [bi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = convert sext i64 i32 3
     return i64 %t1
 }
@@ -60,9 +60,9 @@ function @basic_string_char__char_traits__allocator___basic_string_char__char_tr
   slot $__param2 : i64
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store i64 %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed i64 %__param2, $__param2
     return void
 }
 alias object _ZN12basic_stringIc11char_traits9allocatorEC2EPKcm = @basic_string_char__char_traits__allocator___basic_string_char__char_traits__allocator___ov2

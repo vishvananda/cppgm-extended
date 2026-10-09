@@ -70,23 +70,23 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @D__D(%t1)
     %t2 = addr $d
     %t3 = index i8 %t2, 8
-    store ptr %t3, $b
+    store typed ptr %t3, $b
     %t4 = addr $tmpobj__1
-    %t5 = load ptr $b
-    %t6 = load ptr %t5
-    %t7 = load ptr %t6
+    %t5 = load typed ptr $b
+    %t6 = load typed ptr %t5
+    %t7 = load typed ptr %t6
     %t8 = call obj<4x4> %t7(%t5) as (%arg0 : ptr [object_bytes=8]) -> obj<4x4>
     copyobj 4x4 %t8, %t4
     %t9 = index i8 [projection=field] %t4, 0
-    %t10 = load i32 %t9
-    %t11 = binary sub i32 %t10, 7
+    %t10 = load typed i32 %t9
+    %t11 = binary sub nowrap i32 %t10, 7
     return i32 %t11
 }
 function @B1__anchor(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN2B16anchorEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @D__current(%this : ptr [object_bytes=16]) -> obj<4x4> [binding=weak, object=_ZNK1D7currentEv, inline_hint=yes] {
@@ -95,11 +95,11 @@ function @D__current(%this : ptr [object_bytes=16]) -> obj<4x4> [binding=weak, o
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $out
     %t2 = addr $out
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 7, %t3
+    store typed i32 7, %t3
     %t4 = addr $retobj__1
     %t5 = addr $out
     copyobj 4x4 %t5, %t4
@@ -109,44 +109,44 @@ function @D__D(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @B1__B1__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 8
     call void @B2__B2__base_entry(%t4)
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = addr @D__vtable
     %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
-    %t8 = load ptr $this
+    store typed ptr %t7, %t5
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 8
     %t10 = addr @D____view__B2__8__vtable
     %t11 = index i8 %t10, 16
-    store ptr %t11, %t9
+    store typed ptr %t11, %t9
     return void
 }
 function @B1__B1__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B1C2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @B1__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @B2__B2__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2B2C2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @B2__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @_D__current__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> obj<4x4> [binding=weak, object=_ZThn8_NK1D7currentEv] {

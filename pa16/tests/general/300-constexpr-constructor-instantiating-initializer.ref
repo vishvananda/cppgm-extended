@@ -13,15 +13,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = binary mul i64 1, 12
     %t3 = index i8 [projection=array_element] %t1, %t2
     %t4 = index i8 [projection=field] %t3, 8
-    %t5 = load i32 %t4
-    %t6 = binary sub i32 %t5, 10
+    %t5 = load typed i32 %t4
+    %t6 = binary sub nowrap i32 %t5, 10
     %t7 = addr @table
     %t8 = binary mul i64 0, 12
     %t9 = index i8 [projection=array_element] %t7, %t8
     %t10 = index i8 [projection=field] %t9, 4
-    %t11 = load i32 %t10
-    %t12 = binary add i32 %t6, %t11
-    %t13 = binary sub i32 %t12, 1
+    %t11 = load typed i32 %t10
+    %t12 = binary add nowrap i32 %t6, %t11
+    %t13 = binary sub nowrap i32 %t12, 1
     return i32 %t13
 }
 function @item__item(%this : ptr [object_bytes=12], %a : i32) -> void [binding=weak, object=_ZN4itemC1Ei, inline_hint=yes] {
@@ -29,29 +29,29 @@ function @item__item(%this : ptr [object_bytes=12], %a : i32) -> void [binding=w
   slot $a : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %a, $a
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %a, $a
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @marker__marker__base_entry(%t2)
-    %t3 = load i32 $a
-    %t4 = load ptr $this
+    %t3 = load typed i32 $a
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 4
-    store i32 %t3, %t5
+    store typed i32 %t3, %t5
     %t6 = call i32 @measure_10___of()
-    %t7 = load ptr $this
+    %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 8
-    store i32 %t6, %t8
+    store typed i32 %t6, %t8
     return void
 }
 function @marker__marker__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6markerC2Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 1, %t2
+    store typed i32 1, %t2
     return void
 }
 function @measure_10___of() -> i32 [binding=weak, object=_ZN7measureILi10EE2ofEv, inline_hint=yes] {
@@ -61,147 +61,147 @@ function @measure_10___of() -> i32 [binding=weak, object=_ZN7measureILi10EE2ofEv
     %t1 = addr $tmpobj__1
     call void @chain_10___chain_1_(%t1)
     %t2 = index i8 [projection=field] %t1, 40
-    %t3 = load i32 %t2
+    %t3 = load typed i32 %t2
     return i32 %t3
 }
 function @chain_10___chain_1_(%this : ptr [object_bytes=44]) -> void [binding=weak, object=_ZN5chainILi10EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_9___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 40
-    store i32 10, %t4
+    store typed i32 10, %t4
     return void
 }
 function @chain_9___chain_1_(%this : ptr [object_bytes=40]) -> void [binding=weak, object=_ZN5chainILi9EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_8___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 36
-    store i32 9, %t4
+    store typed i32 9, %t4
     return void
 }
 function @chain_8___chain_1_(%this : ptr [object_bytes=36]) -> void [binding=weak, object=_ZN5chainILi8EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_7___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 32
-    store i32 8, %t4
+    store typed i32 8, %t4
     return void
 }
 function @chain_7___chain_1_(%this : ptr [object_bytes=32]) -> void [binding=weak, object=_ZN5chainILi7EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_6___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 28
-    store i32 7, %t4
+    store typed i32 7, %t4
     return void
 }
 function @chain_6___chain_1_(%this : ptr [object_bytes=28]) -> void [binding=weak, object=_ZN5chainILi6EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_5___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 24
-    store i32 6, %t4
+    store typed i32 6, %t4
     return void
 }
 function @chain_5___chain_1_(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN5chainILi5EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_4___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 20
-    store i32 5, %t4
+    store typed i32 5, %t4
     return void
 }
 function @chain_4___chain_1_(%this : ptr [object_bytes=20]) -> void [binding=weak, object=_ZN5chainILi4EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_3___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 16
-    store i32 4, %t4
+    store typed i32 4, %t4
     return void
 }
 function @chain_3___chain_1_(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN5chainILi3EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_2___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 12
-    store i32 3, %t4
+    store typed i32 3, %t4
     return void
 }
 function @chain_2___chain_1_(%this : ptr [object_bytes=12]) -> void [binding=weak, object=_ZN5chainILi2EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_1___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 8
-    store i32 2, %t4
+    store typed i32 2, %t4
     return void
 }
 function @chain_1___chain_1_(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5chainILi1EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @chain_0___chain_1_(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 [projection=field] %t3, 4
-    store i32 1, %t4
+    store typed i32 1, %t4
     return void
 }
 function @chain_0___chain_1_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN5chainILi0EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 alias object _ZN4itemC2Ei = @item__item

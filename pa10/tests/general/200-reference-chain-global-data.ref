@@ -1,7 +1,7 @@
 global @v : i64 [storage=readonly, binding=internal, object=v] = 42
 global @x : ptr [binding=strong] = addr @v
 global @y : ptr [binding=strong] = addr @v
-global @arr [binding=strong] = {
+global @arr : obj<336x8> [binding=strong] = {
   zero 336
 }
 

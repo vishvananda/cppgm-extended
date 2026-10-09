@@ -817,6 +817,7 @@ std::vector<bool> condition_flags_live_before(
     } else if(opcode == MirInstruction::MI_JCC ||
               opcode == MirInstruction::MI_JNE ||
               opcode == MirInstruction::MI_SETCC ||
+              opcode == MirInstruction::MI_CMOV ||
               !preserves_condition_flags(opcode)) {
       live = false;
     }

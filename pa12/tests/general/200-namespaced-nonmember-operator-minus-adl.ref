@@ -12,14 +12,14 @@ function @N__operator_(%a : obj<4x4>, %b : obj<4x4>) -> obj<4x4> [binding=strong
     %t3 = addr $r
     %t4 = addr $a
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
+    %t6 = load typed i32 %t5
     %t7 = addr $b
     %t8 = index i8 [projection=field] %t7, 0
-    %t9 = load i32 %t8
-    %t10 = binary sub i32 %t6, %t9
+    %t9 = load typed i32 %t8
+    %t10 = binary sub nowrap i32 %t6, %t9
     %t11 = addr $r
     %t12 = index i8 [projection=field] %t11, 0
-    store i32 %t10, %t12
+    store typed i32 %t10, %t12
     %t13 = addr $retobj__1
     %t14 = addr $r
     copyobj 4x4 %t14, %t13
@@ -33,7 +33,7 @@ function @N__count(%d : obj<4x4>) -> i32 [binding=strong, object=_ZN1N5countENS_
     copyobj 4x4 %d, %t1
     %t2 = addr $d
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     return i32 %t4
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -48,10 +48,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $b
     %t3 = addr $a
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 9, %t4
+    store typed i32 9, %t4
     %t5 = addr $b
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 4, %t6
+    store typed i32 4, %t6
     %t7 = addr $argobj__1
     %t8 = addr $argobj__2
     %t9 = addr $a

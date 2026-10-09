@@ -10,10 +10,10 @@ function @boost__runtime__run_case() -> i32 [binding=strong, object=_ZN5boost7ru
     %t2 = addr $second
     %t3 = addr $first
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 3, %t4
+    store typed i32 3, %t4
     %t5 = addr $second
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 7, %t6
+    store typed i32 7, %t6
     %t7 = addr $combined
     %t8 = addr $first
     %t9 = addr $second
@@ -22,7 +22,7 @@ function @boost__runtime__run_case() -> i32 [binding=strong, object=_ZN5boost7ru
     %t11 = addr $combined
     %t12 = index i8 [projection=field] %t11, 0
     %t13 = index i8 [projection=field] %t12, 0
-    %t14 = load i32 %t13
+    %t14 = load typed i32 %t13
     %t15 = cmp eq i32 %t14, 7
     branch %t15, ^land_rhs_4, ^land_short_5
 
@@ -32,27 +32,27 @@ function @boost__runtime__run_case() -> i32 [binding=strong, object=_ZN5boost7ru
     %t18 = call i32 @boost__nfp__nfp_detail____cppgm_class_template_1_0__marker(%t17)
     %t19 = cmp eq i32 %t18, 1
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $land__2
+    store typed i64 %t20, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t21 = load i64 $land__2
+    %t21 = load typed i64 $land__2
     branch %t21, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load i32 $cond__1
+    %t22 = load typed i32 $cond__1
     return i32 %t22
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -67,12 +67,12 @@ function @boost__nfp__opt_append(%__param0 : ptr [pass=by_address, object_bytes=
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %np, $np
+    store typed ptr %__param0, $__param0
+    store typed ptr %np, $np
     %t1 = addr $result
     %t2 = addr $result
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load ptr $np
+    %t4 = load typed ptr $np
     %t5 = call ptr @boost__nfp____cppgm_class_template_4_1__operator_(%t3, %t4)
     %t6 = addr $retobj__1
     %t7 = addr $result
@@ -83,7 +83,7 @@ function @boost__nfp__nfp_detail____cppgm_class_template_1_0__marker(%this : ptr
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }
 function @boost__nfp____cppgm_class_template_4_1__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=internal, object=_ZN5boost3nfp15named_parameterIiNS_7runtime12_GLOBAL__N_19second_idERKiEaSERKS7_, inline_hint=yes] {
@@ -91,11 +91,11 @@ function @boost__nfp____cppgm_class_template_4_1__operator_(%this : ptr [object_
   slot $other : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %other, $other
-    %t1 = load ptr $this
-    %t2 = load ptr $other
+    store typed ptr %this, $this
+    store typed ptr %other, $other
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr $other
     copyobj 4x4 %t2, %t1
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     return ptr %t3
 }

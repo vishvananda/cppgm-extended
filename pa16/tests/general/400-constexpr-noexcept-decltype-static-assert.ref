@@ -2,8 +2,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : ptr
 
   block ^entry:
-    store ptr 0, $p
-    %t1 = load ptr $p
+    store typed ptr 0, $p
+    %t1 = load typed ptr $p
     call void @box_pointer_to_const_char___f(%t1)
     return i32 0
 }
@@ -12,9 +12,9 @@ function @box_pointer_to_const_char___f(%p : ptr) -> void [binding=weak, object=
   slot $q : ptr
 
   block ^entry:
-    store ptr %p, $p
-    %t1 = load ptr $p
-    store ptr %t1, $q
-    %t2 = load ptr $q
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    store typed ptr %t1, $q
+    %t2 = load typed ptr $q
     return void
 }

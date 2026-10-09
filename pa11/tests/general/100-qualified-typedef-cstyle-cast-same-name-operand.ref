@@ -2,8 +2,8 @@ function @run(%mask : u32) -> i32 [binding=strong, object=_Z3runj] {
   slot $mask : u32
 
   block ^entry:
-    store u32 %mask, $mask
-    %t1 = load u32 $mask
+    store typed u32 %mask, $mask
+    %t1 = load typed u32 $mask
     %t2 = copy i32 %t1
     return i32 %t2
 }

@@ -284,6 +284,15 @@ names without replacing the parser or reparsing token spellings from its dump.
 Use stable node ownership and keep printing separate from parsing; no particular
 arena, class hierarchy, or reference implementation layout is required.
 
+Plan the node shape for what every later stage asks of every node. PA7
+attaches a type and a value category to every expression, PA14 instantiates
+template bodies, and PA10 lowers every node of every function. Facts that
+every node of a kind carries are best reached from the node itself, and node
+kinds are best an enumeration rather than a string; a generic tree whose
+facts live in hash tables keyed by node, probed on every visit, works for
+the fixtures and becomes the front end's dominant cost on the standard
+library headers later assignments parse.
+
 ### Multi-file test groups
 
 For a root `name.t`, companions such as `name.t2` are additional primary

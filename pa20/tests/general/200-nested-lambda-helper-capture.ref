@@ -13,11 +13,11 @@ function @Analyzer__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object
   slot $outer : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $helper
     %t2 = addr $outer
     %t3 = addr $helper
-    store ptr %t3, %t2
+    store typed ptr %t3, %t2
     %t4 = addr $outer
     %t5 = call i32 @Analyzer____lambda_Analyzer__f_t33_39_n1__operator__(%t4, 4)
     return i32 %t5
@@ -28,15 +28,15 @@ function @Analyzer____lambda_Analyzer__f_t33_39_n1__operator__(%this : ptr [obje
   slot $inner : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %z, $z
+    store typed ptr %this, $this
+    store typed i32 %z, $z
     %t1 = addr $inner
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load ptr %t3
-    store ptr %t4, %t1
+    %t4 = load typed ptr %t3
+    store typed ptr %t4, %t1
     %t5 = addr $inner
-    %t6 = load i32 $z
+    %t6 = load typed i32 $z
     %t7 = call i32 @Analyzer____lambda_Analyzer__f_t33_39_n1____lambda_nested_t46_52__operator__(%t5, %t6)
     return i32 %t7
 }
@@ -45,12 +45,12 @@ function @Analyzer____lambda_Analyzer__f_t33_39_n1____lambda_nested_t46_52__oper
   slot $y : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %y, $y
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %y, $y
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load i32 $y
+    %t3 = load typed ptr %t2
+    %t4 = load typed i32 $y
     %t5 = call i32 @Analyzer____lambda_Analyzer__f_t13_19__operator__(%t3, %t4)
     return i32 %t5
 }
@@ -59,9 +59,9 @@ function @Analyzer____lambda_Analyzer__f_t13_19__operator__(%this : ptr [object_
   slot $x : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %x, $x
-    %t1 = load i32 $x
-    %t2 = binary add i32 %t1, 1
+    store typed ptr %this, $this
+    store typed i32 %x, $x
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 1
     return i32 %t2
 }

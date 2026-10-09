@@ -2,6 +2,6 @@ global @k : i32 [storage=readonly, binding=internal, object=k] = 6
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
-    %t1 = load i32 @k
+    %t1 = load typed i32 @k
     return i32 %t1
 }

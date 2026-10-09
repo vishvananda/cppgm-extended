@@ -326,6 +326,7 @@ public:
 				if (binary.op == LOW_OP_NONE)
 					ThrowLoweringSource(
 						"unsupported bit-field compound assignment");
+				binary.no_wrap = SignedArithmeticNoWrap(binary.op, operation_type);
 				derived.Emit(binary);
 				value = derived.Convert(value, type, false);
 			}
@@ -410,6 +411,7 @@ public:
 					(operation_type.is_signed ? LOW_OP_SHR : LOW_OP_USHR) : LOW_OP_NONE;
 			if (binary.op == LOW_OP_NONE)
 				ThrowLoweringSource("unsupported PA10 compound assignment");
+			binary.no_wrap = SignedArithmeticNoWrap(binary.op, operation_type);
 			derived.Emit(binary);
 			value = derived.Convert(value, type, false);
 		}

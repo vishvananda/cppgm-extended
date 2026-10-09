@@ -1259,6 +1259,8 @@ protected:
 			static_cast<std::int64_t>(
 				derived.program_.BindingLayout(member).member_offset), LowI64());
 		index.projection = INDEX_PROJECTION_FIELD;
+		index.untyped = derived.IsUnionEntity(member.member_owner) ||
+			member.bit_field;
 		derived.Emit(index);
 		return projected;
 	}

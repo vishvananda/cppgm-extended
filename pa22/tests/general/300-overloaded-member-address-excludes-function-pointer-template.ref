@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = copy i64 %t1
     %t3 = convert zext i128 i64 %t2
     %t4 = addr @x
-    %t5 = load i32 @i
+    %t5 = load typed i32 @i
     %t6 = call i32 @bind(%t3, %t4, %t5)
     return i32 %t6
 }

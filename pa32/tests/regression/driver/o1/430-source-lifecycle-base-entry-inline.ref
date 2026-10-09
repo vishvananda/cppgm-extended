@@ -64,6 +64,6 @@ function @Derived___Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, b
 function @VirtualBase__VirtualBase__base_entry(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN11VirtualBaseC2Ev, object_root=yes, inline_hint=yes] {
   block ^entry:
     %t1 = copy ptr %this
-    store i32 7, %t1
+    store typed i32 7, %t1
     return void
 }

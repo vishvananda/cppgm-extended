@@ -17,16 +17,16 @@ function @F_void_____F_void___(%this : ptr [object_bytes=1]) -> void [binding=we
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
-function @F_void_____operator___ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZN1FIFvvEEaSI3FunEERS1_T_, inline_hint=yes] {
+function @F_void_____operator___ov3(%this : ptr [object_bytes=1], %__param1 : obj<1x1> [classes=none]) -> ptr [binding=weak, object=_ZN1FIFvvEEaSI3FunEERS1_T_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     return ptr %t1
 }
 alias object _ZN1FIFvvEEC2Ev = @F_void_____F_void___

@@ -16,6 +16,8 @@ const char* LowOperationText(LowOperation operation)
 	case LOW_OP_NEG: return "neg";
 	case LOW_OP_BITNOT: return "bitnot";
 	case LOW_OP_BSWAP: return "bswap";
+	case LOW_OP_CTZ: return "ctz";
+	case LOW_OP_CLZ: return "clz";
 	case LOW_OP_ADD: return "add";
 	case LOW_OP_SUB: return "sub";
 	case LOW_OP_MUL: return "mul";
@@ -686,6 +688,70 @@ std::size_t ProgramStorageBytes(const Program& program)
 		}
 	}
 	return bytes;
+}
+
+namespace
+{
+
+// The types a typed access may have: a pointer, a floating type, or an
+// integer wider than a byte.
+bool TypedAccessType(const LowType& type)
+{
+	switch (type.kind)
+	{
+	case LOW_I16: case LOW_U16: case LOW_I32: case LOW_U32: case LOW_I64:
+	case LOW_I128: case LOW_F32: case LOW_F64: case LOW_F80: case LOW_PTR:
+		return true;
+	default:
+		return false;
+	}
+}
+
+void StateTypedAccesses(Function* function)
+{
+	// Addresses reached through a union member: the projections lowering
+	// marked `untyped`, and every index or copy of one.  Iterated to a fixed
+	// point, as a block may use an address defined in a block listed later.
+	std::vector<std::uint8_t> untyped(function->temporary_limit, 0);
+	const auto through = [&untyped](const Operand& address) {
+		return address.kind == Operand::TEMP && address.id < untyped.size() &&
+			untyped[address.id] != 0;
+	};
+	for (bool changed = true; changed;)
+	{
+		changed = false;
+		for (std::size_t b = 0; b < function->blocks.size(); ++b)
+			for (const Instruction& instruction : function->blocks[b].instructions)
+			{
+				const std::uint32_t dest = instruction.dest;
+				if ((instruction.kind != Instruction::INDEX &&
+						instruction.kind != Instruction::COPY) ||
+					dest >= untyped.size() || untyped[dest] != 0 ||
+					(!instruction.untyped && !through(instruction.first)))
+					continue;
+				untyped[dest] = 1;
+				changed = true;
+			}
+	}
+	for (std::size_t b = 0; b < function->blocks.size(); ++b)
+		for (Instruction& instruction : function->blocks[b].instructions)
+		{
+			if (instruction.kind != Instruction::LOAD &&
+				instruction.kind != Instruction::STORE) continue;
+			const Operand& address = instruction.kind == Instruction::LOAD ?
+				instruction.first : instruction.second;
+			instruction.typed_access = !instruction.volatile_access &&
+				!instruction.untyped && TypedAccessType(instruction.type) &&
+				!through(address);
+		}
+}
+
+}  // namespace
+
+void StateTypedAccesses(Program* program)
+{
+	for (std::size_t f = 0; f < program->functions.size(); ++f)
+		StateTypedAccesses(&program->functions[f]);
 }
 
 }

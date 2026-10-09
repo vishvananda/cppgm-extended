@@ -12,20 +12,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 8x8 %t4, %t2
     %t5 = addr $result
     %t6 = index i8 [projection=field] %t5, 0
-    %t7 = load f64 %t6
+    %t7 = load typed f64 %t6
     %t8 = cmp eq f64 %t7, 3.0
     branch %t8, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t9 = load i32 $cond__1
+    %t9 = load typed i32 $cond__1
     return i32 %t9
 }
 function @units__box_long_int___box_double_(%this : ptr [object_bytes=8], %input : i64) -> void [binding=weak, object=_ZN5units3boxIlEC1El, inline_hint=yes] {
@@ -33,28 +33,28 @@ function @units__box_long_int___box_double_(%this : ptr [object_bytes=8], %input
   slot $input : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %input, $input
-    %t1 = load i64 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %input, $input
+    %t1 = load typed i64 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i64 %t1, %t3
+    store typed i64 %t1, %t3
     return void
 }
-function @units__operator_(%input : ptr [pass=by_address, object_bytes=8], %scalar : f64) -> obj<8x8> [binding=weak, object=_ZN5unitsdvIldEENS_6detail13divide_resultINS_3boxIT_EET0_Xsr6is_boxIS6_EE5valueEE4typeERKS5_S6_] {
+function @units__operator_(%input : ptr [pass=by_address, object_bytes=8], %scalar : f64) -> obj<8x8> [result_classes=sse, binding=weak, object=_ZN5unitsdvIldEENS_6detail13divide_resultINS_3boxIT_EET0_Xsr6is_boxIS6_EE5valueEE4typeERKS5_S6_] {
   slot $input : ptr
   slot $scalar : f64
   slot $retobj__1 : obj<8x8>
 
   block ^entry:
-    store ptr %input, $input
-    store f64 %scalar, $scalar
+    store typed ptr %input, $input
+    store typed f64 %scalar, $scalar
     %t1 = addr $retobj__1
-    %t2 = load ptr $input
+    %t2 = load typed ptr $input
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i64 %t3
+    %t4 = load typed i64 %t3
     %t5 = convert sitofp f64 i64 %t4
-    %t6 = load f64 $scalar
+    %t6 = load typed f64 $scalar
     %t7 = binary div f64 %t5, %t6
     call void @units__box_double___box_double_(%t1, %t7)
     return obj<8x8> $retobj__1
@@ -64,12 +64,12 @@ function @units__box_double___box_double_(%this : ptr [object_bytes=8], %input :
   slot $input : f64
 
   block ^entry:
-    store ptr %this, $this
-    store f64 %input, $input
-    %t1 = load f64 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed f64 %input, $input
+    %t1 = load typed f64 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store f64 %t1, %t3
+    store typed f64 %t1, %t3
     return void
 }
 alias object _ZN5units3boxIlEC2El = @units__box_long_int___box_double_

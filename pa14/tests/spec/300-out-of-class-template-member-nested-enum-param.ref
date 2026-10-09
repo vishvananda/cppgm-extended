@@ -12,10 +12,10 @@ function @Box_int___call(%this : ptr [object_bytes=1], %tag : i32) -> i32 [bindi
   slot $tag : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %tag, $tag
-    %t1 = load ptr $this
-    %t2 = load i32 $tag
+    store typed ptr %this, $this
+    store typed i32 %tag, $tag
+    %t1 = load typed ptr $this
+    %t2 = load typed i32 $tag
     %t3 = call i32 @Box_int___value(%t1, %t2)
     return i32 %t3
 }
@@ -24,7 +24,7 @@ function @Box_int___value(%this : ptr [object_bytes=1], %tag : i32) -> i32 [bind
   slot $tag : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %tag, $tag
+    store typed ptr %this, $this
+    store typed i32 %tag, $tag
     return i32 0
 }

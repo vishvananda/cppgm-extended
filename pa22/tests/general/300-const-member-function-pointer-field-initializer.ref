@@ -13,7 +13,7 @@ function @const_member_function_pointer_field_initializer__tester__foo(%this : p
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @const_member_function_pointer_field_initializer__holder__holder(%this : ptr [object_bytes=16], %p : i128) -> void [binding=weak, object=_ZN47const_member_function_pointer_field_initializer6holderC1EMNS_6testerEKFvvE, inline_hint=yes] {
@@ -21,12 +21,12 @@ function @const_member_function_pointer_field_initializer__holder__holder(%this 
   slot $p : i128
 
   block ^entry:
-    store ptr %this, $this
-    store i128 %p, $p
-    %t1 = load i128 $p
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i128 %p, $p
+    %t1 = load typed i128 $p
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i128 %t1, %t3
+    store typed i128 %t1, %t3
     return void
 }
 alias object _ZN47const_member_function_pointer_field_initializer6holderC2EMNS_6testerEKFvvE = @const_member_function_pointer_field_initializer__holder__holder

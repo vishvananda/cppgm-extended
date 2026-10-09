@@ -9,7 +9,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = index i8 %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
     %t5 = index i8 [projection=field] %t4, 0
-    store i32 11, %t5
+    store typed i32 11, %t5
     %t6 = addr $iface
     %t7 = addr $iface
     %t8 = addr $ar
@@ -18,15 +18,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load i32 $cond__1
+    %t11 = load typed i32 $cond__1
     return i32 %t11
 }
 function @interface_oarchive_text_oarchive___get_helper(%this : ptr [object_bytes=1], %archive : ptr) -> i32 [binding=weak, object=_ZN18interface_oarchiveI13text_oarchiveE10get_helperEPS0_, inline_hint=yes] {
@@ -35,23 +35,23 @@ function @interface_oarchive_text_oarchive___get_helper(%this : ptr [object_byte
   slot $hc : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %archive, $archive
-    %t1 = load ptr $archive
+    store typed ptr %this, $this
+    store typed ptr %archive, $archive
+    %t1 = load typed ptr $archive
     %t2 = index i8 %t1, 0
     %t3 = call ptr @basic_oarchive__get_helper_collection(%t2)
-    store ptr %t3, $hc
-    %t4 = load ptr $hc
+    store typed ptr %t3, $hc
+    %t4 = load typed ptr $hc
     %t5 = index i8 [projection=field] %t4, 0
-    %t6 = load i32 %t5
+    %t6 = load typed i32 %t5
     return i32 %t6
 }
 function @basic_oarchive__get_helper_collection(%this : ptr [object_bytes=4]) -> ptr [binding=weak, object=_ZN14basic_oarchive21get_helper_collectionEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }

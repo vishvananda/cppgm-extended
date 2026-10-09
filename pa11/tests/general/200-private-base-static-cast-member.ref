@@ -2,8 +2,8 @@ function @run(%value : ptr) -> ptr [binding=strong, object=_Z3runPK7derived] {
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = call ptr @derived__convert(%t1)
     return ptr %t2
 }
@@ -11,8 +11,8 @@ function @derived__convert(%value : ptr) -> ptr [binding=weak, object=_ZN7derive
   slot $value : ptr
 
   block ^entry:
-    store ptr %value, $value
-    %t1 = load ptr $value
+    store typed ptr %value, $value
+    %t1 = load typed ptr $value
     %t2 = index i8 %t1, 0
     return ptr %t2
 }

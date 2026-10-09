@@ -82,7 +82,9 @@ protected:
 			return false;
 		const semantic::EntityRecord& entity =
 			derived.program_.entities[object.entity];
-		return entity.indirect_class_result_abi;
+		// A class the psABI passes in memory (an x87 or misaligned member)
+		// returns through caller storage too.
+		return entity.indirect_class_result_abi || entity.sysv_memory;
 	}
 
 	bool UsesIndirectClassParameter(semantic::TypeId type) const
@@ -154,8 +156,8 @@ protected:
 
 	void FillBoundary(std::uint32_t node,
 		std::vector<lowering::ir::Parameter>* parameters,
-		lowering::ir::LowType* result, bool* variadic,
-		bool declaration = false) const
+		lowering::ir::LowType* result, std::uint8_t* result_classes,
+		bool* variadic, bool declaration = false) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
 		const semantic::DumpNode& record =
@@ -166,6 +168,9 @@ protected:
 			UsesIndirectClassResult(function_type.child);
 		*result = indirect_result ? lowering::ir::LowVoid() :
 			derived.LowerBoundaryResult(function_type.child);
+		*result_classes = result->kind == lowering::ir::LOW_OBJECT ?
+			lowering::abi::SysvObjectClasses(derived.program_,
+				function_type.child, true) : 0;
 		*variadic = function_type.variadic;
 		if (indirect_result)
 		{
@@ -236,6 +241,10 @@ protected:
 			parameter.reference = parameter_index < function_type.parameter_count &&
 				derived.IsReferenceType(source_parameters[parameter_index]);
 			parameter.by_address = by_address;
+			if (parameter.type.kind == lowering::ir::LOW_OBJECT &&
+				parameter_index < function_type.parameter_count)
+				parameter.classes = lowering::abi::SysvObjectClasses(
+					derived.program_, source_parameters[parameter_index]);
 			if (parameter_index < function_type.parameter_count)
 				parameter.object_bytes = BoundaryObjectBytes(
 					source_parameters[parameter_index], record.binding,
@@ -266,6 +275,9 @@ protected:
 			parameter.reference =
 				derived.IsReferenceType(source_parameters[parameter_index]);
 			parameter.by_address = by_address;
+			if (parameter.type.kind == lowering::ir::LOW_OBJECT)
+				parameter.classes = lowering::abi::SysvObjectClasses(
+					derived.program_, source_parameters[parameter_index]);
 			parameter.object_bytes = BoundaryObjectBytes(
 				source_parameters[parameter_index], record.binding,
 				parameter_index, parameter.reference, by_address);

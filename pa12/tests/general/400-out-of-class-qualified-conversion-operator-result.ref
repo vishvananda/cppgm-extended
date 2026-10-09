@@ -11,29 +11,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $s
     %t2 = addr $s
     %t3 = call ptr @source__targetconst__(%t2)
-    store ptr %t3, $r
-    %t4 = load ptr $r
+    store typed ptr %t3, $r
+    %t4 = load typed ptr $r
     %t5 = addr @ns__global
     %t6 = cmp eq ptr %t4, %t5
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @source__targetconst__(%this : ptr [object_bytes=1]) -> ptr [binding=strong, object=_ZNK6sourcecvRKN2ns6targetEEv] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr @ns__global
     return ptr %t1
 }

@@ -324,7 +324,7 @@ private:
 	void PublishVariableDeclarationFacts(BindingId binding,
 		ScopeId declaration_scope, NameId name, TypeId type,
 		const SpecInfo& spec, bool local);
-	void ApplyVariableObjectAttributes(NodeId declaration, BindingId binding);
+	void ApplyVariableObjectAttributes(NodeId declaration, BindingId binding, NodeId item = kNoNode);
 	std::uint32_t BindingDeclaredTypeLayout(BindingId binding) const;
 	void PublishDeclaredTypeLayout(BindingId binding, TypeId type,
 		std::uint32_t parent, std::size_t alignment = 0);

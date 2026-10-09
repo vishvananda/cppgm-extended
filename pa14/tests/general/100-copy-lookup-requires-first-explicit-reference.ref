@@ -23,7 +23,7 @@ function @iterator_int___iterator_int_(%this : ptr [object_bytes=8]) -> void [bi
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN8iteratorIiEC2Ev = @iterator_int___iterator_int_

@@ -7,28 +7,28 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @holder_int___holder_int_(%t1)
     %t2 = addr $h
     %t3 = call ptr @unsafe_get(%t2)
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp eq i32 %t4, 7
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load i32 $cond__1
+    %t6 = load typed i32 $cond__1
     return i32 %t6
 }
 function @holder_int___holder_int_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN6holderIJiEEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     zeroinit 4x4 %t2
     call void @detail__relay_int___relay_int___base_entry(%t2)
@@ -39,8 +39,8 @@ function @unsafe_get(%v : ptr [pass=by_address, object_bytes=4]) -> ptr [binding
   slot $argobj__1 : obj<1x1>
 
   block ^entry:
-    store ptr %v, $v
-    %t1 = load ptr $v
+    store typed ptr %v, $v
+    %t1 = load typed ptr $v
     %t2 = index i8 %t1, 0
     %t3 = addr $argobj__1
     %t4 = call ptr @detail__base_impl_false__int___get__ov2(%t2, $argobj__1)
@@ -50,19 +50,19 @@ function @detail__relay_int___relay_int___base_entry(%this : ptr [object_bytes=4
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @detail__base_impl_false__int___base_impl_false__int___base_entry(%t2)
     return void
 }
-function @detail__base_impl_false__int___get__ov2(%this : ptr [object_bytes=4], %__param1 : obj<1x1>) -> ptr [binding=weak, object=_ZNK6detail9base_implILb0EJiEE3getILm0EEERKN3altIXT_E6holderIJiEEE4typeEN5boost4mp1117integral_constantImXT_EEE, inline_hint=yes] {
+function @detail__base_impl_false__int___get__ov2(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none]) -> ptr [binding=weak, object=_ZNK6detail9base_implILb0EJiEE3getILm0EEERKN3altIXT_E6holderIJiEEE4typeEN5boost4mp1117integral_constantImXT_EEE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
@@ -70,10 +70,10 @@ function @detail__base_impl_false__int___base_impl_false__int___base_entry(%this
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
+    store typed i32 7, %t2
     return void
 }
 alias object _ZN6holderIJiEEC2Ev = @holder_int___holder_int_

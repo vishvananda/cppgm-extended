@@ -11,11 +11,11 @@ function @derived__derived(%this : ptr [object_bytes=1], %__param1 : i32) -> voi
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load i32 $__param1
+    %t3 = load typed i32 $__param1
     call void @base__base__base_entry(%t2, %t3)
     return void
 }
@@ -24,8 +24,8 @@ function @base__base__base_entry(%this : ptr [object_bytes=1], %__param1 : i32) 
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return void
 }
 alias object _ZN7derivedCI24baseEi = @derived__derived

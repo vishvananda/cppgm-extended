@@ -33,13 +33,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call ptr @X__operatornew__(%t1)
     %t3 = index i8 %t2, 8
     %t4 = const i64 3
-    store i64 %t4, %t2
+    store typed i64 %t4, %t2
     %t5 = const i64 3
-    store i64 0, $array_new_index__1
+    store typed i64 0, $array_new_index__1
     jump ^array_new_ctor_cond_4
 
   block ^array_new_ctor_cond_4:
-    %t6 = load i64 $array_new_index__1
+    %t6 = load typed i64 $array_new_index__1
     %t7 = cmp ult i64 %t6, %t5
     branch %t7, ^array_new_ctor_body_5, ^array_new_ctor_end_6
 
@@ -50,7 +50,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @X__X(%t9)
     eh_end
     %t10 = binary add i64 %t6, 1
-    store i64 %t10, $array_new_index__1
+    store typed i64 %t10, $array_new_index__1
     jump ^array_new_ctor_cond_4
 
   block ^array_new_ctor_end_6:
@@ -59,18 +59,18 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^array_new_ctor_cleanup_7:
     eh_catch_all, 1
     eh_cleanup
-    %t11 = load i64 $array_new_index__1
-    store i64 %t11, $array_dtor_index__2
+    %t11 = load typed i64 $array_new_index__1
+    store typed i64 %t11, $array_dtor_index__2
     jump ^array_dtor_cond_9
 
   block ^array_dtor_cond_9:
-    %t12 = load i64 $array_dtor_index__2
+    %t12 = load typed i64 $array_dtor_index__2
     %t13 = cmp ne i64 %t12, 0
     branch %t13, ^array_dtor_body_10, ^array_dtor_end_11
 
   block ^array_dtor_body_10:
     %t14 = binary sub i64 %t12, 1
-    store i64 %t14, $array_dtor_index__2
+    store typed i64 %t14, $array_dtor_index__2
     %t15 = binary mul i64 %t14, 1
     %t16 = index i8 %t3, %t15
     call void @X___X(%t16)
@@ -98,22 +98,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^catch_body_12:
     %t20 = call ptr @__external_runtime____cxa_begin_catch(%t17)
     eh_cleanup ^catch_cleanup_14
-    %t21 = load i32 @live
+    %t21 = load typed i32 @live
     branch %t21, ^lor_short_16, ^lor_rhs_15
 
   block ^lor_rhs_15:
-    %t22 = load i32 @freed
+    %t22 = load typed i32 @freed
     %t23 = cmp ne i32 %t22, 1
     %t24 = cmp ne i64 %t23, 0
-    store i64 %t24, $lor__3
+    store typed i64 %t24, $lor__3
     jump ^lor_end_17
 
   block ^lor_short_16:
-    store i64 1, $lor__3
+    store typed i64 1, $lor__3
     jump ^lor_end_17
 
   block ^lor_end_17:
-    %t25 = load i64 $lor__3
+    %t25 = load typed i64 $lor__3
     %t26 = convert trunc i32 i64 %t25
     eh_end
     call void @__external_runtime____cxa_end_catch()
@@ -134,8 +134,8 @@ function @X__operatornew__(%n : i64) -> ptr [binding=weak, object=_ZN1XnaEm, inl
   slot $n : i64
 
   block ^entry:
-    store i64 %n, $n
-    %t1 = load i64 $n
+    store typed i64 %n, $n
+    %t1 = load typed i64 $n
     %t2 = call ptr @operatornew__(%t1)
     return ptr %t2
 }
@@ -143,14 +143,14 @@ function @X__X(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1X
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @live
     %t2 = cmp eq i32 %t1, 2
     branch %t2, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
     %t3 = call ptr @__external_runtime____cxa_allocate_exception(4)
-    store i32 1, %t3
+    store typed i32 1, %t3
     %t4 = addr @__external_rtti__int
     call void @__external_runtime____cxa_throw(%t3, %t4, 0)
     return void
@@ -159,30 +159,30 @@ function @X__X(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN1X
     jump ^if_end_3
 
   block ^if_end_3:
-    %t5 = load i32 @live
-    %t6 = binary add i32 %t5, 1
-    store i32 %t6, @live
+    %t5 = load typed i32 @live
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, @live
     return void
 }
 function @X___X(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN1XD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load i32 @live
-    %t2 = binary sub i32 %t1, 1
-    store i32 %t2, @live
+    store typed ptr %this, $this
+    %t1 = load typed i32 @live
+    %t2 = binary sub nowrap i32 %t1, 1
+    store typed i32 %t2, @live
     return void
 }
 function @X__operatordelete__(%p : ptr) -> void [unwind=no, binding=weak, object=_ZN1XdaEPv, inline_hint=yes] {
   slot $p : ptr
 
   block ^entry:
-    store ptr %p, $p
-    %t1 = load i32 @freed
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, @freed
-    %t3 = load ptr $p
+    store typed ptr %p, $p
+    %t1 = load typed i32 @freed
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, @freed
+    %t3 = load typed ptr $p
     call void @operatordelete__(%t3)
     return void
 }

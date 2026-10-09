@@ -70,8 +70,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @YD__YD(%t1)
     %t2 = addr $d
     %t3 = index i8 %t2, 8
-    store ptr %t3, $b
-    %t4 = load ptr $b
+    store typed ptr %t3, $b
+    %t4 = load typed ptr $b
     %t5 = cmp eq ptr %t4, 0
     branch %t5, ^typeid_fail_4, ^typeid_scan_5
 
@@ -80,81 +80,81 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     return i32 0
 
   block ^typeid_scan_5:
-    %t6 = load ptr %t4
+    %t6 = load typed ptr %t4
     %t7 = index i8 %t6, -8
-    %t8 = load ptr %t7
+    %t8 = load typed ptr %t7
     %t9 = addr @__rtti_class_YD
     %t10 = cmp eq ptr %t8, %t9
     branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load i32 $cond__1
+    %t11 = load typed i32 $cond__1
     return i32 %t11
 }
 function @YA__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YA1fEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 1
 }
 function @YB__g(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN2YB1gEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 2
 }
 function @YD__YD(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN2YDC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     call void @YA__YA__base_entry(%t2)
-    %t3 = load ptr $this
+    %t3 = load typed ptr $this
     %t4 = index i8 %t3, 8
     call void @YB__YB__base_entry(%t4)
-    %t5 = load ptr $this
+    %t5 = load typed ptr $this
     %t6 = addr @YD__vtable
     %t7 = index i8 %t6, 16
-    store ptr %t7, %t5
-    %t8 = load ptr $this
+    store typed ptr %t7, %t5
+    %t8 = load typed ptr $this
     %t9 = index i8 %t8, 8
     %t10 = addr @YD____view__YB__8__vtable
     %t11 = index i8 %t10, 16
-    store ptr %t11, %t9
+    store typed ptr %t11, %t9
     return void
 }
 function @YA__YA__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YAC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @YA__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 function @YB__YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN2YBC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = addr @YB__vtable
     %t3 = index i8 %t2, 16
-    store ptr %t3, %t1
+    store typed ptr %t3, %t1
     return void
 }
 alias object _ZN2YDC2Ev = @YD__YD

@@ -257,6 +257,9 @@ struct Program
 	std::vector<Operand> call_arguments;
 	std::vector<std::uint8_t> call_argument_references;
 	std::vector<std::uint32_t> call_argument_object_bytes;
+	// SysV classes of an indirect call's direct object arguments, indexed as
+	// call_arguments; shorter where no later call states any (0).
+	std::vector<std::uint8_t> call_argument_classes;
 	std::vector<SymbolId> exception_filter_types;
 	std::vector<std::int64_t> switch_case_values;
 	std::vector<BlockId> switch_case_targets;
@@ -288,6 +291,11 @@ inline lowir_model::StringId InternLocalName(
 }
 
 std::size_t ProgramStorageBytes(const Program& program);
+
+// Marks `typed` (lowir.md "Instruction Facts") on every load and store of
+// the program's functions that may carry it; run once lowering, including
+// forced inlining, is complete.
+void StateTypedAccesses(Program* program);
 
 }
 }

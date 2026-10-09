@@ -52,6 +52,9 @@ struct VariadicState
 };
 
 const lowir_model::LowType & object_chunk_type(std::size_t remaining);
+// An SSE eightbyte of an object moves as f64, or as f32 when it is the
+// object's last four bytes.
+const lowir_model::LowType & object_sse_chunk_type(std::size_t remaining);
 std::size_t frame_storage_size(const lowir_model::LowType & type);
 std::size_t direct_parameter_bytes(
     const std::vector<lowir_model::LowirParameter> & parameters);

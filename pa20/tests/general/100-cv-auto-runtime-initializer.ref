@@ -7,8 +7,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call i32 @next_value()
-    store i32 %t1, $value
-    %t2 = load i32 $value
-    %t3 = binary sub i32 %t2, 7
+    store typed i32 %t1, $value
+    %t2 = load typed i32 $value
+    %t3 = binary sub nowrap i32 %t2, 7
     return i32 %t3
 }

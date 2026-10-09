@@ -7,35 +7,35 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $first
-    store i64 5, $l
+    store typed i64 5, $l
     %t2 = addr $l
     %t3 = addr $first
     %t4 = index i8 [projection=field] %t3, 0
-    store ptr %t2, %t4
+    store typed ptr %t2, %t4
     %t5 = addr $second
-    store i32 7, $x
+    store typed i32 7, $x
     %t6 = addr $x
     %t7 = addr $second
     %t8 = index i8 [projection=field] %t7, 0
-    store ptr %t6, %t8
+    store typed ptr %t6, %t8
     %t9 = addr $first
     %t10 = call i32 @holder_long_int___run(%t9)
     %t11 = addr $second
     %t12 = call i32 @holder_int___run(%t11)
-    %t13 = binary add i32 %t10, %t12
+    %t13 = binary add nowrap i32 %t10, %t12
     %t14 = cmp eq i32 %t13, 12
     branch %t14, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t15 = load i32 $cond__1
+    %t15 = load typed i32 $cond__1
     return i32 %t15
 }
 function @holder_long_int___run(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN6holderIlE3runEv, inline_hint=yes] {
@@ -43,13 +43,13 @@ function @holder_long_int___run(%this : ptr [object_bytes=8]) -> i32 [binding=we
   slot $t : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $t
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     call void @holder_long_int___temp__temp__ov3(%t1, %t2, 0)
     %t3 = addr $t
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     return i32 %t5
 }
 function @holder_int___run(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN6holderIiE3runEv, inline_hint=yes] {
@@ -57,13 +57,13 @@ function @holder_int___run(%this : ptr [object_bytes=8]) -> i32 [binding=weak, o
   slot $t : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $t
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     call void @holder_int___temp__temp__ov3(%t1, %t2, 0)
     %t3 = addr $t
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     return i32 %t5
 }
 function @holder_long_int___temp__temp__ov3(%this : ptr [object_bytes=4], %h : ptr, %__param2 : i32) -> void [binding=weak, object=_ZN6holderIlE4tempC1IiEEPS0_T_, inline_hint=yes] {
@@ -73,18 +73,18 @@ function @holder_long_int___temp__temp__ov3(%this : ptr [object_bytes=4], %h : p
   slot $a : i64
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    store i32 %__param2, $__param2
-    store i64 0, $a
+    store typed ptr %this, $this
+    store typed ptr %h, $h
+    store typed i32 %__param2, $__param2
+    store typed i64 0, $a
     %t1 = addr $a
-    %t2 = load ptr $h
+    %t2 = load typed ptr $h
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load ptr %t3
+    %t4 = load typed ptr %t3
     %t5 = call i32 @traits_long_int___construct(%t1, %t4)
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 %t5, %t7
+    store typed i32 %t5, %t7
     return void
 }
 function @holder_int___temp__temp__ov3(%this : ptr [object_bytes=4], %h : ptr, %__param2 : i32) -> void [binding=weak, object=_ZN6holderIiE4tempC1IiEEPS0_T_, inline_hint=yes] {
@@ -94,18 +94,18 @@ function @holder_int___temp__temp__ov3(%this : ptr [object_bytes=4], %h : ptr, %
   slot $a : i32
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %h, $h
-    store i32 %__param2, $__param2
-    store i32 0, $a
+    store typed ptr %this, $this
+    store typed ptr %h, $h
+    store typed i32 %__param2, $__param2
+    store typed i32 0, $a
     %t1 = addr $a
-    %t2 = load ptr $h
+    %t2 = load typed ptr $h
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load ptr %t3
+    %t4 = load typed ptr %t3
     %t5 = call i32 @traits_int___construct(%t1, %t4)
-    %t6 = load ptr $this
+    %t6 = load typed ptr $this
     %t7 = index i8 [projection=field] %t6, 0
-    store i32 %t5, %t7
+    store typed i32 %t5, %t7
     return void
 }
 function @traits_long_int___construct(%__param0 : ptr [pass=by_address, object_bytes=8], %p : ptr) -> i32 [binding=weak, object=_ZN6traitsIlE9constructIlEEiRlPT_, inline_hint=yes] {
@@ -113,10 +113,10 @@ function @traits_long_int___construct(%__param0 : ptr [pass=by_address, object_b
   slot $p : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %p, $p
-    %t1 = load ptr $p
-    %t2 = load i64 %t1
+    store typed ptr %__param0, $__param0
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = load typed i64 %t1
     %t3 = convert trunc i32 i64 %t2
     return i32 %t3
 }
@@ -125,10 +125,10 @@ function @traits_int___construct(%__param0 : ptr [pass=by_address, object_bytes=
   slot $p : ptr
 
   block ^entry:
-    store ptr %__param0, $__param0
-    store ptr %p, $p
-    %t1 = load ptr $p
-    %t2 = load i32 %t1
+    store typed ptr %__param0, $__param0
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
+    %t2 = load typed i32 %t1
     return i32 %t2
 }
 alias object _ZN6holderIlE4tempC2IiEEPS0_T_ = @holder_long_int___temp__temp__ov3

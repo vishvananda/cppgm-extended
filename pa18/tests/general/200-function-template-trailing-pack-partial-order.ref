@@ -7,7 +7,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr @g
-    store ptr %t1, $fp
+    store typed ptr %t1, $fp
     %t2 = addr $fp
     %t3 = call i32 @invoke__ov2(%t2)
     %t4 = cmp ne i32 %t3, 7
@@ -18,9 +18,9 @@ function @invoke__ov2(%f : ptr [pass=by_address, object_bytes=8]) -> i32 [bindin
   slot $f : ptr
 
   block ^entry:
-    store ptr %f, $f
-    %t1 = load ptr $f
-    %t2 = load ptr %t1
+    store typed ptr %f, $f
+    %t1 = load typed ptr $f
+    %t2 = load typed ptr %t1
     %t3 = call i32 %t2() as () -> i32
     return i32 %t3
 }

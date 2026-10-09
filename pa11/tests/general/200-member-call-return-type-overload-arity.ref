@@ -12,7 +12,7 @@ function @Stream__state(%this : ptr [object_bytes=1], %__param1 : i32) -> void [
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return void
 }

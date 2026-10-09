@@ -10,24 +10,24 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = addr $s
     %t2 = addr $s
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 4, %t3
+    store typed i32 4, %t3
     %t4 = const i64 1
-    store i64 %t4, $data
+    store typed i64 %t4, $data
     %t5 = addr @S__twice
     %t6 = copy i64 %t5
     %t7 = convert zext i128 i64 %t6
-    store i128 %t7, $method
+    store typed i128 %t7, $method
     %t8 = addr $s
-    %t9 = load i64 $data
+    %t9 = load typed i64 $data
     %t10 = binary sub i64 %t9, 1
     %t11 = index i8 [projection=field] %t8, %t10
-    %t12 = load i32 %t11
+    %t12 = load typed i32 %t11
     %t13 = cmp eq i32 %t12, 4
     branch %t13, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
     %t14 = addr $s
-    %t15 = load i128 $method
+    %t15 = load typed i128 $method
     %t16 = binary shr i128 %t15, 64
     %t17 = convert trunc i64 i128 %t16
     %t18 = convert trunc i64 i128 %t15
@@ -37,54 +37,54 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t20, ^member_pointer_virtual_7, ^member_pointer_direct_8
 
   block ^member_pointer_virtual_7:
-    %t22 = load ptr %t21
+    %t22 = load typed ptr %t21
     %t23 = binary sub i64 %t18, 1
     %t24 = index i8 %t22, %t23
-    %t25 = load ptr %t24
-    store ptr %t25, $member_pointer_callee__3
+    %t25 = load typed ptr %t24
+    store typed ptr %t25, $member_pointer_callee__3
     jump ^member_pointer_end_9
 
   block ^member_pointer_direct_8:
     %t26 = copy ptr %t18
-    store ptr %t26, $member_pointer_callee__3
+    store typed ptr %t26, $member_pointer_callee__3
     jump ^member_pointer_end_9
 
   block ^member_pointer_end_9:
-    %t27 = load ptr $member_pointer_callee__3
+    %t27 = load typed ptr $member_pointer_callee__3
     %t28 = call i32 %t27(%t21) as (%arg0 : ptr [object_bytes=4]) -> i32
     %t29 = cmp eq i32 %t28, 8
     %t30 = cmp ne i64 %t29, 0
-    store i64 %t30, $land__2
+    store typed i64 %t30, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t31 = load i64 $land__2
+    %t31 = load typed i64 $land__2
     branch %t31, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t32 = load i32 $cond__1
+    %t32 = load typed i32 $cond__1
     return i32 %t32
 }
 function @S__twice(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZN1S5twiceEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 %t2
-    %t4 = binary mul i32 %t3, 2
+    %t3 = load typed i32 %t2
+    %t4 = binary mul nowrap i32 %t3, 2
     return i32 %t4
 }

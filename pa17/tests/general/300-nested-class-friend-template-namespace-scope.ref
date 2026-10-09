@@ -2,8 +2,8 @@ function @force(%loc : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=st
   slot $loc : ptr
 
   block ^entry:
-    store ptr %loc, $loc
-    %t1 = load ptr $loc
+    store typed ptr %loc, $loc
+    %t1 = load typed ptr $loc
     %t2 = call ptr @try_use_facet(%t1)
     return ptr %t2
 }
@@ -16,13 +16,13 @@ function @try_use_facet(%loc : ptr [pass=by_address, object_bytes=8]) -> ptr [bi
   slot $facets : ptr
 
   block ^entry:
-    store ptr %loc, $loc
-    %t1 = load ptr $loc
+    store typed ptr %loc, $loc
+    %t1 = load typed ptr $loc
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
+    %t3 = load typed ptr %t2
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load ptr %t4
-    store ptr %t5, $facets
-    %t6 = load ptr $facets
+    %t5 = load typed ptr %t4
+    store typed ptr %t5, $facets
+    %t6 = load typed ptr $facets
     return ptr 0
 }

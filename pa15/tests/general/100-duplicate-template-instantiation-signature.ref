@@ -5,17 +5,17 @@ function @g(%s : ptr, %n : i64, %a : ptr [pass=by_address, object_bytes=2]) -> p
   slot $proj : obj<1x1>
 
   block ^entry:
-    store ptr %s, $s
-    store i64 %n, $n
-    store ptr %a, $a
+    store typed ptr %s, $s
+    store typed i64 %n, $n
+    store typed ptr %a, $a
     %t1 = addr $proj
-    %t2 = load ptr $s
-    %t3 = load ptr $s
-    %t4 = load i64 $n
+    %t2 = load typed ptr $s
+    %t3 = load typed ptr $s
+    %t4 = load typed i64 $n
     %t5 = copy i64 %t4
     %t6 = binary mul i64 %t5, 2
     %t7 = index i8 %t3, %t6
-    %t8 = load ptr $a
+    %t8 = load typed ptr $a
     %t9 = addr $proj
     %t10 = call ptr @std____find(%t2, %t7, %t8, %t9)
     return ptr %t10
@@ -27,10 +27,10 @@ function @std____find(%first : ptr, %last : ptr, %value : ptr [pass=by_address, 
   slot $proj : ptr
 
   block ^entry:
-    store ptr %first, $first
-    store ptr %last, $last
-    store ptr %value, $value
-    store ptr %proj, $proj
-    %t1 = load ptr $last
+    store typed ptr %first, $first
+    store typed ptr %last, $last
+    store typed ptr %value, $value
+    store typed ptr %proj, $proj
+    %t1 = load typed ptr $last
     return ptr %t1
 }

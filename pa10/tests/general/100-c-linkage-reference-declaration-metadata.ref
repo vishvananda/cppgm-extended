@@ -4,7 +4,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $value : i32
 
   block ^entry:
-    store i32 1, $value
+    store typed i32 1, $value
     %t1 = addr $value
     %t2 = call i32 @consume(%t1)
     return i32 %t2

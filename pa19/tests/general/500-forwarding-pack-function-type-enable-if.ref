@@ -21,11 +21,11 @@ function @prefer_fn__operator__(%this : ptr [object_bytes=1], %value : ptr [pass
   slot $__param4 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %value, $value
-    store ptr %__param2, $__param2
-    store ptr %__param3, $__param3
-    store ptr %__param4, $__param4
-    %t1 = load ptr $value
+    store typed ptr %this, $this
+    store typed ptr %value, $value
+    store typed ptr %__param2, $__param2
+    store typed ptr %__param3, $__param3
+    store typed ptr %__param4, $__param4
+    %t1 = load typed ptr $value
     return ptr %t1
 }

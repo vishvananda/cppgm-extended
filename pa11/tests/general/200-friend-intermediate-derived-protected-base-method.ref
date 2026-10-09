@@ -11,8 +11,8 @@ function @archive_access__save(%ar : ptr [pass=by_address, object_bytes=1]) -> v
   slot $ar : ptr
 
   block ^entry:
-    store ptr %ar, $ar
-    %t1 = load ptr $ar
+    store typed ptr %ar, $ar
+    %t1 = load typed ptr $ar
     %t2 = index i8 %t1, 0
     call void @archive_base__end_preamble(%t2)
     return void
@@ -21,6 +21,6 @@ function @archive_base__end_preamble(%this : ptr [object_bytes=1]) -> void [bind
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }

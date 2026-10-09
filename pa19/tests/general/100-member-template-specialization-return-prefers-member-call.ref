@@ -3,9 +3,9 @@ function @path__string(%this : ptr [object_bytes=4], %cvt : ptr [pass=by_address
   slot $cvt : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %cvt, $cvt
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %cvt, $cvt
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     return ptr %t2
 }
@@ -25,20 +25,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = call obj<4x4> @path__string__ov2(%t4, %t5)
     copyobj 4x4 %t6, %t3
     %t7 = index i8 [projection=field] %t3, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     %t9 = cmp eq i32 %t8, 7
     branch %t9, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t10 = load i32 $cond__1
+    %t10 = load typed i32 $cond__1
     return i32 %t10
 }
 function @path__string__ov2(%this : ptr [object_bytes=4], %cvt : ptr [pass=by_address, object_bytes=1]) -> obj<4x4> [binding=weak, object=_ZNK4path6stringI6stringEET_RK7codecvt, inline_hint=yes] {
@@ -47,11 +47,11 @@ function @path__string__ov2(%this : ptr [object_bytes=4], %cvt : ptr [pass=by_ad
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %cvt, $cvt
+    store typed ptr %this, $this
+    store typed ptr %cvt, $cvt
     %t1 = addr $retobj__1
-    %t2 = load ptr $this
-    %t3 = load ptr $cvt
+    %t2 = load typed ptr $this
+    %t3 = load typed ptr $cvt
     %t4 = call ptr @path__string(%t2, %t3)
     copyobj 4x4 %t4, %t1
     return obj<4x4> $retobj__1
@@ -60,8 +60,8 @@ function @path__path(%this : ptr [object_bytes=4]) -> void [binding=weak, object
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     call void @string__string(%t2)
     return void
@@ -70,10 +70,10 @@ function @string__string(%this : ptr [object_bytes=4]) -> void [binding=weak, ob
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 7, %t2
+    store typed i32 7, %t2
     return void
 }
 alias object _ZN4pathC2Ev = @path__path

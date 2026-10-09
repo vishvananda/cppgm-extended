@@ -7,13 +7,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $v
-    store i32 1, $refarg__1
+    store typed i32 1, $refarg__1
     %t2 = addr $refarg__1
-    store i32 2, $refarg__2
+    store typed i32 2, $refarg__2
     %t3 = addr $refarg__2
-    store i32 3, $refarg__3
+    store typed i32 3, $refarg__3
     %t4 = addr $refarg__3
-    store ptr 0, $refarg__4
+    store typed ptr 0, $refarg__4
     %t5 = addr $refarg__4
     call void @vector_int__int__int__pointer_to_const_char___vector_int__int__int__pointer_to_const_char___ov4(%t1, %t2, %t3, %t4, %t5)
     return i32 0
@@ -26,11 +26,11 @@ function @vector_int__int__int__pointer_to_const_char___vector_int__int__int__po
   slot $u__pack4 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %u, $u
-    store ptr %u__pack2, $u__pack2
-    store ptr %u__pack3, $u__pack3
-    store ptr %u__pack4, $u__pack4
+    store typed ptr %this, $this
+    store typed ptr %u, $u
+    store typed ptr %u__pack2, $u__pack2
+    store typed ptr %u__pack3, $u__pack3
+    store typed ptr %u__pack4, $u__pack4
     return void
 }
 alias object _ZN6vectorIJiiiPKcEEC2IJiiiS1_EvEEDpOT_ = @vector_int__int__int__pointer_to_const_char___vector_int__int__int__pointer_to_const_char___ov4

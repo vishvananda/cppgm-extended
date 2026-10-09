@@ -3,10 +3,10 @@ function @call(%f : ptr) -> void [binding=strong, object=_Z4callPFR6StreamI4Char
   slot $s : obj<1x1>
 
   block ^entry:
-    store ptr %f, $f
+    store typed ptr %f, $f
     %t1 = addr $s
     %t2 = addr $s
-    %t3 = load ptr $f
+    %t3 = load typed ptr $f
     %t4 = call ptr %t3(%t2) as (%arg0 : ptr [pass=by_address, object_bytes=1]) -> ptr
     return void
 }
@@ -20,7 +20,7 @@ function @manip(%s : ptr [pass=by_address, object_bytes=1]) -> ptr [binding=weak
   slot $s : ptr
 
   block ^entry:
-    store ptr %s, $s
-    %t1 = load ptr $s
+    store typed ptr %s, $s
+    %t1 = load typed ptr $s
     return ptr %t1
 }

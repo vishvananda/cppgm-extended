@@ -16,6 +16,6 @@ function @semantic_expression____lambda_semantic_expression__f_t122_124__operato
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return i32 0
 }

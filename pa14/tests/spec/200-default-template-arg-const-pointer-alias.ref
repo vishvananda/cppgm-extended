@@ -1,4 +1,4 @@
-function @accept(%__param0 : obj<1x1>) -> i32 [binding=strong, object=_Z6accept3boxIPK4node4wrapIKS2_EE] {
+function @accept(%__param0 : obj<1x1> [classes=none]) -> i32 [binding=strong, object=_Z6accept3boxIPK4node4wrapIKS2_EE] {
   slot $__param0 : obj<1x1>
 
   block ^entry:

@@ -3,9 +3,9 @@ function @operatornew__ov2(%__param0 : i64, %p : ptr) -> ptr [binding=strong, ob
   slot $p : ptr
 
   block ^entry:
-    store i64 %__param0, $__param0
-    store ptr %p, $p
-    %t1 = load ptr $p
+    store typed i64 %__param0, $__param0
+    store typed ptr %p, $p
+    %t1 = load typed ptr $p
     return ptr %t1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -13,13 +13,13 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $i : i32
 
   block ^entry:
-    store f32 0.0f, $f
-    store i32 7, $i
+    store typed f32 0.0f, $f
+    store typed i32 7, $i
     %t1 = convert sext i64 i32 4
     %t2 = addr $f
     %t3 = call ptr @operatornew__ov2(%t1, %t2)
-    %t4 = load i32 $i
+    %t4 = load typed i32 $i
     %t5 = convert sitofp f32 i32 %t4
-    store f32 %t5, %t3
+    store typed f32 %t5, %t3
     return i32 0
 }

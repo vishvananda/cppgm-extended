@@ -1,4 +1,4 @@
-declare function @pair_iter__bool___pair_iter__bool_(%arg0 : ptr [object_bytes=1], %arg1 : obj<1x1>, %arg2 : u8) -> void [binding=weak, object=_ZN4pairI4iterbEC1ES0_b]
+declare function @pair_iter__bool___pair_iter__bool_(%arg0 : ptr [object_bytes=1], %arg1 : obj<1x1> [classes=none], %arg2 : u8) -> void [binding=weak, object=_ZN4pairI4iterbEC1ES0_b]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : obj<1x1>

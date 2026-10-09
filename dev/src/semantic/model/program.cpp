@@ -687,7 +687,8 @@ EntityRecord::EntityRecord()
 	  explicit_instantiation_suppressed(false),
 	  explicit_template_specialization(false),
 	  class_template_presentation(false), unnamed_class(false),
-	  lambda_closure(false),
+	  lambda_closure(false), sysv_quarters(0), sysv_memory(false),
+	  sysv_unmodeled(false),
 	  local_name_ordinal(0), lambda_ordinal(0), lambda_capture_count(0),
 	  template_parameter_ordinal(kNoTemplateParameter)
 {

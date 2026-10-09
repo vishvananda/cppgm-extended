@@ -24,14 +24,14 @@ function @__cppgm_class_template_0_0__A_T_(%this : ptr [object_bytes=1]) -> void
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @__cppgm_class_template_0_1__A_T_(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZN1AIZ1gvE1TEC1Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 alias object _ZN1AIZ1fvE1TEC2Ev = @__cppgm_class_template_0_0__A_T_

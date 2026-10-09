@@ -1,13 +1,13 @@
-function @make_pair_int() -> obj<1x1> [binding=strong, object=_Z13make_pair_intv] {
+function @make_pair_int() -> obj<1x1> [result_classes=none, binding=strong, object=_Z13make_pair_intv] {
   slot $retobj__1 : obj<1x1>
   slot $refarg__2 : i32
   slot $refarg__3 : i32
 
   block ^entry:
     %t1 = addr $retobj__1
-    store i32 1, $refarg__2
+    store typed i32 1, $refarg__2
     %t2 = addr $refarg__2
-    store i32 2, $refarg__3
+    store typed i32 2, $refarg__3
     %t3 = addr $refarg__3
     call void @pair_int___pair_int___ov3(%t1, %t2, %t3)
     return obj<1x1> $retobj__1
@@ -18,9 +18,9 @@ function @pair_int___pair_int___ov3(%this : ptr [object_bytes=1], %__param1 : pt
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return void
 }
 alias object _ZN4pairIiEC2IiiLi0EEEOT_OT0_ = @pair_int___pair_int___ov3

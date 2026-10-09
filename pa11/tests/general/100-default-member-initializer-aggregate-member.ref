@@ -10,7 +10,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $x
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i64 %t4
+    %t5 = load typed i64 %t4
     %t6 = cmp eq i64 %t5, 1
     branch %t6, ^land_rhs_7, ^land_short_8
 
@@ -23,15 +23,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t12 = convert sext i32 i8 %t11
     %t13 = cmp eq i32 %t12, 0
     %t14 = cmp ne i64 %t13, 0
-    store i64 %t14, $land__3
+    store typed i64 %t14, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_9
 
   block ^land_end_9:
-    %t15 = load i64 $land__3
+    %t15 = load typed i64 $land__3
     branch %t15, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
@@ -43,44 +43,44 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t21 = convert sext i32 i8 %t20
     %t22 = cmp eq i32 %t21, 0
     %t23 = cmp ne i64 %t22, 0
-    store i64 %t23, $land__2
+    store typed i64 %t23, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t24 = load i64 $land__2
+    %t24 = load typed i64 $land__2
     branch %t24, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t25 = load i32 $cond__1
+    %t25 = load typed i32 $cond__1
     return i32 %t25
 }
 function @X__X(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1XC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     %t3 = index i8 [projection=field] %t2, 0
-    store i64 1, %t3
-    %t4 = load ptr $this
+    store typed i64 1, %t3
+    %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 0
     %t6 = index i8 [projection=field] %t5, 8
     %t7 = index i8 [projection=array_element] %t6, 0
     store i8 0, %t7
-    %t8 = load ptr $this
+    %t8 = load typed ptr $this
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = index i8 [projection=field] %t9, 8
     %t11 = index i8 [projection=array_element] %t10, 1

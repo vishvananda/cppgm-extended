@@ -16,30 +16,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = call ptr @box_int__long_int__char___operator_(%t2, $argobj__1)
     %t7 = addr $b
     %t8 = index i8 [projection=field] %t7, 0
-    %t9 = load i32 %t8
+    %t9 = load typed i32 %t8
     %t10 = cmp eq i32 %t9, 7
     branch %t10, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__3
+    store typed i32 0, $cond__3
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__3
+    store typed i32 1, $cond__3
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t11 = load i32 $cond__3
+    %t11 = load typed i32 $cond__3
     return i32 %t11
 }
 function @box_int__long_int__char___box_int__long_int__char_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3boxIilcEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i32 0, %t2
+    store typed i32 0, %t2
     return void
 }
 function @source_int___source_int_(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN6sourceIiEC1Ei, inline_hint=yes] {
@@ -47,12 +47,12 @@ function @source_int___source_int_(%this : ptr [object_bytes=4], %v : i32) -> vo
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @source_int___operatorimpl_type(%this : ptr [object_bytes=4]) -> obj<4x4> [binding=weak, object=_ZNK6sourceIiEcv3boxIilcEEv, inline_hint=yes] {
@@ -60,11 +60,11 @@ function @source_int___operatorimpl_type(%this : ptr [object_bytes=4]) -> obj<4x
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $retobj__1
-    %t2 = load ptr $this
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     call void @box_int__long_int__char___box_int__long_int__char___ov2(%t1, %t4)
     return obj<4x4> $retobj__1
 }
@@ -73,16 +73,16 @@ function @box_int__long_int__char___operator_(%this : ptr [object_bytes=4], %oth
   slot $other : obj<4x4>
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     %t1 = addr $other
     copyobj 4x4 %other, %t1
     %t2 = addr $other
     %t3 = index i8 [projection=field] %t2, 0
-    %t4 = load i32 %t3
-    %t5 = load ptr $this
+    %t4 = load typed i32 %t3
+    %t5 = load typed ptr $this
     %t6 = index i8 [projection=field] %t5, 0
-    store i32 %t4, %t6
-    %t7 = load ptr $this
+    store typed i32 %t4, %t6
+    %t7 = load typed ptr $this
     return ptr %t7
 }
 function @box_int__long_int__char___box_int__long_int__char___ov2(%this : ptr [object_bytes=4], %v : i32) -> void [binding=weak, object=_ZN3boxIilcEC1Ei, inline_hint=yes] {
@@ -90,12 +90,12 @@ function @box_int__long_int__char___box_int__long_int__char___ov2(%this : ptr [o
   slot $v : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %v, $v
-    %t1 = load i32 $v
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %v, $v
+    %t1 = load typed i32 $v
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN3boxIilcEC2Ev = @box_int__long_int__char___box_int__long_int__char_

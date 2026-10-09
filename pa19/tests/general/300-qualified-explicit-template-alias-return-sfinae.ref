@@ -2,7 +2,7 @@ function @sink(%__param0 : i32) -> void [binding=strong, object=_Z4sinki] {
   slot $__param0 : i32
 
   block ^entry:
-    store i32 %__param0, $__param0
+    store typed i32 %__param0, $__param0
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -16,10 +16,10 @@ function @Handler_void__pointer_to_function_of__int__returning_void__int___call(
   slot $a : i32
 
   block ^entry:
-    store ptr %f, $f
-    store i32 %a, $a
-    %t1 = load ptr $f
-    %t2 = load i32 $a
+    store typed ptr %f, $f
+    store typed i32 %a, $a
+    %t1 = load typed ptr $f
+    %t2 = load typed i32 $a
     call void @N__invoke_r(%t1, %t2)
     return void
 }
@@ -28,10 +28,10 @@ function @N__invoke_r(%f : ptr, %a : i32) -> void [binding=weak, object=_ZN1N8in
   slot $a : i32
 
   block ^entry:
-    store ptr %f, $f
-    store i32 %a, $a
-    %t1 = load i32 $a
-    %t2 = load ptr $f
+    store typed ptr %f, $f
+    store typed i32 %a, $a
+    %t1 = load typed i32 $a
+    %t2 = load typed ptr $f
     call void %t2(%t1) as (%arg0 : i32) -> void
     return void
 }

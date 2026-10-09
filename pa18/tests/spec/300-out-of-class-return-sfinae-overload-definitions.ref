@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = addr $value
-    store i32 0, $object
+    store typed i32 0, $object
     %t2 = addr $value
     %t3 = addr $object
     %t4 = call i32 @selector_void___select(%t2, %t3)
@@ -15,31 +15,31 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^land_rhs_4:
     %t6 = addr $value
-    %t7 = load i32 $object
+    %t7 = load typed i32 $object
     %t8 = call i64 @selector_void___select__ov2(%t6, %t7)
     %t9 = cmp eq i64 %t8, 22
     %t10 = cmp ne i64 %t9, 0
-    store i64 %t10, $land__2
+    store typed i64 %t10, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__2
+    store typed i64 0, $land__2
     jump ^land_end_6
 
   block ^land_end_6:
-    %t11 = load i64 $land__2
+    %t11 = load typed i64 $land__2
     branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t12 = load i32 $cond__1
+    %t12 = load typed i32 $cond__1
     return i32 %t12
 }
 function @selector_void___select(%this : ptr [object_bytes=1], %__param1 : ptr) -> i32 [binding=weak, object=_ZN8selectorIvE6selectIPiEEN9enable_ifIXsr10is_pointerIT_EE5valueEiE4typeES4_] {
@@ -47,8 +47,8 @@ function @selector_void___select(%this : ptr [object_bytes=1], %__param1 : ptr) 
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return i32 11
 }
 function @selector_void___select__ov2(%this : ptr [object_bytes=1], %__param1 : i32) -> i64 [binding=weak, object=_ZN8selectorIvE6selectIiEElT_] {
@@ -56,7 +56,7 @@ function @selector_void___select__ov2(%this : ptr [object_bytes=1], %__param1 : 
   slot $__param1 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
     return i64 22
 }

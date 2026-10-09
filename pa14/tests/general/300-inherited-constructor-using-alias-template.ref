@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = addr $direct
     %t6 = index i8 %t5, 0
     %t7 = index i8 [projection=field] %t6, 0
-    %t8 = load i32 %t7
+    %t8 = load typed i32 %t7
     %t9 = cmp ne i32 %t8, 7
     %t10 = convert trunc i32 i64 %t9
     return i32 %t10
@@ -23,11 +23,11 @@ function @YHolder_YTraits___YHolder_YTraits_(%this : ptr [object_bytes=1], %t : 
   slot $t : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %t, $t
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %t, $t
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr $t
+    %t3 = load typed ptr $t
     call void @YDerived_YTraits___YDerived_YTraits_(%t2, %t3)
     return void
 }
@@ -36,11 +36,11 @@ function @DirectDerived_IntBase___DirectDerived_IntBase_(%this : ptr [object_byt
   slot $n : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load i32 $n
+    %t3 = load typed i32 $n
     call void @IntBase__IntBase__base_entry(%t2, %t3)
     return void
 }
@@ -49,11 +49,11 @@ function @YDerived_YTraits___YDerived_YTraits_(%this : ptr [object_bytes=1], %__
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
-    %t3 = load ptr $__param1
+    %t3 = load typed ptr $__param1
     call void @YBase_YTraits___YBase_YTraits___base_entry(%t2, %t3)
     return void
 }
@@ -62,12 +62,12 @@ function @IntBase__IntBase__base_entry(%this : ptr [object_bytes=4], %n : i32) -
   slot $n : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %n, $n
-    %t1 = load i32 $n
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %n, $n
+    %t1 = load typed i32 $n
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 function @YBase_YTraits___YBase_YTraits___base_entry(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN5YBaseI7YTraitsEC2ERKS0_, object_root=yes, inline_hint=yes] {
@@ -75,8 +75,8 @@ function @YBase_YTraits___YBase_YTraits___base_entry(%this : ptr [object_bytes=1
   slot $__param1 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
     return void
 }
 alias object _ZN7YHolderI7YTraitsEC2ERKS0_ = @YHolder_YTraits___YHolder_YTraits_

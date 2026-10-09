@@ -8,8 +8,8 @@ function @operatornew__ov2(%__param0 : i64, %__param1 : ptr [pass=by_address, ob
   slot $__param1 : ptr
 
   block ^entry:
-    store i64 %__param0, $__param0
-    store ptr %__param1, $__param1
+    store typed i64 %__param0, $__param0
+    store typed ptr %__param1, $__param1
     return ptr 0
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -27,8 +27,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^new_end_2
 
   block ^new_end_2:
-    store ptr %t3, $p
-    %t5 = load ptr $p
+    store typed ptr %t3, $p
+    %t5 = load typed ptr $p
     branch %t5, ^if_then_3, ^if_else_4
 
   block ^if_then_3:
@@ -38,15 +38,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^if_end_5
 
   block ^if_end_5:
-    %t6 = load i32 @constructed
+    %t6 = load typed i32 @constructed
     return i32 %t6
 }
 function @value__value(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN5valueC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store i32 1, @constructed
+    store typed ptr %this, $this
+    store typed i32 1, @constructed
     return void
 }
 alias object _ZN5valueC2Ev = @value__value

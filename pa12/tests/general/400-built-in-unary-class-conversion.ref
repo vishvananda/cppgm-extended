@@ -20,7 +20,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @scalar_box__scalar_box__ov2(%t8, 0)
     %t9 = call i64 @scalar_box__operatorlong(%t8)
     %t10 = unary bitnot i64 %t9
-    store i64 %t10, $inverted
+    store typed i64 %t10, $inverted
     %t11 = addr $result
     %t12 = call i64 @scalar_box__value(%t11)
     %t13 = unary neg i32 12345
@@ -29,32 +29,32 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t15, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t16 = load i64 $inverted
+    %t16 = load typed i64 $inverted
     %t17 = unary neg i32 1
     %t18 = convert sext i64 i32 %t17
     %t19 = cmp eq i64 %t16, %t18
     %t20 = cmp ne i64 %t19, 0
-    store i64 %t20, $land__3
+    store typed i64 %t20, $land__3
     jump ^land_end_6
 
   block ^land_short_5:
-    store i64 0, $land__3
+    store typed i64 0, $land__3
     jump ^land_end_6
 
   block ^land_end_6:
-    %t21 = load i64 $land__3
+    %t21 = load typed i64 $land__3
     branch %t21, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__2
+    store typed i32 0, $cond__2
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__2
+    store typed i32 1, $cond__2
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t22 = load i32 $cond__2
+    %t22 = load typed i32 $cond__2
     return i32 %t22
 }
 function @scalar_box__scalar_box__ov2(%this : ptr [object_bytes=8], %value : i64) -> void [binding=weak, object=_ZN10scalar_boxC1El, inline_hint=yes] {
@@ -62,32 +62,32 @@ function @scalar_box__scalar_box__ov2(%this : ptr [object_bytes=8], %value : i64
   slot $value : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %value, $value
-    %t1 = load i64 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %value, $value
+    %t1 = load typed i64 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i64 %t1, %t3
+    store typed i64 %t1, %t3
     return void
 }
 function @scalar_box__scalar_box(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN10scalar_boxC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    store i64 0, %t2
+    store typed i64 0, %t2
     return void
 }
 function @scalar_box__operatorlong(%this : ptr [object_bytes=8]) -> i64 [binding=weak, object=_ZNK10scalar_boxcvlEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     return i64 %t3
 }
 function @scalar_box__operator_(%this : ptr [object_bytes=8], %value : i64) -> ptr [binding=weak, object=_ZN10scalar_boxaSEl, inline_hint=yes] {
@@ -95,23 +95,23 @@ function @scalar_box__operator_(%this : ptr [object_bytes=8], %value : i64) -> p
   slot $value : i64
 
   block ^entry:
-    store ptr %this, $this
-    store i64 %value, $value
-    %t1 = load i64 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i64 %value, $value
+    %t1 = load typed i64 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i64 %t1, %t3
-    %t4 = load ptr $this
+    store typed i64 %t1, %t3
+    %t4 = load typed ptr $this
     return ptr %t4
 }
 function @scalar_box__value(%this : ptr [object_bytes=8]) -> i64 [binding=weak, object=_ZNK10scalar_box5valueEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i64 %t2
+    %t3 = load typed i64 %t2
     return i64 %t3
 }
 alias object _ZN10scalar_boxC2El = @scalar_box__scalar_box__ov2

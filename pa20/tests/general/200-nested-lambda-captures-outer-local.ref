@@ -10,15 +10,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @__lambda_main_t11_17__operator__(%this : ptr [object_bytes=1], %input : i32) -> i32 [binding=internal, object=_ZZ4mainENK3$_0clEi, prefer_local=yes, inline_hint=yes] {
@@ -28,14 +28,14 @@ function @__lambda_main_t11_17__operator__(%this : ptr [object_bytes=1], %input 
   slot $inner : obj<8x8>
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = binary add i32 %t1, 1
-    store i32 %t2, $local
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = binary add nowrap i32 %t1, 1
+    store typed i32 %t2, $local
     %t3 = addr $inner
     %t4 = addr $local
-    store ptr %t4, %t3
+    store typed ptr %t4, %t3
     %t5 = addr $inner
     %t6 = call i32 @__lambda_main_t11_17____lambda_nested_t32_36__operator__(%t5)
     return i32 %t6
@@ -44,10 +44,10 @@ function @__lambda_main_t11_17____lambda_nested_t32_36__operator__(%this : ptr [
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load ptr %t2
-    %t4 = load i32 %t3
+    %t3 = load typed ptr %t2
+    %t4 = load typed i32 %t3
     return i32 %t4
 }

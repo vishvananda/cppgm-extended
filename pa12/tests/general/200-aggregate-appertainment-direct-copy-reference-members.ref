@@ -2,8 +2,8 @@ function @aggregate_appertainment_direct_copy_reference_members__get_right(%expr
   slot $expr : ptr
 
   block ^entry:
-    store ptr %expr, $expr
-    %t1 = load ptr $expr
+    store typed ptr %expr, $expr
+    %t1 = load typed ptr $expr
     return ptr %t1
 }
 function @aggregate_appertainment_direct_copy_reference_members__make_expr(%ret : ptr [pass=indirect_result, object_bytes=24], %expr : ptr [pass=by_address, object_bytes=16], %mark : i32) -> void [binding=strong, object=_ZN53aggregate_appertainment_direct_copy_reference_members9make_exprERKNS_13BitwiseOrExprEi] {
@@ -12,15 +12,15 @@ function @aggregate_appertainment_direct_copy_reference_members__make_expr(%ret 
   slot $end : obj<4x4>
 
   block ^entry:
-    store ptr %expr, $expr
-    store i32 %mark, $mark
+    store typed ptr %expr, $expr
+    store typed i32 %mark, $mark
     %t1 = addr $end
-    %t2 = load i32 $mark
+    %t2 = load typed i32 $mark
     %t3 = addr $end
     %t4 = index i8 [projection=field] %t3, 0
-    store i32 %t2, %t4
+    store typed i32 %t2, %t4
     %t5 = index i8 [projection=field] %ret, 0
-    %t6 = load ptr $expr
+    %t6 = load typed ptr $expr
     %t7 = call ptr @aggregate_appertainment_direct_copy_reference_members__get_right(%t6)
     copyobj 16x8 %t7, %t5
     %t8 = index i8 [projection=field] %ret, 16
@@ -46,23 +46,23 @@ function @aggregate_appertainment_direct_copy_reference_members__check() -> i32 
     %t5 = addr $c
     %t6 = addr $right
     %t7 = index i8 [projection=field] %t6, 0
-    store ptr %t5, %t7
+    store typed ptr %t5, %t7
     %t8 = addr $expr
     %t9 = addr $left
     %t10 = addr $expr
     %t11 = index i8 [projection=field] %t10, 0
-    store ptr %t9, %t11
+    store typed ptr %t9, %t11
     %t12 = addr $right
     %t13 = addr $expr
     %t14 = index i8 [projection=field] %t13, 8
-    store ptr %t12, %t14
+    store typed ptr %t12, %t14
     %t15 = addr $result
     %t16 = addr $expr
     call void @aggregate_appertainment_direct_copy_reference_members__make_expr(%t15, %t16, 7)
     %t17 = addr $result
     %t18 = index i8 [projection=field] %t17, 0
     %t19 = index i8 [projection=field] %t18, 0
-    %t20 = load ptr %t19
+    %t20 = load typed ptr %t19
     %t21 = addr $left
     %t22 = cmp ne ptr %t20, %t21
     branch %t22, ^if_then_1, ^if_else_2
@@ -77,7 +77,7 @@ function @aggregate_appertainment_direct_copy_reference_members__check() -> i32 
     %t23 = addr $result
     %t24 = index i8 [projection=field] %t23, 0
     %t25 = index i8 [projection=field] %t24, 8
-    %t26 = load ptr %t25
+    %t26 = load typed ptr %t25
     %t27 = addr $right
     %t28 = cmp ne ptr %t26, %t27
     branch %t28, ^if_then_4, ^if_else_5
@@ -93,7 +93,7 @@ function @aggregate_appertainment_direct_copy_reference_members__check() -> i32 
     %t30 = index i8 [projection=field] %t29, 16
     %t31 = index i8 [projection=field] %t30, 0
     %t32 = index i8 [projection=field] %t31, 0
-    %t33 = load i32 %t32
+    %t33 = load typed i32 %t32
     %t34 = cmp ne i32 %t33, 7
     branch %t34, ^if_then_7, ^if_else_8
 

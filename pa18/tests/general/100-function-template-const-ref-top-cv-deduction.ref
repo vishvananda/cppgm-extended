@@ -3,15 +3,15 @@ function @f(%current : i64) -> i64 [binding=strong, object=_Z1fm] {
   slot $refarg__1 : i64
 
   block ^entry:
-    store i64 %current, $current
+    store typed i64 %current, $current
     %t1 = addr $current
-    %t2 = load i64 $current
+    %t2 = load typed i64 $current
     %t3 = convert sext i64 i32 2
     %t4 = binary mul i64 %t3, %t2
-    store i64 %t4, $refarg__1
+    store typed i64 %t4, $refarg__1
     %t5 = addr $refarg__1
     %t6 = call ptr @max_like(%t1, %t5)
-    %t7 = load i64 %t6
+    %t7 = load typed i64 %t6
     return i64 %t7
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -25,15 +25,15 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @max_like(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by_address, object_bytes=8]) -> ptr [binding=weak, object=_Z8max_likeImERKT_S2_S2_] {
@@ -42,26 +42,26 @@ function @max_like(%a : ptr [pass=by_address, object_bytes=8], %b : ptr [pass=by
   slot $condaddr__1 : ptr
 
   block ^entry:
-    store ptr %a, $a
-    store ptr %b, $b
-    %t1 = load ptr $a
-    %t2 = load i64 %t1
-    %t3 = load ptr $b
-    %t4 = load i64 %t3
+    store typed ptr %a, $a
+    store typed ptr %b, $b
+    %t1 = load typed ptr $a
+    %t2 = load typed i64 %t1
+    %t3 = load typed ptr $b
+    %t4 = load typed i64 %t3
     %t5 = cmp ult i64 %t2, %t4
     branch %t5, ^condaddr_then_1, ^condaddr_else_2
 
   block ^condaddr_then_1:
-    %t6 = load ptr $b
-    store ptr %t6, $condaddr__1
+    %t6 = load typed ptr $b
+    store typed ptr %t6, $condaddr__1
     jump ^condaddr_end_3
 
   block ^condaddr_else_2:
-    %t7 = load ptr $a
-    store ptr %t7, $condaddr__1
+    %t7 = load typed ptr $a
+    store typed ptr %t7, $condaddr__1
     jump ^condaddr_end_3
 
   block ^condaddr_end_3:
-    %t8 = load ptr $condaddr__1
+    %t8 = load typed ptr $condaddr__1
     return ptr %t8
 }

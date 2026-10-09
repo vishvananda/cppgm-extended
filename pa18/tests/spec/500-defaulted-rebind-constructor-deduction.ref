@@ -1,6 +1,6 @@
 global @alignment_value : i64 [storage=readonly, binding=internal, object=alignment_value] = 0
 
-function @unique(%__param0 : obj<1x1>) -> u8 [binding=internal, object=_ZL6unique10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EE] {
+function @unique(%__param0 : obj<1x1> [classes=none]) -> u8 [binding=internal, object=_ZL6unique10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EE] {
   slot $__param0 : obj<1x1>
 
   block ^entry:
@@ -21,22 +21,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     branch %t4, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t5 = load i32 $cond__1
+    %t5 = load typed i32 $cond__1
     return i32 %t5
 }
 function @offset_ptr___cppgm_class_template_identity_8_2_0__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0_(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
-    store ptr %this, $this
+    store typed ptr %this, $this
     return void
 }
 function @offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0___ov4(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr) -> void [binding=weak, object=_ZN10offset_ptrIK12compact_nodeIS_IvlmLm0EEElmLm0EEC1IS2_EERKS_IT_lmLm0EEPN21enable_if_convertibleIS6_S3_vE4typeE, inline_hint=yes] {
@@ -45,9 +45,9 @@ function @offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsi
   slot $__param2 : ptr
 
   block ^entry:
-    store ptr %this, $this
-    store ptr %__param1, $__param1
-    store ptr %__param2, $__param2
+    store typed ptr %this, $this
+    store typed ptr %__param1, $__param1
+    store typed ptr %__param2, $__param2
     return void
 }
 alias object _ZN10offset_ptrI12compact_nodeIS_IvlmLm0EEElmLm0EEC2Ev = @offset_ptr___cppgm_class_template_identity_8_2_0__long_int__unsigned_long_int__0___offset_ptr___cppgm_class_template_identity_8_2_0_const__long_int__unsigned_long_int__0_

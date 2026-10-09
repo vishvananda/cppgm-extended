@@ -7,20 +7,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = call obj<4x4> @make_result(0)
     copyobj 4x4 %t2, %t1
     %t3 = index i8 [projection=field] %t1, 0
-    %t4 = load i32 %t3
+    %t4 = load typed i32 %t3
     %t5 = cmp eq i32 %t4, 22
     branch %t5, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t6 = load i32 $cond__1
+    %t6 = load typed i32 $cond__1
     return i32 %t6
 }
 function @make_result(%__param0 : i32) -> obj<4x4> [binding=strong, object=_Z11make_resultIlE6resultIT_Ei] {
@@ -28,7 +28,7 @@ function @make_result(%__param0 : i32) -> obj<4x4> [binding=strong, object=_Z11m
   slot $retobj__1 : obj<4x4>
 
   block ^entry:
-    store i32 %__param0, $__param0
+    store typed i32 %__param0, $__param0
     %t1 = addr $retobj__1
     call void @__cppgm_class_template_identity_0_1_0__result__aggregate(%t1, 22)
     return obj<4x4> $retobj__1
@@ -38,11 +38,11 @@ function @__cppgm_class_template_identity_0_1_0__result__aggregate(%this : ptr, 
   slot $value : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %value, $value
-    %t1 = load i32 $value
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %value, $value
+    %t1 = load typed i32 $value
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }

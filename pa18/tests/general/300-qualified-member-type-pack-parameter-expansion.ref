@@ -8,20 +8,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $outer
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = index i8 [projection=field] %t3, 0
-    %t5 = load i32 %t4
+    %t5 = load typed i32 %t4
     %t6 = cmp eq i32 %t5, 9
     branch %t6, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
-    store i32 0, $cond__1
+    store typed i32 0, $cond__1
     jump ^cond_end_3
 
   block ^cond_else_2:
-    store i32 1, $cond__1
+    store typed i32 1, $cond__1
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t7 = load i32 $cond__1
+    %t7 = load typed i32 $cond__1
     return i32 %t7
 }
 function @wrapper_int____cppgm_class_template_identity_0_1_0___wrapper_int____cppgm_class_template_identity_0_1_0_(%this : ptr [object_bytes=4], %inputs : i32) -> void [binding=weak, object=_ZN7wrapperIiJ10definitionIiEEEC1Ei, inline_hint=yes] {
@@ -29,11 +29,11 @@ function @wrapper_int____cppgm_class_template_identity_0_1_0___wrapper_int____cp
   slot $inputs : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %inputs, $inputs
-    %t1 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %inputs, $inputs
+    %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
-    %t3 = load i32 $inputs
+    %t3 = load typed i32 $inputs
     call void @tuple___cppgm_class_template_identity_0_1_0___tuple___cppgm_class_template_identity_0_1_0_(%t2, %t3)
     return void
 }
@@ -42,12 +42,12 @@ function @tuple___cppgm_class_template_identity_0_1_0___tuple___cppgm_class_temp
   slot $input : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %input, $input
-    %t1 = load i32 $input
-    %t2 = load ptr $this
+    store typed ptr %this, $this
+    store typed i32 %input, $input
+    %t1 = load typed i32 $input
+    %t2 = load typed ptr $this
     %t3 = index i8 [projection=field] %t2, 0
-    store i32 %t1, %t3
+    store typed i32 %t1, %t3
     return void
 }
 alias object _ZN7wrapperIiJ10definitionIiEEEC2Ei = @wrapper_int____cppgm_class_template_identity_0_1_0___wrapper_int____cppgm_class_template_identity_0_1_0_

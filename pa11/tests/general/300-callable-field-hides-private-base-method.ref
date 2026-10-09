@@ -15,9 +15,9 @@ function @F__operator__(%this : ptr [object_bytes=1], %__param1 : i32, %__param2
   slot $__param3 : i32
 
   block ^entry:
-    store ptr %this, $this
-    store i32 %__param1, $__param1
-    store i32 %__param2, $__param2
-    store i32 %__param3, $__param3
+    store typed ptr %this, $this
+    store typed i32 %__param1, $__param1
+    store typed i32 %__param2, $__param2
+    store typed i32 %__param3, $__param3
     return void
 }
