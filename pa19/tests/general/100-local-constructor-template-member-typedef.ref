@@ -20,7 +20,7 @@ function @__cppgm_class_template_1_0__Wrap_typename___retained_template_paramete
     store typed ptr 0, %t2
     return void
 }
-function @__cppgm_class_template_1_1__Wrap_typename___retained_template_parameter_shape_0___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4WrapIPKZ4mainE14ActiveIntervalEC1IPZ4mainE14ActiveIntervalEERKS_IT_E, object_root=yes, inline_hint=yes] {
+function @__cppgm_class_template_1_1__Wrap_typename___retained_template_parameter_shape_0___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4WrapIPKZ4mainE14ActiveIntervalEC1IPS0_EERKS_IT_E, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -36,4 +36,4 @@ function @__cppgm_class_template_1_1__Wrap_typename___retained_template_paramete
     return void
 }
 alias object _ZN4WrapIPZ4mainE14ActiveIntervalEC2Ev = @__cppgm_class_template_1_0__Wrap_typename___retained_template_parameter_shape_0_
-alias object _ZN4WrapIPKZ4mainE14ActiveIntervalEC2IPZ4mainE14ActiveIntervalEERKS_IT_E = @__cppgm_class_template_1_1__Wrap_typename___retained_template_parameter_shape_0___ov4
+alias object _ZN4WrapIPKZ4mainE14ActiveIntervalEC2IPS0_EERKS_IT_E = @__cppgm_class_template_1_1__Wrap_typename___retained_template_parameter_shape_0___ov4

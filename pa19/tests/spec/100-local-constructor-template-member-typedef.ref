@@ -21,7 +21,7 @@ function @__cppgm_class_template_1_0__wrap_typename___retained_template_paramete
     store typed ptr 0, %t2
     return void
 }
-function @__cppgm_class_template_1_1__wrap_typename___retained_template_parameter_shape_0___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPKZ4mainE5localEC1IPZ4mainE5localEERKS_IT_E, object_root=yes, inline_hint=yes] {
+function @__cppgm_class_template_1_1__wrap_typename___retained_template_parameter_shape_0___ov4(%this : ptr [object_bytes=8], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=internal, object=_ZN4wrapIPKZ4mainE5localEC1IPS0_EERKS_IT_E, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -37,4 +37,4 @@ function @__cppgm_class_template_1_1__wrap_typename___retained_template_paramete
     return void
 }
 alias object _ZN4wrapIPZ4mainE5localEC2Ev = @__cppgm_class_template_1_0__wrap_typename___retained_template_parameter_shape_0_
-alias object _ZN4wrapIPKZ4mainE5localEC2IPZ4mainE5localEERKS_IT_E = @__cppgm_class_template_1_1__wrap_typename___retained_template_parameter_shape_0___ov4
+alias object _ZN4wrapIPKZ4mainE5localEC2IPS0_EERKS_IT_E = @__cppgm_class_template_1_1__wrap_typename___retained_template_parameter_shape_0___ov4

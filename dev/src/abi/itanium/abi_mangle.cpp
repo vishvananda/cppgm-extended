@@ -3,6 +3,7 @@
 #include "abi/itanium/abi_mangle_graph_argument.h"
 #include "abi/itanium/abi_mangle_graph_type.h"
 #include "abi/itanium/abi_mangle_hash.h"
+#include "abi/itanium/abi_mangle_paths.h"
 #include "abi/itanium/abi_mangle_presentation.h"
 #include "abi/itanium/abi_mangle_substitution.h"
 
@@ -21,7 +22,6 @@ using std::size_t;
 using std::string;
 using std::vector;
 using detail::append_generated_lambda_source;
-using detail::base36;
 using detail::discriminator;
 using detail::lambda_discriminator;
 using detail::local_discriminator;
@@ -43,6 +43,9 @@ using detail::SubstitutionKind;
 using detail::SubstitutionKey;
 using detail::SubstitutionTable;
 using detail::ArgumentNode;
+using detail::PathNode;
+using detail::PathPool;
+using detail::StringPool;
 using detail::ExpressionNode;
 using detail::TypeNode;
 using detail::argument_node_hash;
@@ -57,133 +60,6 @@ void require(bool condition, const string & message)
 {
   if(!condition) ThrowAbiInternal(message);
 }
-
-class StringPool
-{
-public:
-  size_t intern(const string & value)
-  {
-    const auto found = indexes_.find(value);
-    if(found != indexes_.end()) return found->second;
-    const size_t id = values_.size();
-    values_.push_back(value);
-    indexes_.insert(std::make_pair(value, id));
-    return id;
-  }
-
-  const string & get(size_t id) const
-  {
-    require(id < values_.size(), "invalid interned ABI string id");
-    return values_[id];
-  }
-
-private:
-  vector<string> values_;
-  std::unordered_map<string, size_t> indexes_;
-};
-
-struct PathNode
-{
-  size_t parent = NO_ID;
-  size_t name = NO_ID;
-
-  PathNode() {}
-  PathNode(size_t parent_value, size_t name_value)
-    : parent(parent_value), name(name_value) {}
-
-  bool operator==(const PathNode & other) const
-  {
-    return parent == other.parent && name == other.name;
-  }
-};
-
-struct PathHash
-{
-  size_t operator()(const PathNode & path) const
-  {
-    return mix_hash(path.parent, path.name);
-  }
-};
-
-class PathPool
-{
-public:
-  PathPool(StringPool & strings, AbiMangleStats * stats)
-    : strings_(strings), stats_(stats) {}
-
-  size_t intern(const string & qualified,
-                size_t * origin_components = nullptr)
-  {
-    size_t begin = qualified.compare(0, 2, "::") == 0 ? 2 : 0;
-    size_t path = NO_ID;
-    while(begin < qualified.size()) {
-      const size_t separator = qualified.find("::", begin);
-      const string component = qualified.substr(begin, separator - begin);
-      if(component.empty()) {
-        ThrowAbiInternal("empty component in ABI name '" + qualified + "'");
-      }
-      if(stats_) ++stats_->path_components;
-      if(origin_components) ++*origin_components;
-      path = intern(path, strings_.intern(component));
-      if(separator == string::npos) break;
-      begin = separator + 2;
-    }
-    require(path != NO_ID, "empty ABI qualified name");
-    return path;
-  }
-
-  size_t intern(size_t parent, size_t name)
-  {
-    const PathNode key{parent, name};
-    const auto found = indexes_.find(key);
-    if(found != indexes_.end()) return found->second;
-    const size_t id = paths_.size();
-    paths_.push_back(key);
-    indexes_.insert(std::make_pair(key, id));
-    return id;
-  }
-
-  size_t intern(const vector<size_t> & components)
-  {
-    require(!components.empty(), "empty ABI component path");
-    size_t path = NO_ID;
-    for(size_t component : components) path = intern(path, component);
-    return path;
-  }
-
-  const PathNode & get(size_t id) const
-  {
-    require(id < paths_.size(), "invalid ABI path id");
-    return paths_[id];
-  }
-
-  vector<size_t> components(size_t id) const
-  {
-    vector<size_t> reverse;
-    while(id != NO_ID) {
-      reverse.push_back(paths_[id].name);
-      id = paths_[id].parent;
-    }
-    return vector<size_t>(reverse.rbegin(), reverse.rend());
-  }
-
-  vector<size_t> prefixes(size_t id) const
-  {
-    vector<size_t> reverse;
-    while(id != NO_ID) {
-      reverse.push_back(id);
-      id = paths_[id].parent;
-    }
-    return vector<size_t>(reverse.rbegin(), reverse.rend());
-  }
-
-private:
-  StringPool & strings_;
-  AbiMangleStats * stats_;
-  vector<PathNode> paths_;
-  std::unordered_map<PathNode, size_t, PathHash> indexes_;
-};
-
 
 size_t expression_hash(const ExpressionNode & expression)
 {
@@ -1477,13 +1353,7 @@ private:
       case ABI_TYPE_MEMBER:
       case ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION:
         output_ += 'N';
-        encode_prefix_type(type.children.at(0));
-        output_ += source_name(graph_.strings.get(type.symbol));
-        emit_tags(type.tags);
-        if(type.kind == ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION) {
-          substitutions_.add(member_template_prefix_key(type));
-          output_ += 'I'; encode_arguments(type.arguments); output_ += 'E';
-        }
+        encode_member_type_name(id);
         output_ += 'E';
         return;
       case ABI_TYPE_DECLTYPE_EXPRESSION:
@@ -1576,6 +1446,26 @@ private:
       output_ += 'I'; encode_arguments(type.arguments); output_ += 'E';
     } else if(type.kind == ABI_TYPE_MEMBER
               || type.kind == ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION) {
+      encode_member_type_name(id);
+    } else {
+      encode_new_type(id, type);
+    }
+    substitutions_.add(key);
+  }
+
+  // The <prefix> of a member class, or the <template-prefix> plus arguments
+  // of a member class template specialization.  A member template's prefix
+  // is a candidate of its own and may already stand for an earlier
+  // spelling of the same template, including one written as a qualified
+  // name path (`context::executor` of an owner `context::executor<int>`).
+  void encode_member_type_name(size_t id)
+  {
+    const TypeNode & type = graph_.type(id);
+    const bool specialization =
+      type.kind == ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION;
+    const SubstitutionKey prefix = specialization ?
+      member_template_prefix_key(type) : SubstitutionKey();
+    if(!specialization || !substitutions_.emit_if_known(prefix, output_)) {
       encode_prefix_type(type.children.at(0));
       // Recursive encoding can resolve an entity reference and grow the
       // canonical type graph.  Reacquire the indexed node instead of reading
@@ -1583,15 +1473,12 @@ private:
       const TypeNode & resolved = graph_.type(id);
       output_ += source_name(graph_.strings.get(resolved.symbol));
       emit_tags(resolved.tags);
-      if(resolved.kind == ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION) {
-        substitutions_.add(member_template_prefix_key(resolved));
-        const vector<size_t> arguments = resolved.arguments;
-        output_ += 'I'; encode_arguments(arguments); output_ += 'E';
-      }
-    } else {
-      encode_new_type(id, type);
+      if(specialization) substitutions_.add(prefix);
     }
-    substitutions_.add(key);
+    if(specialization) {
+      const vector<size_t> arguments = graph_.type(id).arguments;
+      output_ += 'I'; encode_arguments(arguments); output_ += 'E';
+    }
   }
 
   void encode_template_prefix(size_t path, const vector<size_t> & components,
@@ -1845,7 +1732,7 @@ private:
         output_ += template_parameter(expression.index); return;
       case ABI_EXPRESSION_FUNCTION_PARAMETER:
         output_ += "fp";
-        if(expression.index != 0) output_ += base36(expression.index - 1);
+        if(expression.index != 0) output_ += std::to_string(expression.index - 1);
         output_ += '_';
         return;
       case ABI_EXPRESSION_INTEGRAL_VALUE:
@@ -2491,7 +2378,7 @@ private:
       output_ += "Ut";
       const size_t unnamed_ordinal = text_presentation ?
         static_cast<size_t>(std::stoul(local.discriminator)) : ordinal;
-      if(unnamed_ordinal != 0) output_ += base36(unnamed_ordinal - 1);
+      if(unnamed_ordinal != 0) output_ += std::to_string(unnamed_ordinal - 1);
       output_ += '_';
     } else if(!facts.lambda) {
       output_ += source_name(local_name);
@@ -2590,7 +2477,7 @@ private:
         ABI_LOCAL_PRESENTATION_TEXT ? static_cast<size_t>(
           std::stoul(graph_.strings.get(stable.discriminator))) :
         stable.discriminator;
-      if(ordinal != 0) output_ += base36(ordinal - 1);
+      if(ordinal != 0) output_ += std::to_string(ordinal - 1);
       output_ += '_';
     } else {
       output_ += source_name(graph_.strings.get(stable.symbol));
@@ -2710,7 +2597,10 @@ private:
 
   string template_parameter(size_t index) const
   {
-    return index == 0 ? "T_" : "T" + base36(index - 1) + '_';
+    // Template-parameter, function-parameter and unnamed-type numbers are
+    // decimal <number>s (Itanium 5.1.5.8, 5.1.6, 5.1.8); only <seq-id>s of
+    // substitutions are base 36.
+    return index == 0 ? "T_" : "T" + std::to_string(index - 1) + '_';
   }
 
   string final_name(const string & qualified) const
@@ -2763,6 +2653,15 @@ private:
 
   SubstitutionKey member_template_prefix_key(const TypeNode & type)
   {
+    // A member template of a class named by a path is the same
+    // <template-prefix> as that path extended by the template's name.
+    const TypeNode & owner = graph_.type(type.children.at(0));
+    if(owner.kind == ABI_TYPE_NAMED && owner.tags.empty()
+       && owner.substitution == NO_ID)
+      return substitutions_.composite_key(
+        SubstitutionKey{SUBSTITUTION_PATH,
+                        graph_.paths.intern(owner.path, type.symbol)},
+        type.tags);
     return substitutions_.composite_key(
       SubstitutionKey{SUBSTITUTION_MEMBER_TEMPLATE_PREFIX,
                       type.children.at(0), type.symbol},

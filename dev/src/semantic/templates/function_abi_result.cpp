@@ -128,18 +128,12 @@ public:
 	FunctionTemplateAbiTypeId ParseType(bool* pack_expansion = 0)
 	{
 		std::uint8_t cv = 0;
-		while (IsNode("cv-qualifier"))
-		{
-			NameId qualifier = 0;
-			if (!BeginNode("cv-qualifier", &qualifier) || !EndNode())
-				return kNoFunctionTemplateAbiType;
-			const std::string& spelling = program_->names.Get(qualifier);
-			if (spelling == "const") cv |= CV_CONST;
-			else if (spelling == "volatile") cv |= CV_VOLATILE;
-			else return kNoFunctionTemplateAbiType;
-		}
+		if (!ParseCvQualifiers(&cv)) return kNoFunctionTemplateAbiType;
 		FunctionTemplateAbiTypeId root = ParsePrimaryType();
 		if (root == kNoFunctionTemplateAbiType) return root;
+		// A cv-qualifier may also follow the type it qualifies
+		// (`basic_regex<T> const`).
+		if (!ParseCvQualifiers(&cv)) return kNoFunctionTemplateAbiType;
 		if (cv) root = AppendAbiType(program_, FunctionTemplateAbiType(
 			FUNCTION_TEMPLATE_ABI_TYPE_QUALIFIED, root, 0, 0,
 			kNoTemplateParameter, cv));
@@ -291,6 +285,20 @@ public:
 	bool Complete() const { return position_ == atoms_.size(); }
 
 private:
+	bool ParseCvQualifiers(std::uint8_t* cv)
+	{
+		while (IsNode("cv-qualifier"))
+		{
+			NameId qualifier = 0;
+			if (!BeginNode("cv-qualifier", &qualifier) || !EndNode()) return false;
+			const std::string& spelling = program_->names.Get(qualifier);
+			if (spelling == "const") *cv |= CV_CONST;
+			else if (spelling == "volatile") *cv |= CV_VOLATILE;
+			else return false;
+		}
+		return true;
+	}
+
 	bool IsNode(const char* tag) const
 	{
 		return position_ < atoms_.size() &&
@@ -1302,7 +1310,18 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 		std::vector<std::uint64_t> atoms;
 		function_template_result_identities_.CopyAtoms(
 			pattern->expanded_result_identity, &atoms);
-		if (pattern->expanded_result_has_alias ||
+		// A result whose shape is the dependent placeholder has no semantic
+		// TypeId to mangle; the written result is the encoding's (Itanium
+		// 5.1.5.1), not the instantiated one.
+		TypeId shape_result = program_->types.Get(pattern->shape_type).child;
+		while (program_->types.Get(shape_result).kind == TYPE_QUALIFIED ||
+			program_->types.Get(shape_result).kind == TYPE_POINTER ||
+			program_->types.Get(shape_result).kind == TYPE_LVALUE_REFERENCE ||
+			program_->types.Get(shape_result).kind == TYPE_RVALUE_REFERENCE)
+			shape_result = program_->types.Get(shape_result).child;
+		const bool placeholder_result = shape_result != kNoType &&
+			shape_result == function_template_dependent_result_shape_;
+		if (pattern->expanded_result_has_alias || placeholder_result ||
 			HasRetainedParameterRoot(*program_, *pattern, atoms))
 		{
 			AbiPublication publication(program_);

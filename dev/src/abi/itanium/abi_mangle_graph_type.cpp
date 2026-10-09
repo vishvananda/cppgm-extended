@@ -66,6 +66,7 @@ bool has_resolved_type_substitution(const AbiType & type)
     (type.kind == ABI_TYPE_RESOLVED ||
      type.kind == ABI_TYPE_TEMPLATE_PARAMETER ||
      type.kind == ABI_TYPE_TEMPLATE_SPECIALIZATION ||
+     type.kind == ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION ||
      type.kind == ABI_TYPE_STD_TEMPLATE_SPECIALIZATION);
 }
 

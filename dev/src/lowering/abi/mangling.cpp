@@ -360,6 +360,11 @@ class AbiFactBuilder
 	std::vector<std::uint32_t> type_argument_cache_slots_;
 	std::vector<semantic::NameId> semantic_path_scratch_;
 	std::vector<std::size_t> resolved_path_scratch_;
+	// One context per function within a case: every use of a local type of
+	// the same function is then the same canonical type, one substitution
+	// candidate (`_ZN8functionIZN1S1gEvE1GEC2ES1_`).
+	std::vector<std::pair<semantic::BindingId, std::size_t> > local_contexts_;
+	std::vector<LocalContextHandle> local_context_handles_;
 
 	TypeArgumentCacheKey TypeArgumentKey(semantic::TypeId type,
 		const semantic::BindingRecord* function,
@@ -960,10 +965,23 @@ public:
 
 	LocalContextHandle AddLocalContext(semantic::BindingId binding)
 	{
+		if (binding == semantic::kNoBinding || binding >= program_.bindings.size())
+			ThrowLoweringInternal("local ABI type has no function context");
+		const semantic::BindingId canonical = program_.bindings[binding].canonical;
+		for (std::size_t i = 0; i < local_contexts_.size(); ++i)
+			if (local_contexts_[i].first == canonical)
+				return local_context_handles_[local_contexts_[i].second];
+		const LocalContextHandle handle = MakeLocalContext(binding);
+		local_contexts_.push_back(std::make_pair(canonical,
+			local_context_handles_.size()));
+		local_context_handles_.push_back(handle);
+		return handle;
+	}
+
+	LocalContextHandle MakeLocalContext(semantic::BindingId binding)
+	{
 		using namespace abi_mangle;
 		using namespace semantic;
-		if (binding == kNoBinding || binding >= program_.bindings.size())
-			ThrowLoweringInternal("local ABI type has no function context");
 		const BindingRecord& function = program_.bindings[binding];
 		const TypeRecord& type = program_.types.Get(function.type);
 		if (type.kind != TYPE_FUNCTION)
@@ -2052,6 +2070,12 @@ public:
 				result.types.push_back(MakeType(
 					program_.entities[entity.enclosing_class].type,
 					function, recipe));
+				// The specialization is the substitution a member function's
+				// structured class owner enters for the same class.
+				if (specialization &&
+					(!recipe || !UsesFunctionTemplateParameter(type, function, *recipe)))
+					result.resolved_expression = make_semantic_substitution(
+						ABI_SEMANTIC_SUBSTITUTION_CLASS, record->entity);
 				if (specialization)
 					AppendClassTemplateArguments(
 						entity, function, recipe, &result);

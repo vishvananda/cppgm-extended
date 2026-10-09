@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^entry:
     return i32 0
 }
-function @c_int___i_long_int___i_int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1cIiE1iIlEC1IiEERKNS0_1iIT_EE, inline_hint=yes] {
+function @c_int___i_long_int___i_int___ov3(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN1cIiE1iIlEC1IiEERKNS1_IT_EE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -21,4 +21,4 @@ function @c_int___i_long_int___i_int___ov3(%this : ptr [object_bytes=1], %__para
     store typed ptr %__param1, $__param1
     return void
 }
-alias object _ZN1cIiE1iIlEC2IiEERKNS0_1iIT_EE = @c_int___i_long_int___i_int___ov3
+alias object _ZN1cIiE1iIlEC2IiEERKNS1_IT_EE = @c_int___i_long_int___i_int___ov3

@@ -27,7 +27,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = convert trunc i32 i64 %t7
     return i32 %t8
 }
-function @adaptor_int___range_false___range_false___ov4(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4], %__param2 : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb0EEC1ILb0EvEERKNS0_5rangeILb1EEEPT0_, inline_hint=yes] {
+function @adaptor_int___range_false___range_false___ov4(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4], %__param2 : ptr) -> void [binding=weak, object=_ZN7adaptorIiE5rangeILb0EEC1ILb0EvEERKNS1_ILb1EEEPT0_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
   slot $__param2 : ptr
@@ -80,5 +80,5 @@ function @adaptor_int___range_true___range_false_(%this : ptr [object_bytes=4]) 
     store typed i32 %t1, %t3
     return void
 }
-alias object _ZN7adaptorIiE5rangeILb0EEC2ILb0EvEERKNS0_5rangeILb1EEEPT0_ = @adaptor_int___range_false___range_false___ov4
+alias object _ZN7adaptorIiE5rangeILb0EEC2ILb0EvEERKNS1_ILb1EEEPT0_ = @adaptor_int___range_false___range_false___ov4
 alias object _ZN7adaptorIiE5rangeILb1EEC2Ev = @adaptor_int___range_true___range_false_
