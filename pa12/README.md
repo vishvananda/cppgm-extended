@@ -193,7 +193,10 @@ initialized from a prvalue of its own class (an elided copy) or, if it is an
 aggregate, from a braced list takes that value; where the class's size
 exceeds its nvsize the value is built in a temporary and its nvsize bytes
 copied, since a derived class's member or virtual base may already sit past
-them.
+them.  A by-value parameter of a base class given a derived object is
+constructed from that object: the constructor taking the base binds to the
+object's base subobject with the object's value category, so an lvalue is
+copied and a prvalue moved.
 
 For supported trivially copy-constructible class value transfers, PA12 may also lower the
 copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of

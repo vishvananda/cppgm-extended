@@ -1632,8 +1632,17 @@ ExpressionInfo Analyzer::ApplyCallArgument(
 		 program_->entities[target_record.entity].flavor == NAMED_UNION) &&
 		(program_->types.RemoveTopCv(EffectiveType(value.type)) == target_object ||
 		 resolved.rank == CONVERSION_DERIVED_TO_BASE);
+	// A class parameter initialized from a derived object is constructed
+	// from that object ([dcl.init]): a constructor taking the base binds to
+	// its base subobject with the object's value category, so an lvalue is
+	// copied, not moved.
+	const ExpressionInfo unconverted = value;
+	const bool derived_source = class_value && !converted_by_function &&
+		program_->types.RemoveTopCv(EffectiveType(value.type)) != target_object;
 	if (!converted_by_function)
 		value = ApplyTarget(value, target, resolved.rank);
+	if (derived_source)
+		value.node = BuildClassValueConstructorAction(target, unconverted);
 	if (class_value)
 	{
 		while (dump_.nodes[value.node].kind == DUMP_TEMPORARY_OBJECT &&

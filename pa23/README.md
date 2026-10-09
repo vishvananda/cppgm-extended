@@ -315,13 +315,16 @@ function has the corresponding prohibition.
 
 Find a virtual base where the object says it is: its vbase-offset row in the
 object's vtable, or a static offset when the object is a complete object of a
-known type (a named variable, a temporary, a by-value parameter). Hidden
-virtual-base arguments would make the calling convention depend on which
-translation unit sees the complete type, and they would differ from what g++
-and clang pass: a g++ caller of a base-object constructor or member function
-built here would hand it no such arguments. Within a base-object constructor
-or destructor, read the rows from the construction vtable that the VTT names,
-not from the object's vptr, which may still hold a base's table. The VTT never
-changes, so one load of the table and of each row serves a block. Vtables,
-construction vtables and VTTs are `storage=readonly` data, which the optimizer
-reads through once the VTT is known.
+known type (a named variable, a temporary, a by-value parameter). A by-value
+parameter given a derived object is copy-constructed (or, from a prvalue,
+move-constructed) from the argument's base subobject, whose virtual bases are
+found through its vtable. Hidden virtual-base arguments would make the calling
+convention depend on which translation unit sees the complete type, and they
+would differ from what g++ and clang pass: a g++ caller of a base-object
+constructor or member function built here would hand it no such arguments.
+Within a base-object constructor or destructor, read the rows from the
+construction vtable that the VTT names, not from the object's vptr, which may
+still hold a base's table. The VTT never changes, so one load of the table and
+of each row serves a block. Vtables, construction vtables and VTTs are
+`storage=readonly` data, which the optimizer reads through once the VTT is
+known.
