@@ -142,7 +142,6 @@ public:
 			arena_.nodes.size(), kNoDumpEdge);
 		function_definition_.resize(program_.bindings.size(), kNoDumpEdge);
 		function_declaration_.resize(program_.bindings.size(), kNoDumpEdge);
-		virtual_base_contracts_.Reset(program_.bindings.size(), arena_.nodes.size());
 		global_node_.resize(program_.bindings.size(), kNoDumpEdge);
 		namespace_action_.resize(program_.bindings.size(), kNoDumpEdge);
 		thread_local_dynamic_.resize(graph_.namespace_objects.size(), 0);
@@ -253,8 +252,6 @@ public:
 private:
 	friend class lowering::VirtualBaseLowering<ProgramLowerer>;
 	friend class lowering::ConditionalLowering<ProgramLowerer>;
-	friend class lowering::VirtualBaseBoundaryShape<ProgramLowerer>;
-	friend class lowering::VirtualBaseContractLookup<ProgramLowerer>;
 	friend class lowering::ControlFlowLowering<ProgramLowerer>;
 	friend class lowering::StatementLowering<ProgramLowerer>;
 	friend class lowering::ScalarUnaryLowering<ProgramLowerer>;
@@ -608,7 +605,6 @@ private:
 			IndexBitFieldStorageTransferOwner(node);
 		}
 		else if (record.kind == DUMP_FUNCTION_DECLARATION && function_declaration_[record.binding] == kNoDumpEdge) function_declaration_[record.binding] = node;
-		CacheVirtualBaseBoundary(node);
 		if (record.declaration_only) output_.symbols[function_symbols_[record.binding]].referenced = true;
 	}
 	void ScanTop(std::uint32_t node)
@@ -887,7 +883,7 @@ private:
 		current_result_ = LowVoid();
 		current_result_reference_ = false;
 		current_indirect_result_ = false;
-		ResetVirtualBaseBoundary();
+		ResetConstructionVtt();
 		current_class_value_boundary_ = false;
 		SelectBlock(AddBlock("entry"));
 	}
@@ -964,7 +960,7 @@ private:
 		parameter_slot_index_ = current_indirect_result_ ? 1 : 0;
 		current_member_owner_ = record.binding == kNoBinding ? kNoEntity : program_.bindings[record.binding].member_owner;
 		const NodeChildren children = Children(node);
-		PrepareVirtualBaseBoundary(node, result.parameters);
+		PrepareConstructionVtt(node);
 		SetCurrentThisForSlotPlanning(record, children);
 		CollectSourceNames(node);
 		CollectSlots(node);
@@ -985,7 +981,6 @@ private:
 					!program_.bindings[record.binding].static_member_function)
 					current_this_binding_ = child.binding;
 				MaterializeBoundaryParameter(child, boundary_parameter);
-				MaterializeVirtualBaseBoundaryParameter(child);
 				++parameter_index;
 			}
 			else if (child.kind == DUMP_COMPOUND_STATEMENT ||
@@ -1039,7 +1034,7 @@ private:
 		current_class_value_boundary_ = false;
 		current_this_binding_ = kNoBinding;
 		current_member_owner_ = kNoEntity;
-		ResetVirtualBaseBoundary();
+		ResetConstructionVtt();
 		return result;
 	}
 	Block& CurrentBlock() { return function_->blocks[current_block_]; }
@@ -1105,7 +1100,6 @@ private:
 	SymbolId dso_handle_symbol_;
 	std::vector<std::uint32_t> function_definition_;
 	std::vector<std::uint32_t> function_declaration_;
-	lowering::VirtualBaseContractState virtual_base_contracts_;
 	std::vector<std::uint32_t> global_node_;
 	std::vector<std::uint32_t> namespace_action_;
 	std::vector<std::uint32_t> local_static_action_;

@@ -121,13 +121,11 @@ function @StringStream__StringStream(%this : ptr [object_bytes=16]) -> void [bin
     %t4 = index i8 %t3, 0
     %t5 = addr @StringStream____vtt
     %t6 = index i8 %t5, 8
+    call void @OStream__OStream__base_entry(%t4, %t6)
     %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 8
-    call void @OStream__OStream__base_entry(%t4, %t6, %t8)
-    %t9 = load typed ptr $this
-    %t10 = addr @StringStream__vtable
-    %t11 = index i8 %t10, 24
-    store typed ptr %t11, %t9
+    %t8 = addr @StringStream__vtable
+    %t9 = index i8 %t8, 24
+    store typed ptr %t9, %t7
     return void
 }
 function @OStream__mark(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7OStream4markEv, inline_hint=yes] {
@@ -174,7 +172,7 @@ function @IOS__IOS(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_
     store typed i32 0, %t2
     return void
 }
-function @OStream__OStream__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN7OStreamC2Ev, object_root=yes, inline_hint=yes] {
+function @OStream__OStream__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN7OStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -368,12 +368,7 @@ void WriteInstruction(std::ostream& output, const Instruction& instruction,
 			for (std::size_t i = 0; i < instruction.extra_count; ++i)
 			{
 				if (i != 0) output << ", ";
-				if (i + instruction.virtual_base_argument_count >=
-					instruction.extra_count)
-					output << "%__pvbptr" << i +
-						instruction.virtual_base_argument_count -
-						instruction.extra_count << " : ";
-				else output << "%arg" << i << " : ";
+				output << "%arg" << i << " : ";
 				WriteType(output,
 					program.call_arguments[instruction.extra_first + i].type);
 				const std::uint8_t passing =

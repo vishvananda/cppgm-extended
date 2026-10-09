@@ -184,7 +184,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t26 = load typed i32 $cond__2
     return i32 %t26
 }
-function @counter__counter__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %slot : i32, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN7counterC2Ei, object_root=yes, inline_hint=yes] {
+function @counter__counter__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %slot : i32) -> void [binding=weak, object=_ZN7counterC2Ei, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $slot : i32
   slot $source : obj<1x1>
@@ -244,7 +244,7 @@ function @counter__counter(%this : ptr [object_bytes=16], %slot : i32) -> void [
     store typed i32 %t14, %t16
     return void
 }
-function @counter___counter__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN7counterD2Ev, object_root=yes, inline_hint=yes] {
+function @counter___counter__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7counterD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $again : obj<1x1>
   slot $function_exception__1 : ptr
@@ -308,29 +308,25 @@ function @derived__derived(%this : ptr [object_bytes=16]) -> void [binding=weak,
     %t4 = index i8 %t3, 0
     %t5 = addr @derived____vtt
     %t6 = index i8 %t5, 8
-    %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 12
-    call void @counter__counter__base_entry(%t4, %t6, 1, %t8)
+    call void @counter__counter__base_entry(%t4, %t6, 1)
     eh_cleanup ^constructor_cleanup_1
-    %t15 = load typed ptr $this
-    %t16 = addr @derived__vtable
-    %t17 = index i8 %t16, 24
-    store typed ptr %t17, %t15
+    %t11 = load typed ptr $this
+    %t12 = addr @derived__vtable
+    %t13 = index i8 %t12, 24
+    store typed ptr %t13, %t11
     eh_end
     return void
 
   block ^constructor_cleanup_1:
-    %t9 = load typed ptr $this
-    %t10 = index i8 %t9, 0
-    %t11 = addr @derived____vtt
-    %t12 = index i8 %t11, 8
-    %t13 = load typed ptr $this
-    %t14 = index i8 %t13, 12
-    call void @counter___counter__base_entry(%t10, %t12, %t14)
+    %t7 = load typed ptr $this
+    %t8 = index i8 %t7, 0
+    %t9 = addr @derived____vtt
+    %t10 = index i8 %t9, 8
+    call void @counter___counter__base_entry(%t8, %t10)
     eh_end
     resume
 }
-function @derived___derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN7derivedD2Ev, object_root=yes, inline_hint=yes] {
+function @derived___derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN7derivedD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -340,14 +336,14 @@ function @derived___derived__base_entry(%this : ptr [object_bytes=16], %__vtt : 
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = index i8 %__vtt, 8
-    call void @counter___counter__base_entry(%t2, %t3, %__vbptr0)
+    call void @counter___counter__base_entry(%t2, %t3)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t4 = load typed ptr $this
     %t5 = index i8 %t4, 0
     %t6 = index i8 %__vtt, 8
-    call void @counter___counter__base_entry(%t5, %t6, %__vbptr0)
+    call void @counter___counter__base_entry(%t5, %t6)
     eh_end
     resume
 
@@ -365,19 +361,15 @@ function @derived___derived(%this : ptr [object_bytes=16]) -> void [unwind=no, b
     %t2 = index i8 %t1, 0
     %t3 = addr @derived____vtt
     %t4 = index i8 %t3, 8
-    %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 12
-    call void @counter___counter__base_entry(%t2, %t4, %t6)
+    call void @counter___counter__base_entry(%t2, %t4)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 0
-    %t9 = addr @derived____vtt
-    %t10 = index i8 %t9, 8
-    %t11 = load typed ptr $this
-    %t12 = index i8 %t11, 12
-    call void @counter___counter__base_entry(%t8, %t10, %t12)
+    %t5 = load typed ptr $this
+    %t6 = index i8 %t5, 0
+    %t7 = addr @derived____vtt
+    %t8 = index i8 %t7, 8
+    call void @counter___counter__base_entry(%t6, %t8)
     eh_end
     resume
 

@@ -75,7 +75,7 @@ function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, bi
     store typed ptr %t5, %t3
     return void
 }
-function @Derived___Derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN7DerivedD2Ev, object_root=yes, inline_hint=yes] {
+function @Derived___Derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7DerivedD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

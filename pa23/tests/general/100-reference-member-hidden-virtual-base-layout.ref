@@ -124,25 +124,21 @@ function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1
     %t2 = index i8 %t1, 0
     %t3 = addr @D____vtt
     %t4 = index i8 %t3, 8
+    call void @B__B__base_entry(%t2, %t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 16
-    call void @B__B__base_entry(%t2, %t4, %t6)
-    %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 8
-    %t9 = addr @D____vtt
-    %t10 = index i8 %t9, 16
-    %t11 = load typed ptr $this
-    %t12 = index i8 %t11, 16
-    call void @C__C__base_entry(%t8, %t10, %t12)
-    %t13 = load typed ptr $this
-    %t14 = addr @D__vtable
+    %t6 = index i8 %t5, 8
+    %t7 = addr @D____vtt
+    %t8 = index i8 %t7, 16
+    call void @C__C__base_entry(%t6, %t8)
+    %t9 = load typed ptr $this
+    %t10 = addr @D__vtable
+    %t11 = index i8 %t10, 24
+    store typed ptr %t11, %t9
+    %t12 = load typed ptr $this
+    %t13 = index i8 %t12, 8
+    %t14 = addr @D____view__C__8__vtable
     %t15 = index i8 %t14, 24
     store typed ptr %t15, %t13
-    %t16 = load typed ptr $this
-    %t17 = index i8 %t16, 8
-    %t18 = addr @D____view__C__8__vtable
-    %t19 = index i8 %t18, 24
-    store typed ptr %t19, %t17
     return void
 }
 function @Holder__Holder(%this : ptr [object_bytes=8], %b : ptr [pass=by_address, object_bytes=16]) -> void [binding=weak, object=_ZN6HolderC1ER1B, inline_hint=yes] {
@@ -175,7 +171,7 @@ function @Holder__f(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_
     %t10 = load typed i32 %t9
     return i32 %t10
 }
-function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
+function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -185,7 +181,7 @@ function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr
     store typed ptr %t2, %t1
     return void
 }
-function @C__C__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1CC2Ev, object_root=yes, inline_hint=yes] {
+function @C__C__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1CC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

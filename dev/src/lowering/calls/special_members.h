@@ -83,55 +83,6 @@ protected:
 		}
 		arguments.Push(source);
 		references.Push(1);
-		if (construction && selected_binding.constructor_base_entry &&
-			selected_binding.member_owner != kNoEntity)
-		{
-			std::size_t hidden_remaining =
-				derived.VirtualBaseParameterCount(selected, selected_binding.type);
-			const EntityId owner = selected_binding.member_owner;
-			for (std::size_t base = 0;
-				base < derived.program_.entities[owner].virtual_base_count &&
-				hidden_remaining != 0; ++base)
-			{
-				if (!derived.CarriesVirtualBase(selected, 0, base)) continue;
-				const VirtualBaseLayout& needed =
-					derived.program_.VirtualBase(owner, base);
-				Operand address;
-				if (!derived.HasCurrentImplicitVirtualBases())
-				{
-					std::uint64_t offset = 0;
-					if (!derived.program_.FindVirtualBase(
-						derived.current_member_owner_, needed.entity, &offset))
-						ThrowLoweringInternal(
-							"complete synthesized constructor has no virtual base");
-					const Operand complete_object = derived.LoadStorage(
-						derived.StorageFor(
-							derived.current_this_binding_, LowPtr()), LowPtr());
-					address = derived.ProjectBaseSubobjectOffset(
-						complete_object, offset);
-				}
-				else if (!derived.CurrentVirtualBaseAddress(
-					derived.current_this_binding_, needed.entity, &address))
-					ThrowLoweringInternal(
-						"base synthesized constructor has no virtual base");
-				arguments.Push(address);
-				references.Push(Instruction::CALL_PASS_VALUE);
-				--hidden_remaining;
-			}
-			for (std::size_t base = 0;
-				base < derived.program_.entities[owner].virtual_base_count &&
-				hidden_remaining != 0; ++base)
-			{
-				if (!derived.CarriesVirtualBase(selected, 1, base)) continue;
-				arguments.Push(derived.RuntimeVirtualBaseAddress(
-					source, owner, base));
-				references.Push(Instruction::CALL_PASS_VALUE);
-				--hidden_remaining;
-			}
-			if (hidden_remaining != 0)
-				ThrowLoweringInternal(
-					"synthesized constructor virtual-base ABI is incomplete");
-		}
 		if (construction && !selected_binding.nonthrowing)
 			derived.EnsureFullExpressionCleanupSegment();
 		Instruction call = derived.DirectCallInstruction(
@@ -150,7 +101,8 @@ protected:
 
 	// A virtual base of the special member's owner in an object that may
 	// be a base subobject of a larger one: through the object's vtable.
-	Operand SynthesizedVirtualBaseAddress(const Operand& object, TypeId type)
+	Operand SynthesizedVirtualBaseAddress(const Operand& object, TypeId type,
+		bool current_object = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		std::uint32_t ordinal = 0;
@@ -159,7 +111,7 @@ protected:
 				derived.ClassEntity(type), 0, &ordinal))
 			ThrowLoweringInternal("synthesized virtual-base step has no row");
 		return derived.RuntimeVirtualBaseAddress(
-			object, derived.current_member_owner_, ordinal);
+			object, derived.current_member_owner_, ordinal, current_object);
 	}
 
 	Operand LoadAssignmentObject(BindingId binding)
@@ -576,7 +528,8 @@ protected:
 				destination = derived.ProjectAggregateMember(
 					destination, step.binding);
 			else if (step.virtual_base_subobject)
-				destination = SynthesizedVirtualBaseAddress(destination, step.type);
+				destination = SynthesizedVirtualBaseAddress(
+					destination, step.type, true);
 			else
 				destination = derived.ProjectBaseSubobjects(
 					destination, step.base_projection_count, kNoType,
@@ -728,6 +681,7 @@ protected:
 				 derived.output_.strings.get(derived.output_.symbols[
 					derived.function_->symbol].name) :
 				 std::string("<synthetic>")));
+		(void)base_subobject;
 		CallArguments arguments;
 		CallArgumentFlags references;
 		arguments.Push(destination);
@@ -741,50 +695,6 @@ protected:
 					derived.current_member_owner_, owner));
 			references.Push(Instruction::CALL_PASS_VALUE);
 		}
-		std::size_t hidden = derived.VirtualBaseParameterCount(
-			destructor, binding.type);
-		if (hidden == 0 && owner != kNoEntity &&
-			derived.IncludesImplicitVirtualBases(destructor))
-			hidden = derived.program_.entities[owner].virtual_base_count;
-		for (std::size_t base = 0; owner != kNoEntity &&
-			base < derived.program_.entities[owner].virtual_base_count &&
-			hidden != 0; ++base)
-		{
-			if (!derived.CarriesVirtualBase(destructor, 0, base)) continue;
-			const VirtualBaseLayout& needed =
-				derived.program_.VirtualBase(owner, base);
-			Operand address;
-			if (base_subobject && derived.HasCurrentImplicitVirtualBases())
-			{
-				if (derived.current_this_binding_ == kNoBinding ||
-					!derived.CurrentVirtualBaseAddress(
-						derived.current_this_binding_, needed.entity, &address))
-					ThrowLoweringInternal(
-						"base destructor has no forwarded virtual-base address");
-			}
-			else if (base_subobject && derived.current_this_binding_ != kNoBinding &&
-				derived.current_member_owner_ != kNoEntity)
-			{
-				std::uint64_t offset = 0;
-				if (!derived.program_.FindVirtualBase(
-					derived.current_member_owner_, needed.entity, &offset))
-					ThrowLoweringInternal(
-						"complete destructor has no virtual-base address");
-				const Operand complete = derived.LoadStorage(derived.StorageFor(
-					derived.current_this_binding_, LowPtr()), LowPtr());
-				address = derived.ProjectBaseSubobjectOffset(complete, offset);
-			}
-			else address = derived.ProjectBaseSubobjectOffset(
-				destination, needed.offset);
-			arguments.Push(address);
-			references.Push(0);
-			if (derived.stats_)
-				++derived.stats_->virtual_base_call_arguments;
-			--hidden;
-		}
-		if (hidden != 0)
-			ThrowLoweringInternal(
-				"destructor call has an incomplete virtual-base contract");
 		Instruction call = derived.DirectCallInstruction(
 			derived.function_symbols_[destructor], LowVoid());
 		derived.AttachCallArguments(&call, arguments, references);

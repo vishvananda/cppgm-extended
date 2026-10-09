@@ -40,10 +40,6 @@ protected:
 				derived.LoadStorage(storage, LowPtr()) : storage;
 		}
 		Operand base, virtual_base;
-		if (derived.CurrentVirtualBasePathAddressForExpression(
-			children[0], member.member_owner, &virtual_base))
-			base = derived.ProjectBaseSubobjectOffset(virtual_base, 0);
-		else
 		{
 			const TypeId object_type = derived.ExpressionObjectType(
 				derived.arena_.nodes[children[0]].type);

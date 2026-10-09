@@ -111,16 +111,14 @@ function @D__D(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1
     %t2 = index i8 %t1, 0
     %t3 = addr @D____vtt
     %t4 = index i8 %t3, 8
+    call void @B__B__base_entry(%t2, %t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 8
-    call void @B__B__base_entry(%t2, %t4, %t6)
-    %t7 = load typed ptr $this
-    %t8 = addr @D__vtable
-    %t9 = index i8 %t8, 24
-    store typed ptr %t9, %t7
+    %t6 = addr @D__vtable
+    %t7 = index i8 %t6, 24
+    store typed ptr %t7, %t5
     return void
 }
-function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
+function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

@@ -2525,18 +2525,6 @@ void report_lowir_lowering_stats(const cppgm::lowering::Stats & stats)
 			 << stats.slot_implicit_object_fact_reads
 			 << " virtual_calls=" << stats.virtual_calls
 			 << " vptr_stores=" << stats.vptr_stores
-			 << " virtual_base_boundary_scan_nodes="
-			 << stats.virtual_base_boundary_scan_nodes
-			 << " virtual_base_boundary_facts="
-			 << stats.virtual_base_boundary_facts
-			 << " virtual_base_call_arguments="
-			 << stats.virtual_base_call_arguments
-			 << " virtual_base_boundary_binding_steps="
-			 << stats.virtual_base_boundary_binding_steps
-			 << " virtual_base_boundary_binding_cache_hits="
-			 << stats.virtual_base_boundary_binding_cache_hits
-			 << " virtual_base_boundary_binding_table_growth="
-			 << stats.virtual_base_boundary_binding_table_growth
 			 << " vtable_offset_rows=" << stats.vtable_offset_rows
 			 << " vtable_slots=" << stats.vtable_slots
 			 << " vtable_thunk_requests=" << stats.vtable_thunk_requests

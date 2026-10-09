@@ -384,47 +384,41 @@ function @StringStream__StringStream(%this : ptr [object_bytes=32]) -> void [bin
     %t2 = index i8 %t1, 16
     %t3 = addr @StringStream____vtt
     %t4 = index i8 %t3, 80
+    call void @BasicIOS__BasicIOS__base_entry(%t2, %t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 24
-    call void @BasicIOS__BasicIOS__base_entry(%t2, %t4, %t6)
-    %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 0
-    %t9 = addr @StringStream____vtt
-    %t10 = index i8 %t9, 8
-    %t11 = load typed ptr $this
-    %t12 = index i8 %t11, 16
-    %t13 = load typed ptr $this
-    %t14 = index i8 %t13, 24
-    call void @IOStream__IOStream__base_entry(%t8, %t10, %t12, %t14)
-    %t15 = load typed ptr $this
-    %t16 = addr @StringStream__vtable
-    %t17 = index i8 %t16, 32
-    store typed ptr %t17, %t15
-    %t18 = load typed ptr $this
-    %t19 = index i8 %t18, 8
-    %t20 = addr @StringStream____view__OStream__8__vtable
-    %t21 = index i8 %t20, 32
-    store typed ptr %t21, %t19
-    %t22 = load typed ptr $this
-    %t23 = load typed ptr %t22
-    %t24 = index i8 %t23, -24
-    %t25 = load typed i64 %t24
-    %t26 = index i8 %t22, %t25
-    %t27 = index i8 %t26, 0
-    %t28 = addr @StringStream____view__BasicIOS__16__vtable
-    %t29 = index i8 %t28, 24
-    store typed ptr %t29, %t27
-    %t30 = load typed ptr $this
-    %t31 = load typed ptr %t30
-    %t32 = index i8 %t31, -32
-    %t33 = load typed i64 %t32
-    %t34 = index i8 %t30, %t33
-    %t35 = index i8 %t34, 0
-    %t36 = index i8 [projection=field] %t35, 0
-    store typed i32 7, %t36
+    %t6 = index i8 %t5, 0
+    %t7 = addr @StringStream____vtt
+    %t8 = index i8 %t7, 8
+    call void @IOStream__IOStream__base_entry(%t6, %t8)
+    %t9 = load typed ptr $this
+    %t10 = addr @StringStream__vtable
+    %t11 = index i8 %t10, 32
+    store typed ptr %t11, %t9
+    %t12 = load typed ptr $this
+    %t13 = index i8 %t12, 8
+    %t14 = addr @StringStream____view__OStream__8__vtable
+    %t15 = index i8 %t14, 32
+    store typed ptr %t15, %t13
+    %t16 = load typed ptr $this
+    %t17 = load typed ptr %t16
+    %t18 = index i8 %t17, -24
+    %t19 = load typed i64 %t18
+    %t20 = index i8 %t16, %t19
+    %t21 = index i8 %t20, 0
+    %t22 = addr @StringStream____view__BasicIOS__16__vtable
+    %t23 = index i8 %t22, 24
+    store typed ptr %t23, %t21
+    %t24 = load typed ptr $this
+    %t25 = load typed ptr %t24
+    %t26 = index i8 %t25, -32
+    %t27 = load typed i64 %t26
+    %t28 = index i8 %t24, %t27
+    %t29 = index i8 %t28, 0
+    %t30 = index i8 [projection=field] %t29, 0
+    store typed i32 7, %t30
     return void
 }
-function @BasicIOS__BasicIOS__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN8BasicIOSC2Ev, object_root=yes, inline_hint=yes] {
+function @BasicIOS__BasicIOS__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN8BasicIOSC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -434,7 +428,7 @@ function @BasicIOS__BasicIOS__base_entry(%this : ptr [object_bytes=16], %__vtt :
     store typed ptr %t2, %t1
     return void
 }
-function @IOStream__IOStream__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [binding=weak, object=_ZN8IOStreamC2Ev, object_root=yes, inline_hint=yes] {
+function @IOStream__IOStream__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr) -> void [binding=weak, object=_ZN8IOStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -442,11 +436,11 @@ function @IOStream__IOStream__base_entry(%this : ptr [object_bytes=32], %__vtt :
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 0
     %t3 = index i8 %__vtt, 8
-    call void @IStream__IStream__base_entry(%t2, %t3, %__vbptr0, %__vbptr1)
+    call void @IStream__IStream__base_entry(%t2, %t3)
     %t4 = load typed ptr $this
     %t5 = index i8 %t4, 8
     %t6 = index i8 %__vtt, 24
-    call void @OStream__OStream__base_entry(%t5, %t6, %__vbptr0, %__vbptr1)
+    call void @OStream__OStream__base_entry(%t5, %t6)
     %t7 = load typed ptr $this
     %t8 = load typed ptr %__vtt
     store typed ptr %t8, %t7
@@ -455,13 +449,18 @@ function @IOStream__IOStream__base_entry(%this : ptr [object_bytes=32], %__vtt :
     %t11 = index i8 %__vtt, 48
     %t12 = load typed ptr %t11
     store typed ptr %t12, %t10
-    %t13 = index i8 %__vbptr0, 0
-    %t14 = index i8 %__vtt, 40
-    %t15 = load typed ptr %t14
-    store typed ptr %t15, %t13
+    %t13 = load typed ptr $this
+    %t14 = load typed ptr %__vtt
+    %t15 = index i8 %t14, -24
+    %t16 = load typed i64 %t15
+    %t17 = index i8 %t13, %t16
+    %t18 = index i8 %t17, 0
+    %t19 = index i8 %__vtt, 40
+    %t20 = load typed ptr %t19
+    store typed ptr %t20, %t18
     return void
 }
-function @IStream__IStream__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7IStreamC2Ev, object_root=yes, inline_hint=yes] {
+function @IStream__IStream__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7IStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -469,13 +468,18 @@ function @IStream__IStream__base_entry(%this : ptr [object_bytes=24], %__vtt : p
     %t1 = load typed ptr $this
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
-    %t3 = index i8 %__vbptr0, 0
-    %t4 = index i8 %__vtt, 8
-    %t5 = load typed ptr %t4
-    store typed ptr %t5, %t3
+    %t3 = load typed ptr $this
+    %t4 = load typed ptr %__vtt
+    %t5 = index i8 %t4, -24
+    %t6 = load typed i64 %t5
+    %t7 = index i8 %t3, %t6
+    %t8 = index i8 %t7, 0
+    %t9 = index i8 %__vtt, 8
+    %t10 = load typed ptr %t9
+    store typed ptr %t10, %t8
     return void
 }
-function @OStream__OStream__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbptr0 : ptr, %__vbptr1 : ptr) -> void [unwind=no, binding=weak, object=_ZN7OStreamC2Ev, object_root=yes, inline_hint=yes] {
+function @OStream__OStream__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7OStreamC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -483,9 +487,14 @@ function @OStream__OStream__base_entry(%this : ptr [object_bytes=24], %__vtt : p
     %t1 = load typed ptr $this
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
-    %t3 = index i8 %__vbptr0, 0
-    %t4 = index i8 %__vtt, 8
-    %t5 = load typed ptr %t4
-    store typed ptr %t5, %t3
+    %t3 = load typed ptr $this
+    %t4 = load typed ptr %__vtt
+    %t5 = index i8 %t4, -24
+    %t6 = load typed i64 %t5
+    %t7 = index i8 %t3, %t6
+    %t8 = index i8 %t7, 0
+    %t9 = index i8 %__vtt, 8
+    %t10 = load typed ptr %t9
+    store typed ptr %t10, %t8
     return void
 }

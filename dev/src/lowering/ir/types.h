@@ -285,7 +285,6 @@ struct Instruction
 	TempId dest;
 	std::uint32_t extra_first;
 	std::uint32_t extra_count;
-	std::uint32_t virtual_base_argument_count;
 	BlockId target;
 	BlockId alternate;
 	Kind kind;
@@ -317,7 +316,6 @@ struct Instruction
 
 	explicit Instruction(Kind kind_value)
 		: dest(kNoLowId), extra_first(kNoLowId), extra_count(0),
-		  virtual_base_argument_count(0),
 		  target(kNoLowId), alternate(kNoLowId), kind(kind_value),
 		  op(LOW_OP_NONE), projection(INDEX_PROJECTION_NONE), atomic_order(0),
 		  atomic_failure_order(0), indirect(false), volatile_access(false),

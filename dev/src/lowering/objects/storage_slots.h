@@ -211,7 +211,6 @@ protected:
 			}
 			if (record.kind == DUMP_PARAMETER)
 			{
-				derived.PlanVirtualBaseBoundarySlots(record);
 				++derived.parameter_slot_index_;
 				if (derived.HasCurrentConstructionVtt() &&
 					derived.parameter_slot_index_ == 1)

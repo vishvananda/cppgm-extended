@@ -504,34 +504,30 @@ function @Diamond__Diamond(%this : ptr [object_bytes=24]) -> void [binding=weak,
     %t4 = index i8 %t3, 0
     %t5 = addr @Diamond____vtt
     %t6 = index i8 %t5, 8
+    call void @Left__Left__base_entry(%t4, %t6)
     %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 16
-    call void @Left__Left__base_entry(%t4, %t6, %t8)
-    %t9 = load typed ptr $this
-    %t10 = index i8 %t9, 8
-    %t11 = addr @Diamond____vtt
-    %t12 = index i8 %t11, 24
-    %t13 = load typed ptr $this
-    %t14 = index i8 %t13, 16
-    call void @Right__Right__base_entry(%t10, %t12, %t14)
-    %t15 = load typed ptr $this
-    %t16 = addr @Diamond__vtable
+    %t8 = index i8 %t7, 8
+    %t9 = addr @Diamond____vtt
+    %t10 = index i8 %t9, 24
+    call void @Right__Right__base_entry(%t8, %t10)
+    %t11 = load typed ptr $this
+    %t12 = addr @Diamond__vtable
+    %t13 = index i8 %t12, 24
+    store typed ptr %t13, %t11
+    %t14 = load typed ptr $this
+    %t15 = index i8 %t14, 8
+    %t16 = addr @Diamond____view__Right__8__vtable
     %t17 = index i8 %t16, 24
     store typed ptr %t17, %t15
     %t18 = load typed ptr $this
-    %t19 = index i8 %t18, 8
-    %t20 = addr @Diamond____view__Right__8__vtable
-    %t21 = index i8 %t20, 24
-    store typed ptr %t21, %t19
-    %t22 = load typed ptr $this
-    %t23 = load typed ptr %t22
-    %t24 = index i8 %t23, -24
-    %t25 = load typed i64 %t24
-    %t26 = index i8 %t22, %t25
-    %t27 = index i8 %t26, 0
-    %t28 = addr @Diamond____view__YA__16__vtable
-    %t29 = index i8 %t28, 24
-    store typed ptr %t29, %t27
+    %t19 = load typed ptr %t18
+    %t20 = index i8 %t19, -24
+    %t21 = load typed i64 %t20
+    %t22 = index i8 %t18, %t21
+    %t23 = index i8 %t22, 0
+    %t24 = addr @Diamond____view__YA__16__vtable
+    %t25 = index i8 %t24, 24
+    store typed ptr %t25, %t23
     return void
 }
 function @Ambiguous__Ambiguous(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN9AmbiguousC1Ev, inline_hint=yes] {
@@ -624,7 +620,7 @@ function @YB__YB__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, b
     store typed ptr %t3, %t1
     return void
 }
-function @Left__Left__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN4LeftC2Ev, object_root=yes, inline_hint=yes] {
+function @Left__Left__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN4LeftC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -632,13 +628,18 @@ function @Left__Left__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %_
     %t1 = load typed ptr $this
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
-    %t3 = index i8 %__vbptr0, 0
-    %t4 = index i8 %__vtt, 8
-    %t5 = load typed ptr %t4
-    store typed ptr %t5, %t3
+    %t3 = load typed ptr $this
+    %t4 = load typed ptr %__vtt
+    %t5 = index i8 %t4, -24
+    %t6 = load typed i64 %t5
+    %t7 = index i8 %t3, %t6
+    %t8 = index i8 %t7, 0
+    %t9 = index i8 %__vtt, 8
+    %t10 = load typed ptr %t9
+    store typed ptr %t10, %t8
     return void
 }
-function @Right__Right__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN5RightC2Ev, object_root=yes, inline_hint=yes] {
+function @Right__Right__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN5RightC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -646,10 +647,15 @@ function @Right__Right__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, 
     %t1 = load typed ptr $this
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
-    %t3 = index i8 %__vbptr0, 0
-    %t4 = index i8 %__vtt, 8
-    %t5 = load typed ptr %t4
-    store typed ptr %t5, %t3
+    %t3 = load typed ptr $this
+    %t4 = load typed ptr %__vtt
+    %t5 = index i8 %t4, -24
+    %t6 = load typed i64 %t5
+    %t7 = index i8 %t3, %t6
+    %t8 = index i8 %t7, 0
+    %t9 = index i8 %__vtt, 8
+    %t10 = load typed ptr %t9
+    store typed ptr %t10, %t8
     return void
 }
 function @RepeatedLeft__RepeatedLeft__base_entry(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12RepeatedLeftC2Ev, object_root=yes, inline_hint=yes] {

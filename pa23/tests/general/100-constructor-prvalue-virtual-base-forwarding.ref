@@ -456,20 +456,14 @@ function @W_D___W_D_(%this : ptr [object_bytes=24], %e : ptr [pass=by_address, o
     %t27 = addr @__cppgm_class_template_identity_0_1_0____vtt
     %t28 = index i8 %t27, 8
     %t29 = load typed ptr $e
+    call void @D__D__base_entry(%t26, %t28, %t29)
     %t30 = load typed ptr $this
-    %t31 = index i8 %t30, 8
-    %t32 = load typed ptr $this
-    %t33 = index i8 %t32, 12
-    %t34 = load typed ptr $this
-    %t35 = index i8 %t34, 16
-    call void @D__D__base_entry(%t26, %t28, %t29, %t31, %t33, %t35)
-    %t36 = load typed ptr $this
-    %t37 = addr @__cppgm_class_template_identity_0_1_0__vtable
-    %t38 = index i8 %t37, 40
-    store typed ptr %t38, %t36
+    %t31 = addr @__cppgm_class_template_identity_0_1_0__vtable
+    %t32 = index i8 %t31, 40
+    store typed ptr %t32, %t30
     return void
 }
-function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt : ptr, %other : ptr [pass=by_address, alias=noalias, object_bytes=24], %__vbptr0 : ptr, %__vbptr1 : ptr, %__vbptr2 : ptr) -> void [unwind=no, binding=weak, object=_ZN1DC2ERKS_, object_root=yes, inline_hint=yes] {
+function @D__D__base_entry(%this : ptr [alias=noalias, object_bytes=24], %__vtt : ptr, %other : ptr [pass=by_address, alias=noalias, object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN1DC2ERKS_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

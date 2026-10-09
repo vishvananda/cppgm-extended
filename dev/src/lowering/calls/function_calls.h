@@ -246,18 +246,8 @@ protected:
 			if (record.virtual_call && i == 1)
 				virtual_object = arguments[arguments.size() - 1];
 		}
-		CallArguments lowered_boundary_arguments;
-		for (std::size_t i = lowered_argument_begin;
-			i < arguments.size(); ++i)
-			lowered_boundary_arguments.Push(arguments[i]);
-		const std::size_t boundary_argument_begin = arguments.size();
-		derived.AppendCallVirtualBaseArguments(callee, function_type_id,
-			children, lowered_boundary_arguments, &arguments,
-			&argument_references);
 		while (argument_object_bytes.size() < arguments.size())
 			argument_object_bytes.Push(0);
-		call.virtual_base_argument_count = static_cast<std::uint32_t>(
-			arguments.size() - boundary_argument_begin);
 		if (member_pointer_call)
 		{
 			const typename Derived::MemberPointerCallOperands lowered =

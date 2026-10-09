@@ -53,7 +53,7 @@ function @use_derived() -> i32 [binding=strong, object=_Z11use_derivedv] {
   block ^entry:
     return i32 7
 }
-function @Derived___Derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN7DerivedD2Ev, object_root=yes, inline_hint=yes] {
+function @Derived___Derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN7DerivedD2Ev, object_root=yes, inline_hint=yes] {
   block ^entry:
     return void
 }

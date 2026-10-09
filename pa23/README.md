@@ -146,13 +146,13 @@ PA23 supports the following in addition to the PA22 subset:
 
 - virtual inheritance for shared base-subobject layout in complete objects
 - field access through shared virtual bases
-- supported constructor and hidden-argument forwarding cases: a by-value parameter of a
-  class with virtual bases carries each virtual base's subobject address as a hidden
-  pointer argument after the visible parameters, since the complete type is visible to
-  both caller and callee. A reference or pointer parameter carries no such hidden argument
-  and instead reaches its virtual bases through the object's own vtable at each use. So
-  does the implicit object of any member function other than a base-object constructor or
-  destructor, since Itanium passes `this` and the visible arguments
+- supported constructor and argument forwarding cases with the Itanium calling convention:
+  a function takes `this` (for a member) and its visible arguments, and a base-object
+  constructor or destructor of a class with virtual bases also takes the VTT. No parameter
+  carries a hidden virtual-base address. A reference, a pointer, a by-value parameter or
+  an implicit object reaches its virtual bases through the object's vtable; a by-value
+  parameter is a complete object, so it may also use its static layout. A base-object
+  constructor or destructor reads its own construction vtable from the VTT
 - reaching a virtual base through a reference or pointer by that base's own vbase-offset
   row, even when it is a virtual base of another virtual base
 - virtual-base construction by the most derived class's constructor, implicit and
@@ -266,16 +266,12 @@ separate from inlining policy. The entry may need its own object symbol or
 retained definition, but it gains `no_inline=yes` only when the source-level
 function has the corresponding prohibition.
 
-Choose where a virtual base's address comes from by how the parameter is
-passed, not by whether the function happens to see the complete type. A
-by-value parameter forces its complete type on every caller, so the caller
-can compute each virtual base's address and pass it as a hidden pointer
-argument. A reference or pointer parameter does not: a caller may hold only a
-forward declaration, in which case it cannot compute a hidden virtual-base
-argument, while the definition, compiled where the type is complete, would
-expect one -- the two disagree across a translation unit. Give a reference or
-pointer parameter no hidden virtual-base argument and recover each virtual
-base's address from the object's vtable at the point of use, the way the same
-access on any other reference or pointer already does. Restricting the hidden
-argument to by-value parameters keeps the calling convention identical whether
-or not a translation unit has the complete type in view.
+Find a virtual base where the object says it is: its vbase-offset row in the
+object's vtable, or a static offset when the object is a complete object of a
+known type (a named variable, a temporary, a by-value parameter). Hidden
+virtual-base arguments would make the calling convention depend on which
+translation unit sees the complete type, and they would differ from what g++
+and clang pass: a g++ caller of a base-object constructor or member function
+built here would hand it no such arguments. Within a base-object constructor
+or destructor, read the rows from the construction vtable that the VTT names,
+not from the object's vptr, which may still hold a base's table.

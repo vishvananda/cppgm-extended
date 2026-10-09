@@ -656,10 +656,6 @@ void AdaptInstruction(const Instruction& source,
 				lowir_model::Parameter& parameter = target.call_params[i];
 				if (telemetry->serializable())
 					parameter.name = telemetry->Intern(literals,
-						i + source.virtual_base_argument_count >=
-						source.extra_count ?
-						"__pvbptr" + std::to_string(i +
-							source.virtual_base_argument_count - source.extra_count) :
 						"arg" + std::to_string(i));
 				parameter.type = target.args[i].literal_type;
 				if (source.extra_first + i <

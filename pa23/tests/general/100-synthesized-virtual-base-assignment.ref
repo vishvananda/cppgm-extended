@@ -251,19 +251,17 @@ function @Outer__Outer(%this : ptr [object_bytes=48]) -> void [binding=weak, obj
     %t6 = index i8 %t5, 0
     %t7 = addr @Outer____vtt
     %t8 = index i8 %t7, 8
+    call void @Mid__Mid__base_entry(%t6, %t8)
     %t9 = load typed ptr $this
-    %t10 = index i8 %t9, 44
-    call void @Mid__Mid__base_entry(%t6, %t8, %t10)
-    %t11 = load typed ptr $this
-    %t12 = addr @Outer__vtable
-    %t13 = index i8 %t12, 24
-    store typed ptr %t13, %t11
-    %t14 = load typed ptr $this
-    %t15 = index i8 [projection=field] %t14, 40
-    store typed i32 3, %t15
+    %t10 = addr @Outer__vtable
+    %t11 = index i8 %t10, 24
+    store typed ptr %t11, %t9
+    %t12 = load typed ptr $this
+    %t13 = index i8 [projection=field] %t12, 40
+    store typed i32 3, %t13
     return void
 }
-function @Mid__Mid__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=16], %__vtt : ptr, %other : ptr [pass=by_address, alias=noalias, object_bytes=16], %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN3MidC2ERKS_, object_root=yes, inline_hint=yes] {
+function @Mid__Mid__ov2__base_entry(%this : ptr [alias=noalias, object_bytes=16], %__vtt : ptr, %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN3MidC2ERKS_, object_root=yes, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -334,19 +332,17 @@ function @Outer__Outer__ov2(%this : ptr [alias=noalias, object_bytes=48], %other
     %t15 = index i8 %t14, 0
     %t16 = addr @Outer____vtt
     %t17 = index i8 %t16, 8
+    call void @Mid__Mid__ov2__base_entry(%t13, %t17, %t15)
     %t18 = load typed ptr $this
-    %t19 = index i8 %t18, 44
-    call void @Mid__Mid__ov2__base_entry(%t13, %t17, %t15, %t19)
-    %t20 = load typed ptr $this
+    %t19 = index i8 [projection=field] %t18, 40
+    %t20 = load typed ptr $other
     %t21 = index i8 [projection=field] %t20, 40
-    %t22 = load typed ptr $other
-    %t23 = index i8 [projection=field] %t22, 40
-    %t24 = load typed i32 %t23
-    store typed i32 %t24, %t21
-    %t25 = load typed ptr $this
-    %t26 = addr @Outer__vtable
-    %t27 = index i8 %t26, 24
-    store typed ptr %t27, %t25
+    %t22 = load typed i32 %t21
+    store typed i32 %t22, %t19
+    %t23 = load typed ptr $this
+    %t24 = addr @Outer__vtable
+    %t25 = index i8 %t24, 24
+    store typed ptr %t25, %t23
     return void
 }
 function @Shared__operator_(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=4]) -> ptr [unwind=no, binding=weak, object=_ZN6SharedaSERKS_, inline_hint=yes] {
@@ -444,7 +440,7 @@ function @Pad__Pad(%this : ptr [object_bytes=28]) -> void [binding=weak, object=
   block ^for_end_4:
     return void
 }
-function @Mid__Mid__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN3MidC2Ev, object_root=yes, inline_hint=yes] {
+function @Mid__Mid__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN3MidC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

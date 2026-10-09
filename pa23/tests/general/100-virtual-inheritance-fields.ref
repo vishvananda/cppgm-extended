@@ -174,28 +174,24 @@ function @YD__YD(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_Z
     %t2 = index i8 %t1, 0
     %t3 = addr @YD____vtt
     %t4 = index i8 %t3, 8
+    call void @YB__YB__base_entry(%t2, %t4)
     %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 20
-    call void @YB__YB__base_entry(%t2, %t4, %t6)
-    %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 8
-    %t9 = addr @YD____vtt
-    %t10 = index i8 %t9, 16
-    %t11 = load typed ptr $this
-    %t12 = index i8 %t11, 20
-    call void @YC__YC__base_entry(%t8, %t10, %t12)
-    %t13 = load typed ptr $this
-    %t14 = addr @YD__vtable
+    %t6 = index i8 %t5, 8
+    %t7 = addr @YD____vtt
+    %t8 = index i8 %t7, 16
+    call void @YC__YC__base_entry(%t6, %t8)
+    %t9 = load typed ptr $this
+    %t10 = addr @YD__vtable
+    %t11 = index i8 %t10, 24
+    store typed ptr %t11, %t9
+    %t12 = load typed ptr $this
+    %t13 = index i8 %t12, 8
+    %t14 = addr @YD____view__YC__8__vtable
     %t15 = index i8 %t14, 24
     store typed ptr %t15, %t13
-    %t16 = load typed ptr $this
-    %t17 = index i8 %t16, 8
-    %t18 = addr @YD____view__YC__8__vtable
-    %t19 = index i8 %t18, 24
-    store typed ptr %t19, %t17
     return void
 }
-function @YB__YB__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN2YBC2Ev, object_root=yes, inline_hint=yes] {
+function @YB__YB__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN2YBC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -205,7 +201,7 @@ function @YB__YB__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbp
     store typed ptr %t2, %t1
     return void
 }
-function @YC__YC__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN2YCC2Ev, object_root=yes, inline_hint=yes] {
+function @YC__YC__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN2YCC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

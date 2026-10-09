@@ -242,19 +242,15 @@ protected:
 			if (derived.stats_) ++derived.stats_->vptr_stores;
 			const semantic::PolymorphicViewFact& fact = facts.views[view];
 			Operand subobject;
-			Operand inherited;
 			if (fact.virtual_anchor_ordinal == semantic::kNoDumpEdge)
 				subobject = ProjectBaseSubobjectOffset(derived.LoadStorage(
 					derived.StorageFor(derived.current_this_binding_, LowPtr()),
 					LowPtr()), fact.offset);
-			else if (fact.virtual_base && derived.CurrentVirtualBaseAddress(
-				derived.current_this_binding_, fact.entity, &inherited))
-				subobject = ProjectBaseSubobjectOffset(inherited, 0);
 			else
 				subobject = ProjectBaseSubobjectOffset(
 					derived.RuntimeVirtualBaseAddress(derived.LoadStorage(
 						derived.StorageFor(derived.current_this_binding_, LowPtr()),
-						LowPtr()), entity, fact.virtual_anchor_ordinal),
+						LowPtr()), entity, fact.virtual_anchor_ordinal, true),
 					fact.virtual_anchor_offset);
 			Operand view_address_point;
 			const std::uint32_t index = layout && view < layout->view_index.size() ?
