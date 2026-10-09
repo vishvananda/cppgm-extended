@@ -312,6 +312,14 @@ protected:
 		const NodeChildren& children)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		if (action.kind == DUMP_BASE_INITIALIZER_ACTION &&
+			derived.current_this_binding_ != kNoBinding && !children.empty() &&
+			(derived.arena_.nodes[children[0]].kind == DUMP_CLASS_VALUE_TRANSFER ||
+			 derived.arena_.nodes[children[0]].kind == DUMP_BRACED_INIT_LIST))
+		{
+			LowerBaseValueTransfer(action, children);
+			return;
+		}
 		if (action.kind != DUMP_BASE_INITIALIZER_ACTION ||
 			derived.current_this_binding_ == kNoBinding || children.empty() ||
 			derived.arena_.nodes[children[0]].kind != DUMP_CONSTRUCTOR_ACTION)
@@ -349,6 +357,46 @@ protected:
 				action.virtual_base_subobject);
 		if (children.size() > 1)
 			derived.CompleteFullExpressionCleanup();
+	}
+
+	// A base initialized from a prvalue of its own class (an elided copy) or
+	// aggregate-initialized from a braced list.  The value lands whole only
+	// where the class owns all its bytes; past its nvsize a derived class
+	// may have put a member (Itanium 2.4), so the value is made in a
+	// temporary and its nvsize bytes copied.
+	void LowerBaseValueTransfer(const DumpNode& action,
+		const NodeChildren& children)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (children.size() > 1)
+			derived.BeginFullExpressionCleanup(children, 1);
+		const Operand object = derived.LoadStorage(
+			derived.StorageFor(derived.current_this_binding_, LowPtr()), LowPtr());
+		const Operand destination = action.has_direct_base_offset ?
+			derived.ProjectBaseSubobjectOffset(object, action.direct_base_offset) :
+			derived.ProjectBaseSubobjects(object, action.base_projection_count);
+		const LowType type = derived.LowerStorageType(action.type);
+		const std::uint64_t owned = derived.ClassTransferBytes(action.type);
+		if (owned != 0 && owned < type.width / 8)
+		{
+			const Operand slot(derived.EnsureGeneratedSlot(
+				children[0], "baseobj", type), type);
+			const Operand temporary = derived.AddressOfStorage(slot);
+			LowerBaseValue(action, children[0], temporary);
+			derived.EmitClassObjectCopy(action.type, temporary, destination, true);
+		}
+		else LowerBaseValue(action, children[0], destination);
+		if (children.size() > 1)
+			derived.CompleteFullExpressionCleanup();
+	}
+
+	void LowerBaseValue(const DumpNode& action, std::uint32_t value,
+		const Operand& destination)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (derived.arena_.nodes[value].kind == DUMP_BRACED_INIT_LIST)
+			derived.LowerRuntimeObjectValue(action.type, value, destination);
+		else derived.LowerClassValueTransfer(value, destination);
 	}
 
 	void LowerDelegatingInitializationAction(const DumpNode& action,

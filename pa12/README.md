@@ -188,7 +188,12 @@ at most that many bytes (`copyobj 1x4` for a 4-byte class whose data ends in
 its first byte), and value-initializing a base subobject zeroes only those
 bytes.  A mem-initializer `Base()` value-initializes a base whose default
 constructor is not user-provided -- implicit, or defaulted on its first
-declaration -- so the base is zeroed before any constructor runs.
+declaration -- so the base is zeroed before any constructor runs.  A base
+initialized from a prvalue of its own class (an elided copy) or, if it is an
+aggregate, from a braced list takes that value; where the class's size
+exceeds its nvsize the value is built in a temporary and its nvsize bytes
+copied, since a derived class's member or virtual base may already sit past
+them.
 
 For supported trivially copy-constructible class value transfers, PA12 may also lower the
 copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of

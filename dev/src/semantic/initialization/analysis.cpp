@@ -1465,9 +1465,14 @@ std::uint32_t Analyzer::AddBaseInitializationActionAt(EntityId entity,
 		dump_.nodes[action].selected_binding = destructor;
 	}
 	std::vector<ExpressionInfo> prepared_arguments;
-	const bool expanded_arguments = ExpandCallArgumentPacks(
-		arguments, scope, &arguments, &prepared_arguments);
-	const std::uint32_t constructor = BuildConstructorAction(base_type,
+	const bool expanded_arguments = !(list_initialization &&
+		program_->entities[base].is_aggregate) && ExpandCallArgumentPacks(
+			arguments, scope, &arguments, &prepared_arguments);
+	// [dcl.init.list]: a braced list aggregate-initializes an aggregate base.
+	const std::uint32_t constructor =
+		list_initialization && program_->entities[base].is_aggregate ?
+		AnalyzeBracedInit(initializer, scope, base_type).node :
+		BuildConstructorAction(base_type,
 		scope, arguments, false, list_initialization, true, true,
 		list_initialization ? initializer : kNoNode,
 		expanded_arguments ? &prepared_arguments : 0);
