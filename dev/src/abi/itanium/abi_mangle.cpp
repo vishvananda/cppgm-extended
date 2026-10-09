@@ -1079,7 +1079,8 @@ private:
   {
     const bool structured_variable = target.kind == ABI_TARGET_FACT_VARIABLE
                                      && (target.function.kind == ABI_FUNCTION_TARGET_ENCODING
-                                         || target.function.kind == ABI_FUNCTION_TARGET_MEMBER);
+                                         || target.function.kind == ABI_FUNCTION_TARGET_MEMBER
+                                         || target.function.kind == ABI_FUNCTION_TARGET_PATH);
     const bool accepts_function_records = target.kind == ABI_TARGET_FACT_FUNCTION
                                           || structured_variable
                                           || target.kind == ABI_TARGET_FACT_THUNK
@@ -1123,6 +1124,18 @@ private:
           graph_.path(target.function.resolved_path) : graph_.paths.intern(
             target.qualified_name, stats_ ? &stats_->text_object_path_components : nullptr);
         const PathNode & name = graph_.paths.get(path);
+        // A variable template specialization: its name and template
+        // arguments (`_Z2vtIiE`, `_ZN2ns2nvIiEE`).
+        if(!records.empty()) {
+          const FunctionFacts facts = collect_function_facts(records);
+          require(!facts.template_arguments.empty() && facts.parameters.empty()
+                  && facts.result_types.empty() && facts.terminal == nullptr,
+                  "namespace ABI variable has function-only name facts");
+          output_ += "_Z";
+          encode_function_name_path(path, facts, facts.template_arguments, 0,
+                                    target.internal_linkage);
+          return output_;
+        }
         if(!target.internal_linkage && !target.internal_unmarked
            && name.parent == NO_ID)
           return graph_.strings.get(name.name);

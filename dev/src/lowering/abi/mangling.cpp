@@ -2801,7 +2801,10 @@ std::string MangleVariable(const semantic::Program& program,
 		facts.SetSourceName(&member.function, binding.name);
 		AppendTypedFact(&fact_case, &member);
 	}
-	if (member_variable_template && binding.template_argument_count != 0)
+	// A variable template specialization carries its template arguments
+	// (`_Z2vtIiE`, `_ZN2ns2nvIiEE`), at namespace scope as in a class.
+	if ((member_variable_template || (binding.variable_template_specialization &&
+		binding.member_owner == kNoEntity)) && binding.template_argument_count != 0)
 	{
 		const std::size_t first = binding.template_argument_begin;
 		const std::size_t count = binding.template_argument_count;

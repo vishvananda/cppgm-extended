@@ -173,7 +173,9 @@ PA17 owns the template declaration graph and specialization model over the
 implemented language surface, including:
 
 - alias templates
-- variable templates (a course extension beyond C++11)
+- variable templates (a course extension beyond C++11); each specialization is
+  its own object, its symbol carrying the template arguments (`_Z5widthIiE`,
+  `_ZN5store5countIcEE`)
 - template-template parameters and template-template argument matching
 - member templates, including templated member operators and templated call
   operators
