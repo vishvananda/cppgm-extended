@@ -300,7 +300,8 @@ PA11 supports the following in addition to the PA10 procedural subset:
 - pseudo-destructor and explicit destructor-name syntax over supported scalar
   and class expressions
 - standard `alignas` and `alignof`, including rejection of a requested class
-  alignment weaker than its natural alignment
+  alignment weaker than its natural alignment; an alignment-specifier on a
+  block-scope object gives its automatic storage the requested alignment
 - inheriting constructors through `using Base::Base`
 - use of complete class types in:
   - `sizeof(type-id)`

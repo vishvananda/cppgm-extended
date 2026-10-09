@@ -169,7 +169,7 @@ std::uint32_t Analyzer::MakeVariableDeclarationDump(
 		DUMP_VARIABLE, type, VALUE_NONE, name, binding);
 	std::size_t alignment = DeclaredTypeAlignment(
 		type, BindingDeclaredTypeLayout(binding));
-	const std::size_t requested = local ? 0 : static_cast<std::size_t>(
+	const std::size_t requested = static_cast<std::size_t>(
 		program_->BindingLayout(program_->bindings[
 			program_->bindings[binding].canonical]).requested_alignment);
 	if (requested > std::max(alignment, program_->AlignOf(type)))

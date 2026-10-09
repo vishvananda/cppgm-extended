@@ -28,11 +28,14 @@ bool ConsumeLeadingGnuObjectAttribute(
 	syntax::SyntaxArena& arena, std::size_t* position,
 	std::vector<syntax::NodeId>* attributes,
 	std::vector<GnuAttributeExpressionArgument>* expression_arguments);
+// `[[gnu::aligned(N)]]` becomes the GNU `aligned` attribute node, its
+// argument range handed back as for the GNU spelling.
 bool ConsumeLeadingStandardObjectAttribute(
 	const std::vector<syntax::SyntaxToken>& tokens,
 	const syntax::StringTable& strings,
 	syntax::SyntaxArena& arena, std::size_t* position,
-	std::vector<syntax::NodeId>* attributes);
+	std::vector<syntax::NodeId>* attributes,
+	std::vector<GnuAttributeExpressionArgument>* expression_arguments = 0);
 // Standard attributes that lead a block item appertain to the declaration
 // it introduces; a statement admits no `noreturn` (7.6.3p1).
 void AttachLeadingBlockItemAttributes(syntax::SyntaxArena& arena,

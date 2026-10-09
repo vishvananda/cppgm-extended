@@ -1237,8 +1237,10 @@ NodeId SyntaxParser::ParseDeclarator(bool abstract, TextId* name, bool speculati
 				arena_.Add(suffix, bound);
 			}
 			Expect(OP_RSQUARE);
-			SkipAttributes();
 			arena_.Add(result, suffix);
+			std::vector<NodeId> attributes; // GNU: of the declaration.
+			while (ParseLeadingAttribute(&attributes)) {}
+			for (std::size_t i = 0; i < attributes.size(); ++i) arena_.Add(result, attributes[i]);
 			consumed = true;
 			continue;
 		}
@@ -1890,10 +1892,9 @@ NodeId SyntaxParser::ParseCompoundStatement()
 	{
 		if (AtEof()) throw Error("unterminated compound statement");
 		NodeId item = kNoNode;
-		std::vector<NodeId> attributes;
-		while (At(OP_LSQUARE) && AtOffset(1, OP_LSQUARE) &&
-			syntax::ConsumeLeadingStandardObjectAttribute(
-				tokens_, strings_, arena_, &position_, &attributes)) {}
+		std::vector<NodeId> attributes; // As a declaration's leading ones.
+		while ((At(KW_ALIGNAS) && (attributes.push_back(
+			ParseAlignmentSpecifier()), true)) || ParseLeadingAttribute(&attributes)) {}
 		const bool declaration_start = !StartsThisArgumentCast() &&
 			(At(KW_TEMPLATE) || At(KW_USING) ||
 			At(KW_NAMESPACE) ||
@@ -2789,20 +2790,18 @@ NodeId SyntaxParser::FinishSimpleOrFunction(const Mark& mark,
 bool SyntaxParser::ParseLeadingAttribute(std::vector<NodeId>* attributes)
 {
 	std::vector<syntax::GnuAttributeExpressionArgument> aligned_arguments;
-	if (syntax::ConsumeLeadingGnuObjectAttribute(
-		tokens_, strings_, arena_, &position_, attributes, &aligned_arguments))
+	const bool consumed = syntax::ConsumeLeadingGnuObjectAttribute(
+		tokens_, strings_, arena_, &position_, attributes, &aligned_arguments) ||
+		syntax::ConsumeLeadingStandardObjectAttribute(
+			tokens_, strings_, arena_, &position_, attributes, &aligned_arguments);
+	for (std::size_t i = 0; i < aligned_arguments.size(); ++i)
 	{
-		for (std::size_t i = 0; i < aligned_arguments.size(); ++i)
-		{
-			const NodeId parsed = ParseGnuAlignedArgument(
-				aligned_arguments[i].begin, aligned_arguments[i].end);
-			if (parsed != kNoNode)
-				arena_.Add(aligned_arguments[i].attribute, parsed);
-		}
-		return true;
+		const NodeId parsed = ParseGnuAlignedArgument(
+			aligned_arguments[i].begin, aligned_arguments[i].end);
+		if (parsed != kNoNode)
+			arena_.Add(aligned_arguments[i].attribute, parsed);
 	}
-	return syntax::ConsumeLeadingStandardObjectAttribute(
-			tokens_, strings_, arena_, &position_, attributes) || SkipAttribute();
+	return consumed || SkipAttribute();
 }
 NodeId SyntaxParser::ParseDeclaration(bool in_class)
 {

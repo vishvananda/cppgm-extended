@@ -215,7 +215,8 @@ bool ConsumeLeadingGnuObjectAttribute(
 bool ConsumeLeadingStandardObjectAttribute(
 	const std::vector<SyntaxToken>& tokens, const StringTable& strings,
 	SyntaxArena& arena, std::size_t* position,
-	std::vector<NodeId>* attributes)
+	std::vector<NodeId>* attributes,
+	std::vector<GnuAttributeExpressionArgument>* expression_arguments)
 {
 	if (!position || !attributes)
 		ThrowSyntaxInternal("missing standard attribute parser destination");
@@ -237,6 +238,37 @@ bool ConsumeLeadingStandardObjectAttribute(
 			const std::string& name = strings.Get(tokens[*position].spelling);
 			const bool unqualified = *position == attribute_begin ||
 				At(tokens, *position - 1, OP_COMMA);
+			const bool gnu_scope = *position >= 2 &&
+				At(tokens, *position - 1, OP_COLON2) &&
+				(strings.Get(tokens[*position - 2].spelling) == "gnu" ||
+				 strings.Get(tokens[*position - 2].spelling) == "__gnu__");
+			if (gnu_scope && (name == "aligned" || name == "__aligned__"))
+			{
+				const NodeId aligned = arena.Make("gnu-attribute", "aligned");
+				arena.AddFlags(aligned, SYNTAX_FLAG_SEMANTIC_ONLY);
+				attributes->push_back(aligned);
+				if (At(tokens, *position + 1, OP_LPAREN) && expression_arguments)
+				{
+					const NodeId argument = arena.Make(
+						"gnu-attribute-nonliteral-argument", std::string());
+					arena.AddFlags(argument, SYNTAX_FLAG_SEMANTIC_ONLY);
+					arena.Add(aligned, argument);
+					GnuAttributeExpressionArgument pending;
+					pending.attribute = aligned;
+					pending.begin = *position + 2;
+					std::size_t depth = 0, end = *position + 1;
+					do
+					{
+						if (end >= tokens.size() || tokens[end].Kind() == kEofToken)
+							ThrowSyntaxError("unterminated standard attribute argument");
+						if (At(tokens, end, OP_LPAREN)) ++depth;
+						else if (At(tokens, end, OP_RPAREN)) --depth;
+						++end;
+					} while (depth != 0);
+					pending.end = end - 1;
+					expression_arguments->push_back(pending);
+				}
+			}
 			if (name == "noreturn" && unqualified &&
 				At(tokens, *position + 1, OP_LPAREN))
 				ThrowSyntaxError("noreturn attribute cannot have arguments");
