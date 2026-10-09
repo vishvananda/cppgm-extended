@@ -529,7 +529,8 @@ struct RuntimeFunction
     RF_BAD_TYPEID,
     RF_BAD_ARRAY_NEW_LENGTH,
     RF_STRLEN,
-    RF_ATEXIT
+    RF_ATEXIT,
+    RF_THREAD_ATEXIT
   } kind = RF_EH_PERSONALITY;
 
   lowir_model::SymbolId symbol;

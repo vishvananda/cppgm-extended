@@ -2309,7 +2309,8 @@ void emit_eh_runtime(CodeBuffer & out, const mir_model::MirProgram & program)
     case mir_model::RuntimeFunction::RF_BAD_ARRAY_NEW_LENGTH:
       emit_abort_runtime(out); break;
     case mir_model::RuntimeFunction::RF_STRLEN: strlen_detail::emit_runtime(out); break;
-    case mir_model::RuntimeFunction::RF_ATEXIT: lifecycle_detail::emit_registration(out); break;
+    case mir_model::RuntimeFunction::RF_ATEXIT:
+    case mir_model::RuntimeFunction::RF_THREAD_ATEXIT: lifecycle_detail::emit_registration(out, runtime.kind); break;
     }
   }
 }
