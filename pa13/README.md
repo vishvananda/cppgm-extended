@@ -213,7 +213,9 @@ PA13 supports the following in addition to the PA12 subset:
 - virtual `delete` over that supported set, including the deleting-destructor
   entry and selection of a PA12-supported class-specific deallocation function
 - emitted vtable data for supported polymorphic classes
-- constructor/destructor vpointer writes for supported polymorphic classes
+- constructor/destructor vpointer writes for supported polymorphic classes;
+  an explicitly defaulted default constructor of such a class is not trivial
+  (12.1p5) and installs the vpointer like an implicit one
 - deterministic vtable slot order, including declaration order for ordinary virtual
   functions and the destructor slot order used by the checked references
 - deterministic emitted destructor-entry order for each class: base entry,

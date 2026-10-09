@@ -108,15 +108,45 @@ void Analyzer::CompleteDefaultedDefaultConstructor(EntityId entity,
 	BindingId constructor)
 {
 	bool deleted = false;
-	bool trivial = true;
 	const EntityRecord& owner = program_->entities[entity];
+	// 12.1p5: a class with a virtual function or virtual base has no
+	// trivial default constructor; it must at least install the vptr. That
+	// store cannot throw, so whether the constructor may throw depends only
+	// on the subobject constructors it calls (15.4p14).
+	bool trivial = !owner.dynamic_class;
+	bool nonthrowing = true;
+	// A subobject's default construction cannot throw when it is trivial or
+	// its default constructor is already known not to throw.
+	const auto nonthrowing_default_construction = [this](EntityId subobject)
+	{
+		if (program_->entities[subobject].trivial_default_constructor)
+			return true;
+		if (subobject >= entity_constructors_.size()) return false;
+		for (std::size_t i = 0; i < entity_constructors_[subobject].size(); ++i)
+		{
+			const BindingId candidate = entity_constructors_[subobject][i];
+			const FunctionInfo& info = GetFunction(candidate);
+			if (info.special_member != SPECIAL_MEMBER_NONE ||
+				info.inherited_constructor_source != kNoBinding) continue;
+			bool callable_without_arguments = true;
+			for (std::size_t p = 0; p < info.parameters.size(); ++p)
+				if (info.parameters[p].default_argument == kNoNode)
+					callable_without_arguments = false;
+			if (callable_without_arguments)
+				return program_->bindings[candidate].nonthrowing;
+		}
+		return false;
+	};
 	for (std::size_t base_ordinal = 0;
 		base_ordinal < owner.direct_base_count; ++base_ordinal)
 	{
-		const EntityRecord& base = program_->entities[
-			program_->DirectBase(entity, base_ordinal).entity];
+		const EntityId base_entity =
+			program_->DirectBase(entity, base_ordinal).entity;
+		const EntityRecord& base = program_->entities[base_entity];
 		deleted = deleted || !base.default_constructible;
 		trivial = trivial && base.trivial_default_constructor;
+		nonthrowing = nonthrowing &&
+			nonthrowing_default_construction(base_entity);
 	}
 	if (entity < entity_data_members_.size())
 		for (std::size_t i = 0; i < entity_data_members_[entity].size(); ++i)
@@ -126,6 +156,7 @@ void Analyzer::CompleteDefaultedDefaultConstructor(EntityId entity,
 			if (member.has_default_member_initializer)
 			{
 				trivial = false;
+				nonthrowing = false;
 				continue;
 			}
 			TypeId member_type = member.type;
@@ -157,6 +188,8 @@ void Analyzer::CompleteDefaultedDefaultConstructor(EntityId entity,
 					deleted = deleted || !subobject.default_constructible;
 					trivial = trivial &&
 						subobject.trivial_default_constructor;
+					nonthrowing = nonthrowing &&
+						nonthrowing_default_construction(record->entity);
 				}
 				else if (const_member) deleted = true;
 			}
@@ -168,7 +201,7 @@ void Analyzer::CompleteDefaultedDefaultConstructor(EntityId entity,
 	program_->entities[entity].default_constructible = !deleted;
 	program_->entities[entity].trivial_default_constructor =
 		!deleted && trivial;
-	program_->bindings[constructor].nonthrowing = !deleted && trivial;
+	program_->bindings[constructor].nonthrowing = !deleted && nonthrowing;
 }
 
 bool Analyzer::InheritedConstructorSubobjectsAreConstructible(
