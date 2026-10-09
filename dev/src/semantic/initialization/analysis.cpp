@@ -349,10 +349,16 @@ void Analyzer::FinalizeNamedReturnSlot(std::uint32_t function)
 				eligible = false;
 				continue;
 			}
+			// 12.8p31: a non-volatile automatic object of the result's
+			// cv-unqualified class type; a reference names some other object.
 			const BindingRecord& declaration = program_->bindings[binding];
+			const TypeRecord& declared = program_->types.Get(declaration.type);
 			if (declaration.kind != BIND_VARIABLE ||
 				declaration.storage_class != STORAGE_CLASS_NONE ||
 				program_->KindOfScope(declaration.owner) != SCOPE_BLOCK ||
+				program_->types.RemoveTopCv(declaration.type) !=
+					program_->types.RemoveTopCv(result) ||
+				(declared.kind == TYPE_QUALIFIED && (declared.cv & CV_VOLATILE)) ||
 				(candidate != kNoBinding && candidate != binding))
 			{
 				eligible = false;
