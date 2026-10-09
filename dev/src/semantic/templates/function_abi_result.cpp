@@ -102,12 +102,15 @@ struct ParsedComponent
 {
 	NameId name;
 	EntityId entity;
+	// A typedef of a type that is no class (`n::size_type`) has no entity;
+	// its declaration still names the type.
+	TypeId declared_type;
 	ScopeId name_space;
 	bool callable;
 	std::size_t function_template;
 	std::vector<FunctionTemplateAbiArgument> arguments;
 
-	ParsedComponent() : name(0), entity(kNoEntity), name_space(kNoScope), callable(false), function_template(kNoDumpEdge) {}
+	ParsedComponent() : name(0), entity(kNoEntity), declared_type(kNoType), name_space(kNoScope), callable(false), function_template(kNoDumpEdge) {}
 };
 
 class AbiIdentityReader
@@ -574,8 +577,16 @@ private:
 			else if (marker == FUNCTION_TEMPLATE_RESULT_DECLARATION ||
 				marker == FUNCTION_TEMPLATE_RESULT_ENTITY)
 			{
-				component->entity = EntityFromMarker(
-					marker, ResultIdentityValue(atoms_[position_++]));
+				const std::uint64_t value = ResultIdentityValue(atoms_[position_++]);
+				component->entity = EntityFromMarker(marker, value);
+				if (marker == FUNCTION_TEMPLATE_RESULT_DECLARATION &&
+					value < program_->bindings.size() &&
+					(program_->bindings[program_->bindings[
+						static_cast<BindingId>(value)].canonical].kind == BIND_TYPE ||
+					 program_->bindings[program_->bindings[
+						static_cast<BindingId>(value)].canonical].kind == BIND_TYPE_ALIAS))
+					component->declared_type = program_->bindings[program_->bindings[
+						static_cast<BindingId>(value)].canonical].type;
 			}
 		}
 		if (position_ < atoms_.size() && ResultIdentityKind(atoms_[position_]) == FUNCTION_TEMPLATE_RESULT_FUNCTION_TEMPLATE)
@@ -690,6 +701,12 @@ private:
 						FUNCTION_TEMPLATE_ABI_TYPE_PARAMETER,
 						kNoFunctionTemplateAbiType, 0, 0,
 						static_cast<std::uint32_t>(parameter)));
+			if ((component.entity == kNoEntity ||
+				component.entity >= program_->entities.size()) &&
+				component.declared_type != kNoType && !written_qualifier)
+				return AppendAbiType(program_, FunctionTemplateAbiType(
+					FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE, kNoFunctionTemplateAbiType,
+					0, 0, kNoTemplateParameter, 0, component.declared_type));
 			if (component.entity == kNoEntity ||
 				component.entity >= program_->entities.size())
 				return kNoFunctionTemplateAbiType;
@@ -1225,7 +1242,11 @@ void Analyzer::PublishFunctionTemplateResultAbiType(
 		AbiIdentityReader reader(program_, class_templates_, function_templates_,
 			class_template_pattern_by_entity_, pattern->parameters, atoms, false);
 		const FunctionTemplateAbiTypeId type = reader.ParseType();
-		if (type != kNoFunctionTemplateAbiType && reader.Complete())
+		// A parameter of a concrete type (`std::size_t I`) takes no
+		// declaration annotation; only a dependent one does (`Tn`).
+		if (type != kNoFunctionTemplateAbiType && reader.Complete() &&
+			program_->function_template_abi_types[type].kind !=
+				FUNCTION_TEMPLATE_ABI_TYPE_CONCRETE)
 		{
 			const FunctionTemplateAbiTypeId qualified = ApplyTemplateParameterModifiers(
 				program_, *arena_, pattern->parameters[p], type);

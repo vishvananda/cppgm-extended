@@ -6,7 +6,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @f__ov2(0, $argobj__1)
     return i32 0
 }
-function @f__ov2(%__param0 : ptr, %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_Z1fIJLm0EEEvPv8sequenceImJLm0EEE] {
+function @f__ov2(%__param0 : ptr, %__param1 : obj<1x1> [classes=none]) -> void [binding=weak, object=_Z1fIJLm0EEEvPv8sequenceImJXspT_EEE] {
   slot $__param0 : ptr
   slot $__param1 : obj<1x1>
 

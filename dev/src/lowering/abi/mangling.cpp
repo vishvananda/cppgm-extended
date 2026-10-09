@@ -806,6 +806,38 @@ public:
 		return context_->resolve_argument(target);
 	}
 
+	// Whether a function template's parameter is a pack.
+	bool IsPackParameter(const semantic::FunctionTemplateAbiRecipe& recipe,
+		std::size_t parameter) const
+	{
+		using namespace semantic;
+		if (recipe.argument_partition_begin == kNoTemplateParameter)
+			return recipe.template_parameter_pack &&
+				parameter + 1 == recipe.template_parameter_count;
+		const std::size_t index = recipe.argument_partition_begin + parameter;
+		return parameter < recipe.template_parameter_count &&
+			index < program_.function_template_abi_argument_partitions.size() &&
+			program_.function_template_abi_argument_partitions[index].pack;
+	}
+
+	// A dependent type that names a function template parameter pack is its
+	// expansion where it appears (`Dp T0_` in `TT<Args...>` or `R(A...)`).
+	bool PackExpansionParameter(semantic::TypeId type,
+		const semantic::BindingRecord* function,
+		const semantic::FunctionTemplateAbiRecipe* recipe, std::size_t* index) const
+	{
+		return recipe && FunctionTemplateParameter(type, function, recipe, index) &&
+			IsPackParameter(*recipe, *index);
+	}
+
+	static abi_mangle::AbiType PackExpansion(abi_mangle::AbiType type)
+	{
+		abi_mangle::AbiTypeModifier expansion;
+		expansion.kind = abi_mangle::ABI_TYPE_PACK_EXPANSION;
+		type.modifiers.insert(type.modifiers.begin(), expansion);
+		return type;
+	}
+
 	std::size_t AddTemplateArgumentPack(std::size_t first, std::size_t count,
 		const semantic::BindingRecord* function = 0,
 		const semantic::FunctionTemplateAbiRecipe* recipe = 0)
@@ -818,8 +850,26 @@ public:
 		AbiTemplateArgument argument_pack;
 		argument_pack.kind = ABI_TEMPLATE_ARGUMENT_PACK;
 		for (std::size_t argument = 0; argument < count; ++argument)
-			argument_pack.argument_refs.push_resolved(
+		{
+			std::size_t parameter = 0;
+			const bool type_argument = first + argument >=
+				program_.canonical_template_arguments.size() ||
+				program_.canonical_template_arguments[first + argument].kind ==
+					semantic::TEMPLATE_ARGUMENT_TYPE;
+			if (type_argument && PackExpansionParameter(
+				program_.template_arguments[first + argument], function, recipe,
+				&parameter))
+			{
+				AbiTemplateArgument expansion;
+				expansion.kind = ABI_TEMPLATE_ARGUMENT_TYPE;
+				expansion.type = PackExpansion(
+					MakeFunctionTemplateParameterType(parameter));
+				argument_pack.argument_refs.push_resolved(
+					context_->resolve_argument(expansion));
+			}
+			else argument_pack.argument_refs.push_resolved(
 				AddTemplateArgument(first + argument, function, recipe));
+		}
 		return context_->resolve_argument(argument_pack);
 	}
 
@@ -1905,6 +1955,38 @@ public:
 		return true;
 	}
 
+	abi_mangle::AbiType MakeFunctionTypeCore(semantic::TypeId type,
+		const semantic::BindingRecord* function,
+		const semantic::FunctionTemplateAbiRecipe* recipe,
+		abi_mangle::AbiType result)
+	{
+		using namespace abi_mangle;
+		using namespace semantic;
+		const TypeRecord* record = &program_.types.Get(type);
+		result.kind = ABI_TYPE_FUNCTION;
+		result.types.push_back(MakeType(record->child, function, recipe));
+		const TypeId* parameters = program_.types.Parameters(type);
+		// A dependent function type's trailing parameter pack is an
+		// expansion, not a C variadic ellipsis (`PFT_DpT0_E`).
+		std::size_t pack = 0;
+		const bool trailing_pack = record->variadic &&
+			record->parameter_count != 0 && PackExpansionParameter(
+				parameters[record->parameter_count - 1], function, recipe, &pack);
+		for (std::size_t i = 0; i < record->parameter_count; ++i)
+			result.types.push_back(trailing_pack &&
+				i + 1 == record->parameter_count ?
+				PackExpansion(MakeFunctionTemplateParameterType(pack)) :
+				MakeType(parameters[i], function, recipe));
+		result.is_const = (record->cv & CV_CONST) != 0;
+		result.is_volatile = (record->cv & CV_VOLATILE) != 0;
+		result.lvalue_ref =
+			record->ref_qualifier == FUNCTION_REF_LVALUE;
+		result.rvalue_ref =
+			record->ref_qualifier == FUNCTION_REF_RVALUE;
+		result.variadic = record->variadic && !trailing_pack;
+		return result;
+	}
+
 	abi_mangle::AbiType MakeTypeCore(semantic::TypeId type,
 		const semantic::BindingRecord* function,
 		const semantic::FunctionTemplateAbiRecipe* recipe, std::size_t parameter_scope = 0)
@@ -1968,22 +2050,7 @@ public:
 		if (record->kind == TYPE_BLOCK_POINTER) return MakeBlockPointerType(
 			record->child, function, recipe, result);
 		if (record->kind == TYPE_FUNCTION)
-		{
-			result.kind = ABI_TYPE_FUNCTION;
-			result.types.push_back(MakeType(record->child, function, recipe));
-			const TypeId* parameters = program_.types.Parameters(type);
-			for (std::size_t i = 0; i < record->parameter_count; ++i)
-				result.types.push_back(
-					MakeType(parameters[i], function, recipe));
-			result.is_const = (record->cv & CV_CONST) != 0;
-			result.is_volatile = (record->cv & CV_VOLATILE) != 0;
-			result.lvalue_ref =
-				record->ref_qualifier == FUNCTION_REF_LVALUE;
-			result.rvalue_ref =
-				record->ref_qualifier == FUNCTION_REF_RVALUE;
-			result.variadic = record->variadic;
-			return result;
-		}
+			return MakeFunctionTypeCore(type, function, recipe, result);
 		if (record->kind == TYPE_MEMBER_POINTER)
 		{
 			result.kind = ABI_TYPE_MEMBER_POINTER;
