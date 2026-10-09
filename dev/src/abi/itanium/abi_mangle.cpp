@@ -825,7 +825,9 @@ private:
       if(source.text.empty()) node.symbol = node.op;
     }
     if(source.kind == ABI_EXPRESSION_CAST || source.kind == ABI_EXPRESSION_SIZEOF_TYPE
-       || source.kind == ABI_EXPRESSION_MEMBER) node.type = resolve_type(source.type);
+       || source.kind == ABI_EXPRESSION_MEMBER
+       || (source.kind == ABI_EXPRESSION_CONVERSION && source.op != "il"))
+      node.type = resolve_type(source.type);
     if(source.kind == ABI_EXPRESSION_INTEGRAL_VALUE) node.value_type = resolve_type(source.value_type);
     if(source.resolved_entity != ABI_NO_RESOLVED_REFERENCE) {
       entity(source.resolved_entity);
@@ -860,20 +862,11 @@ private:
     node.uses_case_facts = node.uses_case_facts
       || (node.kind == ABI_EXPRESSION_ENTITY && !node.entity_resolved);
     for(size_t expression : node.expressions)
-    {
-      node.uses_case_facts = node.uses_case_facts
-        || expressions[expression].uses_case_facts;
-    }
+      node.uses_case_facts = node.uses_case_facts || expressions[expression].uses_case_facts;
     for(size_t argument : node.arguments)
-    {
-      node.uses_case_facts = node.uses_case_facts
-        || arguments[argument].uses_case_facts;
-    }
+      node.uses_case_facts = node.uses_case_facts || arguments[argument].uses_case_facts;
     for(size_t type : node.types)
-    {
-      node.uses_case_facts = node.uses_case_facts
-        || types[type].uses_case_facts;
-    }
+      node.uses_case_facts = node.uses_case_facts || types[type].uses_case_facts;
     const size_t hash = expression_hash(node);
     vector<size_t> & bucket = expression_buckets[hash];
     for(size_t id : bucket) {
@@ -1808,7 +1801,7 @@ private:
       case ABI_EXPRESSION_TEMPLATE_PARAMETER:
         output_ += template_parameter(expression.index); return;
       case ABI_EXPRESSION_FUNCTION_PARAMETER:
-        output_ += "fp";
+        output_ += expression.value > 0 ? "fL" + std::to_string(expression.value - 1) + "p" : string("fp");
         if(expression.index != 0) output_ += std::to_string(expression.index - 1);
         output_ += '_';
         return;
@@ -1838,6 +1831,14 @@ private:
         emit_expression_operation(expression, expression.symbol);
         encode_type(expression.type);
         encode_expression(expression.expressions.at(0));
+        return;
+      case ABI_EXPRESSION_CONVERSION:
+        // `cv <type> _ <expr>* E`, `tl <type> <expr>* E`, `il <expr>* E`.
+        emit_expression_operation(expression, expression.op);
+        if(expression.type != NO_ID) encode_type(expression.type);
+        if(graph_.strings.get(expression.op) == "cv") output_ += '_';
+        for(size_t child : expression.expressions) encode_expression(child);
+        output_ += 'E';
         return;
       case ABI_EXPRESSION_TEMPLATE_ID:
         output_ += source_name(graph_.strings.get(expression.symbol)) + 'I';
@@ -1885,6 +1886,13 @@ private:
   void encode_unresolved_qualifier(size_t id)
   {
     const TypeNode & type = graph_.type(id);
+    // A member of a written qualifier is one more qualifier level.
+    if(type.kind == ABI_TYPE_MEMBER && type.symbol != NO_ID && !type.children.empty()) {
+      const size_t symbol = type.symbol;
+      encode_unresolved_qualifier(type.children.at(0));
+      output_ += source_name(graph_.strings.get(symbol));
+      return;
+    }
     if(type.kind != ABI_TYPE_NAMED && type.kind != ABI_TYPE_TEMPLATE_SPECIALIZATION) {
       encode_type(id);
       return;
@@ -1908,18 +1916,17 @@ private:
   void encode_entity_reference(const AbiEntityFact & entity)
   {
     output_ += 'L';
-    if(entity.kind == ABI_ENTITY_FACT_SYMBOL) {
-      output_ += entity.qualified_name;
-    } else {
+    if(entity.kind == ABI_ENTITY_FACT_SYMBOL) output_ += entity.qualified_name;
+    else {
       output_ += "_Z";
-      if(entity.kind == ABI_ENTITY_FACT_FUNCTION) {
+      if(entity.kind == ABI_ENTITY_FACT_FUNCTION)
         encode_function(entity.function, FunctionFacts(), entity.internal_linkage);
-      } else if(entity.function.resolved_path != ABI_NO_RESOLVED_REFERENCE) {
-        encode_object_name(graph_.path(entity.function.resolved_path),
-                           entity.internal_linkage);
-      } else {
-        encode_object_name(entity.qualified_name, entity.internal_linkage);
-      }
+      // A class's static data member (`L_ZNSt14numeric_limitsImE6digitsE`).
+      else if(entity.function.kind == ABI_FUNCTION_TARGET_MEMBER)
+        encode_member_object(entity.function, FunctionFacts());
+      else if(entity.function.resolved_path != ABI_NO_RESOLVED_REFERENCE)
+        encode_object_name(graph_.path(entity.function.resolved_path), entity.internal_linkage);
+      else encode_object_name(entity.qualified_name, entity.internal_linkage);
     }
     output_ += 'E';
   }
@@ -2015,9 +2022,7 @@ private:
       function_template_arguments(target, facts, &operand_parameters);
     vector<size_t> parameters;
     parameters.insert(parameters.end(), operand_parameters.begin(), operand_parameters.end());
-    for(const AbiType & type : target.signature_parameter_types) {
-      parameters.push_back(graph_.resolve_type(type));
-    }
+    for(const AbiType & type : target.signature_parameter_types) parameters.push_back(graph_.resolve_type(type));
     parameters.insert(parameters.end(), facts.parameters.begin(), facts.parameters.end());
     encode_function_name_path(path, facts, template_arguments, parameters.size(), internal);
     if(!template_arguments.empty() &&
@@ -2055,7 +2060,10 @@ private:
       encode_type(target.has_result_type ?
         graph_.resolve_type(target.result_type) : facts.result_types.front());
     }
-    encode_bare_parameters(facts.parameters, facts.variadic);
+    // An entity reference states its parameters on the target.
+    vector<size_t> parameters = facts.parameters;
+    for(const AbiType & type : target.signature_parameter_types) parameters.push_back(graph_.resolve_type(type));
+    encode_bare_parameters(parameters, facts.variadic);
   }
 
   void encode_member_object(const AbiFunctionTarget & target,

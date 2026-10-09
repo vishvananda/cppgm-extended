@@ -33,7 +33,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @translate(%t11, %t12)
     return i32 0
 }
-function @translate(%__param0 : ptr [pass=by_address, object_bytes=36], %__param1 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_Z9translateIiLi3EEvRAT0__AT0__T_RA_S0_] {
+function @translate(%__param0 : ptr [pass=by_address, object_bytes=36], %__param1 : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_Z9translateIiLi3EEvRAT0__AT0__T_RAmiT0_Li1E_S0_] {
   slot $__param0 : ptr
   slot $__param1 : ptr
 

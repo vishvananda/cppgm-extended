@@ -60,7 +60,7 @@ function @target__call(%this : ptr [object_bytes=1], %__param1 : i32) -> void [b
     store typed i32 %__param1, $__param1
     return void
 }
-function @example__member_interface_x__vtable____cppgm_class_template_identity_2_2_0___wrap__ov2(%c : ptr, %a0 : i32) -> void [binding=weak, object=_ZN7example6memberIN11interface_x6vtable4infoI6targetEEE4wrapIXadL_ZNKS4_4callEiEEiEENS5_6resultEPvT0_, inline_hint=yes] {
+function @example__member_interface_x__vtable____cppgm_class_template_identity_2_2_0___wrap__ov2(%c : ptr, %a0 : i32) -> void [binding=weak, object=_ZN7example6memberIN11interface_x6vtable4infoI6targetEEE4wrapIXadL_ZNKS4_4callEiEEiEEvPvT0_, inline_hint=yes] {
   slot $c : ptr
   slot $a0 : i32
 

@@ -1,4 +1,5 @@
 #include "lowering/abi/mangling_owners.h"
+#include "lowering/abi/mangling.h"
 
 #include "lowering/support/errors.h"
 
@@ -158,6 +159,57 @@ bool ClassOwnerIsNested(const semantic::Program& program, EntityId entity)
 {
 	return entity != kNoEntity && entity < program.entities.size() &&
 		program.entities[entity].enclosing_class != kNoEntity;
+}
+
+bool HasWeakLinkage(
+	const semantic::Program& program, semantic::BindingId binding, bool function)
+{
+	const semantic::BindingRecord& record = program.bindings[binding];
+	const semantic::BindingRecord& canonical = program.bindings[record.canonical];
+	const bool class_template_member = record.member_owner != semantic::kNoEntity &&
+		IsClassTemplateSpecialization(program.entities[record.member_owner]);
+	const bool primary_template_member = class_template_member &&
+		!program.entities[record.member_owner].explicit_template_specialization;
+	const bool preempted = record.explicit_instantiation_suppressed ||
+		canonical.explicit_instantiation_suppressed;
+	return canonical.weak_symbol || (!preempted &&
+		(record.weak_odr || primary_template_member ||
+		 (function && (record.template_argument_count != 0 ||
+		   record.function_template_specialization) &&
+		  !record.explicit_function_specialization)));
+}
+
+// Mangles one production case, counting its facts.
+std::string MangleProductionCase(const abi_mangle::AbiTypedCase& fact_case,
+	abi_mangle::AbiMangleStats* stats,
+	abi_mangle::AbiMangleContext* context)
+{
+	if (stats)
+	{
+		++stats->production_mangles;
+		stats->production_fact_bytes +=
+			abi_mangle::abi_typed_case_storage_bytes(fact_case);
+		for (const abi_mangle::AbiDefinitionRecord& definition :
+			fact_case.definitions)
+		{
+			switch (definition.kind)
+			{
+			case abi_mangle::ABI_DEFINITION_TYPE:
+				++stats->production_type_definitions; break;
+			case abi_mangle::ABI_DEFINITION_TEMPLATE_ARGUMENT:
+				++stats->production_argument_definitions; break;
+			case abi_mangle::ABI_DEFINITION_EXPRESSION:
+				++stats->production_expression_definitions; break;
+			case abi_mangle::ABI_DEFINITION_CONTEXT:
+				++stats->production_context_definitions; break;
+			case abi_mangle::ABI_DEFINITION_ENTITY:
+				++stats->production_entity_definitions; break;
+			}
+		}
+	}
+	if (context) return context->mangle_case(fact_case);
+	abi_mangle::AbiMangleContext local_context(stats);
+	return local_context.mangle_case(fact_case);
 }
 
 }  // namespace abi

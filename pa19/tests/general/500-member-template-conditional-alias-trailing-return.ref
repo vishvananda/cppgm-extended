@@ -37,7 +37,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load typed i32 $cond__1
     return i32 %t8
 }
-function @wrapper___cppgm_class_template_identity_4_0_0___async_write_some(%this : ptr [object_bytes=1], %buffer : ptr [pass=by_address, object_bytes=4], %handler : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN7wrapperI19basic_stream_socketI3tcp8executorEE16async_write_someIiPFviEEEiRKT_OT0_, inline_hint=yes] {
+function @wrapper___cppgm_class_template_identity_4_0_0___async_write_some(%this : ptr [object_bytes=1], %buffer : ptr [pass=by_address, object_bytes=4], %handler : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN7wrapperI19basic_stream_socketI3tcp8executorEE16async_write_someIiPFviEEEDTcldtcl7declvalIN11conditionalILb1ERS3_T0_E4typeEEE16async_write_somefp_scSA_fp0_EERKT_OSA_, inline_hint=yes] {
   slot $this : ptr
   slot $buffer : ptr
   slot $handler : ptr

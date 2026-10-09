@@ -24,7 +24,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed i32 $cond__1
     return i32 %t7
 }
-function @post(%ctx : ptr [pass=by_address, object_bytes=1], %token : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4postI7context7handlerEiRT_OT0_] {
+function @post(%ctx : ptr [pass=by_address, object_bytes=1], %token : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4postI7context7handlerEDTcl21async_result_initiatecl7declvalI8initiateINT_13executor_typeEEEEfp0_cv19empty_work_function_EEERS3_OT0_] {
   slot $ctx : ptr
   slot $token : ptr
   slot $arg__1 : obj<1x1>
@@ -78,7 +78,7 @@ function @async_result_initiate__ov2(%initiation : ptr [pass=by_address, object_
     %t4 = call i32 @initiate_executor___operator__(%t1, %t2, %t3, 0, 0)
     return i32 %t4
 }
-function @initiate_executor___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : ptr, %__param4 : ptr) -> i32 [binding=weak, object=_ZNK8initiateI8executorEclI7handler19empty_work_functionEEiOT_OT0_P41__function_template_nondeduced_type_shapeSA_, inline_hint=yes] {
+function @initiate_executor___operator__(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1], %__param2 : ptr [pass=by_address, object_bytes=1], %__param3 : ptr, %__param4 : ptr) -> i32 [binding=weak, object=_ZNK8initiateI8executorEclI7handler19empty_work_functionEEiOT_OT0_PN9enable_ifIXsr11is_executorIN11conditionalILb1ES0_S5_E4typeEEE5valueEvE4typeEPNS9_IXntsr10needs_workIN16remove_referenceIS7_E4typeENSG_IS5_E4typeES0_EE5valueEvE4typeE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $__param2 : ptr

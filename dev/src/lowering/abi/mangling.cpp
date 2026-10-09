@@ -80,6 +80,9 @@ class AbiFactBuilder
 	// candidate (`_ZN8functionIZN1S1gEvE1GEC2ES1_`).
 	std::vector<std::pair<std::uint64_t, std::size_t> > local_contexts_;
 	std::vector<LocalContextHandle> local_context_handles_;
+	// 1 while the function's own parameter types are made: a parameter they
+	// name is `fL0p_`, one in the result `fp_` (Itanium 5.1.10).
+	std::size_t function_parameter_level_ = 0;
 
 	TypeArgumentCacheKey TypeArgumentKey(semantic::TypeId type,
 		const semantic::BindingRecord* function,
@@ -164,6 +167,8 @@ class AbiFactBuilder
 	}
 
 	public:
+	void SetFunctionParameterLevel(std::size_t level) { function_parameter_level_ = level; }
+
 	LocalNames& Names()
 	{
 		if (!names_) ThrowLoweringInternal("ABI local names have no unit state");
@@ -424,11 +429,21 @@ public:
 			if (binding.name == 0)
 				ThrowLoweringInternal(
 					"function ABI entity has no semantic name");
-			SetPath(&entity.function, binding.owner, binding.name);
+			// A member function is named in its class (`L_ZNS0_1fES2_E`).
+			const bool member = binding.member_owner != kNoEntity &&
+				binding.member_owner < program_.entities.size();
+			if (member)
+			{
+				entity.function.kind = ABI_FUNCTION_TARGET_MEMBER;
+				entity.function.owner_type = MakeType(program_.entities[binding.member_owner].type);
+				SetSourceName(&entity.function, binding.name);
+			}
+			else SetPath(&entity.function, binding.owner, binding.name);
 			const TypeRecord& function = program_.types.Get(binding.type);
 			const TypeId* parameters =
 				program_.types.Parameters(binding.type);
-			for (std::size_t i = 0; i < function.parameter_count; ++i)
+			for (std::size_t i = member && !binding.static_member_function ? 1 : 0;
+				i < function.parameter_count; ++i)
 				entity.function.signature_parameter_types.push_back(
 					MakeType(parameters[i]));
 		}
@@ -438,7 +453,13 @@ public:
 			if (binding.name == 0)
 				ThrowLoweringInternal(
 					"variable ABI entity has no semantic name");
-			SetPath(&entity.function, binding.owner, VariableAbiName(binding));
+			if (binding.member_owner != kNoEntity && binding.member_owner < program_.entities.size())
+			{
+				entity.function.kind = ABI_FUNCTION_TARGET_MEMBER;
+				entity.function.owner_type = MakeType(program_.entities[binding.member_owner].type);
+				SetSourceName(&entity.function, binding.name);
+			}
+			else SetPath(&entity.function, binding.owner, VariableAbiName(binding));
 			entity.internal_linkage = VariableHasInternalMarker(program_, binding);
 		}
 		return context_->store_entity(entity);
@@ -1265,6 +1286,90 @@ public:
 			recipe.function_parameter_type_begin + parameter];
 	}
 
+	// The operators, conversions, values and resolved names a retained
+	// dependent expression adds to the Itanium <expression> forms.
+	bool AddRetainedOperation(const semantic::FunctionTemplateAbiExpression& source,
+		abi_mangle::AbiDependentExpression* out,
+		const semantic::FunctionTemplateAbiRecipe& recipe, std::size_t parameter_scope)
+	{
+		using namespace abi_mangle;
+		using namespace semantic;
+		AbiDependentExpression& target = *out;
+		if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_UNARY ||
+			source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_BINARY)
+		{
+			const bool unary = source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_UNARY;
+			const char* code = ExpressionOperatorCode(source.operation, unary);
+			if (!code) ThrowLoweringInternal("unsupported retained dependent operation");
+			target.kind = unary ? ABI_EXPRESSION_UNARY : ABI_EXPRESSION_BINARY;
+			target.op = code;
+			target.expression_refs.push_resolved(
+				AddFunctionTemplateAbiExpression(source.left, recipe, parameter_scope));
+			if (!unary)
+				target.expression_refs.push_resolved(
+					AddFunctionTemplateAbiExpression(source.right, recipe, parameter_scope));
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_VALUE)
+		{
+			target.kind = ABI_EXPRESSION_INTEGRAL_VALUE;
+			target.value_type = MakeFunctionTemplateAbiType(source.type, recipe, parameter_scope);
+			target.value = source.value;
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_THIS)
+		{
+			target.kind = ABI_EXPRESSION_UNARY;
+			target.op = "fpT";
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_SIZEOF_TYPE)
+		{
+			target.kind = ABI_EXPRESSION_SIZEOF_TYPE;
+			target.type = MakeFunctionTemplateAbiType(source.type, recipe, parameter_scope);
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_SIZEOF_EXPRESSION)
+		{
+			target.kind = ABI_EXPRESSION_UNARY;
+			target.op = "sz";
+			target.expression_refs.push_resolved(
+				AddFunctionTemplateAbiExpression(source.left, recipe, parameter_scope));
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_CONVERSION ||
+			source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_BRACED_LIST ||
+			source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_CONDITIONAL)
+		{
+			const bool conversion = source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_CONVERSION;
+			if (source.argument_begin > program_.function_template_abi_arguments.size() ||
+				source.argument_count > program_.function_template_abi_arguments.size() - source.argument_begin)
+				ThrowLoweringInternal("retained dependent operand range is invalid");
+			// One operand converts in place, `cv <type> <expr>`.
+			target.kind = source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_CONDITIONAL ?
+				ABI_EXPRESSION_CONDITIONAL : conversion && source.argument_count == 1 ?
+				ABI_EXPRESSION_CAST : ABI_EXPRESSION_CONVERSION;
+			target.op = conversion ? "cv" : "il";
+			if (conversion) target.type = MakeFunctionTemplateAbiType(source.type, recipe, parameter_scope);
+			for (std::size_t i = 0; i < source.argument_count; ++i)
+			{
+				const FunctionTemplateAbiArgument& argument =
+					program_.function_template_abi_arguments[source.argument_begin + i];
+				std::size_t operand = AddFunctionTemplateAbiExpression(argument.expression, recipe, parameter_scope);
+				if (argument.pack_expansion)
+				{
+					AbiDependentExpression expansion;
+					expansion.kind = ABI_EXPRESSION_PACK_EXPANSION;
+					expansion.expression_refs.push_resolved(operand);
+					operand = context_->resolve_expression(expansion);
+				}
+				target.expression_refs.push_resolved(operand);
+			}
+		}
+		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_FUNCTION)
+		{
+			target.kind = ABI_EXPRESSION_ENTITY;
+			target.resolved_entity = AddEntity(static_cast<BindingId>(source.value));
+		}
+		else return false;
+		return true;
+	}
+
 	std::size_t AddFunctionTemplateAbiExpression(
 		semantic::FunctionTemplateAbiExpressionId expression,
 		const semantic::FunctionTemplateAbiRecipe& recipe,
@@ -1291,6 +1396,7 @@ public:
 		{
 			target.kind = ABI_EXPRESSION_FUNCTION_PARAMETER;
 			target.index = source.parameter;
+			target.value = static_cast<long long>(function_parameter_level_);
 		}
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_TYPE_MEMBER)
 		{
@@ -1298,8 +1404,14 @@ public:
 			target.type = MakeFunctionTemplateAbiType(source.type, recipe, parameter_scope);
 			target.type.suppress_template_prefix_substitution = true;
 			target.index = ResolveName(source.name) + 1;
-			const FunctionTemplateAbiTypeKind owner =
-				program_.function_template_abi_types[source.type].kind;
+			// A qualifier rooted in a written template-id is a list of
+			// qualifier levels, `sr 11conditionalI..E 4type E 5value`; one
+			// rooted in a template parameter is `srN T_ 4type E 5value`.
+			FunctionTemplateAbiTypeId root = source.type;
+			while (program_.function_template_abi_types[root].kind == FUNCTION_TEMPLATE_ABI_TYPE_MEMBER &&
+				program_.function_template_abi_types[root].child != kNoFunctionTemplateAbiType)
+				root = program_.function_template_abi_types[root].child;
+			const FunctionTemplateAbiTypeKind owner = program_.function_template_abi_types[root].kind;
 			target.close_member_owner = owner == FUNCTION_TEMPLATE_ABI_TYPE_WRITTEN_QUALIFIER ||
 				owner == FUNCTION_TEMPLATE_ABI_TYPE_TEMPLATE_SPECIALIZATION;
 			if (source.argument_begin > program_.function_template_abi_arguments.size() ||
@@ -1417,33 +1529,7 @@ public:
 			target.expression_refs.push_resolved(
 				AddFunctionTemplateAbiExpression(source.left, recipe, parameter_scope));
 		}
-		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_UNARY)
-		{
-			target.kind = ABI_EXPRESSION_UNARY;
-			if (source.operation != OPERATOR_STAR)
-				ThrowLoweringInternal(
-					"unsupported retained dependent unary operation");
-			target.operation = ABI_EXPRESSION_OPERATION_DEREFERENCE;
-			target.expression_refs.push_resolved(
-				AddFunctionTemplateAbiExpression(source.left, recipe, parameter_scope));
-		}
-		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_BINARY)
-		{
-			target.kind = ABI_EXPRESSION_BINARY;
-			if (source.operation == OPERATOR_PLUS)
-				target.operation = ABI_EXPRESSION_OPERATION_ADD;
-			else if (source.operation == OPERATOR_MINUS)
-				target.operation = ABI_EXPRESSION_OPERATION_SUBTRACT;
-			else if (source.operation == OPERATOR_EQUAL)
-				target.operation = ABI_EXPRESSION_OPERATION_EQUAL;
-			else if (source.operation == OPERATOR_LESS)
-				target.operation = ABI_EXPRESSION_OPERATION_LESS;
-			else ThrowLoweringInternal("unsupported retained dependent binary operation");
-			target.expression_refs.push_resolved(
-				AddFunctionTemplateAbiExpression(source.left, recipe, parameter_scope));
-			target.expression_refs.push_resolved(
-				AddFunctionTemplateAbiExpression(source.right, recipe, parameter_scope));
-		}
+		else if (AddRetainedOperation(source, &target, recipe, parameter_scope)) {}
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_ID)
 		{
 			if (source.argument_begin >
@@ -1497,7 +1583,21 @@ public:
 			const TemplateArgument& argument = program_.canonical_template_arguments[literal.argument_begin];
 			target.kind = ABI_TEMPLATE_ARGUMENT_VALUE;
 			target.value_type = MakeType(argument.type);
+			target.has_value_type = true;
 			target.value = argument.value;
+		}
+		// A non-dependent value is an <expr-primary> argument (`Lb1E`).
+		else if (!source.pack_expansion &&
+			source.expression < program_.function_template_abi_expressions.size() &&
+			program_.function_template_abi_expressions[source.expression].kind ==
+				FUNCTION_TEMPLATE_ABI_EXPRESSION_VALUE)
+		{
+			const FunctionTemplateAbiExpression& value =
+				program_.function_template_abi_expressions[source.expression];
+			target.kind = ABI_TEMPLATE_ARGUMENT_VALUE;
+			target.value_type = MakeFunctionTemplateAbiType(value.type, recipe, parameter_scope);
+			target.has_value_type = true;
+			target.value = value.value;
 		}
 		else
 		{
@@ -1688,7 +1788,14 @@ public:
 		else if (source.kind == FUNCTION_TEMPLATE_ABI_TYPE_ARRAY)
 		{
 			modifier.kind = ABI_TYPE_ARRAY;
-			if (source.parameter != kNoTemplateParameter)
+			// A dependent bound expression (`A szfL0p_ _`).
+			if (source.expression != kNoFunctionTemplateAbiExpression)
+			{
+				modifier.array_bound.kind = ABI_ARRAY_BOUND_EXPRESSION;
+				modifier.array_bound.resolved_expression =
+					AddFunctionTemplateAbiExpression(source.expression, recipe, parameter_scope);
+			}
+			else if (source.parameter != kNoTemplateParameter)
 			{
 				modifier.array_bound.kind = ABI_ARRAY_BOUND_EXPRESSION;
 				modifier.array_bound.resolved_expression =
@@ -2190,37 +2297,6 @@ bool AppendClassTemplateOwner(const semantic::Program& program,
 namespace
 {
 
-std::string MangleProductionCase(const abi_mangle::AbiTypedCase& fact_case,
-	abi_mangle::AbiMangleStats* stats,
-	abi_mangle::AbiMangleContext* context)
-{
-	if (stats)
-	{
-		++stats->production_mangles;
-		stats->production_fact_bytes +=
-			abi_mangle::abi_typed_case_storage_bytes(fact_case);
-		for (const abi_mangle::AbiDefinitionRecord& definition :
-			fact_case.definitions)
-		{
-			switch (definition.kind)
-			{
-			case abi_mangle::ABI_DEFINITION_TYPE:
-				++stats->production_type_definitions; break;
-			case abi_mangle::ABI_DEFINITION_TEMPLATE_ARGUMENT:
-				++stats->production_argument_definitions; break;
-			case abi_mangle::ABI_DEFINITION_EXPRESSION:
-				++stats->production_expression_definitions; break;
-			case abi_mangle::ABI_DEFINITION_CONTEXT:
-				++stats->production_context_definitions; break;
-			case abi_mangle::ABI_DEFINITION_ENTITY:
-				++stats->production_entity_definitions; break;
-			}
-		}
-	}
-	if (context) return context->mangle_case(fact_case);
-	abi_mangle::AbiMangleContext local_context(stats);
-	return local_context.mangle_case(fact_case);
-}
 
 }
 
@@ -2244,26 +2320,6 @@ std::string MangleType(const semantic::Program& program, semantic::TypeId type,
 	AppendTypedFact(&fact_case, &target);
 	return MangleProductionCase(fact_case, stats, context);
 }
-
-
-bool HasWeakLinkage(
-	const semantic::Program& program, semantic::BindingId binding, bool function)
-{
-	const semantic::BindingRecord& record = program.bindings[binding];
-	const semantic::BindingRecord& canonical = program.bindings[record.canonical];
-	const bool class_template_member = record.member_owner != semantic::kNoEntity &&
-		IsClassTemplateSpecialization(program.entities[record.member_owner]);
-	const bool primary_template_member = class_template_member &&
-		!program.entities[record.member_owner].explicit_template_specialization;
-	const bool preempted = record.explicit_instantiation_suppressed ||
-		canonical.explicit_instantiation_suppressed;
-	return canonical.weak_symbol || (!preempted &&
-		(record.weak_odr || primary_template_member ||
-		 (function && (record.template_argument_count != 0 ||
-		   record.function_template_specialization) &&
-		  !record.explicit_function_specialization)));
-}
-
 
 void AppendFunctionTemplateArgumentsAndResult(const semantic::Program& program,
 	const semantic::BindingRecord& binding,
@@ -2699,10 +2755,12 @@ std::string MangleFunction(const semantic::Program& program,
 		AbiFactRecord parameter;
 		parameter.set_kind(ABI_FACT_RECORD_FUNCTION);
 		parameter.function.kind = ABI_FUNCTION_RECORD_PARAMETER;
+		facts.SetFunctionParameterLevel(1);
 		parameter.function.type = retained_type != kNoFunctionTemplateAbiType ?
 			facts.MakeFunctionTemplateAbiType(retained_type, *parameter_recipe) :
 			facts.MakeFunctionTemplateType(
 				parameter_type, signature_binding, parameter_recipe);
+		facts.SetFunctionParameterLevel(0);
 		if (pack_expansion)
 		{
 			AbiTypeModifier expansion;

@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = load typed i32 $cond__1
     return i32 %t8
 }
-function @probe(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z5probeIN13serialization7wrappedEEiRKT_] {
+function @probe(%__param0 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_Z5probeIN13serialization7wrappedEEN9enable_ifIXeqstT_stDtdtcl7declvalIRKS3_EE5valueEEiE4typeES5_] {
   slot $__param0 : ptr
 
   block ^entry:

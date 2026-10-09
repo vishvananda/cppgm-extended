@@ -887,10 +887,9 @@ private:
 	bool EquivalentExpandedFunctionTemplateResults(
 		const FunctionTemplatePattern& left,
 		const FunctionTemplatePattern& right);
-	void InternExpandedFunctionTemplateResult(
-		FunctionTemplatePattern* pattern);
-	void PublishFunctionTemplateResultAbiType(
-		FunctionTemplatePattern* pattern, const DeclaratorInfo& declarator);
+	void InternExpandedFunctionTemplateResult(FunctionTemplatePattern* pattern, bool abi_spelling = false);
+	void PublishFunctionTemplateResultAbiType(FunctionTemplatePattern* pattern, const DeclaratorInfo& declarator);
+	bool PublishParameterArrayBounds(FunctionTemplatePattern* pattern, const DeclaratorInfo& declarator, std::size_t parameter, NodeId declaration, const std::unordered_set<NameId>& dependent_names);
 	void PublishFunctionTemplateSpecialMemberRole(
 		const FunctionTemplatePattern& pattern, BindingId binding,
 		EntityId member_owner, TypeId function_type, bool explicit_by_specifier);

@@ -38,7 +38,7 @@ function @pool__get_executor(%this : ptr [object_bytes=1]) -> obj<1x1> [result_c
     %t1 = addr $retobj__1
     return obj<1x1> $retobj__1
 }
-function @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___ov3(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none], %__param2 : ptr) -> void [binding=weak, object=_ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC1IN4pool8executorEEET_P41__function_template_nondeduced_type_shape, inline_hint=yes] {
+function @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___ov3(%this : ptr [object_bytes=4], %__param1 : obj<1x1> [classes=none], %__param2 : ptr) -> void [binding=weak, object=_ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC1IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_S4_EEE5valueEvE4typeE, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : obj<1x1>
   slot $__param2 : ptr
@@ -51,4 +51,4 @@ function @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_temp
     store typed i32 1, %t2
     return void
 }
-alias object _ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC2IN4pool8executorEEET_P41__function_template_nondeduced_type_shape = @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___ov3
+alias object _ZN12any_executorIJ11prefer_onlyI7trackedES0_I9untrackedEEEC2IN4pool8executorEEET_PN9enable_ifIXaaaantsr7is_sameIS9_S5_EE5valuentsr10is_base_ofI13executor_baseS9_EE5valuesr24is_valid_target_executorIS9_FvS2_S4_EEE5valueEvE4typeE = @any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___any_executor___cppgm_class_template_identity_6_1_0____cppgm_class_template_identity_6_2_0___ov3

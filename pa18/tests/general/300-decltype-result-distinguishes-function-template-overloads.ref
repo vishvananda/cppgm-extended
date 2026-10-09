@@ -34,7 +34,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     return i32 0
 }
-function @pick(%object : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4pickI10first_kindvEiRT_] {
+function @pick(%object : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_Z4pickI10first_kindvEDTcldtcl7declvalIT_EE5valueEERS1_] {
   slot $object : ptr
 
   block ^entry:
@@ -43,7 +43,7 @@ function @pick(%object : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=
     %t2 = call i32 @first_kind__value(%t1)
     return i32 %t2
 }
-function @pick__ov2(%object : ptr [pass=by_address, object_bytes=8]) -> i64 [binding=weak, object=_Z4pickI11second_kindvElRT_] {
+function @pick__ov2(%object : ptr [pass=by_address, object_bytes=8]) -> i64 [binding=weak, object=_Z4pickI11second_kindvEDtdtcl7declvalIT_EE5countERS1_] {
   slot $object : ptr
 
   block ^entry:

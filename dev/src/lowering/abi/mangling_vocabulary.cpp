@@ -220,6 +220,46 @@ abi_mangle::AbiTerminalKind OperatorTerminal(OperatorKind kind, bool member,
 	ThrowLoweringInternal("invalid typed operator terminal");
 }
 
+const char* ExpressionOperatorCode(semantic::OperatorKind kind, bool unary)
+{
+	using namespace semantic;
+	if (unary)
+		switch (kind)
+		{
+		case OPERATOR_PLUS: return "ps";
+		case OPERATOR_MINUS: return "ng";
+		case OPERATOR_STAR: return "de";
+		case OPERATOR_AMPERSAND: return "ad";
+		case OPERATOR_LOGICAL_NOT: return "nt";
+		case OPERATOR_COMPLEMENT: return "co";
+		default: return 0;
+		}
+	switch (kind)
+	{
+	case OPERATOR_PLUS: return "pl";
+	case OPERATOR_MINUS: return "mi";
+	case OPERATOR_STAR: return "ml";
+	case OPERATOR_DIVIDE: return "dv";
+	case OPERATOR_REMAINDER: return "rm";
+	case OPERATOR_AMPERSAND: return "an";
+	case OPERATOR_BIT_OR: return "or";
+	case OPERATOR_BIT_XOR: return "eo";
+	case OPERATOR_LEFT_SHIFT: return "ls";
+	case OPERATOR_RIGHT_SHIFT: return "rs";
+	case OPERATOR_EQUAL: return "eq";
+	case OPERATOR_NOT_EQUAL: return "ne";
+	case OPERATOR_LESS: return "lt";
+	case OPERATOR_GREATER: return "gt";
+	case OPERATOR_LESS_EQUAL: return "le";
+	case OPERATOR_GREATER_EQUAL: return "ge";
+	case OPERATOR_LOGICAL_AND: return "aa";
+	case OPERATOR_LOGICAL_OR: return "oo";
+	case OPERATOR_COMMA: return "cm";
+	case OPERATOR_ASSIGN: return "aS";
+	default: return 0;
+	}
+}
+
 }  // namespace abi
 }  // namespace lowering
 }  // namespace cppgm

@@ -51,7 +51,7 @@ function @selector_void___select(%this : ptr [object_bytes=1], %__param1 : ptr) 
     store typed ptr %__param1, $__param1
     return i32 11
 }
-function @selector_void___select__ov2(%this : ptr [object_bytes=1], %__param1 : i32) -> i64 [binding=weak, object=_ZN8selectorIvE6selectIiEElT_] {
+function @selector_void___select__ov2(%this : ptr [object_bytes=1], %__param1 : i32) -> i64 [binding=weak, object=_ZN8selectorIvE6selectIiEEN9enable_ifIXntsr10is_pointerIT_EE5valueElE4typeES3_] {
   slot $this : ptr
   slot $__param1 : i32
 

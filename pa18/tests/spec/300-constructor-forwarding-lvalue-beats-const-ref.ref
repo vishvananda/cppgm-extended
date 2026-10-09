@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t9 = load typed i32 $cond__1
     return i32 %t9
 }
-function @result_int___result_int___ov4(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=4], %__param2 : ptr) -> void [binding=weak, object=_ZN6resultIiEC1IRiEEOT_P41__function_template_nondeduced_type_shape, inline_hint=yes] {
+function @result_int___result_int___ov4(%this : ptr [object_bytes=8], %value : ptr [pass=by_address, object_bytes=4], %__param2 : ptr) -> void [binding=weak, object=_ZN6resultIiEC1IRiEEOT_PDTclL_ZNS0_14accepts_lvalueES2_EscS3_fL0p_EE, inline_hint=yes] {
   slot $this : ptr
   slot $value : ptr
   slot $__param2 : ptr
@@ -56,5 +56,5 @@ function @reference_int___reference_int_(%this : ptr [object_bytes=8], %value : 
     store typed ptr %t1, %t3
     return void
 }
-alias object _ZN6resultIiEC2IRiEEOT_P41__function_template_nondeduced_type_shape = @result_int___result_int___ov4
+alias object _ZN6resultIiEC2IRiEEOT_PDTclL_ZNS0_14accepts_lvalueES2_EscS3_fL0p_EE = @result_int___result_int___ov4
 alias object _ZN9referenceIiEC2ERi = @reference_int___reference_int_

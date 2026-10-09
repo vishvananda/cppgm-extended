@@ -27,15 +27,13 @@ none) is compared with clang's symbols for the same source:
   that unit) has no clang counterpart and is not judged.
 
 A mismatch whose clang signature mangles an instantiation-dependent
-expression (decltype, an expression template argument or array bound) that
-the course's retained signature does not reproduce is a known residual; the
-summary counts those separately (`--strict` fails on them as well). Other
-known differences are listed in DOCUMENTED with their reason.
+expression (decltype, an expression template argument or array bound) is
+reported as such: the course retains those expressions in its dependent
+signatures. Known differences are listed in DOCUMENTED with their reason.
 
-Usage: scripts/check_clang_names.py [--clang CXX] [--jobs N] [--strict]
-           [--verbose] [paN ...]
-Exits 1 when a fixture has a mismatch that is neither documented nor, without
---strict, a known residual.
+Usage: scripts/check_clang_names.py [--clang CXX] [--jobs N] [--verbose]
+           [paN ...]
+Exits 1 when a fixture has a mismatch that is not documented.
 """
 
 import argparse
@@ -70,7 +68,7 @@ COURSE_PLACEHOLDERS = ('__function_template_nondeduced_type_shape',
 # call, an entity reference or an expression array bound.
 DEPENDENT_EXPRESSION = re.compile(
     r'D[Tt]|[IJ]X|sr\d|s[tzZ]|fp|fL\d|cl[^E]|L_Z|RA[^0-9_]')
-RESIDUAL = 'instantiation-dependent signature (known residual)'
+RESIDUAL = 'instantiation-dependent signature'
 
 # Documented differences: (fixture path relative to the repository root,
 # reference name) -> reason. Keep this list short and explained.
@@ -80,12 +78,6 @@ DOCUMENTED = {
         'semantic: an elaborated-type-specifier in a member declaration '
         'declares the class in the enclosing namespace (3.3.2p7); the '
         'course declares it in the class',
-    ('pa22/tests/general/400-reference-reset-recollects-inclass-template.t',
-     '_ZN7example6memberIN11interface_x6vtable4infoI6targetEEE4wrapIXadL_'
-     'ZNKS4_4callEiEEiEENS5_6resultEPvT0_'):
-        'a member function template of a class template specialization '
-        'keeps `Info::result` unresolved in its result instead of the '
-        'type it names (void)',
 }
 
 
@@ -278,8 +270,6 @@ def main():
     parser.add_argument('pas', nargs='*', default=DEFAULT_PAS)
     parser.add_argument('--clang', default=os.environ.get('CLANG', 'clang++'))
     parser.add_argument('--jobs', type=int, default=8)
-    parser.add_argument('--strict', action='store_true',
-                        help='fail on known residuals too')
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
 
@@ -307,17 +297,12 @@ def main():
     failures, entries = compare(results)
     documented = [entry for entry in entries
                   if (entry[0] + '.t', entry[1]) in DOCUMENTED]
-    residuals = [entry for entry in entries if entry not in documented and
-                 entry[3] == RESIDUAL]
-    mismatches = [entry for entry in entries if entry not in documented and
-                  (args.strict or entry[3] != RESIDUAL)]
+    mismatches = [entry for entry in entries if entry not in documented]
     kinds = collections.Counter(entry[3] for entry in mismatches)
     print('%d fixtures scanned, %d clang compile failures, '
-          '%d mismatching names in %d fixtures, %d documented differences, '
-          '%d known residuals' %
+          '%d mismatching names in %d fixtures, %d documented differences' %
           (len(results), failures, len(mismatches),
-           len(set(entry[0] for entry in mismatches)), len(documented),
-           len(residuals)))
+           len(set(entry[0] for entry in mismatches)), len(documented)))
     for kind, count in kinds.most_common():
         print('%6d %s' % (count, kind))
     limit = None if args.verbose else 3
@@ -331,10 +316,6 @@ def main():
     for relative, name, theirs, kind, binding in documented:
         print('documented: %s.t: %s (clang %s): %s' %
               (relative, name, theirs, DOCUMENTED[(relative + '.t', name)]))
-    if args.verbose and not args.strict:
-        for relative, name, theirs, kind, binding in residuals:
-            print('residual: %s.t: ours %s, clang %s' %
-                  (relative, name, theirs))
     return 1 if mismatches else 0
 
 

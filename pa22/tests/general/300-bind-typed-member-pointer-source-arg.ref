@@ -39,7 +39,7 @@ function @X__f0(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1X
     store typed ptr %this, $this
     return i32 7
 }
-function @bind__ov3(%ret : ptr [pass=indirect_result, object_bytes=24], %__param0 : obj<1x1> [classes=none], %f : i128, %a : ptr) -> void [binding=weak, object=_Z4bindIvi1XPS0_E5boundIv9member_fnIMS0_FivEiS0_ES1_E8type_tagIT_EMT1_FT0_vET2_] {
+function @bind__ov3(%ret : ptr [pass=indirect_result, object_bytes=24], %__param0 : obj<1x1> [classes=none], %f : i128, %a : ptr) -> void [binding=weak, object=_Z4bindIvi1XPS0_EDTcl4bindcv8type_tagIT_E_Ecl6mem_fnfp0_Efp1_EES4_MT1_FT0_vET2_] {
   slot $__param0 : obj<1x1>
   slot $f : i128
   slot $a : ptr

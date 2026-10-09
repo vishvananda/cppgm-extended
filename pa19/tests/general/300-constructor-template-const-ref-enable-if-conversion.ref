@@ -30,7 +30,7 @@ function @duration_like_long_long_int___duration_like_int___ov3(%this : ptr [obj
     store typed i64 %t2, %t4
     return void
 }
-function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxLi0EEERKS_IT_E, inline_hint=yes] {
+function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=4], %other : ptr [pass=by_address, object_bytes=8]) -> void [binding=weak, object=_ZN13duration_likeIiEC1IxTnN9enable_ifIXntsr14is_convertibleIRKS_IT_EiEE5valueEiE4typeELi0EEES6_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -47,4 +47,4 @@ function @duration_like_int___duration_like_int___ov3(%this : ptr [object_bytes=
     return void
 }
 alias object _ZN13duration_likeIxEC2IxTnN9enable_ifIXsr14is_convertibleIRKT_xEE5valueEiE4typeELi0EEES5_ = @duration_like_long_long_int___duration_like_int___ov3
-alias object _ZN13duration_likeIiEC2IxLi0EEERKS_IT_E = @duration_like_int___duration_like_int___ov3
+alias object _ZN13duration_likeIiEC2IxTnN9enable_ifIXntsr14is_convertibleIRKS_IT_EiEE5valueEiE4typeELi0EEES6_ = @duration_like_int___duration_like_int___ov3

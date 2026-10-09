@@ -60,7 +60,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t1 = call i32 @boost__runtime__run_case()
     return i32 %t1
 }
-function @boost__nfp__opt_append(%__param0 : ptr [pass=by_address, object_bytes=4], %np : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=internal, object=_ZN5boost3nfp10opt_appendINS0_15named_parameterIiNS_7runtime12_GLOBAL__N_18first_idERKiEENS2_IiNS4_9second_idES7_EEEENS0_23named_parameter_combineISA_S8_EERKT_RKT0_] {
+function @boost__nfp__opt_append(%__param0 : ptr [pass=by_address, object_bytes=4], %np : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=internal, object=_ZN5boost3nfp10opt_appendINS0_15named_parameterIiNS_7runtime12_GLOBAL__N_18first_idERKiEENS2_IiNS4_9second_idES7_EEEENS_11enable_if_cIXntsr9has_paramIT_NS0_7keywordINT0_2idELb0EEEEE5valueENS0_23named_parameter_combineISE_SC_EEE4typeERKSC_RKSE_] {
   slot $__param0 : ptr
   slot $np : ptr
   slot $result : obj<4x4>

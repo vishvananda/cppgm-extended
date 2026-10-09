@@ -824,6 +824,7 @@ dev/src/semantic/templates/classes.cpp	TemplatePartialPackParameter	1	dev/src/se
 dev/src/semantic/templates/classes.cpp	UpgradeClassTemplateSpecializations	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/classes.cpp	UsingFunctionCandidates	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/function_abi_result.cpp	PublishFunctionTemplateResultAbiType	1	dev/src/semantic/templates/function_abi_result.cpp	keep
+dev/src/semantic/templates/function_abi_result.cpp	PublishParameterArrayBounds	1	dev/src/semantic/templates/function_abi_result.cpp	keep
 dev/src/semantic/templates/function_deduction.cpp	AnalyzeFunctionId	1	dev/src/semantic/templates/function_deduction.cpp	keep
 dev/src/semantic/templates/function_deduction.cpp	AppendConversionFunctionTemplateCandidates	1	dev/src/semantic/templates/function_deduction.cpp	keep
 dev/src/semantic/templates/function_deduction.cpp	CompareFunctionTemplateConstraints	1	dev/src/semantic/templates/function_deduction.cpp	keep

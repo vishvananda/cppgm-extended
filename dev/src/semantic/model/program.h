@@ -633,7 +633,20 @@ enum FunctionTemplateAbiExpressionKind
 	FUNCTION_TEMPLATE_ABI_EXPRESSION_SIZEOF_PACK,
 	FUNCTION_TEMPLATE_ABI_EXPRESSION_STATIC_CAST,
 	FUNCTION_TEMPLATE_ABI_EXPRESSION_NAMESPACE_MEMBER,
-	FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_ENTITY
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_TEMPLATE_ENTITY,
+	// A non-dependent value of a concrete type (`Lb1E`, `Lm8E`, an
+	// enumerator's `L13overload_type0E`).
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_VALUE,
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_THIS,
+	// `T(args)` and `(T)e`: `cv <type> <expr>` for one operand, otherwise
+	// `cv <type> _ <expr>* E`.
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_CONVERSION,
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_SIZEOF_TYPE,
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_SIZEOF_EXPRESSION,
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_BRACED_LIST,
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_CONDITIONAL,
+	// A non-dependent callee resolved to its declaration (`L_Z<encoding>E`).
+	FUNCTION_TEMPLATE_ABI_EXPRESSION_FUNCTION
 };
 
 struct FunctionTemplateAbiExpression
@@ -645,6 +658,8 @@ struct FunctionTemplateAbiExpression
 	std::uint32_t parameter, argument_begin, argument_count;
 	OperatorKind operation;
 	bool indirect_member;
+	// A VALUE's value, or a FUNCTION's binding.
+	std::int64_t value;
 
 	FunctionTemplateAbiExpression(
 		FunctionTemplateAbiExpressionKind kind_value,
@@ -663,7 +678,7 @@ struct FunctionTemplateAbiExpression
 		  type(type_value), name(name_value), parameter(parameter_value),
 		  argument_begin(argument_begin_value),
 		  argument_count(argument_count_value), operation(operation_value),
-		  indirect_member(indirect_member_value) {}
+		  indirect_member(indirect_member_value), value(0) {}
 };
 
 // Syntax-independent source-type structure retained for function-template ABI

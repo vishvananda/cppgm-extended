@@ -206,7 +206,7 @@ function @deferred_value__ov2() -> i32 [binding=weak, object=_Z14deferred_valueI
     %t4 = convert trunc i32 i64 %t3
     return i32 %t4
 }
-function @shorted(%array : ptr [pass=by_address, object_bytes=12]) -> i32 [binding=weak, object=_Z7shortedIiEiRA_i] {
+function @shorted(%array : ptr [pass=by_address, object_bytes=12]) -> i32 [binding=weak, object=_Z7shortedIiEiRAqustT_Li3EdvLi1ELi0E_i] {
   slot $array : ptr
 
   block ^entry:

@@ -133,7 +133,7 @@ function @unwrap_range_like(%first : ptr, %last : ptr) -> obj<16x8> [binding=wea
     copyobj 16x8 %t12, %t1
     return obj<16x8> $retobj__1
 }
-function @unwrap_iter_like(%value : ptr) -> ptr [binding=weak, object=_Z16unwrap_iter_likeIPi16unwrap_impl_likeIS0_Lb1EELi0EENT0_6unwrapET_] {
+function @unwrap_iter_like(%value : ptr) -> ptr [binding=weak, object=_Z16unwrap_iter_likeIPi16unwrap_impl_likeIS0_Lb1EELi0EEDTclsrT0_6unwrapcl7declvalIT_EEEES4_] {
   slot $value : ptr
 
   block ^entry:

@@ -39,7 +39,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = load typed i32 $cond__1
     return i32 %t10
 }
-function @span_char_const___1___span_char_const___1___ov3(%this : ptr [object_bytes=8], %__param1 : ptr, %count : i64) -> void [binding=weak, object=_ZN4spanIKcLm18446744073709551615EEC1IS0_Li0EEEPT_m, inline_hint=yes] {
+function @span_char_const___1___span_char_const___1___ov3(%this : ptr [object_bytes=8], %__param1 : ptr, %count : i64) -> void [binding=weak, object=_ZN4spanIKcLm18446744073709551615EEC1IS0_TnN9enable_ifIXaaeq6Extent14dynamic_extentsr14is_convertibleIT_S0_EE5valueEiE4typeELi0EEEPS4_m, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
   slot $count : i64
@@ -54,4 +54,4 @@ function @span_char_const___1___span_char_const___1___ov3(%this : ptr [object_by
     store typed i64 %t1, %t3
     return void
 }
-alias object _ZN4spanIKcLm18446744073709551615EEC2IS0_Li0EEEPT_m = @span_char_const___1___span_char_const___1___ov3
+alias object _ZN4spanIKcLm18446744073709551615EEC2IS0_TnN9enable_ifIXaaeq6Extent14dynamic_extentsr14is_convertibleIT_S0_EE5valueEiE4typeELi0EEEPS4_m = @span_char_const___1___span_char_const___1___ov3

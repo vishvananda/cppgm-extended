@@ -28,7 +28,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = load typed i32 $cond__3
     return i32 %t7
 }
-function @api__query_fn__impl__operator__(%this : ptr [object_bytes=1], %t : ptr [pass=by_address, object_bytes=1], %p : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK3api8query_fn4implclINS_8executorENS_9execution6detail12relationship6fork_tILi0EEEEES8_OT_OT0_, inline_hint=yes] {
+function @api__query_fn__impl__operator__(%this : ptr [object_bytes=1], %t : ptr [pass=by_address, object_bytes=1], %p : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZNK3api8query_fn4implclINS_8executorENS_9execution6detail12relationship6fork_tILi0EEEEEN9enable_ifIXeqsr11call_traitsIS1_T_FvT0_EEE8overloadLNS0_13overload_typeE1EENS0_11call_traitsIS1_SA_SC_vvvvE11result_typeEE4typeEOSA_OSB_, inline_hint=yes] {
   slot $this : ptr
   slot $t : ptr
   slot $p : ptr

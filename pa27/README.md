@@ -222,6 +222,19 @@ clang, and the object-inspection tests check its spelling:
   function-local unnamed class or closure takes the next number within its
   function, and any other one takes the count of `$_` names the translation
   unit has assigned so far
+- a function template's signature that depends on an expression keeps the
+  expression as clang mangles it. A dependent decltype is `DT<expr>E`, a
+  dependent template argument is `X<expr>E` and a dependent array bound is
+  `A<expr>_`; a parameter the result names is `fp_`, and one a later
+  parameter names is `fL0p_`. A non-dependent sizeof or template argument is
+  written as its value (`Lm8E`, `Lb1E`), and a non-dependent class's static
+  member as its declaration (`L_ZNSt14numeric_limitsImE6digitsE`). A callee
+  that is a class's member function is written as its declaration, and an
+  unqualified function callee as its name. A dependent name's qualifier is
+  written without the template's default arguments
+  (`sr11call_traitsIS1_T_FvT0_EEE8overload`), and a template-id that an
+  alias parameter binds is written as its unqualified name
+  (`sr9is_scalarIT_EE5value`)
 - a numbered closure type, and a local class of an inline function or
   template specialization, is one entity in every unit: its member
   functions, the static invoker, the static variables in their bodies and

@@ -124,7 +124,8 @@ enum ResultIdentityAtomKind
 	RESULT_IDENTITY_NAMESPACE,
 	RESULT_IDENTITY_CALLABLE,
 	RESULT_IDENTITY_FUNCTION_TEMPLATE,
-	RESULT_IDENTITY_VALUE_ARGUMENT
+	RESULT_IDENTITY_VALUE_ARGUMENT,
+	RESULT_IDENTITY_DEFAULT_ARGUMENT
 };
 
 std::uint64_t ResultIdentityAtom(ResultIdentityAtomKind kind,
@@ -136,8 +137,12 @@ std::uint64_t ResultIdentityAtom(ResultIdentityAtomKind kind,
 
 }
 
+// With abi_spelling, the atoms also say what an ABI name spells differently
+// from the result's identity: which arguments are defaults, the value of a
+// written non-dependent value argument, the type an alias parameter
+// qualifying a name binds.
 void Analyzer::InternExpandedFunctionTemplateResult(
-	FunctionTemplatePattern* pattern)
+	FunctionTemplatePattern* pattern, bool abi_spelling)
 {
 	if (!pattern || pattern->result_root_structure == kNoNode) return;
 	const std::size_t nodes = arena_->Nodes();
@@ -280,7 +285,7 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 
 	build = [this, pattern, &root_parameter, &collect_arguments,
 		&environment_names, &root_bindings, &dependent_names,
-		&environment_probes, &build, visit_limit](
+		&environment_probes, &build, visit_limit, abi_spelling](
 		const ResultSyntaxReference& reference,
 		std::vector<std::uint64_t>* atoms, std::size_t* visits,
 		std::size_t* expansions) -> bool {
@@ -522,7 +527,24 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 			component_path.global =
 				FindChild(reference.node, ::cppgm::syntax::STAG_GLOBAL_QUALIFIER) != kNoNode;
 			bool resolved_type_prefix = false;
-			for (std::size_t c = 0; c < components.size(); ++c)
+			std::size_t first_component = 0;
+			// An alias parameter qualifying a name is the type it binds
+			// (`Cond::value` with `Cond = Callable<F>`).
+			if (abi_spelling && components.size() > 1 &&
+				FindChild(components[0], ::cppgm::syntax::STAG_TEMPLATE_TYPE_ARGUMENT_LIST) == kNoNode)
+			{
+				const std::vector<ResultSyntaxReference>* bound = FindResultSyntaxBinding(
+					reference.environment, arena_->SemanticPayloadId(components[0]),
+					environment_names, root_bindings, &environment_probes);
+				if (bound && bound->size() == 1)
+				{
+					if (!build((*bound)[0], atoms, visits, expansions)) return false;
+					component_path.Push(arena_->SemanticPayloadId(components[0]));
+					resolved_type_prefix = true;
+					first_component = 1;
+				}
+			}
+			for (std::size_t c = first_component; c < components.size(); ++c)
 			{
 				const NameId name = arena_->SemanticPayloadId(components[c]);
 				component_path.Push(name);
@@ -572,6 +594,7 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 				}
 				std::vector<ResultSyntaxReference> arguments;
 				collect_arguments(list, reference, &arguments);
+				const std::size_t written_arguments = arguments.size();
 				const std::size_t class_index = FindClassTemplateIndex(marker, name);
 				const std::size_t alias_index = FindAliasTemplateIndex(marker, name);
 				const std::vector<TemplateParameter>* declared_parameters = class_index < class_templates_.size() ?
@@ -615,7 +638,35 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 							argument = arguments.size();
 						}
 						else if (argument < arguments.size())
+						{
+							// A written non-dependent value argument is its value
+							// (14.3.2), as the instantiated specialization has it.
+							ResultSyntaxReference& written = arguments[argument];
+							const TemplateParameter& parameter = class_pattern.parameters[p];
+							if (abi_spelling && written.bound_argument == kNoTemplateArgumentList && written.node != kNoNode &&
+								parameter.kind == TEMPLATE_ARGUMENT_INTEGRAL && parameter.value_type != kNoType &&
+								IsIntegral(parameter.value_type) &&
+								!arena_->IsTag(written.node, ::cppgm::syntax::STAG_PACK_EXPANSION_EXPRESSION) &&
+								!SyntaxUsesAnyTemplateParameter(written.node, dependent_names) &&
+								!UsesResultSyntaxEnvironment(*arena_, written.node, environment_names))
+							{
+								ScopedContainerPush<std::vector<std::uint8_t> > candidate(
+									&candidate_substitution_failures_, 0);
+								ScopedValueRestore<std::size_t> constant_root(
+									&constant_evaluation_suppressed_depth_, 0);
+								ScopedCounterIncrement required(&constant_expression_required_depth_);
+								TemplateArgument formed(TEMPLATE_ARGUMENT_INTEGRAL, parameter.value_type);
+								const NodeId expression_node = arena_->IsTag(written.node, ::cppgm::syntax::STAG_TYPE_ID) ?
+									kNoNode : written.node;
+								const ExpressionInfo expression = expression_node == kNoNode ? ExpressionInfo() :
+									AnalyzeExpression(expression_node, written.scope, formed.type);
+								if (expression_node != kNoNode && !CandidateSubstitutionFailed() &&
+									FormNonTypeTemplateArgumentValue(expression, &formed))
+									written = ResultSyntaxReference(kNoNode, written.scope, 0,
+										program_->InternTemplateArgumentList(std::vector<TemplateArgument>(1, formed)));
+							}
 							frame.values.push_back(arguments[argument++]);
+						}
 						else if (class_pattern.parameters[p].default_argument !=
 							kNoNode)
 						{
@@ -664,6 +715,9 @@ void Analyzer::InternExpandedFunctionTemplateResult(
 				{
 					atoms->push_back(ResultIdentityAtom(
 						RESULT_IDENTITY_ARGUMENT_BEGIN));
+					// A default the template supplies, not one written.
+					if (abi_spelling && a >= written_arguments)
+						atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_DEFAULT_ARGUMENT));
 					if (declared_parameters && !declared_parameters->empty() &&
 						(*declared_parameters)[std::min(a, declared_parameters->size() - 1)].kind == TEMPLATE_ARGUMENT_INTEGRAL)
 						atoms->push_back(ResultIdentityAtom(RESULT_IDENTITY_VALUE_ARGUMENT));

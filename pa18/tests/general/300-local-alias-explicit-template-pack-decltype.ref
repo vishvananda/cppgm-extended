@@ -16,7 +16,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t7 = binary sub nowrap i32 %t6, 1
     return i32 %t7
 }
-function @api__v1____try_key_extraction(%__with_key : obj<1x1> [classes=none], %__without_key : obj<1x1> [classes=none], %__args : ptr [pass=by_address, object_bytes=4], %__args__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3api2v120__try_key_extractionIi7WithKey10WithoutKeyJRiRmEEEiT0_T1_DpOT2_] {
+function @api__v1____try_key_extraction(%__with_key : obj<1x1> [classes=none], %__without_key : obj<1x1> [classes=none], %__args : ptr [pass=by_address, object_bytes=4], %__args__pack2 : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=weak, object=_ZN3api2v120__try_key_extractionIi7WithKey10WithoutKeyJRiRmEEEDTclcl7declvalIT1_EEspcl7declvalIT2_EEEET0_S6_DpOS7_] {
   slot $__with_key : obj<1x1>
   slot $__without_key : obj<1x1>
   slot $__args : ptr

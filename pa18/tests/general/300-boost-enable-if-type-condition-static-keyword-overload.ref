@@ -13,7 +13,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     copyobj 8x8 %t5, %t2
     return i32 0
 }
-function @boost__parameter__keyword_boost__graph__keywords__tag__color_map___operator_(%this : ptr [object_bytes=1], %d : ptr [pass=by_address, object_bytes=4]) -> obj<8x8> [binding=weak, object=_ZNK5boost9parameter7keywordINS_5graph8keywords3tag9color_mapEEorIiEENS0_3aux8default_IS5_KiEERKT_, inline_hint=yes] {
+function @boost__parameter__keyword_boost__graph__keywords__tag__color_map___operator_(%this : ptr [object_bytes=1], %d : ptr [pass=by_address, object_bytes=4]) -> obj<8x8> [binding=weak, object=_ZNK5boost9parameter7keywordINS_5graph8keywords3tag9color_mapEEorIiEENS_9enable_ifINS_4mp116detail12mp_if_c_implIXscbsr9is_scalarIT_EE5valueENS9_7mp_trueEJSD_EE4typeENS0_3aux8default_IS5_KSC_EEE4typeERSI_, inline_hint=yes] {
   slot $this : ptr
   slot $d : ptr
   slot $retobj__1 : obj<8x8>

@@ -8,6 +8,8 @@
 #include "semantic/model/graph.h"
 #include "semantic/model/program.h"
 
+#include <string>
+
 namespace cppgm
 {
 namespace lowering
@@ -17,6 +19,8 @@ namespace abi
 
 void AppendTypedFact(abi_mangle::AbiTypedCase* facts,
 	abi_mangle::AbiFactRecord* record);
+std::string MangleProductionCase(const abi_mangle::AbiTypedCase& fact_case,
+	abi_mangle::AbiMangleStats* stats, abi_mangle::AbiMangleContext* context);
 void AppendFunctionAbiTagFacts(const semantic::Program& program,
 	const semantic::BindingRecord& binding, abi_mangle::AbiMangleContext* context,
 	abi_mangle::AbiTypedCase* facts);

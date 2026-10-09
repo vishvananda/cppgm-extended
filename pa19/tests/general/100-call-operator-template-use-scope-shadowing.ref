@@ -36,7 +36,7 @@ function @N__copy_move_unwrap_iters(%first : i32, %last : i32, %out : i32) -> i3
     %t5 = call i32 @N____copy_impl__operator__(%t1, %t2, %t3, %t4)
     return i32 %t5
 }
-function @N____copy_impl__operator__(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32, %__param3 : i32) -> i32 [binding=weak, object=_ZNK1N11__copy_implclIiiiLi0EEEiT_T0_T1_, inline_hint=yes] {
+function @N____copy_impl__operator__(%this : ptr [object_bytes=1], %__param1 : i32, %__param2 : i32, %__param3 : i32) -> i32 [binding=weak, object=_ZNK1N11__copy_implclIiiiTnNS_8EnableIfIXntsr21specialized_algorithmINS_10_Algorithm6__copyET_T1_EE3hasEiE4typeELi0EEEiS5_T0_S6_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : i32
   slot $__param2 : i32

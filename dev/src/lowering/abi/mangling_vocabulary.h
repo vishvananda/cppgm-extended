@@ -36,6 +36,9 @@ bool MakeBuiltinAbiType(const semantic::Program& program,
 	const semantic::TypeRecord& source, abi_mangle::AbiType* result);
 abi_mangle::AbiTerminalKind OperatorTerminal(semantic::OperatorKind kind,
 	bool member, std::size_t parameter_count);
+// The <operator-name> of an operator applied in a dependent expression
+// (`nt`, `aa`, `le`), or null where the operator has none.
+const char* ExpressionOperatorCode(semantic::OperatorKind kind, bool unary);
 
 }  // namespace abi
 }  // namespace lowering

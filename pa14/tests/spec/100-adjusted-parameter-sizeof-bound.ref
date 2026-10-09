@@ -118,7 +118,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t19 = call i32 @qualified(3, %t18)
     return i32 %t19
 }
-function @adjusted(%array : ptr, %bytes : ptr [pass=by_address, object_bytes=32]) -> i32 [binding=weak, object=_Z8adjustedIiEiPT_RA8_i] {
+function @adjusted(%array : ptr, %bytes : ptr [pass=by_address, object_bytes=32]) -> i32 [binding=weak, object=_Z8adjustedIiEiPT_RAszfL0p__i] {
   slot $array : ptr
   slot $bytes : ptr
 

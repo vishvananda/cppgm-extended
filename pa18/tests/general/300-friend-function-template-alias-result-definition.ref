@@ -52,7 +52,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_6:
     return i32 0
 }
-function @make_owner(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=weak, object=_Z10make_ownerIiJiiEE5ownerIiEDpOT0_, inline_hint=yes] {
+function @make_owner(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=weak, object=_Z10make_ownerIiJiiEE5ownerIN9enable_ifIXntsr8is_arrayIT_EE5valueES2_E4typeEEDpOT0_, inline_hint=yes] {
   slot $args : ptr
   slot $args__pack2 : ptr
   slot $retobj__1 : obj<4x4>
@@ -68,7 +68,7 @@ function @make_owner(%args : ptr [pass=by_address, object_bytes=4], %args__pack2
     call void @owner_int___owner_long_int___ov3(%t1, $argobj__2, %t3, %t4)
     return obj<4x4> $retobj__1
 }
-function @make_owner__ov2(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr [pass=by_address, object_bytes=4], %args__pack3 : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=weak, object=_Z10make_ownerIlJiiiEE5ownerIlEDpOT0_, inline_hint=yes] {
+function @make_owner__ov2(%args : ptr [pass=by_address, object_bytes=4], %args__pack2 : ptr [pass=by_address, object_bytes=4], %args__pack3 : ptr [pass=by_address, object_bytes=4]) -> obj<4x4> [binding=weak, object=_Z10make_ownerIlJiiiEE5ownerIN9enable_ifIXntsr8is_arrayIT_EE5valueES2_E4typeEEDpOT0_, inline_hint=yes] {
   slot $args : ptr
   slot $args__pack2 : ptr
   slot $args__pack3 : ptr

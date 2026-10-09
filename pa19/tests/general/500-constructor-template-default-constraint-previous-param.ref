@@ -15,7 +15,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @mutable_buffer__mutable_buffer__ov5(%t2, %t3, $argobj__1, $argobj__2, $argobj__3)
     return i32 0
 }
-function @mutable_buffer__mutable_buffer__ov5(%this : ptr [object_bytes=1], %span : ptr [pass=by_address, object_bytes=1], %__param2 : obj<1x1> [classes=none], %__param3 : obj<1x1> [classes=none], %__param4 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN14mutable_bufferC1I4spancLm1EEERKT_IT0_Lm0EE41__function_template_nondeduced_type_shapeS7_S7_, inline_hint=yes] {
+function @mutable_buffer__mutable_buffer__ov5(%this : ptr [object_bytes=1], %span : ptr [pass=by_address, object_bytes=1], %__param2 : obj<1x1> [classes=none], %__param3 : obj<1x1> [classes=none], %__param4 : obj<1x1> [classes=none]) -> void [binding=weak, object=_ZN14mutable_bufferC1I4spancLm1EEERKT_IT0_XT1_EEN4meta9enable_ifIXntsr4meta8is_constIS3_EE5valueENS7_20defaulted_constraintEE4typeENS8_IXeqstS3_Li1EES9_E4typeENS8_IXsr4meta7is_sameIDTcldtfL0p_7subspanLi0ELi0EEES2_IS3_Lm18446744073709551615EEEE5valueES9_E4typeE, inline_hint=yes] {
   slot $this : ptr
   slot $span : ptr
   slot $__param2 : obj<1x1>
@@ -27,4 +27,4 @@ function @mutable_buffer__mutable_buffer__ov5(%this : ptr [object_bytes=1], %spa
     store typed ptr %span, $span
     return void
 }
-alias object _ZN14mutable_bufferC2I4spancLm1EEERKT_IT0_Lm0EE41__function_template_nondeduced_type_shapeS7_S7_ = @mutable_buffer__mutable_buffer__ov5
+alias object _ZN14mutable_bufferC2I4spancLm1EEERKT_IT0_XT1_EEN4meta9enable_ifIXntsr4meta8is_constIS3_EE5valueENS7_20defaulted_constraintEE4typeENS8_IXeqstS3_Li1EES9_E4typeENS8_IXsr4meta7is_sameIDTcldtfL0p_7subspanLi0ELi0EEES2_IS3_Lm18446744073709551615EEEE5valueES9_E4typeE = @mutable_buffer__mutable_buffer__ov5

@@ -107,7 +107,7 @@ function @lib__selected_unwrap_range(%first : ptr, %__param1 : ptr) -> ptr [bind
     %t2 = call ptr @lib__selected_unwrap_iter(%t1)
     return ptr %t2
 }
-function @lib__address_unwrap_iter(%value : obj<8x8>) -> ptr [binding=weak, object=_ZN3lib19address_unwrap_iterINS_12wrapped_iterIPiEENS_19address_unwrap_implIS3_Lb1EEEEENT0_6unwrapET_] {
+function @lib__address_unwrap_iter(%value : obj<8x8>) -> ptr [binding=weak, object=_ZN3lib19address_unwrap_iterINS_12wrapped_iterIPiEENS_19address_unwrap_implIS3_Lb1EEEEEDTclsrT0_6unwrapcl7declvalIT_EEEES7_] {
   slot $value : obj<8x8>
   slot $argobj__1 : obj<8x8>
 
@@ -149,7 +149,7 @@ function @lib__unwrap_range(%first : ptr, %last : ptr) -> obj<16x8> [binding=wea
     copyobj 16x8 %t10, %t1
     return obj<16x8> $retobj__1
 }
-function @lib__unwrap_iter(%i : ptr) -> ptr [binding=weak, object=_ZN3lib11unwrap_iterIPiNS_16unwrap_iter_implIS1_EELi0EEENT0_6unwrapET_] {
+function @lib__unwrap_iter(%i : ptr) -> ptr [binding=weak, object=_ZN3lib11unwrap_iterIPiNS_16unwrap_iter_implIS1_EELi0EEEDTclsrT0_6unwrapcl7declvalIT_EEEES5_] {
   slot $i : ptr
 
   block ^entry:
@@ -251,7 +251,7 @@ function @lib__make_pair(%a : ptr, %b : ptr) -> obj<16x8> [binding=weak, object=
     call void @lib__pair_pointer_to_int__pointer_to_int___pair_pointer_to_int__pointer_to_int_(%t1, %t2, %t3)
     return obj<16x8> $retobj__1
 }
-function @lib__selected_unwrap_iter(%i : ptr) -> ptr [binding=weak, object=_ZN3lib20selected_unwrap_iterIPiNS_25selected_unwrap_iter_implIS1_Lb0EEEEENT0_6unwrapET_] {
+function @lib__selected_unwrap_iter(%i : ptr) -> ptr [binding=weak, object=_ZN3lib20selected_unwrap_iterIPiNS_25selected_unwrap_iter_implIS1_Lb0EEEEEDTclsrT0_6unwrapcl7declvalIT_EEEES5_] {
   slot $i : ptr
 
   block ^entry:

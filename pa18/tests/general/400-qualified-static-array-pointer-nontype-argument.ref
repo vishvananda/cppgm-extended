@@ -8,7 +8,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = convert sext i32 i8 %t1
     return i32 %t2
 }
-function @tag____cppgm_class_template_identity_1_0_0__value___get() -> i8 [binding=weak, object=_ZN3tagIXadL_ZN37__cppgm_class_template_identity_1_0_05valueEEEE3getEv, inline_hint=yes] {
+function @tag____cppgm_class_template_identity_1_0_0__value___get() -> i8 [binding=weak, object=_ZN3tagIXadL_ZN6holderIiE5valueEEEE3getEv, inline_hint=yes] {
   block ^entry:
     %t1 = addr @__cppgm_class_template_identity_1_0_0__value
     %t2 = load i8 %t1

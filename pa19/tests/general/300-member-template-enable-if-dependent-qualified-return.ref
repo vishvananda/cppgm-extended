@@ -21,7 +21,7 @@ function @box_int___box_int_(%this : ptr [object_bytes=1], %p : ptr) -> void [bi
     call void @box_int___accept(%t1, %t2)
     return void
 }
-function @box_int___accept(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN3boxIiE6acceptIiiEEvPT_, inline_hint=yes] {
+function @box_int___accept(%this : ptr [object_bytes=1], %__param1 : ptr) -> void [binding=weak, object=_ZN3boxIiE6acceptIiiEEN9enable_ifIXntsr5traitIT0_EE5valueEvE4typeEPT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
