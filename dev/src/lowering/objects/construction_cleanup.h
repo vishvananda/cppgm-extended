@@ -311,6 +311,10 @@ protected:
 		const bool may_throw = !derived.program_.bindings[destructor].nonthrowing;
 		if (may_throw) derived.EmitEhTarget(ir::Instruction::EH_TRY, derived.LexicalCleanupTerminateBlock());
 		if (temporary) derived.LowerFullExpressionDestructorAction(step.temporary_action);
+		else if (step.allocation_node != semantic::kNoDumpEdge &&
+			derived.arena_.nodes[step.allocation_node].array_action)
+			derived.EmitArrayAllocationRelease(
+				derived.arena_.nodes[step.allocation_node], step.destination);
 		else if (step.allocation_node != semantic::kNoDumpEdge)
 			derived.EmitSelectedDeallocation(derived.arena_.nodes[step.allocation_node],
 				step.destination, step.destructor);

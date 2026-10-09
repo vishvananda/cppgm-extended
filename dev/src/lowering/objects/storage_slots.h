@@ -230,19 +230,25 @@ protected:
 			const NodeChildren call = derived.Children(children[0]);
 			const bool retain_size = !record.array_count_constant &&
 				(record.array_cookie || record.value_initialization ||
-				 children.size() == 2);
+				 children.size() >= 2);
 			if (retain_size && call.size() > 1)
 				(void)derived.EnsureGeneratedSlot(call[1],
 					"array_new_size", lowering::ir::LowI64());
 			if (record.value_initialization)
 				(void)derived.EnsureGeneratedSlot(children[0],
 					"zeroinit_offset", lowering::ir::LowI64());
-			if (children.size() == 2 &&
-				derived.arena_.nodes[children[1]].kind == DUMP_BRACED_INIT_LIST)
+			const std::uint32_t last = children[children.size() - 1];
+			const std::uint32_t list = children.size() >= 2 &&
+				derived.arena_.nodes[last].kind == DUMP_BRACED_INIT_LIST ?
+				last : kNoDumpEdge;
+			if (list != kNoDumpEdge)
 			{
-				if (!derived.ArrayListFillsArray(record, children[1]))
-					(void)derived.EnsureGeneratedSlot(children[1],
+				if (!derived.ArrayListFillsArray(record, list))
+					(void)derived.EnsureGeneratedSlot(list,
 						"zeroinit_offset", lowering::ir::LowI64());
+				if (children.size() == 3)
+					(void)derived.EnsureGeneratedSlot(children[1],
+						"array_new_index", lowering::ir::LowI64());
 			}
 			else if (children.size() == 2)
 			{

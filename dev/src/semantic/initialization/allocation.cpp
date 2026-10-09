@@ -150,11 +150,11 @@ ExpressionInfo Analyzer::CheckArrayExtent(const ExpressionInfo& extent,
 	return checked;
 }
 
-// The braced-init-list of an array new-expression (8.5.4p3, 5.3.4p17): the
-// first elements are copy-initialized from its clauses and the rest from an
-// empty initializer list, which value-initializes them. An empty list is
-// value-initialization, returned as a typed result without a node; clauses
-// for class elements are not supported.
+// The braced-init-list of an array new-expression (8.5.4p3, 8.5.1p7,
+// 5.3.4p17): the first elements are copy-initialized from its clauses and
+// the rest from an empty initializer list, which value-initializes them.
+// An empty list is value-initialization, returned as a typed result
+// without a node.
 ExpressionInfo Analyzer::AnalyzeArrayNewList(NodeId node, ScopeId scope,
 	TypeId element)
 {
@@ -170,11 +170,6 @@ ExpressionInfo Analyzer::AnalyzeArrayNewList(NodeId node, ScopeId scope,
 		list.type = element;
 		return list;
 	}
-	TypeId leaf = program_->types.RemoveTopCv(element);
-	while (program_->types.Get(leaf).kind == TYPE_ARRAY)
-		leaf = program_->types.RemoveTopCv(program_->types.Get(leaf).child);
-	if (IsClassEntity(*program_, EntityOf(leaf)))
-		ThrowSemanticError("array new of class elements from initializer-clauses is unsupported");
 	list = AnalyzeBracedInit(braced, scope, program_->types.Array(element, 0));
 	const TypeRecord& shape = program_->types.Get(list.type);
 	if (dump_.nodes[list.node].kind != DUMP_BRACED_INIT_LIST ||
@@ -341,7 +336,11 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 		argument_syntax, arguments, 0, kNoType, naming_class, 0, &conversions);
 	std::uint32_t construction = kNoDumpEdge;
 	BindingId destructor = kNoBinding;
-	if (class_elements)
+	// Elements past a braced-init-list are value-initialized; a constant
+	// count the list fills leaves none to default-construct.
+	const bool listed_all = listed != 0 && extent.constant &&
+		static_cast<std::uint64_t>(extent.value) == listed;
+	if (class_elements && !listed_all)
 	{
 		const std::vector<NodeId> no_arguments;
 		const std::uint32_t action = BuildConstructorAction(
@@ -359,6 +358,9 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 			if (!dump_.nodes[action].trivial_special_member_action)
 				DemandFunction(dump_.nodes[action].binding);
 		}
+	}
+	if (class_elements)
+	{
 		const BindingId selected_destructor = DestructorForType(leaf_type);
 		if (selected_destructor == kNoBinding ||
 			GetFunction(selected_destructor).deleted_destructor)

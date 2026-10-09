@@ -235,6 +235,10 @@ To complete PA21, implement these goals:
    non-throwing (15.4p15).
    If initialization after ordinary scalar allocation throws, call the selected
    usual deallocation function after construction cleanup and propagate the exception.
+   Array new initializes its elements in order, from a braced-init-list's clauses
+   and then by value-initialization or default construction; if one throws,
+   destroy the elements already constructed in reverse order, then call the
+   selected usual deallocation function.
    Successful initialization transfers the allocation to the result.
    If construction of a class subobject throws, destroy exactly the already
    constructed bases and members in reverse construction order.

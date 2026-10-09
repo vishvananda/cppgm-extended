@@ -2,6 +2,7 @@
 #define CPPGM_LOWERING_LIFETIME_ARRAYS_H
 
 #include "lowering/ir/model.h"
+#include "lowering/objects/construction_cleanup.h"
 #include "lowering/support/errors.h"
 #include "lowering/support/sequences.h"
 #include "semantic/model/graph.h"
@@ -777,10 +778,13 @@ protected:
 			derived.program_.SizeOf(derived.arena_.nodes[list].type);
 	}
 
-	// The first elements from the braced-init-list's clauses, the rest
-	// value-initialized (zero: the elements are not classes); storage is
-	// freed if a clause throws.
-	void EmitArrayListInitialization(const DumpNode& record, std::uint32_t list,
+	// The first elements from the braced-init-list's clauses (8.5.1), the
+	// rest value-initialized: zero-filled, then default-constructed when the
+	// element has a constructor to run. While a clause or a constructor may
+	// throw, the construction cleanup chain holds the storage (freed last)
+	// and the elements built so far (destroyed in reverse first).
+	void EmitArrayListInitialization(std::uint32_t node, const DumpNode& record,
+		std::uint32_t list, std::uint32_t construction,
 		const Operand& raw_pointer, const Operand& user_pointer,
 		const Operand& byte_size)
 	{
@@ -789,57 +793,206 @@ protected:
 		const std::int64_t listed_bytes =
 			static_cast<std::int64_t>(derived.program_.SizeOf(list_type));
 		const bool guarded = record.object_binding != kNoBinding;
-		const BlockId cleanup = guarded ? derived.AddBlock(
-			derived.NewLabel("array_new_list_cleanup")) : BlockId(kNoLowId);
-		const BlockId continuation = guarded ? derived.AddBlock(
-			derived.NewLabel("array_new_list_cont")) : BlockId(kNoLowId);
-		if (guarded) derived.EmitEhTarget(Instruction::EH_TRY, cleanup);
-		derived.LowerRuntimeArrayValues(list_type, list, user_pointer, true);
+		bool owns_cleanup = false;
+		std::uint32_t previous = 0;
 		if (guarded)
 		{
-			derived.Emit(Instruction(Instruction::EH_END));
-			derived.EmitJump(continuation);
-			derived.SelectBlock(cleanup);
-			const bool routes_to_try = derived.BeginExceptionTryCleanupDispatch();
-			EmitArrayDeallocation(record.object_binding, record, raw_pointer,
-				EmitArrayCount(record, byte_size));
-			derived.FinishExceptionCleanupDispatch(routes_to_try, false);
-			derived.SelectBlock(continuation);
+			owns_cleanup = derived.BeginConstructionCleanup(record, true);
+			previous = derived.ConstructionCleanupRoot();
+			derived.PauseFullExpressionCleanupSegment();
+			derived.PushConstructionCleanup(ConstructionCleanupStep(previous,
+				kNoDumpEdge, record.operand_type, record.object_binding,
+				raw_pointer, node));
+			derived.full_expression_cleanup_ready_ = true;
 		}
-		if (ArrayListFillsArray(record, list)) return;
-		Operand data_size = byte_size;
-		if (record.array_cookie)
+		derived.LowerRuntimeArrayValues(list_type, list, user_pointer, true);
+		if (!ArrayListFillsArray(record, list))
 		{
-			data_size = derived.Temp(LowI64());
-			Instruction subtract(Instruction::BINARY);
-			subtract.dest = data_size.id;
-			subtract.op = LOW_OP_SUB;
-			subtract.type = LowI64();
-			subtract.first = byte_size;
-			subtract.second = ArrayCookieOperand(record);
-			derived.Emit(subtract);
+			Operand data_size = byte_size;
+			if (record.array_cookie)
+			{
+				data_size = derived.Temp(LowI64());
+				Instruction subtract(Instruction::BINARY);
+				subtract.dest = data_size.id;
+				subtract.op = LOW_OP_SUB;
+				subtract.type = LowI64();
+				subtract.first = byte_size;
+				subtract.second = ArrayCookieOperand(record);
+				derived.Emit(subtract);
+			}
+			const Operand tail_size = derived.Temp(LowI64());
+			Instruction remaining(Instruction::BINARY);
+			remaining.dest = tail_size.id;
+			remaining.op = LOW_OP_SUB;
+			remaining.type = LowI64();
+			remaining.first = data_size;
+			remaining.second = Operand(listed_bytes, LowI64());
+			derived.Emit(remaining);
+			EmitArrayZeroInitialization(list, derived.IndexAddress(LowI8(),
+				user_pointer, Operand(listed_bytes, LowI64()), false), tail_size);
+			if (construction != kNoDumpEdge)
+				EmitArrayTailConstruction(record, construction, user_pointer,
+					listed_bytes / static_cast<std::int64_t>(
+						derived.program_.SizeOf(record.operand_type)),
+					EmitArrayCount(record, byte_size));
 		}
-		const Operand tail_size = derived.Temp(LowI64());
-		Instruction remaining(Instruction::BINARY);
-		remaining.dest = tail_size.id;
-		remaining.op = LOW_OP_SUB;
-		remaining.type = LowI64();
-		remaining.first = data_size;
-		remaining.second = Operand(listed_bytes, LowI64());
-		derived.Emit(remaining);
-		EmitArrayZeroInitialization(list, derived.IndexAddress(LowI8(),
-			user_pointer, Operand(listed_bytes, LowI64()), false), tail_size);
+		if (!guarded) return;
+		derived.PauseFullExpressionCleanupSegment();
+		derived.RetainConstructionTemporaries(previous);
+		if (owns_cleanup) derived.CompleteFullExpressionCleanup();
+	}
+
+	// Default-constructs elements [first, count) of a new array whose earlier
+	// elements are already built; a throwing constructor destroys the tail
+	// built so far, then the construction cleanup chain continues.
+	void EmitArrayTailConstruction(const DumpNode& record,
+		std::uint32_t action, const Operand& user_pointer, std::int64_t first,
+		const Operand& count)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const Operand progress(derived.EnsureGeneratedSlot(
+			action, "array_new_index", LowI64()), LowI64());
+		const BlockId condition = derived.AddBlock(
+			derived.NewLabel("array_new_ctor_cond"));
+		const BlockId body = derived.AddBlock(
+			derived.NewLabel("array_new_ctor_body"));
+		const BlockId end = derived.AddBlock(
+			derived.NewLabel("array_new_ctor_end"));
+		const bool cleanup_needed = record.selected_binding != kNoBinding;
+		const BlockId cleanup = cleanup_needed ? derived.AddBlock(
+			derived.NewLabel("array_new_ctor_cleanup")) : BlockId(kNoLowId);
+		const BlockId cleanup_body = cleanup_needed ? derived.AddBlock(
+			derived.NewLabel("array_new_ctor_cleanup_body")) : BlockId(kNoLowId);
+		const BlockId resume = cleanup_needed ? derived.AddBlock(
+			derived.NewLabel("array_new_ctor_resume")) : BlockId(kNoLowId);
+		Instruction initialize(Instruction::STORE);
+		initialize.type = LowI64();
+		initialize.first = Operand(first, LowI64());
+		initialize.second = progress;
+		derived.Emit(initialize);
+		EnsureConstructorLoopCleanupSegment(action);
+		derived.EmitJump(condition);
+		derived.SelectBlock(condition);
+		const Operand index = derived.LoadStorage(progress, LowI64());
+		const Operand more = derived.Temp(LowI64());
+		Instruction compare(Instruction::CMP);
+		compare.dest = more.id;
+		compare.op = LOW_OP_ULT;
+		compare.type = LowI64();
+		compare.first = index;
+		compare.second = count;
+		derived.Emit(compare);
+		derived.EmitBranch(more, body, end);
+		derived.SelectBlock(body);
+		if (cleanup_needed) derived.EmitEhTarget(Instruction::EH_TRY, cleanup);
+		derived.LowerConstructorAction(action,
+			ArrayElement(record, user_pointer, index));
+		if (cleanup_needed) derived.Emit(Instruction(Instruction::EH_END));
+		const Operand next = derived.Temp(LowI64());
+		Instruction increment(Instruction::BINARY);
+		increment.dest = next.id;
+		increment.op = LOW_OP_ADD;
+		increment.type = LowI64();
+		increment.first = index;
+		increment.second = Operand(1, LowI64());
+		derived.Emit(increment);
+		Instruction save(Instruction::STORE);
+		save.type = LowI64();
+		save.first = next;
+		save.second = progress;
+		derived.Emit(save);
+		derived.EmitJump(condition);
+		bool routes_to_try = false;
+		if (cleanup_needed)
+		{
+			derived.SelectBlock(cleanup);
+			routes_to_try = derived.BeginExceptionTryCleanupDispatch();
+			const BlockId destroy = derived.AddBlock(
+				derived.NewLabel("array_new_ctor_cleanup_cond"));
+			derived.EmitJump(destroy);
+			derived.SelectBlock(destroy);
+			const Operand built = derived.LoadStorage(progress, LowI64());
+			const Operand any = derived.Temp(LowI64());
+			Instruction above(Instruction::CMP);
+			above.dest = any.id;
+			above.op = LOW_OP_UGT;
+			above.type = LowI64();
+			above.first = built;
+			above.second = Operand(first, LowI64());
+			derived.Emit(above);
+			derived.EmitBranch(any, cleanup_body, resume);
+			derived.SelectBlock(cleanup_body);
+			const Operand previous = derived.Temp(LowI64());
+			Instruction decrement(Instruction::BINARY);
+			decrement.dest = previous.id;
+			decrement.op = LOW_OP_SUB;
+			decrement.type = LowI64();
+			decrement.first = built;
+			decrement.second = Operand(1, LowI64());
+			derived.Emit(decrement);
+			Instruction save_previous(Instruction::STORE);
+			save_previous.type = LowI64();
+			save_previous.first = previous;
+			save_previous.second = progress;
+			derived.Emit(save_previous);
+			const bool may_throw =
+				!derived.program_.bindings[record.selected_binding].nonthrowing;
+			if (may_throw) derived.EmitEhTarget(Instruction::EH_TRY,
+				derived.MakeCleanupTerminateBlock());
+			derived.EmitDestructorCall(record.selected_binding,
+				ArrayElement(record, user_pointer, previous));
+			if (may_throw) derived.Emit(Instruction(Instruction::EH_END));
+			derived.EmitJump(destroy);
+			derived.SelectBlock(resume);
+			derived.FinishConstructionArrayCleanup(routes_to_try);
+		}
+		derived.SelectBlock(end);
+	}
+
+	Operand ArrayElement(const DumpNode& record, const Operand& user_pointer,
+		const Operand& index)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const Operand offset = derived.Temp(LowI64());
+		Instruction scale(Instruction::BINARY);
+		scale.dest = offset.id;
+		scale.op = LOW_OP_MUL;
+		scale.type = LowI64();
+		scale.first = index;
+		scale.second = Operand(static_cast<std::int64_t>(
+			derived.program_.SizeOf(record.operand_type)), LowI64());
+		derived.Emit(scale);
+		return derived.IndexAddress(LowI8(), user_pointer, offset, false);
+	}
+
+	// The storage of an array new whose initialization threw: a sized
+	// deallocation function implies a cookie, which holds the count.
+	void EmitArrayAllocationRelease(const DumpNode& record,
+		const Operand& raw_pointer)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		Operand count(0, LowI64());
+		if (record.array_cookie)
+			count = derived.LoadStorage(ArrayCountAddress(record, raw_pointer,
+				derived.IndexAddress(LowI8(), raw_pointer,
+					ArrayCookieOperand(record), false)), LowI64());
+		EmitArrayDeallocation(record.object_binding, record, raw_pointer, count);
 	}
 
 	Operand LowerArrayNewExpression(std::uint32_t node,
 		const DumpNode& record, const NodeChildren& children)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (children.empty() || children.size() > 2)
+		if (children.empty() || children.size() > 3)
 			ThrowLoweringInternal("invalid array new action");
+		std::uint32_t construction = kNoDumpEdge;
+		std::uint32_t list = kNoDumpEdge;
+		for (std::size_t i = 1; i < children.size(); ++i)
+			(derived.arena_.nodes[children[i]].kind == DUMP_BRACED_INIT_LIST ?
+				list : construction) = children[i];
 		const bool retain_size = !record.array_count_constant &&
 			(record.array_cookie || record.value_initialization ||
-			 children.size() == 2);
+			 children.size() >= 2);
 		Operand byte_size;
 		const Operand raw_pointer = EmitArrayAllocation(
 			children[0], retain_size, &byte_size);
@@ -870,12 +1023,11 @@ protected:
 			}
 			EmitArrayZeroInitialization(children[0], user_pointer, data_size);
 		}
-		if (children.size() == 2 &&
-			derived.arena_.nodes[children[1]].kind == DUMP_BRACED_INIT_LIST)
-			EmitArrayListInitialization(record, children[1], raw_pointer,
-				user_pointer, byte_size);
-		else if (children.size() == 2)
-			EmitArrayConstructorLoop(node, record, children[1], raw_pointer,
+		if (list != kNoDumpEdge)
+			EmitArrayListInitialization(node, record, list, construction,
+				raw_pointer, user_pointer, byte_size);
+		else if (construction != kNoDumpEdge)
+			EmitArrayConstructorLoop(node, record, construction, raw_pointer,
 				user_pointer, EmitArrayCount(record, byte_size));
 		return user_pointer;
 	}
