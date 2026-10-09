@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -42,7 +43,7 @@ RENAMED = """function @main(%a : i64, %b : i64) -> i64 {
 
 
 class LowIrComparisonTest(unittest.TestCase):
-    def compare(self, reference, generated, *, direct=False):
+    def compare(self, reference, generated, *, direct=False, mode="lowir_t"):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             test = root / "case.t"
@@ -74,7 +75,7 @@ class LowIrComparisonTest(unittest.TestCase):
                 [
                     "perl",
                     str(COMPARE),
-                    "lowir_t",
+                    mode,
                     "ref",
                     "my",
                     str(test),
@@ -876,6 +877,64 @@ function @worker(%first : ptr, %count : i64) -> void {
         )
         result = self.compare(reference, generated)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_debuginfo_compare_relaxes_names_and_keeps_locations(self):
+        result = self.compare(DEBUG_REFERENCE, DEBUG_RENAMED, mode="lowir_debuginfo_t")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_debuginfo_compare_requires_every_location(self):
+        dropped = DEBUG_RENAMED.replace(" !dbg(main.cpp, 2, 3)", "")
+        result = self.compare(DEBUG_REFERENCE, dropped, mode="lowir_debuginfo_t")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("debug locations do not match reference (missing !dbg(main.cpp, 2, 3))",
+                      result.stdout)
+        undebugged = re.sub(r" !dbg\([^)]*\)", "", DEBUG_RENAMED)
+        result = self.compare(DEBUG_REFERENCE, undebugged, mode="lowir_debuginfo_t")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing !dbg(main.cpp, 1, 1) x2", result.stdout)
+
+    def test_debuginfo_compare_rejects_changed_and_extra_locations(self):
+        moved = DEBUG_RENAMED.replace("!dbg(main.cpp, 2, 3)", "!dbg(main.cpp, 2, 4)")
+        result = self.compare(DEBUG_REFERENCE, moved, mode="lowir_debuginfo_t")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("missing !dbg(main.cpp, 2, 3); unexpected !dbg(main.cpp, 2, 4)",
+                      result.stdout)
+        undebugged = re.sub(r" !dbg\([^)]*\)", "", DEBUG_REFERENCE)
+        result = self.compare(undebugged, DEBUG_RENAMED, mode="lowir_debuginfo_t")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unexpected !dbg(main.cpp, 1, 1) x2", result.stdout)
+
+    def test_debuginfo_compare_keeps_each_location_on_its_instruction(self):
+        shifted = DEBUG_RENAMED.replace(
+            "%v1 = load typed i32 $p\n", "%v1 = load typed i32 $p !dbg(main.cpp, 2, 3)\n"
+        ).replace("return i32 %v2 !dbg(main.cpp, 2, 3)", "return i32 %v2")
+        result = self.compare(DEBUG_REFERENCE, shifted, mode="lowir_debuginfo_t")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("does not match reference", result.stdout)
+
+
+DEBUG_REFERENCE = """function @add1(%x : i32) -> i32 !dbg(main.cpp, 1, 1) {
+  slot $x : i32
+
+  block ^entry:
+    store typed i32 %x, $x !dbg(main.cpp, 1, 1)
+    %t1 = load typed i32 $x
+    %t2 = binary add nowrap i32 %t1, 1
+    return i32 %t2 !dbg(main.cpp, 2, 3)
+}
+"""
+
+
+DEBUG_RENAMED = """function @add1(%a : i32) -> i32 !dbg(main.cpp, 1, 1) {
+  slot $p : i32
+
+  block ^start:
+    store typed i32 %a, $p !dbg(main.cpp, 1, 1)
+    %v1 = load typed i32 $p
+    %v2 = binary add nowrap i32 %v1, 1
+    return i32 %v2 !dbg(main.cpp, 2, 3)
+}
+"""
 
 
 if __name__ == "__main__":

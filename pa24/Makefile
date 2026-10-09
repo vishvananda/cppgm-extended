@@ -100,9 +100,29 @@ test-variants: $(TEST_DEPS)
 		CPPGM_BACKEND_VARIANT=$$variant $(MAKE) --no-print-directory test-course; \
 	done
 
+# Without TEST, `make ref-test` regenerates the regression lane's references
+# as well; the course runner prunes `regression/` from `tests`.  Structural
+# references carry a canonical `.ref.cmir` beside the dump, so every
+# structural root is recanonicalized, whichever fixtures were regenerated.
+STRUCTURAL_TEST_ROOTS = $(wildcard tests/structural tests/regression/structural)
+
+ifeq ($(strip $(TEST)),)
+ref-test: ref-test-regression
+endif
+
 ref-test:
 	@$(REF_TEST_RUN)
-	@if [ -d tests/structural ]; then perl ../scripts/canonicalize_lowir_native_refs.pl tests/structural; fi
+	@set -e; for root in $(STRUCTURAL_TEST_ROOTS); do \
+		perl ../scripts/canonicalize_lowir_native_refs.pl "$$root"; \
+	done
+
+ref-test-regression:
+	@set -e; for root in $(REGRESSION_ORACLE_TEST_ROOTS); do \
+		scripts/run_all_tests.pl $(REF_TEST_APP) ref "$$root"; \
+	done
+	@if [ -d tests/regression/structural ]; then \
+		perl ../scripts/canonicalize_lowir_native_refs.pl tests/regression/structural; \
+	fi
 
 REF_TEST_RUN = case "$(TEST)" in \
 	$(CONTROL_TEST_ROOT)/*) echo "$(TEST): focused native predicate has no reference sidecar" ;; \
@@ -120,7 +140,7 @@ esac
 
 include ../scripts/pa_run_check_targets.mk
 
-.PHONY: dev-shared-target ref-test
+.PHONY: dev-shared-target ref-test ref-test-regression
 $(CPPGM_TEST_APP):
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX) OBJ=$(OBJ)
 

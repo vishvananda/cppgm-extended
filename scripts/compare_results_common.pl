@@ -4064,6 +4064,75 @@ sub compare_lowir_text
 	        lowir_compare_failure_hint($ref_compare, $my_compare, $diff_path));
 }
 
+# The debug-information lanes of `cppgm++ --emit-lowir` check that source
+# locations reach the emitted LowIR.  Names of temporaries, slots and blocks
+# are presentation there as in every relaxed comparison, but the
+# `!dbg(file, line, column)` carrier is what these lanes test: the output
+# must carry exactly the reference's debug locations, each as often as the
+# reference does, and the relaxed comparison then holds each to its place.
+sub lowir_debug_locations
+{
+	my ($data) = @_;
+	my %count;
+	while ($data =~ /!dbg\(\s*([^,()\s]+)\s*,\s*([^,()\s]+)\s*,\s*([^,()\s]+)\s*\)/g)
+	{
+		++$count{"$1, $2, $3"};
+	}
+	return \%count;
+}
+
+sub describe_lowir_debug_locations
+{
+	my ($count, @locations) = @_;
+	return join(', ', map {
+		"!dbg($_)" . ($count->{$_} > 1 ? " x$count->{$_}" : '')
+	} @locations);
+}
+
+sub compare_lowir_debug_locations
+{
+	my ($ref_suffix, $my_suffix, $testbase) = @_;
+	my $ref = "$testbase.$ref_suffix";
+	my $my = "$testbase.$my_suffix";
+	my $ref_status = getdata("$ref.exit_status");
+	my $my_status = getdata("$my.exit_status");
+	my $ref_data = getdata($ref);
+	my $my_data = getdata($my);
+	# Missing outputs and exit-status mismatches are the relaxed comparison's
+	# to report.
+	if (defined($ref_status) && defined($my_status) &&
+	    $ref_status eq 'EXIT_SUCCESS' && $my_status eq 'EXIT_SUCCESS' &&
+	    defined($ref_data) && defined($my_data))
+	{
+		my $expected = lowir_debug_locations($ref_data);
+		my $actual = lowir_debug_locations($my_data);
+		my (%missing, %unexpected);
+		for my $location (keys %{$expected})
+		{
+			my $extra = $expected->{$location} - ($actual->{$location} // 0);
+			$missing{$location} = $extra if $extra > 0;
+		}
+		for my $location (keys %{$actual})
+		{
+			my $extra = $actual->{$location} - ($expected->{$location} // 0);
+			$unexpected{$location} = $extra if $extra > 0;
+		}
+		if (%missing || %unexpected)
+		{
+			my @parts;
+			push @parts, 'missing ' .
+				describe_lowir_debug_locations(\%missing, sort keys %missing)
+				if %missing;
+			push @parts, 'unexpected ' .
+				describe_lowir_debug_locations(\%unexpected, sort keys %unexpected)
+				if %unexpected;
+			return (0, 'ERROR: generated LowIR debug locations do not match reference (' .
+				join('; ', @parts) . ')', undef);
+		}
+	}
+	return compare_lowir_text($ref_suffix, $my_suffix, $testbase);
+}
+
 sub canonical_exit_status
 {
 	my ($status) = @_;
@@ -4252,6 +4321,7 @@ my %patterns = (
 	text_t => qr/\.t$/,
 	lowir_t => qr/\.t$/,
 	lowir_roundtrip_t => qr/\.t$/,
+	lowir_debuginfo_t => qr/\.t$/,
 	text_t1 => qr/\.t\.1$/,
 	program_t => qr/\.t$/,
 	mir_t => qr/\.t$/,
@@ -4338,6 +4408,13 @@ for my $test (@tests)
 		{
 			($ok, $message, $hint) =
 				compare_lowir_text($ref_suffix, $my_suffix, $testbase);
+			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix")
+				if !defined($hint);
+		}
+		elsif ($mode eq 'lowir_debuginfo_t')
+		{
+			($ok, $message, $hint) =
+				compare_lowir_debug_locations($ref_suffix, $my_suffix, $testbase);
 			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix")
 				if !defined($hint);
 		}

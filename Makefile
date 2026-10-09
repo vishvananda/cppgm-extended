@@ -389,6 +389,9 @@ test-report-through-%: build
 		TEST_REPORT_SUBTEST_JOBS='$(TEST_REPORT_SUBTEST_JOBS)' \
 		ORDERED='$(ORDERED)'
 
+# Each assignment's suite runs with make -i: a failing lane is recorded from
+# make's "(ignored)" error line instead of stopping the lanes after it, so
+# the report shows every failure, not only the first of each recipe.
 test-report-nobuild: audit-compiler-exceptions
 	@export KEEP_GOING=1; \
 	export CPPGM_REPORT_QUIET=1; \
@@ -425,7 +428,7 @@ test-report-nobuild: audit-compiler-exceptions
 		dir="$$1"; \
 		echo "===== $$dir =====" > "$$2/$$dir.out"; \
 		status=0; \
-		env MAKEFLAGS= $(MAKE) --no-print-directory -j1 -C "$$dir" \
+		env MAKEFLAGS= $(MAKE) --no-print-directory -j1 -i -C "$$dir" \
 			CXX="$$CXX" \
 			CPPGM_HOST_CXX="$$CPPGM_HOST_CXX" \
 			CPPGM_PROGRESS_FILE="$$2/$$dir.progress" \
@@ -437,6 +440,7 @@ test-report-nobuild: audit-compiler-exceptions
 			$(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)") \
 			CPPGM_SKIP_DEV_REBUILD=1 \
 			test >> "$$2/$$dir.out" 2>&1 || status=$$?; \
+		if grep -q "\] Error [0-9][0-9]* (ignored)" "$$2/$$dir.out"; then status=1; fi; \
 		printf "%s\n" "$$status" > "$$2/$$dir.status"; \
 		: > "$$2/$$dir.done"; \
 		exit "$$status"' _ {} "$$tmpdir" < "$$tmpdir/pas.list" & \

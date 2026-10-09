@@ -192,7 +192,9 @@ verify_regenerated_reference_outputs() {
     fi
   done < "$source_list"
 
-  comm -23 "$source_list" "$dest_list" > "$missing_list"
+  # comm needs its inputs in its own collation order: both lists were sorted
+  # in the C locale, so compare them there too.
+  LC_ALL=C comm -23 "$source_list" "$dest_list" > "$missing_list"
   if [ -s "$missing_list" ]; then
     local missing_count
     missing_count=$(wc -l < "$missing_list")
@@ -206,7 +208,7 @@ verify_regenerated_reference_outputs() {
     exit 1
   fi
 
-  comm -13 "$source_list" "$dest_list" > "$extra_list"
+  LC_ALL=C comm -13 "$source_list" "$dest_list" > "$extra_list"
   if [ -s "$extra_list" ]; then
     : > "$unexpected_extra_list"
     : > "$exported_diagnostic_list"
@@ -783,7 +785,7 @@ check_exported_script_references() {
         echo "export: $makefile names $ref, which did not ship" >&2
         missing=1
       fi
-    done < <(sed 's/#.*//' "$makefile" | grep -o '[A-Za-z0-9_./-]*scripts/[A-Za-z0-9_./-]*\.\(pl\|py\|sh\|pm\|mk\)' | sort -u)
+    done < <(sed 's/#.*//' "$makefile" | LC_ALL=C grep -o '[A-Za-z0-9_./-]*scripts/[A-Za-z0-9_./-]*\.\(pl\|py\|sh\|pm\|mk\)' | LC_ALL=C sort -u)
   done
   # The shipped scripts load one another by bare, quoted file name (the
   # expectation evaluator); those must have shipped as well.
@@ -796,7 +798,7 @@ check_exported_script_references() {
         echo "export: $script names $name, which did not ship" >&2
         missing=1
       fi
-    done < <(sed 's/#.*//' "$script" | grep -o '"[A-Za-z0-9_]*\.\(pl\|pm\|py\|sh\)"' | tr -d '"' | sort -u)
+    done < <(sed 's/#.*//' "$script" | LC_ALL=C grep -o '"[A-Za-z0-9_]*\.\(pl\|pm\|py\|sh\)"' | tr -d '"' | LC_ALL=C sort -u)
   done
   if [ "$missing" -ne 0 ]; then
     echo "export: exported files reference scripts that did not ship" >&2

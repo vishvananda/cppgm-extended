@@ -14,7 +14,7 @@ function @make_pair
   abi
     return obj<16x8> -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -31,7 +31,7 @@ function @forward_pair
   abi
     return obj<16x8> -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -49,7 +49,7 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared

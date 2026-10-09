@@ -15,7 +15,7 @@ function @touch
     param %n -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -28,7 +28,7 @@ function @load_value
     param %p -> rdi : ptr
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -43,7 +43,7 @@ function @read_after_call
     param %n -> rsi : i64
     return i64 -> rax
   frame
-    stack_size 16
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -60,7 +60,7 @@ function @main
   abi
     return i64 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared

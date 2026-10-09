@@ -1432,7 +1432,11 @@ mode skips roundtrip normalization to check checked-in reference stability.
 The source-to-LowIR assignments (PA10 through PA23) and the optimizer's
 regression lane (PA32) judge an output by comparing it with the course
 solution's LowIR after a presentation canonicalization: the relaxed LowIR
-comparison of `scripts/compare_results_common.pl`. This section is the whole
+comparison of `scripts/compare_results_common.pl`. PA8's debug-information
+lanes for `cppgm++ --emit-lowir` (`tests/debuginfo/source` and `source-g0`)
+use it as well, and also require the reference's `!dbg` locations (Debug
+Locations above): each one, as often as the reference carries it, and no
+other. This section is the whole
 list of what that canonicalization absorbs, and of the conventions it
 enforces instead. A difference the comparison accepts is on the first list;
 a difference it rejects is on the second. `make test-seams` in PA11

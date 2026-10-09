@@ -87,15 +87,27 @@ CHECK_COMPARE += \
 	'$(DRIVER_CENSUS_TEST_ROOT)/*::true' \
 	'$(STRUCTURAL_CONTROL_TEST_ROOT)/*::true'
 
-# The performance envelope: each behaviour program runs under Cachegrind and
-# its instruction count must stay within PERF_TOLERANCE_PERCENT of the
-# `x.ref.ir` sidecar.  `make test-perf-refs` writes the sidecars from the
-# current programs.  Skipped when valgrind is not installed.
-test-perf: $(TEST_DEPS)
+# The performance envelope: each behaviour program, course and regression,
+# runs under Cachegrind and its instruction count must stay within
+# PERF_TOLERANCE_PERCENT of its tracked `x.ref.ir` sidecar; a program without
+# one fails.  `make test-perf-refs` builds the same programs and writes every
+# sidecar from them.  Skipped when valgrind is not installed.
+PERF_TEST_ROOTS = $(BEHAVIOR_O1_TEST_ROOT) $(BEHAVIOR_O2_TEST_ROOT) $(BEHAVIOR_O3_TEST_ROOT) \
+	$(REGRESSION_BEHAVIOR_O1_TEST_ROOT) $(REGRESSION_BEHAVIOR_O2_TEST_ROOT) $(REGRESSION_BEHAVIOR_O3_TEST_ROOT)
+
+define build_perf_programs
 	$(call run_native_bucket,$(BEHAVIOR_O1_TEST_ROOT),-O1)
 	$(call run_native_bucket,$(BEHAVIOR_O2_TEST_ROOT),-O2)
 	$(call run_native_bucket,$(BEHAVIOR_O3_TEST_ROOT),-O3)
-	@perl ../scripts/check_ir_envelope.pl $(PERF_TOLERANCE_PERCENT) $(BEHAVIOR_O1_TEST_ROOT) $(BEHAVIOR_O2_TEST_ROOT) $(BEHAVIOR_O3_TEST_ROOT)
+	$(call run_native_bucket,$(REGRESSION_BEHAVIOR_O1_TEST_ROOT),-O1)
+	$(call run_native_bucket,$(REGRESSION_BEHAVIOR_O2_TEST_ROOT),-O2)
+	$(call run_native_bucket,$(REGRESSION_BEHAVIOR_O3_TEST_ROOT),-O3)
+endef
+
+test-perf: $(TEST_DEPS)
+	$(build_perf_programs)
+	@perl ../scripts/check_ir_envelope.pl --require-sidecars $(PERF_TOLERANCE_PERCENT) $(PERF_TEST_ROOTS)
 
 test-perf-refs: $(TEST_DEPS)
-	@perl ../scripts/check_ir_envelope.pl --write $(PERF_TOLERANCE_PERCENT) $(BEHAVIOR_O1_TEST_ROOT) $(BEHAVIOR_O2_TEST_ROOT) $(BEHAVIOR_O3_TEST_ROOT)
+	$(build_perf_programs)
+	@perl ../scripts/check_ir_envelope.pl --write $(PERF_TOLERANCE_PERCENT) $(PERF_TEST_ROOTS)

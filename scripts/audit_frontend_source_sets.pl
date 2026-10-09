@@ -66,8 +66,21 @@ for my $entry (@logical_line)
 	my ($line, $text) = @$entry;
 	$text =~ s/#.*\z//;
 	next if $text =~ /^\s*\z/;
-	next if $text !~ /^\s*([^\s:=]+)\s*:=\s*(.*?)\s*\z/;
-	my ($name, $raw_value) = ($1, $2);
+	next if $text !~ /^\s*(\S+?)\s*(:=|\+=)\s*(.*?)\s*\z/;
+	my ($name, $operator, $raw_value) = ($1, $2, $3);
+	# `+=` extends a simply expanded variable with immediately expanded text,
+	# as make does; the source set must already be defined.
+	if ($operator eq '+=')
+	{
+		if (!exists($value{$name}))
+		{
+			push @error, "$source_sets_path:$line appends to undefined '$name'";
+			$value{$name} = '';
+			$definition_line{$name} = $line;
+		}
+		$value{$name} = expand_value("$value{$name} $raw_value", $line);
+		next;
+	}
 	push @error, "$source_sets_path:$line redefines '$name'"
 		if exists($value{$name});
 	$value{$name} = expand_value($raw_value, $line);

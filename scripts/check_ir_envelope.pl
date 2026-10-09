@@ -1,25 +1,34 @@
 #!/usr/bin/perl
 # The performance envelope for generated programs.
 #
-#   check_ir_envelope.pl [--write] <tolerance-percent> <test-root>...
+#   check_ir_envelope.pl [--write | --require-sidecars] <tolerance-percent> <test-root>...
 #
 # For every `x.t` under the roots whose generated program `x.my.program`
 # exists, run it under Cachegrind and read its instruction count.  With
 # `--write`, record the count in `x.ref.ir`; otherwise compare against the
 # recorded count and fail when the program executes more than the tolerance
-# above it.  A program without a sidecar is skipped.  When valgrind is not
-# installed, every root is skipped with a notice and the exit status is 0:
-# the envelope is a quality bar, not a build dependency.
+# above it.  A program without a sidecar is skipped, or, with
+# `--require-sidecars` (for suites that track a sidecar for every program),
+# fails.  When valgrind is not installed, every root is skipped with a notice
+# and the exit status is 0: the envelope is a quality bar, not a build
+# dependency.
 use strict;
 use warnings;
 use File::Find;
 use POSIX qw(ceil);
 
+my $usage = "usage: check_ir_envelope.pl [--write | --require-sidecars] <tolerance-percent> <test-root>...\n";
 my $write = 0;
-if (@ARGV && $ARGV[0] eq '--write') { $write = 1; shift @ARGV; }
+my $require_sidecars = 0;
+while (@ARGV && $ARGV[0] =~ /^--/)
+{
+	my $option = shift @ARGV;
+	if ($option eq '--write') { $write = 1; }
+	elsif ($option eq '--require-sidecars') { $require_sidecars = 1; }
+	else { die $usage; }
+}
 my ($tolerance, @roots) = @ARGV;
-die "usage: check_ir_envelope.pl [--write] <tolerance-percent> <test-root>...\n"
-	if !defined($tolerance) || !@roots;
+die $usage if !defined($tolerance) || !@roots || ($write && $require_sidecars);
 
 my $valgrind = `which valgrind 2>/dev/null`;
 chomp($valgrind);
@@ -75,7 +84,14 @@ for my $root (@roots)
 			++$written;
 			next;
 		}
-		if (!-f $sidecar) { ++$skipped; next; }
+		if (!-f $sidecar)
+		{
+			if (!$require_sidecars) { ++$skipped; next; }
+			++$checked;
+			++$failed;
+			print "$test: no $sidecar; record it with `make test-perf-refs`\n";
+			next;
+		}
 		open(my $fh, '<', $sidecar) or die "Unable to read $sidecar: $!\n";
 		my $reference = <$fh>;
 		close($fh);

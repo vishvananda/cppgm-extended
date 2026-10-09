@@ -13,7 +13,7 @@ function @byte_value
   abi
     return u8 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -26,7 +26,7 @@ function @store_result
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -44,7 +44,7 @@ function @return_result
   abi
     return u8 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -57,7 +57,7 @@ function @widen_result
   abi
     return i32 -> rax
   frame
-    stack_size 0
+    stack_size N
     scratch_bytes 0
     frame_pointer keep
     epilogues shared
@@ -72,7 +72,7 @@ function @main
   abi
     return i32 -> rax
   frame
-    stack_size 64
+    stack_size N
     scratch_bytes 48
     frame_pointer keep
     epilogues shared

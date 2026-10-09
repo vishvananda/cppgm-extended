@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class TestReportOutputTests(unittest.TestCase):
     def report(self, *, failure=None, ordered=True, target="test-report-nobuild",
-               exported=False, low_jobs=False, real_control=False):
+               exported=False, low_jobs=False, real_control=False, later_lane=False):
         with tempfile.TemporaryDirectory(prefix="test-report-output.") as directory:
             root = Path(directory)
             shutil.copy(ROOT / "Makefile", root / "Makefile")
@@ -68,6 +68,8 @@ class TestReportOutputTests(unittest.TestCase):
                 "echo maintainer success detail >&2; fi\n" +
                 control_recipe + "\t@echo '2 2' >> ../.test_counts\n" +
                 ("\t@echo suite failure diagnostic; exit 1\n" if failure == "suite" else "") +
+                ("\t@echo later lane diagnostic; echo '3 3' >> ../.test_counts; "
+                 "touch .test_failed\n" if later_lane else "") +
                 ("\t@echo comparison failure diagnostic; touch .test_failed\n"
                  if failure == "comparison" else "") +
                 "test-seams:\n"
@@ -138,6 +140,18 @@ class TestReportOutputTests(unittest.TestCase):
         self.assertIn("source builtin did not lower to an unreachable terminator",
                       result.stdout + result.stderr)
         self.assertNotIn("properties: PASS", result.stdout + result.stderr)
+
+    def test_failing_lane_does_not_hide_the_lanes_after_it(self):
+        for exported in (False, True):
+            for ordered in (True, False):
+                with self.subTest(exported=exported, ordered=ordered):
+                    result = self.report(failure="suite", later_lane=True,
+                                         exported=exported, ordered=ordered)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("suite failure diagnostic", result.stdout)
+                    self.assertIn("later lane diagnostic", result.stdout)
+                    self.assertIn("TEST SUMMARY: 5 / 5 TESTS PASSED", result.stdout)
+                    self.assertNotIn("ALL TESTS PASSED", result.stdout)
 
     def test_failed_children_expose_diagnostics(self):
         for failure in ("audit", "build", "suite", "comparison", "seams"):
