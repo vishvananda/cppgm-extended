@@ -81,12 +81,6 @@ global @D____view__B2__8__vtable [binding=internal, object=@D____view__B2__8__vt
   ptr addr @_D___D__vtable_return_adjust__this_neg8__return_pos0
   ptr addr @_D___D__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
 }
-global @D____view__B0__8__vtable [binding=internal, object=@D____view__B0__8__vtable] = {
-  i64 -8
-  ptr addr @__rtti_class_D
-  ptr addr @_D___D__vtable_return_adjust__this_neg8__return_pos0
-  ptr addr @_D___D__deleting_entry__vtable_return_adjust__this_neg8__return_pos0
-}
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $d : obj<16x8>

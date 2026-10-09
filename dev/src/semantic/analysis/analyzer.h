@@ -1460,9 +1460,14 @@ private:
 		BindingId base);
 	void CompleteVirtualExceptionOverrides(EntityId entity, EntityId enclosing);
 	bool ExceptionTypeAllowed(TypeId thrown, TypeId allowed) const;
+	void AssignVirtualBaseRows(EntityId entity);
+	bool ViewOverriderOffset(EntityId entity, const PolymorphicViewFact* view,
+		EntityId target, std::uint64_t* offset) const;
+	void InheritPolymorphicViewAnchor(const DirectBaseEdge& edge,
+		const PolymorphicViewFact& inherited, PolymorphicViewFact* view) const;
+	void AnchorPolymorphicView(EntityId entity, const DirectBaseEdge& edge,
+		PolymorphicViewFact* view);
 	void FinalizeClassPolymorphismViews(EntityId entity);
-	void BeginPolymorphicVirtualViewIndex(
-		const ClassPolymorphismFacts& facts);
 	void AppendPolymorphicView(ClassPolymorphismFacts* facts,
 		const PolymorphicViewFact& view);
 	void MergeSharedVirtualView(PolymorphicViewFact* retained,
@@ -1527,10 +1532,8 @@ private:
 	std::size_t BaseConversionDistance(TypeId source, TypeId target) const;
 	std::size_t BaseProjectionCount(TypeId source, TypeId target,
 		std::uint64_t* offset = 0) const;
-	bool ClassHasEmptySubobject(EntityId entity) const;
 	std::uint64_t EmptyComponentRecordLimit(EntityId entity);
 	bool ClassSpecialMembersKeepPodLayout(EntityId entity);
-	bool MemberKeepsPodLayout(const BindingRecord& member) const;
 	void LayoutClassBitField(const ClassLayoutMember& layout,
 		std::uint64_t member_size, std::uint64_t type_alignment,
 		std::size_t packing_alignment, bool is_union, ClassLayoutCursor* cursor);
@@ -2295,9 +2298,6 @@ private:
 	ObservationCounter virtual_slots_;
 	ObservationCounter virtual_signature_lookups_;
 	ObservationCounter virtual_overrides_;
-	std::vector<std::uint32_t> polymorphic_virtual_view_marks_;
-	std::vector<std::uint32_t> polymorphic_virtual_view_indices_;
-	std::uint32_t polymorphic_virtual_view_generation_;
 	ObservationCounter polymorphic_virtual_view_lookups_;
 	ObservationCounter polymorphic_virtual_view_merges_;
 	mutable ObservationCounter virtual_slot_lookups_;

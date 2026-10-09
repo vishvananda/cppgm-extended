@@ -142,8 +142,8 @@ global @AB____vtt [binding=weak, object=_ZTT2AB, object_root=yes] = {
   ptr addr @AB____construction__A__0__s1__vtable + 24
   ptr addr @AB____construction__B__8__s0__vtable + 24
   ptr addr @AB____construction__B__8__s1__vtable + 24
-  ptr addr @AB____view__B__8__vtable + 24
   ptr addr @AB____view__V__16__vtable + 24
+  ptr addr @AB____view__B__8__vtable + 24
 }
 global @D__vtable [binding=weak, object=_ZTV1D] = {
   i64 16
@@ -164,6 +164,17 @@ global @D____view__V__16__vtable [binding=internal, object=@D____view__V__16__vt
 global @D____construction__AB__0__s0__vtable [binding=internal, object=@D____construction__AB__0__s0__vtable] = {
   i64 16
   i64 0
+  ptr addr @__rtti_struct_AB
+}
+global @D____construction__AB__0__s1__vtable [binding=internal, object=@D____construction__AB__0__s1__vtable] = {
+  i64 0
+  i64 -16
+  ptr addr @__rtti_struct_AB
+  ptr addr @V__anchor
+}
+global @D____construction__AB__0__s2__vtable [binding=internal, object=@D____construction__AB__0__s2__vtable] = {
+  i64 8
+  i64 -8
   ptr addr @__rtti_struct_AB
 }
 global @D____construction__A__0__s0__vtable [binding=internal, object=@D____construction__A__0__s0__vtable] = {
@@ -188,17 +199,6 @@ global @D____construction__B__8__s1__vtable [binding=internal, object=@D____cons
   ptr addr @__rtti_struct_B
   ptr addr @V__anchor
 }
-global @D____construction__AB__0__s1__vtable [binding=internal, object=@D____construction__AB__0__s1__vtable] = {
-  i64 8
-  i64 -8
-  ptr addr @__rtti_struct_AB
-}
-global @D____construction__AB__0__s2__vtable [binding=internal, object=@D____construction__AB__0__s2__vtable] = {
-  i64 0
-  i64 -16
-  ptr addr @__rtti_struct_AB
-  ptr addr @V__anchor
-}
 global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D__vtable + 24
   ptr addr @D____construction__AB__0__s0__vtable + 24
@@ -208,8 +208,8 @@ global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D____construction__B__8__s1__vtable + 24
   ptr addr @D____construction__AB__0__s1__vtable + 24
   ptr addr @D____construction__AB__0__s2__vtable + 24
-  ptr addr @D____view__B__8__vtable + 24
   ptr addr @D____view__V__16__vtable + 24
+  ptr addr @D____view__B__8__vtable + 24
 }
 global @live : i32 [binding=strong] = 0
 
@@ -325,11 +325,11 @@ function @D___D__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbpt
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
     %t4 = index i8 %t3, 8
-    %t5 = index i8 %__vtt, 64
+    %t5 = index i8 %__vtt, 72
     %t6 = load typed ptr %t5
     store typed ptr %t6, %t4
     %t7 = index i8 %__vbptr0, 0
-    %t8 = index i8 %__vtt, 72
+    %t8 = index i8 %__vtt, 64
     %t9 = load typed ptr %t8
     store typed ptr %t9, %t7
     eh_end
@@ -465,11 +465,11 @@ function @AB__AB__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbp
     store typed ptr %t14, %t13
     %t15 = load typed ptr $this
     %t16 = index i8 %t15, 8
-    %t17 = index i8 %__vtt, 40
+    %t17 = index i8 %__vtt, 48
     %t18 = load typed ptr %t17
     store typed ptr %t18, %t16
     %t19 = index i8 %__vbptr0, 0
-    %t20 = index i8 %__vtt, 48
+    %t20 = index i8 %__vtt, 40
     %t21 = load typed ptr %t20
     store typed ptr %t21, %t19
     eh_end
@@ -529,11 +529,11 @@ function @AB___AB__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vb
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
     %t4 = index i8 %t3, 8
-    %t5 = index i8 %__vtt, 40
+    %t5 = index i8 %__vtt, 48
     %t6 = load typed ptr %t5
     store typed ptr %t6, %t4
     %t7 = index i8 %__vbptr0, 0
-    %t8 = index i8 %__vtt, 48
+    %t8 = index i8 %__vtt, 40
     %t9 = load typed ptr %t8
     store typed ptr %t9, %t7
     eh_end

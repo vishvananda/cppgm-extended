@@ -2479,11 +2479,12 @@ void Analyzer::AddDestructorSubobjectActions(EntityId entity,
 	const bool base_entry = active_destructor != kNoBinding &&
 		program_->bindings[active_destructor].destructor_base_entry;
 	if (base_entry) return;
-	for (std::size_t ordinal = owner.virtual_base_count;
-		ordinal != 0; --ordinal)
+	const std::vector<std::uint32_t> order =
+		VirtualBaseConstructionOrder(*program_, entity);
+	for (std::size_t rank = order.size(); rank != 0; --rank)
 	{
 		const VirtualBaseLayout& layout =
-			program_->VirtualBase(entity, ordinal - 1);
+			program_->VirtualBase(entity, order[rank - 1]);
 		const EntityId base = layout.entity;
 		if (program_->entities[base].trivial_destructor) continue;
 		BindingId destructor = DestructorForType(program_->entities[base].type);

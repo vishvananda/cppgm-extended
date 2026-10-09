@@ -50,7 +50,7 @@ global @__rtti_struct_IStream [binding=weak, object=_ZTI7IStream] = {
   i32 0
   i32 1
   ptr addr @__rtti_struct_BasicIOS
-  i64 -8189
+  i64 -6141
 }
 global @__typeinfo_name__struct_OStream [binding=weak, object=_ZTS7OStream] = {
   i8 55
@@ -69,7 +69,7 @@ global @__rtti_struct_OStream [binding=weak, object=_ZTI7OStream] = {
   i32 0
   i32 1
   ptr addr @__rtti_struct_BasicIOS
-  i64 -8189
+  i64 -6141
 }
 global @__typeinfo_name__struct_IOStream [binding=weak, object=_ZTS8IOStream] = {
   i8 56
@@ -124,8 +124,8 @@ global @BasicIOS____vtt [binding=weak, object=_ZTT8BasicIOS, object_root=yes] = 
   ptr addr @BasicIOS__vtable + 24
 }
 global @IStream__vtable [binding=weak, object=_ZTV7IStream] = {
-  i64 8
   i64 16
+  i64 8
   i64 0
   ptr addr @__rtti_struct_IStream
 }
@@ -141,12 +141,12 @@ global @IStream____construction__BasicIOS__8__s0__vtable [binding=internal, obje
 }
 global @IStream____vtt [binding=weak, object=_ZTT7IStream, object_root=yes] = {
   ptr addr @IStream__vtable + 32
-  ptr addr @IStream____construction__BasicIOS__8__s0__vtable + 24
   ptr addr @IStream____view__BasicIOS__8__vtable + 24
+  ptr addr @IStream____construction__BasicIOS__8__s0__vtable + 24
 }
 global @OStream__vtable [binding=weak, object=_ZTV7OStream] = {
-  i64 8
   i64 16
+  i64 8
   i64 0
   ptr addr @__rtti_struct_OStream
 }
@@ -162,18 +162,18 @@ global @OStream____construction__BasicIOS__8__s0__vtable [binding=internal, obje
 }
 global @OStream____vtt [binding=weak, object=_ZTT7OStream, object_root=yes] = {
   ptr addr @OStream__vtable + 32
-  ptr addr @OStream____construction__BasicIOS__8__s0__vtable + 24
   ptr addr @OStream____view__BasicIOS__8__vtable + 24
+  ptr addr @OStream____construction__BasicIOS__8__s0__vtable + 24
 }
 global @IOStream__vtable [binding=weak, object=_ZTV8IOStream] = {
-  i64 16
   i64 24
+  i64 16
   i64 0
   ptr addr @__rtti_struct_IOStream
 }
 global @IOStream____view__OStream__8__vtable [binding=internal, object=@IOStream____view__OStream__8__vtable] = {
-  i64 8
   i64 16
+  i64 8
   i64 -8
   ptr addr @__rtti_struct_IOStream
 }
@@ -183,15 +183,10 @@ global @IOStream____view__BasicIOS__16__vtable [binding=internal, object=@IOStre
   ptr addr @__rtti_struct_IOStream
 }
 global @IOStream____construction__IStream__0__s0__vtable [binding=internal, object=@IOStream____construction__IStream__0__s0__vtable] = {
-  i64 16
   i64 24
+  i64 16
   i64 0
   ptr addr @__rtti_struct_IStream
-}
-global @IOStream____construction__BasicIOS__8__s0__vtable [binding=internal, object=@IOStream____construction__BasicIOS__8__s0__vtable] = {
-  i64 16
-  i64 0
-  ptr addr @__rtti_struct_BasicIOS
 }
 global @IOStream____construction__IStream__0__s1__vtable [binding=internal, object=@IOStream____construction__IStream__0__s1__vtable] = {
   i64 8
@@ -199,9 +194,14 @@ global @IOStream____construction__IStream__0__s1__vtable [binding=internal, obje
   ptr addr @__rtti_struct_IStream
 }
 global @IOStream____construction__OStream__8__s0__vtable [binding=internal, object=@IOStream____construction__OStream__8__s0__vtable] = {
-  i64 8
   i64 16
+  i64 8
   i64 0
+  ptr addr @__rtti_struct_OStream
+}
+global @IOStream____construction__OStream__8__s1__vtable [binding=internal, object=@IOStream____construction__OStream__8__s1__vtable] = {
+  i64 8
+  i64 -8
   ptr addr @__rtti_struct_OStream
 }
 global @IOStream____construction__BasicIOS__16__s0__vtable [binding=internal, object=@IOStream____construction__BasicIOS__16__s0__vtable] = {
@@ -209,31 +209,25 @@ global @IOStream____construction__BasicIOS__16__s0__vtable [binding=internal, ob
   i64 0
   ptr addr @__rtti_struct_BasicIOS
 }
-global @IOStream____construction__OStream__8__s1__vtable [binding=internal, object=@IOStream____construction__OStream__8__s1__vtable] = {
-  i64 8
-  i64 -8
-  ptr addr @__rtti_struct_OStream
-}
 global @IOStream____vtt [binding=weak, object=_ZTT8IOStream, object_root=yes] = {
   ptr addr @IOStream__vtable + 32
   ptr addr @IOStream____construction__IStream__0__s0__vtable + 32
-  ptr addr @IOStream____construction__BasicIOS__8__s0__vtable + 24
   ptr addr @IOStream____construction__IStream__0__s1__vtable + 24
   ptr addr @IOStream____construction__OStream__8__s0__vtable + 32
-  ptr addr @IOStream____construction__BasicIOS__16__s0__vtable + 24
   ptr addr @IOStream____construction__OStream__8__s1__vtable + 24
-  ptr addr @IOStream____view__OStream__8__vtable + 32
   ptr addr @IOStream____view__BasicIOS__16__vtable + 24
+  ptr addr @IOStream____view__OStream__8__vtable + 32
+  ptr addr @IOStream____construction__BasicIOS__16__s0__vtable + 24
 }
 global @StringStream__vtable [binding=weak, object=_ZTV12StringStream] = {
-  i64 16
   i64 24
+  i64 16
   i64 0
   ptr addr @__rtti_struct_StringStream
 }
 global @StringStream____view__OStream__8__vtable [binding=internal, object=@StringStream____view__OStream__8__vtable] = {
-  i64 8
   i64 16
+  i64 8
   i64 -8
   ptr addr @__rtti_struct_StringStream
 }
@@ -243,21 +237,27 @@ global @StringStream____view__BasicIOS__16__vtable [binding=internal, object=@St
   ptr addr @__rtti_struct_StringStream
 }
 global @StringStream____construction__IOStream__0__s0__vtable [binding=internal, object=@StringStream____construction__IOStream__0__s0__vtable] = {
-  i64 16
   i64 24
+  i64 16
   i64 0
   ptr addr @__rtti_struct_IOStream
 }
-global @StringStream____construction__IStream__0__s0__vtable [binding=internal, object=@StringStream____construction__IStream__0__s0__vtable] = {
+global @StringStream____construction__IOStream__0__s1__vtable [binding=internal, object=@StringStream____construction__IOStream__0__s1__vtable] = {
+  i64 8
+  i64 -16
+  ptr addr @__rtti_struct_IOStream
+}
+global @StringStream____construction__IOStream__0__s2__vtable [binding=internal, object=@StringStream____construction__IOStream__0__s2__vtable] = {
   i64 16
+  i64 8
+  i64 -8
+  ptr addr @__rtti_struct_IOStream
+}
+global @StringStream____construction__IStream__0__s0__vtable [binding=internal, object=@StringStream____construction__IStream__0__s0__vtable] = {
   i64 24
+  i64 16
   i64 0
   ptr addr @__rtti_struct_IStream
-}
-global @StringStream____construction__BasicIOS__8__s0__vtable [binding=internal, object=@StringStream____construction__BasicIOS__8__s0__vtable] = {
-  i64 16
-  i64 0
-  ptr addr @__rtti_struct_BasicIOS
 }
 global @StringStream____construction__IStream__0__s1__vtable [binding=internal, object=@StringStream____construction__IStream__0__s1__vtable] = {
   i64 8
@@ -265,9 +265,14 @@ global @StringStream____construction__IStream__0__s1__vtable [binding=internal, 
   ptr addr @__rtti_struct_IStream
 }
 global @StringStream____construction__OStream__8__s0__vtable [binding=internal, object=@StringStream____construction__OStream__8__s0__vtable] = {
-  i64 8
   i64 16
+  i64 8
   i64 0
+  ptr addr @__rtti_struct_OStream
+}
+global @StringStream____construction__OStream__8__s1__vtable [binding=internal, object=@StringStream____construction__OStream__8__s1__vtable] = {
+  i64 8
+  i64 -8
   ptr addr @__rtti_struct_OStream
 }
 global @StringStream____construction__BasicIOS__16__s0__vtable [binding=internal, object=@StringStream____construction__BasicIOS__16__s0__vtable] = {
@@ -275,35 +280,18 @@ global @StringStream____construction__BasicIOS__16__s0__vtable [binding=internal
   i64 0
   ptr addr @__rtti_struct_BasicIOS
 }
-global @StringStream____construction__OStream__8__s1__vtable [binding=internal, object=@StringStream____construction__OStream__8__s1__vtable] = {
-  i64 8
-  i64 -8
-  ptr addr @__rtti_struct_OStream
-}
-global @StringStream____construction__IOStream__0__s1__vtable [binding=internal, object=@StringStream____construction__IOStream__0__s1__vtable] = {
-  i64 8
-  i64 16
-  i64 -8
-  ptr addr @__rtti_struct_IOStream
-}
-global @StringStream____construction__IOStream__0__s2__vtable [binding=internal, object=@StringStream____construction__IOStream__0__s2__vtable] = {
-  i64 8
-  i64 -16
-  ptr addr @__rtti_struct_IOStream
-}
 global @StringStream____vtt [binding=weak, object=_ZTT12StringStream, object_root=yes] = {
   ptr addr @StringStream__vtable + 32
   ptr addr @StringStream____construction__IOStream__0__s0__vtable + 32
   ptr addr @StringStream____construction__IStream__0__s0__vtable + 32
-  ptr addr @StringStream____construction__BasicIOS__8__s0__vtable + 24
   ptr addr @StringStream____construction__IStream__0__s1__vtable + 24
   ptr addr @StringStream____construction__OStream__8__s0__vtable + 32
-  ptr addr @StringStream____construction__BasicIOS__16__s0__vtable + 24
   ptr addr @StringStream____construction__OStream__8__s1__vtable + 24
-  ptr addr @StringStream____construction__IOStream__0__s1__vtable + 32
-  ptr addr @StringStream____construction__IOStream__0__s2__vtable + 24
-  ptr addr @StringStream____view__OStream__8__vtable + 32
+  ptr addr @StringStream____construction__IOStream__0__s1__vtable + 24
+  ptr addr @StringStream____construction__IOStream__0__s2__vtable + 32
   ptr addr @StringStream____view__BasicIOS__16__vtable + 24
+  ptr addr @StringStream____view__OStream__8__vtable + 32
+  ptr addr @StringStream____construction__BasicIOS__16__s0__vtable + 24
 }
 
 function @read(%out : ptr) -> i32 [binding=strong, object=_Z4readP7OStream] {
@@ -325,7 +313,7 @@ function @read(%out : ptr) -> i32 [binding=strong, object=_Z4readP7OStream] {
     %t4 = index i8 %t3, -32
     %t5 = load typed i64 %t4
     %t6 = index i8 %t1, %t5
-    %t7 = index i8 %t6, 8
+    %t7 = index i8 %t6, 0
     store typed ptr %t7, $basecast__1
     jump ^basecast_end_3
 
@@ -395,7 +383,7 @@ function @StringStream__StringStream(%this : ptr [object_bytes=32]) -> void [bin
     %t1 = load typed ptr $this
     %t2 = index i8 %t1, 16
     %t3 = addr @StringStream____vtt
-    %t4 = index i8 %t3, 24
+    %t4 = index i8 %t3, 80
     %t5 = load typed ptr $this
     %t6 = index i8 %t5, 24
     call void @BasicIOS__BasicIOS__base_entry(%t2, %t4, %t6)
@@ -419,7 +407,7 @@ function @StringStream__StringStream(%this : ptr [object_bytes=32]) -> void [bin
     store typed ptr %t21, %t19
     %t22 = load typed ptr $this
     %t23 = load typed ptr %t22
-    %t24 = index i8 %t23, -32
+    %t24 = index i8 %t23, -24
     %t25 = load typed i64 %t24
     %t26 = index i8 %t22, %t25
     %t27 = index i8 %t26, 0
@@ -431,7 +419,7 @@ function @StringStream__StringStream(%this : ptr [object_bytes=32]) -> void [bin
     %t32 = index i8 %t31, -32
     %t33 = load typed i64 %t32
     %t34 = index i8 %t30, %t33
-    %t35 = index i8 %t34, 8
+    %t35 = index i8 %t34, 0
     %t36 = index i8 [projection=field] %t35, 0
     store typed i32 7, %t36
     return void
@@ -457,18 +445,18 @@ function @IOStream__IOStream__base_entry(%this : ptr [object_bytes=32], %__vtt :
     call void @IStream__IStream__base_entry(%t2, %t3, %__vbptr0, %__vbptr1)
     %t4 = load typed ptr $this
     %t5 = index i8 %t4, 8
-    %t6 = index i8 %__vtt, 32
+    %t6 = index i8 %__vtt, 24
     call void @OStream__OStream__base_entry(%t5, %t6, %__vbptr0, %__vbptr1)
     %t7 = load typed ptr $this
     %t8 = load typed ptr %__vtt
     store typed ptr %t8, %t7
     %t9 = load typed ptr $this
     %t10 = index i8 %t9, 8
-    %t11 = index i8 %__vtt, 56
+    %t11 = index i8 %__vtt, 48
     %t12 = load typed ptr %t11
     store typed ptr %t12, %t10
     %t13 = index i8 %__vbptr0, 0
-    %t14 = index i8 %__vtt, 64
+    %t14 = index i8 %__vtt, 40
     %t15 = load typed ptr %t14
     store typed ptr %t15, %t13
     return void
@@ -482,7 +470,7 @@ function @IStream__IStream__base_entry(%this : ptr [object_bytes=24], %__vtt : p
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
     %t3 = index i8 %__vbptr0, 0
-    %t4 = index i8 %__vtt, 16
+    %t4 = index i8 %__vtt, 8
     %t5 = load typed ptr %t4
     store typed ptr %t5, %t3
     return void
@@ -496,7 +484,7 @@ function @OStream__OStream__base_entry(%this : ptr [object_bytes=24], %__vtt : p
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
     %t3 = index i8 %__vbptr0, 0
-    %t4 = index i8 %__vtt, 16
+    %t4 = index i8 %__vtt, 8
     %t5 = load typed ptr %t4
     store typed ptr %t5, %t3
     return void

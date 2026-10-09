@@ -169,15 +169,13 @@ protected:
 			!binding.static_member_function;
 	}
 
+	// Only a base-object constructor or destructor carries its object's
+	// virtual-base addresses; any other member function reaches them through
+	// the object's vtable (Itanium passes `this` and the visible arguments).
 	bool IncludesImplicitVirtualBases(const DumpNode& function) const
 	{
-		const Derived& derived = static_cast<const Derived&>(*this);
 		if (!HasImplicitObjectBoundary(function)) return false;
-		const BindingRecord& binding =
-			derived.program_.bindings[function.binding];
-		return !binding.virtual_function &&
-			(!binding.constructor || binding.constructor_base_entry) &&
-			(!binding.destructor || binding.destructor_base_entry);
+		return IncludesImplicitVirtualBases(function.binding);
 	}
 
 	bool IncludesImplicitVirtualBases(BindingId binding) const
@@ -187,9 +185,9 @@ protected:
 			return false;
 		const BindingRecord& function = derived.program_.bindings[binding];
 		return function.member_owner != kNoEntity &&
-			!function.static_member_function && !function.virtual_function &&
-			(!function.constructor || function.constructor_base_entry) &&
-			(!function.destructor || function.destructor_base_entry);
+			!function.static_member_function &&
+			((function.constructor && function.constructor_base_entry) ||
+			 (function.destructor && function.destructor_base_entry));
 	}
 
 	bool IncludesConstructionVtt(BindingId binding) const
@@ -799,10 +797,20 @@ protected:
 			BoundaryBindingForExpression(expression), virtual_base, address);
 	}
 
+	// The virtual base a path from `owner` to `target` last crosses, and
+	// target's fixed offset within it: a virtual base's address comes from
+	// the object's own vbase row for it, never from another virtual base's
+	// layout (whose virtual bases sit elsewhere in other complete objects).
 	bool VirtualBasePathAnchor(EntityId owner, EntityId target,
 		EntityId* anchor, std::uint64_t* relative_offset) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
+		if (derived.program_.FindVirtualBase(owner, target))
+		{
+			*anchor = target;
+			*relative_offset = 0;
+			return true;
+		}
 		std::vector<std::uint32_t> path;
 		if (!derived.program_.QueryBasePath(
 			owner, target, 0, 0, 0, 0, &path)) return false;
@@ -818,8 +826,6 @@ protected:
 				*anchor = current;
 				*relative_offset = 0;
 				found = true;
-				if (current == target || derived.program_.FindVirtualBase(
-					current, target, relative_offset)) return true;
 			}
 			else if (found) *relative_offset += edge.offset;
 		}
@@ -868,23 +874,26 @@ protected:
 		return Operand(current_construction_vtt_, LowPtr());
 	}
 
-	std::uint64_t ConstructionVttOffset(EntityId owner, EntityId base) const
+	// The start of `base`'s sub-VTT in `owner`'s VTT (Itanium 2.6.2): a
+	// direct non-virtual base's, or, for the complete constructor, a
+	// virtual base's.
+	std::uint32_t ConstructionVttIndex(EntityId owner, EntityId base,
+		bool complete) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
-		if (owner == base) return 0;
-		const std::uint64_t missing = std::numeric_limits<std::uint64_t>::max();
-		const std::vector<std::uint64_t>& offsets =
-			derived.polymorphism_.class_construction_vtt_offsets[owner];
-		for (std::size_t ordinal = 0; ordinal < offsets.size(); ++ordinal)
-		{
-			if (offsets[ordinal] == missing) continue;
-			const EntityId child = derived.program_.DirectBase(owner, ordinal).entity;
-			if (child == base) return offsets[ordinal];
-			if (!derived.program_.IsBaseOf(base, child)) continue;
-			const std::uint64_t nested = ConstructionVttOffset(child, base);
-			if (nested != missing) return offsets[ordinal] + nested;
-		}
-		return missing;
+		if (owner >= derived.polymorphism_.class_vtt_layouts.size() ||
+			!derived.polymorphism_.class_vtt_layouts[owner].computed)
+			ThrowLoweringInternal("constructor's class has no VTT layout");
+		const ClassVttLayout& layout =
+			derived.polymorphism_.class_vtt_layouts[owner];
+		std::uint32_t ordinal = 0;
+		if (complete && derived.program_.FindVirtualBase(owner, base, 0, &ordinal))
+			return layout.virtual_index[ordinal];
+		for (std::size_t i = 0; i < layout.base_index.size(); ++i)
+			if (derived.program_.DirectBase(owner, i).entity == base &&
+				!derived.program_.DirectBase(owner, i).virtual_base)
+				return layout.base_index[i];
+		return kNoVttIndex;
 	}
 
 	Operand ConstructionVttArgument(EntityId complete, EntityId base)
@@ -904,12 +913,14 @@ protected:
 			(complete >= derived.polymorphism_.class_vtt_symbols.size() ||
 			 derived.polymorphism_.class_vtt_symbols[complete] == kNoLowId))
 			ThrowLoweringInternal("complete constructor has no VTT symbol");
-		const std::uint64_t offset = ConstructionVttOffset(owner, base);
-		if (offset == std::numeric_limits<std::uint64_t>::max())
+		const std::uint32_t index =
+			ConstructionVttIndex(owner, base, complete != kNoEntity);
+		if (index == kNoVttIndex)
 			ThrowLoweringInternal("base constructor has no construction VTT slice");
+		const Operand offset(static_cast<std::int64_t>(index) * 8, LowI64());
 		if (complete == kNoEntity)
 			return derived.IndexAddress(LowI8(), CurrentConstructionVtt(),
-				Operand(static_cast<std::int64_t>(offset), LowI64()), false);
+				offset, false);
 		const SymbolId symbol =
 			derived.polymorphism_.class_vtt_symbols[complete];
 		derived.output_.symbols[symbol].referenced = true;
@@ -918,8 +929,7 @@ protected:
 		address.dest = table.id;
 		address.first = Operand(Operand::GLOBAL, symbol, LowPtr());
 		derived.Emit(address);
-		return derived.IndexAddress(LowI8(), table,
-			Operand(static_cast<std::int64_t>(offset), LowI64()), false);
+		return derived.IndexAddress(LowI8(), table, offset, false);
 	}
 
 	Operand RuntimeVirtualBaseAddress(const Operand& view, EntityId owner,
@@ -930,18 +940,14 @@ protected:
 			view.kind == Operand::NULL_POINTER)
 			return Operand(0, LowPtr());
 		const Operand vtable = derived.LoadStorage(view, LowPtr());
-		const bool has_polymorphic_row =
-			owner < derived.graph_.class_polymorphism.size() &&
-			virtual_base_ordinal < derived.graph_.class_polymorphism[
-				owner].virtual_base_offsets.size() &&
-			derived.graph_.class_polymorphism[owner].HasObjectTable();
-		const std::int64_t row = has_polymorphic_row ?
-			-static_cast<std::int64_t>(
-				derived.graph_.class_polymorphism[owner].address_point) +
-			(derived.output_.host_object_emission ? static_cast<std::int64_t>(
-				derived.graph_.class_polymorphism[owner].virtual_call_offsets.size()) * 8 : 0) +
-			static_cast<std::int64_t>(virtual_base_ordinal) * 8 :
-			-static_cast<std::int64_t>(24 + virtual_base_ordinal * 8);
+		// Row 0 is nearest the address point (Itanium 2.5.2).
+		if (owner >= derived.graph_.class_polymorphism.size() ||
+			virtual_base_ordinal >= derived.graph_.class_polymorphism[
+				owner].virtual_base_rows.size())
+			ThrowLoweringInternal("virtual base has no vtable row");
+		const std::int64_t row = -24 - 8 * static_cast<std::int64_t>(
+			derived.graph_.class_polymorphism[owner].virtual_base_rows[
+				virtual_base_ordinal]);
 		const Operand entry = derived.IndexAddress(
 			LowI8(), vtable, Operand(row, LowI64()), false);
 		const Operand offset = derived.LoadStorage(entry, LowI64());

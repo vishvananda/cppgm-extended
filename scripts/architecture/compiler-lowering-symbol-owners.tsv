@@ -174,6 +174,7 @@ struct	dev/src/lowering/objects/cleanup_continuations.h	Key	1	dev/src/lowering/o
 struct	dev/src/lowering/objects/cleanup_continuations.h	Slot	1	dev/src/lowering/objects/cleanup_continuations.h	keep
 struct	dev/src/lowering/objects/cleanup_continuations.h	State	1	dev/src/lowering/objects/cleanup_continuations.h	keep
 struct	dev/src/lowering/objects/member_function_pointers.h	MemberPointerCallOperands	1	dev/src/lowering/objects/member_function_pointers.h	keep
+struct	dev/src/lowering/objects/polymorphism.h	ConstructionGroup	1	dev/src/lowering/objects/polymorphism.h	keep
 struct	dev/src/lowering/objects/polymorphism.h	PolymorphismLoweringState	1	dev/src/lowering/objects/polymorphism.h	keep
 struct	dev/src/lowering/objects/polymorphism.h	VtableThunkLoweringFact	1	dev/src/lowering/objects/polymorphism.h	keep
 struct	dev/src/lowering/objects/virtual_bases.h	VirtualBaseBoundaryFact	1	dev/src/lowering/objects/virtual_bases.h	keep
@@ -183,3 +184,5 @@ struct	dev/src/lowering/presentation/local_names.h	LocalPresentationCounters	1	d
 class	dev/src/lowering/objects/construction_cleanup.h	ConstructionCleanupLowering	1	dev/src/lowering/objects/construction_cleanup.h	keep
 struct	dev/src/lowering/objects/construction_cleanup.h	ConstructionCleanupStep	1	dev/src/lowering/objects/construction_cleanup.h	keep
 struct	dev/src/lowering/objects/storage_slots.h	SlotPlanningVisit	1	dev/src/lowering/objects/storage_slots.h	keep
+class	dev/src/lowering/objects/vtt_layout.h	VttLayoutBuilder	1	dev/src/lowering/objects/vtt_layout.h	keep
+struct	dev/src/lowering/objects/vtt_layout.h	ClassVttLayout	1	dev/src/lowering/objects/vtt_layout.h	keep

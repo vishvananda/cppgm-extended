@@ -406,7 +406,7 @@ protected:
 		if (!trivial)
 			derived.LowerConstructorAction(
 				children[0], destination, false, true, false,
-				derived.HasCurrentImplicitVirtualBases() ?
+				derived.HasCurrentConstructionVtt() ?
 					kNoEntity : derived.current_member_owner_, true);
 		if (children.size() > 1)
 			derived.CompleteFullExpressionCleanup();

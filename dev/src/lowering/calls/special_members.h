@@ -75,7 +75,7 @@ protected:
 			derived.program_.bindings[selected];
 		if (construction && derived.IncludesConstructionVtt(selected))
 		{
-			const EntityId complete = derived.HasCurrentImplicitVirtualBases() ?
+			const EntityId complete = derived.HasCurrentConstructionVtt() ?
 				kNoEntity : derived.current_member_owner_;
 			arguments.Push(derived.ConstructionVttArgument(
 				complete, selected_binding.member_owner));
@@ -146,6 +146,20 @@ protected:
 			call.dest = ignored.id;
 			derived.Emit(call);
 		}
+	}
+
+	// A virtual base of the special member's owner in an object that may
+	// be a base subobject of a larger one: through the object's vtable.
+	Operand SynthesizedVirtualBaseAddress(const Operand& object, TypeId type)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		std::uint32_t ordinal = 0;
+		if (derived.current_member_owner_ == kNoEntity ||
+			!derived.program_.FindVirtualBase(derived.current_member_owner_,
+				derived.ClassEntity(type), 0, &ordinal))
+			ThrowLoweringInternal("synthesized virtual-base step has no row");
+		return derived.RuntimeVirtualBaseAddress(
+			object, derived.current_member_owner_, ordinal);
 	}
 
 	Operand LoadAssignmentObject(BindingId binding)
@@ -431,6 +445,8 @@ protected:
 		Operand source = LoadAssignmentObject(construction.object_binding);
 		if (step.binding != kNoBinding)
 			source = derived.ProjectAggregateMember(source, step.binding);
+		else if (step.virtual_base_subobject)
+			source = SynthesizedVirtualBaseAddress(source, step.type);
 		else if (step.base_projection_count != 0)
 			source = derived.ProjectBaseSubobjects(
 				source, step.base_projection_count, kNoType,
@@ -559,6 +575,8 @@ protected:
 			if (step.binding != kNoBinding)
 				destination = derived.ProjectAggregateMember(
 					destination, step.binding);
+			else if (step.virtual_base_subobject)
+				destination = SynthesizedVirtualBaseAddress(destination, step.type);
 			else
 				destination = derived.ProjectBaseSubobjects(
 					destination, step.base_projection_count, kNoType,
@@ -576,6 +594,8 @@ protected:
 			Operand source = LoadAssignmentObject(assignment.object_binding);
 			if (step.binding != kNoBinding)
 				source = derived.ProjectAggregateMember(source, step.binding);
+			else if (step.virtual_base_subobject)
+				source = SynthesizedVirtualBaseAddress(source, step.type);
 			else
 				source = derived.ProjectBaseSubobjects(
 					source, step.base_projection_count, kNoType,
@@ -717,7 +737,7 @@ protected:
 		if (derived.IncludesConstructionVtt(destructor))
 		{
 			arguments.Push(derived.ConstructionVttArgument(
-				derived.HasCurrentImplicitVirtualBases() ? kNoEntity :
+				derived.HasCurrentConstructionVtt() ? kNoEntity :
 					derived.current_member_owner_, owner));
 			references.Push(Instruction::CALL_PASS_VALUE);
 		}

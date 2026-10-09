@@ -123,11 +123,6 @@ global @Combined____view__Derived2__8__vtable [binding=internal, object=@Combine
   ptr addr @__rtti_struct_Combined
   ptr addr @Derived2__f
 }
-global @Combined____view__Abstract2__8__vtable [binding=internal, object=@Combined____view__Abstract2__8__vtable] = {
-  i64 -8
-  ptr addr @__rtti_struct_Combined
-  ptr addr @Derived2__f
-}
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $combined : obj<16x8>

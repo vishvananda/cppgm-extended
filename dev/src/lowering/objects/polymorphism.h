@@ -5,6 +5,7 @@
 #include "lowering/api.h"
 #include "lowering/ir/model.h"
 #include "lowering/support/errors.h"
+#include "lowering/objects/vtt_layout.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -43,6 +44,20 @@ struct VtableThunkLoweringFact
 
 namespace abi { class LocalNames; }
 
+// A construction vtable group: the base it is for, its offset in the
+// complete class, and its tables (the primary, then one per secondary
+// virtual pointer of the base's VTT).
+struct ConstructionGroup
+{
+	semantic::EntityId base;
+	std::uint64_t offset;
+	std::vector<lowering::ir::SymbolId> tables;
+
+	ConstructionGroup(semantic::EntityId base_value = semantic::kNoEntity,
+		std::uint64_t offset_value = 0)
+		: base(base_value), offset(offset_value) {}
+};
+
 struct PolymorphismLoweringState
 {
 	// The unit's `$_<n>` numbers and local discriminators, shared with the
@@ -55,10 +70,8 @@ struct PolymorphismLoweringState
 	std::vector<std::vector<lowering::ir::SymbolId> >
 		class_view_vtable_symbols;
 	std::vector<std::vector<std::uint64_t> > class_view_address_points;
-	std::vector<std::vector<std::vector<lowering::ir::SymbolId> > >
-		class_construction_vtable_symbols;
-	std::vector<std::vector<std::uint64_t> >
-		class_construction_vtt_offsets;
+	std::vector<std::vector<ConstructionGroup> > class_construction_groups;
+	std::vector<ClassVttLayout> class_vtt_layouts;
 	std::vector<std::vector<std::vector<lowering::ir::SymbolId> > >
 		class_view_slot_symbols;
 	std::vector<std::vector<std::vector<lowering::ir::SymbolId> > >
@@ -212,13 +225,11 @@ protected:
 		derived.Emit(store);
 		const semantic::ClassPolymorphismFacts& facts =
 			derived.graph_.class_polymorphism[entity];
-		std::size_t physical_view = 1;
-		if (derived.HasCurrentConstructionVtt() &&
-			entity < derived.polymorphism_.class_construction_vtable_symbols.size())
-			for (std::size_t base = 0; base < derived.polymorphism_.
-				class_construction_vtable_symbols[entity].size(); ++base)
-				physical_view += derived.polymorphism_.
-					class_construction_vtable_symbols[entity][base].size();
+		// A base-object constructor takes the tables for its secondary
+		// virtual pointers from its VTT (Itanium 2.6.2) and the others from
+		// its own vtable group.
+		const ClassVttLayout* layout = derived.HasCurrentConstructionVtt() ?
+			&derived.polymorphism_.class_vtt_layouts[entity] : 0;
 		for (std::size_t view = 0; view < facts.views.size(); ++view)
 		{
 			if (!facts.views[view].stores_vptr ||
@@ -229,31 +240,31 @@ protected:
 				derived.polymorphism_.class_view_vtable_symbols[entity][view];
 			if (view_symbol == kNoLowId) continue;
 			if (derived.stats_) ++derived.stats_->vptr_stores;
-			Operand inherited;
+			const semantic::PolymorphicViewFact& fact = facts.views[view];
 			Operand subobject;
-			if (facts.views[view].virtual_base &&
-				derived.CurrentVirtualBaseAddress(
-					derived.current_this_binding_, facts.views[view].entity,
-					&inherited))
+			Operand inherited;
+			if (fact.virtual_anchor_ordinal == semantic::kNoDumpEdge)
+				subobject = ProjectBaseSubobjectOffset(derived.LoadStorage(
+					derived.StorageFor(derived.current_this_binding_, LowPtr()),
+					LowPtr()), fact.offset);
+			else if (fact.virtual_base && derived.CurrentVirtualBaseAddress(
+				derived.current_this_binding_, fact.entity, &inherited))
 				subobject = ProjectBaseSubobjectOffset(inherited, 0);
 			else
-			{
-				const Operand view_object = derived.LoadStorage(derived.StorageFor(
-					derived.current_this_binding_, LowPtr()), LowPtr());
-				subobject = facts.views[view].virtual_base ?
-					ProjectBaseSubobjectOffset(derived.RuntimeVirtualBaseAddress(
-						view_object, entity,
-						facts.views[view].virtual_base_ordinal), 0) :
-					ProjectBaseSubobjectOffset(
-						view_object, facts.views[view].offset);
-			}
+				subobject = ProjectBaseSubobjectOffset(
+					derived.RuntimeVirtualBaseAddress(derived.LoadStorage(
+						derived.StorageFor(derived.current_this_binding_, LowPtr()),
+						LowPtr()), entity, fact.virtual_anchor_ordinal),
+					fact.virtual_anchor_offset);
 			Operand view_address_point;
-			if (derived.HasCurrentConstructionVtt())
+			const std::uint32_t index = layout && view < layout->view_index.size() ?
+				layout->view_index[view] : kNoVttIndex;
+			if (index != kNoVttIndex)
 			{
 				const Operand entry = derived.IndexAddress(LowI8(),
 					derived.CurrentConstructionVtt(),
-					Operand(static_cast<std::int64_t>(physical_view * 8),
-						LowI64()), false);
+					Operand(static_cast<std::int64_t>(index) * 8, LowI64()),
+					false);
 				view_address_point = derived.LoadStorage(entry, LowPtr());
 			}
 			else
@@ -274,7 +285,7 @@ protected:
 					derived.polymorphism_.class_view_address_points.size() &&
 					view < derived.polymorphism_.class_view_address_points[entity].size() ?
 					derived.polymorphism_.class_view_address_points[entity][view] :
-					facts.views[view].address_point;
+					fact.address_point;
 				view_index.second = Operand(static_cast<std::int64_t>(
 					view_point), LowI64());
 				derived.Emit(view_index);
@@ -284,7 +295,6 @@ protected:
 			view_store.first = view_address_point;
 			view_store.second = subobject;
 			derived.Emit(view_store);
-			++physical_view;
 		}
 	}
 

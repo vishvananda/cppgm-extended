@@ -240,6 +240,9 @@ struct DumpNode
 	bool construction_nonthrowing : 1;
 	bool contains_construction_cleanup : 1;
 	bool synthesized_prefix_lifetime_only : 1;
+	// DUMP_SPECIAL_MEMBER_SUBOBJECT_ACTION: a virtual base, found in the
+	// source object (and an assigned object) through its vtable.
+	bool virtual_base_subobject : 1;
 	bool body_contains_source_try : 1;
 	bool body_contains_source_label : 1;
 	FunctionTryBodyKind function_try_body;
@@ -330,7 +333,8 @@ struct DumpNode
 		lexical_body_cleanup(false),
 		  construction_recipe(false), construction_nonthrowing(false),
 		  contains_construction_cleanup(false),
-		  synthesized_prefix_lifetime_only(false), body_contains_source_try(false),
+		  synthesized_prefix_lifetime_only(false), virtual_base_subobject(false),
+		  body_contains_source_try(false),
 		  body_contains_source_label(false),
 		  function_try_body(FUNCTION_TRY_BODY_NONE),
 		  operation_kind(0),
@@ -1152,9 +1156,18 @@ struct PolymorphicViewFact
 	std::uint32_t virtual_base_ordinal;
 	std::uint64_t relative_offset, offset;
 	std::uint64_t address_point;
+	// The virtual base of the owner this view lies in (itself when it is a
+	// virtual base), its ordinal once laid out, and the view's offset within
+	// it; kNoEntity when the view is at a fixed offset in the owner's
+	// non-virtual part.  One subobject reached along several paths is one
+	// view.
+	EntityId virtual_anchor;
+	std::uint32_t virtual_anchor_ordinal;
+	std::uint64_t virtual_anchor_offset;
 	bool stores_vptr;
 	bool virtual_base;
 	bool contributes_primary_override;
+	// By row of the view class's own virtual bases.
 	std::vector<std::int64_t> virtual_base_offsets;
 	std::vector<std::int64_t> virtual_call_offsets;
 	std::vector<VirtualSlotFact> slots;
@@ -1166,6 +1179,8 @@ struct PolymorphicViewFact
 		  direct_base_ordinal(direct_base_ordinal_value),
 		  virtual_base_ordinal(kNoDumpEdge),
 		  relative_offset(relative_offset_value), offset(0), address_point(16),
+		  virtual_anchor(kNoEntity), virtual_anchor_ordinal(kNoDumpEdge),
+		  virtual_anchor_offset(0),
 		  stores_vptr(stores_vptr_value), virtual_base(false),
 		  contributes_primary_override(false) {}
 };
@@ -1184,7 +1199,10 @@ struct ClassPolymorphismFacts
 	std::vector<VirtualExceptionOverrideFact> exception_overrides;
 	std::vector<EntityId> primary_ancestors;
 	std::vector<PolymorphicViewFact> views;
+	// Vbase offsets by row (row 0 nearest the address point, Itanium
+	// 2.5.2); virtual_base_rows maps a virtual base ordinal to its row.
 	std::vector<std::int64_t> virtual_base_offsets;
+	std::vector<std::uint32_t> virtual_base_rows;
 	std::vector<std::int64_t> virtual_call_offsets;
 	std::uint64_t address_point;
 	bool complete;

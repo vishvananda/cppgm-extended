@@ -225,10 +225,10 @@ private:
 		state_.class_view_vtable_symbols.resize(count);
 		state_.class_view_address_points.clear();
 		state_.class_view_address_points.resize(count);
-		state_.class_construction_vtable_symbols.clear();
-		state_.class_construction_vtable_symbols.resize(count);
-		state_.class_construction_vtt_offsets.clear();
-		state_.class_construction_vtt_offsets.resize(count);
+		state_.class_construction_groups.clear();
+		state_.class_construction_groups.resize(count);
+		state_.class_vtt_layouts.clear();
+		state_.class_vtt_layouts.resize(count);
 		state_.class_view_slot_symbols.clear();
 		state_.class_view_slot_symbols.resize(count);
 		state_.class_view_deleting_slot_symbols.clear();
@@ -250,11 +250,6 @@ private:
 				PrimaryAddressPoint(facts);
 			state_.class_view_address_points[entity].assign(
 				facts.views.size(), 16);
-			state_.class_construction_vtable_symbols[entity].resize(
-				program_.entities[entity].direct_base_count);
-			state_.class_construction_vtt_offsets[entity].assign(
-				program_.entities[entity].direct_base_count,
-				std::numeric_limits<std::uint64_t>::max());
 			for (std::size_t view = 0; view < facts.views.size(); ++view)
 				state_.class_view_address_points[entity][view] =
 					facts.views[view].address_point;
@@ -931,24 +926,7 @@ private:
 	std::int64_t ReturnRuntimeVtableOffset(
 		const VirtualSlotFact& slot) const
 	{
-		if (!slot.return_adjustment_virtual || !output_.host_object_emission)
-			return slot.return_vtable_offset;
-		const BindingRecord& binding = program_.bindings[slot.function];
-		const TypeRecord& function = program_.types.Get(binding.type);
-		if (function.kind != TYPE_FUNCTION)
-			ThrowLoweringInternal("covariant thunk has no function type");
-		const TypeRecord& result = program_.types.Get(function.child);
-		if (result.kind != TYPE_POINTER &&
-			result.kind != TYPE_LVALUE_REFERENCE &&
-			result.kind != TYPE_RVALUE_REFERENCE)
-			ThrowLoweringInternal("covariant thunk has no class result");
-		const TypeId target = program_.types.RemoveTopCv(result.child);
-		const TypeRecord& named = program_.types.Get(target);
-		if (named.kind != TYPE_NAMED ||
-			named.entity >= graph_.class_polymorphism.size())
-			ThrowLoweringInternal("covariant thunk result has no vtable facts");
-		return slot.return_vtable_offset + static_cast<std::int64_t>(
-			graph_.class_polymorphism[named.entity].virtual_call_offsets.size()) * 8;
+		return slot.return_vtable_offset;
 	}
 
 	struct AdjustedSlotEntry
@@ -1207,77 +1185,67 @@ private:
 			VtableHasWeakLinkage(complete));
 	}
 
-	void RegisterConstructionSubtree(EntityId complete, EntityId base,
-		std::uint64_t offset, std::vector<SymbolId>* symbols,
-		std::uint64_t* vtt_offset)
+	VttLayoutBuilder VttLayouts()
+	{
+		return VttLayoutBuilder(program_, graph_.class_polymorphism,
+			&state_.class_vtt_layouts);
+	}
+
+	// The construction vtable group for `base` at `offset` in `complete`
+	// (Itanium 2.6.2-2.6.4): base's primary table and a table for each of
+	// its secondary virtual pointers, laid out for complete's virtual bases;
+	// then the groups its non-virtual bases' sub-VTTs need.
+	void RegisterConstructionGroup(EntityId complete, EntityId base,
+		std::uint64_t offset)
 	{
 		const ClassPolymorphismFacts& facts = graph_.class_polymorphism[base];
 		RegisterEntitySlots(base, facts, VtableIsExternal(base));
-		symbols->push_back(RegisterConstructionVtable(complete, base, offset, 0));
-		*vtt_offset += 8;
-		const EntityRecord& owner = program_.entities[base];
-		for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
+		DemandRtti(program_.entities[base].type);
+		const ClassVttLayout& layout = VttLayouts().Layout(base);
+		ConstructionGroup group(base, offset);
+		group.tables.push_back(RegisterConstructionVtable(complete, base, offset, 0));
+		for (std::size_t k = 0; k < layout.secondary_views.size(); ++k)
+			group.tables.push_back(
+				RegisterConstructionVtable(complete, base, offset, k + 1));
+		state_.class_construction_groups[complete].push_back(group);
+		RegisterNonvirtualConstructionGroups(complete, base, offset);
+	}
+
+	void RegisterNonvirtualConstructionGroups(EntityId complete, EntityId owner,
+		std::uint64_t offset)
+	{
+		const EntityRecord& record = program_.entities[owner];
+		for (std::size_t i = 0; i < record.direct_base_count; ++i)
 		{
-			const DirectBaseEdge& edge = program_.DirectBase(base, ordinal);
-			if (!ConstructionBaseEligible(edge)) continue;
-			RegisterConstructionSubtree(complete, edge.entity,
-				offset + edge.offset, symbols, vtt_offset);
+			const DirectBaseEdge& edge = program_.DirectBase(owner, i);
+			if (!edge.virtual_base && ConstructionBaseEligible(edge))
+				RegisterConstructionGroup(complete, edge.entity, offset + edge.offset);
 		}
-		std::size_t physical = 1;
-		for (std::size_t view = 0; view < facts.views.size(); ++view)
-			if (facts.views[view].stores_vptr)
-			{
-				symbols->push_back(RegisterConstructionVtable(
-					complete, base, offset, physical++));
-				*vtt_offset += 8;
-			}
 	}
 
 	void RegisterConstructionVtables(EntityId entity)
 	{
-		std::uint64_t vtt_offset = 8;
+		state_.class_construction_groups[entity].clear();
+		RegisterNonvirtualConstructionGroups(entity, entity, 0);
 		const EntityRecord& complete = program_.entities[entity];
-		for (std::size_t ordinal = 0;
-			ordinal < complete.direct_base_count; ++ordinal)
+		for (std::size_t i = 0; i < complete.virtual_base_count; ++i)
 		{
-			const DirectBaseEdge& edge = program_.DirectBase(entity, ordinal);
-			if (!ConstructionBaseEligible(edge)) continue;
-			std::vector<SymbolId>& symbols =
-				state_.class_construction_vtable_symbols[entity][ordinal];
-			state_.class_construction_vtt_offsets[entity][ordinal] = vtt_offset;
-			RegisterConstructionSubtree(
-				entity, edge.entity, edge.offset, &symbols, &vtt_offset);
-			DemandRtti(program_.entities[edge.entity].type);
-		}
-	}
-
-	void AdvanceExternalConstructionVtt(EntityId base,
-		std::uint64_t* vtt_offset) const
-	{
-		*vtt_offset += 8;
-		const EntityRecord& owner = program_.entities[base];
-		for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
-		{
-			const DirectBaseEdge& edge = program_.DirectBase(base, ordinal);
+			const VirtualBaseLayout& layout = program_.VirtualBase(entity, i);
+			const DirectBaseEdge edge(layout.entity);
 			if (ConstructionBaseEligible(edge))
-				AdvanceExternalConstructionVtt(edge.entity, vtt_offset);
+				RegisterConstructionGroup(entity, layout.entity, layout.offset);
 		}
-		const ClassPolymorphismFacts& facts = graph_.class_polymorphism[base];
-		for (std::size_t view = 0; view < facts.views.size(); ++view)
-			if (facts.views[view].stores_vptr) *vtt_offset += 8;
 	}
 
-	void RegisterExternalConstructionVttOffsets(EntityId entity)
+	const ConstructionGroup& FindConstructionGroup(EntityId complete,
+		EntityId base, std::uint64_t offset) const
 	{
-		std::uint64_t vtt_offset = 8;
-		const EntityRecord& owner = program_.entities[entity];
-		for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
-		{
-			const DirectBaseEdge& edge = program_.DirectBase(entity, ordinal);
-			if (!ConstructionBaseEligible(edge)) continue;
-			state_.class_construction_vtt_offsets[entity][ordinal] = vtt_offset;
-			AdvanceExternalConstructionVtt(edge.entity, &vtt_offset);
-		}
+		const std::vector<ConstructionGroup>& groups =
+			state_.class_construction_groups[complete];
+		for (std::size_t i = 0; i < groups.size(); ++i)
+			if (groups[i].base == base && groups[i].offset == offset)
+				return groups[i];
+		ThrowLoweringInternal("sub-VTT has no construction vtable group");
 	}
 
 	void RegisterViewSymbols(EntityId entity,
@@ -1294,7 +1262,7 @@ private:
 			if (program_.entities[entity].virtual_base_count != 0)
 			{
 				state_.class_vtt_symbols[entity] = AddExternalVtt(entity);
-				RegisterExternalConstructionVttOffsets(entity);
+				(void)VttLayouts().Layout(entity);
 			}
 			std::uint64_t offset = primary_address_point;
 			const std::vector<VirtualSlotFact>& primary = PrimarySlots(entity);
@@ -1334,15 +1302,22 @@ private:
 			const std::string name = ClassStem(entity) + "____view__" +
 				ClassStem(source.entity) + "__" +
 				std::to_string(source.offset) + "__vtable";
-			state_.class_view_vtable_symbols[entity][view] =
-				AddPolymorphicGlobal(name, "@" + name,
-					VtableHasWeakLinkage(entity));
+			// A primary base of a secondary base shares that base's table:
+			// it has no table of its own in the group (Itanium 2.5.2).
+			if (source.stores_vptr)
+				state_.class_view_vtable_symbols[entity][view] =
+					AddPolymorphicGlobal(name, "@" + name,
+						VtableHasWeakLinkage(entity));
 			for (std::size_t slot = 0; slot < source.slots.size(); ++slot)
 				if (state_.class_view_slot_symbols[
 					entity][view + 1][slot] == kNoLowId)
 					ThrowLoweringInternal("secondary vtable slots are not registered");
 		}
-		RegisterConstructionVtables(entity);
+		if (program_.entities[entity].virtual_base_count != 0)
+		{
+			(void)VttLayouts().Layout(entity);
+			RegisterConstructionVtables(entity);
+		}
 	}
 
 	void RegisterSymbols()
@@ -1363,6 +1338,14 @@ private:
 			if (!external) RegisterEntitySlots(entity, facts, false);
 			RegisterViewSymbols(entity, facts);
 		}
+		// A base-object constructor reads its VTT by this shape even where
+		// no complete class's vtables are demanded.
+		for (EntityId entity = 0;
+			entity < graph_.class_polymorphism.size(); ++entity)
+			if (graph_.class_polymorphism[entity].complete &&
+				graph_.class_polymorphism[entity].HasObjectTable() &&
+				program_.entities[entity].virtual_base_count != 0)
+				(void)VttLayouts().Layout(entity);
 		for (EntityId entity = 0;
 			entity < state_.class_rtti_demanded.size(); ++entity)
 		{
@@ -1590,8 +1573,9 @@ private:
 		vtable.initializer_kind = Global::STRUCTURED_VALUE;
 		for (std::size_t row = 0; row < virtual_call_offsets.size(); ++row)
 			AddIntegerItem(&vtable, LowI64(), virtual_call_offsets[row]);
-		for (std::size_t row = 0; row < virtual_base_offsets.size(); ++row)
-			AddIntegerItem(&vtable, LowI64(), virtual_base_offsets[row]);
+		// Row 0 is nearest the address point (Itanium 2.5.2).
+		for (std::size_t row = virtual_base_offsets.size(); row != 0; --row)
+			AddIntegerItem(&vtable, LowI64(), virtual_base_offsets[row - 1]);
 		if (stats_) stats_->vtable_offset_rows +=
 			virtual_base_offsets.size() + virtual_call_offsets.size();
 		AddIntegerItem(&vtable, LowI64(), -offset);
@@ -1610,178 +1594,156 @@ private:
 		if (stats_) ++stats_->globals;
 	}
 
-	void EmitConstructionSubtree(EntityId complete, EntityId base_entity,
-		std::uint64_t base_offset, const std::vector<SymbolId>& symbols,
-		std::size_t* cursor)
+	// A construction vtable for a view of `base_entity` (the primary table
+	// when view is the number of views) laid out as that base is in
+	// `complete`: offsets to the top relative to the base, the base's own
+	// type information and overriders, complete's virtual-base offsets.
+	void EmitConstructionTable(EntityId complete, EntityId base_entity,
+		std::uint64_t base_offset, std::size_t view, SymbolId symbol)
 	{
-		const EntityRecord& base_owner = program_.entities[base_entity];
 		const ClassPolymorphismFacts& base =
 			graph_.class_polymorphism[base_entity];
-		if (*cursor >= symbols.size())
-			ThrowLoweringInternal("construction vtable subtree is truncated");
-		std::vector<std::int64_t> offsets;
+		const bool primary = view == base.views.size();
+		const EntityId owner = primary ? base_entity : base.views[view].entity;
+		std::uint64_t view_offset = base_offset;
+		if (!primary)
+		{
+			const PolymorphicViewFact& source = base.views[view];
+			view_offset = base_offset + source.offset;
+			if (source.virtual_anchor_ordinal != kNoDumpEdge)
+			{
+				const EntityId anchor = program_.VirtualBase(
+					base_entity, source.virtual_anchor_ordinal).entity;
+				if (!program_.FindVirtualBase(complete, anchor, &view_offset))
+					ThrowLoweringInternal(
+						"construction view has no complete virtual base");
+				view_offset += source.virtual_anchor_offset;
+			}
+		}
+		const EntityRecord& view_owner = program_.entities[owner];
+		const std::vector<std::uint32_t>& rows =
+			graph_.class_polymorphism[owner].virtual_base_rows;
+		std::vector<std::int64_t> offsets(view_owner.virtual_base_count, 0);
 		for (std::size_t virtual_base = 0;
-			virtual_base < base_owner.virtual_base_count; ++virtual_base)
+			virtual_base < view_owner.virtual_base_count; ++virtual_base)
 		{
 			std::uint64_t complete_offset = 0;
 			if (!program_.FindVirtualBase(complete, program_.VirtualBase(
-				base_entity, virtual_base).entity, &complete_offset))
+				owner, virtual_base).entity, &complete_offset))
 				ThrowLoweringInternal(
 					"construction vtable has no complete virtual base");
-			offsets.push_back(static_cast<std::int64_t>(complete_offset) -
-				static_cast<std::int64_t>(base_offset));
+			offsets[rows[virtual_base]] =
+				static_cast<std::int64_t>(complete_offset) -
+				static_cast<std::int64_t>(view_offset);
 		}
 		const std::vector<std::int64_t> no_virtual_call_offsets;
-		EmitVtableView(base_entity, base_entity, symbols[(*cursor)++],
-			0, PrimarySlots(base_entity), offsets,
-			!output_.host_object_emission && base_offset == 0 ?
-				base.virtual_call_offsets : no_virtual_call_offsets,
-			state_.class_view_slot_symbols[base_entity][0],
-			state_.class_view_deleting_slot_symbols[base_entity][0]);
-		for (std::size_t ordinal = 0;
-			ordinal < base_owner.direct_base_count; ++ordinal)
-		{
-			const DirectBaseEdge& edge = program_.DirectBase(base_entity, ordinal);
-			if (!ConstructionBaseEligible(edge)) continue;
-			EmitConstructionSubtree(complete, edge.entity,
-				base_offset + edge.offset, symbols, cursor);
-		}
-		for (std::size_t view = 0; view < base.views.size(); ++view)
-		{
-			if (!base.views[view].stores_vptr) continue;
-			if (*cursor >= symbols.size())
-				ThrowLoweringInternal("construction view subtree is truncated");
-			std::uint64_t complete_view_offset =
-				base_offset + base.views[view].offset;
-			if (base.views[view].virtual_base && !program_.FindVirtualBase(
-				complete, base.views[view].entity, &complete_view_offset))
-				ThrowLoweringInternal(
-					"construction view has no complete virtual base");
-			std::vector<std::int64_t> view_offsets;
-			const EntityRecord& view_owner =
-				program_.entities[base.views[view].entity];
-			for (std::size_t virtual_base = 0;
-				virtual_base < view_owner.virtual_base_count; ++virtual_base)
-			{
-				std::uint64_t complete_offset = 0;
-				if (!program_.FindVirtualBase(complete, program_.VirtualBase(
-					base.views[view].entity, virtual_base).entity,
-					&complete_offset))
-					ThrowLoweringInternal(
-						"construction view has no nested virtual base");
-				view_offsets.push_back(
-					static_cast<std::int64_t>(complete_offset) -
-					static_cast<std::int64_t>(complete_view_offset));
-			}
-			EmitVtableView(base_entity, base_entity,
-				symbols[(*cursor)++], static_cast<std::int64_t>(complete_view_offset) -
+		if (primary)
+			EmitVtableView(base_entity, base_entity, symbol, 0,
+				PrimarySlots(base_entity), offsets,
+				!output_.host_object_emission && base_offset == 0 ?
+					base.virtual_call_offsets : no_virtual_call_offsets,
+				state_.class_view_slot_symbols[base_entity][0],
+				state_.class_view_deleting_slot_symbols[base_entity][0]);
+		else
+			EmitVtableView(base_entity, base_entity, symbol,
+				static_cast<std::int64_t>(view_offset) -
 					static_cast<std::int64_t>(base_offset),
-				base.views[view].slots, view_offsets,
+				base.views[view].slots, offsets,
 				base.views[view].virtual_call_offsets,
 				state_.class_view_slot_symbols[base_entity][view + 1],
 				state_.class_view_deleting_slot_symbols[base_entity][view + 1]);
-		}
 	}
 
 	void EmitConstructionVtables(EntityId entity)
 	{
-		const EntityRecord& complete = program_.entities[entity];
-		for (std::size_t ordinal = 0;
-			ordinal < complete.direct_base_count; ++ordinal)
+		const std::vector<ConstructionGroup>& groups =
+			state_.class_construction_groups[entity];
+		for (std::size_t i = 0; i < groups.size(); ++i)
 		{
-			const std::vector<SymbolId>& symbols =
-				state_.class_construction_vtable_symbols[entity][ordinal];
-			if (symbols.empty()) continue;
-			const DirectBaseEdge& edge = program_.DirectBase(entity, ordinal);
-			std::size_t cursor = 0;
-			EmitConstructionSubtree(
-				entity, edge.entity, edge.offset, symbols, &cursor);
-			if (cursor != symbols.size())
-				ThrowLoweringInternal("construction vtable subtree is oversized");
+			const ClassPolymorphismFacts& base =
+				graph_.class_polymorphism[groups[i].base];
+			const ClassVttLayout& layout =
+				state_.class_vtt_layouts[groups[i].base];
+			EmitConstructionTable(entity, groups[i].base, groups[i].offset,
+				base.views.size(), groups[i].tables[0]);
+			for (std::size_t k = 0; k < layout.secondary_views.size(); ++k)
+				EmitConstructionTable(entity, groups[i].base, groups[i].offset,
+					layout.secondary_views[k], groups[i].tables[k + 1]);
 		}
 	}
 
-	void AddConstructionVttSubtree(Global* vtt, EntityId base_entity,
-		std::uint64_t base_offset, const std::vector<SymbolId>& symbols,
-		std::size_t* cursor)
+	std::uint64_t ConstructionPrimaryAddressPoint(EntityId base,
+		std::uint64_t base_offset) const
 	{
-		const ClassPolymorphismFacts& base =
-			graph_.class_polymorphism[base_entity];
-		if (*cursor >= symbols.size())
-			ThrowLoweringInternal("construction VTT subtree is truncated");
-		const std::uint64_t address_point = output_.host_object_emission ?
-			PrimaryAddressPoint(base) :
-			(base_offset == 0 ? base.address_point : base.address_point -
-				base.virtual_call_offsets.size() * 8);
-		AddAddressItem(vtt, symbols[(*cursor)++],
-			static_cast<std::int64_t>(address_point));
-		const EntityRecord& owner = program_.entities[base_entity];
-		for (std::size_t ordinal = 0; ordinal < owner.direct_base_count; ++ordinal)
+		const ClassPolymorphismFacts& facts = graph_.class_polymorphism[base];
+		return output_.host_object_emission ? PrimaryAddressPoint(facts) :
+			(base_offset == 0 ? facts.address_point : facts.address_point -
+				facts.virtual_call_offsets.size() * 8);
+	}
+
+	// Itanium 2.6.2: the primary vtable, the non-virtual bases' sub-VTTs,
+	// the secondary virtual pointers, and (for the complete class only) the
+	// virtual bases' sub-VTTs; a sub-VTT names construction vtables.
+	void AddVttEntries(Global* vtt, EntityId complete, EntityId owner,
+		std::uint64_t offset, bool top)
+	{
+		const ClassPolymorphismFacts& facts = graph_.class_polymorphism[owner];
+		const ClassVttLayout& layout = state_.class_vtt_layouts[owner];
+		const ConstructionGroup* group =
+			top ? 0 : &FindConstructionGroup(complete, owner, offset);
+		if (top)
+			AddAddressItem(vtt, state_.class_vtable_symbols[complete],
+				static_cast<std::int64_t>(PrimaryAddressPoint(facts)));
+		else
+			AddAddressItem(vtt, group->tables[0], static_cast<std::int64_t>(
+				ConstructionPrimaryAddressPoint(owner, offset)));
+		const EntityRecord& record = program_.entities[owner];
+		for (std::size_t i = 0; i < record.direct_base_count; ++i)
+			if (layout.base_index[i] != kNoVttIndex)
+				AddVttEntries(vtt, complete, program_.DirectBase(owner, i).entity,
+					offset + program_.DirectBase(owner, i).offset, false);
+		for (std::size_t k = 0; k < layout.secondary_views.size(); ++k)
 		{
-			const DirectBaseEdge& edge = program_.DirectBase(base_entity, ordinal);
-			if (ConstructionBaseEligible(edge))
-				AddConstructionVttSubtree(vtt, edge.entity,
-					base_offset + edge.offset, symbols, cursor);
+			const std::size_t view = layout.secondary_views[k];
+			AddAddressItem(vtt, top ?
+				state_.class_view_vtable_symbols[complete][view] :
+				group->tables[k + 1],
+				static_cast<std::int64_t>(facts.views[view].address_point));
 		}
-		for (std::size_t view = 0; view < base.views.size(); ++view)
-			if (base.views[view].stores_vptr)
+		if (!top) return;
+		for (std::size_t i = 0; i < record.virtual_base_count; ++i)
+			if (layout.virtual_index[i] != kNoVttIndex)
 			{
-				if (*cursor >= symbols.size())
-					ThrowLoweringInternal(
-						"construction VTT view subtree is truncated");
-				AddAddressItem(vtt, symbols[(*cursor)++],
-					static_cast<std::int64_t>(base.views[view].address_point));
+				const VirtualBaseLayout& base = program_.VirtualBase(owner, i);
+				AddVttEntries(vtt, complete, base.entity, base.offset, false);
 			}
 	}
 
 	void EmitVtt(EntityId entity, const ClassPolymorphismFacts& facts)
 	{
+		(void)facts;
 		const SymbolId symbol = state_.class_vtt_symbols[entity];
 		if (symbol == kNoLowId) return;
 		Global vtt;
 		vtt.symbol = symbol;
 		vtt.initializer_kind = Global::STRUCTURED_VALUE;
-		AddAddressItem(&vtt, state_.class_vtable_symbols[entity],
-			static_cast<std::int64_t>(PrimaryAddressPoint(facts)));
-		for (std::size_t ordinal = 0;
-			ordinal < state_.class_construction_vtable_symbols[entity].size();
-			++ordinal)
-		{
-			const std::vector<SymbolId>& construction =
-				state_.class_construction_vtable_symbols[entity][ordinal];
-			if (construction.empty()) continue;
-			const EntityId base = program_.DirectBase(entity, ordinal).entity;
-			std::size_t cursor = 0;
-			AddConstructionVttSubtree(&vtt, base,
-				program_.DirectBase(entity, ordinal).offset,
-				construction, &cursor);
-			if (cursor != construction.size())
-				ThrowLoweringInternal("construction VTT subtree is oversized");
-		}
-		for (std::size_t view = 0; view < facts.views.size(); ++view)
-		{
-			if (!facts.views[view].stores_vptr) continue;
-			AddAddressItem(&vtt,
-				state_.class_view_vtable_symbols[entity][view],
-				static_cast<std::int64_t>(facts.views[view].address_point));
-		}
+		AddVttEntries(&vtt, entity, entity, 0, true);
+		if (vtt.items.size() != state_.class_vtt_layouts[entity].complete_size)
+			ThrowLoweringInternal("VTT does not match its layout");
 		output_.globals.push_back(vtt);
 		if (stats_) ++stats_->globals;
 	}
 
+	// The vbase offset's place relative to the address point, which a VMI
+	// base's __offset_flags carry for a virtual base (Itanium 2.9.5).
 	std::int64_t VirtualBaseRttiRow(EntityId entity, EntityId target) const
 	{
-		if (entity >= graph_.class_polymorphism.size()) return -24;
-		const EntityRecord& owner = program_.entities[entity];
-		for (std::size_t ordinal = 0;
-			ordinal < owner.virtual_base_count; ++ordinal)
-			if (program_.VirtualBase(entity, ordinal).entity == target)
-				return -static_cast<std::int64_t>(
-					graph_.class_polymorphism[entity].address_point) +
-					(output_.host_object_emission ? static_cast<std::int64_t>(
-						graph_.class_polymorphism[entity].virtual_call_offsets.size()) * 8 : 0) +
-					static_cast<std::int64_t>(ordinal) * 8;
-		return -24;
+		std::uint32_t ordinal = 0;
+		if (entity >= graph_.class_polymorphism.size() ||
+			!program_.FindVirtualBase(entity, target, 0, &ordinal))
+			return -24;
+		return -24 - 8 * static_cast<std::int64_t>(
+			graph_.class_polymorphism[entity].virtual_base_rows[ordinal]);
 	}
 
 	std::uint32_t RttiBaseFlags(EntityId entity)
@@ -1980,6 +1942,7 @@ private:
 				state_.class_view_deleting_slot_symbols[entity][0]);
 			for (std::size_t view = 0; view < facts.views.size(); ++view)
 			{
+				if (!facts.views[view].stores_vptr) continue;
 				EmitVtableView(entity, entity,
 					state_.class_view_vtable_symbols[entity][view],
 					facts.views[view].offset, facts.views[view].slots,

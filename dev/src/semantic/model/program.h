@@ -456,14 +456,19 @@ struct DirectBaseEdge
 		  virtual_base(virtual_base_) {}
 };
 
+// A class's virtual bases are listed (their ordinals) in inheritance graph
+// order, the order they are allocated in; construction_rank is the base's
+// place in construction order (N3485 12.6.2p10: depth-first, so a virtual
+// base's own virtual bases come first).
 struct VirtualBaseLayout
 {
 	EntityId entity;
 	std::uint64_t offset;
+	std::uint32_t construction_rank;
 
 	VirtualBaseLayout(EntityId entity_ = kNoEntity,
 		std::uint64_t offset_ = 0)
-		: entity(entity_), offset(offset_) {}
+		: entity(entity_), offset(offset_), construction_rank(0) {}
 };
 
 // Data member pointers inside an object that zero-initialization sets to

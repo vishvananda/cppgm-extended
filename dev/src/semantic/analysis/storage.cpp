@@ -64,7 +64,6 @@ Analyzer::Analyzer(GraphStorage& graph, std::ostream& output,
 	  braced_fact_cache_misses_(0), function_signature_lookups_(0),
 	  polymorphic_classes_(0), virtual_slots_(0),
 	  virtual_signature_lookups_(0), virtual_overrides_(0),
-	  polymorphic_virtual_view_generation_(0),
 	  polymorphic_virtual_view_lookups_(0),
 	  polymorphic_virtual_view_merges_(0),
 	  virtual_slot_lookups_(0), vtable_demands_(0),
@@ -179,8 +178,6 @@ std::size_t Analyzer::DeclarationStorageBytes() const
 		virtual_base_layout_fact_marks_.capacity() * sizeof(std::uint32_t) +
 		virtual_base_layout_scratch_.capacity() *
 			sizeof(std::pair<EntityId, std::uint32_t>) +
-		polymorphic_virtual_view_marks_.capacity() * sizeof(std::uint32_t) +
-		polymorphic_virtual_view_indices_.capacity() * sizeof(std::uint32_t) +
 		entity_constructors_.capacity() * sizeof(std::vector<BindingId>) +
 		pending_inherited_default_constructors_.capacity() *
 			sizeof(std::vector<BindingId>) +

@@ -23,6 +23,18 @@ std::uint64_t AlignLayoutOffset(std::uint64_t value, std::uint64_t alignment)
 	return value + alignment - remainder;
 }
 
+bool MemberKeepsPodLayout(const Program& program, const BindingRecord& member)
+{
+	if (member.access != ACCESS_PUBLIC || member.has_default_member_initializer)
+		return false;
+	const TypeRecord& top = program.types.Get(member.type);
+	if (top.kind == TYPE_LVALUE_REFERENCE || top.kind == TYPE_RVALUE_REFERENCE)
+		return false;
+	std::uint64_t count = 0;
+	const EntityId element = LayoutElementClass(program, member.type, &count);
+	return element == kNoEntity || program.entities[element].pod_for_layout;
+}
+
 }
 
 bool Analyzer::TypeHasKnownSize(TypeId type) const
@@ -154,28 +166,6 @@ void Analyzer::SetBindingRequestedAlignment(
 		program_->MutableBindingLayout(binding).requested_alignment = alignment;
 }
 
-// Whether the class or one of its subobjects is an empty class.
-bool Analyzer::ClassHasEmptySubobject(EntityId entity) const
-{
-	const EntityRecord& owner = program_->entities[entity];
-	if (owner.empty_class) return true;
-	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
-		if (program_->entities[
-			program_->DirectBase(entity, i).entity].has_empty_subobject)
-			return true;
-	if (entity >= entity_layout_members_.size()) return false;
-	const std::vector<ClassLayoutMember>& members = entity_layout_members_[entity];
-	for (std::size_t i = 0; i < members.size(); ++i)
-	{
-		std::uint64_t count = 0;
-		const EntityId element = members[i].bit_field ? kNoEntity :
-			LayoutElementClass(*program_, members[i].type, &count);
-		if (element != kNoEntity && count != 0 &&
-			program_->entities[element].has_empty_subobject) return true;
-	}
-	return false;
-}
-
 // The largest empty component a layout tries at offset zero: offsets below
 // it are where earlier components' empty subobjects can still conflict.
 std::uint64_t Analyzer::EmptyComponentRecordLimit(EntityId entity)
@@ -236,18 +226,6 @@ bool Analyzer::ClassSpecialMembersKeepPodLayout(EntityId entity)
 	return assignment.deleted_special_member || assignment.deleted_function ||
 		(assignment.defaulted_special_member &&
 		 !assignment.user_provided_special_member);
-}
-
-bool Analyzer::MemberKeepsPodLayout(const BindingRecord& member) const
-{
-	if (member.access != ACCESS_PUBLIC || member.has_default_member_initializer)
-		return false;
-	const TypeRecord& top = program_->types.Get(member.type);
-	if (top.kind == TYPE_LVALUE_REFERENCE || top.kind == TYPE_RVALUE_REFERENCE)
-		return false;
-	std::uint64_t count = 0;
-	const EntityId element = LayoutElementClass(*program_, member.type, &count);
-	return element == kNoEntity || program_->entities[element].pod_for_layout;
 }
 
 // A bit-field (2.4 II.1 with the SysV rules it defers to): at the next free
@@ -451,7 +429,8 @@ void Analyzer::CompleteClassLayout(EntityId entity)
 		if (member && (member->has_default_member_initializer ||
 			member->access != ACCESS_PUBLIC))
 			current_owner.is_aggregate = false;
-		if (member && !MemberKeepsPodLayout(*member)) pod_for_layout = false;
+		if (member && !MemberKeepsPodLayout(*program_, *member))
+			pod_for_layout = false;
 		// A shape-only completion lays out nothing: its members' types are the
 		// template's own parameters standing in, and a stand-in has no size.
 		// Asking for one turns a specialization that only had to exist into an

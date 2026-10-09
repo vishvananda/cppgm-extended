@@ -86,20 +86,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     call void @StringStream__StringStream(%t1)
     %t2 = addr $ss
     %t3 = index i8 %t2, 0
-    %t4 = load typed ptr %t3
-    %t5 = index i8 %t4, -24
-    %t6 = load typed i64 %t5
-    %t7 = index i8 %t3, %t6
-    call void @OStream__mark(%t3, %t7)
-    %t8 = addr $ss
-    %t9 = load typed ptr %t8
-    %t10 = index i8 %t9, -24
-    %t11 = load typed i64 %t10
-    %t12 = index i8 %t8, %t11
-    %t13 = index i8 %t12, 0
-    %t14 = call i32 @IOS__get(%t13)
-    %t15 = cmp eq i32 %t14, 7
-    branch %t15, ^cond_then_1, ^cond_else_2
+    call void @OStream__mark(%t3)
+    %t4 = addr $ss
+    %t5 = load typed ptr %t4
+    %t6 = index i8 %t5, -24
+    %t7 = load typed i64 %t6
+    %t8 = index i8 %t4, %t7
+    %t9 = index i8 %t8, 0
+    %t10 = call i32 @IOS__get(%t9)
+    %t11 = cmp eq i32 %t10, 7
+    branch %t11, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -110,8 +106,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t16 = load typed i32 $cond__1
-    return i32 %t16
+    %t12 = load typed i32 $cond__1
+    return i32 %t12
 }
 function @StringStream__StringStream(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN12StringStreamC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -134,13 +130,18 @@ function @StringStream__StringStream(%this : ptr [object_bytes=16]) -> void [bin
     store typed ptr %t11, %t9
     return void
 }
-function @OStream__mark(%this : ptr [object_bytes=16], %__vbptr0 : ptr) -> void [binding=weak, object=_ZN7OStream4markEv, inline_hint=yes] {
+function @OStream__mark(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7OStream4markEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
-    %t1 = index i8 %__vbptr0, 0
-    call void @IOS__set(%t1, 7)
+    %t1 = load typed ptr $this
+    %t2 = load typed ptr %t1
+    %t3 = index i8 %t2, -24
+    %t4 = load typed i64 %t3
+    %t5 = index i8 %t1, %t4
+    %t6 = index i8 %t5, 0
+    call void @IOS__set(%t6, 7)
     return void
 }
 function @IOS__get(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_ZNK3IOS3getEv, inline_hint=yes] {

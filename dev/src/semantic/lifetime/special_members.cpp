@@ -1194,39 +1194,28 @@ void Analyzer::AddSynthesizedConstructorBody(
 	{
 		if (function.synthesized_prefix_size == 0)
 		{
-			for (std::size_t base_ordinal = 0;
-				base_ordinal < owner.direct_base_count; ++base_ordinal)
+			const bool base_entry =
+				program_->bindings[function.binding].constructor_base_entry;
+			const auto add_base = [&](EntityId base_entity, std::uint64_t offset,
+				bool virtual_base)
 			{
-			++special_member_subobject_visits_;
-				const DirectBaseEdge& edge = program_->DirectBase(
-					entity, base_ordinal);
-				if (program_->bindings[function.binding].constructor_base_entry &&
-					edge.virtual_base)
-				{
-					const BindingId selected = ConstructorForSubobject(
-						program_->entities[edge.entity].type,
-						function.special_member);
-					if (selected != kNoBinding &&
-						!GetFunction(selected).trivial_special_member)
-						DemandFunction(EnsureConstructorBaseEntry(selected));
-					continue;
-				}
-				const EntityRecord& base =
-					program_->entities[edge.entity];
-			BindingId selected = ConstructorForSubobject(
-				base.type, function.special_member);
-			if (selected == kNoBinding)
-				ThrowInternalCompilerError(
-					"synthesized base constructor is missing");
-			const FunctionInfo& selected_function = GetFunction(selected);
-			if (!base.empty_class || !selected_function.trivial_special_member ||
-				(complete_constructor_unwind_ && !base.trivial_destructor))
-			{
+				++special_member_subobject_visits_;
+				const EntityRecord& base = program_->entities[base_entity];
+				BindingId selected = ConstructorForSubobject(
+					base.type, function.special_member);
+				if (selected == kNoBinding)
+					ThrowInternalCompilerError(
+						"synthesized base constructor is missing");
+				const FunctionInfo& selected_function = GetFunction(selected);
+				if (base.empty_class && selected_function.trivial_special_member &&
+					(!complete_constructor_unwind_ || base.trivial_destructor))
+					return;
 				const std::uint32_t step = MakeDump(
 					DUMP_SPECIAL_MEMBER_SUBOBJECT_ACTION, base.type);
 				dump_.nodes[step].base_projection_count = 1;
-				dump_.nodes[step].base_projection_offset = edge.offset;
+				dump_.nodes[step].base_projection_offset = offset;
 				dump_.nodes[step].has_base_projection_offset = true;
+				dump_.nodes[step].virtual_base_subobject = virtual_base;
 				if (!selected_function.trivial_special_member)
 				{
 					selected = EnsureConstructorBaseEntry(selected);
@@ -1236,7 +1225,35 @@ void Analyzer::AddSynthesizedConstructorBody(
 					DemandFunction(selected);
 				}
 				dump_.Add(construction, step);
+			};
+			// N3485 12.6.2p10: the most derived class's constructor builds
+			// every virtual base first, depth-first; a base entry leaves them
+			// to it.
+			const std::vector<std::uint32_t> order = base_entry ?
+				std::vector<std::uint32_t>() :
+				VirtualBaseConstructionOrder(*program_, entity);
+			for (std::size_t rank = 0; rank < order.size(); ++rank)
+			{
+				const VirtualBaseLayout& layout =
+					program_->VirtualBase(entity, order[rank]);
+				add_base(layout.entity, layout.offset, true);
 			}
+			for (std::size_t base_ordinal = 0;
+				base_ordinal < owner.direct_base_count; ++base_ordinal)
+			{
+				const DirectBaseEdge& edge = program_->DirectBase(
+					entity, base_ordinal);
+				if (!edge.virtual_base)
+					add_base(edge.entity, edge.offset, false);
+				else if (base_entry)
+				{
+					const BindingId selected = ConstructorForSubobject(
+						program_->entities[edge.entity].type,
+						function.special_member);
+					if (selected != kNoBinding &&
+						!GetFunction(selected).trivial_special_member)
+						DemandFunction(EnsureConstructorBaseEntry(selected));
+				}
 			}
 		}
 		if (entity < entity_data_members_.size())
@@ -1397,6 +1414,7 @@ void Analyzer::AddSynthesizedAssignmentBody(
 				dump_.nodes[step].base_projection_count = 1;
 				dump_.nodes[step].base_projection_offset = edge.offset;
 				dump_.nodes[step].has_base_projection_offset = true;
+				dump_.nodes[step].virtual_base_subobject = edge.virtual_base;
 				dump_.nodes[step].selected_binding = selected;
 				dump_.Add(assignment, step);
 				if (!GetFunction(selected).defined)

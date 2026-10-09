@@ -84,6 +84,28 @@ EntityId LayoutElementClass(const Program& program, TypeId type,
 		record->entity : kNoEntity;
 }
 
+bool ClassHasEmptySubobject(const Program& program,
+	const ClassLayoutMemberTable& table, EntityId entity)
+{
+	const EntityRecord& owner = program.entities[entity];
+	if (owner.empty_class) return true;
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+		if (program.entities[
+			program.DirectBase(entity, i).entity].has_empty_subobject)
+			return true;
+	if (entity >= table.size()) return false;
+	const std::vector<ClassLayoutMember>& members = table[entity];
+	for (std::size_t i = 0; i < members.size(); ++i)
+	{
+		std::uint64_t count = 0;
+		const EntityId element = members[i].bit_field ? kNoEntity :
+			LayoutElementClass(program, members[i].type, &count);
+		if (element != kNoEntity && count != 0 &&
+			program.entities[element].has_empty_subobject) return true;
+	}
+	return false;
+}
+
 EmptySubobjectMap::EmptySubobjectMap()
 	: program_(0), members_(0), count_(0), visits_(0), max_offset_(0),
 	  record_limit_(0)

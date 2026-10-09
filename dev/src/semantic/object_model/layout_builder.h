@@ -37,6 +37,14 @@ struct ClassLayoutCursor
 EntityId LayoutElementClass(const Program& program, TypeId type,
 	std::uint64_t* count);
 
+// Whether a class just laid out, or one of its subobjects, is an empty class.
+bool ClassHasEmptySubobject(const Program& program,
+	const ClassLayoutMemberTable& table, EntityId entity);
+
+// A completed class's virtual base ordinals in construction order.
+std::vector<std::uint32_t> VirtualBaseConstructionOrder(const Program& program,
+	EntityId entity);
+
 // The empty class subobjects a class layout has placed (2.4 II.2-3): two
 // subobjects of one type never share an offset, and only empty ones can
 // meet.  A non-empty component lies below the data size, where only a later

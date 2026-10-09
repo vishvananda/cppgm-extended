@@ -41,6 +41,14 @@ const std::vector<VirtualSlotFact>& SlotsForView(
 	return view == 0 ? facts.slots : facts.views[view - 1].slots;
 }
 
+std::uint32_t VirtualBaseRow(const std::vector<ClassPolymorphismFacts>& facts,
+	EntityId entity, std::size_t ordinal)
+{
+	if (entity >= facts.size() || ordinal >= facts[entity].virtual_base_rows.size())
+		ThrowInternalCompilerError("virtual base has no vtable row");
+	return facts[entity].virtual_base_rows[ordinal];
+}
+
 EntityId VirtualResultEntity(const Program& program, BindingId binding)
 {
 	if (binding == kNoBinding || binding >= program.bindings.size())
@@ -57,31 +65,6 @@ EntityId VirtualResultEntity(const Program& program, BindingId binding)
 	return named.kind == TYPE_NAMED ? named.entity : kNoEntity;
 }
 
-}
-
-void Analyzer::BeginPolymorphicVirtualViewIndex(
-	const ClassPolymorphismFacts& facts)
-{
-	if (polymorphic_virtual_view_marks_.size() < program_->entities.size())
-	{
-		polymorphic_virtual_view_marks_.resize(program_->entities.size(), 0);
-		polymorphic_virtual_view_indices_.resize(program_->entities.size(), 0);
-	}
-	if (polymorphic_virtual_view_generation_ ==
-		std::numeric_limits<std::uint32_t>::max())
-	{
-		std::fill(polymorphic_virtual_view_marks_.begin(),
-			polymorphic_virtual_view_marks_.end(), 0);
-		polymorphic_virtual_view_generation_ = 0;
-	}
-	const std::uint32_t generation = ++polymorphic_virtual_view_generation_;
-	for (std::size_t i = 0; i < facts.views.size(); ++i)
-	{
-		if (!facts.views[i].virtual_base) continue;
-		polymorphic_virtual_view_marks_[facts.views[i].entity] = generation;
-		polymorphic_virtual_view_indices_[facts.views[i].entity] =
-			static_cast<std::uint32_t>(i);
-	}
 }
 
 void Analyzer::MergeSharedVirtualView(PolymorphicViewFact* retained,
@@ -135,30 +118,45 @@ void Analyzer::MergeSharedVirtualView(PolymorphicViewFact* retained,
 void Analyzer::AppendPolymorphicView(ClassPolymorphismFacts* facts,
 	const PolymorphicViewFact& view)
 {
-	if (!view.virtual_base)
+	if (view.virtual_anchor == kNoEntity)
 	{
 		facts->views.push_back(view);
 		return;
 	}
 	++polymorphic_virtual_view_lookups_;
-	const EntityId entity = view.entity;
-	if (entity >= polymorphic_virtual_view_marks_.size())
-		ThrowInternalCompilerError("virtual view identity is out of range");
-	if (polymorphic_virtual_view_marks_[entity] ==
-		polymorphic_virtual_view_generation_)
+	for (std::size_t i = 0; i < facts->views.size(); ++i)
 	{
-		const std::uint32_t index = polymorphic_virtual_view_indices_[entity];
-		if (index >= facts->views.size())
-			ThrowInternalCompilerError("virtual view index is invalid");
-		MergeSharedVirtualView(&facts->views[index], view);
+		PolymorphicViewFact& retained = facts->views[i];
+		if (retained.virtual_anchor != view.virtual_anchor ||
+			retained.entity != view.entity ||
+			retained.virtual_anchor_offset != view.virtual_anchor_offset)
+			continue;
+		MergeSharedVirtualView(&retained, view);
+		retained.virtual_base = retained.virtual_base || view.virtual_base;
 		++polymorphic_virtual_view_merges_;
 		return;
 	}
-	polymorphic_virtual_view_marks_[entity] =
-		polymorphic_virtual_view_generation_;
-	polymorphic_virtual_view_indices_[entity] =
-		static_cast<std::uint32_t>(facts->views.size());
 	facts->views.push_back(view);
+}
+
+// A view inherited through a direct base lies in a virtual base when it does
+// in the base, or in the base itself when that base is virtual.
+void Analyzer::InheritPolymorphicViewAnchor(const DirectBaseEdge& edge,
+	const PolymorphicViewFact& inherited, PolymorphicViewFact* view) const
+{
+	view->virtual_anchor = kNoEntity;
+	view->virtual_anchor_offset = 0;
+	if (inherited.virtual_anchor_ordinal != kNoDumpEdge)
+	{
+		view->virtual_anchor = program_->VirtualBase(
+			edge.entity, inherited.virtual_anchor_ordinal).entity;
+		view->virtual_anchor_offset = inherited.virtual_anchor_offset;
+	}
+	else if (edge.virtual_base)
+	{
+		view->virtual_anchor = edge.entity;
+		view->virtual_anchor_offset = inherited.offset;
+	}
 }
 
 void Analyzer::PublishVirtualBaseStats()
@@ -318,7 +316,6 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 		class_polymorphism_.resize(static_cast<std::size_t>(entity) + 1);
 	ClassPolymorphismFacts& facts = class_polymorphism_[entity];
 	if (facts.complete) return;
-	BeginPolymorphicVirtualViewIndex(facts);
 	EntityRecord& owner = program_->entities[entity];
 	const std::size_t primary = InitializeClassPolymorphismBases(entity);
 	if (primary != owner.direct_base_count)
@@ -335,6 +332,8 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 			PolymorphicViewFact view = inherited.views[i];
 			view.direct_base_ordinal = static_cast<std::uint32_t>(primary);
 			view.relative_offset = inherited.views[i].offset;
+			InheritPolymorphicViewAnchor(program_->DirectBase(entity, primary),
+				inherited.views[i], &view);
 			AppendPolymorphicView(&facts, view);
 		}
 	}
@@ -352,6 +351,7 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 			PolymorphicViewFact view(edge.entity,
 				static_cast<std::uint32_t>(ordinal));
 			view.slots = inherited.slots;
+			if (edge.virtual_base) view.virtual_anchor = edge.entity;
 			AppendPolymorphicView(&facts, view);
 		}
 		if (!inherited.primary_ancestors.empty())
@@ -361,6 +361,7 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 				PolymorphicViewFact alias(inherited.primary_ancestors[i],
 					static_cast<std::uint32_t>(ordinal), 0, false);
 				alias.slots = inherited.slots;
+				if (edge.virtual_base) alias.virtual_anchor = edge.entity;
 				AppendPolymorphicView(&facts, alias);
 			}
 		}
@@ -369,6 +370,7 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 			PolymorphicViewFact view = inherited.views[i];
 			view.direct_base_ordinal = static_cast<std::uint32_t>(ordinal);
 			view.relative_offset = inherited.views[i].offset;
+			InheritPolymorphicViewAnchor(edge, inherited.views[i], &view);
 			AppendPolymorphicView(&facts, view);
 		}
 	}
@@ -523,6 +525,89 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 	facts.complete = true;
 }
 
+// A view lies where its virtual anchor is placed in this class, else at its
+// direct base's offset.
+void Analyzer::AnchorPolymorphicView(EntityId entity,
+	const DirectBaseEdge& edge, PolymorphicViewFact* view)
+{
+	view->virtual_anchor_ordinal = kNoDumpEdge;
+	std::uint64_t anchor_offset = 0;
+	std::uint32_t anchor_ordinal = 0;
+	if (view->virtual_anchor == kNoEntity || !program_->FindVirtualBase(
+		entity, view->virtual_anchor, &anchor_offset, &anchor_ordinal))
+	{
+		view->virtual_anchor = kNoEntity;
+		view->virtual_anchor_offset = 0;
+		view->offset = edge.offset + view->relative_offset;
+		return;
+	}
+	view->offset = anchor_offset + view->virtual_anchor_offset;
+	view->virtual_anchor_ordinal = anchor_ordinal;
+}
+
+// A final overrider declared in the view's class or one of its bases runs
+// on that view's own subobject (a class repeated as a base elsewhere in the
+// object is not the one this table is for).
+bool Analyzer::ViewOverriderOffset(EntityId entity,
+	const PolymorphicViewFact* view, EntityId target, std::uint64_t* offset) const
+{
+	if (!view || target == kNoEntity || target == entity) return false;
+	if (target == view->entity)
+	{
+		*offset = view->offset;
+		return true;
+	}
+	if (!program_->IsBaseOf(target, view->entity)) return false;
+	if (program_->FindVirtualBase(view->entity, target))
+		return program_->FindVirtualBase(entity, target, offset);
+	std::uint64_t relative = 0;
+	bool ambiguous = false;
+	std::vector<std::uint32_t> path;
+	if (!program_->QueryBasePath(view->entity, target, 0, 0, &relative,
+		&ambiguous, &path) || ambiguous)
+		return false;
+	EntityId current = view->entity;
+	for (std::size_t i = 0; i < path.size(); ++i)
+	{
+		const DirectBaseEdge& edge = program_->DirectBase(current, path[i]);
+		if (edge.virtual_base) return false;
+		current = edge.entity;
+	}
+	*offset = view->offset + relative;
+	return true;
+}
+
+// Itanium C++ ABI 2.5.2: a class's vbase offsets are its primary base's
+// rows (at the same places, the table being shared), then its other virtual
+// bases in inheritance graph order, row 0 nearest the address point.
+void Analyzer::AssignVirtualBaseRows(EntityId entity)
+{
+	ClassPolymorphismFacts& facts = class_polymorphism_[entity];
+	const EntityRecord& owner = program_->entities[entity];
+	facts.virtual_base_rows.assign(owner.virtual_base_count, kNoDumpEdge);
+	std::uint32_t next = 0;
+	const EntityId primary = facts.primary_ancestors.empty() ?
+		kNoEntity : facts.primary_ancestors[0];
+	if (primary != kNoEntity && primary < class_polymorphism_.size())
+	{
+		const std::vector<std::uint32_t>& inherited =
+			class_polymorphism_[primary].virtual_base_rows;
+		std::vector<EntityId> order(inherited.size(), kNoEntity);
+		for (std::size_t base = 0; base < inherited.size(); ++base)
+			order[inherited[base]] = program_->VirtualBase(primary, base).entity;
+		for (std::size_t row = 0; row < order.size(); ++row)
+		{
+			std::uint32_t ordinal = 0;
+			if (!program_->FindVirtualBase(entity, order[row], 0, &ordinal))
+				ThrowInternalCompilerError("primary virtual base is not inherited");
+			facts.virtual_base_rows[ordinal] = next++;
+		}
+	}
+	for (std::size_t base = 0; base < owner.virtual_base_count; ++base)
+		if (facts.virtual_base_rows[base] == kNoDumpEdge)
+			facts.virtual_base_rows[base] = next++;
+}
+
 void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 {
 	if (entity >= class_polymorphism_.size()) return;
@@ -530,9 +615,11 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 	facts.virtual_base_offsets.clear();
 	facts.virtual_call_offsets.clear();
 	const EntityRecord& owner = program_->entities[entity];
+	AssignVirtualBaseRows(entity);
+	facts.virtual_base_offsets.assign(owner.virtual_base_count, 0);
 	for (std::size_t base = 0; base < owner.virtual_base_count; ++base)
-		facts.virtual_base_offsets.push_back(static_cast<std::int64_t>(
-			program_->VirtualBase(entity, base).offset));
+		facts.virtual_base_offsets[facts.virtual_base_rows[base]] =
+			static_cast<std::int64_t>(program_->VirtualBase(entity, base).offset);
 	for (std::size_t view = 0; view < facts.views.size(); ++view)
 	{
 		PolymorphicViewFact& current = facts.views[view];
@@ -542,7 +629,7 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 			ThrowInternalCompilerError("polymorphic view has no direct-base owner");
 		const DirectBaseEdge& edge = program_->DirectBase(
 			entity, current.direct_base_ordinal);
-		current.offset = edge.offset + current.relative_offset;
+		AnchorPolymorphicView(entity, edge, &current);
 		current.virtual_base = false;
 		current.virtual_base_ordinal = kNoDumpEdge;
 		current.virtual_base_offsets.clear();
@@ -556,8 +643,12 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 			current.virtual_base = true;
 			current.virtual_base_ordinal = virtual_ordinal;
 			current.offset = virtual_offset;
+			current.virtual_anchor = current.entity;
+			current.virtual_anchor_ordinal = virtual_ordinal;
+			current.virtual_anchor_offset = 0;
 		}
 		const EntityRecord& view_owner = program_->entities[current.entity];
+		current.virtual_base_offsets.assign(view_owner.virtual_base_count, 0);
 		for (std::size_t base = 0; base < view_owner.virtual_base_count; ++base)
 		{
 			const EntityId target =
@@ -565,9 +656,10 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 			std::uint64_t target_offset = 0;
 			if (!program_->FindVirtualBase(entity, target, &target_offset))
 				ThrowInternalCompilerError("view virtual base has no complete offset");
-			current.virtual_base_offsets.push_back(
+			current.virtual_base_offsets[VirtualBaseRow(
+				class_polymorphism_, current.entity, base)] =
 				static_cast<std::int64_t>(target_offset) -
-				static_cast<std::int64_t>(current.offset));
+				static_cast<std::int64_t>(current.offset);
 		}
 		if (current.virtual_base)
 		{
@@ -598,7 +690,8 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 			const EntityId target =
 				program_->bindings[slots[slot].function].member_owner;
 			std::uint64_t target_offset = 0;
-			if (target != entity && target != kNoEntity &&
+			if (!ViewOverriderOffset(entity, view == 0 ? 0 : &facts.views[view - 1],
+				target, &target_offset) && target != entity && target != kNoEntity &&
 				!program_->FindVirtualBase(entity, target, &target_offset) &&
 				!program_->QueryBasePath(entity, target, 0, 0, &target_offset))
 				ThrowInternalCompilerError("virtual final overrider has no object path");
@@ -621,17 +714,10 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 					virtual_ordinal >= program_->entities[result].virtual_base_count)
 					ThrowInternalCompilerError(
 						"covariant result has no finalized virtual-base slot");
-				const ClassPolymorphismFacts& result_facts =
-					class_polymorphism_[result];
-				const std::uint64_t row = 8 *
-					static_cast<std::uint64_t>(virtual_ordinal);
-				if (row >= result_facts.address_point)
-					ThrowInternalCompilerError(
-						"covariant virtual-base row is outside the vtable prefix");
 				slots[slot].return_adjustment_virtual = true;
-				slots[slot].return_vtable_offset =
-					static_cast<std::int64_t>(row) -
-					static_cast<std::int64_t>(result_facts.address_point);
+				slots[slot].return_vtable_offset = -24 - 8 *
+					static_cast<std::int64_t>(VirtualBaseRow(
+						class_polymorphism_, result, virtual_ordinal));
 			}
 			else
 			{

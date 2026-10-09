@@ -238,6 +238,51 @@ void RecordNullMemberPointerRuns(Program& program, EntityId entity,
 
 }
 
+namespace
+{
+
+// Each direct base's virtual bases in its construction order, then the base
+// itself when it is virtual.
+void RankVirtualBaseConstruction(const Program& program, EntityId entity,
+	std::vector<VirtualBaseLayout>* layouts)
+{
+	std::vector<EntityId> order;
+	order.reserve(layouts->size());
+	const EntityRecord& owner = program.entities[entity];
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& edge = program.DirectBase(entity, i);
+		const EntityRecord& base = program.entities[edge.entity];
+		std::vector<EntityId> inherited(base.virtual_base_count, kNoEntity);
+		for (std::size_t k = 0; k < base.virtual_base_count; ++k)
+		{
+			const VirtualBaseLayout& layout = program.VirtualBase(edge.entity, k);
+			inherited[layout.construction_rank] = layout.entity;
+		}
+		if (edge.virtual_base) inherited.push_back(edge.entity);
+		for (std::size_t k = 0; k < inherited.size(); ++k)
+			if (std::find(order.begin(), order.end(), inherited[k]) == order.end())
+				order.push_back(inherited[k]);
+	}
+	for (std::size_t i = 0; i < layouts->size(); ++i)
+		(*layouts)[i].construction_rank = static_cast<std::uint32_t>(
+			std::find(order.begin(), order.end(), (*layouts)[i].entity) -
+			order.begin());
+}
+
+}
+
+std::vector<std::uint32_t> VirtualBaseConstructionOrder(
+	const Program& program, EntityId entity)
+{
+	const EntityRecord& owner = program.entities[entity];
+	std::vector<std::uint32_t> order(owner.virtual_base_count, 0);
+	for (std::size_t i = 0; i < owner.virtual_base_count; ++i)
+		order[program.VirtualBase(entity, i).construction_rank] =
+			static_cast<std::uint32_t>(i);
+	return order;
+}
+
 void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 	std::size_t packing_alignment, ClassLayoutCursor* cursor, bool* empty_class)
 {
@@ -283,6 +328,7 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 		layouts[i].offset = offset;
 	}
 	cursor->alignment = std::max(cursor->alignment, owner.requested_alignment);
+	RankVirtualBaseConstruction(*program_, entity, &layouts);
 	program_->SetVirtualBaseLayouts(entity, layouts);
 	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
 	{
@@ -305,7 +351,8 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 	owner.data_size = cursor->data_size;
 	if (owner.pod_for_layout)
 		owner.nonvirtual_size = owner.data_size = owner.object_size;
-	owner.has_empty_subobject = ClassHasEmptySubobject(entity);
+	owner.has_empty_subobject = ClassHasEmptySubobject(
+		*program_, entity_layout_members_, entity);
 	owner.layout_complete = true;
 	bit_field_layout_.Assign(program_,
 		owner.pod_for_layout ? owner.object_size : member_data_size);
@@ -337,9 +384,11 @@ void Analyzer::AddVirtualBaseInitializationActions(EntityId entity,
 			ThrowInternalCompilerError("direct virtual base has no layout fact");
 		direct_ordinals[virtual_ordinal] = static_cast<std::uint32_t>(candidate);
 	}
-	for (std::size_t virtual_ordinal = 0;
-		virtual_ordinal < owner.virtual_base_count; ++virtual_ordinal)
+	const std::vector<std::uint32_t> order =
+		VirtualBaseConstructionOrder(*program_, entity);
+	for (std::size_t rank = 0; rank < order.size(); ++rank)
 	{
+		const std::size_t virtual_ordinal = order[rank];
 		const VirtualBaseLayout& layout =
 			program_->VirtualBase(entity, virtual_ordinal);
 		const std::size_t direct_ordinal = direct_ordinals[virtual_ordinal];

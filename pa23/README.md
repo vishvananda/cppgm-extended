@@ -149,8 +149,17 @@ PA23 supports the following in addition to the PA22 subset:
 - supported constructor and hidden-argument forwarding cases: a by-value parameter of a
   class with virtual bases carries each virtual base's subobject address as a hidden
   pointer argument after the visible parameters, since the complete type is visible to
-  both caller and callee; a reference or pointer parameter carries no such hidden argument
-  and instead reaches its virtual bases through the object's own vtable at each use
+  both caller and callee. A reference or pointer parameter carries no such hidden argument
+  and instead reaches its virtual bases through the object's own vtable at each use. So
+  does the implicit object of any member function other than a base-object constructor or
+  destructor, since Itanium passes `this` and the visible arguments
+- reaching a virtual base through a reference or pointer by that base's own vbase-offset
+  row, even when it is a virtual base of another virtual base
+- virtual-base construction by the most derived class's constructor, implicit and
+  synthesized constructors included: depth-first and left to right, so a virtual base's
+  own virtual bases are constructed before it, with destruction in reverse order. A
+  synthesized copy constructor or assignment operator reaches the virtual bases of an
+  object that may be a base subobject through that object's vtable
 - polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
   bases
 - virtual dispatch through primary views whose virtual-base ABI carries
@@ -194,8 +203,8 @@ To complete PA23, implement these goals:
 
 The following are explicitly out of scope for PA23:
 
-- virtual-base constructor, copy, assignment, and destructor sequencing beyond the already
-  supported simple generated cases
+- virtual-base constructor, copy, assignment, and destructor sequencing beyond the
+  supported cases above
 - polymorphic multiple inheritance with virtual destructors
 - reference-form `dynamic_cast`
 - `dynamic_cast` and RTTI cases that require `bad_cast` / `bad_typeid`
@@ -235,7 +244,22 @@ The same monotonic-extension rule applies here:
 For Itanium-layout vtable segments, emit any vcall-offset rows before the
 virtual-base-offset rows, followed by offset-to-top, RTTI, and the function
 slots. Track each segment's address point from the rows actually emitted for
-that segment instead of using one class-wide negative-row count.
+that segment instead of using one class-wide negative-row count. The
+virtual-base-offset rows follow the Itanium ABI (2.5.2): the first virtual
+base in inheritance graph order sits nearest the address point, after the rows
+a primary base already places there, and a VMI descriptor's `__offset_flags`
+name the row. A primary base of a secondary base shares that base's table and
+has no table of its own in the group.
+
+The VTT follows Itanium 2.6.2. It holds the primary vtable; a sub-VTT for each
+direct non-virtual base that has virtual bases (without its virtual sub-VTTs);
+the secondary virtual pointers in inheritance graph order, one for each
+dynamic base that has virtual bases or lies in a virtual base and is not a
+non-virtual primary base; then a sub-VTT for each virtual base that has
+virtual bases. A base-object constructor takes the tables for its secondary
+virtual pointers from the VTT, and the rest from its own vtable group.
+Construction vtable groups lay a base out for the complete object's virtual
+bases.
 
 Keep a synthesized constructor or destructor base entry's ABI identity
 separate from inlining policy. The entry may need its own object symbol or
