@@ -402,6 +402,29 @@ protected:
 		return result;
 	}
 
+	// Itanium C++ ABI 2.7: the cookie is max(sizeof(size_t), alignof(T))
+	// bytes before the array, the count in its last eight bytes.
+	std::size_t ArrayCookieSize(const DumpNode& record) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		return derived.program_.ArrayCookieSize(record.operand_type);
+	}
+
+	Operand ArrayCookieOperand(const DumpNode& record) const
+	{
+		return Operand(static_cast<std::int64_t>(ArrayCookieSize(record)),
+			LowI64());
+	}
+
+	Operand ArrayCountAddress(const DumpNode& record, const Operand& raw_pointer,
+		const Operand& user_pointer)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (ArrayCookieSize(record) == 8) return raw_pointer;
+		return derived.IndexAddress(LowI8(), user_pointer,
+			Operand(-8, LowI64()), false);
+	}
+
 	Operand EmitArrayCount(const DumpNode& record, const Operand& byte_size)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
@@ -425,7 +448,7 @@ protected:
 			subtract.op = LOW_OP_SUB;
 			subtract.type = LowI64();
 			subtract.first = byte_size;
-			subtract.second = Operand(8, LowI64());
+			subtract.second = ArrayCookieOperand(record);
 			derived.Emit(subtract);
 		}
 		const std::size_t leaf_size =
@@ -476,7 +499,7 @@ protected:
 				add.op = LOW_OP_ADD;
 				add.type = LowI64();
 				add.first = scaled;
-				add.second = Operand(8, LowI64());
+				add.second = ArrayCookieOperand(record);
 				derived.Emit(add);
 			}
 			arguments.Push(derived.Convert(size,
@@ -684,14 +707,13 @@ protected:
 			children[0], retain_size, &byte_size);
 		Operand user_pointer = raw_pointer;
 		if (record.array_cookie)
-			user_pointer = derived.IndexAddress(LowI8(), raw_pointer,
-				Operand(8, LowI64()), false);
-		if (record.array_cookie)
 		{
+			user_pointer = derived.IndexAddress(LowI8(), raw_pointer,
+				ArrayCookieOperand(record), false);
 			Instruction cookie(Instruction::STORE);
 			cookie.type = LowI64();
 			cookie.first = EmitArrayCount(record, byte_size);
-			cookie.second = raw_pointer;
+			cookie.second = ArrayCountAddress(record, raw_pointer, user_pointer);
 			derived.Emit(cookie);
 		}
 		if (record.value_initialization)
@@ -705,7 +727,7 @@ protected:
 				subtract.op = LOW_OP_SUB;
 				subtract.type = LowI64();
 				subtract.first = byte_size;
-				subtract.second = Operand(8, LowI64());
+				subtract.second = ArrayCookieOperand(record);
 				derived.Emit(subtract);
 			}
 			EmitArrayZeroInitialization(children[0], user_pointer, data_size);
@@ -744,8 +766,10 @@ protected:
 		derived.EmitBranch(condition, nonnull, end);
 		derived.SelectBlock(nonnull);
 		const Operand raw_pointer = derived.IndexAddress(LowI8(), pointer,
-			Operand(-8, LowI64()), false);
-		const Operand count = derived.LoadStorage(raw_pointer, LowI64());
+			Operand(-static_cast<std::int64_t>(ArrayCookieSize(record)), LowI64()),
+			false);
+		const Operand count = derived.LoadStorage(
+			ArrayCountAddress(record, raw_pointer, pointer), LowI64());
 		if (record.selected_binding != kNoBinding)
 		{
 			const Operand index_slot(derived.EnsureGeneratedSlot(

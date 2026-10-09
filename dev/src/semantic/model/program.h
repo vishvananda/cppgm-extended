@@ -945,6 +945,9 @@ public:
 	EntityId EntityForScope(ScopeId scope) const;
 	std::size_t SizeOf(TypeId type) const;
 	std::size_t AlignOf(TypeId type) const;
+	// Itanium C++ ABI 2.7: an array cookie occupies max(sizeof(size_t),
+	// alignof(element)) bytes; the count is in its last eight.
+	std::size_t ArrayCookieSize(TypeId element) const;
 	std::string RenderType(TypeId type) const;
 	void BuildEmissionPath(ScopeId owner, NameId terminal,
 		std::vector<NameId>* path) const;

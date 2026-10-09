@@ -339,7 +339,11 @@ PA12 supports the following in addition to the PA11 subset:
   including class-specific allocation/deallocation selection, explicit global
   qualification, and suppression of scalar initialization after a supported
   non-throwing allocation returns null
-- array `new` / `delete[]` expressions over the supported object subset
+- array `new` / `delete[]` expressions over the supported object subset; the
+  request is a `std::size_t`, and the count is kept in an Itanium C++ ABI
+  (2.7) cookie of max(sizeof(size_t), alignof(T)) bytes before the array
+  unless T has a trivial destructor and its usual array deallocation
+  function takes no size
 - union definitions and union object lifetime in the supported non-template
   class subset, including block-scope anonymous-member injection and an
   explicit variant initializer taking precedence over another variant's

@@ -1417,8 +1417,7 @@ private:
 		const std::vector<BindingId>& member_constructors,
 		const std::vector<BindingId>& member_destructors,
 		const std::vector<std::uint8_t>& trivial_member_constructors);
-	ExpressionInfo AnalyzeNewExpression(NodeId node, ScopeId scope,
-		TypeId target);
+	ExpressionInfo AnalyzeNewExpression(NodeId node, ScopeId scope, TypeId target);
 	ExpressionInfo AnalyzeArrayNewExpression(NodeId node, NodeId type_node,
 		ScopeId scope, TypeId target);
 	ExpressionInfo AnalyzeDeleteExpression(NodeId node, ScopeId scope,
@@ -1428,6 +1427,7 @@ private:
 		bool explicit_global, TypeId target);
 	BindingId SelectUsualDeallocation(ScopeId scope, EntityId entity,
 		bool explicit_global, bool array, TypeId object_type);
+	bool ArrayNeedsCookie(EntityId entity, bool explicit_global);
 	ExpressionInfo MaterializeTemporary(const ExpressionInfo& initializer);
 	ExpressionInfo MaterializeDiscardedClassResult(ExpressionInfo value);
 	ExpressionInfo AnalyzeClassFunctionalCast(TypeId cast_type, ScopeId scope,

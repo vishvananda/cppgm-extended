@@ -87,6 +87,37 @@ BindingId Analyzer::SelectUsualDeallocation(ScopeId scope,
 	return selected;
 }
 
+// Itanium C++ ABI 2.7: array new stores the element count in a cookie
+// before the array unless the element type's destructor is trivial and its
+// usual array deallocation function is not the two-argument (size) form;
+// delete[] finds the count by the same rule. The global usual array
+// deallocation function is always the one-argument form.
+bool Analyzer::ArrayNeedsCookie(EntityId entity, bool explicit_global)
+{
+	if (!IsClassEntity(*program_, entity)) return false;
+	if (!program_->entities[entity].trivial_destructor) return true;
+	if (explicit_global) return false;
+	const LookupResult member = program_->LookupMember(entity,
+		program_->names.Intern("operatordelete[]"), LOOKUP_ORDINARY);
+	if (member.ordinary == kNoBinding ||
+		program_->bindings[member.ordinary].kind != BIND_FUNCTION)
+		return false;
+	const std::vector<BindingId> candidates = FunctionSet(member.ordinary);
+	const TypeId size_type =
+		program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+	bool sized = false;
+	for (std::size_t i = 0; i < candidates.size(); ++i)
+	{
+		const TypeId function_type = GetFunction(candidates[i]).type;
+		const TypeRecord& function = program_->types.Get(function_type);
+		if (function.parameter_count == 1) return false;
+		sized = sized || (function.parameter_count == 2 &&
+			program_->types.RemoveTopCv(program_->types.Parameters(
+				function_type)[1]) == size_type);
+	}
+	return sized;
+}
+
 ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 	NodeId type_node, ScopeId scope, TypeId target)
 {
@@ -140,7 +171,10 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 		ThrowSemanticError("invalid array new extent");
 	const EntityId entity = EntityOf(leaf_type);
 	const bool class_elements = IsClassEntity(*program_, entity);
-	const std::uint64_t cookie_size = class_elements ? 8 : 0;
+	const bool explicit_global = FindChild(node, ::cppgm::syntax::STAG_GLOBAL_SCOPE) != kNoNode;
+	if (class_elements) EnsureClassDefinition(leaf_type);
+	const std::uint64_t cookie_size = ArrayNeedsCookie(entity, explicit_global) ?
+		program_->ArrayCookieSize(leaf_type) : 0;
 	const std::uint64_t row_size = program_->SizeOf(result_element_type);
 	const std::uint64_t leaf_size = program_->SizeOf(leaf_type);
 	if (leaf_size == 0 || row_size % leaf_size != 0)
@@ -205,7 +239,6 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 	}
 	std::vector<NodeId> argument_syntax(1, kNoNode);
 	std::vector<ExpressionInfo> arguments(1, allocation_size);
-	const bool explicit_global = FindChild(node, ::cppgm::syntax::STAG_GLOBAL_SCOPE) != kNoNode;
 	std::vector<BindingId> candidates;
 	EntityId naming_class = kNoEntity;
 	if (!explicit_global && class_elements)
@@ -634,7 +667,8 @@ ExpressionInfo Analyzer::AnalyzeDeleteExpression(NodeId node,
 		dump_.nodes[expression].virtual_slot = complete_slot + 1;
 	}
 	dump_.nodes[expression].array_action = array;
-	dump_.nodes[expression].array_cookie = array && class_object;
+	dump_.nodes[expression].array_cookie =
+		array && ArrayNeedsCookie(entity, explicit_global);
 	dump_.Add(expression, operand.node);
 	ExpressionInfo result;
 	result.node = expression;

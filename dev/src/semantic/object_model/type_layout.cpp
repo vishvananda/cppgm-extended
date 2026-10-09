@@ -112,6 +112,12 @@ std::size_t Program::SizeOf(TypeId type) const
 	}
 }
 
+std::size_t Program::ArrayCookieSize(TypeId element) const
+{
+	const std::size_t alignment = AlignOf(element);
+	return alignment > 8 ? alignment : 8;
+}
+
 std::size_t Program::AlignOf(TypeId type) const
 {
 	const TypeRecord* record = &types.Get(type);
