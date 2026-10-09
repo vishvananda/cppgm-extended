@@ -118,13 +118,14 @@ bool Analyzer::ArrayNeedsCookie(EntityId entity, bool explicit_global)
 	return sized;
 }
 
-// N3485 5.3.4p7: a runtime array new count that is negative or larger than
-// `maximum` (the largest whose request fits the implementation limit)
+// N3485 5.3.4p7: a runtime array new count that is negative, larger than
+// `maximum` (the largest whose request fits the implementation limit) or
+// smaller than `minimum` (the initializer-clauses of a braced-init-list)
 // obtains no storage and throws std::bad_array_new_length. The count is
 // converted to std::size_t through a checked conversion unless its type
 // cannot hold such a value.
 ExpressionInfo Analyzer::CheckArrayExtent(const ExpressionInfo& extent,
-	std::uint64_t maximum)
+	std::uint64_t maximum, std::uint64_t minimum)
 {
 	const TypeId type = program_->types.RemoveTopCv(EffectiveType(extent.type));
 	const TypeRecord& record = program_->types.Get(type);
@@ -132,8 +133,10 @@ ExpressionInfo Analyzer::CheckArrayExtent(const ExpressionInfo& extent,
 		record.fundamental == FUND_BOOL;
 	const std::uint64_t bits = record.kind == TYPE_BITINT ? record.bound :
 		static_cast<std::uint64_t>(program_->SizeOf(type)) * 8;
-	if (boolean || (IsUnsignedIntegral(type) && bits < 64 &&
-		(std::uint64_t(1) << bits) - 1 <= maximum)) return extent;
+	if (minimum == 0 && (boolean || (IsUnsignedIntegral(type) && bits < 64 &&
+		(std::uint64_t(1) << bits) - 1 <= maximum))) return extent;
+	if (minimum > maximum || minimum > std::numeric_limits<std::uint32_t>::max())
+		ThrowSemanticResourceLimit("array new initializer is too large");
 	ExpressionInfo checked;
 	checked.type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
 	checked.category = VALUE_PRVALUE;
@@ -141,8 +144,43 @@ ExpressionInfo Analyzer::CheckArrayExtent(const ExpressionInfo& extent,
 	dump_.Add(checked.node, extent.node);
 	dump_.nodes[checked.node].array_extent_check = true;
 	dump_.nodes[checked.node].array_count = maximum;
+	dump_.nodes[checked.node].array_extent_minimum =
+		static_cast<std::uint32_t>(minimum);
 	++expression_count_;
 	return checked;
+}
+
+// The braced-init-list of an array new-expression (8.5.4p3, 5.3.4p17): the
+// first elements are copy-initialized from its clauses and the rest from an
+// empty initializer list, which value-initializes them. An empty list is
+// value-initialization, returned as a typed result without a node; clauses
+// for class elements are not supported.
+ExpressionInfo Analyzer::AnalyzeArrayNewList(NodeId node, ScopeId scope,
+	TypeId element)
+{
+	ExpressionInfo list;
+	list.node = kNoDumpEdge;
+	const NodeId initializer = FindChild(node, ::cppgm::syntax::STAG_INITIALIZER);
+	if (initializer == kNoNode) return list;
+	const NodeId braced = FirstSemanticChild(initializer);
+	if (braced == kNoNode || !arena_->IsTag(braced, ::cppgm::syntax::STAG_BRACED_INIT_LIST))
+		ThrowSemanticError("array new initializer is not a braced-init-list");
+	if (FirstSemanticChild(braced) == kNoNode)
+	{
+		list.type = element;
+		return list;
+	}
+	TypeId leaf = program_->types.RemoveTopCv(element);
+	while (program_->types.Get(leaf).kind == TYPE_ARRAY)
+		leaf = program_->types.RemoveTopCv(program_->types.Get(leaf).child);
+	if (IsClassEntity(*program_, EntityOf(leaf)))
+		ThrowSemanticError("array new of class elements from initializer-clauses is unsupported");
+	list = AnalyzeBracedInit(braced, scope, program_->types.Array(element, 0));
+	const TypeRecord& shape = program_->types.Get(list.type);
+	if (dump_.nodes[list.node].kind != DUMP_BRACED_INIT_LIST ||
+		shape.kind != TYPE_ARRAY || shape.IsIncompleteArray())
+		ThrowInternalCompilerError("array new initializer has no element plan");
+	return list;
 }
 
 ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
@@ -196,6 +234,11 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 	ExpressionInfo extent = AnalyzeExpression(extent_syntax, scope);
 	if (!IsIntegral(extent.type) || (extent.constant && extent.value < 0))
 		ThrowSemanticError("invalid array new extent");
+	const ExpressionInfo list = AnalyzeArrayNewList(node, scope, result_element_type);
+	value_initialization = value_initialization ||
+		(list.node == kNoDumpEdge && list.type != kNoType);
+	const std::uint64_t listed = list.node == kNoDumpEdge ? 0 :
+		program_->types.Get(list.type).bound;
 	const EntityId entity = EntityOf(leaf_type);
 	const bool class_elements = IsClassEntity(*program_, entity);
 	const bool explicit_global = FindChild(node, ::cppgm::syntax::STAG_GLOBAL_SCOPE) != kNoNode;
@@ -214,6 +257,8 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 	if (extent.constant)
 	{
 		const std::uint64_t count = static_cast<std::uint64_t>(extent.value);
+		if (count < listed)
+			ThrowSemanticError("array new count is smaller than its initializer list");
 		if (count > (std::numeric_limits<std::uint64_t>::max() - cookie_size) /
 			row_size)
 			ThrowSemanticResourceLimit("array allocation size overflow");
@@ -260,7 +305,7 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 		// The request is limited, as for a constant count, to PTRDIFF_MAX.
 		allocation_size = CheckArrayExtent(extent,
 			(static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) -
-			 cookie_size) / row_size);
+			 cookie_size) / row_size, listed);
 		if (row_size != 1)
 			allocation_size = combine(allocation_size, row_size, "*");
 		if (cookie_size != 0)
@@ -326,8 +371,10 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 			DemandFunction(destructor);
 		}
 	}
-	const BindingId cleanup = construction == kNoDumpEdge ? kNoBinding :
-		SelectUsualDeallocation(
+	const bool throwing_list = list.node != kNoDumpEdge &&
+		!InitializationActionsAreNonthrowing(list.node);
+	const BindingId cleanup = construction == kNoDumpEdge && !throwing_list ?
+		kNoBinding : SelectUsualDeallocation(
 			scope, entity, explicit_global, true, leaf_type);
 	const TypeId result_type = program_->types.Pointer(result_element_type);
 	const std::uint32_t result_node = MakeDump(DUMP_NEW_EXPRESSION,
@@ -343,6 +390,7 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 	result_record.array_count = flat_count;
 	dump_.Add(result_node, allocation.node);
 	if (construction != kNoDumpEdge) dump_.Add(result_node, construction);
+	if (list.node != kNoDumpEdge) dump_.Add(result_node, list.node);
 	ExpressionInfo result;
 	result.node = result_node;
 	result.type = result_type;

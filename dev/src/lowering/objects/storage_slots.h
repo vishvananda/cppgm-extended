@@ -237,7 +237,14 @@ protected:
 			if (record.value_initialization)
 				(void)derived.EnsureGeneratedSlot(children[0],
 					"zeroinit_offset", lowering::ir::LowI64());
-			if (children.size() == 2)
+			if (children.size() == 2 &&
+				derived.arena_.nodes[children[1]].kind == DUMP_BRACED_INIT_LIST)
+			{
+				if (!derived.ArrayListFillsArray(record, children[1]))
+					(void)derived.EnsureGeneratedSlot(children[1],
+						"zeroinit_offset", lowering::ir::LowI64());
+			}
+			else if (children.size() == 2)
 			{
 				(void)derived.EnsureGeneratedSlot(children[1],
 					"array_new_index", lowering::ir::LowI64());

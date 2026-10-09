@@ -191,7 +191,8 @@ struct DumpNode
 	bool array_cookie : 1;
 	bool array_count_constant : 1;
 	// A conversion of an array new count to std::size_t that obtains no
-	// storage (throws std::bad_array_new_length) above array_count elements.
+	// storage (throws std::bad_array_new_length) above array_count elements
+	// or below array_extent_minimum.
 	bool array_extent_check : 1;
 	bool value_initialization : 1;
 	bool elide_empty_constructor : 1;
@@ -251,6 +252,8 @@ struct DumpNode
 		std::uint32_t lexical_cleanup_plan; // DUMP_DESTRUCTOR_ACTION; 0 = none
 		// DUMP_SPECIAL_MEMBER_SUBOBJECT_ACTION; binding + 1, 0 = none
 		std::uint32_t construction_destructor;
+		// DUMP_CAST_EXPRESSION with array_extent_check: the fewest elements
+		std::uint32_t array_extent_minimum;
 	};
 
 	BindingId ConstructionDestructor() const

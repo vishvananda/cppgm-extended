@@ -72,7 +72,7 @@ if(scalar(@ARGV) != 3)
 
 my ($app, $native_reference, $root) = @ARGV;
 my @tests = collect_tests($root,
-	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|stable-prefix-query-boundary|parameter-object-extent-boundary|parameter-object-identity|parameter-destruction-full-expression|array-new-size-width|array-new-cookie-layout|array-new-length-check|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|rejected-stable-prefix-query-[^.]+)\.cpp$/);
+	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|stable-prefix-query-boundary|parameter-object-extent-boundary|parameter-object-identity|parameter-destruction-full-expression|array-new-size-width|array-new-cookie-layout|array-new-length-check|array-new-braced-list|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|rejected-stable-prefix-query-[^.]+)\.cpp$/);
 die "No PA12 survivor-property tests found under $root\n" if !@tests;
 
 for my $test (@tests)
@@ -212,6 +212,18 @@ for my $test (@tests)
 		}
 		die "$test: \@make_unsigned checks a count that cannot be invalid\n"
 			if function_body($test, $lowir, 'make_unsigned') =~ /\@\Q$runtime\E\b/;
+		compile_and_run($native_reference, $test, $directory, $path);
+		next;
+	}
+	if($test =~ /array-new-braced-list/) {
+		my ($runtime) = $lowir =~
+			/^declare function \@(\w+)\([^\n]*\brole=bad_array_new_length\b/m;
+		my $body = function_body($test, $lowir, 'listed');
+		my $check = defined($runtime) ? index($body, "call void \@$runtime()") : -1;
+		my $allocation = index($body, 'call ptr @operatornew__(');
+		die "$test: \@listed does not check its count against the 3 clauses before allocating\n"
+			if $body !~ /^\s+%\w+ = binary sub i64 %\w+, 3$/m || $check < 0 ||
+				$allocation < 0 || $check > $allocation;
 		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}

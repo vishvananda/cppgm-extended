@@ -1415,17 +1415,16 @@ private:
 		const std::vector<TypeId>& parameter_types,
 		const std::vector<BindingId>& members);
 	ExpressionInfo AnalyzeNewExpression(NodeId node, ScopeId scope, TypeId target);
-	ExpressionInfo AnalyzeArrayNewExpression(NodeId node, NodeId type_node,
-		ScopeId scope, TypeId target);
-	ExpressionInfo AnalyzeDeleteExpression(NodeId node, ScopeId scope,
-		TypeId target);
+	ExpressionInfo AnalyzeArrayNewExpression(NodeId node, NodeId type_node, ScopeId scope, TypeId target);
+	ExpressionInfo AnalyzeDeleteExpression(NodeId node, ScopeId scope, TypeId target);
 	ExpressionInfo BuildScalarNewResult(ScopeId scope, TypeId object_type,
 		BindingId selected, std::uint32_t allocation_node, std::uint32_t construction,
 		bool explicit_global, TypeId target);
 	BindingId SelectUsualDeallocation(ScopeId scope, EntityId entity,
 		bool explicit_global, bool array, TypeId object_type);
 	bool ArrayNeedsCookie(EntityId entity, bool explicit_global);
-	ExpressionInfo CheckArrayExtent(const ExpressionInfo& extent, std::uint64_t maximum);
+	ExpressionInfo CheckArrayExtent(const ExpressionInfo& extent, std::uint64_t maximum, std::uint64_t minimum);
+	ExpressionInfo AnalyzeArrayNewList(NodeId node, ScopeId scope, TypeId element);
 	ExpressionInfo MaterializeTemporary(const ExpressionInfo& initializer);
 	ExpressionInfo MaterializeDiscardedClassResult(ExpressionInfo value);
 	ExpressionInfo AnalyzeClassFunctionalCast(TypeId cast_type, ScopeId scope,

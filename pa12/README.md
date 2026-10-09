@@ -350,6 +350,11 @@ PA12 supports the following in addition to the PA11 subset:
   is called, the expression calls the `bad_array_new_length` runtime role,
   which throws `std::bad_array_new_length` (5.3.4p7); a count type that cannot
   hold such a value needs no check
+- an array `new` braced-init-list copy-initializes the first elements from its
+  initializer-clauses and value-initializes the rest; an empty list
+  value-initializes every element. A count smaller than the number of
+  clauses is ill-formed when constant and obtains no storage at run time, as
+  above. Clauses for class elements are outside the supported subset
 - union definitions and union object lifetime in the supported non-template
   class subset, including block-scope anonymous-member injection and an
   explicit variant initializer taking precedence over another variant's

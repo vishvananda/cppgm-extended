@@ -403,9 +403,11 @@ protected:
 	}
 
 	// N3485 5.3.4p7: an array new count above the largest the request can
-	// hold (negative counts are huge once converted to std::size_t) obtains
-	// no storage; the expression throws std::bad_array_new_length through
-	// the C++ ABI's __cxa_throw_bad_array_new_length before allocating.
+	// hold (negative counts are huge once converted to std::size_t), or
+	// below the initializer-clauses of its braced-init-list, obtains no
+	// storage; the expression throws std::bad_array_new_length through the
+	// C++ ABI's __cxa_throw_bad_array_new_length before allocating. One
+	// unsigned comparison of count - minimum covers both bounds.
 	Operand LowerCheckedArrayExtent(std::uint32_t source, const DumpNode& cast)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
@@ -414,14 +416,28 @@ protected:
 		// A count wider than std::size_t is compared before it is narrowed.
 		const bool wide = count.type.width > size_type.width;
 		if (!wide) count = derived.Convert(count, size_type);
+		const std::uint64_t minimum = cast.array_extent_minimum;
+		Operand above = count;
+		if (minimum != 0)
+		{
+			above = derived.Temp(count.type);
+			Instruction subtract(Instruction::BINARY);
+			subtract.dest = above.id;
+			subtract.op = LOW_OP_SUB;
+			subtract.type = count.type;
+			subtract.first = count;
+			subtract.second = Operand(static_cast<std::int64_t>(minimum),
+				0, count.type);
+			derived.Emit(subtract);
+		}
 		const Operand invalid = derived.Temp(LowI64());
 		Instruction compare(Instruction::CMP);
 		compare.dest = invalid.id;
 		compare.op = LOW_OP_UGT;
 		compare.type = count.type;
-		compare.first = count;
-		compare.second = Operand(static_cast<std::int64_t>(cast.array_count),
-			0, count.type);
+		compare.first = above;
+		compare.second = Operand(static_cast<std::int64_t>(
+			cast.array_count - minimum), 0, count.type);
 		derived.Emit(compare);
 		if (derived.full_expression_cleanup_active_)
 			derived.EnsureFullExpressionCleanupSegment();
@@ -751,6 +767,70 @@ protected:
 		derived.SelectBlock(continuation);
 	}
 
+	// A constant count no larger than the braced-init-list leaves no element
+	// to value-initialize.
+	bool ArrayListFillsArray(const DumpNode& record, std::uint32_t list) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		return record.array_count_constant && record.array_count *
+			derived.program_.SizeOf(record.operand_type) ==
+			derived.program_.SizeOf(derived.arena_.nodes[list].type);
+	}
+
+	// The first elements from the braced-init-list's clauses, the rest
+	// value-initialized (zero: the elements are not classes); storage is
+	// freed if a clause throws.
+	void EmitArrayListInitialization(const DumpNode& record, std::uint32_t list,
+		const Operand& raw_pointer, const Operand& user_pointer,
+		const Operand& byte_size)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const TypeId list_type = derived.arena_.nodes[list].type;
+		const std::int64_t listed_bytes =
+			static_cast<std::int64_t>(derived.program_.SizeOf(list_type));
+		const bool guarded = record.object_binding != kNoBinding;
+		const BlockId cleanup = guarded ? derived.AddBlock(
+			derived.NewLabel("array_new_list_cleanup")) : BlockId(kNoLowId);
+		const BlockId continuation = guarded ? derived.AddBlock(
+			derived.NewLabel("array_new_list_cont")) : BlockId(kNoLowId);
+		if (guarded) derived.EmitEhTarget(Instruction::EH_TRY, cleanup);
+		derived.LowerRuntimeArrayValues(list_type, list, user_pointer, true);
+		if (guarded)
+		{
+			derived.Emit(Instruction(Instruction::EH_END));
+			derived.EmitJump(continuation);
+			derived.SelectBlock(cleanup);
+			const bool routes_to_try = derived.BeginExceptionTryCleanupDispatch();
+			EmitArrayDeallocation(record.object_binding, record, raw_pointer,
+				EmitArrayCount(record, byte_size));
+			derived.FinishExceptionCleanupDispatch(routes_to_try, false);
+			derived.SelectBlock(continuation);
+		}
+		if (ArrayListFillsArray(record, list)) return;
+		Operand data_size = byte_size;
+		if (record.array_cookie)
+		{
+			data_size = derived.Temp(LowI64());
+			Instruction subtract(Instruction::BINARY);
+			subtract.dest = data_size.id;
+			subtract.op = LOW_OP_SUB;
+			subtract.type = LowI64();
+			subtract.first = byte_size;
+			subtract.second = ArrayCookieOperand(record);
+			derived.Emit(subtract);
+		}
+		const Operand tail_size = derived.Temp(LowI64());
+		Instruction remaining(Instruction::BINARY);
+		remaining.dest = tail_size.id;
+		remaining.op = LOW_OP_SUB;
+		remaining.type = LowI64();
+		remaining.first = data_size;
+		remaining.second = Operand(listed_bytes, LowI64());
+		derived.Emit(remaining);
+		EmitArrayZeroInitialization(list, derived.IndexAddress(LowI8(),
+			user_pointer, Operand(listed_bytes, LowI64()), false), tail_size);
+	}
+
 	Operand LowerArrayNewExpression(std::uint32_t node,
 		const DumpNode& record, const NodeChildren& children)
 	{
@@ -790,7 +870,11 @@ protected:
 			}
 			EmitArrayZeroInitialization(children[0], user_pointer, data_size);
 		}
-		if (children.size() == 2)
+		if (children.size() == 2 &&
+			derived.arena_.nodes[children[1]].kind == DUMP_BRACED_INIT_LIST)
+			EmitArrayListInitialization(record, children[1], raw_pointer,
+				user_pointer, byte_size);
+		else if (children.size() == 2)
 			EmitArrayConstructorLoop(node, record, children[1], raw_pointer,
 				user_pointer, EmitArrayCount(record, byte_size));
 		return user_pointer;
