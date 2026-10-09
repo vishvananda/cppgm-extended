@@ -235,7 +235,6 @@ dev/src/semantic/declarations/analysis.cpp	PublishUsingAccess	1	dev/src/semantic
 dev/src/semantic/declarations/analysis.cpp	PublishVariableDeclarationFacts	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	StructuredSpecifierType	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	ValidateFunctionRefQualifier	1	dev/src/semantic/declarations/analysis.cpp	keep
-dev/src/semantic/declarations/analysis.cpp	ValidateNonmemberOperator	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/analysis.cpp	ValidateStaticMemberDeclaration	1	dev/src/semantic/declarations/analysis.cpp	keep
 dev/src/semantic/declarations/anonymous_unions.cpp	AnalyzeDeclaratorlessSimpleDeclaration	1	dev/src/semantic/declarations/anonymous_unions.cpp	keep
 dev/src/semantic/declarations/anonymous_unions.cpp	DeclareAnonymousUnionObject	1	dev/src/semantic/declarations/anonymous_unions.cpp	keep
@@ -254,6 +253,7 @@ dev/src/semantic/declarations/entity_ownership.cpp	AddInjectedStorageInitializat
 dev/src/semantic/declarations/entity_ownership.cpp	ClearInjectedConstructorInitializers	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/entity_ownership.cpp	RecordInjectedMemberInitializer	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/entity_ownership.cpp	RegisterInjectedStorageMember	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
+dev/src/semantic/declarations/entity_ownership.cpp	LocalEntityFunction	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/entity_ownership.cpp	RegisterLocalTypeAbiIdentity	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/entity_ownership.cpp	DeclareBlockScopeExternVariable	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/enums.cpp	AnalyzeEnum	1	dev/src/semantic/declarations/enums.cpp	keep
@@ -262,6 +262,7 @@ dev/src/semantic/declarations/friends.cpp	AnalyzeFriendClass	1	dev/src/semantic/
 dev/src/semantic/declarations/friends.cpp	AnalyzeFriendFunction	1	dev/src/semantic/declarations/friends.cpp	keep
 dev/src/semantic/declarations/functions.cpp	AnalyzeSimpleFunctionDeclaration	1	dev/src/semantic/declarations/functions.cpp	keep
 dev/src/semantic/declarations/functions.cpp	QueueFunctionDefinitionValidation	1	dev/src/semantic/declarations/functions.cpp	keep
+dev/src/semantic/declarations/functions.cpp	ValidateNonmemberOperator	1	dev/src/semantic/declarations/functions.cpp	keep
 dev/src/semantic/expressions/calls.cpp	AmbiguousOverloadDetail	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	AnalyzeAtomicOrderArgument	1	dev/src/semantic/expressions/calls.cpp	keep
 dev/src/semantic/expressions/calls.cpp	AnalyzeBuiltinCall	1	dev/src/semantic/expressions/calls.cpp	keep

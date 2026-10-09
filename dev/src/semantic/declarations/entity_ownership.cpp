@@ -29,6 +29,31 @@ void Analyzer::RegisterLocalTypeAbiIdentity(EntityId entity)
 	occurrences.Push(entity);
 }
 
+// The function whose body a local class or closure type belongs to.  A
+// constructor's or destructor's base entry analyzes its complete entry's
+// body again; the local entities are the complete entry's, one set for both
+// entries, as Itanium names them in C1 and D1 (5.1.6).
+BindingId Analyzer::LocalEntityFunction(BindingId function) const
+{
+	if (function == kNoBinding || function >= program_->bindings.size())
+		return function;
+	function = program_->bindings[function].canonical;
+	const BindingRecord& record = program_->bindings[function];
+	if (record.constructor_base_entry)
+	{
+		const BindingId complete = GetFunction(function).complete_constructor;
+		return complete == kNoBinding || complete == function ? function :
+			program_->bindings[complete].canonical;
+	}
+	if (!record.destructor_base_entry) return function;
+	for (BindingId destructor = 0;
+		destructor < destructor_base_entry_by_binding_.size(); ++destructor)
+		if (destructor != function &&
+			destructor_base_entry_by_binding_[destructor] == function)
+			return program_->bindings[destructor].canonical;
+	return function;
+}
+
 void Analyzer::RegisterInjectedStorageMember(BindingId alias,
 	BindingId storage, BindingId member)
 {

@@ -198,6 +198,21 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 				entity = generated_type_identities_[i].entity;
 				break;
 			}
+	// A constructor's or destructor's body is analyzed for its complete and
+	// its base entry; the second analysis declares the first's local classes.
+	const BindingId local_function = LocalEntityFunction(LocalTypeContext(
+		*program_, owner, current_function_context_));
+	const bool lifecycle_local = local_function != kNoBinding &&
+		(program_->bindings[local_function].constructor ||
+		 program_->bindings[local_function].destructor);
+	for (std::size_t i = 0; old.type == kNoType && lifecycle_local && i < local_type_identities_.size(); ++i)
+		if (local_type_identities_[i].node == node && local_type_identities_[i].function == local_function)
+		{
+			const TypeId type = program_->entities[local_type_identities_[i].entity].type;
+			if (!generated_identity) program_->SetTypeName(owner, lookup_name, type);
+			if (arena_->Payload(node).size() != 0) program_->AddBinding(owner, BIND_TYPE, lookup_name, type, false, 0, flavor);
+			return type;
+		}
 	if (old.type != kNoType)
 	{
 		const TypeRecord named = program_->types.Get(
@@ -220,8 +235,9 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 				specialization_identity,
 			ENTITY_EMISSION_OWNER_QUALIFIED);
 		created_entity = true;
-		const BindingId local_context = LocalTypeContext(
-			*program_, owner, current_function_context_);
+		const BindingId local_context = local_function;
+		if (lifecycle_local)
+			local_type_identities_.push_back(LocalTypeIdentity{node, local_context, entity});
 		if (program_->entities[entity].enclosing_class == kNoEntity &&
 			local_context != kNoBinding)
 		{
@@ -2856,42 +2872,6 @@ void Analyzer::PublishUsingAccess(BindingId alias,
 	target.no_inline = original.no_inline;
 	target.stable_prefix_query = original.stable_prefix_query;
 	target.function_effects = original.function_effects;
-}
-
-void Analyzer::ValidateNonmemberOperator(BindingId binding) const
-{
-	const BindingRecord& record = program_->bindings[binding];
-	const FunctionInfo& function = GetFunction(binding);
-	if (function.member_owner != kNoType || (record.member_owner != kNoEntity && record.static_member_function && (record.operator_kind == OPERATOR_CALL || record.operator_kind == OPERATOR_INDEX))) return;
-	if (record.operator_kind == OPERATOR_NONE ||
-		record.operator_kind == OPERATOR_LITERAL ||
-		record.operator_kind == OPERATOR_NEW ||
-		record.operator_kind == OPERATOR_NEW_ARRAY ||
-		record.operator_kind == OPERATOR_DELETE ||
-		record.operator_kind == OPERATOR_DELETE_ARRAY) return;
-	const TypeRecord function_type = program_->types.Get(function.type);
-	const TypeId* parameters = program_->types.Parameters(function.type);
-	for (std::size_t i = 0; i < function_type.parameter_count; ++i)
-	{
-		TypeId type = parameters[i];
-		const TypeRecord* shape = &program_->types.Get(type);
-		if (shape->kind == TYPE_LVALUE_REFERENCE ||
-			shape->kind == TYPE_RVALUE_REFERENCE)
-		{
-			type = shape->child;
-			shape = &program_->types.Get(type);
-		}
-		if (shape->kind == TYPE_QUALIFIED)
-		{
-			type = shape->child;
-			shape = &program_->types.Get(type);
-		}
-		if (shape->kind != TYPE_NAMED) continue;
-		const NamedFlavor flavor = program_->entities[shape->entity].flavor;
-		if (IsClassNamedFlavor(flavor) || IsEnumNamedFlavor(flavor)) return;
-	}
-	ThrowSemanticError(
-		"nonmember operator requires a class or enumeration parameter");
 }
 
 void Analyzer::ValidateFunctionRefQualifier(BindingId binding)

@@ -143,8 +143,7 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 		namespace_owner = program_->ParentScope(namespace_owner);
 	if (namespace_owner == kNoScope)
 		ThrowInternalCompilerError("lambda closure has no namespace owner");
-	const BindingId enclosing = current_function_context_ == kNoBinding ?
-		kNoBinding : program_->bindings[current_function_context_].canonical;
+	const BindingId enclosing = LocalEntityFunction(current_function_context_);
 	// One closure per lambda expression and context: its data member (every
 	// constructor analyzes a default member initializer, each class template
 	// specialization its static data member's initializer), the function of

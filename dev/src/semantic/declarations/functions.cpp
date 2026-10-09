@@ -60,6 +60,42 @@ void Analyzer::AnalyzeSimpleFunctionDeclaration(NodeId source_declaration,
 	dump_.Add(output_parent, declaration);
 }
 
+void Analyzer::ValidateNonmemberOperator(BindingId binding) const
+{
+	const BindingRecord& record = program_->bindings[binding];
+	const FunctionInfo& function = GetFunction(binding);
+	if (function.member_owner != kNoType || (record.member_owner != kNoEntity && record.static_member_function && (record.operator_kind == OPERATOR_CALL || record.operator_kind == OPERATOR_INDEX))) return;
+	if (record.operator_kind == OPERATOR_NONE ||
+		record.operator_kind == OPERATOR_LITERAL ||
+		record.operator_kind == OPERATOR_NEW ||
+		record.operator_kind == OPERATOR_NEW_ARRAY ||
+		record.operator_kind == OPERATOR_DELETE ||
+		record.operator_kind == OPERATOR_DELETE_ARRAY) return;
+	const TypeRecord function_type = program_->types.Get(function.type);
+	const TypeId* parameters = program_->types.Parameters(function.type);
+	for (std::size_t i = 0; i < function_type.parameter_count; ++i)
+	{
+		TypeId type = parameters[i];
+		const TypeRecord* shape = &program_->types.Get(type);
+		if (shape->kind == TYPE_LVALUE_REFERENCE ||
+			shape->kind == TYPE_RVALUE_REFERENCE)
+		{
+			type = shape->child;
+			shape = &program_->types.Get(type);
+		}
+		if (shape->kind == TYPE_QUALIFIED)
+		{
+			type = shape->child;
+			shape = &program_->types.Get(type);
+		}
+		if (shape->kind != TYPE_NAMED) continue;
+		const NamedFlavor flavor = program_->entities[shape->entity].flavor;
+		if (IsClassNamedFlavor(flavor) || IsEnumNamedFlavor(flavor)) return;
+	}
+	ThrowSemanticError(
+		"nonmember operator requires a class or enumeration parameter");
+}
+
 void Analyzer::QueueFunctionDefinitionValidation(BindingId binding)
 {
 	if (binding == kNoBinding) return;

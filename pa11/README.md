@@ -272,6 +272,9 @@ PA11 supports the following in addition to the PA10 procedural subset:
   taking precedence
 - local-class default member initializers that use an enclosing integral
   constant expression without odr-using the enclosing automatic object
+- a local class declared in a constructor's or destructor's body is one class
+  for every entry that runs the body (the complete object's and a base
+  subobject's), its members emitted once
 - aggregate initialization for the supported PA11 object subset, including namespace-scope
   aggregate arrays whose elements contain string-literal pointer members
 - local and namespace-scope class object lifetime:

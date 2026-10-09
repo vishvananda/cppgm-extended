@@ -2049,17 +2049,17 @@ private:
 	IndexedSequenceTable ordinary_class_exception_specifications_;
 	std::vector<ClassExceptionSpecificationFact> ordinary_class_exception_facts_;
 	std::vector<ClassPolymorphismFacts>& class_polymorphism_;
-	std::vector<std::uint32_t> virtual_slot_by_binding_;
-	std::vector<std::uint32_t> variable_node_by_binding_;
+	std::vector<std::uint32_t> virtual_slot_by_binding_, variable_node_by_binding_;
 	std::vector<ClassSpecialMemberFacts> class_special_members_;
-	std::vector<BindingId> implicit_constructor_by_entity_;
 	// Unifies generated class identities across repeated node analysis.
-	struct GeneratedTypeIdentity { NodeId node; ScopeId owner;
-		EntityId entity; };
+	struct GeneratedTypeIdentity { NodeId node; ScopeId owner; EntityId entity; };
+	// A constructor's or destructor's local class is one class for both entries.
+	struct LocalTypeIdentity { NodeId node; BindingId function; EntityId entity; };
 	std::vector<GeneratedTypeIdentity> generated_type_identities_;
+	std::vector<LocalTypeIdentity> local_type_identities_;
 	std::vector<std::uint8_t> operation_kind_by_name_, payload_token_kind_;
-	std::vector<BindingId> constructor_base_entry_by_binding_;
-	std::vector<BindingId> destructor_base_entry_by_binding_;
+	std::vector<BindingId> implicit_constructor_by_entity_, constructor_base_entry_by_binding_, destructor_base_entry_by_binding_;
+	BindingId LocalEntityFunction(BindingId function) const;
 	// Canonical constructor identity owns this monotonic elision fact.  A
 	// failure remains a correct conservative result after later declarations;
 	// success is published only from complete class facts and known bodies.
