@@ -1009,31 +1009,7 @@ void Analyzer::CompleteClassSpecialMembers(EntityId entity)
 			function.deferred = !deleted;
 		}
 	}
-	const FunctionInfo& copy = GetFunction(facts.copy_constructor);
-	const bool nontrivial_copy = copy.deleted_constructor ||
-		copy.deleted_special_member || !copy.trivial_special_member;
-	const bool nontrivial_move = facts.move_constructor == kNoBinding ||
-		!GetFunction(facts.move_constructor).trivial_special_member;
-	// PA12 may use a direct boundary when either available transfer is trivial.
-	EntityRecord& class_record = program_->entities[entity];
-	class_record.indirect_class_value_abi =
-		(nontrivial_copy && nontrivial_move) ||
-		!class_record.trivial_destructor;
-	if (!class_record.layout_complete)
-		ThrowInternalCompilerError("class boundary ABI requires completed layout");
-	const std::size_t object_size =
-		static_cast<std::size_t>(class_record.object_size);
-	// Nontrivial results require caller-owned storage, including empty and
-	// exactly 16-byte classes. Template or alias spelling does not change ABI.
-	class_record.indirect_class_result_abi = object_size > 16 ||
-		class_record.indirect_class_value_abi;
-	// Publish parameter passing beside result passing and transfer/lifecycle
-	// facts so lowering consumes class ABI decisions by entity identity.
-	const bool direct_derived_payload = class_record.has_direct_base &&
-		class_record.template_argument_count == 0 &&
-		class_record.trivial_destructor && object_size <= 16;
-	class_record.indirect_class_parameter_abi =
-		class_record.indirect_class_value_abi && !direct_derived_payload;
+	PublishClassCallAbi(entity);
 	ConfigureSynthesizedStoragePrefix(
 		entity, &GetMutableFunction(facts.copy_constructor));
 	if (facts.move_constructor != kNoBinding)
@@ -1044,6 +1020,59 @@ void Analyzer::CompleteClassSpecialMembers(EntityId entity)
 	if (facts.move_assignment != kNoBinding)
 		ConfigureSynthesizedStoragePrefix(
 			entity, &GetMutableFunction(facts.move_assignment));
+}
+
+// Itanium C++ ABI 3.1.2.3 and 3.1.3.1: a class that is non-trivial for the
+// purposes of calls is passed and returned by invisible reference, so the
+// callee's parameter is the object the caller's copy or move constructor
+// initialized (5.2.2p4, 8.5p15). That holds when a copy or move constructor
+// is non-trivial and not deleted, the destructor is non-trivial, or every
+// copy and move constructor is deleted; base classes, size and template
+// spelling do not matter.
+void Analyzer::PublishClassCallAbi(EntityId entity)
+{
+	const ClassSpecialMemberFacts& facts = class_special_members_[entity];
+	bool nontrivial_transfer = false;
+	bool usable_transfer = false;
+	const auto admit = [&](const FunctionInfo& function, bool trivial)
+	{
+		if (function.deleted_constructor || function.deleted_special_member ||
+			function.deleted_function) return;
+		usable_transfer = true;
+		nontrivial_transfer = nontrivial_transfer || !trivial;
+	};
+	const BindingId copy = program_->bindings[facts.copy_constructor].canonical;
+	const BindingId move = facts.move_constructor == kNoBinding ? kNoBinding :
+		program_->bindings[facts.move_constructor].canonical;
+	admit(GetFunction(copy), GetFunction(copy).trivial_special_member);
+	if (move != kNoBinding)
+		admit(GetFunction(move), GetFunction(move).trivial_special_member);
+	// A further copy or move constructor (X(X&) beside X(const X&)) is
+	// trivial only when defaulted and its selected counterpart is trivial.
+	if (entity < entity_constructors_.size())
+		for (std::size_t i = 0; i < entity_constructors_[entity].size(); ++i)
+		{
+			const BindingId other =
+				program_->bindings[entity_constructors_[entity][i]].canonical;
+			const FunctionInfo& function = GetFunction(other);
+			const SpecialMemberKind kind = function.special_member;
+			if (other == copy || other == move ||
+				(kind != SPECIAL_MEMBER_COPY_CONSTRUCTOR &&
+				 kind != SPECIAL_MEMBER_MOVE_CONSTRUCTOR)) continue;
+			const BindingId selected =
+				kind == SPECIAL_MEMBER_COPY_CONSTRUCTOR ? copy : move;
+			admit(function, !function.user_provided_special_member &&
+				function.defaulted_special_member && selected != kNoBinding &&
+				GetFunction(selected).trivial_special_member);
+		}
+	EntityRecord& class_record = program_->entities[entity];
+	class_record.indirect_class_value_abi = nontrivial_transfer ||
+		!usable_transfer || !class_record.trivial_destructor;
+	if (!class_record.layout_complete)
+		ThrowInternalCompilerError("class boundary ABI requires completed layout");
+	// Results larger than two eightbytes also use caller-owned storage.
+	class_record.indirect_class_result_abi = class_record.object_size > 16 ||
+		class_record.indirect_class_value_abi;
 }
 
 void Analyzer::AddSynthesizedPrefixLifetimes(const FunctionInfo& function,

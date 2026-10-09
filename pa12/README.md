@@ -102,6 +102,15 @@ For supported class value types, PA12 extends the PA11 lowering convention by in
 - indirect LowIR return destinations for return-by-value class objects
 - explicit LowIR-level materialization of supported copy/move/value transfers
 
+A class uses those indirect boundaries when it is non-trivial for the purposes
+of calls (Itanium C++ ABI 3.1.2.3): it has a non-trivial copy or move
+constructor that is not deleted, a non-trivial destructor, or only deleted copy
+and move constructors. Base classes, size and template spelling do not change
+that choice. The callee's parameter, or the caller's result object, is then the
+object the selected constructor initialized (5.2.2p4, 8.5p15). Other class
+values may cross the boundary directly as `obj<NxA>`; a result larger than 16
+bytes still uses caller storage.
+
 Every pointer boundary that denotes a complete object also carries the PA8
 `object_bytes=N` extent in emitted O0 LowIR. This includes the implicit object
 parameter of supported member functions, class references and indirect class

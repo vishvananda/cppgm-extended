@@ -37,7 +37,6 @@ comment	dev/src/semantic/constants/analysis.cpp	PA16	assignment boundary or comp
 comment	dev/src/semantic/declarations/analysis.cpp	PA7	assignment boundary or compatibility note
 comment	dev/src/semantic/extensions/range_for.cpp	PA20	assignment boundary or compatibility note
 comment	dev/src/semantic/initialization/allocation.cpp	PA18	assignment boundary or compatibility note
-comment	dev/src/semantic/lifetime/special_members.cpp	PA12	assignment boundary or compatibility note
 comment	dev/src/semantic/model/graph.h	PA7	assignment boundary or compatibility note
 comment	dev/src/semantic/presentation/type_projection.cpp	PA6	assignment boundary or compatibility note
 comment	dev/src/semantic/semantic.h	PA5	assignment boundary or compatibility note

@@ -632,6 +632,7 @@ dev/src/semantic/lifetime/special_members.cpp	EnsureImplicitConstructor	1	dev/sr
 dev/src/semantic/lifetime/special_members.cpp	EvaluateSynthesizedAssignment	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	EvaluateSynthesizedConstructor	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	InheritConstructors	1	dev/src/semantic/lifetime/special_members.cpp	keep
+dev/src/semantic/lifetime/special_members.cpp	PublishClassCallAbi	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	RegisterClassSpecialMember	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/lifetime/special_members.cpp	TryInheritConstructors	1	dev/src/semantic/lifetime/special_members.cpp	keep
 dev/src/semantic/object_model/class_layout.cpp	AccumulateClassZeroSpanFacts	1	dev/src/semantic/object_model/class_layout.cpp	keep

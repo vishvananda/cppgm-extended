@@ -35,40 +35,74 @@ public:
 	}
 
 private:
+	std::size_t ObjectBytes(TypeId type) const
+	{
+		const LowType storage = source_types_.LowerStorage(type);
+		return storage.kind == LOW_OBJECT ?
+			static_cast<std::size_t>(storage.width / 8) : 0;
+	}
+
+	// A thunk forwards its target's boundary unchanged: the caller's result
+	// storage and the addresses of by-address class parameters pass through,
+	// so the target's parameter is the object its caller initialized.
 	void AddParameter(Function* function, std::uint32_t ordinal,
-		const LowType& type, bool reference,
 		TypeId source = kNoType)
 	{
 		Parameter parameter;
 		parameter.name = lowering::presentation::InternOrdinalName(
 			output_, "arg", 3, ordinal);
-		parameter.type = type;
-		parameter.reference = reference;
-		if (type.kind == LOW_OBJECT)
+		parameter.by_address = source != kNoType &&
+			source_types_.PassesByAddress(source);
+		parameter.type = source == kNoType || parameter.by_address ?
+			LowPtr() : source_types_.Lower(source);
+		parameter.reference = source != kNoType &&
+			source_types_.IsReference(source);
+		if (parameter.by_address) parameter.object_bytes = ObjectBytes(source);
+		if (parameter.type.kind == LOW_OBJECT)
 			parameter.classes = lowering::abi::SysvObjectClasses(program_, source);
 		function->parameters.push_back(parameter);
 	}
 
-	void AttachArguments(Instruction* call, const TypeRecord& type,
-		const TypeId* source_parameters, const Operand& object)
+	void AddResultParameter(Function* function, TypeId result)
 	{
+		Parameter parameter;
+		parameter.name = lowering::ir::InternLocalName(output_, "ret");
+		parameter.type = LowPtr();
+		parameter.indirect_result = true;
+		parameter.object_bytes = ObjectBytes(result);
+		function->parameters.push_back(parameter);
+	}
+
+	void PushArgument(const Operand& value, std::uint8_t passing)
+	{
+		output_.call_arguments.push_back(value);
+		output_.call_argument_references.push_back(passing);
+		output_.call_argument_object_bytes.push_back(0);
+	}
+
+	void AttachArguments(Instruction* call, const TypeRecord& type,
+		const TypeId* source_parameters, const Operand& object,
+		bool indirect_result)
+	{
+		const std::uint32_t first = indirect_result ? 1 : 0;
 		call->extra_first = static_cast<std::uint32_t>(
 			output_.call_arguments.size());
 		call->extra_count = static_cast<std::uint32_t>(
-			type.parameter_count + 1);
-		output_.call_arguments.push_back(object);
-		output_.call_argument_references.push_back(
-			Instruction::CALL_PASS_VALUE);
-		output_.call_argument_object_bytes.push_back(0);
+			type.parameter_count + 1 + first);
+		if (indirect_result)
+			PushArgument(Operand(ParameterId(0), LowPtr()),
+				Instruction::CALL_PASS_INDIRECT_RESULT);
+		PushArgument(object, Instruction::CALL_PASS_VALUE);
 		for (std::size_t i = 0; i < type.parameter_count; ++i)
 		{
-			output_.call_arguments.push_back(Operand(
-				ParameterId(static_cast<std::uint32_t>(i + 1)),
-				source_types_.Lower(source_parameters[i])));
-			output_.call_argument_references.push_back(
-				source_types_.IsReference(source_parameters[i]) ?
+			const TypeId source = source_parameters[i];
+			const bool by_address = source_types_.PassesByAddress(source);
+			PushArgument(Operand(ParameterId(
+				static_cast<std::uint32_t>(i + 1 + first)),
+				by_address ? LowPtr() : source_types_.Lower(source)),
+				by_address ? Instruction::CALL_PASS_BY_ADDRESS :
+				source_types_.IsReference(source) ?
 					Instruction::CALL_PASS_REFERENCE : Instruction::CALL_PASS_VALUE);
-			output_.call_argument_object_bytes.push_back(0);
 		}
 	}
 
@@ -82,16 +116,18 @@ private:
 		const TypeId* parameters = program_.types.Parameters(binding.type);
 		Function function;
 		function.symbol = thunk.symbol;
-		function.result = source_types_.Lower(type.child);
+		const bool indirect_result = source_types_.ReturnsIndirect(type.child);
+		function.result = indirect_result ? LowVoid() :
+			source_types_.Lower(type.child);
 		if (function.result.kind == LOW_OBJECT)
 			function.result_classes =
 				lowering::abi::SysvObjectClasses(program_, type.child, true);
 		function.variadic = type.variadic;
-		AddParameter(&function, 0, LowPtr(), false);
+		if (indirect_result) AddResultParameter(&function, type.child);
+		AddParameter(&function, 0);
 		for (std::size_t i = 0; i < type.parameter_count; ++i)
 			AddParameter(&function, static_cast<std::uint32_t>(i + 1),
-				source_types_.Lower(parameters[i]),
-				source_types_.IsReference(parameters[i]), parameters[i]);
+				parameters[i]);
 		function.blocks.push_back(lowering::presentation::MakePresentedBlock(
 			output_, &function,
 			lowering::presentation::ExactBlockPresentation(output_, "entry")));
@@ -101,13 +137,13 @@ private:
 		Instruction index(Instruction::INDEX);
 		index.dest = adjusted.id;
 		index.type = LowI8();
-		index.first = Operand(ParameterId(0), LowPtr());
+		index.first = Operand(ParameterId(indirect_result ? 1 : 0), LowPtr());
 		index.second = Operand(thunk.this_adjustment, LowI64());
 		function.blocks[0].instructions.push_back(index);
 		Instruction call(Instruction::CALL);
 		call.type = function.result;
 		call.first = Operand(Operand::FUNCTION, thunk.target, LowPtr());
-		AttachArguments(&call, type, parameters, adjusted);
+		AttachArguments(&call, type, parameters, adjusted, indirect_result);
 		if (function.result.kind == LOW_VOID)
 			function.blocks[0].instructions.push_back(call);
 		else

@@ -216,6 +216,32 @@ bool SourceTypeLowering::IsComplexObject(TypeId type) const
 	return program_.types.Get(ExpressionObject(type)).kind == TYPE_COMPLEX;
 }
 
+// A complete class object non-trivial for the purposes of calls (Itanium
+// 3.1.2.3) is passed by address; complex values are passed in memory too.
+bool SourceTypeLowering::PassesByAddress(TypeId type) const
+{
+	if (IsReference(type)) return false;
+	if (IsComplexObject(type)) return true;
+	if (!IsClassObject(type)) return false;
+	const EntityRecord& entity =
+		program_.entities[program_.types.Get(ExpressionObject(type)).entity];
+	return entity.complete && entity.indirect_class_value_abi;
+}
+
+// Such a class, a class the psABI returns in memory (larger than two
+// eightbytes, an x87 or misaligned member) and a complex value are
+// returned through caller storage.
+bool SourceTypeLowering::ReturnsIndirect(TypeId type) const
+{
+	if (IsReference(type)) return false;
+	if (IsComplexObject(type)) return true;
+	if (!IsClassObject(type)) return false;
+	const EntityRecord& entity =
+		program_.entities[program_.types.Get(ExpressionObject(type)).entity];
+	return entity.complete &&
+		(entity.indirect_class_result_abi || entity.sysv_memory);
+}
+
 LowType SourceTypeLowering::LowerExpression(TypeId type) const
 {
 	return Lower(RemoveReference(type));

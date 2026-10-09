@@ -6,12 +6,10 @@ function @forward(%v : ptr [pass=by_address, object_bytes=4]) -> ptr [binding=st
     %t1 = load typed ptr $v
     return ptr %t1
 }
-function @take(%__param0 : obj<4x4>) -> void [binding=strong, object=_Z4take5value] {
+function @take(%__param0 : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z4take5value] {
   slot $__param0 : obj<4x4>
 
   block ^entry:
-    %t1 = addr $__param0
-    copyobj 4x4 %__param0, %t1
     return void
 }
 function @copy(%v : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z4copyRK5value] {
@@ -27,18 +25,18 @@ function @copy(%v : ptr [pass=by_address, object_bytes=4]) -> void [binding=stro
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $v : obj<4x4>
-  slot $argobj__1 : obj<4x4>
+  slot $arg__1 : obj<4x4>
 
   block ^entry:
     %t1 = addr $v
     call void @value__value(%t1)
     %t2 = addr $v
     call void @copy(%t2)
-    %t3 = addr $argobj__1
+    %t3 = addr $arg__1
     %t4 = addr $v
     %t5 = call ptr @forward(%t4)
     copyobj 4x4 %t5, %t3
-    call void @take($argobj__1)
+    call void @take(%t3)
     return i32 0
 }
 function @value__value__ov2(%this : ptr [alias=noalias, object_bytes=4], %other : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=weak, object=_ZN5valueC1ERKS_, inline_hint=yes] {

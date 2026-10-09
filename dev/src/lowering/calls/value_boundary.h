@@ -69,46 +69,13 @@ protected:
 	bool UsesIndirectClassResult(semantic::TypeId type) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
-		const semantic::TypeRecord& top = derived.program_.types.Get(type);
-		if (top.kind == semantic::TYPE_LVALUE_REFERENCE ||
-			top.kind == semantic::TYPE_RVALUE_REFERENCE)
-			return false;
-		if (derived.IsComplexObjectType(type)) return true;
-		if (!derived.IsClassObjectType(type)) return false;
-		const semantic::TypeId object_type = derived.ExpressionObjectType(type);
-		const semantic::TypeRecord& object = derived.program_.types.Get(object_type);
-		if (object.kind != semantic::TYPE_NAMED ||
-			!derived.program_.entities[object.entity].complete)
-			return false;
-		const semantic::EntityRecord& entity =
-			derived.program_.entities[object.entity];
-		// A class the psABI passes in memory (an x87 or misaligned member)
-		// returns through caller storage too.
-		return entity.indirect_class_result_abi || entity.sysv_memory;
+		return derived.source_types_.ReturnsIndirect(type);
 	}
 
 	bool UsesIndirectClassParameter(semantic::TypeId type) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
-		const semantic::TypeRecord& top = derived.program_.types.Get(type);
-		if (top.kind == semantic::TYPE_LVALUE_REFERENCE ||
-			top.kind == semantic::TYPE_RVALUE_REFERENCE)
-			return false;
-		if (derived.IsComplexObjectType(type)) return true;
-		if (!derived.IsClassObjectType(type)) return false;
-		const semantic::TypeId object_type = derived.ExpressionObjectType(type);
-		const semantic::TypeRecord& object =
-			derived.program_.types.Get(object_type);
-		if (object.kind != semantic::TYPE_NAMED ||
-			!derived.program_.entities[object.entity].complete)
-			return false;
-		const semantic::EntityRecord& entity =
-			derived.program_.entities[object.entity];
-		const bool aggregate_parameter = object.entity <
-			derived.aggregate_parameter_entities_.size() &&
-			derived.aggregate_parameter_entities_[object.entity] != 0;
-		return entity.indirect_class_parameter_abi ||
-			(aggregate_parameter && entity.indirect_class_value_abi);
+		return derived.source_types_.PassesByAddress(type);
 	}
 
 	std::uint8_t BoundaryCallPassing(semantic::TypeId type) const

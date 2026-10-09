@@ -72,7 +72,7 @@ if(scalar(@ARGV) != 3)
 
 my ($app, $native_reference, $root) = @ARGV;
 my @tests = collect_tests($root,
-	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|stable-prefix-query-boundary|parameter-object-extent-boundary|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|rejected-stable-prefix-query-[^.]+)\.cpp$/);
+	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|stable-prefix-query-boundary|parameter-object-extent-boundary|parameter-object-identity|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|rejected-stable-prefix-query-[^.]+)\.cpp$/);
 die "No PA12 survivor-property tests found under $root\n" if !@tests;
 
 for my $test (@tests)
@@ -175,6 +175,20 @@ for my $test (@tests)
 			if $header !~ /\bquery=stable_prefix\b/;
 		die "$test: query boundary lacks its final integer index or scalar result\n"
 			if $header !~ /%\w+\s*:\s*(?:i|u)(?:8|16|32|64)\)\s*->\s*(?:i|u)(?:8|16|32|64)\b/;
+		compile_and_run($native_reference, $test, $directory, $path);
+		next;
+	}
+	if($test =~ /parameter-object-identity/) {
+		for my $name (qw(take_derived take_mixed take_moved)) {
+			die "$test: \@$name does not receive its class by address\n"
+				if function_body($test, $lowir, $name) !~
+					/\A[^\n]*\(%\w+ : ptr \[pass=by_address\b/;
+		}
+		for my $name (qw(make_mixed copy_mixed)) {
+			die "$test: \@$name does not return through caller storage\n"
+				if function_body($test, $lowir, $name) !~
+					/\A[^\n]*\(%\w+ : ptr \[pass=indirect_result\b/;
+		}
 		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}

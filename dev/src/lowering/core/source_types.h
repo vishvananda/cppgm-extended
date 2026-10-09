@@ -36,6 +36,10 @@ public:
 	bool IsFunction(semantic::TypeId type) const;
 	bool IsClassObject(semantic::TypeId type) const;
 	bool IsComplexObject(semantic::TypeId type) const;
+	// The call boundary of a value of `type`: a parameter passed by
+	// invisible reference, a result returned through caller storage.
+	bool PassesByAddress(semantic::TypeId type) const;
+	bool ReturnsIndirect(semantic::TypeId type) const;
 	bool IsPointerLike(semantic::TypeId type) const;
 	bool IsNullptr(semantic::TypeId type) const;
 	semantic::TypeId RemoveReference(semantic::TypeId type) const;

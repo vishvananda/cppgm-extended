@@ -1195,7 +1195,7 @@ ExpressionInfo Analyzer::BuildResolvedCall(BindingId selected,
 				parameter_entity == kNoEntity ? 0 :
 					&program_->entities[parameter_entity];
 			if (parameter_class && !parameter_class->trivial_destructor &&
-				!(parameter_class->indirect_class_parameter_abi &&
+				!(parameter_class->indirect_class_value_abi &&
 				  parameter_class->object_size == 16 &&
 				  parameter_class->template_argument_count == 0))
 				dump_.nodes[call].full_expression_staging = true;

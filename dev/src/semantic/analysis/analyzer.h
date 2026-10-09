@@ -1496,10 +1496,9 @@ private:
 	bool AnalyzeQualifiedAssignmentStatement(NodeId node, ScopeId scope,
 		std::uint32_t output_parent);
 	void CompleteClassSpecialMembers(EntityId entity);
-	BindingId AssignmentForSubobject(TypeId type,
-		SpecialMemberKind kind) const;
-	BindingId ConstructorForSubobject(TypeId type,
-		SpecialMemberKind kind) const;
+	void PublishClassCallAbi(EntityId entity);
+	BindingId AssignmentForSubobject(TypeId type, SpecialMemberKind kind) const;
+	BindingId ConstructorForSubobject(TypeId type, SpecialMemberKind kind) const;
 	void EvaluateSynthesizedAssignment(EntityId entity,
 		SpecialMemberKind kind, bool* deleted, bool* trivial,
 		bool* nonthrowing) const;

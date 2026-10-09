@@ -31,33 +31,30 @@ function @use(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding=
   block ^if_end_3:
     return void
 }
-function @check(%value : obj<16x8>) -> void [binding=strong, object=_Z5check4Pair] {
+function @check(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z5check4Pair] {
   slot $value : obj<16x8>
   slot $copy : obj<16x8>
 
   block ^entry:
-    %t1 = addr $value
-    copyobj 16x8 %value, %t1
+    %t1 = addr $copy
+    call void @Pair__Pair__ov2(%t1, %value)
     %t2 = addr $copy
-    %t3 = addr $value
-    call void @Pair__Pair__ov2(%t2, %t3)
-    %t4 = addr $copy
-    call void @use(%t4)
+    call void @use(%t2)
     return void
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $input : obj<16x8>
-  slot $argobj__1 : obj<16x8>
+  slot $arg__1 : obj<16x8>
   slot $cond__2 : i32
 
   block ^entry:
     %t1 = addr $input
     %t2 = copy ptr 16
     call void @Pair__Pair(%t1, 0, %t2)
-    %t3 = addr $argobj__1
+    %t3 = addr $arg__1
     %t4 = addr $input
     call void @Pair__Pair__ov2(%t3, %t4)
-    call void @check($argobj__1)
+    call void @check(%t3)
     %t5 = load typed i32 @seen
     %t6 = cmp eq i32 %t5, 1
     branch %t6, ^cond_then_1, ^cond_else_2

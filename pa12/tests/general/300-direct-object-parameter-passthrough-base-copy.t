@@ -1,7 +1,7 @@
 // VALIDATION: compile-pass
-// Direct-object ABI parameters are already initialized at the call boundary.
-// Materializing the local parameter slot must copy the object payload, not pass
-// the payload itself as the address of a constructor source object.
+// A small derived class with a user-provided copy constructor is non-trivial
+// for the purposes of calls, so it is passed by address: the parameter is the
+// caller's copy, and copying it passes that address as the constructor source.
 
 struct Base
 {

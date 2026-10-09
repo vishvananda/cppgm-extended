@@ -180,7 +180,6 @@ public:
 			program_.entities.size(), 0);
 		aggregate_helper_symbols_.resize(
 			graph_.aggregate_helpers.size(), kNoLowId);
-		IndexAggregateParameterEntities(&aggregate_parameter_entities_);
 		process_atexit_runtime_symbol_ = kNoLowId;
 		thread_atexit_runtime_symbol_ = kNoLowId;
 		dso_handle_symbol_ = kNoLowId;
@@ -1094,7 +1093,6 @@ private:
 	std::vector<std::uint8_t> bit_field_storage_transfer_owners_;
 	FlatIdMap class_value_boundary_types_;
 	std::vector<SymbolId> aggregate_helper_symbols_;
-	std::vector<std::uint8_t> aggregate_parameter_entities_;
 	std::vector<ExceptionControlTarget> break_targets_;
 	std::vector<ExceptionControlTarget> continue_targets_;
 	std::vector<StatementTask> statement_tasks_;

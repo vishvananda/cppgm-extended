@@ -496,13 +496,15 @@ struct EntityRecord
 	AccessKind base_access;
 	// dynamic_class includes virtual-base tables; polymorphic_class requires
 	// virtual functions and controls language traits and dynamic type queries.
+	// indirect_class_value_abi: non-trivial for the purposes of calls, so
+	// passed and returned by invisible reference; indirect_class_result_abi
+	// adds results returned in memory for their size.
 	bool complete, layout_complete, has_user_declared_constructor,
 		has_user_provided_constructor, default_constructible,
 		trivial_default_constructor, has_user_declared_destructor,
 		destructible, trivial_destructor,
 		has_direct_base, is_aggregate, empty_class,
 		indirect_class_value_abi, indirect_class_result_abi,
-		indirect_class_parameter_abi,
 		dynamic_class, polymorphic_class, abstract_class, final_class;
 	bool nonlinear_base_graph;
 	bool has_nonzero_base_subobject_offset;

@@ -38,23 +38,6 @@ protected:
 		return false;
 	}
 
-	void IndexAggregateParameterEntities(std::vector<std::uint8_t>* result) const
-	{
-		const Derived& derived = static_cast<const Derived&>(*this);
-		result->assign(derived.program_.entities.size(), 0);
-		for (std::size_t h = 0; h < derived.graph_.aggregate_helpers.size(); ++h)
-		{
-			const AggregateHelperInfo& helper =
-				derived.graph_.aggregate_helpers[h];
-			for (std::size_t m = 0; m < helper.parameter_member_count; ++m)
-			{
-				const EntityId entity = derived.ClassEntity(
-					derived.program_.bindings[helper.members[m]].type);
-				if (entity != kNoEntity) (*result)[entity] = 1;
-			}
-		}
-	}
-
 	void RegisterAggregateHelpers()
 	{
 		Derived& derived = static_cast<Derived&>(*this);
