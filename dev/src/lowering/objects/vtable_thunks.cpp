@@ -128,6 +128,17 @@ private:
 		for (std::size_t i = 0; i < type.parameter_count; ++i)
 			AddParameter(&function, static_cast<std::uint32_t>(i + 1),
 				parameters[i]);
+		if (thunk.external)
+		{
+			FunctionDeclaration declaration;
+			declaration.symbol = function.symbol;
+			declaration.result = function.result;
+			declaration.result_classes = function.result_classes;
+			declaration.parameters = function.parameters;
+			declaration.variadic = function.variadic;
+			output_.declarations.push_back(declaration);
+			return;
+		}
 		function.blocks.push_back(lowering::presentation::MakePresentedBlock(
 			output_, &function,
 			lowering::presentation::ExactBlockPresentation(output_, "entry")));
@@ -138,14 +149,26 @@ private:
 		// object; a non-virtual thunk adds a fixed adjustment.
 		std::uint32_t temp = 1;
 		Operand adjust_by(thunk.this_adjustment, LowI64());
+		Operand base(ParameterId(indirect_result ? 1 : 0), LowPtr());
 		if (thunk.virtual_call_offset != 0)
 		{
+			// The fixed part moves `this` to the virtual base first.
+			if (thunk.this_adjustment != 0)
+			{
+				const Operand moved(TempId(temp++), LowPtr());
+				Instruction move(Instruction::INDEX);
+				move.dest = moved.id;
+				move.type = LowI8();
+				move.first = base;
+				move.second = Operand(thunk.this_adjustment, LowI64());
+				function.blocks[0].instructions.push_back(move);
+				base = moved;
+			}
 			const Operand vtable(TempId(temp++), LowPtr());
 			Instruction load_vtable(Instruction::LOAD);
 			load_vtable.dest = vtable.id;
 			load_vtable.type = LowPtr();
-			load_vtable.first =
-				Operand(ParameterId(indirect_result ? 1 : 0), LowPtr());
+			load_vtable.first = base;
 			function.blocks[0].instructions.push_back(load_vtable);
 			const Operand entry(TempId(temp++), LowPtr());
 			Instruction index_entry(Instruction::INDEX);
@@ -165,7 +188,7 @@ private:
 		Instruction index(Instruction::INDEX);
 		index.dest = adjusted.id;
 		index.type = LowI8();
-		index.first = Operand(ParameterId(indirect_result ? 1 : 0), LowPtr());
+		index.first = base;
 		index.second = adjust_by;
 		function.blocks[0].instructions.push_back(index);
 		Instruction call(Instruction::CALL);
@@ -224,17 +247,9 @@ private:
 			function.blocks[2].selected = true;
 			function.block_order.push_back(BlockId(2));
 			next_temp = result_temp + 2;
+			// Itanium 5.1.4: a result moves by its vbase offset first, then
+			// by the fixed offset.
 			Operand adjusted_result = returned;
-			if (thunk.return_adjustment != 0)
-			{
-				adjusted_result = Operand(TempId(next_temp++), LowPtr());
-				Instruction fixed(Instruction::INDEX);
-				fixed.dest = adjusted_result.id;
-				fixed.type = LowI8();
-				fixed.first = returned;
-				fixed.second = Operand(thunk.return_adjustment, LowI64());
-				function.blocks[2].instructions.push_back(fixed);
-			}
 			if (thunk.return_adjustment_virtual)
 			{
 				const Operand vtable(TempId(next_temp++), LowPtr());
@@ -266,6 +281,17 @@ private:
 				index_result.second = offset;
 				function.blocks[2].instructions.push_back(index_result);
 				adjusted_result = virtual_result;
+			}
+			if (thunk.return_adjustment != 0)
+			{
+				const Operand fixed_result(TempId(next_temp++), LowPtr());
+				Instruction fixed(Instruction::INDEX);
+				fixed.dest = fixed_result.id;
+				fixed.type = LowI8();
+				fixed.first = adjusted_result;
+				fixed.second = Operand(thunk.return_adjustment, LowI64());
+				function.blocks[2].instructions.push_back(fixed);
+				adjusted_result = fixed_result;
 			}
 			Instruction result(Instruction::RETURN_VALUE);
 			result.type = LowPtr();

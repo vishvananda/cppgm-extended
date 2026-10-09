@@ -109,7 +109,7 @@ global @D____view__B__16__vtable [binding=internal, object=@D____view__B__16__vt
   ptr addr @__rtti_struct_D
   ptr addr @V__probe
 }
-global @D____construction__B__16__s0__vtable [binding=internal, object=@D____construction__B__16__s0__vtable] = {
+global @D____construction__B__16__s0__vtable [binding=internal, object=_ZTC1D16_1B] = {
   i64 0
   i64 0
   i64 0

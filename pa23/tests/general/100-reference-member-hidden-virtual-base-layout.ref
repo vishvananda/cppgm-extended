@@ -77,12 +77,12 @@ global @D____view__C__8__vtable [binding=internal, object=@D____view__C__8__vtab
   i64 -8
   ptr addr @__rtti_struct_D
 }
-global @D____construction__B__0__s0__vtable [binding=internal, object=@D____construction__B__0__s0__vtable] = {
+global @D____construction__B__0__s0__vtable [binding=internal, object=_ZTC1D0_1B] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_B
 }
-global @D____construction__C__8__s0__vtable [binding=internal, object=@D____construction__C__8__s0__vtable] = {
+global @D____construction__C__8__s0__vtable [binding=internal, object=_ZTC1D8_1C] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_C

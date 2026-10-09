@@ -195,12 +195,16 @@ To complete PA23, implement these goals:
 2. Polymorphic dispatch over adjusted vtable views.
    Calling a virtual through a class with virtual-base adjustment rows must select the
    requested logical slot. Calling through a later polymorphic base must lower through the
-   correct vtable view and apply the required `this` adjustment. A final overrider inherited
-   from a non-primary or virtual base must also occupy its required slot in the derived
-   class's primary vtable group, in addition to any adjusted secondary-view entry. Each
-   vtable segment must contain only the vcall-offset and virtual-base-offset rows owned by
-   that segment; in particular, vcall rows belonging to a secondary virtual-base view must
-   not enlarge the primary segment or its address point.
+   correct vtable view and apply the required `this` adjustment. A virtual function a
+   class declares has its own entry in the class's primary vtable unless it overrides a
+   function of the primary base without a return adjustment (Itanium 2.5.2). So an
+   overrider of a function of a non-primary or virtual base occupies such an entry, which
+   calls through the class use, in addition to its adjusted entries in the other tables. A
+   final overrider runs on the subobject that the table's inheritance path leads to, not
+   on another subobject of the same class. Each vtable segment must contain only the
+   vcall-offset and virtual-base-offset rows owned by that segment; in particular, vcall
+   rows belonging to a secondary virtual-base view must not enlarge the primary segment or
+   its address point.
 
 3. Sibling cross-cast support.
    Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the
@@ -267,21 +271,42 @@ one vcall offset per virtual function signature the virtual base declares:
 those of its non-virtual primary chain first, then those of its other
 non-virtual bases. They are placed as clang places them, so a virtual primary
 base's vcall offsets come before its vbase offset. An overrider reached
-through a virtual base's table is a virtual thunk (`_ZTv0_n<k>_`) that adds
-that vcall offset, so a class another compiler derives can use it. A primary
-base of a secondary base shares that base's table and has no table of its own
-in the group. The key function is the first non-inline, non-pure virtual
-function the class declares.
+through a virtual base, from that base's table or from a secondary table
+inside it, is a virtual thunk (`_ZTv<n>_<k>_`). The thunk moves `this` to the
+virtual base by the fixed part `n` and adds the vcall offset at `k`, so a
+class that another compiler derives can use it. The entry's subobject is the
+nearest class in the table's primary chain that declares an override. For a
+covariant entry it is the nearest class below the overrider's class whose own
+entry is not a thunk, as g++ picks it. A covariant result moves to the virtual
+base that its overridden result lies in, and then by the fixed offset inside
+it.
+
+A primary base of a secondary base shares that base's table and has no table
+of its own in the group. A virtual primary base may lie elsewhere in the
+class, lost to another subobject; its entries are null. The group's tables
+follow its primary table in clang's order: the non-virtual bases' secondary
+tables depth first, then the virtual bases' tables in inheritance graph order.
+
+Every thunk that a class's tables include is defined with its function and
+only referred to elsewhere. The key function is the first non-inline, non-pure
+virtual function the class declares.
 
 The VTT follows Itanium 2.6.2. It holds the primary vtable; a sub-VTT for each
 direct non-virtual base that has virtual bases (without its virtual sub-VTTs);
 the secondary virtual pointers in inheritance graph order, one for each
 dynamic base that has virtual bases or lies in a virtual base and is not a
 non-virtual primary base; then a sub-VTT for each virtual base that has
-virtual bases. A base-object constructor takes the tables for its secondary
-virtual pointers from the VTT, and the rest from its own vtable group.
-Construction vtable groups lay a base out for the complete object's virtual
-bases.
+virtual bases. A base-object constructor stores each secondary virtual pointer
+of its VTT where the complete object placed that subobject, and takes the rest
+from its own vtable group. A class that is both a non-virtual base and a
+virtual base is constructed with the sub-VTT of the subobject being built.
+
+A construction vtable group (`_ZTC<complete><offset>_<base>`) lays the base
+out as clang lays out a construction group, with the complete object's offsets
+and vcall offsets. A virtual primary base that does not share its class's
+place there gets its own table. The entries are the base's own; g++ instead
+keeps a lost primary base's entries there and adds no vcall offsets to the
+base's own table. A destructor's entries are null.
 
 Keep a synthesized constructor or destructor base entry's ABI identity
 separate from inlining policy. The entry may need its own object symbol or

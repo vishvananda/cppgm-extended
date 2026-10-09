@@ -67,7 +67,7 @@ global @StringStream__vtable [binding=weak, object=_ZTV12StringStream] = {
   i64 0
   ptr addr @__rtti_struct_StringStream
 }
-global @StringStream____construction__OStream__0__s0__vtable [binding=internal, object=@StringStream____construction__OStream__0__s0__vtable] = {
+global @StringStream____construction__OStream__0__s0__vtable [binding=internal, object=_ZTC12StringStream0_7OStream] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_OStream

@@ -1137,19 +1137,38 @@ struct VirtualSlotFact
 	std::int64_t this_adjustment;
 	std::int64_t return_adjustment;
 	std::int64_t return_vtable_offset;
-	// In a virtual base's table, the place of the vcall offset an adjusting
-	// thunk reads instead of applying this_adjustment (0: none).
+	// For an overrider reached from the table's subobject through a virtual
+	// base, the place of the vcall offset in that base's table an adjusting
+	// (virtual) thunk reads after moving `this` by virtual_this_offset to
+	// the base, instead of applying this_adjustment (0: none).
 	std::int64_t virtual_call_offset;
+	std::int64_t virtual_this_offset;
+	// Where the final overrider's subobject lies: overrider_offset bytes
+	// into the virtual base overrider_anchor, else into the direct base
+	// overrider_base (until the class is laid out), else into the class.
+	EntityId overrider_anchor;
+	std::uint32_t overrider_base;
+	std::int64_t overrider_offset;
 	bool return_adjustment_virtual;
+	// An entry of a virtual primary base that lies elsewhere in the class
+	// (Itanium 2.5.2: calls convert to that base first), not overridden in
+	// the table's primary chain before it: never used, it holds null.
+	bool unused;
 
 	VirtualSlotFact()
 		: root(kNoBinding), function(kNoBinding), this_adjustment(0),
 		  return_adjustment(0), return_vtable_offset(0),
-		  virtual_call_offset(0), return_adjustment_virtual(false) {}
+		  virtual_call_offset(0), virtual_this_offset(0),
+		  overrider_anchor(kNoEntity),
+		  overrider_base(kNoDumpEdge), overrider_offset(0),
+		  return_adjustment_virtual(false), unused(false) {}
 	VirtualSlotFact(BindingId root_value, BindingId function_value)
 		: root(root_value), function(function_value), this_adjustment(0),
 		  return_adjustment(0), return_vtable_offset(0),
-		  virtual_call_offset(0), return_adjustment_virtual(false) {}
+		  virtual_call_offset(0), virtual_this_offset(0),
+		  overrider_anchor(kNoEntity),
+		  overrider_base(kNoDumpEdge), overrider_offset(0),
+		  return_adjustment_virtual(false), unused(false) {}
 };
 
 struct PolymorphicViewFact
@@ -1169,11 +1188,9 @@ struct PolymorphicViewFact
 	std::uint64_t virtual_anchor_offset;
 	bool stores_vptr;
 	bool virtual_base;
-	bool contributes_primary_override;
 	// The view's prefix values: its class's prefix entries, with the vcall
 	// entries a virtual base adds.
 	std::vector<std::int64_t> virtual_base_offsets;
-	std::vector<std::int64_t> virtual_call_offsets;
 	std::vector<VirtualSlotFact> slots;
 
 	PolymorphicViewFact(EntityId entity_value = kNoEntity,
@@ -1185,8 +1202,7 @@ struct PolymorphicViewFact
 		  relative_offset(relative_offset_value), offset(0), address_point(16),
 		  virtual_anchor(kNoEntity), virtual_anchor_ordinal(kNoDumpEdge),
 		  virtual_anchor_offset(0),
-		  stores_vptr(stores_vptr_value), virtual_base(false),
-		  contributes_primary_override(false) {}
+		  stores_vptr(stores_vptr_value), virtual_base(false) {}
 };
 
 struct VirtualExceptionOverrideFact
@@ -1209,6 +1225,39 @@ struct VtablePrefixEntry
 		: virtual_base(virtual_base_value), function(function_value) {}
 };
 
+// A table of a construction vtable group (Itanium 2.6.4): the subobject of
+// the group's base it is for (its class, the virtual base of that base it
+// lies in or none, and its offset there or in the base), its offset in the
+// complete class, its row values (row 0 nearest the address point) and its
+// slots with the adjustments the complete class's layout gives them.  The
+// classes of its primary chain that share it follow its class in `sharing`.
+struct ConstructionTableFact
+{
+	EntityId entity;
+	EntityId anchor;
+	std::uint64_t relative;
+	std::uint64_t offset;
+	std::uint64_t address_point;
+	std::vector<EntityId> sharing;
+	std::vector<std::int64_t> rows;
+	std::vector<VirtualSlotFact> slots;
+
+	ConstructionTableFact()
+		: entity(kNoEntity), anchor(kNoEntity), relative(0), offset(0),
+		  address_point(16) {}
+};
+
+struct ConstructionGroupFact
+{
+	EntityId base;
+	std::uint64_t offset;
+	std::vector<ConstructionTableFact> tables;
+
+	ConstructionGroupFact(EntityId base_value = kNoEntity,
+		std::uint64_t offset_value = 0)
+		: base(base_value), offset(offset_value) {}
+};
+
 struct ClassPolymorphismFacts
 {
 	std::vector<VirtualSlotFact> slots;
@@ -1224,7 +1273,8 @@ struct ClassPolymorphismFacts
 	std::vector<VtablePrefixEntry> prefix, virtual_prefix;
 	std::vector<std::int64_t> virtual_base_offsets;
 	std::vector<std::uint32_t> virtual_base_rows;
-	std::vector<std::int64_t> virtual_call_offsets;
+	// The construction vtable groups the class's VTT names.
+	std::vector<ConstructionGroupFact> construction_groups;
 	std::uint64_t address_point;
 	bool complete;
 	bool vtable_demanded;

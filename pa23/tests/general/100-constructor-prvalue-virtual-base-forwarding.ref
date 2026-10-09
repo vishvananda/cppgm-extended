@@ -127,7 +127,7 @@ global @__cppgm_class_template_identity_0_1_0__vtable [binding=weak, object=_ZTV
   i64 0
   ptr addr @__rtti_struct___cppgm_class_template_identity_0_1_0
 }
-global @__cppgm_class_template_identity_0_1_0____construction__D__0__s0__vtable [binding=internal, object=@__cppgm_class_template_identity_0_1_0____construction__D__0__s0__vtable] = {
+global @__cppgm_class_template_identity_0_1_0____construction__D__0__s0__vtable [binding=internal, object=_ZTC1WI1DE0_S0_] = {
   i64 16
   i64 12
   i64 8

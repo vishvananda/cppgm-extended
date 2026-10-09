@@ -57,7 +57,7 @@ protected:
 
 	void LowerSpecialMemberCall(BindingId selected,
 		const Operand& destination, const Operand& source,
-		bool construction = false)
+		bool construction = false, bool virtual_base = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (selected == kNoBinding ||
@@ -78,7 +78,7 @@ protected:
 			const EntityId complete = derived.HasCurrentConstructionVtt() ?
 				kNoEntity : derived.current_member_owner_;
 			arguments.Push(derived.ConstructionVttArgument(
-				complete, selected_binding.member_owner));
+				complete, selected_binding.member_owner, virtual_base));
 			references.Push(Instruction::CALL_PASS_VALUE);
 		}
 		arguments.Push(source);
@@ -122,7 +122,8 @@ protected:
 	}
 
 	void LowerConstructionSubobject(TypeId type, BindingId selected,
-		const Operand& destination, const Operand& source)
+		const Operand& destination, const Operand& source,
+		bool virtual_base = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const TypeId object_type = derived.program_.types.RemoveTopCv(type);
@@ -132,7 +133,8 @@ protected:
 				"array construction bypassed its retained loop recipe");
 		if (selected != kNoBinding)
 		{
-			LowerSpecialMemberCall(selected, destination, source, true);
+			LowerSpecialMemberCall(selected, destination, source, true,
+				virtual_base);
 			return;
 		}
 		if (derived.IsClassObjectType(type))
@@ -413,8 +415,9 @@ protected:
 			return;
 		}
 		LowerConstructionSubobject(step.type, step.selected_binding,
-			destination, source);
-		derived.CompleteConstructionObject(previous, step.type, destructor, destination);
+			destination, source, step.virtual_base_subobject);
+		derived.CompleteConstructionObject(previous, step.type, destructor,
+			destination, step.virtual_base_subobject);
 	}
 
 	LowType BitFieldStorageUnitType(BindingId binding) const
@@ -663,7 +666,7 @@ protected:
 	}
 
 	void EmitDestructorCall(BindingId destructor, const Operand& destination,
-		bool base_subobject = false)
+		bool base_subobject = false, bool virtual_base = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (destructor == kNoBinding ||
@@ -692,7 +695,7 @@ protected:
 		{
 			arguments.Push(derived.ConstructionVttArgument(
 				derived.HasCurrentConstructionVtt() ? kNoEntity :
-					derived.current_member_owner_, owner));
+					derived.current_member_owner_, owner, virtual_base));
 			references.Push(Instruction::CALL_PASS_VALUE);
 		}
 		Instruction call = derived.DirectCallInstruction(
@@ -832,14 +835,15 @@ protected:
 	}
 
 	void LowerDestructorObject(TypeId type, const Operand& address,
-		BindingId destructor, bool base_subobject = false, bool unwinding = false)
+		BindingId destructor, bool base_subobject = false, bool unwinding = false,
+		bool virtual_base = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		type = derived.RemoveTopQualifiers(type);
 		const TypeRecord& record = derived.program_.types.Get(type);
 		if (record.kind != TYPE_ARRAY)
 		{
-			EmitDestructorCall(destructor, address, base_subobject);
+			EmitDestructorCall(destructor, address, base_subobject, virtual_base);
 			return;
 		}
 		if (record.bound == 0)
@@ -986,7 +990,7 @@ protected:
 			base_subobject = true;
 		}
 		LowerDestructorObject(action.operand_type, destination, action.binding,
-			base_subobject, unwinding);
+			base_subobject, unwinding, action.virtual_base_subobject);
 	}
 };
 

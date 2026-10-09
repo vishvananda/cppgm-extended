@@ -19,6 +19,12 @@ class LocalNames;
 std::string MangleType(const semantic::Program& program, semantic::TypeId type,
 	abi_mangle::AbiMangleStats* stats = 0,
 	abi_mangle::AbiMangleContext* context = 0, LocalNames* names = 0);
+// The construction vtable group of `complete` for its `base` subobject at
+// `offset` (Itanium 5.1.4.1, `_ZTC <type> <offset> _ <base type>`).
+std::string MangleConstructionVtable(const semantic::Program& program,
+	semantic::TypeId complete, std::uint64_t offset, semantic::TypeId base,
+	abi_mangle::AbiMangleStats* stats = 0,
+	abi_mangle::AbiMangleContext* context = 0, LocalNames* names = 0);
 std::string MangleFunction(const semantic::Program& program,
 	const semantic::DumpNode& node,
 	bool force_lifecycle_base_entry = false,

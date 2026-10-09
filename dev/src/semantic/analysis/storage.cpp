@@ -437,16 +437,12 @@ std::size_t Analyzer::ClassRecordStorageBytes() const
 			class_polymorphism_[i].views.capacity() *
 				sizeof(PolymorphicViewFact) +
 			class_polymorphism_[i].virtual_base_offsets.capacity() *
-				sizeof(std::int64_t) +
-			class_polymorphism_[i].virtual_call_offsets.capacity() *
 				sizeof(std::int64_t);
 		for (std::size_t view = 0;
 			view < class_polymorphism_[i].views.size(); ++view)
 			bytes += class_polymorphism_[i].views[view].slots.capacity() *
 				sizeof(VirtualSlotFact) +
 				class_polymorphism_[i].views[view].virtual_base_offsets.capacity() *
-					sizeof(std::int64_t) +
-				class_polymorphism_[i].views[view].virtual_call_offsets.capacity() *
 					sizeof(std::int64_t);
 	}
 	for (std::size_t i = 0; i < scope_lifetimes_.size(); ++i)

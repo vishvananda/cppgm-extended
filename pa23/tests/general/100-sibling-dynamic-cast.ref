@@ -222,19 +222,25 @@ global @Diamond____view__Right__8__vtable [binding=internal, object=@Diamond____
   i64 -8
   i64 -8
   ptr addr @__rtti_struct_Diamond
-  ptr addr @_YA__f__vtable_return_adjust__this_neg8__return_pos0
+  ptr 0
 }
-global @Diamond____construction__Left__0__s0__vtable [binding=internal, object=@Diamond____construction__Left__0__s0__vtable] = {
+global @Diamond____construction__Left__0__s0__vtable [binding=internal, object=_ZTC7Diamond0_4Left] = {
   i64 0
   i64 0
   i64 0
   ptr addr @__rtti_struct_Left
   ptr addr @YA__f
 }
-global @Diamond____construction__Right__8__s0__vtable [binding=internal, object=@Diamond____construction__Right__8__s0__vtable] = {
+global @Diamond____construction__Right__8__s0__vtable [binding=internal, object=_ZTC7Diamond8_5Right] = {
+  i64 -8
   i64 -8
   i64 0
+  ptr addr @__rtti_struct_Right
+  ptr addr @YA__f
+}
+global @Diamond____construction__Right__8__s1__vtable [binding=internal, object=@Diamond____construction__Right__8__s1__vtable] = {
   i64 0
+  i64 8
   ptr addr @__rtti_struct_Right
   ptr addr @YA__f
 }
@@ -243,7 +249,7 @@ global @Diamond____vtt [binding=weak, object=_ZTT7Diamond, object_root=yes] = {
   ptr addr @Diamond____construction__Left__0__s0__vtable + 32
   ptr addr @Diamond____construction__Left__0__s0__vtable + 32
   ptr addr @Diamond____construction__Right__8__s0__vtable + 32
-  ptr addr @Diamond____construction__Right__8__s0__vtable + 32
+  ptr addr @Diamond____construction__Right__8__s1__vtable + 24
   ptr addr @Diamond__vtable + 32
   ptr addr @Diamond____view__Right__8__vtable + 32
 }
@@ -718,12 +724,6 @@ function @YB__YB__base_entry__sym2(%this : ptr [alias=noalias, object_bytes=8], 
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
-}
-function @_YA__f__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn8_N2YA1fEv] {
-  block ^entry:
-    %t1 = index i8 %arg0, -8
-    %t2 = call i32 @YA__f(%t1)
-    return i32 %t2
 }
 alias object _ZN2YDC2Ev = @YD__YD
 alias object _ZN9AmbiguousC2Ev = @Ambiguous__Ambiguous

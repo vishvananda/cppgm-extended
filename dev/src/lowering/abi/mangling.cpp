@@ -2304,6 +2304,17 @@ std::string MangleType(const semantic::Program& program, semantic::TypeId type,
 	abi_mangle::AbiMangleStats* stats,
 	abi_mangle::AbiMangleContext* context, LocalNames* names)
 {
+	return MangleConstructionVtable(program, type, 0, semantic::kNoType, stats,
+		context, names);
+}
+
+// One production for both types, so the base reuses the complete type's
+// substitutions (`_ZTC1WI1DE0_S0_`); without a base, the type alone.
+std::string MangleConstructionVtable(const semantic::Program& program,
+	semantic::TypeId complete, std::uint64_t offset, semantic::TypeId base,
+	abi_mangle::AbiMangleStats* stats,
+	abi_mangle::AbiMangleContext* context, LocalNames* names)
+{
 	using namespace abi_mangle;
 	std::unique_ptr<AbiMangleContext> local_context;
 	if (!context)
@@ -2315,8 +2326,14 @@ std::string MangleType(const semantic::Program& program, semantic::TypeId type,
 	AbiFactBuilder facts(program, fact_case, context, stats, names);
 	AbiFactRecord target;
 	target.set_kind(ABI_FACT_RECORD_TARGET);
-	target.target.kind = ABI_TARGET_FACT_TYPE;
-	target.target.type = facts.MakeType(type);
+	target.target.kind = base == semantic::kNoType ? ABI_TARGET_FACT_TYPE :
+		ABI_TARGET_FACT_CONSTRUCTION_VTABLE;
+	target.target.type = facts.MakeType(complete);
+	if (base != semantic::kNoType)
+	{
+		target.target.base_type = facts.MakeType(base);
+		target.target.base_offset = offset;
+	}
 	AppendTypedFact(&fact_case, &target);
 	return MangleProductionCase(fact_case, stats, context);
 }

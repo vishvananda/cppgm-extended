@@ -103,7 +103,7 @@ global @Explicit__vtable [binding=weak, object=_ZTV8Explicit] = {
   i64 0
   ptr addr @__rtti_struct_Explicit
 }
-global @Explicit____construction__Middle__0__s0__vtable [binding=internal, object=@Explicit____construction__Middle__0__s0__vtable] = {
+global @Explicit____construction__Middle__0__s0__vtable [binding=internal, object=_ZTC8Explicit0_6Middle] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Middle
@@ -119,7 +119,7 @@ global @Implicit__vtable [binding=weak, object=_ZTV8Implicit] = {
   i64 0
   ptr addr @__rtti_struct_Implicit
 }
-global @Implicit____construction__Middle__0__s0__vtable [binding=internal, object=@Implicit____construction__Middle__0__s0__vtable] = {
+global @Implicit____construction__Middle__0__s0__vtable [binding=internal, object=_ZTC8Implicit0_6Middle] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Middle

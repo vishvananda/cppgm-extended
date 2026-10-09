@@ -7,6 +7,7 @@
 #include "lowering/support/errors.h"
 #include "lowering/objects/vtt_layout.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -21,6 +22,8 @@ struct VtableThunkLoweringFact
 	lowering::ir::SymbolId symbol;
 	lowering::ir::SymbolId target;
 	semantic::BindingId function;
+	// The fixed `this` adjustment; for a virtual thunk, the move to the
+	// virtual base made before its vcall offset is read and added.
 	std::int64_t this_adjustment;
 	std::int64_t return_adjustment;
 	std::int64_t return_vtable_offset;
@@ -28,6 +31,9 @@ struct VtableThunkLoweringFact
 	bool return_adjustment_virtual;
 	// Nonzero for a virtual thunk: the vcall offset's place in the table.
 	std::int64_t virtual_call_offset;
+	// The target is defined in another translation unit, which defines the
+	// thunk with it (Itanium 5.1.4): only a declaration is emitted here.
+	bool external;
 
 	VtableThunkLoweringFact(lowering::ir::SymbolId symbol_value,
 		lowering::ir::SymbolId target_value, semantic::BindingId function_value,
@@ -43,23 +49,25 @@ struct VtableThunkLoweringFact
 		  return_vtable_offset(return_vtable_offset_value),
 		  return_runtime_vtable_offset(return_runtime_vtable_offset_value),
 		  return_adjustment_virtual(return_adjustment_virtual_value),
-		  virtual_call_offset(virtual_call_offset_value) {}
+		  virtual_call_offset(virtual_call_offset_value), external(false) {}
 };
 
 namespace abi { class LocalNames; }
 
-// A construction vtable group: the base it is for, its offset in the
-// complete class, and its tables (the primary, then one per secondary
-// virtual pointer of the base's VTT).
+// The symbols of a construction vtable group (the complete class's
+// ConstructionGroupFact `fact`): one per table, and per table its slots'
+// entries (none for an unused slot) and deleting destructor entries.
 struct ConstructionGroup
 {
 	semantic::EntityId base;
 	std::uint64_t offset;
+	std::size_t fact;
 	std::vector<lowering::ir::SymbolId> tables;
+	std::vector<std::vector<lowering::ir::SymbolId> > slots, deleting_slots;
 
 	ConstructionGroup(semantic::EntityId base_value = semantic::kNoEntity,
-		std::uint64_t offset_value = 0)
-		: base(base_value), offset(offset_value) {}
+		std::uint64_t offset_value = 0, std::size_t fact_value = 0)
+		: base(base_value), offset(offset_value), fact(fact_value) {}
 };
 
 struct PolymorphismLoweringState
@@ -80,9 +88,6 @@ struct PolymorphismLoweringState
 		class_view_slot_symbols;
 	std::vector<std::vector<std::vector<lowering::ir::SymbolId> > >
 		class_view_deleting_slot_symbols;
-	std::vector<std::vector<semantic::VirtualSlotFact> >
-		class_host_primary_slots;
-	std::vector<std::uint32_t> host_primary_slot_by_binding;
 	std::vector<VtableThunkLoweringFact> vtable_thunks;
 	std::vector<lowering::ir::SymbolId> class_rtti_symbols;
 	std::vector<lowering::ir::SymbolId> class_type_name_symbols;
@@ -155,11 +160,6 @@ void EmitVtableThunks(
 	lowering::ir::Program& output, lowering::Stats* stats,
 	const std::vector<lowering::ir::SymbolId>& function_symbols,
 	PolymorphismLoweringState* state);
-
-std::uint32_t ResolveHostVirtualSlot(const semantic::Program& program,
-	bool host_object_emission, const PolymorphismLoweringState& state,
-	const semantic::DumpNode& record,
-	semantic::EntityId object_entity);
 
 template <class Derived>
 class PolymorphismActionLowering
@@ -243,8 +243,14 @@ protected:
 			const SymbolId view_symbol =
 				derived.polymorphism_.class_view_vtable_symbols[entity][view];
 			if (view_symbol == kNoLowId) continue;
-			if (derived.stats_) ++derived.stats_->vptr_stores;
 			const semantic::PolymorphicViewFact& fact = facts.views[view];
+			// A secondary virtual pointer's table comes from the VTT below.
+			if (layout && std::find(layout->secondary.begin(),
+				layout->secondary.end(), VttSubobject(fact.entity, fact.virtual_anchor,
+					fact.virtual_anchor == semantic::kNoEntity ? fact.offset :
+					fact.virtual_anchor_offset)) != layout->secondary.end())
+				continue;
+			if (derived.stats_) ++derived.stats_->vptr_stores;
 			Operand subobject;
 			if (fact.virtual_anchor_ordinal == semantic::kNoDumpEdge)
 				subobject = ProjectBaseSubobjectOffset(derived.LoadStorage(
@@ -256,66 +262,58 @@ protected:
 						derived.StorageFor(derived.current_this_binding_, LowPtr()),
 						LowPtr()), entity, fact.virtual_anchor_ordinal, true),
 					fact.virtual_anchor_offset);
-			Operand view_address_point;
-			const std::uint32_t index = layout && view < layout->view_index.size() ?
-				layout->view_index[view] : kNoVttIndex;
-			if (index != kNoVttIndex)
-			{
-				const Operand entry = derived.IndexAddress(LowI8(),
-					derived.CurrentConstructionVtt(),
-					Operand(static_cast<std::int64_t>(index) * 8, LowI64()),
-					false);
-				view_address_point = derived.LoadStorage(entry, LowPtr());
-			}
-			else
-			{
-				derived.output_.symbols[view_symbol].referenced = true;
-				const Operand view_table = derived.Temp(LowPtr());
-				Instruction view_address(Instruction::ADDR);
-				view_address.dest = view_table.id;
-				view_address.first = Operand(
-					Operand::GLOBAL, view_symbol, LowPtr());
-				derived.Emit(view_address);
-				view_address_point = derived.Temp(LowPtr());
-				Instruction view_index(Instruction::INDEX);
-				view_index.dest = view_address_point.id;
-				view_index.type = LowI8();
-				view_index.first = view_table;
-				const std::uint64_t view_point = entity <
-					derived.polymorphism_.class_view_address_points.size() &&
-					view < derived.polymorphism_.class_view_address_points[entity].size() ?
-					derived.polymorphism_.class_view_address_points[entity][view] :
-					fact.address_point;
-				view_index.second = Operand(static_cast<std::int64_t>(
-					view_point), LowI64());
-				derived.Emit(view_index);
-			}
+			derived.output_.symbols[view_symbol].referenced = true;
+			const Operand view_table = derived.Temp(LowPtr());
+			Instruction view_address(Instruction::ADDR);
+			view_address.dest = view_table.id;
+			view_address.first = Operand(Operand::GLOBAL, view_symbol, LowPtr());
+			derived.Emit(view_address);
+			const Operand view_address_point = derived.Temp(LowPtr());
+			Instruction view_index(Instruction::INDEX);
+			view_index.dest = view_address_point.id;
+			view_index.type = LowI8();
+			view_index.first = view_table;
+			const std::uint64_t view_point = entity <
+				derived.polymorphism_.class_view_address_points.size() &&
+				view < derived.polymorphism_.class_view_address_points[entity].size() ?
+				derived.polymorphism_.class_view_address_points[entity][view] :
+				fact.address_point;
+			view_index.second = Operand(static_cast<std::int64_t>(view_point), LowI64());
+			derived.Emit(view_index);
 			Instruction view_store(Instruction::STORE);
 			view_store.type = LowPtr();
 			view_store.first = view_address_point;
 			view_store.second = subobject;
 			derived.Emit(view_store);
 		}
-		// A virtual primary base gets the VTT's table where the complete
-		// object placed it (its own address unless this class claimed it).
+		// Each secondary virtual pointer of a base-object constructor's VTT
+		// goes to its subobject where the complete object placed it, a
+		// virtual primary base that lies elsewhere included.
 		const std::size_t first_secondary = layout ?
-			layout->size - layout->secondary_views.size() : 0;
-		for (std::size_t k = 0; layout && k < layout->secondary_views.size(); ++k)
+			layout->size - layout->secondary.size() : 0;
+		for (std::size_t k = 0; layout && k < layout->secondary.size(); ++k)
 		{
-			if (layout->secondary_views[k] != kVttPrimaryTable) continue;
-			const Operand subobject = derived.RuntimeVirtualBaseAddress(
-				derived.LoadStorage(derived.StorageFor(
-					derived.current_this_binding_, LowPtr()), LowPtr()),
-				entity, layout->secondary_shared[k], true);
+			if (derived.stats_) ++derived.stats_->vptr_stores;
+			const VttSubobject& at = layout->secondary[k];
+			const Operand self = derived.LoadStorage(derived.StorageFor(
+				derived.current_this_binding_, LowPtr()), LowPtr());
+			std::uint32_t ordinal = 0;
+			if (at.anchor != semantic::kNoEntity &&
+				!derived.program_.FindVirtualBase(entity, at.anchor, 0, &ordinal))
+				ThrowLoweringInternal("VTT subobject has no virtual base");
+			const Operand base = at.anchor == semantic::kNoEntity ? self :
+				derived.RuntimeVirtualBaseAddress(self, entity, ordinal, true);
+			const Operand subobject = at.relative == 0 ? base :
+				ProjectBaseSubobjectOffset(base, at.relative);
 			const Operand entry = derived.IndexAddress(LowI8(),
 				derived.CurrentConstructionVtt(), Operand(
 					static_cast<std::int64_t>(first_secondary + k) * 8, LowI64()),
 				false);
-			Instruction shared_store(Instruction::STORE);
-			shared_store.type = LowPtr();
-			shared_store.first = derived.LoadStorage(entry, LowPtr());
-			shared_store.second = subobject;
-			derived.Emit(shared_store);
+			Instruction secondary_store(Instruction::STORE);
+			secondary_store.type = LowPtr();
+			secondary_store.first = derived.LoadStorage(entry, LowPtr());
+			secondary_store.second = subobject;
+			derived.Emit(secondary_store);
 		}
 	}
 

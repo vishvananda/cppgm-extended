@@ -67,7 +67,7 @@ global @derived__vtable [binding=weak, object=_ZTV7derived] = {
   i64 0
   ptr addr @__rtti_struct_derived
 }
-global @derived____construction__counter__0__s0__vtable [binding=internal, object=@derived____construction__counter__0__s0__vtable] = {
+global @derived____construction__counter__0__s0__vtable [binding=internal, object=_ZTC7derived0_7counter] = {
   i64 12
   i64 0
   ptr addr @__rtti_struct_counter

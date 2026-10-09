@@ -692,11 +692,9 @@ dev/src/semantic/object_model/polymorphic_layout.cpp	FinalizeClassPolymorphismVi
 dev/src/semantic/object_model/polymorphic_layout.cpp	InheritPrimaryPolymorphism	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	InitializeClassBaseLayout	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	InitializeClassPolymorphismBases	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
-dev/src/semantic/object_model/polymorphic_layout.cpp	MergeSharedVirtualView	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	PreferredClassLayoutBaseOrdinal	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	PublishVirtualBaseStats	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphic_layout.cpp	SelectVirtualPrimaryBase	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
-dev/src/semantic/object_model/polymorphic_layout.cpp	ViewOverriderOffset	1	dev/src/semantic/object_model/polymorphic_layout.cpp	keep
 dev/src/semantic/object_model/polymorphism.cpp	CompleteVirtualExceptionOverrides	1	dev/src/semantic/object_model/polymorphism.cpp	keep
 dev/src/semantic/object_model/polymorphism.cpp	ExceptionTypeAllowed	1	dev/src/semantic/object_model/polymorphism.cpp	keep
 dev/src/semantic/object_model/polymorphism.cpp	RecordVirtualExceptionOverride	1	dev/src/semantic/object_model/polymorphism.cpp	keep

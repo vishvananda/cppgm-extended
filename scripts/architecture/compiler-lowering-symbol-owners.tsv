@@ -61,6 +61,7 @@ function	dev/src/lowering/abi/local_entity_names.cpp	LocalContextIsVisible	1	dev
 function	dev/src/lowering/abi/local_entity_names.cpp	UnnamedTypeIsVisible	1	dev/src/lowering/abi/local_entity_names.cpp	keep
 function	dev/src/lowering/abi/mangling_owners.cpp	HasWeakLinkage	1	dev/src/lowering/abi/mangling_owners.cpp	keep
 function	dev/src/lowering/abi/mangling_owners.cpp	MangleProductionCase	1	dev/src/lowering/abi/mangling_owners.cpp	keep
+function	dev/src/lowering/abi/mangling.cpp	MangleConstructionVtable	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleFunction	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleLocalStatic	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleThreadLocalWrapper	1	dev/src/lowering/abi/mangling.cpp	keep
@@ -181,3 +182,4 @@ struct	dev/src/lowering/objects/construction_cleanup.h	ConstructionCleanupStep	1
 struct	dev/src/lowering/objects/storage_slots.h	SlotPlanningVisit	1	dev/src/lowering/objects/storage_slots.h	keep
 class	dev/src/lowering/objects/vtt_layout.h	VttLayoutBuilder	1	dev/src/lowering/objects/vtt_layout.h	keep
 struct	dev/src/lowering/objects/vtt_layout.h	ClassVttLayout	1	dev/src/lowering/objects/vtt_layout.h	keep
+struct	dev/src/lowering/objects/vtt_layout.h	VttSubobject	1	dev/src/lowering/objects/vtt_layout.h	keep

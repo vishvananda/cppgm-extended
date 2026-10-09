@@ -105,7 +105,7 @@ global @Top____view__Middle__32__vtable [binding=internal, object=@Top____view__
   ptr addr @__rtti_struct_Top
   ptr addr @_Top__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Top____construction__Side__16__s0__vtable [binding=internal, object=@Top____construction__Side__16__s0__vtable] = {
+global @Top____construction__Side__16__s0__vtable [binding=internal, object=_ZTC3Top16_4Side] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_Side
@@ -302,10 +302,9 @@ function @Side__Side__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr) ->
     %t5 = index i8 %t4, -24
     %t6 = load typed i64 %t5
     %t7 = index i8 %t3, %t6
-    %t8 = index i8 %t7, 0
-    %t9 = index i8 %__vtt, 8
-    %t10 = load typed ptr %t9
-    store typed ptr %t10, %t8
+    %t8 = index i8 %__vtt, 8
+    %t9 = load typed ptr %t8
+    store typed ptr %t9, %t7
     return void
 }
 function @Root__Root__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4RootC2Ev, object_root=yes, inline_hint=yes] {
@@ -318,12 +317,6 @@ function @Root__Root__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=
     %t3 = index i8 %t2, 16
     store typed ptr %t3, %t1
     return void
-}
-function @_Top__id__vtable_return_adjust__this_neg32__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZThn32_N3Top2idEv] {
-  block ^entry:
-    %t1 = index i8 %arg0, -32
-    %t2 = call i32 @Top__id(%t1)
-    return i32 %t2
 }
 function @_Top__id__vtable_virtual_adjust_n24__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n24_N3Top2idEv] {
   block ^entry:

@@ -21,12 +21,14 @@ struct ConstructionCleanupStep
 	semantic::TypeId type;
 	semantic::BindingId destructor;
 	ir::Operand destination;
+	// A virtual base subobject (whose class may also be a non-virtual base).
+	bool virtual_base;
 
 	ConstructionCleanupStep(std::uint32_t previous, std::uint32_t temporary,
 		semantic::TypeId object_type, semantic::BindingId destructor_binding,
 		const ir::Operand& address, std::uint32_t allocation = semantic::kNoDumpEdge)
 		: tail(previous), temporary_action(temporary), allocation_node(allocation), type(object_type),
-		  destructor(destructor_binding), destination(address)
+		  destructor(destructor_binding), destination(address), virtual_base(false)
 	{
 	}
 };
@@ -156,14 +158,16 @@ protected:
 
 	void CompleteConstructionObject(std::uint32_t previous,
 		semantic::TypeId type, semantic::BindingId destructor,
-		const ir::Operand& destination)
+		const ir::Operand& destination, bool virtual_base = false)
 	{
 		if (!construction_cleanup_active_ || destructor == semantic::kNoBinding) return;
 		Derived& derived = static_cast<Derived&>(*this);
 		derived.PauseFullExpressionCleanupSegment();
 		RetainConstructionTemporaries(previous);
-		PushConstructionCleanup(ConstructionCleanupStep(construction_cleanup_root_,
-			semantic::kNoDumpEdge, type, destructor, destination));
+		ConstructionCleanupStep step(construction_cleanup_root_,
+			semantic::kNoDumpEdge, type, destructor, destination);
+		step.virtual_base = virtual_base;
+		PushConstructionCleanup(step);
 		derived.full_expression_cleanup_ready_ = true;
 	}
 
@@ -318,7 +322,8 @@ protected:
 		else if (step.allocation_node != semantic::kNoDumpEdge)
 			derived.EmitSelectedDeallocation(derived.arena_.nodes[step.allocation_node],
 				step.destination, step.destructor);
-		else derived.LowerDestructorObject(step.type, step.destination, step.destructor, false, true);
+		else derived.LowerDestructorObject(step.type, step.destination, step.destructor,
+			false, true, step.virtual_base);
 		if (may_throw) derived.Emit(ir::Instruction(ir::Instruction::EH_END));
 		std::uint32_t tail = state.key.terminal;
 		if (step.tail != 0)

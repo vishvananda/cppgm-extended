@@ -73,7 +73,7 @@ global @Outer__vtable [binding=weak, object=_ZTV5Outer] = {
   i64 0
   ptr addr @__rtti_struct_Outer
 }
-global @Outer____construction__Mid__0__s0__vtable [binding=internal, object=@Outer____construction__Mid__0__s0__vtable] = {
+global @Outer____construction__Mid__0__s0__vtable [binding=internal, object=_ZTC5Outer0_3Mid] = {
   i64 44
   i64 0
   ptr addr @__rtti_struct_Mid

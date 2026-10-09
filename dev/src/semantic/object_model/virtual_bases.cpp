@@ -567,19 +567,23 @@ void Analyzer::AddVirtualBaseInitializationActions(EntityId entity,
 		const VirtualBaseLayout& layout =
 			program_->VirtualBase(entity, virtual_ordinal);
 		const std::size_t direct_ordinal = direct_ordinals[virtual_ordinal];
+		std::uint32_t action = 0;
 		if (direct_ordinal != owner.direct_base_count)
-			AddBaseInitializationAction(entity, direct_ordinal,
+			action = AddBaseInitializationAction(entity, direct_ordinal,
 				initializers[direct_ordinal], initializer_scopes[direct_ordinal],
 				body, initializer_expanded[direct_ordinal] != 0);
 		else
 		{
 			const std::size_t initializer_ordinal =
 				owner.direct_base_count + virtual_ordinal;
-			AddBaseInitializationActionAt(entity, layout.entity,
+			action = AddBaseInitializationActionAt(entity, layout.entity,
 				layout.offset, initializers[initializer_ordinal],
 				initializer_scopes[initializer_ordinal], body,
 				initializer_expanded[initializer_ordinal] != 0);
 		}
+		// The constructor finds a virtual base's sub-VTT by this mark (its
+		// class may also be a non-virtual base).
+		dump_.nodes[action].virtual_base_subobject = true;
 	}
 }
 

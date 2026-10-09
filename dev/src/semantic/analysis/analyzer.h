@@ -1462,8 +1462,6 @@ private:
 	bool ExceptionTypeAllowed(TypeId thrown, TypeId allowed) const;
 	void AssignVtablePrefixes(EntityId entity);
 	EntityId SelectVirtualPrimaryBase(EntityId entity);
-	bool ViewOverriderOffset(EntityId entity, const PolymorphicViewFact* view,
-		EntityId target, std::uint64_t* offset) const;
 	void InheritPrimaryPolymorphism(EntityId entity, const DirectBaseEdge& edge,
 		std::uint32_t ordinal);
 	void AnchorPolymorphicView(EntityId entity, const DirectBaseEdge& edge,
@@ -1471,8 +1469,6 @@ private:
 	void FinalizeClassPolymorphismViews(EntityId entity);
 	void AppendPolymorphicView(ClassPolymorphismFacts* facts,
 		const PolymorphicViewFact& view);
-	void MergeSharedVirtualView(PolymorphicViewFact* retained,
-		const PolymorphicViewFact& incoming);
 	void PublishVirtualBaseStats();
 	void MarkVtableDemand(EntityId entity);
 	bool CovariantVirtualReturn(TypeId derived, TypeId base) const;
@@ -1673,10 +1669,10 @@ private:
 		std::vector<NodeId>* syntax, std::vector<ScopeId>* scopes,
 		std::vector<std::uint8_t>* expanded);
 	void RecordDelegatingConstructor(BindingId source, BindingId selected);
-	void AddBaseInitializationAction(EntityId entity, std::size_t base_ordinal,
+	std::uint32_t AddBaseInitializationAction(EntityId entity, std::size_t base_ordinal,
 		NodeId initializer, ScopeId scope, std::uint32_t body,
 		bool pack_expanded = false);
-	void AddBaseInitializationActionAt(EntityId entity, EntityId base,
+	std::uint32_t AddBaseInitializationActionAt(EntityId entity, EntityId base,
 		std::uint64_t offset, NodeId initializer, ScopeId scope,
 		std::uint32_t body, bool pack_expanded = false);
 	void AddVirtualBaseInitializationActions(EntityId entity,

@@ -81,12 +81,12 @@ global @YD____view__YC__8__vtable [binding=internal, object=@YD____view__YC__8__
   i64 -8
   ptr addr @__rtti_class_YD
 }
-global @YD____construction__YB__0__s0__vtable [binding=internal, object=@YD____construction__YB__0__s0__vtable] = {
+global @YD____construction__YB__0__s0__vtable [binding=internal, object=_ZTC2YD0_2YB] = {
   i64 20
   i64 0
   ptr addr @__rtti_class_YB
 }
-global @YD____construction__YC__8__s0__vtable [binding=internal, object=@YD____construction__YC__8__s0__vtable] = {
+global @YD____construction__YC__8__s0__vtable [binding=internal, object=_ZTC2YD8_2YC] = {
   i64 12
   i64 0
   ptr addr @__rtti_class_YC

@@ -13,7 +13,7 @@ using namespace semantic;
 namespace
 {
 
-// The class whose vtable `entity` shares (its non-virtual primary base).
+// The class whose vtable `entity` shares (its primary base).
 EntityId PrimaryBase(const std::vector<ClassPolymorphismFacts>& facts,
 	EntityId entity)
 {
@@ -24,16 +24,10 @@ EntityId PrimaryBase(const std::vector<ClassPolymorphismFacts>& facts,
 
 }
 
-bool VttLayoutBuilder::InPrimaryChain(EntityId owner, EntityId base) const
-{
-	if (owner >= facts_.size()) return false;
-	const std::vector<EntityId>& chain = facts_[owner].primary_ancestors;
-	return std::find(chain.begin(), chain.end(), base) != chain.end();
-}
-
-void VttLayoutBuilder::WalkSecondaryPointers(EntityId root, EntityId current,
-	std::uint64_t offset, bool morally_virtual, std::vector<EntityId>* visited,
-	std::vector<std::uint32_t>* views, std::vector<std::uint32_t>* shared)
+// Clang's VTTBuilder::LayoutSecondaryVirtualPointers.
+void VttLayoutBuilder::WalkSecondaryPointers(EntityId current, VttSubobject at,
+	bool morally_virtual, std::vector<EntityId>* visited,
+	std::vector<VttSubobject>* secondary)
 {
 	const EntityRecord& owner = program_.entities[current];
 	if (owner.virtual_base_count == 0 && !morally_virtual) return;
@@ -44,42 +38,21 @@ void VttLayoutBuilder::WalkSecondaryPointers(EntityId root, EntityId current,
 		const EntityRecord& base = program_.entities[edge.entity];
 		if (!base.dynamic_class) continue;
 		bool moral = morally_virtual;
-		std::uint64_t at = offset + edge.offset;
+		VttSubobject next(edge.entity, at.anchor, at.relative + edge.offset);
 		bool nonvirtual_primary = false;
 		if (edge.virtual_base)
 		{
 			if (std::find(visited->begin(), visited->end(), edge.entity) !=
 				visited->end()) continue;
 			visited->push_back(edge.entity);
-			if (!program_.FindVirtualBase(root, edge.entity, &at))
-				ThrowLoweringInternal("VTT walk has no virtual base offset");
+			next.anchor = edge.entity;
+			next.relative = 0;
 			moral = true;
 		}
 		else nonvirtual_primary = edge.entity == primary;
 		if (!nonvirtual_primary && (base.virtual_base_count != 0 || moral))
-		{
-			// The table the subobject's vptr holds: its own view's, or the
-			// view (or primary table) whose primary chain it lies in.
-			const std::vector<PolymorphicViewFact>& candidates =
-				facts_[root].views;
-			std::size_t view = 0;
-			while (view < candidates.size() &&
-				!(candidates[view].stores_vptr && candidates[view].offset == at &&
-				  (candidates[view].entity == edge.entity ||
-				   InPrimaryChain(candidates[view].entity, edge.entity))))
-				++view;
-			std::uint32_t ordinal = kNoVttIndex;
-			if (view == candidates.size())
-			{
-				if (!InPrimaryChain(root, edge.entity) ||
-					!program_.FindVirtualBase(root, edge.entity, 0, &ordinal))
-					ThrowLoweringInternal("VTT virtual pointer has no vtable view");
-				view = kVttPrimaryTable;
-			}
-			views->push_back(static_cast<std::uint32_t>(view));
-			shared->push_back(ordinal);
-		}
-		WalkSecondaryPointers(root, edge.entity, at, moral, visited, views, shared);
+			secondary->push_back(next);
+		WalkSecondaryPointers(edge.entity, next, moral, visited, secondary);
 	}
 }
 
@@ -99,17 +72,10 @@ const ClassVttLayout& VttLayoutBuilder::Layout(EntityId entity)
 		layout.base_index[i] = next;
 		next += Layout(edge.entity).size;
 	}
-	layout.view_index.assign(entity < facts_.size() ?
-		facts_[entity].views.size() : 0, kNoVttIndex);
 	std::vector<EntityId> visited;
-	WalkSecondaryPointers(entity, entity, 0, false, &visited,
-		&layout.secondary_views, &layout.secondary_shared);
-	for (std::size_t i = 0; i < layout.secondary_views.size(); ++i)
-	{
-		if (layout.secondary_views[i] != kVttPrimaryTable)
-			layout.view_index[layout.secondary_views[i]] = next;
-		++next;
-	}
+	WalkSecondaryPointers(entity, VttSubobject(entity), false, &visited,
+		&layout.secondary);
+	next += static_cast<std::uint32_t>(layout.secondary.size());
 	layout.size = next;
 	layout.virtual_index.assign(owner.virtual_base_count, kNoVttIndex);
 	for (std::size_t i = 0; i < owner.virtual_base_count; ++i)

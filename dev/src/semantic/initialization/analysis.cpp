@@ -1420,18 +1420,18 @@ void Analyzer::AddConstructorMemberActions(
 	}
 	ClearInjectedConstructorInitializers();
 }
-void Analyzer::AddBaseInitializationAction(EntityId entity,
+std::uint32_t Analyzer::AddBaseInitializationAction(EntityId entity,
 	std::size_t base_ordinal, NodeId initializer, ScopeId scope,
 	std::uint32_t body, bool pack_expanded)
 {
 	if (base_ordinal >= program_->entities[entity].direct_base_count)
 		ThrowInternalCompilerError("base initialization has no direct base");
 	const DirectBaseEdge& edge = program_->DirectBase(entity, base_ordinal);
-	AddBaseInitializationActionAt(entity, edge.entity, edge.offset,
+	return AddBaseInitializationActionAt(entity, edge.entity, edge.offset,
 		initializer, scope, body, pack_expanded);
 }
 
-void Analyzer::AddBaseInitializationActionAt(EntityId entity,
+std::uint32_t Analyzer::AddBaseInitializationActionAt(EntityId entity,
 	EntityId base, std::uint64_t offset, NodeId initializer, ScopeId scope,
 	std::uint32_t body, bool pack_expanded)
 {
@@ -1509,6 +1509,7 @@ void Analyzer::AddBaseInitializationActionAt(EntityId entity,
 	AppendFullExpressionDestructionActions(constructor, action);
 	++constructor_base_action_visits_;
 	++expression_count_;
+	return action;
 }
 
 void Analyzer::RecordConstructionRecipe(std::uint32_t node)
@@ -2500,6 +2501,7 @@ void Analyzer::AddDestructorSubobjectActions(EntityId entity,
 			program_->entities[base].type, destructor, kNoBinding, 1);
 		dump_.nodes[action].base_projection_offset = layout.offset;
 		dump_.nodes[action].has_base_projection_offset = true;
+		dump_.nodes[action].virtual_base_subobject = true;
 		dump_.Add(body, action);
 		++destructor_subobject_action_visits_;
 	}

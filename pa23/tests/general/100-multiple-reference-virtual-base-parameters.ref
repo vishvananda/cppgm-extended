@@ -47,7 +47,7 @@ global @D__vtable [binding=weak, object=_ZTV1D] = {
   i64 0
   ptr addr @__rtti_struct_D
 }
-global @D____construction__B__0__s0__vtable [binding=internal, object=@D____construction__B__0__s0__vtable] = {
+global @D____construction__B__0__s0__vtable [binding=internal, object=_ZTC1D0_1B] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_B

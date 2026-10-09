@@ -267,11 +267,7 @@ protected:
 				ThrowLoweringInternal(
 					"virtual call has no object or slot");
 			call.first = derived.LowerVirtualCallee(record, virtual_object,
-				ResolveHostVirtualSlot(derived.program_,
-					derived.output_.host_object_emission,
-					derived.polymorphism_, record,
-					derived.BaseEntityForType(
-						derived.arena_.nodes[children[1]].type)));
+				record.virtual_slot);
 		}
 		else if (!direct)
 			call.first = member_pointer_call ? member_pointer_callee :

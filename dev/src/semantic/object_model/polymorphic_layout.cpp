@@ -1,4 +1,5 @@
 #include "semantic/analysis/analyzer.h"
+#include "semantic/object_model/vtable_groups.h"
 #include "support/exceptions.h"
 
 #include <algorithm>
@@ -66,54 +67,218 @@ EntityId VirtualResultEntity(const Program& program, BindingId binding)
 	return named.kind == TYPE_NAMED ? named.entity : kNoEntity;
 }
 
+// Whether converting an overrider's result to the result of the function it
+// overrides moves the pointer: a path through a virtual base, or a nonzero
+// offset (Itanium 2.5.2's return adjustment).  `known` is false while the
+// overrider's result class is still being laid out.
+bool CovariantResultAdjusts(const Program& program, BindingId function,
+	BindingId overridden, bool* known)
+{
+	*known = true;
+	const EntityId result = VirtualResultEntity(program, function);
+	const EntityId base = VirtualResultEntity(program, overridden);
+	if (result == kNoEntity || base == kNoEntity || result == base) return false;
+	if (program.HasVirtualBasePath(result, base)) return true;
+	if (!program.entities[result].layout_complete)
+	{
+		*known = false;
+		return true;
+	}
+	std::uint64_t offset = 0;
+	return program.QueryBasePath(result, base, 0, 0, &offset) && offset != 0;
 }
 
-void Analyzer::MergeSharedVirtualView(PolymorphicViewFact* retained,
-	const PolymorphicViewFact& incoming)
+// The physical slot of each virtual function root and final overrider in a
+// class's tables (a destructor takes two).  An overrider keeps its first
+// place, the primary table coming first, unless it roots an entry itself.
+void IndexVirtualSlots(const Program& program,
+	const ClassPolymorphismFacts& facts, std::vector<std::uint32_t>* slot_of)
 {
-	if (retained->entity != incoming.entity ||
-		retained->slots.size() != incoming.slots.size())
-		ThrowInternalCompilerError("shared virtual views have incompatible slots");
-	for (std::size_t i = 0; i < retained->slots.size(); ++i)
+	for (std::size_t view = 0; view <= facts.views.size(); ++view)
 	{
-		VirtualSlotFact& selected = retained->slots[i];
-		const VirtualSlotFact& candidate = incoming.slots[i];
-		if (program_->bindings[selected.root].canonical !=
-			program_->bindings[candidate.root].canonical)
+		const std::vector<VirtualSlotFact>& slots = SlotsForView(facts, view);
+		std::uint32_t physical_slot = 0;
+		for (std::size_t slot = 0; slot < slots.size(); ++slot)
+		{
+			const BindingId root = program.bindings[slots[slot].root].canonical;
+			const BindingId function =
+				program.bindings[slots[slot].function].canonical;
+			(*slot_of)[root] = physical_slot;
+			if ((*slot_of)[function] == kNoDumpEdge)
+				(*slot_of)[function] = physical_slot;
+			const std::uint32_t width = program.bindings[root].destructor ? 2 : 1;
+			if (physical_slot > std::numeric_limits<std::uint32_t>::max() - width)
+				ThrowSemanticResourceLimit("too many virtual slots");
+			physical_slot += width;
+		}
+	}
+}
+
+// Two paths reaching one subobject bring its table's slots: each takes the
+// final overrider that dominates (one whose class derives from the other's),
+// none when neither does.
+void MergeSharedSlots(const Program& program,
+	std::vector<VirtualSlotFact>* retained,
+	const std::vector<VirtualSlotFact>& incoming, std::size_t count)
+{
+	if (retained->size() < count || incoming.size() < count)
+		ThrowInternalCompilerError("shared virtual views have incompatible slots");
+	for (std::size_t i = 0; i < count; ++i)
+	{
+		VirtualSlotFact& selected = (*retained)[i];
+		const VirtualSlotFact& candidate = incoming[i];
+		if (program.bindings[selected.root].canonical !=
+			program.bindings[candidate.root].canonical)
 			ThrowInternalCompilerError("shared virtual slot roots do not match");
 		if (selected.function == kNoBinding)
 		{
-			if (program_->bindings[candidate.function].final_virtual)
+			if (candidate.function != kNoBinding &&
+				program.bindings[candidate.function].final_virtual)
 				ThrowSemanticError(
 					"virtual function overrides final function");
 			continue;
 		}
+		if (candidate.function == kNoBinding)
+		{
+			selected = candidate;
+			continue;
+		}
 		const BindingId selected_function =
-			program_->bindings[selected.function].canonical;
+			program.bindings[selected.function].canonical;
 		const BindingId candidate_function =
-			program_->bindings[candidate.function].canonical;
+			program.bindings[candidate.function].canonical;
 		if (selected_function == candidate_function) continue;
 		const EntityId selected_owner =
-			program_->bindings[selected_function].member_owner;
+			program.bindings[selected_function].member_owner;
 		const EntityId candidate_owner =
-			program_->bindings[candidate_function].member_owner;
+			program.bindings[candidate_function].member_owner;
 		const bool selected_is_base = selected_owner != kNoEntity &&
 			candidate_owner != kNoEntity &&
-			program_->IsBaseOf(selected_owner, candidate_owner);
+			program.IsBaseOf(selected_owner, candidate_owner);
 		const bool candidate_is_base = selected_owner != kNoEntity &&
 			candidate_owner != kNoEntity &&
-			program_->IsBaseOf(candidate_owner, selected_owner);
+			program.IsBaseOf(candidate_owner, selected_owner);
 		if (selected_is_base && !candidate_is_base)
-			selected.function = candidate_function;
+			selected = candidate;
 		else if (!candidate_is_base || selected_is_base)
 		{
-			if (program_->bindings[selected_function].final_virtual ||
-				program_->bindings[candidate_function].final_virtual)
+			if (program.bindings[selected_function].final_virtual ||
+				program.bindings[candidate_function].final_virtual)
 				ThrowSemanticError(
 					"virtual function overrides final function");
 			selected.function = kNoBinding;
 		}
 	}
+}
+
+// Slots copied from a direct base keep their final overriders' subobjects:
+// one in the base's non-virtual part now lies in that base (placed once the
+// class is laid out), or in the base itself when it is virtual.
+void InheritOverriders(std::vector<VirtualSlotFact>* slots,
+	const DirectBaseEdge& edge, std::uint32_t ordinal)
+{
+	for (std::size_t i = 0; i < slots->size(); ++i)
+	{
+		VirtualSlotFact& slot = (*slots)[i];
+		if (slot.overrider_anchor != kNoEntity) continue;
+		if (edge.virtual_base) slot.overrider_anchor = edge.entity;
+		else slot.overrider_base = ordinal;
+	}
+}
+
+// Places a slot's final overrider in the laid-out class: one in a direct
+// base is now relative to the class, one in a virtual base stays relative
+// to that base.
+void ResolveOverrider(const Program& program, EntityId entity,
+	VirtualSlotFact* slot)
+{
+	if (slot->overrider_base == kNoDumpEdge) return;
+	slot->overrider_offset += static_cast<std::int64_t>(
+		program.DirectBase(entity, slot->overrider_base).offset);
+	slot->overrider_base = kNoDumpEdge;
+}
+
+// A class sharing a table through a virtual primary base link is the same
+// subobject as the virtual base view of that base, which another path may
+// have brought with a dominating final overrider: the table's slots and the
+// view's agree on the merged overriders.
+void SyncSharedTables(const Program& program,
+	std::vector<ClassPolymorphismFacts>& all, EntityId entity)
+{
+	ClassPolymorphismFacts& facts = all[entity];
+	for (std::size_t owner = 0; owner <= facts.views.size(); ++owner)
+	{
+		const EntityId head = owner == 0 ? entity : facts.views[owner - 1].entity;
+		EntityId anchor = owner == 0 ? kNoEntity :
+			facts.views[owner - 1].virtual_anchor;
+		std::uint64_t anchor_offset = owner == 0 ? 0 :
+			facts.views[owner - 1].virtual_anchor_offset;
+		EntityId current = head;
+		const std::vector<EntityId> chain = all[head].primary_ancestors;
+		for (std::size_t link = 0; link < chain.size(); ++link)
+		{
+			if (all[current].primary_virtual)
+			{
+				anchor = chain[link];
+				anchor_offset = 0;
+			}
+			current = chain[link];
+			if (anchor == kNoEntity) continue;
+			for (std::size_t other = 0; other < facts.views.size(); ++other)
+			{
+				PolymorphicViewFact& shared = facts.views[other];
+				if (other + 1 == owner || shared.entity != current ||
+					shared.virtual_anchor != anchor ||
+					shared.virtual_anchor_offset != anchor_offset) continue;
+				std::vector<VirtualSlotFact>& slots = SlotsForView(&facts, owner);
+				const std::size_t count = all[current].slots.size();
+				MergeSharedSlots(program, &slots, shared.slots, count);
+				std::copy(slots.begin(), slots.begin() +
+					static_cast<std::ptrdiff_t>(count), shared.slots.begin());
+			}
+		}
+	}
+}
+
+// A primary table entry added for an overrider whose result is its own
+// class, before that class was laid out, stays only if converting the class
+// to the overridden function's result moves the pointer.
+void DropUnadjustedCovariantEntries(const Program& program,
+	std::vector<ClassPolymorphismFacts>& all, EntityId entity,
+	const std::function<FunctionSignatureKey(BindingId)>& key_of,
+	std::vector<std::uint32_t>* slot_of)
+{
+	ClassPolymorphismFacts& facts = all[entity];
+	if (facts.primary_ancestors.empty()) return;
+	const std::vector<VirtualSlotFact>& inherited =
+		all[facts.primary_ancestors[0]].slots;
+	bool dropped = false;
+	for (std::size_t slot = inherited.size(); slot < facts.slots.size();)
+	{
+		const BindingId member = facts.slots[slot].root;
+		BindingId overridden = kNoBinding;
+		if (member == facts.slots[slot].function &&
+			VirtualResultEntity(program, member) == entity)
+			for (std::size_t i = 0; i < inherited.size(); ++i)
+				if (key_of(inherited[i].root) == key_of(member))
+				{
+					overridden = inherited[i].function;
+					break;
+				}
+		bool known = true;
+		if (overridden != kNoBinding &&
+			!CovariantResultAdjusts(program, member, overridden, &known))
+		{
+			facts.slots.erase(facts.slots.begin() + static_cast<std::ptrdiff_t>(slot));
+			(*slot_of)[program.bindings[member].canonical] = kNoDumpEdge;
+			dropped = true;
+			continue;
+		}
+		++slot;
+	}
+	if (dropped) IndexVirtualSlots(program, facts, slot_of);
+}
+
 }
 
 void Analyzer::AppendPolymorphicView(ClassPolymorphismFacts* facts,
@@ -132,7 +297,9 @@ void Analyzer::AppendPolymorphicView(ClassPolymorphismFacts* facts,
 			retained.entity != view.entity ||
 			retained.virtual_anchor_offset != view.virtual_anchor_offset)
 			continue;
-		MergeSharedVirtualView(&retained, view);
+		if (retained.slots.size() != view.slots.size())
+			ThrowInternalCompilerError("shared virtual views have incompatible slots");
+		MergeSharedSlots(*program_, &retained.slots, view.slots, view.slots.size());
 		retained.virtual_base = retained.virtual_base || view.virtual_base;
 		++polymorphic_virtual_view_merges_;
 		return;
@@ -365,10 +532,11 @@ void FillVtablePrefixValues(const Program& program, EntityId entity,
 	}
 }
 
-// A vcall offset is the distance from the table's subobject to the
-// overrider's, which the slot of that signature already records.
-void FillVtableVcallValues(std::vector<ClassPolymorphismFacts>& all,
-	const std::function<FunctionSignatureKey(BindingId)>& key_of, EntityId entity)
+// A table's vcall offsets follow the final overriders of the table's
+// slots and of the views in the virtual bases sharing it.
+void FillVtableVcallValues(const VtablePlacement& placement,
+	std::vector<ClassPolymorphismFacts>& all, const SignatureKeyOf& key_of,
+	EntityId entity)
 {
 	ClassPolymorphismFacts& facts = all[entity];
 	for (std::size_t view = 0; view <= facts.views.size(); ++view)
@@ -381,25 +549,47 @@ void FillVtableVcallValues(std::vector<ClassPolymorphismFacts>& all,
 				all[owner].virtual_prefix.end());
 		std::vector<std::int64_t>& values = view == 0 ?
 			facts.virtual_base_offsets : facts.views[view - 1].virtual_base_offsets;
-		std::vector<VirtualSlotFact>& slots = SlotsForView(&facts, view);
-		const bool virtual_table = view != 0 && facts.views[view - 1].virtual_base;
-		for (std::size_t i = 0; i < entries.size() && i < values.size(); ++i)
-		{
-			if (entries[i].function == kNoBinding) continue;
-			const FunctionSignatureKey key = key_of(entries[i].function);
-			for (std::size_t slot = 0; slot < slots.size(); ++slot)
-				if (key_of(slots[slot].root) == key)
-				{
-					values[i] = slots[slot].this_adjustment;
-					// An adjusting entry in a virtual base's table is a
-					// virtual thunk reading this vcall offset.
-					slots[slot].virtual_call_offset = virtual_table &&
-						slots[slot].this_adjustment != 0 ?
-						-24 - 8 * static_cast<std::int64_t>(i) : 0;
-					break;
-				}
-		}
+		FillVcallRows(placement, key_of, facts, entries, SlotsForView(facts, view),
+			TableVirtualAnchors(all, owner,
+				view == 0 ? kNoEntity : facts.views[view - 1].virtual_anchor),
+			view == 0 ? 0 : static_cast<std::int64_t>(facts.views[view - 1].offset),
+			&values);
 	}
+}
+
+// The tables of a class's vtable group follow its primary table in clang's
+// order -- the non-virtual bases' secondary tables depth first, then the
+// virtual bases' in inheritance graph order (Itanium 2.5.2) -- and the views
+// sharing a table come after them.
+void OrderPolymorphicViews(const Program& program,
+	std::vector<ClassPolymorphismFacts>& all, EntityId entity)
+{
+	ClassPolymorphismFacts& facts = all[entity];
+	const std::vector<ConstructionTableFact> order =
+		VtableGroupOrder(program, all, entity);
+	std::vector<std::pair<std::size_t, std::size_t> > ranks;
+	for (std::size_t view = 0; view < facts.views.size(); ++view)
+	{
+		const PolymorphicViewFact& current = facts.views[view];
+		const std::uint64_t relative = current.virtual_anchor == kNoEntity ?
+			current.offset : current.virtual_anchor_offset;
+		std::size_t rank = order.size();
+		for (std::size_t table = 0; current.stores_vptr && table < order.size(); ++table)
+			if (order[table].entity == current.entity &&
+				order[table].anchor == current.virtual_anchor &&
+				order[table].relative == relative)
+			{
+				rank = table;
+				break;
+			}
+		ranks.push_back(std::make_pair(rank, view));
+	}
+	std::stable_sort(ranks.begin(), ranks.end());
+	std::vector<PolymorphicViewFact> views;
+	views.reserve(facts.views.size());
+	for (std::size_t i = 0; i < ranks.size(); ++i)
+		views.push_back(facts.views[ranks[i].second]);
+	facts.views.swap(views);
 }
 
 // A view whose subobject shares a table -- the class's own primary table at
@@ -468,6 +658,7 @@ void Analyzer::InheritPrimaryPolymorphism(EntityId entity,
 	const ClassPolymorphismFacts& inherited = class_polymorphism_[edge.entity];
 	facts.primary_virtual = edge.virtual_base;
 	facts.slots = inherited.slots;
+	InheritOverriders(&facts.slots, edge, ordinal);
 	facts.primary_ancestors.push_back(edge.entity);
 	facts.primary_ancestors.insert(facts.primary_ancestors.end(),
 		inherited.primary_ancestors.begin(), inherited.primary_ancestors.end());
@@ -477,6 +668,7 @@ void Analyzer::InheritPrimaryPolymorphism(EntityId entity,
 		view.direct_base_ordinal = ordinal;
 		view.relative_offset = inherited.views[i].offset;
 		InheritPolymorphicViewAnchor(*program_, edge, inherited.views[i], &view);
+		InheritOverriders(&view.slots, edge, ordinal);
 		AppendPolymorphicView(&facts, view);
 	}
 }
@@ -538,6 +730,7 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 			PolymorphicViewFact view(edge.entity,
 				static_cast<std::uint32_t>(ordinal));
 			view.slots = inherited.slots;
+			InheritOverriders(&view.slots, edge, static_cast<std::uint32_t>(ordinal));
 			if (edge.virtual_base) view.virtual_anchor = edge.entity;
 			AppendPolymorphicView(&facts, view);
 		}
@@ -555,7 +748,11 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 				chain = ancestor;
 				PolymorphicViewFact alias(ancestor,
 					static_cast<std::uint32_t>(ordinal), 0, false);
-				alias.slots = inherited.slots;
+				// The ancestor's slots are the shared table's first ones.
+				alias.slots.assign(inherited.slots.begin(), inherited.slots.begin() +
+					static_cast<std::ptrdiff_t>(std::min(inherited.slots.size(),
+						class_polymorphism_[ancestor].slots.size())));
+				InheritOverriders(&alias.slots, edge, alias.direct_base_ordinal);
 				alias.virtual_anchor = anchor;
 				AppendPolymorphicView(&facts, alias);
 			}
@@ -566,11 +763,11 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 			view.direct_base_ordinal = static_cast<std::uint32_t>(ordinal);
 			view.relative_offset = inherited.views[i].offset;
 			InheritPolymorphicViewAnchor(*program_, edge, inherited.views[i], &view);
+			InheritOverriders(&view.slots, edge, static_cast<std::uint32_t>(ordinal));
 			AppendPolymorphicView(&facts, view);
 		}
 	}
-	std::stable_partition(facts.views.begin(), facts.views.end(),
-		[](const PolymorphicViewFact& view) { return !view.virtual_base; });
+	SyncSharedTables(*program_, class_polymorphism_, entity);
 
 	bool inherits_virtual_destructor = false;
 	for (std::size_t view = 0; view <= facts.views.size(); ++view)
@@ -622,21 +819,17 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 		++virtual_signature_lookups_;
 		BindingId location = slot_index.Find(VirtualSignatureKey(member));
 		const bool matched = location != kNoBinding;
-		bool matched_primary = false;
-		BindingId inherited_root = kNoBinding;
+		// The function this one overrides in the primary base, if any.
+		BindingId primary_overridden = kNoBinding;
 		while (location != kNoBinding)
 		{
 			VirtualSlotLocation& indexed = locations[location];
-			matched_primary = matched_primary || indexed.view == 0;
-			if (primary == owner.direct_base_count &&
-				virtual_primary == kNoEntity &&
-				inherits_virtual_destructor && !binding.destructor &&
-				indexed.view != 0)
-				facts.views[indexed.view - 1].contributes_primary_override = true;
 			std::vector<VirtualSlotFact>& slots =
 				SlotsForView(&facts, indexed.view);
 			VirtualSlotFact& slot = slots[indexed.slot];
-			if (inherited_root == kNoBinding) inherited_root = slot.root;
+			if (indexed.view == 0 && primary_overridden == kNoBinding)
+				primary_overridden = slot.function != kNoBinding ?
+					slot.function : slot.root;
 			if (!VirtualSignatureMatches(member, slot.root))
 				ThrowSemanticError("invalid covariant virtual return type");
 			if (slot.function != kNoBinding &&
@@ -665,16 +858,23 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 				}
 			}
 			slot.function = member;
+			slot.overrider_anchor = kNoEntity;
+			slot.overrider_base = kNoDumpEdge;
+			slot.overrider_offset = 0;
 			location = indexed.next;
 			++virtual_overrides_;
 		}
 		if (matched)
 		{
+			// Itanium 2.5.2: the primary table has an entry for each virtual
+			// function the class declares unless it overrides one of the
+			// primary base's without a return adjustment.  While the result
+			// is this class, its offset is checked once it is laid out.
 			binding.virtual_function = true;
-			if (!matched_primary && primary == owner.direct_base_count &&
-				virtual_primary == kNoEntity &&
-				inherits_virtual_destructor)
-				facts.slots.push_back(VirtualSlotFact(inherited_root, member));
+			bool known = true;
+			if (primary_overridden == kNoBinding || CovariantResultAdjusts(
+				*program_, member, primary_overridden, &known))
+				facts.slots.push_back(VirtualSlotFact(member, member));
 		}
 		else
 		{
@@ -699,26 +899,18 @@ void Analyzer::CompleteClassPolymorphism(EntityId entity)
 	{
 		const std::vector<VirtualSlotFact>& slots = SlotsForView(facts, view);
 		virtual_slots_ += slots.size();
-		std::uint32_t physical_slot = 0;
 		for (std::size_t slot = 0; slot < slots.size(); ++slot)
 		{
 			if (slots[slot].function == kNoBinding)
 				ThrowSemanticError("no unique final overrider");
-			const BindingId root = program_->bindings[slots[slot].root].canonical;
 			const BindingId function =
 				program_->bindings[slots[slot].function].canonical;
 			if (program_->bindings[function].pure_virtual) owner.abstract_class = true;
 			if (program_->bindings[function].destructor)
 				owner.trivial_destructor = false;
-			virtual_slot_by_binding_[root] = physical_slot;
-			if (virtual_slot_by_binding_[function] == kNoDumpEdge)
-				virtual_slot_by_binding_[function] = physical_slot;
-			const std::uint32_t width = program_->bindings[root].destructor ? 2 : 1;
-			if (physical_slot > std::numeric_limits<std::uint32_t>::max() - width)
-				ThrowSemanticResourceLimit("too many virtual slots");
-			physical_slot += width;
 		}
 	}
+	IndexVirtualSlots(*program_, facts, &virtual_slot_by_binding_);
 	facts.complete = true;
 }
 
@@ -740,38 +932,6 @@ void Analyzer::AnchorPolymorphicView(EntityId entity,
 	}
 	view->offset = anchor_offset + view->virtual_anchor_offset;
 	view->virtual_anchor_ordinal = anchor_ordinal;
-}
-
-// A final overrider declared in the view's class or one of its bases runs
-// on that view's own subobject (a class repeated as a base elsewhere in the
-// object is not the one this table is for).
-bool Analyzer::ViewOverriderOffset(EntityId entity,
-	const PolymorphicViewFact* view, EntityId target, std::uint64_t* offset) const
-{
-	if (!view || target == kNoEntity || target == entity) return false;
-	if (target == view->entity)
-	{
-		*offset = view->offset;
-		return true;
-	}
-	if (!program_->IsBaseOf(target, view->entity)) return false;
-	if (program_->FindVirtualBase(view->entity, target))
-		return program_->FindVirtualBase(entity, target, offset);
-	std::uint64_t relative = 0;
-	bool ambiguous = false;
-	std::vector<std::uint32_t> path;
-	if (!program_->QueryBasePath(view->entity, target, 0, 0, &relative,
-		&ambiguous, &path) || ambiguous)
-		return false;
-	EntityId current = view->entity;
-	for (std::size_t i = 0; i < path.size(); ++i)
-	{
-		const DirectBaseEdge& edge = program_->DirectBase(current, path[i]);
-		if (edge.virtual_base) return false;
-		current = edge.entity;
-	}
-	*offset = view->offset + relative;
-	return true;
 }
 
 // Itanium C++ ABI 2.5.2 (clang's VCallAndVBaseOffsetBuilder): a class's
@@ -825,8 +985,10 @@ void Analyzer::AssignVtablePrefixes(EntityId entity)
 void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 {
 	if (entity >= class_polymorphism_.size()) return;
+	DropUnadjustedCovariantEntries(*program_, class_polymorphism_, entity,
+		[this](BindingId binding) { return VirtualSignatureKey(binding); },
+		&virtual_slot_by_binding_);
 	ClassPolymorphismFacts& facts = class_polymorphism_[entity];
-	facts.virtual_call_offsets.clear();
 	AssignVtablePrefixes(entity);
 	FillVtablePrefixValues(*program_, entity, facts.prefix, 0,
 		&facts.virtual_base_offsets);
@@ -842,7 +1004,6 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 		AnchorPolymorphicView(entity, edge, &current);
 		current.virtual_base = false;
 		current.virtual_base_ordinal = kNoDumpEdge;
-		current.virtual_call_offsets.clear();
 		std::uint64_t virtual_offset = 0;
 		std::uint32_t virtual_ordinal = 0;
 		if (program_->FindVirtualBase(entity, current.entity,
@@ -867,28 +1028,25 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 		current.address_point = 8 * (current.virtual_base_offsets.size() + 2);
 	}
 	MarkSharedPolymorphicViews(class_polymorphism_, entity);
+	OrderPolymorphicViews(*program_, class_polymorphism_, entity);
 	facts.address_point = 8 * (facts.virtual_base_offsets.size() + 2);
+	const SignatureKeyOf key_of =
+		[this](BindingId binding) { return VirtualSignatureKey(binding); };
+	const VtablePlacement placement(*program_, entity, 0);
 	for (std::size_t view = 0; view <= facts.views.size(); ++view)
 	{
 		std::vector<VirtualSlotFact>& slots = SlotsForView(&facts, view);
-		const std::uint64_t view_offset = view == 0 ? 0 : facts.views[view - 1].offset;
+		for (std::size_t slot = 0; slot < slots.size(); ++slot)
+			ResolveOverrider(*program_, entity, &slots[slot]);
+		PlaceTableSlots(placement, class_polymorphism_, key_of,
+			view == 0 ? entity : facts.views[view - 1].entity,
+			view == 0 ? kNoEntity : facts.views[view - 1].virtual_anchor,
+			view == 0 ? 0 : facts.views[view - 1].offset, &slots);
 		for (std::size_t slot = 0; slot < slots.size(); ++slot)
 		{
 			slots[slot].return_adjustment = 0;
-			slots[slot].virtual_call_offset = 0;
 			slots[slot].return_vtable_offset = 0;
 			slots[slot].return_adjustment_virtual = false;
-			const EntityId target =
-				program_->bindings[slots[slot].function].member_owner;
-			std::uint64_t target_offset = 0;
-			if (!ViewOverriderOffset(entity, view == 0 ? 0 : &facts.views[view - 1],
-				target, &target_offset) && target != entity && target != kNoEntity &&
-				!program_->FindVirtualBase(entity, target, &target_offset) &&
-				!program_->QueryBasePath(entity, target, 0, 0, &target_offset))
-				ThrowInternalCompilerError("virtual final overrider has no object path");
-			slots[slot].this_adjustment =
-				static_cast<std::int64_t>(target_offset) -
-				static_cast<std::int64_t>(view_offset);
 
 			const EntityId result = VirtualResultEntity(
 				*program_, slots[slot].function);
@@ -897,15 +1055,28 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 			if (result == kNoEntity || root_result == kNoEntity ||
 				result == root_result) continue;
 			std::uint64_t result_offset = 0;
-			std::uint32_t virtual_ordinal = 0;
-			if (program_->FindVirtualBase(result, root_result,
-				&result_offset, &virtual_ordinal))
+			if (program_->HasVirtualBasePath(result, root_result))
 			{
-				if (result >= class_polymorphism_.size() ||
-					virtual_ordinal >= program_->entities[result].virtual_base_count)
+				// Itanium 5.1.4: the result moves to the virtual base its
+				// overridden result lies in by that base's vbase offset,
+				// then by the fixed offset inside it.
+				std::size_t virtual_ordinal = 0;
+				const std::size_t count = program_->entities[result].virtual_base_count;
+				while (virtual_ordinal < count)
+				{
+					const EntityId base =
+						program_->VirtualBase(result, virtual_ordinal).entity;
+					result_offset = 0;
+					if (base == root_result || (!program_->HasVirtualBasePath(
+						base, root_result) && program_->QueryBasePath(
+							base, root_result, 0, 0, &result_offset))) break;
+					++virtual_ordinal;
+				}
+				if (result >= class_polymorphism_.size() || virtual_ordinal == count)
 					ThrowInternalCompilerError(
 						"covariant result has no finalized virtual-base slot");
 				slots[slot].return_adjustment_virtual = true;
+				slots[slot].return_adjustment = static_cast<std::int64_t>(result_offset);
 				slots[slot].return_vtable_offset = -24 - 8 *
 					static_cast<std::int64_t>(VirtualBaseRow(
 						class_polymorphism_, result, virtual_ordinal));
@@ -921,8 +1092,8 @@ void Analyzer::FinalizeClassPolymorphismViews(EntityId entity)
 			}
 		}
 	}
-	FillVtableVcallValues(class_polymorphism_,
-		[this](BindingId binding) { return VirtualSignatureKey(binding); }, entity);
+	FillVtableVcallValues(placement, class_polymorphism_, key_of, entity);
+	BuildConstructionGroups(*program_, class_polymorphism_, key_of, entity);
 }
 
 }

@@ -135,8 +135,10 @@ protected:
 	// The start of `base`'s sub-VTT in `owner`'s VTT (Itanium 2.6.2): a
 	// direct non-virtual base's, or, for the complete constructor, a
 	// virtual base's.
+	// The sub-VTT of a base subobject: a virtual base's in a complete VTT,
+	// else a non-virtual direct base's (one base may be both).
 	std::uint32_t ConstructionVttIndex(EntityId owner, EntityId base,
-		bool complete) const
+		bool complete, bool virtual_base) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
 		if (owner >= derived.polymorphism_.class_vtt_layouts.size() ||
@@ -145,8 +147,10 @@ protected:
 		const ClassVttLayout& layout =
 			derived.polymorphism_.class_vtt_layouts[owner];
 		std::uint32_t ordinal = 0;
-		if (complete && derived.program_.FindVirtualBase(owner, base, 0, &ordinal))
-			return layout.virtual_index[ordinal];
+		if (virtual_base)
+			return complete &&
+				derived.program_.FindVirtualBase(owner, base, 0, &ordinal) ?
+				layout.virtual_index[ordinal] : kNoVttIndex;
 		for (std::size_t i = 0; i < layout.base_index.size(); ++i)
 			if (derived.program_.DirectBase(owner, i).entity == base &&
 				!derived.program_.DirectBase(owner, i).virtual_base)
@@ -154,7 +158,8 @@ protected:
 		return kNoVttIndex;
 	}
 
-	Operand ConstructionVttArgument(EntityId complete, EntityId base)
+	Operand ConstructionVttArgument(EntityId complete, EntityId base,
+		bool virtual_base = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const EntityId owner = complete == kNoEntity ?
@@ -172,7 +177,7 @@ protected:
 			 derived.polymorphism_.class_vtt_symbols[complete] == kNoLowId))
 			ThrowLoweringInternal("complete constructor has no VTT symbol");
 		const std::uint32_t index =
-			ConstructionVttIndex(owner, base, complete != kNoEntity);
+			ConstructionVttIndex(owner, base, complete != kNoEntity, virtual_base);
 		if (index == kNoVttIndex)
 			ThrowLoweringInternal("base constructor has no construction VTT slice");
 		const Operand offset(static_cast<std::int64_t>(index) * 8, LowI64());

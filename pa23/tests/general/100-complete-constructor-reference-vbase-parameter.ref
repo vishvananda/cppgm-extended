@@ -61,7 +61,7 @@ global @E__vtable [binding=weak, object=_ZTV1E] = {
   i64 0
   ptr addr @__rtti_struct_E
 }
-global @E____construction__H__0__s0__vtable [binding=internal, object=@E____construction__H__0__s0__vtable] = {
+global @E____construction__H__0__s0__vtable [binding=internal, object=_ZTC1E0_1H] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_H
@@ -77,13 +77,13 @@ global @W__vtable [binding=weak, object=_ZTV1W] = {
   i64 0
   ptr addr @__rtti_struct_W
 }
-global @W____construction__E__0__s0__vtable [binding=internal, object=@W____construction__E__0__s0__vtable] = {
+global @W____construction__E__0__s0__vtable [binding=internal, object=_ZTC1W0_1E] = {
   i64 0
   i64 8
   i64 0
   ptr addr @__rtti_struct_E
 }
-global @W____construction__H__0__s0__vtable [binding=internal, object=@W____construction__H__0__s0__vtable] = {
+global @W____construction__H__0__s0__vtable [binding=internal, object=_ZTC1W0_1H] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_H

@@ -111,19 +111,19 @@ global @Object____view__Virtual__24__vtable [binding=internal, object=@Object___
   ptr addr @_Object___Object__vtable_virtual_adjust_n24__return_pos0
   ptr addr @_Object___Object__deleting_entry__vtable_virtual_adjust_n24__return_pos0
 }
-global @Object____construction__Base__0__s0__vtable [binding=internal, object=@Object____construction__Base__0__s0__vtable] = {
+global @Object____construction__Base__0__s0__vtable [binding=internal, object=_ZTC6Object0_4Base] = {
   i64 24
   i64 0
   ptr addr @__rtti_struct_Base
-  ptr addr @Base___Base
-  ptr addr @Base___Base__deleting_entry
+  ptr 0
+  ptr 0
 }
 global @Object____construction__Base__0__s1__vtable [binding=internal, object=@Object____construction__Base__0__s1__vtable] = {
-  i64 -16
+  i64 -24
   i64 -24
   ptr addr @__rtti_struct_Base
-  ptr addr @_Base___Base__vtable_virtual_adjust_n24__return_pos0
-  ptr addr @_Base___Base__deleting_entry__vtable_virtual_adjust_n24__return_pos0
+  ptr 0
+  ptr 0
 }
 global @Object____vtt [binding=weak, object=_ZTT6Object, object_root=yes] = {
   ptr addr @Object__vtable + 24
@@ -453,20 +453,19 @@ function @Base___Base__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr) -
     %t5 = index i8 %t4, -24
     %t6 = load typed i64 %t5
     %t7 = index i8 %t3, %t6
-    %t8 = index i8 %t7, 0
-    %t9 = index i8 %__vtt, 8
-    %t10 = load typed ptr %t9
-    store typed ptr %t10, %t8
+    %t8 = index i8 %__vtt, 8
+    %t9 = load typed ptr %t8
+    store typed ptr %t9, %t7
     eh_end
-    %t11 = load typed ptr $this
-    %t12 = index i8 %t11, 0
-    call void @Primary___Primary__base_entry(%t12)
+    %t10 = load typed ptr $this
+    %t11 = index i8 %t10, 0
+    call void @Primary___Primary__base_entry(%t11)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t13 = load typed ptr $this
-    %t14 = index i8 %t13, 0
-    call void @Primary___Primary__base_entry(%t14)
+    %t12 = load typed ptr $this
+    %t13 = index i8 %t12, 0
+    call void @Primary___Primary__base_entry(%t13)
     eh_end
     resume
 
@@ -622,10 +621,9 @@ function @Base__Base__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr) ->
     %t9 = index i8 %t8, -24
     %t10 = load typed i64 %t9
     %t11 = index i8 %t7, %t10
-    %t12 = index i8 %t11, 0
-    %t13 = index i8 %__vtt, 8
-    %t14 = load typed ptr %t13
-    store typed ptr %t14, %t12
+    %t12 = index i8 %__vtt, 8
+    %t13 = load typed ptr %t12
+    store typed ptr %t13, %t11
     eh_end
     return void
 

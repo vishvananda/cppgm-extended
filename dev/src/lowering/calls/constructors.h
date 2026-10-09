@@ -49,6 +49,7 @@ protected:
 			cleanup->base_projection_count = 1;
 			cleanup->base_projection_offset = action.direct_base_offset;
 			cleanup->has_base_projection_offset = true;
+			cleanup->virtual_base_subobject = action.virtual_base_subobject;
 		}
 		return true;
 	}
@@ -142,7 +143,8 @@ protected:
 		const Operand& destination, bool force_empty = false,
 		bool elide_direct_empty_source = false,
 		bool elide_empty_call_source = false,
-		EntityId complete_entity = kNoEntity, bool base_subobject = false)
+		EntityId complete_entity = kNoEntity, bool base_subobject = false,
+		bool virtual_base = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const DumpNode& action = derived.arena_.nodes[node];
@@ -226,7 +228,7 @@ protected:
 		if (derived.IncludesConstructionVtt(action.binding))
 		{
 			arguments.Push(derived.ConstructionVttArgument(
-				complete_entity, constructor_binding.member_owner));
+				complete_entity, constructor_binding.member_owner, virtual_base));
 			references.Push(Instruction::CALL_PASS_VALUE);
 		}
 		for (std::size_t i = 0; i < children.size(); ++i)
@@ -343,7 +345,8 @@ protected:
 			derived.LowerConstructorAction(
 				children[0], destination, false, true, false,
 				derived.HasCurrentConstructionVtt() ?
-					kNoEntity : derived.current_member_owner_, true);
+					kNoEntity : derived.current_member_owner_, true,
+				action.virtual_base_subobject);
 		if (children.size() > 1)
 			derived.CompleteFullExpressionCleanup();
 	}
