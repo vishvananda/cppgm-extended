@@ -316,6 +316,12 @@ To complete PA29, implement hosted compatibility for:
   bodyless C++14 placeholder-return declarations selected by a test's language
   mode, non-standard hex-float compile acceptance on ordinary floating types,
   and `[[no_unique_address]]` empty-member layout through generated copy operations
+- the standard `[[noreturn]]` attribute takes no argument and appertains only
+  to the declarator-id of a function declaration (7.6.3p1): a variable,
+  including a block-scope one, a data member, a parameter, a typedef or
+  alias-declaration, a statement, and the position after a parameter list
+  (where it would appertain to the function type) are rejected. Leading
+  attributes of a block item appertain to the declaration it introduces
 - semantic validation of primary-source GNU inline function bodies even when
   emission is deferred; an unimplemented reserved compiler builtin may defer
   its wrapper, but ordinary lookup and type errors in an unused wrapper must

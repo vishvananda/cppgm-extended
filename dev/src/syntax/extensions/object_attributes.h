@@ -33,6 +33,10 @@ bool ConsumeLeadingStandardObjectAttribute(
 	const syntax::StringTable& strings,
 	syntax::SyntaxArena& arena, std::size_t* position,
 	std::vector<syntax::NodeId>* attributes);
+// Standard attributes that lead a block item appertain to the declaration
+// it introduces; a statement admits no `noreturn` (7.6.3p1).
+void AttachLeadingBlockItemAttributes(syntax::SyntaxArena& arena,
+	syntax::NodeId item, const std::vector<syntax::NodeId>& attributes);
 
 }
 }

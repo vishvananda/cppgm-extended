@@ -1097,6 +1097,8 @@ void Analyzer::AnalyzeClassMember(NodeId node, ScopeId scope,
 		DeclaratorInfo parsed = BuildMemberDeclarator(item, declarator, spec, scope, false, &placeholder_initializer);
 		if (spec.is_typedef)
 		{
+			hosted_extension::RejectNonFunctionNoreturn(
+				*arena_, node, specifiers, declarator);
 			const BindingId alias = program_->AddBinding(scope, BIND_TYPE_ALIAS,
 				parsed.name, parsed.type);
 			program_->bindings[alias].member_owner = EntityOf(owner_type);
@@ -2174,8 +2176,13 @@ DeclaratorInfo Analyzer::BuildDeclarator(NodeId node, TypeId base,
 	{
 		const NodeId child = arena_->EdgeChild(edge);
 		if (arena_->IsTag(child, ::cppgm::syntax::STAG_STANDARD_ATTRIBUTE))
-			standard_noreturn = standard_noreturn ||
-				arena_->SemanticPayload(child) == "noreturn";
+		{
+			const bool noreturn = arena_->SemanticPayload(child) == "noreturn";
+			// After a parameter or array suffix it appertains to the type.
+			if (noreturn && !suffixes.empty())
+				ThrowSemanticError("noreturn attribute requires a function");
+			standard_noreturn = standard_noreturn || noreturn;
+		}
 		else if (arena_->IsTag(child, ::cppgm::syntax::STAG_PTR_OPERATOR))
 		{
 			const std::string operation = PayloadSource(child);
@@ -2540,6 +2547,8 @@ void Analyzer::AnalyzeUsing(NodeId node, ScopeId scope,
 	const EntityId class_owner = program_->EntityForScope(scope);
 	if (arena_->IsTag(node, ::cppgm::syntax::STAG_ALIAS_DECLARATION))
 	{
+		hosted_extension::RejectNonFunctionNoreturn(
+			*arena_, node, syntax::kNoNode, syntax::kNoNode);
 		std::uint32_t type_layout = kNoDeclaredTypeLayout;
 		const TypeId type = BuildIdentityOnlyTypeId(
 			FindChild(node, ::cppgm::syntax::STAG_TYPE_ID), scope, &type_layout);

@@ -1,4 +1,5 @@
 #include "semantic/extensions/hosted_extensions.h"
+#include "support/exceptions.h"
 
 namespace cppgm
 {
@@ -52,6 +53,17 @@ bool HasStandardAttribute(const syntax::SyntaxArena& arena,
 			arena.SemanticPayload(child) == name) return true;
 	}
 	return false;
+}
+
+void RejectNonFunctionNoreturn(const syntax::SyntaxArena& arena,
+	syntax::NodeId declaration, syntax::NodeId specifiers,
+	syntax::NodeId declarator)
+{
+	const syntax::NodeId owners[] = {declaration, specifiers, declarator};
+	for (std::size_t i = 0; i < 3; ++i)
+		if (owners[i] != syntax::kNoNode &&
+			HasStandardAttribute(arena, owners[i], "noreturn"))
+			ThrowSemanticError("noreturn attribute requires a function");
 }
 
 semantic::TypeId ApplyIntegerSignedness(semantic::TypeTable& types,

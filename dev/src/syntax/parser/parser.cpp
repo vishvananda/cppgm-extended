@@ -1890,6 +1890,10 @@ NodeId SyntaxParser::ParseCompoundStatement()
 	{
 		if (AtEof()) throw Error("unterminated compound statement");
 		NodeId item = kNoNode;
+		std::vector<NodeId> attributes;
+		while (At(OP_LSQUARE) && AtOffset(1, OP_LSQUARE) &&
+			syntax::ConsumeLeadingStandardObjectAttribute(
+				tokens_, strings_, arena_, &position_, &attributes)) {}
 		const bool declaration_start = !StartsThisArgumentCast() &&
 			(At(KW_TEMPLATE) || At(KW_USING) ||
 			At(KW_NAMESPACE) ||
@@ -1910,6 +1914,7 @@ NodeId SyntaxParser::ParseCompoundStatement()
 		}
 		if (item == kNoNode) item = ParseStatement();
 		if (item == kNoNode) throw Error("expected block item");
+		syntax::AttachLeadingBlockItemAttributes(arena_, item, attributes);
 		arena_.Add(compound, item);
 	}
 	Expect(OP_RBRACE);

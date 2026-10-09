@@ -2159,6 +2159,8 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 		if (parsed.name == 0) ThrowSemanticError("unnamed declaration");
 		if (spec.is_typedef)
 		{
+			hosted_extension::RejectNonFunctionNoreturn(
+				*arena_, node, specifiers, declarator);
 			const BindingId binding = program_->AddBinding(
 				scope, BIND_TYPE_ALIAS, parsed.name, parsed.type);
 			PublishDeclaredTypeLayout(binding, parsed.type, spec.type_layout,

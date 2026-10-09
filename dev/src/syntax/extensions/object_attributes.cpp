@@ -297,5 +297,19 @@ bool ConsumeLeadingStandardObjectAttribute(
 	return true;
 }
 
+void AttachLeadingBlockItemAttributes(SyntaxArena& arena, NodeId item,
+	const std::vector<NodeId>& attributes)
+{
+	const bool declaration = arena.IsTag(item, STAG_SIMPLE_DECLARATION) ||
+		arena.IsTag(item, STAG_ALIAS_DECLARATION);
+	for (std::size_t i = 0; i < attributes.size(); ++i)
+	{
+		if (declaration) arena.Add(item, attributes[i]);
+		else if (arena.IsTag(attributes[i], STAG_STANDARD_ATTRIBUTE) &&
+			arena.SemanticPayload(attributes[i]) == "noreturn")
+			ThrowSyntaxError("noreturn attribute does not apply to a statement");
+	}
+}
+
 }
 }
