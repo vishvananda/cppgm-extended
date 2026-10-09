@@ -1648,6 +1648,9 @@ struct LocalStaticObjectAction
 	StaticAddressInitializer constant_address;
 	std::uint32_t constant_object;
 	std::uint32_t initializer_list_backing;
+	// A static reference's extended temporaries have static storage
+	// duration (12.2p5): materialized object identity and its destructor.
+	std::vector<std::pair<std::uint32_t, std::uint32_t> > reference_temporaries;
 
 	LocalStaticObjectAction(BindingId object_value, BindingId function_value,
 		TypeId type_value, std::uint32_t variable_value,

@@ -30,33 +30,47 @@ protected:
 			Operand(Operand::GLOBAL, SymbolId(symbol), type) : Operand();
 	}
 
-	bool HasStaticReferenceDestructors(const NamespaceObjectAction& action) const
+	bool HasStaticReferenceStorage(std::uint32_t node) const
 	{
-		for (std::size_t i = 0; i < action.reference_temporaries.size(); ++i)
-			if (action.reference_temporaries[i].second != kNoDumpEdge) return true;
+		std::uint32_t symbol = 0;
+		return static_cast<const Derived&>(*this).
+			static_reference_symbols_.Find(node, &symbol);
+	}
+
+	typedef std::vector<std::pair<std::uint32_t, std::uint32_t> >
+		StaticReferenceTemporaries;
+
+	bool HasStaticReferenceDestructors(
+		const StaticReferenceTemporaries& temporaries) const
+	{
+		for (std::size_t i = 0; i < temporaries.size(); ++i)
+			if (temporaries[i].second != kNoDumpEdge) return true;
 		return false;
 	}
 
-	void RegisterStaticReferenceTemporaries(const NamespaceObjectAction& action)
+	// The temporaries a static reference extends share its storage class:
+	// global storage named after the reference, and a constructed flag for
+	// each one that needs a shutdown destructor.
+	void RegisterStaticReferenceTemporaries(SymbolId object,
+		const StaticReferenceTemporaries& temporaries,
+		bool thread_local_storage)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		for (std::size_t i = 0; i < action.reference_temporaries.size(); ++i)
+		for (std::size_t i = 0; i < temporaries.size(); ++i)
 		{
-			const std::uint32_t node = action.reference_temporaries[i].first;
+			const std::uint32_t node = temporaries[i].first;
 			std::uint32_t existing = 0;
 			if (derived.static_reference_symbols_.Find(node, &existing)) continue;
 			const std::string name = "__cppgm_ref_temporary__" +
 				derived.output_.strings.get(derived.output_.symbols[
-					derived.global_symbols_[action.object]].name) + "_" +
-				std::to_string(i);
+					object].name) + "_" + std::to_string(i);
 			const SymbolId symbol = derived.AddSyntheticSymbol(
 				Symbol::GLOBAL_SYMBOL, name, std::string(), true);
 			derived.static_reference_symbols_.Insert(node, symbol);
 			Symbol& record = derived.output_.symbols[symbol];
 			record.definition_emitted = true;
 			record.referenced = true;
-			record.thread_local_storage =
-				derived.program_.bindings[action.object].thread_local_storage;
+			record.thread_local_storage = thread_local_storage;
 			Global backing;
 			backing.symbol = symbol;
 			const TypeId type = derived.arena_.nodes[node].type;
@@ -64,19 +78,25 @@ protected:
 			derived.static_initializers_.SetZero(type, &backing);
 			derived.output_.globals.push_back(backing);
 			if (derived.stats_) ++derived.stats_->globals;
-			if (action.reference_temporaries[i].second == kNoDumpEdge) continue;
+			if (thread_local_storage && derived.output_.host_object_emission)
+				AddThreadLocalWrapper("__cppgm_tls_wrapper__" + name,
+					std::string(), symbol, true);
+			if (temporaries[i].second == kNoDumpEdge) continue;
 			const SymbolId guard = derived.AddSyntheticSymbol(
 				Symbol::GLOBAL_SYMBOL, name + "_constructed", std::string(), true);
 			derived.static_reference_guards_.Insert(node, guard);
 			derived.output_.symbols[guard].definition_emitted = true;
 			derived.output_.symbols[guard].referenced = true;
 			derived.output_.symbols[guard].thread_local_storage =
-				derived.program_.bindings[action.object].thread_local_storage;
+				thread_local_storage;
 			Global state;
 			state.symbol = guard;
 			state.type = LowI8();
 			derived.output_.globals.push_back(state);
 			if (derived.stats_) ++derived.stats_->globals;
+			if (thread_local_storage && derived.output_.host_object_emission)
+				AddThreadLocalWrapper("__cppgm_tls_wrapper__" + name +
+					"_constructed", std::string(), guard, true);
 		}
 	}
 
@@ -92,13 +112,14 @@ protected:
 		derived.Emit(store);
 	}
 
-	void LowerStaticReferenceDestructors(const NamespaceObjectAction& action)
+	void LowerStaticReferenceDestructors(
+		const StaticReferenceTemporaries& temporaries)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		for (std::size_t i = action.reference_temporaries.size(); i != 0; --i)
+		for (std::size_t i = temporaries.size(); i != 0; --i)
 		{
-			const std::uint32_t node = action.reference_temporaries[i - 1].first;
-			const std::uint32_t destructor = action.reference_temporaries[i - 1].second;
+			const std::uint32_t node = temporaries[i - 1].first;
+			const std::uint32_t destructor = temporaries[i - 1].second;
 			if (destructor == kNoDumpEdge) continue;
 			std::uint32_t guard = 0;
 			if (!derived.static_reference_guards_.Find(node, &guard))
@@ -198,7 +219,8 @@ protected:
 	}
 
 	SymbolId EmitStaticDestructorWrapper(const std::string& proposed,
-		const DumpNode& action, std::uint32_t backing = kNoDumpEdge)
+		const DumpNode* action, std::uint32_t backing = kNoDumpEdge,
+		const StaticReferenceTemporaries* references = 0)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const SymbolId symbol = derived.AddSyntheticSymbol(
@@ -210,10 +232,11 @@ protected:
 		function.symbol = symbol;
 		function.result = LowVoid();
 		derived.BeginSyntheticFunction(&function);
-		if (backing != kNoDumpEdge)
+		if (references) LowerStaticReferenceDestructors(*references);
+		else if (backing != kNoDumpEdge)
 			derived.LowerStaticInitializerListBackingDestructor(
-				backing, action);
-		else derived.LowerDestructorAction(action);
+				backing, *action);
+		else derived.LowerDestructorAction(*action);
 		derived.Emit(Instruction(Instruction::RETURN_VOID));
 		derived.EndSyntheticFunction(function);
 		derived.output_.functions.push_back(function);
@@ -442,7 +465,7 @@ protected:
 			if (action.destructor != kNoDumpEdge)
 				destructor_symbol = EmitStaticDestructorWrapper(
 					"__cppgm_tls_destructor__" + object_internal,
-					derived.arena_.nodes[action.destructor]);
+					&derived.arena_.nodes[action.destructor]);
 
 			Function initializer;
 			initializer.symbol = initializer_symbol;

@@ -1,4 +1,7 @@
 global @__local_static__case_11__get__s__tokens713_720 : ptr [binding=internal] = zero
+global @__cppgm_ref_temporary____local_static__case_11__get__s__tokens713_720_0 [binding=internal] = {
+  zero 4
+}
 global @__local_static__case_11__get__s__tokens713_720__guard : i64 [binding=internal] = zero
 global @case_1__alive : i32 [binding=strong, object=_ZN6case_15aliveE] = zero
 global @case_2__alive : i32 [binding=strong, object=_ZN6case_25aliveE] = zero
@@ -388,8 +391,6 @@ function @case_10__check_case() -> i32 [binding=strong, object=_ZN7case_1010chec
     return i32 %t5
 }
 function @case_11__get() -> ptr [binding=strong, object=_ZN7case_113getEv] {
-  slot $tmpobj__1 : obj<4x4>
-
   block ^entry:
     %t1 = load typed i64 @__local_static__case_11__get__s__tokens713_720__guard
     %t2 = cmp ne i64 %t1, 0
@@ -397,7 +398,7 @@ function @case_11__get() -> ptr [binding=strong, object=_ZN7case_113getEv] {
 
   block ^local_static_init_2:
     %t3 = addr @__local_static__case_11__get__s__tokens713_720
-    %t4 = addr $tmpobj__1
+    %t4 = addr @__cppgm_ref_temporary____local_static__case_11__get__s__tokens713_720_0
     call void @case_11__S__S(%t4, 3)
     store typed ptr %t4, %t3
     store typed i64 1, @__local_static__case_11__get__s__tokens713_720__guard

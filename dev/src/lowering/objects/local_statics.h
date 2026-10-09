@@ -212,15 +212,27 @@ protected:
 			}
 			derived.StateStructuredGlobalAlignment(&global);
 			derived.output_.globals.push_back(global);
-			if (derived.output_.host_object_emission && dynamic &&
-				action.destructor != kNoDumpEdge)
+			// A static reference's temporaries live as long as the reference
+			// (12.2p5): static storage, destroyed at exit like the object.
+			if (dynamic)
+				derived.RegisterStaticReferenceTemporaries(symbol,
+					action.reference_temporaries, thread_local_object);
+			const bool reference_destructors = dynamic &&
+				derived.HasStaticReferenceDestructors(
+					action.reference_temporaries);
+			const bool destroyed = action.destructor != kNoDumpEdge ||
+				reference_destructors;
+			if (derived.output_.host_object_emission && dynamic && destroyed)
 				derived.local_static_destructor_symbols_[i] =
 					derived.EmitStaticDestructorWrapper(
 						"__cppgm_local_static_destructor__" +
 							derived.output_.strings.get(
 								derived.output_.symbols[symbol].name),
-						derived.arena_.nodes[action.destructor], action.initializer_list_backing);
-			else if (action.destructor != kNoDumpEdge)
+						reference_destructors ? 0 :
+							&derived.arena_.nodes[action.destructor],
+						action.initializer_list_backing,
+						reference_destructors ? &action.reference_temporaries : 0);
+			else if (destroyed)
 				derived.local_static_finalizers_.push_back(
 					static_cast<std::uint32_t>(i));
 			if (derived.stats_) ++derived.stats_->globals;
@@ -325,7 +337,10 @@ protected:
 			derived.Emit(compare);
 			derived.EmitBranch(initialized, destroy, next);
 			derived.SelectBlock(destroy);
-			if (action.initializer_list_backing != kNoDumpEdge)
+			if (!action.reference_temporaries.empty())
+				derived.LowerStaticReferenceDestructors(
+					action.reference_temporaries);
+			else if (action.initializer_list_backing != kNoDumpEdge)
 				derived.LowerStaticInitializerListBackingDestructor(
 					action.initializer_list_backing, derived.arena_.nodes[action.destructor]);
 			else derived.LowerDestructorAction(derived.arena_.nodes[action.destructor]);
@@ -338,7 +353,8 @@ protected:
 				derived.graph_.namespace_objects[
 					derived.dynamic_finalizers_[i - 1]];
 			if (!action.reference_temporaries.empty())
-				derived.LowerStaticReferenceDestructors(action);
+				derived.LowerStaticReferenceDestructors(
+					action.reference_temporaries);
 			else if (action.initializer_list_backing != kNoDumpEdge)
 				derived.LowerNamespaceInitializerListBackingDestructor(action);
 			else derived.LowerDestructorAction(

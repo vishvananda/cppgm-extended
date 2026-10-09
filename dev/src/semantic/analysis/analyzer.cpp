@@ -2038,13 +2038,16 @@ void Analyzer::FinishLocalVariableInitializer(ScopeId scope,
 			return;
 		}
 	}
-	const bool extended_initializer_list =
+	const bool static_storage = program_->bindings[binding].storage_class == STORAGE_CLASS_STATIC;
+	const bool static_reference = static_storage && program_->types.IsReference(type);
+	const bool extended_initializer_list = !static_reference &&
 		ExtendInitializerListVariableLifetime(
 		type, scope, initializer.node, control_dependent);
 	const bool direct_temporary =
 		dump_.nodes[initializer.node].kind == DUMP_TEMPORARY_OBJECT &&
 		!dump_.nodes[initializer.node].reference_call_materialization;
-	if (!extended_initializer_list && program_->types.IsReference(type) &&
+	if (!extended_initializer_list && !static_reference &&
+		program_->types.IsReference(type) &&
 		(!control_dependent || direct_temporary))
 	{
 		std::vector<std::uint32_t> temporaries;
@@ -2068,8 +2071,8 @@ void Analyzer::FinishLocalVariableInitializer(ScopeId scope,
 	if (extended_initializer_list ||
 		dump_.nodes[variable].full_expression_staging) return;
 	const std::size_t edge_count = dump_.edges.size();
-	const bool static_storage = program_->bindings[binding].storage_class == STORAGE_CLASS_STATIC;
-	AppendFullExpressionDestructionActions(initializer.node, owner, static_storage);
+	AppendFullExpressionDestructionActions(initializer.node, owner, static_storage,
+		static_reference ? &local_static_objects_.back().reference_temporaries : 0);
 	if (control_dependent && dump_.edges.size() != edge_count &&
 		RequiresManagedConditionalFullExpression(initializer.node, edge_count))
 	{

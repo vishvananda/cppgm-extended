@@ -786,7 +786,8 @@ private:
 			&needs_global_class_initializer_, &keep_global_class_address))
 		{
 			static_initializers_.SetZero(action.type, &global);
-			RegisterStaticReferenceTemporaries(action);
+			RegisterStaticReferenceTemporaries(global_symbols_[action.object],
+				action.reference_temporaries, thread_local_object);
 			dynamic_initializer = true;
 			if (thread_local_object)
 				thread_local_dynamic_[action_index] = 1;
@@ -798,7 +799,8 @@ private:
 			namespace_initializers_.push_back(
 				std::make_pair(action_index, false));
 		}
-		if ((action.destructor != kNoDumpEdge || HasStaticReferenceDestructors(action)) &&
+		if ((action.destructor != kNoDumpEdge ||
+			 HasStaticReferenceDestructors(action.reference_temporaries)) &&
 			!program_.bindings[action.object].thread_local_storage)
 			dynamic_finalizers_.push_back(action_index);
 		// A statically initialized const scalar can never be written, so its

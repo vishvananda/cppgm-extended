@@ -543,6 +543,9 @@ void Analyzer::AddLocalStaticObjectAction(std::uint32_t variable,
 		constant_initialized, specialization_owned_recipe,
 		source_identity_presentation));
 	local_static_objects_.back().initializer_list_backing = initializer_list_backing;
+	if (program_->types.IsReference(type))
+		CollectReferenceLifetimeObjects(initializer,
+			&local_static_objects_.back().reference_temporaries);
 }
 
 void Analyzer::RegisterVariableLifetimeAndStorage(ScopeId scope,

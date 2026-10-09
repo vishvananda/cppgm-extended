@@ -182,6 +182,10 @@ after a valid declaration is instantiated with concrete template arguments:
   - constant initialization when the initializer is a constant expression
   - dynamic class-object local statics with the required guard/check behavior, including
     direct initialization from a class-prvalue factory call
+  - a temporary bound to a local static reference persists for the
+    reference's lifetime (12.2p5): it occupies static storage, not the
+    initializing call's frame, and is destroyed at exit with the other
+    static objects (thread storage for a `thread_local` reference)
 - ordinary namespace objects whose constant-initialization probe encounters a
   core constant-expression failure use dynamic initialization; only contexts
   that require a constant expression are rejected for that failure
