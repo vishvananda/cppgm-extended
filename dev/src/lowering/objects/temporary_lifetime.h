@@ -648,6 +648,18 @@ protected:
 		const char* end_prefix = "call_unwind_end")
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		// A segment that protected nothing leaves no region behind; its
+		// landing stays available to a later segment of the same context.
+		std::vector<Instruction>& instructions = derived.CurrentBlock().instructions;
+		if (!instructions.empty() &&
+			instructions.back().kind == Instruction::EH_TRY &&
+			instructions.back().target == derived.full_expression_cleanup_dispatch_)
+		{
+			instructions.pop_back();
+			if (!derived.full_expression_cleanup_dispatch_reused_)
+				MaterializePendingCleanupStates();
+			return;
+		}
 		derived.Emit(Instruction(Instruction::EH_END));
 		if (derived.full_expression_cleanup_dispatch_reused_) return;
 		const BlockId end = derived.AddBlock(

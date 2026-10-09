@@ -92,8 +92,6 @@ function @construction_probe() -> void [linkage=c, binding=strong] {
     branch %t4, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:
-    eh_try ^cleanup_action_5
-    eh_end
     %t6 = index i8 [projection=field] %t2, 0
     eh_try ^cleanup_action_5
     call void @S__S(%t6, 5)

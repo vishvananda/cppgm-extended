@@ -65,9 +65,17 @@ function @construction_probe() -> void [linkage=c, binding=strong] {
     %t1 = addr $prefix
     call void @S__S(%t1, 1)
     %t2 = addr $tmpobj__2
+    %t4 = index i8 [projection=field] %t2, 0
     eh_try ^cleanup_action_2
+    call void @S__S(%t4, 5)
     eh_end
-    jump ^call_unwind_end_3
+    %t5 = index i8 [projection=field] %t2, 8
+    store typed i32 10, %t5
+    %t6 = index i8 [projection=field] %t2, 12
+    eh_try ^construction_cleanup_3
+    call void @S__S(%t6, 6)
+    eh_end
+    jump ^call_unwind_end_4
 
   block ^cleanup_resume_1:
     resume
@@ -77,27 +85,14 @@ function @construction_probe() -> void [linkage=c, binding=strong] {
     call void @S___S(%t3)
     jump ^cleanup_resume_1
 
-  block ^call_unwind_end_3:
-    %t4 = index i8 [projection=field] %t2, 0
-    eh_try ^cleanup_action_2
-    call void @S__S(%t4, 5)
-    eh_end
-    %t5 = index i8 [projection=field] %t2, 8
-    store typed i32 10, %t5
-    %t6 = index i8 [projection=field] %t2, 12
-    eh_try ^construction_cleanup_4
-    call void @S__S(%t6, 6)
-    eh_end
-    jump ^call_unwind_end_5
-
-  block ^construction_cleanup_4:
+  block ^construction_cleanup_3:
     call void @S___S(%t4)
     jump ^cleanup_action_2
 
-  block ^call_unwind_end_5:
+  block ^call_unwind_end_4:
     %t7 = index i8 [projection=field] %t2, 0
     store typed ptr %t7, $s
-    eh_try ^cleanup_action_6
+    eh_try ^cleanup_action_5
     %t8 = load typed ptr $s
     %t9 = index i8 [projection=field] %t8, 0
     %t10 = load typed i32 %t9
@@ -105,17 +100,17 @@ function @construction_probe() -> void [linkage=c, binding=strong] {
     %t12 = convert trunc i32 i64 %t11
     call void @check(%t12)
     eh_end
-    jump ^call_unwind_end_7
+    jump ^call_unwind_end_6
 
-  block ^cleanup_action_6:
+  block ^cleanup_action_5:
     call void @E___E(%t2)
     jump ^cleanup_action_2
 
-  block ^call_unwind_end_7:
-    eh_try ^cleanup_action_6
+  block ^call_unwind_end_6:
+    eh_try ^cleanup_action_5
     call void @check_live(3)
     eh_end
-    eh_try ^cleanup_action_6
+    eh_try ^cleanup_action_5
     %t13 = call i32 @step_value()
     store typed i32 %t13, $call__1
     %t14 = load typed i32 $call__1

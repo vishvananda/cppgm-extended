@@ -82,8 +82,6 @@ function @construction_probe() -> void [linkage=c, binding=strong] {
     return void
 
   block ^condobj_else_5:
-    eh_try ^cleanup_action_7
-    eh_end
     %t11 = index i8 [projection=field] %t5, 0
     %t12 = addr $x
     call void @S__S__ov2(%t11, %t12)

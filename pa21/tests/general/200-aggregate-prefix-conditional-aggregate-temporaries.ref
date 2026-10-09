@@ -184,8 +184,6 @@ function @construction_probe() -> void [linkage=c, binding=strong] {
     jump ^conditional_cleanup_dispatch_10
 
   block ^condobj_then_16:
-    eh_try ^conditional_cleanup_dispatch_13
-    eh_end
     %t16 = index i8 [projection=field] %t13, 0
     eh_try ^cleanup_action_19
     %t17 = addr $x
