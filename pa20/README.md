@@ -13,8 +13,7 @@ This milestone focuses on:
   extension beyond C++11)
 - direct braced initialization of supported scalar and array objects
 - captureless lambdas plus the supported by-reference local / `this`-capture subset
-- range-for over bounded arrays, braced-init lists, and supported user-defined `begin` / `end`
-  ranges
+- range-for over bounded arrays and supported user-defined `begin` / `end` ranges
 
 PA20 still produces LowIR. It does not introduce a new output format.
 
@@ -177,7 +176,6 @@ PA20 supports the following in addition to the PA19 subset:
   capture subset
 - range-for statements over:
   - bounded arrays
-  - braced-init lists that can be materialized as hidden arrays
   - supported class/member and ADL `begin` / `end` ranges whose iterator operations stay
     within the already-supported call/operator subset
 
@@ -210,7 +208,7 @@ To complete PA20, implement these goals:
    variable template's initializer is one per specialization.
 
 4. Range-for lowering.
-   Range-for over arrays, braced-init lists, and supported user-defined `begin` / `end`
+   Range-for over arrays and supported user-defined `begin` / `end`
    ranges should lower into ordinary loop/control-flow structure in LowIR, including
    ordinary reference loop declarations such as `const int&` and `const auto&`. A
    materialized class prvalue used as the range remains alive through the loop and is
