@@ -37,7 +37,8 @@ const char* RuntimeRoleName(Symbol::RuntimeRole role)
 	case Symbol::RUNTIME_ROLE_RTTI_CLASS:
 	case Symbol::RUNTIME_ROLE_RTTI_SI:
 	case Symbol::RUNTIME_ROLE_RTTI_VMI:
-	case Symbol::RUNTIME_ROLE_RTTI_DATA: return 0;
+	case Symbol::RUNTIME_ROLE_RTTI_DATA:
+	case Symbol::RUNTIME_ROLE_RTTI_POINTER: return 0;
 	}
 	ThrowLoweringInternal("missing PA10 runtime role");
 }

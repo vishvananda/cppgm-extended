@@ -223,6 +223,9 @@ To complete PA21, implement these goals:
    Once an exception object has been initialized, destroy the throw operand's
    temporaries and remove them from later unwind snapshots. A temporary from an
    untaken throw branch must not appear in a sibling call's cleanup path.
+   A pointer exception is caught by value (the runtime's begin-catch result is
+   the thrown pointer), so a handler declared as a reference to a pointer binds
+   to a copy of the caught pointer.
    Operandless `throw;` rethrows the dynamically handled exception, including
    from a called function or destructor. With no active exception it terminates
    at runtime; it does not require a lexical enclosing handler.

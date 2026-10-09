@@ -1190,6 +1190,22 @@ protected:
 		store.first = type.kind == LOW_PTR ? caught :
 			derived.LoadStorage(caught, type);
 		store.second = destination;
+		// Itanium 2.5.3: a pointer exception is caught by value, so a
+		// reference to a pointer binds to a copy of the caught pointer.
+		if (derived.IsReferenceType(handler.type) &&
+			derived.program_.types.Get(derived.program_.types.RemoveTopCv(
+				derived.program_.types.Get(handler.type).child)).kind ==
+				TYPE_POINTER)
+		{
+			const Operand pointer(derived.EnsureGeneratedSlot(
+				handler_node, "catch_pointer", LowPtr()), LowPtr());
+			Instruction copy(Instruction::STORE);
+			copy.type = LowPtr();
+			copy.first = caught;
+			copy.second = pointer;
+			derived.Emit(copy);
+			store.first = derived.AddressOfStorage(pointer);
+		}
 		derived.Emit(store);
 	}
 

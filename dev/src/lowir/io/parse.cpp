@@ -467,7 +467,7 @@ private:
       {"bad_array_new_length", SR_BAD_ARRAY_NEW_LENGTH},
       {"rtti_class", SR_RTTI_CLASS},
       {"rtti_si", SR_RTTI_SI}, {"rtti_vmi", SR_RTTI_VMI},
-      {"rtti_data", SR_RTTI_DATA}
+      {"rtti_data", SR_RTTI_DATA}, {"rtti_pointer", SR_RTTI_POINTER}
     };
     for(std::size_t i = 0; i < sizeof(roles) / sizeof(roles[0]); ++i)
       if(value == roles[i].first) return roles[i].second;
@@ -1094,7 +1094,7 @@ private:
   void validate_global_role(SymbolRole role)
   {
     if(role != SR_NONE && role != SR_RTTI_CLASS && role != SR_RTTI_SI &&
-       role != SR_RTTI_VMI && role != SR_RTTI_DATA)
+       role != SR_RTTI_VMI && role != SR_RTTI_DATA && role != SR_RTTI_POINTER)
       ThrowLowirInputError("function role on global");
   }
 

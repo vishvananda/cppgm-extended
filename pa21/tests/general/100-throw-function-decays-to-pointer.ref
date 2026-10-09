@@ -1,4 +1,4 @@
-declare global @__external_rtti_vtable____pointer_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
+declare global @__external_rtti_vtable____pointer_type_info [role=rtti_pointer, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
 declare global @__external_rtti_vtable____function_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv120__function_type_infoE]
 
 declare function @__external_runtime____cxa_allocate_exception(%arg0 : i64) -> ptr [role=eh_allocate_exception, linkage=c, binding=strong, object=__cxa_allocate_exception]

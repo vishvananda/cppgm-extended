@@ -1230,4 +1230,19 @@ void emit_i128_division(CodeBuffer & out,
   emit_stack_adjust(out, false, scratch_bytes);
 }
 
+void emit_unconditional_jump(CodeBuffer & out, const std::string & target)
+{
+  if(out.short_relative(0xeb, target)) return;
+  out.byte(0xe9);
+  out.relative32(target);
+}
+
+void emit_unconditional_jump(CodeBuffer & out,
+                             lowir_model::LocalLabelId target)
+{
+  if(out.short_relative(0xeb, target)) return;
+  out.byte(0xe9);
+  out.relative32(target);
+}
+
 }  // namespace lowir_native

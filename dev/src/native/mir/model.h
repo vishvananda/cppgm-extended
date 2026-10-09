@@ -538,7 +538,8 @@ struct RuntimeFunction
 
 struct RuntimeData
 {
-  enum Kind { RD_OPAQUE, RD_RTTI_CLASS, RD_RTTI_SI, RD_RTTI_VMI }
+  enum Kind { RD_OPAQUE, RD_RTTI_CLASS, RD_RTTI_SI, RD_RTTI_VMI,
+    RD_RTTI_POINTER }
     kind = RD_OPAQUE;
   lowir_model::SymbolId symbol;
   lowir_model::StringId object_symbol;

@@ -1,5 +1,5 @@
 declare global @__external_rtti_vtable____class_type_info [role=rtti_class, binding=strong, object=_ZTVN10__cxxabiv117__class_type_infoE]
-declare global @__external_rtti_vtable____pointer_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
+declare global @__external_rtti_vtable____pointer_type_info [role=rtti_pointer, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
 
 global @__typeinfo_name_type_10lazy_tupleIJA_iEE [binding=weak, object=_ZTS10lazy_tupleIJA_iEE] = {
   i8 49

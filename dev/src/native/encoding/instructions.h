@@ -127,6 +127,10 @@ void emit_condition_jump(elf_detail::CodeBuffer & out,
 void emit_condition_jump(elf_detail::CodeBuffer & out,
                          X86Condition condition,
                          lowir_model::LocalLabelId target);
+void emit_unconditional_jump(elf_detail::CodeBuffer & out,
+                             const std::string & target);
+void emit_unconditional_jump(elf_detail::CodeBuffer & out,
+                             lowir_model::LocalLabelId target);
 std::size_t emit_constant_division(
     elf_detail::CodeBuffer & out,
     const std::vector<mir_model::MirInstruction> & instructions,

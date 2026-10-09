@@ -523,7 +523,8 @@ struct Symbol
 		RUNTIME_ROLE_RTTI_CLASS,
 		RUNTIME_ROLE_RTTI_SI,
 		RUNTIME_ROLE_RTTI_VMI,
-		RUNTIME_ROLE_RTTI_DATA
+		RUNTIME_ROLE_RTTI_DATA,
+		RUNTIME_ROLE_RTTI_POINTER
 	} runtime_role;
 	lowir_model::StringId name;
 	lowir_model::StringId object_name;

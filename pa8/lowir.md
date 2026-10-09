@@ -232,6 +232,7 @@ The currently defined role values are:
   - `rtti_class`
   - `rtti_si`
   - `rtti_vmi`
+  - `rtti_pointer`
   - `rtti_data`
 
 Only one symbol may own each singleton role inside a LowIR program. All roles
@@ -239,6 +240,11 @@ listed above are singleton roles except `rtti_data`, which may describe each
 distinct runtime type-information object or category helper used by the
 program. A role must also appear on the correct top-level kind: function roles
 on functions and global roles on globals.
+
+The `rtti_pointer` role identifies the vtable of the runtime's pointer
+type-information class. A pointer exception is caught by value: a standalone
+backend recognizes thrown pointer types through it, so that `eh_begin_catch`
+yields the thrown pointer rather than the address of the exception object.
 
 The `terminate` role identifies the C++ termination runtime used at a
 non-throwing function boundary. A standalone backend may provide this runtime

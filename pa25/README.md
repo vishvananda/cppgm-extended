@@ -290,6 +290,9 @@ To complete PA25, implement these goals:
    logical-right, and arithmetic-right shifts must also work for runtime counts,
    including counts on either side of the 64-bit half boundary.
 8. Source-driven runtime-program validation without host-library dependence.
+   Exceptions in that runtime follow the Itanium model the host runtime
+   implements; in particular a pointer exception is caught by value, so a
+   pointer handler receives the thrown pointer itself.
 
 ### Out Of Scope
 

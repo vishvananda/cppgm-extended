@@ -659,21 +659,6 @@ void emit_near_jump(CodeBuffer & out, X86Condition condition,
   emit_condition_jump(out, condition, target);
 }
 
-void emit_unconditional_jump(CodeBuffer & out, const std::string & target)
-{
-  if(out.short_relative(0xeb, target)) return;
-  out.byte(0xe9);
-  out.relative32(target);
-}
-
-void emit_unconditional_jump(CodeBuffer & out,
-                             lowir_model::LocalLabelId target)
-{
-  if(out.short_relative(0xeb, target)) return;
-  out.byte(0xe9);
-  out.relative32(target);
-}
-
 void emit_x87_load_signed_integer(CodeBuffer & out,
                                   const mir_model::MirOperand & source,
                                   unsigned width,
@@ -2188,7 +2173,7 @@ void emit_abort_runtime(CodeBuffer & out)
   out.byte(0x0f); out.byte(0x05);
 }
 
-void emit_eh_begin_catch(CodeBuffer & out)
+void emit_eh_begin_catch(CodeBuffer & out, lowir_model::SymbolId pointer_type)
 {
   const auto linked = out.internal_label("eh_begin_catch_linked");
   const auto increment = out.internal_label("eh_begin_catch_increment");
@@ -2209,6 +2194,16 @@ void emit_eh_begin_catch(CodeBuffer & out)
   emit_store(out, XR_RDI, -8, XR_RCX, 64);
   emit_symbol_move(out, XR_R11, kEhAdjusted);
   emit_load(out, XR_RAX, XR_R11, 0, 64);
+  if(pointer_type.valid()) { // Itanium 2.5.3: a thrown pointer is caught by value
+    const auto done = out.internal_label("eh_begin_catch_done");
+    emit_symbol_move(out, XR_R11, kEhType); emit_load(out, XR_RCX, XR_R11, 0, 64);
+    emit_test_register(out, XR_RCX); emit_condition_jump(out, XC_E, done);
+    emit_load(out, XR_RCX, XR_RCX, 0, 64);
+    emit_symbol_move(out, XR_RDX, pointer_type, mir_model::MirOperand::ADDRESS_PREEMPTIBLE);
+    emit_lea(out, XR_RDX, XR_RDX, 16); emit_register_alu(out, 0x39, XR_RCX, XR_RDX);
+    emit_condition_jump(out, XC_NE, done); emit_load(out, XR_RAX, XR_RAX, 0, 64);
+    out.label(done);
+  }
   out.byte(0xc3);
 }
 
@@ -2295,7 +2290,8 @@ void emit_eh_runtime(CodeBuffer & out, const mir_model::MirProgram & program)
     emit_runtime_labels(out, runtime);
     switch(runtime.kind) {
     case mir_model::RuntimeFunction::RF_EH_ALLOCATE: emit_eh_allocate(out); break;
-    case mir_model::RuntimeFunction::RF_EH_BEGIN_CATCH: emit_eh_begin_catch(out); break;
+    case mir_model::RuntimeFunction::RF_EH_BEGIN_CATCH: emit_eh_begin_catch(out,
+      eh::runtime_data_symbol(program.runtime_data, mir_model::RuntimeData::RD_RTTI_POINTER)); break;
     case mir_model::RuntimeFunction::RF_EH_END_CATCH: emit_eh_end_catch(out); break;
     case mir_model::RuntimeFunction::RF_EH_RETHROW: emit_eh_rethrow(out); break;
     case mir_model::RuntimeFunction::RF_EH_THROW: emit_eh_throw_runtime(out); break;

@@ -1452,7 +1452,8 @@ private:
 		if (need_pointer_rtti)
 			state_.rtti_pointer_symbol = AddExternalRtti(
 				"__external_rtti_vtable____pointer_type_info",
-				"_ZTVN10__cxxabiv119__pointer_type_infoE");
+				"_ZTVN10__cxxabiv119__pointer_type_infoE",
+				Symbol::RUNTIME_ROLE_RTTI_POINTER);
 		if (need_enum_rtti)
 			state_.rtti_enum_symbol = AddExternalRtti(
 				"__external_rtti_vtable____enum_type_info",

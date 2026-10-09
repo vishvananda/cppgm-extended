@@ -54,6 +54,8 @@ bool data_kind(lowir_model::SymbolRole role,
     target = mir_model::RuntimeData::RD_RTTI_SI; return true;
   case lowir_model::SR_RTTI_VMI:
     target = mir_model::RuntimeData::RD_RTTI_VMI; return true;
+  case lowir_model::SR_RTTI_POINTER:
+    target = mir_model::RuntimeData::RD_RTTI_POINTER; return true;
   case lowir_model::SR_RTTI_DATA:
     target = mir_model::RuntimeData::RD_OPAQUE; return true;
   default: return false;

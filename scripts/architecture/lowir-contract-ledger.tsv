@@ -88,6 +88,7 @@ role	bad_array_new_length	array new-expression lowering	allocation runtime mappi
 role	rtti_class	RTTI lowering	RTTI object mapping;native	pa21/README.md	pa21/tests/general/100-typeid-type.t	keep	active RTTI object
 role	rtti_si	RTTI lowering	RTTI object mapping;native	pa22/README.md	pa22/tests/general/100-dynamic-cast-void.t	keep	active RTTI object
 role	rtti_vmi	RTTI lowering	RTTI object mapping;native	pa23/README.md	pa23/tests/general/100-multibase-inherited-virtual-slot-identity.t	keep	active RTTI object
+role	rtti_pointer	RTTI lowering	EH pointer catch;native	pa21/README.md	pa21/tests/general/100-throw-string-literal-decays-to-pointer.t	keep	active RTTI object
 role	rtti_data	RTTI lowering	RTTI object mapping;native	pa21/README.md	pa21/tests/general/100-throw-function-decays-to-pointer.t	keep	active RTTI object
 role	unreachable	none	none	pa8/README.md	scripts/compare_results_common.pl	remove	replaced by the first-class unreachable terminator
 metadata	linkage=c	semantic lowering;explicit LowIR	native symbol and call ABI	pa8/README.md	pa8/tests/spec/200-linkage-metadata-smoke.t	keep	non-default C linkage is not derivable after source lowering

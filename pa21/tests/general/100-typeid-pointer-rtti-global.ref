@@ -1,5 +1,5 @@
 declare global @__external_rtti_vtable____fundamental_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv123__fundamental_type_infoE]
-declare global @__external_rtti_vtable____pointer_type_info [role=rtti_data, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
+declare global @__external_rtti_vtable____pointer_type_info [role=rtti_pointer, binding=strong, object=_ZTVN10__cxxabiv119__pointer_type_infoE]
 
 global @__typeinfo_name__int [binding=weak, object=_ZTSi] = {
   i8 105

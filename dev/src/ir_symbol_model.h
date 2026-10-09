@@ -44,7 +44,8 @@ enum SymbolRole
   SR_RTTI_SI,
   SR_RTTI_VMI,
   SR_RTTI_DATA,
-  SR_BAD_ARRAY_NEW_LENGTH
+  SR_BAD_ARRAY_NEW_LENGTH,
+  SR_RTTI_POINTER
 };
 
 enum LanguageLinkageMode
