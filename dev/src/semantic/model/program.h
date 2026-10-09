@@ -878,7 +878,8 @@ struct BindingLayoutFact
 	bool bit_storage_shared;
 	// A packed bit-field no single 1-, 2-, 4- or 8-byte access within its
 	// class holds: the bytes from member_offset it spans, accessed as
-	// naturally sized pieces of a 64-bit unit (0: one access).
+	// naturally sized pieces of a 64-bit unit, 128-bit past 8 bytes (0: one
+	// access).
 	std::uint32_t bit_storage_split;
 
 	BindingLayoutFact();

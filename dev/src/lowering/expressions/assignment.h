@@ -68,8 +68,10 @@ public:
 		const LowType access = BitFieldAccessType(field);
 		const std::size_t unit =
 			derived.program_.BindingLayout(field).bit_storage_bits;
-		if (derived.program_.BindingLayout(field).bit_storage_split != 0)
-			return storage.is_signed ? LowI64() : LowU64();
+		const std::uint32_t split =
+			derived.program_.BindingLayout(field).bit_storage_split;
+		if (split > 8) return storage.is_signed ? LowI128() : LowU128();
+		if (split != 0) return storage.is_signed ? LowI64() : LowU64();
 		if (unit == 0 || unit == storage.width)
 			return storage.width == access.width ? access : storage;
 		if (unit == access.width) return access;
@@ -124,6 +126,15 @@ public:
 		return derived.Convert(normalized, declared, false);
 	}
 
+	// A unit-typed constant from its low and high 64-bit words.
+	static Operand UnitConstant(std::uint64_t low, std::uint64_t high,
+		const LowType& type)
+	{
+		Operand constant(static_cast<std::int64_t>(low), type);
+		constant.integer_high = type.width > 64 ? high : 0;
+		return constant;
+	}
+
 	Operand NormalizeBitFieldValue(BindingId binding, Operand value,
 		const LowType& type)
 	{
@@ -135,8 +146,7 @@ public:
 		mask.op = LOW_OP_AND;
 		mask.type = type;
 		mask.first = value;
-		mask.second = Operand(
-			static_cast<std::int64_t>(BitFieldMask(field)), type);
+		mask.second = UnitConstant(BitFieldMask(field), 0, type);
 		derived.Emit(mask);
 		return FinishBitFieldValue(binding, masked, type);
 	}
@@ -265,10 +275,8 @@ public:
 		mask.dest = masked.id;
 		mask.op = LOW_OP_AND;
 		mask.type = type;
-		mask.first = mask_first ? Operand(
-			static_cast<std::int64_t>(BitFieldMask(field)), type) : value;
-		mask.second = mask_first ? value : Operand(
-			static_cast<std::int64_t>(BitFieldMask(field)), type);
+		mask.first = mask_first ? UnitConstant(BitFieldMask(field), 0, type) : value;
+		mask.second = mask_first ? value : UnitConstant(BitFieldMask(field), 0, type);
 		derived.Emit(mask);
 		if (normalized_value)
 			*normalized_value = FinishBitFieldValue(binding, masked, type);
@@ -294,18 +302,23 @@ public:
 		const BindingRecord& field = derived.program_.bindings[binding];
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
 		const Operand old = LoadBitFieldUnit(binding, storage, type);
-		const std::uint64_t unit_mask = layout.bit_storage_bits == 64 ?
+		const std::uint64_t unit_mask = layout.bit_storage_bits >= 64 ?
 			~std::uint64_t(0) :
 			(std::uint64_t(1) << layout.bit_storage_bits) - 1;
+		const std::uint64_t field_mask = BitFieldMask(field);
 		const std::uint64_t clear_mask = unit_mask &
-			~(BitFieldMask(field) << layout.bit_offset);
+			~(field_mask << layout.bit_offset);
+		// A 128-bit unit's field reaches its high word past bit 64.
+		const std::uint64_t clear_high = layout.bit_storage_bits > 64 ?
+			~(layout.bit_offset == 0 ? 0 : field_mask >> (64 - layout.bit_offset)) :
+			0;
 		const Operand cleared = derived.Temp(type);
 		Instruction clear(Instruction::BINARY);
 		clear.dest = cleared.id;
 		clear.op = LOW_OP_AND;
 		clear.type = type;
 		clear.first = old;
-		clear.second = Operand(static_cast<std::int64_t>(clear_mask), type);
+		clear.second = UnitConstant(clear_mask, clear_high, type);
 		derived.Emit(clear);
 		return cleared;
 	}

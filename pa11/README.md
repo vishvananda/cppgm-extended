@@ -393,7 +393,8 @@ Useful intermediate representations include:
   holds its fields, and reads and writes then use that unit; a packed
   (`#pragma pack`) bit-field that no single 1-, 2-, 4- or 8-byte access within
   its class holds is read and written piecewise, as naturally sized pieces of
-  the bytes it spans, as g++ does
+  the bytes it spans (assembled in a 64-bit unit, or a 128-bit one when they
+  are more than 8), as g++ does
 - resolved member expressions and method calls over the same call-semantics IR shape used by
   PA7/PA10
 - explicit constructor/destructor actions attached to declarations or generated function bodies

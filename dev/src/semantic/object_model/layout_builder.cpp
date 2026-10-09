@@ -337,11 +337,12 @@ void BitFieldLayout::AssignFields(const Run& run, std::size_t first,
 			&field.unit_begin, &field.unit_bytes))
 		{
 			// A packed field no access within the class holds is read and
-			// written piecewise as the bytes it spans (as g++ does).
-			if (field.packed && end - begin <= 8)
+			// written piecewise as the bytes it spans (as g++ does), within a
+			// 64-bit unit, or a 128-bit one past 8 bytes.
+			if (field.packed && end - begin <= 16)
 			{
 				field.unit_begin = begin;
-				field.unit_bytes = 8;
+				field.unit_bytes = end - begin <= 8 ? 8 : 16;
 				field.split_bytes = end - begin;
 				field.shared = true;
 				continue;
