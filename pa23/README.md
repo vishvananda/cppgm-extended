@@ -293,8 +293,13 @@ clang's order: the non-virtual bases' secondary tables depth first, then the
 virtual bases' tables in inheritance graph order.
 
 Every thunk that a class's tables include is defined with its function and
-only referred to elsewhere. The key function is the first non-inline, non-pure
-virtual function the class declares.
+only referred to elsewhere. A virtual destructor's deleting entry (D0) and its
+thunks are defined with the destructor too, not where the vtable is emitted.
+Only a weak vtable whose destructor is defined elsewhere keeps a weak copy of
+D0 beside it. g++ also defines a static-`this` covariant thunk (`_ZTch0_...`)
+beside a virtual-`this` one, as the target that its thunk code jumps to; no
+vtable names it, so it is not emitted here. The key function is the first
+non-inline, non-pure virtual function the class declares.
 
 The VTT follows Itanium 2.6.2. It holds the primary vtable; a sub-VTT for each
 direct non-virtual base that has virtual bases (without its virtual sub-VTTs);

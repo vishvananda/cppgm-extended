@@ -1023,13 +1023,21 @@ private:
 			state_.class_view_deleting_slot_symbols[entity][view][slot] = deleting;
 	}
 
+	// The deleting destructor (D0) is defined with the destructor (Itanium
+	// 5.1.4, as g++ does): where the destructor is defined, and as a weak
+	// copy beside a weak vtable whose destructor is defined elsewhere (an
+	// extern-instantiated template's); elsewhere it is only declared.
 	void RegisterDeletingDestructor(EntityId entity,
-		const VirtualSlotFact& slot, bool external)
+		const VirtualSlotFact& slot, bool external_vtable)
 	{
 		if (state_.deleting_destructor_symbols[entity] != kNoLowId) return;
 		const BindingRecord& candidate = program_.bindings[slot.function];
 		if (!candidate.destructor || candidate.pure_virtual) return;
 		const BindingId destructor = candidate.canonical;
+		const bool defined = destructor < local_function_definitions_.size() &&
+			local_function_definitions_[destructor] != 0;
+		const bool external = !defined && (external_vtable ||
+			IsFunctionLocalEntity(program_, entity) || !VtableHasWeakLinkage(entity));
 		std::string object_name;
 		if (destructor < function_symbols_.size() &&
 			function_symbols_[destructor] != kNoLowId)
@@ -1117,7 +1125,7 @@ private:
 	// function defines every thunk to it its class's tables have, shared
 	// tables included (a virtual thunk where the virtual base shares the
 	// overrider's place), which other units' vtables and construction
-	// vtables name.
+	// vtables name; a destructor's deleting entry and its thunks too.
 	void RegisterDefinedFunctionThunks()
 	{
 		for (EntityId entity = 0;
@@ -1136,15 +1144,21 @@ private:
 						program_.bindings[candidate.function].canonical;
 					if (candidate.unused ||
 						program_.bindings[function].member_owner != entity ||
-						program_.bindings[function].destructor ||
 						program_.bindings[function].pure_virtual ||
 						function >= local_function_definitions_.size() ||
-						!local_function_definitions_[function] ||
-						(candidate.this_adjustment == 0 &&
-						 candidate.virtual_call_offset == 0 &&
-						 !HasReturnAdjustment(candidate))) continue;
+						!local_function_definitions_[function]) continue;
+					// A destructor defined here brings its deleting entry.
+					if (program_.bindings[function].destructor)
+						RegisterDeletingDestructor(entity, candidate,
+							VtableIsExternal(entity));
+					if (candidate.this_adjustment == 0 &&
+						candidate.virtual_call_offset == 0 &&
+						!HasReturnAdjustment(candidate)) continue;
 					(void)RegisterAdjustedSlot(candidate, function_symbols_[function],
 						function, true);
+					const SymbolId deleting = state_.deleting_destructor_symbols[entity];
+					if (program_.bindings[function].destructor && deleting != kNoLowId)
+						(void)RegisterAdjustedSlot(candidate, deleting, function, true);
 				}
 			}
 		}
