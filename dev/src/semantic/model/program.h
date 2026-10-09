@@ -511,7 +511,13 @@ struct EntityRecord
 	EntityEmissionNameForm emission_name_form;
 	TypeId type, underlying;
 	BindingId declaration, union_default_member;
-	std::uint64_t object_size, nonvirtual_size,
+	// Itanium C++ ABI 2.4 sizes: nonvirtual_size is nvsize (the size of the
+	// class without its virtual bases, its sizeof when the class is a POD
+	// for the purpose of layout) and data_size is the complete object's
+	// dsize (its size without tail padding).  A base subobject, or a
+	// potentially-overlapping member, owns only those bytes; a later
+	// component may be placed in the rest.
+	std::uint64_t object_size, nonvirtual_size, data_size,
 		object_alignment, nonvirtual_alignment, natural_alignment,
 		requested_alignment, packing_alignment, direct_base_offset;
 	AccessKind base_access;
@@ -528,6 +534,10 @@ struct EntityRecord
 		indirect_class_value_abi, indirect_class_result_abi,
 		dynamic_class, polymorphic_class, abstract_class, final_class;
 	bool nonlinear_base_graph;
+	// POD for the purpose of layout (Itanium 2.2): its tail padding is
+	// never reused.  has_empty_subobject: the class or one of its
+	// subobjects is an empty class (empty-subobject conflicts, 2.4 II.2).
+	bool pod_for_layout, has_empty_subobject;
 	bool has_nonzero_base_subobject_offset;
 	bool has_volatile_subobject, has_union_subobject;
 	bool deferred_template_completion;
@@ -561,6 +571,24 @@ struct EntityRecord
 
 	EntityRecord();
 };
+
+// A completed class's Itanium nvsize, nvalign and dsize.
+inline std::uint64_t LayoutNonvirtualSize(const EntityRecord& entity)
+{
+	return entity.nonvirtual_size != 0 ? entity.nonvirtual_size :
+		entity.object_size;
+}
+
+inline std::uint64_t LayoutNonvirtualAlignment(const EntityRecord& entity)
+{
+	return entity.nonvirtual_alignment != 0 ? entity.nonvirtual_alignment :
+		entity.object_alignment;
+}
+
+inline std::uint64_t LayoutDataSize(const EntityRecord& entity)
+{
+	return entity.data_size != 0 ? entity.data_size : entity.object_size;
+}
 
 typedef std::uint32_t FunctionTemplateAbiRecipeId;
 const FunctionTemplateAbiRecipeId kNoFunctionTemplateAbiRecipe =
@@ -839,6 +867,10 @@ struct BindingLayoutFact
 {
 	std::uint64_t member_offset, requested_alignment;
 	std::uint32_t bit_offset, bit_width, bit_storage_bits, member_ordinal;
+	// A bit-field's storage unit (member_offset, bit_storage_bits) also
+	// covers bytes of another field's unit or of a neighbouring subobject:
+	// it is read-modify-written and never stored or transferred whole.
+	bool bit_storage_shared;
 
 	BindingLayoutFact();
 };

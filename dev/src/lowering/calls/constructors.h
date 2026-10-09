@@ -142,7 +142,7 @@ protected:
 		const Operand& destination, bool force_empty = false,
 		bool elide_direct_empty_source = false,
 		bool elide_empty_call_source = false,
-		EntityId complete_entity = kNoEntity)
+		EntityId complete_entity = kNoEntity, bool base_subobject = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const DumpNode& action = derived.arena_.nodes[node];
@@ -204,7 +204,7 @@ protected:
 			const Operand source =
 				derived.LowerClassTransferSource(children[0]);
 			derived.EmitClassObjectCopy(action.operand_type,
-				source, destination);
+				source, destination, base_subobject);
 			return;
 		}
 		if (action.binding >= derived.function_symbols_.size() ||
@@ -401,12 +401,13 @@ protected:
 			derived.ProjectBaseSubobjects(object,
 				action.base_projection_count);
 		if (value_initialization && !empty_base)
-			derived.EmitZeroInitialization(action.type, destination);
+			derived.EmitZeroInitialization(action.type, destination,
+				kNoBinding, true);
 		if (!trivial)
 			derived.LowerConstructorAction(
 				children[0], destination, false, true, false,
 				derived.HasCurrentImplicitVirtualBases() ?
-					kNoEntity : derived.current_member_owner_);
+					kNoEntity : derived.current_member_owner_, true);
 		if (children.size() > 1)
 			derived.CompleteFullExpressionCleanup();
 	}

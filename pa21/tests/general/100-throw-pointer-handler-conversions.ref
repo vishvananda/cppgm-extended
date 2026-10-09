@@ -277,12 +277,8 @@ global @__ehobj_type_PPc [binding=internal, object=@__ehobj_type_PPc] = {
 global @__ehobj_type_PP7Derived [binding=internal, object=@__ehobj_type_PP7Derived] = {
   zero 8
 }
-global @derived [binding=internal, object=_ZL7derived] = {
-  ptr addr @Derived__vtable + 16
-  i32 1
-  zero 4
-  i32 3
-  zero 4
+global @derived : obj<16x8> [binding=internal, object=_ZL7derived] = {
+  zero 16
 }
 global @privately [binding=internal, object=_ZL9privately] = {
   ptr addr @Private__vtable + 16
@@ -928,7 +924,7 @@ function @Derived___Derived__deleting_entry(%this : ptr) -> void [binding=weak, 
   block ^destructor_end_2:
     return void
 }
-function @Derived___Derived(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD1Ev, inline_hint=yes] {
+function @Derived___Derived(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7DerivedD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -954,7 +950,7 @@ function @Derived___Derived(%this : ptr [object_bytes=24]) -> void [unwind=no, b
   block ^destructor_end_2:
     return void
 }
-function @Derived__Derived(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
+function @Derived__Derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7DerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -968,7 +964,7 @@ function @Derived__Derived(%this : ptr [object_bytes=24]) -> void [binding=weak,
     %t7 = index i8 %t6, 16
     store typed ptr %t7, %t5
     %t8 = load typed ptr $this
-    %t9 = index i8 [projection=field] %t8, 16
+    %t9 = index i8 [projection=field] %t8, 12
     store typed i32 3, %t9
     eh_end
     return void
@@ -1116,7 +1112,7 @@ function @Base___Base(%this : ptr [object_bytes=16]) -> void [unwind=no, binding
     store typed ptr %t3, %t1
     return void
 }
-function @Base__Base__base_entry(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN4BaseC2Ev, inline_hint=yes] {
+function @Base__Base__base_entry(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -1142,6 +1138,12 @@ function @Base__Base(%this : ptr [object_bytes=16]) -> void [binding=weak, objec
     %t4 = load typed ptr $this
     %t5 = index i8 [projection=field] %t4, 8
     store typed i32 1, %t5
+    return void
+}
+function @__cppgm_init() -> void [role=init, binding=internal] {
+  block ^entry:
+    %t1 = addr @derived
+    call void @Derived__Derived(%t1)
     return void
 }
 function @__cppgm_fini() -> void [role=fini, binding=internal] {

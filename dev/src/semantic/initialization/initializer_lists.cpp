@@ -79,7 +79,10 @@ void Analyzer::ConfigureInitializerListSpecialization(TypeId type)
 	if (!record.layout_complete)
 	{
 		record.object_size = 16;
+		record.nonvirtual_size = 16;
+		record.data_size = 16;
 		record.object_alignment = 8;
+		record.nonvirtual_alignment = 8;
 		record.natural_alignment = 8;
 		record.layout_complete = true;
 		record.empty_class = false;

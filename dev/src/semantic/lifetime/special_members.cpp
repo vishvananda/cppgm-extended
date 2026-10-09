@@ -82,7 +82,8 @@ public:
 				layout.bit_offset <= storage_bits - layout.bit_width;
 			if (!contiguous || !fits || VolatileBitField(program_, member) ||
 				member.member_owner != first.member_owner ||
-				member.potentially_overlapping_member)
+				member.potentially_overlapping_member ||
+				layout.bit_storage_shared)
 				transfer_unit_ = false;
 			next_bit = static_cast<std::uint64_t>(layout.bit_offset) +
 				layout.bit_width;

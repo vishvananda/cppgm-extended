@@ -192,7 +192,7 @@ dev/src/pa34_gnu_asm_lowering.h	dev/src/lowering/extensions/gnu_asm.h	renamed
 dev/src/pa34_gnu_asm_semantic.cpp	dev/src/semantic/extensions/gnu_asm.cpp	renamed	
 dev/src/pa34_gnu_asm_syntax.h	dev/src/syntax/extensions/gnu_asm.h	renamed	
 dev/src/pa34_hosted_trait_semantic.cpp	dev/src/semantic/extensions/hosted_traits.cpp	renamed	
-dev/src/pa34_layout_semantic.cpp	dev/src/semantic/object_model/zero_offset_layout.cpp	renamed	
+dev/src/pa34_layout_semantic.cpp	dev/src/semantic/object_model/layout_builder.cpp	renamed	
 dev/src/pa34_numeric_semantic.cpp	dev/src/semantic/extensions/numeric.cpp	renamed	
 dev/src/pa34_numeric_template_semantic.cpp	dev/src/semantic/extensions/numeric_templates.cpp	renamed	
 dev/src/pa34_numeric_type_model.cpp	dev/src/semantic/extensions/numeric_types.cpp	renamed	

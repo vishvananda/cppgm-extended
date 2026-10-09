@@ -167,7 +167,10 @@ To complete PA23, implement these goals:
 
 1. Shared virtual-base layout.
    Complete objects with a virtual diamond should expose one shared base-subobject at a
-   deterministic offset.
+   deterministic offset. The virtual bases follow the non-virtual part in inheritance
+   graph order (Itanium C++ ABI 2.4 III). Each is placed as a non-virtual base is: from
+   the data size, so a virtual base can occupy a non-POD base's tail padding, and an empty
+   virtual base at offset `0` when no empty subobject of its type is there.
 
 2. Polymorphic dispatch over adjusted vtable views.
    Calling a virtual through a class with virtual-base adjustment rows must select the

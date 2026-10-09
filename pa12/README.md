@@ -180,6 +180,14 @@ unit, it shall transfer that allocation unit once.  A zero-width bit-field or
 a change of storage offset or width starts a new unit.  Fields whose layout
 cannot be transferred safely shall retain field-wise value semantics.
 
+A base subobject owns only its class's non-virtual size: the rest of the
+class's size can hold a derived class's member or virtual base (PA11 layout,
+Itanium C++ ABI 2.4).  A class value transfer -- a trivial copy or move, a
+synthesized storage copy, or a bit-field allocation unit -- therefore covers
+at most that many bytes (`copyobj 1x4` for a 4-byte class whose data ends in
+its first byte), and value-initializing a base subobject zeroes only those
+bytes.
+
 For supported trivially copy-constructible class value transfers, PA12 may also lower the
 copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of
 spelling a call to a synthesized trivial copy/move constructor helper. That direct

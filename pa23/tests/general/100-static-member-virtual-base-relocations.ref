@@ -80,39 +80,39 @@ global @Primary__vtable [binding=weak, object=_ZTV7Primary] = {
   ptr addr @Primary___Primary__deleting_entry
 }
 global @Base__vtable [binding=weak, object=_ZTV4Base] = {
-  i64 24
+  i64 16
   i64 0
   ptr addr @__rtti_struct_Base
   ptr addr @Base___Base
   ptr addr @Base___Base__deleting_entry
 }
-global @Base____view__Virtual__24__vtable [binding=internal, object=@Base____view__Virtual__24__vtable] = {
+global @Base____view__Virtual__16__vtable [binding=internal, object=@Base____view__Virtual__16__vtable] = {
   i64 0
-  i64 -24
+  i64 -16
   ptr addr @__rtti_struct_Base
-  ptr addr @_Base___Base__vtable_return_adjust__this_neg24__return_pos0
-  ptr addr @_Base___Base__deleting_entry__vtable_return_adjust__this_neg24__return_pos0
+  ptr addr @_Base___Base__vtable_return_adjust__this_neg16__return_pos0
+  ptr addr @_Base___Base__deleting_entry__vtable_return_adjust__this_neg16__return_pos0
 }
 global @Base____vtt [binding=weak, object=_ZTT4Base, object_root=yes] = {
   ptr addr @Base__vtable + 24
-  ptr addr @Base____view__Virtual__24__vtable + 24
+  ptr addr @Base____view__Virtual__16__vtable + 24
 }
 global @Object__vtable [binding=weak, object=_ZTV6Object] = {
-  i64 32
+  i64 24
   i64 0
   ptr addr @__rtti_struct_Object
   ptr addr @Object___Object
   ptr addr @Object___Object__deleting_entry
 }
-global @Object____view__Virtual__32__vtable [binding=internal, object=@Object____view__Virtual__32__vtable] = {
+global @Object____view__Virtual__24__vtable [binding=internal, object=@Object____view__Virtual__24__vtable] = {
   i64 0
-  i64 -32
+  i64 -24
   ptr addr @__rtti_struct_Object
-  ptr addr @_Object___Object__vtable_return_adjust__this_neg32__return_pos0
-  ptr addr @_Object___Object__deleting_entry__vtable_return_adjust__this_neg32__return_pos0
+  ptr addr @_Object___Object__vtable_return_adjust__this_neg24__return_pos0
+  ptr addr @_Object___Object__deleting_entry__vtable_return_adjust__this_neg24__return_pos0
 }
 global @Object____construction__Base__0__s0__vtable [binding=internal, object=@Object____construction__Base__0__s0__vtable] = {
-  i64 32
+  i64 24
   i64 0
   ptr addr @__rtti_struct_Base
   ptr addr @Base___Base
@@ -120,21 +120,21 @@ global @Object____construction__Base__0__s0__vtable [binding=internal, object=@O
 }
 global @Object____construction__Base__0__s1__vtable [binding=internal, object=@Object____construction__Base__0__s1__vtable] = {
   i64 0
-  i64 -32
+  i64 -24
   ptr addr @__rtti_struct_Base
-  ptr addr @_Base___Base__vtable_return_adjust__this_neg24__return_pos0
-  ptr addr @_Base___Base__deleting_entry__vtable_return_adjust__this_neg24__return_pos0
+  ptr addr @_Base___Base__vtable_return_adjust__this_neg16__return_pos0
+  ptr addr @_Base___Base__deleting_entry__vtable_return_adjust__this_neg16__return_pos0
 }
 global @Object____vtt [binding=weak, object=_ZTT6Object, object_root=yes] = {
   ptr addr @Object__vtable + 24
   ptr addr @Object____construction__Base__0__s0__vtable + 24
   ptr addr @Object____construction__Base__0__s1__vtable + 24
-  ptr addr @Object____view__Virtual__32__vtable + 24
+  ptr addr @Object____view__Virtual__24__vtable + 24
 }
-global @holder : obj<56x8> [binding=strong] = {
-  zero 56
+global @holder : obj<48x8> [binding=strong] = {
+  zero 48
 }
-global @reference : ptr [binding=strong] = addr @holder + 40
+global @reference : ptr [binding=strong] = addr @holder + 32
 global @pointer : ptr [binding=strong] = zero
 global @explicit_pointer : ptr [binding=strong] = zero
 global @base_reference : ptr [binding=strong] = addr @holder + 8
@@ -219,7 +219,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t35 = convert trunc i32 i64 %t34
     return i32 %t35
 }
-function @Holder__Holder(%this : ptr [object_bytes=56]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
+function @Holder__Holder(%this : ptr [object_bytes=48]) -> void [binding=weak, object=_ZN6HolderC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -238,7 +238,7 @@ function @Holder__Holder(%this : ptr [object_bytes=56]) -> void [binding=weak, o
     eh_end
     resume
 }
-function @Holder___Holder(%this : ptr [object_bytes=56]) -> void [unwind=no, binding=weak, object=_ZN6HolderD1Ev, inline_hint=yes] {
+function @Holder___Holder(%this : ptr [object_bytes=48]) -> void [unwind=no, binding=weak, object=_ZN6HolderD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -267,7 +267,7 @@ function @Object___Object__deleting_entry(%this : ptr) -> void [binding=weak, ob
   block ^destructor_end_2:
     return void
 }
-function @Object___Object(%this : ptr [object_bytes=48]) -> void [unwind=no, binding=weak, object=_ZN6ObjectD1Ev, inline_hint=yes] {
+function @Object___Object(%this : ptr [object_bytes=40]) -> void [unwind=no, binding=weak, object=_ZN6ObjectD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -283,7 +283,7 @@ function @Object___Object(%this : ptr [object_bytes=48]) -> void [unwind=no, bin
     %t7 = load typed i64 %t6
     %t8 = index i8 %t4, %t7
     %t9 = index i8 %t8, 0
-    %t10 = addr @Object____view__Virtual__32__vtable
+    %t10 = addr @Object____view__Virtual__24__vtable
     %t11 = index i8 %t10, 24
     store typed ptr %t11, %t9
     eh_end
@@ -293,21 +293,21 @@ function @Object___Object(%this : ptr [object_bytes=48]) -> void [unwind=no, bin
     %t14 = addr @Object____vtt
     %t15 = index i8 %t14, 8
     %t16 = load typed ptr $this
-    %t17 = index i8 %t16, 32
+    %t17 = index i8 %t16, 24
     call void @Base___Base__base_entry(%t13, %t15, %t17)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
     %t18 = load typed ptr $this
-    %t19 = index i8 %t18, 32
+    %t19 = index i8 %t18, 24
     call void @Virtual___Virtual__base_entry(%t19)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
     %t20 = load typed ptr $this
-    %t21 = index i8 %t20, 32
+    %t21 = index i8 %t20, 24
     call void @Virtual___Virtual__base_entry(%t21)
     jump ^destructor_end_2
 
@@ -317,10 +317,10 @@ function @Object___Object(%this : ptr [object_bytes=48]) -> void [unwind=no, bin
     %t24 = addr @Object____vtt
     %t25 = index i8 %t24, 8
     %t26 = load typed ptr $this
-    %t27 = index i8 %t26, 32
+    %t27 = index i8 %t26, 24
     call void @Base___Base__base_entry(%t23, %t25, %t27)
     %t28 = load typed ptr $this
-    %t29 = index i8 %t28, 32
+    %t29 = index i8 %t28, 24
     call void @Virtual___Virtual__base_entry(%t29)
     eh_end
     resume
@@ -328,13 +328,13 @@ function @Object___Object(%this : ptr [object_bytes=48]) -> void [unwind=no, bin
   block ^destructor_end_2:
     return void
 }
-function @Object__Object(%this : ptr [object_bytes=48]) -> void [binding=weak, object=_ZN6ObjectC1Ev, inline_hint=yes] {
+function @Object__Object(%this : ptr [object_bytes=40]) -> void [binding=weak, object=_ZN6ObjectC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 32
+    %t2 = index i8 %t1, 24
     call void @Virtual__Virtual__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
     %t5 = load typed ptr $this
@@ -342,7 +342,7 @@ function @Object__Object(%this : ptr [object_bytes=48]) -> void [binding=weak, o
     %t7 = addr @Object____vtt
     %t8 = index i8 %t7, 8
     %t9 = load typed ptr $this
-    %t10 = index i8 %t9, 32
+    %t10 = index i8 %t9, 24
     call void @Base__Base__base_entry(%t6, %t8, %t10)
     eh_end
     eh_cleanup ^constructor_cleanup_2
@@ -356,7 +356,7 @@ function @Object__Object(%this : ptr [object_bytes=48]) -> void [binding=weak, o
     %t23 = load typed i64 %t22
     %t24 = index i8 %t20, %t23
     %t25 = index i8 %t24, 0
-    %t26 = addr @Object____view__Virtual__32__vtable
+    %t26 = addr @Object____view__Virtual__24__vtable
     %t27 = index i8 %t26, 24
     store typed ptr %t27, %t25
     eh_end
@@ -364,7 +364,7 @@ function @Object__Object(%this : ptr [object_bytes=48]) -> void [binding=weak, o
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 %t3, 32
+    %t4 = index i8 %t3, 24
     call void @Virtual___Virtual__base_entry(%t4)
     eh_end
     resume
@@ -375,11 +375,11 @@ function @Object__Object(%this : ptr [object_bytes=48]) -> void [binding=weak, o
     %t13 = addr @Object____vtt
     %t14 = index i8 %t13, 8
     %t15 = load typed ptr $this
-    %t16 = index i8 %t15, 32
+    %t16 = index i8 %t15, 24
     call void @Base___Base__base_entry(%t12, %t14, %t16)
     jump ^constructor_cleanup_1
 }
-function @Base___Base__base_entry(%this : ptr [object_bytes=40], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN4BaseD2Ev, object_root=yes, inline_hint=yes] {
+function @Base___Base__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr, %__vbptr0 : ptr) -> void [unwind=no, binding=weak, object=_ZN4BaseD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -430,7 +430,7 @@ function @Base___Base__deleting_entry(%this : ptr) -> void [binding=weak, object
   block ^destructor_end_2:
     return void
 }
-function @Base___Base(%this : ptr [object_bytes=40]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
+function @Base___Base(%this : ptr [object_bytes=32]) -> void [unwind=no, binding=weak, object=_ZN4BaseD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -446,7 +446,7 @@ function @Base___Base(%this : ptr [object_bytes=40]) -> void [unwind=no, binding
     %t7 = load typed i64 %t6
     %t8 = index i8 %t4, %t7
     %t9 = index i8 %t8, 0
-    %t10 = addr @Base____view__Virtual__24__vtable
+    %t10 = addr @Base____view__Virtual__16__vtable
     %t11 = index i8 %t10, 24
     store typed ptr %t11, %t9
     eh_end
@@ -459,14 +459,14 @@ function @Base___Base(%this : ptr [object_bytes=40]) -> void [unwind=no, binding
 
   block ^destructor_suffix_cleanup_3:
     %t14 = load typed ptr $this
-    %t15 = index i8 %t14, 24
+    %t15 = index i8 %t14, 16
     call void @Virtual___Virtual__base_entry(%t15)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
     %t16 = load typed ptr $this
-    %t17 = index i8 %t16, 24
+    %t17 = index i8 %t16, 16
     call void @Virtual___Virtual__base_entry(%t17)
     jump ^destructor_end_2
 
@@ -475,7 +475,7 @@ function @Base___Base(%this : ptr [object_bytes=40]) -> void [unwind=no, binding
     %t19 = index i8 %t18, 0
     call void @Primary___Primary__base_entry(%t19)
     %t20 = load typed ptr $this
-    %t21 = index i8 %t20, 24
+    %t21 = index i8 %t20, 16
     call void @Virtual___Virtual__base_entry(%t21)
     eh_end
     resume
@@ -540,7 +540,7 @@ function @Virtual__Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [u
     store typed ptr %t3, %t1
     return void
 }
-function @Base__Base__base_entry(%this : ptr [object_bytes=40], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
+function @Base__Base__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN4BaseC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -623,27 +623,27 @@ function @Primary__Primary__base_entry(%this : ptr [object_bytes=16]) -> void [u
     store typed ptr %t3, %t1
     return void
 }
-function @_Base___Base__deleting_entry__vtable_return_adjust__this_neg24__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn24_N4BaseD0Ev] {
+function @_Base___Base__deleting_entry__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn16_N4BaseD0Ev] {
   block ^entry:
-    %t1 = index i8 %arg0, -24
+    %t1 = index i8 %arg0, -16
     call void @Base___Base__deleting_entry(%t1)
     return void
 }
-function @_Base___Base__vtable_return_adjust__this_neg24__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn24_N4BaseD1Ev] {
+function @_Base___Base__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn16_N4BaseD1Ev] {
   block ^entry:
-    %t1 = index i8 %arg0, -24
+    %t1 = index i8 %arg0, -16
     call void @Base___Base(%t1)
     return void
 }
-function @_Object___Object__deleting_entry__vtable_return_adjust__this_neg32__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn32_N6ObjectD0Ev] {
+function @_Object___Object__deleting_entry__vtable_return_adjust__this_neg24__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn24_N6ObjectD0Ev] {
   block ^entry:
-    %t1 = index i8 %arg0, -32
+    %t1 = index i8 %arg0, -24
     call void @Object___Object__deleting_entry(%t1)
     return void
 }
-function @_Object___Object__vtable_return_adjust__this_neg32__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn32_N6ObjectD1Ev] {
+function @_Object___Object__vtable_return_adjust__this_neg24__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn24_N6ObjectD1Ev] {
   block ^entry:
-    %t1 = index i8 %arg0, -32
+    %t1 = index i8 %arg0, -24
     call void @Object___Object(%t1)
     return void
 }

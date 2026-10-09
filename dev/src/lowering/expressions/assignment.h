@@ -57,12 +57,38 @@ public:
 		return declared;
 	}
 
+	// A bit-field is read and written as its storage unit, which can be
+	// narrower or wider than its declared type (a unit shared by adjacent
+	// fields of different types, or narrowed to stay within the bytes its
+	// run may touch); the unit takes the declared type's signedness.
 	LowType BitFieldMemoryType(const BindingRecord& field) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
 		const LowType storage = derived.LowerExpressionType(field.type);
 		const LowType access = BitFieldAccessType(field);
-		return storage.width == access.width ? access : storage;
+		const std::size_t unit =
+			derived.program_.BindingLayout(field).bit_storage_bits;
+		if (unit == 0 || unit == storage.width)
+			return storage.width == access.width ? access : storage;
+		if (unit == access.width) return access;
+		switch (unit)
+		{
+		case 8: return storage.is_signed ? LowI8() : LowU8();
+		case 16: return storage.is_signed ? LowI16() : LowU16();
+		case 32: return storage.is_signed ? LowI32() : LowU32();
+		case 64: return storage.is_signed ? LowI64() : LowU64();
+		default: ThrowLoweringInternal("unsupported bit-field storage unit");
+		}
+	}
+
+	// The type an initializing store uses: the declared type where the unit
+	// has its width, else the unit.
+	LowType BitFieldStoreType(BindingId binding, const LowType& declared) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		const BindingRecord& field = derived.program_.bindings[binding];
+		return derived.program_.BindingLayout(field).bit_storage_bits ==
+			declared.width ? declared : BitFieldMemoryType(field);
 	}
 
 	Operand FinishBitFieldValue(BindingId binding, Operand value,
@@ -160,7 +186,10 @@ public:
 		Derived& derived = static_cast<Derived&>(*this);
 		const BindingRecord& field = derived.program_.bindings[binding];
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
-		value = derived.Convert(value, type, false);
+		// A constant fits a unit wider or narrower than the declared type
+		// directly.
+		value = derived.Convert(value, type, layout.bit_storage_bits !=
+			derived.LowerExpressionType(field.type).width);
 		const Operand masked = derived.Temp(type);
 		Instruction mask(Instruction::BINARY);
 		mask.dest = masked.id;
@@ -274,6 +303,12 @@ public:
 		Derived& derived = static_cast<Derived&>(*this);
 		const BindingRecord& member = derived.program_.bindings[binding];
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(member);
+		// A shared unit also holds another subobject's bytes.
+		if (layout.bit_storage_shared)
+		{
+			derived.initialized_bit_field_unit_valid_ = false;
+			return true;
+		}
 		const bool preserve = derived.initialized_bit_field_unit_valid_ &&
 			derived.initialized_bit_field_owner_ == member.member_owner &&
 			derived.initialized_bit_field_offset_ == layout.member_offset;
@@ -284,8 +319,9 @@ public:
 	}
 
 	void InitializeBitField(BindingId binding, const Operand& value,
-		const Operand& destination, const LowType& type)
+		const Operand& destination, const LowType& declared)
 	{
+		const LowType type = BitFieldStoreType(binding, declared);
 		const bool preserve = PreserveInitializedBitField(binding);
 		const Operand positioned = PrepareBitFieldValue(binding, value, type);
 		const Operand stored = preserve ? CombineBitFieldValue(

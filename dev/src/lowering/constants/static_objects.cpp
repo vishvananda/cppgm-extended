@@ -149,7 +149,8 @@ bool StaticInitializerLowering::AppendConstantObject(std::uint32_t object,
 		{
 			const BindingLayoutFact& layout = program_.BindingLayout(program_.bindings[element.member]);
 			if (layout.bit_width == 0) { bit_offset = ~std::uint64_t(0); continue; }
-			if (layout.bit_storage_bits > 64 || element.object_value || element.address_value)
+			if (layout.bit_storage_bits > 64 || layout.bit_storage_shared ||
+				element.object_value || element.address_value)
 				return false;
 			const std::uint64_t mask = layout.bit_width == 64 ? ~std::uint64_t(0) :
 				(std::uint64_t(1) << layout.bit_width) - 1;

@@ -108,7 +108,7 @@ protected:
 	}
 
 	void EmitClassObjectCopy(TypeId type, const Operand& source,
-		const Operand& destination)
+		const Operand& destination, bool overlapping_destination = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		// An empty type carries no value, so copying one has nothing to
@@ -127,7 +127,43 @@ protected:
 		copy.type = derived.LowerStorageType(type);
 		copy.first = source;
 		copy.second = destination;
+		// Past its nvsize a class's tail padding can hold another object (a
+		// derived class's member or virtual base, Itanium C++ ABI 2.4), so a
+		// class is transferred from storage as its nvsize bytes and a value
+		// reaches a base subobject through a temporary.
+		const std::uint64_t claimed = ClassTransferBytes(type);
+		if (claimed != 0 && claimed < copy.type.width / 8 &&
+			(source.type.kind == LOW_PTR || overlapping_destination))
+		{
+			if (source.type.kind != LOW_PTR)
+			{
+				Slot slot;
+				slot.name = InternLocalName(derived.output_,
+					derived.GeneratedSlotName("classvalue"));
+				slot.type = copy.type;
+				const Operand storage(
+					static_cast<SlotId>(derived.function_->slots.size()), copy.type);
+				derived.function_->slots.push_back(slot);
+				copy.second = derived.AddressOfStorage(storage);
+				derived.Emit(copy);
+				copy.first = copy.second;
+				copy.second = destination;
+			}
+			copy.type = LowObject(static_cast<std::size_t>(claimed),
+				copy.type.alignment);
+		}
 		derived.Emit(copy);
+	}
+
+	// The bytes an object of class type owns (its nvsize); 0 otherwise.
+	std::uint64_t ClassTransferBytes(TypeId type) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		if (!derived.IsClassObjectType(type)) return 0;
+		const TypeRecord& object = derived.program_.types.Get(
+			derived.ExpressionObjectType(type));
+		if (object.kind != TYPE_NAMED || object.entity == kNoEntity) return 0;
+		return LayoutNonvirtualSize(derived.program_.entities[object.entity]);
 	}
 
 	Operand LowerClassTransferSource(std::uint32_t node)
@@ -245,12 +281,24 @@ protected:
 	// Zero-initialization (8.5p5): zero bits, except that a null data member
 	// pointer is -1 (Itanium C++ ABI 2.3).
 	void EmitZeroInitialization(TypeId type, const Operand& destination,
-		BindingId member = kNoBinding)
+		BindingId member = kNoBinding, bool base_subobject = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		EmitZeroBits(type, destination, member);
+		EmitZeroBits(type, destination, member, base_subobject);
 		std::vector<NullMemberPointerRun> runs;
-		derived.program_.AppendNullMemberPointerRuns(type, 0, &runs);
+		const EntityId entity = base_subobject ?
+			derived.ClassEntity(type) : kNoEntity;
+		if (entity != kNoEntity)
+		{
+			// A base subobject holds its class's non-virtual part only.
+			const EntityRecord& record = derived.program_.entities[entity];
+			runs.assign(derived.program_.null_member_pointer_runs.begin() +
+					record.null_member_pointer_begin,
+				derived.program_.null_member_pointer_runs.begin() +
+					record.null_member_pointer_begin +
+					record.null_member_pointer_count);
+		}
+		else derived.program_.AppendNullMemberPointerRuns(type, 0, &runs);
 		EmitNullMemberPointerRuns(runs, destination);
 	}
 
@@ -340,18 +388,25 @@ protected:
 		derived.SelectBlock(end);
 	}
 
-	void EmitZeroBits(TypeId type, const Operand& destination, BindingId member)
+	void EmitZeroBits(TypeId type, const Operand& destination, BindingId member,
+		bool base_subobject)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
-		if (member != kNoBinding &&
-			derived.program_.bindings[member].potentially_overlapping_member)
+		LowType storage_type = derived.LowerStorageType(type);
+		const EntityId entity = derived.ClassEntity(type);
+		const bool overlapping = base_subobject || (member != kNoBinding &&
+			derived.program_.bindings[member].potentially_overlapping_member);
+		if (overlapping && entity != kNoEntity)
 		{
-			const EntityId entity = derived.ClassEntity(type);
-			// This member's padding can be another subobject's live storage.
-			if (entity != kNoEntity && derived.program_.entities[entity].empty_class)
-				return;
+			// This subobject's padding can be another subobject's live storage.
+			const EntityRecord& record = derived.program_.entities[entity];
+			if (record.empty_class) return;
+			const std::uint64_t claimed = base_subobject ?
+				LayoutNonvirtualSize(record) : LayoutDataSize(record);
+			if (storage_type.kind == LOW_OBJECT && claimed < storage_type.width / 8)
+				storage_type = LowObject(static_cast<std::size_t>(claimed),
+					storage_type.alignment);
 		}
-		const LowType storage_type = derived.LowerStorageType(type);
 		if (storage_type.kind == LOW_OBJECT &&
 			lowering::zero_initialization::ContiguousSpanEligible(
 				derived.program_, type))
@@ -362,8 +417,9 @@ protected:
 			derived.Emit(zero);
 			return;
 		}
-		const std::size_t size = derived.program_.SizeOf(type);
-		if (size > 64)
+		const std::size_t size = storage_type.kind == LOW_OBJECT ?
+			storage_type.width / 8 : derived.program_.SizeOf(type);
+		if (size > 64 && size == derived.program_.SizeOf(type))
 		{
 			const LowType zero_type = derived.LowerStorageType(type);
 			Instruction store(Instruction::STORE);

@@ -107,7 +107,7 @@ Stats::Stats()
 	  virtual_base_layout_edge_visits(0), virtual_base_layout_facts(0),
 	  virtual_base_layout_lookups(0), virtual_base_layout_probes(0),
 	  direct_base_validation_visits(0),
-	  class_zero_offset_subobject_visits(0),
+	  class_empty_subobject_visits(0),
 	  special_member_fact_lookups(0), special_member_subobject_visits(0),
 	  constructor_member_action_visits(0),
 	  constructor_base_action_visits(0),

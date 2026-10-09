@@ -100,10 +100,8 @@ Analyzer::Analyzer(GraphStorage& graph, std::ostream& output,
 	  virtual_base_layout_generation_(0),
 	  virtual_base_layout_edge_visits_(0),
 	  virtual_base_layout_facts_(0),
-	  class_zero_offset_subobject_visits_(0),
 	  special_member_fact_lookups_(0),
 	  special_member_subobject_visits_(0),
-	  zero_offset_subobject_generation_(0),
 	  empty_constructor_chain_generation_(0),
 	  empty_constructor_chain_requests_(0),
 	  empty_constructor_chain_cache_hits_(0),
@@ -177,8 +175,6 @@ std::size_t Analyzer::DeclarationStorageBytes() const
 			sizeof(std::vector<BindingId>) +
 		entity_layout_members_.capacity() *
 			sizeof(std::vector<ClassLayoutMember>) +
-		zero_offset_subobject_marks_.capacity() * sizeof(std::uint32_t) +
-		zero_offset_subobject_scratch_.capacity() * sizeof(EntityId) +
 		virtual_base_layout_entity_marks_.capacity() * sizeof(std::uint32_t) +
 		virtual_base_layout_fact_marks_.capacity() * sizeof(std::uint32_t) +
 		virtual_base_layout_scratch_.capacity() *

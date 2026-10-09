@@ -2076,8 +2076,8 @@ int run_emit_semantics_mode(const vector<string> & args)
 		   << stats.virtual_base_layout_probes
 		   << " direct_base_validation_visits="
 		   << stats.direct_base_validation_visits
-		   << " class_zero_offset_subobject_visits="
-           << stats.class_zero_offset_subobject_visits
+		   << " class_empty_subobject_visits="
+           << stats.class_empty_subobject_visits
            << " special_member_fact_lookups="
            << stats.special_member_fact_lookups
            << " special_member_subobject_visits="
@@ -2299,8 +2299,8 @@ void report_lowir_semantic_stats(const cppgm::lowering::Stats & stats)
 			 << semantic.virtual_base_layout_probes
 			 << " direct_base_validation_visits="
 			 << semantic.direct_base_validation_visits
-			 << " class_zero_offset_subobject_visits="
-			 << semantic.class_zero_offset_subobject_visits
+			 << " class_empty_subobject_visits="
+			 << semantic.class_empty_subobject_visits
 			 << " special_member_fact_lookups="
 			 << semantic.special_member_fact_lookups
 			 << " special_member_subobject_visits="

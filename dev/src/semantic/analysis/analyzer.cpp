@@ -2818,8 +2818,7 @@ void Analyzer::Consume(const SyntaxArena& arena, NodeId root)
 		stats_->expressions = expression_count_;
 		stats_->class_layouts = class_layouts_; stats_->class_layout_member_visits = class_layout_member_visits_;
 		PublishVirtualBaseStats();
-		stats_->class_zero_offset_subobject_visits =
-			class_zero_offset_subobject_visits_;
+		stats_->class_empty_subobject_visits = empty_subobjects_.Visits();
 		stats_->special_member_fact_lookups = special_member_fact_lookups_;
 		stats_->special_member_subobject_visits =
 			special_member_subobject_visits_;

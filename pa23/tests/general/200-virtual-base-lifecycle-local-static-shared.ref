@@ -60,12 +60,12 @@ global @counted____vtt [binding=weak, object=_ZTT7counted, object_root=yes] = {
   ptr addr @counted__vtable + 24
 }
 global @derived__vtable [binding=weak, object=_ZTV7derived] = {
-  i64 16
+  i64 12
   i64 0
   ptr addr @__rtti_struct_derived
 }
 global @derived____construction__counted__0__s0__vtable [binding=internal, object=@derived____construction__counted__0__s0__vtable] = {
-  i64 16
+  i64 12
   i64 0
   ptr addr @__rtti_struct_counted
 }
@@ -79,7 +79,7 @@ global @destroyed : i32 [binding=strong] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $whole : obj<16x8>
-  slot $part : obj<24x8>
+  slot $part : obj<16x8>
   slot $cleanup_return__1 : i32
   slot $cond__2 : i32
 
@@ -225,20 +225,20 @@ function @counted___counted(%this : ptr [object_bytes=16]) -> void [unwind=no, b
     store typed i32 %t3, @destroyed
     return void
 }
-function @derived__derived(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN7derivedC1Ev, inline_hint=yes] {
+function @derived__derived(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN7derivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 16
+    %t2 = index i8 %t1, 12
     call void @shared__shared__base_entry(%t2)
     %t3 = load typed ptr $this
     %t4 = index i8 %t3, 0
     %t5 = addr @derived____vtt
     %t6 = index i8 %t5, 8
     %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 16
+    %t8 = index i8 %t7, 12
     call void @counted__counted__base_entry(%t4, %t6, %t8)
     eh_cleanup ^constructor_cleanup_1
     %t15 = load typed ptr $this
@@ -254,12 +254,12 @@ function @derived__derived(%this : ptr [object_bytes=24]) -> void [binding=weak,
     %t11 = addr @derived____vtt
     %t12 = index i8 %t11, 8
     %t13 = load typed ptr $this
-    %t14 = index i8 %t13, 16
+    %t14 = index i8 %t13, 12
     call void @counted___counted__base_entry(%t10, %t12, %t14)
     eh_end
     resume
 }
-function @derived___derived__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN7derivedD2Ev, object_root=yes, inline_hint=yes] {
+function @derived___derived__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr, %__vbptr0 : ptr) -> void [binding=weak, object=_ZN7derivedD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -283,7 +283,7 @@ function @derived___derived__base_entry(%this : ptr [object_bytes=24], %__vtt : 
   block ^destructor_end_2:
     return void
 }
-function @derived___derived(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN7derivedD1Ev, inline_hint=yes] {
+function @derived___derived(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN7derivedD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -295,7 +295,7 @@ function @derived___derived(%this : ptr [object_bytes=24]) -> void [unwind=no, b
     %t3 = addr @derived____vtt
     %t4 = index i8 %t3, 8
     %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 16
+    %t6 = index i8 %t5, 12
     call void @counted___counted__base_entry(%t2, %t4, %t6)
     jump ^destructor_end_2
 
@@ -305,7 +305,7 @@ function @derived___derived(%this : ptr [object_bytes=24]) -> void [unwind=no, b
     %t9 = addr @derived____vtt
     %t10 = index i8 %t9, 8
     %t11 = load typed ptr $this
-    %t12 = index i8 %t11, 16
+    %t12 = index i8 %t11, 12
     call void @counted___counted__base_entry(%t8, %t10, %t12)
     eh_end
     resume

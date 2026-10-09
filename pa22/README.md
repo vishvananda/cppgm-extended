@@ -165,7 +165,11 @@ To complete PA22, implement these goals:
 
 1. Multiple-base layout and field access.
    Distinct base subobjects should have deterministic offsets, and member access should lower
-   through those offsets correctly.
+   through those offsets correctly.  The offsets are the Itanium C++ ABI's (2.4 II): each
+   non-virtual base at the data size so far rounded up to its alignment, reusing a
+   preceding non-POD base's tail padding; an empty base at offset `0` unless an empty
+   subobject of its type is already there, otherwise from the data size on by its
+   alignment until no two empty subobjects of one type share an offset.
 
 2. Base-method lookup and `this` adjustment.
    Calling a method inherited from a later base must lower the implicit object argument to the

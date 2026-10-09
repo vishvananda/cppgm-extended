@@ -12,10 +12,10 @@ namespace semantic
 namespace
 {
 
-std::size_t AlignVirtualBase(std::size_t value, std::size_t alignment)
+std::uint64_t AlignVirtualBase(std::uint64_t value, std::uint64_t alignment)
 {
 	if (alignment <= 1) return value;
-	const std::size_t remainder = value % alignment;
+	const std::uint64_t remainder = value % alignment;
 	return remainder == 0 ? value : value + alignment - remainder;
 }
 
@@ -182,8 +182,8 @@ void ClassifySysvClassLayout(Program& program, EntityId entity,
 			program.bindings[member.binding]).member_offset;
 		// A bit-field's storage unit holds integers.
 		if (member.bit_field)
-			MergeSysvQuarters(&quarters, offset,
-				offset + program.SizeOf(member.type), 1);
+			MergeSysvQuarters(&quarters, offset, offset + program.BindingLayout(
+				program.bindings[member.binding]).bit_storage_bits / 8, 1);
 		else
 			ClassifySysvMember(program, member.type, offset, &quarters,
 				&memory, &unmodeled);
@@ -239,49 +239,50 @@ void RecordNullMemberPointerRuns(Program& program, EntityId entity,
 }
 
 void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
-	std::size_t packing_alignment, std::size_t* size,
-	std::size_t* alignment, std::size_t* natural_alignment, bool* empty_class)
+	std::size_t packing_alignment, ClassLayoutCursor* cursor, bool* empty_class)
 {
 	EntityRecord& owner = program_->entities[entity];
 	std::vector<VirtualBaseLayout> layouts;
 	CollectVirtualBaseLayouts(entity, &layouts);
-	const std::size_t own_nonvirtual_alignment = *alignment;
+	const std::uint64_t own_nonvirtual_alignment = cursor->alignment;
+	const std::uint64_t member_data_size = cursor->data_size;
 	for (std::size_t i = 0; i < layouts.size(); ++i)
-	{
-		const EntityRecord& base = program_->entities[layouts[i].entity];
-		const std::size_t base_alignment =
-			static_cast<std::size_t>(base.object_alignment);
-		const std::size_t effective = packing_alignment == 0 ? base_alignment :
-			std::min(base_alignment, packing_alignment);
-		*natural_alignment = std::max(*natural_alignment, base_alignment);
-		*alignment = std::max(*alignment, effective);
-	}
+		cursor->natural_alignment = std::max(cursor->natural_alignment,
+			program_->entities[layouts[i].entity].object_alignment);
 	if (owner.requested_alignment != 0 &&
-		owner.requested_alignment < *natural_alignment)
+		owner.requested_alignment < cursor->natural_alignment)
 		ThrowSemanticError(
 			"requested alignment is weaker than the natural class alignment");
-	*alignment = std::max(*alignment,
-		static_cast<std::size_t>(owner.requested_alignment));
-	if (*size == 0) *size = 1;
-	owner.nonvirtual_size = *size;
+	if (cursor->size == 0) cursor->size = 1;
+	owner.nonvirtual_size = cursor->size;
 	owner.nonvirtual_alignment = std::max(own_nonvirtual_alignment,
-		static_cast<std::size_t>(owner.requested_alignment));
+		owner.requested_alignment);
+	// Itanium C++ ABI 2.4 III: the virtual bases in inheritance graph order,
+	// placed as non-virtual bases are, from the data size.
 	for (std::size_t i = 0; i < layouts.size(); ++i)
 	{
 		const EntityRecord& base = program_->entities[layouts[i].entity];
-		const std::size_t base_alignment = static_cast<std::size_t>(
-			base.nonvirtual_alignment == 0 ? base.object_alignment :
-			base.nonvirtual_alignment);
-		const std::size_t effective = packing_alignment == 0 ? base_alignment :
-			std::min(base_alignment, packing_alignment);
-		*size = AlignVirtualBase(*size, effective);
-		layouts[i].offset = *size;
-		const std::size_t base_size = static_cast<std::size_t>(
-			base.nonvirtual_size == 0 ? base.object_size : base.nonvirtual_size);
-		if (*size > std::numeric_limits<std::size_t>::max() - base_size)
+		const std::uint64_t base_alignment = LayoutNonvirtualAlignment(base);
+		const std::uint64_t effective = packing_alignment == 0 ? base_alignment :
+			std::min<std::uint64_t>(base_alignment, packing_alignment);
+		std::uint64_t offset = 0;
+		const bool empty = base.empty_class;
+		if (!empty || empty_subobjects_.Conflict(layouts[i].entity, 0, false))
+		{
+			offset = AlignVirtualBase(cursor->data_size, effective);
+			while (empty_subobjects_.Conflict(layouts[i].entity, offset, false))
+				offset += effective;
+		}
+		const std::uint64_t extent = empty ? base.object_size :
+			LayoutNonvirtualSize(base);
+		if (offset > std::numeric_limits<std::uint64_t>::max() - extent)
 			ThrowSemanticResourceLimit("class layout is too large");
-		*size += base_size;
+		empty_subobjects_.Record(layouts[i].entity, offset, false, empty);
+		cursor->Place(offset + extent, !empty);
+		cursor->alignment = std::max(cursor->alignment, effective);
+		layouts[i].offset = offset;
 	}
+	cursor->alignment = std::max(cursor->alignment, owner.requested_alignment);
 	program_->SetVirtualBaseLayouts(entity, layouts);
 	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
 	{
@@ -297,12 +298,17 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 		*empty_class = false;
 		owner.trivial_default_constructor = false;
 	}
-	*size = AlignVirtualBase(*size, *alignment);
-	owner.object_size = *size;
-	owner.object_alignment = *alignment;
-	owner.natural_alignment = *natural_alignment;
+	owner.object_size = AlignVirtualBase(cursor->size, cursor->alignment);
+	owner.object_alignment = cursor->alignment;
+	owner.natural_alignment = cursor->natural_alignment;
 	owner.empty_class = *empty_class;
+	owner.data_size = cursor->data_size;
+	if (owner.pod_for_layout)
+		owner.nonvirtual_size = owner.data_size = owner.object_size;
+	owner.has_empty_subobject = ClassHasEmptySubobject(entity);
 	owner.layout_complete = true;
+	bit_field_layout_.Assign(program_,
+		owner.pod_for_layout ? owner.object_size : member_data_size);
 	if (dependent_shape_completion_depth_ == 0)
 	{
 		const std::vector<ClassLayoutMember>* members =

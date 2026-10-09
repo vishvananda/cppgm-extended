@@ -113,7 +113,7 @@ global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D__vtable + 40
 }
 global @EmptyDerived__vtable [binding=weak, object=_ZTV12EmptyDerived] = {
-  i64 8
+  i64 0
   i64 0
   ptr addr @__rtti_struct_EmptyDerived
 }
@@ -140,9 +140,9 @@ global @__cppgm_class_template_identity_0_1_0____vtt [binding=weak, object=_ZTT1
 }
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $source : obj<16x8>
-  slot $copy : obj<16x8>
-  slot $moved : obj<16x8>
+  slot $source : obj<8x8>
+  slot $copy : obj<8x8>
+  slot $moved : obj<8x8>
   slot $d : obj<24x8>
   slot $w : obj<24x8>
   slot $cond__1 : i32
@@ -261,7 +261,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t56 = load typed i32 $cond__1
     return i32 %t56
 }
-function @EmptyDerived__EmptyDerived(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1Ev, inline_hint=yes] {
+function @EmptyDerived__EmptyDerived(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -272,7 +272,7 @@ function @EmptyDerived__EmptyDerived(%this : ptr [object_bytes=16]) -> void [unw
     store typed ptr %t3, %t1
     return void
 }
-function @EmptyDerived__EmptyDerived__sym2(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1ERKS_, inline_hint=yes] {
+function @EmptyDerived__EmptyDerived__sym2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -285,7 +285,7 @@ function @EmptyDerived__EmptyDerived__sym2(%this : ptr [alias=noalias, object_by
     store typed ptr %t3, %t1
     return void
 }
-function @EmptyDerived__EmptyDerived__ov2(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1EOS_, inline_hint=yes] {
+function @EmptyDerived__EmptyDerived__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN12EmptyDerivedC1EOS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 

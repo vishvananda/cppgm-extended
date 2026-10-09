@@ -13,8 +13,8 @@ function @select__ov2(%__param0 : f64) -> i32 [binding=strong, object=_Z6selectd
     return i32 2
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $bits : obj<24x8>
-  slot $compound : obj<24x8>
+  slot $bits : obj<16x8>
+  slot $compound : obj<16x8>
   slot $cond__1 : i32
   slot $land__2 : i64
   slot $land__3 : i64
@@ -54,81 +54,97 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t20 = binary or i64 %t19, %t17
     store i64 %t20, %t15
     %t21 = addr $bits
-    %t22 = index i8 [projection=field] %t21, 16
-    %t23 = binary and u8 1, 0
-    store u8 %t23, %t22
-    %t24 = addr $bits
-    %t25 = index i8 [projection=field] %t24, 20
-    %t26 = binary and u32 7, 0
-    store u32 %t26, %t25
-    %t27 = addr $compound
-    %t28 = addr $compound
-    %t29 = index i8 [projection=field] %t28, 0
-    %t30 = binary and u32 7, 3
-    store u32 %t30, %t29
-    %t31 = addr $compound
-    %t32 = index i8 [projection=field] %t31, 4
-    %t33 = binary and u32 4294967295, 0
-    store u32 %t33, %t32
-    %t34 = convert sext i64 i32 0
+    %t22 = index i8 [projection=field] %t21, 8
+    %t23 = binary and i64 1, 0
+    %t24 = binary shl i64 %t23, 6
+    %t25 = load i64 %t22
+    %t26 = binary and i64 %t25, -65
+    %t27 = binary or i64 %t26, %t24
+    store i64 %t27, %t22
+    %t28 = addr $bits
+    %t29 = index i8 [projection=field] %t28, 8
+    %t30 = binary and i64 7, 0
+    %t31 = binary shl i64 %t30, 7
+    %t32 = load i64 %t29
+    %t33 = binary and i64 %t32, -897
+    %t34 = binary or i64 %t33, %t31
+    store i64 %t34, %t29
     %t35 = addr $compound
-    %t36 = index i8 [projection=field] %t35, 8
-    %t37 = binary and i64 7, %t34
-    store i64 %t37, %t36
-    %t38 = addr $compound
-    %t39 = index i8 [projection=field] %t38, 8
-    %t40 = binary and i64 7, 0
-    %t41 = binary shl i64 %t40, 3
-    %t42 = load i64 %t39
-    %t43 = binary and i64 %t42, -57
-    %t44 = binary or i64 %t43, %t41
-    store i64 %t44, %t39
-    %t45 = addr $compound
-    %t46 = index i8 [projection=field] %t45, 16
-    %t47 = binary and u8 1, 0
-    store u8 %t47, %t46
-    %t48 = addr $compound
-    %t49 = index i8 [projection=field] %t48, 20
-    %t50 = binary and u32 7, 0
-    store u32 %t50, %t49
-    %t51 = addr $compound
-    %t52 = index i8 [projection=field] %t51, 0
-    %t53 = load i32 %t52
-    %t54 = binary and i32 %t53, 7
-    %t55 = copy u32 %t54
-    %t56 = unary neg i32 2
-    %t57 = copy i32 %t55
-    %t58 = binary div i32 %t57, %t56
-    %t59 = copy u32 %t58
-    %t60 = copy i32 %t59
-    %t61 = binary and i32 %t60, 7
-    %t62 = copy u32 %t61
-    %t63 = load i32 %t52
-    %t64 = binary and i32 %t63, 4294967288
-    %t65 = binary or i32 %t64, %t61
-    store i32 %t65, %t52
-    %t66 = addr $bits
-    %t67 = index i8 [projection=field] %t66, 0
-    %t68 = load i32 %t67
-    %t69 = binary and i32 %t68, 7
-    %t70 = copy u32 %t69
-    %t71 = copy i32 %t70
-    %t72 = binary sub nowrap i32 %t71, 1
-    %t73 = binary div i32 %t72, 2
-    %t74 = cmp eq i32 %t73, 0
-    branch %t74, ^land_rhs_34, ^land_short_35
+    %t36 = addr $compound
+    %t37 = index i8 [projection=field] %t36, 0
+    %t38 = binary and u32 7, 3
+    store u32 %t38, %t37
+    %t39 = addr $compound
+    %t40 = index i8 [projection=field] %t39, 4
+    %t41 = binary and u32 4294967295, 0
+    store u32 %t41, %t40
+    %t42 = convert sext i64 i32 0
+    %t43 = addr $compound
+    %t44 = index i8 [projection=field] %t43, 8
+    %t45 = binary and i64 7, %t42
+    store i64 %t45, %t44
+    %t46 = addr $compound
+    %t47 = index i8 [projection=field] %t46, 8
+    %t48 = binary and i64 7, 0
+    %t49 = binary shl i64 %t48, 3
+    %t50 = load i64 %t47
+    %t51 = binary and i64 %t50, -57
+    %t52 = binary or i64 %t51, %t49
+    store i64 %t52, %t47
+    %t53 = addr $compound
+    %t54 = index i8 [projection=field] %t53, 8
+    %t55 = binary and i64 1, 0
+    %t56 = binary shl i64 %t55, 6
+    %t57 = load i64 %t54
+    %t58 = binary and i64 %t57, -65
+    %t59 = binary or i64 %t58, %t56
+    store i64 %t59, %t54
+    %t60 = addr $compound
+    %t61 = index i8 [projection=field] %t60, 8
+    %t62 = binary and i64 7, 0
+    %t63 = binary shl i64 %t62, 7
+    %t64 = load i64 %t61
+    %t65 = binary and i64 %t64, -897
+    %t66 = binary or i64 %t65, %t63
+    store i64 %t66, %t61
+    %t67 = addr $compound
+    %t68 = index i8 [projection=field] %t67, 0
+    %t69 = load i32 %t68
+    %t70 = binary and i32 %t69, 7
+    %t71 = copy u32 %t70
+    %t72 = unary neg i32 2
+    %t73 = copy i32 %t71
+    %t74 = binary div i32 %t73, %t72
+    %t75 = copy u32 %t74
+    %t76 = copy i32 %t75
+    %t77 = binary and i32 %t76, 7
+    %t78 = copy u32 %t77
+    %t79 = load i32 %t68
+    %t80 = binary and i32 %t79, 4294967288
+    %t81 = binary or i32 %t80, %t77
+    store i32 %t81, %t68
+    %t82 = addr $bits
+    %t83 = index i8 [projection=field] %t82, 0
+    %t84 = load i32 %t83
+    %t85 = binary and i32 %t84, 7
+    %t86 = copy u32 %t85
+    %t87 = copy i32 %t86
+    %t88 = binary sub nowrap i32 %t87, 1
+    %t89 = binary div i32 %t88, 2
+    %t90 = cmp eq i32 %t89, 0
+    branch %t90, ^land_rhs_34, ^land_short_35
 
   block ^land_rhs_34:
-    %t75 = addr $bits
-    %t76 = index i8 [projection=field] %t75, 0
-    %t77 = load i32 %t76
-    %t78 = binary and i32 %t77, 7
-    %t79 = copy u32 %t78
-    %t80 = copy i32 %t79
-    %t81 = binary sub nowrap i32 %t80, 1
-    %t82 = cmp lt i32 %t81, 0
-    %t83 = cmp ne i64 %t82, 0
-    store typed i64 %t83, $land__12
+    %t91 = addr $bits
+    %t92 = index i8 [projection=field] %t91, 0
+    %t93 = load i32 %t92
+    %t94 = binary and i32 %t93, 7
+    %t95 = copy u32 %t94
+    %t96 = copy i32 %t95
+    %t97 = binary sub nowrap i32 %t96, 1
+    %t98 = cmp lt i32 %t97, 0
+    %t99 = cmp ne i64 %t98, 0
+    store typed i64 %t99, $land__12
     jump ^land_end_36
 
   block ^land_short_35:
@@ -136,21 +152,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_36
 
   block ^land_end_36:
-    %t84 = load typed i64 $land__12
-    branch %t84, ^land_rhs_31, ^land_short_32
+    %t100 = load typed i64 $land__12
+    branch %t100, ^land_rhs_31, ^land_short_32
 
   block ^land_rhs_31:
-    %t85 = addr $bits
-    %t86 = index i8 [projection=field] %t85, 0
-    %t87 = load i32 %t86
-    %t88 = binary and i32 %t87, 7
-    %t89 = copy u32 %t88
-    %t90 = unary neg i32 1
-    %t91 = copy i32 %t89
-    %t92 = cmp lt i32 %t91, %t90
-    %t93 = cmp eq i64 %t92, 0
-    %t94 = cmp ne i64 %t93, 0
-    store typed i64 %t94, $land__11
+    %t101 = addr $bits
+    %t102 = index i8 [projection=field] %t101, 0
+    %t103 = load i32 %t102
+    %t104 = binary and i32 %t103, 7
+    %t105 = copy u32 %t104
+    %t106 = unary neg i32 1
+    %t107 = copy i32 %t105
+    %t108 = cmp lt i32 %t107, %t106
+    %t109 = cmp eq i64 %t108, 0
+    %t110 = cmp ne i64 %t109, 0
+    store typed i64 %t110, $land__11
     jump ^land_end_33
 
   block ^land_short_32:
@@ -158,21 +174,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_33
 
   block ^land_end_33:
-    %t95 = load typed i64 $land__11
-    branch %t95, ^land_rhs_28, ^land_short_29
+    %t111 = load typed i64 $land__11
+    branch %t111, ^land_rhs_28, ^land_short_29
 
   block ^land_rhs_28:
-    %t96 = addr $bits
-    %t97 = index i8 [projection=field] %t96, 0
-    %t98 = load i32 %t97
-    %t99 = binary and i32 %t98, 7
-    %t100 = copy u32 %t99
-    %t101 = copy i32 %t100
-    %t102 = unary bitnot i32 %t101
-    %t103 = unary neg i32 1
-    %t104 = cmp eq i32 %t102, %t103
-    %t105 = cmp ne i64 %t104, 0
-    store typed i64 %t105, $land__10
+    %t112 = addr $bits
+    %t113 = index i8 [projection=field] %t112, 0
+    %t114 = load i32 %t113
+    %t115 = binary and i32 %t114, 7
+    %t116 = copy u32 %t115
+    %t117 = copy i32 %t116
+    %t118 = unary bitnot i32 %t117
+    %t119 = unary neg i32 1
+    %t120 = cmp eq i32 %t118, %t119
+    %t121 = cmp ne i64 %t120, 0
+    store typed i64 %t121, $land__10
     jump ^land_end_30
 
   block ^land_short_29:
@@ -180,20 +196,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_30
 
   block ^land_end_30:
-    %t106 = load typed i64 $land__10
-    branch %t106, ^land_rhs_25, ^land_short_26
+    %t122 = load typed i64 $land__10
+    branch %t122, ^land_rhs_25, ^land_short_26
 
   block ^land_rhs_25:
-    %t107 = addr $bits
-    %t108 = index i8 [projection=field] %t107, 0
-    %t109 = load i32 %t108
-    %t110 = binary and i32 %t109, 7
-    %t111 = copy u32 %t110
-    %t112 = copy i32 %t111
-    %t113 = binary shl i32 %t112, 1
-    %t114 = cmp eq i32 %t113, 0
-    %t115 = cmp ne i64 %t114, 0
-    store typed i64 %t115, $land__9
+    %t123 = addr $bits
+    %t124 = index i8 [projection=field] %t123, 0
+    %t125 = load i32 %t124
+    %t126 = binary and i32 %t125, 7
+    %t127 = copy u32 %t126
+    %t128 = copy i32 %t127
+    %t129 = binary shl i32 %t128, 1
+    %t130 = cmp eq i32 %t129, 0
+    %t131 = cmp ne i64 %t130, 0
+    store typed i64 %t131, $land__9
     jump ^land_end_27
 
   block ^land_short_26:
@@ -201,19 +217,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_27
 
   block ^land_end_27:
-    %t116 = load typed i64 $land__9
-    branch %t116, ^land_rhs_22, ^land_short_23
+    %t132 = load typed i64 $land__9
+    branch %t132, ^land_rhs_22, ^land_short_23
 
   block ^land_rhs_22:
-    %t117 = addr $bits
-    %t118 = index i8 [projection=field] %t117, 4
-    %t119 = load u32 %t118
-    %t120 = binary and u32 %t119, 4294967295
-    %t121 = binary sub u32 %t120, 1
-    %t122 = binary udiv u32 %t121, 2
-    %t123 = cmp eq u32 %t122, 2147483647
-    %t124 = cmp ne i64 %t123, 0
-    store typed i64 %t124, $land__8
+    %t133 = addr $bits
+    %t134 = index i8 [projection=field] %t133, 4
+    %t135 = load u32 %t134
+    %t136 = binary and u32 %t135, 4294967295
+    %t137 = binary sub u32 %t136, 1
+    %t138 = binary udiv u32 %t137, 2
+    %t139 = cmp eq u32 %t138, 2147483647
+    %t140 = cmp ne i64 %t139, 0
+    store typed i64 %t140, $land__8
     jump ^land_end_24
 
   block ^land_short_23:
@@ -221,20 +237,20 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_24
 
   block ^land_end_24:
-    %t125 = load typed i64 $land__8
-    branch %t125, ^land_rhs_19, ^land_short_20
+    %t141 = load typed i64 $land__8
+    branch %t141, ^land_rhs_19, ^land_short_20
 
   block ^land_rhs_19:
-    %t126 = addr $bits
-    %t127 = index i8 [projection=field] %t126, 8
-    %t128 = load i64 %t127
-    %t129 = binary and i64 %t128, 7
-    %t130 = convert trunc i32 i64 %t129
-    %t131 = binary sub nowrap i32 %t130, 1
-    %t132 = binary div i32 %t131, 2
-    %t133 = cmp eq i32 %t132, 0
-    %t134 = cmp ne i64 %t133, 0
-    store typed i64 %t134, $land__7
+    %t142 = addr $bits
+    %t143 = index i8 [projection=field] %t142, 8
+    %t144 = load i64 %t143
+    %t145 = binary and i64 %t144, 7
+    %t146 = convert trunc i32 i64 %t145
+    %t147 = binary sub nowrap i32 %t146, 1
+    %t148 = binary div i32 %t147, 2
+    %t149 = cmp eq i32 %t148, 0
+    %t150 = cmp ne i64 %t149, 0
+    store typed i64 %t150, $land__7
     jump ^land_end_21
 
   block ^land_short_20:
@@ -242,19 +258,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_21
 
   block ^land_end_21:
-    %t135 = load typed i64 $land__7
-    branch %t135, ^land_rhs_16, ^land_short_17
+    %t151 = load typed i64 $land__7
+    branch %t151, ^land_rhs_16, ^land_short_17
 
   block ^land_rhs_16:
-    %t136 = addr $bits
-    %t137 = index i8 [projection=field] %t136, 8
-    %t138 = load i64 %t137
-    %t139 = binary and i64 %t138, 7
-    %t140 = convert trunc i32 i64 %t139
-    %t141 = call i32 @select(%t140)
-    %t142 = cmp eq i32 %t141, 1
-    %t143 = cmp ne i64 %t142, 0
-    store typed i64 %t143, $land__6
+    %t152 = addr $bits
+    %t153 = index i8 [projection=field] %t152, 8
+    %t154 = load i64 %t153
+    %t155 = binary and i64 %t154, 7
+    %t156 = convert trunc i32 i64 %t155
+    %t157 = call i32 @select(%t156)
+    %t158 = cmp eq i32 %t157, 1
+    %t159 = cmp ne i64 %t158, 0
+    store typed i64 %t159, $land__6
     jump ^land_end_18
 
   block ^land_short_17:
@@ -262,22 +278,22 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_18
 
   block ^land_end_18:
-    %t144 = load typed i64 $land__6
-    branch %t144, ^land_rhs_13, ^land_short_14
+    %t160 = load typed i64 $land__6
+    branch %t160, ^land_rhs_13, ^land_short_14
 
   block ^land_rhs_13:
-    %t145 = addr $bits
-    %t146 = index i8 [projection=field] %t145, 8
-    %t147 = load i64 %t146
-    %t148 = binary shr i64 %t147, 3
-    %t149 = binary and i64 %t148, 7
-    %t150 = binary shl i64 %t149, 61
-    %t151 = binary shr i64 %t150, 61
-    %t152 = unary neg i32 1
-    %t153 = convert trunc i32 i64 %t151
-    %t154 = cmp eq i32 %t153, %t152
-    %t155 = cmp ne i64 %t154, 0
-    store typed i64 %t155, $land__5
+    %t161 = addr $bits
+    %t162 = index i8 [projection=field] %t161, 8
+    %t163 = load i64 %t162
+    %t164 = binary shr i64 %t163, 3
+    %t165 = binary and i64 %t164, 7
+    %t166 = binary shl i64 %t165, 61
+    %t167 = binary shr i64 %t166, 61
+    %t168 = unary neg i32 1
+    %t169 = convert trunc i32 i64 %t167
+    %t170 = cmp eq i32 %t169, %t168
+    %t171 = cmp ne i64 %t170, 0
+    store typed i64 %t171, $land__5
     jump ^land_end_15
 
   block ^land_short_14:
@@ -285,19 +301,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_15
 
   block ^land_end_15:
-    %t156 = load typed i64 $land__5
-    branch %t156, ^land_rhs_10, ^land_short_11
+    %t172 = load typed i64 $land__5
+    branch %t172, ^land_rhs_10, ^land_short_11
 
   block ^land_rhs_10:
-    %t157 = addr $bits
-    %t158 = index i8 [projection=field] %t157, 16
-    %t159 = load u8 %t158
-    %t160 = binary and u8 %t159, 1
-    %t161 = convert zext i32 u8 %t160
-    %t162 = binary sub nowrap i32 %t161, 1
-    %t163 = cmp lt i32 %t162, 0
-    %t164 = cmp ne i64 %t163, 0
-    store typed i64 %t164, $land__4
+    %t173 = addr $bits
+    %t174 = index i8 [projection=field] %t173, 8
+    %t175 = load i64 %t174
+    %t176 = binary ushr i64 %t175, 6
+    %t177 = binary and i64 %t176, 1
+    %t178 = convert trunc u8 i64 %t177
+    %t179 = convert zext i32 u8 %t178
+    %t180 = binary sub nowrap i32 %t179, 1
+    %t181 = cmp lt i32 %t180, 0
+    %t182 = cmp ne i64 %t181, 0
+    store typed i64 %t182, $land__4
     jump ^land_end_12
 
   block ^land_short_11:
@@ -305,19 +323,19 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_12
 
   block ^land_end_12:
-    %t165 = load typed i64 $land__4
-    branch %t165, ^land_rhs_7, ^land_short_8
+    %t183 = load typed i64 $land__4
+    branch %t183, ^land_rhs_7, ^land_short_8
 
   block ^land_rhs_7:
-    %t166 = addr $compound
-    %t167 = index i8 [projection=field] %t166, 0
-    %t168 = load i32 %t167
-    %t169 = binary and i32 %t168, 7
-    %t170 = copy u32 %t169
-    %t171 = copy i32 %t170
-    %t172 = cmp eq i32 %t171, 7
-    %t173 = cmp ne i64 %t172, 0
-    store typed i64 %t173, $land__3
+    %t184 = addr $compound
+    %t185 = index i8 [projection=field] %t184, 0
+    %t186 = load i32 %t185
+    %t187 = binary and i32 %t186, 7
+    %t188 = copy u32 %t187
+    %t189 = copy i32 %t188
+    %t190 = cmp eq i32 %t189, 7
+    %t191 = cmp ne i64 %t190, 0
+    store typed i64 %t191, $land__3
     jump ^land_end_9
 
   block ^land_short_8:
@@ -325,20 +343,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_9
 
   block ^land_end_9:
-    %t174 = load typed i64 $land__3
-    branch %t174, ^land_rhs_4, ^land_short_5
+    %t192 = load typed i64 $land__3
+    branch %t192, ^land_rhs_4, ^land_short_5
 
   block ^land_rhs_4:
-    %t175 = addr $bits
-    %t176 = index i8 [projection=field] %t175, 20
-    %t177 = load i32 %t176
-    %t178 = binary and i32 %t177, 7
-    %t179 = copy u32 %t178
-    %t180 = binary sub u32 %t179, 1
-    %t181 = binary udiv u32 %t180, 2
-    %t182 = cmp eq u32 %t181, 2147483647
-    %t183 = cmp ne i64 %t182, 0
-    store typed i64 %t183, $land__2
+    %t193 = addr $bits
+    %t194 = index i8 [projection=field] %t193, 8
+    %t195 = load i64 %t194
+    %t196 = binary ushr i64 %t195, 7
+    %t197 = binary and i64 %t196, 7
+    %t198 = convert trunc u32 i64 %t197
+    %t199 = binary sub u32 %t198, 1
+    %t200 = binary udiv u32 %t199, 2
+    %t201 = cmp eq u32 %t200, 2147483647
+    %t202 = cmp ne i64 %t201, 0
+    store typed i64 %t202, $land__2
     jump ^land_end_6
 
   block ^land_short_5:
@@ -346,8 +365,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^land_end_6
 
   block ^land_end_6:
-    %t184 = load typed i64 $land__2
-    branch %t184, ^cond_then_1, ^cond_else_2
+    %t203 = load typed i64 $land__2
+    branch %t203, ^cond_then_1, ^cond_else_2
 
   block ^cond_then_1:
     store typed i32 0, $cond__1
@@ -358,6 +377,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     jump ^cond_end_3
 
   block ^cond_end_3:
-    %t185 = load typed i32 $cond__1
-    return i32 %t185
+    %t204 = load typed i32 $cond__1
+    return i32 %t204
 }

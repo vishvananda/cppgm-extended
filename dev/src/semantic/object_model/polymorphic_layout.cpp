@@ -12,10 +12,10 @@ namespace semantic
 namespace
 {
 
-std::size_t AlignClassBase(std::size_t value, std::size_t alignment)
+std::uint64_t AlignClassBase(std::uint64_t value, std::uint64_t alignment)
 {
 	if (alignment <= 1) return value;
-	const std::size_t remainder = value % alignment;
+	const std::uint64_t remainder = value % alignment;
 	return remainder == 0 ? value : value + alignment - remainder;
 }
 
@@ -189,9 +189,7 @@ std::size_t Analyzer::PreferredClassLayoutBaseOrdinal(
 }
 
 const EntityRecord* Analyzer::InitializeClassBaseLayout(
-	EntityId entity, std::size_t packing_alignment, std::size_t* size,
-	std::size_t* alignment, std::size_t* natural_alignment,
-	std::size_t* empty_base_extent)
+	EntityId entity, std::size_t packing_alignment, ClassLayoutCursor* cursor)
 {
 	EntityRecord& owner = program_->entities[entity];
 	if (!owner.has_user_declared_destructor)
@@ -199,10 +197,21 @@ const EntityRecord* Analyzer::InitializeClassBaseLayout(
 		owner.destructible = true;
 		owner.trivial_destructor = true;
 	}
-	if (owner.direct_base_count == 0) return 0;
-	const std::uint32_t zero_offset_marker = owner.direct_base_count > 1 ?
-		BeginClassZeroOffsetSubobjects(entity, false) : 0;
 	const std::size_t preferred_ordinal = PreferredClassLayoutBaseOrdinal(entity);
+	const bool dynamic_primary = preferred_ordinal != owner.direct_base_count &&
+		program_->entities[program_->DirectBase(
+			entity, preferred_ordinal).entity].dynamic_class;
+	// Itanium C++ ABI 2.4 I: a dynamic class with no primary base starts
+	// with its virtual table pointer.
+	if (owner.dynamic_class && !dynamic_primary)
+	{
+		cursor->Place(8, true);
+		cursor->natural_alignment = std::max<std::uint64_t>(
+			cursor->natural_alignment, 8);
+		cursor->alignment = std::max<std::uint64_t>(cursor->alignment,
+			packing_alignment == 0 ? 8 : std::min<std::size_t>(8, packing_alignment));
+	}
+	if (owner.direct_base_count == 0) return 0;
 	owner.direct_base = kNoEntity;
 	const EntityRecord* primary = 0;
 	for (std::size_t layout_index = 0; layout_index < owner.direct_base_count;
@@ -219,51 +228,41 @@ const EntityRecord* Analyzer::InitializeClassBaseLayout(
 		{
 			primary = base; owner.direct_base = edge.entity;
 		}
-		const std::size_t base_alignment =
-			static_cast<std::size_t>(base->object_alignment);
-		const std::size_t effective_base_alignment = packing_alignment == 0 ?
-			base_alignment : std::min(base_alignment, packing_alignment);
-		std::size_t offset = 0;
-		if (!edge.virtual_base && base->empty_class)
+		// 2.4 II.2-3: the primary base first, then the other non-virtual
+		// bases in declaration order, each at the data size rounded up to its
+		// non-virtual alignment (an empty one at offset zero first), moved on
+		// by that alignment while one of its empty subobjects would share its
+		// type and offset with one placed before.  A non-empty base claims
+		// only its non-virtual size, so its tail padding is reused.
+		std::uint64_t offset = 0;
+		if (!edge.virtual_base)
 		{
-			if (zero_offset_marker != 0 &&
-				ClassZeroOffsetSubobjectConflict(base->type, zero_offset_marker))
-				offset = AlignClassBase(std::max(*size, *empty_base_extent),
-					effective_base_alignment);
-			const std::size_t base_size = static_cast<std::size_t>(
-				base->nonvirtual_size == 0 ? base->object_size : base->nonvirtual_size);
-			if (offset > std::numeric_limits<std::size_t>::max() - base_size)
+			const std::uint64_t base_alignment = LayoutNonvirtualAlignment(*base);
+			const std::uint64_t effective = packing_alignment == 0 ?
+				base_alignment : std::min<std::uint64_t>(base_alignment,
+					packing_alignment);
+			const bool empty = base->empty_class;
+			if (!empty || empty_subobjects_.Conflict(edge.entity, 0, false))
+			{
+				offset = AlignClassBase(cursor->data_size, effective);
+				while (empty_subobjects_.Conflict(edge.entity, offset, false))
+					offset += effective;
+			}
+			const std::uint64_t extent = empty ? base->object_size :
+				LayoutNonvirtualSize(*base);
+			if (offset > std::numeric_limits<std::uint64_t>::max() - extent)
 				ThrowSemanticResourceLimit("class layout is too large");
-			*empty_base_extent = std::max(*empty_base_extent, offset + base_size);
-		}
-		if (!edge.virtual_base && !base->empty_class)
-		{
-			if (primary == base && owner.dynamic_class &&
-				!base->dynamic_class)
-				offset = AlignClassBase(std::max<std::size_t>(*size, 8),
-					effective_base_alignment);
-			else offset = AlignClassBase(*size, effective_base_alignment);
-			const std::size_t raw_base_size = static_cast<std::size_t>(
-				base->nonvirtual_size == 0 ? base->object_size :
-					base->nonvirtual_size);
-			const std::size_t base_size =
-				AlignClassBase(raw_base_size, effective_base_alignment);
-			if (offset > std::numeric_limits<std::size_t>::max() - base_size)
-				ThrowSemanticResourceLimit("class layout is too large");
-			*size = offset + base_size;
+			empty_subobjects_.Record(edge.entity, offset, false, empty);
+			cursor->Place(offset + extent, !empty);
+			cursor->natural_alignment = std::max(cursor->natural_alignment,
+				base_alignment);
+			cursor->alignment = std::max(cursor->alignment, effective);
 		}
 		edge.offset = offset;
-		if (!edge.virtual_base && offset == 0 && zero_offset_marker != 0)
-			MarkClassZeroOffsetSubobject(base->type, zero_offset_marker);
 		owner.has_nonzero_base_subobject_offset =
 			owner.has_nonzero_base_subobject_offset || offset != 0 ||
 			base->has_nonzero_base_subobject_offset;
 		if (primary == base) owner.direct_base_offset = offset;
-		if (!edge.virtual_base)
-		{
-			*natural_alignment = std::max(*natural_alignment, base_alignment);
-			*alignment = std::max(*alignment, effective_base_alignment);
-		}
 		if (!base->destructible) owner.destructible = false;
 		if (!base->trivial_destructor) owner.trivial_destructor = false;
 		const BindingId destructor = DestructorForType(base->type);

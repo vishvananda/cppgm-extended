@@ -49,6 +49,7 @@ void Analyzer::ProjectSourceClassTemplate(
 		parameter_entity.layout_complete = true;
 		parameter_entity.object_size = 1;
 		parameter_entity.nonvirtual_size = 1;
+		parameter_entity.data_size = 1;
 		parameter_entity.object_alignment = 1;
 		parameter_entity.nonvirtual_alignment = 1;
 		parameter_entity.natural_alignment = 1;

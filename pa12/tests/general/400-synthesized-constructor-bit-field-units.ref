@@ -28,21 +28,21 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     store i32 %t16, %t10
     %t17 = addr $source
     %t18 = index i8 [projection=field] %t17, 8
-    %t19 = binary and i32 9, 15
-    %t20 = copy u32 %t19
-    %t21 = load i32 %t18
-    %t22 = binary and i32 %t21, 4294967280
-    %t23 = binary or i32 %t22, %t19
-    store i32 %t23, %t18
+    %t19 = binary and u8 9, 15
+    %t20 = convert zext u32 u8 %t19
+    %t21 = load u8 %t18
+    %t22 = binary and u8 %t21, 240
+    %t23 = binary or u8 %t22, %t19
+    store u8 %t23, %t18
     %t24 = addr $source
     %t25 = index i8 [projection=field] %t24, 8
-    %t26 = binary and i32 12, 15
-    %t27 = copy u32 %t26
-    %t28 = binary shl i32 %t26, 4
-    %t29 = load i32 %t25
-    %t30 = binary and i32 %t29, 4294967055
-    %t31 = binary or i32 %t30, %t28
-    store i32 %t31, %t25
+    %t26 = binary and u8 12, 15
+    %t27 = convert zext u32 u8 %t26
+    %t28 = binary shl u8 %t26, 4
+    %t29 = load u8 %t25
+    %t30 = binary and u8 %t29, 15
+    %t31 = binary or u8 %t30, %t28
+    store u8 %t31, %t25
     %t32 = addr $source
     %t33 = index i8 [projection=field] %t32, 0
     %t34 = index i8 [projection=field] %t33, 0
@@ -83,9 +83,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_7:
     %t54 = addr $copied
     %t55 = index i8 [projection=field] %t54, 8
-    %t56 = load i32 %t55
-    %t57 = binary and i32 %t56, 15
-    %t58 = copy u32 %t57
+    %t56 = load u8 %t55
+    %t57 = binary and u8 %t56, 15
+    %t58 = convert zext u32 u8 %t57
     %t59 = copy i32 %t58
     %t60 = cmp ne i32 %t59, 9
     %t61 = cmp ne i64 %t60, 0
@@ -103,10 +103,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_4:
     %t63 = addr $copied
     %t64 = index i8 [projection=field] %t63, 8
-    %t65 = load i32 %t64
-    %t66 = binary shr i32 %t65, 4
-    %t67 = binary and i32 %t66, 15
-    %t68 = copy u32 %t67
+    %t65 = load u8 %t64
+    %t66 = binary ushr u8 %t65, 4
+    %t67 = binary and u8 %t66, 15
+    %t68 = convert zext u32 u8 %t67
     %t69 = copy i32 %t68
     %t70 = cmp ne i32 %t69, 12
     %t71 = cmp ne i64 %t70, 0
@@ -170,10 +170,10 @@ function @YBits__YBits__sym2(%this : ptr [alias=noalias, object_bytes=12], %othe
     store u32 %t7, %t9
     %t10 = load typed ptr $other
     %t11 = index i8 [projection=field] %t10, 8
-    %t12 = load u32 %t11
+    %t12 = load u8 %t11
     %t13 = load typed ptr $this
     %t14 = index i8 [projection=field] %t13, 8
-    store u32 %t12, %t14
+    store u8 %t12, %t14
     return void
 }
 function @YMember__YMember(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN7YMemberC1Ev, inline_hint=yes] {

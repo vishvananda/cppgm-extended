@@ -223,14 +223,23 @@ PA11 supports the following in addition to the PA10 procedural subset:
 - nested class/type declarations and lookup
 - static data members and static member functions over the supported scalar and
   class subset
-- complete object layout for non-static data members in declaration order, including:
+- complete object layout for non-static data members in declaration order, as the
+  Itanium C++ ABI (2.4) and the SysV x86-64 psABI place them, including:
   - empty classes
   - alignment and padding, including preservation of a stronger requested
     class alignment while laying out a direct base and members
-  - ordinary integral and enum bit-fields, including zero-width unnamed separators
+  - ordinary integral and enum bit-fields, including zero-width unnamed separators:
+    a bit-field starts at the next free bit and moves to the next unit of its own
+    declared type only rather than straddle one, so adjacent bit-fields of
+    different declared types share storage (`struct { long a : 3; bool b : 1; }`
+    is 8 bytes); a zero-width bit-field moves to its type's alignment, and an
+    unnamed bit-field does not align the class
   - self-referential pointer members
   - previously completed class-type members
-- single inheritance with the direct base subobject at offset `0`
+- single inheritance with the direct base subobject at offset `0`; a base that is not
+  a POD for the purpose of layout claims only its non-virtual size, so the derived
+  class's members reuse its tail padding (`struct B : A { char d; }` with
+  `struct A { A(); int i; char c; }` is 8 bytes)
 - member lookup for:
   - direct fields
   - inherited fields
@@ -375,7 +384,13 @@ Useful intermediate representations include:
 - class metadata that preserves fields, direct base, access, nested names, static
   members, friends, and member-function bindings
 - one shared layout service for ordinary fields, bit-fields, anonymous members,
-  and alignment directives
+  and alignment directives, tracking a class's size and data size (its size
+  without tail padding) separately
+- a storage unit per run of adjacent bit-fields: the naturally aligned objects
+  of the fields' declared types nest, so the largest ones partition the run; a
+  unit that would reach bytes outside the run (another member, or tail padding
+  a derived class may reuse) can be narrowed to the narrowest integer that
+  holds its fields, and reads and writes then use that unit
 - resolved member expressions and method calls over the same call-semantics IR shape used by
   PA7/PA10
 - explicit constructor/destructor actions attached to declarations or generated function bodies

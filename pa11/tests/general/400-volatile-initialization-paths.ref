@@ -66,9 +66,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_10:
     %t39 = addr $holder
     %t40 = index i8 [projection=field] %t39, 8
-    %t41 = load volatile i32 %t40
-    %t42 = binary and i32 %t41, 7
-    %t43 = copy u32 %t42
+    %t41 = load volatile u8 %t40
+    %t42 = binary and u8 %t41, 7
+    %t43 = convert zext u32 u8 %t42
     %t44 = copy i32 %t43
     %t45 = cmp ne i32 %t44, 3
     %t46 = cmp ne i64 %t45, 0
@@ -86,10 +86,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_7:
     %t48 = addr $holder
     %t49 = index i8 [projection=field] %t48, 8
-    %t50 = load i32 %t49
-    %t51 = binary shr i32 %t50, 3
-    %t52 = binary and i32 %t51, 7
-    %t53 = copy u32 %t52
+    %t50 = load u8 %t49
+    %t51 = binary ushr u8 %t50, 3
+    %t52 = binary and u8 %t51, 7
+    %t53 = convert zext u32 u8 %t52
     %t54 = copy i32 %t53
     %t55 = cmp ne i32 %t54, 4
     %t56 = cmp ne i64 %t55, 0
@@ -161,16 +161,16 @@ function @Holder__Holder(%this : ptr [object_bytes=12]) -> void [binding=weak, o
     store volatile i32 6, %t6
     %t7 = load typed ptr $this
     %t8 = index i8 [projection=field] %t7, 8
-    %t9 = binary and u32 7, 3
-    store volatile u32 %t9, %t8
+    %t9 = binary and u8 7, 3
+    store volatile u8 %t9, %t8
     %t10 = load typed ptr $this
     %t11 = index i8 [projection=field] %t10, 8
-    %t12 = binary and u32 7, 4
-    %t13 = binary shl u32 %t12, 3
-    %t14 = load u32 %t11
-    %t15 = binary and u32 %t14, 4294967239
-    %t16 = binary or u32 %t15, %t13
-    store u32 %t16, %t11
+    %t12 = binary and u8 7, 4
+    %t13 = binary shl u8 %t12, 3
+    %t14 = load u8 %t11
+    %t15 = binary and u8 %t14, 199
+    %t16 = binary or u8 %t15, %t13
+    store u8 %t16, %t11
     return void
 }
 alias object _ZN6HolderC2Ev = @Holder__Holder

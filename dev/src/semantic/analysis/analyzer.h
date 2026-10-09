@@ -10,6 +10,7 @@
 #include "semantic/analysis/index_tables.h"
 #include "semantic/analysis/control_flow_facts.h"
 #include "semantic/extensions/lambda_capture.h"
+#include "semantic/object_model/layout_builder.h"
 #include "support/containers/flat_hash_map.h"
 
 #include <deque>
@@ -1526,26 +1527,26 @@ private:
 	std::size_t BaseConversionDistance(TypeId source, TypeId target) const;
 	std::size_t BaseProjectionCount(TypeId source, TypeId target,
 		std::uint64_t* offset = 0) const;
-	EntityId ZeroOffsetClassEntity(TypeId type) const;
-	bool VisitZeroOffsetSubobjects(EntityId root, std::uint32_t marker,
-		std::uint32_t conflict_marker);
-	std::uint32_t BeginClassZeroOffsetSubobjects(EntityId entity,
-		bool include_bases = true);
-	bool ClassZeroOffsetSubobjectConflict(TypeId member_type,
-		std::uint32_t occupied_marker);
-	void MarkClassZeroOffsetSubobject(TypeId member_type,
-		std::uint32_t occupied_marker);
+	bool ClassHasEmptySubobject(EntityId entity) const;
+	std::uint64_t EmptyComponentRecordLimit(EntityId entity);
+	bool ClassSpecialMembersKeepPodLayout(EntityId entity);
+	bool MemberKeepsPodLayout(const BindingRecord& member) const;
+	void LayoutClassBitField(const ClassLayoutMember& layout,
+		std::uint64_t member_size, std::uint64_t type_alignment,
+		std::size_t packing_alignment, bool is_union, ClassLayoutCursor* cursor);
+	std::uint64_t LayoutClassDataMember(const ClassLayoutMember& layout,
+		const BindingRecord& member, std::uint64_t member_size,
+		std::uint64_t member_alignment, bool is_union,
+		ClassLayoutCursor* cursor, bool* empty_class);
+	void AccumulateImplicitDefaultConstructorMember(EntityId entity,
+		const BindingRecord& member);
 	const EntityRecord* InitializeClassBaseLayout(EntityId entity,
-		std::size_t packing_alignment, std::size_t* size,
-		std::size_t* alignment, std::size_t* natural_alignment,
-		std::size_t* empty_base_extent);
+		std::size_t packing_alignment, ClassLayoutCursor* cursor);
 	std::size_t PreferredClassLayoutBaseOrdinal(EntityId entity) const;
 	void CollectVirtualBaseLayouts(EntityId entity,
 		std::vector<VirtualBaseLayout>* layouts);
 	void FinalizeClassVirtualBaseLayout(EntityId entity,
-		std::size_t packing_alignment, std::size_t* size,
-		std::size_t* alignment, std::size_t* natural_alignment,
-		bool* empty_class);
+		std::size_t packing_alignment, ClassLayoutCursor* cursor, bool* empty_class);
 	bool ClassBasesAreEmpty(EntityId entity) const;
 	void InitializeImplicitBaseConstructorFacts(EntityId entity);
 	void CompleteClassMemberDestructionFacts(EntityId entity,
@@ -2036,8 +2037,8 @@ private:
 	std::vector<std::vector<BindingId> > entity_data_members_;
 	std::vector<std::vector<BindingId> > entity_static_data_members_;
 	std::vector<std::vector<ClassLayoutMember> > entity_layout_members_;
-	std::vector<std::uint32_t> zero_offset_subobject_marks_;
-	std::vector<EntityId> zero_offset_subobject_scratch_;
+	EmptySubobjectMap empty_subobjects_;
+	BitFieldLayout bit_field_layout_;
 	std::vector<std::vector<BindingId> > entity_constructors_;
 	std::vector<std::vector<BindingId> >
 		pending_inherited_default_constructors_;
@@ -2353,10 +2354,8 @@ private:
 	std::uint32_t virtual_base_layout_generation_;
 	ObservationCounter virtual_base_layout_edge_visits_;
 	ObservationCounter virtual_base_layout_facts_;
-	ObservationCounter class_zero_offset_subobject_visits_;
 	mutable ObservationCounter special_member_fact_lookups_;
 	mutable ObservationCounter special_member_subobject_visits_;
-	std::uint32_t zero_offset_subobject_generation_;
 	std::uint32_t empty_constructor_chain_generation_;
 	ObservationCounter empty_constructor_chain_requests_;
 	ObservationCounter empty_constructor_chain_cache_hits_;

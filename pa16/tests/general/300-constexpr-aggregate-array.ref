@@ -3,9 +3,7 @@ global @p [binding=internal, object=_ZL1p] = {
   i32 4
 }
 global @bits [binding=internal, object=_ZL4bits] = {
-  u32 29
-  u8 1
-  zero 3
+  u32 61
 }
 global @arr [binding=internal, object=_ZL3arr] = {
   i32 10

@@ -68,9 +68,11 @@ protected:
 	void LowerConstructorBitField(
 		semantic::BindingId binding,
 		const lowering::ir::Operand& value,
-		const lowering::ir::LowType& type)
+		const lowering::ir::LowType& declared)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		const lowering::ir::LowType type =
+			derived.BitFieldStoreType(binding, declared);
 		const semantic::BindingRecord& field =
 			derived.program_.bindings[binding];
 		if (field.member_owner >=
@@ -79,7 +81,7 @@ protected:
 		{
 			const lowering::ir::Operand destination =
 				ConstructorBitFieldStorage(binding);
-			derived.InitializeBitField(binding, value, destination, type);
+			derived.InitializeBitField(binding, value, destination, declared);
 			return;
 		}
 		const bool preserve = derived.PreserveInitializedBitField(binding);

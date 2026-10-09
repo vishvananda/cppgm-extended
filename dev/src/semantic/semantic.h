@@ -129,7 +129,7 @@ struct Stats
 	std::size_t virtual_base_layout_lookups;
 	std::size_t virtual_base_layout_probes;
 	std::size_t direct_base_validation_visits;
-	std::size_t class_zero_offset_subobject_visits;
+	std::size_t class_empty_subobject_visits;
 	std::size_t special_member_fact_lookups;
 	std::size_t special_member_subobject_visits;
 	std::size_t constructor_member_action_visits;

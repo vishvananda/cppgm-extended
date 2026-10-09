@@ -440,7 +440,7 @@ lowering::ir::Program lowering::BuildProgram(const std::vector<lowering::Source>
 			semantic.class_layouts += semantic_stats.class_layouts;
 			semantic.class_layout_member_visits += semantic_stats.class_layout_member_visits;
 			AccumulateVirtualBaseStats(&semantic, semantic_stats);
-			semantic.class_zero_offset_subobject_visits += semantic_stats.class_zero_offset_subobject_visits;
+			semantic.class_empty_subobject_visits += semantic_stats.class_empty_subobject_visits;
 			semantic.special_member_fact_lookups +=
 				semantic_stats.special_member_fact_lookups;
 			semantic.special_member_subobject_visits +=

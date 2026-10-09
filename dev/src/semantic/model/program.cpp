@@ -674,6 +674,7 @@ EntityRecord::EntityRecord()
 	  type(kNoType),
 	  underlying(kNoType), declaration(kNoBinding),
 	  union_default_member(kNoBinding), object_size(0), nonvirtual_size(0),
+	  data_size(0),
 	  object_alignment(0), nonvirtual_alignment(0), natural_alignment(0),
 	  requested_alignment(0),
 	  packing_alignment(0), direct_base_offset(0),
@@ -687,7 +688,8 @@ EntityRecord::EntityRecord()
 	  indirect_class_result_abi(false), dynamic_class(false),
 	  polymorphic_class(false),
 	  abstract_class(false), final_class(false),
-	  nonlinear_base_graph(false),
+	  nonlinear_base_graph(false), pod_for_layout(false),
+	  has_empty_subobject(false),
 	  has_nonzero_base_subobject_offset(false), has_volatile_subobject(false),
 	  has_union_subobject(false),
 	  deferred_template_completion(false),
@@ -757,7 +759,8 @@ BindingRecord::BindingRecord()
 
 BindingLayoutFact::BindingLayoutFact()
 	: member_offset(0), requested_alignment(0), bit_offset(0), bit_width(0),
-	  bit_storage_bits(0), member_ordinal(kNoBinding)
+	  bit_storage_bits(0), member_ordinal(kNoBinding),
+	  bit_storage_shared(false)
 {
 }
 
