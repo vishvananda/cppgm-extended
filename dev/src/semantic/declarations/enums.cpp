@@ -155,6 +155,16 @@ TypeId Analyzer::AnalyzeEnum(NodeId node, ScopeId scope, const std::string& hint
 			}
 			if (!expression.constant)
 				ThrowSemanticError("nonconstant enumerator");
+			// 7.2p5, 5.19p3: an integral constant expression or a converted
+			// constant expression of the fixed underlying type. Neither admits
+			// a scoped enumeration operand (no implicit integral conversion,
+			// 7.2p10) or a floating operand. Earlier enumerators of this
+			// enumeration still have the underlying type here.
+			if (IsFloating(expression.type) ||
+				(!IsIntegral(expression.type) &&
+				 IsIntegral(expression.type, true)))
+				ThrowSemanticError(
+					"enumerator initializer is not an integral constant expression");
 			value = expression.value;
 		}
 		const NameId enumerator_name =

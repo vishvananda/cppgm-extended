@@ -239,7 +239,8 @@ PA6 must support:
   evaluate an unselected operand
 - `static_assert` over the supported integral constant-expression subset
 - rejection of implicit conversion or comparison between a scoped-enum value
-  and an integer
+  and an integer, including a scoped enumerator used as the initializer of
+  another enumeration's enumerator (7.2p5)
 - `constexpr` object declarations treated as `const` objects for PA6 type and
   constant-value purposes
 - the supported `decltype(...)` forms listed in the tests and reference output
