@@ -186,7 +186,9 @@ Itanium C++ ABI 2.4).  A class value transfer -- a trivial copy or move, a
 synthesized storage copy, or a bit-field allocation unit -- therefore covers
 at most that many bytes (`copyobj 1x4` for a 4-byte class whose data ends in
 its first byte), and value-initializing a base subobject zeroes only those
-bytes.
+bytes.  A mem-initializer `Base()` value-initializes a base whose default
+constructor is not user-provided -- implicit, or defaulted on its first
+declaration -- so the base is zeroed before any constructor runs.
 
 For supported trivially copy-constructible class value transfers, PA12 may also lower the
 copy/move construction step itself directly as `copyobj <span> <src>, <dst>` instead of

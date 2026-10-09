@@ -1476,9 +1476,11 @@ std::uint32_t Analyzer::AddBaseInitializationActionAt(EntityId entity,
 	{
 		const FunctionInfo& selected =
 			GetFunction(dump_.nodes[constructor].binding);
+		// [dcl.init]: `B()` value-initializes a base with no user-provided
+		// constructor -- an implicit or a defaulted one -- zeroing it first.
 		if (initializer != kNoNode &&
 			arena_->IsTag(initializer, ::cppgm::syntax::STAG_PAREN_ARGUMENT_LIST) &&
-			arguments.empty() && selected.implicit_constructor)
+			arguments.empty() && !program_->entities[base].has_user_provided_constructor)
 			dump_.nodes[constructor].value_initialization = true;
 		const EntityId selected_owner =
 			program_->bindings[selected.binding].member_owner;
