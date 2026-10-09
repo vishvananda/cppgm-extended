@@ -201,10 +201,13 @@ To complete PA23, implement these goals:
    overrider of a function of a non-primary or virtual base occupies such an entry, which
    calls through the class use, in addition to its adjusted entries in the other tables. A
    final overrider runs on the subobject that the table's inheritance path leads to, not
-   on another subobject of the same class. Each vtable segment must contain only the
-   vcall-offset and virtual-base-offset rows owned by that segment; in particular, vcall
-   rows belonging to a secondary virtual-base view must not enlarge the primary segment or
-   its address point.
+   on another subobject of the same class. Where paths meet at a shared virtual base, an
+   overrider dominates another only if its subobject contains the other's. The function
+   has two final overriders, which is diagnosed (10.3p2), when one overrider is reached in
+   two subobjects or when two overriders lie in subobjects neither of which contains the
+   other. Each vtable segment must contain only the vcall-offset and virtual-base-offset
+   rows owned by that segment; in particular, vcall rows belonging to a secondary
+   virtual-base view must not enlarge the primary segment or its address point.
 
 3. Sibling cross-cast support.
    Pointer-form `dynamic_cast` across sibling polymorphic bases should lower into the

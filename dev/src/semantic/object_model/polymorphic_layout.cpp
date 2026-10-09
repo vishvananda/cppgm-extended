@@ -117,6 +117,33 @@ void IndexVirtualSlots(const Program& program,
 // Two paths reaching one subobject bring its table's slots: each takes the
 // final overrider that dominates (one whose class derives from the other's),
 // none when neither does.
+// Whether the subobject of `inner`'s final overrider is a base subobject of
+// `outer`'s: one in a virtual base of outer's class, or one in outer's own
+// component at the place a base of that class takes in it.
+bool OverriderWithin(const Program& program, const VirtualSlotFact& inner,
+	const VirtualSlotFact& outer)
+{
+	const EntityId inner_class = program.bindings[inner.function].member_owner;
+	const EntityId outer_class = program.bindings[outer.function].member_owner;
+	if (inner_class == kNoEntity || outer_class == kNoEntity ||
+		inner_class == outer_class || !program.IsBaseOf(inner_class, outer_class))
+		return false;
+	if (inner.overrider_anchor != kNoEntity &&
+		inner.overrider_anchor != outer.overrider_anchor)
+		return program.FindVirtualBase(outer_class, inner.overrider_anchor);
+	if (inner.overrider_anchor != outer.overrider_anchor ||
+		inner.overrider_base != outer.overrider_base ||
+		inner.overrider_offset < outer.overrider_offset) return false;
+	const std::uint64_t distance = static_cast<std::uint64_t>(
+		inner.overrider_offset - outer.overrider_offset);
+	std::uint64_t offset = 0;
+	bool ambiguous = false;
+	if (!program.QueryBasePath(outer_class, inner_class, 0, 0, &offset, &ambiguous))
+		return false;
+	if (!ambiguous) return distance == offset;
+	return distance < LayoutNonvirtualSize(program.entities[outer_class]);
+}
+
 void MergeSharedSlots(const Program& program,
 	std::vector<VirtualSlotFact>* retained,
 	const std::vector<VirtualSlotFact>& incoming, std::size_t count)
@@ -147,17 +174,20 @@ void MergeSharedSlots(const Program& program,
 			program.bindings[selected.function].canonical;
 		const BindingId candidate_function =
 			program.bindings[candidate.function].canonical;
-		if (selected_function == candidate_function) continue;
-		const EntityId selected_owner =
-			program.bindings[selected_function].member_owner;
-		const EntityId candidate_owner =
-			program.bindings[candidate_function].member_owner;
-		const bool selected_is_base = selected_owner != kNoEntity &&
-			candidate_owner != kNoEntity &&
-			program.IsBaseOf(selected_owner, candidate_owner);
-		const bool candidate_is_base = selected_owner != kNoEntity &&
-			candidate_owner != kNoEntity &&
-			program.IsBaseOf(candidate_owner, selected_owner);
+		// One function in two subobjects is two final overriders
+		// ([class.virtual]/2): neither subobject derives from the other.
+		if (selected_function == candidate_function)
+		{
+			if (selected.overrider_anchor != candidate.overrider_anchor ||
+				selected.overrider_base != candidate.overrider_base ||
+				selected.overrider_offset != candidate.overrider_offset)
+				selected.function = kNoBinding;
+			continue;
+		}
+		// An overrider dominates one whose subobject it contains; a class
+		// derived from the other's is not enough ([class.virtual]/2).
+		const bool selected_is_base = OverriderWithin(program, selected, candidate);
+		const bool candidate_is_base = OverriderWithin(program, candidate, selected);
 		if (selected_is_base && !candidate_is_base)
 			selected = candidate;
 		else if (!candidate_is_base || selected_is_base)
