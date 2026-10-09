@@ -31,7 +31,7 @@ function @holder__read(%this : ptr [object_bytes=4]) -> i32 [binding=weak, objec
     %t4 = call i32 @holder____lambda_holder__read_t30_35__operator__(%t2, %t3)
     return i32 %t4
 }
-function @holder____lambda_holder__read_t30_35__operator__(%this : ptr [object_bytes=1], %object : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=internal, object=_ZZN6holder4readEvENKUlRS_E_clES0_, inline_hint=yes] {
+function @holder____lambda_holder__read_t30_35__operator__(%this : ptr [object_bytes=1], %object : ptr [pass=by_address, object_bytes=4]) -> i32 [binding=weak, object=_ZZN6holder4readEvENKUlRS_E_clES0_, inline_hint=yes] {
   slot $this : ptr
   slot $object : ptr
 

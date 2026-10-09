@@ -215,11 +215,16 @@ clang, and the object-inspection tests check its spelling:
   no typedef names for linkage, is a unit-local `$_<n>` with local
   symbols (a lambda in a non-template class's static data member
   initializer is named in its class, `_ZN5Plain3$_08__invokeEv`); a
-  captureless closure's static invoker is `__invoke`
+  captureless closure's static invoker is `__invoke` (GCC's is `_FUN`)
 - a `$_<n>` number is assigned when the name is first mangled: a
   function-local unnamed class or closure takes the next number within its
   function, and any other one takes the count of `$_` names the translation
   unit has assigned so far
+- a numbered closure type, and a local class of an inline function or
+  template specialization, is one entity in every unit: its member
+  functions, the static invoker, the static variables in their bodies and
+  the template specializations over it are weak (`W _ZZ1hvENKUlvE_clEv`),
+  unit-local only where the function they belong to is
 - a lambda expression has one closure type however many times its context
   is lowered: a lambda in a default member initializer is one closure in
   every constructor that initializes the member; one in an in-class default

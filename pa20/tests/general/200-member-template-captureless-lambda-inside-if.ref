@@ -68,7 +68,7 @@ function @Analyzer__lookup_functions(%this : ptr [object_bytes=1], %scope : ptr 
     call void @Box_pointer_to_int___Box_pointer_to_int_(%t8)
     return obj<1x1> $retobj__1
 }
-function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr [object_bytes=1], %scope : ptr [pass=by_address, object_bytes=1], %qualified : ptr, %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=internal, object=_ZN8Analyzer43lookup_qualified_class_or_namespace_genericI3BoxIPiEZNS_16lookup_functionsER5ScopePKcEUlS5_S7_E_EET_S5_S7_RKT0_, inline_hint=yes] {
+function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr [object_bytes=1], %scope : ptr [pass=by_address, object_bytes=1], %qualified : ptr, %final_lookup : ptr [pass=by_address, object_bytes=1]) -> obj<1x1> [result_classes=none, binding=weak, object=_ZN8Analyzer43lookup_qualified_class_or_namespace_genericI3BoxIPiEZNS_16lookup_functionsER5ScopePKcEUlS5_S7_E_EET_S5_S7_RKT0_, inline_hint=yes] {
   slot $this : ptr
   slot $scope : ptr
   slot $qualified : ptr
@@ -87,7 +87,7 @@ function @Analyzer__lookup_qualified_class_or_namespace_generic(%this : ptr [obj
     %t5 = call obj<1x1> @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%t2, %t3, %t4)
     return obj<1x1> $retobj__1
 }
-function @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=1], %lookup_name : ptr) -> obj<1x1> [result_classes=none, binding=internal, object=_ZZN8Analyzer16lookup_functionsER5ScopePKcENKUlS1_S3_E_clES1_S3_, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__lookup_functions_t125_141__operator__(%this : ptr [object_bytes=1], %target : ptr [pass=by_address, object_bytes=1], %lookup_name : ptr) -> obj<1x1> [result_classes=none, binding=weak, object=_ZZN8Analyzer16lookup_functionsER5ScopePKcENKUlS1_S3_E_clES1_S3_, inline_hint=yes] {
   slot $this : ptr
   slot $target : ptr
   slot $lookup_name : ptr

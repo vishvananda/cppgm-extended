@@ -21,7 +21,7 @@ function @S__f(%this : ptr [object_bytes=1], %s : ptr [pass=by_address, object_b
     %t3 = call i32 %t2(%t1) as (%arg0 : ptr [pass=by_address, object_bytes=1]) -> i32
     return i32 %t3
 }
-function @__lambda_S__f_t29_36(%x : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=internal, object=_ZZNK1S1fERS_ENUlS0_E_8__invokeES0_, object_root=yes] {
+function @__lambda_S__f_t29_36(%x : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZZNK1S1fERS_ENUlS0_E_8__invokeES0_, inline_hint=yes] {
   slot $x : ptr
 
   block ^entry:

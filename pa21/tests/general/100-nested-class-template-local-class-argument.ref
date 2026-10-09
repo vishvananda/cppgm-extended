@@ -54,12 +54,12 @@ function @Maker__one(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $box
-    call void @__cppgm_class_template_0_0__Box_Maker__Piece_(%t1)
+    call void @Box_Maker__Piece___Box_Maker__Piece_(%t1)
     %t2 = addr $box
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = addr $box
-    call void @__cppgm_class_template_0_0___Box(%t5)
+    call void @Box_Maker__Piece____Box(%t5)
     return i32 %t4
 }
 function @Maker__two(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN5Maker3twoEv, inline_hint=yes] {
@@ -69,15 +69,15 @@ function @Maker__two(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=
   block ^entry:
     store typed ptr %this, $this
     %t1 = addr $box
-    call void @__cppgm_class_template_0_1__Box_Maker__Piece_(%t1)
+    call void @Box_Maker__Piece___Box_Maker__Piece___sym2(%t1)
     %t2 = addr $box
     %t3 = index i8 [projection=field] %t2, 0
     %t4 = load typed i32 %t3
     %t5 = addr $box
-    call void @__cppgm_class_template_0_1___Box(%t5)
+    call void @Box_Maker__Piece____Box__sym2(%t5)
     return i32 %t4
 }
-function @__cppgm_class_template_0_0__Box_Maker__Piece_(%this : ptr [object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceEC1Ev, object_root=yes, inline_hint=yes] {
+function @Box_Maker__Piece___Box_Maker__Piece_(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3oneEvE5PieceEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -87,7 +87,7 @@ function @__cppgm_class_template_0_0__Box_Maker__Piece_(%this : ptr [object_byte
     store typed i32 0, %t2
     return void
 }
-function @__cppgm_class_template_0_0___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceED1Ev, object_root=yes, inline_hint=yes] {
+function @Box_Maker__Piece____Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxIZN5Maker3oneEvE5PieceED1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
   slot $tmpobj__2 : obj<8x8>
@@ -97,8 +97,8 @@ function @__cppgm_class_template_0_0___Box(%this : ptr [object_bytes=4]) -> void
     store typed ptr %this, $this
     %t1 = addr $tmpobj__2
     %t2 = load typed ptr $this
-    call void @__cppgm_class_template_0_0__Guard__Guard(%t1, %t2)
-    call void @__cppgm_class_template_0_0__Guard__operator__(%t1)
+    call void @Box_Maker__Piece___Guard__Guard(%t1, %t2)
+    call void @Box_Maker__Piece___Guard__operator__(%t1)
     eh_end
     return void
 
@@ -113,7 +113,7 @@ function @__cppgm_class_template_0_0___Box(%this : ptr [object_bytes=4]) -> void
     call void @cppgm_call_terminate(%t4)
     return void
 }
-function @__cppgm_class_template_0_1__Box_Maker__Piece_(%this : ptr [object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceEC1Ev, object_root=yes, inline_hint=yes] {
+function @Box_Maker__Piece___Box_Maker__Piece___sym2(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceEC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -123,7 +123,7 @@ function @__cppgm_class_template_0_1__Box_Maker__Piece_(%this : ptr [object_byte
     store typed i32 0, %t2
     return void
 }
-function @__cppgm_class_template_0_1___Box(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceED1Ev, object_root=yes, inline_hint=yes] {
+function @Box_Maker__Piece____Box__sym2(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceED1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
   slot $tmpobj__2 : obj<8x8>
@@ -133,8 +133,8 @@ function @__cppgm_class_template_0_1___Box(%this : ptr [object_bytes=4]) -> void
     store typed ptr %this, $this
     %t1 = addr $tmpobj__2
     %t2 = load typed ptr $this
-    call void @__cppgm_class_template_0_1__Guard__Guard(%t1, %t2)
-    call void @__cppgm_class_template_0_1__Guard__operator__(%t1)
+    call void @Box_Maker__Piece___Guard__Guard__sym2(%t1, %t2)
+    call void @Box_Maker__Piece___Guard__operator____sym2(%t1)
     eh_end
     return void
 
@@ -149,7 +149,7 @@ function @__cppgm_class_template_0_1___Box(%this : ptr [object_bytes=4]) -> void
     call void @cppgm_call_terminate(%t4)
     return void
 }
-function @__cppgm_class_template_0_0__Guard__Guard(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC1ERS2_, object_root=yes, inline_hint=yes] {
+function @Box_Maker__Piece___Guard__Guard(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC1ERS2_, inline_hint=yes] {
   slot $this : ptr
   slot $owner : ptr
 
@@ -162,7 +162,7 @@ function @__cppgm_class_template_0_0__Guard__Guard(%this : ptr [object_bytes=8],
     store typed ptr %t1, %t3
     return void
 }
-function @__cppgm_class_template_0_0__Guard__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardclEv, inline_hint=yes] {
+function @Box_Maker__Piece___Guard__operator__(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3oneEvE5PieceE5GuardclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -176,7 +176,7 @@ function @__cppgm_class_template_0_0__Guard__operator__(%this : ptr [object_byte
     store typed i32 %t6, %t4
     return void
 }
-function @__cppgm_class_template_0_1__Guard__Guard(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC1ERS2_, object_root=yes, inline_hint=yes] {
+function @Box_Maker__Piece___Guard__Guard__sym2(%this : ptr [object_bytes=8], %owner : ptr [pass=by_address, object_bytes=4]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC1ERS2_, inline_hint=yes] {
   slot $this : ptr
   slot $owner : ptr
 
@@ -189,7 +189,7 @@ function @__cppgm_class_template_0_1__Guard__Guard(%this : ptr [object_bytes=8],
     store typed ptr %t1, %t3
     return void
 }
-function @__cppgm_class_template_0_1__Guard__operator__(%this : ptr [object_bytes=8]) -> void [binding=internal, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardclEv, inline_hint=yes] {
+function @Box_Maker__Piece___Guard__operator____sym2(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN3BoxIZN5Maker3twoEvE5PieceE5GuardclEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -203,9 +203,9 @@ function @__cppgm_class_template_0_1__Guard__operator__(%this : ptr [object_byte
     store typed i32 %t6, %t4
     return void
 }
-alias object _ZN3BoxIZN5Maker3oneEvE5PieceEC2Ev = @__cppgm_class_template_0_0__Box_Maker__Piece_
-alias object _ZN3BoxIZN5Maker3oneEvE5PieceED2Ev = @__cppgm_class_template_0_0___Box
-alias object _ZN3BoxIZN5Maker3twoEvE5PieceEC2Ev = @__cppgm_class_template_0_1__Box_Maker__Piece_
-alias object _ZN3BoxIZN5Maker3twoEvE5PieceED2Ev = @__cppgm_class_template_0_1___Box
-alias object _ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC2ERS2_ = @__cppgm_class_template_0_0__Guard__Guard
-alias object _ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC2ERS2_ = @__cppgm_class_template_0_1__Guard__Guard
+alias object _ZN3BoxIZN5Maker3oneEvE5PieceEC2Ev = @Box_Maker__Piece___Box_Maker__Piece_
+alias object _ZN3BoxIZN5Maker3oneEvE5PieceED2Ev = @Box_Maker__Piece____Box
+alias object _ZN3BoxIZN5Maker3twoEvE5PieceEC2Ev = @Box_Maker__Piece___Box_Maker__Piece___sym2
+alias object _ZN3BoxIZN5Maker3twoEvE5PieceED2Ev = @Box_Maker__Piece____Box__sym2
+alias object _ZN3BoxIZN5Maker3oneEvE5PieceE5GuardC2ERS2_ = @Box_Maker__Piece___Guard__Guard
+alias object _ZN3BoxIZN5Maker3twoEvE5PieceE5GuardC2ERS2_ = @Box_Maker__Piece___Guard__Guard__sym2

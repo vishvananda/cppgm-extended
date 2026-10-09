@@ -53,7 +53,7 @@ function @run__ov2() -> i32 [binding=weak, object=_Z3runIcEiv] {
     %t7 = binary add nowrap i32 %t4, %t6
     return i32 %t7
 }
-function @__lambda_run__int_t15_19__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runIiEivENKUlvE_clEv, inline_hint=yes] {
+function @__lambda_run__int_t15_19__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZZ3runIiEivENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -61,7 +61,7 @@ function @__lambda_run__int_t15_19__operator__(%this : ptr [object_bytes=1]) -> 
     %t1 = load typed i32 @__local_static__function_symbol_5f5a5a3372756e4969456976454e4b556c76455f636c4576__decl0__value
     return i32 %t1
 }
-function @__lambda_run__int_t36_40_n1__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runIiEivENKUlvE0_clEv, inline_hint=yes] {
+function @__lambda_run__int_t36_40_n1__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZZ3runIiEivENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -69,7 +69,7 @@ function @__lambda_run__int_t36_40_n1__operator__(%this : ptr [object_bytes=1]) 
     %t1 = load typed i32 @__local_static__function_symbol_5f5a5a3372756e4969456976454e4b556c7645305f636c4576__decl0__value
     return i32 %t1
 }
-function @__lambda_run__char_t15_19__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runIcEivENKUlvE_clEv, inline_hint=yes] {
+function @__lambda_run__char_t15_19__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZZ3runIcEivENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -77,7 +77,7 @@ function @__lambda_run__char_t15_19__operator__(%this : ptr [object_bytes=1]) ->
     %t1 = load typed i32 @__local_static__function_symbol_5f5a5a3372756e4963456976454e4b556c76455f636c4576__decl0__value
     return i32 %t1
 }
-function @__lambda_run__char_t36_40_n1__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ3runIcEivENKUlvE0_clEv, inline_hint=yes] {
+function @__lambda_run__char_t36_40_n1__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZZ3runIcEivENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

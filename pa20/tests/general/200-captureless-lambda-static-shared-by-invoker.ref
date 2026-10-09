@@ -90,7 +90,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @__lambda_bump_t10_14() -> i32 [binding=internal, object=_ZZ4bumpvEN3$_08__invokeEv, object_root=yes] {
+function @__lambda_bump_t10_14() -> i32 [binding=internal, object=_ZZ4bumpvEN3$_08__invokeEv, object_root=yes, inline_hint=yes] {
   block ^entry:
     %t1 = load typed i32 @__local_static____lambda_bump_t10_14__decl0__count
     %t2 = binary add nowrap i32 %t1, 1
@@ -109,7 +109,7 @@ function @__lambda_bump_t10_14__operator__(%this : ptr [object_bytes=1]) -> i32 
     %t3 = load typed i32 @__local_static____lambda_bump_t10_14__decl0__count
     return i32 %t3
 }
-function @__lambda_bump_inline_t89_93__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZ11bump_inlinevENKUlvE_clEv, inline_hint=yes] {
+function @__lambda_bump_inline_t89_93__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZZ11bump_inlinevENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -120,7 +120,7 @@ function @__lambda_bump_inline_t89_93__operator__(%this : ptr [object_bytes=1]) 
     %t3 = load typed i32 @__local_static__function_symbol_5f5a5a313162756d705f696e6c696e6576454e4b556c76455f636c4576__decl0__count
     return i32 %t3
 }
-function @__lambda_bump_inline_t89_93() -> i32 [binding=internal, object=_ZZ11bump_inlinevENUlvE_8__invokeEv, object_root=yes] {
+function @__lambda_bump_inline_t89_93() -> i32 [binding=weak, object=_ZZ11bump_inlinevENUlvE_8__invokeEv, inline_hint=yes] {
   block ^entry:
     %t1 = load typed i32 @__local_static__function_symbol_5f5a5a313162756d705f696e6c696e6576454e4b556c76455f636c4576__decl0__count
     %t2 = binary add nowrap i32 %t1, 1

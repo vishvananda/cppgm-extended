@@ -9,6 +9,7 @@
 // anything it did not reach at its first mangling.
 
 #include "semantic/model/graph.h"
+#include "semantic/model/local_contexts.h"
 #include "semantic/model/program.h"
 #include "support/containers/flat_hash_map.h"
 
@@ -22,19 +23,8 @@ namespace lowering
 namespace abi
 {
 
-// A closure type has an Itanium mangling number (`Ul<sig>E<n>_`) when its
-// lambda is lexically inside an inline function or a template
-// specialization; a lambda's own function call operator is inline, so a
-// lambda nested in a lambda body is numbered.  Any other closure type is
-// unit-local and named `$_<n>`.
-bool ClosureHasManglingNumber(const semantic::Program& program,
-	semantic::EntityId closure);
-
-// The function a local entity's name is relative to: a captureless
-// closure's static invoker, which holds the lambda's body, stands for the
-// closure's function call operator.
-semantic::BindingId LocalContextFunction(const semantic::Program& program,
-	semantic::BindingId function);
+using semantic::ClosureHasManglingNumber;
+using semantic::LocalContextFunction;
 
 // A data member initializer's numbered closure type, named in the member,
 // `<class> <member> M Ul<sig>E<n>_`.

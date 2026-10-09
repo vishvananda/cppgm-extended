@@ -20,7 +20,7 @@ function @Box__run(%this : ptr [object_bytes=1], %v : i32) -> i32 [binding=weak,
     %t3 = call i32 %t2(%t1) as (%arg0 : i32) -> i32
     return i32 %t3
 }
-function @__lambda_Box__run_t32_38(%x : i32) -> i32 [binding=internal, object=_ZZN3Box3runEiENUliE_8__invokeEi, object_root=yes] {
+function @__lambda_Box__run_t32_38(%x : i32) -> i32 [binding=weak, object=_ZZN3Box3runEiENUliE_8__invokeEi, inline_hint=yes] {
   slot $x : i32
 
   block ^entry:

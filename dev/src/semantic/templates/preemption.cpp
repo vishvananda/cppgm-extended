@@ -1,4 +1,5 @@
 #include "semantic/analysis/analyzer.h"
+#include "semantic/model/local_contexts.h"
 #include "support/exceptions.h"
 #include "support/containers/flat_hash_set.h"
 
@@ -10,6 +11,22 @@ namespace semantic
 {
 namespace
 {
+
+// A local class or closure type no other unit names: one of a function that
+// is neither inline nor a specialization, or of an internal one (Itanium
+// 5.1.6).  Internal identity later marks what depends on an anchor's own
+// signature.
+bool IsUnitLocalEntity(const Program& program, EntityId entity)
+{
+	bool visible = false;
+	const BindingId anchor = EntityVisibilityAnchor(program, entity, &visible);
+	if (!visible) return true;
+	const BindingRecord& binding = program.bindings[anchor];
+	return binding.unnamed_namespace_linkage ||
+		(binding.storage_class == STORAGE_CLASS_STATIC &&
+		 binding.member_owner == kNoEntity) ||
+		program.HasInternalLinkageScope(binding.owner);
+}
 
 bool TypesContainLocalContext(const Program& program,
 	const std::vector<TemplateArgument>& arguments)
@@ -41,7 +58,8 @@ bool TypesContainLocalContext(const Program& program,
 				ThrowInternalCompilerError(
 					"template emission entity identity is invalid");
 			const EntityRecord& entity = program.entities[record.entity];
-			if (entity.local_context != kNoBinding) return true;
+			if ((entity.local_context != kNoBinding || entity.lambda_closure) &&
+				IsUnitLocalEntity(program, record.entity)) return true;
 			if (program.HasInternalLinkageScope(entity.owner)) return true;
 			const std::size_t first = entity.template_argument_begin;
 			if (first == kNoBinding) continue;

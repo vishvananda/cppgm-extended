@@ -80,7 +80,7 @@ function @nonprimary_chained_lambda__second_void____second(%this : ptr [object_b
     store typed ptr %this, $this
     return void
 }
-function @nonprimary_chained_lambda__second_void___postcondition(%this : ptr [object_bytes=1], %f : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=internal, object=_ZN25nonprimary_chained_lambda6secondIvE13postconditionIZNS_3runEvEUlvE0_EEiRKT_, inline_hint=yes] {
+function @nonprimary_chained_lambda__second_void___postcondition(%this : ptr [object_bytes=1], %f : ptr [pass=by_address, object_bytes=1]) -> i32 [binding=weak, object=_ZN25nonprimary_chained_lambda6secondIvE13postconditionIZNS_3runEvEUlvE0_EEiRKT_, inline_hint=yes] {
   slot $this : ptr
   slot $f : ptr
 
@@ -91,7 +91,7 @@ function @nonprimary_chained_lambda__second_void___postcondition(%this : ptr [ob
     call void @nonprimary_chained_lambda____lambda_nonprimary_chained_lambda__run_t114_114_n1__operator__(%t1)
     return i32 0
 }
-function @nonprimary_chained_lambda__first_void___old(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=internal, object=_ZN25nonprimary_chained_lambda5firstIvE3oldIZNS_3runEvEUlvE_EENS_6secondIvEERKT_, inline_hint=yes] {
+function @nonprimary_chained_lambda__first_void___old(%ret : ptr [pass=indirect_result, object_bytes=1], %this : ptr [object_bytes=1], %__param1 : ptr [pass=by_address, object_bytes=1]) -> void [binding=weak, object=_ZN25nonprimary_chained_lambda5firstIvE3oldIZNS_3runEvEUlvE_EENS_6secondIvEERKT_, inline_hint=yes] {
   slot $this : ptr
   slot $__param1 : ptr
 
@@ -100,7 +100,7 @@ function @nonprimary_chained_lambda__first_void___old(%ret : ptr [pass=indirect_
     store typed ptr %__param1, $__param1
     return void
 }
-function @nonprimary_chained_lambda____lambda_nonprimary_chained_lambda__run_t114_114_n1__operator__(%this : ptr [object_bytes=1]) -> void [binding=internal, object=_ZZN25nonprimary_chained_lambda3runEvENKUlvE0_clEv, inline_hint=yes] {
+function @nonprimary_chained_lambda____lambda_nonprimary_chained_lambda__run_t114_114_n1__operator__(%this : ptr [object_bytes=1]) -> void [binding=weak, object=_ZZN25nonprimary_chained_lambda3runEvENKUlvE0_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

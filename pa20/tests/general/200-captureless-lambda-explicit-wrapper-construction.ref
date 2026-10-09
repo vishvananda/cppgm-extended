@@ -150,7 +150,7 @@ function @Wrapper__operator__(%this : ptr [object_bytes=8], %n : i32) -> i32 [bi
     %t5 = call i32 %t4(%t1) as (%arg0 : i32) -> i32
     return i32 %t5
 }
-function @__lambda_main_t75_79(%n : i32) -> i32 [binding=internal, object=_ZZ4mainEN3$_08__invokeEi, object_root=yes] {
+function @__lambda_main_t75_79(%n : i32) -> i32 [binding=internal, object=_ZZ4mainEN3$_08__invokeEi, object_root=yes, inline_hint=yes] {
   slot $n : i32
 
   block ^entry:

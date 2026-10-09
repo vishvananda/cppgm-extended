@@ -84,7 +84,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t30 = load typed i32 $cond__1
     return i32 %t30
 }
-function @__0() -> i32 [binding=internal, object=_ZZN7chooser4callEPFivEEd_NUlvE_8__invokeEv, object_root=yes] {
+function @__0() -> i32 [binding=weak, object=_ZZN7chooser4callEPFivEEd_NUlvE_8__invokeEv, inline_hint=yes] {
   block ^entry:
     return i32 2
 }
@@ -157,19 +157,19 @@ function @holder__holder__ov2(%this : ptr [object_bytes=16], %b : i32) -> void [
     store typed i32 %t4, %t6
     return void
 }
-function @__1() -> i32 [binding=internal, object=_ZN5widthIiE3getMUlvE_8__invokeEv, object_root=yes] {
+function @__1() -> i32 [binding=weak, object=_ZN5widthIiE3getMUlvE_8__invokeEv, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 4
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
-function @__2() -> i32 [binding=internal, object=_ZN5widthIcE3getMUlvE_8__invokeEv, object_root=yes] {
+function @__2() -> i32 [binding=weak, object=_ZN5widthIcE3getMUlvE_8__invokeEv, inline_hint=yes] {
   block ^entry:
     %t1 = const i64 1
     %t2 = convert trunc i32 i64 %t1
     return i32 %t2
 }
-function @__lambda_holder__holder_t13_13() -> i32 [binding=internal, object=_ZN6holder4makeMUlvE_8__invokeEv, object_root=yes] {
+function @__lambda_holder__holder_t13_13() -> i32 [binding=weak, object=_ZN6holder4makeMUlvE_8__invokeEv, inline_hint=yes] {
   block ^entry:
     return i32 1
 }

@@ -18,53 +18,12 @@ using namespace semantic;
 
 const std::uint32_t kUnassigned = 0xffffffffu;
 
-bool HasTemplateSpecializationOwner(const Program& program, EntityId owner)
-{
-	for (std::size_t depth = 0; owner != kNoEntity &&
-		owner < program.entities.size() && depth < program.entities.size();
-		++depth)
-	{
-		if (program.entities[owner].template_argument_begin != kNoBinding)
-			return true;
-		owner = program.entities[owner].enclosing_class;
-	}
-	return false;
-}
-
-bool IsInlineOrSpecialization(const Program& program, BindingId function)
-{
-	const BindingRecord& binding =
-		program.bindings[program.bindings[function].canonical];
-	return binding.inline_function || binding.weak_odr ||
-		binding.template_argument_count != 0 ||
-		binding.function_template_specialization ||
-		HasTemplateSpecializationOwner(program, binding.member_owner);
-}
-
 bool HasInternalLinkage(const Program& program, const BindingRecord& function)
 {
 	return (function.storage_class == STORAGE_CLASS_STATIC &&
 			function.member_owner == kNoEntity) ||
 		function.unnamed_namespace_linkage ||
 		program.HasInternalLinkageScope(function.owner);
-}
-
-// The function whose body lexically holds a local class's or a closure's
-// member function, or the function itself.
-BindingId OutermostFunction(const Program& program, BindingId function)
-{
-	for (std::size_t depth = 0; depth < program.bindings.size(); ++depth)
-	{
-		function = LocalContextFunction(program, function);
-		const EntityId owner = program.bindings[function].member_owner;
-		if (owner == kNoEntity || owner >= program.entities.size())
-			return function;
-		const BindingId context = program.entities[owner].local_context;
-		if (context == kNoBinding || context >= program.bindings.size())
-			return function;
-		function = context;
-	}
-	ThrowLoweringInternal("local function context chain is cyclic");
 }
 
 bool ClassIsVisible(const Program& program, EntityId entity, std::size_t depth)
@@ -99,39 +58,6 @@ EntityId NamedEntity(const Program& program, TypeId type)
 
 }  // namespace
 
-BindingId LocalContextFunction(const Program& program, BindingId function)
-{
-	function = program.bindings[function].canonical;
-	const BindingRecord& binding = program.bindings[function];
-	if (!binding.lambda_invocation ||
-		binding.lambda_invocation_owner >= program.entities.size())
-		return function;
-	const BindingId call =
-		program.entities[binding.lambda_invocation_owner].lambda_call_operator;
-	return call == kNoBinding || call >= program.bindings.size() ? function :
-		program.bindings[call].canonical;
-}
-
-bool ClosureHasManglingNumber(const Program& program, EntityId closure)
-{
-	if (closure == kNoEntity || closure >= program.entities.size()) return false;
-	const EntityRecord& record = program.entities[closure];
-	// A default member initializer's closure is numbered, and so is an
-	// in-class default argument's and a static data member initializer's
-	// where the member is templated; a namespace function's default
-	// argument's is a unit-local `$_<n>`, and so is a non-template class's
-	// static data member initializer's, in its class.
-	if (record.lambda_member_context != kNoBinding)
-	{
-		const BindingRecord& member = program.bindings[record.lambda_member_context];
-		if (record.lambda_default_argument != 0) return member.member_owner != kNoEntity;
-		return member.storage_class != STORAGE_CLASS_STATIC ||
-			HasTemplateSpecializationOwner(program, member.member_owner);
-	}
-	const BindingId context = program.entities[closure].local_context;
-	return context != kNoBinding && context < program.bindings.size() &&
-		IsInlineOrSpecialization(program, LocalContextFunction(program, context));
-}
 
 bool ClosureIsMemberLambda(const Program& program, EntityId closure)
 {
@@ -166,9 +92,9 @@ bool LocalContextIsVisible(const Program& program, BindingId function)
 {
 	if (function == kNoBinding || function >= program.bindings.size())
 		return false;
-	const BindingId outer = OutermostFunction(program, function);
-	return !HasInternalLinkage(program, program.bindings[outer]) &&
-		IsInlineOrSpecialization(program, outer);
+	bool candidate = false;
+	const BindingId anchor = LocalVisibilityAnchor(program, function, &candidate);
+	return candidate && !HasInternalLinkage(program, program.bindings[anchor]);
 }
 
 bool UnnamedTypeIsVisible(const Program& program, EntityId entity)

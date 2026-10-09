@@ -56,7 +56,6 @@ function	dev/src/lowering/abi/emission_policy.cpp	IsCompleteBoundaryObject	1	dev
 function	dev/src/lowering/abi/emission_policy.cpp	IsFunctionDeclarationBoundaryComplete	1	dev/src/lowering/abi/emission_policy.cpp	keep
 function	dev/src/lowering/abi/emission_policy.cpp	IsFunctionEmissionDemanded	1	dev/src/lowering/abi/emission_policy.cpp	keep
 function	dev/src/lowering/abi/emission_policy.cpp	IsVariableDeclarationOnly	1	dev/src/lowering/abi/emission_policy.cpp	keep
-function	dev/src/lowering/abi/local_entity_names.cpp	ClosureHasManglingNumber	1	dev/src/lowering/abi/local_entity_names.cpp	keep
 function	dev/src/lowering/abi/local_entity_names.cpp	ClosureIsMemberLambda	1	dev/src/lowering/abi/local_entity_names.cpp	keep
 function	dev/src/lowering/abi/local_entity_names.cpp	ClosureIsNamespaceScope	1	dev/src/lowering/abi/local_entity_names.cpp	keep
 function	dev/src/lowering/abi/local_entity_names.cpp	IsUnnamedClass	1	dev/src/lowering/abi/local_entity_names.cpp	keep

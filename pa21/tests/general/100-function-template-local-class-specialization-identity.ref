@@ -79,7 +79,7 @@ function @visit__ov2(%first : ptr, %last : ptr) -> void [binding=weak, object=_Z
     call void @cleanup___cleanup__sym2(%t8)
     return void
 }
-function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=internal, object=_ZZ5visitIiEvPT_S1_EN7cleanupD1Ev, object_root=yes, inline_hint=yes] {
+function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZZ5visitIiEvPT_S1_EN7cleanupD1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
 
@@ -126,7 +126,7 @@ function @cleanup___cleanup(%this : ptr [object_bytes=16]) -> void [unwind=no, b
     call void @cppgm_call_terminate(%t17)
     return void
 }
-function @cleanup___cleanup__sym2(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=internal, object=_ZZ5visitIlEvPT_S1_EN7cleanupD1Ev, object_root=yes, inline_hint=yes] {
+function @cleanup___cleanup__sym2(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZZ5visitIlEvPT_S1_EN7cleanupD1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
 

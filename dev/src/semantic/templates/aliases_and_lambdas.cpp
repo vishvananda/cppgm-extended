@@ -557,8 +557,10 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 		if (trailing_return == kNoNode)
 			call.placeholder_return_kind = PLACEHOLDER_DECLARATOR_VALUE;
 		RegisterClassMemberFunction(entity, call_operator);
-		if (enclosing != kNoBinding)
-			PublishInlineFunctionFacts(call_operator, true);
+		// The function call operator is inline (5.1.2p5), and so is the
+		// static invoker a captureless closure's conversion returns: every
+		// unit that names the closure type defines them.
+		PublishInlineFunctionFacts(call_operator, true);
 		if (trailing_return == kNoNode)
 			AnalyzeRetainedPlaceholderFunctionBody(call_operator);
 
@@ -584,6 +586,7 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 				program_->bindings[invocation_function];
 			invocation_binding.lambda_invocation = true;
 			invocation_binding.lambda_invocation_owner = entity;
+			PublishInlineFunctionFacts(invocation_function, true);
 			FunctionInfo& invocation = GetMutableFunction(invocation_function);
 			invocation.lexical_access_function = enclosing;
 			invocation.lexical_scope = scope;

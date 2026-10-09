@@ -27,7 +27,7 @@ function @owner__value(%this : ptr [object_bytes=1]) -> i32 [binding=weak, objec
     store typed ptr %this, $this
     return i32 7
 }
-function @owner____lambda_owner__call_t27_29__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZNK5owner4callEvENKUlvE_clEv, inline_hint=yes] {
+function @owner____lambda_owner__call_t27_29__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZZNK5owner4callEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

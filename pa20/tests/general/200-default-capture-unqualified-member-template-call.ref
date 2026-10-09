@@ -48,7 +48,7 @@ function @parser_test__run(%this : ptr [object_bytes=4]) -> void [binding=weak, 
     call void @parser_test____lambda_parser_test__run_t68_72__operator__(%t3, 2)
     return void
 }
-function @parser_test__parse(%this : ptr [object_bytes=4], %message : i32, %check : ptr [pass=by_address, object_bytes=1], %skip : u8) -> void [binding=internal, object=_ZN11parser_test5parseIiZZNS_3runEvENKUliE_clEiEUliE_EEviRKT0_b, inline_hint=yes] {
+function @parser_test__parse(%this : ptr [object_bytes=4], %message : i32, %check : ptr [pass=by_address, object_bytes=1], %skip : u8) -> void [binding=weak, object=_ZN11parser_test5parseIiZZNS_3runEvENKUliE_clEiEUliE_EEviRKT0_b, inline_hint=yes] {
   slot $this : ptr
   slot $message : i32
   slot $check : ptr
@@ -80,7 +80,7 @@ function @parser_test__parse(%this : ptr [object_bytes=4], %message : i32, %chec
   block ^if_end_3:
     return void
 }
-function @parser_test____lambda_parser_test__run_t68_72__operator__(%this : ptr [object_bytes=8], %message : i32) -> void [binding=internal, object=_ZZN11parser_test3runEvENKUliE_clEi, inline_hint=yes] {
+function @parser_test____lambda_parser_test__run_t68_72__operator__(%this : ptr [object_bytes=8], %message : i32) -> void [binding=weak, object=_ZZN11parser_test3runEvENKUliE_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $message : i32
   slot $arg__1 : obj<1x1>
@@ -96,7 +96,7 @@ function @parser_test____lambda_parser_test__run_t68_72__operator__(%this : ptr 
     call void @parser_test__parse(%t3, %t4, %t5, 0)
     return void
 }
-function @parser_test____lambda_parser_test__run_t68_72____lambda_nested_t83_87__operator__(%this : ptr [object_bytes=1], %value : i32) -> i32 [binding=internal, object=_ZZZN11parser_test3runEvENKUliE_clEiENKUliE_clEi, inline_hint=yes] {
+function @parser_test____lambda_parser_test__run_t68_72____lambda_nested_t83_87__operator__(%this : ptr [object_bytes=1], %value : i32) -> i32 [binding=weak, object=_ZZZN11parser_test3runEvENKUliE_clEiENKUliE_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 

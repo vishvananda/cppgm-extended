@@ -1,4 +1,5 @@
 #include "semantic/analysis/analyzer.h"
+#include "semantic/model/local_contexts.h"
 #include "support/exceptions.h"
 
 #include <vector>
@@ -137,13 +138,20 @@ private:
 		{
 			const std::size_t node = EntityNode(entity);
 			const EntityRecord& record = program_.entities[entity];
-			// A namespace-scope closure type or unnamed class has no linkage
-			// (3.5p8): its `$_<n>` name is unit-local, and so are its members.
-			if (record.local_context != kNoBinding ||
-				program_.HasInternalLinkageScope(record.owner) ||
+			// A local class or closure type has no linkage (3.5p8), but other
+			// units name one of an inline function or template specialization
+			// (Itanium 5.1.6, 5.1.8): it is unit-local exactly when its
+			// outermost function, or the member a numbered member-context
+			// closure belongs to, is.  A namespace-scope closure type or
+			// unnamed class is a unit-local `$_<n>`, and so are its members.
+			bool visible = false;
+			const BindingId anchor = EntityVisibilityAnchor(program_, entity, &visible);
+			if (visible) AddBindingDependency(anchor, node);
+			else if (record.local_context != kNoBinding ||
 				(record.enclosing_class == kNoEntity &&
 				 (record.lambda_closure || record.unnamed_class)))
 				Mark(node);
+			if (program_.HasInternalLinkageScope(record.owner)) Mark(node);
 			AddBindingDependency(record.declaration, node);
 			AddEntityDependency(record.enclosing_class, node);
 			AddTemplateArgumentDependencies(record.template_argument_begin,
@@ -157,11 +165,16 @@ private:
 		{
 			const std::size_t node = BindingNode(binding);
 			const BindingRecord& record = program_.bindings[binding];
+			// A captureless closure's static invoker is its class's static
+			// member `__invoke`, of the closure type's linkage.
+			const bool invoker = record.lambda_invocation &&
+				record.lambda_invocation_owner < program_.entities.size();
 			if (record.unnamed_namespace_linkage ||
 				(record.storage_class == STORAGE_CLASS_STATIC &&
-				 record.member_owner == kNoEntity) ||
+				 record.member_owner == kNoEntity && !invoker) ||
 				program_.HasInternalLinkageScope(record.owner))
 				Mark(node);
+			if (invoker) AddEntityDependency(record.lambda_invocation_owner, node);
 			AddTypeDependency(record.type, node);
 			AddEntityDependency(record.member_owner, node);
 			AddTemplateArgumentDependencies(record.template_argument_begin,

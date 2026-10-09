@@ -50,7 +50,7 @@ function @Box__run(%this : ptr [object_bytes=4]) -> i32 [binding=weak, object=_Z
     %t4 = call i32 @Box____lambda_Box__run_t39_41__operator__(%t2)
     return i32 %t4
 }
-function @Box____lambda_Box__run_t39_41__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZN3Box3runEvENKUlvE_clEv, inline_hint=yes] {
+function @Box____lambda_Box__run_t39_41__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZZN3Box3runEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:

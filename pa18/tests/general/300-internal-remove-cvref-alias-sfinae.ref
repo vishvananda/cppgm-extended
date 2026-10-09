@@ -1,4 +1,4 @@
-declare function @function_void_int____operator___ov3(%arg0 : ptr [object_bytes=1], %arg1 : obj<1x1> [classes=none]) -> ptr [binding=internal, object=_ZN8functionIFviEJEEaSIZN1S1gEvE1GvEERS1_T_, inline_hint=yes]
+declare function @function_void_int____operator___ov3(%arg0 : ptr [object_bytes=1], %arg1 : obj<1x1> [classes=none]) -> ptr [binding=weak, object=_ZN8functionIFviEJEEaSIZN1S1gEvE1GvEERS1_T_, inline_hint=yes]
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $s : obj<1x1>

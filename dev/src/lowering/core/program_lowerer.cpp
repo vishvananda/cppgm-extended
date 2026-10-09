@@ -453,7 +453,7 @@ private:
 		const bool internal = binding.unnamed_namespace_linkage ||
 			canonical_binding.unnamed_namespace_linkage ||
 			(binding.storage_class == STORAGE_CLASS_STATIC &&
-			 binding.member_owner == kNoEntity);
+			 binding.member_owner == kNoEntity && !binding.lambda_invocation);
 		const bool c_linkage = binding.language_linkage == LANGUAGE_LINKAGE_C;
 		SymbolIdentity identity;
 		identity.kind = kind;

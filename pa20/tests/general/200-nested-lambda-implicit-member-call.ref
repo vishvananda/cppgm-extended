@@ -20,7 +20,7 @@ function @A__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object=_ZN1A1
     %t4 = call i32 @A____lambda_A__f_t56_60__operator__(%t3)
     return i32 %t4
 }
-function @A____lambda_A__f_t56_60__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZN1A1fEvENKUlvE_clEv, inline_hint=yes] {
+function @A____lambda_A__f_t56_60__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZZN1A1fEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
   slot $inner : obj<8x8>
 
@@ -35,7 +35,7 @@ function @A____lambda_A__f_t56_60__operator__(%this : ptr [object_bytes=8]) -> i
     %t6 = call i32 @A____lambda_A__f_t56_60____lambda_nested_t67_71__operator__(%t5)
     return i32 %t6
 }
-function @A____lambda_A__f_t56_60____lambda_nested_t67_71__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZZN1A1fEvENKUlvE_clEvENKUlvE_clEv, inline_hint=yes] {
+function @A____lambda_A__f_t56_60____lambda_nested_t67_71__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZZZN1A1fEvENKUlvE_clEvENKUlvE_clEv, inline_hint=yes] {
   slot $this : ptr
   slot $tmpobj__1 : obj<4x4>
 

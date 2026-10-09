@@ -22,7 +22,7 @@ function @Analyzer__f(%this : ptr [object_bytes=1]) -> i32 [binding=weak, object
     %t5 = call i32 @Analyzer____lambda_Analyzer__f_t33_39_n1__operator__(%t4, 4)
     return i32 %t5
 }
-function @Analyzer____lambda_Analyzer__f_t33_39_n1__operator__(%this : ptr [object_bytes=8], %z : i32) -> i32 [binding=internal, object=_ZZN8Analyzer1fEvENKUliE0_clEi, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__f_t33_39_n1__operator__(%this : ptr [object_bytes=8], %z : i32) -> i32 [binding=weak, object=_ZZN8Analyzer1fEvENKUliE0_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $z : i32
   slot $inner : obj<8x8>
@@ -40,7 +40,7 @@ function @Analyzer____lambda_Analyzer__f_t33_39_n1__operator__(%this : ptr [obje
     %t7 = call i32 @Analyzer____lambda_Analyzer__f_t33_39_n1____lambda_nested_t46_52__operator__(%t5, %t6)
     return i32 %t7
 }
-function @Analyzer____lambda_Analyzer__f_t33_39_n1____lambda_nested_t46_52__operator__(%this : ptr [object_bytes=8], %y : i32) -> i32 [binding=internal, object=_ZZZN8Analyzer1fEvENKUliE0_clEiENKUliE_clEi, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__f_t33_39_n1____lambda_nested_t46_52__operator__(%this : ptr [object_bytes=8], %y : i32) -> i32 [binding=weak, object=_ZZZN8Analyzer1fEvENKUliE0_clEiENKUliE_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $y : i32
 
@@ -54,7 +54,7 @@ function @Analyzer____lambda_Analyzer__f_t33_39_n1____lambda_nested_t46_52__oper
     %t5 = call i32 @Analyzer____lambda_Analyzer__f_t13_19__operator__(%t3, %t4)
     return i32 %t5
 }
-function @Analyzer____lambda_Analyzer__f_t13_19__operator__(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=internal, object=_ZZN8Analyzer1fEvENKUliE_clEi, inline_hint=yes] {
+function @Analyzer____lambda_Analyzer__f_t13_19__operator__(%this : ptr [object_bytes=1], %x : i32) -> i32 [binding=weak, object=_ZZN8Analyzer1fEvENKUliE_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 
