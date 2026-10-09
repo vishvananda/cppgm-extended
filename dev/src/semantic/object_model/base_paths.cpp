@@ -24,6 +24,64 @@ Program::BasePathCacheEntry::BasePathCacheEntry(EntityId derived_value,
 	  distance(0), offset(0), found(false), all_public(false),
 	  ambiguous(false), complete(false) {}
 
+namespace
+{
+
+// Non-virtual paths from `entity` down to `base`, counted up to two.
+unsigned NonvirtualBasePaths(const Program& program, EntityId entity,
+	EntityId base, std::vector<int>* memo)
+{
+	if (entity == base) return 1;
+	if ((*memo)[entity] >= 0) return static_cast<unsigned>((*memo)[entity]);
+	unsigned count = 0;
+	const EntityRecord& record = program.entities[entity];
+	for (std::size_t i = 0; i < record.direct_base_count && count < 2; ++i)
+	{
+		const DirectBaseEdge& edge = program.DirectBase(entity, i);
+		if (!edge.virtual_base)
+			count += NonvirtualBasePaths(program, edge.entity, base, memo);
+	}
+	if (count > 2) count = 2;
+	(*memo)[entity] = static_cast<int>(count);
+	return count;
+}
+
+void CollectVirtualBaseClasses(const Program& program, EntityId entity,
+	std::vector<EntityId>* bases)
+{
+	const EntityRecord& record = program.entities[entity];
+	for (std::size_t i = 0; i < record.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& edge = program.DirectBase(entity, i);
+		if (edge.virtual_base)
+		{
+			bool seen = false;
+			for (std::size_t j = 0; j < bases->size() && !seen; ++j)
+				seen = (*bases)[j] == edge.entity;
+			if (seen) continue;
+			bases->push_back(edge.entity);
+		}
+		CollectVirtualBaseClasses(program, edge.entity, bases);
+	}
+}
+
+// The base subobjects of class `base` in `derived` ([class.mi]): one for each
+// non-virtual path from the class or from one of its virtual bases, which
+// every path through that virtual base shares; counted up to two.
+unsigned DistinctBaseSubobjects(const Program& program, EntityId derived,
+	EntityId base)
+{
+	std::vector<int> memo(program.entities.size(), -1);
+	unsigned count = NonvirtualBasePaths(program, derived, base, &memo);
+	std::vector<EntityId> virtual_bases;
+	CollectVirtualBaseClasses(program, derived, &virtual_bases);
+	for (std::size_t i = 0; i < virtual_bases.size() && count < 2; ++i)
+		count += NonvirtualBasePaths(program, virtual_bases[i], base, &memo);
+	return count;
+}
+
+}
+
 bool Program::IsBaseOf(EntityId base, EntityId derived) const
 {
 	return QueryBasePath(derived, base, 0, 0);
@@ -246,8 +304,10 @@ bool Program::QueryBasePath(EntityId derived, EntityId base,
 		if (distance) *distance = root.distance;
 		if (all_public) *all_public = root.all_public;
 		if (offset) *offset = shared_virtual ? shared_virtual_offset : root.offset;
-		if (ambiguous) *ambiguous = !shared_virtual &&
-			detect_ambiguity && root.path_count == 2;
+		// Paths that meet at a shared virtual base reach one subobject.
+		const bool several = !shared_virtual && detect_ambiguity &&
+			root.path_count == 2 && DistinctBaseSubobjects(*this, derived, base) > 1;
+		if (ambiguous) *ambiguous = several;
 		if (direct_base_ordinals)
 		{
 			EntityId current = derived;
@@ -266,8 +326,7 @@ bool Program::QueryBasePath(EntityId derived, EntityId base,
 		}
 		StoreBasePathCache(derived, base, true, root.distance,
 			root.all_public,
-			shared_virtual ? shared_virtual_offset : root.offset,
-			!shared_virtual && detect_ambiguity && root.path_count == 2,
+			shared_virtual ? shared_virtual_offset : root.offset, several,
 			detect_ambiguity);
 		return true;
 	}
