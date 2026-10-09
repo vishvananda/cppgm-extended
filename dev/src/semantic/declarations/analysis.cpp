@@ -151,6 +151,8 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 {
 	const NodeId key = FindChild(node, ::cppgm::syntax::STAG_CLASS_KEY);
 	if (key == kNoNode) ThrowSemanticError("class without class-key");
+	if (hosted_extension::HasStandardAttribute(*arena_, node, "noreturn"))
+		ThrowSemanticError("noreturn attribute requires a function");
 	const std::string key_text = PayloadSource(key);
 	const NamedFlavor flavor = key_text == "struct" ? NAMED_STRUCT :
 		key_text == "class" ? NAMED_CLASS :

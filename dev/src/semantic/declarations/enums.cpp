@@ -1,6 +1,7 @@
 // Enum declaration analysis: builds enum entities, their enumerators, and
 // their underlying-type facts from syntax.
 #include "semantic/analysis/analyzer.h"
+#include "semantic/extensions/hosted_extensions.h"
 #include "support/exceptions.h"
 #include "support/scoped_state.h"
 #include <string>
@@ -45,6 +46,8 @@ TypeId Analyzer::AnalyzeEnum(NodeId node, ScopeId scope, const std::string& hint
 	BuildEnumDeclarationNamePath(node, hint, &spelling, &path,
 		&generated_identity);
 	const bool scoped = FindChild(node, ::cppgm::syntax::STAG_ENUM_KEY) != kNoNode;
+	if (hosted_extension::HasStandardAttribute(*arena_, node, "noreturn"))
+		ThrowSemanticError("noreturn attribute requires a function");
 	const NamedFlavor flavor = scoped ? NAMED_ENUM_CLASS : NAMED_ENUM;
 	const bool qualified = path.global || path.Size() > 1;
 	const bool definition =

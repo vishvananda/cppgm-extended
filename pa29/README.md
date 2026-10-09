@@ -319,7 +319,8 @@ To complete PA29, implement hosted compatibility for:
 - the standard `[[noreturn]]` attribute takes no argument and appertains only
   to the declarator-id of a function declaration (7.6.3p1): a variable,
   including a block-scope one, a data member, a parameter, a typedef or
-  alias-declaration, a statement, and the position after a parameter list
+  alias-declaration, a class or enumeration head, a statement, and the
+  position after a parameter list
   (where it would appertain to the function type) are rejected. Leading
   attributes of a block item appertain to the declaration it introduces
 - semantic validation of primary-source GNU inline function bodies even when

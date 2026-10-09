@@ -2590,7 +2590,10 @@ NodeId SyntaxParser::ParseEnum(bool require_semicolon)
 	const std::size_t first = position_++;
 	std::size_t key = std::numeric_limits<std::size_t>::max();
 	if (At(KW_CLASS) || At(KW_STRUCT)) key = position_++;
-	SkipAttributes(); std::string name;
+	std::vector<NodeId> attributes; // The enum-head's appertain to the enum.
+	while (syntax::ConsumeLeadingStandardObjectAttribute(
+		tokens_, strings_, arena_, &position_, &attributes) || SkipAttribute()) {}
+	std::string name;
 	NodeId name_structure = kNoNode;
 	if (AtIdentifier())
 	{
@@ -2608,6 +2611,8 @@ NodeId SyntaxParser::ParseEnum(bool require_semicolon)
 	}
 	const NodeId declaration = arena_.Make("enum-specifier", name);
 	if (name_structure != kNoNode) arena_.Add(declaration, name_structure);
+	for (std::size_t i = 0; i < attributes.size(); ++i)
+		arena_.Add(declaration, attributes[i]);
 	if (key != std::numeric_limits<std::size_t>::max())
 		arena_.Add(declaration, MakeTokenNode("enum-key", key));
 	if (underlying != kNoNode) arena_.Add(declaration, underlying);
