@@ -239,7 +239,9 @@ PA11 supports the following in addition to the PA10 procedural subset:
 - `this`, implicit member lookup inside methods, and member access expressions `.` and `->`;
   a data member reached through a volatile object, pointer, reference or `this` is
   itself volatile (`mutable` removes only `const`), so its reads and writes are
-  `load volatile` and `store volatile`
+  `load volatile` and `store volatile`; the same holds for a bit-field's
+  storage unit and for every member and element that braced initialization
+  of a volatile aggregate writes, including value-initialized omitted ones
 - non-static member-function calls selected through overload resolution with the implicit
   object argument described above
 - ordinary non-template operator overloading over the supported object-model subset, including:

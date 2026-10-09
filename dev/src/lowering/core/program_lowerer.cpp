@@ -109,6 +109,7 @@ public:
 		  temp_counter_(0), initialized_bit_field_owner_(kNoEntity),
 		  initialized_bit_field_offset_(0), initialized_bit_field_unit_valid_(false),
 		  source_ordinal_(source_ordinal), needs_global_class_initializer_(false), lowering_namespace_object_(false),
+		  volatile_bit_field_access_(false),
 		  lowering_thread_local_initializer_object_(kNoLowId),
 		  current_class_value_boundary_(false), current_this_binding_(kNoBinding), current_member_owner_(kNoEntity),
 		  destructor_return_target_(kNoLowId),
@@ -1106,6 +1107,7 @@ private:
 	std::size_t source_ordinal_;
 	bool needs_global_class_initializer_;
 	bool lowering_namespace_object_;
+	bool volatile_bit_field_access_;
 	SymbolId lowering_thread_local_initializer_object_;
 	bool current_class_value_boundary_;
 	BindingId current_this_binding_;

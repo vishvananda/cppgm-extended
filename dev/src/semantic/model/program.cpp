@@ -311,6 +311,13 @@ TypeId TypeTable::Qualify(TypeId type, std::uint8_t cv)
 	return result;
 }
 
+TypeId TypeTable::VolatileSubobject(TypeId object, TypeId member)
+{
+	const TypeRecord& record = Get(object);
+	return record.kind == TYPE_QUALIFIED && (record.cv & CV_VOLATILE) != 0 ?
+		Qualify(member, CV_VOLATILE) : member;
+}
+
 bool TypeTable::IsAtomic(TypeId type) const
 {
 	const TypeRecord& record = Get(type);

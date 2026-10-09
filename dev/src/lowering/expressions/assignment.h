@@ -113,6 +113,23 @@ public:
 		return FinishBitFieldValue(binding, masked, type);
 	}
 
+	// A bit-field reached through a volatile glvalue is a volatile object
+	// even when declared without volatile (3.9.3p3); the caller states it.
+	bool SetVolatileBitFieldAccess(bool access)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const bool previous = derived.volatile_bit_field_access_;
+		derived.volatile_bit_field_access_ = access;
+		return previous;
+	}
+
+	bool BitFieldAccessIsVolatile(BindingId binding) const
+	{
+		const Derived& derived = static_cast<const Derived&>(*this);
+		return derived.volatile_bit_field_access_ ||
+			derived.TypeIsVolatile(derived.program_.bindings[binding].type);
+	}
+
 	Operand LoadBitField(BindingId binding, const Operand& storage)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
@@ -120,7 +137,7 @@ public:
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
 		const LowType type = BitFieldMemoryType(field);
 		Operand value = derived.LoadStorage(storage, type,
-			derived.TypeIsVolatile(field.type));
+			BitFieldAccessIsVolatile(binding));
 		if (layout.bit_offset != 0)
 		{
 			const Operand shifted = derived.Temp(type);
@@ -178,7 +195,7 @@ public:
 		const BindingRecord& field = derived.program_.bindings[binding];
 		const BindingLayoutFact& layout = derived.program_.BindingLayout(field);
 		const Operand old = derived.LoadStorage(storage, type,
-			derived.TypeIsVolatile(field.type));
+			BitFieldAccessIsVolatile(binding));
 		const std::uint64_t unit_mask = layout.bit_storage_bits == 64 ?
 			~std::uint64_t(0) :
 			(std::uint64_t(1) << layout.bit_storage_bits) - 1;
@@ -224,8 +241,7 @@ public:
 		Derived& derived = static_cast<Derived&>(*this);
 		Instruction store(Instruction::STORE);
 		store.type = type;
-		store.volatile_access = derived.TypeIsVolatile(
-			derived.program_.bindings[binding].type);
+		store.volatile_access = BitFieldAccessIsVolatile(binding);
 		store.first = value;
 		store.second = storage;
 		derived.Emit(store);
@@ -295,6 +311,8 @@ public:
 		const BindingId bit_field = BitFieldBinding(children[0]);
 		if (bit_field != kNoBinding)
 		{
+			const bool previous_volatile = SetVolatileBitFieldAccess(
+				derived.TypeIsVolatile(derived.arena_.nodes[children[0]].type));
 			const Operand storage = derived.LowerStorage(children[0]);
 			Operand value;
 			if (op == OP_ASS)
@@ -332,6 +350,7 @@ public:
 			}
 			const Operand stored = StoreBitField(
 				bit_field, storage, value, true);
+			(void)SetVolatileBitFieldAccess(previous_volatile);
 			return return_storage ? storage : stored;
 		}
 

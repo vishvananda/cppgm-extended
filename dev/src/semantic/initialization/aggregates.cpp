@@ -51,10 +51,12 @@ ExpressionInfo Analyzer::AnalyzeDesignatedAggregateInit(
 		return found.ordinary;
 	};
 
-	const auto append_action = [this, scope, list, &constant_elements,
+	const auto append_action = [this, scope, list, type, &constant_elements,
 		&constant_object](BindingId member, NodeId designated)
 	{
-		const BindingRecord member_record = program_->bindings[member];
+		BindingRecord member_record = program_->bindings[member];
+		member_record.type = program_->types.VolatileSubobject(
+			type, member_record.type);
 		const std::uint32_t action = MakeDump(DUMP_INITIALIZER_ACTION,
 			member_record.type, VALUE_NONE, member_record.name, member);
 		ExpressionInfo value;

@@ -191,7 +191,8 @@ ExpressionInfo Analyzer::AnalyzeAggregateInit(TypeId type,
 		// Element analysis may instantiate a class and grow both owner vectors.
 		// Retain compact member facts, not references into either vector.
 		const BindingId member_id = entity_data_members_[entity][i];
-		const TypeId member_type = program_->bindings[member_id].type;
+		const TypeId member_type = program_->types.VolatileSubobject(
+			type, program_->bindings[member_id].type);
 		const NameId member_name = program_->bindings[member_id].name;
 		const std::uint32_t action = MakeDump(DUMP_INITIALIZER_ACTION,
 			member_type, VALUE_NONE, member_name, member_id);

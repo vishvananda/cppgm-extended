@@ -555,6 +555,8 @@ protected:
 			derived.BitFieldAccessType(derived.program_.bindings[bit_field]);
 		const bool volatile_access = bit_field == kNoBinding &&
 			derived.TypeIsVolatile(derived.arena_.nodes[operand_node].type);
+		const bool previous_volatile = derived.SetVolatileBitFieldAccess(
+			derived.TypeIsVolatile(derived.arena_.nodes[operand_node].type));
 		Operand old_value = bit_field == kNoBinding ?
 			derived.LoadStorage(storage, type, volatile_access) :
 			derived.LoadBitField(bit_field, storage);
@@ -591,6 +593,7 @@ protected:
 			new_value = derived.StoreBitField(
 				bit_field, write_storage, new_value, true);
 		}
+		(void)derived.SetVolatileBitFieldAccess(previous_volatile);
 		if (return_storage) return storage;
 		return record.kind == DUMP_POSTFIX_EXPRESSION ? old_value : new_value;
 	}

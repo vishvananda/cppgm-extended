@@ -229,6 +229,9 @@ public:
 	TypeId Named(EntityId entity);
 	TypeId TryQualify(TypeId type, std::uint8_t cv);
 	TypeId Qualify(TypeId type, std::uint8_t cv);
+	// The type of a subobject of `object` declared with `member`: volatile
+	// propagates to every subobject of a volatile object (3.9.3p3).
+	TypeId VolatileSubobject(TypeId object, TypeId member);
 	TypeId TryPointer(TypeId type);
 	TypeId Pointer(TypeId type);
 	TypeId TryBlockPointer(TypeId function);

@@ -913,6 +913,7 @@ protected:
 				Operand(static_cast<std::int64_t>(i), LowI64()), true);
 			Instruction store(Instruction::STORE);
 			store.type = element;
+			store.volatile_access = derived.TypeIsVolatile(array.child);
 			if (i < elements.size())
 				store.first = derived.LowerConvertedValue(elements[i], element);
 			else if (element.kind == LOW_PTR)
@@ -1439,8 +1440,11 @@ protected:
 		{
 			const LowType field_type = derived.LowerExpressionType(action.type);
 			store.second = destination;
+			const bool previous = derived.SetVolatileBitFieldAccess(
+				derived.TypeIsVolatile(action.type));
 			derived.InitializeBitField(
 				action.binding, store.first, store.second, field_type);
+			(void)derived.SetVolatileBitFieldAccess(previous);
 		}
 		else
 		{

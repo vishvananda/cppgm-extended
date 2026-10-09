@@ -1314,7 +1314,14 @@ protected:
 			record.constant_value, record.constant_high, type);
 		if (binding != kNoBinding &&
 			derived.program_.bindings[binding].bit_field)
-			return derived.LoadBitField(binding, derived.LowerStorage(node));
+		{
+			const bool previous = derived.SetVolatileBitFieldAccess(
+				derived.TypeIsVolatile(record.type));
+			const Operand value = derived.LoadBitField(
+				binding, derived.LowerStorage(node));
+			(void)derived.SetVolatileBitFieldAccess(previous);
+			return value;
+		}
 		return derived.LoadStorage(derived.LowerStorage(node), type,
 			derived.TypeIsVolatile(record.type));
 	}
