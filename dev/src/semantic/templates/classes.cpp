@@ -21,6 +21,25 @@ std::size_t NoTemplatePattern()
 {
 	return std::numeric_limits<std::size_t>::max();
 }
+
+// C++11 7.2p11: an unscoped enumeration has no scope of its own; its
+// enumerators live in the enclosing scope, yet a nested-name-specifier
+// naming the enumeration still qualifies them.
+LookupResult LookupUnscopedEnumerator(Program& program, TypeId type,
+	NameId name, LookupKind kind)
+{
+	if (type == kNoType || kind != LOOKUP_ORDINARY) return LookupResult();
+	type = program.types.RemoveTopCv(type);
+	const TypeRecord& record = program.types.Get(type);
+	if (record.kind != TYPE_NAMED ||
+		program.entities[record.entity].flavor != NAMED_ENUM) return LookupResult();
+	const LookupResult found = program.LookupQualifiedName(
+		program.entities[record.entity].owner, name, kind);
+	return found.ordinary != kNoBinding &&
+		program.bindings[found.ordinary].kind == BIND_ENUMERATOR &&
+		program.types.RemoveTopCv(program.bindings[found.ordinary].type) == type ?
+		found : LookupResult();
+}
 const std::uint8_t kClassTemplateCompletionPendingDefinition = 4;
 
 class ScopedTemplateRequest
@@ -261,6 +280,7 @@ LookupResult Analyzer::LookupPath(ScopeId scope,
 			LookupName(scope, path[0], kind);
 	}
 	ScopeId carrier = path.global ? program_->GlobalScope() : kNoScope;
+	TypeId carrier_type = kNoType;
 	std::size_t component = 0;
 	if (!path.global)
 	{
@@ -269,6 +289,7 @@ LookupResult Analyzer::LookupPath(ScopeId scope,
 		{
 			EnsureClassDefinition(alias);
 			carrier = program_->ScopeForType(alias);
+			carrier_type = alias;
 		}
 		else
 		{
@@ -278,6 +299,7 @@ LookupResult Analyzer::LookupPath(ScopeId scope,
 			carrier = first.name_space != kNoScope ? first.name_space :
 				first.type != kNoType ? program_->ScopeForType(first.type) :
 				kNoScope;
+			carrier_type = first.name_space != kNoScope ? kNoType : first.type;
 		}
 		component = 1;
 	}
@@ -289,8 +311,11 @@ LookupResult Analyzer::LookupPath(ScopeId scope,
 		carrier = next.name_space != kNoScope ? next.name_space :
 			next.type != kNoType ? program_->ScopeForType(next.type) :
 			kNoScope;
+		carrier_type = next.name_space != kNoScope ? kNoType : next.type;
 	}
-	if (carrier == kNoScope) return LookupResult();
+	if (carrier == kNoScope)
+		return component + 1 == path.Size() ? LookupUnscopedEnumerator(
+			*program_, carrier_type, path.Last(), kind) : LookupResult();
 	return program_->LookupQualifiedName(carrier, path.Last(), kind);
 }
 
@@ -451,6 +476,14 @@ LookupResult Analyzer::LookupStructuredName(NodeId syntax,
 			}
 			EnsureClassDefinition(found.type);
 			carrier = program_->ScopeForType(found.type);
+			std::uint32_t after = arena_->NextEdge(next_component_edge);
+			while (after != kNoEdge && !arena_->IsTag(
+				arena_->EdgeChild(after), "name-component"))
+				after = arena_->NextEdge(after);
+			if (carrier == kNoScope && after == kNoEdge)
+				return LookupUnscopedEnumerator(*program_, found.type,
+					program_->names.UseInterned(arena_->SemanticPayloadId(
+						arena_->EdgeChild(next_component_edge))), kind);
 		}
 		else carrier = found.name_space;
 		if (carrier == kNoScope) return LookupResult();

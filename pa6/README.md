@@ -226,7 +226,9 @@ PA6 must support:
 - unqualified lookup of visible type aliases, template type parameters,
   namespaces, and supported value names
 - qualified lookup through namespaces, class scopes, and scoped enum scopes for
-  the supported declaration forms
+  the supported declaration forms; a nested-name-specifier naming an unscoped
+  enumeration also qualifies its enumerators, which live in the enclosing scope
+  (7.2p11)
 - fundamental, class, enum, cv-qualified, pointer, reference, array, and
   function types
 - array bounds formed from supported integral literals (including character
