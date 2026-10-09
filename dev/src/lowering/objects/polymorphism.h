@@ -198,8 +198,7 @@ protected:
 			derived.current_this_binding_, LowPtr()), LowPtr());
 		Operand address_point;
 		if (derived.HasCurrentConstructionVtt())
-			address_point = derived.LoadStorage(
-				derived.CurrentConstructionVtt(), LowPtr());
+			address_point = derived.CurrentConstructionTable();
 		else
 		{
 			const SymbolId symbol =

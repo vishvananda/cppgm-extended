@@ -82,14 +82,14 @@ global @__rtti_struct_pa13_reentrant_override_derived [binding=weak, object=_ZTI
   ptr addr @__typeinfo_name__struct_pa13_reentrant_override_derived
   ptr addr @__rtti_struct_pa13_reentrant_override_base
 }
-global @pa13_reentrant_override_base__vtable [binding=weak, object=_ZTV28pa13_reentrant_override_base] = {
+global @pa13_reentrant_override_base__vtable [storage=readonly, binding=weak, object=_ZTV28pa13_reentrant_override_base] = {
   i64 0
   ptr addr @__rtti_struct_pa13_reentrant_override_base
   ptr addr @pa13_reentrant_override_base___pa13_reentrant_override_base
   ptr addr @pa13_reentrant_override_base___pa13_reentrant_override_base__deleting_entry
   ptr addr @__cxa_pure_virtual
 }
-global @pa13_reentrant_override_derived__vtable [binding=strong, object=_ZTV31pa13_reentrant_override_derived] = {
+global @pa13_reentrant_override_derived__vtable [storage=readonly, binding=strong, object=_ZTV31pa13_reentrant_override_derived] = {
   i64 0
   ptr addr @__rtti_struct_pa13_reentrant_override_derived
   ptr addr @pa13_reentrant_override_derived___pa13_reentrant_override_derived

@@ -65,6 +65,23 @@ protected:
 		current_construction_vtt_ =
 			IncludesConstructionVtt(derived.arena_.nodes[node].binding) ?
 			ParameterId(1) : ParameterId(kNoLowId);
+		construction_table_block_ = BlockId(kNoLowId);
+	}
+
+	// The table VTT[0] names, which a base-object constructor or destructor
+	// reads its own virtual bases' offsets from: the VTT does not change, so
+	// one load serves the rest of the block.
+	Operand CurrentConstructionTable()
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		if (construction_table_block_ != derived.current_block_)
+		{
+			construction_table_ =
+				derived.LoadStorage(CurrentConstructionVtt(), LowPtr());
+			construction_table_block_ = derived.current_block_;
+			construction_rows_.clear();
+		}
+		return construction_table_;
 	}
 
 	// The variable an expression designates through single-operand nodes.
@@ -206,21 +223,27 @@ protected:
 		if ((view.kind == Operand::INTEGER && view.integer_value == 0) ||
 			view.kind == Operand::NULL_POINTER)
 			return Operand(0, LowPtr());
-		const Operand vtable = current_object && HasCurrentConstructionVtt() &&
-			owner == derived.current_member_owner_ ?
-			derived.LoadStorage(CurrentConstructionVtt(), LowPtr()) :
+		const bool construction = current_object && HasCurrentConstructionVtt() &&
+			owner == derived.current_member_owner_;
+		const Operand vtable = construction ? CurrentConstructionTable() :
 			derived.LoadStorage(view, LowPtr());
 		// Row 0 is nearest the address point (Itanium 2.5.2).
 		if (owner >= derived.graph_.class_polymorphism.size() ||
 			virtual_base_ordinal >= derived.graph_.class_polymorphism[
 				owner].virtual_base_rows.size())
 			ThrowLoweringInternal("virtual base has no vtable row");
+		for (std::size_t i = 0; construction && i < construction_rows_.size(); ++i)
+			if (construction_rows_[i].first == virtual_base_ordinal)
+				return derived.IndexAddress(LowI8(), view,
+					construction_rows_[i].second, false);
 		const std::int64_t row = -24 - 8 * static_cast<std::int64_t>(
 			derived.graph_.class_polymorphism[owner].virtual_base_rows[
 				virtual_base_ordinal]);
 		const Operand entry = derived.IndexAddress(
 			LowI8(), vtable, Operand(row, LowI64()), false);
 		const Operand offset = derived.LoadStorage(entry, LowI64());
+		if (construction)
+			construction_rows_.push_back(std::make_pair(virtual_base_ordinal, offset));
 		return derived.IndexAddress(LowI8(), view, offset, false);
 	}
 
@@ -322,9 +345,13 @@ protected:
 	void ResetConstructionVtt()
 	{
 		current_construction_vtt_ = kNoLowId;
+		construction_table_block_ = BlockId(kNoLowId);
 	}
 
 	ParameterId current_construction_vtt_;
+	BlockId construction_table_block_;
+	Operand construction_table_;
+	std::vector<std::pair<std::size_t, Operand> > construction_rows_;
 };
 
 }

@@ -32,12 +32,12 @@ global @__rtti_struct_derived [binding=weak, object=_ZTI7derived] = {
   ptr addr @__rtti_struct_root
   i64 -8189
 }
-global @root__vtable [binding=weak, object=_ZTV4root] = {
+global @root__vtable [storage=readonly, binding=weak, object=_ZTV4root] = {
   i64 0
   ptr addr @__rtti_struct_root
   ptr addr @root__anchor
 }
-global @derived__vtable [binding=weak, object=_ZTV7derived] = {
+global @derived__vtable [storage=readonly, binding=weak, object=_ZTV7derived] = {
   i64 0
   i64 0
   i64 0
@@ -46,7 +46,7 @@ global @derived__vtable [binding=weak, object=_ZTV7derived] = {
   ptr addr @derived__first
   ptr addr @derived__second
 }
-global @derived____vtt [binding=weak, object=_ZTT7derived, object_root=yes] = {
+global @derived____vtt [storage=readonly, binding=weak, object=_ZTT7derived, object_root=yes] = {
   ptr addr @derived__vtable + 32
   ptr addr @derived__vtable + 32
 }

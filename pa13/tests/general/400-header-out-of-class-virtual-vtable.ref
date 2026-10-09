@@ -57,12 +57,12 @@ global @__rtti_struct_HeaderVtableDerived [binding=weak, object=_ZTI19HeaderVtab
   ptr addr @__typeinfo_name__struct_HeaderVtableDerived
   ptr addr @__rtti_struct_HeaderVtableBase
 }
-global @HeaderVtableBase__vtable [binding=weak, object=_ZTV16HeaderVtableBase] = {
+global @HeaderVtableBase__vtable [storage=readonly, binding=weak, object=_ZTV16HeaderVtableBase] = {
   i64 0
   ptr addr @__rtti_struct_HeaderVtableBase
   ptr addr @__cxa_pure_virtual
 }
-global @HeaderVtableDerived__vtable [binding=strong, object=_ZTV19HeaderVtableDerived] = {
+global @HeaderVtableDerived__vtable [storage=readonly, binding=strong, object=_ZTV19HeaderVtableDerived] = {
   i64 0
   ptr addr @__rtti_struct_HeaderVtableDerived
   ptr addr @HeaderVtableDerived__value

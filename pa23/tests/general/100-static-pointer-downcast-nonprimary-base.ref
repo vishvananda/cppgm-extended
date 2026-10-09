@@ -31,7 +31,7 @@ global @__rtti_struct_leaf [binding=weak, object=_ZTI4leaf] = {
   ptr addr @__rtti_struct_base
   i64 2050
 }
-global @leaf__vtable [binding=weak, object=_ZTV4leaf] = {
+global @leaf__vtable [storage=readonly, binding=weak, object=_ZTV4leaf] = {
   i64 0
   ptr addr @__rtti_struct_leaf
   ptr addr @leaf___leaf

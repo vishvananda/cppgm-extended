@@ -56,14 +56,14 @@ global @__rtti_struct_KeyFunctionDerived [binding=weak, object=_ZTI18KeyFunction
   ptr addr @__typeinfo_name__struct_KeyFunctionDerived
   ptr addr @__rtti_struct_KeyFunctionBase
 }
-global @KeyFunctionBase__vtable [binding=weak, object=_ZTV15KeyFunctionBase] = {
+global @KeyFunctionBase__vtable [storage=readonly, binding=weak, object=_ZTV15KeyFunctionBase] = {
   i64 0
   ptr addr @__rtti_struct_KeyFunctionBase
   ptr addr @KeyFunctionBase___KeyFunctionBase
   ptr addr @KeyFunctionBase___KeyFunctionBase__deleting_entry
   ptr addr @__cxa_pure_virtual
 }
-global @KeyFunctionDerived__vtable [binding=strong, object=_ZTV18KeyFunctionDerived] = {
+global @KeyFunctionDerived__vtable [storage=readonly, binding=strong, object=_ZTV18KeyFunctionDerived] = {
   i64 0
   ptr addr @__rtti_struct_KeyFunctionDerived
   ptr addr @KeyFunctionDerived___KeyFunctionDerived

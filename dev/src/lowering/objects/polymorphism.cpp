@@ -1561,6 +1561,8 @@ private:
 		Global vtable;
 		vtable.symbol = symbol;
 		vtable.initializer_kind = Global::STRUCTURED_VALUE;
+		// Vtables never change: the optimizer folds loads from them.
+		vtable.storage = Global::STORAGE_READONLY;
 		// Row 0 is nearest the address point (Itanium 2.5.2).
 		for (std::size_t row = virtual_base_offsets.size(); row != 0; --row)
 			AddIntegerItem(&vtable, LowI64(), virtual_base_offsets[row - 1]);
@@ -1713,6 +1715,7 @@ private:
 		Global vtt;
 		vtt.symbol = symbol;
 		vtt.initializer_kind = Global::STRUCTURED_VALUE;
+		vtt.storage = Global::STORAGE_READONLY;
 		AddVttEntries(&vtt, entity, entity, 0, true);
 		if (vtt.items.size() != state_.class_vtt_layouts[entity].complete_size)
 			ThrowLoweringInternal("VTT does not match its layout");

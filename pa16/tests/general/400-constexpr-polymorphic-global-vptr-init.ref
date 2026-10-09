@@ -30,12 +30,12 @@ global @__rtti_struct_object [binding=weak, object=_ZTI6object] = {
   ptr addr @__typeinfo_name__struct_object
   ptr addr @__rtti_struct_base
 }
-global @base__vtable [binding=weak, object=_ZTV4base] = {
+global @base__vtable [storage=readonly, binding=weak, object=_ZTV4base] = {
   i64 0
   ptr addr @__rtti_struct_base
   ptr addr @__cxa_pure_virtual
 }
-global @object__vtable [binding=weak, object=_ZTV6object] = {
+global @object__vtable [storage=readonly, binding=weak, object=_ZTV6object] = {
   i64 0
   ptr addr @__rtti_struct_object
   ptr addr @object__get

@@ -321,4 +321,7 @@ translation unit sees the complete type, and they would differ from what g++
 and clang pass: a g++ caller of a base-object constructor or member function
 built here would hand it no such arguments. Within a base-object constructor
 or destructor, read the rows from the construction vtable that the VTT names,
-not from the object's vptr, which may still hold a base's table.
+not from the object's vptr, which may still hold a base's table. The VTT never
+changes, so one load of the table and of each row serves a block. Vtables,
+construction vtables and VTTs are `storage=readonly` data, which the optimizer
+reads through once the VTT is known.

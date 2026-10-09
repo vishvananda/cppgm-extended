@@ -110,14 +110,14 @@ global @__rtti_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_c
   ptr addr @__typeinfo_name_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE
   ptr addr @__rtti_class_array_reference_cv_lazy
 }
-global @array_reference_cv_lazy__vtable [binding=weak, object=_ZTV23array_reference_cv_lazy] = {
+global @array_reference_cv_lazy__vtable [storage=readonly, binding=weak, object=_ZTV23array_reference_cv_lazy] = {
   i64 0
   ptr addr @__rtti_class_array_reference_cv_lazy
   ptr addr @array_reference_cv_lazy___array_reference_cv_lazy
   ptr addr @array_reference_cv_lazy___array_reference_cv_lazy__deleting_entry
   ptr addr @array_reference_cv_lazy__operator__
 }
-global @__vtable_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE [binding=weak, object=_ZTV28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE] = {
+global @__vtable_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE [storage=readonly, binding=weak, object=_ZTV28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE] = {
   i64 0
   ptr addr @__rtti_type_28array_reference_cv_lazy_implI23array_reference_cv_lazyA4_cRA4_KcE
   ptr addr @array_reference_cv_lazy_impl_array_reference_cv_lazy__array_of_4_char__lvalue_reference_to_array_of_4_const_char____array_reference_cv_lazy_impl

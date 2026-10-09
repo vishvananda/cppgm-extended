@@ -60,17 +60,17 @@ global @__rtti_type_Z6secondvE5local [binding=weak, object=_ZTIZ6secondvE5local]
   ptr addr @__typeinfo_name_type_Z6secondvE5local
   ptr addr @__rtti_struct_base
 }
-global @base__vtable [binding=weak, object=_ZTV4base] = {
+global @base__vtable [storage=readonly, binding=weak, object=_ZTV4base] = {
   i64 0
   ptr addr @__rtti_struct_base
   ptr addr @base__value
 }
-global @__vtable_type_Z5firstvE5local [binding=weak, object=_ZTVZ5firstvE5local] = {
+global @__vtable_type_Z5firstvE5local [storage=readonly, binding=weak, object=_ZTVZ5firstvE5local] = {
   i64 0
   ptr addr @__rtti_type_Z5firstvE5local
   ptr addr @local__value
 }
-global @__vtable_type_Z6secondvE5local [binding=weak, object=_ZTVZ6secondvE5local] = {
+global @__vtable_type_Z6secondvE5local [storage=readonly, binding=weak, object=_ZTVZ6secondvE5local] = {
   i64 0
   ptr addr @__rtti_type_Z6secondvE5local
   ptr addr @local__value__sym2

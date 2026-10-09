@@ -97,12 +97,12 @@ global @__rtti_struct_boost__exception_detail__impl [binding=weak, object=_ZTIN5
   ptr addr @__typeinfo_name__struct_boost__exception_detail__impl
   ptr addr @__rtti_struct_boost__exception_detail__error_info_container
 }
-global @boost__exception_detail__error_info_container__vtable [binding=weak, object=_ZTVN5boost16exception_detail20error_info_containerE] = {
+global @boost__exception_detail__error_info_container__vtable [storage=readonly, binding=weak, object=_ZTVN5boost16exception_detail20error_info_containerE] = {
   i64 0
   ptr addr @__rtti_struct_boost__exception_detail__error_info_container
   ptr addr @__cxa_pure_virtual
 }
-global @boost__exception_detail__impl__vtable [binding=weak, object=_ZTVN5boost16exception_detail4implE] = {
+global @boost__exception_detail__impl__vtable [storage=readonly, binding=weak, object=_ZTVN5boost16exception_detail4implE] = {
   i64 0
   ptr addr @__rtti_struct_boost__exception_detail__impl
   ptr addr @boost__exception_detail__impl__diagnostic_information

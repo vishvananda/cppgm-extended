@@ -120,28 +120,28 @@ global @__rtti_struct_Zeroed [binding=weak, object=_ZTI6Zeroed] = {
   ptr addr @__rtti_struct_Mark
   i64 -6141
 }
-global @EmptyDerived__vtable [binding=weak, object=_ZTV12EmptyDerived] = {
+global @EmptyDerived__vtable [storage=readonly, binding=weak, object=_ZTV12EmptyDerived] = {
   i64 0
   i64 0
   ptr addr @__rtti_struct_EmptyDerived
 }
-global @EmptyDerived____vtt [binding=weak, object=_ZTT12EmptyDerived, object_root=yes] = {
+global @EmptyDerived____vtt [storage=readonly, binding=weak, object=_ZTT12EmptyDerived, object_root=yes] = {
   ptr addr @EmptyDerived__vtable + 24
 }
-global @Holder__vtable [binding=weak, object=_ZTV6Holder] = {
+global @Holder__vtable [storage=readonly, binding=weak, object=_ZTV6Holder] = {
   i64 13
   i64 0
   ptr addr @__rtti_struct_Holder
 }
-global @Holder____vtt [binding=weak, object=_ZTT6Holder, object_root=yes] = {
+global @Holder____vtt [storage=readonly, binding=weak, object=_ZTT6Holder, object_root=yes] = {
   ptr addr @Holder__vtable + 24
 }
-global @Zeroed__vtable [binding=weak, object=_ZTV6Zeroed] = {
+global @Zeroed__vtable [storage=readonly, binding=weak, object=_ZTV6Zeroed] = {
   i64 14
   i64 0
   ptr addr @__rtti_struct_Zeroed
 }
-global @Zeroed____vtt [binding=weak, object=_ZTT6Zeroed, object_root=yes] = {
+global @Zeroed____vtt [storage=readonly, binding=weak, object=_ZTT6Zeroed, object_root=yes] = {
   ptr addr @Zeroed__vtable + 24
 }
 

@@ -40,17 +40,17 @@ global @__rtti_struct_leaf [binding=weak, object=_ZTI4leaf] = {
   ptr addr @__typeinfo_name__struct_leaf
   ptr addr @__rtti_struct_mid
 }
-global @base__vtable [binding=weak, object=_ZTV4base] = {
+global @base__vtable [storage=readonly, binding=weak, object=_ZTV4base] = {
   i64 0
   ptr addr @__rtti_struct_base
   ptr addr @__cxa_pure_virtual
 }
-global @mid__vtable [binding=weak, object=_ZTV3mid] = {
+global @mid__vtable [storage=readonly, binding=weak, object=_ZTV3mid] = {
   i64 0
   ptr addr @__rtti_struct_mid
   ptr addr @__cxa_pure_virtual
 }
-global @leaf__vtable [binding=weak, object=_ZTV4leaf] = {
+global @leaf__vtable [storage=readonly, binding=weak, object=_ZTV4leaf] = {
   i64 0
   ptr addr @__rtti_struct_leaf
   ptr addr @leaf__what

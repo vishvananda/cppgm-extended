@@ -62,61 +62,61 @@ global @__rtti_struct_Top [binding=weak, object=_ZTI3Top] = {
   ptr addr @__rtti_struct_Middle
   i64 -8189
 }
-global @Root__vtable [binding=weak, object=_ZTV4Root] = {
+global @Root__vtable [storage=readonly, binding=weak, object=_ZTV4Root] = {
   i64 0
   ptr addr @__rtti_struct_Root
   ptr addr @Root__id
 }
-global @Middle__vtable [binding=weak, object=_ZTV6Middle] = {
+global @Middle__vtable [storage=readonly, binding=weak, object=_ZTV6Middle] = {
   i64 0
   ptr addr @__rtti_struct_Middle
   ptr addr @Root__id
 }
-global @Side__vtable [binding=weak, object=_ZTV4Side] = {
+global @Side__vtable [storage=readonly, binding=weak, object=_ZTV4Side] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_Side
 }
-global @Side____view__Middle__16__vtable [binding=internal, object=@Side____view__Middle__16__vtable] = {
+global @Side____view__Middle__16__vtable [storage=readonly, binding=internal, object=@Side____view__Middle__16__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_Side
   ptr addr @Root__id
 }
-global @Side____vtt [binding=weak, object=_ZTT4Side, object_root=yes] = {
+global @Side____vtt [storage=readonly, binding=weak, object=_ZTT4Side, object_root=yes] = {
   ptr addr @Side__vtable + 24
   ptr addr @Side____view__Middle__16__vtable + 24
 }
-global @Top__vtable [binding=weak, object=_ZTV3Top] = {
+global @Top__vtable [storage=readonly, binding=weak, object=_ZTV3Top] = {
   i64 32
   i64 16
   i64 0
   ptr addr @__rtti_struct_Top
   ptr addr @Top__id
 }
-global @Top____view__Side__16__vtable [binding=internal, object=@Top____view__Side__16__vtable] = {
+global @Top____view__Side__16__vtable [storage=readonly, binding=internal, object=@Top____view__Side__16__vtable] = {
   i64 16
   i64 -16
   ptr addr @__rtti_struct_Top
 }
-global @Top____view__Middle__32__vtable [binding=internal, object=@Top____view__Middle__32__vtable] = {
+global @Top____view__Middle__32__vtable [storage=readonly, binding=internal, object=@Top____view__Middle__32__vtable] = {
   i64 -32
   i64 -32
   ptr addr @__rtti_struct_Top
   ptr addr @_Top__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Top____construction__Side__16__s0__vtable [binding=internal, object=_ZTC3Top16_4Side] = {
+global @Top____construction__Side__16__s0__vtable [storage=readonly, binding=internal, object=_ZTC3Top16_4Side] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_Side
 }
-global @Top____construction__Side__16__s1__vtable [binding=internal, object=@Top____construction__Side__16__s1__vtable] = {
+global @Top____construction__Side__16__s1__vtable [storage=readonly, binding=internal, object=@Top____construction__Side__16__s1__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_Side
   ptr addr @Root__id
 }
-global @Top____vtt [binding=weak, object=_ZTT3Top, object_root=yes] = {
+global @Top____vtt [storage=readonly, binding=weak, object=_ZTT3Top, object_root=yes] = {
   ptr addr @Top__vtable + 32
   ptr addr @Top____view__Side__16__vtable + 24
   ptr addr @Top____view__Middle__32__vtable + 24
@@ -298,13 +298,12 @@ function @Side__Side__base_entry(%this : ptr [object_bytes=32], %__vtt : ptr) ->
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
-    %t4 = load typed ptr %__vtt
-    %t5 = index i8 %t4, -24
-    %t6 = load typed i64 %t5
-    %t7 = index i8 %t3, %t6
-    %t8 = index i8 %__vtt, 8
-    %t9 = load typed ptr %t8
-    store typed ptr %t9, %t7
+    %t4 = index i8 %t2, -24
+    %t5 = load typed i64 %t4
+    %t6 = index i8 %t3, %t5
+    %t7 = index i8 %__vtt, 8
+    %t8 = load typed ptr %t7
+    store typed ptr %t8, %t6
     return void
 }
 function @Root__Root__base_entry(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN4RootC2Ev, object_root=yes, inline_hint=yes] {

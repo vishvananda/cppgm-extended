@@ -26,13 +26,13 @@ global @__rtti_class_D [binding=weak, object=_ZTI1D] = {
   ptr addr @__typeinfo_name__class_D
   ptr addr @__rtti_class_B
 }
-global @B__vtable [binding=weak, object=_ZTV1B] = {
+global @B__vtable [storage=readonly, binding=weak, object=_ZTV1B] = {
   i64 0
   ptr addr @__rtti_class_B
   ptr addr @B___B
   ptr addr @B___B__deleting_entry
 }
-global @D__vtable [binding=weak, object=_ZTV1D] = {
+global @D__vtable [storage=readonly, binding=weak, object=_ZTV1D] = {
   i64 0
   ptr addr @__rtti_class_D
   ptr addr @D___D

@@ -238,6 +238,13 @@ The course solution’s `-O1` includes these semantic-preserving pass families w
   scalar global to its typed initializer; mutable, volatile, thread-local,
   externally replaceable, aggregate, and indirectly addressed storage keeps
   the ordinary memory operation
+- folding a load at a constant offset into a non-replaceable
+  `storage=readonly` structured global -- the source lowering emits vtables,
+  construction vtables and VTTs so -- reached through `addr`, constant
+  `index` and `copy`: an integer item becomes its constant and an address
+  item the address it names; the fold also runs on callers the late inliner
+  rewrote, so a base-object constructor inlined with a known VTT reads its
+  construction table's virtual-base offsets as constants
 - folding a direct call to the ABI-designated `strlen` operation when its
   argument is the direct address of `storage=readonly` structured byte data
   with a compiler-known first NUL byte; writable or unterminated data and a

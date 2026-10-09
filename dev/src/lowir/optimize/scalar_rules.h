@@ -47,6 +47,31 @@ struct ReadonlyByteStringIndex
 
 // A readonly scalar global with a literal initializer always observes that
 // literal, so a typed direct load of it is the constant.
+// The items of each readonly structured global that is not replaceable (a
+// vtable group's tables, a VTT): what a load at a constant byte offset into
+// one observes.
+struct ReadonlyTableIndex
+{
+  struct Item
+  {
+    std::uint64_t offset;
+    std::uint64_t size;
+    const lowir_model::GlobalDefinition::DataItem * item;
+  };
+  std::vector<std::int32_t> table_of;
+  std::vector<std::vector<Item> > tables;
+
+  ReadonlyTableIndex(const lowir_model::LowirProgram & program, bool populate);
+  const lowir_model::GlobalDefinition::DataItem * find(
+    lowir_model::SymbolId symbol, std::uint64_t offset,
+    std::uint64_t size) const;
+};
+
+// Folds loads at constant offsets into readonly tables: an integer item is
+// the constant, an address item the address it names.
+bool fold_readonly_table_loads(lowir_model::Function * function,
+                               const ReadonlyTableIndex & index, Stats * stats);
+
 bool fold_readonly_global_loads(lowir_model::Function * function,
     const std::vector<unsigned char> & readonly_known,
     const std::vector<lowir_model::Operand> & readonly_constants,

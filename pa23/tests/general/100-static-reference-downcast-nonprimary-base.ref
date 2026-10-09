@@ -51,7 +51,7 @@ global @__rtti_struct_downcast_leaf [binding=weak, object=_ZTI13downcast_leaf] =
   ptr addr @__rtti_struct_downcast_root
   i64 2050
 }
-global @downcast_leaf__vtable [binding=weak, object=_ZTV13downcast_leaf] = {
+global @downcast_leaf__vtable [storage=readonly, binding=weak, object=_ZTV13downcast_leaf] = {
   i64 0
   ptr addr @__rtti_struct_downcast_leaf
   ptr addr @downcast_leaf___downcast_leaf

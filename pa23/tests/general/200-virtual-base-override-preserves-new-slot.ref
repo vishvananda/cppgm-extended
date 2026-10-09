@@ -25,7 +25,7 @@ global @__rtti_struct_D [binding=weak, object=_ZTI1D] = {
   ptr addr @__rtti_struct_V
   i64 -8189
 }
-global @D__vtable [binding=strong, object=_ZTV1D] = {
+global @D__vtable [storage=readonly, binding=strong, object=_ZTV1D] = {
   i64 0
   i64 0
   i64 0
@@ -33,7 +33,7 @@ global @D__vtable [binding=strong, object=_ZTV1D] = {
   ptr addr @D__tag
   ptr addr @D__id
 }
-global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
+global @D____vtt [storage=readonly, binding=weak, object=_ZTT1D, object_root=yes] = {
   ptr addr @D__vtable + 32
   ptr addr @D__vtable + 32
 }

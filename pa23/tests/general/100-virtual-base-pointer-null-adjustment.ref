@@ -67,27 +67,27 @@ global @__rtti_struct_Object [binding=weak, object=_ZTI6Object] = {
   ptr addr @__rtti_struct_Virtual
   i64 -6141
 }
-global @Virtual__vtable [binding=weak, object=_ZTV7Virtual] = {
+global @Virtual__vtable [storage=readonly, binding=weak, object=_ZTV7Virtual] = {
   i64 0
   ptr addr @__rtti_struct_Virtual
   ptr addr @Virtual___Virtual
   ptr addr @Virtual___Virtual__deleting_entry
 }
-global @Object__vtable [binding=weak, object=_ZTV6Object] = {
+global @Object__vtable [storage=readonly, binding=weak, object=_ZTV6Object] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_Object
   ptr addr @Object___Object
   ptr addr @Object___Object__deleting_entry
 }
-global @Object____view__Virtual__16__vtable [binding=internal, object=@Object____view__Virtual__16__vtable] = {
+global @Object____view__Virtual__16__vtable [storage=readonly, binding=internal, object=@Object____view__Virtual__16__vtable] = {
   i64 -16
   i64 -16
   ptr addr @__rtti_struct_Object
   ptr addr @_Object___Object__vtable_virtual_adjust_n24__return_pos0
   ptr addr @_Object___Object__deleting_entry__vtable_virtual_adjust_n24__return_pos0
 }
-global @Object____vtt [binding=weak, object=_ZTT6Object, object_root=yes] = {
+global @Object____vtt [storage=readonly, binding=weak, object=_ZTT6Object, object_root=yes] = {
   ptr addr @Object__vtable + 24
   ptr addr @Object____view__Virtual__16__vtable + 24
 }
@@ -358,13 +358,12 @@ function @Object___Object__base_entry(%this : ptr [object_bytes=32], %__vtt : pt
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
-    %t4 = load typed ptr %__vtt
-    %t5 = index i8 %t4, -24
-    %t6 = load typed i64 %t5
-    %t7 = index i8 %t3, %t6
-    %t8 = index i8 %__vtt, 8
-    %t9 = load typed ptr %t8
-    store typed ptr %t9, %t7
+    %t4 = index i8 %t2, -24
+    %t5 = load typed i64 %t4
+    %t6 = index i8 %t3, %t5
+    %t7 = index i8 %__vtt, 8
+    %t8 = load typed ptr %t7
+    store typed ptr %t8, %t6
     return void
 }
 function @Object___Object__deleting_entry(%this : ptr) -> void [binding=weak, object=_ZN6ObjectD0Ev] {

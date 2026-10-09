@@ -33,12 +33,12 @@ global @__rtti_struct_OStream [binding=weak, object=_ZTI7OStream] = {
   ptr addr @__rtti_struct_IOS
   i64 -6141
 }
-global @OStream__vtable [binding=weak, object=_ZTV7OStream] = {
+global @OStream__vtable [storage=readonly, binding=weak, object=_ZTV7OStream] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_OStream
 }
-global @OStream____vtt [binding=weak, object=_ZTT7OStream, object_root=yes] = {
+global @OStream____vtt [storage=readonly, binding=weak, object=_ZTT7OStream, object_root=yes] = {
   ptr addr @OStream__vtable + 24
 }
 

@@ -76,33 +76,33 @@ global @__rtti_struct_implementation [binding=weak, object=_ZTI14implementation]
   ptr addr @__typeinfo_name__struct_implementation
   ptr addr @__rtti_struct_interface
 }
-global @left__vtable [binding=weak, object=_ZTV4left] = {
+global @left__vtable [storage=readonly, binding=weak, object=_ZTV4left] = {
   i64 0
   ptr addr @__rtti_struct_left
   ptr addr @__cxa_pure_virtual
 }
-global @right__vtable [binding=weak, object=_ZTV5right] = {
+global @right__vtable [storage=readonly, binding=weak, object=_ZTV5right] = {
   i64 0
   ptr addr @__rtti_struct_right
   ptr addr @__cxa_pure_virtual
 }
-global @interface__vtable [binding=weak, object=_ZTV9interface] = {
+global @interface__vtable [storage=readonly, binding=weak, object=_ZTV9interface] = {
   i64 0
   ptr addr @__rtti_struct_interface
   ptr addr @__cxa_pure_virtual
 }
-global @interface____view__right__8__vtable [binding=internal, object=@interface____view__right__8__vtable] = {
+global @interface____view__right__8__vtable [storage=readonly, binding=internal, object=@interface____view__right__8__vtable] = {
   i64 -8
   ptr addr @__rtti_struct_interface
   ptr addr @__cxa_pure_virtual
 }
-global @implementation__vtable [binding=weak, object=_ZTV14implementation] = {
+global @implementation__vtable [storage=readonly, binding=weak, object=_ZTV14implementation] = {
   i64 0
   ptr addr @__rtti_struct_implementation
   ptr addr @implementation__first
   ptr addr @implementation__second
 }
-global @implementation____view__right__8__vtable [binding=internal, object=@implementation____view__right__8__vtable] = {
+global @implementation____view__right__8__vtable [storage=readonly, binding=internal, object=@implementation____view__right__8__vtable] = {
   i64 -8
   ptr addr @__rtti_struct_implementation
   ptr addr @_implementation__second__vtable_return_adjust__this_neg8__return_pos0

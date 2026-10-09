@@ -38,23 +38,23 @@ global @__rtti_struct_D [binding=weak, object=_ZTI1D] = {
   ptr addr @__rtti_struct_B2
   i64 2050
 }
-global @B1__vtable [binding=weak, object=_ZTV2B1] = {
+global @B1__vtable [storage=readonly, binding=weak, object=_ZTV2B1] = {
   i64 0
   ptr addr @__rtti_struct_B1
   ptr addr @B1__anchor
 }
-global @B2__vtable [binding=weak, object=_ZTV2B2] = {
+global @B2__vtable [storage=readonly, binding=weak, object=_ZTV2B2] = {
   i64 0
   ptr addr @__rtti_struct_B2
   ptr addr @__cxa_pure_virtual
 }
-global @D__vtable [binding=weak, object=_ZTV1D] = {
+global @D__vtable [storage=readonly, binding=weak, object=_ZTV1D] = {
   i64 0
   ptr addr @__rtti_struct_D
   ptr addr @B1__anchor
   ptr addr @D__current
 }
-global @D____view__B2__8__vtable [binding=internal, object=@D____view__B2__8__vtable] = {
+global @D____view__B2__8__vtable [storage=readonly, binding=internal, object=@D____view__B2__8__vtable] = {
   i64 -8
   ptr addr @__rtti_struct_D
   ptr addr @_D__current__vtable_return_adjust__this_neg8__return_pos0

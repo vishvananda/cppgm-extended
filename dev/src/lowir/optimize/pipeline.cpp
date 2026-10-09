@@ -1890,8 +1890,16 @@ void promote_after_late_inlining(LowirProgram * program, Function * function,
                                  Stats * stats,
                                  SimplifyScratch * simplify_arena,
                                  DceScratch * dce_scratch,
-                                 CleanupCfgScratch * cfg_scratch)
+                                 CleanupCfgScratch * cfg_scratch,
+                                 const ReadonlyTableIndex * tables)
 {
+  // An inlined base-object constructor's VTT reads, now from a VTT known
+  // here, become the tables and offsets they name.
+  if(tables && fold_readonly_table_loads(function, *tables, stats)) {
+    timed_function_pass(simplify_values, function, stats,
+      &Stats::simplify_runs, &Stats::simplify_nanoseconds, 0, simplify_arena);
+    timed_dce(function, boundaries, stats, dce_scratch);
+  }
   const bool promoted = timed_function_pass(promote_slots, function, stats,
       &Stats::slot_runs, &Stats::slot_nanoseconds);
   // Most rewritten callers have no surviving promotable slot: let the
@@ -1970,6 +1978,7 @@ void optimize_function_bodies(
 {
   O3UnrollBudget o3_unroll_budget;
   ReadonlyGlobalIndex readonly(program, level >= 1);
+  const ReadonlyTableIndex readonly_tables(program, level >= 1);
   for(std::size_t i = 0; i < program.functions.size(); ++i) {
     Function & function = program.functions[i];
     if(inlined_symbols[function.symbol])
@@ -2028,8 +2037,9 @@ void optimize_function_bodies(
       timed_function_pass(remove_dead_slots, &function, stats,
         &Stats::slot_runs, &Stats::slot_nanoseconds, &analysis);
     }
-    if(level >= 1 && fold_readonly_global_loads(
-         &function, readonly.known, readonly.constants, readonly.types, stats)) {
+    if(level >= 1 && (fold_readonly_global_loads(
+         &function, readonly.known, readonly.constants, readonly.types, stats) |
+         fold_readonly_table_loads(&function, readonly_tables, stats))) {
       timed_function_pass(simplify_values, &function, stats,
         &Stats::simplify_runs, &Stats::simplify_nanoseconds, &analysis,
         &simplify_arena);
@@ -2268,6 +2278,7 @@ void finish_optimizer_pipeline(
     if(stats)
       stats->late_inline_direct_edges = late_call_graph.edges.size();
     std::vector<unsigned char> late_rewritten_symbols(program.symbol_names.size(), 0);
+    const ReadonlyTableIndex late_tables(program, true);
     LateInlineCleanupContext cleanup_context = {
       &boundaries, &program, &simplify_arena, &dce_scratch, &cfg_scratch};
     InlineCleanup cleanup;
@@ -2280,7 +2291,7 @@ void finish_optimizer_pipeline(
       if(late_rewritten_symbols[program.functions[i].symbol]) {
         inlined_symbols[program.functions[i].symbol] = 1;
         promote_after_late_inlining(&program, &program.functions[i], boundaries, stats,
-          &simplify_arena, &dce_scratch, &cfg_scratch);
+          &simplify_arena, &dce_scratch, &cfg_scratch, &late_tables);
       }
     for(std::size_t i = 0; i < program.functions.size(); ++i)
     if(stats) {
@@ -2331,7 +2342,7 @@ void finish_optimizer_pipeline(
             &program.functions[i], boundaries, stats, &simplify_arena,
             &dce_scratch, &cfg_scratch);
           promote_after_late_inlining(&program, &program.functions[i], boundaries, stats, &simplify_arena,
-            &dce_scratch, &cfg_scratch);
+            &dce_scratch, &cfg_scratch, 0);
         }
       const std::size_t prior_pruned = pruning.pruned_functions;
       const std::size_t prior_unreachable_weak =
@@ -2386,7 +2397,7 @@ void finish_optimizer_pipeline(
           &program.functions[i], noreturn_symbols, boundaries, stats,
           &simplify_arena, &dce_scratch, &cfg_scratch);
         promote_after_late_inlining(&program, &program.functions[i], boundaries, stats, &simplify_arena,
-          &dce_scratch, &cfg_scratch);
+          &dce_scratch, &cfg_scratch, 0);
       }
 
     const std::chrono::steady_clock::time_point grouped_started = stats ?

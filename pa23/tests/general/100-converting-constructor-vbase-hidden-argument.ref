@@ -30,12 +30,12 @@ global @__rtti_struct_Stream [binding=weak, object=_ZTI6Stream] = {
   ptr addr @__rtti_struct_IOS
   i64 -6141
 }
-global @Stream__vtable [binding=weak, object=_ZTV6Stream] = {
+global @Stream__vtable [storage=readonly, binding=weak, object=_ZTV6Stream] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Stream
 }
-global @Stream____vtt [binding=weak, object=_ZTT6Stream, object_root=yes] = {
+global @Stream____vtt [storage=readonly, binding=weak, object=_ZTT6Stream, object_root=yes] = {
   ptr addr @Stream__vtable + 24
 }
 

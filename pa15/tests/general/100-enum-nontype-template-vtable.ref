@@ -30,7 +30,7 @@ global @__rtti_struct___cppgm_class_template_identity_0_0_0 [binding=weak, objec
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct___cppgm_class_template_identity_0_0_0
 }
-global @__cppgm_class_template_identity_0_0_0__vtable [binding=weak, object=_ZTV7ControlIiL6Policy2EE] = {
+global @__cppgm_class_template_identity_0_0_0__vtable [storage=readonly, binding=weak, object=_ZTV7ControlIiL6Policy2EE] = {
   i64 0
   ptr addr @__rtti_struct___cppgm_class_template_identity_0_0_0
   ptr addr @Control_int___Policy_2____Control

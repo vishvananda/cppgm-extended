@@ -54,25 +54,25 @@ global @__rtti_struct_StringStream [binding=weak, object=_ZTI12StringStream] = {
   ptr addr @__typeinfo_name__struct_StringStream
   ptr addr @__rtti_struct_OStream
 }
-global @OStream__vtable [binding=weak, object=_ZTV7OStream] = {
+global @OStream__vtable [storage=readonly, binding=weak, object=_ZTV7OStream] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_OStream
 }
-global @OStream____vtt [binding=weak, object=_ZTT7OStream, object_root=yes] = {
+global @OStream____vtt [storage=readonly, binding=weak, object=_ZTT7OStream, object_root=yes] = {
   ptr addr @OStream__vtable + 24
 }
-global @StringStream__vtable [binding=weak, object=_ZTV12StringStream] = {
+global @StringStream__vtable [storage=readonly, binding=weak, object=_ZTV12StringStream] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_StringStream
 }
-global @StringStream____construction__OStream__0__s0__vtable [binding=internal, object=_ZTC12StringStream0_7OStream] = {
+global @StringStream____construction__OStream__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC12StringStream0_7OStream] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_OStream
 }
-global @StringStream____vtt [binding=weak, object=_ZTT12StringStream, object_root=yes] = {
+global @StringStream____vtt [storage=readonly, binding=weak, object=_ZTT12StringStream, object_root=yes] = {
   ptr addr @StringStream__vtable + 24
   ptr addr @StringStream____construction__OStream__0__s0__vtable + 24
 }

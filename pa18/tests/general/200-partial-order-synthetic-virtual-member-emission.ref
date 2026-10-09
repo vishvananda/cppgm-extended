@@ -17,7 +17,7 @@ global @__rtti_struct___cppgm_class_template_identity_1_1_0 [binding=weak, objec
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct___cppgm_class_template_identity_1_1_0
 }
-global @__cppgm_class_template_identity_1_1_0__vtable [binding=weak, object=_ZTV5cacheIKiE] = {
+global @__cppgm_class_template_identity_1_1_0__vtable [storage=readonly, binding=weak, object=_ZTV5cacheIKiE] = {
   i64 0
   ptr addr @__rtti_struct___cppgm_class_template_identity_1_1_0
   ptr addr @cache_int_const___fill

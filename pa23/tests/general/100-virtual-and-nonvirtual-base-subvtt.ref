@@ -69,137 +69,137 @@ global @__rtti_struct_Outer [binding=weak, object=_ZTI5Outer] = {
   ptr addr @__rtti_struct_Root
   i64 -8189
 }
-global @Root__vtable [binding=weak, object=_ZTV4Root] = {
+global @Root__vtable [storage=readonly, binding=weak, object=_ZTV4Root] = {
   i64 0
   ptr addr @__rtti_struct_Root
   ptr addr @Root__id
 }
-global @Inner__vtable [binding=weak, object=_ZTV5Inner] = {
+global @Inner__vtable [storage=readonly, binding=weak, object=_ZTV5Inner] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Inner
   ptr addr @Inner__id
 }
-global @Inner____view__Root__8__vtable [binding=internal, object=@Inner____view__Root__8__vtable] = {
+global @Inner____view__Root__8__vtable [storage=readonly, binding=internal, object=@Inner____view__Root__8__vtable] = {
   i64 -8
   i64 -8
   ptr addr @__rtti_struct_Inner
   ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Inner____vtt [binding=weak, object=_ZTT5Inner, object_root=yes] = {
+global @Inner____vtt [storage=readonly, binding=weak, object=_ZTT5Inner, object_root=yes] = {
   ptr addr @Inner__vtable + 24
   ptr addr @Inner____view__Root__8__vtable + 24
 }
-global @Left__vtable [binding=weak, object=_ZTV4Left] = {
+global @Left__vtable [storage=readonly, binding=weak, object=_ZTV4Left] = {
   i64 24
   i64 16
   i64 0
   ptr addr @__rtti_struct_Left
   ptr addr @Root__id
 }
-global @Left____view__Inner__16__vtable [binding=internal, object=@Left____view__Inner__16__vtable] = {
+global @Left____view__Inner__16__vtable [storage=readonly, binding=internal, object=@Left____view__Inner__16__vtable] = {
   i64 0
   i64 8
   i64 -16
   ptr addr @__rtti_struct_Left
   ptr addr @Inner__id
 }
-global @Left____view__Root__24__vtable [binding=internal, object=@Left____view__Root__24__vtable] = {
+global @Left____view__Root__24__vtable [storage=readonly, binding=internal, object=@Left____view__Root__24__vtable] = {
   i64 -8
   i64 -24
   ptr addr @__rtti_struct_Left
   ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Left____construction__Inner__16__s0__vtable [binding=internal, object=_ZTC4Left16_5Inner] = {
+global @Left____construction__Inner__16__s0__vtable [storage=readonly, binding=internal, object=_ZTC4Left16_5Inner] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Inner
   ptr addr @Inner__id
 }
-global @Left____construction__Inner__16__s1__vtable [binding=internal, object=@Left____construction__Inner__16__s1__vtable] = {
+global @Left____construction__Inner__16__s1__vtable [storage=readonly, binding=internal, object=@Left____construction__Inner__16__s1__vtable] = {
   i64 -8
   i64 -8
   ptr addr @__rtti_struct_Inner
   ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Left____vtt [binding=weak, object=_ZTT4Left, object_root=yes] = {
+global @Left____vtt [storage=readonly, binding=weak, object=_ZTT4Left, object_root=yes] = {
   ptr addr @Left__vtable + 32
   ptr addr @Left____view__Inner__16__vtable + 32
   ptr addr @Left____view__Root__24__vtable + 24
   ptr addr @Left____construction__Inner__16__s0__vtable + 24
   ptr addr @Left____construction__Inner__16__s1__vtable + 24
 }
-global @Outer__vtable [binding=weak, object=_ZTV5Outer] = {
+global @Outer__vtable [storage=readonly, binding=weak, object=_ZTV5Outer] = {
   i64 40
   i64 32
   i64 0
   ptr addr @__rtti_struct_Outer
   ptr addr @Outer__id
 }
-global @Outer____view__Inner__16__vtable [binding=internal, object=@Outer____view__Inner__16__vtable] = {
+global @Outer____view__Inner__16__vtable [storage=readonly, binding=internal, object=@Outer____view__Inner__16__vtable] = {
   i64 24
   i64 -16
   ptr addr @__rtti_struct_Outer
   ptr addr @_Outer__id__vtable_return_adjust__this_neg16__return_pos0
 }
-global @Outer____view__Inner__32__vtable [binding=internal, object=@Outer____view__Inner__32__vtable] = {
+global @Outer____view__Inner__32__vtable [storage=readonly, binding=internal, object=@Outer____view__Inner__32__vtable] = {
   i64 -32
   i64 8
   i64 -32
   ptr addr @__rtti_struct_Outer
   ptr addr @_Outer__id__vtable_virtual_adjust_n32__return_pos0
 }
-global @Outer____view__Root__40__vtable [binding=internal, object=@Outer____view__Root__40__vtable] = {
+global @Outer____view__Root__40__vtable [storage=readonly, binding=internal, object=@Outer____view__Root__40__vtable] = {
   i64 -40
   i64 -40
   ptr addr @__rtti_struct_Outer
   ptr addr @_Outer__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Outer____construction__Left__0__s0__vtable [binding=internal, object=_ZTC5Outer0_4Left] = {
+global @Outer____construction__Left__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC5Outer0_4Left] = {
   i64 40
   i64 32
   i64 0
   ptr addr @__rtti_struct_Left
   ptr addr @Root__id
 }
-global @Outer____construction__Left__0__s1__vtable [binding=internal, object=@Outer____construction__Left__0__s1__vtable] = {
+global @Outer____construction__Left__0__s1__vtable [storage=readonly, binding=internal, object=@Outer____construction__Left__0__s1__vtable] = {
   i64 0
   i64 8
   i64 -32
   ptr addr @__rtti_struct_Left
   ptr addr @Inner__id
 }
-global @Outer____construction__Left__0__s2__vtable [binding=internal, object=@Outer____construction__Left__0__s2__vtable] = {
+global @Outer____construction__Left__0__s2__vtable [storage=readonly, binding=internal, object=@Outer____construction__Left__0__s2__vtable] = {
   i64 -8
   i64 -40
   ptr addr @__rtti_struct_Left
   ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Outer____construction__Inner__16__s0__vtable [binding=internal, object=_ZTC5Outer16_5Inner] = {
+global @Outer____construction__Inner__16__s0__vtable [storage=readonly, binding=internal, object=_ZTC5Outer16_5Inner] = {
   i64 24
   i64 0
   ptr addr @__rtti_struct_Inner
   ptr addr @Inner__id
 }
-global @Outer____construction__Inner__16__s1__vtable [binding=internal, object=@Outer____construction__Inner__16__s1__vtable] = {
+global @Outer____construction__Inner__16__s1__vtable [storage=readonly, binding=internal, object=@Outer____construction__Inner__16__s1__vtable] = {
   i64 -24
   i64 -24
   ptr addr @__rtti_struct_Inner
   ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Outer____construction__Inner__32__s0__vtable [binding=internal, object=_ZTC5Outer32_5Inner] = {
+global @Outer____construction__Inner__32__s0__vtable [storage=readonly, binding=internal, object=_ZTC5Outer32_5Inner] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Inner
   ptr addr @Inner__id
 }
-global @Outer____construction__Inner__32__s1__vtable [binding=internal, object=@Outer____construction__Inner__32__s1__vtable] = {
+global @Outer____construction__Inner__32__s1__vtable [storage=readonly, binding=internal, object=@Outer____construction__Inner__32__s1__vtable] = {
   i64 -8
   i64 -8
   ptr addr @__rtti_struct_Inner
   ptr addr @_Inner__id__vtable_virtual_adjust_n24__return_pos0
 }
-global @Outer____vtt [binding=weak, object=_ZTT5Outer, object_root=yes] = {
+global @Outer____vtt [storage=readonly, binding=weak, object=_ZTT5Outer, object_root=yes] = {
   ptr addr @Outer__vtable + 32
   ptr addr @Outer____construction__Left__0__s0__vtable + 32
   ptr addr @Outer____construction__Left__0__s1__vtable + 32
@@ -395,33 +395,29 @@ function @Inner__Inner__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) 
     %t2 = load typed ptr %__vtt
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
-    %t4 = load typed ptr %__vtt
-    %t5 = index i8 %t4, -24
-    %t6 = load typed i64 %t5
-    %t7 = index i8 %t3, %t6
-    %t8 = index i8 %__vtt, 8
-    %t9 = load typed ptr %t8
-    store typed ptr %t9, %t7
-    %t10 = load typed ptr $this
-    %t11 = load typed ptr %__vtt
-    %t12 = index i8 %t11, -24
-    %t13 = load typed i64 %t12
-    %t14 = index i8 %t10, %t13
-    %t15 = index i8 %t14, 0
-    %t16 = index i8 [projection=field] %t15, 8
-    %t17 = load typed i32 %t16
-    %t18 = binary mul nowrap i32 %t17, 10
-    %t19 = load typed ptr $this
-    %t20 = load typed ptr %t19
-    %t21 = load typed ptr %t20
-    %t22 = call i32 %t21(%t19) as (%arg0 : ptr [object_bytes=24]) -> i32
-    %t23 = binary add nowrap i32 %t18, %t22
-    %t24 = addr @seen
-    %t25 = load typed i32 @count
-    %t26 = binary add nowrap i32 %t25, 1
-    store typed i32 %t26, @count
-    %t27 = index i32 [projection=array_element] %t24, %t25
-    store typed i32 %t23, %t27
+    %t4 = index i8 %t2, -24
+    %t5 = load typed i64 %t4
+    %t6 = index i8 %t3, %t5
+    %t7 = index i8 %__vtt, 8
+    %t8 = load typed ptr %t7
+    store typed ptr %t8, %t6
+    %t9 = load typed ptr $this
+    %t10 = index i8 %t9, %t5
+    %t11 = index i8 %t10, 0
+    %t12 = index i8 [projection=field] %t11, 8
+    %t13 = load typed i32 %t12
+    %t14 = binary mul nowrap i32 %t13, 10
+    %t15 = load typed ptr $this
+    %t16 = load typed ptr %t15
+    %t17 = load typed ptr %t16
+    %t18 = call i32 %t17(%t15) as (%arg0 : ptr [object_bytes=24]) -> i32
+    %t19 = binary add nowrap i32 %t14, %t18
+    %t20 = addr @seen
+    %t21 = load typed i32 @count
+    %t22 = binary add nowrap i32 %t21, 1
+    store typed i32 %t22, @count
+    %t23 = index i32 [projection=array_element] %t20, %t21
+    store typed i32 %t19, %t23
     return void
 }
 function @Inner__Inner(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN5InnerC1Ev, inline_hint=yes] {
@@ -479,21 +475,19 @@ function @Left__Left__base_entry(%this : ptr [object_bytes=40], %__vtt : ptr) ->
     %t4 = load typed ptr %__vtt
     store typed ptr %t4, %t3
     %t5 = load typed ptr $this
-    %t6 = load typed ptr %__vtt
-    %t7 = index i8 %t6, -24
-    %t8 = load typed i64 %t7
-    %t9 = index i8 %t5, %t8
-    %t10 = index i8 %__vtt, 8
-    %t11 = load typed ptr %t10
-    store typed ptr %t11, %t9
-    %t12 = load typed ptr $this
-    %t13 = load typed ptr %__vtt
-    %t14 = index i8 %t13, -32
-    %t15 = load typed i64 %t14
-    %t16 = index i8 %t12, %t15
-    %t17 = index i8 %__vtt, 16
-    %t18 = load typed ptr %t17
-    store typed ptr %t18, %t16
+    %t6 = index i8 %t4, -24
+    %t7 = load typed i64 %t6
+    %t8 = index i8 %t5, %t7
+    %t9 = index i8 %__vtt, 8
+    %t10 = load typed ptr %t9
+    store typed ptr %t10, %t8
+    %t11 = load typed ptr $this
+    %t12 = index i8 %t4, -32
+    %t13 = load typed i64 %t12
+    %t14 = index i8 %t11, %t13
+    %t15 = index i8 %__vtt, 16
+    %t16 = load typed ptr %t15
+    store typed ptr %t16, %t14
     return void
 }
 function @_Inner__id__vtable_virtual_adjust_n24__return_pos0(%arg0 : ptr) -> i32 [binding=weak, object=_ZTv0_n24_N5Inner2idEv] {

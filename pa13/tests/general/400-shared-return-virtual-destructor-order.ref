@@ -14,7 +14,7 @@ global @__rtti_struct_Base [binding=weak, object=_ZTI4Base] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_Base
 }
-global @Base__vtable [binding=weak, object=_ZTV4Base] = {
+global @Base__vtable [storage=readonly, binding=weak, object=_ZTV4Base] = {
   i64 0
   ptr addr @__rtti_struct_Base
   ptr addr @Base___Base

@@ -843,6 +843,183 @@ bool fold_readonly_byte_string_table_lengths(
   return changed;
 }
 
+ReadonlyTableIndex::ReadonlyTableIndex(
+    const lowir_model::LowirProgram & program, bool populate)
+  : table_of(program.symbol_names.size(), -1)
+{
+  if(!populate) return;
+  for(std::size_t i = 0; i < program.globals.size(); ++i) {
+    const lowir_model::GlobalDefinition & global = program.globals[i];
+    if(!global.structured || global.metadata.replaceable ||
+       global.storage != lowir_model::GSM_READONLY ||
+       static_cast<std::uint32_t>(global.symbol) >= table_of.size()) continue;
+    std::vector<Item> items;
+    std::uint64_t offset = 0;
+    bool valid = true;
+    for(std::size_t j = 0; valid && j < global.data_items.size(); ++j) {
+      const lowir_model::GlobalDefinition::DataItem & item =
+        global.data_items[j];
+      std::uint64_t size = item.kind ==
+        lowir_model::GlobalDefinition::DataItem::ITEM_ZERO ? item.zero_bytes :
+        item.kind == lowir_model::GlobalDefinition::DataItem::ITEM_ADDR ? 8 :
+        item.type.storage_size;
+      if(item.kind == lowir_model::GlobalDefinition::DataItem::ITEM_INTEGER &&
+         (item.literal_operand.kind != Operand::OP_INTEGER ||
+          !item.literal_operand.has_int_value))
+        valid = false;
+      const Item entry = {offset, size, &item};
+      items.push_back(entry);
+      offset += size;
+    }
+    if(!valid) continue;
+    table_of[global.symbol] = static_cast<std::int32_t>(tables.size());
+    tables.push_back(items);
+  }
+}
+
+const lowir_model::GlobalDefinition::DataItem * ReadonlyTableIndex::find(
+    lowir_model::SymbolId symbol, std::uint64_t offset,
+    std::uint64_t size) const
+{
+  const std::uint32_t id = symbol;
+  if(id >= table_of.size() || table_of[id] < 0) return 0;
+  const std::vector<Item> & items = tables[static_cast<std::size_t>(table_of[id])];
+  for(std::size_t i = 0; i < items.size(); ++i)
+    if(items[i].offset == offset && items[i].size == size &&
+       items[i].item->kind !=
+         lowir_model::GlobalDefinition::DataItem::ITEM_ZERO)
+      return items[i].item;
+  return 0;
+}
+
+namespace {
+
+// The table and constant byte offset an address operand denotes, through
+// `addr`, constant `index` and `copy` definitions.
+bool resolve_table_address(const Operand & operand,
+    const std::vector<const Instruction *> & definitions,
+    lowir_model::SymbolId * symbol, std::int64_t * offset, int depth = 0)
+{
+  if(depth > 16) return false;
+  if(operand.kind == Operand::OP_GLOBAL) {
+    *symbol = operand.symbol;
+    *offset = 0;
+    return true;
+  }
+  if(operand.kind != Operand::OP_TEMP) return false;
+  const std::uint32_t value = operand.value;
+  if(value >= definitions.size() || !definitions[value]) return false;
+  const Instruction & definition = *definitions[value];
+  if(definition.kind == Instruction::IK_ADDR)
+    return resolve_table_address(definition.first, definitions, symbol, offset,
+      depth + 1);
+  if(definition.kind == Instruction::IK_COPY)
+    return resolve_table_address(definition.first, definitions, symbol, offset,
+      depth + 1);
+  if(definition.kind != Instruction::IK_INDEX ||
+     definition.second.kind != Operand::OP_INTEGER ||
+     !definition.second.has_int_value ||
+     definition.second.int_high != (definition.second.int_value < 0 ?
+       ~std::uint64_t(0) : 0) ||
+     definition.type.storage_size == 0 ||
+     !resolve_table_address(definition.first, definitions, symbol, offset,
+       depth + 1)) return false;
+  *offset += definition.second.int_value *
+    static_cast<std::int64_t>(definition.type.storage_size);
+  return true;
+}
+
+}  // namespace
+
+bool fold_readonly_table_loads(Function * function,
+                               const ReadonlyTableIndex & index, Stats * stats)
+{
+  if(index.tables.empty()) return false;
+  bool changed = false;
+  // Rewritten in place, a load stays its value's definition; an inserted
+  // instruction moves the block's others, so the definitions are rebuilt.
+  for(bool rebuild = true; rebuild;) {
+    rebuild = false;
+    std::vector<const Instruction *> definitions;
+    for(std::size_t block = 0; block < function->blocks.size(); ++block)
+      for(std::size_t i = 0; i < function->blocks[block].instructions.size(); ++i) {
+        const Instruction & ins = function->blocks[block].instructions[i];
+        if(!ins.dest.valid()) continue;
+        const std::uint32_t value = ins.dest;
+        if(definitions.size() <= value) definitions.resize(value + 1, 0);
+        definitions[value] = &ins;
+      }
+    for(std::size_t block = 0; block < function->blocks.size(); ++block) {
+      std::vector<Instruction> & instructions = function->blocks[block].instructions;
+      for(std::size_t i = 0; i < instructions.size(); ++i) {
+        Instruction & ins = instructions[i];
+        lowir_model::SymbolId symbol;
+        std::int64_t offset = 0;
+        if(ins.kind != Instruction::IK_LOAD || ins.volatile_access ||
+           !ins.dest.valid() ||
+           !resolve_table_address(ins.first, definitions, &symbol, &offset) ||
+           offset < 0) continue;
+        const lowir_model::GlobalDefinition::DataItem * item = index.find(
+          symbol, static_cast<std::uint64_t>(offset), ins.type.storage_size);
+        if(!item) continue;
+        if(item->kind ==
+             lowir_model::GlobalDefinition::DataItem::ITEM_INTEGER) {
+          if(ins.type.kind == lowir_model::LTK_PTR ||
+             ins.type.kind == lowir_model::LTK_F32 ||
+             ins.type.kind == lowir_model::LTK_F64 ||
+             ins.type.kind == lowir_model::LTK_OBJECT) continue;
+          ins.kind = Instruction::IK_CONST;
+          ins.first = item->literal_operand;
+          ins.first.literal_type = ins.type;
+          ins.second = Operand();
+        } else {
+          if(ins.type.kind != lowir_model::LTK_PTR) continue;
+          Operand target;
+          target.kind = Operand::OP_GLOBAL;
+          target.symbol = item->symbol_id;
+          if(item->addr_addend == 0) {
+            ins.kind = Instruction::IK_ADDR;
+            ins.first = target;
+            ins.second = Operand();
+          } else {
+            Instruction address;
+            address.kind = Instruction::IK_ADDR;
+            address.dest = lowir_model::append_lowir_fresh_generated_value(
+              *function, ins.type);
+            address.first = target;
+            address.debug_location = ins.debug_location;
+            Operand base;
+            base.kind = Operand::OP_TEMP;
+            base.value = address.dest;
+            Operand addend;
+            addend.kind = Operand::OP_INTEGER;
+            addend.has_int_value = true;
+            addend.int_value = item->addr_addend;
+            addend.int_high = item->addr_addend < 0 ? ~std::uint64_t(0) : 0;
+            addend.literal_type.kind = lowir_model::LTK_I64;
+            addend.literal_type.storage_size = 8;
+            addend.literal_type.alignment = 8;
+            ins.kind = Instruction::IK_INDEX;
+            ins.type.kind = lowir_model::LTK_I8;
+            ins.type.storage_size = 1;
+            ins.type.alignment = 1;
+            ins.first = base;
+            ins.second = addend;
+            instructions.insert(instructions.begin() +
+              static_cast<std::ptrdiff_t>(i), address);
+            rebuild = true;
+          }
+        }
+        changed = true;
+        if(stats) ++stats->rewrites;
+        if(rebuild) break;
+      }
+      if(rebuild) break;
+    }
+  }
+  return changed;
+}
+
 bool fold_readonly_global_loads(Function * function,
     const std::vector<unsigned char> & readonly_known,
     const std::vector<Operand> & readonly_constants,

@@ -93,32 +93,32 @@ global @__rtti_struct_Combined [binding=weak, object=_ZTI8Combined] = {
   ptr addr @__rtti_struct_Derived2
   i64 2050
 }
-global @Abstract__vtable [binding=weak, object=_ZTV8Abstract] = {
+global @Abstract__vtable [storage=readonly, binding=weak, object=_ZTV8Abstract] = {
   i64 0
   ptr addr @__rtti_struct_Abstract
   ptr addr @__cxa_pure_virtual
 }
-global @Derived1__vtable [binding=weak, object=_ZTV8Derived1] = {
+global @Derived1__vtable [storage=readonly, binding=weak, object=_ZTV8Derived1] = {
   i64 0
   ptr addr @__rtti_struct_Derived1
   ptr addr @Derived1__f
 }
-global @Abstract2__vtable [binding=weak, object=_ZTV9Abstract2] = {
+global @Abstract2__vtable [storage=readonly, binding=weak, object=_ZTV9Abstract2] = {
   i64 0
   ptr addr @__rtti_struct_Abstract2
   ptr addr @__cxa_pure_virtual
 }
-global @Derived2__vtable [binding=weak, object=_ZTV8Derived2] = {
+global @Derived2__vtable [storage=readonly, binding=weak, object=_ZTV8Derived2] = {
   i64 0
   ptr addr @__rtti_struct_Derived2
   ptr addr @Derived2__f
 }
-global @Combined__vtable [binding=weak, object=_ZTV8Combined] = {
+global @Combined__vtable [storage=readonly, binding=weak, object=_ZTV8Combined] = {
   i64 0
   ptr addr @__rtti_struct_Combined
   ptr addr @Derived1__f
 }
-global @Combined____view__Derived2__8__vtable [binding=internal, object=@Combined____view__Derived2__8__vtable] = {
+global @Combined____view__Derived2__8__vtable [storage=readonly, binding=internal, object=@Combined____view__Derived2__8__vtable] = {
   i64 -8
   ptr addr @__rtti_struct_Combined
   ptr addr @Derived2__f

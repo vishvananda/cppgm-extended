@@ -60,34 +60,34 @@ global @__rtti_struct_Pair [binding=weak, object=_ZTI4Pair] = {
   ptr addr @__rtti_struct_Lane
   i64 2
 }
-global @Value__vtable [binding=weak, object=_ZTV5Value] = {
+global @Value__vtable [storage=readonly, binding=weak, object=_ZTV5Value] = {
   i64 0
   ptr addr @__rtti_struct_Value
   ptr addr @Value__get
 }
-global @Shell__vtable [binding=weak, object=_ZTV5Shell] = {
+global @Shell__vtable [storage=readonly, binding=weak, object=_ZTV5Shell] = {
   i64 0
   ptr addr @__rtti_struct_Shell
   ptr addr @Shell__get
 }
-global @Lane__vtable [binding=weak, object=_ZTV4Lane] = {
+global @Lane__vtable [storage=readonly, binding=weak, object=_ZTV4Lane] = {
   i64 0
   ptr addr @__rtti_struct_Lane
   ptr addr @Value__get
 }
-global @Pair__vtable [binding=weak, object=_ZTV4Pair] = {
+global @Pair__vtable [storage=readonly, binding=weak, object=_ZTV4Pair] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_Pair
   ptr addr @Value__get
 }
-global @Pair____view__Shell__16__vtable [binding=internal, object=@Pair____view__Shell__16__vtable] = {
+global @Pair____view__Shell__16__vtable [storage=readonly, binding=internal, object=@Pair____view__Shell__16__vtable] = {
   i64 0
   i64 -16
   ptr addr @__rtti_struct_Pair
   ptr addr @Shell__get
 }
-global @Pair____vtt [binding=weak, object=_ZTT4Pair, object_root=yes] = {
+global @Pair____vtt [storage=readonly, binding=weak, object=_ZTT4Pair, object_root=yes] = {
   ptr addr @Pair__vtable + 24
   ptr addr @Pair____view__Shell__16__vtable + 24
 }

@@ -55,43 +55,43 @@ global @__rtti_class_YD [binding=weak, object=_ZTI2YD] = {
   ptr addr @__rtti_class_YC
   i64 2050
 }
-global @YB__vtable [binding=weak, object=_ZTV2YB] = {
+global @YB__vtable [storage=readonly, binding=weak, object=_ZTV2YB] = {
   i64 8
   i64 0
   ptr addr @__rtti_class_YB
 }
-global @YB____vtt [binding=weak, object=_ZTT2YB, object_root=yes] = {
+global @YB____vtt [storage=readonly, binding=weak, object=_ZTT2YB, object_root=yes] = {
   ptr addr @YB__vtable + 24
 }
-global @YC__vtable [binding=weak, object=_ZTV2YC] = {
+global @YC__vtable [storage=readonly, binding=weak, object=_ZTV2YC] = {
   i64 12
   i64 0
   ptr addr @__rtti_class_YC
 }
-global @YC____vtt [binding=weak, object=_ZTT2YC, object_root=yes] = {
+global @YC____vtt [storage=readonly, binding=weak, object=_ZTT2YC, object_root=yes] = {
   ptr addr @YC__vtable + 24
 }
-global @YD__vtable [binding=weak, object=_ZTV2YD] = {
+global @YD__vtable [storage=readonly, binding=weak, object=_ZTV2YD] = {
   i64 20
   i64 0
   ptr addr @__rtti_class_YD
 }
-global @YD____view__YC__8__vtable [binding=internal, object=@YD____view__YC__8__vtable] = {
+global @YD____view__YC__8__vtable [storage=readonly, binding=internal, object=@YD____view__YC__8__vtable] = {
   i64 12
   i64 -8
   ptr addr @__rtti_class_YD
 }
-global @YD____construction__YB__0__s0__vtable [binding=internal, object=_ZTC2YD0_2YB] = {
+global @YD____construction__YB__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC2YD0_2YB] = {
   i64 20
   i64 0
   ptr addr @__rtti_class_YB
 }
-global @YD____construction__YC__8__s0__vtable [binding=internal, object=_ZTC2YD8_2YC] = {
+global @YD____construction__YC__8__s0__vtable [storage=readonly, binding=internal, object=_ZTC2YD8_2YC] = {
   i64 12
   i64 0
   ptr addr @__rtti_class_YC
 }
-global @YD____vtt [binding=weak, object=_ZTT2YD, object_root=yes] = {
+global @YD____vtt [storage=readonly, binding=weak, object=_ZTT2YD, object_root=yes] = {
   ptr addr @YD__vtable + 24
   ptr addr @YD____construction__YB__0__s0__vtable + 24
   ptr addr @YD____construction__YC__8__s0__vtable + 24

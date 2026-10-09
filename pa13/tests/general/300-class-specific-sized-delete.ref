@@ -16,7 +16,7 @@ global @__rtti_struct_object [binding=weak, object=_ZTI6object] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_object
 }
-global @object__vtable [binding=weak, object=_ZTV6object] = {
+global @object__vtable [storage=readonly, binding=weak, object=_ZTV6object] = {
   i64 0
   ptr addr @__rtti_struct_object
   ptr addr @object___object

@@ -78,40 +78,40 @@ global @__rtti_struct_Derived [binding=weak, object=_ZTI7Derived] = {
   ptr addr @__rtti_struct_Pair
   i64 -6141
 }
-global @Left__vtable [binding=weak, object=_ZTV4Left] = {
+global @Left__vtable [storage=readonly, binding=weak, object=_ZTV4Left] = {
   i64 0
   ptr addr @__rtti_struct_Left
   ptr addr @Left__x
 }
-global @Right__vtable [binding=weak, object=_ZTV5Right] = {
+global @Right__vtable [storage=readonly, binding=weak, object=_ZTV5Right] = {
   i64 0
   ptr addr @__rtti_struct_Right
   ptr addr @Right__y
 }
-global @Pair__vtable [binding=weak, object=_ZTV4Pair] = {
+global @Pair__vtable [storage=readonly, binding=weak, object=_ZTV4Pair] = {
   i64 0
   ptr addr @__rtti_struct_Pair
   ptr addr @Left__x
   ptr addr @Pair__y
 }
-global @Pair____view__Right__16__vtable [binding=internal, object=@Pair____view__Right__16__vtable] = {
+global @Pair____view__Right__16__vtable [storage=readonly, binding=internal, object=@Pair____view__Right__16__vtable] = {
   i64 -16
   ptr addr @__rtti_struct_Pair
   ptr addr @_Pair__y__vtable_return_adjust__this_neg16__return_pos0
 }
-global @Front__vtable [binding=weak, object=_ZTV5Front] = {
+global @Front__vtable [storage=readonly, binding=weak, object=_ZTV5Front] = {
   i64 0
   ptr addr @__rtti_struct_Front
   ptr addr @Front__w
 }
-global @Derived__vtable [binding=weak, object=_ZTV7Derived] = {
+global @Derived__vtable [storage=readonly, binding=weak, object=_ZTV7Derived] = {
   i64 16
   i64 0
   ptr addr @__rtti_struct_Derived
   ptr addr @Front__w
   ptr addr @Derived__x
 }
-global @Derived____view__Pair__16__vtable [binding=internal, object=@Derived____view__Pair__16__vtable] = {
+global @Derived____view__Pair__16__vtable [storage=readonly, binding=internal, object=@Derived____view__Pair__16__vtable] = {
   i64 0
   i64 -16
   i64 -16
@@ -119,12 +119,12 @@ global @Derived____view__Pair__16__vtable [binding=internal, object=@Derived____
   ptr addr @_Derived__x__vtable_virtual_adjust_n24__return_pos0
   ptr addr @Pair__y
 }
-global @Derived____view__Right__32__vtable [binding=internal, object=@Derived____view__Right__32__vtable] = {
+global @Derived____view__Right__32__vtable [storage=readonly, binding=internal, object=@Derived____view__Right__32__vtable] = {
   i64 -32
   ptr addr @__rtti_struct_Derived
   ptr addr @_Pair__y__vtable_return_adjust__this_neg16__return_pos0
 }
-global @Derived____vtt [binding=weak, object=_ZTT7Derived, object_root=yes] = {
+global @Derived____vtt [storage=readonly, binding=weak, object=_ZTT7Derived, object_root=yes] = {
   ptr addr @Derived__vtable + 24
   ptr addr @Derived____view__Pair__16__vtable + 32
   ptr addr @Derived____view__Right__32__vtable + 16

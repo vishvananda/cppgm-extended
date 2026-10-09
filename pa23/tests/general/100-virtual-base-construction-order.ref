@@ -88,43 +88,43 @@ global @__rtti_struct_Implicit [binding=weak, object=_ZTI8Implicit] = {
   ptr addr @__rtti_struct_Middle
   i64 -8189
 }
-global @Middle__vtable [binding=weak, object=_ZTV6Middle] = {
+global @Middle__vtable [storage=readonly, binding=weak, object=_ZTV6Middle] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Middle
 }
-global @Middle____vtt [binding=weak, object=_ZTT6Middle, object_root=yes] = {
+global @Middle____vtt [storage=readonly, binding=weak, object=_ZTT6Middle, object_root=yes] = {
   ptr addr @Middle__vtable + 24
 }
-global @Explicit__vtable [binding=weak, object=_ZTV8Explicit] = {
+global @Explicit__vtable [storage=readonly, binding=weak, object=_ZTV8Explicit] = {
   i64 0
   i64 0
   i64 8
   i64 0
   ptr addr @__rtti_struct_Explicit
 }
-global @Explicit____construction__Middle__0__s0__vtable [binding=internal, object=_ZTC8Explicit0_6Middle] = {
+global @Explicit____construction__Middle__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC8Explicit0_6Middle] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Middle
 }
-global @Explicit____vtt [binding=weak, object=_ZTT8Explicit, object_root=yes] = {
+global @Explicit____vtt [storage=readonly, binding=weak, object=_ZTT8Explicit, object_root=yes] = {
   ptr addr @Explicit__vtable + 40
   ptr addr @Explicit__vtable + 40
   ptr addr @Explicit____construction__Middle__0__s0__vtable + 24
 }
-global @Implicit__vtable [binding=weak, object=_ZTV8Implicit] = {
+global @Implicit__vtable [storage=readonly, binding=weak, object=_ZTV8Implicit] = {
   i64 0
   i64 8
   i64 0
   ptr addr @__rtti_struct_Implicit
 }
-global @Implicit____construction__Middle__0__s0__vtable [binding=internal, object=_ZTC8Implicit0_6Middle] = {
+global @Implicit____construction__Middle__0__s0__vtable [storage=readonly, binding=internal, object=_ZTC8Implicit0_6Middle] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Middle
 }
-global @Implicit____vtt [binding=weak, object=_ZTT8Implicit, object_root=yes] = {
+global @Implicit____vtt [storage=readonly, binding=weak, object=_ZTT8Implicit, object_root=yes] = {
   ptr addr @Implicit__vtable + 32
   ptr addr @Implicit__vtable + 32
   ptr addr @Implicit____construction__Middle__0__s0__vtable + 24

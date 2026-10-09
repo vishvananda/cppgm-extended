@@ -20,7 +20,7 @@ global @__rtti_struct_std__ios_base [binding=weak, object=_ZTISt8ios_base] = {
   ptr addr @__external_rtti_vtable____class_type_info + 16
   ptr addr @__typeinfo_name__struct_std__ios_base
 }
-global @std__ios_base__vtable [binding=strong, object=_ZTVSt8ios_base] = {
+global @std__ios_base__vtable [storage=readonly, binding=strong, object=_ZTVSt8ios_base] = {
   i64 0
   ptr addr @__rtti_struct_std__ios_base
   ptr addr @std__ios_base___ios_base
