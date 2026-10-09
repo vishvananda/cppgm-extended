@@ -390,6 +390,9 @@ protected:
 			else if (derived.arena_.nodes[children[0]].kind ==
 				DUMP_CONDITIONAL_EXPRESSION)
 				derived.LowerClassConditionalResult(children[0], destination);
+			else if (derived.arena_.nodes[children[0]].kind ==
+				DUMP_CLASS_VALUE_TRANSFER)
+				derived.LowerClassValueTransfer(children[0], destination);
 			else ThrowLoweringSource(
 				"unsupported temporary object initializer");
 			derived.temporary_initialized_[node] = 1;

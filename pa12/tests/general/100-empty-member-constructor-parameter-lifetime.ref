@@ -26,6 +26,8 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t10 = addr $holder
     %t11 = index i8 [projection=field] %t10, 4
     store typed i32 7, %t11
+    call void @Token___Token(%t8)
+    call void @Token___Token(%t6)
     %t12 = load typed i32 @alive
     %t13 = cmp ne i32 %t12, 2
     branch %t13, ^if_then_1, ^lor_rhs_4
@@ -107,8 +109,6 @@ function @Empty__Empty(%this : ptr [object_bytes=1], %__param1 : ptr [pass=by_ad
 
   block ^entry:
     store typed ptr %this, $this
-    call void @Token___Token(%__param2)
-    call void @Token___Token(%__param1)
     return void
 }
 alias object _ZN5TokenC2Ev = @Token__Token

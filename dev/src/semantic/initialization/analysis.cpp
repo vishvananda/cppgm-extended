@@ -149,8 +149,9 @@ std::uint32_t Analyzer::BuildClassValueConstructorAction(TypeId type,
 			program_->types.RemoveTopCv(EffectiveType(type)))
 			dump_.nodes[action].copy_elision_candidate = true;
 	}
-	dump_.Add(action, converted_source.node);
-	std::vector<ExpressionInfo> constexpr_arguments(1, converted_source);
+	const ExpressionInfo staged_source = StageClassArgument(converted_source);
+	dump_.Add(action, staged_source.node);
+	std::vector<ExpressionInfo> constexpr_arguments(1, staged_source);
 	for (std::size_t a = 1; a < function_type.parameter_count; ++a)
 	{
 		if (a >= constructor.parameters.size() ||
@@ -159,7 +160,7 @@ std::uint32_t Analyzer::BuildClassValueConstructorAction(TypeId type,
 		ExpressionInfo argument = AnalyzeExpression(
 			constructor.parameters[a].default_argument,
 			constructor.parameters[a].default_scope, parameters[a]);
-		argument = ApplyCallArgument(argument, parameters[a]);
+		argument = StageClassArgument(ApplyCallArgument(argument, parameters[a]));
 		MarkDefaultArgumentSubtree(argument.node);
 		dump_.Add(action, argument.node);
 		constexpr_arguments.push_back(argument);

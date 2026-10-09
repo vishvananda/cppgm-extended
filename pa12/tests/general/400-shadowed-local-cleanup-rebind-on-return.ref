@@ -8,7 +8,6 @@ function @f(%pattern : ptr [pass=by_address, object_bytes=8], %actual : ptr [pas
   slot $deduced_type : obj<8x8>
   slot $actual_cv_inner__shadow2 : obj<8x8>
   slot $pattern_cv_inner__shadow2 : obj<8x8>
-  slot $cleanup_return__1 : u8
 
   block ^entry:
     %t1 = addr $pattern_cv_inner
@@ -44,33 +43,13 @@ function @f(%pattern : ptr [pass=by_address, object_bytes=8], %actual : ptr [pas
     jump ^if_end_6
 
   block ^if_end_6:
-    store u8 1, $cleanup_return__1
-    jump ^return_cleanup_action_9
-
-  block ^return_cleanup_terminal_7:
-    return u8 $cleanup_return__1
-
-  block ^return_cleanup_action_8:
-    call void @S___S(%pattern)
-    jump ^return_cleanup_terminal_7
-
-  block ^return_cleanup_action_9:
-    call void @S___S(%actual)
-    jump ^return_cleanup_action_8
+    return u8 1
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    store u8 0, $cleanup_return__1
-    jump ^return_cleanup_action_9
-}
-function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1SD1Ev, object_root=yes, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return void
+    return u8 0
 }
 function @S__S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1SC1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -80,6 +59,13 @@ function @S__S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, o
     %t1 = load typed ptr $this
     %t2 = index i8 [projection=field] %t1, 0
     store typed ptr 0, %t2
+    return void
+}
+function @S___S(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1SD1Ev, object_root=yes, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
     return void
 }
 function @S__S__ov2(%this : ptr [alias=noalias, object_bytes=8], %o : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN1SC1ERKS_, inline_hint=yes] {
@@ -125,6 +111,6 @@ function @S__operator_(%this : ptr [object_bytes=8], %o : ptr [pass=by_address, 
     %t6 = load typed ptr $this
     return ptr %t6
 }
-alias object _ZN1SD2Ev = @S___S
 alias object _ZN1SC2Ev = @S__S
+alias object _ZN1SD2Ev = @S___S
 alias object _ZN1SC2ERKS_ = @S__S__ov2

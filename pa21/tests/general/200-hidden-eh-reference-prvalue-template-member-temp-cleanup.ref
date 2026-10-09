@@ -14,10 +14,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t3 = addr $arg__1
     %t4 = addr $buffer
     call void @Buffer__begin(%t3, %t4)
-    %t5 = addr $arg__2
-    %t6 = addr $buffer
-    call void @Buffer__end(%t5, %t6)
-    call void @Buffer__assign(%t2, %t3, %t5)
     eh_end
     jump ^call_unwind_end_2
 
@@ -25,19 +21,43 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^call_unwind_end_2:
+    eh_try ^cleanup_action_3
+    %t5 = addr $arg__2
+    %t6 = addr $buffer
+    call void @Buffer__end(%t5, %t6)
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^cleanup_action_3:
+    call void @Iterator___Iterator(%t3)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_4:
+    eh_try ^cleanup_action_5
+    call void @Buffer__assign(%t2, %t3, %t5)
+    call void @Iterator___Iterator(%t5)
+    call void @Iterator___Iterator(%t3)
+    eh_end
+    jump ^call_unwind_end_6
+
+  block ^cleanup_action_5:
+    call void @Iterator___Iterator(%t5)
+    jump ^cleanup_action_3
+
+  block ^call_unwind_end_6:
     %t7 = load typed i32 @Iterator__destroyed
     %t8 = cmp gt i32 %t7, 0
-    branch %t8, ^cond_then_3, ^cond_else_4
+    branch %t8, ^cond_then_7, ^cond_else_8
 
-  block ^cond_then_3:
+  block ^cond_then_7:
     store typed i32 0, $cond__3
-    jump ^cond_end_5
+    jump ^cond_end_9
 
-  block ^cond_else_4:
+  block ^cond_else_8:
     store typed i32 1, $cond__3
-    jump ^cond_end_5
+    jump ^cond_end_9
 
-  block ^cond_end_5:
+  block ^cond_end_9:
     %t9 = load typed i32 $cond__3
     return i32 %t9
 }
@@ -97,8 +117,6 @@ function @Buffer__assign(%this : ptr [object_bytes=4], %first : ptr [pass=by_add
     jump ^cleanup_resume_1
 
   block ^call_unwind_end_4:
-    call void @Iterator___Iterator(%last)
-    call void @Iterator___Iterator(%first)
     return void
 }
 function @Iterator___Iterator(%this : ptr [object_bytes=1]) -> void [unwind=no, binding=weak, object=_ZN8IteratorD1Ev, inline_hint=yes] {

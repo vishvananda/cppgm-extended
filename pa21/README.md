@@ -204,9 +204,12 @@ To complete PA21, implement these goals:
    Construction and destruction cleanup dependencies on class-template
    destructors should be demanded only after a recursively containing type is
    complete, and should retain that concrete owner in emitted cleanup calls.
-   A caller-created copy for a destructible class value parameter transfers to
-   the callee. The callee destroys that parameter, while the caller keeps only
-   the unwind cleanup needed for objects it still owns.
+   A by-value class parameter with a non-trivial destructor stays owned by the
+   caller (Itanium C++ ABI 3.1.2.3): the caller destroys it at the end of the
+   full-expression containing the call, and on the unwind path when the callee,
+   a later argument or a later part of that full-expression throws. The callee
+   never destroys its parameter, and an inheriting constructor forwards the
+   parameter's address unchanged.
    Once an exception object has been initialized, destroy the throw operand's
    temporaries and remove them from later unwind snapshots. A temporary from an
    untaken throw branch must not appear in a sibling call's cleanup path.

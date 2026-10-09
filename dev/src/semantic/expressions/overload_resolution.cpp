@@ -1527,8 +1527,8 @@ ExpressionInfo Analyzer::BuildConvertingArgument(
 	{
 		CallConversionFact parameter_conversion;
 		parameter_conversion.rank = conversion.constructor_argument_rank;
-		ExpressionInfo converted = ApplyCallArgument(
-			source, parameters[0], &parameter_conversion);
+		ExpressionInfo converted = StageClassArgument(ApplyCallArgument(
+			source, parameters[0], &parameter_conversion));
 		dump_.Add(action, converted.node);
 		constexpr_arguments.push_back(converted);
 	}
@@ -1541,7 +1541,7 @@ ExpressionInfo Analyzer::BuildConvertingArgument(
 		ExpressionInfo value = AnalyzeExpression(
 			constructor.parameters[i].default_argument,
 			constructor.parameters[i].default_scope, parameters[i]);
-		value = ApplyCallArgument(value, parameters[i]);
+		value = StageClassArgument(ApplyCallArgument(value, parameters[i]));
 		MarkDefaultArgumentSubtree(value.node);
 		dump_.Add(action, value.node);
 		constexpr_arguments.push_back(value);
@@ -1782,6 +1782,25 @@ ExpressionInfo Analyzer::ApplyCallArgument(
 		}
 	}
 	return value;
+}
+
+// Itanium C++ ABI 3.1.2.3: the caller owns a by-value class argument. One
+// whose destructor is non-trivial (always passed by address) is a temporary
+// of the full-expression containing the call, destroyed there on the normal
+// and the exceptional path; the callee never destroys its parameter.
+ExpressionInfo Analyzer::StageClassArgument(ExpressionInfo value)
+{
+	if (value.node == kNoDumpEdge ||
+		!dump_.nodes[value.node].class_argument_staging ||
+		dump_.nodes[value.node].kind == DUMP_TEMPORARY_OBJECT) return value;
+	const EntityId entity = DestructedEntity(value.type);
+	if (entity == kNoEntity || program_->entities[entity].trivial_destructor)
+		return value;
+	dump_.nodes[value.node].class_argument_staging = false;
+	ExpressionInfo temporary = MaterializeTemporary(value);
+	dump_.nodes[temporary.node].argument_materialization = true;
+	dump_.nodes[temporary.node].class_argument_staging = true;
+	return temporary;
 }
 
 ExpressionInfo Analyzer::MakeImplicitObjectPointer(
@@ -2429,8 +2448,8 @@ bool Analyzer::TryAnalyzeCallSurrogate(ScopeId scope,
 	{
 		ExpressionInfo argument = arguments[a];
 		if (a < callable.parameter_count)
-			argument = ApplyCallArgument(argument, parameters[a],
-				&selected_argument_facts[a]);
+			argument = StageClassArgument(ApplyCallArgument(argument,
+				parameters[a], &selected_argument_facts[a]));
 		dump_.Add(call, argument.node);
 	}
 	result->node = call;

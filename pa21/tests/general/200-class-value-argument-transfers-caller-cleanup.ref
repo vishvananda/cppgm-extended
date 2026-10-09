@@ -1,7 +1,7 @@
 declare function @__external_runtime____cxa_begin_catch(%arg0 : ptr) -> ptr [role=eh_begin_catch, linkage=c, binding=strong, object=__cxa_begin_catch]
 declare function @std_terminate() -> void [unwind=no, return=noreturn, role=terminate, binding=strong, object=_ZSt9terminatev]
-declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
+declare function @operatordelete(%arg0 : ptr) -> void [unwind=no, role=free_memory, binding=strong, object=cppgm_builtin_operator_delete]
 
 global @Value__live : i32 [binding=strong, object=_ZN5Value4liveE] = 0
 
@@ -18,7 +18,6 @@ function @consume(%value : ptr [pass=by_address, object_bytes=8]) -> i32 [bindin
     %t1 = index i8 [projection=field] %value, 0
     %t2 = load typed ptr %t1
     %t3 = load typed i32 %t2
-    call void @Value___Value(%value)
     return i32 %t3
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
@@ -37,10 +36,6 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t2 = addr $arg__2
     %t3 = addr $source
     call void @Value__Value__ov2(%t2, %t3)
-    %t4 = call i32 @consume(%t2)
-    store typed i32 %t4, $call__1
-    %t5 = load typed i32 $call__1
-    store typed i32 %t5, $result
     eh_end
     jump ^call_unwind_end_3
 
@@ -48,16 +43,30 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     resume
 
   block ^cleanup_action_2:
-    %t6 = addr $source
-    call void @Value___Value(%t6)
+    %t4 = addr $source
+    call void @Value___Value(%t4)
     jump ^cleanup_resume_1
 
   block ^call_unwind_end_3:
+    eh_try ^cleanup_action_4
+    %t5 = call i32 @consume(%t2)
+    store typed i32 %t5, $call__1
+    %t6 = load typed i32 $call__1
+    store typed i32 %t6, $result
+    call void @Value___Value(%t2)
+    eh_end
+    jump ^call_unwind_end_5
+
+  block ^cleanup_action_4:
+    call void @Value___Value(%t2)
+    jump ^cleanup_action_2
+
+  block ^call_unwind_end_5:
     %t7 = load typed i32 $result
     %t8 = cmp eq i32 %t7, 7
-    branch %t8, ^land_rhs_10, ^land_short_11
+    branch %t8, ^land_rhs_12, ^land_short_13
 
-  block ^land_rhs_10:
+  block ^land_rhs_12:
     %t9 = addr $source
     %t10 = index i8 [projection=field] %t9, 0
     %t11 = load typed ptr %t10
@@ -65,44 +74,60 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t13 = cmp eq i32 %t12, 7
     %t14 = cmp ne i64 %t13, 0
     store typed i64 %t14, $land__5
-    jump ^land_end_12
+    jump ^land_end_14
 
-  block ^land_short_11:
+  block ^land_short_13:
     store typed i64 0, $land__5
-    jump ^land_end_12
+    jump ^land_end_14
 
-  block ^land_end_12:
+  block ^land_end_14:
     %t15 = load typed i64 $land__5
-    branch %t15, ^land_rhs_7, ^land_short_8
+    branch %t15, ^land_rhs_9, ^land_short_10
 
-  block ^land_rhs_7:
+  block ^land_rhs_9:
     %t16 = load typed i32 @Value__live
     %t17 = cmp eq i32 %t16, 1
     %t18 = cmp ne i64 %t17, 0
     store typed i64 %t18, $land__4
-    jump ^land_end_9
+    jump ^land_end_11
 
-  block ^land_short_8:
+  block ^land_short_10:
     store typed i64 0, $land__4
-    jump ^land_end_9
+    jump ^land_end_11
 
-  block ^land_end_9:
+  block ^land_end_11:
     %t19 = load typed i64 $land__4
-    branch %t19, ^cond_then_4, ^cond_else_5
+    branch %t19, ^cond_then_6, ^cond_else_7
 
-  block ^cond_then_4:
+  block ^cond_then_6:
     store typed i32 0, $cond__3
-    jump ^cond_end_6
+    jump ^cond_end_8
 
-  block ^cond_else_5:
+  block ^cond_else_7:
     store typed i32 1, $cond__3
-    jump ^cond_end_6
+    jump ^cond_end_8
 
-  block ^cond_end_6:
+  block ^cond_end_8:
     %t20 = load typed i32 $cond__3
     %t21 = addr $source
     call void @Value___Value(%t21)
     return i32 %t20
+}
+function @Value__Value(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5ValueC1Ev, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    %t1 = convert sext i64 i32 4
+    %t2 = call ptr @operatornew(%t1)
+    store typed i32 7, %t2
+    %t3 = load typed ptr $this
+    %t4 = index i8 [projection=field] %t3, 0
+    store typed ptr %t2, %t4
+    %t5 = load typed i32 @Value__live
+    %t6 = binary add nowrap i32 %t5, 1
+    store typed i32 %t6, @Value__live
+    return void
 }
 function @Value___Value(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, object=_ZN5ValueD1Ev, inline_hint=yes] {
   slot $this : ptr
@@ -132,22 +157,6 @@ function @Value___Value(%this : ptr [object_bytes=8]) -> void [unwind=no, bindin
     call void @cppgm_call_terminate(%t7)
     return void
 }
-function @Value__Value(%this : ptr [object_bytes=8]) -> void [binding=weak, object=_ZN5ValueC1Ev, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    %t1 = convert sext i64 i32 4
-    %t2 = call ptr @operatornew(%t1)
-    store typed i32 7, %t2
-    %t3 = load typed ptr $this
-    %t4 = index i8 [projection=field] %t3, 0
-    store typed ptr %t2, %t4
-    %t5 = load typed i32 @Value__live
-    %t6 = binary add nowrap i32 %t5, 1
-    store typed i32 %t6, @Value__live
-    return void
-}
 function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=8], %other : ptr [pass=by_address, alias=noalias, object_bytes=8]) -> void [binding=weak, object=_ZN5ValueC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
@@ -170,6 +179,6 @@ function @Value__Value__ov2(%this : ptr [alias=noalias, object_bytes=8], %other 
     store typed i32 %t10, @Value__live
     return void
 }
-alias object _ZN5ValueD2Ev = @Value___Value
 alias object _ZN5ValueC2Ev = @Value__Value
+alias object _ZN5ValueD2Ev = @Value___Value
 alias object _ZN5ValueC2ERKS_ = @Value__Value__ov2

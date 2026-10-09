@@ -26,5 +26,6 @@ int main()
 {
   int destroys = 0;
   S s(&destroys);
-  return f(s) && destroys == 1 ? 0 : 1;
+  bool alive_after_return = f(s) && destroys == 0;
+  return alive_after_return && destroys == 1 ? 0 : 1;
 }

@@ -271,6 +271,17 @@ protected:
 						children[i], parameters[parameter]));
 					continue;
 				}
+				// An inheriting constructor forwards its own by-address
+				// parameter (12.9; Itanium C++ ABI 3.1.2.3 leaves it owned by
+				// the original caller), as GCC and Clang do.
+				if (parameter < function_type.parameter_count &&
+					derived.arena_.nodes[children[i]].category != VALUE_PRVALUE &&
+					derived.UsesIndirectClassParameter(parameters[parameter]))
+				{
+					arguments.Push(derived.AddressOfStorage(
+						derived.LowerStorage(children[i])));
+					continue;
+				}
 				const LowType expected = parameter < function_type.parameter_count ?
 					derived.LowerType(parameters[parameter]) :
 					derived.LowerExpressionType(

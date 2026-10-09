@@ -587,6 +587,12 @@ void Analyzer::RegisterVariableLifetimeAndStorage(ScopeId scope,
 		const std::uint32_t edge = dump_.nodes[variable].first_edge;
 		const std::uint32_t initializer = edge == kNoDumpEdge ?
 			kNoDumpEdge : dump_.edges[edge].child;
+		// A dynamic initializer ends its full-expression in the initialization
+		// function, which destroys its temporaries and by-value class
+		// arguments (12.2p3).
+		if (has_initializer && initializer != kNoDumpEdge &&
+			!program_->types.IsReference(type) && !IsInitializerListType(type))
+			AppendFullExpressionDestructionActions(initializer, variable);
 		AddNamespaceObjectAction(variable, object, type, initializer);
 		namespace_objects_.back().constant_object = constant_object;
 		const ConstexprAddressValue* address = ConstexprAddressAt(constant_address);

@@ -1260,6 +1260,8 @@ std::uint32_t Analyzer::BuildConstructorAction(TypeId type,
 						&selected_conversions[a] : 0);
 		}
 		else argument = MaterializeVariadicCallArgument(argument);
+		if (a < function_type.parameter_count)
+			argument = StageClassArgument(argument);
 		dump_.Add(action, argument.node);
 		if (a < function_type.parameter_count)
 			constexpr_arguments.push_back(argument);
@@ -1273,7 +1275,7 @@ std::uint32_t Analyzer::BuildConstructorAction(TypeId type,
 		ExpressionInfo argument = AnalyzeExpression(
 			constructor.parameters[a].default_argument,
 			constructor.parameters[a].default_scope, parameters[a]);
-		argument = ApplyCallArgument(argument, parameters[a]);
+		argument = StageClassArgument(ApplyCallArgument(argument, parameters[a]));
 		MarkDefaultArgumentSubtree(argument.node);
 		dump_.Add(action, argument.node);
 		constexpr_arguments.push_back(argument);

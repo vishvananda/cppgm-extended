@@ -1,4 +1,3 @@
-declare function @Box___Box(%arg0 : ptr [object_bytes=4]) -> void [unwind=no, binding=strong, object=_ZN3BoxD1Ev]
 declare function @Box__Box__ov3(%arg0 : ptr [alias=noalias, object_bytes=4], %arg1 : ptr [pass=by_address, alias=noalias, object_bytes=4]) -> void [binding=strong, object=_ZN3BoxC1EOS_]
 
 function @forward_box(%ret : ptr [pass=indirect_result, object_bytes=4], %box : ptr [pass=by_address, object_bytes=4]) -> void [binding=strong, object=_Z11forward_box3Box] {
@@ -6,6 +5,5 @@ function @forward_box(%ret : ptr [pass=indirect_result, object_bytes=4], %box : 
 
   block ^entry:
     call void @Box__Box__ov3(%ret, %box)
-    call void @Box___Box(%box)
     return void
 }

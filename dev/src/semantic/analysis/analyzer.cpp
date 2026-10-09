@@ -1182,6 +1182,7 @@ ExpressionInfo Analyzer::BuildResolvedCall(BindingId selected,
 				argument_conversions && a < argument_conversions->size() ?
 					&(*argument_conversions)[a] : 0);
 			if (CandidateSubstitutionFailed()) return ExpressionInfo();
+			argument = StageClassArgument(argument);
 			constexpr_arguments.push_back(argument);
 		}
 		else argument = MaterializeVariadicCallArgument(argument);
@@ -1210,7 +1211,7 @@ ExpressionInfo Analyzer::BuildResolvedCall(BindingId selected,
 		ExpressionInfo argument = AnalyzeExpression(
 			function.parameters[a].default_argument,
 			function.parameters[a].default_scope, parameters[a]);
-		argument = ApplyCallArgument(argument, parameters[a]);
+		argument = StageClassArgument(ApplyCallArgument(argument, parameters[a]));
 		MarkDefaultArgumentSubtree(argument.node);
 		dump_.Add(call, argument.node);
 		constexpr_arguments.push_back(argument);
@@ -1342,8 +1343,8 @@ ExpressionInfo Analyzer::AnalyzeIndirectCall(ExpressionInfo callee,
 	{
 		ExpressionInfo argument = analyzed_arguments[a];
 		if (a < callable.parameter_count)
-			argument = MaterializeCallArgument(
-				argument_syntax[a], scope, parameters[a], argument);
+			argument = StageClassArgument(MaterializeCallArgument(
+				argument_syntax[a], scope, parameters[a], argument));
 		if (CandidateSubstitutionFailed()) return ExpressionInfo();
 		dump_.Add(call, argument.node);
 	}

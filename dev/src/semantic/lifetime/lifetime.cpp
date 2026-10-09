@@ -95,6 +95,11 @@ void Analyzer::AddLifetimeObligation(ScopeId scope,
 	const EntityId entity = DestructedEntity(type);
 	if (entity == kNoEntity) return;
 	EnsureClassDefinition(type);
+	// The caller destroys a by-value class parameter (Itanium C++ ABI
+	// 3.1.2.3); see StageClassArgument. Its type is still complete in the
+	// definition (8.3.5p9).
+	if (object != kNoBinding && program_->bindings[object].kind == BIND_PARAMETER)
+		return;
 	if (!program_->entities[entity].destructible)
 		ThrowSemanticError("object type is not destructible");
 	const BindingId destructor = DestructorForType(type);

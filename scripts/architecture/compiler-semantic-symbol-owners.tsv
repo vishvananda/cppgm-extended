@@ -391,6 +391,7 @@ dev/src/semantic/expressions/overload_resolution.cpp	MatchesEnumOnlyOperatorCand
 dev/src/semantic/expressions/overload_resolution.cpp	PrepareConversionFunctionObject	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	RestoreAssociatedLookup	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	SelectOperatorOverload	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
+dev/src/semantic/expressions/overload_resolution.cpp	StageClassArgument	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	TryAnalyzeCallOperator	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	TryAnalyzeCallSurrogate	1	dev/src/semantic/expressions/overload_resolution.cpp	keep
 dev/src/semantic/expressions/overload_resolution.cpp	TryAnalyzeOverloadedOperator	1	dev/src/semantic/expressions/overload_resolution.cpp	keep

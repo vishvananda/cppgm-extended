@@ -4,6 +4,7 @@ declare global @__external_rtti_vtable____class_type_info [role=rtti_class, bind
 
 declare function @__cxa_pure_virtual(%arg0 : ptr) -> void [unwind=no, return=noreturn, role=pure_virtual, binding=strong]
 declare function @take(%arg0 : ptr [pass=by_address, object_bytes=16]) -> void [binding=strong, object=_Z4take1C]
+declare function @C___C(%arg0 : ptr [object_bytes=16]) -> void [unwind=no, binding=strong, object=_ZN1CD1Ev]
 
 global @__typeinfo_name__struct_A [binding=weak, object=_ZTS1A] = {
   i8 49
@@ -27,10 +28,28 @@ function @pass(%value : ptr [pass=by_address, object_bytes=16]) -> void [binding
 
   block ^entry:
     store typed ptr %value, $value
+    eh_try ^cleanup_resume_1
     %t1 = addr $arg__1
     %t2 = load typed ptr $value
     call void @C__C(%t1, %t2)
+    eh_end
+    jump ^call_unwind_end_2
+
+  block ^cleanup_resume_1:
+    resume
+
+  block ^call_unwind_end_2:
+    eh_try ^cleanup_action_3
     call void @take(%t1)
+    call void @C___C(%t1)
+    eh_end
+    jump ^call_unwind_end_4
+
+  block ^cleanup_action_3:
+    call void @C___C(%t1)
+    jump ^cleanup_resume_1
+
+  block ^call_unwind_end_4:
     return void
 }
 function @C__C(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1CC1ERKS_, inline_hint=yes] {
