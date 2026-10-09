@@ -22,7 +22,7 @@ global @__rtti_struct_A [binding=weak, object=_ZTI1A] = {
   i32 0
   i32 1
   ptr addr @__rtti_struct_V
-  i64 -6141
+  i64 -8189
 }
 global @__typeinfo_name__struct_B [binding=weak, object=_ZTS1B] = {
   i8 49
@@ -35,7 +35,7 @@ global @__rtti_struct_B [binding=weak, object=_ZTI1B] = {
   i32 0
   i32 1
   ptr addr @__rtti_struct_V
-  i64 -6141
+  i64 -8189
 }
 global @__typeinfo_name__struct_AB [binding=weak, object=_ZTS2AB] = {
   i8 50
@@ -69,152 +69,122 @@ global @V__vtable [binding=weak, object=_ZTV1V] = {
   ptr addr @V__anchor
 }
 global @A__vtable [binding=weak, object=_ZTV1A] = {
-  i64 8
   i64 0
-  ptr addr @__rtti_struct_A
-}
-global @A____view__V__8__vtable [binding=internal, object=@A____view__V__8__vtable] = {
   i64 0
-  i64 -8
+  i64 0
   ptr addr @__rtti_struct_A
   ptr addr @V__anchor
 }
 global @A____vtt [binding=weak, object=_ZTT1A, object_root=yes] = {
-  ptr addr @A__vtable + 24
-  ptr addr @A____view__V__8__vtable + 24
+  ptr addr @A__vtable + 32
+  ptr addr @A__vtable + 32
 }
 global @B__vtable [binding=weak, object=_ZTV1B] = {
-  i64 8
   i64 0
-  ptr addr @__rtti_struct_B
-}
-global @B____view__V__8__vtable [binding=internal, object=@B____view__V__8__vtable] = {
   i64 0
-  i64 -8
+  i64 0
   ptr addr @__rtti_struct_B
   ptr addr @V__anchor
 }
 global @B____vtt [binding=weak, object=_ZTT1B, object_root=yes] = {
-  ptr addr @B__vtable + 24
-  ptr addr @B____view__V__8__vtable + 24
+  ptr addr @B__vtable + 32
+  ptr addr @B__vtable + 32
 }
 global @AB__vtable [binding=weak, object=_ZTV2AB] = {
-  i64 16
   i64 0
-  ptr addr @__rtti_struct_AB
-}
-global @AB____view__B__8__vtable [binding=internal, object=@AB____view__B__8__vtable] = {
-  i64 8
-  i64 -8
-  ptr addr @__rtti_struct_AB
-}
-global @AB____view__V__16__vtable [binding=internal, object=@AB____view__V__16__vtable] = {
   i64 0
-  i64 -16
+  i64 0
   ptr addr @__rtti_struct_AB
   ptr addr @V__anchor
 }
-global @AB____construction__A__0__s0__vtable [binding=internal, object=@AB____construction__A__0__s0__vtable] = {
-  i64 16
-  i64 0
-  ptr addr @__rtti_struct_A
+global @AB____view__B__8__vtable [binding=internal, object=@AB____view__B__8__vtable] = {
+  i64 -8
+  i64 -8
+  i64 -8
+  ptr addr @__rtti_struct_AB
+  ptr addr @_V__anchor__vtable_return_adjust__this_neg8__return_pos0
 }
-global @AB____construction__A__0__s1__vtable [binding=internal, object=@AB____construction__A__0__s1__vtable] = {
+global @AB____construction__A__0__s0__vtable [binding=internal, object=@AB____construction__A__0__s0__vtable] = {
   i64 0
-  i64 -16
+  i64 0
+  i64 0
   ptr addr @__rtti_struct_A
   ptr addr @V__anchor
 }
 global @AB____construction__B__8__s0__vtable [binding=internal, object=@AB____construction__B__8__s0__vtable] = {
-  i64 8
-  i64 0
-  ptr addr @__rtti_struct_B
-}
-global @AB____construction__B__8__s1__vtable [binding=internal, object=@AB____construction__B__8__s1__vtable] = {
-  i64 0
   i64 -8
+  i64 0
+  i64 0
   ptr addr @__rtti_struct_B
   ptr addr @V__anchor
 }
 global @AB____vtt [binding=weak, object=_ZTT2AB, object_root=yes] = {
-  ptr addr @AB__vtable + 24
-  ptr addr @AB____construction__A__0__s0__vtable + 24
-  ptr addr @AB____construction__A__0__s1__vtable + 24
-  ptr addr @AB____construction__B__8__s0__vtable + 24
-  ptr addr @AB____construction__B__8__s1__vtable + 24
-  ptr addr @AB____view__V__16__vtable + 24
-  ptr addr @AB____view__B__8__vtable + 24
+  ptr addr @AB__vtable + 32
+  ptr addr @AB____construction__A__0__s0__vtable + 32
+  ptr addr @AB____construction__A__0__s0__vtable + 32
+  ptr addr @AB____construction__B__8__s0__vtable + 32
+  ptr addr @AB____construction__B__8__s0__vtable + 32
+  ptr addr @AB__vtable + 32
+  ptr addr @AB____view__B__8__vtable + 32
 }
 global @D__vtable [binding=weak, object=_ZTV1D] = {
-  i64 16
   i64 0
-  ptr addr @__rtti_struct_D
-}
-global @D____view__B__8__vtable [binding=internal, object=@D____view__B__8__vtable] = {
-  i64 8
-  i64 -8
-  ptr addr @__rtti_struct_D
-}
-global @D____view__V__16__vtable [binding=internal, object=@D____view__V__16__vtable] = {
   i64 0
-  i64 -16
+  i64 0
   ptr addr @__rtti_struct_D
   ptr addr @V__anchor
 }
-global @D____construction__AB__0__s0__vtable [binding=internal, object=@D____construction__AB__0__s0__vtable] = {
-  i64 16
-  i64 0
-  ptr addr @__rtti_struct_AB
+global @D____view__B__8__vtable [binding=internal, object=@D____view__B__8__vtable] = {
+  i64 -8
+  i64 -8
+  i64 -8
+  ptr addr @__rtti_struct_D
+  ptr addr @_V__anchor__vtable_return_adjust__this_neg8__return_pos0
 }
-global @D____construction__AB__0__s1__vtable [binding=internal, object=@D____construction__AB__0__s1__vtable] = {
+global @D____construction__AB__0__s0__vtable [binding=internal, object=@D____construction__AB__0__s0__vtable] = {
   i64 0
-  i64 -16
+  i64 0
+  i64 0
   ptr addr @__rtti_struct_AB
   ptr addr @V__anchor
 }
 global @D____construction__AB__0__s2__vtable [binding=internal, object=@D____construction__AB__0__s2__vtable] = {
-  i64 8
+  i64 -8
+  i64 -8
   i64 -8
   ptr addr @__rtti_struct_AB
+  ptr addr @_V__anchor__vtable_return_adjust__this_neg8__return_pos0
 }
 global @D____construction__A__0__s0__vtable [binding=internal, object=@D____construction__A__0__s0__vtable] = {
-  i64 16
   i64 0
-  ptr addr @__rtti_struct_A
-}
-global @D____construction__A__0__s1__vtable [binding=internal, object=@D____construction__A__0__s1__vtable] = {
   i64 0
-  i64 -16
+  i64 0
   ptr addr @__rtti_struct_A
   ptr addr @V__anchor
 }
 global @D____construction__B__8__s0__vtable [binding=internal, object=@D____construction__B__8__s0__vtable] = {
-  i64 8
-  i64 0
-  ptr addr @__rtti_struct_B
-}
-global @D____construction__B__8__s1__vtable [binding=internal, object=@D____construction__B__8__s1__vtable] = {
-  i64 0
   i64 -8
+  i64 0
+  i64 0
   ptr addr @__rtti_struct_B
   ptr addr @V__anchor
 }
 global @D____vtt [binding=weak, object=_ZTT1D, object_root=yes] = {
-  ptr addr @D__vtable + 24
-  ptr addr @D____construction__AB__0__s0__vtable + 24
-  ptr addr @D____construction__A__0__s0__vtable + 24
-  ptr addr @D____construction__A__0__s1__vtable + 24
-  ptr addr @D____construction__B__8__s0__vtable + 24
-  ptr addr @D____construction__B__8__s1__vtable + 24
-  ptr addr @D____construction__AB__0__s1__vtable + 24
-  ptr addr @D____construction__AB__0__s2__vtable + 24
-  ptr addr @D____view__V__16__vtable + 24
-  ptr addr @D____view__B__8__vtable + 24
+  ptr addr @D__vtable + 32
+  ptr addr @D____construction__AB__0__s0__vtable + 32
+  ptr addr @D____construction__A__0__s0__vtable + 32
+  ptr addr @D____construction__A__0__s0__vtable + 32
+  ptr addr @D____construction__B__8__s0__vtable + 32
+  ptr addr @D____construction__B__8__s0__vtable + 32
+  ptr addr @D____construction__AB__0__s0__vtable + 32
+  ptr addr @D____construction__AB__0__s2__vtable + 32
+  ptr addr @D__vtable + 32
+  ptr addr @D____view__B__8__vtable + 32
 }
 global @live : i32 [binding=strong] = 0
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $value : obj<24x8>
+  slot $value : obj<16x8>
   slot $cond__1 : i32
 
   block ^entry:
@@ -258,13 +228,13 @@ function @V__anchor(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=we
     store typed ptr %this, $this
     return void
 }
-function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
+function @D__D(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN1DC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 16
+    %t2 = index i8 %t1, 0
     call void @V__V__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
     %t5 = load typed ptr $this
@@ -276,28 +246,19 @@ function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1
     eh_cleanup ^constructor_cleanup_2
     %t13 = load typed ptr $this
     %t14 = addr @D__vtable
-    %t15 = index i8 %t14, 24
+    %t15 = index i8 %t14, 32
     store typed ptr %t15, %t13
     %t16 = load typed ptr $this
     %t17 = index i8 %t16, 8
     %t18 = addr @D____view__B__8__vtable
-    %t19 = index i8 %t18, 24
+    %t19 = index i8 %t18, 32
     store typed ptr %t19, %t17
-    %t20 = load typed ptr $this
-    %t21 = load typed ptr %t20
-    %t22 = index i8 %t21, -24
-    %t23 = load typed i64 %t22
-    %t24 = index i8 %t20, %t23
-    %t25 = index i8 %t24, 0
-    %t26 = addr @D____view__V__16__vtable
-    %t27 = index i8 %t26, 24
-    store typed ptr %t27, %t25
     eh_end
     return void
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 %t3, 16
+    %t4 = index i8 %t3, 0
     call void @V___V(%t4)
     eh_end
     resume
@@ -310,7 +271,7 @@ function @D__D(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN1
     call void @AB___AB__base_entry(%t10, %t12)
     jump ^constructor_cleanup_1
 }
-function @D___D__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> void [binding=weak, object=_ZN1DD2Ev, object_root=yes, inline_hint=yes] {
+function @D___D__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN1DD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -326,32 +287,31 @@ function @D___D__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> void
     store typed ptr %t6, %t4
     %t7 = load typed ptr $this
     %t8 = load typed ptr %__vtt
-    %t9 = index i8 %t8, -24
+    %t9 = index i8 %t8, -32
     %t10 = load typed i64 %t9
     %t11 = index i8 %t7, %t10
-    %t12 = index i8 %t11, 0
-    %t13 = index i8 %__vtt, 64
-    %t14 = load typed ptr %t13
-    store typed ptr %t14, %t12
+    %t12 = index i8 %__vtt, 64
+    %t13 = load typed ptr %t12
+    store typed ptr %t13, %t11
     eh_end
-    %t15 = load typed ptr $this
-    %t16 = index i8 %t15, 0
-    %t17 = index i8 %__vtt, 8
-    call void @AB___AB__base_entry(%t16, %t17)
+    %t14 = load typed ptr $this
+    %t15 = index i8 %t14, 0
+    %t16 = index i8 %__vtt, 8
+    call void @AB___AB__base_entry(%t15, %t16)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t18 = load typed ptr $this
-    %t19 = index i8 %t18, 0
-    %t20 = index i8 %__vtt, 8
-    call void @AB___AB__base_entry(%t19, %t20)
+    %t17 = load typed ptr $this
+    %t18 = index i8 %t17, 0
+    %t19 = index i8 %__vtt, 8
+    call void @AB___AB__base_entry(%t18, %t19)
     eh_end
     resume
 
   block ^destructor_end_2:
     return void
 }
-function @D___D(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN1DD1Ev, inline_hint=yes] {
+function @D___D(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN1DD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -359,54 +319,45 @@ function @D___D(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak,
     eh_cleanup ^destructor_cleanup_1
     %t1 = load typed ptr $this
     %t2 = addr @D__vtable
-    %t3 = index i8 %t2, 24
+    %t3 = index i8 %t2, 32
     store typed ptr %t3, %t1
     %t4 = load typed ptr $this
     %t5 = index i8 %t4, 8
     %t6 = addr @D____view__B__8__vtable
-    %t7 = index i8 %t6, 24
+    %t7 = index i8 %t6, 32
     store typed ptr %t7, %t5
-    %t8 = load typed ptr $this
-    %t9 = load typed ptr %t8
-    %t10 = index i8 %t9, -24
-    %t11 = load typed i64 %t10
-    %t12 = index i8 %t8, %t11
-    %t13 = index i8 %t12, 0
-    %t14 = addr @D____view__V__16__vtable
-    %t15 = index i8 %t14, 24
-    store typed ptr %t15, %t13
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
+    %t8 = load typed ptr $this
+    %t9 = index i8 %t8, 0
+    %t10 = addr @D____vtt
+    %t11 = index i8 %t10, 8
+    call void @AB___AB__base_entry(%t9, %t11)
+    eh_end
+    jump ^destructor_suffix_next_4
+
+  block ^destructor_suffix_cleanup_3:
+    %t12 = load typed ptr $this
+    %t13 = index i8 %t12, 0
+    call void @V___V__base_entry(%t13)
+    eh_end
+    resume
+
+  block ^destructor_suffix_next_4:
+    %t14 = load typed ptr $this
+    %t15 = index i8 %t14, 0
+    call void @V___V__base_entry(%t15)
+    jump ^destructor_end_2
+
+  block ^destructor_cleanup_1:
     %t16 = load typed ptr $this
     %t17 = index i8 %t16, 0
     %t18 = addr @D____vtt
     %t19 = index i8 %t18, 8
     call void @AB___AB__base_entry(%t17, %t19)
-    eh_end
-    jump ^destructor_suffix_next_4
-
-  block ^destructor_suffix_cleanup_3:
     %t20 = load typed ptr $this
-    %t21 = index i8 %t20, 16
+    %t21 = index i8 %t20, 0
     call void @V___V__base_entry(%t21)
-    eh_end
-    resume
-
-  block ^destructor_suffix_next_4:
-    %t22 = load typed ptr $this
-    %t23 = index i8 %t22, 16
-    call void @V___V__base_entry(%t23)
-    jump ^destructor_end_2
-
-  block ^destructor_cleanup_1:
-    %t24 = load typed ptr $this
-    %t25 = index i8 %t24, 0
-    %t26 = addr @D____vtt
-    %t27 = index i8 %t26, 8
-    call void @AB___AB__base_entry(%t25, %t27)
-    %t28 = load typed ptr $this
-    %t29 = index i8 %t28, 16
-    call void @V___V__base_entry(%t29)
     eh_end
     resume
 
@@ -441,7 +392,7 @@ function @V__V(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, o
     store typed i32 %t5, @live
     return void
 }
-function @AB__AB__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> void [binding=weak, object=_ZN2ABC2Ev, object_root=yes, inline_hint=yes] {
+function @AB__AB__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN2ABC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -467,13 +418,12 @@ function @AB__AB__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> voi
     store typed ptr %t18, %t16
     %t19 = load typed ptr $this
     %t20 = load typed ptr %__vtt
-    %t21 = index i8 %t20, -24
+    %t21 = index i8 %t20, -32
     %t22 = load typed i64 %t21
     %t23 = index i8 %t19, %t22
-    %t24 = index i8 %t23, 0
-    %t25 = index i8 %__vtt, 40
-    %t26 = load typed ptr %t25
-    store typed ptr %t26, %t24
+    %t24 = index i8 %__vtt, 40
+    %t25 = load typed ptr %t24
+    store typed ptr %t25, %t23
     eh_end
     return void
 
@@ -520,7 +470,7 @@ function @V___V(%this : ptr [object_bytes=8]) -> void [unwind=no, binding=weak, 
     store typed i32 %t5, @live
     return void
 }
-function @AB___AB__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN2ABD2Ev, object_root=yes, inline_hint=yes] {
+function @AB___AB__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN2ABD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -536,53 +486,52 @@ function @AB___AB__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> vo
     store typed ptr %t6, %t4
     %t7 = load typed ptr $this
     %t8 = load typed ptr %__vtt
-    %t9 = index i8 %t8, -24
+    %t9 = index i8 %t8, -32
     %t10 = load typed i64 %t9
     %t11 = index i8 %t7, %t10
-    %t12 = index i8 %t11, 0
-    %t13 = index i8 %__vtt, 40
-    %t14 = load typed ptr %t13
-    store typed ptr %t14, %t12
+    %t12 = index i8 %__vtt, 40
+    %t13 = load typed ptr %t12
+    store typed ptr %t13, %t11
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
-    %t15 = load typed ptr $this
-    %t16 = index i8 %t15, 8
-    %t17 = index i8 %__vtt, 24
-    call void @B___B__base_entry(%t16, %t17)
+    %t14 = load typed ptr $this
+    %t15 = index i8 %t14, 8
+    %t16 = index i8 %__vtt, 24
+    call void @B___B__base_entry(%t15, %t16)
     eh_end
     jump ^destructor_suffix_next_4
 
   block ^destructor_suffix_cleanup_3:
-    %t18 = load typed ptr $this
-    %t19 = index i8 %t18, 0
-    %t20 = index i8 %__vtt, 8
-    call void @A___A__base_entry(%t19, %t20)
+    %t17 = load typed ptr $this
+    %t18 = index i8 %t17, 0
+    %t19 = index i8 %__vtt, 8
+    call void @A___A__base_entry(%t18, %t19)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
-    %t21 = load typed ptr $this
-    %t22 = index i8 %t21, 0
-    %t23 = index i8 %__vtt, 8
-    call void @A___A__base_entry(%t22, %t23)
+    %t20 = load typed ptr $this
+    %t21 = index i8 %t20, 0
+    %t22 = index i8 %__vtt, 8
+    call void @A___A__base_entry(%t21, %t22)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
-    %t24 = load typed ptr $this
-    %t25 = index i8 %t24, 8
-    %t26 = index i8 %__vtt, 24
-    call void @B___B__base_entry(%t25, %t26)
-    %t27 = load typed ptr $this
-    %t28 = index i8 %t27, 0
-    %t29 = index i8 %__vtt, 8
-    call void @A___A__base_entry(%t28, %t29)
+    %t23 = load typed ptr $this
+    %t24 = index i8 %t23, 8
+    %t25 = index i8 %__vtt, 24
+    call void @B___B__base_entry(%t24, %t25)
+    %t26 = load typed ptr $this
+    %t27 = index i8 %t26, 0
+    %t28 = index i8 %__vtt, 8
+    call void @A___A__base_entry(%t27, %t28)
     eh_end
     resume
 
   block ^destructor_end_2:
     return void
 }
-function @A__A__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1AC2Ev, object_root=yes, inline_hint=yes] {
+function @A__A__base_entry(%this : ptr [object_bytes=8], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1AC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -592,16 +541,15 @@ function @A__A__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void 
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
     %t4 = load typed ptr %__vtt
-    %t5 = index i8 %t4, -24
+    %t5 = index i8 %t4, -32
     %t6 = load typed i64 %t5
     %t7 = index i8 %t3, %t6
-    %t8 = index i8 %t7, 0
-    %t9 = index i8 %__vtt, 8
-    %t10 = load typed ptr %t9
-    store typed ptr %t10, %t8
+    %t8 = index i8 %__vtt, 8
+    %t9 = load typed ptr %t8
+    store typed ptr %t9, %t7
     return void
 }
-function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
+function @B__B__base_entry(%this : ptr [object_bytes=8], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1BC2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -611,16 +559,15 @@ function @B__B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void 
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
     %t4 = load typed ptr %__vtt
-    %t5 = index i8 %t4, -24
+    %t5 = index i8 %t4, -32
     %t6 = load typed i64 %t5
     %t7 = index i8 %t3, %t6
-    %t8 = index i8 %t7, 0
-    %t9 = index i8 %__vtt, 8
-    %t10 = load typed ptr %t9
-    store typed ptr %t10, %t8
+    %t8 = index i8 %__vtt, 8
+    %t9 = load typed ptr %t8
+    store typed ptr %t9, %t7
     return void
 }
-function @A___A__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1AD2Ev, object_root=yes, inline_hint=yes] {
+function @A___A__base_entry(%this : ptr [object_bytes=8], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1AD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -630,16 +577,15 @@ function @A___A__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
     %t4 = load typed ptr %__vtt
-    %t5 = index i8 %t4, -24
+    %t5 = index i8 %t4, -32
     %t6 = load typed i64 %t5
     %t7 = index i8 %t3, %t6
-    %t8 = index i8 %t7, 0
-    %t9 = index i8 %__vtt, 8
-    %t10 = load typed ptr %t9
-    store typed ptr %t10, %t8
+    %t8 = index i8 %__vtt, 8
+    %t9 = load typed ptr %t8
+    store typed ptr %t9, %t7
     return void
 }
-function @B___B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1BD2Ev, object_root=yes, inline_hint=yes] {
+function @B___B__base_entry(%this : ptr [object_bytes=8], %__vtt : ptr) -> void [unwind=no, binding=weak, object=_ZN1BD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -649,12 +595,17 @@ function @B___B__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void
     store typed ptr %t2, %t1
     %t3 = load typed ptr $this
     %t4 = load typed ptr %__vtt
-    %t5 = index i8 %t4, -24
+    %t5 = index i8 %t4, -32
     %t6 = load typed i64 %t5
     %t7 = index i8 %t3, %t6
-    %t8 = index i8 %t7, 0
-    %t9 = index i8 %__vtt, 8
-    %t10 = load typed ptr %t9
-    store typed ptr %t10, %t8
+    %t8 = index i8 %__vtt, 8
+    %t9 = load typed ptr %t8
+    store typed ptr %t9, %t7
+    return void
+}
+function @_V__anchor__vtable_return_adjust__this_neg8__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn8_N1V6anchorEv] {
+  block ^entry:
+    %t1 = index i8 %arg0, -8
+    call void @V__anchor(%t1)
     return void
 }

@@ -662,27 +662,28 @@ private:
 			program_, program_.entities[entity].type, 0, 0, state_.local_names);
 	}
 
+	// The key function (Itanium 5.2.3): the first non-pure virtual function
+	// the class declares that is not inline, in declaration order.
 	BindingId VtableKeyFunction(EntityId entity) const
 	{
 		const ClassPolymorphismFacts& facts =
 			graph_.class_polymorphism[entity];
-		for (std::size_t slot = 0; slot < facts.slots.size(); ++slot)
+		BindingId key = kNoBinding;
+		for (std::size_t view = 0; view <= facts.views.size(); ++view)
 		{
-			const BindingRecord& function = program_.bindings[
-				facts.slots[slot].function];
-			if (!function.pure_virtual && !function.inline_function &&
-				function.member_owner == entity) return function.canonical;
-		}
-		for (std::size_t view = 0; view < facts.views.size(); ++view)
-			for (std::size_t slot = 0;
-				slot < facts.views[view].slots.size(); ++slot)
+			const std::vector<VirtualSlotFact>& slots =
+				view == 0 ? facts.slots : facts.views[view - 1].slots;
+			for (std::size_t slot = 0; slot < slots.size(); ++slot)
 			{
-				const BindingRecord& function = program_.bindings[
-					facts.views[view].slots[slot].function];
+				const BindingRecord& function =
+					program_.bindings[slots[slot].function];
 				if (!function.pure_virtual && !function.inline_function &&
-					function.member_owner == entity) return function.canonical;
+					function.member_owner == entity &&
+					(key == kNoBinding || function.canonical < key))
+					key = function.canonical;
 			}
-		return kNoBinding;
+		}
+		return key;
 	}
 
 	bool VtableHasWeakLinkage(EntityId entity) const
@@ -878,6 +879,18 @@ private:
 		output_.declarations.push_back(declaration);
 	}
 
+	// Itanium 5.1.4: _ZTv0_n<vcall offset place>_<encoding>.
+	std::string VirtualThunkObjectName(SymbolId target,
+		std::int64_t virtual_call_offset) const
+	{
+		const std::string& target_name = output_.strings.get(
+			output_.symbols[target].object_name);
+		if (target_name.size() < 2 || target_name[0] != '_' ||
+			target_name[1] != 'Z') return std::string();
+		return "_ZTv0_" + SignedOffset(virtual_call_offset) + "_" +
+			target_name.substr(2);
+	}
+
 	std::string ThunkObjectName(SymbolId target,
 		std::int64_t adjustment) const
 	{
@@ -919,8 +932,10 @@ private:
 			"v" + SignedOffset(slot.return_adjustment) + "_" +
 				SignedOffset(slot.return_vtable_offset) + "_" :
 			NonvirtualCallOffset(slot.return_adjustment);
-		return "_ZTc" + NonvirtualCallOffset(slot.this_adjustment) +
-			result + target_name.substr(2);
+		const std::string adjust_this = slot.virtual_call_offset != 0 ?
+			"v0_" + SignedOffset(slot.virtual_call_offset) + "_" :
+			NonvirtualCallOffset(slot.this_adjustment);
+		return "_ZTc" + adjust_this + result + target_name.substr(2);
 	}
 
 	std::int64_t ReturnRuntimeVtableOffset(
@@ -933,7 +948,7 @@ private:
 	{
 		SymbolId target, symbol;
 		std::int64_t this_adjustment, return_adjustment,
-			return_vtable_offset;
+			return_vtable_offset, virtual_call_offset;
 		bool return_adjustment_virtual;
 
 		AdjustedSlotEntry(SymbolId target_value, const VirtualSlotFact& slot,
@@ -942,6 +957,7 @@ private:
 			  this_adjustment(slot.this_adjustment),
 			  return_adjustment(slot.return_adjustment),
 			  return_vtable_offset(slot.return_vtable_offset),
+			  virtual_call_offset(slot.virtual_call_offset),
 			  return_adjustment_virtual(slot.return_adjustment_virtual) {}
 	};
 
@@ -983,9 +999,9 @@ private:
 			adjusted_slot_slots_.size() * 7)
 			RehashAdjustedSlots(adjusted_slot_slots_.size() * 2);
 		const std::size_t mask = adjusted_slot_slots_.size() - 1;
-		std::size_t index = AdjustedSlotHash(target, slot.this_adjustment,
-			slot.return_adjustment, slot.return_vtable_offset,
-			slot.return_adjustment_virtual) & mask;
+		std::size_t index = AdjustedSlotHash(target, slot.this_adjustment +
+			slot.virtual_call_offset, slot.return_adjustment,
+			slot.return_vtable_offset, slot.return_adjustment_virtual) & mask;
 		while (adjusted_slot_slots_[index] != 0)
 		{
 			if (stats_) ++stats_->vtable_thunk_index_probes;
@@ -993,6 +1009,7 @@ private:
 				adjusted_slot_slots_[index] - 1];
 			if (entry.target == target &&
 				entry.this_adjustment == slot.this_adjustment &&
+				entry.virtual_call_offset == slot.virtual_call_offset &&
 				entry.return_adjustment == slot.return_adjustment &&
 				entry.return_vtable_offset == slot.return_vtable_offset &&
 				entry.return_adjustment_virtual ==
@@ -1017,13 +1034,17 @@ private:
 			static_cast<std::uint64_t>(slot.return_adjustment);
 		const std::string name = "_" + output_.strings.get(
 			output_.symbols[target].name) +
-			"__vtable_return_adjust__this_" + direction +
-			std::to_string(magnitude) + "__return_" + return_direction +
+			(slot.virtual_call_offset != 0 ? "__vtable_virtual_adjust_" +
+				SignedOffset(slot.virtual_call_offset) + "__return_" :
+				"__vtable_return_adjust__this_" + direction +
+				std::to_string(magnitude) + "__return_") + return_direction +
 			std::to_string(return_magnitude) +
 			(slot.return_adjustment_virtual ? "__virtual_" +
 				SignedOffset(slot.return_vtable_offset) : std::string());
 		const SymbolId thunk = AddSyntheticSymbol(Symbol::FUNCTION_SYMBOL, name,
 			HasReturnAdjustment(slot) ? CovariantThunkObjectName(target, slot) :
+				slot.virtual_call_offset != 0 ?
+				VirtualThunkObjectName(target, slot.virtual_call_offset) :
 				ThunkObjectName(target, slot.this_adjustment),
 			output_.symbols[target].internal_linkage);
 		Symbol& record = output_.symbols[thunk];
@@ -1035,7 +1056,7 @@ private:
 			thunk, target, function, slot.this_adjustment,
 			slot.return_adjustment, slot.return_vtable_offset,
 			ReturnRuntimeVtableOffset(slot),
-			slot.return_adjustment_virtual));
+			slot.return_adjustment_virtual, slot.virtual_call_offset));
 		adjusted_slot_entries_.push_back(AdjustedSlotEntry(
 			target, slot, thunk));
 		adjusted_slot_slots_[index] =
@@ -1205,7 +1226,8 @@ private:
 		ConstructionGroup group(base, offset);
 		group.tables.push_back(RegisterConstructionVtable(complete, base, offset, 0));
 		for (std::size_t k = 0; k < layout.secondary_views.size(); ++k)
-			group.tables.push_back(
+			group.tables.push_back(layout.secondary_views[k] == kVttPrimaryTable ?
+				group.tables[0] :
 				RegisterConstructionVtable(complete, base, offset, k + 1));
 		state_.class_construction_groups[complete].push_back(group);
 		RegisterNonvirtualConstructionGroups(complete, base, offset);
@@ -1620,28 +1642,31 @@ private:
 				view_offset += source.virtual_anchor_offset;
 			}
 		}
-		const EntityRecord& view_owner = program_.entities[owner];
-		const std::vector<std::uint32_t>& rows =
-			graph_.class_polymorphism[owner].virtual_base_rows;
-		std::vector<std::int64_t> offsets(view_owner.virtual_base_count, 0);
-		for (std::size_t virtual_base = 0;
-			virtual_base < view_owner.virtual_base_count; ++virtual_base)
+		// The base's own prefix values (its vcall offsets), with its virtual
+		// bases' offsets taken from the complete object.
+		std::vector<VtablePrefixEntry> entries =
+			graph_.class_polymorphism[owner].prefix;
+		if (!primary && base.views[view].virtual_base)
+			entries.insert(entries.end(),
+				graph_.class_polymorphism[owner].virtual_prefix.begin(),
+				graph_.class_polymorphism[owner].virtual_prefix.end());
+		std::vector<std::int64_t> offsets = primary ?
+			base.virtual_base_offsets : base.views[view].virtual_base_offsets;
+		for (std::size_t i = 0; i < entries.size() && i < offsets.size(); ++i)
 		{
+			if (entries[i].virtual_base == kNoEntity) continue;
 			std::uint64_t complete_offset = 0;
-			if (!program_.FindVirtualBase(complete, program_.VirtualBase(
-				owner, virtual_base).entity, &complete_offset))
+			if (!program_.FindVirtualBase(complete, entries[i].virtual_base,
+				&complete_offset))
 				ThrowLoweringInternal(
 					"construction vtable has no complete virtual base");
-			offsets[rows[virtual_base]] =
-				static_cast<std::int64_t>(complete_offset) -
+			offsets[i] = static_cast<std::int64_t>(complete_offset) -
 				static_cast<std::int64_t>(view_offset);
 		}
 		const std::vector<std::int64_t> no_virtual_call_offsets;
 		if (primary)
 			EmitVtableView(base_entity, base_entity, symbol, 0,
-				PrimarySlots(base_entity), offsets,
-				!output_.host_object_emission && base_offset == 0 ?
-					base.virtual_call_offsets : no_virtual_call_offsets,
+				PrimarySlots(base_entity), offsets, no_virtual_call_offsets,
 				state_.class_view_slot_symbols[base_entity][0],
 				state_.class_view_deleting_slot_symbols[base_entity][0]);
 		else
@@ -1667,18 +1692,17 @@ private:
 			EmitConstructionTable(entity, groups[i].base, groups[i].offset,
 				base.views.size(), groups[i].tables[0]);
 			for (std::size_t k = 0; k < layout.secondary_views.size(); ++k)
-				EmitConstructionTable(entity, groups[i].base, groups[i].offset,
-					layout.secondary_views[k], groups[i].tables[k + 1]);
+				if (layout.secondary_views[k] != kVttPrimaryTable)
+					EmitConstructionTable(entity, groups[i].base, groups[i].offset,
+						layout.secondary_views[k], groups[i].tables[k + 1]);
 		}
 	}
 
 	std::uint64_t ConstructionPrimaryAddressPoint(EntityId base,
 		std::uint64_t base_offset) const
 	{
-		const ClassPolymorphismFacts& facts = graph_.class_polymorphism[base];
-		return output_.host_object_emission ? PrimaryAddressPoint(facts) :
-			(base_offset == 0 ? facts.address_point : facts.address_point -
-				facts.virtual_call_offsets.size() * 8);
+		(void)base_offset;
+		return PrimaryAddressPoint(graph_.class_polymorphism[base]);
 	}
 
 	// Itanium 2.6.2: the primary vtable, the non-virtual bases' sub-VTTs,
@@ -1705,6 +1729,17 @@ private:
 		for (std::size_t k = 0; k < layout.secondary_views.size(); ++k)
 		{
 			const std::size_t view = layout.secondary_views[k];
+			// A virtual primary base shares its class's primary table.
+			if (view == kVttPrimaryTable)
+			{
+				if (top)
+					AddAddressItem(vtt, state_.class_vtable_symbols[complete],
+						static_cast<std::int64_t>(PrimaryAddressPoint(facts)));
+				else
+					AddAddressItem(vtt, group->tables[0], static_cast<std::int64_t>(
+						ConstructionPrimaryAddressPoint(owner, offset)));
+				continue;
+			}
 			AddAddressItem(vtt, top ?
 				state_.class_view_vtable_symbols[complete][view] :
 				group->tables[k + 1],

@@ -45,6 +45,12 @@ bool ClassHasEmptySubobject(const Program& program,
 std::vector<std::uint32_t> VirtualBaseConstructionOrder(const Program& program,
 	EntityId entity);
 
+// The indirect primary bases of `entity` (Itanium 2.4 I.a): the virtual
+// primary bases of the classes below it, each class visited once.
+void CollectIndirectPrimaryBases(const Program& program,
+	const std::vector<ClassPolymorphismFacts>& facts, EntityId entity,
+	std::vector<EntityId>* visited, std::vector<EntityId>* indirect);
+
 // The empty class subobjects a class layout has placed (2.4 II.2-3): two
 // subobjects of one type never share an offset, and only empty ones can
 // meet.  A non-empty component lies below the data size, where only a later

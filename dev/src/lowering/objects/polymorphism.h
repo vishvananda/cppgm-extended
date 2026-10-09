@@ -26,6 +26,8 @@ struct VtableThunkLoweringFact
 	std::int64_t return_vtable_offset;
 	std::int64_t return_runtime_vtable_offset;
 	bool return_adjustment_virtual;
+	// Nonzero for a virtual thunk: the vcall offset's place in the table.
+	std::int64_t virtual_call_offset;
 
 	VtableThunkLoweringFact(lowering::ir::SymbolId symbol_value,
 		lowering::ir::SymbolId target_value, semantic::BindingId function_value,
@@ -33,13 +35,15 @@ struct VtableThunkLoweringFact
 		std::int64_t return_adjustment_value,
 		std::int64_t return_vtable_offset_value,
 		std::int64_t return_runtime_vtable_offset_value,
-		bool return_adjustment_virtual_value)
+		bool return_adjustment_virtual_value,
+		std::int64_t virtual_call_offset_value = 0)
 		: symbol(symbol_value), target(target_value), function(function_value),
 		  this_adjustment(this_adjustment_value),
 		  return_adjustment(return_adjustment_value),
 		  return_vtable_offset(return_vtable_offset_value),
 		  return_runtime_vtable_offset(return_runtime_vtable_offset_value),
-		  return_adjustment_virtual(return_adjustment_virtual_value) {}
+		  return_adjustment_virtual(return_adjustment_virtual_value),
+		  virtual_call_offset(virtual_call_offset_value) {}
 };
 
 namespace abi { class LocalNames; }
@@ -291,6 +295,27 @@ protected:
 			view_store.first = view_address_point;
 			view_store.second = subobject;
 			derived.Emit(view_store);
+		}
+		// A virtual primary base gets the VTT's table where the complete
+		// object placed it (its own address unless this class claimed it).
+		const std::size_t first_secondary = layout ?
+			layout->size - layout->secondary_views.size() : 0;
+		for (std::size_t k = 0; layout && k < layout->secondary_views.size(); ++k)
+		{
+			if (layout->secondary_views[k] != kVttPrimaryTable) continue;
+			const Operand subobject = derived.RuntimeVirtualBaseAddress(
+				derived.LoadStorage(derived.StorageFor(
+					derived.current_this_binding_, LowPtr()), LowPtr()),
+				entity, layout->secondary_shared[k], true);
+			const Operand entry = derived.IndexAddress(LowI8(),
+				derived.CurrentConstructionVtt(), Operand(
+					static_cast<std::int64_t>(first_secondary + k) * 8, LowI64()),
+				false);
+			Instruction shared_store(Instruction::STORE);
+			shared_store.type = LowPtr();
+			shared_store.first = derived.LoadStorage(entry, LowPtr());
+			shared_store.second = subobject;
+			derived.Emit(shared_store);
 		}
 	}
 

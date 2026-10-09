@@ -24,9 +24,16 @@ EntityId PrimaryBase(const std::vector<ClassPolymorphismFacts>& facts,
 
 }
 
+bool VttLayoutBuilder::InPrimaryChain(EntityId owner, EntityId base) const
+{
+	if (owner >= facts_.size()) return false;
+	const std::vector<EntityId>& chain = facts_[owner].primary_ancestors;
+	return std::find(chain.begin(), chain.end(), base) != chain.end();
+}
+
 void VttLayoutBuilder::WalkSecondaryPointers(EntityId root, EntityId current,
 	std::uint64_t offset, bool morally_virtual, std::vector<EntityId>* visited,
-	std::vector<std::uint32_t>* views)
+	std::vector<std::uint32_t>* views, std::vector<std::uint32_t>* shared)
 {
 	const EntityRecord& owner = program_.entities[current];
 	if (owner.virtual_base_count == 0 && !morally_virtual) return;
@@ -51,19 +58,28 @@ void VttLayoutBuilder::WalkSecondaryPointers(EntityId root, EntityId current,
 		else nonvirtual_primary = edge.entity == primary;
 		if (!nonvirtual_primary && (base.virtual_base_count != 0 || moral))
 		{
+			// The table the subobject's vptr holds: its own view's, or the
+			// view (or primary table) whose primary chain it lies in.
 			const std::vector<PolymorphicViewFact>& candidates =
 				facts_[root].views;
 			std::size_t view = 0;
 			while (view < candidates.size() &&
-				!(candidates[view].stores_vptr &&
-				  candidates[view].entity == edge.entity &&
-				  candidates[view].offset == at))
+				!(candidates[view].stores_vptr && candidates[view].offset == at &&
+				  (candidates[view].entity == edge.entity ||
+				   InPrimaryChain(candidates[view].entity, edge.entity))))
 				++view;
+			std::uint32_t ordinal = kNoVttIndex;
 			if (view == candidates.size())
-				ThrowLoweringInternal("VTT virtual pointer has no vtable view");
+			{
+				if (!InPrimaryChain(root, edge.entity) ||
+					!program_.FindVirtualBase(root, edge.entity, 0, &ordinal))
+					ThrowLoweringInternal("VTT virtual pointer has no vtable view");
+				view = kVttPrimaryTable;
+			}
 			views->push_back(static_cast<std::uint32_t>(view));
+			shared->push_back(ordinal);
 		}
-		WalkSecondaryPointers(root, edge.entity, at, moral, visited, views);
+		WalkSecondaryPointers(root, edge.entity, at, moral, visited, views, shared);
 	}
 }
 
@@ -87,9 +103,13 @@ const ClassVttLayout& VttLayoutBuilder::Layout(EntityId entity)
 		facts_[entity].views.size() : 0, kNoVttIndex);
 	std::vector<EntityId> visited;
 	WalkSecondaryPointers(entity, entity, 0, false, &visited,
-		&layout.secondary_views);
+		&layout.secondary_views, &layout.secondary_shared);
 	for (std::size_t i = 0; i < layout.secondary_views.size(); ++i)
-		layout.view_index[layout.secondary_views[i]] = next++;
+	{
+		if (layout.secondary_views[i] != kVttPrimaryTable)
+			layout.view_index[layout.secondary_views[i]] = next;
+		++next;
+	}
 	layout.size = next;
 	layout.virtual_index.assign(owner.virtual_base_count, kNoVttIndex);
 	for (std::size_t i = 0; i < owner.virtual_base_count; ++i)

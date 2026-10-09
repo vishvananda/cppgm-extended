@@ -1460,11 +1460,12 @@ private:
 		BindingId base);
 	void CompleteVirtualExceptionOverrides(EntityId entity, EntityId enclosing);
 	bool ExceptionTypeAllowed(TypeId thrown, TypeId allowed) const;
-	void AssignVirtualBaseRows(EntityId entity);
+	void AssignVtablePrefixes(EntityId entity);
+	EntityId SelectVirtualPrimaryBase(EntityId entity);
 	bool ViewOverriderOffset(EntityId entity, const PolymorphicViewFact* view,
 		EntityId target, std::uint64_t* offset) const;
-	void InheritPolymorphicViewAnchor(const DirectBaseEdge& edge,
-		const PolymorphicViewFact& inherited, PolymorphicViewFact* view) const;
+	void InheritPrimaryPolymorphism(EntityId entity, const DirectBaseEdge& edge,
+		std::uint32_t ordinal);
 	void AnchorPolymorphicView(EntityId entity, const DirectBaseEdge& edge,
 		PolymorphicViewFact* view);
 	void FinalizeClassPolymorphismViews(EntityId entity);

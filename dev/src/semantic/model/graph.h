@@ -1137,16 +1137,19 @@ struct VirtualSlotFact
 	std::int64_t this_adjustment;
 	std::int64_t return_adjustment;
 	std::int64_t return_vtable_offset;
+	// In a virtual base's table, the place of the vcall offset an adjusting
+	// thunk reads instead of applying this_adjustment (0: none).
+	std::int64_t virtual_call_offset;
 	bool return_adjustment_virtual;
 
 	VirtualSlotFact()
 		: root(kNoBinding), function(kNoBinding), this_adjustment(0),
 		  return_adjustment(0), return_vtable_offset(0),
-		  return_adjustment_virtual(false) {}
+		  virtual_call_offset(0), return_adjustment_virtual(false) {}
 	VirtualSlotFact(BindingId root_value, BindingId function_value)
 		: root(root_value), function(function_value), this_adjustment(0),
 		  return_adjustment(0), return_vtable_offset(0),
-		  return_adjustment_virtual(false) {}
+		  virtual_call_offset(0), return_adjustment_virtual(false) {}
 };
 
 struct PolymorphicViewFact
@@ -1167,7 +1170,8 @@ struct PolymorphicViewFact
 	bool stores_vptr;
 	bool virtual_base;
 	bool contributes_primary_override;
-	// By row of the view class's own virtual bases.
+	// The view's prefix values: its class's prefix entries, with the vcall
+	// entries a virtual base adds.
 	std::vector<std::int64_t> virtual_base_offsets;
 	std::vector<std::int64_t> virtual_call_offsets;
 	std::vector<VirtualSlotFact> slots;
@@ -1193,23 +1197,44 @@ struct VirtualExceptionOverrideFact
 		: function(function_value), base(base_value) {}
 };
 
+// An entry of a vtable's prefix (Itanium 2.5.2): a vbase offset for a
+// virtual base, or a vcall offset for a virtual function's signature.
+struct VtablePrefixEntry
+{
+	EntityId virtual_base;
+	BindingId function;
+
+	VtablePrefixEntry(EntityId virtual_base_value = kNoEntity,
+		BindingId function_value = kNoBinding)
+		: virtual_base(virtual_base_value), function(function_value) {}
+};
+
 struct ClassPolymorphismFacts
 {
 	std::vector<VirtualSlotFact> slots;
 	std::vector<VirtualExceptionOverrideFact> exception_overrides;
 	std::vector<EntityId> primary_ancestors;
 	std::vector<PolymorphicViewFact> views;
-	// Vbase offsets by row (row 0 nearest the address point, Itanium
-	// 2.5.2); virtual_base_rows maps a virtual base ordinal to its row.
+	// The class's vtable prefix, nearest the address point first: its
+	// primary base's entries, then its other vbase offsets (prefix), and the
+	// vcall offsets it adds when it is a virtual base (virtual_prefix).
+	// virtual_base_offsets holds the primary table's values by entry;
+	// virtual_base_rows maps a virtual base ordinal to its entry, which is
+	// 24 + 8 * entry bytes below the address point.
+	std::vector<VtablePrefixEntry> prefix, virtual_prefix;
 	std::vector<std::int64_t> virtual_base_offsets;
 	std::vector<std::uint32_t> virtual_base_rows;
 	std::vector<std::int64_t> virtual_call_offsets;
 	std::uint64_t address_point;
 	bool complete;
 	bool vtable_demanded;
+	// The primary base (primary_ancestors[0]) is a nearly empty virtual
+	// base (Itanium 2.4 I.b).
+	bool primary_virtual;
 
 	ClassPolymorphismFacts()
-		: address_point(16), complete(false), vtable_demanded(false) {}
+		: address_point(16), complete(false), vtable_demanded(false),
+		  primary_virtual(false) {}
 
 	bool HasObjectTable() const
 	{

@@ -64,7 +64,7 @@ global @__rtti_struct_Explicit [binding=weak, object=_ZTI8Explicit] = {
   i32 0
   i32 2
   ptr addr @__rtti_struct_Middle
-  i64 -6141
+  i64 -8189
   ptr addr @__rtti_struct_Side
   i64 -10237
 }
@@ -86,7 +86,7 @@ global @__rtti_struct_Implicit [binding=weak, object=_ZTI8Implicit] = {
   i32 0
   i32 1
   ptr addr @__rtti_struct_Middle
-  i64 -6141
+  i64 -8189
 }
 global @Middle__vtable [binding=weak, object=_ZTV6Middle] = {
   i64 8
@@ -98,46 +98,36 @@ global @Middle____vtt [binding=weak, object=_ZTT6Middle, object_root=yes] = {
 }
 global @Explicit__vtable [binding=weak, object=_ZTV8Explicit] = {
   i64 0
-  i64 16
+  i64 0
   i64 8
   i64 0
   ptr addr @__rtti_struct_Explicit
 }
-global @Explicit____view__Middle__8__vtable [binding=internal, object=@Explicit____view__Middle__8__vtable] = {
-  i64 8
-  i64 -8
-  ptr addr @__rtti_struct_Explicit
-}
-global @Explicit____construction__Middle__8__s0__vtable [binding=internal, object=@Explicit____construction__Middle__8__s0__vtable] = {
+global @Explicit____construction__Middle__0__s0__vtable [binding=internal, object=@Explicit____construction__Middle__0__s0__vtable] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Middle
 }
 global @Explicit____vtt [binding=weak, object=_ZTT8Explicit, object_root=yes] = {
   ptr addr @Explicit__vtable + 40
-  ptr addr @Explicit____view__Middle__8__vtable + 24
-  ptr addr @Explicit____construction__Middle__8__s0__vtable + 24
+  ptr addr @Explicit__vtable + 40
+  ptr addr @Explicit____construction__Middle__0__s0__vtable + 24
 }
 global @Implicit__vtable [binding=weak, object=_ZTV8Implicit] = {
-  i64 16
+  i64 0
   i64 8
   i64 0
   ptr addr @__rtti_struct_Implicit
 }
-global @Implicit____view__Middle__8__vtable [binding=internal, object=@Implicit____view__Middle__8__vtable] = {
-  i64 8
-  i64 -8
-  ptr addr @__rtti_struct_Implicit
-}
-global @Implicit____construction__Middle__8__s0__vtable [binding=internal, object=@Implicit____construction__Middle__8__s0__vtable] = {
+global @Implicit____construction__Middle__0__s0__vtable [binding=internal, object=@Implicit____construction__Middle__0__s0__vtable] = {
   i64 8
   i64 0
   ptr addr @__rtti_struct_Middle
 }
 global @Implicit____vtt [binding=weak, object=_ZTT8Implicit, object_root=yes] = {
   ptr addr @Implicit__vtable + 32
-  ptr addr @Implicit____view__Middle__8__vtable + 24
-  ptr addr @Implicit____construction__Middle__8__s0__vtable + 24
+  ptr addr @Implicit__vtable + 32
+  ptr addr @Implicit____construction__Middle__0__s0__vtable + 24
 }
 global @__local_static__main__decl0__explicit_order [binding=internal, object=_ZZ4mainE14explicit_order] = {
   i32 1
@@ -244,9 +234,9 @@ function @matches(%want : ptr, %length : i32) -> i32 [binding=strong, object=_Z7
     return i32 1
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
-  slot $value : obj<24x8>
-  slot $source : obj<24x8>
-  slot $copy : obj<24x8>
+  slot $value : obj<16x8>
+  slot $source : obj<16x8>
+  slot $copy : obj<16x8>
 
   block ^entry:
     %t1 = addr $value
@@ -269,7 +259,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t6 = addr $source
     call void @Implicit__Implicit(%t6)
     %t7 = addr $source
-    %t8 = index i8 %t7, 16
+    %t8 = index i8 %t7, 8
     %t9 = index i8 [projection=field] %t8, 0
     store typed i32 5, %t9
     %t10 = addr $copy
@@ -289,7 +279,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^call_unwind_end_6:
     %t13 = addr $copy
-    %t14 = index i8 %t13, 16
+    %t14 = index i8 %t13, 8
     %t15 = index i8 [projection=field] %t14, 0
     %t16 = load typed i32 %t15
     %t17 = cmp ne i32 %t16, 5
@@ -324,17 +314,17 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_12:
     return i32 0
 }
-function @Explicit__Explicit(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN8ExplicitC1Ev, inline_hint=yes] {
+function @Explicit__Explicit(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN8ExplicitC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 16
+    %t2 = index i8 %t1, 8
     call void @Root__Root__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
     %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 8
+    %t6 = index i8 %t5, 0
     %t7 = addr @Explicit____vtt
     %t8 = index i8 %t7, 16
     call void @Middle__Middle__base_entry(%t6, %t8)
@@ -349,29 +339,20 @@ function @Explicit__Explicit(%this : ptr [object_bytes=24]) -> void [binding=wea
     %t18 = addr @Explicit__vtable
     %t19 = index i8 %t18, 40
     store typed ptr %t19, %t17
-    %t20 = load typed ptr $this
-    %t21 = load typed ptr %t20
-    %t22 = index i8 %t21, -24
-    %t23 = load typed i64 %t22
-    %t24 = index i8 %t20, %t23
-    %t25 = index i8 %t24, 0
-    %t26 = addr @Explicit____view__Middle__8__vtable
-    %t27 = index i8 %t26, 24
-    store typed ptr %t27, %t25
     call void @mark(4)
     eh_end
     return void
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 %t3, 16
+    %t4 = index i8 %t3, 8
     call void @Root___Root(%t4)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
     %t9 = load typed ptr $this
-    %t10 = index i8 %t9, 8
+    %t10 = index i8 %t9, 0
     %t11 = addr @Explicit____vtt
     %t12 = index i8 %t11, 16
     call void @Middle___Middle__base_entry(%t10, %t12)
@@ -383,7 +364,7 @@ function @Explicit__Explicit(%this : ptr [object_bytes=24]) -> void [binding=wea
     call void @Side___Side(%t16)
     jump ^constructor_cleanup_2
 }
-function @Explicit___Explicit__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> void [binding=weak, object=_ZN8ExplicitD2Ev, object_root=yes, inline_hint=yes] {
+function @Explicit___Explicit__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN8ExplicitD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -392,7 +373,7 @@ function @Explicit___Explicit__base_entry(%this : ptr [object_bytes=24], %__vtt 
     call void @mark(%t1)
     return void
 }
-function @Explicit___Explicit(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN8ExplicitD1Ev, inline_hint=yes] {
+function @Explicit___Explicit(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN8ExplicitD1Ev, inline_hint=yes] {
   slot $this : ptr
   slot $function_exception__1 : ptr
 
@@ -412,12 +393,12 @@ function @Explicit___Explicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
 
   block ^destructor_suffix_cleanup_5:
     %t4 = load typed ptr $this
-    %t5 = index i8 %t4, 8
+    %t5 = index i8 %t4, 0
     %t6 = addr @Explicit____vtt
     %t7 = index i8 %t6, 16
     call void @Middle___Middle__base_entry(%t5, %t7)
     %t8 = load typed ptr $this
-    %t9 = index i8 %t8, 16
+    %t9 = index i8 %t8, 8
     call void @Root___Root__base_entry(%t9)
     eh_end
     eh_catch_all, 1
@@ -430,7 +411,7 @@ function @Explicit___Explicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
   block ^destructor_suffix_next_6:
     eh_cleanup ^destructor_suffix_cleanup_7
     %t12 = load typed ptr $this
-    %t13 = index i8 %t12, 8
+    %t13 = index i8 %t12, 0
     %t14 = addr @Explicit____vtt
     %t15 = index i8 %t14, 16
     call void @Middle___Middle__base_entry(%t13, %t15)
@@ -439,7 +420,7 @@ function @Explicit___Explicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
 
   block ^destructor_suffix_cleanup_7:
     %t16 = load typed ptr $this
-    %t17 = index i8 %t16, 16
+    %t17 = index i8 %t16, 8
     call void @Root___Root__base_entry(%t17)
     eh_end
     eh_catch_all, 1
@@ -451,7 +432,7 @@ function @Explicit___Explicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
 
   block ^destructor_suffix_next_8:
     %t20 = load typed ptr $this
-    %t21 = index i8 %t20, 16
+    %t21 = index i8 %t20, 8
     call void @Root___Root__base_entry(%t21)
     jump ^destructor_end_4
 
@@ -460,12 +441,12 @@ function @Explicit___Explicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
     %t23 = index i8 %t22, 0
     call void @Side___Side__base_entry(%t23)
     %t24 = load typed ptr $this
-    %t25 = index i8 %t24, 8
+    %t25 = index i8 %t24, 0
     %t26 = addr @Explicit____vtt
     %t27 = index i8 %t26, 16
     call void @Middle___Middle__base_entry(%t25, %t27)
     %t28 = load typed ptr $this
-    %t29 = index i8 %t28, 16
+    %t29 = index i8 %t28, 8
     call void @Root___Root__base_entry(%t29)
     eh_end
     eh_catch_all, 1
@@ -490,17 +471,17 @@ function @Explicit___Explicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
     call void @cppgm_call_terminate(%t33)
     return void
 }
-function @Implicit__Implicit(%this : ptr [object_bytes=24]) -> void [binding=weak, object=_ZN8ImplicitC1Ev, inline_hint=yes] {
+function @Implicit__Implicit(%this : ptr [object_bytes=16]) -> void [binding=weak, object=_ZN8ImplicitC1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 16
+    %t2 = index i8 %t1, 8
     call void @Root__Root__base_entry(%t2)
     eh_cleanup ^constructor_cleanup_1
     %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 8
+    %t6 = index i8 %t5, 0
     %t7 = addr @Implicit____vtt
     %t8 = index i8 %t7, 16
     call void @Middle__Middle__base_entry(%t6, %t8)
@@ -510,41 +491,32 @@ function @Implicit__Implicit(%this : ptr [object_bytes=24]) -> void [binding=wea
     %t14 = addr @Implicit__vtable
     %t15 = index i8 %t14, 32
     store typed ptr %t15, %t13
-    %t16 = load typed ptr $this
-    %t17 = load typed ptr %t16
-    %t18 = index i8 %t17, -24
-    %t19 = load typed i64 %t18
-    %t20 = index i8 %t16, %t19
-    %t21 = index i8 %t20, 0
-    %t22 = addr @Implicit____view__Middle__8__vtable
-    %t23 = index i8 %t22, 24
-    store typed ptr %t23, %t21
     eh_end
     return void
 
   block ^constructor_cleanup_1:
     %t3 = load typed ptr $this
-    %t4 = index i8 %t3, 16
+    %t4 = index i8 %t3, 8
     call void @Root___Root__base_entry(%t4)
     eh_end
     resume
 
   block ^constructor_cleanup_2:
     %t9 = load typed ptr $this
-    %t10 = index i8 %t9, 8
+    %t10 = index i8 %t9, 0
     %t11 = addr @Implicit____vtt
     %t12 = index i8 %t11, 16
     call void @Middle___Middle__base_entry(%t10, %t12)
     jump ^constructor_cleanup_1
 }
-function @Implicit___Implicit__base_entry(%this : ptr [object_bytes=24], %__vtt : ptr) -> void [binding=weak, object=_ZN8ImplicitD2Ev, object_root=yes, inline_hint=yes] {
+function @Implicit___Implicit__base_entry(%this : ptr [object_bytes=16], %__vtt : ptr) -> void [binding=weak, object=_ZN8ImplicitD2Ev, object_root=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
     store typed ptr %this, $this
     return void
 }
-function @Implicit___Implicit(%this : ptr [object_bytes=24]) -> void [unwind=no, binding=weak, object=_ZN8ImplicitD1Ev, inline_hint=yes] {
+function @Implicit___Implicit(%this : ptr [object_bytes=16]) -> void [unwind=no, binding=weak, object=_ZN8ImplicitD1Ev, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
@@ -553,7 +525,7 @@ function @Implicit___Implicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
     eh_end
     eh_cleanup ^destructor_suffix_cleanup_3
     %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 8
+    %t2 = index i8 %t1, 0
     %t3 = addr @Implicit____vtt
     %t4 = index i8 %t3, 16
     call void @Middle___Middle__base_entry(%t2, %t4)
@@ -562,25 +534,25 @@ function @Implicit___Implicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
 
   block ^destructor_suffix_cleanup_3:
     %t5 = load typed ptr $this
-    %t6 = index i8 %t5, 16
+    %t6 = index i8 %t5, 8
     call void @Root___Root__base_entry(%t6)
     eh_end
     resume
 
   block ^destructor_suffix_next_4:
     %t7 = load typed ptr $this
-    %t8 = index i8 %t7, 16
+    %t8 = index i8 %t7, 8
     call void @Root___Root__base_entry(%t8)
     jump ^destructor_end_2
 
   block ^destructor_cleanup_1:
     %t9 = load typed ptr $this
-    %t10 = index i8 %t9, 8
+    %t10 = index i8 %t9, 0
     %t11 = addr @Implicit____vtt
     %t12 = index i8 %t11, 16
     call void @Middle___Middle__base_entry(%t10, %t12)
     %t13 = load typed ptr $this
-    %t14 = index i8 %t13, 16
+    %t14 = index i8 %t13, 8
     call void @Root___Root__base_entry(%t14)
     eh_end
     resume
@@ -588,7 +560,7 @@ function @Implicit___Implicit(%this : ptr [object_bytes=24]) -> void [unwind=no,
   block ^destructor_end_2:
     return void
 }
-function @Implicit__Implicit__sym2(%this : ptr [alias=noalias, object_bytes=24], %other : ptr [pass=by_address, alias=noalias, object_bytes=24]) -> void [binding=weak, object=_ZN8ImplicitC1ERKS_, inline_hint=yes] {
+function @Implicit__Implicit__sym2(%this : ptr [alias=noalias, object_bytes=16], %other : ptr [pass=by_address, alias=noalias, object_bytes=16]) -> void [binding=weak, object=_ZN8ImplicitC1ERKS_, inline_hint=yes] {
   slot $this : ptr
   slot $other : ptr
 
@@ -596,18 +568,18 @@ function @Implicit__Implicit__sym2(%this : ptr [alias=noalias, object_bytes=24],
     store typed ptr %this, $this
     store typed ptr %other, $other
     %t1 = load typed ptr $this
-    %t2 = index i8 %t1, 16
+    %t2 = index i8 %t1, 8
     %t3 = load typed ptr $other
     %t4 = load typed ptr %t3
-    %t5 = index i8 %t4, -32
+    %t5 = index i8 %t4, -24
     %t6 = load typed i64 %t5
     %t7 = index i8 %t3, %t6
     call void @Root__Root__ov2__base_entry(%t2, %t7)
     %t8 = load typed ptr $this
-    %t9 = index i8 %t8, 8
+    %t9 = index i8 %t8, 0
     %t10 = load typed ptr $other
     %t11 = load typed ptr %t10
-    %t12 = index i8 %t11, -24
+    %t12 = index i8 %t11, -32
     %t13 = load typed i64 %t12
     %t14 = index i8 %t10, %t13
     %t15 = addr @Implicit____vtt
@@ -629,15 +601,6 @@ function @Implicit__Implicit__sym2(%this : ptr [alias=noalias, object_bytes=24],
     %t18 = addr @Implicit__vtable
     %t19 = index i8 %t18, 32
     store typed ptr %t19, %t17
-    %t20 = load typed ptr $this
-    %t21 = load typed ptr %t20
-    %t22 = index i8 %t21, -24
-    %t23 = load typed i64 %t22
-    %t24 = index i8 %t20, %t23
-    %t25 = index i8 %t24, 0
-    %t26 = addr @Implicit____view__Middle__8__vtable
-    %t27 = index i8 %t26, 24
-    store typed ptr %t27, %t25
     return void
 }
 function @Root__Root__base_entry(%this : ptr [object_bytes=4]) -> void [binding=weak, object=_ZN4RootC2Ev, object_root=yes, inline_hint=yes] {

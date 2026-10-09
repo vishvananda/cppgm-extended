@@ -241,6 +241,37 @@ void RecordNullMemberPointerRuns(Program& program, EntityId entity,
 namespace
 {
 
+// A base subobject placed at `offset` claims the virtual primary base of its
+// class, and of its non-virtual bases, when no subobject placed before did
+// (Itanium 2.4: an indirect primary base lies with the base it is primary
+// for).  `self` marks the class's own virtual primary base.
+void ClaimPrimaryVirtualBases(const Program& program,
+	const std::vector<ClassPolymorphismFacts>& facts, EntityId base,
+	std::uint64_t offset, bool self, const std::vector<EntityId>& indirect,
+	std::vector<std::pair<EntityId, std::uint64_t> >* claimed)
+{
+	if (self) claimed->push_back(std::make_pair(base, offset));
+	if (base < facts.size() && facts[base].primary_virtual)
+	{
+		const EntityId primary = facts[base].primary_ancestors[0];
+		bool taken = false;
+		for (std::size_t i = 0; i < claimed->size(); ++i)
+			taken = taken || (*claimed)[i].first == primary;
+		if (!taken && std::find(indirect.begin(), indirect.end(), primary) !=
+			indirect.end())
+			ClaimPrimaryVirtualBases(program, facts, primary, offset, true,
+				indirect, claimed);
+	}
+	const EntityRecord& record = program.entities[base];
+	for (std::size_t i = 0; i < record.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& edge = program.DirectBase(base, i);
+		if (!edge.virtual_base)
+			ClaimPrimaryVirtualBases(program, facts, edge.entity,
+				offset + edge.offset, false, indirect, claimed);
+	}
+}
+
 // Each direct base's virtual bases in its construction order, then the base
 // itself when it is virtual.
 void RankVirtualBaseConstruction(const Program& program, EntityId entity,
@@ -303,10 +334,42 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 	owner.nonvirtual_alignment = std::max(own_nonvirtual_alignment,
 		owner.requested_alignment);
 	// Itanium C++ ABI 2.4 III: the virtual bases in inheritance graph order,
-	// placed as non-virtual bases are, from the data size.
+	// placed as non-virtual bases are, from the data size -- except the
+	// class's own virtual primary base (at offset zero) and the indirect
+	// primary bases, which lie with the subobject claiming them.
+	std::vector<EntityId> visited, indirect;
+	CollectIndirectPrimaryBases(*program_, class_polymorphism_, entity,
+		&visited, &indirect);
+	std::vector<std::pair<EntityId, std::uint64_t> > claimed;
+	if (entity < class_polymorphism_.size() &&
+		class_polymorphism_[entity].primary_virtual)
+		ClaimPrimaryVirtualBases(*program_, class_polymorphism_,
+			class_polymorphism_[entity].primary_ancestors[0], 0, true,
+			indirect, &claimed);
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& edge = program_->DirectBase(entity, i);
+		if (!edge.virtual_base)
+			ClaimPrimaryVirtualBases(*program_, class_polymorphism_, edge.entity,
+				edge.offset, false, indirect, &claimed);
+	}
+	for (std::size_t pass = 0; pass != 2; ++pass)
 	for (std::size_t i = 0; i < layouts.size(); ++i)
 	{
-		const EntityRecord& base = program_->entities[layouts[i].entity];
+		const EntityId candidate = layouts[i].entity;
+		std::size_t claim = 0;
+		while (claim < claimed.size() && claimed[claim].first != candidate) ++claim;
+		const bool is_indirect = std::find(indirect.begin(), indirect.end(),
+			candidate) != indirect.end();
+		if (claim != claimed.size())
+		{
+			layouts[i].offset = claimed[claim].second;
+			continue;
+		}
+		// An indirect primary base no placed subobject claimed is laid out
+		// after the others.
+		if (is_indirect != (pass != 0)) continue;
+		const EntityRecord& base = program_->entities[candidate];
 		const std::uint64_t base_alignment = LayoutNonvirtualAlignment(base);
 		const std::uint64_t effective = packing_alignment == 0 ? base_alignment :
 			std::min<std::uint64_t>(base_alignment, packing_alignment);
@@ -326,6 +389,9 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 		cursor->Place(offset + extent, !empty);
 		cursor->alignment = std::max(cursor->alignment, effective);
 		layouts[i].offset = offset;
+		claimed.push_back(std::make_pair(candidate, offset));
+		ClaimPrimaryVirtualBases(*program_, class_polymorphism_, candidate,
+			offset, false, indirect, &claimed);
 	}
 	cursor->alignment = std::max(cursor->alignment, owner.requested_alignment);
 	RankVirtualBaseConstruction(*program_, entity, &layouts);

@@ -81,11 +81,11 @@ global @Object__vtable [binding=weak, object=_ZTV6Object] = {
   ptr addr @Object___Object__deleting_entry
 }
 global @Object____view__Virtual__16__vtable [binding=internal, object=@Object____view__Virtual__16__vtable] = {
-  i64 0
+  i64 -16
   i64 -16
   ptr addr @__rtti_struct_Object
-  ptr addr @_Object___Object__vtable_return_adjust__this_neg16__return_pos0
-  ptr addr @_Object___Object__deleting_entry__vtable_return_adjust__this_neg16__return_pos0
+  ptr addr @_Object___Object__vtable_virtual_adjust_n24__return_pos0
+  ptr addr @_Object___Object__deleting_entry__vtable_virtual_adjust_n24__return_pos0
 }
 global @Object____vtt [binding=weak, object=_ZTT6Object, object_root=yes] = {
   ptr addr @Object__vtable + 24
@@ -514,15 +514,21 @@ function @Virtual__Virtual__base_entry(%this : ptr [object_bytes=16]) -> void [u
     store typed ptr %t3, %t1
     return void
 }
-function @_Object___Object__deleting_entry__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZThn16_N6ObjectD0Ev] {
+function @_Object___Object__deleting_entry__vtable_virtual_adjust_n24__return_pos0(%arg0 : ptr) -> void [binding=weak, object=_ZTv0_n24_N6ObjectD0Ev] {
   block ^entry:
-    %t1 = index i8 %arg0, -16
-    call void @Object___Object__deleting_entry(%t1)
+    %t1 = load typed ptr %arg0
+    %t2 = index i8 %t1, -24
+    %t3 = load typed i64 %t2
+    %t4 = index i8 %arg0, %t3
+    call void @Object___Object__deleting_entry(%t4)
     return void
 }
-function @_Object___Object__vtable_return_adjust__this_neg16__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZThn16_N6ObjectD1Ev] {
+function @_Object___Object__vtable_virtual_adjust_n24__return_pos0(%arg0 : ptr) -> void [unwind=no, binding=weak, object=_ZTv0_n24_N6ObjectD1Ev] {
   block ^entry:
-    %t1 = index i8 %arg0, -16
-    call void @Object___Object(%t1)
+    %t1 = load typed ptr %arg0
+    %t2 = index i8 %t1, -24
+    %t3 = load typed i64 %t2
+    %t4 = index i8 %arg0, %t3
+    call void @Object___Object(%t4)
     return void
 }

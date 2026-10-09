@@ -30,7 +30,7 @@ global @__rtti_struct_derived [binding=weak, object=_ZTI7derived] = {
   i32 0
   i32 1
   ptr addr @__rtti_struct_root
-  i64 -6141
+  i64 -8189
 }
 global @root__vtable [binding=weak, object=_ZTV4root] = {
   i64 0
@@ -38,48 +38,30 @@ global @root__vtable [binding=weak, object=_ZTV4root] = {
   ptr addr @root__anchor
 }
 global @derived__vtable [binding=weak, object=_ZTV7derived] = {
-  i64 8
+  i64 0
+  i64 0
   i64 0
   ptr addr @__rtti_struct_derived
+  ptr addr @root__anchor
   ptr addr @derived__first
   ptr addr @derived__second
 }
-global @derived____view__root__8__vtable [binding=internal, object=@derived____view__root__8__vtable] = {
-  i64 0
-  i64 -8
-  ptr addr @__rtti_struct_derived
-  ptr addr @root__anchor
-}
 global @derived____vtt [binding=weak, object=_ZTT7derived, object_root=yes] = {
-  ptr addr @derived__vtable + 24
-  ptr addr @derived____view__root__8__vtable + 24
+  ptr addr @derived__vtable + 32
+  ptr addr @derived__vtable + 32
 }
 
-function @call_second(%value : ptr [pass=by_address, object_bytes=16]) -> i32 [binding=strong, object=_Z11call_secondR7derived] {
+function @call_second(%value : ptr [pass=by_address, object_bytes=8]) -> i32 [binding=strong, object=_Z11call_secondR7derived] {
   slot $value : ptr
 
   block ^entry:
     store typed ptr %value, $value
     %t1 = load typed ptr $value
     %t2 = load typed ptr %t1
-    %t3 = index i8 %t2, 8
+    %t3 = index i8 %t2, 16
     %t4 = load typed ptr %t3
-    %t5 = call i32 %t4(%t1) as (%arg0 : ptr [object_bytes=16]) -> i32
+    %t5 = call i32 %t4(%t1) as (%arg0 : ptr [object_bytes=8]) -> i32
     return i32 %t5
-}
-function @derived__first(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN7derived5firstEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 2
-}
-function @derived__second(%this : ptr [object_bytes=16]) -> i32 [binding=weak, object=_ZN7derived6secondEv, inline_hint=yes] {
-  slot $this : ptr
-
-  block ^entry:
-    store typed ptr %this, $this
-    return i32 3
 }
 function @root__anchor(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN4root6anchorEv, inline_hint=yes] {
   slot $this : ptr
@@ -87,4 +69,18 @@ function @root__anchor(%this : ptr [object_bytes=8]) -> i32 [binding=weak, objec
   block ^entry:
     store typed ptr %this, $this
     return i32 1
+}
+function @derived__first(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7derived5firstEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 2
+}
+function @derived__second(%this : ptr [object_bytes=8]) -> i32 [binding=weak, object=_ZN7derived6secondEv, inline_hint=yes] {
+  slot $this : ptr
+
+  block ^entry:
+    store typed ptr %this, $this
+    return i32 3
 }

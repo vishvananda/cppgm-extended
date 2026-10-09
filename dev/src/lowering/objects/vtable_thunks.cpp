@@ -133,34 +133,64 @@ private:
 			lowering::presentation::ExactBlockPresentation(output_, "entry")));
 		function.blocks[0].selected = true;
 		function.block_order.push_back(BlockId(0));
-		const Operand adjusted(TempId(1), LowPtr());
+		// A virtual thunk (Itanium 5.1.4) adds the vcall offset its table
+		// holds for the function, so it serves the base in any complete
+		// object; a non-virtual thunk adds a fixed adjustment.
+		std::uint32_t temp = 1;
+		Operand adjust_by(thunk.this_adjustment, LowI64());
+		if (thunk.virtual_call_offset != 0)
+		{
+			const Operand vtable(TempId(temp++), LowPtr());
+			Instruction load_vtable(Instruction::LOAD);
+			load_vtable.dest = vtable.id;
+			load_vtable.type = LowPtr();
+			load_vtable.first =
+				Operand(ParameterId(indirect_result ? 1 : 0), LowPtr());
+			function.blocks[0].instructions.push_back(load_vtable);
+			const Operand entry(TempId(temp++), LowPtr());
+			Instruction index_entry(Instruction::INDEX);
+			index_entry.dest = entry.id;
+			index_entry.type = LowI8();
+			index_entry.first = vtable;
+			index_entry.second = Operand(thunk.virtual_call_offset, LowI64());
+			function.blocks[0].instructions.push_back(index_entry);
+			adjust_by = Operand(TempId(temp++), LowI64());
+			Instruction load_offset(Instruction::LOAD);
+			load_offset.dest = adjust_by.id;
+			load_offset.type = LowI64();
+			load_offset.first = entry;
+			function.blocks[0].instructions.push_back(load_offset);
+		}
+		const Operand adjusted(TempId(temp++), LowPtr());
 		Instruction index(Instruction::INDEX);
 		index.dest = adjusted.id;
 		index.type = LowI8();
 		index.first = Operand(ParameterId(indirect_result ? 1 : 0), LowPtr());
-		index.second = Operand(thunk.this_adjustment, LowI64());
+		index.second = adjust_by;
 		function.blocks[0].instructions.push_back(index);
 		Instruction call(Instruction::CALL);
 		call.type = function.result;
 		call.first = Operand(Operand::FUNCTION, thunk.target, LowPtr());
 		AttachArguments(&call, type, parameters, adjusted, indirect_result);
+		const std::uint32_t result_temp = temp;
 		if (function.result.kind == LOW_VOID)
 			function.blocks[0].instructions.push_back(call);
 		else
 		{
-			call.dest = 2;
+			call.dest = result_temp;
 			function.blocks[0].instructions.push_back(call);
 		}
 		const bool adjust_return = thunk.return_adjustment_virtual ||
 			thunk.return_adjustment != 0;
-		std::uint32_t next_temp = function.result.kind == LOW_VOID ? 2 : 3;
+		std::uint32_t next_temp = function.result.kind == LOW_VOID ?
+			result_temp : result_temp + 1;
 		if (adjust_return)
 		{
 			if (function.result.kind != LOW_PTR)
 				ThrowLoweringInternal(
 					"covariant vtable thunk result is not pointer-shaped");
-			const Operand returned(TempId(2), LowPtr());
-			const Operand is_null(TempId(3), LowI64());
+			const Operand returned(TempId(result_temp), LowPtr());
+			const Operand is_null(TempId(result_temp + 1), LowI64());
 			Instruction compare(Instruction::CMP);
 			compare.dest = is_null.id;
 			compare.op = LOW_OP_EQ;
@@ -193,7 +223,7 @@ private:
 					output_, "adjust_return")));
 			function.blocks[2].selected = true;
 			function.block_order.push_back(BlockId(2));
-			next_temp = 4;
+			next_temp = result_temp + 2;
 			Operand adjusted_result = returned;
 			if (thunk.return_adjustment != 0)
 			{
@@ -250,7 +280,7 @@ private:
 			if (function.result.kind != LOW_VOID)
 			{
 				result.type = function.result;
-				result.first = Operand(TempId(2), function.result);
+				result.first = Operand(TempId(result_temp), function.result);
 			}
 			function.blocks[0].instructions.push_back(result);
 			function.blocks[0].terminated = true;

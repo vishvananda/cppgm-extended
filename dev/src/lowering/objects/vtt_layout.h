@@ -13,6 +13,9 @@ namespace lowering
 {
 
 const std::uint32_t kNoVttIndex = std::numeric_limits<std::uint32_t>::max();
+// A secondary virtual pointer of a virtual primary base: its table is the
+// class's primary table.
+const std::uint32_t kVttPrimaryTable = kNoVttIndex - 1;
 
 // A class's VTT shape (Itanium C++ ABI 2.6.2), which does not depend on the
 // complete class it is a sub-VTT of: entry 0 holds the primary vtable; then
@@ -31,8 +34,11 @@ struct ClassVttLayout
 	std::vector<std::uint32_t> base_index;
 	// Per polymorphic view: its secondary virtual pointer's index.
 	std::vector<std::uint32_t> view_index;
-	// The views holding secondary virtual pointers, in VTT order.
+	// The views holding secondary virtual pointers, in VTT order
+	// (kVttPrimaryTable for a virtual primary base, whose ordinal among the
+	// class's virtual bases secondary_shared then holds).
 	std::vector<std::uint32_t> secondary_views;
+	std::vector<std::uint32_t> secondary_shared;
 	// Per virtual base ordinal: the start of its sub-VTT in a complete VTT.
 	std::vector<std::uint32_t> virtual_index;
 
@@ -51,10 +57,11 @@ public:
 	const ClassVttLayout& Layout(semantic::EntityId entity);
 
 private:
+	bool InPrimaryChain(semantic::EntityId owner, semantic::EntityId base) const;
 	void WalkSecondaryPointers(semantic::EntityId root,
 		semantic::EntityId current, std::uint64_t offset, bool morally_virtual,
 		std::vector<semantic::EntityId>* visited,
-		std::vector<std::uint32_t>* views);
+		std::vector<std::uint32_t>* views, std::vector<std::uint32_t>* shared);
 
 	const semantic::Program& program_;
 	const std::vector<semantic::ClassPolymorphismFacts>& facts_;

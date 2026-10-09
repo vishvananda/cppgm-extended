@@ -106,6 +106,26 @@ bool ClassHasEmptySubobject(const Program& program,
 	return false;
 }
 
+// The indirect primary bases of `entity` (2.4 I.a): the virtual primary
+// bases of the classes below it.
+void CollectIndirectPrimaryBases(const Program& program,
+	const std::vector<ClassPolymorphismFacts>& facts, EntityId entity,
+	std::vector<EntityId>* visited, std::vector<EntityId>* indirect)
+{
+	const EntityRecord& owner = program.entities[entity];
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+	{
+		const EntityId base = program.DirectBase(entity, i).entity;
+		if (program.entities[base].virtual_base_count == 0 ||
+			std::find(visited->begin(), visited->end(), base) != visited->end())
+			continue;
+		visited->push_back(base);
+		if (base < facts.size() && facts[base].primary_virtual)
+			indirect->push_back(facts[base].primary_ancestors[0]);
+		CollectIndirectPrimaryBases(program, facts, base, visited, indirect);
+	}
+}
+
 EmptySubobjectMap::EmptySubobjectMap()
 	: program_(0), members_(0), count_(0), visits_(0), max_offset_(0),
 	  record_limit_(0)

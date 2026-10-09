@@ -179,7 +179,11 @@ To complete PA23, implement these goals:
    deterministic offset. The virtual bases follow the non-virtual part in inheritance
    graph order (Itanium C++ ABI 2.4 III). Each is placed as a non-virtual base is: from
    the data size, so a virtual base can occupy a non-POD base's tail padding, and an empty
-   virtual base at offset `0` when no empty subobject of its type is there.
+   virtual base at offset `0` when no empty subobject of its type is there. A class with
+   no non-virtual dynamic base takes a nearly empty virtual base (one whose non-virtual
+   part is its vptr alone) as its primary base (2.4 I.b). That base sits at offset `0` and
+   shares the class's vptr and vtable. A virtual base that is some base's primary base is
+   not placed again: it lies with the subobject that claims it.
 
 2. Polymorphic dispatch over adjusted vtable views.
    Calling a virtual through a class with virtual-base adjustment rows must select the
@@ -248,8 +252,19 @@ that segment instead of using one class-wide negative-row count. The
 virtual-base-offset rows follow the Itanium ABI (2.5.2): the first virtual
 base in inheritance graph order sits nearest the address point, after the rows
 a primary base already places there, and a VMI descriptor's `__offset_flags`
-name the row. A primary base of a secondary base shares that base's table and
-has no table of its own in the group.
+name the row.
+
+A virtual base's table also carries vcall offsets, and so does a class's
+primary table when its primary chain reaches a virtual primary base. There is
+one vcall offset per virtual function signature the virtual base declares:
+those of its non-virtual primary chain first, then those of its other
+non-virtual bases. They are placed as clang places them, so a virtual primary
+base's vcall offsets come before its vbase offset. An overrider reached
+through a virtual base's table is a virtual thunk (`_ZTv0_n<k>_`) that adds
+that vcall offset, so a class another compiler derives can use it. A primary
+base of a secondary base shares that base's table and has no table of its own
+in the group. The key function is the first non-inline, non-pure virtual
+function the class declares.
 
 The VTT follows Itanium 2.6.2. It holds the primary vtable; a sub-VTT for each
 direct non-virtual base that has virtual bases (without its virtual sub-VTTs);
