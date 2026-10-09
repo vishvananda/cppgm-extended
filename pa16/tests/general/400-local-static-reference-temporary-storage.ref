@@ -1,21 +1,21 @@
-global @__local_static__whole__held__tokens66_73 : ptr [binding=internal] = zero
+global @__local_static__whole__held__tokens66_73 : ptr [binding=internal, object=_ZZ5wholevE4held] = zero
 global @__cppgm_ref_temporary____local_static__whole__held__tokens66_73_0 [binding=internal] = {
   zero 16
 }
-global @__local_static__whole__held__tokens66_73__guard : i64 [binding=internal] = zero
-global @__local_static__member__held__tokens88_97 : ptr [binding=internal] = zero
+global @__local_static__whole__held__tokens66_73__guard : i64 [binding=internal, object=_ZGVZ5wholevE4held] = zero
+global @__local_static__member__held__tokens88_97 : ptr [binding=internal, object=_ZZ6membervE4held] = zero
 global @__cppgm_ref_temporary____local_static__member__held__tokens88_97_0 [binding=internal] = {
   zero 16
 }
-global @__local_static__member__held__tokens88_97__guard : i64 [binding=internal] = zero
-global @__local_static__chosen__held__tokens112_128 : ptr [binding=internal] = zero
+global @__local_static__member__held__tokens88_97__guard : i64 [binding=internal, object=_ZGVZ6membervE4held] = zero
+global @__local_static__chosen__held__tokens112_128 : ptr [binding=internal, object=_ZZ6chosenvE4held] = zero
 global @__cppgm_ref_temporary____local_static__chosen__held__tokens112_128_0 [binding=internal] = {
   zero 16
 }
-global @__local_static__chosen__held__tokens112_128__guard : i64 [binding=internal] = zero
-global @__local_static__scalar__decl0__held : ptr [binding=internal] = zero
+global @__local_static__chosen__held__tokens112_128__guard : i64 [binding=internal, object=_ZGVZ6chosenvE4held] = zero
+global @__local_static__scalar__decl0__held : ptr [binding=internal, object=_ZZ6scalarvE4held] = zero
 global @__cppgm_ref_temporary____local_static__scalar__decl0__held_0 : i32 [binding=internal] = zero
-global @__local_static__scalar__decl0__held__guard : i64 [binding=internal] = zero
+global @__local_static__scalar__decl0__held__guard : i64 [binding=internal, object=_ZGVZ6scalarvE4held] = zero
 global @calls : i32 [binding=strong] = zero
 
 function @next() -> i32 [binding=strong, object=_Z4nextv] {

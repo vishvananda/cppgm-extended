@@ -1,10 +1,11 @@
 #include "lowering/abi/mangling.h"
+#include "lowering/abi/local_entity_names.h"
+#include "lowering/abi/mangling_vocabulary.h"
 
 #include "abi/itanium/abi_mangle.h"
 #include "lowering/ir/model.h"
 #include "lowering/objects/polymorphism.h"
 #include "lowering/support/errors.h"
-#include "semantic/presentation/lambdas.h"
 #include "support/containers/flat_hash_set.h"
 
 #include <limits>
@@ -25,67 +26,6 @@ namespace
 {
 
 using namespace semantic;
-
-bool MakeBuiltinAbiType(const semantic::Program& program, const TypeRecord& source,
-	abi_mangle::AbiType* result)
-{
-	using namespace abi_mangle;
-	if (source.kind == TYPE_BITINT)
-	{
-		if (source.dependent_bound_parameter != kNoTemplateParameter ||
-			source.bound == 0)
-			ThrowLoweringInternal("dependent _BitInt has no ABI encoding");
-		result->kind = ABI_TYPE_BUILTIN;
-		result->builtin_type = source.bitint_unsigned ?
-			ABI_BUILTIN_TYPE_UNSIGNED_BITINT : ABI_BUILTIN_TYPE_BITINT;
-		result->index = source.bound;
-		return true;
-	}
-	if (source.kind == TYPE_COMPLEX)
-	{
-		const TypeRecord& element = program.types.Get(source.child);
-		if (element.kind != TYPE_FUNDAMENTAL)
-			ThrowLoweringInternal("complex ABI element is not fundamental");
-		result->kind = ABI_TYPE_BUILTIN;
-		switch (element.fundamental)
-		{
-		case FUND_FLOAT:
-			result->builtin_type = ABI_BUILTIN_TYPE_COMPLEX_FLOAT;
-			return true;
-		case FUND_DOUBLE:
-			result->builtin_type = ABI_BUILTIN_TYPE_COMPLEX_DOUBLE;
-			return true;
-		case FUND_LONG_DOUBLE:
-			result->builtin_type = ABI_BUILTIN_TYPE_COMPLEX_LONG_DOUBLE;
-			return true;
-		default:
-			ThrowLoweringSource("unsupported complex ABI element type");
-		}
-	}
-	if (source.kind != TYPE_FUNDAMENTAL) return false;
-	static const AbiBuiltinTypeKind fundamental_types[] = {
-		ABI_BUILTIN_TYPE_BOOL, ABI_BUILTIN_TYPE_CHAR,
-		ABI_BUILTIN_TYPE_SIGNED_CHAR, ABI_BUILTIN_TYPE_UNSIGNED_CHAR,
-		ABI_BUILTIN_TYPE_SHORT, ABI_BUILTIN_TYPE_UNSIGNED_SHORT,
-		ABI_BUILTIN_TYPE_INT, ABI_BUILTIN_TYPE_UNSIGNED_INT,
-		ABI_BUILTIN_TYPE_LONG, ABI_BUILTIN_TYPE_UNSIGNED_LONG,
-		ABI_BUILTIN_TYPE_LONG_LONG, ABI_BUILTIN_TYPE_UNSIGNED_LONG_LONG,
-		ABI_BUILTIN_TYPE_FLOAT, ABI_BUILTIN_TYPE_DOUBLE,
-		ABI_BUILTIN_TYPE_LONG_DOUBLE, ABI_BUILTIN_TYPE_VOID,
-		ABI_BUILTIN_TYPE_NULLPTR, ABI_BUILTIN_TYPE_WCHAR,
-		ABI_BUILTIN_TYPE_CHAR16, ABI_BUILTIN_TYPE_CHAR32,
-		ABI_BUILTIN_TYPE_INT128, ABI_BUILTIN_TYPE_UINT128,
-		ABI_BUILTIN_TYPE_FLOAT16, ABI_BUILTIN_TYPE_FLOAT32,
-		ABI_BUILTIN_TYPE_FLOAT32X, ABI_BUILTIN_TYPE_FLOAT64,
-		ABI_BUILTIN_TYPE_FLOAT64X, ABI_BUILTIN_TYPE_STDFLOAT128,
-		ABI_BUILTIN_TYPE_FLOAT128
-	};
-	static_assert(sizeof(fundamental_types) / sizeof(fundamental_types[0]) ==
-		FUND_FLOAT128 + 1, "fundamental ABI type table is incomplete");
-	result->kind = ABI_TYPE_BUILTIN;
-	result->builtin_type = fundamental_types[source.fundamental];
-	return true;
-}
 
 void AppendTypedFact(abi_mangle::AbiTypedCase* facts,
 	abi_mangle::AbiFactRecord* record)
@@ -150,30 +90,6 @@ void AppendComponentAbiTagFacts(const semantic::Program& program,
 	}
 }
 
-abi_mangle::AbiTerminalKind OperatorTerminal(OperatorKind kind, bool member,
-	std::size_t parameter_count);
-
-struct StandardTemplateSubstitution
-{
-	abi_mangle::AbiStandardSubstitutionKind code;
-	bool includes_arguments;
-
-	StandardTemplateSubstitution(
-		abi_mangle::AbiStandardSubstitutionKind code_value =
-			abi_mangle::ABI_STANDARD_SUBSTITUTION_TEXT,
-		bool includes_arguments_value = false)
-		: code(code_value), includes_arguments(includes_arguments_value) {}
-};
-
-NameId StandardTemplateTerminal(const semantic::Program& program,
-	const EntityRecord& entity)
-{
-	std::vector<NameId> path;
-	program.BuildEmissionPath(entity.owner, entity.identity_name, &path);
-	return path.size() == 2 && program.IsStandardNamespace(entity.owner) ?
-		path[1] : 0;
-}
-
 bool IsClassTemplateSpecialization(const EntityRecord& entity)
 {
 	return entity.template_argument_begin != kNoBinding;
@@ -236,83 +152,31 @@ bool ClassOwnerHasSpecializedAncestor(const semantic::Program& program, EntityId
 	return false;
 }
 
+// A namespace-scope variable of internal linkage carries the `L` marker
+// (clang's isInternalLinkageDecl): static, or const and not extern; one of
+// an unnamed namespace has none, its `_GLOBAL__N_1` prefix already being
+// unit-local.  An anonymous union's object is named by its first member
+// and takes no marker either.
+bool VariableHasInternalMarker(const semantic::Program& program,
+	const BindingRecord& binding)
+{
+	return binding.storage_class == STORAGE_CLASS_STATIC &&
+		binding.member_owner == kNoEntity && !binding.anonymous_union_storage &&
+		program.KindOfScope(binding.owner) == SCOPE_NAMESPACE &&
+		!program.HasInternalLinkageScope(binding.owner);
+}
+
+NameId VariableAbiName(const BindingRecord& binding)
+{
+	return binding.anonymous_union_storage &&
+		binding.anonymous_union_object_name != 0 ?
+		binding.anonymous_union_object_name : binding.name;
+}
+
 bool ClassOwnerIsNested(const semantic::Program& program, EntityId entity)
 {
 	return entity != kNoEntity && entity < program.entities.size() &&
 		program.entities[entity].enclosing_class != kNoEntity;
-}
-
-bool IsFundamentalType(const semantic::Program& program, TypeId type,
-	FundamentalKind fundamental)
-{
-	type = program.types.RemoveTopCv(type);
-	const TypeRecord& record = program.types.Get(type);
-	return record.kind == TYPE_FUNDAMENTAL &&
-		record.fundamental == fundamental;
-}
-
-bool IsStandardUnaryCharTemplate(const semantic::Program& program, TypeId type,
-	const char* terminal)
-{
-	type = program.types.RemoveTopCv(type);
-	const TypeRecord& record = program.types.Get(type);
-	if (record.kind != TYPE_NAMED || record.entity >= program.entities.size())
-		return false;
-	const EntityRecord& entity = program.entities[record.entity];
-	const NameId name = StandardTemplateTerminal(program, entity);
-	if (name == 0 || program.names.Get(name) != terminal ||
-		entity.template_argument_count != 1 ||
-		entity.template_argument_begin >= program.template_arguments.size())
-		return false;
-	return IsFundamentalType(program,
-		program.template_arguments[entity.template_argument_begin], FUND_CHAR);
-}
-
-bool HasExactStandardCharacterArguments(const semantic::Program& program,
-	const EntityRecord& entity, bool allocator)
-{
-	const std::size_t expected = allocator ? 3 : 2;
-	const std::size_t first = entity.template_argument_begin;
-	if (entity.template_argument_count != expected ||
-		first > program.template_arguments.size() ||
-		expected > program.template_arguments.size() - first)
-		return false;
-	return IsFundamentalType(program, program.template_arguments[first],
-			FUND_CHAR) &&
-		IsStandardUnaryCharTemplate(program,
-			program.template_arguments[first + 1], "char_traits") &&
-		(!allocator || IsStandardUnaryCharTemplate(program,
-			program.template_arguments[first + 2], "allocator"));
-}
-
-StandardTemplateSubstitution StandardSubstitutionFor(
-	const semantic::Program& program, const EntityRecord& entity)
-{
-	const NameId terminal_id = StandardTemplateTerminal(program, entity);
-	if (terminal_id == 0) return StandardTemplateSubstitution();
-	const std::string& terminal = program.names.Get(terminal_id);
-	if (terminal == "allocator")
-		return StandardTemplateSubstitution(
-			abi_mangle::ABI_STANDARD_SUBSTITUTION_ALLOCATOR, false);
-	if (terminal == "basic_string")
-		return HasExactStandardCharacterArguments(program, entity, true) ?
-			StandardTemplateSubstitution(
-				abi_mangle::ABI_STANDARD_SUBSTITUTION_STRING, true) :
-			StandardTemplateSubstitution(
-				abi_mangle::ABI_STANDARD_SUBSTITUTION_BASIC_STRING, false);
-	if (terminal == "basic_istream" &&
-		HasExactStandardCharacterArguments(program, entity, false))
-		return StandardTemplateSubstitution(
-			abi_mangle::ABI_STANDARD_SUBSTITUTION_ISTREAM, true);
-	if (terminal == "basic_ostream" &&
-		HasExactStandardCharacterArguments(program, entity, false))
-		return StandardTemplateSubstitution(
-			abi_mangle::ABI_STANDARD_SUBSTITUTION_OSTREAM, true);
-	if (terminal == "basic_iostream" &&
-		HasExactStandardCharacterArguments(program, entity, false))
-		return StandardTemplateSubstitution(
-			abi_mangle::ABI_STANDARD_SUBSTITUTION_IOSTREAM, true);
-	return StandardTemplateSubstitution();
 }
 
 class AbiFactBuilder
@@ -355,6 +219,7 @@ class AbiFactBuilder
 	abi_mangle::AbiTypedCase& facts_;
 	abi_mangle::AbiMangleContext* context_;
 	abi_mangle::AbiMangleStats* stats_;
+	LocalNames* names_;
 	std::size_t next_argument_;
 	std::vector<TypeArgumentCacheEntry> type_argument_cache_;
 	std::vector<std::uint32_t> type_argument_cache_slots_;
@@ -447,6 +312,45 @@ class AbiFactBuilder
 		return ResolvePath(semantic_path_scratch_, 0,
 			semantic_path_scratch_.size());
 	}
+
+	public:
+	LocalNames& Names()
+	{
+		if (!names_) ThrowLoweringInternal("ABI local names have no unit state");
+		return *names_;
+	}
+
+	std::string AnonymousName(semantic::EntityId entity)
+	{
+		return "$_" + std::to_string(Names().AnonymousNumber(entity));
+	}
+
+	// A unit-local unnamed class or closure type of namespace scope is the
+	// source name `$_<n>` in its namespace.
+	std::size_t ResolveAnonymousPath(semantic::EntityId entity)
+	{
+		return ResolveGeneratedPath(program_.entities[entity].owner,
+			AnonymousName(entity));
+	}
+
+	// A member of a namespace-scope class named `$_<n>` (an unnamed class or
+	// a closure type without a mangling number).
+	bool SetAnonymousMemberPath(abi_mangle::AbiFunctionTarget* target,
+		semantic::EntityId owner, std::size_t terminal)
+	{
+		using namespace semantic;
+		if (owner == kNoEntity || owner >= program_.entities.size()) return false;
+		const EntityRecord& record = program_.entities[owner];
+		if (record.local_context != kNoBinding ||
+			(!record.lambda_closure && (!IsUnnamedClass(program_, owner) ||
+			 record.enclosing_class != kNoEntity)))
+			return false;
+		target->resolved_path = context_->resolve_path_component(
+			ResolveAnonymousPath(owner), terminal);
+		return true;
+	}
+
+	private:
 
 	std::size_t ResolvePath(const std::vector<semantic::NameId>& path,
 		std::size_t begin, std::size_t end)
@@ -580,6 +484,22 @@ public:
 		target->set_resolved_source_name(ResolveName(name));
 	}
 
+	void SetGeneratedSourceName(abi_mangle::AbiFunctionRecord* target,
+		const std::string& name)
+	{
+		target->set_resolved_source_name(context_->resolve_generated_name(name));
+	}
+
+	std::size_t ResolveSourceName(semantic::NameId name)
+	{
+		return ResolveName(name);
+	}
+
+	std::size_t ResolveGeneratedName(const std::string& name)
+	{
+		return context_->resolve_generated_name(name);
+	}
+
 	void SetLocalSourceName(abi_mangle::AbiFunctionRecord* target,
 		semantic::NameId name)
 	{
@@ -603,9 +523,9 @@ public:
 	AbiFactBuilder(const semantic::Program& program,
 		abi_mangle::AbiTypedCase& facts,
 		abi_mangle::AbiMangleContext* context,
-		abi_mangle::AbiMangleStats* stats)
+		abi_mangle::AbiMangleStats* stats, LocalNames* names)
 		: program_(program), facts_(facts), context_(context), stats_(stats),
-		  next_argument_(0),
+		  names_(names), next_argument_(0),
 		  type_argument_cache_slots_(32, 0)
 	{
 		if (!context_)
@@ -667,11 +587,8 @@ public:
 			if (binding.name == 0)
 				ThrowLoweringInternal(
 					"variable ABI entity has no semantic name");
-			SetPath(&entity.function, binding.owner, binding.name);
-			entity.internal_linkage =
-				binding.storage_class == STORAGE_CLASS_STATIC &&
-				binding.member_owner == kNoEntity &&
-				!binding.unnamed_namespace_linkage;
+			SetPath(&entity.function, binding.owner, VariableAbiName(binding));
+			entity.internal_linkage = VariableHasInternalMarker(program_, binding);
 		}
 		return context_->store_entity(entity);
 	}
@@ -963,11 +880,103 @@ public:
 		return MakeType(type);
 	}
 
+	static void AppendFunctionQualifiers(const semantic::TypeRecord& type,
+		std::vector<abi_mangle::AbiFunctionQualifier>* qualifiers)
+	{
+		using namespace abi_mangle;
+		if ((type.cv & semantic::CV_CONST) != 0)
+			qualifiers->push_back(ABI_FUNCTION_QUALIFIER_CONST);
+		if ((type.cv & semantic::CV_VOLATILE) != 0)
+			qualifiers->push_back(ABI_FUNCTION_QUALIFIER_VOLATILE);
+		if (type.ref_qualifier == semantic::FUNCTION_REF_LVALUE)
+			qualifiers->push_back(ABI_FUNCTION_QUALIFIER_LVALUE_REFERENCE);
+		else if (type.ref_qualifier == semantic::FUNCTION_REF_RVALUE)
+			qualifiers->push_back(ABI_FUNCTION_QUALIFIER_RVALUE_REFERENCE);
+	}
+
+	// The context of a local class's member function:
+	// Z <enclosing encoding> E N <local class> <member> E <parameters>.
+	abi_mangle::AbiLocalContext MakeLocalMemberContext(
+		abi_mangle::AbiLocalContext context,
+		const semantic::BindingRecord& function)
+	{
+		using namespace abi_mangle;
+		using namespace semantic;
+		const EntityId owner_id = function.member_owner;
+		const EntityRecord& owner = program_.entities[owner_id];
+		context.target_signature_is_parameter_list = true;
+		AbiFunctionTarget& target = context.function;
+		target.kind = ABI_FUNCTION_TARGET_LOCAL;
+		AssignLocalContext(&target, AddLocalContext(owner.local_context));
+		target.local_presentation = ABI_LOCAL_PRESENTATION_NAME_ORDINAL;
+		if (IsUnnamedClass(program_, owner_id) &&
+			!UnnamedTypeIsVisible(program_, owner_id))
+		{
+			target.local_presentation = ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA;
+			target.resolved_path = Names().AnonymousNumber(owner_id);
+		}
+		else if (owner.unnamed_class)
+			target.resolved_path = owner.local_name_ordinal;
+		else
+		{
+			target.qualified_name = program_.names.Get(owner.identity_name);
+			target.resolved_path = Names().ClassDiscriminator(owner_id);
+		}
+		target.owner_type = MakeType(owner.type);
+		const TypeRecord& type = program_.types.Get(function.type);
+		if (function.operator_kind != OPERATOR_NONE &&
+			function.operator_kind != OPERATOR_LITERAL)
+			target.terminal_code = OperatorTerminal(function.operator_kind,
+				true, type.parameter_count);
+		else target.source_name = program_.names.Get(function.name);
+		const TypeId* parameters = program_.types.Parameters(function.type);
+		for (std::size_t i = 0; i < type.parameter_count; ++i)
+			target.signature_parameter_types.push_back(MakeType(parameters[i]));
+		target.variadic = type.variadic;
+		return context;
+	}
+
+	// A closure's function call operator: `Ul<sig>E<n>_` in the closure's
+	// local context where it has a mangling number, `$_<n>` in its function
+	// or namespace otherwise.
+	void SetClosureTarget(abi_mangle::AbiFunctionTarget* target,
+		semantic::EntityId closure)
+	{
+		using namespace abi_mangle;
+		using namespace semantic;
+		const EntityRecord& lambda = program_.entities[closure];
+		if (lambda.local_context != kNoBinding &&
+			ClosureHasManglingNumber(program_, closure))
+		{
+			target->kind = ABI_FUNCTION_TARGET_LAMBDA;
+			AssignLocalContext(target, AddLocalContext(lambda.local_context));
+			target->local_presentation =
+				ABI_LOCAL_PRESENTATION_LAMBDA_DISCRIMINATOR;
+			target->resolved_path = lambda.lambda_abi_ordinal;
+		}
+		else if (lambda.local_context != kNoBinding)
+		{
+			target->kind = ABI_FUNCTION_TARGET_LOCAL;
+			AssignLocalContext(target, AddLocalContext(lambda.local_context));
+			target->local_presentation = ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA;
+			target->resolved_path = Names().AnonymousNumber(closure);
+			target->owner_type = MakeType(lambda.type);
+		}
+		else
+		{
+			target->kind = ABI_FUNCTION_TARGET_NAMESPACE_LAMBDA;
+			SetNamespaceLambda(target, lambda.owner,
+				Names().AnonymousNumber(closure));
+		}
+		target->terminal_code = ABI_TERMINAL_CALL;
+	}
+
 	LocalContextHandle AddLocalContext(semantic::BindingId binding)
 	{
 		if (binding == semantic::kNoBinding || binding >= program_.bindings.size())
 			ThrowLoweringInternal("local ABI type has no function context");
-		const semantic::BindingId canonical = program_.bindings[binding].canonical;
+		binding = LocalContextFunction(program_, binding);
+		const semantic::BindingId canonical = binding;
 		for (std::size_t i = 0; i < local_contexts_.size(); ++i)
 			if (local_contexts_[i].first == canonical)
 				return local_context_handles_[local_contexts_[i].second];
@@ -1001,33 +1010,7 @@ public:
 				context.kind = ABI_CONTEXT_FUNCTION;
 				context.target_signature_is_parameter_list = true;
 				AbiFunctionTarget& target = context.function;
-				if (owner.local_context != kNoBinding &&
-					lowering::PreferLocalObjectBinding(
-						program_, function.member_owner))
-				{
-					target.kind = ABI_FUNCTION_TARGET_LOCAL;
-					AssignLocalContext(&target,
-						AddLocalContext(owner.local_context));
-					target.local_presentation =
-						ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA;
-					target.resolved_path = owner.lambda_ordinal;
-				}
-				else if (owner.local_context != kNoBinding)
-				{
-					target.kind = ABI_FUNCTION_TARGET_LAMBDA;
-					AssignLocalContext(&target,
-						AddLocalContext(owner.local_context));
-					target.local_presentation =
-						ABI_LOCAL_PRESENTATION_LAMBDA_DISCRIMINATOR;
-					target.resolved_path = owner.lambda_abi_ordinal;
-				}
-				else
-				{
-					target.kind = ABI_FUNCTION_TARGET_NAMESPACE_LAMBDA;
-					SetNamespaceLambda(
-						&target, owner.owner, owner.lambda_ordinal);
-				}
-				target.terminal_code = ABI_TERMINAL_CALL;
+				SetClosureTarget(&target, function.member_owner);
 				if ((type.cv & CV_CONST) != 0)
 					context.qualifiers.push_back(
 						ABI_FUNCTION_QUALIFIER_CONST);
@@ -1053,28 +1036,46 @@ public:
 		context_fact.kind = ABI_CONTEXT_FUNCTION;
 		AbiFunctionTarget& target = context_fact.function;
 		target.kind = ABI_FUNCTION_TARGET_PATH;
-		if (function.member_owner != kNoEntity &&
-			function.member_owner < program_.entities.size() &&
-			IsClassTemplateSpecialization(
-				program_.entities[function.member_owner]))
+		const EntityId member_owner =
+			function.member_owner < program_.entities.size() ?
+			function.member_owner : kNoEntity;
+		// A member function's cv- and ref-qualifiers are part of the
+		// encoding its local entities are named in (`_ZZNK1S1mEvE1x`).
+		if (member_owner != kNoEntity && !function.static_member_function)
+			AppendFunctionQualifiers(type, &context_fact.qualifiers);
+		if (member_owner != kNoEntity &&
+			program_.entities[member_owner].local_context != kNoBinding)
+			return StoreLocalContext(
+				MakeLocalMemberContext(context_fact, function), identity);
+		if (member_owner != kNoEntity &&
+			IsClassTemplateSpecialization(program_.entities[member_owner]))
 		{
-			const EntityRecord& owner = program_.entities[function.member_owner];
+			const EntityRecord& owner = program_.entities[member_owner];
 			context_fact.target_signature_is_parameter_list = true;
 			target.kind = ABI_FUNCTION_TARGET_MEMBER;
 			target.owner_type = AddContextType(owner.type);
 			SetSourceName(&target, function.name);
-			if (!function.static_member_function)
-			{
-				if ((type.cv & CV_CONST) != 0)
-					context_fact.qualifiers.push_back(ABI_FUNCTION_QUALIFIER_CONST);
-				if ((type.cv & CV_VOLATILE) != 0)
-					context_fact.qualifiers.push_back(ABI_FUNCTION_QUALIFIER_VOLATILE);
-			}
 		}
 		if (function.name == 0)
 			ThrowLoweringInternal(
 				"function ABI local context has no semantic name");
-		SetPath(&target, function.owner, function.name);
+		if (!SetAnonymousMemberPath(&target, member_owner, ResolveName(function.name)))
+			SetPath(&target, function.owner, function.name);
+		// Clang names a constructor's or destructor's local entities in its
+		// complete entry (C1, D1).
+		target.terminal_code = function.constructor ?
+			ABI_TERMINAL_CONSTRUCTOR_COMPLETE : function.destructor ?
+			ABI_TERMINAL_DESTRUCTOR_COMPLETE :
+			function.operator_kind != OPERATOR_NONE &&
+			function.operator_kind != OPERATOR_LITERAL ?
+			OperatorTerminal(function.operator_kind, member_owner != kNoEntity &&
+				!function.static_member_function, type.parameter_count) :
+			ABI_TERMINAL_NONE;
+		context_fact.internal_linkage =
+			function.storage_class == STORAGE_CLASS_STATIC &&
+			member_owner == kNoEntity &&
+			program_.KindOfScope(function.owner) == SCOPE_NAMESPACE &&
+			!program_.HasInternalLinkageScope(function.owner);
 		std::size_t parameter_scope = 0;
 		for (EntityId owner = function.member_owner; owner != kNoEntity;
 			owner = program_.entities[owner].enclosing_class)
@@ -2007,15 +2008,15 @@ public:
 			else if (entity.lambda_closure)
 			{
 				if (entity.local_context != kNoBinding &&
-					lowering::PreferLocalObjectBinding(
-						program_, record->entity))
+					!ClosureHasManglingNumber(program_, record->entity))
 				{
 					result.kind = ABI_TYPE_LOCAL_TYPE;
 					AssignLocalContext(&result,
 						AddLocalContext(entity.local_context));
 					result.local_presentation =
 						ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA;
-					result.resolved_expression = entity.lambda_ordinal;
+					result.resolved_expression =
+						Names().AnonymousNumber(record->entity);
 				}
 				else if (entity.local_context != kNoBinding)
 				{
@@ -2042,8 +2043,8 @@ public:
 				else
 				{
 					result.kind = ABI_TYPE_NAMESPACE_LAMBDA;
-					SetNamespaceLambda(
-						&result, entity.owner, entity.lambda_ordinal);
+					SetNamespaceLambda(&result, entity.owner,
+						Names().AnonymousNumber(record->entity));
 				}
 			}
 			else if (entity.local_context != kNoBinding)
@@ -2051,11 +2052,24 @@ public:
 				result.kind = ABI_TYPE_LOCAL_TYPE;
 				AssignLocalContext(&result,
 					AddLocalContext(entity.local_context));
-				if (!entity.unnamed_class)
-					result.index = ResolveName(entity.identity_name) + 1;
-				result.local_presentation =
-					ABI_LOCAL_PRESENTATION_NAME_ORDINAL;
-				result.resolved_expression = entity.local_name_ordinal;
+				if (IsUnnamedClass(program_, record->entity) &&
+					!UnnamedTypeIsVisible(program_, record->entity))
+				{
+					result.local_presentation =
+						ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA;
+					result.resolved_expression =
+						Names().AnonymousNumber(record->entity);
+				}
+				else
+				{
+					if (!entity.unnamed_class)
+						result.index = ResolveName(entity.identity_name) + 1;
+					result.local_presentation =
+						ABI_LOCAL_PRESENTATION_NAME_ORDINAL;
+					result.resolved_expression = entity.unnamed_class ?
+						entity.local_name_ordinal :
+						Names().ClassDiscriminator(record->entity);
+				}
 			}
 			else if (entity.enclosing_class != kNoEntity)
 			{
@@ -2066,7 +2080,19 @@ public:
 					IsClassTemplateSpecialization(entity);
 				result.kind = specialization ?
 					ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION : ABI_TYPE_MEMBER;
-				result.index = ResolveName(entity.identity_name) + 1;
+				// An unnamed member class is `Ut<n>_` where other units name
+				// its class and a unit-local `$_<n>` otherwise.
+				if (!IsUnnamedClass(program_, record->entity))
+					result.index = ResolveName(entity.identity_name) + 1;
+				else if (!UnnamedTypeIsVisible(program_, record->entity))
+					result.index = context_->resolve_generated_name(
+						AnonymousName(record->entity)) + 1;
+				else
+				{
+					result.local_presentation =
+						ABI_LOCAL_PRESENTATION_NAME_ORDINAL;
+					result.resolved_expression = entity.local_name_ordinal;
+				}
 				result.types.push_back(MakeType(
 					program_.entities[entity.enclosing_class].type,
 					function, recipe));
@@ -2083,8 +2109,9 @@ public:
 			else if (!IsClassTemplateSpecialization(entity))
 			{
 				result.kind = ABI_TYPE_NAMED;
-				result.index = ResolvePath(
-					entity.owner, entity.identity_name) + 1;
+				result.index = (IsUnnamedClass(program_, record->entity) ?
+					ResolveAnonymousPath(record->entity) :
+					ResolvePath(entity.owner, entity.identity_name)) + 1;
 			}
 			else
 			{
@@ -2176,64 +2203,6 @@ bool AppendClassTemplateOwner(const semantic::Program& program,
 	return true;
 }
 
-abi_mangle::AbiTerminalKind OperatorTerminal(OperatorKind kind, bool member,
-	std::size_t parameter_count)
-{
-	using namespace abi_mangle;
-	switch (kind)
-	{
-	case OPERATOR_PLUS: return ABI_TERMINAL_PLUS;
-	case OPERATOR_MINUS: return ABI_TERMINAL_MINUS;
-	case OPERATOR_STAR:
-		return (member ? parameter_count == 0 : parameter_count == 1) ?
-			ABI_TERMINAL_DEREFERENCE : ABI_TERMINAL_MULTIPLY;
-	case OPERATOR_AMPERSAND:
-		return (member ? parameter_count == 0 : parameter_count == 1) ?
-			ABI_TERMINAL_ADDRESS_OF : ABI_TERMINAL_BIT_AND;
-	case OPERATOR_DIVIDE: return ABI_TERMINAL_DIVIDE;
-	case OPERATOR_REMAINDER: return ABI_TERMINAL_REMAINDER;
-	case OPERATOR_BIT_OR: return ABI_TERMINAL_BIT_OR;
-	case OPERATOR_BIT_XOR: return ABI_TERMINAL_BIT_XOR;
-	case OPERATOR_ASSIGN: return ABI_TERMINAL_ASSIGN;
-	case OPERATOR_PLUS_ASSIGN: return ABI_TERMINAL_PLUS_ASSIGN;
-	case OPERATOR_MINUS_ASSIGN: return ABI_TERMINAL_MINUS_ASSIGN;
-	case OPERATOR_MULTIPLY_ASSIGN: return ABI_TERMINAL_MULTIPLY_ASSIGN;
-	case OPERATOR_DIVIDE_ASSIGN: return ABI_TERMINAL_DIVIDE_ASSIGN;
-	case OPERATOR_REMAINDER_ASSIGN: return ABI_TERMINAL_REMAINDER_ASSIGN;
-	case OPERATOR_AND_ASSIGN: return ABI_TERMINAL_AND_ASSIGN;
-	case OPERATOR_OR_ASSIGN: return ABI_TERMINAL_OR_ASSIGN;
-	case OPERATOR_XOR_ASSIGN: return ABI_TERMINAL_XOR_ASSIGN;
-	case OPERATOR_LEFT_SHIFT: return ABI_TERMINAL_LEFT_SHIFT;
-	case OPERATOR_RIGHT_SHIFT: return ABI_TERMINAL_RIGHT_SHIFT;
-	case OPERATOR_LEFT_SHIFT_ASSIGN: return ABI_TERMINAL_LEFT_SHIFT_ASSIGN;
-	case OPERATOR_RIGHT_SHIFT_ASSIGN: return ABI_TERMINAL_RIGHT_SHIFT_ASSIGN;
-	case OPERATOR_EQUAL: return ABI_TERMINAL_EQUAL;
-	case OPERATOR_NOT_EQUAL: return ABI_TERMINAL_NOT_EQUAL;
-	case OPERATOR_LESS: return ABI_TERMINAL_LESS;
-	case OPERATOR_GREATER: return ABI_TERMINAL_GREATER;
-	case OPERATOR_LESS_EQUAL: return ABI_TERMINAL_LESS_EQUAL;
-	case OPERATOR_GREATER_EQUAL: return ABI_TERMINAL_GREATER_EQUAL;
-	case OPERATOR_LOGICAL_NOT: return ABI_TERMINAL_LOGICAL_NOT;
-	case OPERATOR_COMPLEMENT: return ABI_TERMINAL_COMPLEMENT;
-	case OPERATOR_LOGICAL_AND: return ABI_TERMINAL_LOGICAL_AND;
-	case OPERATOR_LOGICAL_OR: return ABI_TERMINAL_LOGICAL_OR;
-	case OPERATOR_INCREMENT: return ABI_TERMINAL_INCREMENT;
-	case OPERATOR_DECREMENT: return ABI_TERMINAL_DECREMENT;
-	case OPERATOR_COMMA: return ABI_TERMINAL_COMMA;
-	case OPERATOR_MEMBER_POINTER: return ABI_TERMINAL_MEMBER_POINTER;
-	case OPERATOR_ARROW: return ABI_TERMINAL_ARROW;
-	case OPERATOR_CALL: return ABI_TERMINAL_CALL;
-	case OPERATOR_INDEX: return ABI_TERMINAL_INDEX;
-	case OPERATOR_NEW: return ABI_TERMINAL_NEW;
-	case OPERATOR_NEW_ARRAY: return ABI_TERMINAL_NEW_ARRAY;
-	case OPERATOR_DELETE: return ABI_TERMINAL_DELETE;
-	case OPERATOR_DELETE_ARRAY: return ABI_TERMINAL_DELETE_ARRAY;
-	case OPERATOR_NONE:
-	case OPERATOR_LITERAL: return ABI_TERMINAL_NONE;
-	}
-	ThrowLoweringInternal("invalid typed operator terminal");
-}
-
 }
 
 namespace
@@ -2275,7 +2244,7 @@ std::string MangleProductionCase(const abi_mangle::AbiTypedCase& fact_case,
 
 std::string MangleType(const semantic::Program& program, semantic::TypeId type,
 	abi_mangle::AbiMangleStats* stats,
-	abi_mangle::AbiMangleContext* context)
+	abi_mangle::AbiMangleContext* context, LocalNames* names)
 {
 	using namespace abi_mangle;
 	std::unique_ptr<AbiMangleContext> local_context;
@@ -2285,7 +2254,7 @@ std::string MangleType(const semantic::Program& program, semantic::TypeId type,
 		context = local_context.get();
 	}
 	AbiTypedCase fact_case;
-	AbiFactBuilder facts(program, fact_case, context, stats);
+	AbiFactBuilder facts(program, fact_case, context, stats, names);
 	AbiFactRecord target;
 	target.set_kind(ABI_FACT_RECORD_TARGET);
 	target.target.kind = ABI_TARGET_FACT_TYPE;
@@ -2375,7 +2344,7 @@ void AppendFunctionTemplateArgumentsAndResult(const semantic::Program& program,
 std::string MangleLambdaCallOperator(const semantic::Program& program,
 	const semantic::BindingRecord& binding,
 	const semantic::EntityRecord& lambda, abi_mangle::AbiMangleStats* stats,
-	abi_mangle::AbiMangleContext* context)
+	abi_mangle::AbiMangleContext* context, LocalNames* names)
 {
 	using namespace abi_mangle;
 	using namespace semantic;
@@ -2384,7 +2353,7 @@ std::string MangleLambdaCallOperator(const semantic::Program& program,
 	if (binding.operator_kind != OPERATOR_CALL)
 		ThrowLoweringInternal("invalid lambda call-operator ABI identity");
 	AbiTypedCase fact_case;
-	AbiFactBuilder facts(program, fact_case, context, stats);
+	AbiFactBuilder facts(program, fact_case, context, stats, names);
 	const FunctionTemplateAbiRecipe* recipe = 0;
 	if (binding.function_template_abi_recipe != kNoFunctionTemplateAbiRecipe)
 	{
@@ -2398,33 +2367,8 @@ std::string MangleLambdaCallOperator(const semantic::Program& program,
 	lambda_target.set_kind(ABI_FACT_RECORD_TARGET);
 	lambda_target.target.kind = ABI_TARGET_FACT_FUNCTION;
 	AbiFunctionTarget& function = lambda_target.target.function;
-	if (lambda.local_context != kNoBinding &&
-		lowering::PreferLocalObjectBinding(
-			program, binding.member_owner))
-	{
-		function.kind = ABI_FUNCTION_TARGET_LOCAL;
-		AbiFactBuilder::AssignLocalContext(&function,
-			facts.AddLocalContext(lambda.local_context));
-		function.local_presentation =
-			ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA;
-		function.resolved_path = lambda.lambda_ordinal;
-	}
-	else if (lambda.local_context != kNoBinding)
-	{
-		function.kind = ABI_FUNCTION_TARGET_LAMBDA;
-		AbiFactBuilder::AssignLocalContext(&function,
-			facts.AddLocalContext(lambda.local_context));
-		function.local_presentation =
-			ABI_LOCAL_PRESENTATION_LAMBDA_DISCRIMINATOR;
-		function.resolved_path = lambda.lambda_abi_ordinal;
-	}
-	else
-	{
-		function.kind = ABI_FUNCTION_TARGET_NAMESPACE_LAMBDA;
-		facts.SetNamespaceLambda(
-			&function, lambda.owner, lambda.lambda_ordinal);
-	}
-	function.terminal_code = ABI_TERMINAL_CALL;
+	facts.SetClosureTarget(&function, binding.member_owner);
+	(void)lambda;
 	const TypeRecord& lambda_type = program.types.Get(binding.type);
 	AbiFactRecord qualifier;
 	qualifier.set_kind(ABI_FACT_RECORD_FUNCTION);
@@ -2461,29 +2405,48 @@ std::string MangleLambdaCallOperator(const semantic::Program& program,
 	return MangleProductionCase(fact_case, stats, context);
 }
 
+// The local class or closure type that owns a member function: a closure
+// with a mangling number is `Ul<sig>E<n>_`, a unit-local unnamed class or
+// closure `$_<n>`, an unnamed class other units name `Ut<n>_`, and a named
+// class its name and discriminator.
 void AppendLocalFunctionOwner(const semantic::Program& program,
-	const semantic::BindingRecord& binding, AbiFactBuilder* facts,
+	semantic::EntityId owner_id, AbiFactBuilder* facts,
 	abi_mangle::AbiMangleContext* context,
 	abi_mangle::AbiTypedCase* fact_case)
 {
 	using namespace abi_mangle;
-	const semantic::EntityRecord& owner =
-		program.entities[binding.member_owner];
+	using namespace semantic;
+	const EntityRecord& owner = program.entities[owner_id];
 	AbiFactRecord local;
 	local.set_kind(ABI_FACT_RECORD_FUNCTION);
 	local.function.kind = ABI_FUNCTION_RECORD_LOCAL_CONTEXT;
 	AbiFactBuilder::AssignLocalContext(&local.function,
 		facts->AddLocalContext(owner.local_context));
-	if (owner.lambda_closure)
+	local.function.local_presentation = ABI_LOCAL_PRESENTATION_NAME_ORDINAL;
+	local.function.type.resolved_expression = 0;
+	if (owner.lambda_closure && ClosureHasManglingNumber(program, owner_id))
+	{
+		local.function.kind = ABI_FUNCTION_RECORD_LAMBDA_CONTEXT;
+		local.function.type.resolved_expression = owner.lambda_abi_ordinal;
+		const TypeId call = program.bindings[owner.lambda_call_operator].type;
+		const TypeId* parameters = program.types.Parameters(call);
+		for (std::size_t i = 0; i < program.types.Get(call).parameter_count; ++i)
+			local.function.types.push_back(facts->MakeType(parameters[i]));
+	}
+	else if (owner.lambda_closure || (IsUnnamedClass(program, owner_id) &&
+		!UnnamedTypeIsVisible(program, owner_id)))
 		facts->SetGeneratedLocalSourceName(&local.function,
-			semantic::presentation::RenderLambdaEntityTerminal(
-				program, binding.member_owner));
-	else if (!owner.unnamed_class)
+			facts->AnonymousName(owner_id));
+	else if (owner.unnamed_class)
+		local.function.type.resolved_expression = owner.local_name_ordinal;
+	else
+	{
 		facts->SetLocalSourceName(&local.function, owner.identity_name);
-	local.function.local_presentation =
-		ABI_LOCAL_PRESENTATION_NAME_ORDINAL;
-	local.function.type.resolved_expression = owner.lambda_closure ? 0 :
-		owner.local_name_ordinal;
+		local.function.type.resolved_expression =
+			facts->Names().ClassDiscriminator(owner_id);
+	}
+	if (local.function.kind == ABI_FUNCTION_RECORD_LOCAL_CONTEXT)
+		local.function.types.push_back(facts->MakeType(owner.type));
 	AppendTypedFact(fact_case, &local);
 	AppendComponentAbiTagFacts(program, owner, context, fact_case);
 }
@@ -2518,7 +2481,7 @@ void AppendMemberFunctionQualifiers(const semantic::Program& program,
 std::string MangleFunction(const semantic::Program& program,
 	const semantic::DumpNode& node,
 	bool force_lifecycle_base_entry, abi_mangle::AbiMangleStats* stats,
-	abi_mangle::AbiMangleContext* context)
+	abi_mangle::AbiMangleContext* context, LocalNames* names)
 {
 	using namespace abi_mangle;
 	using namespace semantic;
@@ -2561,15 +2524,19 @@ std::string MangleFunction(const semantic::Program& program,
 	if (lambda && lambda->lambda_closure &&
 		binding.operator_kind == OPERATOR_CALL)
 		return MangleLambdaCallOperator(
-			program, binding, *lambda, stats, context);
+			program, binding, *lambda, stats, context, names);
 	AbiTypedCase fact_case;
-	AbiFactBuilder facts(program, fact_case, context, stats);
+	AbiFactBuilder facts(program, fact_case, context, stats, names);
 	const BindingRecord* inherited = InheritedConstructorAbiSource(program, binding, node);
 	const FunctionTemplateAbiRecipe* recipe = FunctionAbiRecipe(program,
 		inherited ? *inherited : binding);
 	const BindingRecord& signature_binding = inherited ? *inherited : binding;
-	const bool structured_local_owner = binding.member_owner != kNoEntity &&
-		program.entities[binding.member_owner].local_context != kNoBinding;
+	// A captureless closure's static invoker is its static member function
+	// `__invoke`, as clang names it (GCC's is `_FUN`).
+	const EntityId owner_id = binding.lambda_invocation ?
+		binding.lambda_invocation_owner : binding.member_owner;
+	const bool structured_local_owner = owner_id != kNoEntity &&
+		program.entities[owner_id].local_context != kNoBinding;
 	const bool tagged_class_owner = binding.member_owner != kNoEntity &&
 		ClassOwnerHasAbiTags(program, binding.member_owner);
 	const bool nested_specialized_class_owner =
@@ -2595,15 +2562,11 @@ std::string MangleFunction(const semantic::Program& program,
 	target.target.function.kind = structured_owner ?
 		ABI_FUNCTION_TARGET_ENCODING : typed_class_owner ?
 			ABI_FUNCTION_TARGET_MEMBER : ABI_FUNCTION_TARGET_PATH;
-	if (!structured_owner)
-	{
-		if (binding.lambda_invocation)
-			facts.SetGeneratedPath(&target.target.function, binding.owner,
-				semantic::presentation::RenderLambdaEntityTerminal(
-					program, binding.lambda_invocation_owner));
-		else facts.SetPath(
-			&target.target.function, binding.owner, binding.name);
-	}
+	if (!structured_owner && !facts.SetAnonymousMemberPath(
+		&target.target.function, owner_id, binding.lambda_invocation ?
+			facts.ResolveGeneratedName("__invoke") :
+			facts.ResolveSourceName(binding.name)))
+		facts.SetPath(&target.target.function, binding.owner, binding.name);
 	if (typed_class_owner)
 	{
 		const EntityRecord& owner = program.entities[binding.member_owner];
@@ -2614,7 +2577,7 @@ std::string MangleFunction(const semantic::Program& program,
 	AppendFunctionAbiTagFacts(program, binding, context, &fact_case);
 	if (structured_local_owner)
 		AppendLocalFunctionOwner(
-			program, binding, &facts, context, &fact_case);
+			program, owner_id, &facts, context, &fact_case);
 	if (structured_class_owner &&
 		!AppendClassTemplateOwner(program, binding, &facts, &fact_case, true))
 		ThrowLoweringInternal("class template ABI owner was lost");
@@ -2652,7 +2615,9 @@ std::string MangleFunction(const semantic::Program& program,
 		terminal.function.kind = structured_local_owner ?
 			ABI_FUNCTION_RECORD_TERMINAL_SOURCE :
 			ABI_FUNCTION_RECORD_NAME_SOURCE;
-		facts.SetSourceName(&terminal.function, binding.name);
+		if (binding.lambda_invocation)
+			facts.SetGeneratedSourceName(&terminal.function, "__invoke");
+		else facts.SetSourceName(&terminal.function, binding.name);
 		AppendTypedFact(&fact_case, &terminal);
 	}
 	if (binding.operator_kind == OPERATOR_LITERAL ||
@@ -2757,7 +2722,7 @@ std::string MangleFunction(const semantic::Program& program,
 std::string MangleVariable(const semantic::Program& program,
 	const semantic::DumpNode& node,
 	abi_mangle::AbiMangleStats* stats,
-	abi_mangle::AbiMangleContext* context)
+	abi_mangle::AbiMangleContext* context, LocalNames* names)
 {
 	using namespace abi_mangle;
 	using namespace semantic;
@@ -2788,7 +2753,7 @@ std::string MangleVariable(const semantic::Program& program,
 		context = local_context.get();
 	}
 	AbiTypedCase fact_case;
-	AbiFactBuilder facts(program, fact_case, context, stats);
+	AbiFactBuilder facts(program, fact_case, context, stats, names);
 	const bool tagged_class_owner = binding.member_owner != kNoEntity &&
 		ClassOwnerHasAbiTags(program, binding.member_owner);
 	const bool nested_specialized_class_owner =
@@ -2809,10 +2774,9 @@ std::string MangleVariable(const semantic::Program& program,
 	target.target.function.kind = structured_class_owner ?
 		ABI_FUNCTION_TARGET_ENCODING : typed_class_owner ?
 		ABI_FUNCTION_TARGET_MEMBER : ABI_FUNCTION_TARGET_PATH;
-	target.target.internal_linkage =
-		binding.storage_class == STORAGE_CLASS_STATIC &&
-		binding.member_owner == kNoEntity &&
-		!binding.unnamed_namespace_linkage;
+	target.target.internal_linkage = VariableHasInternalMarker(program, binding);
+	target.target.internal_unmarked = binding.anonymous_union_storage &&
+		binding.member_owner == kNoEntity;
 	const bool needs_path =
 		target.target.function.kind == ABI_FUNCTION_TARGET_PATH ||
 		(target.target.function.kind == ABI_FUNCTION_TARGET_MEMBER &&
@@ -2822,7 +2786,8 @@ std::string MangleVariable(const semantic::Program& program,
 	{
 		if (binding.name == 0)
 			ThrowLoweringInternal("variable ABI target has no semantic name");
-		facts.SetPath(&target.target.function, binding.owner, binding.name);
+		facts.SetPath(&target.target.function, binding.owner,
+			VariableAbiName(binding));
 	}
 	if (typed_class_owner)
 	{
@@ -2867,7 +2832,7 @@ std::string MangleVariable(const semantic::Program& program,
 std::string MangleThreadLocalWrapper(const semantic::Program& program,
 	semantic::BindingId binding_id, semantic::NameId fallback_name,
 	abi_mangle::AbiMangleStats* stats,
-	abi_mangle::AbiMangleContext* context)
+	abi_mangle::AbiMangleContext* context, LocalNames* names)
 {
 	using namespace abi_mangle;
 	using namespace semantic;
@@ -2881,10 +2846,11 @@ std::string MangleThreadLocalWrapper(const semantic::Program& program,
 		context = local_context.get();
 	}
 	AbiTypedCase fact_case;
-	AbiFactBuilder facts(program, fact_case, context, stats);
+	AbiFactBuilder facts(program, fact_case, context, stats, names);
 	AbiFactRecord target;
 	target.set_kind(ABI_FACT_RECORD_TARGET);
 	target.target.kind = ABI_TARGET_FACT_THREAD_LOCAL_WRAPPER;
+	target.target.internal_linkage = VariableHasInternalMarker(program, binding);
 	const NameId terminal = binding.name != 0 ? binding.name : fallback_name;
 	if (terminal != 0 && !program.names.Get(terminal).empty())
 		facts.SetPath(&target.target.function, binding.owner, terminal);
@@ -2894,6 +2860,34 @@ std::string MangleThreadLocalWrapper(const semantic::Program& program,
 			std::to_string(binding.owner) + ", terminal " +
 			std::to_string(binding.name) + ", fallback " +
 			std::to_string(fallback_name) + ")");
+	AppendTypedFact(&fact_case, &target);
+	return MangleProductionCase(fact_case, stats, context);
+}
+
+std::string MangleLocalStatic(const semantic::Program& program,
+	semantic::BindingId object, semantic::BindingId function,
+	std::uint32_t discriminator, bool guard, abi_mangle::AbiMangleStats* stats,
+	abi_mangle::AbiMangleContext* context, LocalNames* names)
+{
+	using namespace abi_mangle;
+	using namespace semantic;
+	std::unique_ptr<AbiMangleContext> local_context;
+	if (!context)
+	{
+		local_context.reset(new AbiMangleContext(stats));
+		context = local_context.get();
+	}
+	AbiTypedCase fact_case;
+	AbiFactBuilder facts(program, fact_case, context, stats, names);
+	AbiFactRecord target;
+	target.set_kind(ABI_FACT_RECORD_TARGET);
+	target.target.kind = guard ? ABI_TARGET_FACT_GUARD_VARIABLE :
+		ABI_TARGET_FACT_VARIABLE;
+	AbiFunctionTarget& local = target.target.function;
+	local.kind = ABI_FUNCTION_TARGET_LOCAL;
+	AbiFactBuilder::AssignLocalContext(&local, facts.AddLocalContext(function));
+	local.source_name = program.names.Get(VariableAbiName(program.bindings[object]));
+	local.resolved_path = discriminator;
 	AppendTypedFact(&fact_case, &target);
 	return MangleProductionCase(fact_case, stats, context);
 }

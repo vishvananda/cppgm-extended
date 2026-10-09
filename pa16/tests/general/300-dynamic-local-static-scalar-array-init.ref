@@ -1,9 +1,9 @@
 declare function @next() -> i32 [binding=strong, object=_Z4nextv]
 
-global @__local_static__read__decl0__values : obj<4x4> [binding=internal] = {
+global @__local_static__read__decl0__values : obj<4x4> [binding=internal, object=_ZZ4readvE6values] = {
   zero 4
 }
-global @__local_static__read__decl0__values__guard : i64 [binding=internal] = zero
+global @__local_static__read__decl0__values__guard : i64 [binding=internal, object=_ZGVZ4readvE6values] = zero
 
 function @read() -> i32 [binding=strong, object=_Z4readv] {
   block ^entry:

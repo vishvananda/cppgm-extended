@@ -1,4 +1,4 @@
-global @__local_static__read__decl0__reference : ptr [binding=internal] = addr @source
+global @__local_static__read__decl0__reference : ptr [binding=internal, object=_ZZ4readvE9reference] = addr @source
 global @source : i32 [binding=strong] = 5
 
 function @read() -> i32 [binding=strong, object=_Z4readv] {

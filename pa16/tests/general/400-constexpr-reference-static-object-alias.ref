@@ -1,7 +1,7 @@
 global @object : i32 [binding=strong] = zero
 global @reference : ptr [binding=strong] = addr @object
 global @second : ptr [binding=strong] = addr @object
-global @__constexpr_reference_temporary__8 : i32 [storage=readonly, binding=internal, object=__constexpr_reference_temporary__8] = 3
+global @__constexpr_reference_temporary__8 : i32 [storage=readonly, binding=internal, object=_ZL34__constexpr_reference_temporary__8] = 3
 global @temporary : ptr [binding=strong] = addr @__constexpr_reference_temporary__8
 global @alias : ptr [binding=strong] = addr @__constexpr_reference_temporary__8
 

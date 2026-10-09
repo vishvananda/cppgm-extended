@@ -1,5 +1,5 @@
-global @__local_static__function_symbol_5f5a347069636b494c693345456962__decl0__value : i32 [binding=weak] = 4
-global @__local_static__function_symbol_5f5a347069636b494c693345456962__decl1__value : i32 [binding=weak] = 3
+global @__local_static__function_symbol_5f5a347069636b494c693345456962__decl0__value : i32 [binding=weak, object=_ZZ4pickILi3EEibE5value] = 4
+global @__local_static__function_symbol_5f5a347069636b494c693345456962__decl1__value : i32 [binding=weak, object=_ZZ4pickILi3EEibE5value_0] = 3
 
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $cond__1 : i32

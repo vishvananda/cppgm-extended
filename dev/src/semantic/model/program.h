@@ -766,7 +766,14 @@ struct BindingRecord
 	hosted_builtin::IntegerIntrinsicKind hosted_integer_intrinsic;
 	hosted_builtin::FloatingIntrinsicKind hosted_floating_intrinsic;
 	hosted_builtin::MemoryIntrinsicKind hosted_memory_intrinsic;
-	NameId operator_literal_suffix;
+	// Kind-disjoint: a literal operator's suffix, or the first named member
+	// of a namespace-scope anonymous union, the object's ABI name (Itanium
+	// 5.1.2).
+	union
+	{
+		NameId operator_literal_suffix;
+		NameId anonymous_union_object_name;
+	};
 	LanguageLinkage language_linkage;
 	StorageClass storage_class;
 	AccessKind access;

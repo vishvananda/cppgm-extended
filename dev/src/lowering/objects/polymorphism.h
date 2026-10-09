@@ -41,8 +41,13 @@ struct VtableThunkLoweringFact
 		  return_adjustment_virtual(return_adjustment_virtual_value) {}
 };
 
+namespace abi { class LocalNames; }
+
 struct PolymorphismLoweringState
 {
+	// The unit's `$_<n>` numbers and local discriminators, shared with the
+	// symbols the RTTI and vtable names mention.
+	abi::LocalNames* local_names;
 	std::vector<lowering::ir::SymbolId> class_vtable_symbols;
 	std::vector<std::uint8_t> class_vtable_external;
 	std::vector<lowering::ir::SymbolId> class_vtt_symbols;

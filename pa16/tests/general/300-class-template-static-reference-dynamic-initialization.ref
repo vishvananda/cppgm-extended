@@ -1,4 +1,4 @@
-global @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__decl0__stored [binding=weak] = {
+global @__local_static__function_symbol_5f5a33676574493576616c75654552545f76__decl0__stored [binding=weak, object=_ZZ3getI5valueERT_vE6stored] = {
   i32 7
 }
 global @__cppgm_class_template_identity_0_0_0__instance : ptr [binding=weak, object=_ZN6holderI5valueE8instanceE] = zero

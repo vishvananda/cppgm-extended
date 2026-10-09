@@ -30,7 +30,7 @@ function @use() -> i32 [binding=strong, object=_Z3usev] {
     %t3 = call i32 @owner__call(%t2)
     return i32 %t3
 }
-function @owner____lambda_owner__call_t49_53__operator__(%this : ptr [object_bytes=8], %input : i32) -> i32 [binding=internal, object=_ZZN5owner4callEvENKUliE_clEi, inline_hint=yes] {
+function @owner____lambda_owner__call_t49_53__operator__(%this : ptr [object_bytes=8], %input : i32) -> i32 [binding=internal, object=_ZZNK5owner4callEvENK3$_0clEi, inline_hint=yes] {
   slot $this : ptr
   slot $input : i32
 

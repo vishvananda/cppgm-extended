@@ -1,11 +1,11 @@
 global @copies : i32 [binding=strong] = 0
-global @a : obj<4x4> [binding=internal, object=a] = {
+global @a : obj<4x4> [binding=internal, object=_ZL1a] = {
   zero 4
 }
-global @b : obj<4x4> [binding=internal, object=b] = {
+global @b : obj<4x4> [binding=internal, object=_ZL1b] = {
   zero 4
 }
-global @table : obj<8x4> [binding=strong] = {
+global @table : obj<8x4> [binding=internal, object=_ZL5table] = {
   zero 8
 }
 

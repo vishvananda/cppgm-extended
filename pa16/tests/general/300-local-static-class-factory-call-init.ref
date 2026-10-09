@@ -1,7 +1,7 @@
-global @__local_static__read_cached__decl0__cached : obj<24x8> [binding=internal] = {
+global @__local_static__read_cached__decl0__cached : obj<24x8> [binding=internal, object=_ZZ11read_cachedlE6cached] = {
   zero 24
 }
-global @__local_static__read_cached__decl0__cached__guard : i64 [binding=internal] = zero
+global @__local_static__read_cached__decl0__cached__guard : i64 [binding=internal, object=_ZGVZ11read_cachedlE6cached] = zero
 global @factory_calls : i32 [binding=strong] = 0
 
 function @make_wide(%ret : ptr [pass=indirect_result, object_bytes=24], %seed : i64) -> void [binding=strong, object=_Z9make_widel] {

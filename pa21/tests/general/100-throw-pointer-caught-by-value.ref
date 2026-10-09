@@ -82,11 +82,11 @@ global @__ehobj_type_P1B [binding=internal, object=@__ehobj_type_P1B] = {
 global @__ehobj_type_Pi [binding=internal, object=@__ehobj_type_Pi] = {
   zero 8
 }
-global @object [binding=internal, object=object] = {
+global @object [binding=internal, object=_ZL6object] = {
   i32 7
 }
-global @number : i32 [binding=internal, object=number] = 9
-global @text [binding=internal, object=text] = {
+global @number : i32 [binding=internal, object=_ZL6number] = 9
+global @text [binding=internal, object=_ZL4text] = {
   i8 104
   i8 101
   i8 108

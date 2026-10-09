@@ -3,6 +3,7 @@ class	dev/src/lowering/calls/arguments.h	CallArgumentLowering	1	dev/src/lowering
 class	dev/src/lowering/calls/constructors.h	ConstructorActionLowering	1	dev/src/lowering/calls/constructors.h	keep
 class	dev/src/lowering/calls/special_members.h	DestructorActionLowering	1	dev/src/lowering/calls/special_members.h	keep
 class	dev/src/lowering/calls/function_calls.h	FunctionCallLowering	1	dev/src/lowering/calls/function_calls.h	keep
+class	dev/src/lowering/abi/local_entity_names.h	LocalNames	1	dev/src/lowering/abi/local_entity_names.h	keep
 class	dev/src/lowering/calls/special_members.h	SpecialMemberLowering	1	dev/src/lowering/calls/special_members.h	keep
 class	dev/src/lowering/calls/value_boundary.h	ValueBoundaryLowering	1	dev/src/lowering/calls/value_boundary.h	keep
 class	dev/src/lowering/constants/templates.h	Pool	1	dev/src/lowering/constants/templates.h	keep
@@ -55,11 +56,17 @@ function	dev/src/lowering/abi/emission_policy.cpp	IsCompleteBoundaryObject	1	dev
 function	dev/src/lowering/abi/emission_policy.cpp	IsFunctionDeclarationBoundaryComplete	1	dev/src/lowering/abi/emission_policy.cpp	keep
 function	dev/src/lowering/abi/emission_policy.cpp	IsFunctionEmissionDemanded	1	dev/src/lowering/abi/emission_policy.cpp	keep
 function	dev/src/lowering/abi/emission_policy.cpp	IsVariableDeclarationOnly	1	dev/src/lowering/abi/emission_policy.cpp	keep
+function	dev/src/lowering/abi/local_entity_names.cpp	ClosureHasManglingNumber	1	dev/src/lowering/abi/local_entity_names.cpp	keep
+function	dev/src/lowering/abi/local_entity_names.cpp	IsUnnamedClass	1	dev/src/lowering/abi/local_entity_names.cpp	keep
+function	dev/src/lowering/abi/local_entity_names.cpp	LocalContextIsVisible	1	dev/src/lowering/abi/local_entity_names.cpp	keep
+function	dev/src/lowering/abi/local_entity_names.cpp	UnnamedTypeIsVisible	1	dev/src/lowering/abi/local_entity_names.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	HasWeakLinkage	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleFunction	1	dev/src/lowering/abi/mangling.cpp	keep
+function	dev/src/lowering/abi/mangling.cpp	MangleLocalStatic	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleThreadLocalWrapper	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleType	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleVariable	1	dev/src/lowering/abi/mangling.cpp	keep
+function	dev/src/lowering/abi/mangling_vocabulary.cpp	MakeBuiltinAbiType	1	dev/src/lowering/abi/mangling_vocabulary.cpp	keep
 function	dev/src/lowering/abi/symbol_metadata.cpp	ApplyBuiltinParameterAliasMetadata	1	dev/src/lowering/abi/symbol_metadata.cpp	keep
 function	dev/src/lowering/abi/symbol_metadata.cpp	ApplyBuiltinSymbolMetadata	1	dev/src/lowering/abi/symbol_metadata.cpp	keep
 function	dev/src/lowering/abi/symbol_metadata.cpp	ApplyNativeRuntimeSymbolMetadata	1	dev/src/lowering/abi/symbol_metadata.cpp	keep
@@ -110,7 +117,9 @@ method	dev/src/lowering/core/program_lowerer.cpp	ResetCommonFunctionLoweringStat
 method	dev/src/lowering/core/program_lowerer.cpp	ScanTop	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	Temp	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	UniqueSlotName	1	dev/src/lowering/core/program_lowerer.cpp	keep
+struct	dev/src/lowering/abi/local_entity_names.h	DeferredFunction	1	dev/src/lowering/abi/local_entity_names.h	keep
 struct	dev/src/lowering/api.h	Source	1	dev/src/lowering/api.h	keep
+struct	dev/src/lowering/abi/mangling_vocabulary.h	StandardTemplateSubstitution	1	dev/src/lowering/abi/mangling_vocabulary.h	keep
 struct	dev/src/lowering/api.h	Stats	1	dev/src/lowering/api.h	keep
 struct	dev/src/lowering/constants/templates.h	Entry	1	dev/src/lowering/constants/templates.h	keep
 struct	dev/src/lowering/control/statements.h	ExceptionControlTarget	1	dev/src/lowering/control/statements.h	keep

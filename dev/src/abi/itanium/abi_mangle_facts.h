@@ -156,7 +156,9 @@ enum AbiTargetFactKind
   ABI_TARGET_FACT_CONSTRUCTION_VTABLE,
   ABI_TARGET_FACT_THREAD_LOCAL_WRAPPER,
   ABI_TARGET_FACT_THUNK,
-  ABI_TARGET_FACT_VIRTUAL_BASE_THUNK
+  ABI_TARGET_FACT_VIRTUAL_BASE_THUNK,
+  // `_ZGV <object name>`: the guard of a static variable's initialization.
+  ABI_TARGET_FACT_GUARD_VARIABLE
 };
 
 enum AbiFunctionTargetKind
@@ -368,9 +370,13 @@ struct AbiLocalContext
 {
   AbiContextFactKind kind = ABI_CONTEXT_RAW;
   std::string fragment;
+  // A path or member function context may state its terminal code (a
+  // constructor's or destructor's complete entry, an operator) and the `L`
+  // marker of an internal-linkage function.
   AbiFunctionTarget function;
   std::vector<AbiFunctionQualifier> qualifiers;
   bool target_signature_is_parameter_list = false;
+  bool internal_linkage = false;
 };
 
 struct AbiEntityFact

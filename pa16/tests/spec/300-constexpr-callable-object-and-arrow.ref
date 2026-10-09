@@ -1,7 +1,7 @@
-global @function [binding=internal, object=function] = {
+global @function [binding=internal, object=_ZL8function] = {
   i32 3
 }
-global @pointer [binding=internal, object=pointer] = {
+global @pointer [binding=internal, object=_ZL7pointer] = {
   i32 4
 }
 

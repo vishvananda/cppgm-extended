@@ -339,7 +339,8 @@ public:
         node.substitution_resolved = true;
       } else if(source.local_presentation != ABI_LOCAL_PRESENTATION_TEXT) {
         require(source.kind == ABI_TYPE_LAMBDA_CLOSURE ||
-                  source.kind == ABI_TYPE_LOCAL_TYPE,
+                  source.kind == ABI_TYPE_LOCAL_TYPE ||
+                  source.kind == ABI_TYPE_MEMBER,
                 "typed local presentation used by non-local ABI type");
         require(source.resolved_expression != ABI_NO_RESOLVED_REFERENCE,
                 "typed local ABI presentation has no ordinal");
@@ -1099,6 +1100,15 @@ private:
                       target.internal_linkage);
       return output_;
     }
+    if(target.kind == ABI_TARGET_FACT_GUARD_VARIABLE
+       || (target.kind == ABI_TARGET_FACT_VARIABLE
+           && target.function.kind == ABI_FUNCTION_TARGET_LOCAL)) {
+      require(records.empty() && target.function.kind == ABI_FUNCTION_TARGET_LOCAL,
+              "ABI guard target is not a function's static variable");
+      output_ += target.kind == ABI_TARGET_FACT_GUARD_VARIABLE ? "_ZGV" : "_Z";
+      encode_local_object(target.function);
+      return output_;
+    }
     if(target.kind == ABI_TARGET_FACT_VARIABLE) {
       if(target.function.kind == ABI_FUNCTION_TARGET_ENCODING) {
         output_ += "_Z";
@@ -1111,7 +1121,8 @@ private:
           graph_.path(target.function.resolved_path) : graph_.paths.intern(
             target.qualified_name, stats_ ? &stats_->text_object_path_components : nullptr);
         const PathNode & name = graph_.paths.get(path);
-        if(!target.internal_linkage && name.parent == NO_ID)
+        if(!target.internal_linkage && !target.internal_unmarked
+           && name.parent == NO_ID)
           return graph_.strings.get(name.name);
         output_ += "_Z";
         encode_object_name(path, target.internal_linkage);
@@ -1137,8 +1148,9 @@ private:
     if(target.kind == ABI_TARGET_FACT_THREAD_LOCAL_WRAPPER) {
       output_ += "_ZTW";
       if(target.function.resolved_path != ABI_NO_RESOLVED_REFERENCE)
-        encode_object_name(graph_.path(target.function.resolved_path), false);
-      else encode_object_name(target.qualified_name, false);
+        encode_object_name(graph_.path(target.function.resolved_path),
+                           target.internal_linkage);
+      else encode_object_name(target.qualified_name, target.internal_linkage);
       return output_;
     }
     if(target.kind == ABI_TARGET_FACT_THUNK || target.kind == ABI_TARGET_FACT_VIRTUAL_BASE_THUNK) {
@@ -1161,6 +1173,18 @@ private:
       return output_;
     }
     ThrowAbiInternal("unsupported ABI target kind");
+  }
+
+  // A function's static variable (Itanium 5.1.6):
+  //   Z <function encoding> E <source-name> [<discriminator>]
+  void encode_local_object(const AbiFunctionTarget & target)
+  {
+    require(target.resolved_context != ABI_NO_RESOLVED_REFERENCE
+            && !target.source_name.empty(),
+            "local ABI object has no function context or name");
+    encode_local_prefix(target.resolved_context);
+    output_ += source_name(target.source_name);
+    output_ += local_discriminator(target.resolved_path);
   }
 
   void encode_fixed_call_offset(long long offset)
@@ -1471,7 +1495,10 @@ private:
       // canonical type graph.  Reacquire the indexed node instead of reading
       // through a reference invalidated by vector reallocation.
       const TypeNode & resolved = graph_.type(id);
-      output_ += source_name(graph_.strings.get(resolved.symbol));
+      if(resolved.symbol == NO_ID && resolved.local_presentation
+         == ABI_LOCAL_PRESENTATION_NAME_ORDINAL)
+        emit_unnamed_type_name(resolved.discriminator);
+      else output_ += source_name(graph_.strings.get(resolved.symbol));
       emit_tags(resolved.tags);
       if(specialization) substitutions_.add(prefix);
     }
@@ -1479,6 +1506,14 @@ private:
       const vector<size_t> arguments = graph_.type(id).arguments;
       output_ += 'I'; encode_arguments(arguments); output_ += 'E';
     }
+  }
+
+  // <unnamed-type-name> ::= Ut [<nonnegative number>] _ (the first is Ut_).
+  void emit_unnamed_type_name(size_t ordinal)
+  {
+    output_ += "Ut";
+    if(ordinal != 0) output_ += std::to_string(ordinal - 1);
+    output_ += '_';
   }
 
   void encode_template_prefix(size_t path, const vector<size_t> & components,
@@ -2312,20 +2347,30 @@ private:
       if(target.local_presentation ==
          ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA)
         append_generated_lambda_source(output_, target.resolved_path);
-      else {
-        output_ += source_name(target.qualified_name);
-        output_ += target.local_presentation == ABI_LOCAL_PRESENTATION_TEXT ?
-          discriminator(target.discriminator) :
-          local_discriminator(target.resolved_path);
-      }
+      else if(target.qualified_name.empty())
+        emit_unnamed_type_name(target.resolved_path);
+      else output_ += source_name(target.qualified_name);
+      // The local class or unit-local closure type is the candidate its
+      // later uses in the name refer to.
+      if(target.owner_type.kind == ABI_TYPE_RESOLVED)
+        substitutions_.add(SubstitutionKey{SUBSTITUTION_TYPE,
+                                           graph_.resolve_type(target.owner_type)});
     }
-    output_ += abi_terminal_code(
+    // A member function of a local class names its source terminal; a
+    // closure's call operator and other operators a terminal code.
+    if(!target.source_name.empty()) output_ += source_name(target.source_name);
+    else output_ += abi_terminal_code(
       resolved_terminal(target.terminal_code, target.terminal), true,
       facts.parameters.size());
     if(!facts.template_arguments.empty()) {
       output_ += 'I'; encode_arguments(facts.template_arguments); output_ += 'E';
     }
     output_ += 'E';
+    if(target.kind == ABI_FUNCTION_TARGET_LOCAL && !target.qualified_name.empty()
+       && target.local_presentation != ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA)
+      output_ += target.local_presentation == ABI_LOCAL_PRESENTATION_TEXT ?
+        discriminator(target.discriminator) :
+        local_discriminator(target.resolved_path);
     if(!facts.template_arguments.empty() && !facts.result_types.empty())
       encode_type(facts.result_types.front());
     encode_bare_parameters(facts.parameters, facts.variadic);
@@ -2375,15 +2420,17 @@ private:
     const string & local_name = local.type.index != 0 ?
       graph_.strings.get(local.type.index - 1) : local.name;
     if(!facts.lambda && local_name.empty()) {
-      output_ += "Ut";
-      const size_t unnamed_ordinal = text_presentation ?
-        static_cast<size_t>(std::stoul(local.discriminator)) : ordinal;
-      if(unnamed_ordinal != 0) output_ += std::to_string(unnamed_ordinal - 1);
-      output_ += '_';
+      emit_unnamed_type_name(text_presentation ?
+        static_cast<size_t>(std::stoul(local.discriminator)) : ordinal);
     } else if(!facts.lambda) {
       output_ += source_name(local_name);
       emit_tags(component_tags(facts, &local));
     }
+    // The local class is the substitution candidate its type's later uses
+    // in the name refer to (`_ZZ1fvEN5LocalC2EOS_`).
+    if(!facts.lambda && !local.types.empty())
+      substitutions_.add(SubstitutionKey{SUBSTITUTION_TYPE,
+                                         graph_.resolve_type(local.types.front())});
     if(facts.terminal) {
       emit_function_terminal(nullptr, facts, true, facts.parameters.size());
     }
@@ -2472,13 +2519,10 @@ private:
               ABI_LOCAL_PRESENTATION_GENERATED_LAMBDA) {
       append_generated_lambda_source(output_, stable.discriminator);
     } else if(stable.symbol == NO_ID) {
-      output_ += "Ut";
-      const size_t ordinal = stable.local_presentation ==
+      emit_unnamed_type_name(stable.local_presentation ==
         ABI_LOCAL_PRESENTATION_TEXT ? static_cast<size_t>(
           std::stoul(graph_.strings.get(stable.discriminator))) :
-        stable.discriminator;
-      if(ordinal != 0) output_ += std::to_string(ordinal - 1);
-      output_ += '_';
+        stable.discriminator);
     } else {
       output_ += source_name(graph_.strings.get(stable.symbol));
       output_ += stable.local_presentation == ABI_LOCAL_PRESENTATION_TEXT ?
@@ -2517,8 +2561,19 @@ private:
         }
         facts.variadic = context.function.variadic;
       }
+      AbiFunctionRecord terminal;
+      const AbiTerminalKind code = context.function.terminal_code;
+      if(code != ABI_TERMINAL_NONE
+         && (context.function.kind == ABI_FUNCTION_TARGET_PATH
+             || context.function.kind == ABI_FUNCTION_TARGET_MEMBER)) {
+        terminal.kind = code >= ABI_TERMINAL_CONSTRUCTOR_COMPLETE
+          && code <= ABI_TERMINAL_DESTRUCTOR_BASE ?
+          ABI_FUNCTION_RECORD_TERMINAL : ABI_FUNCTION_RECORD_OPERATOR_TERMINAL;
+        terminal.terminal_code = code;
+        facts.terminal = &terminal;
+      }
       output_ += 'Z';
-      encode_function(context.function, facts);
+      encode_function(context.function, facts, context.internal_linkage);
       output_ += 'E';
     }
   }

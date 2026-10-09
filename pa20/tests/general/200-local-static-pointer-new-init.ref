@@ -1,7 +1,7 @@
 declare function @operatornew(%arg0 : i64) -> ptr [role=allocate_memory, binding=strong, object=cppgm_builtin_operator_new]
 
-global @__local_static__get__decl0__p : ptr [binding=internal] = zero
-global @__local_static__get__decl0__p__guard : i64 [binding=internal] = zero
+global @__local_static__get__decl0__p : ptr [binding=internal, object=_ZZ3getvE1p] = zero
+global @__local_static__get__decl0__p__guard : i64 [binding=internal, object=_ZGVZ3getvE1p] = zero
 
 function @get() -> ptr [binding=strong, object=_Z3getv] {
   block ^entry:

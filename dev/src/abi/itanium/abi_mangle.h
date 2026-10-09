@@ -45,7 +45,12 @@ struct AbiTargetRecord
 {
   AbiTargetFactKind kind = ABI_TARGET_FACT_TYPE;
   bool c_linkage = false;
+  // `L` marker on the entity's own name (Itanium 5.1.2's <unqualified-name>
+  // of an internal-linkage entity, as clang marks it).
   bool internal_linkage = false;
+  // A unit-local variable of the global namespace mangled without the `L`
+  // marker: an anonymous union's object (`_Z2ua`).
+  bool internal_unmarked = false;
   AbiType type;
   AbiType base_type;
   AbiFunctionTarget function;

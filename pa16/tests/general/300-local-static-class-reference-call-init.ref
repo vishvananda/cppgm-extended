@@ -1,9 +1,9 @@
-global @__local_static__get_table__decl0__table [binding=internal] = {
+global @__local_static__get_table__decl0__table [binding=internal, object=_ZZ9get_tablevE5table] = {
   i32 1
   i32 2
 }
-global @__local_static__read_table__decl0__table : ptr [binding=internal] = zero
-global @__local_static__read_table__decl0__table__guard : i64 [binding=internal] = zero
+global @__local_static__read_table__decl0__table : ptr [binding=internal, object=_ZZ10read_tablevE5table] = zero
+global @__local_static__read_table__decl0__table__guard : i64 [binding=internal, object=_ZGVZ10read_tablevE5table] = zero
 
 function @get_table() -> ptr [binding=strong, object=_Z9get_tablev] {
   block ^entry:

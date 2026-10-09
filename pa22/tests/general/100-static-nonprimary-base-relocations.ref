@@ -1,5 +1,5 @@
-global @__local_static__local_reference__decl0__result : ptr [binding=internal] = addr @object + 4
-global @__local_static__local_pointer__decl0__result : ptr [binding=internal] = addr @object + 4
+global @__local_static__local_reference__decl0__result : ptr [binding=internal, object=_ZZ15local_referencevE6result] = addr @object + 4
+global @__local_static__local_pointer__decl0__result : ptr [binding=internal, object=_ZZ13local_pointervE6result] = addr @object + 4
 global @object : obj<12x4> [binding=strong] = {
   zero 12
 }

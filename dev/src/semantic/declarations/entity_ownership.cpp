@@ -11,8 +11,14 @@ void Analyzer::RegisterLocalTypeAbiIdentity(EntityId entity)
 	if (entity == kNoEntity || entity >= program_->entities.size())
 		ThrowInternalCompilerError("local ABI identity has no entity");
 	EntityRecord& record = program_->entities[entity];
-	if (record.local_context == kNoBinding) return;
-	const std::uint64_t key =
+	// A function's local classes of one name, and its unnamed ones, are
+	// numbered in declaration order; so are a class's unnamed member classes
+	// (`Ut<n>_`, Itanium 5.1.8).
+	const bool member_unnamed = record.local_context == kNoBinding &&
+		record.unnamed_class && record.enclosing_class != kNoEntity;
+	if (record.local_context == kNoBinding && !member_unnamed) return;
+	const std::uint64_t key = member_unnamed ?
+		(UINT64_C(1) << 63) | record.enclosing_class :
 		(static_cast<std::uint64_t>(record.local_context) << 32) |
 		(record.unnamed_class ? 0 : record.identity_name);
 	CompactIndexSequence& occurrences = local_type_occurrences_.Ensure(key);

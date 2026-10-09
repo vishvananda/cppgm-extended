@@ -12,7 +12,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = binary sub nowrap i32 %t4, 3
     return i32 %t5
 }
-function @__lambda_main_t16_18____lambda_nested_t25_27__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZZ4mainENK3$_0clEvENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
+function @__lambda_main_t16_18____lambda_nested_t25_27__operator__(%this : ptr [object_bytes=1]) -> i32 [binding=internal, object=_ZZZ4mainENK3$_0clEvENKUlvE_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
   slot $value : i32
 

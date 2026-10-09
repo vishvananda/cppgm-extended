@@ -1,4 +1,4 @@
-global @h : obj<8x8> [binding=internal, object=h] = {
+global @h : obj<8x8> [binding=internal, object=_ZL1h] = {
   zero 8
 }
 

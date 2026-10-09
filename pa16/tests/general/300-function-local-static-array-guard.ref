@@ -7,11 +7,11 @@ global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 98
   i8 0
 }
-global @__local_static__f__decl0__values [binding=internal] = {
+global @__local_static__f__decl0__values [binding=internal, object=_ZZ1fvE6values] = {
   ptr addr @__strlit__1
   ptr addr @__strlit__2
 }
-global @__local_static__f__decl1__nested [binding=internal] = {
+global @__local_static__f__decl1__nested [binding=internal, object=_ZZ1fvE6nested] = {
   i8 120
   i8 0
 }

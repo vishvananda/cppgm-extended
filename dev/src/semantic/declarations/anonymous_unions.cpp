@@ -8,6 +8,31 @@ namespace cppgm
 namespace semantic
 {
 
+namespace
+{
+
+// The first named data member of an anonymous union in a pre-order,
+// depth-first walk names the union's unnamed object (Itanium 5.1.2).
+NameId FirstNamedUnionMember(const Program& program,
+	const std::vector<std::vector<BindingId> >& data_members, EntityId entity)
+{
+	if (entity >= data_members.size()) return 0;
+	const std::vector<BindingId>& members = data_members[entity];
+	for (std::size_t i = 0; i < members.size(); ++i)
+	{
+		const BindingRecord& member = program.bindings[members[i]];
+		if (!member.anonymous_union_storage) return member.name;
+		const TypeRecord& type = program.types.Get(
+			program.types.RemoveTopCv(member.type));
+		const NameId nested = type.kind != TYPE_NAMED ? 0 :
+			FirstNamedUnionMember(program, data_members, type.entity);
+		if (nested != 0) return nested;
+	}
+	return 0;
+}
+
+}
+
 void Analyzer::AnalyzeDeclaratorlessSimpleDeclaration(
 	NodeId specifiers, ScopeId scope, std::uint32_t output_parent,
 	bool local, const SpecInfo& spec)
@@ -57,6 +82,8 @@ void Analyzer::DeclareAnonymousUnionObject(NodeId source,
 	storage_record.anonymous_union_storage = true;
 	storage_record.storage_class = storage_class;
 	storage_record.language_linkage = current_language_linkage_;
+	storage_record.anonymous_union_object_name =
+		FirstNamedUnionMember(*program_, entity_data_members_, entity);
 
 	const std::uint32_t parent = local ?
 		MakeDump(DUMP_SIMPLE_DECLARATION) : output_parent;

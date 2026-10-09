@@ -158,8 +158,10 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 		key_text == "class" ? NAMED_CLASS :
 		key_text == "union" ? NAMED_UNION : NAMED_NONE;
 	if (flavor == NAMED_NONE) ThrowSemanticError("invalid class-key");
+	// An unnamed class other than one a typedef names for linkage purposes
+	// (7.1.3p9); its ABI name is `Ut<n>_` or a unit-local `$_<n>`.
 	const bool unnamed_class = specialization_name.empty() &&
-		arena_->Payload(node).empty() && !hint.empty();
+		arena_->Payload(node).empty() && typedef_linkage_name == 0;
 	std::string spelling;
 	NamePath path;
 	bool generated_identity = false;
@@ -298,6 +300,12 @@ TypeId Analyzer::AnalyzeClass(NodeId node, ScopeId scope,
 			name, lookup_name, specialization_owner,
 			specialization_identity, specialization_emission_name == 0 ?
 				program_->names.Intern(spelling) : specialization_emission_name);
+	// A typedef names an unnamed class for linkage purposes (7.1.3p9): its
+	// members are emitted in that name's scope (`_ZN14NamedByTypedef3getEv`).
+	if (typedef_linkage_name != 0 &&
+		program_->entities[entity].member_scope != kNoScope)
+		program_->SetScopeEmissionName(
+			program_->entities[entity].member_scope, typedef_linkage_name);
 	return type;
 }
 
@@ -1389,7 +1397,12 @@ void Analyzer::PublishVariableDeclarationFacts(BindingId binding,
 	}
 	record.thread_local_storage = spec.thread_local_storage;
 	PublishDeclaredTypeLayout(binding, type, spec.type_layout);
-	const TypeRecord top_type = program_->types.Get(type);
+	// An array's cv-qualifiers are its elements' (8.3.4p1), so an array of
+	// const elements is a const variable for linkage too.
+	TypeId element_type = type;
+	while (program_->types.Get(element_type).kind == TYPE_ARRAY)
+		element_type = program_->types.Get(element_type).child;
+	const TypeRecord top_type = program_->types.Get(element_type);
 	// A namespace-scope const variable is internal unless it is inline: the
 	// inline specifier is what makes one definition per translation unit the
 	// same object, so the name has to stay external and merge weakly.

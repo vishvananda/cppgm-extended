@@ -42,7 +42,7 @@ function @A__dep(%this : ptr [object_bytes=1], %__param1 : i32) -> u8 [binding=w
     store typed i32 %__param1, $__param1
     return u8 1
 }
-function @A____lambda_A__f_t26_30__operator__(%this : ptr [object_bytes=8], %x : i32) -> u8 [binding=internal, object=_ZZN1A1fEvENKUliE_clEi, inline_hint=yes] {
+function @A____lambda_A__f_t26_30__operator__(%this : ptr [object_bytes=8], %x : i32) -> u8 [binding=internal, object=_ZZNK1A1fEvENKUliE_clEi, inline_hint=yes] {
   slot $this : ptr
   slot $x : i32
 

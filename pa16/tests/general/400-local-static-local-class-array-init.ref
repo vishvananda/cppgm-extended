@@ -7,10 +7,10 @@ global @__strlit__1 [storage=readonly, binding=internal] = {
   i8 32
   i8 0
 }
-global @__local_static__make_result__decl0__prefixes : obj<32x8> [binding=internal] = {
+global @__local_static__make_result__decl0__prefixes : obj<32x8> [binding=internal, object=_ZZ11make_resultvE8prefixes] = {
   zero 32
 }
-global @__local_static__make_result__decl0__prefixes__guard : i64 [binding=internal] = zero
+global @__local_static__make_result__decl0__prefixes__guard : i64 [binding=internal, object=_ZGVZ11make_resultvE8prefixes] = zero
 global @constructed : i32 [binding=strong] = 0
 global @__strlit__2 [storage=readonly, binding=internal] = {
   i8 115

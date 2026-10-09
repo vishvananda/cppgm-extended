@@ -21,7 +21,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t5 = load typed i32 $cond__1
     return i32 %t5
 }
-function @__lambda_main_t10_12() -> void [binding=internal, object=_Z20__lambda_main_t10_12v, object_root=yes] {
+function @__lambda_main_t10_12() -> void [binding=internal, object=_ZZ4mainEN3$_08__invokeEv, object_root=yes] {
   block ^entry:
     return void
 }

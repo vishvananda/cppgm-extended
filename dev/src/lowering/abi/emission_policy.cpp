@@ -65,7 +65,7 @@ void ApplyLifecycleSymbolMetadata(const semantic::Program& program,
 	lowering::ir::Program* output,
 	lowering::ir::SymbolId symbol,
 	abi_mangle::AbiMangleContext* context,
-	abi_mangle::AbiMangleStats* stats)
+	abi_mangle::AbiMangleStats* stats, LocalNames* names)
 {
 	using namespace semantic;
 	using namespace lowering::ir;
@@ -104,7 +104,7 @@ void ApplyLifecycleSymbolMetadata(const semantic::Program& program,
 		node.kind != semantic::DUMP_FUNCTION_DEFINITION ||
 		!shared_base_entry) return;
 	const std::string alias =
-		MangleFunction(program, node, true, stats, context);
+		MangleFunction(program, node, true, stats, context, names);
 	if (!alias.empty() && (!record.object_name.valid() ||
 		alias != output->strings.get(record.object_name)))
 		output->object_aliases.push_back(ObjectAlias(

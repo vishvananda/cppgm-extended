@@ -1,4 +1,4 @@
-global @p [binding=internal, object=p] = {
+global @p [binding=internal, object=_ZL1p] = {
   i32 9
 }
 

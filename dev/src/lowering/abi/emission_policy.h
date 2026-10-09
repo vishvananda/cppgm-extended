@@ -24,11 +24,13 @@ bool IsFunctionDeclarationBoundaryComplete(const semantic::Program& program,
 	const semantic::DumpNode& node);
 bool IsVariableDeclarationOnly(const semantic::Program& program,
 	const semantic::DumpNode& node, bool has_initializer);
+class LocalNames;
+
 void ApplyLifecycleSymbolMetadata(const semantic::Program& program,
 	const semantic::DumpNode& node, lowering::ir::Program* output,
 	lowering::ir::SymbolId symbol,
 	abi_mangle::AbiMangleContext* context = 0,
-	abi_mangle::AbiMangleStats* stats = 0);
+	abi_mangle::AbiMangleStats* stats = 0, LocalNames* names = 0);
 
 }  // namespace abi
 }  // namespace lowering

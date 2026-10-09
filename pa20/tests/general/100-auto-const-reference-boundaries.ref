@@ -1,8 +1,8 @@
-global @__local_static__case_11__get__s__tokens713_720 : ptr [binding=internal] = zero
+global @__local_static__case_11__get__s__tokens713_720 : ptr [binding=internal, object=_ZZN7case_113getEvE1s] = zero
 global @__cppgm_ref_temporary____local_static__case_11__get__s__tokens713_720_0 [binding=internal] = {
   zero 4
 }
-global @__local_static__case_11__get__s__tokens713_720__guard : i64 [binding=internal] = zero
+global @__local_static__case_11__get__s__tokens713_720__guard : i64 [binding=internal, object=_ZGVZN7case_113getEvE1s] = zero
 global @case_1__alive : i32 [binding=strong, object=_ZN6case_15aliveE] = zero
 global @case_2__alive : i32 [binding=strong, object=_ZN6case_25aliveE] = zero
 global @case_3__alive : i32 [binding=strong, object=_ZN6case_35aliveE] = zero

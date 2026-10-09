@@ -137,8 +137,12 @@ private:
 		{
 			const std::size_t node = EntityNode(entity);
 			const EntityRecord& record = program_.entities[entity];
+			// A namespace-scope closure type or unnamed class has no linkage
+			// (3.5p8): its `$_<n>` name is unit-local, and so are its members.
 			if (record.local_context != kNoBinding ||
-				program_.HasInternalLinkageScope(record.owner))
+				program_.HasInternalLinkageScope(record.owner) ||
+				(record.enclosing_class == kNoEntity &&
+				 (record.lambda_closure || record.unnamed_class)))
 				Mark(node);
 			AddBindingDependency(record.declaration, node);
 			AddEntityDependency(record.enclosing_class, node);

@@ -193,6 +193,28 @@ names:
 - canonical qualified names matter, including inline namespaces when they are
   part of the ABI name
 
+Where Itanium leaves a name to the implementation, the reference follows
+clang, and the object-inspection tests check its spelling:
+
+- a namespace-scope variable or function of internal linkage carries the `L`
+  marker (`_ZL4data`, `_ZN2nsL1vE`, `_ZL4sfunv`), except inside an unnamed
+  namespace, whose `_GLOBAL__N_1` prefix is already unit-local
+- a function's static variable and its guard are local names
+  (`_ZZ3getvE5local`, `_ZGVZ3getvE5local`); where the function is inline or
+  a template specialization every unit names them alike, so they are one
+  object across units; a constructor's or destructor's statics are named in
+  its complete entry (`_ZZN1SC1EvE5count`, where GCC writes `C4`) and are
+  one object for both entries
+- a closure type has a mangling number (`Ul<sig>E<n>_`) when its lambda lies
+  in an inline function or a template specialization, a lambda body
+  included; any other closure type, and an unnamed class that no typedef
+  names for linkage, is a unit-local `$_<n>` with local symbols; a
+  captureless closure's static invoker is `__invoke`
+- a `$_<n>` number is assigned when the name is first mangled: a
+  function-local unnamed class or closure takes the next number within its
+  function, and any other one takes the count of `$_` names the translation
+  unit has assigned so far
+
 Reference:
 
 - Local copy of Itanium C++ ABI, Chapter 5.1 "External Names (a.k.a.

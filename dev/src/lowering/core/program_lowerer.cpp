@@ -4,6 +4,7 @@
 #include "lowering/control/control_flow.h"
 #include "lowering/expressions/conditionals.h"
 #include "lowering/abi/emission_policy.h"
+#include "lowering/abi/local_entity_names.h"
 #include "lowering/abi/mangling.h"
 #include "lowering/abi/symbol_metadata.h"
 #include "lowering/presentation/local_names.h"
@@ -103,7 +104,7 @@ public:
 		lowering::Stats* stats, std::size_t source_ordinal)
 		: graph_(graph), program_(graph.program), arena_(graph.arena),
 		  output_(output), stats_(stats),
-		  abi_context_(stats ? &stats->abi : 0),
+		  abi_context_(stats ? &stats->abi : 0), local_names_(graph.program),
 		  function_(0), current_block_(0), current_result_(LowVoid()),
 		  current_result_reference_(false), current_indirect_result_(false),
 		  temp_counter_(0), initialized_bit_field_owner_(kNoEntity),
@@ -187,6 +188,7 @@ public:
 	}
 	void Lower()
 	{
+		local_names_.Prepare(graph_);
 		RegisterAggregateHelpers();
 		ScanTop(graph_.root);
 		std::vector<std::uint32_t> callee_nodes_by_symbol(output_.symbols.size(),
@@ -213,6 +215,7 @@ public:
 						static_cast<std::uint32_t>(node);
 			}
 		RegisterLocalStaticObjects();
+		polymorphism_.local_names = &local_names_;
 		lowering::PreparePolymorphism(graph_, output_, stats_,
 			source_ordinal_, function_symbols_, &polymorphism_);
 		PrepareFunctionExceptionPolicyRuntime();
@@ -593,10 +596,10 @@ private:
 				name + "__base_entry" : name;
 			function_symbols_[record.binding] = InternSymbol(record, Symbol::FUNCTION_SYMBOL, entry_name,
 				lowering::abi::MangleFunction(program_, record, false,
-					stats_ ? &stats_->abi : 0, &abi_context_));
+					stats_ ? &stats_->abi : 0, &abi_context_, &local_names_));
 			lowering::abi::ApplyLifecycleSymbolMetadata(program_, record,
 				&output_, function_symbols_[record.binding], &abi_context_,
-				stats_ ? &stats_->abi : 0);
+				stats_ ? &stats_->abi : 0, &local_names_);
 		}
 		if (record.kind == DUMP_FUNCTION_DEFINITION)
 		{
@@ -713,7 +716,7 @@ private:
 											lowering::abi::MangleThreadLocalWrapper(
 												program_, record.binding, record.text,
 												stats_ ? &stats_->abi : 0,
-												&abi_context_)));
+												&abi_context_, &local_names_)));
 								}
 						}
 						else
@@ -783,7 +786,7 @@ private:
 				std::make_pair(action_index,
 					lowering::abi::MangleThreadLocalWrapper(
 						program_, record.binding, record.text,
-						stats_ ? &stats_->abi : 0, &abi_context_)));
+						stats_ ? &stats_->abi : 0, &abi_context_, &local_names_)));
 		bool keep_global_class_address = false;
 		bool dynamic_initializer = false;
 		if (!SetExplicitVariableZero(record, &global) &&
@@ -1054,6 +1057,7 @@ private:
 	lowering::ir::Program& output_;
 	lowering::Stats* stats_;
 	abi_mangle::AbiMangleContext abi_context_;
+	lowering::abi::LocalNames local_names_;
 	std::vector<SymbolId> function_symbols_;
 	std::vector<LifecycleBaseEntry> lifecycle_base_entries_;
 	std::vector<SymbolId> global_symbols_;

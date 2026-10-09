@@ -1,4 +1,4 @@
-global @__local_static__table__value__tokens32_43 [binding=internal] = {
+global @__local_static__table__value__tokens32_43 [binding=internal, object=_ZZ5tablevE5value] = {
   ptr addr @x__f
   i64 0
 }

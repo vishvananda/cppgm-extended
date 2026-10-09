@@ -60,7 +60,7 @@ function @optional_ref_lvalue_reference_to_int___get(%this : ptr [object_bytes=8
     %t11 = load typed ptr $condaddr__1
     return ptr %t11
 }
-function @__lambda___cppgm_class_template_identity_0_0_0__get_t40_40() -> void [binding=internal, object=_Z58__lambda___cppgm_class_template_identity_0_0_0__get_t40_40v, object_root=yes] {
+function @__lambda___cppgm_class_template_identity_0_0_0__get_t40_40() -> void [binding=internal, object=_ZZNK12optional_refIRiE3getEvENUlvE_8__invokeEv, object_root=yes] {
   slot $marker : i32
 
   block ^entry:

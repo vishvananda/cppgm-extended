@@ -1,7 +1,7 @@
 global @seed [binding=strong] = {
   f32 0.00000000000000000000F
 }
-global @x [binding=internal, object=x] = {
+global @x [binding=internal, object=_ZL1x] = {
   f32 0.00000000000000000000F
 }
 

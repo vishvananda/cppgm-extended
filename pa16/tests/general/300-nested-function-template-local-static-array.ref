@@ -1,7 +1,7 @@
-global @__local_static__function_symbol_5f5a3576616c7565494c693145456976__decl0__data [binding=weak] = {
+global @__local_static__function_symbol_5f5a3576616c7565494c693145456976__decl0__data [binding=weak, object=_ZZ5valueILi1EEivE4data] = {
   i32 1
 }
-global @__local_static__function_symbol_5f5a3576616c7565494c693245456976__decl0__data [binding=weak] = {
+global @__local_static__function_symbol_5f5a3576616c7565494c693245456976__decl0__data [binding=weak, object=_ZZ5valueILi2EEivE4data] = {
   i32 2
 }
 

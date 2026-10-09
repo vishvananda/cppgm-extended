@@ -3,6 +3,8 @@
 
 #include "semantic/model/graph.h"
 #include "lowering/ir/model.h"
+#include "lowering/abi/local_entity_names.h"
+#include "lowering/abi/mangling.h"
 #include "lowering/abi/symbol_names.h"
 #include "lowering/support/errors.h"
 #include "lowering/support/sequences.h"
@@ -105,9 +107,29 @@ protected:
 		return name;
 	}
 
+	// A function's static variable and its guard are named as Itanium names
+	// them (`_ZZ3getvE5local`, `_ZGVZ3getvE5local`), so a weak one of an
+	// inline function is the same object in every unit.
+	std::string LocalStaticObjectName(std::uint32_t action, bool guard)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const LocalStaticObjectAction& object =
+			derived.graph_.local_static_objects[action];
+		return abi::MangleLocalStatic(derived.program_, object.object,
+			object.function, derived.local_names_.StaticDiscriminator(action),
+			guard, derived.stats_ ? &derived.stats_->abi : 0,
+			&derived.abi_context_, &derived.local_names_);
+	}
+
 	void RegisterLocalStaticObjects()
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		// Every action of one declaration (its body lowered for a
+		// constructor's complete and base entries, or for a closure's call
+		// operator and static invoker) is the object the first emitted one
+		// registers, with its guard and destructor.
+		std::vector<std::uint32_t> registered(
+			derived.graph_.local_static_objects.size(), kNoDumpEdge);
 		for (std::size_t i = 0;
 			i < derived.graph_.local_static_objects.size(); ++i)
 		{
@@ -118,20 +140,26 @@ protected:
 				action.function >= derived.function_definition_.size() ||
 				derived.function_definition_[action.function] == kNoDumpEdge)
 				continue;
-			const BindingRecord& function =
-				derived.program_.bindings[action.function];
-			const Symbol& owner = derived.output_.symbols[
-				derived.function_symbols_[action.function]];
-			const bool weak = !owner.internal_linkage &&
-				(function.weak_odr || function.template_argument_count != 0);
+			std::uint32_t& shared = registered[derived.local_names_.StaticDeclaration(
+				static_cast<std::uint32_t>(i))];
+			if (shared != kNoDumpEdge)
+			{
+				derived.global_symbols_[action.object] = derived.global_symbols_[
+					derived.graph_.local_static_objects[shared].object];
+				derived.local_static_action_[action.object] = shared;
+				continue;
+			}
+			shared = static_cast<std::uint32_t>(i);
+			// One object in every unit where other units name it: its
+			// function's outermost enclosing function is inline or a template
+			// specialization of external linkage.
+			const bool weak = abi::LocalContextIsVisible(
+				derived.program_, action.function);
 			const std::string name =
 				LocalStaticSymbolName(action, weak, true);
-			const std::string object_name = weak ?
-				(derived.output_.host_object_emission ? std::string() : "@") +
-					LocalStaticSymbolName(action, weak, false) : std::string();
 			const SymbolId symbol = derived.AddSyntheticSymbol(
 				Symbol::GLOBAL_SYMBOL, name,
-				object_name, !weak);
+				LocalStaticObjectName(static_cast<std::uint32_t>(i), false), !weak);
 			Symbol& record = derived.output_.symbols[symbol];
 			record.weak_linkage = weak;
 			record.definition_emitted = true;
@@ -190,15 +218,9 @@ protected:
 				const bool weak = derived.output_.symbols[symbol].weak_linkage;
 				const std::string guard_name = derived.output_.strings.get(
 					derived.output_.symbols[symbol].name) + "__guard";
-				const lowir_model::StringId object_name_id =
-					derived.output_.symbols[symbol].object_name;
-				const std::string guard_object_name = weak &&
-					object_name_id.valid() ? derived.output_.strings.get(
-						object_name_id) + "__guard" :
-					std::string();
 				const SymbolId guard_symbol = derived.AddSyntheticSymbol(
 					Symbol::GLOBAL_SYMBOL, guard_name,
-					guard_object_name, !weak);
+					LocalStaticObjectName(static_cast<std::uint32_t>(i), true), !weak);
 				Symbol& guard_record = derived.output_.symbols[guard_symbol];
 				guard_record.weak_linkage = weak;
 				guard_record.definition_emitted = true;

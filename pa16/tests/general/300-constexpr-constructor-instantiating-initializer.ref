@@ -1,4 +1,4 @@
-global @table [binding=strong] = {
+global @table [binding=internal, object=_ZL5table] = {
   i32 1
   i32 1
   i32 10

@@ -17,11 +17,11 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @progress : i32 [binding=internal, object=progress] = zero
-global @limit : i32 [binding=internal, object=limit] = zero
-global @live : i32 [binding=internal, object=live] = zero
-global @trace_digest : u32 [binding=internal, object=trace_digest] = zero
-global @case_0__expected [binding=internal, object=_ZN6case_08expectedE] = {
+global @progress : i32 [binding=internal, object=_ZL8progress] = zero
+global @limit : i32 [binding=internal, object=_ZL5limit] = zero
+global @live : i32 [binding=internal, object=_ZL4live] = zero
+global @trace_digest : u32 [binding=internal, object=_ZL12trace_digest] = zero
+global @case_0__expected [binding=internal, object=_ZN6case_0L8expectedE] = {
   u32 1988700000
   u32 0
   u32 32
@@ -30,7 +30,7 @@ global @case_0__expected [binding=internal, object=_ZN6case_08expectedE] = {
   u32 2373708736
   u32 4043241184
 }
-global @case_1__expected [binding=internal, object=_ZN6case_18expectedE] = {
+global @case_1__expected [binding=internal, object=_ZN6case_1L8expectedE] = {
   u32 1988700000
   u32 0
   u32 32
@@ -39,7 +39,7 @@ global @case_1__expected [binding=internal, object=_ZN6case_18expectedE] = {
   u32 2373708736
   u32 4043241184
 }
-global @case_2__expected [binding=internal, object=_ZN6case_28expectedE] = {
+global @case_2__expected [binding=internal, object=_ZN6case_2L8expectedE] = {
   u32 1378408384
   u32 0
   u32 32
@@ -71,7 +71,7 @@ global @case_2__expected [binding=internal, object=_ZN6case_28expectedE] = {
   u32 404769344
   u32 151618624
 }
-global @case_3__expected [binding=internal, object=_ZN6case_38expectedE] = {
+global @case_3__expected [binding=internal, object=_ZN6case_3L8expectedE] = {
   u32 4043241184
   u32 0
   u32 32
@@ -79,7 +79,7 @@ global @case_3__expected [binding=internal, object=_ZN6case_38expectedE] = {
   u32 41611712
   u32 2373708736
 }
-global @case_4__expected [binding=internal, object=_ZN6case_48expectedE] = {
+global @case_4__expected [binding=internal, object=_ZN6case_4L8expectedE] = {
   u32 1988700000
   u32 0
   u32 32
@@ -88,7 +88,7 @@ global @case_4__expected [binding=internal, object=_ZN6case_48expectedE] = {
   u32 2373708736
   u32 4043241184
 }
-global @case_5__expected [binding=internal, object=_ZN6case_58expectedE] = {
+global @case_5__expected [binding=internal, object=_ZN6case_5L8expectedE] = {
   u32 4083490624
   u32 0
   u32 32
@@ -98,7 +98,7 @@ global @case_5__expected [binding=internal, object=_ZN6case_58expectedE] = {
   u32 2373708736
   u32 4083490624
 }
-global @case_6__expected [binding=internal, object=_ZN6case_68expectedE] = {
+global @case_6__expected [binding=internal, object=_ZN6case_6L8expectedE] = {
   u32 4083490624
   u32 0
   u32 32

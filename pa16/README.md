@@ -186,6 +186,9 @@ after a valid declaration is instantiated with concrete template arguments:
     reference's lifetime (12.2p5): it occupies static storage, not the
     initializing call's frame, and is destroyed at exit with the other
     static objects (thread storage for a `thread_local` reference)
+  - one object per declaration wherever the body is lowered more than once: a
+    constructor's or destructor's complete and base-subobject entries share
+    their statics (N3485 6.7p4)
 - ordinary namespace objects whose constant-initialization probe encounters a
   core constant-expression failure use dynamic initialization; only contexts
   that require a constant expression are rejected for that failure

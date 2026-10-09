@@ -17,11 +17,11 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @progress : i32 [binding=internal, object=progress] = zero
-global @limit : i32 [binding=internal, object=limit] = zero
-global @live : i32 [binding=internal, object=live] = zero
-global @trace_digest : u32 [binding=internal, object=trace_digest] = zero
-global @expected [binding=internal, object=expected] = {
+global @progress : i32 [binding=internal, object=_ZL8progress] = zero
+global @limit : i32 [binding=internal, object=_ZL5limit] = zero
+global @live : i32 [binding=internal, object=_ZL4live] = zero
+global @trace_digest : u32 [binding=internal, object=_ZL12trace_digest] = zero
+global @expected [binding=internal, object=_ZL8expected] = {
   u32 4083490624
   u32 0
   u32 32

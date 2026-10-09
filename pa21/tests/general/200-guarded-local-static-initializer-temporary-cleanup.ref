@@ -15,10 +15,10 @@ global @__rtti_int [binding=weak, object=_ZTIi] = {
 global @__ehobj_int [binding=internal, object=@__ehobj_int] = {
   zero 4
 }
-global @__local_static__read_static__value__tokens129_141 : obj<4x4> [binding=internal] = {
+global @__local_static__read_static__value__tokens129_141 : obj<4x4> [binding=internal, object=_ZZ11read_staticPiE5value] = {
   zero 4
 }
-global @__local_static__read_static__value__tokens129_141__guard : i64 [binding=internal] = zero
+global @__local_static__read_static__value__tokens129_141__guard : i64 [binding=internal, object=_ZGVZ11read_staticPiE5value] = zero
 
 function @read_static(%live_count : ptr) -> i32 [binding=strong, object=_Z11read_staticPi] {
   slot $live_count : ptr

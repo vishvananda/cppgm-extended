@@ -32,7 +32,7 @@ static bool SingleInheritanceRtti(const semantic::Program& program, EntityId ent
 }
 
 PolymorphismLoweringState::PolymorphismLoweringState()
-	: pure_virtual_symbol(kNoLowId), rtti_class_symbol(kNoLowId),
+	: local_names(0), pure_virtual_symbol(kNoLowId), rtti_class_symbol(kNoLowId),
 	  rtti_si_symbol(kNoLowId), rtti_vmi_symbol(kNoLowId),
 	  rtti_fundamental_symbol(kNoLowId), rtti_pointer_symbol(kNoLowId),
 	  rtti_enum_symbol(kNoLowId), rtti_array_symbol(kNoLowId),
@@ -664,7 +664,7 @@ private:
 	std::string TypeInfoEncoding(EntityId entity) const
 	{
 		return lowering::abi::MangleType(
-			program_, program_.entities[entity].type);
+			program_, program_.entities[entity].type, 0, 0, state_.local_names);
 	}
 
 	BindingId VtableKeyFunction(EntityId entity) const
@@ -815,7 +815,8 @@ private:
 		const TypeRecord& record = program_.types.Get(type);
 		if (record.kind == TYPE_FUNDAMENTAL)
 			return abi::NormalizeSymbolName(program_.RenderType(type));
-		return "type_" + lowering::abi::MangleType(program_, type);
+		return "type_" + lowering::abi::MangleType(program_, type, 0, 0,
+			state_.local_names);
 	}
 
 	std::string ExceptionObjectPresentationStem(TypeId type) const
@@ -1430,7 +1431,7 @@ private:
 				!(record.kind == TYPE_NAMED && !IsClassRttiType(type)))
 				ThrowLoweringInternal("demanded RTTI type has no ABI category");
 			const std::string encoding =
-				lowering::abi::MangleType(program_, type);
+				lowering::abi::MangleType(program_, type, 0, 0, state_.local_names);
 			const std::string stem = RttiPresentationStem(type);
 			state_.type_name_symbols[type] = AddPolymorphicGlobal(
 				std::string("__typeinfo_name_") +
@@ -1487,7 +1488,8 @@ private:
 				state_.exception_rtti_symbols[type] = AddExternalRtti(
 					"__external_rtti__" +
 						abi::NormalizeSymbolName(program_.RenderType(type)),
-					"_ZTI" + lowering::abi::MangleType(program_, type));
+					"_ZTI" + lowering::abi::MangleType(program_, type, 0, 0,
+						state_.local_names));
 			if (!state_.thrown_type_demanded[type]) continue;
 			const std::string name =
 				"__ehobj_" + ExceptionObjectPresentationStem(type);
@@ -1895,7 +1897,7 @@ private:
 			name.symbol = state_.type_name_symbols[type];
 			name.initializer_kind = Global::STRUCTURED_VALUE;
 			const std::string encoding =
-				lowering::abi::MangleType(program_, type);
+				lowering::abi::MangleType(program_, type, 0, 0, state_.local_names);
 			for (std::size_t i = 0; i < encoding.size(); ++i)
 				AddIntegerItem(&name, LowI8(),
 					static_cast<unsigned char>(encoding[i]));

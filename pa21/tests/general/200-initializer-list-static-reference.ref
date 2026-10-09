@@ -1,6 +1,6 @@
 declare function @__cppgm_runtime_atexit(%arg0 : ptr) -> i32 [linkage=c, binding=strong, object=atexit]
 
-global @__local_static__get__held__tokens167_175 : ptr [binding=internal] = zero
+global @__local_static__get__held__tokens167_175 : ptr [binding=internal, object=_ZZ3getvE4held] = zero
 global @__cppgm_ref_temporary____local_static__get__held__tokens167_175_0 [binding=internal] = {
   zero 16
 }
@@ -8,14 +8,14 @@ global @__cppgm_ref_temporary____local_static__get__held__tokens167_175_1 [bindi
   zero 8
 }
 global @__cppgm_ref_temporary____local_static__get__held__tokens167_175_1_constructed : i8 [binding=internal] = zero
-global @__local_static__get__held__tokens167_175__guard : i64 [binding=internal] = zero
+global @__local_static__get__held__tokens167_175__guard : i64 [binding=internal, object=_ZGVZ3getvE4held] = zero
 global @__cppgm_initlist_backing_1 [binding=internal] = {
   zero 8
 }
-global @__local_static__get_value__held__tokens189_196 : obj<16x8> [binding=internal] = {
+global @__local_static__get_value__held__tokens189_196 : obj<16x8> [binding=internal, object=_ZZ9get_valuevE4held] = {
   zero 16
 }
-global @__local_static__get_value__held__tokens189_196__guard : i64 [binding=internal] = zero
+global @__local_static__get_value__held__tokens189_196__guard : i64 [binding=internal, object=_ZGVZ9get_valuevE4held] = zero
 global @alive : i32 [binding=strong] = zero
 global @made : i32 [binding=strong] = zero
 global @destroyed : i32 [binding=strong] = zero

@@ -42,7 +42,7 @@ protected:
 				lowering::abi::MangleVariable(
 					derived.program_, record,
 					derived.stats_ ? &derived.stats_->abi : 0,
-					&derived.abi_context_));
+					&derived.abi_context_, &derived.local_names_));
 		}
 		derived.global_symbols_[record.binding] =
 			derived.global_symbols_[canonical];

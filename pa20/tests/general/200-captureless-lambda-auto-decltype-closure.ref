@@ -61,7 +61,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t17 = load typed i32 $cond__1
     return i32 %t17
 }
-function @__lambda_main_t52_61(%lhs : i32, %rhs : i8) -> i32 [binding=internal, object=_Z20__lambda_main_t52_61ic, object_root=yes] {
+function @__lambda_main_t52_61(%lhs : i32, %rhs : i8) -> i32 [binding=internal, object=_ZZ4mainEN3$_08__invokeEic, object_root=yes] {
   slot $lhs : i32
   slot $rhs : i8
 

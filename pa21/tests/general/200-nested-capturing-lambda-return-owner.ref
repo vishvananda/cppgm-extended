@@ -28,7 +28,7 @@ function @__lambda_main_t17_19__operator__(%this : ptr [object_bytes=8]) -> obj<
     store typed ptr %t4, %t1
     return obj<8x8> $retobj__1
 }
-function @__lambda_main_t17_19____lambda_nested_t25_27__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZZ4mainENK3$_0clEvENK3$_0clEv, prefer_local=yes, inline_hint=yes] {
+function @__lambda_main_t17_19____lambda_nested_t25_27__operator__(%this : ptr [object_bytes=8]) -> i32 [binding=internal, object=_ZZZ4mainENK3$_0clEvENKUlvE_clEv, prefer_local=yes, inline_hint=yes] {
   slot $this : ptr
 
   block ^entry:
