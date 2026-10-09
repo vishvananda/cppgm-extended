@@ -2,6 +2,7 @@
 #define CPPGM_LOWERING_LIFETIME_STATIC_STORAGE_H
 
 #include "semantic/model/graph.h"
+#include "lowering/abi/symbol_names.h"
 #include "lowering/ir/model.h"
 #include "lowering/support/errors.h"
 #include "lowering/support/sequences.h"
@@ -49,13 +50,17 @@ protected:
 	}
 
 	// The temporaries a static reference extends share its storage class:
-	// global storage named after the reference, and a constructed flag for
-	// each one that needs a shutdown destructor.
+	// global storage named after the reference as Itanium 5.1.4.5 numbers
+	// them (`_ZGR1g_`, `_ZGR1g0_`, ...), and a constructed flag for each one
+	// that needs a shutdown destructor.
 	void RegisterStaticReferenceTemporaries(SymbolId object,
 		const StaticReferenceTemporaries& temporaries,
 		bool thread_local_storage)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
+		const Symbol& owner = derived.output_.symbols[object];
+		const std::string owner_symbol = derived.output_.strings.get(
+			owner.object_name.valid() ? owner.object_name : owner.name);
 		for (std::size_t i = 0; i < temporaries.size(); ++i)
 		{
 			const std::uint32_t node = temporaries[i].first;
@@ -65,7 +70,8 @@ protected:
 				derived.output_.strings.get(derived.output_.symbols[
 					object].name) + "_" + std::to_string(i);
 			const SymbolId symbol = derived.AddSyntheticSymbol(
-				Symbol::GLOBAL_SYMBOL, name, std::string(), true);
+				Symbol::GLOBAL_SYMBOL, name,
+				abi::ReferenceTemporarySymbol(owner_symbol, i), true);
 			derived.static_reference_symbols_.Insert(node, symbol);
 			Symbol& record = derived.output_.symbols[symbol];
 			record.definition_emitted = true;

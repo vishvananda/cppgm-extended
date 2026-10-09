@@ -1,5 +1,6 @@
 #include "lowering/objects/static_initialization.h"
 
+#include "lowering/abi/symbol_names.h"
 #include "lowering/core/source_types.h"
 #include "lowering/support/errors.h"
 #include "lowering/support/sequences.h"
@@ -672,11 +673,16 @@ bool StaticInitializerLowering::LowerScalarReferenceTemporary(
 	backing.type = types_.LowerStorage(value_type);
 	bool needs_initializer = false;
 	if (!Lower(value_action, false, &backing, &needs_initializer)) return false;
-	const std::string name = "__ref_tmp__" +
-		output_.strings.get(output_.symbols[global->symbol].name);
+	const Symbol& owner = output_.symbols[global->symbol];
+	const std::string name = "__ref_tmp__" + output_.strings.get(owner.name);
+	// Itanium 5.1.4.5: the reference's first temporary.
+	const std::string object = abi::ReferenceTemporarySymbol(
+		output_.strings.get(owner.object_name.valid() ? owner.object_name :
+			owner.name), 0);
 	const SymbolId symbol = static_cast<SymbolId>(output_.symbols.size());
 	output_.symbols.push_back(Symbol(Symbol::GLOBAL_SYMBOL,
-		output_.strings.intern(name), lowir_model::StringId(),
+		output_.strings.intern(name), object.empty() ?
+			lowir_model::StringId() : output_.strings.intern(object),
 		false, true, false));
 	output_.symbols.back().definition_emitted = true;
 	output_.symbols.back().referenced = true;

@@ -217,6 +217,13 @@ std::string mangle_fact_files(const std::vector<std::string> & input_paths);
 void mangle_fact_files_to_stream(const std::vector<std::string> & input_paths,
                                  std::ostream & output,
                                  AbiMangleStats * stats = nullptr);
+// Itanium 5.1.4.5: the index-th temporary (from 0, in a pre-order walk of
+// the initializer) whose lifetime a static-storage variable's initializer
+// extends, `_ZGR <object name> [<seq-id>] _`, given the variable's symbol
+// (`_ZZ5wholevE4held` -> `_ZGRZ5wholevE4held_`, `g` -> `_ZGR1g_`, then
+// `_ZGR1g0_`); empty when the symbol is neither mangled nor an identifier.
+std::string reference_temporary_name(const std::string & variable_symbol,
+                                     std::size_t index);
 
 
 }  // namespace abi_mangle

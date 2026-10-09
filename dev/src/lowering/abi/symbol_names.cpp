@@ -1,5 +1,7 @@
 #include "lowering/abi/symbol_names.h"
 
+#include "abi/itanium/abi_mangle.h"
+
 #include <cstddef>
 
 namespace cppgm
@@ -29,6 +31,12 @@ std::string NormalizeSymbolName(const std::string& name)
 	}
 	if (result.empty()) result = "anonymous";
 	return result;
+}
+
+std::string ReferenceTemporarySymbol(const std::string& variable_symbol,
+	std::size_t index)
+{
+	return abi_mangle::reference_temporary_name(variable_symbol, index);
 }
 
 }  // namespace abi

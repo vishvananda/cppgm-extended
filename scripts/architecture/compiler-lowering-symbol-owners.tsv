@@ -81,6 +81,7 @@ function	dev/src/lowering/abi/symbol_metadata.cpp	ApplyBuiltinParameterAliasMeta
 function	dev/src/lowering/abi/symbol_metadata.cpp	ApplyBuiltinSymbolMetadata	1	dev/src/lowering/abi/symbol_metadata.cpp	keep
 function	dev/src/lowering/abi/symbol_metadata.cpp	ApplyNativeRuntimeSymbolMetadata	1	dev/src/lowering/abi/symbol_metadata.cpp	keep
 function	dev/src/lowering/abi/symbol_names.cpp	NormalizeSymbolName	1	dev/src/lowering/abi/symbol_names.cpp	keep
+function	dev/src/lowering/abi/symbol_names.cpp	ReferenceTemporarySymbol	1	dev/src/lowering/abi/symbol_names.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	AddSyntheticSymbol	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	ArrayElementType	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	BaseEntityForType	1	dev/src/lowering/core/program_lowerer.cpp	keep
@@ -113,6 +114,7 @@ method	dev/src/lowering/core/program_lowerer.cpp	LowerGlobal	1	dev/src/lowering/
 method	dev/src/lowering/core/program_lowerer.cpp	LowerGlobalDeclaration	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	LowerStorageType	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	LowerType	1	dev/src/lowering/core/program_lowerer.cpp	keep
+method	dev/src/lowering/core/program_lowerer.cpp	NameConstantReferenceTemporaries	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	NewLabel	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	NewTemp	1	dev/src/lowering/core/program_lowerer.cpp	keep
 method	dev/src/lowering/core/program_lowerer.cpp	NullPointerExpectation	1	dev/src/lowering/core/program_lowerer.cpp	keep

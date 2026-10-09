@@ -205,6 +205,13 @@ clang, and the object-inspection tests check its spelling:
   object across units; a constructor's or destructor's statics are named in
   its complete entry (`_ZZN1SC1EvE5count`, where GCC writes `C4`) and are
   one object for both entries
+- a temporary whose lifetime a static-storage variable's initializer
+  extends (a reference's, or an initializer_list's array) is named after
+  the variable (Itanium 5.1.4.5): the first is `_ZGR1g_`, and the others
+  are numbered in a pre-order walk of the initializer (`_ZGR4list_` for a
+  reference's initializer_list object, `_ZGR4list0_` for its array); the
+  symbols are unit-local, since every unit reaches the temporary through
+  the variable
 - a closure type has a mangling number (`Ul<sig>E<n>_`) when its lambda lies
   in an inline function or a template specialization, a lambda body
   included, in a default member initializer, a class template's static

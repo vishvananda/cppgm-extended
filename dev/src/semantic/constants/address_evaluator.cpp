@@ -36,6 +36,8 @@ void Analyzer::MaterializeStaticReferenceTemporary(BindingId binding,
 	PublishVariableDeclarationFacts(storage, program_->GlobalScope(), name,
 		object_type, spec, false);
 	program_->bindings[storage].compiler_generated = true;
+	program_->static_reference_temporaries.push_back(
+		std::make_pair(storage, binding));
 	PublishConstantVariableInitializer(storage, object_type, spec, *initializer);
 	bool declaration_only = false;
 	const std::uint32_t variable = MakeVariableDeclarationDump(

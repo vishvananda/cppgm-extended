@@ -237,6 +237,7 @@ public:
 			EmitThreadLocalInitializers();
 		EmitDynamicInitializer();
 		EmitDynamicFinalizer();
+		NameConstantReferenceTemporaries();
 		for (std::size_t symbol = 0;
 			symbol < callee_nodes_by_symbol.size(); ++symbol)
 			if (callee_nodes_by_symbol[symbol] != kNoDumpEdge &&
@@ -825,6 +826,32 @@ private:
 		StateStructuredGlobalAlignment(&global);
 		if (stats_) ++stats_->globals;
 		return global;
+	}
+	// A constant temporary a static-storage reference binds occupies a
+	// generated variable, named after the reference once both have symbols
+	// (Itanium 5.1.4.5, `_ZGR9temporary_`).
+	void NameConstantReferenceTemporaries()
+	{
+		for (std::size_t i = 0;
+			i < program_.static_reference_temporaries.size(); ++i)
+		{
+			const BindingId storage =
+				program_.static_reference_temporaries[i].first;
+			const BindingId reference = program_.bindings[
+				program_.static_reference_temporaries[i].second].canonical;
+			if (storage >= global_symbols_.size() ||
+				reference >= global_symbols_.size() ||
+				global_symbols_[storage] == kNoLowId ||
+				global_symbols_[reference] == kNoLowId)
+				continue;
+			const Symbol& owner = output_.symbols[global_symbols_[reference]];
+			const std::string object = abi::ReferenceTemporarySymbol(
+				output_.strings.get(owner.object_name.valid() ?
+					owner.object_name : owner.name), 0);
+			if (!object.empty())
+				output_.symbols[global_symbols_[storage]].object_name =
+					output_.strings.intern(object);
+		}
 	}
 	SymbolId AddSyntheticSymbol(Symbol::Kind kind, const std::string& proposed,
 		const std::string& object_name, bool internal)

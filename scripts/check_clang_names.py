@@ -23,6 +23,12 @@ none) is compared with clang's symbols for the same source:
   expression;
 - a LowIR spelling that stands for a C++ entity clang names (a function-local
   static, its guard, an unnamed or local type, a lambda) is a mismatch;
+- an internal symbol whose name is not mangled is compared with clang's
+  local symbol for the same entity: a temporary that a static-storage
+  variable extends (Itanium 5.1.4.5, `_ZGR <object name> [<seq-id>] _`) by
+  its variable and position, so a course spelling of it is a mismatch, and so
+  is a clang `_ZGR` temporary of a variable the reference defines that the
+  reference does not name;
 - any other name (a course runtime helper, an entity clang does not emit in
   that unit) has no clang counterpart and is not judged.
 
@@ -66,6 +72,15 @@ COURSE_PLACEHOLDERS = ('__function_template_nondeduced_type_shape',
 # Itanium expression forms inside a type: decltype, an expression template
 # argument, an unresolved name, sizeof/alignof, a function parameter, a
 # call, an entity reference or an expression array bound.
+# The temporaries a static-storage variable extends: clang names the n-th
+# `_ZGR <variable's object name> [<seq-id>] _` (Itanium 5.1.4.5), numbered
+# in a pre-order walk of the initializer. The course's unmangled spellings of
+# one name the variable's LowIR symbol: its n-th temporary, or a constant
+# scalar one.
+TEMPORARY_SEQUENCE = re.compile(r'^[0-9A-Z]*_$')
+COURSE_TEMPORARY = re.compile(
+    r'^(?:__cppgm_ref_temporary__(?P<owner>.+)_(?P<index>\d+)|'
+    r'__ref_tmp__(?P<scalar>.+))$')
 DEPENDENT_EXPRESSION = re.compile(
     r'D[Tt]|[IJ]X|sr\d|s[tzZ]|fp|fL\d|cl[^E]|L_Z|RA[^0-9_]')
 RESIDUAL = 'instantiation-dependent signature'
@@ -77,7 +92,9 @@ DOCUMENTED = {
 
 
 def reference_names(path):
+    """Object name -> binding of each symbol, and LowIR name -> object name."""
     names = {}
+    objects = {}
     with open(path, errors='replace') as stream:
         for line in stream:
             match = SYMBOL_LINE.match(line)
@@ -91,7 +108,8 @@ def reference_names(path):
             name = obj.group('object') if obj else match.group('name')
             binding = BINDING_ATTR.search(attrs)
             names[name] = binding.group('binding') if binding else '?'
-    return names
+            objects[match.group('name')] = name
+    return names, objects
 
 
 def is_lowir(path):
@@ -128,11 +146,59 @@ def clang_symbols(clang, source, scratch):
 
 def scan_fixture(job):
     clang, base, scratch = job
-    names = reference_names(base + '.ref')
+    names, objects = reference_names(base + '.ref')
     if not names:
         return None
     symbols = clang_symbols(clang, base + '.t', scratch)
-    return base, names, symbols
+    return base, names, symbols, objects
+
+
+def base36(value):
+    digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    text = ''
+    while True:
+        text = digits[value % 36] + text
+        value //= 36
+        if value == 0:
+            return text
+
+
+def temporary_prefix(object_name):
+    """`_ZGR <object name>` of a variable's object name, or None."""
+    if object_name.startswith('_Z'):
+        return '_ZGR' + object_name[2:]
+    if re.match(r'^[A-Za-z_]\w*$', object_name):
+        return '_ZGR%d%s' % (len(object_name), object_name)
+    return None
+
+
+def course_temporary(name, objects):
+    """Clang's name for the temporary an unmangled course name stands for."""
+    match = COURSE_TEMPORARY.match(name)
+    if not match:
+        return None
+    owner = objects.get(match.group('owner') or match.group('scalar'))
+    prefix = temporary_prefix(owner) if owner else None
+    if prefix is None:
+        return None
+    index = int(match.group('index') or 0)
+    return prefix + (base36(index - 1) if index else '') + '_'
+
+
+def temporaries_of(names, symbols):
+    """Clang's `_ZGR` symbols of the variables the reference defines."""
+    prefixes = set(filter(None, (temporary_prefix(name) for name in names
+                                 if not name.startswith('_ZGR'))))
+    found = []
+    for symbol in symbols:
+        if not symbol.startswith('_ZGR'):
+            continue
+        for end in range(len(symbol) - 1, 4, -1):
+            if symbol[:end] in prefixes and \
+                    TEMPORARY_SEQUENCE.match(symbol[end:]):
+                found.append(symbol)
+                break
+    return found
 
 
 # Constructor and destructor entries (C1/C2/C3, CI1/CI2 before the base
@@ -207,7 +273,7 @@ def classify(ours, theirs, by_signature):
 
 def compare(results):
     every = set()
-    for _, names, symbols in results:
+    for _, names, symbols, _ in results:
         if symbols is None:
             continue
         every.update(names)
@@ -218,7 +284,7 @@ def compare(results):
 
     failures = 0
     entries = []
-    for base, names, symbols in results:
+    for base, names, symbols, objects in results:
         if symbols is None:
             failures += 1
             continue
@@ -233,8 +299,16 @@ def compare(results):
             by_name[normalized(demangled, symbol)].append(symbol)
             if variant_free(symbol) not in ours:
                 by_entity[normalized(entities, symbol)].append(symbol)
+        reported = set()
         for name, binding in sorted(names.items()):
             if name in symbols or variant_free(name) in variants:
+                continue
+            temporary = course_temporary(name, objects) \
+                if binding == 'internal' else None
+            if temporary and temporary in symbols:
+                reported.add(temporary)
+                entries.append((relative, name, temporary,
+                                'reference temporary', binding))
                 continue
             counterparts = [symbol for symbol in
                             by_name.get(normalized(demangled, name), [])
@@ -257,6 +331,10 @@ def compare(results):
             else:
                 continue
             entries.append((relative, name, theirs, kind, binding))
+        for symbol in temporaries_of(names, symbols):
+            if symbol not in names and symbol not in reported:
+                entries.append((relative, '-', symbol, 'reference temporary',
+                                '-'))
     return failures, entries
 
 

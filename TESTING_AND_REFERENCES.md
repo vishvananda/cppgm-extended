@@ -99,11 +99,16 @@ The maintainer script compiles each C++ LowIR fixture's source with clang
 every symbol of the reference with clang's: a name spelled differently from
 clang's name for the same entity is reported (an internal-linkage marker, a
 closure or unnamed type, a local entity, an external name, or a LowIR
-spelling standing for a C++ entity). Which constructor and destructor entries
-a unit emits (C1/C2, CI1/CI2, D0/D1/D2) is an emission choice and is not
-judged, nor is a symbol clang does not emit. A signature whose clang
-spelling mangles an instantiation-dependent expression (decltype, an
-expression template argument or array bound) is compared like any other:
-the course retains those expressions. The script exits 1 when a mismatch is
-not listed with its reason in the script's `DOCUMENTED` table, and
-`--verbose` lists every mismatch of a fixture.
+spelling standing for a C++ entity). An internal symbol whose name is not
+mangled is compared with clang's local symbol for the same entity: a
+temporary that a static-storage variable extends is compared with clang's
+`_ZGR` name for that variable and position, and every clang `_ZGR`
+temporary of a variable the reference defines must appear in it. Which
+constructor and destructor entries a unit emits (C1/C2, CI1/CI2,
+D0/D1/D2) is an emission choice and is not judged, nor is a symbol clang
+does not emit. A signature whose clang spelling mangles an
+instantiation-dependent expression (decltype, an expression template
+argument or array bound) is compared like any other: the course retains
+those expressions. The script exits 1 when a mismatch is not listed with
+its reason in the script's `DOCUMENTED` table, and `--verbose` lists every
+mismatch of a fixture.

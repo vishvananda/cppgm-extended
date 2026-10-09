@@ -5,10 +5,10 @@ global @order : i32 [binding=strong] = zero
 global @verify [binding=strong] = {
   zero 1
 }
-global @__cppgm_ref_temporary__held_0 [binding=internal] = {
+global @__cppgm_ref_temporary__held_0 [binding=internal, object=_ZGR4held_] = {
   zero 16
 }
-global @__cppgm_ref_temporary__held_1 [binding=internal] = {
+global @__cppgm_ref_temporary__held_1 [binding=internal, object=_ZGR4held0_] = {
   zero 12
 }
 global @__cppgm_ref_temporary__held_1_constructed : i8 [binding=internal] = zero

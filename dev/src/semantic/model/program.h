@@ -9,6 +9,7 @@
 #include <iosfwd>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace cppgm
@@ -1038,6 +1039,10 @@ public:
 	std::vector<FunctionTemplateAbiRecipe> function_template_abi_recipes;
 	std::vector<FunctionTemplateAbiArgumentPartition>
 		function_template_abi_argument_partitions;
+	// The generated variable a constant temporary bound by a static-storage
+	// reference occupies, and that reference (12.2p5): the temporary is named
+	// after its reference (Itanium 5.1.4.5).
+	std::vector<std::pair<BindingId, BindingId> > static_reference_temporaries;
 	ObservationCounter lookup_queries, lookup_scope_visits, lookup_edge_visits;
 	mutable ObservationCounter base_path_queries, base_path_cache_hits,
 		base_path_cache_misses;

@@ -1,6 +1,7 @@
 #ifndef CPPGM_LOWERING_EXTENSIONS_INITIALIZER_LISTS_H
 #define CPPGM_LOWERING_EXTENSIONS_INITIALIZER_LISTS_H
 
+#include "lowering/abi/symbol_names.h"
 #include "lowering/support/identity_maps.h"
 #include "lowering/support/errors.h"
 #include "lowering/support/sequences.h"
@@ -88,10 +89,21 @@ protected:
 			ThrowLoweringInternal(
 				"invalid namespace initializer-list backing fact");
 		if (derived.initializer_lists_.backing_symbols[node] != kNoLowId) return;
+		// The backing array is the variable's first lifetime-extended
+		// temporary (Itanium 5.1.4.5, `_ZGR1v_`).
+		std::string object;
+		if (action.object < derived.global_symbols_.size() &&
+			derived.global_symbols_[action.object].valid())
+		{
+			const Symbol& record =
+				derived.output_.symbols[derived.global_symbols_[action.object]];
+			object = abi::ReferenceTemporarySymbol(derived.output_.strings.get(
+				record.object_name.valid() ? record.object_name : record.name), 0);
+		}
 		const SymbolId symbol = derived.AddSyntheticSymbol(
 			Symbol::GLOBAL_SYMBOL, "__cppgm_initlist_backing_" +
 				std::to_string(++derived.initializer_lists_.backing_ordinal),
-			std::string(), true);
+			object, true);
 		derived.initializer_lists_.backing_symbols[node] = symbol;
 		Symbol& symbol_record = derived.output_.symbols[symbol];
 		symbol_record.definition_emitted = true;

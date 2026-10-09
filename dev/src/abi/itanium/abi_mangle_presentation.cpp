@@ -1,5 +1,6 @@
 #include "abi/itanium/abi_mangle_presentation.h"
 
+#include "abi/itanium/abi_mangle.h"
 #include "abi/itanium/abi_mangle_errors.h"
 
 #include <algorithm>
@@ -76,4 +77,23 @@ void append_generated_lambda_source(std::string & output,
 }
 
 }  // namespace detail
+
+std::string reference_temporary_name(const std::string & variable_symbol,
+                                     std::size_t index)
+{
+  std::string object = variable_symbol;
+  if(object.compare(0, 2, "_Z") == 0) object.erase(0, 2);
+  else {
+    if(object.empty() || (object[0] >= '0' && object[0] <= '9'))
+      return std::string();
+    for(char ch : object)
+      if(!((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+           (ch >= '0' && ch <= '9') || ch == '_'))
+        return std::string();
+    object = detail::source_name(object);
+  }
+  return "_ZGR" + object + (index == 0 ? std::string() :
+                            detail::base36(index - 1)) + "_";
+}
+
 }  // namespace abi_mangle
