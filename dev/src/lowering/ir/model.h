@@ -270,13 +270,14 @@ struct Program
 	std::vector<std::uint32_t> symbol_name_counts;
 	std::size_t string_literal_count;
 	SymbolId terminate_runtime_symbol, terminate_helper_symbol;
-	SymbolId call_unexpected_symbol;
+	SymbolId call_unexpected_symbol, bad_array_new_length_symbol;
 	bool host_object_emission;
 	bool retain_local_names;
 
 	Program()
 		: string_literal_count(0), terminate_runtime_symbol(kNoLowId),
 		  terminate_helper_symbol(kNoLowId), call_unexpected_symbol(kNoLowId),
+		  bad_array_new_length_symbol(kNoLowId),
 		  host_object_emission(false), retain_local_names(true) {}
 
 	lowir_model::StringId InternUniqueSymbolName(

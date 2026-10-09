@@ -276,6 +276,8 @@ protected:
 					record.has_base_projection_offset,
 					derived.BaseEntityForType(record.type),
 					record.inverse_base_projection);
+			else if (record.array_extent_check)
+				result = derived.LowerCheckedArrayExtent(children[0], record);
 			else
 			{
 				const DumpNode& source = derived.arena_.nodes[children[0]];

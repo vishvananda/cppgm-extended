@@ -1,0 +1,38 @@
+#include <new>
+
+struct Destructible
+{
+  long value;
+  Destructible() : value(3) {}
+  ~Destructible() {}
+};
+
+template <class Element, class Count>
+int rejects(Count count)
+{
+  try
+  {
+    delete[] new Element[count];
+  }
+  catch (const std::bad_array_new_length&)
+  {
+    return 0;
+  }
+  return 1;
+}
+
+int count_of(int value) { return value; }
+
+int main()
+{
+  if (rejects<int>(count_of(-1))) return 1;
+  if (rejects<char>(-1L)) return 2;
+  if (rejects<long>(~0ul)) return 3;
+  if (rejects<long>(1ul << 61)) return 4;
+  if (rejects<Destructible>(count_of(-4))) return 5;
+  if (rejects<Destructible>(1ul << 60)) return 6;
+  Destructible* valid = new Destructible[count_of(2)];
+  const int value = static_cast<int>(valid[1].value);
+  delete[] valid;
+  return value == 3 ? 0 : 7;
+}

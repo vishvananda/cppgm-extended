@@ -84,6 +84,7 @@ role	pure_virtual	virtual dispatch lowering	pure-virtual runtime mapping;native	
 role	dynamic_cast	RTTI lowering	RTTI runtime mapping;native	pa21/README.md	pa21/tests/general/100-dynamic-cast-success.t	keep	active runtime import
 role	bad_cast	RTTI lowering	RTTI runtime mapping;native	pa21/README.md	pa21/tests/general/100-bad-dynamic-cast-reference.t	keep	active runtime import
 role	bad_typeid	RTTI lowering	RTTI runtime mapping;native	pa23/README.md	pa23/tests/general/100-typeid-nonprimary-view.t	keep	active runtime import
+role	bad_array_new_length	array new-expression lowering	allocation runtime mapping;native	pa12/README.md	pa12/tests/controls/542-array-new-length-check.cpp	keep	active runtime import
 role	rtti_class	RTTI lowering	RTTI object mapping;native	pa21/README.md	pa21/tests/general/100-typeid-type.t	keep	active RTTI object
 role	rtti_si	RTTI lowering	RTTI object mapping;native	pa22/README.md	pa22/tests/general/100-dynamic-cast-void.t	keep	active RTTI object
 role	rtti_vmi	RTTI lowering	RTTI object mapping;native	pa23/README.md	pa23/tests/general/100-multibase-inherited-virtual-slot-identity.t	keep	active RTTI object

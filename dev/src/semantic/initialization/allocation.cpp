@@ -118,6 +118,33 @@ bool Analyzer::ArrayNeedsCookie(EntityId entity, bool explicit_global)
 	return sized;
 }
 
+// N3485 5.3.4p7: a runtime array new count that is negative or larger than
+// `maximum` (the largest whose request fits the implementation limit)
+// obtains no storage and throws std::bad_array_new_length. The count is
+// converted to std::size_t through a checked conversion unless its type
+// cannot hold such a value.
+ExpressionInfo Analyzer::CheckArrayExtent(const ExpressionInfo& extent,
+	std::uint64_t maximum)
+{
+	const TypeId type = program_->types.RemoveTopCv(EffectiveType(extent.type));
+	const TypeRecord& record = program_->types.Get(type);
+	const bool boolean = record.kind == TYPE_FUNDAMENTAL &&
+		record.fundamental == FUND_BOOL;
+	const std::uint64_t bits = record.kind == TYPE_BITINT ? record.bound :
+		static_cast<std::uint64_t>(program_->SizeOf(type)) * 8;
+	if (boolean || (IsUnsignedIntegral(type) && bits < 64 &&
+		(std::uint64_t(1) << bits) - 1 <= maximum)) return extent;
+	ExpressionInfo checked;
+	checked.type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
+	checked.category = VALUE_PRVALUE;
+	checked.node = MakeDump(DUMP_CAST_EXPRESSION, checked.type, VALUE_PRVALUE);
+	dump_.Add(checked.node, extent.node);
+	dump_.nodes[checked.node].array_extent_check = true;
+	dump_.nodes[checked.node].array_count = maximum;
+	++expression_count_;
+	return checked;
+}
+
 ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 	NodeId type_node, ScopeId scope, TypeId target)
 {
@@ -230,6 +257,10 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 			++expression_count_;
 			return result;
 		};
+		// The request is limited, as for a constant count, to PTRDIFF_MAX.
+		allocation_size = CheckArrayExtent(extent,
+			(static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) -
+			 cookie_size) / row_size);
 		if (row_size != 1)
 			allocation_size = combine(allocation_size, row_size, "*");
 		if (cookie_size != 0)

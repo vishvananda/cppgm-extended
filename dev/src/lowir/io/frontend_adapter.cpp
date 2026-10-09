@@ -426,6 +426,8 @@ void AdaptSymbolFacts(const Symbol& source,
 		symbol->role = lowir_model::SR_BAD_CAST; break;
 	case Symbol::RUNTIME_ROLE_BAD_TYPEID:
 		symbol->role = lowir_model::SR_BAD_TYPEID; break;
+	case Symbol::RUNTIME_ROLE_BAD_ARRAY_NEW_LENGTH:
+		symbol->role = lowir_model::SR_BAD_ARRAY_NEW_LENGTH; break;
 	case Symbol::RUNTIME_ROLE_RTTI_CLASS:
 		symbol->role = lowir_model::SR_RTTI_CLASS; break;
 	case Symbol::RUNTIME_ROLE_RTTI_SI:

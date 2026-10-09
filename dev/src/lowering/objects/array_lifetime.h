@@ -402,6 +402,64 @@ protected:
 		return result;
 	}
 
+	// N3485 5.3.4p7: an array new count above the largest the request can
+	// hold (negative counts are huge once converted to std::size_t) obtains
+	// no storage; the expression throws std::bad_array_new_length through
+	// the C++ ABI's __cxa_throw_bad_array_new_length before allocating.
+	Operand LowerCheckedArrayExtent(std::uint32_t source, const DumpNode& cast)
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		const LowType size_type = derived.LowerExpressionType(cast.type);
+		Operand count = derived.LowerValue(source);
+		// A count wider than std::size_t is compared before it is narrowed.
+		const bool wide = count.type.width > size_type.width;
+		if (!wide) count = derived.Convert(count, size_type);
+		const Operand invalid = derived.Temp(LowI64());
+		Instruction compare(Instruction::CMP);
+		compare.dest = invalid.id;
+		compare.op = LOW_OP_UGT;
+		compare.type = count.type;
+		compare.first = count;
+		compare.second = Operand(static_cast<std::int64_t>(cast.array_count),
+			0, count.type);
+		derived.Emit(compare);
+		if (derived.full_expression_cleanup_active_)
+			derived.EnsureFullExpressionCleanupSegment();
+		const BlockId fail = derived.AddBlock(
+			derived.NewLabel("array_new_length_invalid"));
+		const BlockId valid = derived.AddBlock(
+			derived.NewLabel("array_new_length_valid"));
+		derived.EmitBranch(invalid, fail, valid);
+		derived.SelectBlock(fail);
+		Instruction call = derived.DirectCallInstruction(
+			BadArrayNewLengthRuntime(), LowVoid());
+		derived.Emit(call);
+		derived.Emit(Instruction(Instruction::UNREACHABLE));
+		derived.SelectBlock(valid);
+		return wide ? derived.Convert(count, size_type) : count;
+	}
+
+	SymbolId BadArrayNewLengthRuntime()
+	{
+		Derived& derived = static_cast<Derived&>(*this);
+		SymbolId& symbol = derived.output_.bad_array_new_length_symbol;
+		if (symbol != kNoLowId) return symbol;
+		symbol = derived.AddSyntheticSymbol(Symbol::FUNCTION_SYMBOL,
+			"__external_runtime____cxa_throw_bad_array_new_length",
+			"__cxa_throw_bad_array_new_length", false);
+		Symbol& record = derived.output_.symbols[symbol];
+		record.c_linkage = true;
+		record.declaration_emitted = true;
+		record.referenced = true;
+		record.noreturn = true;
+		record.runtime_role = Symbol::RUNTIME_ROLE_BAD_ARRAY_NEW_LENGTH;
+		FunctionDeclaration declaration;
+		declaration.symbol = symbol;
+		declaration.result = LowVoid();
+		derived.output_.declarations.push_back(declaration);
+		return symbol;
+	}
+
 	// Itanium C++ ABI 2.7: the cookie is max(sizeof(size_t), alignof(T))
 	// bytes before the array, the count in its last eight bytes.
 	std::size_t ArrayCookieSize(const DumpNode& record) const

@@ -33,6 +33,7 @@ const char* RuntimeRoleName(Symbol::RuntimeRole role)
 	case Symbol::RUNTIME_ROLE_DYNAMIC_CAST:
 	case Symbol::RUNTIME_ROLE_BAD_CAST:
 	case Symbol::RUNTIME_ROLE_BAD_TYPEID:
+	case Symbol::RUNTIME_ROLE_BAD_ARRAY_NEW_LENGTH:
 	case Symbol::RUNTIME_ROLE_RTTI_CLASS:
 	case Symbol::RUNTIME_ROLE_RTTI_SI:
 	case Symbol::RUNTIME_ROLE_RTTI_VMI:

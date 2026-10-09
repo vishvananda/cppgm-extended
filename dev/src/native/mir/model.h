@@ -527,6 +527,7 @@ struct RuntimeFunction
     RF_DYNAMIC_CAST,
     RF_BAD_CAST,
     RF_BAD_TYPEID,
+    RF_BAD_ARRAY_NEW_LENGTH,
     RF_STRLEN,
     RF_ATEXIT
   } kind = RF_EH_PERSONALITY;

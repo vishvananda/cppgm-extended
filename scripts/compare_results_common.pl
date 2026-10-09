@@ -2114,7 +2114,7 @@ sub lowir_role_owner_kind
 {
 	my ($role) = @_;
 	return '' if !defined($role) || $role eq '';
-	return 'function' if $role =~ /^(?:entry|init|fini|eh_allocate_exception|eh_begin_catch|eh_end_catch|eh_rethrow|eh_throw|eh_personality|eh_resume|allocate_memory|free_memory|terminate|pure_virtual|dynamic_cast|bad_cast|bad_typeid|unreachable)$/;
+	return 'function' if $role =~ /^(?:entry|init|fini|eh_allocate_exception|eh_begin_catch|eh_end_catch|eh_rethrow|eh_throw|eh_personality|eh_resume|allocate_memory|free_memory|terminate|pure_virtual|dynamic_cast|bad_cast|bad_typeid|bad_array_new_length|unreachable)$/;
 	return 'global' if $role =~ /^(?:rtti_class|rtti_si|rtti_vmi|rtti_data)$/;
 	return '';
 }
@@ -2380,7 +2380,7 @@ sub lowir_metadata_item_ignored_for_compare
 	my ($key, $value) = @_;
 	# Validate full metadata, but do not make early source-to-LowIR oracles depend
 	# on later object/export policy or optional optimizer/provenance annotations.
-	return 1 if $key eq 'role' && $value =~ /^(?:allocate_memory|free_memory|terminate|pure_virtual|dynamic_cast|bad_cast|bad_typeid|rtti_class|rtti_si|rtti_vmi|rtti_data)$/;
+	return 1 if $key eq 'role' && $value =~ /^(?:allocate_memory|free_memory|terminate|pure_virtual|dynamic_cast|bad_cast|bad_typeid|bad_array_new_length|rtti_class|rtti_si|rtti_vmi|rtti_data)$/;
 	return 1 if $key =~ /^(?:linkage|binding|replaceable|object|tls_for|keep_alias|prefer_local|trivial_lifecycle|force_inline|inline_hint|no_inline)$/;
 	return 1 if $key =~ /^(?:effects|unwind|return|capture|access|alias|object_bytes|projection|classes|result_classes)$/;
 	return 1 if $key eq 'pass' && $value eq 'decay';

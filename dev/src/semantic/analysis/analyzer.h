@@ -1425,6 +1425,7 @@ private:
 	BindingId SelectUsualDeallocation(ScopeId scope, EntityId entity,
 		bool explicit_global, bool array, TypeId object_type);
 	bool ArrayNeedsCookie(EntityId entity, bool explicit_global);
+	ExpressionInfo CheckArrayExtent(const ExpressionInfo& extent, std::uint64_t maximum);
 	ExpressionInfo MaterializeTemporary(const ExpressionInfo& initializer);
 	ExpressionInfo MaterializeDiscardedClassResult(ExpressionInfo value);
 	ExpressionInfo AnalyzeClassFunctionalCast(TypeId cast_type, ScopeId scope,

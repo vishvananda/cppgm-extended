@@ -344,6 +344,12 @@ PA12 supports the following in addition to the PA11 subset:
   (2.7) cookie of max(sizeof(size_t), alignof(T)) bytes before the array
   unless T has a trivial destructor and its usual array deallocation
   function takes no size
+- a runtime array `new` count that is negative, or whose request would exceed
+  the implementation limit (`PTRDIFF_MAX` bytes, the limit a constant count
+  is diagnosed against), obtains no storage: before the allocation function
+  is called, the expression calls the `bad_array_new_length` runtime role,
+  which throws `std::bad_array_new_length` (5.3.4p7); a count type that cannot
+  hold such a value needs no check
 - union definitions and union object lifetime in the supported non-template
   class subset, including block-scope anonymous-member injection and an
   explicit variant initializer taking precedence over another variant's

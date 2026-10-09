@@ -227,6 +227,7 @@ The currently defined role values are:
   - `dynamic_cast`
   - `bad_cast`
   - `bad_typeid`
+  - `bad_array_new_length`
 - global roles:
   - `rtti_class`
   - `rtti_si`
@@ -243,6 +244,12 @@ The `terminate` role identifies the C++ termination runtime used at a
 non-throwing function boundary. A standalone backend may provide this runtime
 directly, while an object backend may retain the declared object symbol for the
 host C++ runtime.
+
+The `bad_array_new_length` role identifies the runtime an array new-expression
+calls, instead of its allocation function, when its count is invalid; it does
+not return. An object backend retains the host symbol
+(`__cxa_throw_bad_array_new_length`), which throws `std::bad_array_new_length`;
+the standalone backend, like `bad_cast` and `bad_typeid`, terminates.
 
 The currently defined linkage values are:
 

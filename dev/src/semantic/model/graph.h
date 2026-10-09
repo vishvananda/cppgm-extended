@@ -190,6 +190,9 @@ struct DumpNode
 	bool array_action : 1;
 	bool array_cookie : 1;
 	bool array_count_constant : 1;
+	// A conversion of an array new count to std::size_t that obtains no
+	// storage (throws std::bad_array_new_length) above array_count elements.
+	bool array_extent_check : 1;
 	bool value_initialization : 1;
 	bool elide_empty_constructor : 1;
 	bool trivial_special_member_action : 1;
@@ -292,7 +295,7 @@ struct DumpNode
 		  explicit_user_conversion_call(false),
 		  allocation_may_return_null(false),
 		  array_action(false), array_cookie(false),
-		  array_count_constant(false),
+		  array_count_constant(false), array_extent_check(false),
 		  value_initialization(false), elide_empty_constructor(false),
 		  trivial_special_member_action(false), storage_unit_transfer(false),
 		  argument_materialization(false), discarded_materialization(false),

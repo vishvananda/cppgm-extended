@@ -38,6 +38,8 @@ bool runtime_kind(lowir_model::SymbolRole role,
     target = mir_model::RuntimeFunction::RF_BAD_CAST; return true;
   case lowir_model::SR_BAD_TYPEID:
     target = mir_model::RuntimeFunction::RF_BAD_TYPEID; return true;
+  case lowir_model::SR_BAD_ARRAY_NEW_LENGTH:
+    target = mir_model::RuntimeFunction::RF_BAD_ARRAY_NEW_LENGTH; return true;
   default: return false;
   }
 }

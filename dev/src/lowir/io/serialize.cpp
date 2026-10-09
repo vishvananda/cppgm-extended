@@ -29,6 +29,7 @@ const char * role_name(SymbolRole role)
   case SR_DYNAMIC_CAST: return "dynamic_cast";
   case SR_BAD_CAST: return "bad_cast";
   case SR_BAD_TYPEID: return "bad_typeid";
+  case SR_BAD_ARRAY_NEW_LENGTH: return "bad_array_new_length";
   case SR_RTTI_CLASS: return "rtti_class";
   case SR_RTTI_SI: return "rtti_si";
   case SR_RTTI_VMI: return "rtti_vmi";
