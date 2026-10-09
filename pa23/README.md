@@ -288,9 +288,12 @@ A primary base of a secondary base shares that base's table and has no table
 of its own in the group. A virtual primary base may lie elsewhere in the
 class, lost to another subobject. Its entries are null where their walk to the
 declaring class passes a class that lost its own primary base, judged where
-each class of the chain lies. The group's tables follow its primary table in
-clang's order: the non-virtual bases' secondary tables depth first, then the
-virtual bases' tables in inheritance graph order.
+each class of the chain lies. A call, or a pointer to the member, dispatches
+through the place of the entry that returns the overrider's result unadjusted,
+as g++ does. It never uses a covariant thunk's place, which a lost primary
+base may leave null. The group's tables follow its primary table in clang's
+order: the non-virtual bases' secondary tables depth first, then the virtual
+bases' tables in inheritance graph order.
 
 Every thunk that a class's tables include is defined with its function and
 only referred to elsewhere. A virtual destructor's deleting entry (D0) and its

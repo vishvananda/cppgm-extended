@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <functional>
 #include <limits>
+#include <utility>
 
 namespace cppgm
 {
@@ -90,10 +91,15 @@ bool CovariantResultAdjusts(const Program& program, BindingId function,
 
 // The physical slot of each virtual function root and final overrider in a
 // class's tables (a destructor takes two).  An overrider keeps its first
-// place, the primary table coming first, unless it roots an entry itself.
+// place whose entry returns its own result unadjusted, the primary table
+// coming first, unless it roots an entry itself: a call dispatches through
+// that place (g++'s DECL_VINDEX), never through a covariant thunk's, which
+// a lost virtual primary base leaves null.  Only if it has none does it
+// keep its first place.
 void IndexVirtualSlots(const Program& program,
 	const ClassPolymorphismFacts& facts, std::vector<std::uint32_t>* slot_of)
 {
+	std::vector<std::pair<BindingId, std::uint32_t> > adjusted_places;
 	for (std::size_t view = 0; view <= facts.views.size(); ++view)
 	{
 		const std::vector<VirtualSlotFact>& slots = SlotsForView(facts, view);
@@ -104,14 +110,23 @@ void IndexVirtualSlots(const Program& program,
 			const BindingId function =
 				program.bindings[slots[slot].function].canonical;
 			(*slot_of)[root] = physical_slot;
+			bool known = true;
 			if ((*slot_of)[function] == kNoDumpEdge)
-				(*slot_of)[function] = physical_slot;
+			{
+				if (!CovariantResultAdjusts(program, function, root, &known))
+					(*slot_of)[function] = physical_slot;
+				else
+					adjusted_places.push_back(std::make_pair(function, physical_slot));
+			}
 			const std::uint32_t width = program.bindings[root].destructor ? 2 : 1;
 			if (physical_slot > std::numeric_limits<std::uint32_t>::max() - width)
 				ThrowSemanticResourceLimit("too many virtual slots");
 			physical_slot += width;
 		}
 	}
+	for (std::size_t i = 0; i < adjusted_places.size(); ++i)
+		if ((*slot_of)[adjusted_places[i].first] == kNoDumpEdge)
+			(*slot_of)[adjusted_places[i].first] = adjusted_places[i].second;
 }
 
 // Two paths reaching one subobject bring its table's slots: each takes the
