@@ -7,15 +7,16 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $initlist__1 : obj<8x4>
   slot $arg__2 : obj<4x4>
   slot $arg__3 : obj<4x4>
-  slot $call__4 : i64
-  slot $tmpobj__5 : obj<16x8>
+  slot $lor__4 : i64
+  slot $call__5 : i64
+  slot $tmpobj__6 : obj<16x8>
 
   block ^entry:
     %t1 = addr $first
     call void @S__S(%t1, 1)
     %t2 = addr $second
     call void @S__S(%t2, 2)
-    %t3 = addr $tmpobj__5
+    %t3 = addr $tmpobj__6
     %t4 = addr $initlist__1
     %t5 = addr $first
     call void @S__S__ov2(%t4, %t5)
@@ -35,36 +36,59 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t8 = index i8 %t3, 8
     store typed i64 2, %t8
     store typed ptr %t3, $xs
-    eh_try ^cleanup_resume_6
     %t9 = load typed i32 @alive
     %t10 = cmp ne i32 %t9, 4
-    eh_end
-    jump ^call_unwind_end_8
+    branch %t10, ^lor_short_7, ^lor_rhs_6
 
-  block ^cleanup_resume_6:
-    resume
-
-  block ^call_unwind_end_8:
-    branch %t10, ^if_then_3, ^lor_rhs_7
-
-  block ^lor_rhs_7:
-    eh_try ^cleanup_resume_6
+  block ^lor_rhs_6:
+    eh_try ^cleanup_action_12
     %t11 = load typed ptr $xs
     %t12 = call i64 @std__initializer_list_S___size(%t11)
-    store typed i64 %t12, $call__4
-    %t13 = load typed i64 $call__4
+    store typed i64 %t12, $call__5
+    %t13 = load typed i64 $call__5
     %t14 = convert sext i64 i32 2
     %t15 = cmp ne i64 %t13, %t14
+    %t16 = cmp ne i64 %t15, 0
+    store typed i64 %t16, $lor__4
     eh_end
-    branch %t15, ^if_then_3, ^if_else_4
+    jump ^call_unwind_end_13
+
+  block ^cleanup_resume_9:
+    resume
+
+  block ^cleanup_action_10:
+    %t17 = addr $first
+    call void @S___S(%t17)
+    jump ^cleanup_resume_9
+
+  block ^cleanup_action_11:
+    %t18 = addr $second
+    call void @S___S(%t18)
+    jump ^cleanup_action_10
+
+  block ^cleanup_action_12:
+    call void @S___S(%t6)
+    call void @S___S(%t4)
+    jump ^cleanup_action_11
+
+  block ^call_unwind_end_13:
+    jump ^lor_end_8
+
+  block ^lor_short_7:
+    store typed i64 1, $lor__4
+    jump ^lor_end_8
+
+  block ^lor_end_8:
+    %t19 = load typed i64 $lor__4
+    branch %t19, ^if_then_3, ^if_else_4
 
   block ^if_then_3:
     call void @S___S(%t6)
     call void @S___S(%t4)
-    %t16 = addr $second
-    call void @S___S(%t16)
-    %t17 = addr $first
-    call void @S___S(%t17)
+    %t20 = addr $second
+    call void @S___S(%t20)
+    %t21 = addr $first
+    call void @S___S(%t21)
     return i32 1
 
   block ^if_else_4:
@@ -73,29 +97,29 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_5:
     call void @S___S(%t6)
     call void @S___S(%t4)
-    %t18 = load typed i32 @alive
-    %t19 = cmp ne i32 %t18, 2
-    branch %t19, ^if_then_9, ^if_else_10
+    %t22 = load typed i32 @alive
+    %t23 = cmp ne i32 %t22, 2
+    branch %t23, ^if_then_14, ^if_else_15
 
-  block ^if_then_9:
-    %t20 = addr $second
-    call void @S___S(%t20)
-    %t21 = addr $first
-    call void @S___S(%t21)
+  block ^if_then_14:
+    %t24 = addr $second
+    call void @S___S(%t24)
+    %t25 = addr $first
+    call void @S___S(%t25)
     return i32 2
 
-  block ^if_else_10:
-    jump ^if_end_11
+  block ^if_else_15:
+    jump ^if_end_16
 
-  block ^if_end_11:
-    %t22 = addr $second
-    call void @S___S(%t22)
-    %t23 = addr $first
-    call void @S___S(%t23)
-    %t24 = load typed i32 @alive
-    %t25 = cmp ne i32 %t24, 0
-    %t26 = convert trunc i32 i64 %t25
-    return i32 %t26
+  block ^if_end_16:
+    %t26 = addr $second
+    call void @S___S(%t26)
+    %t27 = addr $first
+    call void @S___S(%t27)
+    %t28 = load typed i32 @alive
+    %t29 = cmp ne i32 %t28, 0
+    %t30 = convert trunc i32 i64 %t29
+    return i32 %t30
 }
 function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [unwind=no, binding=weak, object=_ZN1SC1Ei, inline_hint=yes] {
   slot $this : ptr

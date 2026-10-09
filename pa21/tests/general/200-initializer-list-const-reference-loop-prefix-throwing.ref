@@ -243,82 +243,83 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
   slot $earlier : obj<4x4>
   slot $xs : ptr
   slot $initlist__1 : obj<48x4>
-  slot $call__2 : i64
-  slot $catch__3 : ptr
+  slot $lor__2 : i64
+  slot $call__3 : i64
+  slot $catch__4 : ptr
   slot $e : i32
-  slot $cleanup_return__4 : i32
-  slot $tmpobj__5 : obj<16x8>
-  slot $initlist_constructor_index__6 : i64
-  slot $destructor_array_index__7 : i64
+  slot $cleanup_return__5 : i32
+  slot $tmpobj__6 : obj<16x8>
+  slot $initlist_constructor_index__7 : i64
   slot $destructor_array_index__8 : i64
   slot $destructor_array_index__9 : i64
-  slot $cond__10 : i32
+  slot $destructor_array_index__10 : i64
+  slot $cond__11 : i32
 
   block ^entry:
     eh_try ^catch_dispatch_1
     %t1 = addr $earlier
     call void @S__S(%t1, 9)
-    %t2 = addr $tmpobj__5
+    %t2 = addr $tmpobj__6
     eh_try ^call_unwind_dispatch_6
     %t3 = addr $initlist__1
-    store typed i64 0, $initlist_constructor_index__6
+    store typed i64 0, $initlist_constructor_index__7
     call void @S__S(%t3, 1)
-    store typed i64 1, $initlist_constructor_index__6
+    store typed i64 1, $initlist_constructor_index__7
     %t4 = index i8 [projection=array_element] %t3, 4
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t4, 2)
     eh_end
-    store typed i64 2, $initlist_constructor_index__6
+    store typed i64 2, $initlist_constructor_index__7
     %t5 = index i8 [projection=array_element] %t3, 8
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t5, 3)
     eh_end
-    store typed i64 3, $initlist_constructor_index__6
+    store typed i64 3, $initlist_constructor_index__7
     %t6 = index i8 [projection=array_element] %t3, 12
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t6, 4)
     eh_end
-    store typed i64 4, $initlist_constructor_index__6
+    store typed i64 4, $initlist_constructor_index__7
     %t7 = index i8 [projection=array_element] %t3, 16
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t7, 5)
     eh_end
-    store typed i64 5, $initlist_constructor_index__6
+    store typed i64 5, $initlist_constructor_index__7
     %t8 = index i8 [projection=array_element] %t3, 20
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t8, 6)
     eh_end
-    store typed i64 6, $initlist_constructor_index__6
+    store typed i64 6, $initlist_constructor_index__7
     %t9 = index i8 [projection=array_element] %t3, 24
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t9, 7)
     eh_end
-    store typed i64 7, $initlist_constructor_index__6
+    store typed i64 7, $initlist_constructor_index__7
     %t10 = index i8 [projection=array_element] %t3, 28
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t10, 8)
     eh_end
-    store typed i64 8, $initlist_constructor_index__6
+    store typed i64 8, $initlist_constructor_index__7
     %t11 = index i8 [projection=array_element] %t3, 32
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t11, 10)
     eh_end
-    store typed i64 9, $initlist_constructor_index__6
+    store typed i64 9, $initlist_constructor_index__7
     %t12 = index i8 [projection=array_element] %t3, 36
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t12, 11)
     eh_end
-    store typed i64 10, $initlist_constructor_index__6
+    store typed i64 10, $initlist_constructor_index__7
     %t13 = index i8 [projection=array_element] %t3, 40
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t13, 12)
     eh_end
-    store typed i64 11, $initlist_constructor_index__6
+    store typed i64 11, $initlist_constructor_index__7
     %t14 = index i8 [projection=array_element] %t3, 44
     eh_try ^initlist_constructor_cleanup_7
     call void @S__S(%t14, 13)
     eh_end
-    store typed i64 12, $initlist_constructor_index__6
+    store typed i64 12, $initlist_constructor_index__7
     jump ^initlist_constructor_end_8
 
   block ^initlist_constructor_cleanup_7:
@@ -327,13 +328,13 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^initlist_constructor_cleanup_condition_9
 
   block ^initlist_constructor_cleanup_condition_9:
-    %t15 = load typed i64 $initlist_constructor_index__6
+    %t15 = load typed i64 $initlist_constructor_index__7
     %t16 = cmp ne i64 %t15, 0
     branch %t16, ^initlist_constructor_cleanup_body_10, ^initlist_constructor_resume_11
 
   block ^initlist_constructor_cleanup_body_10:
     %t17 = binary sub i64 %t15, 1
-    store typed i64 %t17, $initlist_constructor_index__6
+    store typed i64 %t17, $initlist_constructor_index__7
     %t18 = binary mul i64 %t17, 4
     %t19 = index i8 [projection=array_element] %t3, %t18
     call void @S___S(%t19)
@@ -372,17 +373,17 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^call_unwind_end_15
 
   block ^cleanup_action_13:
-    store typed i64 12, $destructor_array_index__7
+    store typed i64 12, $destructor_array_index__8
     jump ^destructor_array_cond_16
 
   block ^destructor_array_cond_16:
-    %t22 = load typed i64 $destructor_array_index__7
+    %t22 = load typed i64 $destructor_array_index__8
     %t23 = cmp ne i64 %t22, 0
     branch %t23, ^destructor_array_body_17, ^destructor_array_end_18
 
   block ^destructor_array_body_17:
     %t24 = binary sub i64 %t22, 1
-    store typed i64 %t24, $destructor_array_index__7
+    store typed i64 %t24, $destructor_array_index__8
     %t25 = binary mul i64 %t24, 4
     %t26 = index i8 [projection=array_element] %t3, %t25
     call void @S___S(%t26)
@@ -397,51 +398,51 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^cleanup_action_13
 
   block ^call_unwind_end_15:
-    eh_try ^call_unwind_dispatch_22
     %t27 = load typed i32 @alive
     %t28 = cmp ne i32 %t27, 13
-    eh_end
-    jump ^call_unwind_end_24
+    branch %t28, ^lor_short_23, ^lor_rhs_22
 
-  block ^call_unwind_dispatch_22:
-    eh_catch @__external_rtti__int, 1
-    eh_cleanup
-    jump ^cleanup_resume_4
-
-  block ^call_unwind_end_24:
-    branch %t28, ^if_then_19, ^lor_rhs_23
-
-  block ^lor_rhs_23:
-    eh_try ^call_unwind_dispatch_22
+  block ^lor_rhs_22:
+    eh_try ^call_unwind_dispatch_14
     %t29 = load typed ptr $xs
     %t30 = call i64 @std__initializer_list_S___size(%t29)
-    store typed i64 %t30, $call__2
-    %t31 = load typed i64 $call__2
+    store typed i64 %t30, $call__3
+    %t31 = load typed i64 $call__3
     %t32 = convert sext i64 i32 12
     %t33 = cmp ne i64 %t31, %t32
+    %t34 = cmp ne i64 %t33, 0
+    store typed i64 %t34, $lor__2
     eh_end
-    branch %t33, ^if_then_19, ^if_else_20
+    jump ^lor_end_24
+
+  block ^lor_short_23:
+    store typed i64 1, $lor__2
+    jump ^lor_end_24
+
+  block ^lor_end_24:
+    %t35 = load typed i64 $lor__2
+    branch %t35, ^if_then_19, ^if_else_20
 
   block ^if_then_19:
-    store typed i64 12, $destructor_array_index__8
+    store typed i64 12, $destructor_array_index__9
     jump ^destructor_array_cond_25
 
   block ^destructor_array_cond_25:
-    %t34 = load typed i64 $destructor_array_index__8
-    %t35 = cmp ne i64 %t34, 0
-    branch %t35, ^destructor_array_body_26, ^destructor_array_end_27
+    %t36 = load typed i64 $destructor_array_index__9
+    %t37 = cmp ne i64 %t36, 0
+    branch %t37, ^destructor_array_body_26, ^destructor_array_end_27
 
   block ^destructor_array_body_26:
-    %t36 = binary sub i64 %t34, 1
-    store typed i64 %t36, $destructor_array_index__8
-    %t37 = binary mul i64 %t36, 4
-    %t38 = index i8 [projection=array_element] %t3, %t37
-    call void @S___S(%t38)
+    %t38 = binary sub i64 %t36, 1
+    store typed i64 %t38, $destructor_array_index__9
+    %t39 = binary mul i64 %t38, 4
+    %t40 = index i8 [projection=array_element] %t3, %t39
+    call void @S___S(%t40)
     jump ^destructor_array_cond_25
 
   block ^destructor_array_end_27:
-    %t39 = addr $earlier
-    call void @S___S(%t39)
+    %t41 = addr $earlier
+    call void @S___S(%t41)
     eh_end
     return i32 2
 
@@ -449,48 +450,48 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^if_end_21
 
   block ^if_end_21:
-    store typed i64 12, $destructor_array_index__9
+    store typed i64 12, $destructor_array_index__10
     jump ^destructor_array_cond_28
 
   block ^destructor_array_cond_28:
-    %t40 = load typed i64 $destructor_array_index__9
-    %t41 = cmp ne i64 %t40, 0
-    branch %t41, ^destructor_array_body_29, ^destructor_array_end_30
+    %t42 = load typed i64 $destructor_array_index__10
+    %t43 = cmp ne i64 %t42, 0
+    branch %t43, ^destructor_array_body_29, ^destructor_array_end_30
 
   block ^destructor_array_body_29:
-    %t42 = binary sub i64 %t40, 1
-    store typed i64 %t42, $destructor_array_index__9
-    %t43 = binary mul i64 %t42, 4
-    %t44 = index i8 [projection=array_element] %t3, %t43
-    call void @S___S(%t44)
+    %t44 = binary sub i64 %t42, 1
+    store typed i64 %t44, $destructor_array_index__10
+    %t45 = binary mul i64 %t44, 4
+    %t46 = index i8 [projection=array_element] %t3, %t45
+    call void @S___S(%t46)
     jump ^destructor_array_cond_28
 
   block ^destructor_array_end_30:
-    %t45 = load typed i32 @alive
-    %t46 = cmp ne i32 %t45, 1
-    branch %t46, ^if_then_31, ^if_else_32
+    %t47 = load typed i32 @alive
+    %t48 = cmp ne i32 %t47, 1
+    branch %t48, ^if_then_31, ^if_else_32
 
   block ^if_then_31:
-    store typed i32 3, $cleanup_return__4
+    store typed i32 3, $cleanup_return__5
     jump ^return_cleanup_action_36
 
   block ^return_cleanup_terminal_34:
-    return i32 $cleanup_return__4
+    return i32 $cleanup_return__5
 
   block ^return_cleanup_exit_35:
     eh_end
     jump ^return_cleanup_terminal_34
 
   block ^return_cleanup_action_36:
-    %t47 = addr $earlier
-    call void @S___S(%t47)
+    %t49 = addr $earlier
+    call void @S___S(%t49)
     jump ^return_cleanup_exit_35
 
   block ^if_else_32:
     jump ^if_end_33
 
   block ^if_end_33:
-    store typed i32 0, $cleanup_return__4
+    store typed i32 0, $cleanup_return__5
     jump ^return_cleanup_action_36
 
   block ^catch_dispatch_1:
@@ -498,34 +499,34 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^catch_entry_2
 
   block ^catch_entry_2:
-    %t48 = exception ptr
-    %t49 = exception_selector i32
-    %t50 = cmp eq i32 %t49, 1
-    branch %t50, ^catch_body_37, ^catch_next_38
+    %t50 = exception ptr
+    %t51 = exception_selector i32
+    %t52 = cmp eq i32 %t51, 1
+    branch %t52, ^catch_body_37, ^catch_next_38
 
   block ^catch_body_37:
-    %t51 = call ptr @__external_runtime____cxa_begin_catch(%t48)
-    store typed ptr %t51, $catch__3
+    %t53 = call ptr @__external_runtime____cxa_begin_catch(%t50)
+    store typed ptr %t53, $catch__4
     eh_cleanup ^catch_cleanup_39
-    %t52 = load typed i32 %t51
-    store typed i32 %t52, $e
-    %t53 = load typed i32 $e
-    %t54 = cmp eq i32 %t53, 77
-    branch %t54, ^cond_then_40, ^cond_else_41
+    %t54 = load typed i32 %t53
+    store typed i32 %t54, $e
+    %t55 = load typed i32 $e
+    %t56 = cmp eq i32 %t55, 77
+    branch %t56, ^cond_then_40, ^cond_else_41
 
   block ^cond_then_40:
-    store typed i32 77, $cond__10
+    store typed i32 77, $cond__11
     jump ^cond_end_42
 
   block ^cond_else_41:
-    store typed i32 0, $cond__10
+    store typed i32 0, $cond__11
     jump ^cond_end_42
 
   block ^cond_end_42:
-    %t55 = load typed i32 $cond__10
+    %t57 = load typed i32 $cond__11
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t55
+    return i32 %t57
 
   block ^catch_cleanup_39:
     call void @__external_runtime____cxa_end_catch()

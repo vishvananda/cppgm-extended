@@ -1903,8 +1903,8 @@ protected:
 			derived.EmitBranch(derived.LowerControlCondition(condition), then_block, else_block);
 		else if (condition_children.size() != 1 ||
 			derived.arena_.nodes[condition].full_expression_staging)
-			derived.EmitFullExpressionConditionBranch(condition_children, then_block, else_block,
-				derived.InitializerListLifetimeObservationDispatch(condition));
+			derived.EmitFullExpressionConditionBranch(
+				condition_children, then_block, else_block);
 		else derived.EmitConditionBranch(condition_children[0], then_block, else_block);
 		derived.SelectBlock(then_block);
 		StatementTask after(STATEMENT_IF_AFTER_THEN);

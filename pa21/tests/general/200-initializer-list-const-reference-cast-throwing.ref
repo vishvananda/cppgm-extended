@@ -243,14 +243,15 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
   slot $earlier : obj<4x4>
   slot $xs : ptr
   slot $initlist__1 : obj<8x4>
-  slot $call__2 : i64
-  slot $cleanup_return__3 : i32
-  slot $refcall__4 : obj<16x8>
+  slot $lor__2 : i64
+  slot $call__3 : i64
+  slot $cleanup_return__4 : i32
+  slot $refcall__5 : obj<16x8>
 
   block ^entry:
     %t1 = addr $earlier
     call void @S__S(%t1, 9)
-    %t2 = addr $refcall__4
+    %t2 = addr $refcall__5
     eh_try ^cleanup_action_2
     %t3 = addr $initlist__1
     call void @S__S(%t3, 1)
@@ -293,28 +294,36 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^cleanup_action_2
 
   block ^call_unwind_end_7:
-    eh_try ^cleanup_resume_1
     %t7 = load typed i32 @alive
     %t8 = cmp ne i32 %t7, 3
-    eh_end
-    branch %t8, ^if_then_8, ^lor_rhs_11
+    branch %t8, ^lor_short_12, ^lor_rhs_11
 
   block ^lor_rhs_11:
-    eh_try ^cleanup_resume_1
+    eh_try ^cleanup_action_6
     %t9 = load typed ptr $xs
     %t10 = call i64 @std__initializer_list_S___size(%t9)
-    store typed i64 %t10, $call__2
-    %t11 = load typed i64 $call__2
+    store typed i64 %t10, $call__3
+    %t11 = load typed i64 $call__3
     %t12 = convert sext i64 i32 2
     %t13 = cmp ne i64 %t11, %t12
+    %t14 = cmp ne i64 %t13, 0
+    store typed i64 %t14, $lor__2
     eh_end
-    branch %t13, ^if_then_8, ^if_else_9
+    jump ^lor_end_13
+
+  block ^lor_short_12:
+    store typed i64 1, $lor__2
+    jump ^lor_end_13
+
+  block ^lor_end_13:
+    %t15 = load typed i64 $lor__2
+    branch %t15, ^if_then_8, ^if_else_9
 
   block ^if_then_8:
     call void @S___S(%t4)
     call void @S___S(%t3)
-    %t14 = addr $earlier
-    call void @S___S(%t14)
+    %t16 = addr $earlier
+    call void @S___S(%t16)
     return i32 2
 
   block ^if_else_9:
@@ -323,28 +332,28 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
   block ^if_end_10:
     call void @S___S(%t4)
     call void @S___S(%t3)
-    %t15 = load typed i32 @alive
-    %t16 = cmp ne i32 %t15, 1
-    branch %t16, ^if_then_12, ^if_else_13
+    %t17 = load typed i32 @alive
+    %t18 = cmp ne i32 %t17, 1
+    branch %t18, ^if_then_14, ^if_else_15
 
-  block ^if_then_12:
-    store typed i32 3, $cleanup_return__3
-    jump ^return_cleanup_action_16
+  block ^if_then_14:
+    store typed i32 3, $cleanup_return__4
+    jump ^return_cleanup_action_18
 
-  block ^return_cleanup_terminal_15:
-    return i32 $cleanup_return__3
+  block ^return_cleanup_terminal_17:
+    return i32 $cleanup_return__4
 
-  block ^return_cleanup_action_16:
-    %t17 = addr $earlier
-    call void @S___S(%t17)
-    jump ^return_cleanup_terminal_15
+  block ^return_cleanup_action_18:
+    %t19 = addr $earlier
+    call void @S___S(%t19)
+    jump ^return_cleanup_terminal_17
 
-  block ^if_else_13:
-    jump ^if_end_14
+  block ^if_else_15:
+    jump ^if_end_16
 
-  block ^if_end_14:
-    store typed i32 0, $cleanup_return__3
-    jump ^return_cleanup_action_16
+  block ^if_end_16:
+    store typed i32 0, $cleanup_return__4
+    jump ^return_cleanup_action_18
 }
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : i32

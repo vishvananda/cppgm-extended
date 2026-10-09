@@ -106,17 +106,9 @@ function @get_value() -> ptr [binding=strong, object=_Z9get_valuev] {
     resume
 
   block ^call_unwind_end_4:
-    eh_try ^call_unwind_dispatch_5
     store typed ptr %t4, %t3
     %t6 = index i8 %t3, 8
     store typed i64 2, %t6
-    eh_end
-    jump ^call_unwind_end_6
-
-  block ^call_unwind_dispatch_5:
-    resume
-
-  block ^call_unwind_end_6:
     %t7 = call i32 @__cppgm_runtime_atexit(@__cppgm_local_static_destructor____local_static__get_value__held__tokens189_196)
     store typed i64 1, @__local_static__get_value__held__tokens189_196__guard
     jump ^local_static_ready_1

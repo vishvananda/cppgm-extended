@@ -714,8 +714,7 @@ protected:
 	}
 
 	void BeginFullExpressionCleanup(const NodeChildren& children,
-		std::size_t first_cleanup, bool defer_segment = false,
-		BlockId preferred_dispatch = kNoLowId)
+		std::size_t first_cleanup, bool defer_segment = false)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (derived.full_expression_cleanup_active_)
@@ -774,22 +773,11 @@ protected:
 				derived.full_expression_cleanup_ready_ = false;
 			}
 		}
-		if (preferred_dispatch != kNoLowId &&
-			!derived.full_expression_cleanup_actions_.empty())
-			ThrowLoweringInternal(
-				"preferred cleanup dispatch has destructor actions");
 		if (defer_segment ||
 			(derived.full_expression_uses_branch_cleanup_ &&
 			 derived.full_expression_deferred_cleanup_ &&
 			 !derived.full_expression_cleanup_ready_)) return;
-		if (preferred_dispatch == kNoLowId)
-			StartFullExpressionCleanupSegment();
-		else
-		{
-			derived.full_expression_cleanup_dispatch_ = preferred_dispatch;
-			derived.full_expression_cleanup_dispatch_reused_ = true;
-			derived.EmitEhTarget(Instruction::EH_TRY, preferred_dispatch);
-		}
+		StartFullExpressionCleanupSegment();
 	}
 
 	void TransitionFullExpressionCleanup(std::uint32_t temporary)
@@ -969,15 +957,14 @@ protected:
 	}
 
 	void EmitFullExpressionConditionBranch(const NodeChildren& children,
-		BlockId true_block, BlockId false_block,
-		BlockId preferred_dispatch = kNoLowId)
+		BlockId true_block, BlockId false_block)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		if (children.empty())
 			ThrowLoweringInternal("condition cleanup has no value");
 		if (children.size() == 1)
 		{
-			BeginFullExpressionCleanup(children, 1, false, preferred_dispatch);
+			BeginFullExpressionCleanup(children, 1, false);
 			derived.EmitConditionBranch(children[0], true_block, false_block);
 			ResetFullExpressionCleanup();
 			return;

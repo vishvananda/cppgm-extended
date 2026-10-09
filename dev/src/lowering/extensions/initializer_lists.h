@@ -30,10 +30,8 @@ struct InitializerListLoweringState
 	FlatIdMap element_address_index;
 	std::vector<InitializerListElementAddresses> element_addresses;
 	std::size_t backing_ordinal;
-	BlockId lifetime_observation_dispatch;
 
-	InitializerListLoweringState()
-		: backing_ordinal(0), lifetime_observation_dispatch(kNoLowId) {}
+	InitializerListLoweringState() : backing_ordinal(0) {}
 };
 
 template <class Derived>
@@ -45,7 +43,6 @@ protected:
 		Derived& derived = static_cast<Derived&>(*this);
 		derived.initializer_lists_.element_address_index.Clear();
 		derived.initializer_lists_.element_addresses.clear();
-		derived.initializer_lists_.lifetime_observation_dispatch = kNoLowId;
 	}
 
 	void RecordInitializerListElementAddress(
@@ -108,16 +105,6 @@ protected:
 			derived.arena_.nodes[node].type, &global);
 		derived.output_.globals.push_back(global);
 		if (derived.stats_) ++derived.stats_->globals;
-	}
-
-	BlockId InitializerListLifetimeObservationDispatch(
-		std::uint32_t condition) const
-	{
-		const Derived& derived = static_cast<const Derived&>(*this);
-		return derived.arena_.nodes[condition].
-			initializer_list_lifetime_observation ?
-			derived.initializer_lists_.lifetime_observation_dispatch :
-			BlockId(kNoLowId);
 	}
 
 	Operand NamespaceInitializerListBackingStorage(
@@ -390,7 +377,7 @@ protected:
 	}
 
 	void LowerInitializerListObject(std::uint32_t node,
-		const Operand& destination, bool protect_object = false)
+		const Operand& destination)
 	{
 		Derived& derived = static_cast<Derived&>(*this);
 		const DumpNode& record = derived.arena_.nodes[node];
@@ -399,12 +386,6 @@ protected:
 			ThrowLoweringInternal("invalid initializer-list object recipe");
 		const Operand backing = children.empty() ?
 			Operand::NullPointer(LowPtr()) : derived.LowerStorage(children[0]);
-		const BlockId dispatch = protect_object ? derived.AddBlock(
-			derived.NewLabel("call_unwind_dispatch")) : BlockId(kNoLowId);
-		const BlockId end = protect_object ? derived.AddBlock(
-			derived.NewLabel("call_unwind_end")) : BlockId(kNoLowId);
-		if (protect_object)
-			derived.EmitEhTarget(Instruction::EH_TRY, dispatch);
 		Instruction store_begin(Instruction::STORE);
 		store_begin.type = LowPtr();
 		store_begin.first = backing;
@@ -418,15 +399,6 @@ protected:
 			static_cast<std::int64_t>(record.array_count), LowI64());
 		store_size.second = size_field;
 		derived.Emit(store_size);
-		if (protect_object)
-		{
-			derived.initializer_lists_.lifetime_observation_dispatch = dispatch;
-			derived.Emit(Instruction(Instruction::EH_END));
-			derived.EmitJump(end);
-			derived.SelectBlock(dispatch);
-			derived.EmitExceptionResume();
-			derived.SelectBlock(end);
-		}
 	}
 
 	bool LowerInitializerListVariable(const DumpNode& record,
@@ -437,13 +409,9 @@ protected:
 			!derived.IsClassObjectType(record.type) || children.size() != 1 ||
 			derived.arena_.nodes[children[0]].kind != DUMP_INITIALIZER_LIST)
 			return false;
-		const NodeChildren list_children = derived.Children(children[0]);
-		const bool protect = !derived.full_expression_cleanup_active_ &&
-			list_children.size() == 1 &&
-			derived.arena_.nodes[list_children[0]].selected_binding != kNoBinding;
 		LowerInitializerListObject(children[0], derived.AddressOfStorage(
 			derived.StorageFor(record.binding,
-				derived.LowerStorageType(record.type))), protect);
+				derived.LowerStorageType(record.type))));
 		return true;
 	}
 

@@ -174,7 +174,10 @@ To complete PA21, implement these goals:
    the expected `__begin` / `__size` semantics to range-for lowering.
    A backing array with static storage duration, including one extended by a
    namespace-scope reference, is destroyed at exit element by element, last
-   element first.
+   element first. An automatic backing array lives as long as its list: once
+   it exists, every potentially throwing call later in its scope, including
+   one in a condition, unwinds through cleanup that destroys the elements in
+   reverse order and the earlier automatic objects.
 
 3. RTTI and `typeid`.
    The compiler should emit deterministic RTTI globals and lower both static and dynamic

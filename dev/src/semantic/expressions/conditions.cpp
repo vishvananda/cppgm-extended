@@ -102,12 +102,6 @@ void Analyzer::AnalyzeCondition(NodeId node, ScopeId scope,
 		MarkFullExpressionCalls(value.node);
 		StageExceptionalFullExpression(value.node, condition, scope, true);
 	}
-	else if (HasActiveInitializerListBacking(scope))
-	{
-		dump_.nodes[condition].full_expression_staging = true;
-		dump_.nodes[condition].initializer_list_lifetime_observation = true;
-		MarkInitializerListLifetimeCalls(value.node);
-	}
 	else if (dump_.edges.size() == first_cleanup_edge)
 		StageExceptionalFullExpression(value.node, condition, scope);
 }

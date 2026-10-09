@@ -246,13 +246,15 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
   slot $second : obj<4x4>
   slot $xs : obj<16x8>
   slot $initlist__2 : obj<8x4>
-  slot $call__3 : i64
+  slot $lor__3 : i64
+  slot $call__4 : i64
   slot $xs__shadow2 : obj<16x8>
-  slot $initlist__4 : obj<8x4>
-  slot $call__5 : i64
-  slot $catch__6 : ptr
+  slot $initlist__5 : obj<8x4>
+  slot $lor__6 : i64
+  slot $call__7 : i64
+  slot $catch__8 : ptr
   slot $e : i32
-  slot $cond__7 : i32
+  slot $cond__9 : i32
 
   block ^entry:
     eh_try ^catch_dispatch_1
@@ -357,40 +359,40 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^cleanup_action_19
 
   block ^call_unwind_end_21:
-    eh_try ^call_unwind_dispatch_25
     %t15 = load typed i32 @alive
     %t16 = cmp ne i32 %t15, 5
-    eh_end
-    jump ^call_unwind_end_27
+    branch %t16, ^lor_short_26, ^lor_rhs_25
 
-  block ^call_unwind_dispatch_25:
-    eh_catch @__external_rtti__int, 1
-    eh_cleanup
-    jump ^cleanup_resume_7
-
-  block ^call_unwind_end_27:
-    branch %t16, ^if_then_22, ^lor_rhs_26
-
-  block ^lor_rhs_26:
-    eh_try ^call_unwind_dispatch_25
+  block ^lor_rhs_25:
+    eh_try ^call_unwind_dispatch_20
     %t17 = addr $xs
     %t18 = call i64 @std__initializer_list_S___size(%t17)
-    store typed i64 %t18, $call__3
-    %t19 = load typed i64 $call__3
+    store typed i64 %t18, $call__4
+    %t19 = load typed i64 $call__4
     %t20 = convert sext i64 i32 2
     %t21 = cmp ne i64 %t19, %t20
+    %t22 = cmp ne i64 %t21, 0
+    store typed i64 %t22, $lor__3
     eh_end
-    branch %t21, ^if_then_22, ^if_else_23
+    jump ^lor_end_27
+
+  block ^lor_short_26:
+    store typed i64 1, $lor__3
+    jump ^lor_end_27
+
+  block ^lor_end_27:
+    %t23 = load typed i64 $lor__3
+    branch %t23, ^if_then_22, ^if_else_23
 
   block ^if_then_22:
     call void @S___S(%t11)
     call void @S___S(%t9)
-    %t22 = addr $second
-    call void @S___S(%t22)
-    %t23 = addr $first
-    call void @S___S(%t23)
-    %t24 = addr $earlier
+    %t24 = addr $second
     call void @S___S(%t24)
+    %t25 = addr $first
+    call void @S___S(%t25)
+    %t26 = addr $earlier
+    call void @S___S(%t26)
     eh_end
     return i32 2
 
@@ -403,42 +405,42 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     eh_end
     call void @S___S(%t11)
     call void @S___S(%t9)
-    %t25 = addr $second
-    call void @S___S(%t25)
-    %t26 = addr $first
-    call void @S___S(%t26)
+    %t27 = addr $second
+    call void @S___S(%t27)
+    %t28 = addr $first
+    call void @S___S(%t28)
     jump ^if_end_6
 
   block ^if_else_5:
-    %t27 = addr $xs__shadow2
-    %t28 = addr $initlist__4
+    %t29 = addr $xs__shadow2
+    %t30 = addr $initlist__5
     eh_try ^call_unwind_dispatch_9
-    call void @S__S(%t28, 1)
+    call void @S__S(%t30, 1)
     eh_try ^call_unwind_dispatch_28
-    %t29 = index i8 [projection=array_element] %t28, 4
-    call void @S__S(%t29, 2)
+    %t31 = index i8 [projection=array_element] %t30, 4
+    call void @S__S(%t31, 2)
     eh_end
     jump ^call_unwind_end_29
 
   block ^call_unwind_dispatch_28:
     eh_catch @__external_rtti__int, 1
     eh_cleanup
-    call void @S___S(%t28)
+    call void @S___S(%t30)
     eh_end
     jump ^call_unwind_dispatch_9
 
   block ^call_unwind_end_29:
     eh_end
     eh_try ^call_unwind_dispatch_31
-    store typed ptr %t28, %t27
-    %t30 = index i8 %t27, 8
-    store typed i64 2, %t30
+    store typed ptr %t30, %t29
+    %t32 = index i8 %t29, 8
+    store typed i64 2, %t32
     eh_end
     jump ^call_unwind_end_32
 
   block ^cleanup_action_30:
-    call void @S___S(%t29)
-    call void @S___S(%t28)
+    call void @S___S(%t31)
+    call void @S___S(%t30)
     jump ^cleanup_action_8
 
   block ^call_unwind_dispatch_31:
@@ -447,28 +449,36 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^cleanup_action_30
 
   block ^call_unwind_end_32:
-    eh_try ^call_unwind_dispatch_25
-    %t31 = load typed i32 @alive
-    %t32 = cmp ne i32 %t31, 3
-    eh_end
-    branch %t32, ^if_then_33, ^lor_rhs_36
+    %t33 = load typed i32 @alive
+    %t34 = cmp ne i32 %t33, 3
+    branch %t34, ^lor_short_37, ^lor_rhs_36
 
   block ^lor_rhs_36:
-    eh_try ^call_unwind_dispatch_25
-    %t33 = addr $xs__shadow2
-    %t34 = call i64 @std__initializer_list_S___size(%t33)
-    store typed i64 %t34, $call__5
-    %t35 = load typed i64 $call__5
-    %t36 = convert sext i64 i32 2
-    %t37 = cmp ne i64 %t35, %t36
+    eh_try ^call_unwind_dispatch_31
+    %t35 = addr $xs__shadow2
+    %t36 = call i64 @std__initializer_list_S___size(%t35)
+    store typed i64 %t36, $call__7
+    %t37 = load typed i64 $call__7
+    %t38 = convert sext i64 i32 2
+    %t39 = cmp ne i64 %t37, %t38
+    %t40 = cmp ne i64 %t39, 0
+    store typed i64 %t40, $lor__6
     eh_end
-    branch %t37, ^if_then_33, ^if_else_34
+    jump ^lor_end_38
+
+  block ^lor_short_37:
+    store typed i64 1, $lor__6
+    jump ^lor_end_38
+
+  block ^lor_end_38:
+    %t41 = load typed i64 $lor__6
+    branch %t41, ^if_then_33, ^if_else_34
 
   block ^if_then_33:
-    call void @S___S(%t29)
-    call void @S___S(%t28)
-    %t38 = addr $earlier
-    call void @S___S(%t38)
+    call void @S___S(%t31)
+    call void @S___S(%t30)
+    %t42 = addr $earlier
+    call void @S___S(%t42)
     eh_end
     return i32 2
 
@@ -479,13 +489,13 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     eh_try ^call_unwind_dispatch_31
     call void @stop()
     eh_end
-    call void @S___S(%t29)
-    call void @S___S(%t28)
+    call void @S___S(%t31)
+    call void @S___S(%t30)
     jump ^if_end_6
 
   block ^if_end_6:
-    %t39 = addr $earlier
-    call void @S___S(%t39)
+    %t43 = addr $earlier
+    call void @S___S(%t43)
     eh_end
     return i32 0
 
@@ -494,41 +504,41 @@ function @test() -> i32 [binding=strong, object=_Z4testv] {
     jump ^catch_entry_2
 
   block ^catch_entry_2:
-    %t40 = exception ptr
-    %t41 = exception_selector i32
-    %t42 = cmp eq i32 %t41, 1
-    branch %t42, ^catch_body_37, ^catch_next_38
+    %t44 = exception ptr
+    %t45 = exception_selector i32
+    %t46 = cmp eq i32 %t45, 1
+    branch %t46, ^catch_body_39, ^catch_next_40
 
-  block ^catch_body_37:
-    %t43 = call ptr @__external_runtime____cxa_begin_catch(%t40)
-    store typed ptr %t43, $catch__6
-    eh_cleanup ^catch_cleanup_39
-    %t44 = load typed i32 %t43
-    store typed i32 %t44, $e
-    %t45 = load typed i32 $e
-    %t46 = cmp eq i32 %t45, 77
-    branch %t46, ^cond_then_40, ^cond_else_41
+  block ^catch_body_39:
+    %t47 = call ptr @__external_runtime____cxa_begin_catch(%t44)
+    store typed ptr %t47, $catch__8
+    eh_cleanup ^catch_cleanup_41
+    %t48 = load typed i32 %t47
+    store typed i32 %t48, $e
+    %t49 = load typed i32 $e
+    %t50 = cmp eq i32 %t49, 77
+    branch %t50, ^cond_then_42, ^cond_else_43
 
-  block ^cond_then_40:
-    store typed i32 77, $cond__7
-    jump ^cond_end_42
+  block ^cond_then_42:
+    store typed i32 77, $cond__9
+    jump ^cond_end_44
 
-  block ^cond_else_41:
-    store typed i32 0, $cond__7
-    jump ^cond_end_42
+  block ^cond_else_43:
+    store typed i32 0, $cond__9
+    jump ^cond_end_44
 
-  block ^cond_end_42:
-    %t47 = load typed i32 $cond__7
+  block ^cond_end_44:
+    %t51 = load typed i32 $cond__9
     eh_end
     call void @__external_runtime____cxa_end_catch()
-    return i32 %t47
+    return i32 %t51
 
-  block ^catch_cleanup_39:
+  block ^catch_cleanup_41:
     call void @__external_runtime____cxa_end_catch()
     eh_end
     resume
 
-  block ^catch_next_38:
+  block ^catch_next_40:
     resume
 
   block ^try_end_3:

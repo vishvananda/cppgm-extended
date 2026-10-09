@@ -108,17 +108,9 @@ function @__cppgm_init() -> void [role=init, binding=internal] {
     resume
 
   block ^call_unwind_end_2:
-    eh_try ^call_unwind_dispatch_3
     store typed ptr %t2, %t1
     %t4 = index i8 %t1, 8
     store typed i64 2, %t4
-    eh_end
-    jump ^call_unwind_end_4
-
-  block ^call_unwind_dispatch_3:
-    resume
-
-  block ^call_unwind_end_4:
     return void
 }
 function @__cppgm_fini() -> void [role=fini, binding=internal] {

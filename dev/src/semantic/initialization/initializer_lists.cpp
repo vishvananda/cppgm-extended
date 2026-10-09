@@ -158,34 +158,6 @@ std::uint32_t Analyzer::InitializerListBackingTemporary(
 		backing : kNoDumpEdge;
 }
 
-bool Analyzer::HasActiveInitializerListBacking(ScopeId scope) const
-{
-	++initializer_list_lifetime_queries_;
-	return scope < nearest_initializer_list_lifetime_scopes_.size() &&
-		nearest_initializer_list_lifetime_scopes_[scope] != kNoScope;
-}
-
-void Analyzer::MarkInitializerListLifetimeScope(
-	ScopeId scope, std::uint32_t temporary)
-{
-	if (!dump_.nodes[temporary].initializer_list_backing) return;
-	if (nearest_initializer_list_lifetime_scopes_.size() <= scope)
-		nearest_initializer_list_lifetime_scopes_.resize(
-			static_cast<std::size_t>(scope) + 1, kNoScope);
-	nearest_initializer_list_lifetime_scopes_[scope] = scope;
-}
-
-void Analyzer::MarkInitializerListLifetimeCalls(std::uint32_t node)
-{
-	if (node == kNoDumpEdge || node >= dump_.nodes.size()) return;
-	DumpNode& record = dump_.nodes[node];
-	if (record.kind == DUMP_CALL_EXPRESSION)
-		record.full_expression_staging = true;
-	for (std::uint32_t edge = record.first_edge; edge != kNoDumpEdge;
-		edge = dump_.edges[edge].next)
-		MarkInitializerListLifetimeCalls(dump_.edges[edge].child);
-}
-
 void Analyzer::ConfigureInitializerListBackingLifetime(
 	std::uint32_t backing, TypeId element_type)
 {

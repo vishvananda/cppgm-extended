@@ -203,7 +203,6 @@ struct DumpNode
 	bool reference_call_materialization : 1;
 	bool range_for_materialization : 1;
 	bool initializer_list_backing : 1;
-	bool initializer_list_lifetime_observation : 1;
 	bool contains_temporary_object : 1;
 	bool temporary_implicit_object : 1;
 	bool pending_constructor_demand : 1;
@@ -304,7 +303,6 @@ struct DumpNode
 		  argument_materialization(false), discarded_materialization(false),
 		  reference_call_materialization(false), range_for_materialization(false),
 		  initializer_list_backing(false),
-		  initializer_list_lifetime_observation(false),
 		  contains_temporary_object(value == DUMP_TEMPORARY_OBJECT),
 		  temporary_implicit_object(false), pending_constructor_demand(false),
 		  pending_runtime_call_demand(false),

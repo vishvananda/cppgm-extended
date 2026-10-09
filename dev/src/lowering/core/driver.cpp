@@ -209,8 +209,6 @@ void AccumulateLifetimeQueryStats(semantic::Stats* target,
 	const semantic::Stats& source)
 {
 	target->enclosing_lifetime_queries += source.enclosing_lifetime_queries;
-	target->initializer_list_lifetime_queries +=
-		source.initializer_list_lifetime_queries;
 }
 
 void AccumulateVirtualBaseStats(semantic::Stats* target,

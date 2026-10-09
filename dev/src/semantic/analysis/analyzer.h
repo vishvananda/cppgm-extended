@@ -142,7 +142,6 @@ private:
 		NameId prefix);
 	ScopeId NewNamedScope(ScopeId parent, ScopeKind kind, NameId lookup_name,
 		ScopeId presentation_owner, NameId presentation_name);
-	void InitializeInitializerListLifetimeScope(ScopeId scope, ScopeId parent);
 	bool HasInternalLinkageScope(ScopeId scope) const;
 	bool IsDeclaration(NodeId node) const;
 
@@ -1707,14 +1706,10 @@ private:
 		bool allow_elision = true);
 	void AddTemporaryLifetimeObligation(ScopeId scope,
 		std::uint32_t temporary, std::uint32_t known_action = kNoDumpEdge);
-	void MarkInitializerListLifetimeScope(ScopeId scope,
-		std::uint32_t temporary);
 	bool ExtendInitializerListVariableLifetime(TypeId type, ScopeId scope,
 		std::uint32_t initializer, bool control_dependent);
 	std::uint32_t InitializerListBackingTemporary(
 		TypeId type, std::uint32_t initializer) const;
-	bool HasActiveInitializerListBacking(ScopeId scope) const;
-	void MarkInitializerListLifetimeCalls(std::uint32_t node);
 	bool CollectTemporaryObjects(std::uint32_t node,
 		std::vector<std::uint32_t>* temporaries);
 	bool CollectTemporaryObjectsImpl(std::uint32_t node,
@@ -2193,7 +2188,6 @@ private:
 	std::vector<InjectedMemberInfo> injected_members_;
 	std::vector<std::vector<LifetimeObligation> > scope_lifetimes_;
 	std::vector<ScopeId> nearest_lifetime_scopes_;
-	std::vector<ScopeId> nearest_initializer_list_lifetime_scopes_;
 	// Children copy the active automatic-object count on scope entry; local
 	// declarations increment only their scope's compact prefix entry.
 	std::vector<std::uint32_t> scope_nontrivial_object_lifetime_prefixes_;
@@ -2379,7 +2373,6 @@ private:
 	ObservationCounter unwind_cleanup_scope_visits_;
 	ObservationCounter unwind_cleanup_action_visits_;
 	mutable ObservationCounter enclosing_lifetime_queries_;
-	mutable ObservationCounter initializer_list_lifetime_queries_;
 	ObservationCounter temporary_dependency_visits_;
 	ObservationCounter materialized_demand_visits_;
 	mutable ObservationCounter nonthrowing_action_visits_;

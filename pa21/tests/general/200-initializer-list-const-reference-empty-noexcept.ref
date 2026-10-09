@@ -211,17 +211,9 @@ function @local() -> obj<16x8> [binding=strong, object=_Z5localv] {
     resume
 
   block ^call_unwind_end_2:
-    eh_try ^call_unwind_dispatch_3
     store typed ptr %t2, %t1
     %t4 = index i8 %t1, 8
     store typed i64 2, %t4
-    eh_end
-    jump ^call_unwind_end_4
-
-  block ^call_unwind_dispatch_3:
-    resume
-
-  block ^call_unwind_end_4:
     %t5 = addr $retobj__2
     %t6 = addr $x
     copyobj 16x8 %t6, %t5

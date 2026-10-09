@@ -61,7 +61,6 @@ dev/src/semantic/analysis/name_resolution.cpp	SyntaxNamePath	1	dev/src/semantic/
 dev/src/semantic/analysis/name_resolution.cpp	ValidateDefaultArgumentContext	1	dev/src/semantic/analysis/name_resolution.cpp	keep
 dev/src/semantic/analysis/scope.cpp	DisplayName	1	dev/src/semantic/analysis/scope.cpp	keep
 dev/src/semantic/analysis/scope.cpp	HasInternalLinkageScope	1	dev/src/semantic/analysis/scope.cpp	keep
-dev/src/semantic/analysis/scope.cpp	InitializeInitializerListLifetimeScope	1	dev/src/semantic/analysis/scope.cpp	keep
 dev/src/semantic/analysis/scope.cpp	NewNamedScope	1	dev/src/semantic/analysis/scope.cpp	keep
 dev/src/semantic/analysis/scope.cpp	NewScope	1	dev/src/semantic/analysis/scope.cpp	keep
 dev/src/semantic/analysis/scope.cpp	PublishInlineFunctionFacts	1	dev/src/semantic/analysis/scope.cpp	keep
@@ -539,14 +538,11 @@ dev/src/semantic/initialization/initializer_lists.cpp	ConfigureInitializerListBa
 dev/src/semantic/initialization/initializer_lists.cpp	ConfigureInitializerListSpecialization	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	DeduceInitializerListElementType	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	ExtendInitializerListVariableLifetime	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
-dev/src/semantic/initialization/initializer_lists.cpp	HasActiveInitializerListBacking	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	InitializerListBackingTemporary	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	InitializerListDefinitionReplayInProgress	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	IsInitializerListFunction	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	IsInitializerListType	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	IsStandardInitializerListTemplate	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
-dev/src/semantic/initialization/initializer_lists.cpp	MarkInitializerListLifetimeCalls	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
-dev/src/semantic/initialization/initializer_lists.cpp	MarkInitializerListLifetimeScope	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	MaterializeBracedConstructorArgument	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	PrepareNamespaceInitializerListLifetime	1	dev/src/semantic/initialization/initializer_lists.cpp	keep
 dev/src/semantic/initialization/initializer_lists.cpp	SelectInitializerListConstructorPhase	1	dev/src/semantic/initialization/initializer_lists.cpp	keep

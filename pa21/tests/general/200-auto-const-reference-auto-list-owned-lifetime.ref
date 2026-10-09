@@ -3,11 +3,12 @@ global @alive : i32 [binding=strong] = zero
 function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $xs : ptr
   slot $initlist__1 : obj<8x4>
-  slot $call__2 : i64
-  slot $tmpobj__3 : obj<16x8>
+  slot $lor__2 : i64
+  slot $call__3 : i64
+  slot $tmpobj__4 : obj<16x8>
 
   block ^entry:
-    %t1 = addr $tmpobj__3
+    %t1 = addr $tmpobj__4
     %t2 = addr $initlist__1
     call void @S__S(%t2, 1)
     %t3 = index i8 [projection=array_element] %t2, 4
@@ -25,28 +26,41 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
     %t4 = index i8 %t1, 8
     store typed i64 2, %t4
     store typed ptr %t1, $xs
-    eh_try ^cleanup_resume_6
     %t5 = load typed i32 @alive
     %t6 = cmp ne i32 %t5, 2
-    eh_end
-    jump ^call_unwind_end_8
+    branch %t6, ^lor_short_7, ^lor_rhs_6
 
-  block ^cleanup_resume_6:
-    resume
-
-  block ^call_unwind_end_8:
-    branch %t6, ^if_then_3, ^lor_rhs_7
-
-  block ^lor_rhs_7:
-    eh_try ^cleanup_resume_6
+  block ^lor_rhs_6:
+    eh_try ^cleanup_action_10
     %t7 = load typed ptr $xs
     %t8 = call i64 @std__initializer_list_S___size(%t7)
-    store typed i64 %t8, $call__2
-    %t9 = load typed i64 $call__2
+    store typed i64 %t8, $call__3
+    %t9 = load typed i64 $call__3
     %t10 = convert sext i64 i32 2
     %t11 = cmp ne i64 %t9, %t10
+    %t12 = cmp ne i64 %t11, 0
+    store typed i64 %t12, $lor__2
     eh_end
-    branch %t11, ^if_then_3, ^if_else_4
+    jump ^call_unwind_end_11
+
+  block ^cleanup_resume_9:
+    resume
+
+  block ^cleanup_action_10:
+    call void @S___S(%t3)
+    call void @S___S(%t2)
+    jump ^cleanup_resume_9
+
+  block ^call_unwind_end_11:
+    jump ^lor_end_8
+
+  block ^lor_short_7:
+    store typed i64 1, $lor__2
+    jump ^lor_end_8
+
+  block ^lor_end_8:
+    %t13 = load typed i64 $lor__2
+    branch %t13, ^if_then_3, ^if_else_4
 
   block ^if_then_3:
     call void @S___S(%t3)
@@ -59,10 +73,10 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^if_end_5:
     call void @S___S(%t3)
     call void @S___S(%t2)
-    %t12 = load typed i32 @alive
-    %t13 = cmp ne i32 %t12, 0
-    %t14 = convert trunc i32 i64 %t13
-    return i32 %t14
+    %t14 = load typed i32 @alive
+    %t15 = cmp ne i32 %t14, 0
+    %t16 = convert trunc i32 i64 %t15
+    return i32 %t16
 }
 function @S__S(%this : ptr [object_bytes=4], %v : i32) -> void [unwind=no, binding=weak, object=_ZN1SC1Ei, inline_hint=yes] {
   slot $this : ptr

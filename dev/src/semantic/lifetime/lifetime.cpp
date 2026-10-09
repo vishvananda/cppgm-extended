@@ -154,7 +154,6 @@ void Analyzer::AddTemporaryLifetimeObligation(ScopeId scope,
 	obligation.cleanup_plan = CreateLifetimeCleanupPlan(scope, obligation);
 	PrepareLifetimeScope(scope, &scope_lifetimes_, &nearest_lifetime_scopes_);
 	scope_lifetimes_[scope].push_back(obligation);
-	MarkInitializerListLifetimeScope(scope, temporary);
 }
 
 void Analyzer::CollectReferenceLifetimeObjects(std::uint32_t node,

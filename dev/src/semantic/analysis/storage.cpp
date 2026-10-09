@@ -115,7 +115,6 @@ Analyzer::Analyzer(GraphStorage& graph, std::ostream& output,
 	  unwind_cleanup_scope_visits_(0),
 	  unwind_cleanup_action_visits_(0),
 	  enclosing_lifetime_queries_(0),
-	  initializer_list_lifetime_queries_(0),
 	  temporary_dependency_visits_(0),
 	  materialized_demand_visits_(0),
 	  nonthrowing_action_visits_(0),
@@ -304,7 +303,6 @@ std::size_t Analyzer::LifetimeStorageBytes() const
 		scope_lifetimes_.capacity() *
 			sizeof(std::vector<LifetimeObligation>) +
 		nearest_lifetime_scopes_.capacity() * sizeof(ScopeId) +
-		nearest_initializer_list_lifetime_scopes_.capacity() * sizeof(ScopeId) +
 		scope_nontrivial_object_lifetime_prefixes_.capacity() *
 			sizeof(std::uint32_t) +
 		scope_switch_entry_barriers_.capacity() * sizeof(std::uint32_t) +

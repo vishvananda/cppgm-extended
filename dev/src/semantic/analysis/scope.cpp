@@ -150,17 +150,6 @@ NameId Analyzer::DisplayName(ScopeId owner, NameId name)
 	return program_->names.Intern(qualified);
 }
 
-void Analyzer::InitializeInitializerListLifetimeScope(
-	ScopeId scope, ScopeId parent)
-{
-	if (nearest_initializer_list_lifetime_scopes_.size() <= scope)
-		nearest_initializer_list_lifetime_scopes_.resize(
-			static_cast<std::size_t>(scope) + 1, kNoScope);
-	nearest_initializer_list_lifetime_scopes_[scope] = parent != kNoScope &&
-		parent < nearest_initializer_list_lifetime_scopes_.size() ?
-			nearest_initializer_list_lifetime_scopes_[parent] : kNoScope;
-}
-
 ScopeId Analyzer::NewScope(ScopeId parent, ScopeKind kind,
 	NameId name, NameId prefix)
 {
@@ -189,7 +178,6 @@ ScopeId Analyzer::NewScope(ScopeId parent, ScopeKind kind,
 	nearest_lifetime_scopes_[scope] = lifetime_parent != kNoScope &&
 		lifetime_parent < nearest_lifetime_scopes_.size() ?
 			nearest_lifetime_scopes_[lifetime_parent] : kNoScope;
-	InitializeInitializerListLifetimeScope(scope, lifetime_parent);
 	scope_nontrivial_object_lifetime_prefixes_[scope] =
 		lifetime_parent != kNoScope && lifetime_parent <
 			scope_nontrivial_object_lifetime_prefixes_.size() ?

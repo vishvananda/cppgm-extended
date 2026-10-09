@@ -2096,8 +2096,6 @@ int run_emit_semantics_mode(const vector<string> & args)
 		   << stats.unwind_cleanup_scope_visits
 		   << " unwind_cleanup_action_visits="
 		   << stats.unwind_cleanup_action_visits
-		   << " initializer_list_lifetime_queries="
-		   << stats.initializer_list_lifetime_queries
 		   << " empty_constructor_chain_requests="
 		   << stats.empty_constructor_chain_requests
 		   << " empty_constructor_chain_cache_hits="
@@ -2323,8 +2321,6 @@ void report_lowir_semantic_stats(const cppgm::lowering::Stats & stats)
 			 << semantic.unwind_cleanup_action_visits
 			 << " enclosing_lifetime_queries="
 			 << semantic.enclosing_lifetime_queries
-			 << " initializer_list_lifetime_queries="
-			 << semantic.initializer_list_lifetime_queries
 			 << " temporary_dependency_visits="
 			 << semantic.temporary_dependency_visits
 			 << " materialized_demand_visits="
