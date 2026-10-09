@@ -58,6 +58,27 @@ struct ClassVttLayout
 	ClassVttLayout() : computed(false), size(0), complete_size(0) {}
 };
 
+// Whether a function is a base-object constructor or destructor of a class
+// with virtual bases, which takes the VTT after `this` (Itanium 2.6).
+bool BaseEntryTakesVtt(const semantic::Program& program,
+	const std::vector<semantic::ClassPolymorphismFacts>& facts,
+	semantic::BindingId binding);
+
+// The start of a base subobject's sub-VTT in its owner's VTT (2.6.2): a
+// virtual base's in a complete VTT, else a non-virtual direct base's (one
+// base may be both); kNoVttIndex when there is none.
+std::uint32_t SubVttIndex(const semantic::Program& program,
+	const ClassVttLayout& layout, semantic::EntityId owner,
+	semantic::EntityId base, bool complete, bool virtual_base);
+
+// The virtual base a path from `owner` to `target` last crosses, and
+// target's fixed offset within it: a virtual base's address comes from the
+// object's own vbase row for it, never from another virtual base's layout
+// (whose virtual bases sit elsewhere in other complete objects).
+bool FindVirtualBasePathAnchor(const semantic::Program& program,
+	semantic::EntityId owner, semantic::EntityId target,
+	semantic::EntityId* anchor, std::uint64_t* relative_offset);
+
 // Computes VTT shapes on demand, each once.
 class VttLayoutBuilder
 {

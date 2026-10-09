@@ -56,6 +56,62 @@ void VttLayoutBuilder::WalkSecondaryPointers(EntityId current, VttSubobject at,
 	}
 }
 
+bool BaseEntryTakesVtt(const Program& program,
+	const std::vector<ClassPolymorphismFacts>& facts, BindingId binding)
+{
+	if (binding == kNoBinding || binding >= program.bindings.size()) return false;
+	const BindingRecord& function = program.bindings[binding];
+	if (!((function.constructor && function.constructor_base_entry) ||
+		  (function.destructor && function.destructor_base_entry)) ||
+		function.member_owner == kNoEntity ||
+		function.member_owner >= facts.size() ||
+		program.entities[function.member_owner].virtual_base_count == 0)
+		return false;
+	return facts[function.member_owner].HasObjectTable();
+}
+
+std::uint32_t SubVttIndex(const Program& program, const ClassVttLayout& layout,
+	EntityId owner, EntityId base, bool complete, bool virtual_base)
+{
+	std::uint32_t ordinal = 0;
+	if (virtual_base)
+		return complete && program.FindVirtualBase(owner, base, 0, &ordinal) ?
+			layout.virtual_index[ordinal] : kNoVttIndex;
+	for (std::size_t i = 0; i < layout.base_index.size(); ++i)
+		if (program.DirectBase(owner, i).entity == base &&
+			!program.DirectBase(owner, i).virtual_base)
+			return layout.base_index[i];
+	return kNoVttIndex;
+}
+
+bool FindVirtualBasePathAnchor(const Program& program, EntityId owner,
+	EntityId target, EntityId* anchor, std::uint64_t* relative_offset)
+{
+	if (program.FindVirtualBase(owner, target))
+	{
+		*anchor = target;
+		*relative_offset = 0;
+		return true;
+	}
+	std::vector<std::uint32_t> path;
+	if (!program.QueryBasePath(owner, target, 0, 0, 0, 0, &path)) return false;
+	EntityId current = owner;
+	bool found = false;
+	for (std::size_t i = 0; i < path.size(); ++i)
+	{
+		const DirectBaseEdge& edge = program.DirectBase(current, path[i]);
+		current = edge.entity;
+		if (edge.virtual_base)
+		{
+			*anchor = current;
+			*relative_offset = 0;
+			found = true;
+		}
+		else if (found) *relative_offset += edge.offset;
+	}
+	return found;
+}
+
 const ClassVttLayout& VttLayoutBuilder::Layout(EntityId entity)
 {
 	if (layouts_.size() <= entity) layouts_.resize(entity + 1);

@@ -31,18 +31,8 @@ protected:
 	bool IncludesConstructionVtt(BindingId binding) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
-		if (binding == kNoBinding || binding >= derived.program_.bindings.size())
-			return false;
-		const BindingRecord& function = derived.program_.bindings[binding];
-		if (!((function.constructor && function.constructor_base_entry) ||
-			  (function.destructor && function.destructor_base_entry)) ||
-			function.member_owner == kNoEntity ||
-			function.member_owner >= derived.graph_.class_polymorphism.size() ||
-			derived.program_.entities[function.member_owner].virtual_base_count == 0)
-			return false;
-		const ClassPolymorphismFacts& facts =
-			derived.graph_.class_polymorphism[function.member_owner];
-		return facts.HasObjectTable();
+		return BaseEntryTakesVtt(derived.program_,
+			derived.graph_.class_polymorphism, binding);
 	}
 
 	// A base-object constructor or destructor of a class with virtual bases
@@ -102,39 +92,13 @@ protected:
 		return kNoBinding;
 	}
 
-	// The virtual base a path from `owner` to `target` last crosses, and
-	// target's fixed offset within it: a virtual base's address comes from
-	// the object's own vbase row for it, never from another virtual base's
-	// layout (whose virtual bases sit elsewhere in other complete objects).
+	// FindVirtualBasePathAnchor (vtt_layout.h) for the program lowered.
 	bool VirtualBasePathAnchor(EntityId owner, EntityId target,
 		EntityId* anchor, std::uint64_t* relative_offset) const
 	{
 		const Derived& derived = static_cast<const Derived&>(*this);
-		if (derived.program_.FindVirtualBase(owner, target))
-		{
-			*anchor = target;
-			*relative_offset = 0;
-			return true;
-		}
-		std::vector<std::uint32_t> path;
-		if (!derived.program_.QueryBasePath(
-			owner, target, 0, 0, 0, 0, &path)) return false;
-		EntityId current = owner;
-		bool found = false;
-		for (std::size_t i = 0; i < path.size(); ++i)
-		{
-			const DirectBaseEdge& edge =
-				derived.program_.DirectBase(current, path[i]);
-			current = edge.entity;
-			if (edge.virtual_base)
-			{
-				*anchor = current;
-				*relative_offset = 0;
-				found = true;
-			}
-			else if (found) *relative_offset += edge.offset;
-		}
-		return found;
+		return FindVirtualBasePathAnchor(derived.program_, owner, target, anchor,
+			relative_offset);
 	}
 
 	bool HasCurrentConstructionVtt() const
@@ -149,11 +113,6 @@ protected:
 		return Operand(current_construction_vtt_, LowPtr());
 	}
 
-	// The start of `base`'s sub-VTT in `owner`'s VTT (Itanium 2.6.2): a
-	// direct non-virtual base's, or, for the complete constructor, a
-	// virtual base's.
-	// The sub-VTT of a base subobject: a virtual base's in a complete VTT,
-	// else a non-virtual direct base's (one base may be both).
 	std::uint32_t ConstructionVttIndex(EntityId owner, EntityId base,
 		bool complete, bool virtual_base) const
 	{
@@ -161,18 +120,9 @@ protected:
 		if (owner >= derived.polymorphism_.class_vtt_layouts.size() ||
 			!derived.polymorphism_.class_vtt_layouts[owner].computed)
 			ThrowLoweringInternal("constructor's class has no VTT layout");
-		const ClassVttLayout& layout =
-			derived.polymorphism_.class_vtt_layouts[owner];
-		std::uint32_t ordinal = 0;
-		if (virtual_base)
-			return complete &&
-				derived.program_.FindVirtualBase(owner, base, 0, &ordinal) ?
-				layout.virtual_index[ordinal] : kNoVttIndex;
-		for (std::size_t i = 0; i < layout.base_index.size(); ++i)
-			if (derived.program_.DirectBase(owner, i).entity == base &&
-				!derived.program_.DirectBase(owner, i).virtual_base)
-				return layout.base_index[i];
-		return kNoVttIndex;
+		return SubVttIndex(derived.program_,
+			derived.polymorphism_.class_vtt_layouts[owner], owner, base, complete,
+			virtual_base);
 	}
 
 	Operand ConstructionVttArgument(EntityId complete, EntityId base,
