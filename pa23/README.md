@@ -286,9 +286,11 @@ it.
 
 A primary base of a secondary base shares that base's table and has no table
 of its own in the group. A virtual primary base may lie elsewhere in the
-class, lost to another subobject; its entries are null. The group's tables
-follow its primary table in clang's order: the non-virtual bases' secondary
-tables depth first, then the virtual bases' tables in inheritance graph order.
+class, lost to another subobject. Its entries are null where their walk to the
+declaring class passes a class that lost its own primary base, judged where
+each class of the chain lies. The group's tables follow its primary table in
+clang's order: the non-virtual bases' secondary tables depth first, then the
+virtual bases' tables in inheritance graph order.
 
 Every thunk that a class's tables include is defined with its function and
 only referred to elsewhere. The key function is the first non-inline, non-pure

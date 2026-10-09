@@ -87,11 +87,18 @@ void SlotDeclaration(const VtablePlacement& placement,
 		all[table_class].primary_ancestors.end());
 	std::size_t depth = 0;
 	while (depth < chain.size() && slot < all[chain[depth]].slots.size()) ++depth;
-	// A link to a virtual primary base that lies elsewhere is lost.
+	// Each class of the chain lies where its link puts it; a class whose
+	// virtual primary base lies elsewhere has lost it (g++'s
+	// BINFO_LOST_PRIMARY_P).
+	std::vector<std::uint64_t> place(chain.size(), table_offset);
 	std::vector<std::uint8_t> lost_link(chain.size(), 0);
 	for (std::size_t link = 1; link < depth; ++link)
-		lost_link[link] = all[chain[link - 1]].primary_virtual &&
-			placement.VirtualBaseOffset(chain[link]) != table_offset;
+	{
+		place[link] = place[link - 1];
+		if (!all[chain[link - 1]].primary_virtual) continue;
+		place[link] = placement.VirtualBaseOffset(chain[link]);
+		lost_link[link] = place[link] != place[link - 1];
+	}
 	std::size_t parent = depth == 0 ? 0 : depth - 1;
 	for (std::size_t j = 0; j < depth; ++j)
 	{
