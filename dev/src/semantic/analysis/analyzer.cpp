@@ -1187,20 +1187,6 @@ ExpressionInfo Analyzer::BuildResolvedCall(BindingId selected,
 		}
 		else argument = MaterializeVariadicCallArgument(argument);
 		dump_.Add(call, argument.node);
-		if (a < function_type.parameter_count &&
-			IsClassObjectType(parameters[a]) &&
-			argument.category == VALUE_PRVALUE)
-		{
-			const EntityId parameter_entity = EntityOf(parameters[a]);
-			const EntityRecord* parameter_class =
-				parameter_entity == kNoEntity ? 0 :
-					&program_->entities[parameter_entity];
-			if (parameter_class && !parameter_class->trivial_destructor &&
-				!(parameter_class->indirect_class_value_abi &&
-				  parameter_class->object_size == 16 &&
-				  parameter_class->template_argument_count == 0))
-				dump_.nodes[call].full_expression_staging = true;
-		}
 	}
 	for (std::size_t a = arguments.size();
 		a < function_type.parameter_count; ++a)
