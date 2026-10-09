@@ -39,5 +39,5 @@ translation-unit
                 decl-specifier KW_CHAR:char
               declarator
                 identifier value
-                parameter-pack ...
+            parameter-pack ...
 end translation unit

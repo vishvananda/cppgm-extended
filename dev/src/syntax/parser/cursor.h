@@ -99,6 +99,15 @@ protected:
 			parser.tokens_[parser.position_].Kind() == kEofToken;
 	}
 
+	// "type(*this, ...)" and "type(this, ...)" build a temporary: no declarator
+	// begins with the this keyword, so the statement is an expression.
+	bool StartsThisArgumentCast() const
+	{
+		if (!AtOffset(1, OP_LPAREN)) return false;
+		return AtOffset(2, KW_THIS) ||
+			(AtOffset(2, OP_STAR) && AtOffset(3, KW_THIS));
+	}
+
 	bool AtCloseAngle() const
 	{
 		const Derived& parser = static_cast<const Derived&>(*this);

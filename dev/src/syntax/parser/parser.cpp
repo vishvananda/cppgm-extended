@@ -687,7 +687,6 @@ private:
 		NodeId specifiers);
 	NodeId ParseCompoundStatement();
 	NodeId ParseStatement();
-	bool StartsThisArgumentCast() const;
 	NodeId ParseExpression(int minimum_precedence = 1);
 	NodeId ParseUnaryExpression();
 	NodeId ParsePostfixExpression();
@@ -1002,12 +1001,15 @@ ParserAttempt SyntaxParser::TryParseParameterClause(bool speculative) {
 			arena_.Add(parameter, default_argument);
 		}
 		arena_.Add(clause, parameter);
-		if (!Match(OP_COMMA)) break;
+		// An ellipsis after the last parameter, with or without a comma, is
+		// the clause's (8.3.5p3): `f(int, ...)`, `g(char value...)`.
+		const bool comma = Match(OP_COMMA);
 		if (Match(OP_DOTS))
 		{
 			arena_.Add(clause, arena_.Make("parameter-pack", "..."));
 			break;
 		}
+		if (!comma) break;
 	}
 	if (!Match(OP_RPAREN))
 		return ParserAttempt(PARSER_EXPECTED_CLOSE_PAREN);
@@ -1018,6 +1020,7 @@ NodeId SyntaxParser::ParseDeclarator(bool abstract, TextId* name, bool speculati
 	const NodeId result = arena_.Make(abstract ?
 		"abstract-declarator" : "declarator");
 	bool consumed = false;
+	bool named = false;
 	while (true)
 	{
 		const std::size_t operator_position = position_;
@@ -1082,6 +1085,7 @@ NodeId SyntaxParser::ParseDeclarator(bool abstract, TextId* name, bool speculati
 		arena_.Add(nested_declarator, nested);
 		arena_.Add(result, nested_declarator);
 		if (name) *name = nested_name;
+		named = nested_name != 0;
 		consumed = true;
 	}
 	else if (!abstract && ParseStructuredBindingDeclarator(result))
@@ -1106,6 +1110,7 @@ NodeId SyntaxParser::ParseDeclarator(bool abstract, TextId* name, bool speculati
 			if (name) *name = arena_.PayloadId(identifier);
 			arena_.Add(result, identifier);
 			consumed = true;
+			named = true;
 		}
 		else Rollback(name_mark);
 	}
@@ -1246,7 +1251,9 @@ NodeId SyntaxParser::ParseDeclarator(bool abstract, TextId* name, bool speculati
 		}
 		break;
 	}
-	if (Match(OP_DOTS))
+	// A declarator's pack ellipsis precedes its declarator-id (8.3p1); one
+	// after the declarator-id belongs to the enclosing parameter clause.
+	if (!named && Match(OP_DOTS))
 	{
 		arena_.Add(result, arena_.Make("parameter-pack", "..."));
 		consumed = true;
@@ -2104,14 +2111,6 @@ NodeId SyntaxParser::ParseStatement()
 	const NodeId statement = arena_.Make("expression-statement");
 	arena_.Add(statement, expression);
 	return statement;
-}
-// "type(*this, ...)" and "type(this, ...)" build a temporary: no declarator
-// begins with the this keyword, so the statement is an expression.
-bool SyntaxParser::StartsThisArgumentCast() const
-{
-	if (!AtOffset(1, OP_LPAREN)) return false;
-	return AtOffset(2, KW_THIS) ||
-		(AtOffset(2, OP_STAR) && AtOffset(3, KW_THIS));
 }
 NodeId SyntaxParser::ParseNamespace()
 {

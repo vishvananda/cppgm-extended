@@ -206,7 +206,10 @@ PA7 passes consume, including:
 - `static_assert`
 - declarator-derived syntax, including pointers, references, arrays, function
   parameter clauses, exception specifications, cv/ref qualifiers, default
-  arguments, and trailing return types
+  arguments, and trailing return types. A declarator's pack `...` precedes its
+  declarator-id (`T... values`); an ellipsis after the last parameter, with or
+  without a comma (`f(int, ...)`, `g(char value...)`), is the parameter
+  clause's own and dumps under `parameter-clause`
 - structured `type-id` syntax in casts, `new`, `typeid`, `alignof`,
   `sizeof(type)`, and `noexcept`
 - compound statements, selection statements, iteration statements, labels,
