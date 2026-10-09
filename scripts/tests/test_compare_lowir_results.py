@@ -542,6 +542,117 @@ function @helper() -> void {
         result = self.compare(reference, generated)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
+    FINALIZER_ARRAY_REFERENCE = """declare function @destroy(%value : ptr) -> void
+declare function @finish(%value : ptr) -> void
+
+global @items : obj<12x4> = {
+  zero 12
+}
+global @other : i32 = 0
+
+function @fini() -> void [role=fini] {
+  block ^entry:
+    %base = addr @items
+    %third = index i8 [projection=array_element] %base, 8
+    call void @destroy(%third)
+    %second = index i8 [projection=array_element] %base, 4
+    call void @destroy(%second)
+    %first = index i8 [projection=array_element] %base, 0
+    call void @destroy(%first)
+    %other = addr @other
+    call void @finish(%other)
+    return void
+}
+"""
+
+    def test_relaxed_compare_rejects_finalizer_missing_array_elements(self):
+        generated = """declare function @destroy(%value : ptr) -> void
+declare function @finish(%value : ptr) -> void
+
+global @items : obj<12x4> = {
+  zero 12
+}
+global @other : i32 = 0
+
+function @fini() -> void [role=fini] {
+  block ^entry:
+    %base = addr @items
+    call void @destroy(%base)
+    %other = addr @other
+    call void @finish(%other)
+    return void
+}
+"""
+        result = self.compare(self.FINALIZER_ARRAY_REFERENCE, generated)
+        self.assertNotEqual(result.returncode, 0)
+
+    def test_relaxed_compare_allows_finalizer_destruction_loop(self):
+        generated = """declare function @destroy(%value : ptr) -> void
+declare function @finish(%value : ptr) -> void
+
+global @items : obj<12x4> = {
+  zero 12
+}
+global @other : i32 = 0
+
+function @fini() -> void [role=fini] {
+  slot $index : i64
+  block ^entry:
+    store i64 3, $index
+    jump ^test
+  block ^test:
+    %remaining = load i64 $index
+    %more = cmp ne i64 %remaining, 0
+    branch %more, ^body, ^done
+  block ^body:
+    %next = binary sub i64 %remaining, 1
+    store i64 %next, $index
+    %offset = binary mul i64 %next, 4
+    %base = addr @items
+    %element = index i8 [projection=array_element] %base, %offset
+    call void @destroy(%element)
+    jump ^test
+  block ^done:
+    %other = addr @other
+    call void @finish(%other)
+    return void
+}
+"""
+        result = self.compare(self.FINALIZER_ARRAY_REFERENCE, generated)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_relaxed_compare_rejects_reordered_finalizer(self):
+        reference = """declare function @destroy(%value : ptr) -> void
+
+global @first : i32 = 0
+global @second : i32 = 0
+
+function @fini() -> void [role=fini] {
+  block ^entry:
+    %late = addr @second
+    call void @destroy(%late)
+    %early = addr @first
+    call void @destroy(%early)
+    return void
+}
+"""
+        generated = """declare function @destroy(%value : ptr) -> void
+
+global @first : i32 = 0
+global @second : i32 = 0
+
+function @fini() -> void [role=fini] {
+  block ^entry:
+    %early = addr @first
+    call void @destroy(%early)
+    %late = addr @second
+    call void @destroy(%late)
+    return void
+}
+"""
+        result = self.compare(reference, generated)
+        self.assertNotEqual(result.returncode, 0)
+
     def test_relaxed_compare_allows_complete_nothrow_termination_path(self):
         reference = """function @work() -> void [unwind=no] {
   block ^entry:

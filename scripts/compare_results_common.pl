@@ -3812,22 +3812,73 @@ sub lowir_reference_entry_is_projection
 	return 1;
 }
 
+# A finalizer's destructor actions: each void call whose one argument is a
+# global's address or a constant offset into it (an array element), as
+# [global, offset, callee]. A dynamic offset, as a destruction loop computes,
+# is recorded as '*'.
+sub lowir_finalizer_actions
+{
+	my ($entry) = @_;
+	my (%address, %constant, @actions);
+	for my $line (split(/\n/, $entry))
+	{
+		if ($line =~ /^\s*(%<value\d+>)\s*=\s*addr\s+(\@<global\d+>)\s*$/)
+		{
+			$address{$1} = [$2, 0];
+		}
+		elsif ($line =~ /^\s*(%<value\d+>)\s*=\s*binary\s+(mul|add)\s+\S+\s+(-?\d+),\s*(-?\d+)\s*$/)
+		{
+			$constant{$1} = $2 eq 'mul' ? $3 * $4 : $3 + $4;
+		}
+		elsif ($line =~ /^\s*(%<value\d+>)\s*=\s*index\s+\S+(?:\s+\[[^\]]*\])?\s+(%<value\d+>),\s*(\S+)\s*$/ &&
+			exists($address{$2}))
+		{
+			my ($value, $base, $operand) = ($1, $2, $3);
+			my ($global, $offset) = @{$address{$base}};
+			my $step = exists($constant{$operand}) ? $constant{$operand} : $operand;
+			$address{$value} = [$global,
+				$offset ne '*' && $step =~ /^-?\d+$/ ? $offset + $step : '*'];
+		}
+		elsif ($line =~ /^\s*call\s+void\s+(\@<fn\d+>)\((%<value\d+>)\)\s*$/ &&
+			exists($address{$2}))
+		{
+			push @actions, [$address{$2}[0], $address{$2}[1], $1];
+		}
+	}
+	return @actions;
+}
+
+# A static finalizer may instead be a registered destructor function: the
+# candidate must destroy the same objects with the same destructors, the
+# same elements of each in the same order (a destruction loop stands for
+# any count), and keep the groups in the reference's destruction order.
 sub lowir_static_finalizer_action_is_projection
 {
 	my ($ref_entry, $my_entry) = @_;
 	return 0 if $ref_entry !~ /^function [^\n]*\[[^\]\n]*\brole=fini\b[^\]\n]*\]/;
 	return 0 if $my_entry !~ /^function /;
-	my @actions;
-	while ($ref_entry =~ /(%<value\d+>)\s*=\s*addr\s+(\@<global\d+>)[\s\S]*?call\s+void\s+(\@<fn\d+>)\(\g{1}\)/g)
+	my (%expected, %actual, @expected_order, @actual_order);
+	for my $action (lowir_finalizer_actions($ref_entry))
 	{
-		push @actions, [$2, $3];
+		my $key = "$action->[0] $action->[2]";
+		push @expected_order, $key if !exists($expected{$key});
+		push @{$expected{$key}}, $action->[1];
 	}
-	return 0 if scalar(@actions) == 0;
-	for my $action (@actions)
+	return 0 if scalar(@expected_order) == 0;
+	for my $action (lowir_finalizer_actions($my_entry))
 	{
-		my ($global, $callee) = @$action;
-		return 0 if $my_entry !~ /(%<value\d+>)\s*=\s*addr\s+\Q$global\E[\s\S]*?call\s+void\s+\Q$callee\E\(\g{1}\)/;
+		my $key = "$action->[0] $action->[2]";
+		push @actual_order, $key if !exists($actual{$key});
+		push @{$actual{$key}}, $action->[1];
 	}
+	for my $key (@expected_order)
+	{
+		return 0 if !exists($actual{$key});
+		next if grep { $_ eq '*' } (@{$actual{$key}}, @{$expected{$key}});
+		return 0 if join(',', @{$actual{$key}}) ne join(',', @{$expected{$key}});
+	}
+	my @order = grep { exists($expected{$_}) } @actual_order;
+	return 0 if join(';', @order) ne join(';', @expected_order);
 	return $my_entry =~ /return void/;
 }
 

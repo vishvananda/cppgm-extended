@@ -1474,6 +1474,10 @@ diff of code they did not write.
 - The operand order of a commutative operation does not matter. For
   `binary add`, `mul`, `and`, `or` and `xor`, and for `cmp eq` and `ne`,
   the two operands may appear in either order.
+- Where static destruction happens: a `fini` function may instead be a
+  function registered to run at exit, provided it makes the same destructor
+  calls, on the same objects and the same elements of each (a destruction
+  loop stands for any element count), in the same order.
 
 ### The comparison enforces
 
