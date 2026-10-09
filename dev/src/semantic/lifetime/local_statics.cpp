@@ -28,7 +28,15 @@ bool Analyzer::IsNonthrowing(NodeId declarator, ScopeId scope,
 	bool force_evaluation)
 {
 	const NodeId qualifier = FindChild(declarator, ::cppgm::syntax::STAG_FUNCTION_QUALIFIER);
-	if (qualifier == kNoNode) return false;
+	if (qualifier == kNoNode)
+	{
+		// 15.4p15: a deallocation function without an exception-specification
+		// is treated as noexcept(true).
+		const NamePath path = DeclaratorNamePath(declarator);
+		return path.Size() != 0 &&
+			(path.Last() == program_->names.Intern("operatordelete") ||
+			 path.Last() == program_->names.Intern("operatordelete[]"));
+	}
 	const std::string spelling = PayloadSource(qualifier);
 	if (spelling == "noexcept" || spelling == "throw()") return true;
 	if (spelling.compare(0, 8, "noexcept") != 0) return false;

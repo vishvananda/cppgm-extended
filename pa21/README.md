@@ -231,6 +231,8 @@ To complete PA21, implement these goals:
    When a potentially throwing call is reached through a branch in an active
    handler, its unwind path must finish the handler and destroy objects that
    remain live from scopes outside the corresponding `try` statement.
+   A deallocation function declared without an exception specification is
+   non-throwing (15.4p15).
    If initialization after ordinary scalar allocation throws, call the selected
    usual deallocation function after construction cleanup and propagate the exception.
    Successful initialization transfers the allocation to the result.
