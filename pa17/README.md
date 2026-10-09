@@ -198,6 +198,10 @@ implemented language surface, including:
   not itself be defined more than once
 - an out-of-class member-template definition attaches to specializations selected
   by earlier calls in the translation unit and remains available for their demand
+- a block-scope static in a function-template or member-template
+  specialization whose substituted initializer is a constant expression is
+  constant-initialized data with no guard, as in an ordinary function (PA16),
+  even when the initializer names other specializations' functions
 - the dependent-name and instantiation behavior strictly required to make the
   specialization model work
 

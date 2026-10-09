@@ -168,8 +168,7 @@ protected:
 				derived.SetExplicitVariableZero(variable, &global);
 			if (!static_initialized &&
 				(!derived.IsClassObjectType(action.type) ||
-				(action.constant_initialized &&
-				 !action.specialization_owned_recipe)))
+				 action.constant_initialized))
 				static_initialized = derived.static_initializers_.Lower(
 					initializer, false, &global,
 					&derived.needs_global_class_initializer_);
