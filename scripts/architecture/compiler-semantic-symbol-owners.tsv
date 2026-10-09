@@ -240,6 +240,7 @@ dev/src/semantic/declarations/analysis.cpp	ValidateStaticMemberDeclaration	1	dev
 dev/src/semantic/declarations/anonymous_unions.cpp	AnalyzeDeclaratorlessSimpleDeclaration	1	dev/src/semantic/declarations/anonymous_unions.cpp	keep
 dev/src/semantic/declarations/anonymous_unions.cpp	DeclareAnonymousUnionObject	1	dev/src/semantic/declarations/anonymous_unions.cpp	keep
 dev/src/semantic/declarations/class_scope.cpp	OpenClassDefinitionScope	1	dev/src/semantic/declarations/class_scope.cpp	keep
+dev/src/semantic/declarations/declarator_types.cpp	AnalyzeSimpleTypedefDeclaration	1	dev/src/semantic/declarations/declarator_types.cpp	keep
 dev/src/semantic/declarations/declarator_types.cpp	BindDeclaratorImplicitObject	1	dev/src/semantic/declarations/declarator_types.cpp	keep
 dev/src/semantic/declarations/declarator_types.cpp	BuildArrayDeclaratorType	1	dev/src/semantic/declarations/declarator_types.cpp	keep
 dev/src/semantic/declarations/declarator_types.cpp	BuildBitIntSpecifierType	1	dev/src/semantic/declarations/declarator_types.cpp	keep
@@ -718,6 +719,7 @@ dev/src/semantic/presentation/type_projection.cpp	ApplySourceTypeOverrides	1	dev
 dev/src/semantic/presentation/type_projection.cpp	ProjectSourceClassTemplate	1	dev/src/semantic/presentation/type_projection.cpp	keep
 dev/src/semantic/presentation/type_projection.cpp	RecordSourceTypeOverride	1	dev/src/semantic/presentation/type_projection.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	AnalyzeExplicitFunctionInstantiation	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
+dev/src/semantic/templates/aliases_and_lambdas.cpp	AnalyzeDefaultArgument	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	AnalyzeLambdaExpression	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	BuildLambdaInvocationPointer	1	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep
 dev/src/semantic/templates/aliases_and_lambdas.cpp	BuildTemplateTemplateArgument	2	dev/src/semantic/templates/aliases_and_lambdas.cpp	keep

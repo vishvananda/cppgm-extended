@@ -78,12 +78,56 @@ bool Analyzer::HasTargetTypedSpecializedMemberImmediate(
 		destination_type == value.converted_scalar_target;
 }
 
+// A default argument's lambda names the function and the parameter's
+// position from the last one as its context (Itanium 5.1.8, `Ed0_`).
+ExpressionInfo Analyzer::AnalyzeDefaultArgument(BindingId function,
+	std::size_t position, NodeId node, ScopeId scope, TypeId target)
+{
+	const BindingId saved_context = default_argument_context_;
+	const std::size_t saved_position = default_argument_parameter_;
+	default_argument_context_ = program_->bindings[function].canonical;
+	default_argument_parameter_ = position + 1;
+	struct Restore
+	{
+		Analyzer* self;
+		BindingId context;
+		std::size_t position;
+		~Restore()
+		{
+			self->default_argument_context_ = context;
+			self->default_argument_parameter_ = position;
+		}
+	} restore = { this, saved_context, saved_position };
+	return AnalyzeExpression(node, scope, target);
+}
+
 ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 	ScopeId scope, TypeId target)
 {
 	if (unevaluated_depth_ != 0)
 		return CandidateExpressionFailure("lambda expression in an unevaluated operand");
 	++lambda_closure_requests_;
+	// A default member initializer's lambda takes the data member as its
+	// context; a lambda in its body takes the call operator.
+	const BindingId member_context = default_member_initializer_context_;
+	const BindingId argument_context = default_argument_context_;
+	const std::size_t argument_position = default_argument_parameter_;
+	struct ContextScope
+	{
+		Analyzer* self;
+		BindingId member;
+		BindingId argument;
+		std::size_t position;
+		~ContextScope()
+		{
+			self->default_member_initializer_context_ = member;
+			self->default_argument_context_ = argument;
+			self->default_argument_parameter_ = position;
+		}
+	} context_scope = { this, member_context, argument_context, argument_position };
+	default_member_initializer_context_ = kNoBinding;
+	default_argument_context_ = kNoBinding;
+	default_argument_parameter_ = 0;
 	const NodeId introducer = FindChild(node, ::cppgm::syntax::STAG_LAMBDA_INTRODUCER);
 	if (introducer == kNoNode)
 		ThrowSemanticError("lambda expression has no capture introducer");
@@ -101,7 +145,15 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 		ThrowInternalCompilerError("lambda closure has no namespace owner");
 	const BindingId enclosing = current_function_context_ == kNoBinding ?
 		kNoBinding : program_->bindings[current_function_context_].canonical;
-	const std::uint32_t context_key = enclosing == kNoBinding ?
+	// One closure per lambda expression and context: its data member (every
+	// constructor analyzes a default member initializer, each class template
+	// specialization its static data member's initializer), the function of
+	// its default argument wherever a call uses it, its function, or its
+	// namespace.
+	const BindingId lambda_context = argument_context != kNoBinding ?
+		argument_context : member_context;
+	const std::uint32_t context_key = lambda_context != kNoBinding ?
+		static_cast<std::uint32_t>(lambda_context) : enclosing == kNoBinding ?
 		(static_cast<std::uint32_t>(namespace_owner) | 0x80000000u) :
 		static_cast<std::uint32_t>(enclosing);
 	const std::uint64_t key =
@@ -115,7 +167,8 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 		fact_index = (*indexed)[0];
 		if (fact_index >= lambda_closures_.size() ||
 			lambda_closures_[fact_index].syntax != node ||
-			lambda_closures_[fact_index].function != enclosing ||
+			(lambda_context == kNoBinding &&
+			 lambda_closures_[fact_index].function != enclosing) ||
 			lambda_closures_[fact_index].namespace_owner != namespace_owner)
 			ThrowInternalCompilerError("corrupt canonical lambda closure index");
 		++lambda_closure_cache_hits_;
@@ -326,6 +379,10 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 			kNoType, namespace_owner, leaf, ENTITY_EMISSION_LAMBDA);
 		EntityRecord& closure = program_->entities[entity];
 		closure.local_context = enclosing;
+		closure.lambda_member_context = argument_context != kNoBinding ?
+			argument_context : member_context;
+		closure.lambda_default_argument = argument_context != kNoBinding ?
+			static_cast<std::uint32_t>(argument_position) : 0;
 		closure.lambda_closure = true;
 		closure.lambda_token_first = arena_->TokenFirst(node);
 		closure.lambda_token_last = arena_->TokenLast(node);
@@ -453,11 +510,20 @@ ExpressionInfo Analyzer::AnalyzeLambdaExpression(NodeId node,
 		parameter_types.reserve(call_parameters.size());
 		for (std::size_t i = 0; i < call_parameters.size(); ++i)
 			parameter_types.push_back(call_parameters[i].function_type);
-		if (enclosing != kNoBinding)
+		if (enclosing != kNoBinding || member_context != kNoBinding ||
+			argument_context != kNoBinding)
 		{
 			const TypeId signature = program_->types.Function(
 				program_->types.Fundamental(FUND_VOID), parameter_types, variadic_call);
-			const std::uint64_t signature_key =
+			// Closures are numbered per context and signature: a data member
+			// initializer's per member, any other's per function.
+			const std::uint64_t signature_key = argument_context != kNoBinding ?
+				(((static_cast<std::uint64_t>(argument_context) << 32) | signature) ^
+					(static_cast<std::uint64_t>(argument_position) << 56) ^
+					(UINT64_C(3) << 62)) :
+				member_context != kNoBinding ?
+				((static_cast<std::uint64_t>(member_context) | 0x80000000u) << 32) |
+					signature :
 				(static_cast<std::uint64_t>(enclosing) << 32) | signature;
 			CompactIndexSequence& occurrences =
 				lambda_signature_occurrences_.Ensure(signature_key);

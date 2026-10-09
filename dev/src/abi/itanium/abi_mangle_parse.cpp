@@ -996,6 +996,8 @@ string unmodified_type_text(const AbiType & type)
     }
     case ABI_TYPE_RESOLVED:
       throw_abi_internal("resolved ABI type is not a fact-file form");
+    case ABI_TYPE_MEMBER_LAMBDA:
+      throw_abi_internal("member lambda ABI type is not a fact-file form");
   }
   throw_abi_internal("unknown ABI type form in canonical serializer");
 }

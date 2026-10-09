@@ -57,6 +57,8 @@ function	dev/src/lowering/abi/emission_policy.cpp	IsFunctionDeclarationBoundaryC
 function	dev/src/lowering/abi/emission_policy.cpp	IsFunctionEmissionDemanded	1	dev/src/lowering/abi/emission_policy.cpp	keep
 function	dev/src/lowering/abi/emission_policy.cpp	IsVariableDeclarationOnly	1	dev/src/lowering/abi/emission_policy.cpp	keep
 function	dev/src/lowering/abi/local_entity_names.cpp	ClosureHasManglingNumber	1	dev/src/lowering/abi/local_entity_names.cpp	keep
+function	dev/src/lowering/abi/local_entity_names.cpp	ClosureIsMemberLambda	1	dev/src/lowering/abi/local_entity_names.cpp	keep
+function	dev/src/lowering/abi/local_entity_names.cpp	ClosureIsNamespaceScope	1	dev/src/lowering/abi/local_entity_names.cpp	keep
 function	dev/src/lowering/abi/local_entity_names.cpp	IsUnnamedClass	1	dev/src/lowering/abi/local_entity_names.cpp	keep
 function	dev/src/lowering/abi/local_entity_names.cpp	LocalContextIsVisible	1	dev/src/lowering/abi/local_entity_names.cpp	keep
 function	dev/src/lowering/abi/local_entity_names.cpp	UnnamedTypeIsVisible	1	dev/src/lowering/abi/local_entity_names.cpp	keep
@@ -66,6 +68,14 @@ function	dev/src/lowering/abi/mangling.cpp	MangleLocalStatic	1	dev/src/lowering/
 function	dev/src/lowering/abi/mangling.cpp	MangleThreadLocalWrapper	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleType	1	dev/src/lowering/abi/mangling.cpp	keep
 function	dev/src/lowering/abi/mangling.cpp	MangleVariable	1	dev/src/lowering/abi/mangling.cpp	keep
+function	dev/src/lowering/abi/mangling_owners.cpp	AppendComponentAbiTagFacts	1	dev/src/lowering/abi/mangling_owners.cpp	keep
+function	dev/src/lowering/abi/mangling_owners.cpp	AppendFunctionAbiTagFacts	1	dev/src/lowering/abi/mangling_owners.cpp	keep
+function	dev/src/lowering/abi/mangling_owners.cpp	AppendTypedFact	1	dev/src/lowering/abi/mangling_owners.cpp	keep
+function	dev/src/lowering/abi/mangling_owners.cpp	ClassOwnerHasAbiTags	1	dev/src/lowering/abi/mangling_owners.cpp	keep
+function	dev/src/lowering/abi/mangling_owners.cpp	ClassOwnerHasSpecializedAncestor	1	dev/src/lowering/abi/mangling_owners.cpp	keep
+function	dev/src/lowering/abi/mangling_owners.cpp	ClassOwnerIsNested	1	dev/src/lowering/abi/mangling_owners.cpp	keep
+function	dev/src/lowering/abi/mangling_owners.cpp	IsClassTemplateSpecialization	1	dev/src/lowering/abi/mangling_owners.cpp	keep
+function	dev/src/lowering/abi/mangling_owners.cpp	VariableHasInternalMarker	1	dev/src/lowering/abi/mangling_owners.cpp	keep
 function	dev/src/lowering/abi/mangling_vocabulary.cpp	MakeBuiltinAbiType	1	dev/src/lowering/abi/mangling_vocabulary.cpp	keep
 function	dev/src/lowering/abi/symbol_metadata.cpp	ApplyBuiltinParameterAliasMetadata	1	dev/src/lowering/abi/symbol_metadata.cpp	keep
 function	dev/src/lowering/abi/symbol_metadata.cpp	ApplyBuiltinSymbolMetadata	1	dev/src/lowering/abi/symbol_metadata.cpp	keep

@@ -207,13 +207,24 @@ clang, and the object-inspection tests check its spelling:
   one object for both entries
 - a closure type has a mangling number (`Ul<sig>E<n>_`) when its lambda lies
   in an inline function or a template specialization, a lambda body
-  included; any other closure type, and an unnamed class that no typedef
-  names for linkage, is a unit-local `$_<n>` with local symbols; a
+  included, in a default member initializer or a class template's static
+  data member initializer (named in the data member,
+  `_ZNK8WithInit2fpMUlvE_clEv`, `_ZN5TableIiE4sizeMUlvE_8__invokeEv`) or
+  in an in-class default argument (named in the function and parameter,
+  `...Ed_NKUlvE_clEv`); any other closure type, and an unnamed class that
+  no typedef names for linkage, is a unit-local `$_<n>` with local
+  symbols (a lambda in a non-template class's static data member
+  initializer is named in its class, `_ZN5Plain3$_08__invokeEv`); a
   captureless closure's static invoker is `__invoke`
 - a `$_<n>` number is assigned when the name is first mangled: a
   function-local unnamed class or closure takes the next number within its
   function, and any other one takes the count of `$_` names the translation
   unit has assigned so far
+- a lambda expression has one closure type however many times its context
+  is lowered: a lambda in a default member initializer is one closure in
+  every constructor that initializes the member; one in an in-class default
+  argument is one at every call that uses it; and one in a class template's
+  static data member initializer is one per specialization
 
 Reference:
 

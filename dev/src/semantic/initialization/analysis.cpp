@@ -11,6 +11,16 @@ namespace semantic
 namespace
 {
 const std::size_t kDestructorArrayInlineLimit = 8;
+// Sets an analysis context slot for one scope: a default member
+// initializer's lambda names the member as its context (Itanium 5.1.8).
+struct BindingSlotScope
+{
+	BindingId* slot;
+	BindingId saved;
+	BindingSlotScope(BindingId* slot_value, BindingId value)
+		: slot(slot_value), saved(*slot_value) { *slot = value; }
+	~BindingSlotScope() { *slot = saved; }
+};
 bool IsClassEntity(const Program& program, EntityId entity)
 {
 	if (entity == kNoEntity) return false;
@@ -1375,6 +1385,8 @@ void Analyzer::AddConstructorMemberActions(
 			if (ordinal >= members.size() || members[ordinal] != active)
 				ThrowInternalCompilerError("union active member has no canonical ordinal");
 			NodeId initializer = constructor_initializer_scratch_[ordinal];
+			const BindingSlotScope member_context(&default_member_initializer_context_,
+				initializer == kNoNode ? active : default_member_initializer_context_);
 			if (initializer == kNoNode &&
 				active < member_initializer_by_binding_.size())
 				initializer = member_initializer_by_binding_[active];
@@ -1390,6 +1402,8 @@ void Analyzer::AddConstructorMemberActions(
 			++constructor_member_action_visits_;
 			const BindingId member = members[i];
 			NodeId initializer = constructor_initializer_scratch_[i];
+			const BindingSlotScope member_context(&default_member_initializer_context_,
+				initializer == kNoNode ? member : default_member_initializer_context_);
 			if (initializer == kNoNode &&
 				member < member_initializer_by_binding_.size())
 				initializer = member_initializer_by_binding_[member];

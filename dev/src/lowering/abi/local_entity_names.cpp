@@ -115,9 +115,51 @@ BindingId LocalContextFunction(const Program& program, BindingId function)
 bool ClosureHasManglingNumber(const Program& program, EntityId closure)
 {
 	if (closure == kNoEntity || closure >= program.entities.size()) return false;
+	const EntityRecord& record = program.entities[closure];
+	// A default member initializer's closure is numbered, and so is an
+	// in-class default argument's and a static data member initializer's
+	// where the member is templated; a namespace function's default
+	// argument's is a unit-local `$_<n>`, and so is a non-template class's
+	// static data member initializer's, in its class.
+	if (record.lambda_member_context != kNoBinding)
+	{
+		const BindingRecord& member = program.bindings[record.lambda_member_context];
+		if (record.lambda_default_argument != 0) return member.member_owner != kNoEntity;
+		return member.storage_class != STORAGE_CLASS_STATIC ||
+			HasTemplateSpecializationOwner(program, member.member_owner);
+	}
 	const BindingId context = program.entities[closure].local_context;
 	return context != kNoBinding && context < program.bindings.size() &&
 		IsInlineOrSpecialization(program, LocalContextFunction(program, context));
+}
+
+bool ClosureIsMemberLambda(const Program& program, EntityId closure)
+{
+	const EntityRecord& record = program.entities[closure];
+	return record.lambda_member_context != kNoBinding &&
+		record.lambda_default_argument == 0 &&
+		ClosureHasManglingNumber(program, closure);
+}
+
+bool ClosureIsNamespaceScope(const Program& program, EntityId closure)
+{
+	const EntityRecord& record = program.entities[closure];
+	if (!record.lambda_closure) return false;
+	if (record.lambda_member_context != kNoBinding)
+		return !ClosureHasManglingNumber(program, closure);
+	return record.local_context == kNoBinding;
+}
+
+ScopeId ClosureNamingScope(const Program& program, EntityId closure)
+{
+	const EntityRecord& record = program.entities[closure];
+	if (record.lambda_member_context == kNoBinding ||
+		record.lambda_default_argument != 0)
+		return record.owner;
+	const EntityId owner = program.bindings[record.lambda_member_context].member_owner;
+	return owner == kNoEntity || owner >= program.entities.size() ||
+		program.entities[owner].member_scope == kNoScope ? record.owner :
+		program.entities[owner].member_scope;
 }
 
 bool LocalContextIsVisible(const Program& program, BindingId function)
@@ -158,7 +200,8 @@ std::uint32_t LocalNames::AnonymousNumber(EntityId type)
 	if (anonymous_numbers_.size() <= type)
 		anonymous_numbers_.resize(program_.entities.size(), kUnassigned);
 	if (anonymous_numbers_[type] != kUnassigned) return anonymous_numbers_[type];
-	const BindingId context = program_.entities[type].local_context;
+	const BindingId context = ClosureIsNamespaceScope(program_, type) ? kNoBinding :
+		program_.entities[type].local_context;
 	std::uint32_t number = anonymous_total_;
 	if (context != kNoBinding && context < program_.bindings.size())
 	{
@@ -336,6 +379,9 @@ void LocalNames::WalkTop(std::uint32_t node,
 			if (IsUnnamedClass(program_, type) && defined_member_owner_[type] &&
 				!UnnamedTypeIsVisible(program_, type))
 				AnonymousNumber(type);
+			// A namespace-scope variable's initializer is emitted where the
+			// variable is defined.
+			WalkBody(child);
 		}
 	}
 }
@@ -343,6 +389,19 @@ void LocalNames::WalkTop(std::uint32_t node,
 void LocalNames::WalkFunction(std::uint32_t node, BindingId function)
 {
 	NameReference(function);
+	WalkBody(node);
+	// The local classes whose member functions clang defers to the end of
+	// the function's declaration, in definition order.
+	const std::vector<EntityId>* classes = local_classes_.Find(function);
+	if (classes)
+		for (std::size_t i = 0; i < classes->size(); ++i)
+			NameEntity((*classes)[i], 0);
+}
+
+// Names what a function body or a variable's initializer uses, in source
+// order.
+void LocalNames::WalkBody(std::uint32_t node)
+{
 	const DumpArena& arena = graph_->arena;
 	std::vector<std::uint32_t> pending(1, node);
 	while (!pending.empty())
@@ -370,12 +429,6 @@ void LocalNames::WalkFunction(std::uint32_t node, BindingId function)
 			pending.push_back(arena.edges[edge].child);
 		std::reverse(pending.begin() + first, pending.end());
 	}
-	// The local classes whose member functions clang defers to the end of
-	// the function's declaration, in definition order.
-	const std::vector<EntityId>* classes = local_classes_.Find(function);
-	if (classes)
-		for (std::size_t i = 0; i < classes->size(); ++i)
-			NameEntity((*classes)[i], 0);
 }
 
 void LocalNames::NameReference(BindingId binding)
@@ -383,6 +436,13 @@ void LocalNames::NameReference(BindingId binding)
 	const BindingRecord& record = program_.bindings[binding];
 	const EntityId owner = record.lambda_invocation ?
 		record.lambda_invocation_owner : record.member_owner;
+	// clang calls no trivial default constructor or destructor (an anonymous
+	// union's), so it does not name one.
+	if (owner != kNoEntity && owner < program_.entities.size() &&
+		((record.constructor && program_.entities[owner].trivial_default_constructor &&
+		  program_.types.Get(record.type).parameter_count <= 1) ||
+		 (record.destructor && program_.entities[owner].trivial_destructor)))
+		return;
 	if (owner != kNoEntity) NameEntity(owner, 0);
 	NameType(record.type, 0);
 	const std::size_t first = record.template_argument_begin;

@@ -201,6 +201,12 @@ To complete PA20, implement these goals:
    lambda expression and each enclosing function-template specialization; a
    call through the function pointer a captureless closure converts to runs
    the same body, so it shares the call operator's statics (N3485 5.1.2p6).
+   A lambda expression has one closure type (5.1.2p3) however many times its
+   context is lowered: a lambda in a default member initializer is one
+   closure in every constructor that initializes the member; one in an
+   in-class default argument is one at every call that uses it; and one in a
+   class template's static data member initializer is one per
+   specialization.
 
 4. Range-for lowering.
    Range-for over arrays, braced-init lists, and supported user-defined `begin` / `end`

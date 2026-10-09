@@ -489,7 +489,12 @@ struct EntityRecord
 	NameId emission_name, identity_name;
 	ScopeId owner, member_scope;
 	EntityId direct_base, enclosing_class;
-	BindingId local_context, lambda_call_operator;
+	// A closure type of a default member initializer's lambda names that
+	// data member as its context (`_ZNK8WithInit2fpMUlvE_clEv`); one of a
+	// default argument names the function, and lambda_default_argument is
+	// its parameter's position from the last one plus one (`Ed0_`).
+	BindingId local_context, lambda_call_operator, lambda_member_context;
+	std::uint32_t lambda_default_argument;
 	TemplateArgumentListId template_argument_list;
 	std::uint32_t template_argument_begin, template_argument_count;
 	// Class specializations and lambda closures use disjoint identity facts.

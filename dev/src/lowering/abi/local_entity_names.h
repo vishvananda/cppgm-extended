@@ -36,6 +36,23 @@ bool ClosureHasManglingNumber(const semantic::Program& program,
 semantic::BindingId LocalContextFunction(const semantic::Program& program,
 	semantic::BindingId function);
 
+// A data member initializer's numbered closure type, named in the member,
+// `<class> <member> M Ul<sig>E<n>_`.
+bool ClosureIsMemberLambda(const semantic::Program& program,
+	semantic::EntityId closure);
+
+// A closure type named `$_<n>` outside a function: one of a namespace-scope
+// lambda, of a namespace function's default argument, or of a non-template
+// class's static data member initializer.
+bool ClosureIsNamespaceScope(const semantic::Program& program,
+	semantic::EntityId closure);
+
+// The scope such a `$_<n>` closure type is named in: a static data member
+// initializer's is its class (`_ZN1P3$_08__invokeEv`), any other's its
+// namespace.
+semantic::ScopeId ClosureNamingScope(const semantic::Program& program,
+	semantic::EntityId closure);
+
 // Whether other units name a function's local entities: its outermost
 // enclosing function is inline or a template specialization and has
 // external linkage (clang's externally visible no-linkage entities).
@@ -85,6 +102,7 @@ private:
 		const semantic::LocalStaticObjectAction& action) const;
 	void WalkTop(std::uint32_t node, std::vector<DeferredFunction>* deferred);
 	void WalkFunction(std::uint32_t node, semantic::BindingId function);
+	void WalkBody(std::uint32_t node);
 	void NameReference(semantic::BindingId binding);
 	void NameType(semantic::TypeId type, std::size_t depth);
 	void NameEntity(semantic::EntityId entity, std::size_t depth);

@@ -221,6 +221,7 @@ public:
         break;
       case ABI_TYPE_MEMBER:
       case ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION:
+      case ABI_TYPE_MEMBER_LAMBDA:
       case ABI_TYPE_LOCAL_TYPE:
       case ABI_TYPE_BUILTIN_TRANSFORM:
         *source_name = true;
@@ -340,7 +341,8 @@ public:
       } else if(source.local_presentation != ABI_LOCAL_PRESENTATION_TEXT) {
         require(source.kind == ABI_TYPE_LAMBDA_CLOSURE ||
                   source.kind == ABI_TYPE_LOCAL_TYPE ||
-                  source.kind == ABI_TYPE_MEMBER,
+                  source.kind == ABI_TYPE_MEMBER ||
+                  source.kind == ABI_TYPE_MEMBER_LAMBDA,
                 "typed local presentation used by non-local ABI type");
         require(source.resolved_expression != ABI_NO_RESOLVED_REFERENCE,
                 "typed local ABI presentation has no ordinal");
@@ -1376,6 +1378,7 @@ private:
         return;
       case ABI_TYPE_MEMBER:
       case ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION:
+      case ABI_TYPE_MEMBER_LAMBDA:
         output_ += 'N';
         encode_member_type_name(id);
         output_ += 'E';
@@ -1469,7 +1472,8 @@ private:
       encode_template_prefix(type.path, components, prefixes, type.tags);
       output_ += 'I'; encode_arguments(type.arguments); output_ += 'E';
     } else if(type.kind == ABI_TYPE_MEMBER
-              || type.kind == ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION) {
+              || type.kind == ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION
+              || type.kind == ABI_TYPE_MEMBER_LAMBDA) {
       encode_member_type_name(id);
     } else {
       encode_new_type(id, type);
@@ -1484,6 +1488,10 @@ private:
   // name path (`context::executor` of an owner `context::executor<int>`).
   void encode_member_type_name(size_t id)
   {
+    if(graph_.type(id).kind == ABI_TYPE_MEMBER_LAMBDA) {
+      encode_member_lambda_name(id);
+      return;
+    }
     const TypeNode & type = graph_.type(id);
     const bool specialization =
       type.kind == ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION;
@@ -1506,6 +1514,24 @@ private:
       const vector<size_t> arguments = graph_.type(id).arguments;
       output_ += 'I'; encode_arguments(arguments); output_ += 'E';
     }
+  }
+
+  // A default member initializer's closure type: the member's
+  // <data-member-prefix> (a candidate of its own) and the closure name.
+  void encode_member_lambda_name(size_t id)
+  {
+    const TypeNode stable = graph_.type(id);
+    encode_prefix_type(stable.children.at(0));
+    output_ += source_name(graph_.strings.get(stable.symbol)) + 'M';
+    substitutions_.add(SubstitutionKey{SUBSTITUTION_MEMBER_TEMPLATE_PREFIX,
+                                       stable.children.at(0), stable.symbol});
+    output_ += "Ul";
+    const vector<size_t> signature(stable.children.begin() + 1,
+                                   stable.children.end());
+    encode_bare_parameters(signature, false);
+    output_ += 'E';
+    output_ += lambda_discriminator(stable.discriminator);
+    output_ += '_';
   }
 
   // <unnamed-type-name> ::= Ut [<nonnegative number>] _ (the first is Ut_).
@@ -2575,6 +2601,12 @@ private:
       output_ += 'Z';
       encode_function(context.function, facts, context.internal_linkage);
       output_ += 'E';
+      if(context.default_argument != 0) {
+        output_ += 'd';
+        if(context.default_argument > 1)
+          output_ += std::to_string(context.default_argument - 2);
+        output_ += '_';
+      }
     }
   }
 

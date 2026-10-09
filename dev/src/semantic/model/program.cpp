@@ -663,6 +663,7 @@ EntityRecord::EntityRecord()
 	  owner(kNoScope), member_scope(kNoScope),
 	  direct_base(kNoEntity), enclosing_class(kNoEntity),
 	  local_context(kNoBinding), lambda_call_operator(kNoBinding),
+	  lambda_member_context(kNoBinding), lambda_default_argument(0),
 	  template_argument_list(kNoTemplateArgumentList),
 	  template_argument_begin(kNoBinding), template_argument_count(0),
 	  template_argument_pack_begin(kNoTemplateParameter),
@@ -1619,6 +1620,8 @@ void Program::ResetClassDefinition(EntityId entity)
 	reset.local_name_ordinal = old.local_name_ordinal;
 	reset.unnamed_class = old.unnamed_class;
 	reset.lambda_call_operator = old.lambda_call_operator;
+	reset.lambda_member_context = old.lambda_member_context;
+	reset.lambda_default_argument = old.lambda_default_argument;
 	reset.template_argument_list = old.template_argument_list;
 	reset.template_argument_begin = old.template_argument_begin;
 	reset.template_argument_count = old.template_argument_count;

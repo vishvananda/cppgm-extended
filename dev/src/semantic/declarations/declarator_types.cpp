@@ -1,7 +1,9 @@
 #include "semantic/analysis/analyzer.h"
+#include "semantic/extensions/hosted_extensions.h"
 #include "support/exceptions.h"
 #include "support/scoped_state.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <unordered_set>
 
@@ -200,6 +202,21 @@ bool Analyzer::IsCallableDeclaration(NodeId node) const
 			FindChild(declarator, ::cppgm::syntax::STAG_PARAMETER_CLAUSE) != kNoNode) return true;
 	}
 	return false;
+}
+
+void Analyzer::AnalyzeSimpleTypedefDeclaration(NodeId node, NodeId specifiers,
+	NodeId declarator, ScopeId scope, std::uint32_t output_parent,
+	const DeclaratorInfo& parsed, const SpecInfo& spec)
+{
+	hosted_extension::RejectNonFunctionNoreturn(
+		*arena_, node, specifiers, declarator);
+	const BindingId binding = program_->AddBinding(
+		scope, BIND_TYPE_ALIAS, parsed.name, parsed.type);
+	PublishDeclaredTypeLayout(binding, parsed.type, spec.type_layout,
+		std::max(RequestedAlignment(node, scope), RequestedAlignment(declarator, scope)));
+	const std::uint32_t alias = MakeDump(DUMP_TYPE_ALIAS, parsed.type,
+		VALUE_NONE, parsed.name);
+	dump_.Add(output_parent, alias);
 }
 
 }

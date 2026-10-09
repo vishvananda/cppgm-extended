@@ -65,7 +65,11 @@ enum AbiTypeKind : std::uint8_t
   ABI_TYPE_LAMBDA_CLOSURE,
   ABI_TYPE_LOCAL_TYPE,
   ABI_TYPE_NAMESPACE_LAMBDA,
-  ABI_TYPE_RESOLVED
+  ABI_TYPE_RESOLVED,
+  // The closure type of a default member initializer's lambda:
+  // <owner prefix> <member source-name> M Ul <signature> E [<n>] _.
+  // types[0] is the owner class, types[1..] the call signature.
+  ABI_TYPE_MEMBER_LAMBDA
 };
 
 enum AbiArrayBoundKind
@@ -377,6 +381,9 @@ struct AbiLocalContext
   std::vector<AbiFunctionQualifier> qualifiers;
   bool target_signature_is_parameter_list = false;
   bool internal_linkage = false;
+  // A default argument's context: its parameter's position from the last
+  // one plus one, written `d [<n>] _` after the encoding (Itanium 5.1.6).
+  std::size_t default_argument = 0;
 };
 
 struct AbiEntityFact

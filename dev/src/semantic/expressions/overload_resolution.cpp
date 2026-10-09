@@ -1538,7 +1538,8 @@ ExpressionInfo Analyzer::BuildConvertingArgument(
 			constructor.parameters[i].default_argument == kNoNode)
 			ThrowInternalCompilerError(
 				"converting constructor lacks a default argument");
-		ExpressionInfo value = AnalyzeExpression(
+		ExpressionInfo value = AnalyzeDefaultArgument(constructor_binding,
+			function.parameter_count - 1 - i,
 			constructor.parameters[i].default_argument,
 			constructor.parameters[i].default_scope, parameters[i]);
 		value = StageClassArgument(ApplyCallArgument(value, parameters[i]));

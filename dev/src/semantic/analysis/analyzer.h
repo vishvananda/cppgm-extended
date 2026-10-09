@@ -301,6 +301,9 @@ private:
 		ScopeId syntax_scope, ScopeId declaration_scope,
 		std::uint32_t output_parent, const NamePath& declared_path,
 		const SpecInfo& spec, DeclaratorInfo parsed);
+	void AnalyzeSimpleTypedefDeclaration(NodeId node, NodeId specifiers,
+		NodeId declarator, ScopeId scope, std::uint32_t output_parent,
+		const DeclaratorInfo& parsed, const SpecInfo& spec);
 	bool AnalyzeAmbiguousCallStatement(NodeId node, ScopeId scope,
 		std::uint32_t output_parent);
 	bool AnalyzeAmbiguousRelationalDeclaration(NodeId node, ScopeId scope,
@@ -991,7 +994,7 @@ private:
 	void EmitDemandedFunction(BindingId binding);
 	const FunctionInfo& GetFunction(BindingId binding) const;
 	FunctionInfo& GetMutableFunction(BindingId binding);
-
+	ExpressionInfo AnalyzeDefaultArgument(BindingId function, std::size_t position, NodeId node, ScopeId scope, TypeId target);
 	ExpressionInfo AnalyzeExpression(NodeId node, ScopeId scope,
 		TypeId target = kNoType);
 	ExpressionInfo AnalyzeBuiltinTypeTrait(NodeId node, ScopeId scope);
@@ -2246,11 +2249,11 @@ private:
 	TypeId current_return_type_;
 	EntityId current_class_context_;
 	EntityId current_class_template_access_principal_;
-	BindingId current_function_context_;
+	BindingId current_function_context_, default_member_initializer_context_, default_argument_context_;
 	BracedInitializationContext* braced_initialization_context_;
 	std::size_t current_pack_alignment_;
 	std::vector<std::size_t> pack_alignment_stack_;
-	std::size_t loop_depth_;
+	std::size_t loop_depth_, default_argument_parameter_;
 	std::size_t switch_depth_;
 	std::vector<ScopeId> exception_cleanup_stops_;
 	std::vector<ScopeId> exception_handler_cleanup_stops_;
