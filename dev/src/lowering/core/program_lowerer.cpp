@@ -191,8 +191,12 @@ public:
 		ScanTop(graph_.root);
 		std::vector<std::uint32_t> callee_nodes_by_symbol(output_.symbols.size(),
 			kNoDumpEdge);
+		// Callees and block-scope function declarations (3.5p6) name
+		// namespace functions the top-level scan may not have registered.
 		for (std::size_t node = 0; node < arena_.nodes.size(); ++node)
-			if (arena_.nodes[node].kind == DUMP_CALLEE && arena_.nodes[node].binding != kNoBinding &&
+			if ((arena_.nodes[node].kind == DUMP_CALLEE ||
+				 arena_.nodes[node].kind == DUMP_FUNCTION_DECLARATION) &&
+				arena_.nodes[node].binding != kNoBinding &&
 				function_symbols_[arena_.nodes[node].binding] == kNoLowId)
 				RegisterFunction(node);
 		for (std::size_t node = 0; node < arena_.nodes.size(); ++node)

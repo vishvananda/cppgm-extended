@@ -2178,6 +2178,8 @@ void Analyzer::AnalyzeSimple(NodeId node, ScopeId scope,
 				declaration_scope, owner, declared_path, spec, parsed);
 			continue;
 		}
+		if (local && DeclareBlockScopeExternVariable(
+			item, declaration_scope, parsed.name, parsed.type, spec)) continue;
 		if (spec.is_constexpr)
 			parsed.type = program_->types.Qualify(parsed.type, CV_CONST);
 		const NodeId initializer_node = FindChild(item, ::cppgm::syntax::STAG_INITIALIZER);

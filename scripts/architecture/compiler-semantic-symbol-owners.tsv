@@ -254,6 +254,7 @@ dev/src/semantic/declarations/entity_ownership.cpp	ClearInjectedConstructorIniti
 dev/src/semantic/declarations/entity_ownership.cpp	RecordInjectedMemberInitializer	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/entity_ownership.cpp	RegisterInjectedStorageMember	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/entity_ownership.cpp	RegisterLocalTypeAbiIdentity	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
+dev/src/semantic/declarations/entity_ownership.cpp	DeclareBlockScopeExternVariable	1	dev/src/semantic/declarations/entity_ownership.cpp	keep
 dev/src/semantic/declarations/enums.cpp	AnalyzeEnum	1	dev/src/semantic/declarations/enums.cpp	keep
 dev/src/semantic/declarations/enums.cpp	BuildEnumDeclarationNamePath	1	dev/src/semantic/declarations/enums.cpp	keep
 dev/src/semantic/declarations/friends.cpp	AnalyzeFriendClass	1	dev/src/semantic/declarations/friends.cpp	keep
@@ -710,6 +711,7 @@ dev/src/semantic/presentation/diagnostic_names.cpp	DescribeTemplateSpecializatio
 dev/src/semantic/presentation/diagnostic_names.cpp	DescribeType	1	dev/src/semantic/presentation/diagnostic_names.cpp	keep
 dev/src/semantic/presentation/diagnostic_names.cpp	DescribeTypeAt	1	dev/src/semantic/presentation/diagnostic_names.cpp	keep
 dev/src/semantic/presentation/diagnostic_names.cpp	InstallSemanticErrorLocationHook	1	dev/src/semantic/presentation/diagnostic_names.cpp	keep
+dev/src/semantic/presentation/diagnostic_names.cpp	RecordGeneratedIdentityRender	1	dev/src/semantic/presentation/diagnostic_names.cpp	keep
 dev/src/semantic/presentation/render.cpp	DumpFunctionText	1	dev/src/semantic/presentation/render.cpp	keep
 dev/src/semantic/presentation/render.cpp	RenderLine	1	dev/src/semantic/presentation/render.cpp	keep
 dev/src/semantic/presentation/type_projection.cpp	ApplySourceTypeOverrides	1	dev/src/semantic/presentation/type_projection.cpp	keep

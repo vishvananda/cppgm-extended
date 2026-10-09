@@ -286,6 +286,9 @@ This PA10 milestone supports the following:
   function-level runtime identity and effects needed by later stages;
   non-overlapping `memcpy` boundaries carry `alias=noalias`, while potentially
   overlapping `memmove` boundaries do not
+- block-scope function declarations and `extern` variable declarations, which
+  name members of the innermost enclosing namespace (3.5p6) and have no
+  automatic storage
 - local scalar objects, scalar/function references, function pointers/references, and bounded
   arrays in the supported PA7 procedural type subset; an omitted array bound is inferred
   from its initializer, missing elements are zero-initialized, and excess elements are

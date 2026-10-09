@@ -155,4 +155,15 @@ std::string Analyzer::DescribeFunctionSpecialization(BindingId binding) const
 		function_templates_[function.template_pattern].name) + parameters;
 }
 
+void Analyzer::RecordGeneratedIdentityRender(
+	SemanticGeneratedIdentityFamily family,
+	const std::string& rendered, std::size_t components) const
+{
+	RecordPresentationRender(SEMANTIC_PRESENTATION_GENERATED_IDENTITY,
+		rendered, components);
+	++stats_->generated_identity_renders[family];
+	stats_->generated_identity_render_components[family] += components;
+	stats_->generated_identity_render_bytes[family] += rendered.size();
+}
+
 } }

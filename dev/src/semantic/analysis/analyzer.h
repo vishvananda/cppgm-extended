@@ -125,14 +125,7 @@ private:
 	}
 	void RecordGeneratedIdentityRender(
 		SemanticGeneratedIdentityFamily family,
-		const std::string& rendered, std::size_t components = 0) const
-	{
-		RecordPresentationRender(SEMANTIC_PRESENTATION_GENERATED_IDENTITY,
-			rendered, components);
-		++stats_->generated_identity_renders[family];
-		stats_->generated_identity_render_components[family] += components;
-		stats_->generated_identity_render_bytes[family] += rendered.size();
-	}
+		const std::string& rendered, std::size_t components = 0) const;
 	NameId ReadFunctionDisplayName(const FunctionInfo& function);
 	NameId ReadFunctionSourceDisplayName(const FunctionInfo& function);
 	NameId DumpFunctionText(const DumpNode& node);
@@ -1582,6 +1575,8 @@ private:
 	void RegisterClassDataMember(
 		EntityId entity, BindingId member, TypeId member_type);
 	void RegisterLocalTypeAbiIdentity(EntityId entity);
+	bool DeclareBlockScopeExternVariable(NodeId item, ScopeId scope,
+		NameId name, TypeId type, const SpecInfo& spec);
 	void RegisterInjectedStorageMember(BindingId alias,
 		BindingId storage, BindingId member);
 	bool ExplicitInstantiationCoversMember(BindingId binding) const;

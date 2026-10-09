@@ -1520,7 +1520,10 @@ protected:
 		const DumpNode& record = derived.arena_.nodes[node];
 		const NodeChildren children = derived.Children(node);
 		if (derived.TryLowerGnuAsmStatement(record, children)) return;
-		if (record.kind == DUMP_TYPE_ALIAS) return;
+		// A block-scope function declaration names a namespace member
+		// (3.5p6); it has no run-time effect.
+		if (record.kind == DUMP_TYPE_ALIAS ||
+			record.kind == DUMP_FUNCTION_DECLARATION) return;
 		if (record.kind == DUMP_COMPOUND_STATEMENT ||
 			record.kind == DUMP_CONDITION_DECLARATION ||
 			record.kind == DUMP_THEN || record.kind == DUMP_ELSE)

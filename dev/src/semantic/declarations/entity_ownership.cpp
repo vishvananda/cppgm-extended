@@ -146,5 +146,37 @@ void Analyzer::ClearInjectedConstructorInitializers()
 	injected_constructor_initializer_touched_.clear();
 }
 
+// 3.5p6: a block-scope extern variable declaration names a member of the
+// innermost enclosing namespace (declared there if it was not already); the
+// block sees that entity by the name, as through a using-declaration.
+bool Analyzer::DeclareBlockScopeExternVariable(NodeId item, ScopeId scope,
+	NameId name, TypeId type, const SpecInfo& spec)
+{
+	if (spec.storage_class != STORAGE_CLASS_EXTERN ||
+		FindChild(item, ::cppgm::syntax::STAG_INITIALIZER) != kNoNode)
+		return false;
+	ScopeId owner = scope;
+	while (owner != kNoScope && program_->KindOfScope(owner) != SCOPE_NAMESPACE)
+		owner = program_->ParentScope(owner);
+	if (owner == kNoScope)
+		ThrowInternalCompilerError("block scope has no enclosing namespace");
+	BindingId target =
+		program_->LookupDirect(owner, name, LOOKUP_ORDINARY).ordinary;
+	if (target != kNoBinding && program_->bindings[target].kind != BIND_VARIABLE)
+		ThrowSemanticError("block-scope extern declaration names a non-variable");
+	if (target == kNoBinding)
+	{
+		target = program_->AddBinding(owner, BIND_VARIABLE, name, type);
+		PublishVariableDeclarationFacts(target, owner, name, type, spec, false);
+		bool declaration_only = false;
+		dump_.Add(root_, MakeVariableDeclarationDump(
+			type, name, target, false, false, &declaration_only));
+	}
+	const BindingRecord& entity = program_->bindings[target];
+	program_->AddBinding(scope, BIND_VARIABLE, name, entity.type, false, 0,
+		NAMED_NONE, 0, entity.canonical);
+	return true;
+}
+
 }
 }
