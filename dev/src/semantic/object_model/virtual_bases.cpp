@@ -241,35 +241,118 @@ void RecordNullMemberPointerRuns(Program& program, EntityId entity,
 namespace
 {
 
-// A base subobject placed at `offset` claims the virtual primary base of its
-// class, and of its non-virtual bases, when no subobject placed before did
-// (Itanium 2.4: an indirect primary base lies with the base it is primary
-// for).  `self` marks the class's own virtual primary base.
-void ClaimPrimaryVirtualBases(const Program& program,
-	const std::vector<ClassPolymorphismFacts>& facts, EntityId base,
-	std::uint64_t offset, bool self, const std::vector<EntityId>& indirect,
-	std::vector<std::pair<EntityId, std::uint64_t> >* claimed)
+// A virtual base that is the primary base of some base subobjects lies with
+// one of them (Itanium 2.4; clang's ComputeBaseSubobjectInfo, GCC's
+// mark_primary_bases): the first in inheritance graph order, or the subobject
+// itself when the walk of its bases first reached the virtual base.  A base
+// subobject is named by the virtual base it lies in (none: the class's
+// non-virtual part) and its path of direct base ordinals from there.
+struct PrimaryClaim
 {
-	if (self) claimed->push_back(std::make_pair(base, offset));
-	if (base < facts.size() && facts[base].primary_virtual)
+	EntityId base, anchor;
+	std::vector<std::uint32_t> path;
+};
+
+std::size_t FindPrimaryClaim(const std::vector<PrimaryClaim>& claims,
+	EntityId base)
+{
+	std::size_t i = 0;
+	while (i < claims.size() && claims[i].base != base) ++i;
+	return i;
+}
+
+void SetPrimaryClaim(std::vector<PrimaryClaim>* claims, EntityId base,
+	EntityId anchor, const std::vector<std::uint32_t>& path)
+{
+	const std::size_t i = FindPrimaryClaim(*claims, base);
+	if (i == claims->size()) claims->push_back(PrimaryClaim());
+	(*claims)[i].base = base;
+	(*claims)[i].anchor = anchor;
+	(*claims)[i].path = path;
+}
+
+void ComputePrimaryClaims(const Program& program,
+	const std::vector<ClassPolymorphismFacts>& facts, EntityId base,
+	bool virtual_base, EntityId anchor, const std::vector<std::uint32_t>& path,
+	std::vector<EntityId>* reached, std::vector<PrimaryClaim>* claims)
+{
+	if (virtual_base)
 	{
-		const EntityId primary = facts[base].primary_ancestors[0];
-		bool taken = false;
-		for (std::size_t i = 0; i < claimed->size(); ++i)
-			taken = taken || (*claimed)[i].first == primary;
-		if (!taken && std::find(indirect.begin(), indirect.end(), primary) !=
-			indirect.end())
-			ClaimPrimaryVirtualBases(program, facts, primary, offset, true,
-				indirect, claimed);
+		if (std::find(reached->begin(), reached->end(), base) != reached->end())
+			return;
+		reached->push_back(base);
+	}
+	EntityId primary = base < facts.size() && facts[base].primary_virtual ?
+		facts[base].primary_ancestors[0] : kNoEntity;
+	const bool reached_before = primary != kNoEntity &&
+		std::find(reached->begin(), reached->end(), primary) != reached->end();
+	if (reached_before)
+	{
+		if (FindPrimaryClaim(*claims, primary) != claims->size()) primary = kNoEntity;
+		else SetPrimaryClaim(claims, primary, anchor, path);
 	}
 	const EntityRecord& record = program.entities[base];
 	for (std::size_t i = 0; i < record.direct_base_count; ++i)
 	{
 		const DirectBaseEdge& edge = program.DirectBase(base, i);
+		std::vector<std::uint32_t> next;
 		if (!edge.virtual_base)
-			ClaimPrimaryVirtualBases(program, facts, edge.entity,
-				offset + edge.offset, false, indirect, claimed);
+		{
+			next = path;
+			next.push_back(static_cast<std::uint32_t>(i));
+		}
+		ComputePrimaryClaims(program, facts, edge.entity, edge.virtual_base,
+			edge.virtual_base ? edge.entity : anchor, next, reached, claims);
 	}
+	if (primary != kNoEntity && !reached_before)
+		SetPrimaryClaim(claims, primary, anchor, path);
+}
+
+// A base subobject placed at `offset` places the virtual primary bases it
+// claims, and those its non-virtual bases claim, at its own address.
+void PlaceClaimedPrimaries(const Program& program,
+	const std::vector<ClassPolymorphismFacts>& facts,
+	const std::vector<PrimaryClaim>& claims, EntityId base, EntityId anchor,
+	const std::vector<std::uint32_t>& path, std::uint64_t offset,
+	std::vector<VirtualBaseLayout>* layouts, std::vector<std::uint8_t>* placed,
+	std::vector<std::size_t>* newly)
+{
+	if (base < facts.size() && facts[base].primary_virtual)
+	{
+		const EntityId primary = facts[base].primary_ancestors[0];
+		const std::size_t claim = FindPrimaryClaim(claims, primary);
+		if (claim != claims.size() && claims[claim].anchor == anchor &&
+			claims[claim].path == path)
+			for (std::size_t i = 0; i < layouts->size(); ++i)
+				if ((*layouts)[i].entity == primary && !(*placed)[i])
+				{
+					(*layouts)[i].offset = offset;
+					(*placed)[i] = 1;
+					newly->push_back(i);
+					PlaceClaimedPrimaries(program, facts, claims, primary, primary,
+						std::vector<std::uint32_t>(), offset, layouts, placed, newly);
+				}
+	}
+	const EntityRecord& record = program.entities[base];
+	for (std::size_t i = 0; i < record.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& edge = program.DirectBase(base, i);
+		if (edge.virtual_base) continue;
+		std::vector<std::uint32_t> next = path;
+		next.push_back(static_cast<std::uint32_t>(i));
+		PlaceClaimedPrimaries(program, facts, claims, edge.entity, anchor, next,
+			offset + edge.offset, layouts, placed, newly);
+	}
+}
+
+// A claimed primary base's empty subobjects lie where its claimer put it.
+void RecordClaimedPrimaries(EmptySubobjectMap* map,
+	const std::vector<VirtualBaseLayout>& layouts, std::vector<std::size_t>* claimed)
+{
+	for (std::size_t i = 0; i < claimed->size(); ++i)
+		map->Record(layouts[(*claimed)[i]].entity, layouts[(*claimed)[i]].offset,
+			false, false);
+	claimed->clear();
 }
 
 // Each direct base's virtual bases in its construction order, then the base
@@ -340,34 +423,59 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 	std::vector<EntityId> visited, indirect;
 	CollectIndirectPrimaryBases(*program_, class_polymorphism_, entity,
 		&visited, &indirect);
-	std::vector<std::pair<EntityId, std::uint64_t> > claimed;
-	if (entity < class_polymorphism_.size() &&
-		class_polymorphism_[entity].primary_virtual)
-		ClaimPrimaryVirtualBases(*program_, class_polymorphism_,
-			class_polymorphism_[entity].primary_ancestors[0], 0, true,
-			indirect, &claimed);
+	std::vector<PrimaryClaim> claims;
+	std::vector<EntityId> reached;
+	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
+	{
+		const DirectBaseEdge& edge = program_->DirectBase(entity, i);
+		ComputePrimaryClaims(*program_, class_polymorphism_, edge.entity,
+			edge.virtual_base, edge.virtual_base ? edge.entity : kNoEntity,
+			edge.virtual_base ? std::vector<std::uint32_t>() :
+				std::vector<std::uint32_t>(1, static_cast<std::uint32_t>(i)),
+			&reached, &claims);
+	}
+	std::vector<std::uint8_t> placed(layouts.size(), 0);
+	std::vector<std::size_t> newly;
+	const EntityId own_primary = entity < class_polymorphism_.size() &&
+		class_polymorphism_[entity].primary_virtual ?
+		class_polymorphism_[entity].primary_ancestors[0] : kNoEntity;
+	if (own_primary != kNoEntity)
+	{
+		// The class's own virtual primary base lies at offset zero, taken
+		// from any base subobject that claimed it.
+		const std::size_t claim = FindPrimaryClaim(claims, own_primary);
+		if (claim != claims.size()) claims.erase(claims.begin() +
+			static_cast<std::ptrdiff_t>(claim));
+		for (std::size_t i = 0; i < layouts.size(); ++i)
+			if (layouts[i].entity == own_primary)
+			{
+				layouts[i].offset = 0;
+				placed[i] = 1;
+			}
+		PlaceClaimedPrimaries(*program_, class_polymorphism_, claims, own_primary,
+			own_primary, std::vector<std::uint32_t>(), 0, &layouts, &placed, &newly);
+		RecordClaimedPrimaries(&empty_subobjects_, layouts, &newly);
+	}
 	for (std::size_t i = 0; i < owner.direct_base_count; ++i)
 	{
 		const DirectBaseEdge& edge = program_->DirectBase(entity, i);
 		if (!edge.virtual_base)
-			ClaimPrimaryVirtualBases(*program_, class_polymorphism_, edge.entity,
-				edge.offset, false, indirect, &claimed);
+		{
+			PlaceClaimedPrimaries(*program_, class_polymorphism_, claims, edge.entity,
+				kNoEntity, std::vector<std::uint32_t>(1, static_cast<std::uint32_t>(i)),
+				edge.offset, &layouts, &placed, &newly);
+			RecordClaimedPrimaries(&empty_subobjects_, layouts, &newly);
+		}
 	}
+	// A pass places the virtual bases that are no base's primary base; a
+	// second one any indirect primary base no placed subobject claimed.
 	for (std::size_t pass = 0; pass != 2; ++pass)
 	for (std::size_t i = 0; i < layouts.size(); ++i)
 	{
 		const EntityId candidate = layouts[i].entity;
-		std::size_t claim = 0;
-		while (claim < claimed.size() && claimed[claim].first != candidate) ++claim;
+		if (placed[i] || candidate == own_primary) continue;
 		const bool is_indirect = std::find(indirect.begin(), indirect.end(),
 			candidate) != indirect.end();
-		if (claim != claimed.size())
-		{
-			layouts[i].offset = claimed[claim].second;
-			continue;
-		}
-		// An indirect primary base no placed subobject claimed is laid out
-		// after the others.
 		if (is_indirect != (pass != 0)) continue;
 		const EntityRecord& base = program_->entities[candidate];
 		const std::uint64_t base_alignment = LayoutNonvirtualAlignment(base);
@@ -389,9 +497,10 @@ void Analyzer::FinalizeClassVirtualBaseLayout(EntityId entity,
 		cursor->Place(offset + extent, !empty);
 		cursor->alignment = std::max(cursor->alignment, effective);
 		layouts[i].offset = offset;
-		claimed.push_back(std::make_pair(candidate, offset));
-		ClaimPrimaryVirtualBases(*program_, class_polymorphism_, candidate,
-			offset, false, indirect, &claimed);
+		placed[i] = 1;
+		PlaceClaimedPrimaries(*program_, class_polymorphism_, claims, candidate,
+			candidate, std::vector<std::uint32_t>(), offset, &layouts, &placed, &newly);
+		RecordClaimedPrimaries(&empty_subobjects_, layouts, &newly);
 	}
 	cursor->alignment = std::max(cursor->alignment, owner.requested_alignment);
 	RankVirtualBaseConstruction(*program_, entity, &layouts);

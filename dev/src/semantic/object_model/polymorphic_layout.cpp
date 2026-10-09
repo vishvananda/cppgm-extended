@@ -190,6 +190,10 @@ const EntityRecord* Analyzer::InitializeClassBaseLayout(
 		const std::uint64_t pointer_alignment = virtual_primary ?
 			LayoutNonvirtualAlignment(program_->entities[
 				class_polymorphism_[entity].primary_ancestors[0]]) : 8;
+		// The virtual primary base's empty subobjects lie at offset zero.
+		if (virtual_primary)
+			empty_subobjects_.Record(class_polymorphism_[entity].primary_ancestors[0],
+				0, false, false);
 		cursor->Place(8, true);
 		cursor->natural_alignment = std::max<std::uint64_t>(
 			cursor->natural_alignment, pointer_alignment);

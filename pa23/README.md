@@ -183,7 +183,12 @@ To complete PA23, implement these goals:
    no non-virtual dynamic base takes a nearly empty virtual base (one whose non-virtual
    part is its vptr alone) as its primary base (2.4 I.b). That base sits at offset `0` and
    shares the class's vptr and vtable. A virtual base that is some base's primary base is
-   not placed again: it lies with the subobject that claims it.
+   not placed again: it lies with the subobject that claims it. The claimant is the first
+   base subobject in inheritance graph order (virtual bases taken where the walk first
+   meets them) whose primary base it is, or that subobject itself when the walk of its own
+   bases reached the virtual base first. The class's own primary base is not claimed this
+   way. The empty subobjects of the virtual primary base and of each claimed base count
+   when later empty bases are placed.
 
 2. Polymorphic dispatch over adjusted vtable views.
    Calling a virtual through a class with virtual-base adjustment rows must select the
