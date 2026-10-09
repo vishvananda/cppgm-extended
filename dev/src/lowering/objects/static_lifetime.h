@@ -110,9 +110,11 @@ protected:
 			derived.EmitBranch(state, destroy, done);
 			derived.SelectBlock(destroy);
 			const DumpNode& cleanup = derived.arena_.nodes[destructor];
+			const TypeId type = derived.arena_.nodes[node].type;
 			const Operand storage = StaticReferenceStorage(node,
-				derived.LowerStorageType(cleanup.operand_type));
-			derived.EmitDestructorCall(cleanup.binding, derived.AddressOfStorage(storage));
+				derived.LowerStorageType(type));
+			derived.LowerDestructorObject(type,
+				derived.AddressOfStorage(storage), cleanup.binding);
 			derived.EmitJump(done);
 			derived.SelectBlock(done);
 		}

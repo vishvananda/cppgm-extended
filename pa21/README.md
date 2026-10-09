@@ -172,6 +172,9 @@ To complete PA21, implement these goals:
 2. `std::initializer_list` interoperation.
    Supported braced-list calls should materialize deterministic lowered storage and expose
    the expected `__begin` / `__size` semantics to range-for lowering.
+   A backing array with static storage duration, including one extended by a
+   namespace-scope reference, is destroyed at exit element by element, last
+   element first.
 
 3. RTTI and `typeid`.
    The compiler should emit deterministic RTTI globals and lower both static and dynamic

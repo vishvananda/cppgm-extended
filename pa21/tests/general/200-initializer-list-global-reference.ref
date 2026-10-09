@@ -160,7 +160,10 @@ function @__cppgm_fini() -> void [role=fini, binding=internal] {
 
   block ^ref_destroy_1:
     %t2 = addr @__cppgm_ref_temporary__held_1
-    call void @S___S(%t2)
+    %t3 = index i8 [projection=array_element] %t2, 4
+    call void @S___S(%t3)
+    %t4 = index i8 [projection=array_element] %t2, 0
+    call void @S___S(%t4)
     jump ^ref_destroy_done_2
 
   block ^ref_destroy_done_2:
