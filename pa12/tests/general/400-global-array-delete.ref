@@ -5,13 +5,12 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   slot $p : ptr
 
   block ^entry:
-    %t1 = convert sext i64 i32 3
-    %t2 = call ptr @operatornew__(%t1)
-    store typed ptr %t2, $p
-    %t3 = load typed ptr $p
-    %t4 = index i8 [projection=array_element] %t3, 0
-    store i8 7, %t4
-    %t5 = load typed ptr $p
-    call void @operatordelete__(%t5)
+    %t1 = call ptr @operatornew__(3)
+    store typed ptr %t1, $p
+    %t2 = load typed ptr $p
+    %t3 = index i8 [projection=array_element] %t2, 0
+    store i8 7, %t3
+    %t4 = load typed ptr $p
+    call void @operatordelete__(%t4)
     return i32 0
 }

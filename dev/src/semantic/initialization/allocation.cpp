@@ -145,6 +145,9 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 	const std::uint64_t leaf_size = program_->SizeOf(leaf_type);
 	if (leaf_size == 0 || row_size % leaf_size != 0)
 		ThrowInternalCompilerError("invalid array element stride");
+	// 5.3.4p10: the request is a std::size_t; a runtime count widens by its
+	// promoted type's signedness before it is scaled and the cookie added.
+	const TypeId size_type = program_->types.Fundamental(FUND_UNSIGNED_LONG_INT);
 	ExpressionInfo allocation_size = extent;
 	std::uint64_t flat_count = 0;
 	if (extent.constant)
@@ -160,7 +163,7 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 			count > std::numeric_limits<std::uint64_t>::max() / inner_count)
 			ThrowSemanticResourceLimit("array allocation exceeds PA12 limits");
 		flat_count = count * inner_count;
-		allocation_size = MakeLiteral(extent.type,
+		allocation_size = MakeLiteral(size_type,
 			InternNumber(static_cast<std::int64_t>(bytes)));
 		allocation_size.constant = true;
 		allocation_size.value = static_cast<std::int64_t>(bytes);
@@ -169,17 +172,16 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 	}
 	else
 	{
-		const auto combine = [this](const ExpressionInfo& left,
+		const auto combine = [this, size_type](const ExpressionInfo& left,
 			std::uint64_t right_value, const char* operation) -> ExpressionInfo
 		{
-			ExpressionInfo right = MakeLiteral(
-				program_->types.Fundamental(FUND_INT),
+			ExpressionInfo right = MakeLiteral(size_type,
 				InternNumber(static_cast<std::int64_t>(right_value)));
 			right.constant = true;
 			right.value = static_cast<std::int64_t>(right_value);
 			dump_.nodes[right.node].constant = true;
 			dump_.nodes[right.node].constant_value = right.value;
-			const TypeId arithmetic = CommonArithmeticType(left.type, right.type);
+			const TypeId arithmetic = size_type;
 			const ExpressionInfo converted_left = ApplyTarget(left, arithmetic);
 			const ExpressionInfo converted_right = ApplyTarget(right, arithmetic);
 			const std::uint32_t expression = MakeDump(DUMP_BINARY_EXPRESSION,
@@ -198,6 +200,8 @@ ExpressionInfo Analyzer::AnalyzeArrayNewExpression(NodeId node,
 			allocation_size = combine(allocation_size, row_size, "*");
 		if (cookie_size != 0)
 			allocation_size = combine(allocation_size, cookie_size, "+");
+		if (row_size == 1 && cookie_size == 0)
+			allocation_size = ApplyTarget(allocation_size, size_type);
 	}
 	std::vector<NodeId> argument_syntax(1, kNoNode);
 	std::vector<ExpressionInfo> arguments(1, allocation_size);

@@ -72,7 +72,7 @@ if(scalar(@ARGV) != 3)
 
 my ($app, $native_reference, $root) = @ARGV;
 my @tests = collect_tests($root,
-	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|stable-prefix-query-boundary|parameter-object-extent-boundary|parameter-object-identity|parameter-destruction-full-expression|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|rejected-stable-prefix-query-[^.]+)\.cpp$/);
+	qr/(?:constructor-alias-boundaries|enclosing-temporary-lifetime|out-of-class-move-assignment-boundary|conditional-copy-elision-permission|stable-prefix-query-boundary|parameter-object-extent-boundary|parameter-object-identity|parameter-destruction-full-expression|array-new-size-width|named-return-object-identity|static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|rejected-stable-prefix-query-[^.]+)\.cpp$/);
 die "No PA12 survivor-property tests found under $root\n" if !@tests;
 
 for my $test (@tests)
@@ -92,7 +92,7 @@ for my $test (@tests)
 		next;
 	}
 	my ($path, $lowir) = compile_source($app, $test, $directory);
-	if($test =~ /(?:static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|named-return-object-identity)/) {
+	if($test =~ /(?:static-reference-lifetime|conditional-transfer-selection|empty-value-initialization|array-new-size-width|named-return-object-identity)/) {
 		compile_and_run($native_reference, $test, $directory, $path);
 		next;
 	}

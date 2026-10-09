@@ -13,9 +13,9 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
 
   block ^entry:
     %t1 = call u32 @count()
-    %t2 = binary mul u32 %t1, 16
-    %t3 = binary add u32 %t2, 8
-    %t4 = convert zext i64 u32 %t3
+    %t2 = convert zext i64 u32 %t1
+    %t3 = binary mul i64 %t2, 16
+    %t4 = binary add i64 %t3, 8
     store typed i64 %t4, $array_new_size__1
     %t5 = call ptr @operatornew__(%t4)
     %t6 = load typed i64 $array_new_size__1

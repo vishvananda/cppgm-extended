@@ -7,12 +7,11 @@ function @owned_array() -> ptr [binding=strong, object=_Z11owned_arrayv] {
 }
 function @Hidden__create_array() -> ptr [binding=weak, object=_ZN6Hidden12create_arrayEv, inline_hint=yes] {
   block ^entry:
-    %t1 = convert sext i64 i32 16
-    %t2 = call ptr @operatornew__(%t1)
-    %t3 = index i8 %t2, 8
-    %t4 = const i64 2
-    store typed i64 %t4, %t2
-    return ptr %t3
+    %t1 = call ptr @operatornew__(16)
+    %t2 = index i8 %t1, 8
+    %t3 = const i64 2
+    store typed i64 %t3, %t1
+    return ptr %t2
 }
 function @Hidden___Hidden(%this : ptr [object_bytes=4]) -> void [unwind=no, binding=weak, object=_ZN6HiddenD1Ev, inline_hint=yes] {
   slot $this : ptr
