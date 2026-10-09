@@ -210,6 +210,10 @@ To complete PA21, implement these goals:
    Construction and destruction cleanup dependencies on class-template
    destructors should be demanded only after a recursively containing type is
    complete, and should retain that concrete owner in emitted cleanup calls.
+   A class return value built in the caller's destination by a constructor,
+   copy or call that may throw unwinds the function's automatic objects
+   first; each arm of a class conditional does so too, and a completed result
+   stays owned until the return's cleanup succeeds.
    A by-value class parameter with a non-trivial destructor stays owned by the
    caller (Itanium C++ ABI 3.1.2.3): the caller destroys it at the end of the
    full-expression containing the call, and on the unwind path when the callee,

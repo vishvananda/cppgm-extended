@@ -215,8 +215,10 @@ function @preproc_get(%ret : ptr [pass=indirect_result, object_bytes=8], %cursor
     jump ^if_end_27
 
   block ^if_end_27:
+    eh_try ^cleanup_action_11
     %t61 = addr $token
     call void @Tok__Tok__ov2(%ret, %t61)
+    eh_end
     %t62 = addr $token
     call void @Tok___Tok(%t62)
     return void

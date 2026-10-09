@@ -382,73 +382,72 @@ function @case_2__value(%ret : ptr [pass=indirect_result, object_bytes=1], %mode
     branch %t4, ^if_then_1, ^if_else_2
 
   block ^if_then_1:
-    eh_try ^cleanup_resume_4
+    eh_try ^cleanup_action_6
     eh_end
-    jump ^call_unwind_end_5
+    jump ^call_unwind_end_7
 
   block ^cleanup_resume_4:
     resume
 
-  block ^call_unwind_end_5:
-    call void @case_2__R__R(%ret)
-    eh_try ^lexical_cleanup_dispatch_8
-    %t6 = addr $g
-    call void @case_2__G___G(%t6)
-    eh_end
-    %t7 = addr $earlier
-    call void @case_2__Earlier___Earlier(%t7)
-    return void
-
-  block ^lexical_unwind_7:
-    resume
-
-  block ^lexical_unwind_6:
+  block ^cleanup_action_5:
     %t5 = addr $earlier
     call void @case_2__Earlier___Earlier(%t5)
-    jump ^lexical_unwind_7
+    jump ^cleanup_resume_4
 
-  block ^lexical_cleanup_dispatch_8:
+  block ^cleanup_action_6:
+    eh_try ^lexical_cleanup_terminate_8
+    %t7 = addr $g
+    call void @case_2__G___G(%t7)
+    eh_end
+    jump ^cleanup_action_5
+
+  block ^lexical_cleanup_terminate_8:
+    eh_catch_all, 1
+    %t6 = exception ptr
+    call void @cppgm_call_terminate(%t6)
+    unreachable
+
+  block ^call_unwind_end_7:
+    eh_try ^cleanup_action_6
+    call void @case_2__R__R(%ret)
+    eh_end
+    eh_try ^lexical_cleanup_dispatch_11
+    %t9 = addr $g
+    call void @case_2__G___G(%t9)
+    eh_end
+    %t10 = addr $earlier
+    call void @case_2__Earlier___Earlier(%t10)
+    return void
+
+  block ^lexical_unwind_10:
+    resume
+
+  block ^lexical_unwind_9:
+    %t8 = addr $earlier
+    call void @case_2__Earlier___Earlier(%t8)
+    jump ^lexical_unwind_10
+
+  block ^lexical_cleanup_dispatch_11:
     eh_cleanup
     eh_end
     call void @case_2__R___R(%ret)
-    jump ^lexical_unwind_6
+    jump ^lexical_unwind_9
 
   block ^if_else_2:
     jump ^if_end_3
 
   block ^if_end_3:
-    %t8 = load typed i32 $mode
-    %t9 = cmp eq i32 %t8, 1
-    branch %t9, ^if_then_9, ^if_else_10
+    %t11 = load typed i32 $mode
+    %t12 = cmp eq i32 %t11, 1
+    branch %t12, ^if_then_12, ^if_else_13
 
-  block ^if_then_9:
-    eh_try ^cleanup_action_13
+  block ^if_then_12:
+    eh_try ^cleanup_action_6
     eh_end
-    jump ^call_unwind_end_14
-
-  block ^cleanup_action_12:
-    %t10 = addr $earlier
-    call void @case_2__Earlier___Earlier(%t10)
-    jump ^cleanup_resume_4
-
-  block ^cleanup_action_13:
-    eh_try ^lexical_cleanup_terminate_15
-    %t12 = addr $g
-    call void @case_2__G___G(%t12)
-    eh_end
-    jump ^cleanup_action_12
-
-  block ^lexical_cleanup_terminate_15:
-    eh_catch_all, 1
-    %t11 = exception ptr
-    call void @cppgm_call_terminate(%t11)
-    unreachable
-
-  block ^call_unwind_end_14:
-    eh_try ^cleanup_action_13
+    eh_try ^cleanup_action_6
     call void @case_2__make(%ret)
     eh_end
-    eh_try ^lexical_cleanup_dispatch_16
+    eh_try ^lexical_cleanup_dispatch_15
     %t13 = addr $g
     call void @case_2__G___G(%t13)
     eh_end
@@ -456,30 +455,34 @@ function @case_2__value(%ret : ptr [pass=indirect_result, object_bytes=1], %mode
     call void @case_2__Earlier___Earlier(%t14)
     return void
 
-  block ^lexical_cleanup_dispatch_16:
+  block ^lexical_cleanup_dispatch_15:
     eh_cleanup
     eh_end
     call void @case_2__R___R(%ret)
-    jump ^lexical_unwind_6
+    jump ^lexical_unwind_9
 
-  block ^if_else_10:
-    jump ^if_end_11
+  block ^if_else_13:
+    jump ^if_end_14
 
-  block ^if_end_11:
+  block ^if_end_14:
     %t15 = load typed i32 $mode
     %t16 = cmp eq i32 %t15, 2
-    branch %t16, ^condobj_then_17, ^condobj_else_18
+    branch %t16, ^condobj_then_16, ^condobj_else_17
 
-  block ^condobj_then_17:
+  block ^condobj_then_16:
+    eh_try ^cleanup_action_6
     call void @case_2__R__R(%ret)
-    jump ^condobj_end_19
+    eh_end
+    jump ^condobj_end_18
 
-  block ^condobj_else_18:
+  block ^condobj_else_17:
+    eh_try ^cleanup_action_6
     call void @case_2__R__R(%ret)
-    jump ^condobj_end_19
+    eh_end
+    jump ^condobj_end_18
 
-  block ^condobj_end_19:
-    eh_try ^lexical_cleanup_dispatch_20
+  block ^condobj_end_18:
+    eh_try ^lexical_cleanup_dispatch_19
     %t17 = addr $g
     call void @case_2__G___G(%t17)
     eh_end
@@ -487,11 +490,11 @@ function @case_2__value(%ret : ptr [pass=indirect_result, object_bytes=1], %mode
     call void @case_2__Earlier___Earlier(%t18)
     return void
 
-  block ^lexical_cleanup_dispatch_20:
+  block ^lexical_cleanup_dispatch_19:
     eh_cleanup
     eh_end
     call void @case_2__R___R(%ret)
-    jump ^lexical_unwind_6
+    jump ^lexical_unwind_9
 }
 function @case_2__check() -> i32 [binding=strong, object=_ZN6case_25checkEv] {
   slot $r : obj<1x1>

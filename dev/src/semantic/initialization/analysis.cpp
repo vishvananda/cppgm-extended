@@ -313,7 +313,7 @@ void Analyzer::FinalizeNamedReturnSlot(std::uint32_t function)
 	const EntityRecord& class_record = program_->entities[entity];
 	const bool indirect = class_record.indirect_class_result_abi;
 	std::vector<std::uint32_t> pending(1, function);
-	std::vector<std::uint32_t> return_edges;
+	std::vector<std::uint32_t> return_edges, return_statements;
 	std::vector<std::uint32_t> sources;
 	std::vector<BindingId> deferred_constructors;
 	BindingId candidate = kNoBinding;
@@ -367,6 +367,7 @@ void Analyzer::FinalizeNamedReturnSlot(std::uint32_t function)
 			}
 			candidate = binding;
 			return_edges.push_back(edge);
+			return_statements.push_back(node);
 			sources.push_back(source);
 			continue;
 		}
@@ -391,6 +392,16 @@ void Analyzer::FinalizeNamedReturnSlot(std::uint32_t function)
 	{
 		dump_.edges[return_edges[i]].child = sources[i];
 		dump_.nodes[sources[i]].direct_return_slot = true;
+		// The elided copy can no longer throw: drop its unwind staging.
+		DumpNode& statement = dump_.nodes[return_statements[i]];
+		std::uint32_t kept = return_edges[i];
+		for (std::uint32_t edge = dump_.edges[kept].next;
+			edge != kNoDumpEdge; edge = dump_.edges[edge].next)
+			if (dump_.nodes[dump_.edges[edge].child].unwind_only)
+				dump_.edges[kept].next = dump_.edges[edge].next;
+			else kept = edge;
+		statement.last_edge = kept;
+		statement.full_expression_staging = false;
 	}
 }
 
@@ -588,21 +599,32 @@ void Analyzer::AnalyzeReturnStatement(NodeId node, ScopeId scope,
 			value.node = BuildAggregateConstructionAction(
 				returned_object, value.node);
 		}
-		if (class_return && dump_.nodes[value.node].kind ==
-			DUMP_CONDITIONAL_EXPRESSION &&
+		const bool class_conditional = class_return &&
+			dump_.nodes[value.node].kind == DUMP_CONDITIONAL_EXPRESSION &&
 			program_->types.RemoveTopCv(EffectiveType(value.type)) ==
-				returned_object)
+				returned_object;
+		if (class_conditional)
 		{
 			value = RetargetClassConditional(value, current_return_type_);
 			const std::uint32_t first = dump_.nodes[value.node].first_edge;
 			std::uint32_t arm = first == kNoDumpEdge ? kNoDumpEdge :
 				dump_.edges[first].next;
+			// Each arm builds the result itself; one that may throw, or that
+			// destroys temporaries, unwinds the enclosing locals.
 			for (std::size_t i = 0; i < 2 && arm != kNoDumpEdge; ++i)
 			{
 				const std::uint32_t arm_node = dump_.edges[arm].child;
 				const std::uint32_t recipe = dump_.nodes[arm_node].first_edge;
-				if (recipe != kNoDumpEdge && dump_.edges[recipe].next != kNoDumpEdge)
+				const std::size_t first_unwind = dump_.edges.size();
+				if (recipe != kNoDumpEdge &&
+					(dump_.edges[recipe].next != kNoDumpEdge ||
+					 !InitializationActionsAreNonthrowing(
+						dump_.edges[recipe].child)))
 					AppendUnwindDestructionActions(scope, arm_node);
+				for (std::size_t edge = first_unwind; edge < dump_.edges.size(); ++edge)
+					if (!FunctionIsNonthrowing(
+						dump_.nodes[dump_.edges[edge].child].binding))
+						dump_.construction_cleanup_may_throw = true;
 				arm = dump_.edges[arm].next;
 			}
 		}
@@ -667,12 +689,12 @@ void Analyzer::AnalyzeReturnStatement(NodeId node, ScopeId scope,
 		const std::size_t first_cleanup_edge = dump_.edges.size();
 		AppendFullExpressionDestructionActions(value.node, statement);
 		StageReturnTemporaryCleanup(value.node, statement, scope);
-		// A direct class-value transfer still evaluates a potentially throwing
-		// call before returning; protect the enclosing locals just as for a
-		// scalar return expression with no temporary cleanup of its own.
-		if (dump_.edges.size() == first_cleanup_edge &&
-			(!IsClassObjectType(value.type) ||
-			 dump_.nodes[value.node].kind == DUMP_CLASS_VALUE_TRANSFER))
+		// Building the result in the caller's destination, by a call, a
+		// constructor or an aggregate, may throw before returning (15.2p1);
+		// protect the enclosing locals just as for a scalar return
+		// expression with no temporary cleanup of its own. A provably
+		// non-throwing construction stays unprotected.
+		if (dump_.edges.size() == first_cleanup_edge && !class_conditional)
 			StageExceptionalFullExpression(value.node, statement, scope);
 	}
 	AppendScopeDestructionActions(scope, statement);

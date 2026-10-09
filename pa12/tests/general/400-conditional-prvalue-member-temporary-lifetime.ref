@@ -23,15 +23,9 @@ function @choose(%ret : ptr [pass=indirect_result, object_bytes=8], %local : u8)
     branch %t3, ^condobj_then_1, ^condobj_else_2
 
   block ^condobj_then_1:
+    eh_try ^cleanup_action_5
     %t4 = addr $base
     call void @Owner__Owner__ov2(%ret, %t4)
-    jump ^condobj_end_3
-
-  block ^condobj_else_2:
-    %t5 = addr $tmpobj__1
-    eh_try ^cleanup_action_5
-    %t6 = addr @result_control
-    call void @Result__Result(%t5, %t6)
     eh_end
     jump ^call_unwind_end_6
 
@@ -39,20 +33,28 @@ function @choose(%ret : ptr [pass=indirect_result, object_bytes=8], %local : u8)
     resume
 
   block ^cleanup_action_5:
-    %t7 = addr $base
-    call void @Owner___Owner(%t7)
+    %t5 = addr $base
+    call void @Owner___Owner(%t5)
     jump ^cleanup_resume_4
 
   block ^call_unwind_end_6:
+    jump ^condobj_end_3
+
+  block ^condobj_else_2:
+    %t6 = addr $tmpobj__1
+    eh_try ^cleanup_action_5
+    %t7 = addr @result_control
+    call void @Result__Result(%t6, %t7)
+    eh_end
     eh_try ^cleanup_action_7
-    %t8 = index i8 [projection=field] %t5, 0
+    %t8 = index i8 [projection=field] %t6, 0
     call void @Owner__Owner__ov3(%ret, %t8)
-    call void @Result___Result(%t5)
+    call void @Result___Result(%t6)
     eh_end
     jump ^call_unwind_end_8
 
   block ^cleanup_action_7:
-    call void @Result___Result(%t5)
+    call void @Result___Result(%t6)
     jump ^cleanup_action_5
 
   block ^call_unwind_end_8:

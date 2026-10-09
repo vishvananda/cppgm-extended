@@ -2,7 +2,7 @@ struct Box {
   int x;
   Box();
   Box(const Box &);
-  Box(Box &&);
+  Box(Box &&) noexcept;
   ~Box();
 };
 

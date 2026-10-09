@@ -573,11 +573,16 @@ protected:
 		}
 		const bool managed_full_expression = conditional_full_expression ||
 			explicitly_managed_full_expression || lexical_unwind || protect_return;
-		if (managed_full_expression)
+		// A class conditional's arms stage their own cleanup and unwinding;
+		// the returned object is retained only once an arm has built it.
+		const bool arm_managed_value = protect_return &&
+			full_expression_actions.empty() &&
+			derived.arena_.nodes[children[0]].kind == DUMP_CONDITIONAL_EXPRESSION;
+		if (managed_full_expression && !arm_managed_value)
 			derived.BeginFullExpressionCleanup(full_expression_actions, 0,
 				has_value && derived.arena_.nodes[children[0]].kind ==
 					DUMP_CONDITIONAL_EXPRESSION);
-		if (protect_return)
+		if (protect_return && !arm_managed_value)
 			derived.BeginConstructionCleanup(derived.arena_.nodes[return_node], true);
 		Operand result_value;
 		if (has_value)
@@ -677,6 +682,8 @@ protected:
 			}
 		}
 		if (derived.CurrentBlock().terminated) return;
+		if (arm_managed_value)
+			derived.BeginConstructionCleanup(derived.arena_.nodes[return_node], true);
 		const ConstructionCleanupStep returned = protect_return ?
 			RetainReturnedObject(return_node, children[0], result_value) :
 			ConstructionCleanupStep(0, kNoDumpEdge, kNoType, kNoBinding, Operand());
