@@ -1017,8 +1017,12 @@ ExpressionInfo Analyzer::AnalyzeImplicitDataMember(
 	if (object_pointer.kind == TYPE_POINTER)
 	{
 		const TypeRecord pointee = program_->types.Get(object_pointer.child);
-		if (pointee.kind == TYPE_QUALIFIED && !binding.mutable_member)
-			member_type = program_->types.Qualify(member_type, pointee.cv);
+		// 5.2.5p4: mutable removes only the object's const.
+		if (pointee.kind == TYPE_QUALIFIED)
+			member_type = program_->types.Qualify(member_type,
+				binding.mutable_member ?
+					static_cast<std::uint8_t>(pointee.cv & ~CV_CONST) :
+					pointee.cv);
 	}
 	const std::uint32_t member = MakeDump(DUMP_MEMBER_EXPRESSION,
 		member_type, VALUE_LVALUE, binding.name, member_binding);

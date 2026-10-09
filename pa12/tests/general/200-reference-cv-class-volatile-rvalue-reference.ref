@@ -18,7 +18,7 @@ function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
   block ^lor_rhs_1:
     %t8 = load typed ptr $r
     %t9 = index i8 [projection=field] %t8, 0
-    %t10 = load typed i32 %t9
+    %t10 = load volatile i32 %t9
     %t11 = cmp ne i32 %t10, 3
     %t12 = cmp ne i64 %t11, 0
     store typed i64 %t12, $lor__1

@@ -2338,6 +2338,14 @@ ExpressionInfo Analyzer::AnalyzeMember(NodeId node, ScopeId scope)
 	TypeId type = member_binding.type;
 	if (IsConst(owner_type) && !member_binding.mutable_member)
 		type = program_->types.Qualify(type, CV_CONST);
+	// 5.2.5p4: a non-static data member of a volatile object is volatile,
+	// mutable or not (3.9.3p3), so every access through it is observable.
+	const TypeRecord owner_record =
+		program_->types.Get(EffectiveType(owner_type));
+	if (member_binding.non_static_data_member &&
+		owner_record.kind == TYPE_QUALIFIED &&
+		(owner_record.cv & CV_VOLATILE) != 0)
+		type = program_->types.Qualify(type, CV_VOLATILE);
 	if (!member_binding.non_static_data_member && !member_function)
 		EnsureStaticMemberStorage(found.ordinary);
 	std::string operation = arena_->Payload(node);

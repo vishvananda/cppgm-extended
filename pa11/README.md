@@ -236,7 +236,10 @@ PA11 supports the following in addition to the PA10 procedural subset:
   - inherited fields
   - direct methods
   - inherited methods
-- `this`, implicit member lookup inside methods, and member access expressions `.` and `->`
+- `this`, implicit member lookup inside methods, and member access expressions `.` and `->`;
+  a data member reached through a volatile object, pointer, reference or `this` is
+  itself volatile (`mutable` removes only `const`), so its reads and writes are
+  `load volatile` and `store volatile`
 - non-static member-function calls selected through overload resolution with the implicit
   object argument described above
 - ordinary non-template operator overloading over the supported object-model subset, including:
