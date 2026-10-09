@@ -207,9 +207,11 @@ clang, and the object-inspection tests check its spelling:
   one object for both entries
 - a closure type has a mangling number (`Ul<sig>E<n>_`) when its lambda lies
   in an inline function or a template specialization, a lambda body
-  included, in a default member initializer or a class template's static
-  data member initializer (named in the data member,
-  `_ZNK8WithInit2fpMUlvE_clEv`, `_ZN5TableIiE4sizeMUlvE_8__invokeEv`) or
+  included, in a default member initializer, a class template's static
+  data member initializer or a variable template's initializer (named in the
+  data member, `_ZNK8WithInit2fpMUlvE_clEv`,
+  `_ZN5TableIiE4sizeMUlvE_8__invokeEv`, `_ZNK2vtIiEMUlvE_clEv`; GCC omits
+  the `M` for a variable template) or
   in an in-class default argument (named in the function and parameter,
   `...Ed_NKUlvE_clEv`); any other closure type, and an unnamed class that
   no typedef names for linkage, is a unit-local `$_<n>` with local

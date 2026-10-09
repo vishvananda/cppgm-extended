@@ -260,6 +260,8 @@ dev/src/semantic/declarations/enums.cpp	AnalyzeEnum	1	dev/src/semantic/declarati
 dev/src/semantic/declarations/enums.cpp	BuildEnumDeclarationNamePath	1	dev/src/semantic/declarations/enums.cpp	keep
 dev/src/semantic/declarations/friends.cpp	AnalyzeFriendClass	1	dev/src/semantic/declarations/friends.cpp	keep
 dev/src/semantic/declarations/friends.cpp	AnalyzeFriendFunction	1	dev/src/semantic/declarations/friends.cpp	keep
+dev/src/semantic/declarations/friends.cpp	PublishClassTemplateFriendGrants	1	dev/src/semantic/declarations/friends.cpp	keep
+dev/src/semantic/declarations/friends.cpp	RegisterClassTemplateFriend	1	dev/src/semantic/declarations/friends.cpp	keep
 dev/src/semantic/declarations/functions.cpp	AnalyzeSimpleFunctionDeclaration	1	dev/src/semantic/declarations/functions.cpp	keep
 dev/src/semantic/declarations/functions.cpp	QueueFunctionDefinitionValidation	1	dev/src/semantic/declarations/functions.cpp	keep
 dev/src/semantic/declarations/functions.cpp	ValidateNonmemberOperator	1	dev/src/semantic/declarations/functions.cpp	keep
@@ -811,10 +813,8 @@ dev/src/semantic/templates/classes.cpp	MatchTemplatePartialArguments	1	dev/src/s
 dev/src/semantic/templates/classes.cpp	MaterializeTemplatePartialArguments	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/classes.cpp	NamesTemplateParameterShape	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/classes.cpp	ParseExplicitTemplateArguments	1	dev/src/semantic/templates/classes.cpp	keep
-dev/src/semantic/templates/classes.cpp	PublishClassTemplateFriendGrants	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/classes.cpp	QueueClassTemplateMemberDefinitions	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/classes.cpp	RegisterClassMemberFunction	1	dev/src/semantic/templates/classes.cpp	keep
-dev/src/semantic/templates/classes.cpp	RegisterClassTemplateFriend	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/classes.cpp	ResolveStructuredTypeName	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/classes.cpp	RetainVariableTemplate	1	dev/src/semantic/templates/classes.cpp	keep
 dev/src/semantic/templates/classes.cpp	RetainedClassDeclaresNestedPath	1	dev/src/semantic/templates/classes.cpp	keep

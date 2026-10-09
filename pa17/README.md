@@ -175,7 +175,9 @@ implemented language surface, including:
 - alias templates
 - variable templates (a course extension beyond C++11); each specialization is
   its own object, its symbol carrying the template arguments (`_Z5widthIiE`,
-  `_ZN5store5countIcEE`)
+  `_ZN5store5countIcEE`, `_ZN5table5countIiEE`); a static data member template
+  may be defined outside its class, an ordinary class or a class template, and
+  the definition's initializer is analyzed in the class's scope
 - template-template parameters and template-template argument matching
 - member templates, including templated member operators and templated call
   operators

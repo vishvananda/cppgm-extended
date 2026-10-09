@@ -3,6 +3,7 @@
 #include "support/exceptions.h"
 #include "support/scoped_state.h"
 
+#include <algorithm>
 #include <vector>
 
 namespace cppgm
@@ -215,6 +216,42 @@ void Analyzer::AnalyzeFriendClass(NodeId node,
 		(static_cast<std::uint64_t>(owner) << 32) | friend_entity;
 	CompactIndexSequence& grants = friend_class_grants_.Ensure(key);
 	if (grants.Size() == 0) grants.Push(0);
+}
+
+void Analyzer::PublishClassTemplateFriendGrants(
+	const ClassTemplatePattern& pattern, EntityId specialization)
+{
+	if (specialization == kNoEntity) return;
+	for (std::size_t i = 0; i < pattern.friend_owners.size(); ++i)
+	{
+		const std::uint64_t key =
+			(static_cast<std::uint64_t>(pattern.friend_owners[i]) << 32) |
+			specialization;
+		CompactIndexSequence& grants = friend_class_grants_.Ensure(key);
+		if (grants.Size() == 0) grants.Push(0);
+	}
+}
+
+void Analyzer::RegisterClassTemplateFriend(
+	std::size_t pattern_index, EntityId owner)
+{
+	if (pattern_index >= class_templates_.size() || owner == kNoEntity)
+		ThrowInternalCompilerError("invalid class template friend owner");
+	ClassTemplatePattern& pattern = class_templates_[pattern_index];
+	if (std::find(pattern.friend_owners.begin(), pattern.friend_owners.end(),
+		owner) == pattern.friend_owners.end())
+		pattern.friend_owners.push_back(owner);
+	const std::uint64_t marker_key =
+		(static_cast<std::uint64_t>(owner) << 32) | pattern.marker_entity;
+	CompactIndexSequence& marker_grants =
+		friend_class_grants_.Ensure(marker_key);
+	if (marker_grants.Size() == 0) marker_grants.Push(0);
+	for (std::size_t i = 0; i < pattern.specialization_bindings.size(); ++i)
+	{
+		const EntityId specialization = EntityOf(
+			program_->bindings[pattern.specialization_bindings[i]].type);
+		PublishClassTemplateFriendGrants(pattern, specialization);
+	}
 }
 
 }

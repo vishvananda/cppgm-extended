@@ -1,0 +1,51 @@
+global @sizes__counter_int_ : i32 [binding=weak, object=_ZN5sizes7counterIiEE] = 7
+global @sizes__counter_char_ : i32 [binding=weak, object=_ZN5sizes7counterIcEE] = 7
+
+function @main() -> i32 [role=entry, binding=strong, keep_alias=yes] {
+  slot $cond__1 : i32
+
+  block ^entry:
+    %t1 = cmp ne i32 4, 4
+    branch %t1, ^if_then_1, ^if_else_2
+
+  block ^if_then_1:
+    return i32 10
+
+  block ^if_else_2:
+    jump ^if_end_3
+
+  block ^if_end_3:
+    %t2 = load typed i32 @sizes__counter_int_
+    %t3 = binary add nowrap i32 %t2, 1
+    store typed i32 %t3, @sizes__counter_int_
+    %t4 = load typed i32 @sizes__counter_int_
+    %t5 = cmp ne i32 %t4, 8
+    branch %t5, ^if_then_4, ^lor_rhs_7
+
+  block ^lor_rhs_7:
+    %t6 = load typed i32 @sizes__counter_char_
+    %t7 = cmp ne i32 %t6, 7
+    branch %t7, ^if_then_4, ^if_else_5
+
+  block ^if_then_4:
+    return i32 11
+
+  block ^if_else_5:
+    jump ^if_end_6
+
+  block ^if_end_6:
+    %t8 = cmp eq i32 5, 5
+    branch %t8, ^cond_then_8, ^cond_else_9
+
+  block ^cond_then_8:
+    store typed i32 0, $cond__1
+    jump ^cond_end_10
+
+  block ^cond_else_9:
+    store typed i32 12, $cond__1
+    jump ^cond_end_10
+
+  block ^cond_end_10:
+    %t9 = load typed i32 $cond__1
+    return i32 %t9
+}

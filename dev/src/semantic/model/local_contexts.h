@@ -26,9 +26,9 @@ bool IsInlineOrSpecialization(const Program& program, BindingId function);
 // lambda is lexically inside an inline function or a template
 // specialization (a lambda's own function call operator is inline, so a
 // lambda nested in a lambda body is numbered), in a default member
-// initializer, in a class template's static data member initializer, or in
-// an in-class default argument.  Any other closure type is unit-local and
-// named `$_<n>`.
+// initializer, in a class template's static data member initializer or a
+// variable template's initializer, or in an in-class default argument.  Any
+// other closure type is unit-local and named `$_<n>`.
 bool ClosureHasManglingNumber(const Program& program, EntityId closure);
 
 // The declaration whose linkage decides whether other units name the local

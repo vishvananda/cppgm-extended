@@ -206,8 +206,8 @@ To complete PA20, implement these goals:
    closure in every constructor that initializes the member; one in an
    in-class default argument is one at every call that uses it; one in a
    constructor's or destructor's body is one in every entry that runs the
-   body; and one in a class template's static data member initializer is one
-   per specialization.
+   body; and one in a class template's static data member initializer or a
+   variable template's initializer is one per specialization.
 
 4. Range-for lowering.
    Range-for over arrays, braced-init lists, and supported user-defined `begin` / `end`

@@ -67,6 +67,7 @@ bool ClosureHasManglingNumber(const Program& program, EntityId closure)
 		const BindingRecord& member = program.bindings[record.lambda_member_context];
 		if (record.lambda_default_argument != 0) return member.member_owner != kNoEntity;
 		return member.storage_class != STORAGE_CLASS_STATIC ||
+			member.variable_template_specialization ||
 			HasTemplateSpecializationOwner(program, member.member_owner);
 	}
 	const BindingId context = record.local_context;

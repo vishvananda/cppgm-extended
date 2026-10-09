@@ -1530,12 +1530,15 @@ private:
   }
 
   // A default member initializer's closure type: the member's
-  // <data-member-prefix> (a candidate of its own) and the closure name.
+  // <data-member-prefix> (a candidate of its own) and the closure name.  A
+  // variable template specialization's has no member name; its own prefix
+  // type ends in its template arguments.
   void encode_member_lambda_name(size_t id)
   {
     const TypeNode stable = graph_.type(id);
     encode_prefix_type(stable.children.at(0));
-    output_ += source_name(graph_.strings.get(stable.symbol)) + 'M';
+    if(stable.symbol != NO_ID) output_ += source_name(graph_.strings.get(stable.symbol));
+    output_ += 'M';
     substitutions_.add(SubstitutionKey{SUBSTITUTION_MEMBER_TEMPLATE_PREFIX,
                                        stable.children.at(0), stable.symbol});
     output_ += "Ul";

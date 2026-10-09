@@ -1006,6 +1006,24 @@ bool Analyzer::RetainVariableTemplate(NodeId declaration,
 	if (partial && !has_primary)
 		ThrowSemanticError(
 			"variable template partial specialization has no primary");
+	// An out-of-class definition of a static data member template (14.5p1)
+	// supplies the declared primary's initializer; it is analyzed in the
+	// class's scope (9.4.2p2) with the definition's own parameter names.
+	const NodeId definition_initializer = FindChild(item, ::cppgm::syntax::STAG_INITIALIZER);
+	for (std::size_t i = 0; related && !partial && i < related->Size(); ++i)
+	{
+		VariableTemplatePattern& primary = variable_templates_[(*related)[i]];
+		if (primary.partial_specialization || primary.initializer != kNoNode ||
+			definition_initializer == kNoNode ||
+			program_->KindOfScope(owner) != SCOPE_CLASS) continue;
+		primary.lexical_scope = owner;
+		primary.declaration = declaration;
+		primary.specifiers = FindChild(declaration, ::cppgm::syntax::STAG_DECL_SPECIFIER_SEQ);
+		primary.declarator = declarator;
+		primary.initializer = definition_initializer;
+		primary.parameters = parameters;
+		return true;
+	}
 	VariableTemplatePattern pattern;
 	pattern.owner = owner;
 	pattern.lexical_scope = scope;
@@ -1033,42 +1051,6 @@ bool Analyzer::RetainVariableTemplate(NodeId declaration,
 	variable_template_sets_.Ensure(key).Push(index);
 	program_->PublishVariableTemplateName(owner, name);
 	return true;
-}
-
-void Analyzer::PublishClassTemplateFriendGrants(
-	const ClassTemplatePattern& pattern, EntityId specialization)
-{
-	if (specialization == kNoEntity) return;
-	for (std::size_t i = 0; i < pattern.friend_owners.size(); ++i)
-	{
-		const std::uint64_t key =
-			(static_cast<std::uint64_t>(pattern.friend_owners[i]) << 32) |
-			specialization;
-		CompactIndexSequence& grants = friend_class_grants_.Ensure(key);
-		if (grants.Size() == 0) grants.Push(0);
-	}
-}
-
-void Analyzer::RegisterClassTemplateFriend(
-	std::size_t pattern_index, EntityId owner)
-{
-	if (pattern_index >= class_templates_.size() || owner == kNoEntity)
-		ThrowInternalCompilerError("invalid class template friend owner");
-	ClassTemplatePattern& pattern = class_templates_[pattern_index];
-	if (std::find(pattern.friend_owners.begin(), pattern.friend_owners.end(),
-		owner) == pattern.friend_owners.end())
-		pattern.friend_owners.push_back(owner);
-	const std::uint64_t marker_key =
-		(static_cast<std::uint64_t>(owner) << 32) | pattern.marker_entity;
-	CompactIndexSequence& marker_grants =
-		friend_class_grants_.Ensure(marker_key);
-	if (marker_grants.Size() == 0) marker_grants.Push(0);
-	for (std::size_t i = 0; i < pattern.specialization_bindings.size(); ++i)
-	{
-		const EntityId specialization = EntityOf(
-			program_->bindings[pattern.specialization_bindings[i]].type);
-		PublishClassTemplateFriendGrants(pattern, specialization);
-	}
 }
 
 bool Analyzer::AnalyzeFriendClassTemplate(NodeId target,
@@ -1506,8 +1488,12 @@ void Analyzer::ApplyClassTemplateMemberDefinitions(
 		{
 			const LookupResult member = program_->LookupDirect(actual_owner,
 				definition.storage_name, LOOKUP_ORDINARY);
-			if (member.ordinary == kNoBinding ||
-				!program_->bindings[member.ordinary].emission_demanded)
+			// A static data member template has no binding of its own; its
+			// specialization names demand it.
+			const bool member_template = arena_->IsTag(node, ::cppgm::syntax::STAG_TEMPLATE_DECLARATION) &&
+				variable_template_sets_.Find((static_cast<std::uint64_t>(actual_owner) << 32) | definition.storage_name);
+			if (!member_template && (member.ordinary == kNoBinding ||
+				!program_->bindings[member.ordinary].emission_demanded))
 			{
 				applied_static_member_definitions_.Ensure(demand_key).Clear();
 				continue;

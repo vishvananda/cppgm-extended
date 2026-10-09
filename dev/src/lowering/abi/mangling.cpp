@@ -846,8 +846,32 @@ public:
 		const EntityRecord& lambda = program_.entities[closure];
 		const BindingRecord& member = program_.bindings[lambda.lambda_member_context];
 		result.kind = abi_mangle::ABI_TYPE_MEMBER_LAMBDA;
-		result.index = ResolveName(member.name) + 1;
-		result.types.push_back(MakeType(program_.entities[member.member_owner].type));
+		if (member.variable_template_specialization)
+		{
+			// A variable template specialization is the whole data member
+			// prefix, `<name> <template-args> M` (`N2vtIiEMUlvE_E`).
+			abi_mangle::AbiType variable;
+			if (member.member_owner != kNoEntity)
+			{
+				variable.kind = abi_mangle::ABI_TYPE_MEMBER_TEMPLATE_SPECIALIZATION;
+				variable.index = ResolveName(member.name) + 1;
+				variable.types.push_back(MakeType(program_.entities[member.member_owner].type));
+			}
+			else
+			{
+				variable.kind = abi_mangle::ABI_TYPE_TEMPLATE_SPECIALIZATION;
+				variable.index = ResolvePath(member.owner, member.name) + 1;
+			}
+			for (std::size_t i = 0; i < member.template_argument_count; ++i)
+				variable.argument_refs.push_resolved(AddTemplateArgument(
+					member.template_argument_begin + i, 0, 0));
+			result.types.push_back(variable);
+		}
+		else
+		{
+			result.index = ResolveName(member.name) + 1;
+			result.types.push_back(MakeType(program_.entities[member.member_owner].type));
+		}
 		const TypeId call = program_.bindings[lambda.lambda_call_operator].type;
 		const TypeId* parameters = program_.types.Parameters(call);
 		for (std::size_t i = 0; i < program_.types.Get(call).parameter_count; ++i)
@@ -2803,8 +2827,8 @@ std::string MangleVariable(const semantic::Program& program,
 	}
 	// A variable template specialization carries its template arguments
 	// (`_Z2vtIiE`, `_ZN2ns2nvIiEE`), at namespace scope as in a class.
-	if ((member_variable_template || (binding.variable_template_specialization &&
-		binding.member_owner == kNoEntity)) && binding.template_argument_count != 0)
+	if ((member_variable_template || binding.variable_template_specialization) &&
+		binding.template_argument_count != 0)
 	{
 		const std::size_t first = binding.template_argument_begin;
 		const std::size_t count = binding.template_argument_count;

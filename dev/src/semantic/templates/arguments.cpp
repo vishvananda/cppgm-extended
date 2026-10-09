@@ -990,6 +990,31 @@ BindingId Analyzer::InstantiateVariableTemplate(
 			break;
 		}
 	if (primary_index == variable_templates_.size()) return kNoBinding;
+	// A class template's static data member template is defined out of the
+	// class on demand: attach that definition to the specialization's
+	// pattern before naming one of its own specializations.
+	const EntityId member_owner = program_->EntityForScope(
+		variable_templates_[primary_index].owner);
+	if (variable_templates_[primary_index].initializer == kNoNode &&
+		member_owner != kNoEntity && member_owner < class_template_pattern_by_entity_.size() &&
+		class_template_pattern_by_entity_[member_owner] != kNoDumpEdge &&
+		!program_->entities[member_owner].explicit_template_specialization)
+	{
+		const std::size_t pattern = class_template_pattern_by_entity_[member_owner];
+		const BindingId specialization = program_->entities[member_owner].declaration;
+		const NameId name = variable_templates_[primary_index].name;
+		CompactIndexSequence& names = requested_static_member_names_.Ensure(specialization);
+		if (!names.Contains(name)) names.Push(name);
+		if (class_template_member_definition_demand_states_.size() <= specialization)
+			class_template_member_definition_demand_states_.resize(
+				static_cast<std::size_t>(specialization) + 1, 0);
+		class_template_member_definition_demand_states_[specialization] |= 1U;
+		const CompactIndexSequence* definitions = demanded_static_member_definitions_.Find(
+			(static_cast<std::uint64_t>(pattern) << 32) | name);
+		for (std::size_t i = 0; definitions && i < definitions->Size(); ++i)
+			QueueStaticMemberDefinition(pattern, specialization, (*definitions)[i], false);
+		ApplyDemandedClassTemplateMemberDefinitions(specialization);
+	}
 	const VariableTemplatePattern& primary = variable_templates_[primary_index];
 	std::vector<TemplateArgument> arguments;
 	if (!BuildTemplateArguments(primary.parameters, argument_syntax,
@@ -1155,8 +1180,11 @@ BindingId Analyzer::InstantiateVariableTemplate(
 			static_cast<std::size_t>(binding) + 1, 0);
 	variable_template_bindings_[binding] = 1;
 	BindingRecord& record = program_->bindings[binding];
-	record.storage_class = spec.storage_class;
 	record.member_owner = program_->EntityForScope(selected.owner);
+	// A class's variable template is a static data member template, whose
+	// out-of-class definition does not repeat `static`.
+	record.storage_class = record.member_owner != kNoEntity ?
+		STORAGE_CLASS_STATIC : spec.storage_class;
 	record.weak_odr = true;
 	record.variable_template_specialization = true;
 	StoreTemplateArguments(arguments,
@@ -1190,6 +1218,13 @@ BindingId Analyzer::InstantiateVariableTemplate(
 		{
 			ScopedValueRestore<std::size_t> evaluated(
 				&constant_evaluation_suppressed_depth_, 0);
+			// The initializer belongs to the specialization, not to the
+			// function that first names it: a lambda in it is one closure
+			// type per specialization, named in the variable (Itanium 5.1.8).
+			ScopedValueRestore<BindingId> function_context(
+				&current_function_context_, kNoBinding);
+			ScopedValueRestore<BindingId> member_context(
+				&default_member_initializer_context_, binding);
 			initializer = AnalyzeConstantAwareVariableInitializer(
 				selected.initializer, substitution_scope, parsed.type,
 				false, spec.is_constexpr, true);
