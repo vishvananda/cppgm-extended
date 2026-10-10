@@ -318,6 +318,10 @@ base may leave null. The group's tables follow its primary table in clang's
 order: the non-virtual bases' secondary tables depth first, then the virtual
 bases' tables in inheritance graph order.
 
+A thunk states its target's boundary facts, except that its `this`, which
+points into the object at the thunk's adjustment, states no `object_bytes`;
+a deleting destructor's thunks state `unwind=no` as D0 does.
+
 Every thunk that a class's tables include is defined with its function and
 only referred to elsewhere. A virtual destructor's deleting entry (D0) and its
 thunks are defined with the destructor too, not where the vtable is emitted.

@@ -347,6 +347,13 @@ To complete PA29, implement hosted compatibility for:
   position after a parameter list
   (where it would appertain to the function type) are rejected. Leading
   attributes of a block item appertain to the declaration it introduces
+- a function declared `[[noreturn]]` or GNU `noreturn` on any declaration
+  states `return=noreturn` on its declarations, definition and direct and
+  virtual calls (`../pa8/lowir.md`, "Facts The C++ Lowering States"), and so
+  do a function template's specializations, while an explicit specialization
+  keeps only its own declarations'; a call through a pointer states none, and
+  a call of such a function does not end its block. PA32's `-O0` driver lane
+  compares the fact
 - semantic validation of primary-source GNU inline function bodies even when
   emission is deferred; an unimplemented reserved compiler builtin may defer
   its wrapper, but ordinary lookup and type errors in an unused wrapper must

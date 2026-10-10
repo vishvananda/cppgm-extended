@@ -76,12 +76,29 @@ but optimized LowIR output is not part of PA11.
 The authoritative LowIR definition is `../pa8/lowir.md`. PA11 extends the PA10 procedural
 subset of that IR with the object-model lowering needed by this milestone.
 
-When PA11 emits function-boundary metadata such as `unwind=no`, treat that as a
-truthful emitted fact, not as a promise that every semantically equivalent C++
-exception specification is normalized. The direct `noexcept` form on free
-functions, member functions, constructors, and destructors is in scope for the
-tested metadata path. Other explicit `noexcept(expr)` forms may lower
-conservatively without `unwind=no`.
+PA11 states the boundary facts of `../pa8/lowir.md` ("Facts The C++ Lowering
+States") for every function it emits, and the comparison checks each one:
+
+- `unwind=no` on a function whose exception-specification allows no
+  exception (15.4p12): `noexcept`, `noexcept(true)`, `throw()`, or
+  `noexcept(e)` with `e` true; on a destructor without an
+  exception-specification unless a base's or member's destructor allows
+  exceptions (12.4p3); and on an implicitly declared special member function,
+  or one defaulted on its first declaration, when every function it directly
+  invokes is non-throwing (15.4p14).
+- `inline_hint=yes` on every inline function (7.1.2): one declared `inline`
+  or `constexpr`, a member or friend defined in its class (9.3p2, 11.3p7), and
+  an implicitly declared or first-declaration-defaulted special member
+  function; a member defined outside its class without `inline` states none.
+- `no_inline=yes` on a function any declaration of which carries GNU
+  `noinline` (PA27 owns that attribute; PA32's `-O0` driver lane compares the
+  fact), and on the lowering's own `cppgm_call_terminate` helper.
+- `object_bytes=N` on `this`, `N` its class's size, in every member function
+  and every constructor and destructor entry, and on the `this` and
+  reference-member parameters of an aggregate's initialization helper.
+- `storage=readonly` on a statically initialized const object of a class
+  with no `mutable` or volatile member and no non-trivial destructor at any
+  depth (7.1.6.1p4, 12.4p2).
 
 A call to `__builtin_unreachable()` lowers directly to the PA8
 `unreachable` block terminator. It does not emit a synthetic function

@@ -40,6 +40,7 @@ O0_TEST_ROOT ?= tests/o0
 O1_TEST_ROOT ?= tests/o1
 O2_TEST_ROOT ?= tests/o2
 O3_TEST_ROOT ?= tests/o3
+DRIVER_O0_TEST_ROOT ?= tests/driver/o0
 DRIVER_O1_TEST_ROOT ?= tests/driver/o1
 DRIVER_O2_TEST_ROOT ?= tests/driver/o2
 DRIVER_O3_TEST_ROOT ?= tests/driver/o3
@@ -185,6 +186,8 @@ test-course: $(TEST_DEPS)
 	@CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(O2_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(O2_TEST_ROOT)
 	$(call run_text_course_bucket,-O3,$(LOWIROPT_APP),$(O3_TEST_ROOT))
+	@CPPGM_APP_ARGS='--emit-lowir -g0 -O0' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) my $(DRIVER_O0_TEST_ROOT)
+	@scripts/compare_results.pl ref my $(DRIVER_O0_TEST_ROOT)
 	@CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) my $(DRIVER_O1_TEST_ROOT)
 	@scripts/compare_results.pl ref my $(DRIVER_O1_TEST_ROOT)
 	@CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) my $(DRIVER_O2_TEST_ROOT)
@@ -225,6 +228,7 @@ else
 	@if [ -d "$(O1_TEST_ROOT)" ]; then CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(O1_TEST_ROOT); fi
 	@if [ -d "$(O2_TEST_ROOT)" ]; then CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(O2_TEST_ROOT); fi
 	@if [ -d "$(O3_TEST_ROOT)" ]; then CPPGM_APP_ARGS='-O3' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref $(O3_TEST_ROOT); fi
+	@if [ -d "$(DRIVER_O0_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O0' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O0_TEST_ROOT); fi
 	@if [ -d "$(DRIVER_O1_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O1_TEST_ROOT); fi
 	@if [ -d "$(DRIVER_O2_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O2_TEST_ROOT); fi
 	@if [ -d "$(DRIVER_O3_TEST_ROOT)" ]; then CPPGM_APP_ARGS='--emit-lowir -g0 -O3' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref $(DRIVER_O3_TEST_ROOT); fi
@@ -251,13 +255,14 @@ REF_TEST_RUN = case "$(TEST)" in \
 	$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
 	$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='-O2' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
 	$(O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='-O3' scripts/run_all_tests.pl $(LOWIROPT_REF_APP) ref "$(TEST)" ;; \
+	$(DRIVER_O0_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O0' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DRIVER_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DRIVER_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DRIVER_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -g0 -O3' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DEBUGINFO_DRIVER_O1_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O1' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DEBUGINFO_DRIVER_O2_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O2' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
 	$(DEBUGINFO_DRIVER_O3_TEST_ROOT)/*) CPPGM_APP_ARGS='--emit-lowir -gline-tables-only -O3' scripts/run_all_tests.pl $(CPPGM_DRIVER_REF_APP) ref "$(TEST)" ;; \
-	*) echo "Usage: make ref-test TEST=$(O0_TEST_ROOT)/<file>.t | $(O1_TEST_ROOT)/<file>.t | $(O2_TEST_ROOT)/<file>.t | $(O3_TEST_ROOT)/<file>.t | $(DRIVER_O1_TEST_ROOT)/<file>.t | $(DRIVER_O2_TEST_ROOT)/<file>.t | $(DRIVER_O3_TEST_ROOT)/<file>.t"; exit 1 ;; \
+	*) echo "Usage: make ref-test TEST=$(O0_TEST_ROOT)/<file>.t | $(O1_TEST_ROOT)/<file>.t | $(O2_TEST_ROOT)/<file>.t | $(O3_TEST_ROOT)/<file>.t | $(DRIVER_O0_TEST_ROOT)/<file>.t | $(DRIVER_O1_TEST_ROOT)/<file>.t | $(DRIVER_O2_TEST_ROOT)/<file>.t | $(DRIVER_O3_TEST_ROOT)/<file>.t"; exit 1 ;; \
 esac
 
 CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
@@ -286,6 +291,7 @@ CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 		'$(O1_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*::CPPGM_APP_ARGS=-O1 scripts/run_all_tests.pl $(LOWIROPT_APP) check {tests}' \
 		'$(O2_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*::CPPGM_APP_ARGS=-O2 scripts/run_all_tests.pl $(LOWIROPT_APP) check {tests}' \
 		'$(O3_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*::CPPGM_APP_ARGS=-O3 scripts/run_all_tests.pl $(LOWIROPT_APP) check {tests}' \
+		'$(DRIVER_O0_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -g0 -O0" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}' \
 		'$(DRIVER_O1_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -g0 -O1" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}' \
 		'$(DRIVER_O2_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -g0 -O2" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}' \
 		'$(DRIVER_O3_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -g0 -O3" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}' \
@@ -294,7 +300,7 @@ CHECK_RUN = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 		'$(DEBUGINFO_DRIVER_O3_TEST_ROOT)/*::CPPGM_APP_ARGS="--emit-lowir -gline-tables-only -O3" scripts/run_all_tests.pl $(CPPGM_DRIVER_APP) check {tests}'
 CHECK_COMPARE = perl ../scripts/run_routed_test_spec.pl "$(TEST)" \
 		'$(CONTROL_TEST_ROOT)/*|$(OBJECT_ROUNDTRIP_TEST_ROOT)/*::true' \
-		'$(O0_TEST_ROOT)/*|$(O1_TEST_ROOT)/*|$(O2_TEST_ROOT)/*|$(O3_TEST_ROOT)/*|$(DRIVER_O1_TEST_ROOT)/*|$(DRIVER_O2_TEST_ROOT)/*|$(DRIVER_O3_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O1_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O2_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O3_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}'
+		'$(O0_TEST_ROOT)/*|$(O1_TEST_ROOT)/*|$(O2_TEST_ROOT)/*|$(O3_TEST_ROOT)/*|$(DRIVER_O0_TEST_ROOT)/*|$(DRIVER_O1_TEST_ROOT)/*|$(DRIVER_O2_TEST_ROOT)/*|$(DRIVER_O3_TEST_ROOT)/*|$(DEBUGINFO_O1_TEST_ROOT)/*|$(DEBUGINFO_O2_TEST_ROOT)/*|$(DEBUGINFO_O3_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O1_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O2_TEST_ROOT)/*|$(DEBUGINFO_DRIVER_O3_TEST_ROOT)/*::scripts/compare_results.pl ref check {tests}'
 include ../scripts/pa_run_check_targets.mk
 
 .PHONY: dev-shared-target ref-test ref-test-debuginfo test-debuginfo

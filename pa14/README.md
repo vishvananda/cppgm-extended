@@ -262,6 +262,14 @@ PA14 supports the following in addition to the PA13 subset:
 - class-template instantiation preserves the class-scope rule that a name which
   has become a typedef-name cannot be redefined by another typedef declaration
 - compatible function-template declarations and definitions in either order
+- a specialization of an `inline` function template, or of a member defined in
+  its class template, is an inline function and states `inline_hint=yes`; one
+  of a function template not declared inline does not, and an explicit
+  specialization does only when it is declared `inline` or `constexpr`
+  (14.7.3p12)
+- a template's `noexcept(e)` is evaluated for each specialization, which states
+  `unwind=no` when its `e` is true (`f<int>` of
+  `template<class X> int f(X) noexcept(sizeof(X) == 4)`, not `f<char>`)
 - dependent-base lookup provenance attached to the particular base-specifier,
   so a nested class with a fixed base keeps ordinary base lookup and a local
   class in a function template independently classifies its own dependent base

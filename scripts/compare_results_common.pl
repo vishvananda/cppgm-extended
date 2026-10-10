@@ -2375,30 +2375,62 @@ sub validate_lowir_text
 	return scalar(@errors) == 0 ? (1, undef) : (0, join('; ', @errors));
 }
 
+# The source-to-LowIR lanes (PA10-PA23 and PA8's `cppgm++ --emit-lowir`
+# debug-information lanes) compare the facts the C++ lowering states by rule
+# (pa8/lowir.md, "Facts The C++ Lowering States"), as they compare the
+# instruction facts.  PA32's optimized lanes (mode lowir_optimized_t) leave
+# them uncompared: an optimizer may add a fact it proves, or drop one.
+my $LOWIR_COMPARE_SOURCE_FACTS = 1;
+
+sub lowir_metadata_item_is_source_fact
+{
+	my ($key, $value) = @_;
+	return 1 if $key =~ /^(?:effects|unwind|return|inline_hint|no_inline|alias|object_bytes|classes|result_classes|elision)$/;
+	return 1 if $key eq 'storage' && $value eq 'readonly';
+	return 0;
+}
+
 sub lowir_metadata_item_ignored_for_compare
 {
 	my ($key, $value) = @_;
 	# Validate full metadata, but do not make early source-to-LowIR oracles depend
 	# on later object/export policy or optional optimizer/provenance annotations.
 	return 1 if $key eq 'role' && $value =~ /^(?:allocate_memory|free_memory|terminate|pure_virtual|dynamic_cast|bad_cast|bad_typeid|bad_array_new_length|rtti_class|rtti_si|rtti_vmi|rtti_pointer|rtti_data)$/;
-	return 1 if $key =~ /^(?:linkage|binding|replaceable|object|tls_for|keep_alias|prefer_local|trivial_lifecycle|force_inline|inline_hint|no_inline)$/;
-	return 1 if $key =~ /^(?:effects|unwind|return|capture|access|alias|object_bytes|projection|classes|result_classes)$/;
+	return 1 if $key =~ /^(?:linkage|binding|replaceable|object|tls_for|keep_alias|prefer_local|trivial_lifecycle|force_inline)$/;
+	return 1 if $key =~ /^(?:capture|access|projection)$/;
 	return 1 if $key eq 'pass' && $value eq 'decay';
-	return 1 if $key eq 'storage' && $value =~ /^(?:readonly|writable)$/;
-	return 0;
+	return 1 if $key eq 'storage' && $value eq 'writable';
+	return !$LOWIR_COMPARE_SOURCE_FACTS && lowir_metadata_item_is_source_fact($key, $value);
 }
 
+# One bracketed group, its ignored metadata items dropped and, when it is a
+# metadata group, the rest in a canonical order: the order of items inside
+# a metadata group is presentation.  (A phi's incoming list is bracketed
+# too; its order is left alone.)
 sub canonicalize_lowir_metadata_group_for_compare
 {
 	my ($group) = @_;
 	my @kept;
+	my $metadata = 1;
 	for my $item (split(/\s*,\s*/, $group))
 	{
 		my ($key, $value) = ($item =~ /^([A-Za-z0-9_]+)\s*=\s*([^\],\s]+)$/);
+		$metadata = 0 if !defined($key);
 		next if defined($key) && lowir_metadata_item_ignored_for_compare($key, $value);
 		push @kept, $item;
 	}
+	@kept = sort @kept if $metadata;
 	return scalar(@kept) == 0 ? '' : ' [' . join(', ', @kept) . ']';
+}
+
+# Every bracketed group of a text canonicalized; adjacent metadata groups of
+# one entity (`[unwind=no] [binding=weak]`) read as one group.
+sub canonicalize_lowir_metadata_groups_for_compare
+{
+	my ($text) = @_;
+	$text =~ s/\][ \t]+\[(?=[A-Za-z0-9_]+\s*=)/, /g;
+	$text =~ s/\s+\[([^\]]+)\]/canonicalize_lowir_metadata_group_for_compare($1)/ge;
+	return $text;
 }
 
 sub canonicalize_lowir_function_locals_for_compare
@@ -2813,7 +2845,7 @@ sub canonicalize_lowir_for_compare
 {
 	my ($data, $function_symbols) = @_;
 	return undef if !defined($data);
-	$data =~ s/\s+\[([^\]]+)\]/canonicalize_lowir_metadata_group_for_compare($1)/ge;
+	$data = canonicalize_lowir_metadata_groups_for_compare($data);
 	# Object aliases are backend symbol-surface metadata, like object=... metadata.
 	# Validate them above, but omit them from relaxed source-to-LowIR comparison.
 	$data =~ s/^alias object [^\n]*\n?//gm;
@@ -2893,6 +2925,7 @@ sub lowir_normalize_function_signature
 	# Parameter names are presentation (the comparison renames them); the
 	# signature that pairs two functions keeps only the types and metadata.
 	$params =~ s/%[A-Za-z0-9_]+\s*:\s*//g;
+	$params = canonicalize_lowir_metadata_groups_for_compare($params);
 	$params =~ s/\s+/ /g;
 	$return_type =~ s/\s+/ /g;
 	return '(' . $params . ') -> ' . $return_type;
@@ -2956,8 +2989,7 @@ sub lowir_function_shape_text
 	# Apply the same ignored-metadata policy before structural pairing that the
 	# final relaxed comparison applies after pairing. Legacy source-origin facts
 	# must not make two otherwise unique function shapes look different.
-	$text =~ s/\s+\[([^\]]+)\]/canonicalize_lowir_metadata_group_for_compare($1)/ge;
-	$text =~ s/\s+\[([^\]]+)\]/canonicalize_lowir_metadata_group_for_compare($1)/ge;
+	$text = canonicalize_lowir_metadata_groups_for_compare($text);
 	# Nothing the final comparison absorbs may tell two shapes apart either:
 	# local names, slot order, layout, literal spelling and commutative
 	# operand order are canonicalized before the shape is compared.
@@ -3520,11 +3552,6 @@ sub canonicalize_lowir_generated_root_annotations_for_compare
 sub canonicalize_lowir_pair_for_compare
 {
 	my ($ref_data, $my_data) = @_;
-	# Source-language copy-elision permission is verified by PA12/PA32
-	# structural controls.  Older exact O0 fixtures intentionally remain a
-	# baseline for the ordinary call and lifetime behavior.
-	$ref_data =~ s/\s+\[\s*elision\s*=\s*copy\s*\]//g;
-	$my_data =~ s/\s+\[\s*elision\s*=\s*copy\s*\]//g;
 	$ref_data =~ s/\bpass\s*=\s*reference\b/pass=by_address/g;
 	$ref_data = canonicalize_lowir_tls_accesses_for_compare($ref_data);
 	$my_data = canonicalize_lowir_tls_accesses_for_compare($my_data);
@@ -4305,6 +4332,7 @@ if (scalar(@ARGV) != 4)
 }
 
 my $mode = shift(@ARGV);
+$LOWIR_COMPARE_SOURCE_FACTS = $mode eq 'lowir_optimized_t' ? 0 : 1;
 my $ref_suffix = $ARGV[0];
 my $my_suffix = $ARGV[1];
 my $tests = $ARGV[2];
@@ -4320,6 +4348,7 @@ my $host_tag = host_platform_tag();
 my %patterns = (
 	text_t => qr/\.t$/,
 	lowir_t => qr/\.t$/,
+	lowir_optimized_t => qr/\.t$/,
 	lowir_roundtrip_t => qr/\.t$/,
 	lowir_debuginfo_t => qr/\.t$/,
 	text_t1 => qr/\.t\.1$/,
@@ -4404,7 +4433,7 @@ for my $test (@tests)
 			($ok, $message) = compare_lowir_roundtrip($ref_suffix, $my_suffix, $testbase);
 			$hint = checked_output_hint("$testbase.$ref_suffix", "$testbase.$my_suffix");
 		}
-		elsif ($mode eq 'lowir_t')
+		elsif ($mode eq 'lowir_t' || $mode eq 'lowir_optimized_t')
 		{
 			($ok, $message, $hint) =
 				compare_lowir_text($ref_suffix, $my_suffix, $testbase);

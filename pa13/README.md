@@ -103,6 +103,14 @@ the complete-then-deleting virtual destructor slot pair, are part of the LowIR
 contract in `../pa8/lowir.md` even though the top-level position of the vtable
 global itself is presentation.
 
+Vtables, the RTTI objects they point to and those objects' names are
+`storage=readonly` data (`../pa8/lowir.md`, "Facts The C++ Lowering States").
+A virtual call's signature states the called function's boundary facts:
+`unwind=no` and `return=noreturn` by its declaration, and `object_bytes` on
+`this` by its class. The virtual call of the deleting destructor that
+`delete p` makes states the destructor's, `unwind=no` when the destructor is
+non-throwing (12.4p3).
+
 The checked-in `.ref` files define the required LowIR facts for the tests. The
 test harness checks exit status, LowIR well-formedness, and the
 course-defined normalized LowIR output rather than requiring students to match every
@@ -295,3 +303,11 @@ Useful intermediate representations include:
   order does not depend on the order in which call sites demand those entries
 - a direct-call vs. virtual-call distinction in the semantic IR so codegen does not have to
   rediscover polymorphism from source syntax
+
+A virtual call is an ordinary load of the vpointer, a load from the vtable
+and an indirect call. Keep it that way, with vtables as `storage=readonly`
+structured data and vpointer writes as ordinary stores in the constructors.
+Then PA32 needs no virtual-call machinery to turn a call on an object of known
+type into a direct one: once the constructor is inlined, memory forwarding
+knows the vpointer, a load from readonly data at a constant offset yields the
+function's address, and an indirect call through an `addr` becomes direct.

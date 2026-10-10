@@ -195,6 +195,13 @@ The currently defined global `storage` values are:
 - `readonly`
 - `thread_local`
 
+`storage=readonly` means that no code writes the object once it is statically
+initialized; a program that writes it has undefined behavior. A back end may
+place it in read-only memory (`.rodata`, or `.data.rel.ro` when it holds
+addresses), and a consumer may fold a load from a global that is not
+`replaceable` to the value of its initializer. The C++ lowering states it by the
+rule in Facts The C++ Lowering States below.
+
 `section=<name>` places a declared or defined global in a named ELF section.
 The first public form is intentionally token-safe: `<name>` must be nonempty
 and contain only ASCII letters, digits, `_`, and `.`. It does not accept a
@@ -307,25 +314,25 @@ an explicit template-instantiation definition. Omission means false; there is no
 `object_root=no` spelling.
 
 The `force_inline=yes` metadata flag on top-level function declarations and definitions
-records that eligible direct
-same-program calls must be expanded during object preparation at every
-optimization level. It does not relax call-boundary, ABI, type, recursion, or
-control-flow safety checks. Canonical `lowiropt -O0` preserves this metadata
-without performing the object-preparation transform. Omission means false; there is no
-`force_inline=no` spelling.
+admits an eligible direct call of the function for inlining at `-O1` and above without
+counting its size against the caller's budget. A unit-wide growth budget still applies, as do
+the safety checks (recursion, `no_inline`, `replaceable`, exception regions). At `-O0` it has
+no effect, and `lowiropt -O0` preserves it. The C++ lowering never states it. Omission means
+false; there is no `force_inline=no` spelling.
 
 The `inline_hint=yes` metadata flag on top-level function declarations and definitions
-records a source-language
-preference for inlining eligible direct calls. It may increase a bounded
-profitability limit, but does not require substitution, change linkage, make
-the definition an object root, or override `no_inline=yes`. Omission means false; there is no
-`inline_hint=no` spelling.
+records that the function is an inline function (7.1.2), the source language's preference
+for inlining its eligible direct calls. It may increase a bounded profitability limit, but
+does not require substitution, change linkage, make the definition an object root, or
+override `no_inline=yes`. Omission means false; there is no `inline_hint=no` spelling.
 
 The `no_inline=yes` metadata flag on top-level function declarations and definitions prevents
-optional inlining of
-calls to that function. It does not make the function an object-emission root,
-change its symbol binding, or suppress other semantics-preserving transforms. Omission means
-false; there is no `no_inline=no` spelling.
+optional inlining of calls to that function. It does not make the function an object-emission
+root, change its symbol binding, or suppress other semantics-preserving transforms. Omission
+means false; there is no `no_inline=no` spelling.
+
+The C++ lowering states `inline_hint` and `no_inline` by the rules in Facts The C++ Lowering
+States below.
 
 `alias object <object-symbol> = @target` records an additional object-file symbol spelling
 that must resolve to the same emitted top-level LowIR function or global as `@target`.
@@ -390,15 +397,11 @@ may read memory but does not write it.
 The currently defined unwind value is `no`. Omission means the call may unwind and has no
 explicit spelling.
 
-This is an IR-level fact, not a promise about how every frontend always infers
-it. In particular, the current `cppgm++ --emit-lowir` path only infers
-`unwind=no` from cheap explicit source forms such as bare `noexcept`,
-`throw()`, and trivial boolean `noexcept(...)` expressions. Arbitrary explicit
-`noexcept(expr)` may still omit `unwind=no` until that semantic path has a
-cheap non-text-based implementation.
-
 The currently defined return value is `noreturn`. Omission means the call returns normally
 and has no explicit spelling.
+
+The C++ lowering states `effects`, `unwind` and `return` by the rules in Facts The C++
+Lowering States below.
 
 Call signatures only accept call-boundary metadata such as `arity=...`, `effects=...`,
 `unwind=...`, and `return=...`. Top-level symbol metadata such as `role=...`, `linkage=...`,
@@ -632,12 +635,12 @@ The intended meaning is semantic, not host-ABI-specific:
   boundary whose argument denotes addressable storage
 - `noalias`: this incoming pointer is disjoint from every other pointer
   parameter on the same boundary that also carries `alias=noalias`
-- `object_bytes=N`: the pointer denotes the beginning of a positive, complete
-  semantic object region containing `N` bytes. Memory accessed through that
-  parameter, or through a pointer derived from it and retained or returned by
-  the callee, remains inside that region. This is an object-model boundary,
-  not a claim that the callee reads or writes every byte and not a host ABI
-  size. Omission provides no bounded-region promise.
+- `object_bytes=N`: `N` bytes starting at the pointer are readable when the
+  function is entered, so a consumer may load from them where the code would
+  not (out of a loop that may not run) as long as nothing that may free them
+  has run since the entry. It does not say that accesses through the pointer
+  stay inside those bytes, and it is not a host ABI size. Omission promises
+  nothing.
 
 For the current LowIR subset, every explicitly spelled pass mode and alias
 metadata require parameter type `ptr`. `object_bytes` likewise requires `ptr`
@@ -827,8 +830,9 @@ register, which these classes do not describe, so such a result states no classe
 The native backend places an INTEGER eightbyte in the next argument GPR (rax then rdx for a
 result), an SSE eightbyte in the next XMM register (xmm0 then xmm1 for a result), and nothing
 for a `none` eightbyte. An object whose eightbytes do not all fit in the remaining registers,
-or whose classes are `memory`, goes on the stack whole. Objects passed this way interoperate
-with GCC- and Clang-compiled code.
+or whose classes are `memory`, goes on the stack whole. The placement is the same in course
+objects, link mode and `lowir2native` as in host objects, and objects passed this way
+interoperate with GCC- and Clang-compiled code.
 
 PA8's reader/writer preserves the object-boundary forms exercised by its
 fixtures. Later C++ lowering creates these boundaries, and the native
@@ -955,19 +959,17 @@ atomic_store <type> <value>, <ptr-value>, <order>
 In the PA8 subset, `index` computes a pointer by advancing a base pointer by `offset`
 elements of `<type>`.
 
-`[projection=<kind>]` is optional metadata. When present, it makes the semantic address
-intent explicit instead of leaving later passes to reconstruct it from frontend-only
-lowering shape. The currently supported projection kinds are:
+`[projection=<kind>]` is optional metadata that labels the source of an address. The
+currently supported projection kinds are:
 
 - `array_element`
 - `field`
 
-`array_element` identifies scaled element addressing used by array and table
-transforms. `field` identifies a constant within-object byte projection used by
-the object-copy and zeroing transforms. When omitted, `index` means plain
-pointer arithmetic with no stronger optimization claim; already-lowered source
-origins such as base-subobject and reference-field selection have no separate
-LowIR spelling.
+`array_element` labels the address of an array element (`p[i]`), and `field` the
+address of a member (`s.x`, `p->x`, `obj.*pm`). When omitted, `index` is plain
+pointer arithmetic; already-lowered source origins such as base-subobject selection
+have no spelling. No pass of the course solution draws a conclusion from the label, so a
+consumer may not depend on it, a producer may omit it, and the comparison ignores it.
 
 `typed` is an instruction fact (see Instruction Facts below).
 
@@ -1270,6 +1272,8 @@ control-flow and lifetime uses prove that rewrite safe.  It is not a command
 to erase the call: an `-O0` consumer executes the call and all ordinary source
 cleanup exactly as written.  The permission is invalid on value-returning or
 indirect calls and does not classify an unmarked call by its symbol spelling.
+The C++ lowering states it by the rule in Facts The C++ Lowering States below;
+consuming it is optional, and the course solution's optimizer does not.
 
 ### Terminators
 
@@ -1466,6 +1470,211 @@ conditions as the original (inlining, unrolling, duplication along a path)
 keep them, and of two equal instructions merged into one, the survivor keeps
 its facts only if it ran wherever the other did.
 
+## Facts The C++ Lowering States
+
+The C++ lowering (PA10 onward) states the boundary facts below by these
+rules, and the source-to-LowIR comparison checks them as it checks the
+instruction facts. The lowering states only what the source states: a fact
+proven from a function body or from knowledge of a library belongs to the
+optimizer, which may add it to optimized output, but the lowering never
+states it.
+
+`unwind=no`: a function declaration or definition states it exactly when the
+function's exception-specification allows no exception (15.4p12).
+
+- `noexcept`, `noexcept(true)` and `throw()`.
+- `noexcept(e)` whose constant expression is true, evaluated for each
+  specialization of a template: with
+  `template<class X> int f(X) noexcept(sizeof(X) == 4)`, `f<int>` states it
+  and `f<char>` does not.
+- A destructor without an exception-specification, unless a destructor of a
+  base or member allows exceptions (12.4p3, 15.4p14).
+- An implicitly declared special member function, or one defaulted on its
+  first declaration, when every function it directly invokes is non-throwing
+  (15.4p14); an inheriting constructor likewise (12.9).
+- A deallocation function without an exception-specification (15.4p15).
+- A lambda's call operator by its own `noexcept` or `throw()`, and the static
+  function its conversion to a function pointer returns by the call
+  operator's.
+- Every ABI entry of a constructor or destructor (base, complete, deleting)
+  by the function's own specification, and a thunk by its target's.
+- The GNU builtins (`__builtin_memcpy`, `__builtin_strlen`, ...) and the
+  functions the lowering declares for itself: `std::terminate`
+  (`role=terminate`), `__cxa_pure_virtual`, `abort` for `__builtin_abort`,
+  `cppgm_builtin_trap`, `cppgm_builtin_memset`, the internal
+  `cppgm_call_terminate`, local-static destructor helpers, the `__aggregate`
+  helpers, and the soft-float and complex helpers.
+- A C-linkage function first declared non-throwing in a system header and
+  redeclared without an exception-specification (glibc's `__THROW`).
+
+A call signature (`as (...) -> T [...]`) states `unwind=no` exactly when the
+callee's declared type is non-throwing.
+
+- A virtual call by the called function's specification; the virtual call of
+  a deleting destructor that `delete p` makes by the destructor's.
+- A call through a pointer, reference or pointer to member whose declaration
+  (a variable, parameter or data member) is non-throwing by the rules above,
+  such as `void (*fp)() noexcept`; `noexcept(fp())` agrees (5.3.7p3).
+- A lambda-expression called directly, by its call operator's.
+
+`noexcept(false)`, a dynamic-exception-specification that names a type, and
+a function or pointer declared without a specification state none, and so
+does a call through the result of a call or of a conditional expression. An
+indirect call keeps its unwind path whatever its signature states.
+
+`return=noreturn`: a function declaration, definition or call signature
+states it when any declaration of the function carries `[[noreturn]]` or GNU
+`noreturn`, or the function is one of the runtime functions listed here.
+
+- A user function, member functions included, declared `[[noreturn]]` or
+  `__attribute__((noreturn))` on its first declaration, its definition or a
+  later declaration.
+- A function template's specializations by the template's attribute; an
+  explicit specialization of a function template by its own declarations
+  only, and an explicit specialization of a member of a class template by
+  the member's.
+- A virtual call of a `noreturn` virtual function.
+- `__cxa_throw`, `__cxa_rethrow`, `__cxa_call_unexpected`, `__cxa_bad_cast`,
+  `__cxa_bad_typeid`, `__cxa_throw_bad_array_new_length`,
+  `__cxa_pure_virtual`, `std::terminate`, `abort` for `__builtin_abort`,
+  `cppgm_builtin_trap` and the internal `cppgm_call_terminate`.
+
+A call through a pointer or reference states none: the attribute appertains
+to a function, not to its type (7.6.3p1). A call of a `noreturn` function
+does not end its block; what follows it is lowered as written.
+
+`effects`: a function declaration, definition or call signature states
+`effects=readnone` when any declaration of the function carries GNU `const`,
+and `effects=readonly` when one carries GNU `pure` and none carries `const`;
+`__builtin_strlen` states `effects=readonly`.
+
+- `__attribute__((pure))`, `__attribute__((const))`, `[[gnu::pure]]` and
+  `[[gnu::const]]` on any declaration: a later declaration adds to an earlier
+  one, and a definition without the attribute keeps it.
+- A function template's specializations by the template's; an explicit
+  specialization by its own declarations.
+- The attribute on a lambda-declarator, for the call operator.
+- A virtual call of such a function.
+
+What a library function does (`sqrt`, `strlen` declared by `<string.h>`) is
+knowledge for the optimizer; the lowering states nothing for it.
+
+`storage=readonly`: a global definition states it when the object is
+statically initialized, not thread-local, and of a const, non-volatile type
+whose class, at any depth (an element's, a base's, a member's), has no
+`mutable` or volatile member and no non-trivial destructor; the lowering's
+own constant data states it too.
+
+- A const scalar, pointer or member pointer, and a const complex or vector
+  value.
+- A const array, whose qualifiers are its element type's (3.9.3p5).
+- A const object of a trivially destructible class, statically initialized by
+  constant initialization, by a constexpr constructor or by the lowering's
+  static construction of a polymorphic object.
+- Namespace-scope variables, static data members (of class templates too) and
+  block-scope statics, GNU weak definitions included.
+- The temporary that a constant-initialized reference of static storage
+  duration is bound to, by the temporary's own type: `const int& r = 3;`
+  makes a readonly `const int`; `int&& r = 3;` and `const P& r = P{1, 2};`
+  do not.
+- String literals, `__constexpr_template__` images, vtables and construction
+  vtables, VTTs, and RTTI objects and their names.
+
+A dynamically initialized object, a volatile object or one with a volatile
+member, a thread-local object, an object of a class with a `mutable` member
+(7.1.6.1p4) or a non-trivial destructor (12.4p2), a reference, a temporary
+initialized at startup (an `std::initializer_list` array), and a declaration
+state none.
+
+`inline_hint=yes`: a function declaration or definition states it exactly
+when the function is an inline function (7.1.2).
+
+- A function declared `inline` or `constexpr`, constructors included.
+- A function defined in its class definition (9.3p2): member functions,
+  static and virtual ones, member templates, members of local classes, and
+  friends defined in the class (11.3p7).
+- An implicitly declared special member function, one defaulted on its first
+  declaration, and an inheriting constructor.
+- A lambda's call operator and its conversion's static function (5.1.2p5).
+- A specialization of a template declared inline (an `inline` function
+  template, a member defined in its class template); an explicit
+  specialization only when it is itself declared `inline` or `constexpr`
+  (14.7.3p12).
+- The internal `.always_inline` copy the lowering makes of a GNU
+  `always_inline` function.
+
+A member defined outside its class without `inline`, a function defaulted
+outside its class (`S::S() = default;`) and an implicit specialization of a
+function template not declared inline state none.
+
+`no_inline=yes`: a function declaration or definition states it when any
+declaration of the function carries GNU `noinline` (on a lambda-declarator,
+the call operator; for a function template, its specializations, while an
+explicit specialization keeps only its own declarations'), and the internal
+`cppgm_call_terminate` helper states it.
+
+`object_bytes=N`: a pointer parameter states it, `N` the size of the object
+type, when the pointer designates the start of a complete object of that
+type.
+
+- `this` of every member function, of every constructor and destructor entry
+  (base, complete, deleting), and of the `__aggregate` helpers (an aggregate
+  has no base classes).
+- A reference parameter to a complete object type, an `__aggregate` helper's
+  reference-member parameter included.
+- A class object passed by address (`pass=by_address`) and an indirect
+  result (`pass=indirect_result`).
+- In a call signature: a virtual call's `this`, by the called function's
+  class; a pointer or reference call's parameters, as their declaration
+  states them; and the object of a call through a pointer to member of a
+  class without base classes.
+
+A thunk's `this` (it points into the object at the thunk's adjustment) and
+the object of a call through a pointer to member of a class with a base
+class (which the pointer may adjust to a base subobject, 5.5p6) state none.
+
+`alias=noalias`: a pointer parameter states it on `__builtin_memcpy`'s
+destination and source and on a copy or move constructor's `this` and source
+(12.8p2-p3), further parameters with default arguments allowed, in every ABI
+entry of the constructor and every call signature that copies its boundary.
+A constructor template, a converting constructor, an assignment operator,
+`__builtin_memmove` and `__restrict` state none.
+
+`classes` and `result_classes`: a direct object parameter of at most 16
+bytes states `classes`, and a direct object result `result_classes`, exactly
+when some eightbyte is SSE or `none` or (a parameter only) the object is
+`memory`, by the rules of Object ABI Conventions above.
+
+- `struct { double a, b; }` is `sse_sse`, `{ double d; long i; }` is
+  `sse_integer`, `{ double d; E e; }` with an empty `E` is `sse_none`, and an
+  empty class is `none`.
+- A parameter with a misaligned member, an x87 (`long double`) member or a
+  16-byte vector member is `memory`.
+- A result with a misaligned member is returned through
+  `pass=indirect_result`, and an x87 or 16-byte vector result states no
+  classes.
+- An argument past a variadic function's fixed parameters states none.
+
+`elision=copy`: a direct call of a copy or move constructor that is not
+trivial states it when the call copy-initializes an object from a
+conditional expression (5.16) that is a prvalue of the object's own class.
+
+- `T x = c ? T(1) : T(2);`, also parenthesized, nested, or with a
+  throw-expression arm (`c ? T(1) : throw 1`).
+- A by-value argument (`take(c ? T(1) : T(2))`), an aggregate member
+  (`Agg a = {c ? T(1) : T(2)}`) and a namespace-scope object.
+- A conditional with one lvalue arm and one prvalue arm (`c ? a : T(3)`, a
+  prvalue).
+
+Direct-initialization (`T x(c ? ...)`, `T x{c ? ...}`, `new T(c ? ...)`, a
+mem-initializer), a `return` or `throw` operand (whose operands construct the
+result in place), a glvalue conditional, a trivial copy, and a derived
+class's prvalue sliced into a base (12.8p31 permits omitting the copy only of
+an object of the destination's class) state none.
+
+The lowering never states `force_inline`. It may state `projection`, which is
+optional, has no consumer and is not compared.
+
 ## Structural Rules
 
 - Every temporary must be defined before it is used.
@@ -1517,13 +1726,14 @@ diff of code they did not write.
 - Internal symbol names: functions and globals that are not externally
   visible are paired by their `role` and `object` metadata, then by shape,
   then by position.
-- The order of items inside a metadata group, and the metadata keys that
-  belong to later stages (`linkage`, `binding`, `replaceable`, `classes`,
-  `result_classes`, `object`, `effects`,
-  `unwind`, `return`, `capture`, `access`, `alias`, the optimizer's
-  `force_inline`, `inline_hint` and `no_inline`, and the few others that
-  `lowir_metadata_item_ignored_for_compare` lists): they are validated but
-  not compared.
+- The order of items inside a metadata group, and whether they share one
+  group or stand in several: `[unwind=no, inline_hint=yes]` and
+  `[inline_hint=yes] [unwind=no]` are one.
+- The metadata keys that belong to later stages (`linkage`, `binding`,
+  `replaceable`, `object`, `tls_for`, `keep_alias`, `prefer_local`, the
+  optimizer's `force_inline`, the optional `projection`, and the few others
+  that `lowir_metadata_item_ignored_for_compare` lists): they are validated
+  but not compared.
 - Indentation and blank lines.
 - A literal is its value, not its spelling. `16`, `0x10` and `020` are one
   literal; `-1` and `4294967295` are one `i32`; `1.5`, `1.50` and `15e-1`
@@ -1560,6 +1770,14 @@ follows them, and so must yours.
   reference.
 - A structured global states its storage type exactly when its alignment is
   greater than that of its items (Structured Global Data Initializers above).
+- The facts the C++ lowering states are part of its output. `unwind`,
+  `return`, `effects`, `storage=readonly`, `inline_hint`, `no_inline`,
+  `object_bytes`, `alias`, `classes`, `result_classes` and `elision=copy`
+  follow the rules of Facts The C++ Lowering States above, on declarations,
+  definitions, parameters and call signatures alike; an output that misses
+  one, or states one the rules do not, differs from the reference. PA32's
+  optimized lanes leave these facts uncompared, since an optimizer may add a
+  fact it proves or drop one; its `-O0` driver lane compares them.
 - Instructions follow the source's evaluation order. Where the source fixes
   the order, the LowIR follows it: the right operand of an assignment is
   evaluated before the address of its left operand. Where the language
@@ -1574,8 +1792,10 @@ branch that follows it) and a table of inverted predicates; absorbing a
 missing `copy` would accept an output in which a temporary's type no
 longer says what its uses need; absorbing the order of independent
 instructions needs a dependency-respecting sort of every block, and would
-still leave the order of side effects pinned. Each is harder to hold than
-the sentence it would replace.
+still leave the order of side effects pinned; absorbing a missing fact
+would accept a lowering that leaves the optimizer less to work from, and
+absorbing an extra one would accept a promise the source never made. Each
+is harder to hold than the sentence it would replace.
 
 ## Later Reserved Extensions
 

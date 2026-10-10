@@ -556,7 +556,7 @@ class CompareResultsCommonTests(unittest.TestCase):
             result = run_compare("lowir_t", root, "tests")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_lowir_compare_ignores_late_export_names_and_hints(self) -> None:
+    def test_lowir_compare_ignores_late_export_names_and_compares_facts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "pa14"
             testbase = root / "tests" / "126"
@@ -610,7 +610,24 @@ class CompareResultsCommonTests(unittest.TestCase):
                 """
             )
             write_text(testbase.with_suffix(".ref"), ref_lowir)
+            # The source-to-LowIR lanes compare the facts the C++ lowering
+            # states; PA32's optimized lanes leave them uncompared.
             write_text(testbase.with_suffix(".my"), my_lowir)
+            result = run_compare("lowir_t", root, "tests")
+            self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+            result = run_compare("lowir_optimized_t", root, "tests")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            with_facts = (
+                my_lowir
+                .replace("declare global @extern_ro : ptr\n",
+                         "declare global @extern_ro : ptr [storage=readonly]\n")
+                .replace("declare function @rt0() -> void\n",
+                         "declare function @rt0() -> void [return=noreturn, unwind=no, effects=readnone]\n")
+                .replace("global @table = {", "global @table [storage=readonly] = {")
+                .replace("function @lowered_0(%p : ptr) -> i32 {",
+                         "function @lowered_0(%p : ptr [alias=noalias]) -> i32 [unwind=no] {")
+            )
+            write_text(testbase.with_suffix(".my"), with_facts)
             result = run_compare("lowir_t", root, "tests")
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

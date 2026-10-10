@@ -160,16 +160,25 @@ in words rather than absorbing, chief among them:
   `mul` of signed `int` and `long` source arithmetic (and of `++`, `--` and
   the compound assignments) are `nowrap`; and the division of a pointer
   difference by its element size is `exact`.
+- The boundary facts are part of the output (`../pa8/lowir.md`, "Facts The
+  C++ Lowering States"): a function whose exception-specification allows no
+  exception (`noexcept`, `noexcept(true)`, `throw()`, or `noexcept(e)` with
+  `e` true) states `unwind=no`; a statically initialized global of a const,
+  non-volatile type that is not `thread_local` states `storage=readonly`;
+  and a reference parameter to a complete object type states
+  `object_bytes=N`, `N` the size of the object it refers to.
 
 A fixture that fails on one of these is telling you which convention
 your output departs from; the canonical diff the harness writes beside the
 output shows where.
 
 The facts are what later stages may rely on: PA32's optimizer can assume a
-typed store does not change a typed load of another type, and PA24's
-backend can skip renormalizing a result that does not wrap. Stating them now
-costs one flag per instruction; deriving them again after lowering is not
-possible.
+typed store does not change a typed load of another type, remove the
+exception region around a call that cannot unwind, fold a load from readonly
+data to its value, and load through a reference before a loop that may not
+run; PA24's backend can skip renormalizing a result that does not wrap.
+Stating them now costs one flag each; deriving them again after lowering is
+not possible.
 
 For supported scalar conversions, PA10 may canonicalize widened integral immediates directly
 to their final LowIR literal value instead of spelling those same conversions through
@@ -285,10 +294,11 @@ This PA10 milestone supports the following:
 - up to four parameters in the supported PA7 procedural type subset
 - global integral/pointer/function-pointer objects with constant initializers or zero-init,
   including object addresses and constant array-element addresses
-- internal namespace-scope `const` scalar objects represented as
-  `storage=readonly` in LowIR when they are neither volatile nor
-  `thread_local`; volatile scalars, class objects, and thread-local objects
-  retain their respective conservative storage contracts
+- `storage=readonly` on every statically initialized global definition of a
+  const, non-volatile type that is not `thread_local`: a scalar, a pointer,
+  or an array of them (an array's qualifiers are its element type's,
+  3.9.3p5); a volatile, thread-local, dynamically initialized or non-const
+  object states none, and PA11 extends the rule to class objects
 - volatile scalar lvalue-to-rvalue conversions and stores represented by
   `load volatile` and `store volatile` at the LowIR boundary, including local,
   pointer-indirect, and class-member access; the marker belongs to the access,

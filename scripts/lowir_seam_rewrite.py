@@ -35,7 +35,7 @@ MODES = [
     ('R9-function-order', 'presentation', 'The order of top-level entries'),
     ('R6-extra-declare', 'presentation', 'A declaration nothing uses'),
     ('R5-metadata-order', 'presentation', 'The order of items inside a metadata group'),
-    ('R10-default-metadata', 'presentation', 'the metadata keys that belong to later stages'),
+    ('R10-metadata-groups', 'presentation', 'whether they share one group or stand in several'),
     ('R12-indent', 'presentation', 'Indentation and blank lines'),
     ('R13-blank-lines', 'presentation', 'Indentation and blank lines'),
     ('R11-hex-literal', 'normalization', 'A literal is its value, not its spelling'),
@@ -47,7 +47,14 @@ MODES = [
     ('R7-pure-swap', 'convention', "Instructions follow the source's evaluation order"),
     ('R21-drop-facts', 'convention', 'Instruction facts are part of the instruction'),
     ('R22-global-storage-type', 'convention', 'A structured global states its storage type'),
+    ('R23-drop-source-facts', 'convention', 'The facts the C++ lowering states are part of its output'),
 ]
+
+# The facts the C++ lowering states by rule (pa8/lowir.md, "Facts The C++
+# Lowering States"), as metadata items.
+SOURCE_FACT = re.compile(
+    r'^(?:unwind=no|return=noreturn|effects=\w+|storage=readonly|inline_hint=yes|no_inline=yes|'
+    r'object_bytes=\d+|alias=noalias|classes=\w+|result_classes=\w+|elision=copy)$')
 
 PURE = ('addr', 'const', 'index', 'binary', 'cmp', 'convert', 'copy')
 INVERT = {'eq': 'ne', 'ne': 'eq', 'lt': 'ge', 'ge': 'lt', 'gt': 'le', 'le': 'gt',
@@ -199,8 +206,15 @@ def rewrite(mode, text):
         pieces = split_functions(text)
         fns = iter([p for k, p in pieces if k == 'fn'][::-1])
         return ''.join(next(fns) if k == 'fn' else p for k, p in pieces)
-    if mode == 'R10-default-metadata':  # spell the default unwind mode in a second group
-        return re.sub(r'^(function @(?![^\n]*\bunwind=)[^\n]*?)( \{)$', r'\1 [unwind=may]\2', text, flags=re.M)
+    if mode == 'R10-metadata-groups':   # one group per item on every function header
+        def split_groups(m):
+            items = [x.strip() for x in m.group(1).split(',')]
+            return ' ' + ' '.join(f'[{x}]' for x in items)
+        def header(m):
+            head, groups, tail = m.groups()
+            return head + re.sub(r' \[([^\]]+)\]', split_groups, groups) + tail
+        return re.sub(r'^((?:declare )?function @[^\n]*?\)(?: -> \S+)?)((?: \[[^\]\n]+\])+)( \{|(?:\s*!dbg\([^)]*\))? \{|)$',
+                      header, text, flags=re.M)
     if mode == 'R11-hex-literal':       # spell stored integer zeros in hex
         return map_functions(text, lambda fn: re.sub(r'(store (?:typed )?(?:i|u)(?:8|16|32|64) )0,', r'\g<1>0x0,', fn))
     if mode == 'R12-indent':            # six-space instruction indentation
@@ -228,6 +242,14 @@ def rewrite(mode, text):
     if mode == 'R21-drop-facts':        # drop every instruction fact
         return re.sub(r'(= load(?: volatile)?| store(?: volatile)?|^    store(?: volatile)?) typed ',
                       r'\1 ', re.sub(r'(= binary \w+) (?:nowrap |exact )+', r'\1 ', text), flags=re.M)
+    if mode == 'R23-drop-source-facts':    # drop every fact the C++ lowering states
+        def drop(m):
+            items = [x.strip() for x in m.group(1).split(',')]
+            kept = [x for x in items if not SOURCE_FACT.match(x)]
+            if len(kept) == len(items):
+                return m.group(0)
+            return ' [' + ', '.join(kept) + ']' if kept else ''
+        return re.sub(r' \[([a-z_]+=[^\]\n]*)\]', drop, text)
     if mode == 'R22-global-storage-type':  # drop structured globals' storage types
         return re.sub(r'^(global @\S+) : obj<\d+x\d+>( \[[^\]]*\])? = \{$', r'\1\2 = {', text, flags=re.M)
     if mode == 'R20-param-names':       # rename parameters

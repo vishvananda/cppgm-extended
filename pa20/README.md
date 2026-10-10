@@ -222,6 +222,11 @@ To complete PA20, implement these goals:
    constructor's or destructor's body is one in every entry that runs the
    body; and one in a class template's static data member initializer or a
    variable template's initializer is one per specialization.
+   The call operator, and the static function the conversion to a function
+   pointer returns, is an inline function (5.1.2p5) that states
+   `inline_hint=yes`, and `unwind=no` when the lambda is declared `noexcept`
+   or `throw()`; a lambda-expression called directly states its call
+   operator's `unwind=no` on the call signature.
 
 4. Range-for lowering.
    Range-for over arrays and supported user-defined `begin` / `end`

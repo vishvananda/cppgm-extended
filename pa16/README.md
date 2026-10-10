@@ -203,6 +203,12 @@ C++11 `constexpr` forms that later template and library code expect:
 - ordinary namespace objects whose constant-initialization probe encounters a
   core constant-expression failure use dynamic initialization; only contexts
   that require a constant expression are rejected for that failure
+- a `constexpr` object is const, so one that is statically initialized states
+  `storage=readonly` when its class has no `mutable` member and no
+  non-trivial destructor, as PA11's const objects do; the temporary that a
+  constant-initialized reference binds is readonly by its own type
+  (`const int& r = 3` binds a readonly `const int`, `int&& r = 3` a writable
+  `int`)
 
 A call that constant evaluation replaces by its value does not make the
 function used in emitted code, so a `constexpr` function whose every call is

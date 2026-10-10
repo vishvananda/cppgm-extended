@@ -209,6 +209,11 @@ To complete PA22, implement these goals:
    contextual conversion to `bool` tests `ptr`. `.*` and `->*` add `adj` to the
    object's address, then call `ptr` or, when `ptr` is odd, the entry `ptr - 1`
    bytes into the vtable of the adjusted object.
+   The call's signature states `unwind=no` when the member pointer's
+   declaration is non-throwing, and `object_bytes` on the object only when the
+   member pointer's class has no base class, since `adj` may move the object to
+   a base subobject (5.5p6). A statically initialized const member pointer, and
+   a const array of them, states `storage=readonly`.
 
 5. Remaining single-vptr RTTI case.
    `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI

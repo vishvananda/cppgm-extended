@@ -222,7 +222,14 @@ To complete PA21, implement these goals:
    after it. A delegating constructor destroys its completed target when its
    own body fails. A second exception during unwind destruction terminates.
    A destructor declared without an exception specification has the one its
-   implicit declaration would have (12.4p3, 15.4p14), normally non-throwing. A
+   implicit declaration would have (12.4p3, 15.4p14), normally non-throwing,
+   and states `unwind=no` exactly when that one is non-throwing; a base's or
+   member's `noexcept(false)` destructor makes it potentially throwing. A call
+   through a pointer, reference or pointer to member whose declaration (a
+   variable, parameter or data member) is non-throwing states `unwind=no` on
+   its call signature, as `noexcept` of the call answers true (5.3.7p3); a
+   call through the result of a call or a conditional states none, and the
+   call keeps its unwind path either way. A
    non-throwing function, such a destructor included, whose definition may
    throw runs its whole definition under a terminate guard: one region whose
    handler calls `std::terminate` (15.5.1). A definition may throw when it

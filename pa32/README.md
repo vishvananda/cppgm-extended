@@ -268,6 +268,7 @@ Before moving on, run `make test-report-through-pa32` from the repository root.
 - `tests/o1`
 - `tests/o2`
 - `tests/o3`
+- `tests/driver/o0`
 - `tests/driver/o1`
 - `tests/driver/o2`
 - `tests/driver/o3`
@@ -281,6 +282,10 @@ source-language clauses.
 - `tests/o1` runs `lowiropt -O1` on handwritten LowIR.
 - `tests/o2` runs `lowiropt -O2` on handwritten LowIR.
 - `tests/o3` runs `lowiropt -O3` on handwritten LowIR.
+- `tests/driver/o0` runs `cppgm++ --emit-lowir -g0 -O0` on source programs
+  whose boundary facts come from attributes that PA27-PA29 introduce (GNU
+  `noinline`, `pure` and `const`, `[[noreturn]]`): the C++ lowering's own
+  output, compared as PA10-PA23 compare theirs, facts included.
 - `tests/driver/o1` runs `cppgm++ --emit-lowir -g0 -O1` on source programs.
 - `tests/driver/o2` runs `cppgm++ --emit-lowir -g0 -O2` on source programs.
 - `tests/driver/o3` runs `cppgm++ --emit-lowir -g0 -O3` on source programs.
@@ -328,7 +333,10 @@ instruction keeps.
 For each `.t` test, the harness records the tool exit status and compares the
 generated output against the oracle for that test directory. Failed reference
 cases are judged by exit status; successful reference cases are judged by the
-directory's LowIR validation mode.
+directory's LowIR validation mode. Outside `tests/driver/o0`, the comparison
+validates the facts of `../pa8/lowir.md` "Facts The C++ Lowering States" but
+does not compare them: an optimizer may add a fact it proves, such as
+`unwind=no` on a function whose body cannot throw, or drop one.
 
 ### Out Of Scope
 

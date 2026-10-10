@@ -118,9 +118,10 @@ Every pointer boundary that denotes a complete object also carries the PA8
 `object_bytes=N` extent in emitted O0 LowIR. This includes the implicit object
 parameter of supported member functions, class references and indirect class
 arguments, and indirect result storage. An ordinary source pointer does not
-gain an extent merely from its pointee type. The extent is semantic LowIR
-metadata and must survive text and compiler-object replay; it is not a native
-calling-convention annotation.
+gain an extent merely from its pointee type. The extent says that `N` bytes
+are readable when the function is entered; it is semantic LowIR metadata,
+compared like the other boundary facts, and must survive text and
+compiler-object replay; it is not a native calling-convention annotation.
 
 Synthesized copy/move constructors, assignment helpers, and related
 temporary-materialization support are part of the PA12 semantic model, but `cppgm++` only
@@ -128,9 +129,11 @@ needs to emit the helper definitions that the lowered program actually requires.
 copy/move/value helpers do not need to appear just because they are synthesizable.
 
 The indirect destination and source parameters of a same-class copy or move
-constructor denote distinct live objects during construction. Their emitted
-LowIR boundary metadata may therefore mark both parameters `alias=noalias`.
-Assignment operators do not have that property and must remain conservative.
+constructor denote distinct live objects during construction, so the emitted
+LowIR marks both `alias=noalias`, in every entry of the constructor and in a
+copy or move constructor with further defaulted parameters too (12.8p2). A
+constructor template, a converting constructor and an assignment operator,
+whose operands may be one object, state none.
 
 Focused course controls validate these boundary facts and temporary-lifetime
 relationships without comparing a complete LowIR module. They inspect only
@@ -144,7 +147,10 @@ and the compile/link driver remain PA24 and PA25 work.
 When a same-type conditional class prvalue is materialized in a private
 temporary and then selected for copy or move construction into its final
 complete-object destination, PA12 records the standard source-language
-permission on that outer direct call as `[elision=copy]`.  This is serialized
+permission on that outer direct call as `[elision=copy]`, by the rule of
+`../pa8/lowir.md`: a copy-initialization from a prvalue conditional of the
+object's own class, never a direct-initialization, a `return` operand or a
+derived prvalue sliced into a base; the comparison checks it.  This is serialized
 optimization information, not an O0 elision: the emitted O0 LowIR retains the
 distinct temporary, transfer call, and normal/exceptional destruction.  The
 focused control checks those relationships and executes the O0 behavior
@@ -210,10 +216,18 @@ copy/move construction step itself directly as `copyobj <span> <src>, <dst>` ins
 spelling a call to a synthesized trivial copy/move constructor helper. That direct
 value-transfer form is part of the accepted PA12 output contract.
 
-Supported synthesized constructors, destructors, and copy/move assignment operators may
-also carry LowIR boundary metadata such as `[unwind=no]` when the compiler can determine
-that the synthesized body is semantically non-throwing. That metadata is part of the
-accepted PA12 output contract when it appears in the checked-in `.ref` files.
+A synthesized constructor, destructor or copy/move assignment operator, and
+one defaulted on its first declaration, states `unwind=no` when every function
+it directly invokes is non-throwing (15.4p14); the comparison checks it.
+
+A class value that crosses a boundary directly as `obj<NxA>` states its
+eightbytes' classes, `classes` on the parameter and `result_classes` on the
+function or call signature, when some eightbyte is SSE or holds no member, or
+when a parameter goes in memory (`../pa8/lowir.md`, Object ABI Conventions):
+`struct { double a, b; }` is `sse_sse`, `{ double d; long i; }` is
+`sse_integer`, an empty class is `none`, and a class with a `long double`
+member is passed `memory`. The comparison checks them, and PA24's back end
+passes such values in XMM registers by them.
 
 For supported synthesized destructors, trivial union subobject destructor steps may be
 omitted from enclosing synthesized destructors.

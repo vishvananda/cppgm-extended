@@ -202,7 +202,14 @@ the supported subset:
 - foreign catch-all interaction in the tested subset
 - GNU `pure` and `const` attributes on ordinary functions and function
   templates, preserved on the canonical callable as read-only-memory and
-  no-memory-access effects, respectively
+  no-memory-access effects, respectively: `effects=readonly` and
+  `effects=readnone` on its declarations, definition and calls
+  (`../pa8/lowir.md`, "Facts The C++ Lowering States"). A later declaration
+  adds the attribute, one on a lambda-declarator is the call operator's, and
+  a function template's reaches its specializations, while an explicit
+  specialization takes only its own declarations' attributes, as GCC reads
+  them; `noinline` follows the same rules for `no_inline=yes`, and PA32's
+  `-O0` driver lane compares these facts
 
 If host link succeeds but the host C++ ABI/runtime behavior is wrong, fix the
 host ABI/runtime lowering, metadata, or object-emission path.

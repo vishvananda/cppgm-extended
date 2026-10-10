@@ -781,10 +781,94 @@ function @main(%x : i32, %p : ptr) -> i64 {
             self.assertIn("does not match reference", result.stdout, changed)
 
     def test_relaxed_compare_accepts_a_second_metadata_group(self):
-        generated = REFERENCE.replace(
-            ") -> i64 {", ") -> i64 [effects=readwrite] [unwind=may] {", 1
+        reference = REFERENCE.replace(
+            ") -> i64 {", ") -> i64 [unwind=no, inline_hint=yes] {", 1
         )
-        result = self.compare(REFERENCE, generated)
+        generated = REFERENCE.replace(
+            ") -> i64 {", ") -> i64 [inline_hint=yes] [unwind=no] {", 1
+        )
+        result = self.compare(reference, generated)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    # The facts the C++ lowering states (pa8/lowir.md, "Facts The C++
+    # Lowering States") are compared on the source-to-LowIR lanes and left
+    # uncompared on PA32's optimized lanes, where an optimizer may add them.
+    FACTS = """declare function @helper(%p : ptr [pass=by_address, object_bytes=4]) -> i32 [unwind=no]
+
+global @limit : i32 [storage=readonly] = 3
+
+function @twice(%x : i32) -> i32 [unwind=no, inline_hint=yes] {
+  block ^entry:
+    %y = binary add nowrap i32 %x, %x
+    return i32 %y
+}
+
+function @main() -> i32 [role=entry] {
+  slot $value : i32
+
+  block ^entry:
+    store typed i32 1, $value
+    %p = addr $value
+    %a = call i32 @helper(%p)
+    %b = call i32 @twice(%a)
+    %fp = addr @twice
+    %c = call i32 %fp(%b) as (%x : i32) -> i32 [unwind=no]
+    %g = addr @limit
+    %l = load typed i32 %g
+    %r = binary add nowrap i32 %c, %l
+    return i32 %r
+}
+"""
+
+    UNSOUND_OR_MISSING_FACTS = (
+        # main neither returns nothing nor reads no memory
+        ("-> i32 [role=entry] {", "-> i32 [role=entry, effects=readnone, return=noreturn] {"),
+        ("object_bytes=4", "object_bytes=999"),
+        ("-> i32 [unwind=no]\n", "-> i32\n"),
+        ("[unwind=no, inline_hint=yes]", "[unwind=no]"),
+        ("[storage=readonly] ", ""),
+        ("as (%x : i32) -> i32 [unwind=no]", "as (%x : i32) -> i32"),
+        ("[pass=by_address, object_bytes=4]", "[pass=by_address, alias=noalias, object_bytes=4]"),
+    )
+
+    def test_relaxed_compare_rejects_unsound_and_missing_facts(self):
+        for original, changed in self.UNSOUND_OR_MISSING_FACTS:
+            self.assertIn(original, self.FACTS)
+            generated = self.FACTS.replace(original, changed, 1)
+            result = self.compare(self.FACTS, generated)
+            self.assertNotEqual(result.returncode, 0, changed)
+            self.assertIn("does not match reference", result.stdout, changed)
+
+    def test_optimized_compare_leaves_facts_uncompared(self):
+        for original, changed in self.UNSOUND_OR_MISSING_FACTS:
+            generated = self.FACTS.replace(original, changed, 1)
+            result = self.compare(self.FACTS, generated, mode="lowir_optimized_t")
+            self.assertEqual(result.returncode, 0, changed + "\n" + result.stdout + result.stderr)
+
+    def test_relaxed_compare_reads_fact_items_in_any_order_and_grouping(self):
+        generated = (
+            self.FACTS
+            .replace("[unwind=no, inline_hint=yes]", "[inline_hint=yes] [unwind=no]")
+            .replace("[pass=by_address, object_bytes=4]", "[object_bytes=4, pass=by_address]")
+        )
+        result = self.compare(self.FACTS, generated)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    ELISION = """declare function @copy(%dst : ptr [object_bytes=4], %src : ptr [pass=by_address, object_bytes=4]) -> void
+
+function @main(%dst : ptr, %src : ptr) -> i64 {
+  block ^entry:
+    call void @copy(%dst, %src) [elision=copy]
+    return i64 0
+}
+"""
+
+    def test_relaxed_compare_requires_copy_elision_permission(self):
+        generated = self.ELISION.replace(" [elision=copy]", "")
+        result = self.compare(self.ELISION, generated)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("does not match reference", result.stdout)
+        result = self.compare(self.ELISION, generated, mode="lowir_optimized_t")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_lowir_sanity_reports_a_duplicate_metadata_key(self):

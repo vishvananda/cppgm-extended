@@ -310,9 +310,13 @@ def compare(results):
                 entries.append((relative, name, temporary,
                                 'reference temporary', binding))
                 continue
+            # A clang symbol that one of our names spells exactly is that
+            # name's entity, not this one's: two closures' members normalize
+            # alike, and clang may not emit the second (a directly called
+            # closure's invoker), which is an emission choice.
             counterparts = [symbol for symbol in
                             by_name.get(normalized(demangled, name), [])
-                            if symbol != name]
+                            if symbol != name and variant_free(symbol) not in ours]
             by_signature = False
             if not counterparts and name.startswith('_Z'):
                 counterparts = [
