@@ -6,6 +6,7 @@ CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
 CPPGM_TEST_APP ?= ../dev/$(TARGET)
 REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
+NATIVE_REFERENCE_APP ?= ../dev/lowir2native-ref
 TEST_DEPS ?= dev-shared-target
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(TEST_RUNNER_SHARED_FLAGS) $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
@@ -18,6 +19,7 @@ OBJ = ../obj
 VPATH = $(SRC)
 RDEPDIR = $(OBJ)/release/.d
 DDEPDIR = $(OBJ)/debug/.d
+CONTROL_TEST_ROOT ?= tests/controls
 
 $(shell mkdir -p $(RDEPDIR) $(DDEPDIR) >/dev/null)
 
@@ -61,16 +63,41 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
+# tests/controls: a control that states its expected outcome is a self-checking
+# program graded by ../scripts/check_controls.pl (see TESTING_AND_REFERENCES.md).
+CONTROLS_RUN = if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
+		perl ../scripts/check_controls.pl \
+			$(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(CONTROL_TEST_ROOT)"; \
+	fi
+
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
+	@$(CONTROLS_RUN)
+
+test-controls: $(TEST_DEPS)
+	@$(CONTROLS_RUN)
 
 ref-test:
 	@$(REF_TEST_RUN)
 
+REF_TEST_RUN = case "$(TEST)" in \
+	$(CONTROL_TEST_ROOT)/*) echo "$(TEST): self-checking control has no reference sidecar" ;; \
+	*) scripts/run_all_tests.pl $(REF_TEST_APP) ref "$(if $(strip $(TEST)),$(TEST),tests)" ;; \
+esac
+
+CHECK_RUN = case "$(TEST)" in \
+	$(CONTROL_TEST_ROOT)/*) perl ../scripts/check_controls.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)" ;; \
+	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
+esac
+CHECK_COMPARE = case "$(TEST)" in \
+	$(CONTROL_TEST_ROOT)/*) true ;; \
+	*) scripts/compare_results.pl ref check "$(TEST)" ;; \
+esac
+
 include ../scripts/pa_run_check_targets.mk
 
-.PHONY: dev-shared-target ref-test
+.PHONY: dev-shared-target ref-test test-controls
 ../dev/$(TARGET):
 	$(MAKE) -C ../dev $(TARGET) CXX=$(CXX)
 

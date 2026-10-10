@@ -262,6 +262,7 @@ test-cells:
 HARNESS_TESTS = \
 	scripts/tests/test_audit_pa_feature_placement.py \
 	scripts/tests/test_batch_timeout_harness.py \
+	scripts/tests/test_check_controls.py \
 	scripts/tests/test_check_object_expectations.py \
 	scripts/tests/test_compare_lowir_results.py \
 	scripts/tests/test_compare_results_common.py \

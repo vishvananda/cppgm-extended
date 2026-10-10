@@ -114,6 +114,15 @@ backend introduced in PA8. Your own native backend is implemented in PA24.
 
 The shipped PA23 tests are the contract for this milestone.
 
+Self-checking controls in `tests/controls/` state their expected outcome in
+their leading comment (`expect exit N` or `expect reject`) or in an
+`x.expect` sidecar. `make test` compiles each with your
+`cppgm++ --emit-lowir -O0`, builds the LowIR with the supplied
+`lowir2native-ref -O0` and requires the stated exit status (and the output in
+`x.stdout`, when present), or requires your frontend to reject the program.
+The LowIR text of a control is not compared. `make test-controls` runs only
+the controls; `make check TEST=tests/controls/<name>.cpp` runs one.
+
 ### PA23 Syntax Spec
 
 The authoritative source syntax is the shared `cppgm++` source grammar, exposed

@@ -44,6 +44,21 @@ used; put a reducer in the earliest assignment that owns all its requirements.
 `controls/` contains focused property checks. Personal inputs and scratch
 harnesses belong in `student.tests/` and are run explicitly.
 
+In the LowIR-graded assignments (PA10–PA23), a control that states its
+expected outcome is a self-checking program: `expect exit N` or
+`expect reject` in its leading comment, or an `x.expect` sidecar (`exit N`
+or `reject`, with optional exact output in `x.stdout`).
+`scripts/check_controls.pl` compiles it with `cppgm++ --emit-lowir -O0`,
+builds the LowIR with `lowir2native-ref -O0`, runs it and checks the status
+and output, or that the frontend rejects it; the LowIR text is not compared.
+A program killed by a signal fails whatever status it states (SIGABRT is not
+`exit 134`), and a frontend killed by one does not reject.
+`make test` runs controls after the LowIR suite, `make test-controls` runs
+them alone, and controls need no references. Use this lane for a runtime
+reducer whose features the assignment owns. Host-linked, multi-unit,
+optimized or g++-output-compared programs belong to PA25 and later. Controls
+without a stated outcome stay with PA10–PA12's focused checkers.
+
 PA24, PA32 and PA33 also have `tests/regression/`, which pins this solution's
 particular output shapes. Maintainer `make test` runs both `test-course` and
 `test-regression`; student-export `make test` runs the course contract only.

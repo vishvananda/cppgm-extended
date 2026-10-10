@@ -6,6 +6,7 @@ CPPGM_STDLIB_FLAGS ?=
 CPPGM_TEST_RUNNER ?= 1
 CPPGM_TEST_APP ?= ../dev/$(TARGET)
 REF_TEST_APP ?= $(CPPGM_TEST_APP)-ref
+NATIVE_REFERENCE_APP ?= ../dev/lowir2native-ref
 TEST_DEPS ?= dev-shared-target
 TEST_RUNNER_SHARED_FLAGS = $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-DTEST_RUNNER_ENABLE,)
 TEST_RUNNER_ENTRY_FLAGS = $(TEST_RUNNER_SHARED_FLAGS) $(if $(filter 1,$(CPPGM_TEST_RUNNER)),-Dmain=test_runner_real_main,)
@@ -62,19 +63,30 @@ $(OBJ)/debug/test_runner_enabled.o: $(SRC)/$(FRONTEND_TEST_RUNNER_SOURCE_ID).cpp
 	$(CXX) $(CC_FLAGS) $(TEST_RUNNER_SHARED_FLAGS) $(INC) -c -MT $@ -MMD -MP -MF $(DDEPDIR)/test_runner_enabled.Td -o $@ $<
 	mv -f $(DDEPDIR)/test_runner_enabled.Td $(DDEPDIR)/test_runner_enabled.d
 
+# tests/controls: a control that states its expected outcome is a self-checking
+# program graded by ../scripts/check_controls.pl (see TESTING_AND_REFERENCES.md).
+CONTROLS_RUN = if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
+		status=0; \
+		perl ../scripts/check_pa11_string_literal_storage.pl \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
+		perl ../scripts/check_pa11_lifecycle_policy.pl \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
+		perl ../scripts/check_pa11_goto_lifetime_cleanup.pl \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
+		perl ../scripts/check_pa11_unreachable_terminator.pl \
+			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
+		perl ../scripts/check_controls.pl \
+			$(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(CONTROL_TEST_ROOT)" || status=1; \
+		exit $$status; \
+	fi
+
 test: $(TEST_DEPS)
 	@scripts/run_all_tests.pl $(CPPGM_TEST_APP) my tests
 	@scripts/compare_results.pl ref my tests
-	@if [ -d "$(CONTROL_TEST_ROOT)" ]; then \
-		perl ../scripts/check_pa11_string_literal_storage.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
-		perl ../scripts/check_pa11_lifecycle_policy.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
-		perl ../scripts/check_pa11_goto_lifetime_cleanup.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
-		perl ../scripts/check_pa11_unreachable_terminator.pl \
-			$(CPPGM_TEST_APP) "$(CONTROL_TEST_ROOT)"; \
-	fi
+	@$(CONTROLS_RUN)
+
+test-controls: $(TEST_DEPS)
+	@$(CONTROLS_RUN)
 
 # The LowIR comparison seams: the harness's own unit tests, then every
 # rewrite of this lane's outputs that ../pa8/lowir.md says the comparison
@@ -100,6 +112,7 @@ CHECK_RUN = case "$(TEST)" in \
 	$(CONTROL_TEST_ROOT)/*lifecycle-inline-policy*) perl ../scripts/check_pa11_lifecycle_policy.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*goto-lifetime-cleanup*) perl ../scripts/check_pa11_goto_lifetime_cleanup.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
 	$(CONTROL_TEST_ROOT)/*unreachable-terminator*) perl ../scripts/check_pa11_unreachable_terminator.pl $(CPPGM_TEST_APP) "$(TEST)" ;; \
+	$(CONTROL_TEST_ROOT)/*) perl ../scripts/check_controls.pl $(CPPGM_TEST_APP) $(NATIVE_REFERENCE_APP) "$(TEST)" ;; \
 	*) scripts/run_all_tests.pl $(CPPGM_TEST_APP) check "$(TEST)" ;; \
 esac
 CHECK_COMPARE = case "$(TEST)" in \

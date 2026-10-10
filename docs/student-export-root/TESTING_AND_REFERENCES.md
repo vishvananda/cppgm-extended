@@ -62,6 +62,15 @@ LowIR construction and later C++ lowering itself.
 PA12’s behavioral controls also execute your source-generated LowIR through
 the supplied native backend. Your own native backend is introduced in PA24.
 
+From PA10 through PA23, a control whose leading comment says `expect exit N`
+or `expect reject` (or with an `x.expect` sidecar) is a self-checking program.
+`make test` compiles it with your `cppgm++ --emit-lowir -O0`, builds the result
+with `lowir2native-ref -O0` and requires that exit status (and the output in
+`x.stdout`, when present), or requires your frontend to reject it. A program
+killed by a signal never has the stated status, and a frontend that crashes
+does not reject. Any LowIR with the right behavior passes. Run them alone
+with `make test-controls`.
+
 Reference wrappers download and verify a pinned bundle built from the current
 cppgm-extended solution. They provide examples of the required behavior and
 are not the original CPPGM binaries. Fetch them ahead of time with:

@@ -427,10 +427,16 @@ sub submit_cli_request
 	die "Unexpected worker status '$status'\n";
 }
 
+# Runs a command with its output appended to files and returns its status:
+# the exit status, 128 + N when signal N killed it, or 124 on timeout.
+# Those overlap with real exit statuses; a caller that must tell them apart
+# passes `outcome => \%outcome`, which receives `timed_out => 1`, or the
+# `signal` that killed the command (0 for none) and its `exit` status.
 sub run_command_capture
 {
 	my (%options) = @_;
 	my @cmd = @{$options{cmd}};
+	my $outcome = $options{outcome};
 	my $stdout_path = $options{stdout};
 	my $stderr_path = $options{stderr};
 	my $stdin_path = $options{stdin};
@@ -483,6 +489,7 @@ sub run_command_capture
 			}
 			close($stdout_fh) or die "Unable to close $stdout_path: $!";
 			close($stderr_fh) or die "Unable to close $stderr_path: $!";
+			%{$outcome} = (timed_out => 1) if ref($outcome) eq 'HASH';
 			return 124;
 		}
 	}
@@ -490,12 +497,15 @@ sub run_command_capture
 	{
 		waitpid($pid, 0);
 	}
+	my $wait_status = $?;
 
 	close($stdout_fh) or die "Unable to close $stdout_path: $!";
 	close($stderr_fh) or die "Unable to close $stderr_path: $!";
 
-	return $? >> 8 if ($? & 127) == 0;
-	return 128 + ($? & 127);
+	%{$outcome} = (timed_out => 0, signal => $wait_status & 127,
+		exit => $wait_status >> 8) if ref($outcome) eq 'HASH';
+	return $wait_status >> 8 if ($wait_status & 127) == 0;
+	return 128 + ($wait_status & 127);
 }
 
 1;
