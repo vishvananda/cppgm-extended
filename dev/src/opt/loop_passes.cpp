@@ -65,6 +65,7 @@ private:
 	SymbolId builtin_symbol(const char* name, const char* object, const Type* types, uint32_t count);
 	bool builtin_available(const char* name) const;
 	bool private_values(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs) const;
+	bool final_values(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs);
 	bool bypass(uint32_t loop, const ExitTest& test);
 	void emit_fill(uint32_t loop, const Induction& iv, const ExitTest& test, InstId store, InstId load);
 	SymbolId fill_symbol();
@@ -278,8 +279,18 @@ bool LoopPass::exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& i
 			const Value v = cmp.ops[side], other = cmp.ops[1 - side];
 			if (!v.is(ValueKind::Temp) || (v.index != iv.value && v.index != iv.next) || !invariant(loop, other))
 				continue;
-			const ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
-													: swapped(static_cast<ComparePredicate>(cmp.sub));
+			ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
+											  : swapped(static_cast<ComparePredicate>(cmp.sub));
+			// Unsigned, `x > 0` is `x != 0` and `x <= 0` is `x == 0` (a count
+			// down to zero).
+			if (other.is(ValueKind::Integer) && body_.literals[other.index].low == 0 &&
+				body_.literals[other.index].high == 0)
+			{
+				if (pred == ComparePredicate::Ugt)
+					pred = ComparePredicate::Ne;
+				else if (pred == ComparePredicate::Ule)
+					pred = ComparePredicate::Eq;
+			}
 			out.compared = v;
 			out.bound = other;
 			out.exit_value = other;
@@ -354,6 +365,159 @@ bool LoopPass::private_values(uint32_t loop, const ExitTest& test, const std::ve
 		}
 	}
 	return ok;
+}
+
+// A loop tested at its header on an induction phi it leaves when the phi
+// meets the bound (a counted trip number, an integer stepping by one, or a
+// pointer, which moves within its object until it meets the bound), whose
+// values read after it are header inductions: the preheader computes the
+// trip count N and each such induction's exit value init + N * step (in
+// its own type's arithmetic, as the loop's steps wrap), and the reads
+// after the loop take them. Then only the tested value is read after it
+// (bypass gives it the bound).
+bool LoopPass::final_values(uint32_t loop, const ExitTest& test, const std::vector<Induction>& ivs)
+{
+	const Loop& l = forest_.loops[loop];
+	if (l.preheader == kNoId || test.exiting != l.header || !test.compared.is(ValueKind::Temp))
+		return false;
+	const Induction* tested = nullptr;
+	for (const Induction& iv : ivs)
+		if (iv.value == test.compared.index)
+			tested = &iv;
+	if (tested == nullptr ||
+		(test.trips < 0 && !tested->pointer && tested->step_bytes != 1 && tested->step_bytes != -1))
+		return false;
+	auto fits = [](Type t) {
+		return t.is_pointer() || (t.is_integer() && t.kind() != TypeKind::I128 && t.kind() != TypeKind::I1);
+	};
+	if (!fits(body_.temps[tested->value].type))
+		return false;
+	// The inductions read after the loop (the tested one included).
+	std::vector<uint8_t> read(ivs.size(), 0);
+	bool ok = true;
+	for (BlockId b : body_.layout)
+	{
+		if (in_loop(forest_, loop, b))
+			continue;
+		for (InstId i = body_.blocks[b].first; i != kNoId && ok; i = body_.instructions[i].next)
+			for_each_operand(body_, body_.instructions[i], [&](const Value& v) {
+				if (!v.is(ValueKind::Temp) || invariant(loop, v))
+					return;
+				bool found = false;
+				for (size_t k = 0; k < ivs.size(); ++k)
+					if (ivs[k].value == v.index)
+					{
+						read[k] = 1;
+						found = true;
+					}
+				ok = ok && found;
+			});
+	}
+	if (!ok)
+		return false;
+	for (size_t k = 0; k < ivs.size(); ++k)
+		if (read[k] && !fits(body_.temps[ivs[k].value].type))
+			return false;
+	// The trip count, as i64, in the preheader.
+	const BlockId pre = l.preheader;
+	const InstId term = body_.blocks[pre].last;
+	InstId at = previous_in_block(body_, pre, term);
+	const uint32_t location = body_.instructions[term].location;
+	auto emit = [&](Instruction inst) {
+		inst.location = location;
+		const InstId id = append_instruction(body_, inst);
+		body_.instructions[id].result = append_temp(body_, inst.type, id);
+		insert_after(body_, pre, at, id);
+		at = id;
+		return Value::temp(body_.instructions[id].result);
+	};
+	auto binary = [&](BinaryOp op, Type type, Value a, Value b) {
+		Instruction inst = make_instruction(Opcode::Binary, type);
+		inst.sub = static_cast<uint8_t>(op);
+		inst.ops[0] = a;
+		inst.ops[1] = b;
+		return emit(inst);
+	};
+	auto literal = [&](int64_t v) { return integer_value(body_, integer_literal(v)); };
+	const Type i64 = Type::scalar(TypeKind::I64);
+	Value trips;
+	if (test.trips >= 0)
+		trips = literal(test.trips);
+	else if (tested->pointer)
+	{
+		const Value bytes = binary(BinaryOp::Sub, Type::scalar(TypeKind::Ptr), test.bound, tested->init);
+		Instruction count = make_instruction(Opcode::Binary, i64);
+		count.sub = static_cast<uint8_t>(BinaryOp::Div);
+		count.flags = IF_EXACT;
+		count.ops[0] = bytes;
+		count.ops[1] = literal(tested->step_bytes);
+		trips = emit(count);
+	}
+	else
+	{
+		const Type type = body_.temps[tested->value].type;
+		const Value diff = tested->step_bytes == 1 ? binary(BinaryOp::Sub, type, test.bound, tested->init)
+												   : binary(BinaryOp::Sub, type, tested->init, test.bound);
+		trips = diff;
+		if (type.kind() != TypeKind::I64)
+		{
+			Instruction widen = make_instruction(Opcode::Convert, i64);
+			widen.sub = static_cast<uint8_t>(ConvertOp::ZExt);
+			widen.ops[0] = diff;
+			set_convert_source_type(widen, type);
+			trips = emit(widen);
+		}
+	}
+	// Each read induction's exit value.
+	std::vector<Value> exit(ivs.size(), Value::none());
+	for (size_t k = 0; k < ivs.size(); ++k)
+	{
+		if (!read[k])
+			continue;
+		const Induction& iv = ivs[k];
+		if (&iv == tested)
+		{
+			exit[k] = test.exit_value;
+			continue;
+		}
+		const Type type = body_.temps[iv.value].type;
+		if (iv.pointer)
+		{
+			const Value bytes = binary(BinaryOp::Mul, i64, trips, literal(iv.step_bytes));
+			Instruction step = make_instruction(Opcode::Index, Type::scalar(TypeKind::I8));
+			step.ops[0] = iv.init;
+			step.ops[1] = bytes;
+			exit[k] = emit(step);
+			continue;
+		}
+		Value count = trips;
+		if (type.kind() != TypeKind::I64)
+		{
+			Instruction narrow = make_instruction(Opcode::Convert, type);
+			narrow.sub = static_cast<uint8_t>(ConvertOp::Trunc);
+			narrow.ops[0] = trips;
+			set_convert_source_type(narrow, i64);
+			count = emit(narrow);
+		}
+		const Value product = binary(BinaryOp::Mul, type, count, literal(iv.step_bytes));
+		exit[k] = binary(BinaryOp::Add, type, iv.init, product);
+	}
+	for (BlockId b : body_.layout)
+	{
+		if (in_loop(forest_, loop, b))
+			continue;
+		for (InstId i = body_.blocks[b].first; i != kNoId; i = body_.instructions[i].next)
+			for_each_operand(body_, body_.instructions[i], [&](Value& v) {
+				if (!v.is(ValueKind::Temp) || v.index == test.compared.index)
+					return;
+				for (size_t k = 0; k < ivs.size(); ++k)
+					if (read[k] && ivs[k].value == v.index)
+						v = exit[k];
+			});
+	}
+	map_instruction_blocks(body_, c_.block_of);
+	c_.invalidate_block_of();
+	return true;
 }
 
 // Every entry into the loop goes to the exit instead; the exit's phis take
@@ -1219,6 +1383,15 @@ bool LoopPass::try_loop(uint32_t loop)
 		return false;
 	if (!private_values(loop, test, ivs))
 	{
+		// An effect-free loop whose header inductions are read after it:
+		// their exit values from the trip count.
+		if (effect_free(loop) && final_values(loop, test, ivs))
+		{
+			if (!bypass(loop, test))
+				return false;
+			++c_.stats.loops_removed;
+			return true;
+		}
 		// A copy loop's destination may be read after it.
 		uint32_t src, dst;
 		if (c_.level >= 2 && l.preheader != kNoId && test.exiting == l.header &&

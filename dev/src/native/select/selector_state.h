@@ -231,6 +231,7 @@ struct SelectorState
 	std::vector<uint32_t> layout_map_;
 	std::vector<uint64_t> layout_frequency_; // layout_branches: block_frequencies
 	std::vector<uint32_t> layout_chain_;
+	std::vector<uint8_t> layout_live_; // layout_branches: blocks the entry and the pads reach
 };
 
 } // namespace native

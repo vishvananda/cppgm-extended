@@ -75,6 +75,10 @@ const uint32_t kPartialFewCap = 48;
 // A callee whose hot code allocates (a growth path) gets only a partial
 // copy this small: a test or two in front of the work.
 const uint32_t kPartialAllocatingCap = 8;
+// So does a callee on a call cycle (not the caller itself): its early
+// return (`if (p == nullptr) return nullptr;` in front of a tree walk)
+// goes inline at each site of the cycle at the cost of a few instructions.
+const uint32_t kPartialRecursiveCap = 8;
 // Recursive inlining (O2+, late wave): a caller's call to itself takes a
 // copy of the caller's body as the wave found it, to kRecursiveDepth
 // levels (fewer when the copies would pass kRecursiveTotal instructions),
@@ -119,7 +123,9 @@ struct Shape
 	bool loop_dispatch = false; // an indirect call outside cold blocks inside one of its natural loops
 	bool unsafe = false;
 	bool unwinds = false;
-	uint32_t fast = 0;        // instructions of the blocks a call-free path from the entry reaches
+	// Instructions on the longest call-free path from the entry to a return
+	// (with a loop: in every block such a path reaches).
+	uint32_t fast = 0;
 	bool fast_return = false; // one of them returns
 	bool allocates = false;   // hot code calls an allocation function (a growth path)
 };
@@ -243,6 +249,38 @@ Shape shape_of(const Program& program, SymbolId symbol, const std::vector<uint8_
 				}
 			}
 		}
+		// Loop-free, the fast path is the longest path through the region
+		// from the entry to a return: what one call executes there, not
+		// every alternative path the region holds.
+		if (!shape.loop && region[body.layout[0]])
+		{
+			std::vector<uint32_t> longest(cfg.block_count, 0);
+			std::vector<uint8_t> returns(cfg.block_count, 0);
+			for (uint32_t r = static_cast<uint32_t>(cfg.rpo.size()); r-- > 0;)
+			{
+				const BlockId b = cfg.rpo[r];
+				if (!region[b])
+					continue;
+				uint32_t own = 0, tail = 0;
+				for (InstId i = body.blocks[b].first; i != kNoId; i = body.instructions[i].next)
+				{
+					++own;
+					returns[b] = returns[b] || body.instructions[i].op == Opcode::Return;
+				}
+				for (uint32_t k = cfg.succ_first[b]; k < cfg.succ_first[b + 1]; ++k)
+				{
+					const BlockId s = cfg.succs[k];
+					if (region[s] && returns[s] && cfg.rpo_index[s] > r)
+					{
+						tail = longest[s] > tail ? longest[s] : tail;
+						returns[b] = 1;
+					}
+				}
+				longest[b] = own + tail;
+			}
+			if (returns[body.layout[0]])
+				shape.fast = longest[body.layout[0]];
+		}
 		// Loops find_loops does not report (holding handler blocks, deep
 		// nests) count as dispatch-free.
 		if (shape.loop && shape.hot_call)
@@ -362,8 +400,10 @@ void merge_returns(FunctionBody& cb, TempId result, Type type, const std::vector
 // block holding a call is cut at its shallowest clean dominator below the
 // entry that reaches no return without a call (or stays in the copy): the
 // copy keeps the returning fast paths and none of a slow path's prefix.
-// When that copy is over `cap`, the cut is the shallowest clean dominator
-// (the copy holds the first test only).
+// A copy over `cap` is not made. (Cutting at the shallowest clean
+// dominator instead, to copy the first test only, mostly copied a rarely
+// taken call-free path and kept the call on the common one: ParserState::at
+// copied its replayed-token read, and every call read the window.)
 struct PartialCut
 {
 	std::vector<uint8_t> copy, cut;
@@ -465,25 +505,20 @@ bool partial_cut(const Program& program, const FunctionBody& kb, PartialCut& out
 	}
 	const BlockId entry = kb.layout[0];
 	bool returns = false;
-	for (int keep_fast = 1; keep_fast >= 0; --keep_fast)
+	out.cut.assign(n, 0);
+	for (BlockId c : cfg.rpo)
 	{
-		out.cut.assign(n, 0);
-		for (BlockId c : cfg.rpo)
-		{
-			if (!calls[c])
-				continue;
-			BlockId at = kNoId;
-			for (BlockId d = c; d != kNoId && d != entry; d = cfg.idom[d])
-				if (clean[d] && (!keep_fast || !fast[d]) && (cfg.flags[d] & BF_HANDLER) == 0)
-					at = d;
-			if (at != kNoId)
-				out.cut[at] = 1;
-		}
-		partial_region(kb, cfg, out, returns);
-		if (out.size <= cap)
-			break;
+		if (!calls[c])
+			continue;
+		BlockId at = kNoId;
+		for (BlockId d = c; d != kNoId && d != entry; d = cfg.idom[d])
+			if (clean[d] && !fast[d] && (cfg.flags[d] & BF_HANDLER) == 0)
+				at = d;
+		if (at != kNoId)
+			out.cut[at] = 1;
 	}
-	return out.cuts != 0 && returns;
+	partial_region(kb, cfg, out, returns);
+	return out.cuts != 0 && returns && out.size <= cap;
 }
 
 // Copies callee `kb` into `cb` in place of the call `call_id` (in `block`,
@@ -1078,8 +1113,9 @@ bool InlineWaveRunner::admit(uint32_t g, bool handler_code, bool loop_site, uint
 // returning nothing or a scalar. A caller's call to itself qualifies: the
 // copy holds the clean prefix and calls the callee at the cuts, so it never
 // recurses itself, and the copies are not revisited in the wave. (Other
-// recursive callees stay out: copies at every site of a call cycle, the
-// parser's, take the budgets the ordinary callees of those sites need.)
+// recursive callees get only a copy within kPartialRecursiveCap: larger
+// copies at every site of a call cycle, the parser's, take the budgets the
+// ordinary callees of those sites need.)
 // `source`, when given, is the body cut and copied (the caller's original
 // under recursive inlining: the live body's cuts would sit below the
 // copies).
@@ -1089,8 +1125,8 @@ bool InlineWaveRunner::admit_partial(uint32_t g, const Instruction& call, bool h
 	const SymbolId callee = graph_.functions[g];
 	const SymbolMetadata& m = program_.symbols[callee].metadata;
 	const Shape& shape = shapes_[g];
-	if (options_.level < 2 || (graph_.recursive[g] && g != caller_) ||
-		(m.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0 || shape.unsafe || shape.eh ||
+	const bool cycle = graph_.recursive[g] && g != caller_;
+	if (options_.level < 2 || (m.flags & (SF_NO_INLINE | SF_REPLACEABLE)) != 0 || shape.unsafe || shape.eh ||
 		(handler_code && shape.unwinds) || (call.result != kNoId && !phi_type(call.type)))
 		return false;
 	const Function& function = program_.functions[program_.symbols[callee].detail];
@@ -1104,10 +1140,11 @@ bool InlineWaveRunner::admit_partial(uint32_t g, const Instruction& call, bool h
 			return false;
 	}
 	const bool hint = (m.flags & (SF_INLINE_HINT | SF_FORCE_INLINE)) != 0;
-	const uint32_t cap = (graph_.calls_in[g] <= 2 ? kPartialFewCap
-								 : hint           ? kPartialHintCap
-												  : kPartialCap) *
-		(loop_site ? kLoopSiteScale : 1);
+	const uint32_t cap = cycle ? kPartialRecursiveCap
+							   : (graph_.calls_in[g] <= 2 ? kPartialFewCap
+										 : hint           ? kPartialHintCap
+														  : kPartialCap) *
+			(loop_site ? kLoopSiteScale : 1);
 	if (!partial_cut(program_, source != nullptr ? *source : *function.body, partial, cap) || partial.size > cap ||
 		(shape.allocates && partial.size > kPartialAllocatingCap))
 		return false;

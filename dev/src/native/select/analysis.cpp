@@ -1402,6 +1402,13 @@ void FunctionSelector::find_byte_booleans()
 	});
 }
 
+namespace {
+
+// The farthest a load folds into its user (find_folds), in instructions.
+const int32_t kFoldDistance = 8;
+
+} // namespace
+
 void FunctionSelector::find_folds()
 {
 	const lowir::FunctionBody& body = *body_;
@@ -1490,8 +1497,35 @@ void FunctionSelector::find_folds()
 			}
 			return;
 		}
-		if (inst_block_[user_id] != b || pos_[user_id] != pos_[id] + 1)
+		if (inst_block_[user_id] != b || pos_[user_id] <= pos_[id])
 			return;
+		// O1+: a load folds into a later user of its block past a few
+		// instructions that write no memory (a hash step's rotation between
+		// the field load and the xor reading it); everything else folds
+		// into the next instruction only.
+		if (pos_[user_id] != pos_[id] + 1)
+		{
+			if (level_ < 1 || inst.op != Opcode::Load || pos_[user_id] - pos_[id] > kFoldDistance)
+				return;
+			for (lowir::InstId i = inst.next; i != kNoId && i != user_id; i = body.instructions[i].next)
+			{
+				const Instruction& between = body.instructions[i];
+				if (marks_[i] & IM_DEAD)
+					continue;
+				const bool quiet = between.op == Opcode::Binary || between.op == Opcode::Unary ||
+					between.op == Opcode::Convert || between.op == Opcode::Compare || between.op == Opcode::Copy ||
+					between.op == Opcode::Const || between.op == Opcode::Index || between.op == Opcode::Addr ||
+					between.op == Opcode::Select ||
+					(between.op == Opcode::Load && (between.flags & lowir::IF_VOLATILE) == 0);
+				if (!quiet ||
+					(between.op == Opcode::Binary &&
+						(static_cast<lowir::BinaryOp>(between.sub) == lowir::BinaryOp::Div ||
+							static_cast<lowir::BinaryOp>(between.sub) == lowir::BinaryOp::UDiv ||
+							static_cast<lowir::BinaryOp>(between.sub) == lowir::BinaryOp::Mod ||
+							static_cast<lowir::BinaryOp>(between.sub) == lowir::BinaryOp::UMod)))
+					return;
+			}
+		}
 		const Instruction& user = body.instructions[user_id];
 		const Value self = Value::temp(inst.result);
 		const bool left = resolve(user.ops[0]) == self;
@@ -1533,8 +1567,13 @@ void FunctionSelector::find_folds()
 		// O1+: a load only the next instruction's branch tests compares in
 		// memory (cmp byte [m], 0).
 		const bool branch_test = level_ >= 1 && user.op == Opcode::Branch && left;
+		// (O1+: a pointer read as an i64 through a retyping copy, the copy
+		// an alias, reads the same eight bytes.)
+		const bool retyped = level_ >= 1 &&
+			((user.type.kind() == TypeKind::I64 && inst.type.is_pointer()) ||
+				(user.type.is_pointer() && inst.type.kind() == TypeKind::I64));
 		if (inst.op != Opcode::Load || (inst.flags & lowir::IF_VOLATILE) || t.cls != VClass::Gpr || left == right ||
-			(user.type != inst.type && !branch_test))
+			(user.type != inst.type && !branch_test && !retyped))
 			return;
 		const TypeKind k = inst.type.kind();
 		bool ok = branch_test && k != TypeKind::I128;

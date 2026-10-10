@@ -113,9 +113,11 @@ struct Function
 	// O1+, host model: no RBP frame. The frame keeps its layout below a
 	// virtual RBP (the saved-RBP slot left unused): the prologue reserves
 	// stack_size + 8 less the saves and pushes them, so a frame operand
-	// [rbp + d] is encoded [rsp + stack_size + d]. Only for bodies where
-	// RSP does not move (no rsp or rbp register operand, stack_alloc,
-	// va_start/va_arg, i128 conversion call through the stack).
+	// [rbp + d] is encoded [rsp + stack_size + d] (plus the argument area
+	// a call's `sub rsp, n` opened, until its `add rsp, n`). Only for
+	// bodies where RSP moves by nothing else (no other rsp or rbp register
+	// operand, stack_alloc, va_start/va_arg, i128 conversion call through
+	// the stack).
 	bool omit_frame_pointer = false;
 	// O1+, frameless functions only: the blocks before the first prologue
 	// block (Op::Prologue) run without the frame: no frame operand, no call,

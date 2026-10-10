@@ -53,11 +53,11 @@ RM FunctionEmitter::rm(const Operand& op) const
 		if (op.reg == kFrame && in_aligned_region(*function_, op.disp))
 			return RM::m(R12, op.disp - function_->aligned_disp, op.index, op.scale);
 		if (op.reg == kFrame)
-			return omit_fp_
-				? RM::m(RSP,
-					  op.disp + static_cast<int32_t>(function_->stack_size) - (op.disp >= 0 ? incoming_shift_ : 0),
-					  op.index, op.scale)
-				: RM::m(RBP, op.disp, op.index, op.scale);
+			return omit_fp_ ? RM::m(RSP,
+								  op.disp + static_cast<int32_t>(function_->stack_size) -
+									  (op.disp >= 0 ? incoming_shift_ : 0) + rsp_shift_,
+								  op.index, op.scale)
+							: RM::m(RBP, op.disp, op.index, op.scale);
 		return RM::m(op.reg, op.disp, op.index, op.scale);
 	default:
 		throw InternalError("operand is not a register or memory location");
@@ -72,8 +72,10 @@ RM FunctionEmitter::scratch_rm() const
 // [rbp + disp], RSP-based without a frame pointer (Function::omit_frame_pointer).
 RM FunctionEmitter::frame_rm(int32_t disp) const
 {
-	return omit_fp_ ? RM::m(RSP, disp + static_cast<int32_t>(function_->stack_size) - (disp >= 0 ? incoming_shift_ : 0))
-					: RM::m(RBP, disp);
+	return omit_fp_
+		? RM::m(
+			  RSP, disp + static_cast<int32_t>(function_->stack_size) - (disp >= 0 ? incoming_shift_ : 0) + rsp_shift_)
+		: RM::m(RBP, disp);
 }
 
 Reg FunctionEmitter::scratch(const Inst& inst, Reg avoid) const
@@ -302,6 +304,24 @@ bool calls_out(const Function& function)
 	return false;
 }
 
+// Whether no instruction addresses the frame (a frame object, a home, the
+// scratch area or the stack through RSP): the reservation below the saves
+// then serves only the calls' alignment.
+bool frameless_body(const Function& function)
+{
+	if (function.scratch_bytes != 0 || function.aligned_base != 0)
+		return false;
+	for (const Inst& inst : function.insts)
+		for (unsigned k = 0; k < inst.nops; ++k)
+		{
+			const Operand& op = inst.ops[k];
+			if (op.kind == OperandKind::Mem && op.symbol == lowir::kNoId &&
+				(op.reg == kFrame || op.reg == RSP || op.index == RSP))
+				return false;
+		}
+	return true;
+}
+
 bool frame_slot(const Operand& op, int32_t& offset)
 {
 	if (op.kind != OperandKind::Mem || op.reg != kFrame || op.index != kNoReg || op.symbol != lowir::kNoId)
@@ -421,6 +441,8 @@ void FunctionEmitter::encode(const Function& function)
 	unwind_.pads.clear();
 	unwind_.returns.clear();
 	unwind_.prologues.clear();
+	unwind_.adjusts.clear();
+	rsp_shift_ = 0;
 	dynamic_stack_ = function.eh_records_pushed;
 	for (size_t i = 0; i < function.insts.size() && !dynamic_stack_; ++i)
 		dynamic_stack_ = function.insts[i].op == Op::StackAlloc;
@@ -494,6 +516,12 @@ void FunctionEmitter::encode(const Function& function)
 		if (chain_end_[b] != b && chain_end_[b] != kNoChainEnd)
 			continue;
 		asm_.bind(labels_[b]);
+		// An argument area a noreturn call left open ends with its block.
+		if (rsp_shift_ != 0)
+		{
+			rsp_shift_ = 0;
+			unwind_.adjusts.push_back(UnwindFacts::Adjust{ asm_.size() - static_cast<uint32_t>(base_), 0 });
+		}
 		carries_.clear();
 		block_first_ = block.first;
 		const uint32_t next = next_emitted_[b + 1];
@@ -582,6 +610,12 @@ void FunctionEmitter::frame_reserve(const Function& function)
 {
 	const uint32_t saved = static_cast<uint32_t>(__builtin_popcount(function.preserve_mask));
 	unwind_.reserve = omit_fp_ ? function.stack_size + 8 - 8 * saved - static_cast<uint32_t>(incoming_shift_) : 0;
+	// O1+, a body that names no frame location: only a call's alignment
+	// needs RSP moved past the saves (none in a function that calls
+	// nothing; an odd number of pushes leaves it aligned), not the frame's
+	// unused virtual-RBP slot and padding.
+	if (omit_fp_ && frameless_body(function))
+		unwind_.reserve = incoming_shift_ != 0 || saved % 2 == 1 ? 0 : 8;
 }
 
 void FunctionEmitter::prologue(const Function& function)
@@ -615,7 +649,10 @@ void FunctionEmitter::prologue(const Function& function)
 	// pushed from the highest (r15) down.
 	if (!omit_fp_ && function.stack_size != 8 * saved)
 		asm_.alu_ri(5, RM::r(RSP), function.stack_size - 8 * saved, 8);
-	int32_t offset = function.preserve_offset + static_cast<int32_t>(8 * saved) + incoming_shift_;
+	// (Without a frame pointer the first push stores at [virtual rbp -
+	// reserve].)
+	int32_t offset = omit_fp_ ? 8 - static_cast<int32_t>(unwind_.reserve)
+							  : function.preserve_offset + static_cast<int32_t>(8 * saved) + incoming_shift_;
 	unsigned pushed = 0;
 	for (unsigned k = 6; k-- > 0;)
 	{
@@ -663,6 +700,19 @@ void FunctionEmitter::epilogue(const Function& function)
 	unwind_.leave_end = asm_.size() - static_cast<uint32_t>(base_);
 	asm_.ret();
 	unwind_.ret_end = asm_.size() - static_cast<uint32_t>(base_);
+}
+
+// Without a frame pointer, `sub rsp, n` / `add rsp, n` open and close a
+// call's argument area: frame operands move with RSP, and the CFA rule
+// follows it.
+void FunctionEmitter::argument_area(const Inst& inst)
+{
+	if (!omit_fp_ || inst.ops[0].kind != OperandKind::Reg || inst.ops[0].reg != RSP ||
+		inst.ops[1].kind != OperandKind::Imm)
+		return;
+	rsp_shift_ += static_cast<int32_t>(inst.op == Op::Sub ? inst.ops[1].imm : -inst.ops[1].imm);
+	unwind_.adjusts.push_back(
+		UnwindFacts::Adjust{ asm_.size() - static_cast<uint32_t>(base_), static_cast<uint32_t>(rsp_shift_) });
 }
 
 void FunctionEmitter::shift(const Inst& inst)
@@ -872,6 +922,7 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 		break;
 	case Op::Add:
 		alu(0, inst);
+		argument_area(inst);
 		break;
 	case Op::Or:
 		alu(1, inst);
@@ -881,6 +932,7 @@ void FunctionEmitter::instruction(const Function& function, const Inst& inst, ui
 		break;
 	case Op::Sub:
 		alu(5, inst);
+		argument_area(inst);
 		break;
 	case Op::Xor:
 		alu(6, inst);

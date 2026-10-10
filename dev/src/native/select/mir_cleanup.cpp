@@ -1152,13 +1152,16 @@ uint32_t forward_home_reloads(Function& function)
 	return forwarding.run();
 }
 
-// O1+: `test r, r` (or `cmp r, 0`, which sets the flags alike) right after
-// an instruction that set the flags from r at the same width goes when
-// every reader of the flags before they are set again (or the block ends:
-// the selector keeps no flags across blocks) reads what both set alike:
-// any condition after and/or/xor (CF and OF clear in both), only the zero
-// and sign conditions after add, sub and a shift by a nonzero immediate.
-// Linear.
+// O1+: `test r, r` (or `cmp r, 0`, which sets the flags alike) after an
+// instruction that set the flags from r at the same width goes when every
+// reader of the flags before they are set again (or the block ends: the
+// selector keeps no flags across blocks) reads what both set alike: any
+// condition after and/or/xor (CF and OF clear in both), only the zero and
+// sign conditions after add, sub and a shift by a nonzero immediate. Copies,
+// loads, stores and lea may lie between when they write neither r nor the
+// flags (no `mov reg, 0`, which may be encoded as an xor). A 64-bit and
+// whose result's upper half is zero (an operand's is, from the block's
+// instructions) sets the zero flag a 32-bit test of r would. Linear.
 uint32_t drop_redundant_tests(Function& function)
 {
 	std::vector<Inst>& insts = function.insts;
@@ -1169,18 +1172,33 @@ uint32_t drop_redundant_tests(Function& function)
 	for (const Block& block : function.blocks)
 	{
 		const uint32_t end = block.first + block.count;
+		// The registers whose upper halves the block's instructions so far
+		// left zero (none known at its start).
+		uint32_t upper_zero = 0;
+		uint32_t known_at = block.first;
 		for (uint32_t i = block.first + 1; i < end; ++i)
 		{
 			Inst& test = insts[i];
-			const Inst& prior = insts[i - 1];
 			const bool self_test = test.op == Op::Test && plain_gpr(test.ops[1]) && test.ops[1].reg == test.ops[0].reg;
 			const bool zero_compare = test.op == Op::Cmp && test.ops[1].kind == OperandKind::Imm &&
 				test.ops[1].imm == 0;
-			if (!(self_test || zero_compare) || !plain_gpr(test.ops[0]) || prior.nops < 2 || !plain_gpr(prior.ops[0]) ||
-				prior.ops[0].reg != test.ops[0].reg)
+			if (!(self_test || zero_compare) || !plain_gpr(test.ops[0]))
+				continue;
+			const Reg r = test.ops[0].reg;
+			uint32_t at = i - 1;
+			while (at > block.first && simple_inst(insts[at]) &&
+				(insts[at].op == Op::Nop || insts[at].op == Op::Store || insts[at].op == Op::Lea ||
+					insts[at].op == Op::Load ||
+					(insts[at].op == Op::Mov &&
+						!(insts[at].ops[1].kind == OperandKind::Imm && insts[at].ops[1].imm == 0))) &&
+				written_reg(insts[at]) != r)
+				--at;
+			const Inst& prior = insts[at];
+			if (prior.nops < 2 || !plain_gpr(prior.ops[0]) || prior.ops[0].reg != r)
 				continue;
 			unsigned width = 0;
 			bool full = false;
+			bool zero_only = false;
 			switch (prior.op)
 			{
 			case Op::And:
@@ -1208,6 +1226,27 @@ uint32_t drop_redundant_tests(Function& function)
 			default:
 				break;
 			}
+			if (width == 8 && register_bytes(test.type) == 4 && prior.op == Op::And)
+			{
+				for (; known_at < at; ++known_at)
+				{
+					const Inst& inst = insts[known_at];
+					if (!simple_inst(inst))
+					{
+						upper_zero = 0;
+						continue;
+					}
+					const Reg w = written_reg(inst);
+					if (w < 16)
+						upper_zero = zeroes_upper(inst, upper_zero) ? upper_zero | (1u << w) : upper_zero & ~(1u << w);
+				}
+				const Operand& other = prior.ops[1];
+				if (((upper_zero >> r) & 1u) || (plain_gpr(other) && ((upper_zero >> other.reg) & 1u)))
+				{
+					width = 4;
+					zero_only = true;
+				}
+			}
 			if (width == 0 || width != register_bytes(test.type))
 				continue;
 			bool ok = true;
@@ -1217,7 +1256,8 @@ uint32_t drop_redundant_tests(Function& function)
 				if (reader.op == Op::Jcc || reader.op == Op::Setcc || reader.op == Op::Cmov)
 				{
 					const Cond cond = static_cast<Cond>(reader.sub);
-					ok = full || cond == CC_E || cond == CC_NE || cond == CC_S || cond == CC_NS;
+					ok = zero_only ? cond == CC_E || cond == CC_NE
+								   : full || cond == CC_E || cond == CC_NE || cond == CC_S || cond == CC_NS;
 					continue;
 				}
 				if (reader.op == Op::Mov || reader.op == Op::Load || reader.op == Op::Store || reader.op == Op::Lea ||
@@ -1284,6 +1324,58 @@ uint32_t drop_redundant_copies(Function& function)
 				if (!reads_or_writes(inst, p.first) && !reads_or_writes(inst, p.second))
 					same[kept++] = p;
 			same.resize(kept);
+		}
+	}
+	return removed;
+}
+
+uint32_t drop_redundant_constants(Function& function)
+{
+	std::vector<Inst>& insts = function.insts;
+	uint32_t removed = 0;
+	struct Held
+	{
+		bool known = false;
+		lowir::TypeKind type = lowir::TypeKind::Void;
+		int64_t imm = 0;
+	};
+	Held held[16];
+	for (const Block& block : function.blocks)
+	{
+		for (Held& h : held)
+			h.known = false;
+		for (uint32_t i = block.first; i < block.first + block.count; ++i)
+		{
+			Inst& inst = insts[i];
+			if (inst.op == Op::Nop || inst.op == Op::Jcc)
+				continue;
+			if (inst.op == Op::Mov && inst.nops == 2 && plain_gpr(inst.ops[0]) && inst.ops[1].kind == OperandKind::Imm)
+			{
+				Held& h = held[inst.ops[0].reg];
+				if (h.known && h.type == inst.type && h.imm == inst.ops[1].imm)
+				{
+					inst.op = Op::Nop;
+					inst.nops = 0;
+					inst.ops[0] = inst.ops[1] = Operand();
+					++removed;
+					continue;
+				}
+				h.known = true;
+				h.type = inst.type;
+				h.imm = inst.ops[1].imm;
+				continue;
+			}
+			// Anything the emitter may expand with implicit registers (calls,
+			// bulk copies, wide immediates through the scratch) forgets all.
+			if (!simple_inst(inst))
+			{
+				for (Held& h : held)
+					h.known = false;
+				continue;
+			}
+			const Reg w = written_reg(inst);
+			if (w != kNoReg && w < 16)
+				held[w].known = false;
 		}
 	}
 	return removed;

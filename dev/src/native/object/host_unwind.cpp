@@ -181,9 +181,10 @@ uint32_t encode_cie(bool personality, std::vector<uint8_t>& out)
 }
 
 // Without a frame pointer (UnwindFacts::frameless) the CFA stays RSP +
-// the bytes below the return address: `reserve`, then each push; each
-// epilogue pops them back and releases the reserve.
-void encode_frameless_instructions(const UnwindFacts& facts, std::vector<uint8_t>& out)
+// the bytes below the return address: `reserve`, then each push, and in
+// the body a call's argument area while it is open; each epilogue pops
+// the saves back and releases the reserve.
+void encode_frameless_instructions(const UnwindFacts& facts, bool lsda, std::vector<uint8_t>& out)
 {
 	Cursor cursor = { out, 0 };
 	uint32_t below = 8;
@@ -258,16 +259,62 @@ void encode_frameless_instructions(const UnwindFacts& facts, std::vector<uint8_t
 			out.push_back(DW_CFA_restore_state);
 		}
 	};
-	for (const UnwindFacts::Epilogue& ret : facts.returns)
-		epilogue(ret.pop_end, ret.leave_end, ret.ret_end, true);
-	epilogue(facts.pop_end, facts.leave_end, facts.ret_end, facts.size > facts.ret_end);
+	// The body's argument areas and, where a landing pad catches a call,
+	// its argument bytes (DW_CFA_GNU_args_size, as with a frame pointer:
+	// the pad runs with the area released), in address order with the
+	// epilogues; none lies inside an epilogue's code.
+	size_t next_adjust = 0;
+	size_t next_call = 0;
+	uint32_t args = 0;
+	auto body_events = [&](uint32_t before) {
+		for (;;)
+		{
+			while (next_call < facts.calls.size())
+			{
+				const UnwindFacts::CallSite& call = facts.calls[next_call];
+				if (lsda && call.landing != 0 && call.args != args && call.begin < facts.ret_end)
+					break;
+				++next_call;
+			}
+			const uint32_t adjust = next_adjust < facts.adjusts.size() ? facts.adjusts[next_adjust].end : 0xffffffffu;
+			const uint32_t call = next_call < facts.calls.size() ? facts.calls[next_call].begin : 0xffffffffu;
+			if (adjust >= before && call >= before)
+				return;
+			if (adjust <= call)
+			{
+				cursor.advance(adjust);
+				out.push_back(DW_CFA_def_cfa_offset);
+				put_uleb(out, body + facts.adjusts[next_adjust].args);
+				++next_adjust;
+			}
+			else
+			{
+				cursor.advance(call);
+				out.push_back(DW_CFA_GNU_args_size);
+				put_uleb(out, facts.calls[next_call].args);
+				args = facts.calls[next_call].args;
+				++next_call;
+			}
+		}
+	};
+	// The duplicated epilogues, then the shared one; an epilogue's first
+	// rule follows its first pop (or the release).
+	for (size_t r = 0; r <= facts.returns.size(); ++r)
+	{
+		const bool shared = r == facts.returns.size();
+		const uint32_t* pop_end = shared ? facts.pop_end : facts.returns[r].pop_end;
+		const uint32_t released_end = shared ? facts.leave_end : facts.returns[r].leave_end;
+		body_events(facts.saves.empty() ? released_end : pop_end[0]);
+		epilogue(pop_end, released_end, shared ? facts.ret_end : facts.returns[r].ret_end,
+			!shared || facts.size > facts.ret_end);
+	}
 }
 
 void encode_frame_instructions(const UnwindFacts& facts, bool lsda, std::vector<uint8_t>& out)
 {
 	if (facts.frameless)
 	{
-		encode_frameless_instructions(facts, out);
+		encode_frameless_instructions(facts, lsda, out);
 		return;
 	}
 	Cursor cursor = { out, 0 };

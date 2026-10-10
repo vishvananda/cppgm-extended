@@ -104,9 +104,12 @@ uint32_t FunctionSelector::layout_branches()
 	place_blocks(*out_);
 	// A spill moved into a prologue block may meet its reload there, and a
 	// loop's test left only on its entry path (its copy closes the loop)
-	// may read a home the entry's block still holds in a register.
+	// may read a home the entry's block still holds in a register. A test
+	// copied to a back edge may follow the instruction that set its flags.
 	if (shrink_wrap(*out_) || rotated != 0)
 		forward_home_reloads(*out_);
+	if (rotated != 0)
+		drop_redundant_tests(*out_);
 	Function& f = *out_;
 	const uint32_t blocks = static_cast<uint32_t>(f.blocks.size());
 	auto jump_only = [&](uint32_t b) {
@@ -131,6 +134,72 @@ uint32_t FunctionSelector::layout_branches()
 		if (t < blocks && t != b && f.blocks[t].count == 1 && f.insts[f.blocks[t].first].op == Op::Ret &&
 			(bare_returns || (f.insts[f.blocks[t].first].flags & MF_FRAMELESS) != 0))
 			last = f.insts[f.blocks[t].first];
+	}
+	// Host objects: the blocks the entry and the landing pads reach (a
+	// return copied over the jump to a returning block, or a test the
+	// threading decided, leaves blocks nothing reaches); the others are not
+	// laid out. A block whose last instruction may fall through reaches the
+	// next.
+	std::vector<uint8_t>& live = layout_live_;
+	live.assign(blocks, eh_model_ == EhModel::Host ? 0 : 1);
+	if (eh_model_ == EhModel::Host)
+	{
+		std::vector<uint32_t>& work = layout_chain_;
+		work.clear();
+		auto reach = [&](uint32_t b) {
+			if (b < blocks && !live[b])
+			{
+				live[b] = 1;
+				work.push_back(b);
+			}
+		};
+		reach(0);
+		for (uint32_t b = 0; b < blocks; ++b)
+			if (f.blocks[b].landing)
+				reach(b);
+		for (const EhLanding& landing : f.eh.landings)
+		{
+			if (landing.pad != kNoId)
+				reach(landing.pad);
+			if (landing.select != kNoId)
+				reach(landing.select);
+		}
+		while (!work.empty())
+		{
+			const uint32_t b = work.back();
+			work.pop_back();
+			const Block& block = f.blocks[b];
+			Op last = Op::Nop;
+			for (uint32_t i = block.first; i < block.first + block.count; ++i)
+			{
+				const Inst& inst = f.insts[i];
+				switch (inst.op)
+				{
+				case Op::Nop:
+					continue;
+				case Op::JumpTable:
+					for (uint32_t k = inst.aux; k < inst.aux + inst.aux2; ++k)
+						reach(f.jump_targets[k]);
+					break;
+				case Op::WideCmpBranch:
+					reach(inst.aux);
+					[[fallthrough]];
+				case Op::Jcc:
+				case Op::Jmp:
+				case Op::EhPush:
+					for (unsigned k = 0; k < inst.nops; ++k)
+						if (inst.ops[k].kind == OperandKind::Label)
+							reach(inst.ops[k].symbol);
+					break;
+				default:
+					break;
+				}
+				last = inst.op;
+			}
+			if (!(last == Op::Jmp || last == Op::Ret || last == Op::TailJump || last == Op::JumpTable ||
+					last == Op::Trap || last == Op::Resume || last == Op::Throw))
+				reach(b + 1);
+		}
 	}
 	// layout_map_[b]: the block ending b's jump chain (b itself unless b is
 	// jump-only), or kNoChainEnd for a chain entering a cycle (kept).
@@ -159,7 +228,7 @@ uint32_t FunctionSelector::layout_branches()
 	{
 		if (end[b] == kNoChainEnd)
 			end[b] = b;
-		if (end[b] == b)
+		if (end[b] == b && live[b])
 			end[b] = kept++ | 0x80000000u;
 	}
 	auto target = [&](uint32_t b) {

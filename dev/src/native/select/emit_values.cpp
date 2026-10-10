@@ -678,6 +678,12 @@ void FunctionSelector::emit_binary(const Instruction& inst)
 	// register: r11, or r10 when the left operand (after a swap, the former
 	// right operand) already occupies r11.
 	auto right_to_register = [&]() {
+		// O1+: a 32-bit multiply reads its multiplier's low 32 bits only, so
+		// one beyond imm32 as an i64 (a u32 hash constant above 2^31) is its
+		// sign-extended low half, an imm32 (imul r32, r/m32, imm32).
+		if (level_ >= 1 && op == BinaryOp::Mul && b.kind == OperandKind::Imm && !fits_imm32(b) &&
+			(kind == TypeKind::U32 || kind == TypeKind::I32))
+			b = Operand::make_imm(static_cast<int32_t>(static_cast<uint32_t>(b.imm)));
 		const bool load = (b.kind == OperandKind::Mem && !wide_mem) ||
 			(op == BinaryOp::Mul && b.kind == OperandKind::Imm && !fits_imm32(b));
 		if (!load)

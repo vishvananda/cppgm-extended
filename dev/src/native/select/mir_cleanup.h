@@ -31,6 +31,12 @@ uint32_t drop_redundant_tests(Function& function);
 // made equal (neither named since) goes. Returns the copies removed.
 uint32_t drop_redundant_copies(Function& function);
 
+// A register set to a constant it already holds (set by an earlier move in
+// the block, unwritten since: a 64-bit multiplier or mask reloaded into
+// the scratch register for each use) is not set again. Returns the number
+// removed.
+uint32_t drop_redundant_constants(Function& function);
+
 // Reloads of a temp's frame home a register still holds go or become
 // register copies (feeding the scratch's readers directly). Returns the
 // instructions removed.

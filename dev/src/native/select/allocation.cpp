@@ -31,33 +31,55 @@ using lowir::ValueKind;
 
 namespace {
 
-const Reg kGprOrder[] = { R8, R9, RDI, RSI, RDX, RCX, RAX, RBX, R12, R13, R14, R15 };
-const Reg kCalleeFirstOrder[] = { RBX, R12, R13, R14, R15, R8, R9, RDI, RSI, RDX, RCX, RAX };
+// RBP, last of the callee-saved registers, only without a frame pointer
+// (rbp_free_).
+const Reg kGprOrder[] = { R8, R9, RDI, RSI, RDX, RCX, RAX, RBX, R12, R13, R14, R15, RBP };
+const Reg kCalleeFirstOrder[] = { RBX, R12, R13, R14, R15, RBP, R8, R9, RDI, RSI, RDX, RCX, RAX };
 // Functions with vector parameters follow the reference order, which keeps
 // the fixed registers of comparisons, division and shifts last.
-const Reg kVectorBoundaryOrder[] = { R8, R9, RDI, RSI, RBX, R12, R13, R14, R15, RDX, RCX, RAX };
+const Reg kVectorBoundaryOrder[] = { R8, R9, RDI, RSI, RBX, R12, R13, R14, R15, RBP, RDX, RCX, RAX };
 
 // The conversion scratch area (x87 transfers, saved rbx), sized as the
 // reference frame layout sizes it.
 const uint32_t kScratchAreaBytes = 48;
 const uint64_t kMaxFrameBytes = 0x7fff0000u;
 
-// Whether RSP stays put after the prologue (Function::omit_frame_pointer):
-// no instruction names RSP as a register (calls' stack argument areas,
-// over-aligned argument realignment), allocates stack, walks the variadic
-// areas or converts through the i128 routines' stack argument.
+// With calls' argument areas, the most instructions addressing the frame
+// a function without a frame pointer may have: each takes a SIB byte more
+// RSP-based than RBP-based, which in a large body outweighs the two
+// instructions per call the frame pointer costs.
+const uint32_t kAreaFrameAccessCap = 64;
+
+// Whether the frame pointer can go (Function::omit_frame_pointer): RSP
+// moves after the prologue only by calls' argument areas (`sub rsp, n`
+// and `add rsp, n`, which the emitter follows with the frame operands and
+// the CFA rule), and with those, few instructions address the frame. No
+// other instruction names RSP as a register (over-aligned argument
+// realignment), allocates stack, walks the variadic areas or converts
+// through the i128 routines' stack argument.
 bool fixed_stack(const Function& f)
 {
+	bool areas = false;
+	uint32_t accesses = 0;
 	for (const Inst& inst : f.insts)
 	{
 		if (inst.op == Op::StackAlloc || inst.op == Op::VaStart || inst.op == Op::VaArg ||
 			(inst.op == Op::Convert && (inst.type == TypeKind::I128 || inst.type2 == TypeKind::I128)))
 			return false;
+		bool frame = false;
 		for (unsigned k = 0; k < inst.nops; ++k)
-			if (inst.ops[k].kind == OperandKind::Reg && inst.ops[k].reg == RSP)
+		{
+			const Operand& op = inst.ops[k];
+			frame = frame || (op.kind == OperandKind::Mem && (op.reg == kFrame || op.index == kFrame));
+			if (op.kind != OperandKind::Reg || op.reg != RSP)
+				continue;
+			if (k != 0 || (inst.op != Op::Sub && inst.op != Op::Add) || inst.ops[1].kind != OperandKind::Imm)
 				return false;
+			areas = true;
+		}
+		accesses += frame ? 1 : 0;
 	}
-	return true;
+	return !areas || accesses <= kAreaFrameAccessCap;
 }
 
 // O1+, without EH (its landings are edges this graph lacks): object slots
@@ -638,7 +660,9 @@ int32_t FunctionSelector::home_of(uint32_t temp)
 Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg prefer1)
 {
 	const TempInfo& t = temps_[temp];
-	const uint32_t pool = t.cls == VClass::Xmm ? kAllocatableXmms : (t.cls == VClass::Gpr ? kAllocatableGprs : 0);
+	const uint32_t pool = t.cls == VClass::Xmm ? kAllocatableXmms
+		: t.cls == VClass::Gpr                 ? kAllocatableGprs | (rbp_free_ ? 1u << RBP : 0u)
+											   : 0;
 	const uint32_t allowed = pool & ~t.forbid & ~occupied_ & ~pinned_ & ~exclude & ~excluded_;
 	if (allowed == 0)
 	{
@@ -663,7 +687,7 @@ Reg FunctionSelector::allocate(uint32_t temp, uint32_t exclude, Reg prefer0, Reg
 	const Reg* order = (t.forbid & kCallerSavedGprs) == (kCallerSavedGprs & kAllocatableGprs) ? kCalleeFirstOrder
 		: vector_params_                                                                      ? kVectorBoundaryOrder
 																							  : kGprOrder;
-	for (unsigned k = 0; k < 12; ++k)
+	for (unsigned k = 0; k < 13; ++k)
 		if (allowed & (1u << order[k]))
 			return order[k];
 	return kNoReg;
@@ -678,7 +702,7 @@ void FunctionSelector::bind(uint32_t temp, Reg reg)
 	++stats_.register_grants;
 	temps_[temp].reg = reg;
 	temps_[temp].flags &= ~TF_HOMED;
-	if (kCalleeSavedGprs & (1u << reg))
+	if ((kCalleeSavedGprs | (1u << RBP)) & (1u << reg))
 		used_callee_saved_ |= 1u << reg;
 	// A parameter bound to its own incoming register leaves it intact.
 	if (temp >= body_->parameter_count || incoming_reg(temp) != reg)

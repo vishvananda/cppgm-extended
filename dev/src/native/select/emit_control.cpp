@@ -62,7 +62,9 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out)
 	// Without a frame pointer (finish_frame decides it from the code: no
 	// instruction moves RSP), RBP holds values: no stack allocation, no
 	// variadic area, no i128 conversion through the stack, no call with
-	// a stack argument area or an over-aligned one.
+	// a stack argument area or an over-aligned one. (A function whose
+	// calls' argument areas are all that moves RSP may drop its frame
+	// pointer too, keeping RBP unused.)
 	// Local objects aligned beyond 16 are addressed from R12, reserved for
 	// the function (Function::aligned_base); the frame pointer stays.
 	for (uint32_t s = 0; s < body_->slots.size(); ++s)
@@ -106,6 +108,7 @@ void FunctionSelector::select(lowir::SymbolId symbol, Function& out)
 		fuse_adds_and_extensions(out);
 		drop_redundant_tests(out);
 		drop_redundant_copies(out);
+		drop_redundant_constants(out);
 		forward_frame_copies(out, frame_objects_);
 		stats_.dead_frame_stores += drop_dead_frame_stores(out, frame_objects_);
 		drop_unused_frame(out);

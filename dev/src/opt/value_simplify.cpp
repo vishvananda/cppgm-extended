@@ -137,6 +137,7 @@ private:
 	bool mask_or(Instruction& inst);
 	void canonicalize(Instruction& inst);
 	bool narrow_compare(Instruction& inst);
+	bool exact_compare(Instruction& inst);
 	bool bulk_call(Instruction& inst);
 	bool equality_memcmp(BlockId block, InstId& prev, InstId id);
 	void simplify_branch(Instruction& term);
@@ -1266,6 +1267,66 @@ bool Simplifier::narrow_compare(Instruction& inst)
 	return true;
 }
 
+// An exact quotient (`div exact`, `udiv exact`, `shr exact`, `ushr exact`
+// by a literal: no set bit or remainder lost) is zero exactly when its
+// dividend is, and two by one divisor are equal exactly when their
+// dividends are: equality compares the dividends (a vector's `size() != 0`
+// tests its end against its begin, not their scaled distance).
+bool Simplifier::exact_compare(Instruction& inst)
+{
+	if (inst.op != Opcode::Compare || !inst.type.is_integer() || inst.type.kind() == TypeKind::I128)
+		return false;
+	const ComparePredicate pred = static_cast<ComparePredicate>(inst.sub);
+	if (pred != ComparePredicate::Eq && pred != ComparePredicate::Ne)
+		return false;
+	auto quotient = [&](Value v) -> const Instruction* {
+		const Instruction* q = producer(v);
+		if (q == nullptr || q->op != Opcode::Binary || (q->flags & IF_EXACT) == 0 || q->type != inst.type ||
+			!q->ops[0].is(ValueKind::Temp) || !q->ops[1].is(ValueKind::Integer))
+			return nullptr;
+		const BinaryOp op = static_cast<BinaryOp>(q->sub);
+		if (op != BinaryOp::Div && op != BinaryOp::UDiv && op != BinaryOp::Shr && op != BinaryOp::UShr)
+			return nullptr;
+		const Literal k = body_.literals[q->ops[1].index];
+		return k.low != 0 || k.high != 0 ? q : nullptr;
+	};
+	// The dividend's type: the quotient's, or a pointer (a pointer
+	// difference's operands) compared as a pointer.
+	auto dividend_type = [&](const Instruction& q, Type& out) {
+		const Type t = body_.temps[q.ops[0].index].type;
+		if (t == inst.type || (t.is_pointer() && storage_bytes(inst.type) == 8))
+		{
+			out = t;
+			return true;
+		}
+		return false;
+	};
+	const Instruction* a = quotient(inst.ops[0]);
+	Type type;
+	if (a != nullptr && inst.ops[1].is(ValueKind::Integer))
+	{
+		const Literal zero = normalize_integer(inst.type, body_.literals[inst.ops[1].index]);
+		if (zero.low != 0 || zero.high != 0 || !dividend_type(*a, type))
+			return false;
+		inst.ops[0] = a->ops[0];
+		inst.ops[1] = integer_value(body_, Literal{ 0, 0 });
+		inst.type = type;
+		return true;
+	}
+	const Instruction* b = quotient(inst.ops[1]);
+	Type other;
+	if (a == nullptr || b == nullptr || a->sub != b->sub ||
+		!(a->ops[1] == b->ops[1] ||
+			(body_.literals[a->ops[1].index].low == body_.literals[b->ops[1].index].low &&
+				body_.literals[a->ops[1].index].high == body_.literals[b->ops[1].index].high)) ||
+		!dividend_type(*a, type) || !dividend_type(*b, other) || type != other)
+		return false;
+	inst.ops[0] = a->ops[0];
+	inst.ops[1] = b->ops[0];
+	inst.type = type;
+	return true;
+}
+
 // memset(p, 0, n) and memcpy(d, s, n) of a literal n up to kBulkCallBytes:
 // zeroinit and copyobj (the back end stores directly); the result is the
 // destination.
@@ -1452,6 +1513,21 @@ void Simplifier::simplify_branch(Instruction& term)
 			changed_ = true;
 			continue;
 		}
+		// An exact quotient by a nonzero literal is nonzero exactly when its
+		// dividend is (exact_compare).
+		if (def->op == Opcode::Binary && (def->flags & IF_EXACT) != 0 && def->ops[0].is(ValueKind::Temp) &&
+			def->ops[1].is(ValueKind::Integer) &&
+			(body_.literals[def->ops[1].index].low != 0 || body_.literals[def->ops[1].index].high != 0) &&
+			(static_cast<BinaryOp>(def->sub) == BinaryOp::Div || static_cast<BinaryOp>(def->sub) == BinaryOp::UDiv ||
+				static_cast<BinaryOp>(def->sub) == BinaryOp::Shr || static_cast<BinaryOp>(def->sub) == BinaryOp::UShr))
+		{
+			const Type t = body_.temps[def->ops[0].index].type;
+			if (!(t.is_pointer() || (t.is_integer() && t.kind() != TypeKind::I128)))
+				return;
+			term.ops[0] = def->ops[0];
+			changed_ = true;
+			continue;
+		}
 		return;
 	}
 }
@@ -1583,8 +1659,8 @@ void Simplifier::process_block(BlockId block)
 		if (inst.op == Opcode::Branch)
 			simplify_branch(inst);
 		canonicalize(inst);
-		if (reassociate(inst) || mask_or(inst) || merge_index(inst) || narrow_compare(inst) || bulk_call(inst) ||
-			readonly_table_address(inst))
+		if (reassociate(inst) || mask_or(inst) || merge_index(inst) || narrow_compare(inst) || exact_compare(inst) ||
+			bulk_call(inst) || readonly_table_address(inst))
 			changed_ = true;
 		Value value;
 		if (inst.result != kNoId && (fold(inst, value) || identity(inst, value)))

@@ -238,7 +238,7 @@ const int32_t kGprCapacity = 12;
 // a callee-saved register, whose push and pop run once per call: two
 // executions in a loop, one outside loops.
 const uint64_t kOpenWeight = 2 * kWeightScale;
-const uint64_t kOpenWeightStraight = kWeightScale;
+const uint64_t kOpenWeightStraight = 2 * kWeightScale;
 const int32_t kXmmCapacity = 8;
 // The loop discovery's work budget per block, plus a fixed allowance.
 const uint64_t kLoopStepsPerBlock = 16;

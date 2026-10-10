@@ -85,6 +85,15 @@ struct UnwindFacts
 		uint32_t save_end[6];
 	};
 	std::vector<Prologue> prologues;
+	// Frameless: after each `sub rsp, n` or `add rsp, n` of a call's
+	// argument area (or a block's start that closes one a noreturn call
+	// left open), the argument bytes below the body's RSP.
+	struct Adjust
+	{
+		uint32_t end;
+		uint32_t args;
+	};
+	std::vector<Adjust> adjusts;
 	uint32_t size = 0;
 	std::vector<CallSite> calls;
 	std::vector<uint32_t> pads;
@@ -124,6 +133,7 @@ private:
 	void return_jump(const Function& function, bool last);
 	void tail_jump(const Function& function, const Inst& inst);
 	void ret(const Function& function, const Inst& inst, bool last);
+	void argument_area(const Inst& inst);
 	void shift(const Inst& inst);
 	void instruction(const Function& function, const Inst& inst, uint32_t index, bool last_in_function);
 	void branch(Cond cond, bool conditional, uint32_t label);
@@ -183,6 +193,11 @@ private:
 	// saved RBP), which moves the incoming arguments, not the slots, by
 	// incoming_shift_ relative to RSP.
 	int32_t incoming_shift_ = 0;
+	// Without a frame pointer, the bytes of a call's argument area RSP is
+	// lowered by at the current instruction (`sub rsp, n` before the call,
+	// `add rsp, n` after it, in one block): frame operands lie that much
+	// farther from RSP.
+	int32_t rsp_shift_ = 0;
 	bool terminal_used_ = false;
 	// Branch relaxation: per MIR instruction index, whether its branch is
 	// encoded short; the first pass records the long encoding's offsets.
