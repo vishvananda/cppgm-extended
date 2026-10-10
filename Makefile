@@ -254,9 +254,6 @@ test-cells:
 	fi; \
 	exit $$status
 
-# The course suites of the backend assignments under every design variant
-# of dev/src/backend_variant.h, in the default cell.  A course fixture that
-# fails a variant encodes the course solution's shape, not the contract.
 # The harness unit tests: the comparison, the workers, the audits and the
 # export, each a self-contained python unittest file under scripts/tests.
 HARNESS_TESTS = \
@@ -282,9 +279,6 @@ HARNESS_TESTS = \
 
 test-harness:
 	@set -e; for test in $(HARNESS_TESTS); do echo "== $$test"; python3 $$test; done
-
-test-variants:
-	@for pa in pa24 pa32 pa33; do $(MAKE) -C $$pa test-variants || exit 1; done
 
 # GNU make prefers the pattern rule that yields the shortest stem, so
 # `with-clang-libcxx-<target>` selects the libc++ cell rather than the

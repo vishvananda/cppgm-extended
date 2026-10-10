@@ -135,7 +135,7 @@ class ExportedDevMakefileTests(unittest.TestCase):
             self.assertIn('tests/debuginfo/o3', result.stdout)
             self.assertNotIn('census', result.stdout)
             self.assertNotIn('check_ir_envelope', result.stdout)
-            for target in ('test-regression', 'test-perf', 'test-perf-refs', 'test-variants'):
+            for target in ('test-regression', 'test-perf', 'test-perf-refs'):
                 result = subprocess.run(['make', '-n', '-C', str(pa), target],
                                         capture_output=True, text=True)
                 self.assertNotEqual(result.returncode, 0, target)

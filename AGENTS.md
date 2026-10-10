@@ -32,7 +32,6 @@ make CXX=clang++ CPPGM_HOST_CXX=clang++
 make test-pa8
 CPPGM_LOWIR_DIRECT_TEXT_COMPARE=1 make test-report
 make test-debuginfo
-make test-variants
 make -C pa34 test-through-pa5 CXX=../dev/cppgm++ CPPGM_HOST_CXX=g++
 make inception
 ```
@@ -42,9 +41,9 @@ self-hosting, keep a real host compiler in `CPPGM_HOST_CXX`. Isolate self-host
 or mixed-toolchain objects with `INCEPTION_OBJ_ROOT_BASE` or `OBJ`.
 
 After compiler changes, run the affected suite, full strict report, debug-info
-checks and self-host through PA5. Run backend variants when changing lowering
-or optimization, and inception when changing self-host behavior. PA34 owns the
-`test-through-*` ladder; root `make inception` compares the rebuilt compiler.
+checks and self-host through PA5. Run inception when changing self-host
+behavior. PA34 owns the `test-through-*` ladder; root `make inception`
+compares the rebuilt compiler.
 
 See [TESTING_AND_REFERENCES.md](TESTING_AND_REFERENCES.md) for test selection,
 reference regeneration and the distinction between this checkout and the

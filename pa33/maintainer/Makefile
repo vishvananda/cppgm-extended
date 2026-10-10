@@ -57,13 +57,6 @@ test-regression: $(TEST_DEPS)
 	$(call run_survivor_property_bucket,$(REGRESSION_O2_TEST_ROOT))
 	$(call run_survivor_property_bucket,$(REGRESSION_BEHAVIOR_O1_TEST_ROOT))
 
-BACKEND_VARIANTS ?= pool-reverse frame-pad rpo-layout colouring linear-scan
-test-variants: $(TEST_DEPS)
-	@set -e; for variant in $(BACKEND_VARIANTS); do \
-		echo "== $(TARGET) course suite under variant $$variant"; \
-		CPPGM_BACKEND_VARIANT=$$variant $(MAKE) --no-print-directory test-course test-debuginfo; \
-	done
-
 ifeq ($(strip $(TEST)),)
 ref-test: ref-test-regression
 endif

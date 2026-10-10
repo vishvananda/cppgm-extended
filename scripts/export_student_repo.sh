@@ -308,7 +308,6 @@ prune_student_pa33() {
   rm -rf "$dest/pa33/maintainer" "$dest/pa33/tests/regression"
   find "$dest/pa33/tests" -type f -name '*.ref.ir' -delete
   perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/pa33/Makefile"
-  perl -pi -e 's/for pa in pa24 pa32 pa33;/for pa in pa24 pa32;/' "$dest/Makefile"
   local script
   for script in check_cppgm_function_census \
     check_lowir_native_structural_controls check_lowir_native_parameter_rematerialization \

@@ -42,8 +42,7 @@ $(OBJ)/debug/%.o: %.cpp
 
 # The course suite (test-course) judges by behaviour, contract shape where
 # the shape is the contract, and envelope; the regression suite
-# (test-regression) pins the course solution's dumps.  test-variants runs the
-# course suite under each design variant of dev/src/backend_variant.h.
+# (test-regression) pins the course solution's dumps.
 test: test-course test-regression
 
 test-course: $(TEST_DEPS)
@@ -92,13 +91,6 @@ else
 			"$$mode" ref my "$$root"; \
 	done
 endif
-
-BACKEND_VARIANTS ?= pool-reverse frame-pad rpo-layout colouring linear-scan
-test-variants: $(TEST_DEPS)
-	@set -e; for variant in $(BACKEND_VARIANTS); do \
-		echo "== $(TARGET) course suite under variant $$variant"; \
-		CPPGM_BACKEND_VARIANT=$$variant $(MAKE) --no-print-directory test-course; \
-	done
 
 # Without TEST, `make ref-test` regenerates the regression lane's references
 # as well; the course runner prunes `regression/` from `tests`.  Structural

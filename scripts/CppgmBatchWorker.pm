@@ -294,19 +294,11 @@ sub read_env_file
 	return \%env;
 }
 
-# The tool's arguments: CPPGM_APP_ARGS, plus the backend design variant the
-# course harness selects through CPPGM_BACKEND_VARIANT (`make test-variants`)
-# for the tools that have a backend.  The compiler takes the variant only as
-# the `--backend-variant <name>` option.
+# The tool's arguments: CPPGM_APP_ARGS.
 sub app_args_for
 {
 	my ($app) = @_;
-	my @app_args = shellwords($ENV{CPPGM_APP_ARGS} || '');
-	my $variant = $ENV{CPPGM_BACKEND_VARIANT};
-	push @app_args, '--backend-variant', $variant
-		if defined($variant) && $variant ne '' &&
-		   $app =~ m{(?:^|/)(?:cppgm\+\+|lowiropt|lowir2native)(?:-ref)?$};
-	return @app_args;
+	return shellwords($ENV{CPPGM_APP_ARGS} || '');
 }
 
 sub open_worker

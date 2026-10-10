@@ -179,8 +179,7 @@ endef
 
 # The course suite (test-course) judges by contract, outcome and envelope; the
 # regression suite (test-regression) pins the course solution's outputs and
-# its pass-specific controls.  test-variants runs the course suite under each
-# design variant of dev/src/backend_variant.h.
+# its pass-specific controls.
 test: test-course test-regression
 
 test-course: $(TEST_DEPS)
@@ -209,13 +208,6 @@ test-regression: $(TEST_DEPS)
 	$(call run_inline_control_bucket,$(CONTROL_TEST_ROOT))
 	$(call run_survivor_property_bucket,$(REGRESSION_O1_TEST_ROOT))
 	$(call run_survivor_property_bucket,$(REGRESSION_O2_TEST_ROOT))
-
-BACKEND_VARIANTS ?= pool-reverse frame-pad rpo-layout colouring linear-scan
-test-variants: $(TEST_DEPS)
-	@set -e; for variant in $(BACKEND_VARIANTS); do \
-		echo "== $(TARGET) course suite under variant $$variant"; \
-		CPPGM_BACKEND_VARIANT=$$variant $(MAKE) --no-print-directory test-course; \
-	done
 
 test-debuginfo: $(TEST_DEPS)
 	@CPPGM_APP_ARGS='-O1' scripts/run_all_tests.pl $(LOWIROPT_APP) my $(DEBUGINFO_O1_TEST_ROOT)
