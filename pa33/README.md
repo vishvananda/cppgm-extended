@@ -9,8 +9,9 @@ its translation to machine instructions. Reuse this backend in both
 
 Complete PA24 and PA32 first. Continue working in `dev/lowir2native.cpp` and
 your shared backend under `dev/src/`. The assignment wrapper points there.
-The supplied `mir_model.h` and register definitions are scaffolding you may
-adapt or replace. [Design notes](design-notes.md) suggest a starting approach.
+The supplied `mir_model.h` and register definitions are the MIR vocabulary
+the course solution also uses; the MIR's containers are yours.
+[Design notes](design-notes.md) suggest a starting approach.
 
 ### Required behavior
 

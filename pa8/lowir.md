@@ -26,10 +26,11 @@ LowIR is:
   for values selected by incoming control-flow edges
 
 LowIR text is the serialized form of the compiler-owned backend program model.
-Implementations may use a typed in-memory representation, and the starter
-support includes an optional `dev/src/lowir_model.h` scaffold for that shape,
-but the text remains the durable boundary. A backend-visible fact that cannot
-be serialized to LowIR and parsed back is not part of the LowIR contract.
+Implementations may use a typed in-memory representation. The starter support's
+`dev/src/lowir_model.h` and `dev/src/ir_symbol_model.h` give its vocabulary:
+the format's fixed words as enums, with their spellings and readers. The text
+remains the durable boundary. A backend-visible fact that cannot be serialized
+to LowIR and parsed back is not part of the LowIR contract.
 
 The following naming conventions are used:
 
@@ -56,6 +57,7 @@ The base LowIR type family begins with the scalar and pointer types:
 - `i32`
 - `u32`
 - `i64`
+- `i128`
 - `f32`
 - `f64`
 - `f80`

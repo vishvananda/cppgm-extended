@@ -26,8 +26,9 @@ model in which a function owns its instructions and blocks, where an edit
 touches only that function and use counts are cheap to keep current, serves
 all of that. A model that packs a whole program into flat append-only pools,
 or that can only be rebuilt from text, makes every later rewrite a rebuild.
-`dev/src/lowir_model.h` is a teaching shape for reading the format, not a
-recommendation for that design.
+`dev/src/lowir_model.h` gives the format's vocabulary and no containers: the
+model's shape is yours, under the requirements above. Store its enums, not
+words.
 
 ### Prerequisites and starter kit
 
@@ -39,8 +40,10 @@ The starter kit provides:
 
 - `dev/lowir.cpp`, the editable command-line scaffold, and the assignment's
   `lowir.cpp` symlink to it;
-- `dev/src/lowir_model.h`, a simple example model you may adapt or replace;
-- `dev/src/ir_symbol_model.h`, the shared metadata vocabulary;
+- `dev/src/lowir_model.h`, the LowIR vocabulary (every enumerable concept of
+  the format as an enum with its spellings and readers, and the 8-byte
+  `Type`), which the course solution also builds on;
+- `dev/src/ir_symbol_model.h`, the metadata vocabulary;
 - [the format reference](lowir.md), [the grammar](pa8.gram), and its HTML
   explorer under `grammar/`;
 - the tests, reference outcomes and harnesses under `pa8/`;

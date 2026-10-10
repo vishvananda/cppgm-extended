@@ -66,10 +66,10 @@ The starter kit contains:
 - a student-editable `dev/lowir2native.cpp` starter scaffold
 - the `pa24/lowir2native.cpp` symlink back to `../dev/lowir2native.cpp`
 - shared support sources and headers under `dev/src/`
-- optional typed LowIR and machine-IR model scaffolding in
-  `dev/src/lowir_model.h` and `dev/src/mir_model.h`, with shared
-  exported-symbol and register support in `dev/src/ir_symbol_model.h` and
-  `dev/src/native/mir/registers.h`
+- the MIR vocabulary in `dev/src/mir_model.h` and
+  `dev/src/native/mir/registers.h` (operations, operand kinds, registers,
+  condition codes and the System V register sets), with the LowIR vocabulary
+  in `dev/src/lowir_model.h` and `dev/src/ir_symbol_model.h`
 - a local test suite under `pa24/tests/`
 - the grammar for this assignment called `pa24.gram`
 - the authoritative LowIR specification in `../pa8/lowir.md`
@@ -134,9 +134,9 @@ If `--dump-machine-ir <mirfile>` is provided, `lowir2native` shall also write a
 deterministic machine-IR dump to `<mirfile>`.
 
 The machine-IR dump is the serialized form of the backend model used for native
-emission. You may keep a typed MIR internally, and the optional
-`dev/src/mir_model.h` scaffold gives one possible representation,
-but the dump must describe the same program that native emission consumes.
+emission. You may keep a typed MIR internally, with `dev/src/mir_model.h`
+supplying its vocabulary, but the dump must describe the same program that
+native emission consumes.
 
 Integer immediates must preserve the complete input value, including values
 that use the high half of an `i128`. Floating immediates must be interpreted as
@@ -255,7 +255,7 @@ for testing is still this textual machine-IR form:
 Machine operands use the following target-specific forms:
 
 - `rax` through `r15` for general-purpose registers
-- `xmm0` through `xmm7` for scalar floating-point registers
+- `xmm0` through `xmm15` for scalar floating-point registers
 - an integer or floating literal for an immediate value
 - `@name` or `^label` for a symbol or block label
 - `[register]` or `[register+displacement]` for register-based memory

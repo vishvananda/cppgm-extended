@@ -44,23 +44,25 @@ The starter kit provides:
 - `pa9/scripts/`, the ABI fact test harness
 - `pa9/tests/abi/`, the checked-in ABI fact tests and reference files
 - shared support sources and headers under `dev/src/`
-- an optional ABI fact scaffold in `dev/src/abi/itanium/abi_mangle.h`
+- the ABI vocabulary in `dev/src/abi/itanium/abi_mangle.h`: the Itanium code
+  tables and the fact-file words as enums
 
 Put code changes in `dev/`, especially `dev/abimangle.cpp` and reusable
 helpers under `dev/src/`. Do not edit generated `.my` files. Preserve supplied test inputs.
 Corrections to reference outputs follow the
 [reference policy](../TESTING_AND_REFERENCES.md).
 
-The assignment-facing scaffold is the typed fact data model and the declared
-parse/serialize/mangle API in `dev/src/abi/itanium/abi_mangle.h`. Keep the reusable typed
-ABI model and encoder under `dev/src/`; keep the line-oriented fact reader at
-the `abimangle` tool boundary. Later compiler stages must construct typed ABI
-targets and call the same encoder directly. They must not serialize semantic
-state to fact text and parse it back.
+`abi_mangle.h` gives the vocabulary; the typed ABI model, the fact reader and
+the encoder are yours. Keep the reusable typed ABI model and encoder under
+`dev/src/`; keep the line-oriented fact reader at the `abimangle` tool
+boundary. Later compiler stages must construct typed ABI targets and call the
+same encoder directly. They must not serialize semantic state to fact text and
+parse it back.
 
-Encoding tables, Itanium terminal spelling, compiler semantic lowering, and
-other implementation logic are intentionally outside the PA9 wrapper and
-test harness.
+The code tables in `abi_mangle.h` cover builtin types, standard substitutions,
+terminals and operators. Substitution, the structure of each encoding,
+compiler semantic lowering and other implementation logic are your work,
+outside the PA9 wrapper and test harness.
 
 Use `abimangle-ref` to inspect example output.
 Tests run your implementation against the checked-in contract fixtures.
@@ -412,8 +414,8 @@ A simple implementation strategy is to keep three concerns separate:
 - ABI name encoding from those typed records
 - substitution-table state for one mangled name
 
-The `abi_mangle.h` scaffold follows that shape. You may extend its typed model
-and APIs as the tested ABI vocabulary grows, but the standalone tool and later
+The `abi_mangle.h` scaffold supplies the words and codes for that shape: the
+typed records store its enums, not fact words. The standalone tool and later
 compiler stages should share one structured encoder implementation.
 
 Substitution is part of the ABI grammar, not just text de-duplication. The
