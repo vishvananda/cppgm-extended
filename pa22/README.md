@@ -200,6 +200,15 @@ To complete PA22, implement these goals:
    pointers (static storage included) produce -1; a base-to-derived or derived-to-base
    conversion adjusts only a non-null value; comparison with null and contextual
    conversion to `bool` test against -1; `.*` and `->*` add the offset unchanged.
+   A member function pointer uses the Itanium representation (2.3) as well: two
+   words, `ptr` then `adj`. `ptr` is the function's address or, for a virtual
+   function, 1 plus the byte offset of its entry in the vtable, so an odd `ptr`
+   marks a virtual function. `adj` is the byte adjustment added to the object's
+   address to form `this`. Null is both words zero; a base-to-derived or
+   derived-to-base conversion adjusts `adj` of a non-null value only;
+   contextual conversion to `bool` tests `ptr`. `.*` and `->*` add `adj` to the
+   object's address, then call `ptr` or, when `ptr` is odd, the entry `ptr - 1`
+   bytes into the vtable of the adjusted object.
 
 5. Remaining single-vptr RTTI case.
    `dynamic_cast<void*>` should lower for the existing polymorphic single-inheritance ABI
@@ -216,7 +225,6 @@ The following are explicitly out of scope for PA22:
 - polymorphic multiple inheritance
 - member-pointer behavior that depends on virtual-base or polymorphic
   multiple-inheritance adjustment
-- `dynamic_cast` reference forms
 - `dynamic_cast` cases that depend on multiple or virtual polymorphic base layouts
 - the remaining RTTI cases that require a broader multi-vptr or virtual-base ABI
 

@@ -7,7 +7,7 @@ PA29 establishes that hosted source/header inputs preprocess and compile at all
 (intrinsics, parser concessions, builtin traits, header-free conformance
 anchors, and lightweight C-wrapper header smokes). PA30 raises the bar to
 **compiling the heaviest real C++ standard-library headers** end to end with
-`cppgm++ -c`, within a workable time and memory budget.
+`cppgm++ -c`, within a workable compile time.
 
 By PA29, hosted headers and source should preprocess and compile for the
 lighter hosted workload. PA30 raises the bar to large, template- and trait-heavy
@@ -22,8 +22,9 @@ To complete PA30, implement these goals:
 - compile the heaviest hosted standard-library headers cleanly with `cppgm++ -c`
 - carry the template instantiation, trait evaluation, and overload-resolution
   depth those headers exercise without exponential blow-up
-- stay within a workable compile time and memory budget on the heavy-header
-  workload (the harness allows 45 seconds per compile by default)
+- stay within a workable compile time on the heavy-header workload (the
+  harness stops a compile after 45 seconds by default; it does not limit
+  memory)
 
 ### Prerequisites
 
@@ -108,8 +109,9 @@ make check TEST=tests/compile/600-const-unordered-map-find.t
 ```
 
 The local tests live in `tests/compile/`. Each test is `.t` (source) plus an
-empty `.ref` base, a `.ref.exit_status` of `EXIT_SUCCESS`, and a `.ref.stdout`;
-it passes iff `cppgm++ -c` compiles it cleanly. Each test includes a real heavy
+empty `.ref` base, a `.ref.exit_status`, and a `.ref.stdout`. Most expect
+`EXIT_SUCCESS` and pass iff `cppgm++ -c` compiles them cleanly; the few
+negative tests expect `EXIT_FAILURE`. Each test includes a real heavy
 header together with a semantic check — a trait, `decltype`, `sizeof`, or
 `static_assert` that cannot be satisfied without analyzing the header,
 so a test cannot pass by skipping or stubbing the include.
@@ -122,7 +124,7 @@ accepts `c++11` and `c++14`.
 
 To complete PA30, support:
 
-- compiling the heaviest hosted standard-library headers within the perf budget
+- compiling the heaviest hosted standard-library headers within that time limit
 - the template, trait, and overload-resolution depth those headers exercise
   during `-c` compilation
 
@@ -146,6 +148,29 @@ specialization selection, and large overload sets. The productive failures here
 are usually performance cliffs (re-resolving the same bound template pack,
 re-instantiating the same specialization) rather than missing features. Prefer
 memoizing repeated resolution over deepening recursion guards.
+
+PA30 is the first assignment whose inputs make the harness's time limit a
+budget rather than a guard against hangs: each test brings a heavy header,
+with its macros, overload sets and thousands of specializations, into one
+translation unit. The limit sits far above what a sound design needs, so it
+catches cliffs, not constant factors: work that grows with the square of the
+input, or that is redone at every use instead of once. The speed comes from
+structure the earlier assignments set up:
+
+- PA4: a header inside an include guard is skipped on later inclusions, and
+  an inactive group is scanned only for its directives
+- PA6: a lookup costs the scopes it searches, not the size of the program
+- PA14 and PA15: a specialization is found in one probe, by its template and
+  canonical arguments, with constant arguments as values
+- PA14's on-demand instantiation and the deferred instantiation of PA18 and
+  PA19: a body is instantiated only when it is used
+- PA16: the constant-initialization probe runs on every namespace-scope
+  object of every hosted header, so it has to give up cheaply
+- PA17: an explicit-instantiation declaration (`extern template`) leaves the
+  library's own instantiations to the library
+
+When a PA30 compile is slow, find which of these it breaks before tuning
+anything else.
 
 ### After PA30
 

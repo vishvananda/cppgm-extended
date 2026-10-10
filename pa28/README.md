@@ -193,7 +193,9 @@ To complete PA28, preserve practical host-linked C++ ABI/runtime behavior within
 the supported subset:
 
 - virtual dispatch and imported/exported vtable ownership
-- RTTI-driven `dynamic_cast` / `typeid`
+- RTTI-driven `dynamic_cast` / `typeid`; a reference-form `dynamic_cast` that
+  fails throws `std::bad_cast` through the host runtime (5.2.7p9), and an
+  ordinary handler catches it
 - covariant return adjustment
 - ordinary host-linked rethrow and advanced catch behavior
 - cleanup and unwind interactions beyond the basic PA26 fact owners

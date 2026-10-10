@@ -158,10 +158,7 @@ complete compiler-owned semantic layer for the supported C++11 language surface,
 collection of special cases.
 
 More concretely, over the already-implemented language subset, PA16 should cover the full
-C++11 `constexpr` forms that later template and library code expect include
-dependent function-template return and parameter types. Their literal-type
-requirements are checked on the dependent declaration, and are not reapplied
-after a valid declaration is instantiated with concrete template arguments:
+C++11 `constexpr` forms that later template and library code expect:
 
 - scalar, floating, `nullptr`, and enum constant expressions
 - unary, arithmetic, comparison, bitwise, logical, conditional, cast, `sizeof`,
@@ -173,6 +170,11 @@ after a valid declaration is instantiated with concrete template arguments:
   evaluating those initializers use the constructor's class context, so a
   derived constructor may invoke an accessible protected base constructor
 - `constexpr` member-function calls on constant objects
+- `constexpr` function templates and `constexpr` member functions of class
+  templates, including dependent return and parameter types: the literal-type
+  requirements are checked on the template's declaration, and a
+  specialization whose instantiated types are not literal is still a valid
+  function, only not `constexpr` (7.1.5p6)
 - constant object values, not just integral scalars:
   - aggregate/class values
   - array values
@@ -202,6 +204,12 @@ after a valid declaration is instantiated with concrete template arguments:
   core constant-expression failure use dynamic initialization; only contexts
   that require a constant expression are rejected for that failure
 
+A call that constant evaluation replaces by its value does not make the
+function used in emitted code, so a `constexpr` function whose every call is
+evaluated at compile time (in a `static_assert`, a template argument, an
+array bound, an enumerator or a constant initializer) need not be emitted.
+The comparison accepts output with or without such unreferenced definitions.
+
 PA16 also owns the semantic validation side of C++11 `constexpr`, not just evaluation. In
 particular, the compiler should enforce the C++11-facing rules that matter for the
 supported language subset, such as:
@@ -221,6 +229,13 @@ The implementation may support a strict superset of C++11 evaluation rules inter
 such as local variables, assignment, and loops inside constexpr evaluation. That is fine
 and often useful for later milestones, but it does not reduce the requirement that the
 standard C++11 forms above be covered cleanly and intentionally.
+
+Constant evaluation is bounded, as Annex B allows. Support at least 512
+nested `constexpr` calls, Annex B's figure. An evaluation that nests deeper,
+or does more work than your evaluator's own limit, is not a constant
+expression: a context that requires one is rejected, and a namespace object
+falls back to dynamic initialization as above. Runaway recursion must end in
+a clean rejection, not a crash or a hang.
 
 ### Out Of Scope
 

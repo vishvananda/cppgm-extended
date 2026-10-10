@@ -8,7 +8,7 @@ single-inheritance object model:
 - capturing lambdas
 - `std::initializer_list` semantic interoperation
 - RTTI and `typeid`
-- pointer-form `dynamic_cast`
+- pointer- and reference-form `dynamic_cast`
 - exception-aware construction and full-expression cleanup
 
 PA21 still produces LowIR. It does not introduce a new output format.
@@ -165,7 +165,8 @@ PA21 supports the following in addition to the PA20 subset:
   PA11/PA12/PA19 object and template subset
 - `typeid(type-id)`
 - `typeid(expr)` for supported polymorphic lvalue expressions
-- `dynamic_cast<T*>(expr)` for supported polymorphic single-inheritance pointer conversions
+- `dynamic_cast<T*>(expr)` and `dynamic_cast<T&>(expr)` for supported polymorphic
+  single-inheritance conversions
 
 Within this milestone, PA21 should produce valid LowIR for ordinary source programs over
 that subset. That LowIR should be accepted by PA24 `lowir2native` for the supported cases.
@@ -190,11 +191,17 @@ To complete PA21, implement these goals:
 
 3. RTTI and `typeid`.
    The compiler should emit deterministic RTTI globals and lower both static and dynamic
-   `typeid` queries into ordinary LowIR address/load/branch operations.
+   `typeid` queries into ordinary LowIR address/load/branch operations. A dynamic
+   `typeid` tests the object's address first: when it is null it calls the runtime's
+   `bad_typeid` function, which throws `std::bad_typeid` and does not return (5.2.8p2).
+   The course solution makes the same test for a reference operand.
 
-4. Pointer-form `dynamic_cast`.
-   The compiler should lower supported polymorphic single-inheritance pointer casts into
-   ordinary LowIR control flow without introducing new IR operations.
+4. Pointer- and reference-form `dynamic_cast`.
+   The compiler should lower supported polymorphic single-inheritance pointer and
+   reference casts into ordinary LowIR control flow without introducing new IR
+   operations. A reference cast runs the same runtime search as a pointer cast; when
+   the search fails it calls the runtime's `bad_cast` function, which throws
+   `std::bad_cast` and does not return (5.2.7p9).
 
 5. Full-expression cleanup through condition control flow.
    Temporary-owning call arguments inside nested `&&` and `||` expressions
@@ -214,6 +221,14 @@ To complete PA21, implement these goals:
    may catch the exception before that cleanup; a function-try handler runs
    after it. A delegating constructor destroys its completed target when its
    own body fails. A second exception during unwind destruction terminates.
+   A destructor declared without an exception specification has the one its
+   implicit declaration would have (12.4p3, 15.4p14), normally non-throwing. A
+   non-throwing function, such a destructor included, whose definition may
+   throw runs its whole definition under a terminate guard: one region whose
+   handler calls `std::terminate` (15.5.1). A definition may throw when it
+   calls a function that may throw, has a throw-expression, initializes or
+   destroys a subobject in a way that may throw, or has a delete-expression,
+   which counts even though its deallocation function does not throw.
    Function-template instantiation retains function-try bodies and handlers,
    including constructor mem-initializers within the function-try block.
    Construction and destruction cleanup dependencies on class-template
@@ -287,8 +302,6 @@ The following are explicitly out of scope for PA21:
   features
 - `std::initializer_list` class elements that require unsupported construction,
   copy, destruction, or later object-model behavior
-- `typeid` cases that require `bad_typeid`
-- `dynamic_cast` reference forms
 - `dynamic_cast<void*>`
 - multiple inheritance and virtual inheritance
 - any PA21 feature path that depends on unsupported later object-model or ABI work

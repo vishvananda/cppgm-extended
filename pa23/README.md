@@ -170,13 +170,20 @@ PA23 supports the following in addition to the PA22 subset:
   synthesized copy constructor or assignment operator reaches the virtual bases of an
   object that may be a base subobject through that object's vtable
 - polymorphic multiple inheritance with separate vtable views for non-primary polymorphic
-  bases
+  bases, virtual destructors included
 - virtual dispatch through primary views whose virtual-base ABI carries
   function/adjustment rows, and through non-primary polymorphic base pointers
   and references
 - pointer-form `dynamic_cast<T*>` across sibling polymorphic bases in the supported object
   model
 - `typeid(expr)` through supported non-primary polymorphic base lvalue views
+- member pointers over these layouts: a pointer to a virtual member function names the
+  function's entry in its class's primary vtable (the entry that returns the overrider's
+  result unadjusted); a conversion between pointers to members of a class and of a
+  non-virtual base adjusts `adj` by that base's offset; `.*` and `->*` first convert the
+  object to the member's class, through a virtual base where needed. A conversion between
+  pointers to members of a class and of one of its virtual bases is ill-formed (4.11p2,
+  5.2.9p12), and in deduction it is a substitution failure
 
 Within this milestone, PA23 should produce valid LowIR for ordinary source programs over
 that subset. That LowIR should be accepted by PA24 `lowir2native` for the supported cases.
@@ -226,15 +233,22 @@ To complete PA23, implement these goals:
    `typeid(expr)` should observe the dynamic type through a supported non-primary
    polymorphic base reference.
 
+5. Exception boundaries of the lifecycle entries.
+   Constructing a variable or an array element with a constructor that cannot throw
+   opens no cleanup region around that call: the objects completed before it need no
+   unwind path there. An implicitly declared constructor cannot throw when none of the
+   constructors it calls can (15.4p14), also when its class has virtual bases; a
+   user-provided constructor without an exception specification may throw. A
+   destructor's implicit exception specification counts its virtual bases' destructors
+   too. Each entry of a destructor that cannot throw, the base-object entry included,
+   runs under PA21's terminate guard when its definition may throw.
+
 ### Out Of Scope
 
 The following are explicitly out of scope for PA23:
 
 - virtual-base constructor, copy, assignment, and destructor sequencing beyond the
   supported cases above
-- polymorphic multiple inheritance with virtual destructors
-- reference-form `dynamic_cast`
-- `dynamic_cast` and RTTI cases that require `bad_cast` / `bad_typeid`
 - virtual inheritance combined with the unsupported special-member or exception cases
 - toolchain-driver and host-linker integration
 

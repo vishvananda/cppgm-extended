@@ -134,6 +134,24 @@ including `<functional>`, using `std::forward`, using placement `new`, or
 instantiating an `unordered_set` should not by itself cause unrelated libc++ or
 libstdc++ helper definitions to appear as defined symbols in the output object.
 
+The required-definition closure starts from the definitions the translation
+unit owns (its non-inline functions and variables with external linkage, and
+the vtable of each class whose key function it defines, as the Itanium ABI
+decides) and adds, until nothing new appears, every vague-linkage definition
+that something already in it refers to:
+
+- an inline function, function template specialization or member of a class
+  template specialization that emitted code calls or takes the address of
+- the vtable of a class with no key function, where emitted code refers to
+  it, with the virtual functions, type information and thunks it names
+- a static local variable of an emitted inline function or specialization,
+  and its guard variable
+
+At `-O0` the closure follows the code as lowered. At `-O1` and above, from
+PA32 on, it is computed after inlining and pruning: an inline function whose
+every call has been inlined is no longer referenced and is not emitted, so an
+optimized object defines far fewer symbols than the `-O0` one.
+
 ### Hosted ABI Names
 
 PA31 uses the ordinary host C++ ABI spelling for every hosted symbol that is

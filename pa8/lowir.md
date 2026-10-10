@@ -257,9 +257,10 @@ host C++ runtime.
 
 The `bad_array_new_length` role identifies the runtime an array new-expression
 calls, instead of its allocation function, when its count is invalid; it does
-not return. An object backend retains the host symbol
-(`__cxa_throw_bad_array_new_length`), which throws `std::bad_array_new_length`;
-the standalone backend, like `bad_cast` and `bad_typeid`, terminates.
+not return. It throws `std::bad_array_new_length`: an object backend retains
+the host symbol (`__cxa_throw_bad_array_new_length`), and the standalone
+backend's runtime throws the same exception, as it throws `std::bad_cast` and
+`std::bad_typeid` for those roles.
 
 The currently defined linkage values are:
 
@@ -1317,12 +1318,15 @@ the first matching `<case-value>:^case` arm, or to `^default` if no arm matches.
 It takes no operands and emits no call or symbol declaration. A release backend
 may emit no bytes for this impossible continuation.
 
-## PA17 Exception/Runtime Instructions
+## Exception Instructions
 
-PA17 extends the same LowIR family with explicit exception/runtime ABI instructions. These
-forms are part of the defined long-term LowIR contract, and PA8 must already parse and
-translate them so later milestones can target the same execution scaffold without extending
-the PA8 adapter again.
+These instructions carry exception handling through LowIR. The C++ lowering
+emits the handler-stack forms for cleanups from PA11 on, and the catch
+clauses and the selector when PA21 adds `try`, `catch` and `throw`; the
+native backend runs them on the course's handler-stack runtime, and PA26's
+host objects turn them into unwind tables. They are part of the long-term
+LowIR contract, and PA8's reader, validator and writer already carry the
+handler-stack forms.
 
 ### Handler Stack Management
 
@@ -1345,6 +1349,11 @@ These instructions manage the dynamic exception-handler stack.
 Handlers are lexically explicit in LowIR. The backend/runtime ABI decides how they are
 represented at run time.
 
+Entering an `eh_try` handler removes its record. A `^cleanup` handler's
+record stays on the stack while the handler runs, but an exception thrown
+inside the handler passes it by; the handler's `eh_end` removes it, as does
+`resume`.
+
 ### Throwing and Resuming
 
 ```text
@@ -1357,8 +1366,10 @@ resume
 - `resume`
   continues unwinding the currently active exception after a cleanup block has run
 
-PA17 uses a simplified low-level ABI: the exception payload is a lowered scalar or pointer
-value carried through the reserved runtime state.
+`throw` is the low-level form: its payload is a scalar or pointer value
+carried through the runtime's state. The C++ lowering does not use it; it
+throws by calling the functions with the `eh_allocate_exception` and
+`eh_throw` roles (Reserved Runtime Hooks).
 
 ### Accessing the Current Exception
 
@@ -1368,8 +1379,52 @@ value carried through the reserved runtime state.
 
 This reads the current exception payload into a temporary of the given lowered type.
 
-In the PA17 subset, `<type>` must be non-`void` and is expected to be a scalar or `ptr`
-type already representable in LowIR.
+`<type>` is a non-`void` scalar or `ptr` type. The C++ lowering reads the
+exception as `ptr`, the value it passes to the `eh_begin_catch` function.
+
+### Catch Clauses and the Selector
+
+```text
+eh_catch @type_info, <selector>
+eh_catch_all, <selector>
+eh_filter @type_info, ..., <selector>
+eh_cleanup
+%s = exception_selector i32
+```
+
+A handler block may begin with clauses that say which exceptions it
+handles. On entry the handler's selector is 0; the clauses then run in
+order, and each one that matches sets the selector to its `<selector>` if no
+earlier clause did.
+
+- `eh_catch @type_info, <selector>` matches an exception that a handler for
+  the type that `@type_info` describes would catch (15.3): the same type, a
+  public unambiguous base class, or for pointers a qualification, base or
+  `void*` conversion. `@type_info` is that type's type-information global;
+  a reference handler names the referenced type without cv-qualifiers.
+- `eh_catch_all, <selector>` matches every exception.
+- `eh_filter @type_info, ..., <selector>` matches an exception that matches
+  none of the listed types: the violation of a dynamic exception
+  specification (with no types, `throw()`, every exception violates it).
+  Only host objects use it.
+- `eh_cleanup` without a target sets no selector. It says that the handler
+  has cleanup work to do, and it keeps an `eh_try` handler's record on the
+  stack until an `eh_end` in the handler removes it.
+
+`exception_selector` reads the selector: the `<selector>` of the first clause
+that matched, or 0 if none did. A handler is entered for every exception that
+reaches its record, whatever its clauses; its code tests the selector to
+choose a catch body, or runs its cleanups and `resume`s when the selector is
+0.
+
+The C++ lowering numbers a function's handlers from 1, each keeping its
+number at every landing that lists it, and gives a specification's filter
+-1. A landing inside a `try` block also lists the clauses of every enclosing
+`try` statement the exception can reach before it leaves the function, up to
+the first `catch (...)`, so the selector names the handler however deeply the
+throwing region is nested. A clause after the handler has removed its own
+record acts as the enclosing handler's clause would on entry: it sets the
+selector only if no clause has.
 
 ## Instruction Facts
 
@@ -1561,7 +1616,7 @@ changing its overall shape:
 - virtual-call and vtable-related operations
 - richer constant/data initializers
 - template-instantiated function and object definitions
-- exception-aware source-language lowering that targets the PA17 exception/runtime ABI
+- exception-aware source-language lowering that targets the exception instructions
 
 Some later-oriented forms are already required in PA8 because later lowering milestones need
 the backend boundary to be in place before they start:
@@ -1570,7 +1625,7 @@ the backend boundary to be in place before they start:
 - `copyobj`
 - `zeroinit`
 - structured global data initializers
-- the PA17 exception/runtime instructions:
+- the handler-stack exception instructions:
   - `eh_try`
   - `eh_cleanup`
   - `eh_end`

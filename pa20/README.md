@@ -8,9 +8,10 @@ while the compiler was still building its type, object, template, and backend la
 This milestone focuses on:
 
 - `auto` variable type deduction
-- ordinary `auto` function return type deduction for non-template function definitions and
-  non-template member function definitions with visible bodies (a course
-  extension beyond C++11)
+- `auto` function return type deduction for function definitions with visible
+  bodies, including member functions, function templates and member templates
+  (a C++14 feature, which the course accepts in C++11; clang and g++ reject it
+  under `-std=c++11`)
 - direct braced initialization of supported scalar and array objects
 - captureless lambdas plus the supported by-reference local / `this`-capture subset
 - range-for over bounded arrays and supported user-defined `begin` / `end` ranges
@@ -169,6 +170,12 @@ PA20 supports the following in addition to the PA19 subset:
 - `auto` in variable declarations when exactly one declarator is present and an initializer
   is provided
 - `const auto` and similar cv-qualified `auto` variable declarations over the same subset
+- a function, member function or function template declared with an `auto`,
+  cv-qualified `auto`, `auto*`, `auto&` or `auto&&` return type and defined
+  with a body: the return type is deduced from the `return` statements as an
+  `auto` variable's type is from its initializer, once per specialization for
+  a template; `return` statements that deduce different types, or a use of
+  the function before its return type is known, are rejected
 - direct braced initialization for supported scalar objects
 - direct braced-init expressions over the supported scalar / array / class subset when the
   earlier PA11-PA19 object/value semantics already define the target
@@ -236,7 +243,7 @@ The following are explicitly out of scope for PA20:
 - RTTI and `typeid`
 - `dynamic_cast`
 - placeholder return-type declarations without a visible definition body
-- template bodies that require deferred placeholder return deduction
+- `decltype(auto)` (C++14; not in `pa20.gram`)
 - range-declarations that require unsupported user-defined iterator or reference semantics
 - any PA20 feature path that depends on unsupported PA11-PA19 semantics
 

@@ -316,6 +316,17 @@ LowIR/object symbol. This keeps lower object-format and toolchain-driver code
 focused on preserving the spelling it was given instead of reconstructing C++
 ABI names from text fragments.
 
+Give every definition the narrowest binding the language allows. Put each
+inline function and template specialization, and each other definition with
+vague linkage, in its own COMDAT group with a weak symbol, and give a
+definition with internal linkage a local symbol. Both make a definition
+discardable: a translation unit that stops referring to it can leave it out,
+because another unit that needs a vague-linkage definition emits its own
+copy and nothing outside the unit names a local one. Item 7 relies on the
+second; PA32's single-call inlining and pruning rely on both. Keep each
+section's relocations in their own list, sorted by offset, so that emitting
+or dropping one definition never scans the relocations of the whole object.
+
 ### After PA27
 
 Later host-link tests keep the same object path and then exercise richer host

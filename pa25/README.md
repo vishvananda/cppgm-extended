@@ -290,10 +290,15 @@ To complete PA25, implement these goals:
    logical-right, and arithmetic-right shifts must also work for runtime counts,
    including counts on either side of the 64-bit half boundary.
 8. Source-driven runtime-program validation without host-library dependence.
-   Exceptions in that runtime follow the Itanium model the host runtime
-   implements; in particular a pointer exception is caught by value, so a
-   pointer handler receives the thrown pointer, after any qualification,
-   public-base or `void*` conversion the handler's type requires. The runtime also
+   The runtime calls `main` with the process's arguments: a `main` declared
+   `int main(int argc, char** argv)` receives the argument count and the
+   argument strings, with `argv[argc]` null. Exceptions in that runtime are
+   caught as the Itanium C++ ABI catches them; in particular a pointer
+   exception is caught by value, so a pointer handler receives the thrown
+   pointer, after any qualification, public-base or `void*` conversion the
+   handler's type requires. How the runtime finds a handler is not part of
+   that contract: handler records pushed and popped as regions open and
+   close, and unwind tables like the host's, both meet it. The runtime also
    provides `__dso_handle` and `__cxa_thread_atexit`, so the main thread's
    `thread_local` objects are destroyed at exit, before process-exit
    destructors, as the host C library does.
@@ -333,6 +338,15 @@ In particular:
 - Do not carry a private PA25 object encoding forward as the host-object
   solution. PA26/PA27 replace the internal compiler-object contract with a
   host-linker-compatible object contract.
+- A compiler object needs what linking needs: code, data, symbols and
+  relocations. Do not put a serialized copy of the program in it for link
+  mode to compile again; the host objects of PA26 onward carry nothing of the
+  kind.
+- A handler-record runtime, like the course solution's, is the simpler way
+  to meet goal 8. A record restores the callee-saved registers as they were
+  when its region was entered, so a function with regions keeps in memory
+  the values its landings may read (PA21's design notes say what that
+  costs); PA26's table-driven host model does not have that cost.
 
 ### Stage Handoff
 
