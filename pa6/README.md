@@ -339,6 +339,17 @@ hashed on each lookup repeats that work millions of times on real headers.
 The same holds for types: give each canonical type a compact identity so
 that type equality is an identity comparison.
 
+Keep the cost of one lookup proportional to the scopes it actually
+searches. A table per scope, or one table keyed by scope and interned name,
+answers each step in one probe. A lookup that allocates or clears a
+structure sized to every scope of the translation unit, or walks every
+binding of an enclosing namespace, makes compile time grow with the square
+of the input: each new class, function or namespace adds a scope that every
+later lookup pays for. The same goes for constant values (enumerators,
+array bounds, `static_assert` operands): keep them as small values, not as
+records that own strings or maps and are copied with every binding and
+expression.
+
 ### Multi-file test groups
 
 For a root `name.t`, companions such as `name.t2` are additional primary

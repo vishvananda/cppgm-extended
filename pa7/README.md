@@ -338,6 +338,14 @@ Keep compiler-generated identities separate from ordinary source lookup.
 Anonymous entities should receive stable typed identities rather than names
 that are re-parsed or inserted into the source identifier namespace.
 
+Overload resolution runs for every call, operator and initialization, which
+is thousands of times per translation unit once the standard library headers
+are in it. Keep an expression's analysis result small: the node, its type's
+identity and its value category, never a copy of a subtree. Record the
+selected function and each operand's conversion on the operands, as small
+records over type identities, so that later assignments lower what PA7
+decided instead of classifying the conversion again.
+
 ### Multi-file test groups
 
 For a root `name.t`, companions such as `name.t2` are additional primary

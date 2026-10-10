@@ -117,6 +117,37 @@ reference policy. You may run the tool directly with temporary files while
 developing; no separate stdin implementation or macro-only executable is
 required. Finish with the cumulative through-PA4 report from the root.
 
+## Later scale
+
+The macro and directive guides describe the clearest way to get every rule
+right, and it is a fine way to finish PA4. Later assignments preprocess the
+host's standard library headers for every translation unit, and PA34
+compiles the compiler itself: hundreds of thousands of tokens per compile,
+most of them from macros, include guards and groups that are skipped. At
+that scale the representation decides the cost, not the rules:
+
+- Find a macro through the identifier's interned entry (a field that says
+  whether, and as what, the name is defined), not by probing a table keyed by
+  spelling on every rescan.
+- Keep each token's set of unavailable macro names as a small interned id,
+  so that a produced token copies one number instead of a set of names.
+- Expand by pulling tokens from a stack of active expansions, with arguments
+  kept as ranges of the invocation's tokens. Memory then follows the nesting
+  depth, not the length of the output, and nothing rewrites a long token
+  sequence in place.
+- Record leading whitespace and the start of a line as flags on the next
+  token instead of keeping whitespace and new-line tokens.
+- Give each file one range in a single location space, so a token's position
+  is one number; work out a file and line only when a diagnostic, `__LINE__`
+  or a debug location asks.
+- Remember a header whose whole text sits inside one `#ifndef` guard, and
+  skip it on a later inclusion while the guard macro stays defined. Lex an
+  inactive group only far enough to find its directives, without interning
+  its identifiers or looking up macros.
+
+None of this changes PA4's output, so it can come later, but it is easier
+to leave room for it now.
+
 ## What carries forward
 
 Keep token kind, source spelling, decoded literal data, and source location

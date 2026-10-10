@@ -229,7 +229,8 @@ PA13 supports the following in addition to the PA12 subset:
   functions and the destructor slot order used by the checked references
 - deterministic emitted destructor-entry order for each class: base entry,
   deleting entry, then complete entry, even when later cleanup sharing changes
-  which entry is demanded first
+  which entry is demanded first (like all top-level order, a presentation
+  convention that the relaxed comparison does not grade)
 
 Within this milestone, PA13 should produce valid LowIR for ordinary single-inheritance
 polymorphic code over the supported PA12 subset. That LowIR is intended to be
@@ -241,7 +242,9 @@ The following are explicitly out of scope for PA13:
 
 - multiple inheritance
 - virtual inheritance
-- RTTI and `dynamic_cast`
+- RTTI and `dynamic_cast`, except the typeinfo objects (`_ZTI`, `_ZTS`)
+  that each polymorphic class's vtable points to, which are required here
+  with the vtable header that holds that pointer and the offset-to-top
 - pointer-adjusting thunks or any ABI that requires base-subobject pointer adjustment
 - class-level `final`
 - full abstract-class enforcement beyond the pure-declaration/vtable cases above

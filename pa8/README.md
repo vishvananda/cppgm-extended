@@ -158,6 +158,31 @@ Inspecting reference output is useful for learning; copying a reference body
 or invoking the reference implementation to perform your work bypasses the
 exercise. No C++-to-LowIR frontend is needed for these programs.
 
+### Design Notes (Non-Normative)
+
+The model built here outlives this assignment: PA10 lowers C++ into it, PA32
+optimizes it and PA24 compiles it. Three choices made now decide how much
+that later work costs.
+
+- Keep one model in memory for every stage. The lowering builds it, the
+  optimizer edits it and the backend reads it, in one process. The text
+  reader and writer are tools for tests, `lowir`, `lowiropt` and
+  `--emit-lowir`; the compile path never writes LowIR text and parses it
+  back, and the host objects of PA26 onward carry machine code, not a
+  serialized copy of the program.
+- Give every fact a spelling. PA32 requires an object compiled from emitted
+  LowIR to equal the one compiled directly, so a fact that later stages read
+  must survive the writer and the reader. A flag kept only in memory is a
+  fact no later stage may rely on: add its text form when you add the flag.
+- Number temporaries, slots and blocks densely within each function, so an
+  analysis keeps its facts in arrays indexed by those numbers rather than in
+  maps keyed by names. Keep each value's use count, or its list of uses,
+  current as instructions change: the optimizer asks how a value is used
+  constantly. The course solution recounts a function's uses each time its
+  body has changed, a cost that later showed up as a noticeable share of its
+  optimizer's work. Removed instructions can leave holes; compact a function
+  after a pipeline rather than after every edit.
+
 ### Testing
 
 From this directory:

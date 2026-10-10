@@ -153,6 +153,8 @@ In the case of `integer` and `floating`, `<prefix>` is the source without the `u
 
 In the case of `string` and `character`, `<type> <hexdump>` have the same meaning as in `literal` (above).
 
+A `ud-suffix` that does not begin with `_` is reserved (17.6.4.3.5); the course defines such a token as `invalid` (for example `123yyy` and `"abc"yyy`).
+
 For example:
 
     123_foo 4.2_bar 0x3_baz "abc"_qux 'a'_quux
@@ -240,6 +242,13 @@ You may _optionally_ check that `floating-literals` are in the range of their ty
 but this is not required for PA2, nor will it be tested for PA2.
 
 For `integer-literals` you need to check that they fit into the maximal type based on their `integer-suffix`, if they do not output them as `invalid`.  Calculate the appropriate type to place them in and scan them into that type for output.  This is explained in 2.14.2.
+
+These are the C++11 grammars. PA1 through PA4 follow them strictly, so
+binary integer literals (`0b101`), hexadecimal floating literals (`0x1p3`)
+and the extended floating suffixes (`1.0Q`, `1.0f128`) are `invalid` here.
+From PA29 on, the compiler accepts them through the same tokenizer, because
+the host's headers use them; take the dialect as a parameter of the literal
+classifier now rather than write a second classifier later.
 
 #### character-literal
 
@@ -526,6 +535,13 @@ The course mapping for simple tokens is given below, and this has also been tran
 ### Design Tips (Optional)
 
 These design tips are optional, and only suggest one way to complete this assignment.
+
+The tips below connect your PA1 code to the PA2 output. The compiler that
+later assignments build reads post-tokens on a different path: classify an
+identifier as a keyword once, on its interned entry, and produce post-tokens
+on demand as small records that refer to their spellings rather than copy
+them. The `PA2Decode_*` helpers exist so that floating hexdumps match the
+references bit for bit; the compiler can decode literals directly.
 
 You can start by creating an implementation of `IPPTokenStream` from PA1, and connect up your PA1 code to it.
 

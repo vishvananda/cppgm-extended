@@ -386,8 +386,8 @@ To complete this assignment, implement this behavior:
 2. Represent the ABI facts with enough typed structure to apply the Itanium C++
    ABI mangling grammar.
 3. Encode the supported fact records into deterministic mangled names.
-4. Implement substitution-table behavior in host-compatible order for the
-   tested cases.
+4. Implement substitution-table behavior in the order the Itanium ABI gives,
+   as clang implements it, for the tested cases.
 
 If `abimangle` accepts a fact file and writes a different ABI name from the
 checked-in reference, the issue belongs in this assignment.
@@ -430,6 +430,14 @@ Avoid building names by assembling large ad hoc strings that are later
 reparsed. Some ABI facts contain source spellings, but type structure,
 template arguments, dependent expressions, and local contexts should remain
 structured until the encoder emits the final mangled name.
+
+The compiler of later assignments mangles every symbol it emits, thousands
+per translation unit once the standard library headers are in it. If each
+ABI entity (a name, a type, a template argument list) is built once and
+shared, a substitution check is an identity comparison and the table maps
+identities to indices; comparing structures or spellings for every
+candidate repeats that work on every name. A mangled name is output: produce
+it when the symbol is emitted, not as a key for finding entities.
 
 ### Stage Handoff
 

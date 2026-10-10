@@ -282,10 +282,16 @@ PA11 supports the following in addition to the PA10 procedural subset:
   names a private nested type in the member's class context
 - constructors and destructors defined inside the class body
 - implicit default constructors and destructors when no user-declared one exists
-- semantically trivial constructor/destructor actions may be omitted directly;
-  if a retained helper must be substituted, use the ordinary mandatory inline
-  policy rather than a separate lifecycle label, let `no_inline` take
-  precedence for that helper, and decide `object_root` retention independently
+- a constructor or destructor that is trivial (12.1p5, 12.4p5) is not called.
+  Any other is emitted and called, even when its body is empty, with one
+  exception: a destructor with no effect, whose body is empty or implicit and
+  whose subobjects' destructors have none, is not called to destroy a single
+  automatic object. It is still emitted, and temporaries, array elements and
+  allocated objects call it
+- a constructor protects each base and member it has constructed whose
+  destructor is not trivial with a cleanup region (`eh_cleanup` in
+  `../pa8/lowir.md`) that destroys it, open over the rest of the constructor,
+  its body included, whether or not anything in the region can throw
 - demand-driven LowIR emission of the ctor/dtor helpers required by the supported lifetime
   paths above
 - constructor initializer lists for:
@@ -418,3 +424,10 @@ Useful intermediate representations include:
   emitted instructions
 - demand-driven helper emission keyed by semantic entities rather than source
   spelling, so unused constructors/destructors do not perturb earlier outputs
+
+An object lives in an `obj<NxA>` slot, and its address passes to its
+constructor and destructor as `this`. PA32 splits a slot into scalar values
+only when every use of its address is a direct load or store, a copy, a
+zeroing or a call's indirect result, so an object can live in registers only
+after its constructor and destructor calls are inlined. Keep them ordinary calls to ordinary
+functions that the inliner can take.

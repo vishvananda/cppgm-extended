@@ -495,6 +495,15 @@ need it; to produce tokens on demand rather than storing them; and to intern
 each identifier's spelling once, as it is lexed. None of this changes PA1's
 output, so it can come later, but it is easier to leave room for now.
 
+Two more choices matter at that scale. `IPPTokenStream` and its debug
+implementation are how `pptoken` reports tokens to the test harness. They
+pass each token's text as a `std::string`, which suits a dump but not the
+compiler's own token path, where later stages read compact token records
+from the lexer directly. And a token's position can be one offset in a
+single location space that covers every file, with the line and column
+worked out only when a diagnostic or a debug location needs them; a line
+and column stored for every character or token is the cost to avoid.
+
 ### Self-Tokenizing (Optional/Ungraded)
 
 To get into the self-hosting spirit of things, once you have completed this assignment run your `pptoken` application using your `pptoken.cpp` source file as input:

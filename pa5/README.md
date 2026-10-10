@@ -294,7 +294,9 @@ every node of a kind carries are best reached from the node itself, and node
 kinds are best an enumeration rather than a string; a generic tree whose
 facts live in hash tables keyed by node, probed on every visit, works for
 the fixtures and becomes the front end's dominant cost on the standard
-library headers later assignments parse.
+library headers later assignments parse. Nodes hold kinds and identities,
+not the dump's spellings: the printer renders `KW_INT:int` or a qualified name
+when it writes the dump, and no later stage compares those strings.
 
 ### Multi-file test groups
 

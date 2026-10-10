@@ -72,6 +72,8 @@ In particular if any of the following conditions are true it is course defined f
 - The right operand of division or modulous is zero
 - The right operand of a shift operator is negative or greater than or equal to 64
 
+A signed result outside the range of `intmax_t` is also an `error`, since such an expression is not a constant expression (5.19p2).  This applies to `+`, `-`, `*`, `/`, `%` and unary `-`: `9223372036854775807 + 1` and `(-9223372036854775807 - 1) / -1` are both `error`.  Unsigned arithmetic wraps modulo 2^64 and is never an error, and neither is a left shift (see below).
+
 ### Example
 
 For an input of:
@@ -136,12 +138,13 @@ Some types that are NOT integral types are:
     nullptr_t
     array of <anything>
 
-An `identifier_or_keyword` is simply an identifier in `preprocessing-token` context (meaning the `identifier` from PA1 and not from PA2).  In particular it treats keywords the same as identifiers.  There are two special cases.  They are:
+An `identifier_or_keyword` is simply an identifier in `preprocessing-token` context (meaning the `identifier` from PA1 and not from PA2).  In particular it treats keywords the same as identifiers.  There are three special cases.  They are:
 
  - `true`, which is effectively evaluated as `1`
+ - `false`, which is effectively evaluated as `0`
  - `defined` which has special meaning in a controlling expression
 
-> Note: For PA3, in the context of a preprocessor controlling expression only, we shall course-define the treatment of the identifier `true` to be evaluated the same as the integer literal `1`, and the identifier `false` to be evaluated the same as the integer literal `0`.  Note that this may conflict slightly with the standard requirements.
+> Note: For PA3, in the context of a preprocessor controlling expression only, we shall course-define the treatment of the identifier `true` to be evaluated the same as the integer literal `1`, and the identifier `false` to be evaluated the same as the integer literal `0`.  This agrees with 16.1p4, which exempts `true` and `false` from the replacement of remaining identifiers by `0`.
 
 At this point try to read 16.1 Conditional Inclusion, there will be many "forward" references to terminology that has not been required reading in the course yet, so don't worry if you don't understand everything.  The parts which you do understand should be sufficient to complete this assignment.
 
@@ -265,7 +268,7 @@ This can also be looked up with `std::numeric_limits<T>::is_signed`
 
 Parse the token sequence by the `controlling-expression` grammar into a parse tree.  If it does not match the grammar output "error".
 
-Walk the tree in post-order evaluating each sub-expression up to the root.  The behaviour of each of the used operators are documented in clause 5 of the standard.  You do not need to read the entire clause, just the parts that deal with those operators used in the controlling expression grammar.
+Walk the tree in post-order evaluating each sub-expression up to the root, except that, as in C++, the second operand of `&&` is evaluated only when the first is nonzero, the second operand of `||` only when the first is zero, and only the selected operand of `?:`.  An operand that is not evaluated produces no error (`0 && 1/0` is `0`), though the unselected operand of `?:` still takes part in the result type (`false ? 5/0u : -5` is `18446744073709551611u`).  The behaviour of each of the used operators are documented in clause 5 of the standard.  You do not need to read the entire clause, just the parts that deal with those operators used in the controlling expression grammar.
 
 You should read and understand the concepts of _Integral Promotion_ (4.7), _Integer Conversion Rank_ (4.13) and the _Usual Arithmetic Conversions_ (5.0.10).
 
@@ -275,6 +278,7 @@ It is course defined that:
 
 - signed integral types (2s-compliment) are sign extended when promoted to a larger type.
 - right shift operations on a signed left operand sign preserve (shift in bits the same as sign bits)
+- a left shift discards the bits shifted out of the 64-bit value, so it never overflows: `1 << 63` is `-9223372036854775808` and `1 << 60 << 60` is `0`
 
 ### Design Notes (Optional)
 

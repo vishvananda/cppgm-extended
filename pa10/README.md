@@ -436,3 +436,11 @@ The instruction facts (Instruction Facts in `../pa8/lowir.md`) are the
 semantic facts the optimizer cannot recover from LowIR alone: C++'s type-based
 aliasing and its undefined signed overflow. State them where the rules say,
 even though nothing before PA32 reads them.
+
+Lower each function straight into the PA8 model, and decide by demand from
+the start which definitions to lower. A definition the translation unit need
+not emit, such as an inline function, an implicit member or a template
+instantiation, is lowered only when something already emitted refers to it.
+Later assignments bring such definitions in from headers by the thousand,
+and most are never used; lowering them all and discarding the unused ones
+costs time on every compile.

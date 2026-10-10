@@ -142,6 +142,8 @@ This must be rescanned, and a new invocation is found.  That of `g (b)`, which i
     
 Given the nature of that operation, a good data structure to use is a stack, where the top of the stack is the start of the text sequence (ie token order is in reverse).  That way when an invocation is replaced, its tokens can be popped off the top of the stack and the replacement list can be pushed onto it, and processing can continue from the top of the stack again.
 
+This is the clearest way to see rescanning. On a standard library header a `text-sequence` can run to thousands of lines; the [README's "Later scale" section](README.md#later-scale) describes a shape that gives the same tokens without holding the whole sequence.
+
 After you identify a function-like macro invocation and its arguments, there are three possible transformations you may need to perform on each argument before they are used:
 
 - the argument is used as is

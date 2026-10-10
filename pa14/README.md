@@ -356,3 +356,13 @@ sharing the non-dependent parts between instantiations, provided a shared
 node costs the same to read as an ordinary one. What does not scale is
 re-parsing or replaying source text per instantiation, or reaching every
 shared node through an extra lookup on each read.
+
+Find a specialization through a table keyed by its template and its
+canonical argument list, with each argument an interned type or constant,
+so that asking for `vector<int>` again is one probe. Scanning a template's
+specializations and comparing their arguments one by one grows with the
+number of instantiations, which is what a standard library header has most
+of. If expressions carry their analyzed facts on the nodes, as PA5
+suggests, each instantiation needs its own copy of the dependent body; that
+is a sound trade, but it puts the copy on the front end's hottest path, so
+keep it a plain walk over the nodes.

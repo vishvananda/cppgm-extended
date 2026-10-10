@@ -165,9 +165,16 @@ particular, an out-of-class move-assignment definition retains its rvalue-refere
 in the ABI identity.
 
 Nested operand and overload analysis must preserve the identity of the
-enclosing binary operator and the lifetime of its full expression. Interning
-additional candidate or conversion spellings while resolving an overloaded
-operator must not change the enclosing operator or its result.
+enclosing binary operator and the lifetime of its full expression.
+
+Temporaries and by-value arguments whose destructors are not trivial are
+destroyed on the exceptional path as well as the normal one, inside cleanup
+regions. The course solution places those regions by the shape of the
+full-expression, not by whether its calls can throw, so the references have
+regions around calls that cannot throw, and the comparison checks them like
+any other region. A temporary's destructor is called even when its body is
+empty: PA11's exception for a destructor with no effect covers only a single
+automatic object.
 
 For supported synthesized copy/move special members, PA12 may lower a leading trivially
 copyable storage prefix directly as `copyobj <span> <src>, <dst>` instead of spelling that
@@ -428,7 +435,8 @@ The following are explicitly out of scope for PA12:
 - copy-elision perfection and the full set of standard temporary-materialization rules
 - advanced move-generation rules beyond the common supported field-wise/base-wise cases
   above, and the full standard move-semantics corner cases
-- exception-aware cleanup during value transfers
+- throwing and catching exceptions (PA21); the cleanup regions described
+  above are required all the same
 - template-aware value semantics
 - lambda expressions, range-for, and later general convenience syntax that is not
   needed by the PA12 value-semantics tests
@@ -494,3 +502,12 @@ Useful intermediate representations include:
 - a single linear classifier over completed member-layout facts that marks the
   first transferable bit-field in an allocation unit and suppresses later
   fields covered by that transfer
+
+One small value returned from one function and passed to another is three
+or four whole-object copies in this LowIR: field stores into the result, a
+`copyobj` or a `return` of the object, and a `copyobj` into the argument's
+storage. That is the intended shape. PA32 splits such slots into scalar
+values when every use of their addresses is a direct load or store, a
+`copyobj` or `zeroinit` at a constant offset, or an indirect result. A copy
+lowered as a loop, a byte sequence or a call to a helper keeps the object in
+memory.
