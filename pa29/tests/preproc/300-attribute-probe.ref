@@ -1,5 +1,5 @@
 preproc 1
-sof tests/directives/500-attribute-probe.t
+sof tests/preproc/300-attribute-probe.t
 identifier present
 identifier spelled
 identifier unknown

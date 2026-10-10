@@ -84,7 +84,9 @@ and text. You can run it before supporting includes or conditionals. Preserve
 the course-defined recursion rules in `macros.md`; a host preprocessor is not
 an exact oracle for those rules. The directives handout specifies the default
 include search and predefined values. Hosted-system-header compatibility is
-later work.
+later work: PA29 adds the GNU and Clang extensions that the host's headers
+use, such as `__COUNTER__`, the `__has_*` probes and the GNU comma paste
+`, ## __VA_ARGS__`.
 
 ## Starter and tests
 

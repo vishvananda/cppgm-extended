@@ -249,14 +249,22 @@ separate hosted-only naming scheme.
 
 To complete PA29, implement hosted compatibility for:
 
-- predefined macro import, `_Pragma`, `__has_*`, `#include_next`, `#warning`,
-  ignored unknown pragmas, and hosted hex-float preprocessing forms such as
-  `0x1p+4`.  A probe answers for its whole family or not at all: a name the
+- predefined macro import, `__COUNTER__`, the GNU comma paste, `_Pragma`,
+  `__has_*`, `#include_next`, `#warning`, ignored unknown pragmas, and hosted
+  hex-float preprocessing forms such as `0x1p+4`.  `__COUNTER__` expands to
+  `0` at its first use in a translation unit and to one more at each later
+  use.  In a variadic macro's replacement list, the GNU form
+  `, ## __VA_ARGS__` removes the comma when the variable arguments are empty
+  as written; otherwise the comma stays and the arguments follow it, pasting
+  nothing.  A probe answers for its whole family or not at all: a name the
   preprocessor treats as defined but does not substitute leaves the header's
   own fallback macro unused and the probe call sitting in the controlling
   expression.  `__has_cpp_attribute` takes an attribute-token, which N4868
   15.2/2 spells as an identifier or a scoped `identifier :: identifier`, and
   `__has_warning` takes a string literal; the rest take a single identifier.
+  `__has_cpp_attribute` answers nonzero only for an attribute the compiler
+  implements, here the standard `no_unique_address`, also spelled
+  `__no_unique_address__`, and `0` for any other name, scoped ones included.
   `__has_builtin` answers from the registries that hold the builtins rather
   than from a list beside them: claiming not to have one that is implemented is
   worse than lacking it, because the header then takes a fallback written in

@@ -1,5 +1,5 @@
 preproc 1
-sof tests/macros/300-gnu-variadic-comma-paste.t
+sof tests/preproc/300-gnu-variadic-comma-paste.t
 identifier target
 simple ( OP_LPAREN
 literal 1 int 01000000
