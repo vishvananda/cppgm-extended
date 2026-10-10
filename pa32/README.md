@@ -219,7 +219,26 @@ pass:
   use `typed` to keep a value in a register across a store of another type.
 - When an optimization makes the output slower because the backend lowers
   the result badly, fix the backend. Withholding the optimization leaves both
-  problems in place.
+  problems in place, and the rule that withholds it has to be found and
+  undone once the backend improves.
+- Know what blocks inlining in real code. A callee that contains exception
+  instructions is the common case (any destructible local and a call), and
+  LowIR's handler edges are implicit (see PA21's design notes). The course
+  solution inlines such a callee only when constant arguments fold its
+  exception instructions away; an optimizer that tracks the handler stack can
+  admit a callee whose regions leave it balanced.
+- Keep the optimizer's own work bounded. PA34 compiles the whole compiler
+  at `-O3` with this optimizer; [the design notes](design-notes.md) describe
+  how the course solution avoids repeating work.
+
+A few fixtures pin one policy at the level they test:
+`o1/500-shared-loop-inline-policy` (a loop callee with several callers stays a
+call at `-O1`), `o1/400-inline-discardable-size-cap` (the `-O1` single-call
+cap), `o3/500-late-inline-complex-size-cap` (a small callee made mostly of
+calls stays out of line) and `o3/500-full-unroll-small-constant-loops`
+(general full unrolling stays small). A broader policy later must leave those
+cases alone, by applying from a level the fixture does not test or by
+triggering only on the shapes it is meant for.
 
 ### Design example
 

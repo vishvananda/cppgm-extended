@@ -729,12 +729,12 @@ So PA24 should leave behind:
 
 - a stable `LowIR -> native` lowering boundary
 - a stable `LowIR -> machine IR` boundary that later optimization passes can target:
-  instruction selection kept separate from register assignment and frame placement,
-  over a machine IR whose instructions state their defined, used and clobbered
-  registers, so that PA33 can add a liveness-based allocator and machine-IR passes
-  without rewriting the selector. The conservative placement PA24 uses is one policy
-  over that IR; selection that places values in frame homes as it goes is the shape
-  that later has to be taken apart
+  a machine IR whose instructions state the registers they define, use and clobber,
+  and the placement of values that live across blocks decided apart from
+  instruction selection, so that PA33 can replace PA24's placement with a
+  liveness-based allocator, and add machine-IR passes, without rewriting the
+  selector. The conservative placement PA24 uses is one policy over that IR
+  ([the design notes](design-notes.md) describe these seams)
 - reusable target-specific code/data emission layers
 - a backend test corpus that already catches the basic execution-level
   arithmetic and conversion bugs before the source-driven toolchain stages

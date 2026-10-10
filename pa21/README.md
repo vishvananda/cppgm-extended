@@ -327,3 +327,32 @@ The same monotonic-extension rule applies here:
 - in practice, RTTI globals, closure helpers, and dynamic-cast support should stay
   on-demand rather than eagerly changing the behavior of ordinary earlier programs that do
   not use those features
+
+#### What later stages need from the exception shape
+
+A function with a destructible local and a call that may throw has a cleanup
+region, so in real C++ code, this compiler's own source included, most
+functions have one. The shape this assignment emits is therefore the common
+case for PA32's optimizer and for the PA24 and PA33 backend, not a rare path
+they can treat conservatively. A few properties decide how much of that code
+they can improve:
+
+- Close full-expression regions before control-flow joins, and give the
+  paths that merge the same protected-call state (PA26 states this as a
+  requirement for host objects). PA32 removes a region that nothing inside
+  can unwind out of, and promotes slots across the function; both rely on
+  every block having one stack of active regions.
+- Handler edges are implicit in LowIR: an exception leaves from the region
+  opener's block, not from the call that throws. An optimizer that does not
+  model those edges must keep a value in memory where a handler might read
+  it, and cannot inline a callee that contains exception instructions. The
+  course solution's PA32 is in that position: it inlines such a callee only
+  when constant arguments fold its exception instructions away. Region
+  granularity is therefore a performance decision as well as a correctness
+  one.
+- A backend that treats each landing pad as a successor of every call that
+  can unwind into it can keep values in registers across those calls, as
+  the host model of PA26 allows. A runtime whose handler records restore
+  callee-saved registers to their values when the region was entered does
+  not, and in the course runtime a function with regions keeps its
+  cross-block values in memory.

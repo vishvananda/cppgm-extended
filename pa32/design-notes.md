@@ -422,6 +422,21 @@ merging breaks that, reorder the blocks (reverse postorder, or a stable
 topological order of definition blocks when that would break an order the
 input relied on).
 
+The optimizer's own speed matters once it compiles the compiler. In the
+course solution, each function body carries a version that changes only
+when a pass changes the body, and a pass reports a change only when it made
+one: the report decides whether another round runs, so a pass that reports
+work it did not do buys a whole extra round of every pass. A pass that ran
+at the current version and found nothing is not run again. Analyses (the
+CFG, dominators, block maps, use counts) are kept between passes at the same
+version, and a checking mode (`--verify-passes`) validates the program after
+every pass and checks that the kept block maps and use counts are what a
+fresh computation gives. The per-function containers of the larger
+passes live in pools reused from one function to the next. No per-function
+pass scans the whole program: calls, callers and symbols are indexed once
+per wave. None of this changes the output; together it removed a large
+share of the optimizer's own work on the compiler's sources.
+
 ### Diagnostic controls
 
 `lowiropt` and `cppgm++` (the compile, link and `--emit-lowir` modes)

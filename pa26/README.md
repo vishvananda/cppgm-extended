@@ -150,6 +150,10 @@ surface:
 - call-site coalescing safety across unprotected unwind barriers and distinct
   cleanup or catch continuations
 
+One case, `300-host-eh-nested-catch-forward-at-o1`, compiles at `-O1`, so
+its tables describe a function after optimization; the others compile at
+`-O0`.
+
 For each test anchor `x.t`, companion C++ sources are named:
 
 ```text
@@ -185,7 +189,9 @@ runtime-helper object surface for `cppgm++ -c` within the supported subset:
 1. Lower `throw` expressions to host ABI throw helper calls.
 2. Lower typed catches to host landing-pad selector dispatch and
    `__cxa_begin_catch` / `__cxa_end_catch` calls.
-3. Emit host personality and unwind metadata for EH-bearing functions.
+3. Emit unwind metadata (a CIE and an FDE) for every function, since an
+   exception passes through frames that have no handler, and the host
+   personality and LSDA for EH-bearing functions.
 4. Emit LSDA/call-site/action/type-info facts sufficient for basic catch and
    cleanup paths.
 5. Preserve cleanup/resume paths using `_Unwind_Resume`.
@@ -194,7 +200,7 @@ runtime-helper object surface for `cppgm++ -c` within the supported subset:
    that would make a default-PIE host link unsafe.
 7. Close full-expression EH regions before control-flow joins and require
    matching protected-call state at statement, conditional, short-circuit, and
-   loop merges.
+   loop merges (the PA21 lowering rule; see its design notes).
 8. Preserve translation-unit-local object binding for generated functions in a
    non-ODR-mergeable local context; do not export a local lambda call operator
    as a weak or global host symbol.
@@ -246,6 +252,22 @@ host ABI symbols and platform EH metadata:
 
 Do not construct host EH facts from source text. The object backend should work
 from typed semantic/runtime-role information and final machine layout.
+
+Generate each function's call-frame instructions from the frame facts the
+encoder records as it emits the prologue and epilogues: each push, the stack
+reservation, where the prologue sits, and each epilogue, with its own rows
+when returns have their own epilogues. Do not write them from a fixed
+`push rbp; mov rbp, rsp` template. Build the LSDA's call-site table from the
+final addresses of the calls after block layout. With both, later
+optimization can omit the frame pointer, push callee-saved registers, start
+the prologue after an early exit, give each return its own epilogue, and move
+cold blocks and landing pads to the end of the function, all without
+changing the unwind writer. A table built from an assumed frame shape or an
+assumed block order has to be rewritten for each of those. Keep layout and
+the call-site table in step: when layout removes a jump so that one block
+falls into the next, the calls of the next block still need the entries of
+their own region, and a landing pad is entered only by unwinding, never by
+falling into it.
 
 A compact terminate boundary can pass the typed exception value to a single
 internal helper. This keeps the handler-entry ABI sequence in one place while

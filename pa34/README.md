@@ -135,3 +135,22 @@ The timeout knobs are `INCEPTION_SELFHOST_COMPILE_TIMEOUT_SEC` and
 `INCEPTION_INCEPTION_COMPILE_TIMEOUT_SEC`; the memory knob is
 `CPPGM_RUN_MAX_RSS_KB`. Use them to diagnose a reduced case, then validate the
 complete build under the normal limits.
+
+## Measuring the self-built compiler
+
+Nothing in PA34 is timed, but the self-built compiler is the largest program
+your optimizer and backend compile, and the natural one to measure them on.
+A few habits make such measurements mean something:
+
+- Freeze a seed and a self build of one source, and keep them unchanged
+  while you measure. A rebuilt binary is a different program.
+- Link the seed and the self build the same way, with the same `malloc`. An
+  allocator difference can move a compiler's time by a few percent and hide
+  the difference that comes from generated code.
+- Count instructions on both levels of one workload (`-O0` mostly runs the
+  front end and instruction selection, `-O3` mostly the optimizer), and use
+  paired timing to confirm. When a change touches the optimizer, a self
+  build from the new source does different work as well as running
+  different code; to see the code alone, build one frozen source with the
+  old and the new compiler and compare those two binaries, which do the
+  same work.
