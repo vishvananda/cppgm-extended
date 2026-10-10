@@ -86,7 +86,7 @@ SUBMAKE_OBJ_ARG = $(if $(strip $(OBJ)),OBJ=$(OBJ))
 SUBMAKE_GENERATED_ARG = $(if $(strip $(GENERATED)),GENERATED=$(GENERATED))
 SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 
-.PHONY: all build build-telemetry-off test test-telemetry-off audit-lowir-contract audit-compiler-layout audit-compiler-rename-manifest audit-compiler-exceptions audit-frontend-source-sets audit-semantic-owners audit-builtin-registry-tables audit-lowering-owners audit-native-owners ref-test ref-test-debuginfo \
+.PHONY: all build build-telemetry-off test test-telemetry-off audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables ref-test ref-test-debuginfo \
 	test-debuginfo test-debuginfo-nobuild require-clang require-clang-libcxx asan-build test-cells \
 	test-report inception clean run-cppgm run-cppgm-nobuild \
 	test-report-nobuild test-report-through-% test-report-through-%-nobuild \
@@ -103,26 +103,14 @@ audit-lowir-contract:
 audit-compiler-layout:
 	@perl scripts/audit_compiler_layout.pl
 
-audit-compiler-rename-manifest:
-	@perl scripts/audit_compiler_rename_manifest.pl
-
 audit-compiler-exceptions:
 	@perl scripts/audit_compiler_exceptions.pl $(if $(filter 1,$(CPPGM_REPORT_QUIET)),--quiet)
 
 audit-frontend-source-sets:
 	@perl scripts/audit_frontend_source_sets.pl
 
-audit-semantic-owners:
-	@perl scripts/audit_semantic_owners.pl
-
 audit-builtin-registry-tables:
 	@perl scripts/audit_builtin_registry_tables.pl
-
-audit-lowering-owners:
-	@perl scripts/audit_lowering_owners.pl
-
-audit-native-owners:
-	@perl scripts/audit_native_owners.pl
 
 build:
 	@mkdir -p obj
@@ -281,9 +269,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_dev_makefile_obj_isolation.py \
 	scripts/tests/test_dump_host_eh_object_facts_pl.py \
 	scripts/tests/test_exported_dev_makefile.py \
-	scripts/tests/test_flat_hash_set.py \
 	scripts/tests/test_lowir_program_harness.py \
-	scripts/tests/test_compiler_rename_manifest.py \
 	scripts/tests/test_cppgm_file_audit.py \
 	scripts/tests/test_machine_object_host_eh_roundtrip.py \
 	scripts/tests/test_pa24_mir_modes.py \

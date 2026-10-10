@@ -57,10 +57,8 @@ jobs:
       - name: Run the architecture audits
         run: |
           make audit-lowir-contract audit-compiler-layout \
-            audit-compiler-rename-manifest audit-compiler-exceptions \
-            audit-frontend-source-sets audit-semantic-owners \
-            audit-builtin-registry-tables audit-lowering-owners \
-            audit-native-owners
+            audit-compiler-exceptions audit-frontend-source-sets \
+            audit-builtin-registry-tables
 
       - name: Run the file audit
         run: perl scripts/cppgm_file_audit.pl --paths dev

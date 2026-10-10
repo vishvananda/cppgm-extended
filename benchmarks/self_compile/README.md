@@ -63,10 +63,13 @@ Most files were frozen from:
 - source paths under `dev/src/`
 - repository `HEAD` at the time this corpus was created
 
-`callsemantic_frozen.cpp` was frozen from `dev/src/callsemantic.cpp` at commit
-`a850082570c40d1b34bbc98c3c0919baaa1ce7cd`, immediately before the
-reachability probe implementation. That keeps the benchmark source fixed
-without benchmarking the probe code itself.
+`callsemantic_frozen.cpp` was frozen from `dev/src/callsemantic.cpp` of the
+compiler's earlier source layout, immediately before the reachability probe
+implementation, at commit `a850082570c40d1b34bbc98c3c0919baaa1ce7cd` of the
+history that predates this repository. Neither that file nor that commit
+exists here; the frozen copy arrived with this repository's initial commit.
+Freezing it there keeps the benchmark source fixed without benchmarking the
+probe code itself.
 
 Use `scripts/run_frozen_self_compile_benchmarks.sh` to run the corpus against
 either the current compiler or a compiler binary from another worktree.

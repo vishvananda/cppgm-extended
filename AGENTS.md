@@ -10,8 +10,7 @@ attribution and consult [NOTICE](NOTICE), not historical PA numbers, for origins
 ## Ownership
 
 - Put compiler changes in `dev/` and `dev/src/`. Keep tool source lists in
-  `dev/frontend_source_sets.mk` and the owner ledgers in
-  `scripts/architecture/` current.
+  `dev/frontend_source_sets.mk` current.
 - Treat `pa1/` through `pa34/` as handouts, tests, references and wrappers.
   Read the owning handout before changing a milestone's behavior.
 - Required fixtures live in the earliest owning `paN/tests/`, in the cluster
@@ -57,9 +56,8 @@ After compiler changes, run all architecture and placement checks; `make test`
 does not run them:
 
 ```sh
-make audit-lowir-contract audit-compiler-layout audit-compiler-rename-manifest \
-  audit-compiler-exceptions audit-frontend-source-sets audit-semantic-owners \
-  audit-builtin-registry-tables audit-lowering-owners audit-native-owners
+make audit-lowir-contract audit-compiler-layout audit-compiler-exceptions \
+  audit-frontend-source-sets audit-builtin-registry-tables
 perl scripts/cppgm_file_audit.pl --paths dev
 python3 scripts/audit_pa_feature_placement.py --fail-on-early
 ```
@@ -86,7 +84,7 @@ verify output equality.
 - `compiler_object`, `support`: object/link support and shared utilities.
 - `scripts/`: runners, comparison, audits and export; `shared/`: source grammar.
 - `doc/`: the C++ draft and Itanium ABI reference.
-- `scripts/architecture/`: live audit tables and ownership ledgers.
+- `scripts/architecture/`: live audit tables.
 - `docs/student-export-root/`: documents installed at the student repo root.
 - `docs/v4/`: historical migration records; their original
   paths and numbers are historical evidence, not current workflow instructions.
