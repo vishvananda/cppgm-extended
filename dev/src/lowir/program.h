@@ -116,60 +116,22 @@ struct FunctionBody
 // Object mode (Program::object_facts: `classes=` on a parameter,
 // `result_classes=` on a boundary), as `obj<bytes x align>` carries no
 // field types: the x86-64 psABI classification (3.2.3) of a direct object
-// parameter or result (or an i128 one holding a member function
-// pointer's pair), which an object-mode lowering states from the class's
-// layout and a host object's call boundary follows. 0 states
-// none: the course's boundary, each eightbyte INTEGER. Otherwise
-// OC_STATED with the classes of eightbytes 0 and 1 (EightbyteClass, bits
-// 0-1 and 2-3; EB_NONE for padding or empty subobjects only, which take
-// no register; EB_SSEUP for eightbyte 1 of a binary128 value after its
-// SSE eightbyte 0: both in one XMM register), or OC_MEMORY (more than two
-// eightbytes, an unaligned field, or merged x87 data: in memory, a result
-// through a hidden destination), or OC_X87 (one long double: in memory as
-// a parameter, a result in st0), or OC_COMPLEX_X87 (a complex long double:
-// in memory as a parameter, a result's real part in st0 and imaginary part
-// in st1).
-enum ObjectClassBits : uint8_t
-{
-	OC_MEMORY = 0x10,
-	OC_X87 = 0x20,
-	OC_COMPLEX_X87 = 0x40,
-	OC_STATED = 0x80
-};
+// parameter or result (or an i128 one holding a member function pointer's
+// pair), which an object-mode lowering states from the class's layout and
+// a host object's call boundary follows: ObjectClassBits and
+// EightbyteClass of ir_symbol_model.h.
 
-enum EightbyteClass : uint8_t
-{
-	EB_NONE = 0,
-	EB_INTEGER = 1,
-	EB_SSE = 2,
-	EB_SSEUP = 3
-};
-
-// The class of eightbyte 0 or 1 (the bits above are flags); none past
-// them (an object over 16 bytes is MEMORY).
-inline EightbyteClass eightbyte_class(uint8_t classes, unsigned eightbyte)
-{
-	return eightbyte < 2 ? static_cast<EightbyteClass>((classes >> (2 * eightbyte)) & 3u) : EB_NONE;
-}
-
-struct Parameter
+// The parameter's pass, alias, classes (object mode) and object_bytes
+// metadata are the scaffold's record.
+struct Parameter : ir_model::ParameterMetadata
 {
 	NameId name;
 	Type type;
-	uint8_t pass;          // ir_model::ParamPassingMode
-	uint8_t alias;         // ir_model::ParamAliasMode
-	uint8_t classes = 0;   // ObjectClassBits (object mode)
-	uint64_t object_bytes; // 0 when absent
 };
 
-struct BoundaryMetadata
-{
-	uint8_t arity = ir_model::CAM_FIXED;
-	uint8_t effects = ir_model::CFXM_DEFAULT;
-	uint8_t unwind = ir_model::CUM_DEFAULT;
-	uint8_t returns = ir_model::CRM_DEFAULT;
-	uint8_t query = ir_model::CQM_DEFAULT;
-};
+// A boundary's arity, effects, unwind, return and query metadata, and the
+// classes of an object result (object mode).
+typedef ir_model::FunctionBoundaryMetadata BoundaryMetadata;
 
 // A function or call boundary: parameters [first_parameter,
 // first_parameter + parameter_count) of Program::parameters.
@@ -179,31 +141,12 @@ struct Signature
 	uint32_t parameter_count;
 	Type result;
 	BoundaryMetadata boundary;
-	uint8_t result_classes = 0; // ObjectClassBits of an object result (object mode)
 };
 
-enum SymbolFlag : uint8_t
+// The named-value metadata (role, linkage, binding, storage and the
+// SymbolFlag bits) is the scaffold's record; the names are interned.
+struct SymbolMetadata : ir_model::SymbolFacts
 {
-	SF_KEEP_ALIAS = 1,
-	SF_PREFER_LOCAL = 2,
-	SF_OBJECT_ROOT = 4,
-	SF_FORCE_INLINE = 8,
-	SF_INLINE_HINT = 16,
-	SF_NO_INLINE = 32,
-	// Object mode (`replaceable=yes`; binding=weak covers both): a GNU weak
-	// definition, which another object's strong definition replaces,
-	// unlike a vague-linkage definition's identical copies (a host object
-	// reaches its data through the GOT, as the reference's do).
-	SF_REPLACEABLE = 64
-};
-
-struct SymbolMetadata
-{
-	uint8_t role = ir_model::SR_NONE;
-	uint8_t linkage = ir_model::LLM_DEFAULT;
-	uint8_t binding = ir_model::SBM_DEFAULT;
-	uint8_t storage = ir_model::GSM_DEFAULT;
-	uint8_t flags = 0;
 	NameId object = 0;
 	NameId section = 0;
 	SymbolId tls_for = kNoId;
@@ -237,22 +180,7 @@ struct Symbol
 	SymbolMetadata metadata;
 };
 
-enum class GlobalInit : uint8_t
-{
-	None, // declaration
-	Zero,
-	Constant,
-	Address,
-	Data // structured data items
-};
-
-enum class DataItemKind : uint8_t
-{
-	Scalar,
-	Address,
-	Zero
-};
-
+// GlobalInit and DataItemKind are lowir_model.h's.
 struct DataItem
 {
 	DataItemKind kind;

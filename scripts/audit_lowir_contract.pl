@@ -4,11 +4,14 @@
 # row (scripts/architecture/lowir-contract-ledger.tsv), is documented in
 # pa8/lowir.md, and is both read and written by the implementation.
 #
-# The student-facing vocabulary is the ir_symbol_model.h scaffold's enums.
-# The implementation spells them through the tables of
-# dev/src/lowir/metadata_spellings.cpp, reads text with
-# dev/src/lowir/text_parser*.cpp, writes it with dev/src/lowir/text_writer.cpp
-# and spells scalar types in dev/src/lowir/program.cpp.
+# The LowIR vocabulary is the shipped scaffold headers' enums and spelling
+# tables: the metadata in dev/src/ir_symbol_model.h, and the types, opcodes,
+# operations, structural keywords and instruction-fact words in
+# dev/src/lowir_model.h.  The implementation reads text with
+# dev/src/lowir/text_parser*.cpp and writes it with
+# dev/src/lowir/text_writer.cpp, both through those tables
+# (scripts/audit_scaffold_usage.pl and scripts/audit_scaffold_spellings.pl
+# check that they build on the headers and keep no words of their own).
 
 use strict;
 use warnings;
@@ -29,11 +32,10 @@ sub read_file
 }
 
 my $scaffold = read_file('dev/src/ir_symbol_model.h');
-my $spellings = read_file('dev/src/lowir/metadata_spellings.cpp');
+my $vocabulary = read_file('dev/src/lowir_model.h');
 my $parser = read_file('dev/src/lowir/text_parser.cpp') .
 	read_file('dev/src/lowir/text_parser_body.cpp');
 my $writer = read_file('dev/src/lowir/text_writer.cpp');
-my $program = read_file('dev/src/lowir/program.cpp');
 my $documentation = read_file('pa8/lowir.md');
 my $ledger = read_file('scripts/architecture/lowir-contract-ledger.tsv');
 
@@ -95,11 +97,11 @@ for my $row (@retained)
 
 my %count = (values => 0, keys => 0, roles => 0, instructions => 0, types => 0);
 
-# The string literals of `name[] = { ... };` in $text.
+# The string literals of `name[...] = { ... };` in $text.
 sub table_strings
 {
 	my ($text, $name, $where) = @_;
-	if ($text !~ /\b\Q$name\E\[\]\s*=\s*\{(.*?)\};/s)
+	if ($text !~ /\b\Q$name\E\[[^\]]*\]\s*=\s*\{(.*?)\};/s)
 	{
 		push @errors, "cannot locate the spelling table $name in $where";
 		return ();
@@ -126,13 +128,13 @@ my %table_for_enum = (
 	IndexProjectionKind => 'kProjections',
 );
 my %enum_spellings;
-while ($scaffold =~ /enum\s+(\w+)\s*\{(.*?)\};/sg)
+while ($scaffold =~ /enum\s+(\w+)\s*(?::\s*[\w:]+\s*)?\{(.*?)\};/sg)
 {
 	my ($enum, $body) = ($1, $2);
 	my $table = $table_for_enum{$enum};
 	next if !defined($table);
 	my @names = $body =~ /\b([A-Z]+_[A-Z0-9_]+)\b/g;
-	my @spelled = table_strings($spellings, $table, 'lowir/metadata_spellings.cpp');
+	my @spelled = table_strings($scaffold, $table, 'ir_symbol_model.h');
 	next if !@spelled;
 	push @errors, "$enum has " . scalar(@names) . " enumerators but $table has " .
 		scalar(@spelled) . " spellings"
@@ -157,7 +159,7 @@ for my $enum (sort keys %table_for_enum)
 # 2. Metadata keys: the key table and the words the parser recognizes as keys
 # against the ledger, pa8/lowir.md and the writer.
 my %key_source = map { $_ => 'table' }
-	table_strings($spellings, 'kKeys', 'lowir/metadata_spellings.cpp');
+	table_strings($scaffold, 'kKeys', 'ir_symbol_model.h');
 while ($parser =~ /(?:at_word\("|memcmp\([^,]+,\s*")([a-z_]+)"/g)
 {
 	$key_source{$1} //= 'parser';
@@ -206,46 +208,60 @@ for my $name (sort keys %ledger_role)
 		if $ledger_role{$name} eq 'keep' && !$role{$name};
 }
 
-# 4. Instructions: every word of a retained instruction row is a parser
-# keyword and is written by the writer.
-my %keyword = map { $_ => 1 }
-	table_strings($parser, 'kKeywordSpellings', 'lowir/text_parser.cpp'),
-	table_strings($parser, 'kUnarySpellings', 'lowir/text_parser.cpp');
+# 4. Instructions: every word of a retained instruction row is a vocabulary
+# word: an opcode head, a unary operation, a structural keyword, a storage
+# word or an instruction-fact word, which the parser classifies and the
+# writer spells through the scaffold tables.  Every opcode head has a
+# retained row.
+my @opcodes = table_strings($vocabulary, 'kOpcodes', 'lowir_model.h');
+my @fact_words;
+if ($vocabulary =~ /spelling\(InstructionFlag \w+\)\s*\{(.*?)\n\}/s)
+{
+	@fact_words = $1 =~ /return\s+"([^"]+)"/g;
+}
+push @errors, 'cannot locate the instruction-fact words of lowir_model.h' if !@fact_words;
+my %keyword = map { $_ => 1 } @opcodes, @fact_words,
+	table_strings($vocabulary, 'kKeywords', 'lowir_model.h'),
+	table_strings($vocabulary, 'kUnaryOps', 'lowir_model.h'),
+	grep { $_ ne '' } table_strings($scaffold, 'kStorages', 'ir_symbol_model.h');
+my %ledger_head;
 for my $row (@retained)
 {
 	next if $row->{category} ne 'instruction';
 	for my $form (split /\|/, $row->{surface})
 	{
-		for my $word (split /\s+/, $form)
+		my @words = split /\s+/, $form;
+		$ledger_head{$words[0]} = 1 if @words;
+		for my $word (@words)
 		{
 			next if $word eq 'clause';
-			push @errors, "ledger instruction word '$word' is not a parser keyword"
+			push @errors, "ledger instruction word '$word' is not a LowIR vocabulary word"
 				if !$keyword{$word};
-			push @errors, "ledger instruction word '$word' is not written by lowir/text_writer.cpp"
-				if $writer !~ /\b\Q$word\E\b/;
 		}
 		++$count{instructions};
 	}
 }
+for my $head (@opcodes)
+{
+	push @errors, "opcode '$head' has no retained ledger instruction row" if !$ledger_head{$head};
+}
 
-# 5. Types: every retained type row has a scalar type spelling.
-my %type;
-if ($program =~ /scalar_type_spelling.*?\{(.*?)\};/s)
-{
-	my $body = $1;
-	%type = map { $_ => 1 } $body =~ /"([^"]+)"/g;
-}
-else
-{
-	push @errors, "cannot locate scalar_type_spelling in lowir/program.cpp";
-}
+# 5. Types: every retained type row is a type spelling of lowir_model.h, and
+# every type spelling has a retained row.
+my %type = map { $_ => 1 } table_strings($vocabulary, 'kTypeKinds', 'lowir_model.h');
+my %ledger_type;
 for my $row (@retained)
 {
 	next if $row->{category} ne 'type';
 	(my $name = $row->{surface}) =~ s/<.*//;
-	push @errors, "ledger type '$name' has no spelling in lowir/program.cpp"
+	$ledger_type{$name} = 1;
+	push @errors, "ledger type '$name' has no spelling in lowir_model.h"
 		if !$type{$name};
 	++$count{types};
+}
+for my $name (sort keys %type)
+{
+	push @errors, "type '$name' has no retained ledger row" if !$ledger_type{$name};
 }
 
 if (@errors)

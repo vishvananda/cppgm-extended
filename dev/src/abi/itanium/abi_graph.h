@@ -8,9 +8,7 @@
 // constructs, not their spellings). The graph never renders text; only the
 // encoder does.
 
-#include "abi/itanium/abi_expression_vocabulary.h"
-#include "abi/itanium/abi_terminal_vocabulary.h"
-#include "abi/itanium/abi_type_vocabulary.h"
+#include "abi/itanium/abi_mangle.h"
 #include "support/flat_map.h"
 #include "support/memory/arena.h"
 
@@ -19,12 +17,6 @@
 #include <vector>
 
 namespace abi_mangle {
-
-// Builtin types the fixed vocabulary (abi_type_vocabulary.h) lacks,
-// numbered after its kinds, which the vocabulary's functions answer for
-// too (abi_vocabulary.cpp): Clang's __bf16, DF16b (std::bfloat16_t's code).
-const AbiBuiltinTypeKind ABI_BUILTIN_TYPE_BFLOAT16 = static_cast<AbiBuiltinTypeKind>(ABI_BUILTIN_TYPE_COUNT);
-const unsigned kAbiBuiltinTypeCount = ABI_BUILTIN_TYPE_COUNT + 1;
 
 // A dense node identity; 0 is "no node".
 typedef std::uint32_t AbiNode;
@@ -138,31 +130,9 @@ enum AbiNodeFlag : std::uint8_t
 	ABI_FLAG_NO_VALUE = 4
 };
 
-// The forms of a <template-param-decl>: Ty, Tn <type>, Tt <template-param-decl>* E.
-enum AbiTemplateParamDeclKind : std::uint16_t
-{
-	ABI_PARAM_DECL_TYPE,
-	ABI_PARAM_DECL_NON_TYPE,
-	ABI_PARAM_DECL_TEMPLATE
-};
-
-enum AbiQualifier : std::uint16_t
-{
-	ABI_QUALIFIER_CONST = 1,
-	ABI_QUALIFIER_VOLATILE = 2,
-	ABI_QUALIFIER_RESTRICT = 4,
-	ABI_QUALIFIER_LVALUE_REF = 8,
-	ABI_QUALIFIER_RVALUE_REF = 16
-};
-
-enum AbiArrayBound : std::uint8_t
-{
-	ABI_ARRAY_BOUND_NONE,
-	ABI_ARRAY_BOUND_VALUE,
-	ABI_ARRAY_BOUND_EXPRESSION,
-	// A vendor vector of that many lanes: Dv <number> _ <element>.
-	ABI_ARRAY_BOUND_VECTOR
-};
+// AbiTemplateParamDeclKind, AbiQualifier and AbiArrayBound are
+// abi_mangle.h's, as are the builtin, substitution, terminal and operation
+// vocabularies.
 
 struct AbiNodeData
 {

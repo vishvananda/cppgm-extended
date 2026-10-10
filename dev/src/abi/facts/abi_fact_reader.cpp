@@ -7,6 +7,7 @@
 
 #include "abi/facts/abi_fact_case.h"
 #include "support/file_handle.h"
+#include "support/internal_error.h"
 #include "support/stack_budget.h"
 
 #include <cstdio>
@@ -35,57 +36,17 @@ bool same_word(const FactWord& left, const FactWord& right)
 	return left.length == right.length && std::memcmp(left.text, right.text, left.length) == 0;
 }
 
-bool definition_kind(const FactWord& word, DefinitionKind* kind)
+// The terminal a word of class `word_class` names, or `operator-call`
+// (abi_find_terminal_kind's other word for the call operator).
+bool terminal_kind(const FactWord& word, const FactWordClass& word_class, AbiTerminalKind* kind)
 {
-	static const struct
-	{
-		const char* word;
-		DefinitionKind kind;
-	} kForms[] = {
-		{ "let-type", DEFINITION_TYPE },
-		{ "let-arg", DEFINITION_ARGUMENT },
-		{ "let-expr", DEFINITION_EXPRESSION },
-		{ "let-context", DEFINITION_CONTEXT },
-		{ "let-entity", DEFINITION_ENTITY },
-	};
-	for (const auto& form : kForms)
-	{
-		if (word.is(form.word))
-		{
-			*kind = form.kind;
-			return true;
-		}
-	}
-	return false;
-}
-
-bool is_target_word(const FactWord& word)
-{
-	static const char* const kTargets[] = {
-		"type",
-		"function",
-		"c-function",
-		"variable",
-		"typeinfo",
-		"typeinfo-name",
-		"vtable",
-		"vtt",
-		"construction-vtable",
-		"tls-wrapper",
-		"thunk",
-		"virtual-base-thunk",
-	};
-	for (const char* target : kTargets)
-	{
-		if (word.is(target))
-			return true;
-	}
-	return false;
+	*kind = word_class.terminal;
+	return *kind != ABI_TERMINAL_NONE || abi_find_terminal_kind(word.text, word.length, kind);
 }
 
 bool is_placeholder(const FactWord& word)
 {
-	return word.length == 0 || word.is("-") || word.is("operator");
+	return word.length == 0 || word.is(ABI_FACT_WORD_PLACEHOLDER) || word.is(ABI_FACT_WORD_OPERATOR);
 }
 
 bool is_member_scope(const AbiGraph& graph, AbiNode scope)
@@ -94,6 +55,71 @@ bool is_member_scope(const AbiGraph& graph, AbiNode scope)
 }
 
 } // namespace
+
+FactVocabulary::FactVocabulary()
+{
+	std::memset(&none_, kNotFactWord, sizeof none_);
+	none_.builtin = ABI_BUILTIN_TYPE_NONE;
+	none_.terminal = ABI_TERMINAL_NONE;
+	for (Entry& entry : slots_)
+		entry = Entry{ nullptr, 0, none_ };
+	std::memset(lengths_by_first_, 0, sizeof lengths_by_first_);
+	add_family<AbiFactDefinition>(ABI_FACT_DEFINITION_COUNT, &FactWordClass::definition);
+	add_family<AbiFactTarget>(ABI_FACT_TARGET_COUNT, &FactWordClass::target);
+	add_family<AbiFactFunctionForm>(ABI_FACT_FUNCTION_COUNT, &FactWordClass::function_form);
+	add_family<AbiFactRecord>(ABI_FACT_RECORD_COUNT, &FactWordClass::record);
+	add_family<AbiFactQualifier>(ABI_FACT_QUALIFIER_COUNT, &FactWordClass::qualifier);
+	add_family<AbiFactSpecialTerminal>(ABI_FACT_TERMINAL_COUNT, &FactWordClass::special_terminal);
+	add_family<AbiFactTypeForm>(ABI_FACT_TYPE_COUNT, &FactWordClass::type_form);
+	add_family<AbiFactTypePrefix>(ABI_FACT_PREFIX_COUNT, &FactWordClass::prefix);
+	add_family<AbiFactArgumentForm>(ABI_FACT_ARGUMENT_COUNT, &FactWordClass::argument_form);
+	add_family<AbiFactExpressionForm>(ABI_FACT_EXPRESSION_COUNT, &FactWordClass::expression_form);
+	add_family<AbiFactContextForm>(ABI_FACT_CONTEXT_COUNT, &FactWordClass::context_form);
+	add_family<AbiFactEntityForm>(ABI_FACT_ENTITY_COUNT, &FactWordClass::entity_form);
+	add_family<AbiFactWord>(ABI_FACT_WORD_COUNT, &FactWordClass::word);
+	for (unsigned kind = ABI_BUILTIN_TYPE_VOID; kind < ABI_BUILTIN_TYPE_COUNT; ++kind)
+		add(abi_builtin_type_word(static_cast<AbiBuiltinTypeKind>(kind))).builtin = static_cast<AbiBuiltinTypeKind>(
+			kind);
+	for (unsigned kind = ABI_TERMINAL_CONSTRUCTOR_COMPLETE; kind < ABI_TERMINAL_COUNT; ++kind)
+		add(abi_terminal_word(static_cast<AbiTerminalKind>(kind))).terminal = static_cast<AbiTerminalKind>(kind);
+	// The compact prefixes again, listed by first byte in table order.
+	std::memset(first_prefix_, 0, sizeof first_prefix_);
+	for (unsigned prefix = ABI_FACT_PREFIX_COUNT; prefix-- > 0;)
+	{
+		const char* text = spelling(static_cast<AbiFactTypePrefix>(prefix));
+		const unsigned char first = static_cast<unsigned char>(text[0]);
+		prefix_lengths_[prefix] = static_cast<std::uint32_t>(std::strlen(text));
+		prefixes_[prefix] = Prefix{ text, prefix_lengths_[prefix], static_cast<std::uint8_t>(prefix),
+			first_prefix_[first] };
+		first_prefix_[first] = static_cast<std::uint8_t>(prefix + 1);
+	}
+}
+
+template<typename E>
+void FactVocabulary::add_family(unsigned count, std::uint8_t FactWordClass::* field)
+{
+	for (unsigned value = 0; value < count; ++value)
+		add(spelling(static_cast<E>(value))).*field = static_cast<std::uint8_t>(value);
+}
+
+// The class of `text`, entered on first use.
+FactWordClass& FactVocabulary::add(const char* text)
+{
+	const std::uint32_t length = static_cast<std::uint32_t>(std::strlen(text));
+	if (length - 1u >= kLongestWord)
+		throw InternalError(std::string("ABI fact word '") + text + "' does not fit the fact vocabulary's table");
+	std::uint32_t slot = hash(text, length);
+	for (; slots_[slot].length != 0; slot = (slot + 1) & (kSlots - 1))
+	{
+		if (slots_[slot].length == length && same_bytes(slots_[slot].text, text, length))
+			return slots_[slot].word_class;
+	}
+	slots_[slot] = Entry{ text, length, none_ };
+	lengths_by_first_[static_cast<unsigned char>(text[0])] |= std::uint64_t(1) << length;
+	return slots_[slot].word_class;
+}
+
+const FactVocabulary kFactVocabulary;
 
 CaseReader::CaseReader(AbiGraph& graph, const std::vector<FactWord>& words, const std::vector<FactLine>& lines)
 	: graph_(graph), words_(words), lines_(lines), stack_base_(0), stack_budget_(stack_budget_bytes())
@@ -108,14 +134,15 @@ void CaseReader::fail(std::uint32_t line, const std::string& message) const
 
 void CaseReader::index_definitions()
 {
-	for (std::uint32_t line = 0; line < lines_.size(); ++line)
+	for (std::uint32_t line = 0; line < line_count(); ++line)
 	{
-		DefinitionKind kind;
-		if (!definition_kind(line_words(line)[0], &kind))
+		const std::uint8_t kind = lines_[line].definition;
+		if (kind == kNotFactWord)
 			continue;
 		if (line_size(line) < 3)
 			fail(line, "incomplete definition");
-		definitions_.push_back(Definition{ line_words(line)[1], line, kind, 0, ABI_NONE });
+		definitions_.push_back(
+			Definition{ line_words(line)[1], line, static_cast<AbiFactDefinition>(kind), 0, ABI_NONE });
 	}
 	std::uint32_t size = 16;
 	while (size < definitions_.size() * 2)
@@ -147,7 +174,7 @@ int CaseReader::find_definition(const FactWord& id) const
 	return -1;
 }
 
-bool CaseReader::is_defined_as(const FactWord& id, DefinitionKind kind) const
+bool CaseReader::is_defined_as(const FactWord& id, AbiFactDefinition kind) const
 {
 	const int index = find_definition(id);
 	return index >= 0 && definitions_[index].kind == kind;
@@ -170,7 +197,7 @@ AbiNode CaseReader::resolve(std::uint32_t index)
 	return node;
 }
 
-AbiNode CaseReader::reference(const FactWord& id, DefinitionKind kind, const char* what)
+AbiNode CaseReader::reference(const FactWord& id, AbiFactDefinition kind, const char* what)
 {
 	const int index = find_definition(id);
 	if (index < 0 || definitions_[index].kind != kind)
@@ -218,11 +245,10 @@ long long CaseReader::integer_value(std::uint32_t line, const FactWord& word) co
 
 bool CaseReader::flag_value(std::uint32_t line, const FactWord& word) const
 {
-	if (word.is("yes") || word.is("true") || word.is("1"))
-		return true;
-	if (word.is("no") || word.is("false") || word.is("0"))
-		return false;
-	fail(line, "expected boolean ABI word, got '" + word.str() + "'");
+	bool value = false;
+	if (!abi_fact_flag_from_spelling(word.text, word.length, &value))
+		fail(line, "expected boolean ABI word, got '" + word.str() + "'");
+	return value;
 }
 
 AbiNode CaseReader::qualified_name(std::uint32_t line, const char* text, std::uint32_t length)
@@ -247,7 +273,7 @@ AbiNode CaseReader::qualified_name(std::uint32_t line, const char* text, std::ui
 		if (std::memchr(text + start, ':', end - start) != nullptr)
 			fail(line, "stray ':' in ABI name '" + std::string(text, length) + "'");
 		const bool last = end >= length;
-		if (first && !last && end - start == 3 && std::memcmp(text + start, "std", 3) == 0)
+		if (first && !last && FactWord{ text + start, end - start }.is(ABI_FACT_WORD_STD))
 			scope = graph_.std_scope();
 		else
 			scope = graph_.name(scope, graph_.string(text + start, end - start));
@@ -283,7 +309,7 @@ void CaseReader::set_path(std::uint32_t line, const FactWord& path, FunctionFact
 	if (std::memchr(last.text, ':', last.length) != nullptr)
 		fail(line, "stray ':' in ABI name '" + path.str() + "'");
 	function.scope = split == length ? ABI_NONE : qualified_name(line, text, split);
-	if (split != length && split == 3 && std::memcmp(text, "std", 3) == 0)
+	if (split != length && FactWord{ text, split }.is(ABI_FACT_WORD_STD))
 		function.scope = graph_.std_scope();
 	function.has_final_component = true;
 	function.final_is_placeholder = is_placeholder(last);
@@ -300,27 +326,28 @@ void CaseReader::read_function_target(std::uint32_t line, std::uint32_t first, F
 	if (count == 0)
 		fail(line, "missing function target");
 	const FactWord& form = words[0];
-	if (form.is("encoding"))
+	const std::uint8_t function_form = form.classify().function_form;
+	if (function_form == ABI_FACT_FUNCTION_ENCODING)
 	{
 		if (count != 1)
 			fail(line, "function encoding takes no operands");
 		function.structured = true;
 		return;
 	}
-	if (form.is("local") || form.is("lambda") || form.is("namespace-lambda"))
+	if (function_form == ABI_FACT_FUNCTION_LOCAL || function_form == ABI_FACT_FUNCTION_LAMBDA ||
+		function_form == ABI_FACT_FUNCTION_NAMESPACE_LAMBDA)
 	{
 		AbiTerminalKind terminal;
-		const std::uint32_t terminal_word = form.is("namespace-lambda") ? 2 : 3;
-		if (count <= terminal_word ||
-			!abi_find_terminal_kind(words[terminal_word].text, words[terminal_word].length, &terminal))
+		const std::uint32_t terminal_word = function_form == ABI_FACT_FUNCTION_NAMESPACE_LAMBDA ? 2 : 3;
+		if (count <= terminal_word || !terminal_kind(words[terminal_word], words[terminal_word].classify(), &terminal))
 			fail(line, form.str() + " function target has invalid operands");
-		if (form.is("local"))
+		if (function_form == ABI_FACT_FUNCTION_LOCAL)
 		{
 			if (count != 5)
 				fail(line, "local function target has invalid operands");
 			function.scope = local_entity(line, words[1], string(words[2]), words[4]);
 		}
-		else if (form.is("lambda"))
+		else if (function_form == ABI_FACT_FUNCTION_LAMBDA)
 			function.scope = closure_entity(line, words[1], words[2], words + 4, count - 4);
 		else
 			function.scope = graph_.name(namespace_path(line, words + 3, count - 3), string(words[1]));
@@ -329,14 +356,14 @@ void CaseReader::read_function_target(std::uint32_t line, std::uint32_t first, F
 		++function.context_records;
 		return;
 	}
-	const bool path = form.is("path");
+	const bool path = function_form == ABI_FACT_FUNCTION_PATH;
 	if (path && count < 2)
 		fail(line, "function path needs a name");
 	set_path(line, words[path ? 1 : 0], function);
 	for (std::uint32_t i = path ? 2 : 1; i < count; ++i)
 	{
-		if (path && is_defined_as(words[i], DEFINITION_ARGUMENT))
-			function.template_args.push_back(reference(words[i], DEFINITION_ARGUMENT, "template argument"));
+		if (path && is_defined_as(words[i], ABI_FACT_DEFINITION_ARGUMENT))
+			function.template_args.push_back(reference(words[i], ABI_FACT_DEFINITION_ARGUMENT, "template argument"));
 		else
 			function.params.push_back(compact_type(line, words[i].text, words[i].length));
 	}
@@ -345,7 +372,7 @@ void CaseReader::read_function_target(std::uint32_t line, std::uint32_t first, F
 AbiNode CaseReader::function_entity(std::uint32_t line, std::uint32_t first)
 {
 	FunctionFacts function;
-	if (line_words(line)[first].is("encoding"))
+	if (line_words(line)[first].is(ABI_FACT_FUNCTION_ENCODING))
 		fail(line, "a function entity needs a path");
 	read_function_target(line, first, function);
 	return finish_function(line, function);
@@ -358,7 +385,8 @@ void CaseReader::read_terminal_record(std::uint32_t line, FunctionFacts& functio
 	if (++function.terminal_records > 1)
 		fail(line, "multiple ABI function terminals");
 	const FactWord& form = words[0];
-	if (form.is("conversion-terminal"))
+	const std::uint8_t record = lines_[line].record;
+	if (record == ABI_FACT_RECORD_CONVERSION_TERMINAL)
 	{
 		if (count < 2)
 			fail(line, "conversion-terminal needs a type");
@@ -367,14 +395,15 @@ void CaseReader::read_terminal_record(std::uint32_t line, FunctionFacts& functio
 	}
 	if (count < 2)
 		fail(line, form.str() + " has invalid operands");
-	if (form.is("terminal-source"))
+	if (record == ABI_FACT_RECORD_TERMINAL_SOURCE)
 	{
 		if (count != 2)
 			fail(line, "terminal-source takes one name");
 		function.terminal_unqualified = string(words[1]);
 		return;
 	}
-	if (form.is("operator-terminal") && words[1].is("literal"))
+	const FactWordClass& operand = words[1].classify();
+	if (record == ABI_FACT_RECORD_OPERATOR_TERMINAL && operand.special_terminal == ABI_FACT_TERMINAL_LITERAL)
 	{
 		if (count != 3)
 			fail(line, "operator-terminal has invalid operands");
@@ -383,8 +412,9 @@ void CaseReader::read_terminal_record(std::uint32_t line, FunctionFacts& functio
 	}
 	// An inheriting constructor: CI1 or CI2, then the class that declared
 	// the inherited constructor (5.1.4.3).
-	const bool inherited_complete = words[1].is("constructor-inherited-complete");
-	if (form.is("terminal") && (inherited_complete || words[1].is("constructor-inherited-base")))
+	const bool inherited_complete = operand.special_terminal == ABI_FACT_TERMINAL_INHERITED_COMPLETE;
+	if (record == ABI_FACT_RECORD_TERMINAL &&
+		(inherited_complete || operand.special_terminal == ABI_FACT_TERMINAL_INHERITED_BASE))
 	{
 		if (count != 3)
 			fail(line, "an inherited constructor terminal needs its base class type");
@@ -394,9 +424,9 @@ void CaseReader::read_terminal_record(std::uint32_t line, FunctionFacts& functio
 		return;
 	}
 	AbiTerminalKind kind;
-	if (count != 2 || !abi_find_terminal_kind(words[1].text, words[1].length, &kind))
+	if (count != 2 || !terminal_kind(words[1], operand, &kind))
 		fail(line, "unknown ABI terminal '" + words[1].str() + "'");
-	if (form.is("operator-terminal") && abi_terminal_is_constructor_or_destructor(kind))
+	if (record == ABI_FACT_RECORD_OPERATOR_TERMINAL && abi_terminal_is_constructor_or_destructor(kind))
 		fail(line, "operator-terminal names an operator");
 	function.terminal = kind;
 }
@@ -412,7 +442,8 @@ void CaseReader::read_name_record(std::uint32_t line, FunctionFacts& function)
 		fail(line, "structured ABI name records require a function encoding target");
 	if (function.context_records != 0)
 		fail(line, "name components cannot follow a local context");
-	if (words[0].is("name-std"))
+	const std::uint8_t record = lines_[line].record;
+	if (record == ABI_FACT_RECORD_NAME_STD)
 	{
 		if (count != 1)
 			fail(line, "name-std takes no operands");
@@ -421,7 +452,7 @@ void CaseReader::read_name_record(std::uint32_t line, FunctionFacts& function)
 		function.scope = graph_.std_scope();
 		return;
 	}
-	if (words[0].is("component-abi-tag"))
+	if (record == ABI_FACT_RECORD_COMPONENT_ABI_TAG)
 	{
 		if (count != 2)
 			fail(line, "component-abi-tag takes one tag");
@@ -445,7 +476,7 @@ void CaseReader::read_name_record(std::uint32_t line, FunctionFacts& function)
 		function.component_tags.clear();
 		function.has_final_component = false;
 	}
-	if (words[0].is("name-source"))
+	if (record == ABI_FACT_RECORD_NAME_SOURCE)
 	{
 		if (count != 2 && count != 3)
 			fail(line, "name-source has invalid operands");
@@ -459,7 +490,7 @@ void CaseReader::read_name_record(std::uint32_t line, FunctionFacts& function)
 		fail(line, "name-template has invalid operands");
 	argument_list(words + 6, count - 6, scratch_);
 	AbiNode component;
-	if (words[4].is("-"))
+	if (words[4].is(ABI_FACT_WORD_PLACEHOLDER))
 		component = graph_.template_id(graph_.name(function.scope, string(words[1])), scratch_.data(), scratch_.size());
 	else
 	{
@@ -488,14 +519,15 @@ void CaseReader::read_context_record(std::uint32_t line, FunctionFacts& function
 		fail(line, "multiple ABI function context kinds");
 	if (function.has_final_component || function.scope != ABI_NONE)
 		fail(line, "a local context cannot follow name components");
-	if (words[0].is("local-context"))
+	const std::uint8_t record = lines_[line].record;
+	if (record == ABI_FACT_RECORD_LOCAL_CONTEXT)
 	{
 		if (count != 4)
 			fail(line, "local-context has invalid operands");
 		function.scope = local_entity(line, words[1], string(words[2]), words[3]);
 		function.generated_lambda = is_generated_lambda_name(words[2]);
 	}
-	else if (words[0].is("lambda-context"))
+	else if (record == ABI_FACT_RECORD_LAMBDA_CONTEXT)
 	{
 		if (count < 3)
 			fail(line, "lambda-context has invalid operands");
@@ -513,74 +545,73 @@ void CaseReader::read_function_record(std::uint32_t line, FunctionFacts& functio
 {
 	const FactWord* words = line_words(line);
 	const std::uint32_t count = line_size(line);
-	const FactWord& form = words[0];
-	if (form.is("param"))
-		function.params.push_back(type_spec(line, words + 1, count - 1));
-	else if (form.is("result"))
+	switch (static_cast<AbiFactRecord>(lines_[line].record))
 	{
+	case ABI_FACT_RECORD_PARAM:
+		function.params.push_back(type_spec(line, words + 1, count - 1));
+		return;
+	case ABI_FACT_RECORD_RESULT:
 		if (function.result != ABI_NONE)
 			fail(line, "multiple ABI function result types");
 		function.result = type_spec(line, words + 1, count - 1);
-	}
-	else if (form.is("variadic"))
-	{
+		return;
+	case ABI_FACT_RECORD_VARIADIC:
 		if (count != 1)
 			fail(line, "variadic takes no operands");
 		if (function.variadic)
 			fail(line, "multiple ABI variadic markers");
 		function.variadic = true;
-	}
-	else if (form.is("abi-tag"))
-	{
+		return;
+	case ABI_FACT_RECORD_ABI_TAG:
 		if (count != 2)
 			fail(line, "abi-tag takes one tag");
 		function.tags.push_back(string(words[1]));
-	}
-	else if (form.is("qualifier") || form.is("function-qualifier"))
-	{
+		return;
+	case ABI_FACT_RECORD_QUALIFIER:
+	case ABI_FACT_RECORD_FUNCTION_QUALIFIER:
 		if (count < 2)
 			fail(line, "function qualifier needs at least one qualifier");
 		for (std::uint32_t i = 1; i < count; ++i)
 		{
-			if (words[i].is("const"))
-				function.qualifiers |= ABI_QUALIFIER_CONST;
-			else if (words[i].is("volatile"))
-				function.qualifiers |= ABI_QUALIFIER_VOLATILE;
-			else if (words[i].is("restrict"))
-				function.qualifiers |= ABI_QUALIFIER_RESTRICT;
-			else if (words[i].is("lvalue-ref"))
-				function.qualifiers |= ABI_QUALIFIER_LVALUE_REF;
-			else if (words[i].is("rvalue-ref"))
-				function.qualifiers |= ABI_QUALIFIER_RVALUE_REF;
-			else
+			const std::uint8_t qualifier = words[i].classify().qualifier;
+			if (qualifier == kNotFactWord)
 				fail(line, "unknown function qualifier '" + words[i].str() + "'");
+			function.qualifiers |= abi_qualifier(static_cast<AbiFactQualifier>(qualifier));
 		}
 		if ((function.qualifiers & ABI_QUALIFIER_LVALUE_REF) != 0 &&
 			(function.qualifiers & ABI_QUALIFIER_RVALUE_REF) != 0)
 			fail(line, "conflicting ABI function reference qualifiers");
-	}
-	else if (form.is("function-template-arg"))
-	{
+		return;
+	case ABI_FACT_RECORD_FUNCTION_TEMPLATE_ARG:
 		if (count != 2)
 			fail(line, "function-template-arg takes one id");
-		function.template_args.push_back(reference(words[1], DEFINITION_ARGUMENT, "template argument"));
-	}
-	else if (form.is("function-template-prefix"))
-	{
+		function.template_args.push_back(reference(words[1], ABI_FACT_DEFINITION_ARGUMENT, "template argument"));
+		return;
+	case ABI_FACT_RECORD_FUNCTION_TEMPLATE_PREFIX:
 		// The template prefix is a substitution candidate by the grammar;
 		// the key names it for readers and is not an identity.
 		if (count != 2)
 			fail(line, "function-template-prefix takes one key");
-	}
-	else if (form.is("operator-terminal") || form.is("conversion-terminal") || form.is("terminal") ||
-		form.is("terminal-source"))
+		return;
+	case ABI_FACT_RECORD_OPERATOR_TERMINAL:
+	case ABI_FACT_RECORD_CONVERSION_TERMINAL:
+	case ABI_FACT_RECORD_TERMINAL:
+	case ABI_FACT_RECORD_TERMINAL_SOURCE:
 		read_terminal_record(line, function);
-	else if (form.is("name-source") || form.is("name-std") || form.is("name-template") || form.is("component-abi-tag"))
+		return;
+	case ABI_FACT_RECORD_NAME_SOURCE:
+	case ABI_FACT_RECORD_NAME_STD:
+	case ABI_FACT_RECORD_NAME_TEMPLATE:
+	case ABI_FACT_RECORD_COMPONENT_ABI_TAG:
 		read_name_record(line, function);
-	else if (form.is("local-context") || form.is("lambda-context") || form.is("namespace-lambda-context"))
+		return;
+	case ABI_FACT_RECORD_LOCAL_CONTEXT:
+	case ABI_FACT_RECORD_LAMBDA_CONTEXT:
+	case ABI_FACT_RECORD_NAMESPACE_LAMBDA_CONTEXT:
 		read_context_record(line, function);
-	else
-		fail(line, "unknown ABI function record '" + form.str() + "'");
+		return;
+	}
+	fail(line, "unknown ABI function record '" + words[0].str() + "'");
 }
 
 // Builds the function encoding: the final name component (a terminal, or
@@ -644,28 +675,25 @@ AbiTarget CaseReader::read_target_line(std::uint32_t line, FunctionFacts& functi
 {
 	const FactWord* words = line_words(line);
 	const std::uint32_t count = line_size(line);
-	const FactWord& form = words[0];
+	const AbiFactTarget form = static_cast<AbiFactTarget>(lines_[line].target);
 	AbiTarget target;
+	target.kind = abi_target_kind(form);
 	is_function = false;
-	if (form.is("type"))
+	switch (form)
 	{
-		target.kind = ABI_TARGET_TYPE;
+	case ABI_FACT_TARGET_TYPE:
+	case ABI_FACT_TARGET_TYPEINFO:
+	case ABI_FACT_TARGET_TYPEINFO_NAME:
+	case ABI_FACT_TARGET_VTABLE:
+	case ABI_FACT_TARGET_VTT:
 		target.node = type_spec(line, words + 1, count - 1);
-	}
-	else if (form.is("typeinfo") || form.is("typeinfo-name") || form.is("vtable") || form.is("vtt"))
+		break;
+	case ABI_FACT_TARGET_VARIABLE:
+	case ABI_FACT_TARGET_TLS_WRAPPER:
 	{
-		target.kind = form.is("typeinfo") ? ABI_TARGET_TYPEINFO
-			: form.is("typeinfo-name")    ? ABI_TARGET_TYPEINFO_NAME
-			: form.is("vtable")           ? ABI_TARGET_VTABLE
-										  : ABI_TARGET_VTT;
-		target.node = type_spec(line, words + 1, count - 1);
-	}
-	else if (form.is("variable") || form.is("tls-wrapper"))
-	{
-		const bool wrapper = form.is("tls-wrapper");
-		if (count != (wrapper ? 3u : 2u) || (wrapper && !words[1].is("variable")))
+		const bool wrapper = form == ABI_FACT_TARGET_TLS_WRAPPER;
+		if (count != (wrapper ? 3u : 2u) || (wrapper && !words[1].is(ABI_FACT_TARGET_VARIABLE)))
 			fail(line, wrapper ? "TLS wrapper must name a variable" : "variable target takes one name");
-		target.kind = wrapper ? ABI_TARGET_TLS_WRAPPER : ABI_TARGET_ENTITY;
 		target.node = named_type(line, words[count - 1].text, words[count - 1].length);
 		// 5.1.2: an ordinary variable of the global namespace is not
 		// mangled (its plain source name, without ABI tags).
@@ -676,8 +704,9 @@ AbiTarget CaseReader::read_target_line(std::uint32_t line, FunctionFacts& functi
 			target.kind = ABI_TARGET_C_NAME;
 			target.node = data.b;
 		}
+		break;
 	}
-	else if (form.is("c-function"))
+	case ABI_FACT_TARGET_C_FUNCTION:
 	{
 		if (count < 2)
 			fail(line, "empty C-linkage ABI function name");
@@ -688,27 +717,25 @@ AbiTarget CaseReader::read_target_line(std::uint32_t line, FunctionFacts& functi
 		qualified_name(line, path.text, path.length);
 		for (std::uint32_t i = 2; i < count; ++i)
 			compact_type(line, words[i].text, words[i].length);
-		target.kind = ABI_TARGET_C_NAME;
 		target.node = graph_.string(path.text + start, path.length - start);
+		break;
 	}
-	else if (form.is("construction-vtable"))
-	{
+	case ABI_FACT_TARGET_CONSTRUCTION_VTABLE:
 		if (count != 4)
 			fail(line, "construction vtable needs derived, offset, and base");
-		target.kind = ABI_TARGET_CONSTRUCTION_VTABLE;
 		target.node = compact_type(line, words[1].text, words[1].length);
 		target.offset = integer_value(line, words[2]);
 		target.base = compact_type(line, words[3].text, words[3].length);
-	}
-	else if (form.is("thunk") || form.is("virtual-base-thunk"))
+		break;
+	case ABI_FACT_TARGET_THUNK:
+	case ABI_FACT_TARGET_VIRTUAL_BASE_THUNK:
 	{
 		// thunk <this> [<result> | virtual-result <fixed> <vcall>] function ...
 		// virtual-base-thunk <vcall> function ...
 		std::uint32_t next = 2;
-		target.kind = ABI_TARGET_THUNK;
 		if (count < 3)
 			fail(line, "thunk is missing function target");
-		if (form.is("virtual-base-thunk"))
+		if (form == ABI_FACT_TARGET_VIRTUAL_BASE_THUNK)
 		{
 			target.this_adjustment.is_virtual = true;
 			target.this_adjustment.vcall_offset = integer_value(line, words[1]);
@@ -716,7 +743,7 @@ AbiTarget CaseReader::read_target_line(std::uint32_t line, FunctionFacts& functi
 		else
 		{
 			target.this_adjustment.offset = integer_value(line, words[1]);
-			if (words[2].is("virtual-result"))
+			if (words[2].is(ABI_FACT_WORD_VIRTUAL_RESULT))
 			{
 				if (count < 6)
 					fail(line, "virtual result thunk has invalid offsets");
@@ -726,23 +753,23 @@ AbiTarget CaseReader::read_target_line(std::uint32_t line, FunctionFacts& functi
 				target.result_adjustment.vcall_offset = integer_value(line, words[4]);
 				next = 5;
 			}
-			else if (!words[2].is("function"))
+			else if (!words[2].is(ABI_FACT_TARGET_FUNCTION))
 			{
 				target.has_result_adjustment = true;
 				target.result_adjustment.offset = integer_value(line, words[2]);
 				next = 3;
 			}
 		}
-		if (next >= count || !words[next].is("function"))
+		if (next >= count || !words[next].is(ABI_FACT_TARGET_FUNCTION))
 			fail(line, "thunk target has invalid operands");
 		read_function_target(line, next + 1, function);
 		is_function = true;
+		break;
 	}
-	else
-	{
-		target.kind = ABI_TARGET_ENTITY;
+	case ABI_FACT_TARGET_FUNCTION:
 		read_function_target(line, 1, function);
 		is_function = true;
+		break;
 	}
 	return target;
 }
@@ -758,9 +785,9 @@ AbiTarget CaseReader::read_target()
 	for (std::uint32_t i = 0; i < definitions_.size(); ++i)
 		resolve(i);
 	int target_line = -1;
-	for (std::uint32_t line = 0; line < lines_.size(); ++line)
+	for (std::uint32_t line = 0; line < line_count(); ++line)
 	{
-		if (!is_target_word(line_words(line)[0]))
+		if (lines_[line].target == kNotFactWord)
 			continue;
 		if (target_line >= 0)
 			fail(line, "ABI case has more than one target");
@@ -771,11 +798,10 @@ AbiTarget CaseReader::read_target()
 	FunctionFacts function;
 	bool is_function = false;
 	AbiTarget target = read_target_line(static_cast<std::uint32_t>(target_line), function, is_function);
-	const bool c_function = line_words(static_cast<std::uint32_t>(target_line))[0].is("c-function");
-	for (std::uint32_t line = 0; line < lines_.size(); ++line)
+	const bool c_function = lines_[target_line].target == ABI_FACT_TARGET_C_FUNCTION;
+	for (std::uint32_t line = 0; line < line_count(); ++line)
 	{
-		DefinitionKind kind;
-		if (static_cast<int>(line) == target_line || definition_kind(line_words(line)[0], &kind))
+		if (static_cast<int>(line) == target_line || lines_[line].definition != kNotFactWord)
 			continue;
 		if (!is_function)
 			fail(line,
@@ -882,7 +908,7 @@ private:
 		while (first_end < end && !is_space(*first_end))
 			++first_end;
 		const FactWord keyword{ first, static_cast<std::uint32_t>(first_end - first) };
-		if (keyword.is("case"))
+		if (keyword.is(ABI_FACT_WORD_CASE))
 		{
 			const char* label = first_end;
 			while (label < end && is_space(*label))
@@ -913,7 +939,7 @@ private:
 		const char* cursor = case_text_.data();
 		for (std::uint32_t number : line_numbers_)
 		{
-			FactLine line{ number, static_cast<std::uint32_t>(words_.size()), 0 };
+			const std::uint32_t first_word = static_cast<std::uint32_t>(words_.size());
 			for (;;)
 			{
 				while (is_space(*cursor))
@@ -926,9 +952,13 @@ private:
 				words_.push_back(FactWord{ start, static_cast<std::uint32_t>(cursor - start) });
 			}
 			++cursor;
-			line.word_count = static_cast<std::uint32_t>(words_.size()) - line.first_word;
-			lines_.push_back(line);
+			// Every line has a first word (blank lines are not kept): its
+			// class decides what the line is.
+			const FactWordClass& form = words_[first_word].classify();
+			lines_.push_back(FactLine{ number, first_word, form.definition, form.target, form.record });
 		}
+		lines_.push_back(
+			FactLine{ 0, static_cast<std::uint32_t>(words_.size()), kNotFactWord, kNotFactWord, kNotFactWord });
 	}
 
 	void finish_case()
@@ -943,7 +973,7 @@ private:
 		{
 			++stats_->cases;
 			++stats_->targets;
-			stats_->records += lines_.size();
+			stats_->records += lines_.size() - 1;
 			stats_->definitions += reader.definitions();
 			telemetry::note_peak(stats_->peak_graph_nodes, graph_.size());
 			telemetry::note_peak(stats_->peak_graph_bytes, graph_.bytes_reserved());

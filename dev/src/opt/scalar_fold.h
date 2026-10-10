@@ -53,9 +53,4 @@ bool integer_bits(lowir::Type type, const lowir::Constant& c, lowir::Literal& bi
 // Whether the integer constant is all ones at `type`'s width.
 bool is_all_ones(lowir::Type type, const lowir::Constant& c);
 
-// The predicate with its operands exchanged (lt <-> gt, ...).
-lowir::ComparePredicate swapped_predicate(lowir::ComparePredicate pred);
-// The predicate's negation (lt <-> ge, eq <-> ne, ...).
-lowir::ComparePredicate inverted_predicate(lowir::ComparePredicate pred);
-
 } // namespace opt

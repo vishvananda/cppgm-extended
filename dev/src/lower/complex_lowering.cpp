@@ -105,7 +105,7 @@ lowir::SymbolId ProgramLowering::complex_helper(bool divide, const sema::Type* p
 	signature.parameter_count = 4;
 	const sema::Type* complex = graph().types.complex(bare);
 	signature.result = storage_type(complex);
-	signature.result_classes = complex_classes(complex);
+	signature.boundary.result_classes = complex_classes(complex);
 	signature.boundary.unwind = ir_model::CUM_NO;
 	program_.declare_function(symbol, lowir::SymbolKind::FunctionDeclaration, program_.add_signature(signature));
 	lowir::SymbolMetadata& metadata = program_.symbols[symbol].metadata;

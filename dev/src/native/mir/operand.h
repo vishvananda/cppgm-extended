@@ -3,81 +3,27 @@
 #include <cstdint>
 
 #include "lowir/program.h"
+#include "mir_model.h"
 
 // The registers and operands of the machine IR (native/mir/mir.h).
 namespace native {
 
-// Registers: 0-15 are the GPRs in x86 encoding order, 16-31 XMM0-XMM15.
-typedef uint8_t Reg;
+// Registers (Reg, RAX ... R15, XMM0 ... XMM15, kNoReg, kSt0, reg_bit, the
+// System V register sets), condition codes and the MIR operations and operand
+// kinds are the shipped vocabulary headers native/mir/registers.h and
+// mir_model.h, used as they are.
+using namespace mir_model;
 
-enum : Reg
-{
-	RAX = 0,
-	RCX,
-	RDX,
-	RBX,
-	RSP,
-	RBP,
-	RSI,
-	RDI,
-	R8,
-	R9,
-	R10,
-	R11,
-	R12,
-	R13,
-	R14,
-	R15,
-	XMM0 = 16
-};
-
-const Reg kNoReg = 0xff;
 // A frame slot's base: RBP, or RSP past the prologue without a frame
 // pointer (Function::omit_frame_pointer), where RBP may hold a value.
 const Reg kFrame = 0xfd;
-
-inline bool is_xmm(Reg reg)
-{
-	return reg >= XMM0 && reg < XMM0 + 16;
-}
-inline uint32_t reg_bit(Reg reg)
-{
-	return 1u << reg;
-}
 
 // Selector scratch (r10), emitter scratch (r11) and the emitter's vector
 // scratch (xmm14, xmm15) are never allocated to values.
 const Reg kSelectScratch = R10;
 const Reg kEmitScratch = R11;
-const uint32_t kCallerSavedGprs = (1u << RAX) | (1u << RCX) | (1u << RDX) | (1u << RSI) | (1u << RDI) | (1u << R8) |
-	(1u << R9) | (1u << R10) | (1u << R11);
-const uint32_t kCalleeSavedGprs = (1u << RBX) | (1u << R12) | (1u << R13) | (1u << R14) | (1u << R15);
-const uint32_t kAllXmms = 0xffff0000u;
 const uint32_t kAllocatableGprs = (kCallerSavedGprs | kCalleeSavedGprs) & ~((1u << R10) | (1u << R11));
 const uint32_t kAllocatableXmms = 0x00ff0000u; // xmm0-xmm7
-
-// How a Symbol operand's address forms: pc-relative, from its GOT entry
-// (a host object's imported data), or as a thread-local object's for the
-// executing thread (a host object's thread_local: local exec for one the
-// object defines, initial exec otherwise).
-enum class SymbolAccess : uint8_t
-{
-	Direct,
-	Got,
-	TlsLocal,
-	TlsInitial
-};
-
-enum class OperandKind : uint8_t
-{
-	None,
-	Reg,
-	Imm,    // integer immediate (imm, imm_high for i128)
-	FImm,   // floating literal: bits in imm/imm_high, kind in `type`
-	Mem,    // [base + index*scale + disp] or symbol-relative
-	Symbol, // the address of a symbol (`@g`)
-	Label   // a block of the current function
-};
 
 // A memory operand. With `symbol` set the address is PC-relative to that
 // symbol (base and index absent); otherwise base is a GPR (RBP for frame

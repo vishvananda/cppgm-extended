@@ -5,7 +5,7 @@
 using namespace std;
 
 #include "preprocess/source/source_buffer.h"
-#include "preprocess/tokens/debug_pp_token_stream.h"
+#include "preprocess/tokens/DebugPPTokenStream.h"
 #include "preprocess/tokens/pp_token_emitter.h"
 #include "support/internal_error.h"
 

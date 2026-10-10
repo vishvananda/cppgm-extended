@@ -906,7 +906,7 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 		for (unsigned side = 0; side < 2; ++side)
 		{
 			const Value d = side == 0 ? x : y, base = side == 0 ? y : x;
-			const ComparePredicate p = side == 0 ? pred : swapped_predicate(pred);
+			const ComparePredicate p = side == 0 ? pred : swapped(pred);
 			const Instruction* dec = producer(d);
 			Constant one;
 			if (dec != nullptr && dec->op == Opcode::Binary && static_cast<BinaryOp>(dec->sub) == BinaryOp::Sub &&
@@ -969,7 +969,7 @@ bool Simplifier::compare_identity(Instruction& inst, Value& out)
 	}
 	if (def == nullptr || def->op != Opcode::Compare || def->type.is_float())
 		return false;
-	inst.sub = static_cast<uint8_t>(inverted_predicate(static_cast<ComparePredicate>(def->sub)));
+	inst.sub = static_cast<uint8_t>(inverted(static_cast<ComparePredicate>(def->sub)));
 	inst.type = def->type;
 	inst.ops[0] = def->ops[0];
 	inst.ops[1] = def->ops[1];
@@ -1155,7 +1155,7 @@ void Simplifier::canonicalize(Instruction& inst)
 	else if (inst.op == Opcode::Compare)
 	{
 		std::swap(x, y);
-		inst.sub = static_cast<uint8_t>(swapped_predicate(static_cast<ComparePredicate>(inst.sub)));
+		inst.sub = static_cast<uint8_t>(swapped(static_cast<ComparePredicate>(inst.sub)));
 	}
 }
 
@@ -1614,7 +1614,7 @@ void Simplifier::process_block(BlockId block)
 			{
 				// `b > a` is `a < b`.
 				std::swap(key.a, key.b);
-				key.sub = static_cast<uint8_t>(swapped_predicate(static_cast<ComparePredicate>(inst.sub)));
+				key.sub = static_cast<uint8_t>(swapped(static_cast<ComparePredicate>(inst.sub)));
 			}
 			Available* found = table_.find(key);
 			if (found != nullptr && c_.cfg.dominates(found->block, block))

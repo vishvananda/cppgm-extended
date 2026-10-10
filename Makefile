@@ -86,7 +86,7 @@ SUBMAKE_OBJ_ARG = $(if $(strip $(OBJ)),OBJ=$(OBJ))
 SUBMAKE_GENERATED_ARG = $(if $(strip $(GENERATED)),GENERATED=$(GENERATED))
 SUBMAKE_CC_FLAGS_ARG = $(if $(strip $(CC_FLAGS)),CC_FLAGS="$(CC_FLAGS)")
 
-.PHONY: all build build-telemetry-off test test-telemetry-off audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-headers ref-test ref-test-debuginfo \
+.PHONY: all build build-telemetry-off test test-telemetry-off audit-lowir-contract audit-compiler-layout audit-compiler-exceptions audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-usage audit-scaffold-spellings ref-test ref-test-debuginfo \
 	test-debuginfo test-debuginfo-nobuild require-clang require-clang-libcxx asan-build test-cells \
 	test-report inception clean run-cppgm run-cppgm-nobuild \
 	test-report-nobuild test-report-through-% test-report-through-%-nobuild \
@@ -112,8 +112,13 @@ audit-frontend-source-sets:
 audit-builtin-registry-tables:
 	@perl scripts/audit_builtin_registry_tables.pl
 
-audit-scaffold-headers:
-	@perl scripts/audit_scaffold_headers.pl
+# Reads the build's dependency files (the build's OBJ is relative to dev/),
+# so it builds the tools first.
+audit-scaffold-usage: build
+	@perl scripts/audit_scaffold_usage.pl --deps $(if $(strip $(OBJ)),$(if $(filter /%,$(OBJ)),$(OBJ),dev/$(OBJ)),obj)/dev/.d
+
+audit-scaffold-spellings:
+	@perl scripts/audit_scaffold_spellings.pl
 
 build:
 	@mkdir -p obj
@@ -277,6 +282,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_pa33_course.py \
 	scripts/tests/test_pending_audit_regressions.py \
 	scripts/tests/test_report_elf_code_shape.py \
+	scripts/tests/test_scaffold_audits.py \
 	scripts/tests/test_test_report_output.py \
 	scripts/tests/test_run_ab_compile_benchmark.py \
 	scripts/tests/test_validate_perf_regression.py

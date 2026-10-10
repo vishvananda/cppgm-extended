@@ -652,7 +652,7 @@ lowir::SymbolId ProgramLowering::soft_float_helper(SoftFloatHelper which)
 	}
 	signature.parameter_count = count;
 	signature.result = SpecType(spec.result);
-	signature.result_classes = soft_float_classes(SpecKind(spec.result));
+	signature.boundary.result_classes = soft_float_classes(SpecKind(spec.result));
 	signature.boundary.unwind = ir_model::CUM_NO;
 	program_.declare_function(symbol, lowir::SymbolKind::FunctionDeclaration, program_.add_signature(signature));
 	lowir::SymbolMetadata& metadata = program_.symbols[symbol].metadata;

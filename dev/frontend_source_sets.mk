@@ -36,12 +36,12 @@ FRONTEND_PHASE_BASENAMES_sema := sema/type_table sema/lookup sema/integral_arith
 # and the validator. The text reader and writer (lowir/text_*) are tool
 # adapters, listed only by the tools that read or write LowIR text; the
 # construction exercises only by lowir.
-FRONTEND_PHASE_BASENAMES_lowir := support/memory/arena lowir/name_table lowir/program lowir/builder lowir/literals lowir/metadata_spellings lowir/validator
+FRONTEND_PHASE_BASENAMES_lowir := support/memory/arena lowir/name_table lowir/program lowir/builder lowir/literals lowir/validator
 
 # PA9's ABI naming: the canonical ABI graph, the vocabulary tables and the
 # one Itanium encoder, which later stages link to name their symbols. The
 # fact-file reader (abi/facts/) is the abimangle tool adapter.
-FRONTEND_PHASE_BASENAMES_abi := support/memory/arena abi/itanium/abi_vocabulary abi/itanium/abi_graph abi/itanium/abi_encoder
+FRONTEND_PHASE_BASENAMES_abi := support/memory/arena abi/itanium/abi_graph abi/itanium/abi_encoder
 
 FRONTEND_OBJ_BASENAMES_abimangle := $(FRONTEND_PHASE_BASENAMES_abi) abi/facts/abi_fact_reader abi/facts/abi_fact_definitions
 FRONTEND_OBJ_BASENAMES_pptoken := $(FRONTEND_PHASE_BASENAMES_pplex) preprocess/tokens/pp_token_emitter
@@ -53,7 +53,7 @@ FRONTEND_OBJ_BASENAMES_preproc := $(FRONTEND_PHASE_BASENAMES_pplex) $(FRONTEND_P
 # the --emit-lowir view.
 FRONTEND_PHASE_BASENAMES_lower := lower/program_lowering lower/definition_order lower/symbol_lowering lower/placeholder_mangling lower/local_mangling lower/global_lowering lower/constant_lowering lower/local_static_lowering lower/function_lowering lower/statement_lowering lower/object_lowering lower/copy_lowering lower/conversion_lowering lower/allocation_lowering lower/aggregate_lowering lower/cleanup_lowering lower/expression_lowering lower/discard_lowering lower/intrinsic_lowering lower/soft_float_lowering lower/complex_lowering lower/vector_lowering lower/member_pointer_lowering lower/condition_lowering lower/vtable_lowering lower/covariant_lowering lower/itanium_layout lower/virtual_base_lowering lower/rtti_lowering lower/dispatch_lowering lower/dynamic_type_lowering lower/initializer_list_lowering lower/exception_lowering lower/lexical_cleanup_lowering lower/tracked_lifetime_lowering
 
-FRONTEND_OBJ_BASENAMES_cppgm++ := $(FRONTEND_PHASE_BASENAMES_pplex) $(FRONTEND_PHASE_BASENAMES_literals) $(FRONTEND_PHASE_BASENAMES_posttoken) $(FRONTEND_PHASE_BASENAMES_ppexpr) $(FRONTEND_PHASE_BASENAMES_preprocess) $(FRONTEND_PHASE_BASENAMES_syntax) syntax/ast_render syntax/ast_printer $(FRONTEND_PHASE_BASENAMES_sema) sema/semantic_dump sema/semantics_dump abi/itanium/abi_vocabulary abi/itanium/abi_graph abi/itanium/abi_encoder lowir/name_table lowir/program lowir/builder lowir/literals lowir/metadata_spellings lowir/validator lowir/text_writer lowir/local_names $(FRONTEND_PHASE_BASENAMES_lower) lex/post_token_writer
+FRONTEND_OBJ_BASENAMES_cppgm++ := $(FRONTEND_PHASE_BASENAMES_pplex) $(FRONTEND_PHASE_BASENAMES_literals) $(FRONTEND_PHASE_BASENAMES_posttoken) $(FRONTEND_PHASE_BASENAMES_ppexpr) $(FRONTEND_PHASE_BASENAMES_preprocess) $(FRONTEND_PHASE_BASENAMES_syntax) syntax/ast_render syntax/ast_printer $(FRONTEND_PHASE_BASENAMES_sema) sema/semantic_dump sema/semantics_dump abi/itanium/abi_graph abi/itanium/abi_encoder lowir/name_table lowir/program lowir/builder lowir/literals lowir/validator lowir/text_writer lowir/local_names $(FRONTEND_PHASE_BASENAMES_lower) lex/post_token_writer
 # PA32's LowIR optimizer: the passes over the typed program (opt/), linked
 # by lowiropt and by cppgm++'s --emit-lowir and object paths.
 FRONTEND_PHASE_BASENAMES_opt := opt/function_ir opt/scalar_fold opt/value_simplify opt/dead_code opt/memory_forwarding opt/copy_coalescing opt/constant_propagation opt/cfg_cleanup opt/jump_threading opt/aggregate_slots opt/wide_integers opt/slot_promotion opt/eh_regions opt/loops opt/loop_passes opt/switch_formation opt/select_formation opt/call_graph opt/inliner opt/interprocedural opt/optimizer

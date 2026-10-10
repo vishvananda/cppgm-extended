@@ -20,151 +20,12 @@ typedef uint32_t InstId;
 
 const uint32_t kNoId = 0xffffffffu;
 
-// ---------------------------------------------------------------------------
-// Operations
-
-enum class Opcode : uint8_t
-{
-	// Value-producing instructions.
-	Const,
-	Copy,
-	Phi,
-	Addr,
-	Load,
-	AtomicLoad,
-	Index,
-	Unary,
-	Binary,
-	Compare,
-	Select,
-	Convert,
-	AtomicAddFetch,
-	AtomicExchange,
-	AtomicCompareExchange,
-	VaArg,
-	StackAlloc,
-	Call,
-	Exception,
-	ExceptionSelector,
-	// Effects.
-	Store,
-	AtomicStore,
-	AtomicThreadFence,
-	AtomicSignalFence,
-	VaStart,
-	CopyObject,
-	ZeroInit,
-	EhTry,
-	EhCleanup,
-	EhCatch,
-	EhFilter,
-	EhCatchAll,
-	EhEnd,
-	// Terminators.
-	Throw,
-	Resume,
-	Jump,
-	Branch,
-	Switch,
-	Return,
-	Unreachable
-};
-
-inline bool is_terminator(Opcode op)
-{
-	return op >= Opcode::Throw;
-}
-
-enum class UnaryOp : uint8_t
-{
-	Neg,
-	Not,
-	BitNot,
-	ByteSwap,
-	// The index of the lowest (highest) set bit of a 32- or 64-bit integer,
-	// counted from bit 0 (from the top): undefined for 0, as GCC's builtins.
-	CountTrailingZeros,
-	CountLeadingZeros
-};
-
-const unsigned kUnaryOpCount = static_cast<unsigned>(UnaryOp::CountLeadingZeros) + 1;
-
-enum class BinaryOp : uint8_t
-{
-	Add,
-	Sub,
-	Mul,
-	Div,
-	Mod,
-	UDiv,
-	UMod,
-	And,
-	Or,
-	Xor,
-	Shl,
-	Shr,
-	UShr
-};
-
-const unsigned kBinaryOpCount = static_cast<unsigned>(BinaryOp::UShr) + 1;
-
-enum class ComparePredicate : uint8_t
-{
-	Eq,
-	Ne,
-	Lt,
-	Le,
-	Gt,
-	Ge,
-	Ult,
-	Ule,
-	Ugt,
-	Uge
-};
-
-const unsigned kComparePredicateCount = static_cast<unsigned>(ComparePredicate::Uge) + 1;
-
-enum class ConvertOp : uint8_t
-{
-	SExt,
-	ZExt,
-	Trunc,
-	SIToFP,
-	UIToFP,
-	FPToSI,
-	FPToUI,
-	FPExt,
-	FPTrunc
-};
-
-const unsigned kConvertOpCount = static_cast<unsigned>(ConvertOp::FPTrunc) + 1;
-
-// GNU/Clang memory-order encoding (lowir.md "Memory and Addressing").
-enum class MemoryOrder : uint8_t
-{
-	Relaxed,
-	Consume,
-	Acquire,
-	Release,
-	AcqRel,
-	SeqCst
-};
-
-const unsigned kMemoryOrderCount = 6;
+// The operations (Opcode, UnaryOp, BinaryOp, ComparePredicate, ConvertOp,
+// MemoryOrder), operand kinds (ValueKind) and instruction flags
+// (InstructionFlag) are lowir_model.h's (lowir/types.h).
 
 // ---------------------------------------------------------------------------
 // Values
-
-enum class ValueKind : uint8_t
-{
-	None,
-	Temp,
-	Slot,
-	Symbol,
-	Block,
-	Integer,
-	Float
-};
 
 // A literal's bits. Integers are 128-bit two's complement; a literal read
 // outside an i128 context is wrapped to 64 bits and sign extended. Floats
@@ -229,33 +90,6 @@ struct DebugLocation
 
 // ---------------------------------------------------------------------------
 // Instructions
-
-enum InstructionFlag : uint8_t
-{
-	IF_VOLATILE = 1,     // load/store volatile
-	IF_SIGNATURE = 2,    // call with an explicit `as (...) -> T` signature
-	IF_COPY_ELISION = 4, // call [elision=copy]
-	IF_SELECTOR = 8,     // eh_catch/eh_filter/eh_catch_all with a selector
-	// Instruction facts (lowir.md "Instruction Facts"): true whenever the
-	// instruction runs, or the program's behavior is undefined; dropping one
-	// is always correct. Every reader accepts them and every writer prints
-	// them.
-	//
-	// binary div/udiv `exact`: the dividend is a multiple of the divisor (a
-	// pointer difference, 5.7p6); shr/ushr: no set bit is shifted out.
-	IF_EXACT = 16,
-	// binary add/sub/mul/shl `nowrap`: the exact result is representable in
-	// the type at its signedness (a loop counter stepped by one while below a
-	// bound of its type): computed at 64 bits from canonical operands it is
-	// its own canonical register form.
-	IF_NO_WRAP = 32,
-	// load/store `typed`: a C++ access of an object through a glvalue of the
-	// access's own type ([basic.lval]/10), not a character type: two typed
-	// accesses of incompatible types (a pointer and a non-pointer, integers
-	// of different widths, an integer and a floating type) never read or
-	// write the same bytes. The optimizer uses the pointer/non-pointer case.
-	IF_TYPED = 64
-};
 
 // One instruction. Operand use by opcode:
 //   Const             ops[0] literal

@@ -73,22 +73,6 @@ unsigned value_bits(Type t)
 	}
 }
 
-ComparePredicate negated(ComparePredicate p)
-{
-	static const ComparePredicate n[] = { ComparePredicate::Ne, ComparePredicate::Eq, ComparePredicate::Ge,
-		ComparePredicate::Gt, ComparePredicate::Le, ComparePredicate::Lt, ComparePredicate::Uge, ComparePredicate::Ugt,
-		ComparePredicate::Ule, ComparePredicate::Ult };
-	return n[static_cast<unsigned>(p)];
-}
-
-ComparePredicate swapped(ComparePredicate p)
-{
-	static const ComparePredicate n[] = { ComparePredicate::Eq, ComparePredicate::Ne, ComparePredicate::Gt,
-		ComparePredicate::Ge, ComparePredicate::Lt, ComparePredicate::Le, ComparePredicate::Ugt, ComparePredicate::Uge,
-		ComparePredicate::Ult, ComparePredicate::Ule };
-	return n[static_cast<unsigned>(p)];
-}
-
 // The values x of `bits` width with `x pred k`.
 ValueSet admitted(ComparePredicate pred, uint64_t k, unsigned bits)
 {
@@ -1148,7 +1132,7 @@ bool JumpThreading::edge_fact(BlockId cur, BlockId to, Value& cx, ValueSet& f, u
 		if (bits != 0 && a.is(ValueKind::Temp) && literal_constant(body_, k, kc) && kc.kind == ValueKind::Integer)
 		{
 			cx = a;
-			f = admitted(taken ? p : negated(p), kc.bits.low, bits);
+			f = admitted(taken ? p : inverted(p), kc.bits.low, bits);
 			return true;
 		}
 		return false;

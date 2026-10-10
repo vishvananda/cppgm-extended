@@ -40,7 +40,7 @@ TypeKind move_type(Type type)
 // A host object's result classes (argument_classes).
 uint8_t result_classes(EhModel model, const lowir::Signature* sig)
 {
-	return model == EhModel::Host && sig != nullptr ? sig->result_classes : 0;
+	return model == EhModel::Host && sig != nullptr ? sig->boundary.result_classes : 0;
 }
 
 } // namespace

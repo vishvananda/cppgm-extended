@@ -277,12 +277,13 @@ sanitize_student_makefile_defaults() {
 
 # The root Makefile carries maintainer-only targets whose scripts never ship:
 # the architecture audits (scripts/audit_*.pl), the harness unit tests and the
-# telemetry-off build check (scripts/tests/*.py).  Drop those targets, the
-# audit prerequisite of test-report-nobuild, and their .PHONY names.
+# telemetry-off build check (scripts/tests/*.py).  Drop those targets with
+# their comments, the audit prerequisite of test-report-nobuild, and their
+# .PHONY names.
 sanitize_student_root_makefile() {
   perl -0pi -e '
     s/^test-report-nobuild: audit-compiler-exceptions$/test-report-nobuild:/m;
-    s/^audit-[a-z-]+:\n\t\@perl scripts\/audit_[a-z_]+\.pl[^\n]*\n\n?//mg;
+    s/(?:^#[^\n]*\n)*^audit-[a-z-]+:[^\n]*\n\t\@perl scripts\/audit_[a-z_]+\.pl[^\n]*\n\n?//mg;
     s/^build-telemetry-off:\n(?:\t[^\n]*\n)+\n?//m;
     s/^test-telemetry-off: build build-telemetry-off\n(?:\t[^\n]*\n)+\n?//m;
     s/(?:^#[^\n]*\n)*^HARNESS_TESTS = \\\n(?:\t[^\n]*\n)+\n?^test-harness:\n(?:\t[^\n]*\n)+\n?//m;
@@ -392,14 +393,13 @@ dev_public=(
   dev/gen_builtin_host_config.pl
 )
 
+# The shipped scaffold files: the vocabulary headers of the LowIR, MIR and
+# ABI formats, the token-stream interface and dump, the help texts, the
+# scaffolds' not-implemented status and the batch test runner.  The course
+# solution builds on every one of them as shipped, except not_implemented.h,
+# which only the scaffolds use (scripts/audit_scaffold_usage.pl).
 dev_support_files=(
   dev/src/abi/itanium/abi_mangle.h
-  dev/src/abi/itanium/abi_mangle_expression.h
-  dev/src/abi/itanium/abi_mangle_facts.h
-  dev/src/abi/itanium/abi_mangle_reference.h
-  dev/src/abi/itanium/abi_mangle_stats.h
-  dev/src/abi/itanium/abi_mangle_terminal.h
-  dev/src/abi/itanium/abi_mangle_type_vocabulary.h
   dev/src/ir_symbol_model.h
   dev/src/lowir_model.h
   dev/src/mir_model.h
@@ -806,37 +806,41 @@ check_exported_script_references() {
 }
 check_exported_script_references
 
-# The optional typed-model scaffolding the handouts name is a teaching shape a
-# student may adapt or replace, so nothing in the course solution consumes it
-# and only this check keeps it from rotting: it must compile and run on its
-# own, with only the shipped student headers on the include path.
-check_exported_scaffold_model() {
-  local scratch unit
+# The shipped headers are the vocabulary of their formats.  The course
+# solution compiles them but never exercises every reader, so this check
+# keeps them whole: with only the exported headers on the include path they
+# compile together, and every spelling reads back as its own value.
+check_exported_scaffold_vocabulary() {
+  local scratch
   scratch=$(mktemp -d)
-  unit="$scratch/scaffold_model_smoke.cpp"
-  cat > "$unit" <<'EOF'
-#include "lowir_model.h"
-#include "mir_model.h"
-int main()
-{
-  lowir_model::Program program;
-  mir_model::Program machine;
-  ir_model::ExportedSymbol symbol;
-  program.functions.clear();
-  machine.functions.clear();
-  symbol.object_symbol = "_Z1fv";
-  return ir_model::has_object_symbol(symbol) ? 0 : 1;
-}
-EOF
-  if ! "${CXX:-g++}" -std=gnu++11 -Wall ${CPPGM_STDLIB_FLAGS:-} -I "$dest/dev/src" \
-       -o "$scratch/scaffold_model_smoke" "$unit" ||
-     ! "$scratch/scaffold_model_smoke"; then
-    echo "export: the shipped model scaffolds do not build on their own" >&2
+  if ! "${CXX:-g++}" -std=gnu++11 -Wall -Wextra -Werror ${CPPGM_STDLIB_FLAGS:-} -I "$dest/dev/src" \
+       -o "$scratch/scaffold_vocabulary_round_trip" "$repo_root/scripts/scaffold_vocabulary_round_trip.cpp" ||
+     ! "$scratch/scaffold_vocabulary_round_trip"; then
+    echo "export: the shipped vocabulary headers do not build on their own or do not round-trip" >&2
     rm -rf "$scratch"
     exit 1
   fi
   rm -rf "$scratch"
 }
-check_exported_scaffold_model
+check_exported_scaffold_vocabulary
+
+# The tool scaffolds are the only exported code that includes the
+# scaffold-only not_implemented.h, and the only users of the token stream and
+# help texts in the export: each must compile against the exported headers.
+check_exported_tool_scaffolds() {
+  local pair target failed=0
+  for pair in "${scaffold_pairs[@]}"; do
+    target=${pair%%:*}
+    if ! "${CXX:-g++}" -std=gnu++11 -Wall ${CPPGM_STDLIB_FLAGS:-} -I "$dest/dev/src" \
+         -fsyntax-only "$dest/dev/$target.cpp"; then
+      echo "export: the exported dev/$target.cpp scaffold does not compile" >&2
+      failed=1
+    fi
+  done
+  if [ "$failed" -ne 0 ]; then
+    exit 1
+  fi
+}
+check_exported_tool_scaffolds
 
 echo "==> Exported student repo to $dest"

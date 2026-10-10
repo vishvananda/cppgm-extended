@@ -274,7 +274,7 @@ bool LoopPass::exit_test(uint32_t loop, ExitTest& out, std::vector<Induction>& i
 			if (!v.is(ValueKind::Temp) || (v.index != iv.value && v.index != iv.next) || !invariant(loop, other))
 				continue;
 			const ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
-													: swapped_predicate(static_cast<ComparePredicate>(cmp.sub));
+													: swapped(static_cast<ComparePredicate>(cmp.sub));
 			out.compared = v;
 			out.bound = other;
 			out.exit_value = other;
@@ -2017,7 +2017,7 @@ bool LoopPass::try_unroll_search(uint32_t loop)
 			if (!v.is(ValueKind::Temp) || (v.index != iv.value && v.index != iv.next) || !other.is(ValueKind::Integer))
 				continue;
 			const ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
-													: swapped_predicate(static_cast<ComparePredicate>(cmp.sub));
+													: swapped(static_cast<ComparePredicate>(cmp.sub));
 			const Literal a = normalize_integer(cmp.type, body_.literals[iv.init.index]);
 			const Literal b = normalize_integer(cmp.type, body_.literals[other.index]);
 			__int128 last;
@@ -2888,9 +2888,9 @@ bool LoopPass::mark_no_wrap()
 						!invariant(loop, cmp.ops[1 - side]))
 						continue;
 					ComparePredicate pred = side == 0 ? static_cast<ComparePredicate>(cmp.sub)
-													  : swapped_predicate(static_cast<ComparePredicate>(cmp.sub));
+													  : swapped(static_cast<ComparePredicate>(cmp.sub));
 					if (!continue_on_true)
-						pred = inverted_predicate(pred);
+						pred = inverted(pred);
 					guarded = pred == (is_signed ? ComparePredicate::Lt : ComparePredicate::Ult);
 				}
 			}

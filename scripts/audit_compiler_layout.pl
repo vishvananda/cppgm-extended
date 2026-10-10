@@ -112,6 +112,18 @@ for (my $i = 0; $i < scalar(@contract_lines); ++$i)
 	};
 }
 
+# The shipped scaffold files (dev_support_files in
+# scripts/export_student_repo.sh) are student-facing: their comments may cite
+# the handouts of the assignments that use them, so their comment PA
+# references need no allowlist rows.  Their code is audited as usual.
+my %shipped_scaffold;
+if (read_text("$root/scripts/export_student_repo.sh") =~ /^dev_support_files=\(\n(.*?)^\)/ms)
+{
+	my $list = $1;
+	$shipped_scaffold{$_} = 1 for $list =~ /^\s*(dev\/\S+)\s*$/mg;
+}
+die "scripts/export_student_repo.sh lists no dev_support_files\n" if !%shipped_scaffold;
+
 my @files;
 find({
 	wanted => sub {
@@ -133,6 +145,7 @@ for my $path (glob "$root/dev/*")
 
 my @finding;
 my @contract_finding;
+my $scaffold_citations = 0;
 my %namespace_name;
 my @code_by_file;
 
@@ -173,6 +186,11 @@ sub find_contract_references
 		{
 			my $token = $1;
 			my $token_offset = $-[1];
+			if ($is_comment && $shipped_scaffold{$path})
+			{
+				++$scaffold_citations;
+				next;
+			}
 			my $kind = $is_comment ? 'comment' :
 				($token =~ /\Apa/ ? 'diagnostic' : 'error-prose');
 			add_contract_finding($kind, $token, $path,
@@ -288,4 +306,5 @@ print "Compiler layout audit passed: " . scalar(@files) . " files; " .
 	"$count{identifier} legacy identifier uses remain; " .
 	"$contract_count{diagnostic} diagnostic, " .
 	"$contract_count{'error-prose'} error-prose, and " .
-	"$contract_count{comment} comment PA references are contract-approved.\n";
+	"$contract_count{comment} comment PA references are contract-approved; " .
+	"$scaffold_citations handout citations in shipped scaffold comments.\n";

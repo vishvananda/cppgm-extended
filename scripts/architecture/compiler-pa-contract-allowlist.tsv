@@ -12,12 +12,6 @@ comment	dev/src/abi/facts/abi_fact_reader.h	PA9	handout or fixture cross-referen
 comment	dev/src/abi/itanium/abi_encoder.h	PA9	handout or fixture cross-reference in a comment
 comment	dev/src/abi/itanium/abi_graph.cpp	PA9	handout or fixture cross-reference in a comment
 comment	dev/src/abi/itanium/abi_graph.h	PA9	handout or fixture cross-reference in a comment
-comment	dev/src/abi/itanium/abi_mangle.h	PA9	shipped scaffold header: assignment cross-reference in a comment
-comment	dev/src/abi/itanium/abi_mangle_expression.h	PA9	shipped scaffold header: assignment cross-reference in a comment
-comment	dev/src/abi/itanium/abi_mangle_reference.h	PA9	shipped scaffold header: assignment cross-reference in a comment
-comment	dev/src/abi/itanium/abi_mangle_terminal.h	PA9	shipped scaffold header: assignment cross-reference in a comment
-comment	dev/src/abi/itanium/abi_terminal_vocabulary.h	PA9	handout or fixture cross-reference in a comment
-comment	dev/src/abi/itanium/abi_type_vocabulary.h	PA9	handout or fixture cross-reference in a comment
 comment	dev/src/driver/host_environment.h	PA26	handout or fixture cross-reference in a comment
 comment	dev/src/driver/host_environment.h	PA29	handout or fixture cross-reference in a comment
 comment	dev/src/driver/toolchain.cpp	PA2	handout or fixture cross-reference in a comment
@@ -62,7 +56,6 @@ comment	dev/src/lower/symbol_lowering.cpp	pa8	handout or fixture cross-reference
 comment	dev/src/lowir/exercises.h	PA8	handout or fixture cross-reference in a comment
 comment	dev/src/lowir/instruction.h	PA17	handout or fixture cross-reference in a comment
 comment	dev/src/lowir/instruction.h	PA8	handout or fixture cross-reference in a comment
-comment	dev/src/lowir_model.h	PA8	shipped scaffold header: assignment cross-reference in a comment
 comment	dev/src/native/object/host_unwind.h	pa26	handout or fixture cross-reference in a comment
 comment	dev/src/native/object/object_compiler.cpp	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/native/object/object_compiler.h	PA25	handout or fixture cross-reference in a comment
@@ -92,8 +85,6 @@ comment	dev/src/preprocess/preprocessor.h	PA26	handout or fixture cross-referenc
 comment	dev/src/preprocess/preprocessor.h	PA29	handout or fixture cross-reference in a comment
 comment	dev/src/preprocess/preprocessor.h	PA4	handout or fixture cross-reference in a comment
 comment	dev/src/preprocess/preprocessor_directives.cpp	PA3	handout or fixture cross-reference in a comment
-comment	dev/src/preprocess/tokens/IPPTokenStream.h	PA1	shipped scaffold header: assignment cross-reference in a comment
-comment	dev/src/preprocess/tokens/IPPTokenStream.h	PA4	shipped scaffold header: assignment cross-reference in a comment
 comment	dev/src/preprocess/tokens/pp_token_cursor.h	PA3	handout or fixture cross-reference in a comment
 comment	dev/src/preprocess/tokens/pp_token_cursor.h	PA4	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer.cpp	PA6	handout or fixture cross-reference in a comment

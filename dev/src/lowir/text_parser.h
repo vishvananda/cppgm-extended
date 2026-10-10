@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "lowir/builder.h"
-#include "lowir/metadata_spellings.h"
+#include "ir_symbol_model.h"
 #include "lowir/program.h"
 #include "lowir/text_lexer.h"
 #include "lowir/validator.h"
@@ -17,84 +17,21 @@
 namespace lowir {
 namespace text {
 
+// The class of a word the lexer interned; WordInfo::value is the word's
+// enumerator in its class's lowir_model.h (or ir_symbol_model.h) enum.
 enum class WordClass : uint8_t
 {
 	None,
-	Keyword,
+	Keyword, // lowir_model::Keyword
 	Type,
 	Unary,
 	Binary,
 	Compare,
 	Convert,
-	NamedLiteral
-};
-
-enum class Keyword : uint8_t
-{
-	Declare,
-	Global,
-	Function,
-	Alias,
-	Object,
-	Readonly,
-	ThreadLocal,
-	Slot,
-	Block,
-	Zero,
-	As,
-	Volatile,
-	Typed,
-	NoWrap,
-	Exact,
-	// Instruction heads.
-	Const,
-	Copy,
-	Phi,
-	Addr,
-	Load,
-	AtomicLoad,
-	Index,
-	Unary,
-	Binary,
-	Cmp,
-	Select,
-	Convert,
-	AtomicAddFetch,
-	AtomicExchange,
-	AtomicCompareExchange,
-	VaArg,
-	StackAlloc,
-	Call,
-	Exception,
-	ExceptionSelector,
-	Store,
-	AtomicStore,
-	AtomicThreadFence,
-	AtomicSignalFence,
-	VaStart,
-	CopyObj,
-	ZeroInit,
-	EhTry,
-	EhCleanup,
-	EhCatch,
-	EhFilter,
-	EhCatchAll,
-	EhEnd,
-	Throw,
-	Resume,
-	Jump,
-	Branch,
-	Switch,
-	Return,
-	Unreachable
-};
-
-enum class NamedLiteral : uint8_t
-{
-	Nullptr,
-	Infinity,
-	QuietNaN,
-	SignalingNaN
+	NamedLiteral,
+	Opcode, // an instruction head
+	Fact,   // an InstructionFlag word: volatile, typed, nowrap, exact
+	Storage // a GlobalStorageMode word after a global's name
 };
 
 // A NamedLiteral word's value holds the literal in its low bits and its
@@ -162,8 +99,11 @@ private:
 	bool at_keyword(Keyword keyword) const;
 	bool accept(TokenKind kind);
 	bool accept_keyword(Keyword keyword);
+	// Accepts the word `value` of `word_class` (an Opcode, an
+	// InstructionFlag, ...).
+	bool accept_word(WordClass word_class, unsigned value);
 	void expect(TokenKind kind, const char* spelling);
-	void expect_keyword(Keyword keyword, const char* spelling);
+	void expect_keyword(Keyword keyword);
 	NameId expect_name(TokenKind kind, const char* what);
 	std::string spelling(const Token& token) const;
 	[[noreturn]] void fail(const std::string& message) const;
@@ -219,11 +159,11 @@ private:
 	MemoryOrder parse_order();
 	void parse_instruction(FunctionBuilder& builder);
 	void parse_rvalue(FunctionBuilder& builder, TempId result);
-	bool parse_value_instruction(FunctionBuilder& builder, Keyword keyword, Instruction& inst, Type& result);
-	bool parse_memory_instruction(FunctionBuilder& builder, Keyword keyword, Instruction& inst, Type& result);
+	bool parse_value_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst, Type& result);
+	bool parse_memory_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst, Type& result);
 	void parse_effect(FunctionBuilder& builder);
-	bool parse_control_instruction(FunctionBuilder& builder, Keyword keyword, Instruction& inst);
-	void parse_eh_instruction(FunctionBuilder& builder, Keyword keyword, Instruction& inst);
+	bool parse_control_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst);
+	void parse_eh_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst);
 	void parse_call(FunctionBuilder& builder, Instruction& inst);
 	void parse_phi(FunctionBuilder& builder, Instruction& inst);
 	void parse_switch(FunctionBuilder& builder, Instruction& inst);
@@ -234,6 +174,10 @@ private:
 	uint32_t source_;
 	std::vector<std::string> sources_;
 	std::vector<WordInfo> words_;
+	// MetadataKey + 1 of an interned word that spells one (0: none); a key
+	// may also be another class's word (`return`, `alias`, `object`).
+	std::vector<uint8_t> metadata_keys_;
+	bool find_key(const Token& token, MetadataKey* key) const;
 	std::string scratch_;
 	// First reference of each symbol, for undefined-symbol diagnostics.
 	std::vector<Position> symbol_uses_;

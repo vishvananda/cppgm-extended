@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include "lowir/metadata_spellings.h"
+#include "ir_symbol_model.h"
 
 namespace lowir {
 
@@ -439,14 +439,15 @@ bool Validator::check_links()
 	{
 		const BoundaryMetadata& boundary = signature.boundary;
 		if (static_cast<uint64_t>(signature.first_parameter) + signature.parameter_count > program_.parameters.size() ||
-			boundary.arity >= kAritySpellings.count || boundary.effects >= kEffectsSpellings.count ||
-			boundary.unwind >= kUnwindSpellings.count || boundary.returns >= kReturnSpellings.count ||
-			boundary.query >= kQuerySpellings.count)
+			boundary.arity >= ir_model::kCallArityModeCount || boundary.effects >= ir_model::kCallEffectsModeCount ||
+			boundary.unwind >= ir_model::kCallUnwindModeCount || boundary.returns >= ir_model::kCallReturnModeCount ||
+			boundary.query >= ir_model::kCallQueryModeCount)
 			return fail("invalid signature");
 		const Parameter* parameters = program_.parameters_of(signature);
 		for (uint32_t i = 0; i < signature.parameter_count; ++i)
 		{
-			if (parameters[i].pass >= kPassSpellings.count || parameters[i].alias >= kAliasSpellings.count)
+			if (parameters[i].pass >= ir_model::kParamPassingModeCount ||
+				parameters[i].alias >= ir_model::kParamAliasModeCount)
 				return fail("invalid parameter metadata", parameters[i].name);
 		}
 	}
@@ -455,8 +456,9 @@ bool Validator::check_links()
 		const SymbolMetadata& metadata = symbol.metadata;
 		if (symbol.name == 0 || symbol.name >= program_.names.size())
 			return fail("invalid symbol name");
-		if (metadata.role >= kRoleSpellings.count || metadata.linkage >= kLinkageSpellings.count ||
-			metadata.binding >= kBindingSpellings.count || metadata.storage >= kStorageSpellings.count ||
+		if (metadata.role >= ir_model::kSymbolRoleCount || metadata.linkage >= ir_model::kLanguageLinkageModeCount ||
+			metadata.binding >= ir_model::kSymbolBindingModeCount ||
+			metadata.storage >= ir_model::kGlobalStorageModeCount ||
 			(metadata.flags & ~SF_REPLACEABLE) >= 1u << (static_cast<unsigned>(MetadataKey::NoInline) -
 													  static_cast<unsigned>(MetadataKey::KeepAlias) + 1))
 			return fail("invalid symbol metadata", symbol.name);
@@ -897,13 +899,7 @@ std::string describe(const Program& program, const Diagnostic& diagnostic)
 
 void apply_legacy_roles(Program& program)
 {
-	struct Legacy
-	{
-		uint8_t role;
-		const char* name;
-	};
-	const Legacy legacy[] = { { ir_model::SR_ENTRY, "main" }, { ir_model::SR_INIT, "__cppgm_init" },
-		{ ir_model::SR_FINI, "__cppgm_fini" } };
+	const ir_model::SymbolRole legacy[] = { ir_model::SR_ENTRY, ir_model::SR_INIT, ir_model::SR_FINI };
 	uint32_t taken_roles = 0;
 	for (const Symbol& symbol : program.symbols)
 	{
@@ -914,15 +910,16 @@ void apply_legacy_roles(Program& program)
 	// legacy names are ordinary names there.
 	if ((taken_roles & (1u << ir_model::SR_ENTRY)) != 0)
 		return;
-	for (const Legacy& entry : legacy)
+	for (const ir_model::SymbolRole role : legacy)
 	{
-		const bool taken = (taken_roles & (1u << entry.role)) != 0;
-		const SymbolId id = program.find_symbol(program.names.find(entry.name, std::strlen(entry.name)));
+		const char* name = ir_model::legacy_role_symbol(role);
+		const bool taken = (taken_roles & (1u << role)) != 0;
+		const SymbolId id = program.find_symbol(program.names.find(name, std::strlen(name)));
 		if (taken || id == kNoId)
 			continue;
 		Symbol& symbol = program.symbols[id];
 		if (symbol.kind == SymbolKind::FunctionDefinition && symbol.metadata.role == ir_model::SR_NONE)
-			symbol.metadata.role = entry.role;
+			symbol.metadata.role = role;
 	}
 }
 

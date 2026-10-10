@@ -2,11 +2,6 @@
 
 // Work counters for ABI mangling (spec section 9). They observe work the
 // reader and encoder already do; nothing is computed for the report alone.
-//
-// Replaces the course's scaffold abi/itanium/abi_mangle_stats.h, which ships to
-// students unchanged. The ABI scaffold headers define some of these names
-// differently, so the implementation includes none of them (the
-// scaffold-header check enforces this).
 
 #include <cstddef>
 

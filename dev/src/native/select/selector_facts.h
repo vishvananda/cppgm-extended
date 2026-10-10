@@ -205,16 +205,6 @@ inline Cond int_cond(lowir::ComparePredicate pred)
 	return conds[static_cast<unsigned>(pred)];
 }
 
-// The predicate that holds with the operands exchanged.
-inline lowir::ComparePredicate swapped_predicate(lowir::ComparePredicate pred)
-{
-	using lowir::ComparePredicate;
-	static const ComparePredicate swaps[] = { ComparePredicate::Eq, ComparePredicate::Ne, ComparePredicate::Gt,
-		ComparePredicate::Ge, ComparePredicate::Lt, ComparePredicate::Le, ComparePredicate::Ugt, ComparePredicate::Uge,
-		ComparePredicate::Ult, ComparePredicate::Ule };
-	return swaps[static_cast<unsigned>(pred)];
-}
-
 // A pending parallel transfer (operands.cpp): dst <- src, or dst <- the
 // address of the memory operand src when `address` is set. A memory source
 // holding a narrower value (the home of a value an elided extension stands

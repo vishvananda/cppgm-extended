@@ -90,8 +90,6 @@ struct CallLayoutCache
 	}
 };
 
-const Reg kArgGprs[6] = { RDI, RSI, RDX, RCX, R8, R9 };
-
 // The position of an integer argument register in kArgGprs.
 inline unsigned arg_gpr_slot(Reg reg)
 {

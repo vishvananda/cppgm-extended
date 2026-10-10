@@ -17,178 +17,10 @@
 // handler-stack runtime ABI and the host's Itanium tables.
 namespace native {
 
-// x86 condition codes (the low nibble of Jcc/SETcc).
-enum Cond : uint8_t
-{
-	CC_O = 0,
-	CC_NO,
-	CC_B,
-	CC_AE,
-	CC_E,
-	CC_NE,
-	CC_BE,
-	CC_A,
-	CC_S,
-	CC_NS,
-	CC_P,
-	CC_NP,
-	CC_L,
-	CC_GE,
-	CC_LE,
-	CC_G
-};
-
-inline Cond invert(Cond cond)
-{
-	return static_cast<Cond>(cond ^ 1);
-}
-
-enum class Op : uint8_t
-{
-	// Integer moves and memory.
-	Mov,   // mov dst, reg|imm|@sym
-	Load,  // load.T dst, mem (extending per T)
-	Store, // store.T mem, reg|imm
-	Lea,   // lea dst, mem
-	// Two-address integer ALU at 64 bits (at T's width with a memory
-	// operand): dst op= src.
-	Add,
-	Sub,
-	And,
-	Or,
-	Xor,
-	Imul,
-	Neg,
-	Not,
-	Bswap,
-	Bsf,
-	Bsr, // bsf/bsr.T dst, src: the lowest/highest set bit's index (dst undefined for 0)
-	Shl,
-	Shr,
-	Sar,   // dst, imm or rcx (u32: the 32-bit form, count below 32)
-	Cmp,   // cmp.T a, b
-	Test,  // test.T a, b (flags of a & b; O1+)
-	Bt,    // bt.T a, b (CF: bit b of a; O1+)
-	Setcc, // set<cc> dst
-	Cmov,  // cmov<cc> dst, src: dst = src when cc holds (64-bit registers; O2+ selects)
-	Movzx, // movzx dst, dst (low byte)
-	Sext,  // sext.T dst [, src]: sign-extend the low T bits in place (or src's)
-	Zext,  // zext.T dst [, src]: zero-extend the low T bits in place (or src's)
-	Cqo,
-	Idiv,
-	Div, // idiv/div src
-	Jcc,
-	Jmp,
-	Call,      // call @sym | call *reg | call *mem
-	TailJump,  // tail_jump @sym | *reg | *mem: the epilogue, then a jump (O2+ sibling call; aux as Call's)
-	CopyBytes, // copy_bytes NxA, dst, src (address operands); copy_bytes_dynamic
-			   // (MF_COPY_DYNAMIC): rdx bytes from rsi to rdi, a call's registers
-	ZeroBytes, // zero_bytes NxA, dst
-	Ret,       // ret [value]
-	// Scalar floating point (f32/f64 in XMM; f80 forms take memory).
-	FMov, // fmov.T dst, src
-	FAdd,
-	FSub,
-	FMul,
-	FDiv,    // f<op>.T dst, a, b
-	FNeg,    // fneg.T dst, a
-	FCmp,    // fcmp.T a, b (flags; unordered sets PF)
-	FSetcc,  // f<pred>.T dst, a, b (materialized Boolean)
-	Convert, // <conv>.S.D dst, src
-	FRet,    // fret.f80 src
-	FStp,    // fstp.f80 [mem] (store a call's x87 result, or discard it)
-	// Wide integers in memory.
-	Wide,          // <op>.i128 dst, a, b (sub = WideOp)
-	WideSetcc,     // set.<pred>.i128 dst, a, b
-	WideCmpBranch, // cmp.i128 a, b, ^true, ^false (sub = predicate)
-	// Atomics.
-	LockXadd,
-	Xchg,
-	LockCmpxchg,
-	LockCmpxchg16b,
-	Mfence,
-	// Variadic support, stack allocation and runtime operations.
-	VaStart,    // va_start mem (list)
-	VaArg,      // va_arg.T dst, list-mem
-	StackAlloc, // stack_alloc dst, size
-	EhPush,
-	EhPop,
-	Throw,
-	Resume,
-	LoadException,
-	EhMark,       // eh_mark: a landing's cleanup clause keeps its own record
-	EhCatch,      // eh_catch [@type-info], selector: one catch clause
-	LoadSelector, // load_selector.T dst: the landing's matched clause
-	Landing,      // landing exc-slot, sel-slot[, sel-slot]: a host landing pad stores rax, rdx
-	EhSelect,     // eh_select sel-slot, raw-slot: a host landing's selector translation (aux: landing)
-	CatchAll,     // catch_all sel-slot, n: a host mid-landing catch-all clause (aux: n)
-	TlsAddr,
-	Exit,
-	Trap,
-	// jump_table idx, [^a, ^b, ...] (O1+ switch): a jump to the block the
-	// table's entry `idx` names; idx is an unsigned register below the
-	// entry count (aux2), which a preceding compare checked. The entries
-	// are Function::jump_targets[aux .. aux + aux2).
-	JumpTable,
-	// Widening multiplies (constant division): rdx:rax = rax * src,
-	// unsigned (`mul src`) or signed (`imul src`).
-	MulWide,
-	ImulWide,
-	// A shrink-wrapped function's prologue (Function::shrink_wrapped): the
-	// frame is set up here instead of at the entry.
-	Prologue,
-	// A removed instruction (merged into another): no code, not dumped.
-	Nop
-};
-
-// Sub-operations of Op::Convert.
-enum class ConvKind : uint8_t
-{
-	SIToFP,
-	UIToFP,
-	FPToSI,
-	FPToUI,
-	FPExt,
-	FPTrunc
-};
-
-// Div, UDiv, Mod and UMod call the runtime's division routines (rdi:rsi
-// by rdx:rcx, the result in rax:rdx).
-enum class WideOp : uint8_t
-{
-	Move,
-	Add,
-	Sub,
-	Mul,
-	And,
-	Or,
-	Xor,
-	Shl,
-	Shr,
-	Sar,
-	Neg,
-	Not,
-	SExt,
-	ZExt,
-	Div,
-	UDiv,
-	Mod,
-	UMod
-};
-
-enum InstFlag : uint16_t
-{
-	MF_VARIADIC = 1,
-	MF_UNWIND_NO = 2,
-	MF_NORETURN = 4,
-	MF_VOLATILE = 8,
-	MF_COPY_DYNAMIC = 16, // CopyBytes: the count is dynamic (rdi, rsi, rdx)
-	// Call: a strlen whose string's first 16 bytes are probed inline (when
-	// they lie in one page); the call runs only if none is NUL.
-	MF_STRLEN_PREFIX = 32,
-	// Ret in a shrink-wrapped function's frameless entry region: no epilogue.
-	MF_FRAMELESS = 64
-};
+// The condition codes (Cond), operations (Op, ConvKind, WideOp), instruction
+// flags (InstFlag) and frame binding kinds (BindingKind) are the shipped
+// vocabulary headers native/mir/registers.h and mir_model.h, which operand.h
+// brings into this namespace.
 
 struct Inst
 {
@@ -222,13 +54,6 @@ struct AbiParam
 	uint32_t part_count = 0;
 };
 
-enum class BindingKind : uint8_t
-{
-	ParamSlot,
-	Slot,
-	Temp
-};
-
 // A named frame location shown in the dump: `param-slot %x`, `slot $x`,
 // `temp %x`. Synthetic names (the register save area) use `label`.
 struct FrameBinding
@@ -249,8 +74,6 @@ struct Block
 	uint32_t count;
 	bool landing; // a host landing pad (named by its landing block)
 };
-
-const Reg kSt0 = 0xfe;
 
 struct Function
 {

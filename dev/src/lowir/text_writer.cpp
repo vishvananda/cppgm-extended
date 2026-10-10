@@ -4,19 +4,44 @@
 
 #include "lowir/literals.h"
 #include "lowir/local_names.h"
-#include "lowir/metadata_spellings.h"
+#include "ir_symbol_model.h"
 #include "support/internal_error.h"
 
 namespace lowir {
 
 namespace {
 
-const char* const kUnaryNames[] = { "neg", "not", "bitnot", "bswap", "ctz", "clz" };
-const char* const kBinaryNames[] = { "add", "sub", "mul", "div", "mod", "udiv", "umod", "and", "or", "xor", "shl",
-	"shr", "ushr" };
-const char* const kCompareNames[] = { "eq", "ne", "lt", "le", "gt", "ge", "ult", "ule", "ugt", "uge" };
-const char* const kConvertNames[] = { "sext", "zext", "trunc", "sitofp", "uitofp", "fptosi", "fptoui", "fpext",
-	"fptrunc" };
+// A vocabulary spelling with its length, for appending without strlen.
+struct Spelled
+{
+	const char* text;
+	uint32_t length;
+};
+
+// The spellings of the N enumerators of E (lowir_model.h), measured once,
+// before main: the tables below hold only constant data until then.
+template<typename E, unsigned N>
+struct SpelledTable
+{
+	Spelled entries[N];
+
+	SpelledTable()
+	{
+		for (unsigned i = 0; i < N; ++i)
+		{
+			entries[i].text = lowir_model::spelling(static_cast<E>(i));
+			entries[i].length = static_cast<uint32_t>(std::strlen(entries[i].text));
+		}
+	}
+
+	const Spelled& operator[](unsigned index) const { return entries[index]; }
+};
+
+const SpelledTable<Opcode, kOpcodeCount> kHeads;
+const SpelledTable<UnaryOp, kUnaryOpCount> kUnaryWords;
+const SpelledTable<BinaryOp, kBinaryOpCount> kBinaryWords;
+const SpelledTable<ComparePredicate, kComparePredicateCount> kCompareWords;
+const SpelledTable<ConvertOp, kConvertOpCount> kConvertWords;
 
 // The size whose eightbytes a value's classes name (append_object_classes).
 uint64_t classes_bytes(Type type)
@@ -46,9 +71,21 @@ public:
 
 private:
 	void text(const char* s) { out_ += s; }
+	// A word of the vocabulary and the space after it.
+	void word(const char* s)
+	{
+		out_ += s;
+		out_.push_back(' ');
+	}
+	void spelled(const Spelled& w) { out_.append(w.text, w.length); }
+	void head(Opcode op)
+	{
+		spelled(kHeads[static_cast<unsigned>(op)]);
+		out_.push_back(' ');
+	}
 	void number(uint64_t value);
 	void signed_number(int64_t value);
-	void name(char sigil, NameId id, uint32_t fallback);
+	void name(char prefix, NameId id, uint32_t fallback);
 	void symbol(SymbolId id) { name('@', program_.symbols[id].name, id); }
 	void type(Type t);
 	void value(Value v);
@@ -56,6 +93,7 @@ private:
 	void operand(Value v, TypeKind context);
 	void metadata(const SymbolMetadata* symbol, const BoundaryMetadata* boundary, const Signature* signature = nullptr);
 	void classes_item(bool& open, MetadataKey key, uint8_t classes, Type type);
+	void key(bool& open, MetadataKey key);
 	void item(bool& open, MetadataKey key, const char* value);
 	// A definition's parameters are the body's (`definition`), spelled as
 	// its uses are.
@@ -122,9 +160,9 @@ void Writer::signed_number(int64_t value)
 		number(static_cast<uint64_t>(value));
 }
 
-void Writer::name(char sigil, NameId id, uint32_t fallback)
+void Writer::name(char prefix, NameId id, uint32_t fallback)
 {
-	out_.push_back(sigil);
+	out_.push_back(prefix);
 	if (id != 0)
 		out_.append(program_.names.spelling(id), program_.names.length(id));
 	else
@@ -135,10 +173,11 @@ void Writer::type(Type t)
 {
 	if (!t.is_object())
 	{
-		text(scalar_type_spelling(t.kind()));
+		text(spelling(t.kind()));
 		return;
 	}
-	text("obj<");
+	text(spelling(TypeKind::Obj));
+	out_.push_back('<');
 	number(t.bytes);
 	out_.push_back('x');
 	number(static_cast<uint64_t>(1) << t.align_log2);
@@ -189,12 +228,17 @@ void Writer::operand(Value v, TypeKind context)
 		value(v);
 }
 
-void Writer::item(bool& open, MetadataKey key, const char* value)
+void Writer::key(bool& open, MetadataKey key)
 {
 	text(open ? ", " : " [");
 	open = true;
-	text(metadata_key_spelling(key));
+	text(spelling(key));
 	out_.push_back('=');
+}
+
+void Writer::item(bool& open, MetadataKey key, const char* value)
+{
+	this->key(open, key);
 	text(value);
 }
 
@@ -211,32 +255,32 @@ void Writer::metadata(const SymbolMetadata* symbol, const BoundaryMetadata* boun
 	if (boundary != nullptr)
 	{
 		if (boundary->arity != 0)
-			item(open, MetadataKey::Arity, kAritySpellings[boundary->arity]);
+			item(open, MetadataKey::Arity, spelling(boundary->arity));
 		if (boundary->effects != 0)
-			item(open, MetadataKey::Effects, kEffectsSpellings[boundary->effects]);
+			item(open, MetadataKey::Effects, spelling(boundary->effects));
 		if (boundary->unwind != 0)
-			item(open, MetadataKey::Unwind, kUnwindSpellings[boundary->unwind]);
+			item(open, MetadataKey::Unwind, spelling(boundary->unwind));
 		if (boundary->returns != 0)
-			item(open, MetadataKey::Return, kReturnSpellings[boundary->returns]);
+			item(open, MetadataKey::Return, spelling(boundary->returns));
 		if (boundary->query != 0)
-			item(open, MetadataKey::Query, kQuerySpellings[boundary->query]);
-		if (signature != nullptr && signature->result_classes != 0)
-			classes_item(open, MetadataKey::ResultClasses, signature->result_classes, signature->result);
+			item(open, MetadataKey::Query, spelling(boundary->query));
+		if (signature != nullptr && signature->boundary.result_classes != 0)
+			classes_item(open, MetadataKey::ResultClasses, signature->boundary.result_classes, signature->result);
 	}
 	if (symbol != nullptr)
 	{
 		if (symbol->storage != 0)
-			item(open, MetadataKey::Storage, kStorageSpellings[symbol->storage]);
+			item(open, MetadataKey::Storage, spelling(symbol->storage));
 		if (symbol->section != 0)
 			item(open, MetadataKey::Section, program_.spelling(symbol->section));
 		if (symbol->role != 0)
-			item(open, MetadataKey::Role, kRoleSpellings[symbol->role]);
+			item(open, MetadataKey::Role, spelling(symbol->role));
 		if (symbol->linkage != 0)
-			item(open, MetadataKey::Linkage, kLinkageSpellings[symbol->linkage]);
+			item(open, MetadataKey::Linkage, spelling(symbol->linkage));
 		if (symbol->binding != 0)
-			item(open, MetadataKey::Binding, kBindingSpellings[symbol->binding]);
+			item(open, MetadataKey::Binding, spelling(symbol->binding));
 		if ((symbol->flags & SF_REPLACEABLE) != 0)
-			item(open, MetadataKey::Replaceable, "yes");
+			item(open, MetadataKey::Replaceable, metadata_yes_spelling());
 		if (symbol->object != 0)
 			item(open, MetadataKey::Object, program_.spelling(symbol->object));
 		if (symbol->tls_for != kNoId)
@@ -248,7 +292,7 @@ void Writer::metadata(const SymbolMetadata* symbol, const BoundaryMetadata* boun
 		for (unsigned flag = 0; flag < 6u; ++flag)
 		{
 			if ((symbol->flags & (1u << flag)) != 0)
-				item(open, static_cast<MetadataKey>(static_cast<unsigned>(MetadataKey::KeepAlias) + flag), "yes");
+				item(open, symbol_flag_key(static_cast<SymbolFlag>(1u << flag)), metadata_yes_spelling());
 		}
 	}
 	if (open)
@@ -272,28 +316,18 @@ void Writer::parameters(const Signature& signature, bool definition)
 		type(parameter[i].type);
 		bool open = false;
 		if (parameter[i].pass != 0)
-		{
-			text(" [pass=");
-			text(kPassSpellings[parameter[i].pass]);
-			open = true;
-		}
+			item(open, MetadataKey::Pass, spelling(parameter[i].pass));
 		if (parameter[i].alias != 0)
-		{
-			text(open ? ", alias=" : " [alias=");
-			text(kAliasSpellings[parameter[i].alias]);
-			open = true;
-		}
+			item(open, MetadataKey::Alias, spelling(parameter[i].alias));
 		if (parameter[i].object_bytes != 0)
 		{
-			text(open ? ", object_bytes=" : " [object_bytes=");
+			key(open, MetadataKey::ObjectBytes);
 			number(parameter[i].object_bytes);
-			open = true;
 		}
 		if (parameter[i].classes != 0)
 		{
-			text(open ? ", classes=" : " [classes=");
+			key(open, MetadataKey::Classes);
 			append_object_classes(out_, parameter[i].classes, classes_bytes(parameter[i].type));
-			open = true;
 		}
 		if (open)
 			out_.push_back(']');
@@ -314,7 +348,7 @@ void Writer::constant(const Constant& c, TypeKind context)
 
 void Writer::address(SymbolId target, int64_t addend)
 {
-	text("addr ");
+	head(Opcode::Addr);
 	symbol(target);
 	if (addend > 0)
 	{
@@ -394,7 +428,8 @@ void Writer::write()
 	}
 	for (const ObjectAlias& alias : program_.aliases)
 	{
-		text("alias object ");
+		word(spelling(Keyword::Alias));
+		word(spelling(Keyword::Object));
 		text(program_.spelling(alias.object));
 		text(" = ");
 		symbol(alias.target);
@@ -443,7 +478,8 @@ void Writer::global_definition(const Symbol& symbol)
 	switch (global.init)
 	{
 	case GlobalInit::Zero:
-		text("zero\n");
+		text(spelling(Keyword::Zero));
+		out_.push_back('\n');
 		return;
 	case GlobalInit::Constant:
 		constant(global.constant, global.type.kind());
@@ -463,7 +499,7 @@ void Writer::global_definition(const Symbol& symbol)
 		text("  ");
 		if (data.kind == DataItemKind::Zero)
 		{
-			text("zero ");
+			word(spelling(Keyword::Zero));
 			signed_number(data.amount);
 		}
 		else
@@ -574,31 +610,31 @@ bool Writer::write_value_instruction(const Instruction& inst)
 	switch (inst.op)
 	{
 	case Opcode::Const:
-		text("const ");
+		head(inst.op);
 		break;
 	case Opcode::Copy:
-		text("copy ");
+		head(inst.op);
 		break;
 	case Opcode::VaArg:
-		text("va_arg ");
+		head(inst.op);
 		break;
 	case Opcode::Exception:
-		text("exception ");
+		head(inst.op);
 		type(inst.type);
 		return true;
 	case Opcode::ExceptionSelector:
-		text("exception_selector ");
+		head(inst.op);
 		type(inst.type);
 		return true;
 	case Opcode::StackAlloc:
-		text("stack_alloc ");
+		head(inst.op);
 		value(inst.ops[0]);
 		return true;
 	case Opcode::Call:
 		write_call(inst);
 		return true;
 	case Opcode::Phi:
-		text("phi ");
+		head(inst.op);
 		type(inst.type);
 		text(" [");
 		for (uint32_t i = 0; i < inst.extra_count; i += 2)
@@ -612,7 +648,7 @@ bool Writer::write_value_instruction(const Instruction& inst)
 		out_.push_back(']');
 		return true;
 	case Opcode::Select:
-		text("select ");
+		head(inst.op);
 		type(inst.type);
 		out_.push_back(' ');
 		operand(inst.ops[0], TypeKind::I64);
@@ -624,14 +660,18 @@ bool Writer::write_value_instruction(const Instruction& inst)
 	case Opcode::Unary:
 	case Opcode::Binary:
 	case Opcode::Compare:
-		text(inst.op == Opcode::Unary ? "unary " : inst.op == Opcode::Binary ? "binary " : "cmp ");
-		text(inst.op == Opcode::Unary       ? kUnaryNames[inst.sub]
-				: inst.op == Opcode::Binary ? kBinaryNames[inst.sub]
-											: kCompareNames[inst.sub]);
-		if (inst.op == Opcode::Binary && (inst.flags & IF_NO_WRAP) != 0)
-			text(" nowrap");
-		if (inst.op == Opcode::Binary && (inst.flags & IF_EXACT) != 0)
-			text(" exact");
+		head(inst.op);
+		spelled(inst.op == Opcode::Unary    ? kUnaryWords[inst.sub]
+				: inst.op == Opcode::Binary ? kBinaryWords[inst.sub]
+											: kCompareWords[inst.sub]);
+		for (const InstructionFlag fact : { IF_NO_WRAP, IF_EXACT })
+		{
+			if (inst.op == Opcode::Binary && (inst.flags & fact) != 0)
+			{
+				out_.push_back(' ');
+				text(spelling(fact));
+			}
+		}
 		out_.push_back(' ');
 		type(inst.type);
 		out_.push_back(' ');
@@ -643,8 +683,8 @@ bool Writer::write_value_instruction(const Instruction& inst)
 		}
 		return true;
 	case Opcode::Convert:
-		text("convert ");
-		text(kConvertNames[inst.sub]);
+		head(inst.op);
+		spelled(kConvertWords[inst.sub]);
 		out_.push_back(' ');
 		type(inst.type);
 		out_.push_back(' ');
@@ -674,16 +714,17 @@ bool Writer::write_memory_instruction(const Instruction& inst)
 	switch (inst.op)
 	{
 	case Opcode::Addr:
-		text("addr ");
+		head(inst.op);
 		value(inst.ops[0]);
 		return true;
 	case Opcode::Load:
 	case Opcode::Store:
-		text(inst.op == Opcode::Load ? "load " : "store ");
-		if ((inst.flags & IF_VOLATILE) != 0)
-			text("volatile ");
-		if ((inst.flags & IF_TYPED) != 0)
-			text("typed ");
+		head(inst.op);
+		for (const InstructionFlag fact : { IF_VOLATILE, IF_TYPED })
+		{
+			if ((inst.flags & fact) != 0)
+				word(spelling(fact));
+		}
 		type(inst.type);
 		out_.push_back(' ');
 		operand(inst.ops[0], inst.op == Opcode::Store ? inst.type.kind() : TypeKind::Ptr);
@@ -694,12 +735,12 @@ bool Writer::write_memory_instruction(const Instruction& inst)
 		}
 		return true;
 	case Opcode::Index:
-		text("index ");
+		head(inst.op);
 		type(inst.type);
 		if (inst.sub != 0)
 		{
-			text(" [projection=");
-			text(kProjectionSpellings[inst.sub]);
+			bool open = false;
+			item(open, MetadataKey::Projection, spelling(static_cast<IndexProjectionKind>(inst.sub)));
 			out_.push_back(']');
 		}
 		out_.push_back(' ');
@@ -708,19 +749,19 @@ bool Writer::write_memory_instruction(const Instruction& inst)
 		value(inst.ops[1]);
 		return true;
 	case Opcode::AtomicLoad:
-		text("atomic_load ");
+		head(inst.op);
 		break;
 	case Opcode::AtomicStore:
-		text("atomic_store ");
+		head(inst.op);
 		break;
 	case Opcode::AtomicAddFetch:
-		text("atomic_add_fetch ");
+		head(inst.op);
 		break;
 	case Opcode::AtomicExchange:
-		text("atomic_exchange ");
+		head(inst.op);
 		break;
 	case Opcode::AtomicCompareExchange:
-		text("atomic_compare_exchange ");
+		head(inst.op);
 		break;
 	default:
 		return false;
@@ -762,8 +803,7 @@ void Writer::argument_classes(const Instruction& inst, bool& open)
 	{
 		if (entry.call != id)
 			continue;
-		text(open ? ", classes=" : " [classes=");
-		open = true;
+		key(open, MetadataKey::Classes);
 		if (inst.op == Opcode::Call)
 		{
 			number(entry.argument);
@@ -775,7 +815,7 @@ void Writer::argument_classes(const Instruction& inst, bool& open)
 
 void Writer::write_call(const Instruction& inst)
 {
-	text("call ");
+	head(inst.op);
 	type(inst.type);
 	out_.push_back(' ');
 	value(inst.ops[0]);
@@ -785,8 +825,7 @@ void Writer::write_call(const Instruction& inst)
 	bool open = false;
 	if ((inst.flags & IF_COPY_ELISION) != 0)
 	{
-		text(" [elision=copy");
-		open = true;
+		item(open, MetadataKey::Elision, elision_copy_spelling());
 	}
 	argument_classes(inst, open);
 	if (open)
@@ -794,7 +833,8 @@ void Writer::write_call(const Instruction& inst)
 	if ((inst.flags & IF_SIGNATURE) != 0)
 	{
 		const Signature& signature = program_.signatures[static_cast<SignatureId>(inst.immediate)];
-		text(" as ");
+		out_.push_back(' ');
+		word(spelling(Keyword::As));
 		parameters(signature);
 		metadata(nullptr, &signature.boundary, &signature);
 	}
@@ -805,11 +845,11 @@ void Writer::write_eh(const Instruction& inst)
 	switch (inst.op)
 	{
 	case Opcode::EhTry:
-		text("eh_try ");
+		head(inst.op);
 		value(inst.ops[0]);
 		return;
 	case Opcode::EhCleanup:
-		text("eh_cleanup");
+		text(spelling(inst.op));
 		if (!inst.ops[0].is(ValueKind::None))
 		{
 			out_.push_back(' ');
@@ -817,11 +857,11 @@ void Writer::write_eh(const Instruction& inst)
 		}
 		return;
 	case Opcode::EhCatch:
-		text("eh_catch ");
+		head(inst.op);
 		value(inst.ops[0]);
 		break;
 	case Opcode::EhFilter:
-		text("eh_filter");
+		text(spelling(inst.op));
 		if (inst.extra_count != 0)
 		{
 			out_.push_back(' ');
@@ -834,10 +874,10 @@ void Writer::write_eh(const Instruction& inst)
 		}
 		return;
 	case Opcode::EhCatchAll:
-		text("eh_catch_all");
+		text(spelling(inst.op));
 		break;
 	default:
-		text("eh_end");
+		text(spelling(inst.op));
 		return;
 	}
 	if ((inst.flags & IF_SELECTOR) != 0)
@@ -853,16 +893,16 @@ void Writer::write_effect(const Instruction& inst)
 	{
 	case Opcode::AtomicThreadFence:
 	case Opcode::AtomicSignalFence:
-		text(inst.op == Opcode::AtomicThreadFence ? "atomic_thread_fence " : "atomic_signal_fence ");
+		head(inst.op);
 		number(static_cast<unsigned>(inst.order));
 		return;
 	case Opcode::VaStart:
-		text("va_start ");
+		head(inst.op);
 		value(inst.ops[0]);
 		return;
 	case Opcode::CopyObject:
 	case Opcode::ZeroInit:
-		text(inst.op == Opcode::CopyObject ? "copyobj " : "zeroinit ");
+		head(inst.op);
 		number(static_cast<uint64_t>(inst.immediate));
 		out_.push_back('x');
 		number(static_cast<uint64_t>(1) << inst.sub);
@@ -875,23 +915,23 @@ void Writer::write_effect(const Instruction& inst)
 		}
 		return;
 	case Opcode::Throw:
-		text("throw ");
+		head(inst.op);
 		type(inst.type);
 		out_.push_back(' ');
 		operand(inst.ops[0], inst.type.kind());
 		return;
 	case Opcode::Resume:
-		text("resume");
+		text(spelling(inst.op));
 		return;
 	case Opcode::Unreachable:
-		text("unreachable");
+		text(spelling(inst.op));
 		return;
 	case Opcode::Jump:
-		text("jump ");
+		head(inst.op);
 		value(inst.ops[0]);
 		return;
 	case Opcode::Branch:
-		text("branch ");
+		head(inst.op);
 		operand(inst.ops[0], TypeKind::I64);
 		text(", ");
 		value(inst.ops[1]);
@@ -899,7 +939,7 @@ void Writer::write_effect(const Instruction& inst)
 		value(inst.ops[2]);
 		return;
 	case Opcode::Switch:
-		text("switch ");
+		head(inst.op);
 		value(inst.ops[0]);
 		text(", ");
 		value(inst.ops[1]);
@@ -912,7 +952,7 @@ void Writer::write_effect(const Instruction& inst)
 		}
 		return;
 	case Opcode::Return:
-		text("return ");
+		head(inst.op);
 		type(inst.type);
 		if (!inst.ops[0].is(ValueKind::None))
 		{

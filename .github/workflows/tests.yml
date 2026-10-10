@@ -58,7 +58,7 @@ jobs:
         run: |
           make audit-lowir-contract audit-compiler-layout \
             audit-compiler-exceptions audit-frontend-source-sets \
-            audit-builtin-registry-tables audit-scaffold-headers
+            audit-builtin-registry-tables audit-scaffold-spellings
 
       - name: Run the file audit
         run: perl scripts/cppgm_file_audit.pl --paths dev
@@ -141,6 +141,10 @@ jobs:
 
       - name: Build host compiler
         run: make
+
+      # Reads this build's dependency files, so it runs where the build is.
+      - name: Check that the build uses the shipped scaffold files
+        run: make audit-scaffold-usage
 
       - name: Upload host compiler build
         run: |

@@ -56,7 +56,8 @@ does not run them:
 
 ```sh
 make audit-lowir-contract audit-compiler-layout audit-compiler-exceptions \
-  audit-frontend-source-sets audit-builtin-registry-tables audit-scaffold-headers
+  audit-frontend-source-sets audit-builtin-registry-tables \
+  audit-scaffold-usage audit-scaffold-spellings
 perl scripts/cppgm_file_audit.pl --paths dev
 python3 scripts/audit_pa_feature_placement.py --fail-on-early
 ```
@@ -89,9 +90,12 @@ verify output equality.
 - `native`: instruction selection to machine IR, x86-64 encoding, objects,
   the course runtime and the linker; `driver`: `cppgm++`'s modes and host
   toolchain; `support`: shared utilities.
-- The shipped scaffold headers (`dev_support_files` in
-  `scripts/export_student_repo.sh`) are course files; `audit-scaffold-headers`
-  keeps the implementation off the ones it replaces.
+- The shipped scaffold files (`dev_support_files` in
+  `scripts/export_student_repo.sh`) are course files and the vocabulary the
+  implementation builds on as shipped. `audit-scaffold-usage` checks, from the
+  build's dependency files, that each is compiled in and that the scaffold-only
+  `support/not_implemented.h` is not; `audit-scaffold-spellings` checks that the
+  literal words of the LowIR and MIR writers are vocabulary spellings.
 - `scripts/`: runners, comparison, audits and export; `shared/`: source grammar.
 - `doc/`: the C++ draft and Itanium ABI reference.
 - `scripts/architecture/`: live audit tables.

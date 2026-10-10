@@ -7,6 +7,7 @@
 #include "support/internal_error.h"
 #include "support/telemetry.h"
 #include "support/tool_errors.h"
+#include "support/tool_help_text.h"
 
 #include <sys/resource.h>
 
@@ -91,7 +92,7 @@ int run_abimangle(int argc, char** argv)
 {
 	if (has_help_arg(argc, argv))
 	{
-		cout << "usage: abimangle [--stats] -o <outfile> <abi-facts-file>...\n";
+		cout << abimangle_help_text();
 		return EXIT_SUCCESS;
 	}
 	const Invocation invocation = parse_invocation(argc, argv);

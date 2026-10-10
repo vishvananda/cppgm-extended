@@ -5,7 +5,7 @@
 #include <cstring>
 
 #include "lowir/literals.h"
-#include "lowir/metadata_spellings.h"
+#include "ir_symbol_model.h"
 
 namespace native {
 
@@ -13,16 +13,6 @@ using lowir::Type;
 using lowir::TypeKind;
 
 namespace {
-
-const char* const kGprNames[16] = { "rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi", "r8", "r9", "r10", "r11",
-	"r12", "r13", "r14", "r15" };
-const char* const kCondNames[16] = { "o", "no", "b", "ae", "e", "ne", "be", "a", "s", "ns", "p", "np", "l", "ge", "le",
-	"g" };
-const char* const kPredNames[10] = { "eq", "ne", "lt", "le", "gt", "ge", "ult", "ule", "ugt", "uge" };
-const unsigned kWideOpCount = static_cast<unsigned>(WideOp::UMod) + 1;
-const char* const kWideNames[kWideOpCount] = { "mov", "add", "sub", "mul", "and", "or", "xor", "shl", "shr", "sar",
-	"neg", "not", "sext", "zext", "div", "udiv", "mod", "umod" };
-const char* const kConvNames[6] = { "sitofp", "uitofp", "fptosi", "fptoui", "fpext", "fptrunc" };
 
 void append_int(std::string& out, int64_t value)
 {
@@ -46,151 +36,6 @@ const char* extension_name(TypeKind kind)
 		return "i1";
 	default:
 		return "i32";
-	}
-}
-
-const char* mnemonic(Op op)
-{
-	switch (op)
-	{
-	case Op::Mov:
-		return "mov";
-	case Op::Load:
-		return "load";
-	case Op::Store:
-		return "store";
-	case Op::Lea:
-		return "lea";
-	case Op::Add:
-		return "add";
-	case Op::Sub:
-		return "sub";
-	case Op::And:
-		return "and";
-	case Op::Or:
-		return "or";
-	case Op::Xor:
-		return "xor";
-	case Op::Imul:
-		return "imul";
-	case Op::Neg:
-		return "neg";
-	case Op::Not:
-		return "not";
-	case Op::Bswap:
-		return "bswap";
-	case Op::Bsf:
-		return "bsf";
-	case Op::Bsr:
-		return "bsr";
-	case Op::Shl:
-		return "shl";
-	case Op::Shr:
-		return "shr";
-	case Op::Sar:
-		return "sar";
-	case Op::Cmp:
-		return "cmp";
-	case Op::Test:
-		return "test";
-	case Op::Bt:
-		return "bt";
-	case Op::Movzx:
-		return "movzx";
-	case Op::Sext:
-		return "sext";
-	case Op::Zext:
-		return "zext";
-	case Op::Cqo:
-		return "cqo";
-	case Op::Idiv:
-		return "idiv";
-	case Op::Div:
-		return "div";
-	case Op::Jmp:
-		return "jmp";
-	case Op::Call:
-		return "call";
-	case Op::TailJump:
-		return "tail_jump";
-	case Op::CopyBytes:
-		return "copy_bytes";
-	case Op::ZeroBytes:
-		return "zero_bytes";
-	case Op::Ret:
-		return "ret";
-	case Op::FMov:
-		return "fmov";
-	case Op::FAdd:
-		return "fadd";
-	case Op::FSub:
-		return "fsub";
-	case Op::FMul:
-		return "fmul";
-	case Op::FDiv:
-		return "fdiv";
-	case Op::FNeg:
-		return "fneg";
-	case Op::FCmp:
-		return "fcmp";
-	case Op::FRet:
-		return "fret";
-	case Op::FStp:
-		return "fstp";
-	case Op::LockXadd:
-		return "lock_xadd";
-	case Op::Xchg:
-		return "xchg";
-	case Op::LockCmpxchg:
-		return "lock_cmpxchg";
-	case Op::LockCmpxchg16b:
-		return "lock_cmpxchg16b";
-	case Op::Mfence:
-		return "mfence";
-	case Op::VaStart:
-		return "va_start";
-	case Op::VaArg:
-		return "va_arg";
-	case Op::StackAlloc:
-		return "stack_alloc";
-	case Op::EhPush:
-		return "eh_push";
-	case Op::EhPop:
-		return "eh_pop";
-	case Op::Throw:
-		return "throw";
-	case Op::Resume:
-		return "resume";
-	case Op::LoadException:
-		return "load_exception";
-	case Op::EhMark:
-		return "eh_mark";
-	case Op::EhCatch:
-		return "eh_catch";
-	case Op::LoadSelector:
-		return "load_selector";
-	case Op::Landing:
-		return "landing";
-	case Op::EhSelect:
-		return "eh_select";
-	case Op::CatchAll:
-		return "catch_all";
-	case Op::TlsAddr:
-		return "tls_addr";
-	case Op::Exit:
-		return "exit";
-	case Op::Trap:
-		return "trap";
-	case Op::JumpTable:
-		return "jump_table";
-	case Op::MulWide:
-		return "mul";
-	case Op::ImulWide:
-		return "imul";
-	case Op::Prologue:
-		return "prologue";
-	default:
-		return "?";
 	}
 }
 
@@ -233,12 +78,16 @@ void append_mir_float(std::string& out, TypeKind kind, uint64_t low, uint64_t hi
 	const long double value = lowir::float_value(kind, bits);
 	if (std::isnan(value))
 	{
-		out += std::signbit(value) ? "-nan" : "nan";
+		if (std::signbit(value))
+			out += '-';
+		out += lowir::spelling(lowir::NamedLiteral::QuietNaN);
 		return;
 	}
 	if (std::isinf(value))
 	{
-		out += value < 0 ? "-inf" : "inf";
+		if (value < 0)
+			out += '-';
+		out += lowir::spelling(lowir::NamedLiteral::Infinity);
 		return;
 	}
 	char buffer[64];
@@ -259,10 +108,7 @@ void append_mir_float(std::string& out, TypeKind kind, uint64_t low, uint64_t hi
 	out += buffer;
 	if (std::strpbrk(buffer, ".e") == nullptr)
 		out += ".0";
-	if (kind == TypeKind::F32)
-		out += 'f';
-	else if (kind == TypeKind::F80)
-		out += 'L';
+	out += lowir::float_suffix(kind);
 }
 
 MirWriter::MirWriter(const lowir::Program& program, std::FILE* file) : program_(program), file_(file)
@@ -300,24 +146,13 @@ void MirWriter::type(Type t)
 		text_ += buffer;
 		return;
 	}
-	text_ += lowir::scalar_type_spelling(t.kind());
+	text_ += lowir::spelling(t.kind());
 }
 
 void MirWriter::reg(Reg r)
 {
-	if (r == kSt0)
-		text_ += "st0";
-	else if (is_xmm(r))
-	{
-		text_ += "xmm";
-		append_int(text_, r - XMM0);
-	}
-	else if (r < 16)
-		text_ += kGprNames[r];
-	else if (r == kFrame)
-		text_ += "rbp";
-	else
-		text_ += "?";
+	const char* name = register_spelling(r == kFrame ? static_cast<Reg>(RBP) : r);
+	text_ += name != nullptr ? name : "?";
 }
 
 void MirWriter::symbol(uint32_t sym)
@@ -379,9 +214,10 @@ void MirWriter::operand(const Function* function, const Operand& op)
 	case OperandKind::Symbol:
 		symbol(op.symbol);
 		if (op.access != SymbolAccess::Direct)
-			text_ += op.access == SymbolAccess::Got   ? "@got"
-				: op.access == SymbolAccess::TlsLocal ? "@tpoff"
-													  : "@gottpoff";
+		{
+			text_ += '@';
+			text_ += spelling(op.access);
+		}
 		if (op.disp != 0)
 		{
 			text_ += op.disp > 0 ? '+' : '-';
@@ -448,14 +284,14 @@ void MirWriter::call_facts(const Inst& inst)
 		text_ += ", stack=";
 		append_int(text_, (inst.aux2 + 15) & ~15u);
 	}
-	if (inst.flags & MF_VARIADIC)
-		text_ += ", variadic";
-	if (inst.flags & MF_UNWIND_NO)
-		text_ += ", unwind=no";
-	if (inst.flags & MF_NORETURN)
-		text_ += ", returns=noreturn";
-	if (inst.flags & MF_STRLEN_PREFIX)
-		text_ += ", strlen_prefix=16";
+	for (const InstFlag fact : { MF_VARIADIC, MF_UNWIND_NO, MF_NORETURN, MF_STRLEN_PREFIX })
+	{
+		if (inst.flags & fact)
+		{
+			text_ += ", ";
+			text_ += call_fact_spelling(fact);
+		}
+	}
 	text_ += ']';
 }
 
@@ -469,44 +305,47 @@ void MirWriter::instruction(const Function& function, const Inst& inst)
 	case Op::Setcc:
 	case Op::Jcc:
 	case Op::Cmov:
-		text_ += inst.op == Op::Setcc ? "set" : inst.op == Op::Jcc ? "j" : "cmov";
-		text_ += kCondNames[inst.sub & 15];
+		text_ += spelling(inst.op);
+		text_ += spelling(static_cast<Cond>(inst.sub & 15));
 		break;
 	case Op::Sext:
 	case Op::Zext:
-		text_ += mnemonic(inst.op);
+		text_ += spelling(inst.op);
 		text_ += '.';
 		text_ += extension_name(inst.type);
 		break;
 	case Op::FSetcc:
-		text_ += 'f';
-		text_ += kPredNames[inst.sub % 10];
+		text_ += spelling(inst.op);
+		text_ += lowir::spelling(static_cast<lowir::ComparePredicate>(inst.sub % 10));
 		text_ += '.';
-		text_ += lowir::scalar_type_spelling(inst.type);
+		text_ += lowir::spelling(inst.type);
 		break;
 	case Op::Convert:
-		text_ += kConvNames[inst.sub % 6];
+		text_ += spelling(static_cast<ConvKind>(inst.sub % 6));
 		text_ += '.';
-		text_ += lowir::scalar_type_spelling(inst.type);
+		text_ += lowir::spelling(inst.type);
 		text_ += '.';
-		text_ += lowir::scalar_type_spelling(inst.type2);
+		text_ += lowir::spelling(inst.type2);
 		break;
 	case Op::Wide:
-		text_ += (inst.flags & MF_VOLATILE) ? "atomic_load" : kWideNames[inst.sub % kWideOpCount];
+		text_ += (inst.flags & MF_VOLATILE) ? lowir::spelling(lowir::Opcode::AtomicLoad)
+											: spelling(static_cast<WideOp>(inst.sub % kWideOpCount));
 		text_ += ".i128";
 		break;
 	case Op::WideSetcc:
-		text_ += "set.";
-		text_ += kPredNames[inst.sub % 10];
+		text_ += spelling(inst.op);
+		text_ += '.';
+		text_ += lowir::spelling(static_cast<lowir::ComparePredicate>(inst.sub % 10));
 		text_ += ".i128";
 		break;
 	case Op::WideCmpBranch:
-		text_ += "cmp_branch.";
-		text_ += kPredNames[inst.sub % 10];
+		text_ += spelling(inst.op);
+		text_ += '.';
+		text_ += lowir::spelling(static_cast<lowir::ComparePredicate>(inst.sub % 10));
 		text_ += ".i128";
 		break;
 	default:
-		text_ += mnemonic(inst.op);
+		text_ += spelling(inst.op);
 		if (typed(inst.op) ||
 			((inst.op == Op::Add || inst.op == Op::Sub || inst.op == Op::And || inst.op == Op::Or ||
 				 inst.op == Op::Xor || inst.op == Op::Imul || inst.op == Op::Shl || inst.op == Op::Shr ||
@@ -515,7 +354,7 @@ void MirWriter::instruction(const Function& function, const Inst& inst)
 			((inst.op == Op::Bswap || inst.op == Op::Bsf || inst.op == Op::Bsr) && inst.type != TypeKind::I64))
 		{
 			text_ += '.';
-			text_ += lowir::scalar_type_spelling(inst.type);
+			text_ += lowir::spelling(inst.type);
 		}
 		break;
 	}
@@ -632,10 +471,11 @@ void MirWriter::global(lowir::SymbolId sym)
 	const lowir::Global& g = program_.globals[s.detail];
 	text_ += "\nglobal ";
 	symbol(sym);
-	if (s.metadata.storage == ir_model::GSM_READONLY)
-		text_ += " readonly";
-	else if (s.metadata.storage == ir_model::GSM_THREAD_LOCAL)
-		text_ += " thread_local";
+	if (s.metadata.storage != ir_model::GSM_DEFAULT)
+	{
+		text_ += ' ';
+		text_ += spelling(s.metadata.storage);
+	}
 	text_ += '\n';
 	auto constant = [&](Type t, const lowir::Constant& c) {
 		if (c.kind == lowir::ValueKind::Float)
@@ -688,7 +528,7 @@ void MirWriter::global(lowir::SymbolId sym)
 	if (g.typed)
 		type(g.type);
 	else
-		text_ += "ptr";
+		text_ += lowir::spelling(TypeKind::Ptr);
 	text_ += '\n';
 	text_ += "  init ";
 	if (g.init == lowir::GlobalInit::Address)
@@ -749,15 +589,19 @@ void MirWriter::function(const Function& f)
 	text_ += " -> ";
 	const TypeKind rk = f.return_type.kind();
 	if (f.return_type.is_void())
-		text_ += "void";
+		text_ += lowir::spelling(TypeKind::Void);
 	else if (rk == TypeKind::F32 || rk == TypeKind::F64)
-		text_ += "xmm0";
+		reg(XMM0);
 	else if (rk == TypeKind::F80)
-		text_ += "st0";
+		reg(kSt0);
 	else if (f.return_type.is_object() && f.return_type.bytes > 16)
-		text_ += "[rax]";
+	{
+		text_ += '[';
+		reg(RAX);
+		text_ += ']';
+	}
 	else
-		text_ += "rax";
+		reg(RAX);
 	text_ += "\n  frame\n    stack_size ";
 	append_int(text_, f.stack_size);
 	text_ += "\n    scratch_bytes ";
@@ -788,9 +632,10 @@ void MirWriter::function(const Function& f)
 	for (size_t b = 0; b < f.bindings.size(); ++b)
 	{
 		const FrameBinding& binding = f.bindings[b];
-		text_ += binding.kind == BindingKind::ParamSlot
-			? "    param-slot %"
-			: (binding.kind == BindingKind::Slot ? "    slot $" : "    temp %");
+		text_ += "    ";
+		text_ += spelling(binding.kind);
+		text_ += ' ';
+		text_ += sigil(binding.kind);
 		text_ += binding.label != nullptr ? binding.label : program_.spelling(binding.name);
 		text_ += " -> [rbp";
 		if (binding.offset >= 0)

@@ -10,33 +10,6 @@ namespace text {
 
 namespace {
 
-const char* const kKeywordSpellings[] = { "declare", "global", "function", "alias", "object", "readonly",
-	"thread_local", "slot", "block", "zero", "as", "volatile", "typed", "nowrap", "exact", "const", "copy", "phi",
-	"addr", "load", "atomic_load", "index", "unary", "binary", "cmp", "select", "convert", "atomic_add_fetch",
-	"atomic_exchange", "atomic_compare_exchange", "va_arg", "stack_alloc", "call", "exception", "exception_selector",
-	"store", "atomic_store", "atomic_thread_fence", "atomic_signal_fence", "va_start", "copyobj", "zeroinit", "eh_try",
-	"eh_cleanup", "eh_catch", "eh_filter", "eh_catch_all", "eh_end", "throw", "resume", "jump", "branch", "switch",
-	"return", "unreachable" };
-const char* const kUnarySpellings[] = { "neg", "not", "bitnot", "bswap", "ctz", "clz" };
-const char* const kBinarySpellings[] = { "add", "sub", "mul", "div", "mod", "udiv", "umod", "and", "or", "xor", "shl",
-	"shr", "ushr" };
-const char* const kCompareSpellings[] = { "eq", "ne", "lt", "le", "gt", "ge", "ult", "ule", "ugt", "uge" };
-const char* const kConvertSpellings[] = { "sext", "zext", "trunc", "sitofp", "uitofp", "fptosi", "fptoui", "fpext",
-	"fptrunc" };
-
-struct NamedLiteralSpelling
-{
-	const char* spelling;
-	NamedLiteral value;
-};
-
-const NamedLiteralSpelling kNamedLiterals[] = { { "nullptr", NamedLiteral::Nullptr }, { "inf", NamedLiteral::Infinity },
-	{ "INFINITY", NamedLiteral::Infinity }, { "nan", NamedLiteral::QuietNaN }, { "NAN", NamedLiteral::QuietNaN },
-	{ "snan", NamedLiteral::SignalingNaN }, { "SNAN", NamedLiteral::SignalingNaN } };
-
-static_assert(sizeof kKeywordSpellings / sizeof kKeywordSpellings[0] == static_cast<unsigned>(Keyword::Unreachable) + 1,
-	"keyword spellings");
-
 bool is_section_char(char c)
 {
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.';
@@ -65,54 +38,56 @@ Parser::Parser(Program& program)
 
 void Parser::define_words()
 {
-	struct Group
-	{
-		const char* const* spellings;
-		unsigned count;
-		WordClass word_class;
-	};
-	const Group groups[] = {
-		{ kKeywordSpellings, sizeof kKeywordSpellings / sizeof kKeywordSpellings[0], WordClass::Keyword },
-		{ kUnarySpellings, sizeof kUnarySpellings / sizeof kUnarySpellings[0], WordClass::Unary },
-		{ kBinarySpellings, sizeof kBinarySpellings / sizeof kBinarySpellings[0], WordClass::Binary },
-		{ kCompareSpellings, sizeof kCompareSpellings / sizeof kCompareSpellings[0], WordClass::Compare },
-		{ kConvertSpellings, sizeof kConvertSpellings / sizeof kConvertSpellings[0], WordClass::Convert },
-	};
-	for (const Group& group : groups)
-	{
-		for (unsigned i = 0; i < group.count; ++i)
-		{
-			const NameId name = program_.names.intern(group.spellings[i], std::strlen(group.spellings[i]));
-			if (name >= words_.size())
-				words_.resize(name + 1, WordInfo{ WordClass::None, 0 });
-			words_[name] = WordInfo{ group.word_class, static_cast<uint8_t>(i) };
-		}
-	}
-	for (unsigned kind = 0; kind <= static_cast<unsigned>(TypeKind::Ptr); ++kind)
-	{
-		const char* text = scalar_type_spelling(static_cast<TypeKind>(kind));
-		const NameId name = program_.names.intern(text, std::strlen(text));
+	auto define = [this](const char* text, WordClass word_class, unsigned value) {
+		const NameId name = program_.names.intern(text, static_cast<uint32_t>(std::strlen(text)));
 		if (name >= words_.size())
 			words_.resize(name + 1, WordInfo{ WordClass::None, 0 });
-		words_[name] = WordInfo{ WordClass::Type, static_cast<uint8_t>(kind) };
+		words_[name] = WordInfo{ word_class, static_cast<uint8_t>(value) };
+	};
+	for (unsigned i = 0; i < kKeywordCount; ++i)
+		define(lowir_model::spelling(static_cast<Keyword>(i)), WordClass::Keyword, i);
+	for (unsigned i = 0; i < kMetadataKeyCount; ++i)
+	{
+		const char* text = ir_model::spelling(static_cast<MetadataKey>(i));
+		const NameId name = program_.names.intern(text, static_cast<uint32_t>(std::strlen(text)));
+		if (name >= metadata_keys_.size())
+			metadata_keys_.resize(name + 1, 0);
+		metadata_keys_[name] = static_cast<uint8_t>(i + 1);
 	}
+	for (unsigned i = 0; i < kOpcodeCount; ++i)
+		define(lowir_model::spelling(static_cast<Opcode>(i)), WordClass::Opcode, i);
+	for (unsigned i = 0; i < kUnaryOpCount; ++i)
+		define(lowir_model::spelling(static_cast<UnaryOp>(i)), WordClass::Unary, i);
+	for (unsigned i = 0; i < kBinaryOpCount; ++i)
+		define(lowir_model::spelling(static_cast<BinaryOp>(i)), WordClass::Binary, i);
+	for (unsigned i = 0; i < kComparePredicateCount; ++i)
+		define(lowir_model::spelling(static_cast<ComparePredicate>(i)), WordClass::Compare, i);
+	for (unsigned i = 0; i < kConvertOpCount; ++i)
+		define(lowir_model::spelling(static_cast<ConvertOp>(i)), WordClass::Convert, i);
+	for (const InstructionFlag fact : { IF_VOLATILE, IF_TYPED, IF_NO_WRAP, IF_EXACT })
+		define(lowir_model::spelling(fact), WordClass::Fact, fact);
+	// The compatibility spellings `readonly` and `thread_local` after a
+	// global's name (lowir.md "Structured Global Data Initializers").
+	for (unsigned i = ir_model::GSM_READONLY; i < ir_model::kGlobalStorageModeCount; ++i)
+		define(ir_model::spelling(static_cast<ir_model::GlobalStorageMode>(i)), WordClass::Storage, i);
+	for (unsigned kind = 0; kind <= static_cast<unsigned>(TypeKind::Ptr); ++kind)
+		define(lowir_model::spelling(static_cast<TypeKind>(kind)), WordClass::Type, kind);
 	// The floating words also take a floating suffix (`INFINITYL`, `nanf`);
 	// the value records the suffix above the literal (kNamedSuffixShift).
 	const char* const suffixes[] = { "", "f", "F", "l", "L" };
 	const unsigned suffix_kinds[] = { 0, 1, 1, 2, 2 };
-	for (const NamedLiteralSpelling& literal : kNamedLiterals)
+	for (unsigned literal = 0; literal < kNamedLiteralCount; ++literal)
 	{
-		for (unsigned suffix = 0; suffix < 5; ++suffix)
+		const NamedLiteral named = static_cast<NamedLiteral>(literal);
+		for (const char* word : { lowir_model::spelling(named), alternate_spelling(named) })
 		{
-			if (suffix != 0 && literal.value == NamedLiteral::Nullptr)
-				break;
-			const std::string text = std::string(literal.spelling) + suffixes[suffix];
-			const NameId name = program_.names.intern(text.data(), static_cast<uint32_t>(text.size()));
-			if (name >= words_.size())
-				words_.resize(name + 1, WordInfo{ WordClass::None, 0 });
-			words_[name] = WordInfo{ WordClass::NamedLiteral,
-				static_cast<uint8_t>(
-					static_cast<unsigned>(literal.value) | suffix_kinds[suffix] << kNamedSuffixShift) };
+			for (unsigned suffix = 0; word != nullptr && suffix < 5; ++suffix)
+			{
+				if (suffix != 0 && named == NamedLiteral::Nullptr)
+					break;
+				const std::string text = std::string(word) + suffixes[suffix];
+				define(text.c_str(), WordClass::NamedLiteral, literal | suffix_kinds[suffix] << kNamedSuffixShift);
+			}
 		}
 	}
 }
@@ -131,6 +106,23 @@ bool Parser::at_keyword(Keyword keyword) const
 {
 	const WordInfo info = word(token());
 	return info.word_class == WordClass::Keyword && info.value == static_cast<uint8_t>(keyword);
+}
+
+bool Parser::find_key(const Token& token, MetadataKey* key) const
+{
+	if (token.kind != TokenKind::Word || token.name >= metadata_keys_.size() || metadata_keys_[token.name] == 0)
+		return false;
+	*key = static_cast<MetadataKey>(metadata_keys_[token.name] - 1);
+	return true;
+}
+
+bool Parser::accept_word(WordClass word_class, unsigned value)
+{
+	const WordInfo info = word(token());
+	if (info.word_class != word_class || info.value != value)
+		return false;
+	advance();
+	return true;
 }
 
 bool Parser::accept(TokenKind kind)
@@ -165,10 +157,10 @@ void Parser::expect(TokenKind kind, const char* text)
 		fail(std::string("expected '") + text + "', got '" + spelling(token()) + "'");
 }
 
-void Parser::expect_keyword(Keyword keyword, const char* text)
+void Parser::expect_keyword(Keyword keyword)
 {
 	if (!accept_keyword(keyword))
-		fail(std::string("expected '") + text + "', got '" + spelling(token()) + "'");
+		fail(std::string("expected '") + lowir_model::spelling(keyword) + "', got '" + spelling(token()) + "'");
 }
 
 NameId Parser::expect_name(TokenKind kind, const char* what)
@@ -252,10 +244,12 @@ void Parser::parse_storage_keyword(SymbolMetadata& metadata)
 {
 	// The compatibility spellings `readonly` and `thread_local` after the
 	// name (lowir.md "Structured Global Data Initializers").
-	if (accept_keyword(Keyword::Readonly))
-		metadata.storage = ir_model::GSM_READONLY;
-	else if (accept_keyword(Keyword::ThreadLocal))
-		metadata.storage = ir_model::GSM_THREAD_LOCAL;
+	const WordInfo info = word(token());
+	if (info.word_class == WordClass::Storage)
+	{
+		metadata.storage = static_cast<ir_model::GlobalStorageMode>(info.value);
+		advance();
+	}
 }
 
 void Parser::parse_global_declaration()
@@ -303,7 +297,7 @@ void Parser::parse_global_definition()
 		}
 		else if (accept_keyword(Keyword::Zero))
 			global.init = GlobalInit::Zero;
-		else if (accept_keyword(Keyword::Addr))
+		else if (accept_word(WordClass::Opcode, static_cast<unsigned>(Opcode::Addr)))
 		{
 			global.init = GlobalInit::Address;
 			global.address = reference_symbol(expect_name(TokenKind::Global, "address initializer symbol"));
@@ -354,7 +348,7 @@ void Parser::parse_global_data(Global& global)
 		else
 		{
 			item.type = parse_type();
-			if (item.type.is_pointer() && accept_keyword(Keyword::Addr))
+			if (item.type.is_pointer() && accept_word(WordClass::Opcode, static_cast<unsigned>(Opcode::Addr)))
 			{
 				item.kind = DataItemKind::Address;
 				item.address = reference_symbol(expect_name(TokenKind::Global, "address target"));
@@ -399,7 +393,7 @@ void Parser::parse_function(bool definition)
 
 void Parser::parse_alias()
 {
-	expect_keyword(Keyword::Object, "object");
+	expect_keyword(Keyword::Object);
 	const Position position = here();
 	if (!at(TokenKind::Word))
 		fail("invalid object alias spelling");
@@ -625,7 +619,7 @@ uint8_t Parser::parse_object_classes(Type type)
 		fail("classes metadata requires a direct object of matching size");
 	uint8_t classes = 0;
 	if (at(TokenKind::Word))
-		classes = find_object_classes(token().text, token().length, bytes, program_.object_facts);
+		classes = ir_model::object_classes_from_spelling(token().text, token().length, bytes, program_.object_facts);
 	else if (at(TokenKind::Number) && program_.object_facts)
 	{
 		const uint64_t value = parse_positive(token().text, token().length);
@@ -657,14 +651,14 @@ void Parser::parse_metadata_item(
 {
 	if (!at(TokenKind::Word))
 		fail("expected metadata key, got '" + spelling(token()) + "'");
-	const MetadataKey key = find_metadata_key(token().text, token().length);
-	if (key == MetadataKey::Count)
+	MetadataKey key = MetadataKey::Arity;
+	if (!find_key(token(), &key) || !(is_boundary_key(key) || is_symbol_key(key)))
 		fail("unknown symbol metadata: " + spelling(token()));
 	advance();
 	expect(TokenKind::Equals, "=");
 	const uint32_t bit = 1u << static_cast<unsigned>(key);
 	if ((seen & bit) != 0)
-		fail(std::string("duplicate metadata key: ") + metadata_key_spelling(key));
+		fail(std::string("duplicate metadata key: ") + ir_model::spelling(key));
 	seen |= bit;
 	const bool on_global = context == MetadataContext::GlobalDeclaration ||
 		context == MetadataContext::GlobalDefinition;
@@ -693,41 +687,32 @@ void Parser::parse_metadata_item(
 
 void Parser::parse_boundary_value(MetadataKey key, BoundaryMetadata& boundary)
 {
-	const SpellingTable* table = nullptr;
-	uint8_t* field = nullptr;
-	const char* problem = nullptr;
+	const char* text = token().text;
+	const uint32_t length = token().length;
+	const bool word = at(TokenKind::Word);
 	switch (key)
 	{
 	case MetadataKey::Arity:
-		table = &kAritySpellings;
-		field = &boundary.arity;
-		problem = "invalid arity metadata";
+		if (!word || !ir_model::from_spelling(text, length, &boundary.arity))
+			fail("invalid arity metadata");
 		break;
 	case MetadataKey::Effects:
-		table = &kEffectsSpellings;
-		field = &boundary.effects;
-		problem = "invalid effects metadata";
+		if (!word || !ir_model::from_spelling(text, length, &boundary.effects))
+			fail("invalid effects metadata");
 		break;
 	case MetadataKey::Unwind:
-		table = &kUnwindSpellings;
-		field = &boundary.unwind;
-		problem = "invalid unwind metadata";
+		if (!word || !ir_model::from_spelling(text, length, &boundary.unwind))
+			fail("invalid unwind metadata");
 		break;
 	case MetadataKey::Return:
-		table = &kReturnSpellings;
-		field = &boundary.returns;
-		problem = "invalid return metadata";
+		if (!word || !ir_model::from_spelling(text, length, &boundary.returns))
+			fail("invalid return metadata");
 		break;
 	default:
-		table = &kQuerySpellings;
-		field = &boundary.query;
-		problem = "invalid query metadata";
+		if (!word || !ir_model::from_spelling(text, length, &boundary.query))
+			fail("invalid query metadata");
 		break;
 	}
-	const unsigned value = at(TokenKind::Word) ? table->find(token().text, token().length) : 0;
-	if (value == 0)
-		fail(problem);
-	*field = static_cast<uint8_t>(value);
 	advance();
 }
 
@@ -747,7 +732,7 @@ void Parser::parse_symbol_value(MetadataKey key, MetadataContext context, Symbol
 	case MetadataKey::InlineHint:
 	case MetadataKey::NoInline:
 		if (on_global)
-			fail(std::string(metadata_key_spelling(key)) + " metadata requires a function");
+			fail(std::string(ir_model::spelling(key)) + " metadata requires a function");
 		break;
 	default:
 		break;
@@ -766,13 +751,12 @@ void Parser::parse_symbol_value(MetadataKey key, MetadataContext context, Symbol
 		return;
 	}
 	if (!at(TokenKind::Word))
-		fail(std::string("missing value after ") + metadata_key_spelling(key));
+		fail(std::string("missing value after ") + ir_model::spelling(key));
 	const Token& value = token();
 	switch (key)
 	{
 	case MetadataKey::Storage:
-		symbol.storage = static_cast<uint8_t>(kStorageSpellings.find(value.text, value.length));
-		if (symbol.storage == ir_model::GSM_DEFAULT)
+		if (!ir_model::from_spelling(value.text, value.length, &symbol.storage))
 			fail("invalid global storage metadata");
 		break;
 	case MetadataKey::Section:
@@ -784,20 +768,17 @@ void Parser::parse_symbol_value(MetadataKey key, MetadataContext context, Symbol
 		symbol.section = value.name;
 		break;
 	case MetadataKey::Role:
-		symbol.role = static_cast<uint8_t>(kRoleSpellings.find(value.text, value.length));
-		if (symbol.role == ir_model::SR_NONE)
+		if (!ir_model::from_spelling(value.text, value.length, &symbol.role))
 			fail("invalid symbol role");
 		if (is_global_role(symbol.role) != on_global)
 			fail(on_global ? "function role on global" : "invalid symbol role");
 		break;
 	case MetadataKey::Linkage:
-		symbol.linkage = static_cast<uint8_t>(kLinkageSpellings.find(value.text, value.length));
-		if (symbol.linkage == ir_model::LLM_DEFAULT)
+		if (!ir_model::from_spelling(value.text, value.length, &symbol.linkage))
 			fail("invalid linkage metadata");
 		break;
 	case MetadataKey::Binding:
-		symbol.binding = static_cast<uint8_t>(kBindingSpellings.find(value.text, value.length));
-		if (symbol.binding == ir_model::SBM_DEFAULT)
+		if (!ir_model::from_spelling(value.text, value.length, &symbol.binding))
 			fail("invalid binding metadata");
 		break;
 	case MetadataKey::Object:
@@ -807,10 +788,9 @@ void Parser::parse_symbol_value(MetadataKey key, MetadataContext context, Symbol
 	{
 		// The flags: keep_alias, prefer_local, object_root, force_inline,
 		// inline_hint, no_inline.
-		if (value.length != 3 || std::memcmp(value.text, "yes", 3) != 0)
+		if (value.length != 3 || std::memcmp(value.text, metadata_yes_spelling(), 3) != 0)
 			fail("metadata flag must be yes");
-		const unsigned flag = static_cast<unsigned>(key) - static_cast<unsigned>(MetadataKey::KeepAlias);
-		symbol.flags |= static_cast<uint8_t>(1u << flag);
+		symbol.flags |= symbol_flag_of(key);
 		break;
 	}
 	}
@@ -839,7 +819,7 @@ SignatureId Parser::parse_signature(MetadataContext context, SymbolMetadata* sym
 	signature.result = parse_type();
 	uint8_t* const saved_result_classes = result_classes_;
 	const Type* const saved_result_type = result_type_;
-	result_classes_ = &signature.result_classes;
+	result_classes_ = &signature.boundary.result_classes;
 	result_type_ = &signature.result;
 	parse_metadata(context, symbol, &signature.boundary);
 	result_classes_ = saved_result_classes;
@@ -876,51 +856,43 @@ void Parser::parse_parameter_metadata(Parameter& parameter)
 		const Token key = token();
 		advance();
 		expect(TokenKind::Equals, "=");
-		unsigned index = 0;
-		if (key.length == 4 && std::memcmp(key.text, "pass", 4) == 0)
+		MetadataKey index = MetadataKey::Arity;
+		if (!find_key(key, &index) || !is_parameter_key(index))
+			fail("invalid parameter metadata");
+		if (index == MetadataKey::Pass)
 		{
-			index = 1;
-			parameter.pass = at(TokenKind::Word)
-				? static_cast<uint8_t>(kPassSpellings.find(token().text, token().length))
-				: 0;
-			if (parameter.pass == ir_model::PPM_DIRECT)
+			if (!at(TokenKind::Word) || !ir_model::from_spelling(token().text, token().length, &parameter.pass))
 				fail("invalid parameter pass metadata");
 			if (!parameter.type.is_pointer())
 				fail("non-direct passing requires ptr");
 		}
-		else if (key.length == 5 && std::memcmp(key.text, "alias", 5) == 0)
+		else if (index == MetadataKey::Alias)
 		{
-			index = 2;
-			parameter.alias = at(TokenKind::Word)
-				? static_cast<uint8_t>(kAliasSpellings.find(token().text, token().length))
-				: 0;
-			if (parameter.alias == ir_model::PALM_DEFAULT)
+			if (!at(TokenKind::Word) || !ir_model::from_spelling(token().text, token().length, &parameter.alias))
 				fail("invalid parameter metadata");
 			if (!parameter.type.is_pointer())
 				fail("alias metadata requires ptr");
 		}
-		else if (key.length == 12 && std::memcmp(key.text, "object_bytes", 12) == 0)
+		else if (index == MetadataKey::ObjectBytes)
 		{
-			index = 3;
 			if (!at(TokenKind::Number))
 				fail("expected positive integer");
 			parameter.object_bytes = parse_positive(token().text, token().length);
 			if (!parameter.type.is_pointer())
 				fail("object_bytes metadata requires ptr");
 		}
-		else if (key.length == 7 && std::memcmp(key.text, "classes", 7) == 0)
+		const uint32_t bit = 1u << static_cast<unsigned>(index);
+		if (index == MetadataKey::Classes)
 		{
-			if ((seen & (1u << 4)) != 0)
+			if ((seen & bit) != 0)
 				fail("duplicate metadata key: classes");
-			seen |= 1u << 4;
+			seen |= bit;
 			parameter.classes = parse_object_classes(parameter.type);
 			continue;
 		}
-		else
-			fail("invalid parameter metadata");
-		if ((seen & (1u << index)) != 0)
+		if ((seen & bit) != 0)
 			fail("duplicate metadata key: " + std::string(key.text, key.length));
-		seen |= 1u << index;
+		seen |= bit;
 		advance();
 	} while (accept(TokenKind::Comma));
 	expect(TokenKind::RBracket, "]");

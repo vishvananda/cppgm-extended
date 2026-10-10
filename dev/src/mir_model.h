@@ -1,323 +1,291 @@
 #pragma once
 
-// Optional typed machine-IR model scaffold.
+// The machine-IR vocabulary: every enumerable concept of the x86-64 MIR and
+// its dump (`lowir2native --dump-machine-ir`, pa24/README.md) as an enum,
+// with its spellings.  Registers and condition codes are in
+// native/mir/registers.h; the LowIR words the dump reuses (types, compare
+// predicates, conversions) come from lowir_model.h.  The course solution
+// builds on this header exactly as it is shipped.
 //
-// This header is a teaching shape, not the course solution's own model: it
-// is deliberately simple (names are plain strings) so it can be read whole.
+// As in lowir_model.h there are no containers: how a MIR function, block,
+// instruction and operand are stored is your design.  PA33 adds a
+// liveness-based allocator and MIR passes between selection and encoding,
+// so keep selection separate from register assignment and record each
+// instruction's uses, definitions and clobbers (see the PA24 handout).
 //
-// The MIR dump is the serialized view of the backend program model introduced
-// by lowir2native. This header gives one possible in-memory shape for that
-// model. Native emission and MIR dumping should consume the same facts.
+// The dump writes some of these with the LowIR type of their operation
+// (`load.i32`, `fadd.f64`, `sitofp.f64.i32`) and the compound forms from
+// their parts (`set` + condition, `f` + predicate, wide operation +
+// `.i128`); the fixed words of the dump's sections (`machine_ir`, `abi`,
+// `frame`, `stack_size`, ...) are format text, not vocabulary.
 
 #include <cstddef>
-#include <map>
-#include <string>
-#include <vector>
+#include <cstdint>
 
-#include "ir_symbol_model.h"
+#include "lowir_model.h"
 #include "native/mir/registers.h"
 
 namespace mir_model {
 
-struct GlobalDefinition
+// ---------------------------------------------------------------------------
+// Operations
+
+enum class Op : std::uint8_t
 {
-  struct DataItem
-  {
-    enum Kind
-    {
-      ITEM_INTEGER,
-      ITEM_FLOAT,
-      ITEM_ADDR,
-      ITEM_ZERO
-    } kind = ITEM_INTEGER;
-
-    std::string type;
-    long long int_value = 0;
-    long double float_value = 0.0L;
-    std::string literal_text;
-    std::string symbol;
-    long long addr_addend = 0;
-    std::size_t zero_bytes = 0;
-  };
-
-  enum StorageKind
-  {
-    GS_SCALAR,
-    GS_DATA
-  } storage_kind = GS_SCALAR;
-
-  enum InitKind
-  {
-    GI_ZERO,
-    GI_INTEGER,
-    GI_FLOAT,
-    GI_ADDR
-  } init_kind = GI_ZERO;
-
-  std::string name;
-  bool readonly = false;
-  bool thread_local_storage = false;
-  std::string thread_local_wrapper_symbol;
-  std::string section_segment;
-  std::string section_name;
-  std::string type;
-  long long int_value = 0;
-  long double float_value = 0.0L;
-  std::string literal_text;
-  std::string symbol;
-  long long addr_addend = 0;
-  std::vector<DataItem> data_items;
+  // Integer moves and memory.
+  Mov,    // mov dst, reg|imm|@sym
+  Load,   // load.T dst, mem (extending per T)
+  Store,  // store.T mem, reg|imm
+  Lea,    // lea dst, mem
+  // Two-address integer ALU: dst op= src.
+  Add,
+  Sub,
+  And,
+  Or,
+  Xor,
+  Imul,
+  Neg,
+  Not,
+  Bswap,
+  Bsf,  // bsf/bsr.T dst, src: the index of the lowest/highest set bit
+  Bsr,
+  Shl,
+  Shr,
+  Sar,    // dst, imm or rcx
+  Cmp,    // cmp.T a, b
+  Test,   // test.T a, b: the flags of a & b
+  Bt,     // bt.T a, b: CF = bit b of a
+  Setcc,  // set<cond> dst
+  Cmov,   // cmov<cond> dst, src
+  Movzx,  // movzx dst, dst (low byte)
+  Sext,   // sext.T dst [, src]: sign-extend the low T bits
+  Zext,   // zext.T dst [, src]: zero-extend the low T bits
+  Cqo,
+  Idiv,
+  Div,
+  Jcc,        // j<cond> ^label
+  Jmp,        // jmp ^label
+  Call,       // call @sym | call *reg | call *mem [call facts]
+  TailJump,   // tail_jump @sym | *reg | *mem: the epilogue, then a jump
+  CopyBytes,  // copy_bytes NxA, dst, src; copy_bytes_dynamic (MF_COPY_DYNAMIC)
+  ZeroBytes,  // zero_bytes NxA, dst
+  Ret,        // ret [value]
+  // Scalar floating point (f32/f64 in XMM registers; f80 forms in memory).
+  FMov,
+  FAdd,
+  FSub,
+  FMul,
+  FDiv,
+  FNeg,
+  FCmp,     // fcmp.T a, b (an unordered result sets PF)
+  FSetcc,   // f<predicate>.T dst, a, b: the comparison as a Boolean
+  Convert,  // <conversion>.S.D dst, src (source and destination types)
+  FRet,     // fret.f80 src
+  FStp,     // fstp.f80 [mem]: store or discard an x87 result
+  // Wide integers in memory.
+  Wide,           // <wide op>.i128 dst, a, b
+  WideSetcc,      // set.<predicate>.i128 dst, a, b
+  WideCmpBranch,  // cmp_branch.<predicate>.i128 a, b, ^true, ^false
+  // Atomics.
+  LockXadd,
+  Xchg,
+  LockCmpxchg,
+  LockCmpxchg16b,
+  Mfence,
+  // Variadic support, stack allocation and runtime operations.
+  VaStart,
+  VaArg,
+  StackAlloc,
+  EhPush,
+  EhPop,
+  Throw,
+  Resume,
+  LoadException,
+  EhMark,        // a landing's cleanup clause keeps its own record
+  EhCatch,       // eh_catch [@type-info], selector: one catch clause
+  LoadSelector,  // load_selector.T dst: the landing's matched clause
+  Landing,       // landing exc-slot, sel-slot: a host landing pad
+  EhSelect,      // eh_select sel-slot, raw-slot: a landing's selector translation
+  CatchAll,      // catch_all sel-slot, n: a mid-landing catch-all clause
+  TlsAddr,
+  Exit,
+  Trap,
+  JumpTable,  // jump_table idx, [^a, ^b, ...]
+  MulWide,    // mul src: rdx:rax = rax * src, unsigned
+  ImulWide,   // imul src: the signed form
+  Prologue,   // a shrink-wrapped function's frame setup
+  Nop         // a removed instruction: no code, not dumped
 };
 
-struct ParamBinding
-{
-  enum LocationKind
-  {
-    PL_REG,
-    PL_XMM,
-    PL_STACK
-  } location = PL_REG;
+const unsigned kOpCount = static_cast<unsigned>(Op::Nop) + 1;
 
-  std::string name;
-  X64Register reg = XR_RDI;
-  XmmRegister xmm = XMM_0;
-  long long stack_offset = 0;
-  long long chunk_offset = 0;
-  std::string type;
+// The mnemonic, or the stem of a compound one: "set" and "j" and "cmov"
+// take a condition, "f" a predicate, "cmp_branch" and "set" (WideSetcc)
+// a predicate and ".i128"; Convert and Wide are spelled by their sub-
+// operation, and Nop is never written ("").
+inline const char * spelling(Op op)
+{
+  static const char * const kOps[kOpCount] = { "mov", "load", "store", "lea", "add", "sub", "and",
+    "or", "xor", "imul", "neg", "not", "bswap", "bsf", "bsr", "shl", "shr", "sar", "cmp", "test",
+    "bt", "set", "cmov", "movzx", "sext", "zext", "cqo", "idiv", "div", "j", "jmp", "call",
+    "tail_jump", "copy_bytes", "zero_bytes", "ret", "fmov", "fadd", "fsub", "fmul", "fdiv", "fneg",
+    "fcmp", "f", "", "fret", "fstp", "", "set", "cmp_branch", "lock_xadd", "xchg", "lock_cmpxchg",
+    "lock_cmpxchg16b", "mfence", "va_start", "va_arg", "stack_alloc", "eh_push", "eh_pop", "throw",
+    "resume", "load_exception", "eh_mark", "eh_catch", "load_selector", "landing", "eh_select",
+    "catch_all", "tls_addr", "exit", "trap", "jump_table", "mul", "imul", "prologue", "" };
+  return kOps[static_cast<unsigned>(op)];
+}
+
+// The floating conversions of Op::Convert: the last six LowIR ConvertOps,
+// spelled as they are.
+enum class ConvKind : std::uint8_t
+{
+  SIToFP,
+  UIToFP,
+  FPToSI,
+  FPToUI,
+  FPExt,
+  FPTrunc
 };
 
-struct FrameBinding
+const unsigned kConvKindCount = static_cast<unsigned>(ConvKind::FPTrunc) + 1;
+
+inline lowir_model::ConvertOp convert_op(ConvKind kind)
 {
-  enum Kind
-  {
-    FB_PARAM_SLOT,
-    FB_SLOT,
-    FB_TEMP
-  } kind = FB_TEMP;
+  return static_cast<lowir_model::ConvertOp>(static_cast<unsigned>(kind) +
+                                             static_cast<unsigned>(lowir_model::ConvertOp::SIToFP));
+}
 
-  std::string name;
-  long long offset = 0;
-  std::string type;
-};
-
-struct Operand
+// The floating conversion of a LowIR ConvertOp; false for sext/zext/trunc.
+inline bool conv_kind(lowir_model::ConvertOp op, ConvKind * kind)
 {
-  enum Kind
-  {
-    OP_REG,
-    OP_XMM,
-    OP_IMM,
-    OP_FLOAT_IMM,
-    OP_SYMBOL,
-    OP_FRAME,
-    OP_GLOBAL,
-    OP_DEREF,
-    OP_LABEL
-  } kind = OP_IMM;
-
-  X64Register reg = XR_RAX;
-  XmmRegister xmm = XMM_0;
-  long long imm = 0;
-  long double float_imm = 0.0L;
-  long long offset = 0;
-  std::string text;
-};
-
-struct InstructionDebugLocation
-{
-  std::string file;
-  std::size_t line = 0;
-  std::size_t column = 0;
-
-  bool present() const
-  {
-    return !file.empty() && line != 0 && column != 0;
+  if(op < lowir_model::ConvertOp::SIToFP) {
+    return false;
   }
-};
+  *kind = static_cast<ConvKind>(static_cast<unsigned>(op) - static_cast<unsigned>(lowir_model::ConvertOp::SIToFP));
+  return true;
+}
 
-struct Instruction
+inline const char * spelling(ConvKind kind) { return lowir_model::spelling(convert_op(kind)); }
+
+// The operations of Op::Wide.  Div, UDiv, Mod and UMod call the runtime's
+// division routines.
+enum class WideOp : std::uint8_t
 {
-  enum Opcode
-  {
-    MI_MOV,
-    MI_LOAD,
-    MI_STORE,
-    MI_MFENCE,
-    MI_LOCK_XADD,
-    MI_XCHG,
-    MI_LOCK_CMPXCHG,
-    MI_LOCK_CMPXCHG16B,
-    MI_LEA,
-    MI_FMOV,
-    MI_FNEG,
-    MI_FADD,
-    MI_FSUB,
-    MI_FMUL,
-    MI_FDIV,
-    MI_FEQ,
-    MI_FNE,
-    MI_FLT,
-    MI_FGT,
-    MI_FLE,
-    MI_FGE,
-    MI_FCMP,
-    MI_FSTP,
-    MI_FPOP,
-    MI_SITOFP,
-    MI_UITOFP,
-    MI_FPTOSI,
-    MI_FPTOUI,
-    MI_FPEXT,
-    MI_FPTRUNC,
-    MI_ADD,
-    MI_SUB,
-    MI_IMUL,
-    MI_AND,
-    MI_OR,
-    MI_XOR,
-    MI_NEG,
-    MI_NOT,
-    MI_BSWAP,
-    MI_BSF,
-    MI_BSR,
-    MI_CMP,
-    MI_TEST,
-    MI_JCC,
-    MI_SETCC,
-    MI_CMOV,
-    MI_MOVZX,
-    MI_SEXT,
-    MI_ZEXT,
-    MI_CQO,
-    MI_IDIV,
-    MI_DIV,
-    MI_SHL_CL,
-    MI_SHR_CL,
-    MI_SAR_CL,
-    MI_TLS_ADDR,
-    MI_CALL,
-    MI_CALL_INDIRECT,
-    MI_COPY_BYTES,
-    MI_ZERO_BYTES,
-    MI_EH_PUSH,
-    MI_EH_POP,
-    MI_LOAD_EXCEPTION,
-    MI_LOAD_EXCEPTION_SELECTOR,
-    MI_THROW,
-    MI_RESUME,
-    MI_JMP,
-    MI_JMP_INDIRECT,
-    MI_JNE,
-    MI_FRET,
-    MI_RET,
-    MI_EXIT
-  } opcode = MI_MOV;
-
-  std::string type;
-  X86Condition condition = XC_E;
-  std::size_t byte_count = 0;
-  std::size_t byte_alignment = 1;
-  bool call_unwind_no = false;
-  bool call_returns_noreturn = false;
-  bool call_variadic = false;
-  bool has_source_position = false;
-  std::size_t source_position = 0;
-  InstructionDebugLocation debug_location;
-  std::vector<Operand> operands;
+  Move,
+  Add,
+  Sub,
+  Mul,
+  And,
+  Or,
+  Xor,
+  Shl,
+  Shr,
+  Sar,
+  Neg,
+  Not,
+  SExt,
+  ZExt,
+  Div,
+  UDiv,
+  Mod,
+  UMod
 };
 
-struct DebugVariable
+const unsigned kWideOpCount = static_cast<unsigned>(WideOp::UMod) + 1;
+
+inline const char * spelling(WideOp op)
 {
-  struct Range
-  {
-    enum LocationKind
-    {
-      LK_FRAME,
-      LK_REG,
-      LK_XMM
-    } location = LK_FRAME;
+  static const char * const kWideOps[kWideOpCount] = { "mov", "add", "sub", "mul", "and", "or",
+    "xor", "shl", "shr", "sar", "neg", "not", "sext", "zext", "div", "udiv", "mod", "umod" };
+  return kWideOps[static_cast<unsigned>(op)];
+}
 
-    std::size_t start_source_position = 0;
-    std::size_t end_source_position = 0;
-    long long frame_offset = 0;
-    X64Register reg = XR_RAX;
-    XmmRegister xmm = XMM_0;
-  };
+// ---------------------------------------------------------------------------
+// Instruction flags
 
-  std::string name;
-  std::string type;
-  InstructionDebugLocation decl_location;
-  std::vector<Range> ranges;
-};
-
-struct Block
+enum InstFlag : std::uint16_t
 {
-  std::string label;
-  std::vector<Instruction> instructions;
+  MF_VARIADIC = 1,       // call: `variadic`
+  MF_UNWIND_NO = 2,      // call: `unwind=no`
+  MF_NORETURN = 4,       // call: `returns=noreturn`
+  MF_VOLATILE = 8,       // a volatile access (Wide: an i128 atomic load)
+  MF_COPY_DYNAMIC = 16,  // copy_bytes_dynamic: rdx bytes from rsi to rdi
+  MF_STRLEN_PREFIX = 32, // call: `strlen_prefix=16`, a strlen whose first 16 bytes are probed inline
+  MF_FRAMELESS = 64      // ret in a shrink-wrapped function's frameless region: no epilogue
 };
 
-struct HostEhClause
+// The call fact a flag writes in a call's `[args=(...), ...]` list; null
+// for flags that are not call facts.
+inline const char * call_fact_spelling(InstFlag flag)
 {
-  enum Kind
-  {
-    HC_CLEANUP,
-    HC_CATCH,
-    HC_FILTER
-  } kind = HC_CATCH;
-  bool catch_all = false;
-  long long selector = 0;
-  std::string type_symbol;
-  std::vector<std::string> filter_type_symbols;
-};
+  switch(flag) {
+  case MF_VARIADIC: return "variadic";
+  case MF_UNWIND_NO: return "unwind=no";
+  case MF_NORETURN: return "returns=noreturn";
+  case MF_STRLEN_PREFIX: return "strlen_prefix=16";
+  default: return 0;
+  }
+}
 
-struct Function
+// ---------------------------------------------------------------------------
+// Operands
+
+enum class OperandKind : std::uint8_t
 {
-  std::string name;
-  std::vector<ParamBinding> params;
-  std::string return_type;
-  std::size_t frame_bytes = 0;
-  std::size_t stack_size = 0;
-  std::size_t scratch_bytes = 0;
-  bool host_eh_enabled = false;
-  long long host_eh_exception_offset = 0;
-  long long host_eh_selector_offset = 0;
-  InstructionDebugLocation debug_location;
-  std::vector<X64Register> callee_saved_regs;
-  std::vector<FrameBinding> frame_bindings;
-  std::vector<DebugVariable> debug_variables;
-  std::map<std::string, std::vector<HostEhClause> > host_eh_clauses;
-  std::vector<Block> blocks;
+  None,
+  Reg,     // rax, xmm0, st0
+  Imm,     // an integer immediate (two 64-bit halves for i128)
+  FImm,    // a floating immediate: its bits and its f32/f64/f80 kind
+  Mem,     // [base + index*scale + disp], or symbol-relative @sym+disp
+  Symbol,  // the address of a symbol: @sym, @sym+disp
+  Label    // a block of the current function: ^label
 };
 
-struct ObjectAlias
+// How a symbol's address forms: pc-relative; from its GOT entry (a host
+// object's imported data); as a thread-local object's address for the
+// executing thread (local exec for one the object defines, initial exec
+// otherwise).
+enum class SymbolAccess : std::uint8_t
 {
-  std::string object_symbol;
-  std::string target;
+  Direct,
+  Got,
+  TlsLocal,
+  TlsInitial
 };
 
-struct Program
+const unsigned kSymbolAccessCount = static_cast<unsigned>(SymbolAccess::TlsInitial) + 1;
+
+// The operand suffix after `@`: "got", "tpoff", "gottpoff"; "" for Direct.
+inline const char * spelling(SymbolAccess access)
 {
-  std::string target;
-  std::vector<Instruction> startup;
-  std::vector<GlobalDefinition> globals;
-  std::vector<Function> functions;
-  std::vector<ObjectAlias> object_aliases;
-  std::vector<ir_model::ExportedSymbol> exported_symbols;
+  static const char * const kAccesses[kSymbolAccessCount] = { "", "got", "tpoff", "gottpoff" };
+  return kAccesses[static_cast<unsigned>(access)];
+}
+
+// ---------------------------------------------------------------------------
+// Frame bindings: the named frame locations a function's `frame` section
+// lists (`param-slot %x -> [rbp-8] : i64`, `slot $x ...`, `temp %x ...`).
+
+enum class BindingKind : std::uint8_t
+{
+  ParamSlot,
+  Slot,
+  Temp
 };
 
-using MirGlobalDefinition = GlobalDefinition;
-using MirParamBinding = ParamBinding;
-using MirFrameBinding = FrameBinding;
-using MirOperand = Operand;
-using MirInstructionDebugLocation = InstructionDebugLocation;
-using MirInstruction = Instruction;
-using MirDebugVariable = DebugVariable;
-using MirBlock = Block;
-using MirHostEhClause = HostEhClause;
-using MirFunction = Function;
-using MirObjectAlias = ObjectAlias;
-using MirProgram = Program;
+const unsigned kBindingKindCount = static_cast<unsigned>(BindingKind::Temp) + 1;
 
-std::string serialize_mir_program(const MirProgram & program);
+inline const char * spelling(BindingKind kind)
+{
+  static const char * const kBindings[kBindingKindCount] = { "param-slot", "slot", "temp" };
+  return kBindings[static_cast<unsigned>(kind)];
+}
+
+// The sigil of the bound name: a parameter's or temporary's `%`, a slot's `$`.
+inline char sigil(BindingKind kind)
+{
+  return lowir_model::sigil(kind == BindingKind::Slot ? lowir_model::ValueKind::Slot : lowir_model::ValueKind::Temp);
+}
 
 }  // namespace mir_model

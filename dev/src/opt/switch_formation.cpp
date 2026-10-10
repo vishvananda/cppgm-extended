@@ -180,7 +180,7 @@ bool SwitchFormer::test_of(BlockId block, bool head, Test& test) const
 	if (!x.is(ValueKind::Temp))
 	{
 		std::swap(x, k);
-		pred = swapped_predicate(pred);
+		pred = swapped(pred);
 	}
 	Constant literal;
 	if (!x.is(ValueKind::Temp) || !literal_constant(body_, k, literal) || body_.temps[x.index].type != cmp.type)

@@ -744,7 +744,7 @@ Cond FunctionSelector::compare_flags(const Instruction& compare)
 	if (a.kind == OperandKind::Imm && b.kind != OperandKind::Imm)
 	{
 		std::swap(a, b);
-		pred = swapped_predicate(pred);
+		pred = swapped(pred);
 	}
 	if (a.kind == OperandKind::Imm || (a.kind == OperandKind::Mem && b.kind == OperandKind::Mem))
 	{

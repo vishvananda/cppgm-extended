@@ -71,7 +71,10 @@ struct DebugPPTokenStream : IPPTokenStream
 
 private:
 
-	void write_token(const std::string& type, const std::string& data)
+	// `type` stays a C string: most type names are longer than the
+	// short-string buffer, so a std::string parameter would allocate for
+	// every token.
+	void write_token(const char* type, const std::string& data)
 	{
 		std::cout << type << " " << data.size() << " ";
 		std::cout.write(data.data(), data.size());

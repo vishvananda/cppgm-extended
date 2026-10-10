@@ -1,7 +1,14 @@
 // Student-facing scaffold for the PA9 `abimangle` binary.
+//
+// abi/itanium/abi_mangle.h gives the vocabulary: the Itanium codes and the
+// fact-file words as enums.  The typed ABI model, the fact reader that
+// builds it, the substitution dictionary and the encoder are yours; keep
+// the model and encoder under dev/src/ so the compiler (PA10 on) builds
+// typed targets and calls the same encoder without writing fact text.
 
 #include "abi/itanium/abi_mangle.h"
 #include "support/not_implemented.h"
+#include "support/tool_help_text.h"
 
 #include <cstdlib>
 #include <fstream>
@@ -12,41 +19,15 @@
 
 using namespace std;
 
-namespace abi_mangle {
+namespace {
 
-AbiFactRecord parse_fact_record_words(const vector<string> & words)
-{
-  (void)words;
-  throw NotImplementedException();
-}
-
-AbiFactFile parse_fact_text(const string & text)
-{
-  (void)text;
-  throw NotImplementedException();
-}
-
-string serialize_fact_file(const AbiFactFile & file)
-{
-  (void)file;
-  throw NotImplementedException();
-}
-
-string mangle_fact_file(const AbiFactFile & file)
-{
-  (void)file;
-  throw NotImplementedException();
-}
-
+// Reads the fact files in order and returns one mangled name per case,
+// each on its own line.
 string mangle_fact_files(const vector<string> & input_paths)
 {
   (void)input_paths;
   throw NotImplementedException();
 }
-
-}  // namespace abi_mangle
-
-namespace {
 
 struct AbimangleInvocation
 {
@@ -67,7 +48,7 @@ bool has_help_arg(int argc, char ** argv)
 
 void print_help()
 {
-  cout << "usage: abimangle -o <outfile> <abi-facts-file>...\n";
+  cout << abimangle_help_text();
 }
 
 AbimangleInvocation parse_invocation(int argc, char ** argv)
@@ -101,7 +82,7 @@ int run_abimangle(int argc, char ** argv)
   if(!out) {
     throw logic_error("unable to open output file '" + invocation.outfile + "'");
   }
-  out << abi_mangle::mangle_fact_files(invocation.inputs);
+  out << mangle_fact_files(invocation.inputs);
   return EXIT_SUCCESS;
 }
 
@@ -111,9 +92,9 @@ int main(int argc, char ** argv)
 {
   try {
     return run_abimangle(argc, argv);
-  } catch(const NotImplementedException &) {
-    cerr << "abimangle: not implemented\n";
-    return EXIT_FAILURE;
+  } catch(const NotImplementedException & e) {
+    cerr << "ERROR: " << e.what() << endl;
+    return CPPGM_EXIT_NOT_IMPLEMENTED;
   } catch(const exception & e) {
     cerr << "abimangle: " << e.what() << "\n";
     return EXIT_FAILURE;

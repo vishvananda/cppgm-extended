@@ -12,7 +12,7 @@
 #include "support/internal_error.h"
 #include "support/telemetry.h"
 #include "support/tool_errors.h"
-#include "support/tool_usage.h"
+#include "support/tool_help_text.h"
 #include "syntax/ast_printer.h"
 #include "syntax/syntax_unit.h"
 

@@ -57,7 +57,7 @@ struct RuntimeSpec
 {
 	const char* spelling;
 	const char* object;
-	uint8_t role;
+	ir_model::SymbolRole role;
 	// Parameters (`p` ptr, `l` i64) and the result (`v` void, `p` ptr).
 	const char* parameters;
 	char result;
@@ -409,7 +409,8 @@ lowir::SymbolId ProgramLowering::rtti_vtable(TypeInfoKind kind)
 		"_ZTVN10__cxxabiv123__fundamental_type_infoE", "_ZTVN10__cxxabiv119__pointer_type_infoE",
 		"_ZTVN10__cxxabiv129__pointer_to_member_type_infoE", "_ZTVN10__cxxabiv120__function_type_infoE",
 		"_ZTVN10__cxxabiv117__array_type_infoE", "_ZTVN10__cxxabiv116__enum_type_infoE" };
-	static const uint8_t kRoles[] = { ir_model::SR_RTTI_CLASS, ir_model::SR_RTTI_SI, ir_model::SR_RTTI_VMI };
+	static const ir_model::SymbolRole kRoles[] = { ir_model::SR_RTTI_CLASS, ir_model::SR_RTTI_SI,
+		ir_model::SR_RTTI_VMI };
 	const lowir::SymbolId symbol = new_symbol(std::string("__external_rtti_vtable__") + kNames[index]);
 	lowir::Global global = lowir::Global();
 	global.typed = false;
@@ -417,8 +418,8 @@ lowir::SymbolId ProgramLowering::rtti_vtable(TypeInfoKind kind)
 	program_.declare_global(symbol, lowir::SymbolKind::GlobalDeclaration, global);
 	lowir::SymbolMetadata& metadata = program_.symbols[symbol].metadata;
 	metadata.role = index < 3           ? kRoles[index]
-		: kind == TypeInfoKind::Pointer ? static_cast<uint8_t>(ir_model::SR_RTTI_POINTER)
-										: static_cast<uint8_t>(ir_model::SR_RTTI_DATA);
+		: kind == TypeInfoKind::Pointer ? ir_model::SR_RTTI_POINTER
+										: ir_model::SR_RTTI_DATA;
 	metadata.binding = ir_model::SBM_STRONG;
 	metadata.object = intern(kObjects[index], static_cast<uint32_t>(std::strlen(kObjects[index])));
 	rtti_vtables_[index] = symbol;

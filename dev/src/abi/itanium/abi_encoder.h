@@ -3,12 +3,10 @@
 // Public ABI naming API: typed targets over the canonical ABI graph and the
 // one Itanium encoder (Itanium C++ ABI 5.1) shared by the PA9 `abimangle`
 // tool and the compiler stages that emit symbols. Producers build graph
-// nodes and a target directly; nothing is serialized to fact text.
-//
-// Replaces the course's scaffold abi/itanium/abi_mangle.h, which ships to
-// students unchanged. The ABI scaffold headers define some of these names
-// differently, so the implementation includes none of them (the
-// scaffold-header check enforces this).
+// nodes and a target directly; nothing is serialized to fact text. The
+// Itanium vocabulary it spells names with (builtin, substitution, terminal
+// and operation codes, target prefixes) is the shipped vocabulary header
+// abi/itanium/abi_mangle.h, used as it is.
 
 #include "abi/itanium/abi_graph.h"
 #include "abi/itanium/abi_stats.h"
@@ -18,30 +16,7 @@
 
 namespace abi_mangle {
 
-enum AbiTargetKind : std::uint8_t
-{
-	ABI_TARGET_TYPE,                // node = type; the bare <type> encoding
-	ABI_TARGET_ENTITY,              // node = function encoding or data name: _Z <encoding>
-	ABI_TARGET_C_NAME,              // node = STRING: an unmangled C-linkage name
-	ABI_TARGET_TYPEINFO,            // node = type: _ZTI
-	ABI_TARGET_TYPEINFO_NAME,       // node = type: _ZTS
-	ABI_TARGET_VTABLE,              // node = type: _ZTV
-	ABI_TARGET_VTT,                 // node = type: _ZTT
-	ABI_TARGET_CONSTRUCTION_VTABLE, // node = derived type, base = base type, offset: _ZTC
-	ABI_TARGET_TLS_WRAPPER,         // node = variable name: _ZTW
-	ABI_TARGET_THUNK,               // node = function encoding; call offsets: _ZT
-	ABI_TARGET_TLS_INIT,            // node = variable name: _ZTH
-	ABI_TARGET_GUARD_VARIABLE       // node = variable name (a local one's too): _ZGV
-};
-
-// A <call-offset> (5.1.4.2): a fixed adjustment, or a fixed adjustment to a
-// virtual base followed by a vcall offset.
-struct AbiCallOffset
-{
-	bool is_virtual = false;
-	long long offset = 0;
-	long long vcall_offset = 0;
-};
+// AbiTargetKind and AbiCallOffset (a <call-offset>) are abi_mangle.h's.
 
 struct AbiTarget
 {

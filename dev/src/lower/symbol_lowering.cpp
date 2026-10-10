@@ -3117,7 +3117,7 @@ lowir::SignatureId ProgramLowering::function_signature(
 	signature.result = incomplete_result || indirect ? lowir::Type::scalar(lowir::TypeKind::Void)
 		: result->is_reference()                     ? lowir::Type::scalar(lowir::TypeKind::Ptr)
 													 : storage_type(result);
-	signature.result_classes = incomplete_result || indirect ? 0 : result_classes(result);
+	signature.boundary.result_classes = incomplete_result || indirect ? 0 : result_classes(result);
 	if (type->variadic)
 		signature.boundary.arity = ir_model::CAM_VARIADIC;
 	if (function_nothrow(function))
@@ -3170,7 +3170,7 @@ lowir::SignatureId ProgramLowering::member_call_signature(const sema::Type* memb
 	signature.result = indirect  ? lowir::Type::scalar(lowir::TypeKind::Void)
 		: result->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
 								 : storage_type(result);
-	signature.result_classes = indirect ? 0 : result_classes(result);
+	signature.boundary.result_classes = indirect ? 0 : result_classes(result);
 	if (type->variadic)
 		signature.boundary.arity = ir_model::CAM_VARIADIC;
 	const lowir::SignatureId id = program_.add_signature(signature);
@@ -3210,7 +3210,7 @@ lowir::SignatureId ProgramLowering::call_signature(const sema::Type* function)
 	signature.result = indirect  ? lowir::Type::scalar(lowir::TypeKind::Void)
 		: result->is_reference() ? lowir::Type::scalar(lowir::TypeKind::Ptr)
 								 : storage_type(result);
-	signature.result_classes = indirect ? 0 : result_classes(result);
+	signature.boundary.result_classes = indirect ? 0 : result_classes(result);
 	if (type->variadic)
 		signature.boundary.arity = ir_model::CAM_VARIADIC;
 	const lowir::SignatureId id = program_.add_signature(signature);

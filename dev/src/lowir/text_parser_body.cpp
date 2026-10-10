@@ -272,10 +272,10 @@ void Parser::parse_rvalue(FunctionBuilder& builder, TempId result)
 {
 	const Token head = token();
 	const WordInfo info = word(head);
-	if (info.word_class != WordClass::Keyword)
+	if (info.word_class != WordClass::Opcode)
 		fail("unknown rvalue instruction: " + spelling(head));
 	advance();
-	const Keyword keyword = static_cast<Keyword>(info.value);
+	const Opcode keyword = static_cast<Opcode>(info.value);
 	Instruction inst = make_instruction(Opcode::Const, kVoid);
 	Type type = kVoid;
 	if (!parse_value_instruction(builder, keyword, inst, type) &&
@@ -287,11 +287,11 @@ void Parser::parse_rvalue(FunctionBuilder& builder, TempId result)
 	builder.bind(result, type, id);
 }
 
-bool Parser::parse_value_instruction(FunctionBuilder& builder, Keyword keyword, Instruction& inst, Type& result)
+bool Parser::parse_value_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst, Type& result)
 {
 	switch (keyword)
 	{
-	case Keyword::Const:
+	case Opcode::Const:
 	{
 		inst.op = Opcode::Const;
 		inst.type = result = parse_type();
@@ -300,49 +300,49 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Keyword keyword, 
 		inst.ops[0] = parse_value(builder, inst.type.kind());
 		return true;
 	}
-	case Keyword::Copy:
+	case Opcode::Copy:
 		inst.op = Opcode::Copy;
 		inst.type = result = parse_type();
 		inst.ops[0] = parse_value(builder, inst.type.kind());
 		return true;
-	case Keyword::Phi:
+	case Opcode::Phi:
 		parse_phi(builder, inst);
 		result = inst.type;
 		return true;
-	case Keyword::Unary:
-	case Keyword::Binary:
-	case Keyword::Cmp:
+	case Opcode::Unary:
+	case Opcode::Binary:
+	case Opcode::Compare:
 	{
 		const WordInfo info = word(token());
-		const WordClass expected = keyword == Keyword::Unary ? WordClass::Unary
-			: keyword == Keyword::Binary                     ? WordClass::Binary
-															 : WordClass::Compare;
+		const WordClass expected = keyword == Opcode::Unary ? WordClass::Unary
+			: keyword == Opcode::Binary                     ? WordClass::Binary
+															: WordClass::Compare;
 		if (info.word_class != expected)
 			fail("unknown LowIR operation: " + spelling(token()));
 		advance();
-		inst.op = keyword == Keyword::Unary ? Opcode::Unary
-			: keyword == Keyword::Binary    ? Opcode::Binary
-											: Opcode::Compare;
+		inst.op = keyword == Opcode::Unary ? Opcode::Unary
+			: keyword == Opcode::Binary    ? Opcode::Binary
+										   : Opcode::Compare;
 		inst.sub = info.value;
-		if (keyword == Keyword::Binary)
+		if (keyword == Opcode::Binary)
 		{
 			// Instruction facts, in this order (the validator checks where).
-			if (accept_keyword(Keyword::NoWrap))
+			if (accept_word(WordClass::Fact, IF_NO_WRAP))
 				inst.flags |= IF_NO_WRAP;
-			if (accept_keyword(Keyword::Exact))
+			if (accept_word(WordClass::Fact, IF_EXACT))
 				inst.flags |= IF_EXACT;
 		}
 		inst.type = parse_type();
 		inst.ops[0] = parse_value(builder, inst.type.kind());
-		if (keyword != Keyword::Unary)
+		if (keyword != Opcode::Unary)
 		{
 			expect(TokenKind::Comma, ",");
 			inst.ops[1] = parse_value(builder, inst.type.kind());
 		}
-		result = keyword == Keyword::Cmp ? kI64 : inst.type;
+		result = keyword == Opcode::Compare ? kI64 : inst.type;
 		return true;
 	}
-	case Keyword::Select:
+	case Opcode::Select:
 	{
 		// select <type> <condition>, <if nonzero>, <else>: the condition at
 		// its own temporary's type (a literal reads as i64).
@@ -355,7 +355,7 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Keyword keyword, 
 		inst.ops[2] = parse_value(builder, inst.type.kind());
 		return true;
 	}
-	case Keyword::Convert:
+	case Opcode::Convert:
 	{
 		const WordInfo info = word(token());
 		if (info.word_class != WordClass::Convert)
@@ -369,29 +369,29 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Keyword keyword, 
 		inst.ops[0] = parse_value(builder, source.kind());
 		return true;
 	}
-	case Keyword::Call:
+	case Opcode::Call:
 		parse_call(builder, inst);
 		result = inst.type;
 		return true;
-	case Keyword::Exception:
-	case Keyword::ExceptionSelector:
-		inst.op = keyword == Keyword::Exception ? Opcode::Exception : Opcode::ExceptionSelector;
+	case Opcode::Exception:
+	case Opcode::ExceptionSelector:
+		inst.op = keyword == Opcode::Exception ? Opcode::Exception : Opcode::ExceptionSelector;
 		inst.type = parse_type();
-		result = keyword == Keyword::Exception ? inst.type : kI64;
+		result = keyword == Opcode::Exception ? inst.type : kI64;
 		return true;
-	case Keyword::StackAlloc:
+	case Opcode::StackAlloc:
 		inst.op = Opcode::StackAlloc;
 		inst.type = result = kPtr;
 		inst.ops[0] = parse_value(builder, TypeKind::Void);
 		return true;
-	case Keyword::VaArg:
+	case Opcode::VaArg:
 		inst.op = Opcode::VaArg;
 		inst.type = result = parse_type();
 		inst.ops[0] = parse_value(builder, TypeKind::Void);
 		if (accept(TokenKind::LBracket))
 		{
 			// Host objects: [classes=<classes>] of the object read.
-			if (!program_.object_facts || !at_word("classes"))
+			if (!program_.object_facts || !at_word(ir_model::spelling(MetadataKey::Classes)))
 				fail("invalid va_arg metadata");
 			advance();
 			expect(TokenKind::Equals, "=");
@@ -406,34 +406,34 @@ bool Parser::parse_value_instruction(FunctionBuilder& builder, Keyword keyword, 
 	}
 }
 
-bool Parser::parse_memory_instruction(FunctionBuilder& builder, Keyword keyword, Instruction& inst, Type& result)
+bool Parser::parse_memory_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst, Type& result)
 {
 	switch (keyword)
 	{
-	case Keyword::Addr:
+	case Opcode::Addr:
 		inst.op = Opcode::Addr;
 		inst.type = result = kPtr;
 		if (!at(TokenKind::Slot) && !at(TokenKind::Global))
 			fail(at(TokenKind::Block) ? "block label used as value" : "expected a slot, global or function to address");
 		inst.ops[0] = parse_value(builder, TypeKind::Void);
 		return true;
-	case Keyword::Load:
+	case Opcode::Load:
 		inst.op = Opcode::Load;
-		if (accept_keyword(Keyword::Volatile))
+		if (accept_word(WordClass::Fact, IF_VOLATILE))
 			inst.flags |= IF_VOLATILE;
-		if (accept_keyword(Keyword::Typed))
+		if (accept_word(WordClass::Fact, IF_TYPED))
 			inst.flags |= IF_TYPED;
 		inst.type = result = parse_type();
 		inst.ops[0] = parse_storage(builder);
 		return true;
-	case Keyword::AtomicLoad:
+	case Opcode::AtomicLoad:
 		inst.op = Opcode::AtomicLoad;
 		inst.type = result = parse_type();
 		inst.ops[0] = parse_value(builder, TypeKind::Ptr);
 		expect(TokenKind::Comma, ",");
 		inst.order = parse_order();
 		return true;
-	case Keyword::Index:
+	case Opcode::Index:
 		inst.op = Opcode::Index;
 		inst.type = parse_type();
 		result = kPtr;
@@ -443,9 +443,9 @@ bool Parser::parse_memory_instruction(FunctionBuilder& builder, Keyword keyword,
 		expect(TokenKind::Comma, ",");
 		inst.ops[1] = parse_value(builder, TypeKind::Void);
 		return true;
-	case Keyword::AtomicAddFetch:
-	case Keyword::AtomicExchange:
-		inst.op = keyword == Keyword::AtomicAddFetch ? Opcode::AtomicAddFetch : Opcode::AtomicExchange;
+	case Opcode::AtomicAddFetch:
+	case Opcode::AtomicExchange:
+		inst.op = keyword == Opcode::AtomicAddFetch ? Opcode::AtomicAddFetch : Opcode::AtomicExchange;
 		inst.type = result = parse_type();
 		inst.ops[0] = parse_value(builder, TypeKind::Ptr);
 		expect(TokenKind::Comma, ",");
@@ -453,7 +453,7 @@ bool Parser::parse_memory_instruction(FunctionBuilder& builder, Keyword keyword,
 		expect(TokenKind::Comma, ",");
 		inst.order = parse_order();
 		return true;
-	case Keyword::AtomicCompareExchange:
+	case Opcode::AtomicCompareExchange:
 		inst.op = Opcode::AtomicCompareExchange;
 		inst.type = parse_type();
 		result = kI64;
@@ -476,24 +476,24 @@ void Parser::parse_effect(FunctionBuilder& builder)
 {
 	const Token head = token();
 	const WordInfo info = word(head);
-	if (info.word_class != WordClass::Keyword)
+	if (info.word_class != WordClass::Opcode)
 		fail("unknown instruction: " + spelling(head));
 	advance();
-	const Keyword keyword = static_cast<Keyword>(info.value);
+	const Opcode keyword = static_cast<Opcode>(info.value);
 	Instruction inst = make_instruction(Opcode::Store, kVoid);
 	switch (keyword)
 	{
-	case Keyword::Store:
-		if (accept_keyword(Keyword::Volatile))
+	case Opcode::Store:
+		if (accept_word(WordClass::Fact, IF_VOLATILE))
 			inst.flags |= IF_VOLATILE;
-		if (accept_keyword(Keyword::Typed))
+		if (accept_word(WordClass::Fact, IF_TYPED))
 			inst.flags |= IF_TYPED;
 		inst.type = parse_type();
 		inst.ops[0] = parse_value(builder, inst.type.kind());
 		expect(TokenKind::Comma, ",");
 		inst.ops[1] = parse_storage(builder);
 		break;
-	case Keyword::AtomicStore:
+	case Opcode::AtomicStore:
 		inst.op = Opcode::AtomicStore;
 		inst.type = parse_type();
 		inst.ops[0] = parse_value(builder, inst.type.kind());
@@ -502,43 +502,43 @@ void Parser::parse_effect(FunctionBuilder& builder)
 		expect(TokenKind::Comma, ",");
 		inst.order = parse_order();
 		break;
-	case Keyword::AtomicThreadFence:
-	case Keyword::AtomicSignalFence:
-		inst.op = keyword == Keyword::AtomicThreadFence ? Opcode::AtomicThreadFence : Opcode::AtomicSignalFence;
+	case Opcode::AtomicThreadFence:
+	case Opcode::AtomicSignalFence:
+		inst.op = keyword == Opcode::AtomicThreadFence ? Opcode::AtomicThreadFence : Opcode::AtomicSignalFence;
 		inst.order = parse_order();
 		break;
-	case Keyword::VaStart:
+	case Opcode::VaStart:
 		inst.op = Opcode::VaStart;
 		inst.ops[0] = parse_value(builder, TypeKind::Ptr);
 		break;
-	case Keyword::Call:
+	case Opcode::Call:
 		parse_call(builder, inst);
 		if (!inst.type.is_void())
 			fail_at(Position{ source_, head.line }, "a call without a result must be void");
 		break;
-	case Keyword::CopyObj:
-	case Keyword::ZeroInit:
+	case Opcode::CopyObject:
+	case Opcode::ZeroInit:
 	{
-		inst.op = keyword == Keyword::CopyObj ? Opcode::CopyObject : Opcode::ZeroInit;
+		inst.op = keyword == Opcode::CopyObject ? Opcode::CopyObject : Opcode::ZeroInit;
 		uint64_t bytes = 0;
 		unsigned align_log2 = 0;
 		parse_span(bytes, align_log2);
 		inst.immediate = static_cast<int64_t>(bytes);
 		inst.sub = static_cast<uint8_t>(align_log2);
 		inst.ops[0] = parse_value(builder, TypeKind::Ptr);
-		if (keyword == Keyword::CopyObj)
+		if (keyword == Opcode::CopyObject)
 		{
 			expect(TokenKind::Comma, ",");
 			inst.ops[1] = parse_value(builder, TypeKind::Ptr);
 		}
 		break;
 	}
-	case Keyword::EhTry:
-	case Keyword::EhCleanup:
-	case Keyword::EhCatch:
-	case Keyword::EhFilter:
-	case Keyword::EhCatchAll:
-	case Keyword::EhEnd:
+	case Opcode::EhTry:
+	case Opcode::EhCleanup:
+	case Opcode::EhCatch:
+	case Opcode::EhFilter:
+	case Opcode::EhCatchAll:
+	case Opcode::EhEnd:
 		parse_eh_instruction(builder, keyword, inst);
 		break;
 	default:
@@ -550,26 +550,26 @@ void Parser::parse_effect(FunctionBuilder& builder)
 	builder.append(inst);
 }
 
-bool Parser::parse_control_instruction(FunctionBuilder& builder, Keyword keyword, Instruction& inst)
+bool Parser::parse_control_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst)
 {
 	switch (keyword)
 	{
-	case Keyword::Throw:
+	case Opcode::Throw:
 		inst.op = Opcode::Throw;
 		inst.type = parse_type();
 		inst.ops[0] = parse_value(builder, inst.type.kind());
 		return true;
-	case Keyword::Resume:
+	case Opcode::Resume:
 		inst.op = Opcode::Resume;
 		return true;
-	case Keyword::Unreachable:
+	case Opcode::Unreachable:
 		inst.op = Opcode::Unreachable;
 		return true;
-	case Keyword::Jump:
+	case Opcode::Jump:
 		inst.op = Opcode::Jump;
 		inst.ops[0] = Value::block(expect_block(builder));
 		return true;
-	case Keyword::Branch:
+	case Opcode::Branch:
 		inst.op = Opcode::Branch;
 		inst.ops[0] = parse_value(builder, TypeKind::I64);
 		expect(TokenKind::Comma, ",");
@@ -577,10 +577,10 @@ bool Parser::parse_control_instruction(FunctionBuilder& builder, Keyword keyword
 		expect(TokenKind::Comma, ",");
 		inst.ops[2] = Value::block(expect_block(builder));
 		return true;
-	case Keyword::Switch:
+	case Opcode::Switch:
 		parse_switch(builder, inst);
 		return true;
-	case Keyword::Return:
+	case Opcode::Return:
 		inst.op = Opcode::Return;
 		inst.type = parse_type();
 		if (!inst.type.is_void())
@@ -591,20 +591,20 @@ bool Parser::parse_control_instruction(FunctionBuilder& builder, Keyword keyword
 	}
 }
 
-void Parser::parse_eh_instruction(FunctionBuilder& builder, Keyword keyword, Instruction& inst)
+void Parser::parse_eh_instruction(FunctionBuilder& builder, Opcode keyword, Instruction& inst)
 {
 	switch (keyword)
 	{
-	case Keyword::EhTry:
+	case Opcode::EhTry:
 		inst.op = Opcode::EhTry;
 		inst.ops[0] = Value::block(expect_block(builder));
 		break;
-	case Keyword::EhCleanup:
+	case Opcode::EhCleanup:
 		inst.op = Opcode::EhCleanup;
 		if (at(TokenKind::Block))
 			inst.ops[0] = Value::block(expect_block(builder));
 		break;
-	case Keyword::EhCatch:
+	case Opcode::EhCatch:
 		inst.op = Opcode::EhCatch;
 		inst.ops[0] = Value::symbol(reference_symbol(expect_name(TokenKind::Global, "catch type symbol")));
 		if (accept(TokenKind::Comma))
@@ -613,7 +613,7 @@ void Parser::parse_eh_instruction(FunctionBuilder& builder, Keyword keyword, Ins
 			inst.flags |= IF_SELECTOR;
 		}
 		break;
-	case Keyword::EhFilter:
+	case Opcode::EhFilter:
 	{
 		inst.op = Opcode::EhFilter;
 		operand_scratch_.clear();
@@ -637,7 +637,7 @@ void Parser::parse_eh_instruction(FunctionBuilder& builder, Keyword keyword, Ins
 		inst.extra_first = builder.add_operands(operand_scratch_.data(), inst.extra_count);
 		break;
 	}
-	case Keyword::EhCatchAll:
+	case Opcode::EhCatchAll:
 		inst.op = Opcode::EhCatchAll;
 		if (accept(TokenKind::Comma))
 		{
@@ -674,17 +674,17 @@ void Parser::parse_call(FunctionBuilder& builder, Instruction& inst)
 		const InstId id = static_cast<InstId>(builder.body().instructions.size());
 		do
 		{
-			if (at_word("elision") && (inst.flags & IF_COPY_ELISION) == 0)
+			if (at_word(ir_model::spelling(MetadataKey::Elision)) && (inst.flags & IF_COPY_ELISION) == 0)
 			{
 				advance();
 				expect(TokenKind::Equals, "=");
-				if (!at_word("copy"))
+				if (!at_word(elision_copy_spelling()))
 					fail("invalid call metadata");
 				advance();
 				inst.flags |= IF_COPY_ELISION;
 				continue;
 			}
-			if (!program_.object_facts || !at_word("classes"))
+			if (!program_.object_facts || !at_word(ir_model::spelling(MetadataKey::Classes)))
 				fail("invalid call metadata");
 			advance();
 			expect(TokenKind::Equals, "=");
@@ -748,12 +748,12 @@ void Parser::parse_switch(FunctionBuilder& builder, Instruction& inst)
 void Parser::parse_index_metadata(Instruction& inst)
 {
 	advance();
-	if (!at(TokenKind::Word) || token().length != 10 || std::memcmp(token().text, "projection", 10) != 0)
+	if (!at(TokenKind::Word) || !at_word(ir_model::spelling(MetadataKey::Projection)))
 		fail("invalid index metadata");
 	advance();
 	expect(TokenKind::Equals, "=");
-	const unsigned projection = at(TokenKind::Word) ? kProjectionSpellings.find(token().text, token().length) : 0;
-	if (projection == 0)
+	IndexProjectionKind projection = IPK_NONE;
+	if (!at(TokenKind::Word) || !ir_model::from_spelling(token().text, token().length, &projection))
 		fail("invalid index projection");
 	advance();
 	inst.sub = static_cast<uint8_t>(projection);
