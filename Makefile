@@ -60,7 +60,7 @@ export CPPGM_PROGRAM_TEST_TIMEOUT_SEC ?= 10
 DEBUGINFO_TEST_PAS ?= pa8 pa32 pa33
 
 ALL_PAS = $(patsubst %/Makefile,%,$(wildcard pa*/Makefile))
-EXPERIMENTAL_PAS ?= pa34
+EXPERIMENTAL_PAS ?= pa34 pa35
 PAS = $(filter-out $(EXPERIMENTAL_PAS),$(ALL_PAS))
 SORTED_PAS = $(shell printf '%s\n' $(PAS) | sort -t a -k 2,2n)
 TEST_REPORT_PAS ?= $(SORTED_PAS)
@@ -280,6 +280,7 @@ HARNESS_TESTS = \
 	scripts/tests/test_machine_object_host_eh_roundtrip.py \
 	scripts/tests/test_pa24_mir_modes.py \
 	scripts/tests/test_pa33_course.py \
+	scripts/tests/test_pa35_harness.py \
 	scripts/tests/test_pending_audit_regressions.py \
 	scripts/tests/test_report_elf_code_shape.py \
 	scripts/tests/test_scaffold_audits.py \

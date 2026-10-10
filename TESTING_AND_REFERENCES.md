@@ -19,7 +19,8 @@ make test-harness
 make inception
 ```
 
-The report covers PA1–PA33; PA34's final check is inception. Narrow the report
+The report covers PA1–PA33; PA34's final check is inception, and PA35's gates
+are a release check ([below](#pa35-smoke-and-release-check)). Narrow the report
 with `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`. Control parallelism with
 `TEST_REPORT_ASSIGNMENT_JOBS` and `TEST_REPORT_SUBTEST_JOBS`; `ORDERED=false`
 streams completed jobs. Use `CPPGM_TEST_RUNNER=0` to diagnose ordinary versus
@@ -126,3 +127,65 @@ argument or array bound) is compared like any other: the course retains
 those expressions. The script exits 1 when a mismatch is not listed with
 its reason in the script's `DOCUMENTED` table, and `--verbose` lists every
 mismatch of a fixture.
+
+## PA35 smoke and release check
+
+PA35 has no reference files. Its gates compare at test time: generated code
+with the compiler's own host-built seed and with GCC, compile time and memory
+with the host compiler. What the course keeps from its solution is a
+calibration.
+
+`make -C pa35 test-smoke` runs the correctness group alone: the workload at
+`-O0` and `-O3`, every `tests/behavior` program at `-O0` to `-O3` with its
+MIR dump, and generated programs from five seeds, in seconds (8 at twelve
+jobs here). Run it
+with the other checks in [AGENTS.md](AGENTS.md) after a change to the
+optimizer, the backend or the lowering. `make test-harness` includes
+`scripts/tests/test_pa35_harness.py`, which checks the gate table, the
+progress ladder, the release check's margins and the runners without the
+course compiler. Neither `make test` nor `make test-report` runs PA35: like
+PA34 it is outside the report, its speed gates time real compiles, and its
+cycle proxy runs the workload under cache simulation, so a full run takes
+minutes.
+
+`make -C pa35 ref-test` is the release check. It runs every gate on the
+course build (`check.pl` with 100 generated seeds), then builds the same
+source as the student export's Makefile does (plain `-O3`, the C library's
+`malloc`; the seed by g++, self by that seed) and measures its speed and
+codegen groups, the configuration students' gates compare. It writes
+`pa35/calibration.tsv`: each gate's value and margin in both builds, the
+measurements behind them, and the machine, toolchain and commit. Commit the
+file. The check fails when a gate fails in either build, or when a course
+build value does not clear its limit by the release margin of its kind
+(margin = limit / value - 1):
+
+| Kind | Gates | Release margin | Spread measured when PA35 entered |
+| --- | --- | ---: | --- |
+| count | own instructions at `-O0` and `-O3`, the four kernels | 2% | under 0.01%: 81 seed/self pairs relinked in shuffled object orders, 8 environment sizes, 3 workload paths; kernels identical with relinked seeds |
+| proxy | cycle proxy at `-O0` and `-O3` | 1.5% | 1.22% at `-O0` and 0.51% at `-O3` over the 81 relinked pairs (standard deviation 0.27% and 0.13%); environment and path under 0.03% |
+| text | `.text` ratio | 1% | 0.05% over the relinked pairs (alignment padding) |
+| memory | `-O3` peak RSS ratio | 25% | 13% over nine runs of the course build |
+| time | `-O0` and `-O3` time ratios, scaling growth | 25% | 15% (`-O0`) and 2.5% (`-O3`) over nine runs of the course build; scaling 8% there, and 24% (1.86 to 2.30) across the course, student and reference seeds |
+
+The margins cover noise; the limits in `gates.txt` stay what they are. A
+flat 2% for every kind would fail `text-size` (1.75% at entry) and leave the
+`-O0` proxy (2.16% at entry) within the layout spread of failing; the
+deterministic text ratio needs less. The student build's margins are
+reported and not enforced; they are thinner, because its seed is built with
+strict aliasing and without jemalloc.
+
+Re-calibrate:
+
+- at each release, on the release machine;
+- after a `dev/src` sync that changes code generation, the optimizer or the
+  front end's hot paths;
+- after the host compiler, libstdc++, glibc, valgrind or the jemalloc package
+  changes: whether `dev/Makefile` links jemalloc alone moved the course
+  build's proxies from 1.0376 / 1.0292 to 1.0427 / 1.0424 at entry;
+- after changing the workload (and its `MANIFEST.sha256`), the kernels or the
+  generators.
+
+When the course build falls short, improve the solution and re-sync it;
+never move a limit to fit it. The export ships `calibration.tsv` and drops
+`pa35/maintainer/`.
+

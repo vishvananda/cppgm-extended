@@ -1,7 +1,7 @@
 # Repository guide
 
 This is the complete cppgm-extended compiler solution and the source of its
-student export. The course has 34 cumulative assignments; see [ROADMAP.md](ROADMAP.md).
+student export. The course has 35 cumulative assignments; see [ROADMAP.md](ROADMAP.md).
 Follow [spec.md](spec.md) for the compiler architecture, including parsing
 source once, consuming typed facts and avoiding speculative work on hot paths.
 The original CPPGM material has been substantially adapted; preserve inherited
@@ -11,7 +11,7 @@ attribution and consult [NOTICE](NOTICE), not historical PA numbers, for origins
 
 - Put compiler changes in `dev/` and `dev/src/`. Keep tool source lists in
   `dev/frontend_source_sets.mk` current.
-- Treat `pa1/` through `pa34/` as handouts, tests, references and wrappers.
+- Treat `pa1/` through `pa35/` as handouts, tests, references and wrappers.
   Read the owning handout before changing a milestone's behavior.
 - Required fixtures live in the earliest owning `paN/tests/`, in the cluster
   of the latest feature they exercise. `student.tests/` is for personal tests
@@ -42,7 +42,8 @@ or mixed-toolchain objects with `INCEPTION_OBJ_ROOT_BASE` or `OBJ`.
 
 After compiler changes, run the affected suite, full strict report, debug-info
 checks and self-host through PA5. Run inception when changing self-host
-behavior. PA34 owns the `test-through-*` ladder; root `make inception`
+behavior, and `make -C pa35 test-smoke` when changing the optimizer, the
+backend or the lowering; `make -C pa35 ref-test` is PA35's release check. PA34 owns the `test-through-*` ladder; root `make inception`
 compares the rebuilt compiler.
 
 See [TESTING_AND_REFERENCES.md](TESTING_AND_REFERENCES.md) for test selection,

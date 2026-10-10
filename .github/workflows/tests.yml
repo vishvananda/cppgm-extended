@@ -1,6 +1,6 @@
 name: Tests
 
-# The 34-assignment course owns self-hosting in PA34. PA5 is the
+# The 35-assignment course owns self-hosting in PA34. PA5 is the
 # consolidated parser checkpoint (formerly PA10); it builds cppgm++ in full.
 
 on:

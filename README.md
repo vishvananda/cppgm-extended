@@ -2,9 +2,9 @@
 
 [![Tests](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml/badge.svg)](https://github.com/vishvananda/cppgm-extended/actions/workflows/tests.yml)
 
-A C++11 compiler course in 34 cumulative assignments, from preprocessing to
+A C++11 compiler course in 35 cumulative assignments, from preprocessing to
 native code, optimization and self-hosting. This repository contains the
-complete compiler solution in `dev/`; `pa1/` through `pa34/` hold the handouts,
+complete compiler solution in `dev/`; `pa1/` through `pa35/` hold the handouts,
 tests and wrappers.
 
 Students should start with
@@ -34,7 +34,7 @@ reference policy. Personal experiments go in `student.tests/`.
 The original C++ Grandmaster Certification course supplied early assignment
 material, tests and starter code. The cppgm-extended authors have substantially
 revised, combined, renumbered and extended that material into this independent
-34-assignment course. Today's handouts, harnesses and reference implementation
+35-assignment course. Today's handouts, harnesses and reference implementation
 describe this version; current PA numbers do not identify original CPPGM lessons.
 
 Copyright 2026 The cppgm-extended Authors. Project-maintained code and materials

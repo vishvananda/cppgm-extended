@@ -11,10 +11,12 @@ make test-report
 make inception
 ```
 
-For PA1–PA33, a clean through-milestone report is the exit criterion. PA34 ends
-with inception. `make test` builds once and runs all assignment suites;
-`make test-report` keeps going and summarizes failures. Use
-`ACTIVE_TEST_REPORT_PAS='pa8 pa10'` to narrow a report.
+For PA1–PA33, a clean through-milestone report is the exit criterion. PA34
+ends with inception. PA35 ends with `make -C pa35 test`, which is not part of
+the report: its gates compare your compiler with the host and its own seed.
+`make test` builds once and runs all assignment suites; `make test-report`
+keeps going and summarizes failures. Use `ACTIVE_TEST_REPORT_PAS='pa8 pa10'`
+to narrow a report.
 
 ## Local checks and toolchains
 

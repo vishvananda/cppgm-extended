@@ -318,6 +318,15 @@ prune_student_pa33() {
   done
 }
 
+# PA35's release check calibrates the course solution itself: drop its
+# maintainer directory and the Makefile line that includes it.
+prune_student_pa35() {
+  if [ -f "$dest/pa35/Makefile" ]; then
+    rm -rf "$dest/pa35/maintainer"
+    perl -0pi -e 's/\n-include maintainer\/Makefile\n/\n/' "$dest/pa35/Makefile"
+  fi
+}
+
 sanitize_linux_student_scripts() {
   local run_script
   run_script="$dest/scripts/run_cpphostinterop_tests_worker.pl"
@@ -750,6 +759,7 @@ make -s -C "$dest" ref-test-debuginfo \
 verify_regenerated_reference_outputs
 
 prune_student_pa33
+prune_student_pa35
 
 finalize_reference_binaries
 

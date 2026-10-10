@@ -34,6 +34,7 @@ pa33/design-notes.md
 pa33/tests/o1/README.md
 pa33/tests/o2/README.md
 pa34/README.md
+pa35/README.md
 pa4/README.md
 pa4/directives.md
 pa4/macros.md

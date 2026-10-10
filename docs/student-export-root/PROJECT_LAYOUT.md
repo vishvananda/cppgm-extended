@@ -41,6 +41,7 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 - PA27-PA31: host ABI and hosted compatibility
 - PA32-PA33: LowIR and machine-backend optimization
 - PA34: inception, rebuilding `cppgm++` with `cppgm++`
+- PA35: optimizing the compiler, its generated code and its own speed
 
 ## Assignment Map
 
@@ -80,6 +81,7 @@ path without `.cpp`; for example, `dev/src/syntax/foo.cpp` is listed as
 | PA32 | `lowiropt` | LowIR optimization |
 | PA33 | `lowir2native -O1/-O2/-O3` | machine/backend optimization |
 | PA34 | inception targets | rebuild `cppgm++` with `cppgm++` |
+| PA35 | `make -C pa35 test` | generated code against the seed and GCC, compile speed against the host |
 
 ## PA34
 
@@ -88,3 +90,10 @@ PA34 rebuilds your compiler with itself. The host-built `dev/cppgm++` produces
 last two binaries to match byte for byte. The `test-through-paN` ladder runs
 earlier assignment tests with self-built tools while you work toward that
 comparison; see [PA34](pa34/README.md) for the commands.
+
+## PA35
+
+PA35 makes the compiler you finished in PA34 fast. Its gates compare the
+self-built compiler with the host-built seed on a frozen workload, a few
+generated-code kernels with GCC, and the seed's compile time and memory with
+the host compiler's. `make -C pa35 test` runs them; see [PA35](pa35/README.md).

@@ -2,7 +2,7 @@
 
 This checkout contains the complete course solution. The student export
 replaces tool entry points with scaffolds and supplies only public support
-code; students build one cumulative implementation across PA1–PA34.
+code; students build one cumulative implementation across PA1–PA35.
 
 Keep tool entry points in `dev/` and shared implementation in `dev/src/`.
 List each new implementation source, without `.cpp`, in every tool that needs

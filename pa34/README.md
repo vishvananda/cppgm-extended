@@ -154,3 +154,6 @@ A few habits make such measurements mean something:
   different code; to see the code alone, build one frozen source with the
   old and the new compiler and compare those two binaries, which do the
   same work.
+
+[PA35](../pa35/README.md) turns these measurements into gates: its scripts
+freeze the seed and the self build, link them alike and count both levels.

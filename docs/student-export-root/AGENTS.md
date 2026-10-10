@@ -1,6 +1,6 @@
 # Agent instructions
 
-Build one cumulative C++11 compiler for Linux x86-64, working through PA1–PA34.
+Build one cumulative C++11 compiler for Linux x86-64, working through PA1–PA35.
 Read the current `paN/README.md` and [Testing and references](TESTING_AND_REFERENCES.md)
 before changing code. [Project layout](PROJECT_LAYOUT.md) gives the assignment map.
 
@@ -26,8 +26,9 @@ make test-report-through-paN
 ```
 
 Replace N with the assignment number. For PA1–PA33, pass the root through
-report before advancing. PA34 ends with `make inception`. Use the debug and
-inspection targets required by the owning handout when changing those surfaces.
+report before advancing. PA34 ends with `make inception`, PA35 with
+`make -C pa35 test`. Use the debug and inspection targets required by the
+owning handout when changing those surfaces.
 
 Default tests run the course contract. PA24 and PA32's `tests/regression/`
 describe the course solution's design and are outside your exit criteria.

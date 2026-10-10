@@ -1,6 +1,6 @@
 # cppgm assignments
 
-Build a C++11 compiler in 34 cumulative assignments, from preprocessing to
+Build a C++11 compiler in 35 cumulative assignments, from preprocessing to
 native code, optimization and self-hosting. Later handouts identify the
 additional language and hosted-library extensions they require. Start with
 [PA1](pa1/README.md) and extend the same implementation in `dev/` and
@@ -28,6 +28,8 @@ make test-report-through-paN
 Replace N with the assignment number. A clean through-milestone report is the
 exit criterion for PA1–PA33. [PA34](pa34/README.md) runs the self-host ladder
 and ends with `make inception`, comparing the self and inception generations.
+[PA35](pa35/README.md) makes the compiler fast and ends with
+`make -C pa35 test`, its own gates on generated code and compile speed.
 Later milestones extend your existing compiler; do not reset to the initial
 scaffolds.
 
@@ -44,7 +46,7 @@ reference text is `doc/n3485.txt`.
 This is an independently maintained adaptation of the original C++ Grandmaster
 Certification course. The cppgm-extended authors substantially edited,
 combined, renumbered and extended the inherited handouts, tests and starter
-code. Current PA numbers and reference tools belong to this 34-assignment
+code. Current PA numbers and reference tools belong to this 35-assignment
 version of the course.
 
 Copyright 2026 The cppgm-extended Authors. Project-maintained code and materials

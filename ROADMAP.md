@@ -20,6 +20,7 @@ under `dev/` and `dev/src/`.
 | PA29-PA31 | hosted source/header compatibility and hosted link/runtime behavior |
 | PA32-PA33 | LowIR and machine/backend optimization |
 | PA34 | staged self-host ladder and inception |
+| PA35 | optimizing the compiler: generated code against its own host-built seed and GCC, compile speed against the host |
 
 ## PA9 ABI Boundary
 
