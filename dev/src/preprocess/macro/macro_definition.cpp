@@ -141,9 +141,9 @@ void MacroDefinitionParser::parse_parameters(DefinitionTokens& tokens, const PPT
 		token = tokens.next();
 		if (IsPunctuatorToken(token, TokenKind::OP_RPAREN))
 			return;
-		// GNU `identifier ...` (hosted mode; the course grammar has no such
-		// form, pa4 P5): the named parameter takes the variable arguments,
-		// as __VA_ARGS__ would.
+		// GNU `identifier ...` (hosted mode; C++11's grammar has no such
+		// form, so course mode rejects it): the named parameter takes the
+		// variable arguments, as __VA_ARGS__ would.
 		if (hosted_ && IsPunctuatorToken(token, TokenKind::OP_DOTS))
 		{
 			variadic_ = true;

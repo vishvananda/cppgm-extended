@@ -29,11 +29,12 @@ struct NumberLiteral
 };
 
 // The literal forms a reader accepts: C++11's grammars alone (the
-// standalone PA2-PA4 tools, pa2/plan.md D1, D3); GCC's dialect too (binary
-// literals, hexadecimal floating literals, the q/Q and f16 ... f64x
-// suffixes) as the compiler reads it, q/Q naming __float128 as in GCC; or
-// that dialect as the course's preprocessor stream types it, q/Q long double
-// (cppgm++ -E: pa29's preprocessor fixtures pin it).
+// standalone PA2-PA4 tools, which reject the GNU forms below: 2.14.2,
+// 2.14.4); GCC's dialect too (binary literals, hexadecimal floating
+// literals, the q/Q and f16 ... f64x suffixes) as the compiler reads it,
+// q/Q naming __float128 as in GCC; or that dialect as the course's
+// preprocessor stream types it, q/Q long double (cppgm++ -E: pa29's
+// preprocessor fixtures pin it).
 enum class NumberDialect : uint8_t
 {
 	Cxx11,

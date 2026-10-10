@@ -1546,7 +1546,7 @@ bool LoopPass::fill_available() const
 		is_function_kind(c_.program.symbols[symbol].kind);
 }
 
-// O3 full unrolling (pa32/plan.md budgets): a counted loop tested at its
+// O3 full unrolling, within the budgets below: a counted loop tested at its
 // header that leaves after at most kUnrollTrips passes through a
 // straight-line body (a chain of jump-ended blocks back to the header)
 // becomes those passes in one block, then the header's final test values,
@@ -2926,7 +2926,8 @@ bool mark_no_wrap_counters(FunctionContext& context)
 
 bool unroll_loops(FunctionContext& context)
 {
-	// One loop per function (pa32/plan.md).
+	// At most kUnrollRounds loops, one at a time, each found again after
+	// the previous change (LoopPass::unroll).
 	LoopPass pass(context);
 	const bool changed = pass.unroll();
 	if (changed)

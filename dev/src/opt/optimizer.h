@@ -13,8 +13,8 @@
 // policies (spec section 7): O0 transforms nothing; O1 runs local
 // simplification, propagation, control-flow cleanup, slot promotion,
 // bounded inlining and pruning; O2 adds bounded memory and loop work; O3
-// targeted unrolling. Every pass is bounded (pa32/plan.md lists scopes,
-// complexities and budgets).
+// targeted unrolling. Every pass is bounded: its scope and budgets are
+// constants beside its code.
 namespace opt {
 
 // Optional limits of the inliner (`--inline-limit <name>=<n>`); 0 keeps

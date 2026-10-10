@@ -129,10 +129,10 @@ public:
 	// storage and defines the functions its initializer odr-uses (see
 	// record_constant_initializer).
 	bool read_through_storage(const VariableEntity* variable) const;
-	// The course's integral_constant convention (pa18/plan.md): whether a
-	// condition converted to bool by a conversion function has a value
-	// known without evaluating it (its value then); asked by the lowering,
-	// when a specialization's member body has been instantiated.
+	// The course's integral_constant convention: whether a condition
+	// converted to bool by a conversion function has a value known without
+	// evaluating it (its value then); asked by the lowering, when a
+	// specialization's member body has been instantiated.
 	bool constant_conversion(const syntax::Expr& condition, bool& value) const;
 	// The functions template arguments designate (3.2p2) in the definition
 	// of `context` (null: outside any function body), which no lowered code

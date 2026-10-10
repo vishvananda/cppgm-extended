@@ -299,15 +299,23 @@ sub is_source_file {
 
 # The scaffold files the student export ships from dev/src
 # (dev_support_files in scripts/export_student_repo.sh) are the students'
-# starting points, not the implementation: not audited.
+# starting points, not the implementation: not audited.  A tree without the
+# export script (the implementation's own repository) lists the same files
+# in scripts/scaffold_headers.sha256, the course copies' checksums.
 sub read_shipped_scaffold_files {
     my ($root) = @_;
     my $export = File::Spec->catfile($root, 'scripts', 'export_student_repo.sh');
-    return () if !-f $export;
+    my $manifest = File::Spec->catfile($root, 'scripts', 'scaffold_headers.sha256');
     my %shipped;
-    if (read_text($export) =~ /^dev_support_files=\(\n(.*?)^\)/ms) {
-        my $list = $1;
-        $shipped{$_} = 1 for $list =~ /^\s*(dev\/\S+)\s*$/mg;
+    if (-f $export) {
+        if (read_text($export) =~ /^dev_support_files=\(\n(.*?)^\)/ms) {
+            my $list = $1;
+            $shipped{$_} = 1 for $list =~ /^\s*(dev\/\S+)\s*$/mg;
+        }
+    } elsif (-f $manifest) {
+        for my $line (split /\n/, read_text($manifest)) {
+            $shipped{$1} = 1 if $line =~ /^[0-9a-f]{64}  (dev\/\S+)$/;
+        }
     }
     return %shipped;
 }

@@ -108,8 +108,9 @@ bool IsPointerLike(const sema::Type* type)
 }
 
 // 5.6, 5.7 as the executed operation rounds: f32 once in float; f64 in
-// x87 extended precision, then rounded to double (pa25/plan.md D1,
-// [expr]p11), which can differ in the last place from one rounding.
+// x87 extended precision, then rounded to double, as the native back end
+// evaluates it ([expr]p11 allows the extra precision), which can differ
+// in the last place from one rounding.
 template<typename T>
 long double FloatingArithmetic(TokenKind op, long double left, long double right)
 {

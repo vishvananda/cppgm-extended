@@ -893,7 +893,7 @@ void FunctionSelector::emit_call(uint32_t id)
 	// which the call clobbers anyway). The course runtime's strlen is a
 	// byte loop; host objects call the C library's vectorized strlen,
 	// where the probe ran 22% slower on 16-47 byte strings (and 28% faster
-	// on short ones: pa33/plan.md), so they keep the plain call.
+	// on short ones), so they keep the plain call.
 	if (level_ >= 1 && eh_model_ == EhModel::Course && cell == kNoId && callee.kind == ValueKind::Symbol && !variadic &&
 		inst.extra_count == 1 && sig->parameter_count == 1 && params[0].type.is_pointer() &&
 		params[0].pass == ir_model::PPM_DIRECT && sig->result.kind() == TypeKind::I64 && !(call.flags & MF_NORETURN) &&

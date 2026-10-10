@@ -887,10 +887,9 @@ bool AggregateSlots::run()
 			continue;
 		// A scalar slot whose address was taken keeps its accesses at O1:
 		// turning them into direct ones for promotion made the two
-		// exec_bench workloads it changed about 10% slower with the hull
-		// allocator (pa32/plan.md, Performance evidence). From O2 they
-		// become direct (the live-range allocator keeps promoted values
-		// in registers).
+		// benchmark workloads it changed about 10% slower with the hull
+		// allocator. From O2 they become direct (the live-range allocator
+		// keeps promoted values in registers).
 		if (!type.is_object() && c_.level < 2)
 			continue;
 		settled[s] = 1;

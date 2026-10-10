@@ -17,8 +17,8 @@
 // mismatched boundary, recursion, no_inline or GNU replaceability stays a
 // call; a call in handler code needs a callee that cannot unwind. Each
 // caller is simplified (`simplify`) after it changes, before its own
-// callers decide, so a whole wave is one traversal. Budgets are listed in
-// pa32/plan.md.
+// callers decide, so a whole wave is one traversal. The budgets, in copied
+// instructions, are the constants at the top of opt/inliner.cpp.
 namespace opt {
 
 enum class InlineWave

@@ -7,7 +7,8 @@
 //
 // Replaces the course's scaffold abi/itanium/abi_mangle.h, which ships to
 // students unchanged. The ABI scaffold headers define some of these names
-// differently, so v4opt includes none of them (scripts/check_scaffold_headers.sh).
+// differently, so the implementation includes none of them (the
+// scaffold-header check enforces this).
 
 #include "abi/itanium/abi_graph.h"
 #include "abi/itanium/abi_stats.h"

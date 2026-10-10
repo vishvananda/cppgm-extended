@@ -1,9 +1,9 @@
 #pragma once
 
 // The tools' --help texts. The course's scaffold support/tool_help_text.h ships
-// to students unchanged and defines the same functions with the options of the
-// previous course solution, so v4opt never includes it
-// (scripts/check_scaffold_headers.sh).
+// to students unchanged and defines the same functions with a different option
+// list, so the implementation never includes it (the scaffold-header check
+// enforces this).
 
 inline const char* cppgm_help_text()
 {

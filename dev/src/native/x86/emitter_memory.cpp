@@ -788,7 +788,7 @@ void FunctionEmitter::eh(const Inst& inst)
 	// `exception` read has taken it. A record below the frame is released
 	// by RSP set past it from the record's address (lea rsp, [record +
 	// 80]), which writes RSP without reading it: on the O1 workloads `add
-	// rsp, 80` ran up to 20% slower (pa33/plan.md).
+	// rsp, 80` ran up to 20% slower.
 	case Op::EhPop:
 	{
 		const Reg prev = function_->eh_records_pushed ? R10 : R11;

@@ -84,7 +84,7 @@ enum class AttributeKind : uint8_t
 	// GNU always_inline.
 	AlwaysInline,
 	// GNU gnu_inline: an inline function's definition serves inlining
-	// only (PA34 audit).
+	// only; it is never emitted on its own (ProgramLowering::demand_entry).
 	GnuInline,
 	// GNU used: the function is emitted and kept even when nothing
 	// in the unit refers to it.

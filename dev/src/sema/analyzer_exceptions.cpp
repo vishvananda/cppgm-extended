@@ -474,7 +474,7 @@ void Analyzer::check_redeclared_exceptions(
 	// `void* operator new(std::size_t) noexcept` there): it is not compared,
 	// the first declaration's staying in force. (The hosts compare no
 	// redeclaration under -fno-exceptions; other functions' are compared
-	// as with exceptions, see pa30/plan.md's known limits.)
+	// as with exceptions, a known difference from them.)
 	const syntax::Expr* operand = NoexceptOperand(info.function_suffix);
 	if (!exceptions_ && function->is_operator &&
 		(function->operator_token == TokenKind::KW_NEW || function->operator_token == TokenKind::KW_DELETE))

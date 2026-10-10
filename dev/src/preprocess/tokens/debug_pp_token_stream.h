@@ -4,8 +4,8 @@
 
 // Replaces the course's scaffold preprocess/tokens/DebugPPTokenStream.h, which
 // ships to students unchanged and defines the same class; this one writes each
-// token's type name without building a std::string. v4opt never includes the
-// scaffold (scripts/check_scaffold_headers.sh).
+// token's type name without building a std::string. The implementation never
+// includes the scaffold (the scaffold-header check enforces this).
 
 #include <iostream>
 #include <string>

@@ -1071,8 +1071,9 @@ bool ConstantInterpreter::floating_operation(
 {
 	// 5.6, 5.7 in the operation's own precision, as the native back end
 	// evaluates it: a double operation in x87 extended precision, then
-	// rounded to double (pa25/plan.md D1, [expr]p11); a zero divisor or a
-	// result outside the type's range is undefined (5p4, 5.6p4).
+	// rounded to double ([expr]p11 allows the extra precision); a zero
+	// divisor or a result outside the type's range is undefined (5p4,
+	// 5.6p4).
 	bool defined = false;
 	switch (FloatingRepresentation(type->unqualified->fundamental))
 	{

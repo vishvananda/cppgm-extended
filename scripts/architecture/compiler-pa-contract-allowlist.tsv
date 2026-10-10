@@ -34,7 +34,6 @@ comment	dev/src/lex/gnu_builtins.h	pa28	handout or fixture cross-reference in a 
 comment	dev/src/lex/number_literal.cpp	pa29	handout or fixture cross-reference in a comment
 comment	dev/src/lex/number_literal.h	PA2	handout or fixture cross-reference in a comment
 comment	dev/src/lex/number_literal.h	PA4	handout or fixture cross-reference in a comment
-comment	dev/src/lex/number_literal.h	pa2	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/lex/number_literal.h	pa29	handout or fixture cross-reference in a comment
 comment	dev/src/lex/post_token.h	PA2	handout or fixture cross-reference in a comment
 comment	dev/src/lex/post_token_writer.cpp	PA2	handout or fixture cross-reference in a comment; inherited CPPGM starter-code attribution
@@ -49,7 +48,6 @@ comment	dev/src/lower/constant_lowering.cpp	PA16	handout or fixture cross-refere
 comment	dev/src/lower/dispatch_lowering.cpp	PA31	handout or fixture cross-reference in a comment
 comment	dev/src/lower/function_lowering.h	PA34	handout or fixture cross-reference in a comment
 comment	dev/src/lower/global_lowering.cpp	PA11	handout or fixture cross-reference in a comment
-comment	dev/src/lower/global_lowering.cpp	pa25	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/lower/local_mangling.cpp	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/lower/local_static_lowering.cpp	PA16	handout or fixture cross-reference in a comment
 comment	dev/src/lower/object_lowering.cpp	PA31	handout or fixture cross-reference in a comment
@@ -71,8 +69,6 @@ comment	dev/src/native/object/object_compiler.h	PA25	handout or fixture cross-re
 comment	dev/src/native/object/object_compiler.h	pa26	handout or fixture cross-reference in a comment
 comment	dev/src/native/object/object_compiler.h	pa8	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/allocation.cpp	PA24	handout or fixture cross-reference in a comment
-comment	dev/src/native/select/allocation.cpp	pa33	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
-comment	dev/src/native/select/emit_calls.cpp	pa33	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/native/select/global_allocation.cpp	PA10	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/global_allocation.cpp	PA23	handout or fixture cross-reference in a comment
 comment	dev/src/native/select/host_eh.cpp	pa26	handout or fixture cross-reference in a comment
@@ -81,21 +77,15 @@ comment	dev/src/native/select/register_allocation.cpp	PA24	handout or fixture cr
 comment	dev/src/native/select/selector.h	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/native/x86/emitter.cpp	pa26	handout or fixture cross-reference in a comment
 comment	dev/src/native/x86/emitter_floating.cpp	PA25	handout or fixture cross-reference in a comment
-comment	dev/src/native/x86/emitter_memory.cpp	pa33	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
-comment	dev/src/opt/aggregate_slots.cpp	pa32	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/opt/call_graph.h	PA32	handout or fixture cross-reference in a comment
 comment	dev/src/opt/function_ir.h	pa10	handout or fixture cross-reference in a comment
 comment	dev/src/opt/inliner.cpp	pa32	handout or fixture cross-reference in a comment
 comment	dev/src/opt/inliner.h	PA32	handout or fixture cross-reference in a comment
-comment	dev/src/opt/inliner.h	pa32	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/opt/interprocedural.h	PA32	handout or fixture cross-reference in a comment
-comment	dev/src/opt/loop_passes.cpp	pa32	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/opt/loops.h	PA32	handout or fixture cross-reference in a comment
-comment	dev/src/opt/optimizer.h	pa32	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/opt/optimizer.h	pa32_opt_stats	handout or fixture cross-reference in a comment
 comment	dev/src/opt/value_simplify.cpp	pa32	handout or fixture cross-reference in a comment
 comment	dev/src/preprocess/expr/controlling_expression.h	PA3	handout or fixture cross-reference in a comment
-comment	dev/src/preprocess/macro/macro_definition.cpp	pa4	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/preprocess/macro/macro_definition.h	PA12	handout or fixture cross-reference in a comment
 comment	dev/src/preprocess/preprocessor.h	PA2	handout or fixture cross-reference in a comment
 comment	dev/src/preprocess/preprocessor.h	PA26	handout or fixture cross-reference in a comment
@@ -111,7 +101,6 @@ comment	dev/src/sema/analyzer.h	PA16	handout or fixture cross-reference in a com
 comment	dev/src/sema/analyzer.h	PA29	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer.h	PA6	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer.h	PA7	handout or fixture cross-reference in a comment
-comment	dev/src/sema/analyzer.h	pa18	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/sema/analyzer_bindings.cpp	PA29	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer_bodies.cpp	PA6	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer_builtins.cpp	PA27	handout or fixture cross-reference in a comment
@@ -121,12 +110,10 @@ comment	dev/src/sema/analyzer_declarations.cpp	PA27	handout or fixture cross-ref
 comment	dev/src/sema/analyzer_declarations.cpp	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer_declarations.cpp	pa28	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer_declarations.cpp	pa8	handout or fixture cross-reference in a comment
-comment	dev/src/sema/analyzer_exceptions.cpp	pa30	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/sema/analyzer_expressions.cpp	PA13	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer_expressions.cpp	PA7	handout or fixture cross-reference in a comment
 comment	dev/src/sema/analyzer_lambdas.cpp	PA20	handout or fixture cross-reference in a comment
 comment	dev/src/sema/constant_evaluator.h	PA6	handout or fixture cross-reference in a comment
-comment	dev/src/sema/constant_expressions.cpp	pa25	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/sema/constant_values.h	PA18	handout or fixture cross-reference in a comment
 comment	dev/src/sema/conversions.h	PA7	handout or fixture cross-reference in a comment
 comment	dev/src/sema/entity_records.h	PA18	handout or fixture cross-reference in a comment
@@ -150,7 +137,6 @@ comment	dev/src/syntax/ast.h	PA5	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/ast_declarations.h	pa28	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/ast_printer.cpp	PA5	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/ast_printer.h	PA5	handout or fixture cross-reference in a comment
-comment	dev/src/syntax/ast_types.h	PA34	cites a v4opus design record (paN/plan.md or its audit), which this repository does not carry
 comment	dev/src/syntax/ast_types.h	pa27	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/ast_types.h	pa28	handout or fixture cross-reference in a comment
 comment	dev/src/syntax/parser.h	PA5	handout or fixture cross-reference in a comment

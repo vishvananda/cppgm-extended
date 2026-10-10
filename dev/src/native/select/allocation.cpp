@@ -493,7 +493,7 @@ void FunctionSelector::compute_clobbers()
 	// At O1 and above handler records go below the frame unless an
 	// allocation must outlive a pop (native/runtime/eh_record.h); O0 keeps
 	// frame slots, which cost no RSP updates per region (destructor-heavy
-	// O0 loops ran 15-27% slower with pushed records: pa33/plan.md).
+	// O0 loops ran 15-27% slower with pushed records).
 	out_->eh_records_pushed = level_ >= 1 && has_eh_ && !has_stack_alloc_ && eh_model_ == EhModel::Course;
 }
 
